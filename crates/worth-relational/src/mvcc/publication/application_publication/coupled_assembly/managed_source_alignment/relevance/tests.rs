@@ -14,6 +14,7 @@ use crate::schema::data::{
 use crate::validation::candidate_source::program::schema_fixture::managed_cache_schema;
 
 mod footprint;
+mod reach;
 
 const SCOPE: KindId = KindId(1);
 const MEMBER: KindId = KindId(3);

@@ -11,12 +11,17 @@
 //! lineage that read rested on, or birth a name the read found unknown;
 //! unrelated commits leave it clean.
 
+mod candidates;
+#[cfg(test)]
+mod candidates_tests;
 mod denial;
 mod dependencies;
 mod reader;
+mod record_names;
 mod resolve;
 mod selection_lowering;
 
+pub use candidates::NameResolutionCandidates;
 pub use denial::{ExecutionNameReadDenial, ExecutionNameResolveDenial};
 pub use dependencies::{NameReadCurrentness, NameReadDependencies, NameReadStaleness};
 pub use reader::ExecutionNameReader;

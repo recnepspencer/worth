@@ -31,7 +31,7 @@ pub fn prepare<Schema, Binding>(
     candidate: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
     own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
     participants: &dyn crate::domain_computation::primary_graph::provider::AppliedOutputParticipants,
-    assembly: &dyn crate::domain_computation::primary_graph::application_query::managed_index::AppliedManagedSourceAlignment,
+    assembly: &worth_relational::facade::mvcc::RelationalAuthoredCoupledCandidate<'_>,
     erased: ErasedAppliedProducerSource,
     predecessor: Option<&worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
     edition: super::super::InstalledProducerEdition,

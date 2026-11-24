@@ -1,5 +1,5 @@
 //! Original-request fixed metadata for one complete immutable adjacency bucket.
-use super::{admit, borrowed_denial, consult, Denial, Direction};
+use super::{admit, borrowed_denial, consult, Denial, Direction, Visibility};
 use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::storage::data::RecordLifecycleState as Lifecycle;
 use crate::storage::partition::AdjacencyDirection;
@@ -16,6 +16,7 @@ pub(super) fn read(
     anchor: EntityId,
     kind: KindId,
     direction: Direction,
+    visibility: Visibility,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<ExecutionArray<Option<RelationalRelationMetadata>>, Denial> {
     view.demand_regions_head(execution, [anchor.partition_id])
@@ -54,7 +55,7 @@ pub(super) fn read(
             }
             Visit::Relation(relation) => {
                 rows.push(live(
-                    view, execution, relation, anchor, kind, direction, context,
+                    view, execution, relation, anchor, kind, direction, visibility, context,
                 )?)
                 .map_err(array_denial)?;
             }
@@ -74,6 +75,7 @@ fn live(
     anchor: EntityId,
     kind: KindId,
     direction: Direction,
+    visibility: Visibility,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<Option<RelationalRelationMetadata>, Denial> {
     if relation.generation_value() == 0 {
@@ -94,7 +96,9 @@ fn live(
         return Ok(None);
     }
     match slot.lifecycle() {
-        Lifecycle::RetainedDanglingForAudit => return Err(Denial::UnsupportedVisibility),
+        Lifecycle::RetainedDanglingForAudit if matches!(visibility, Visibility::Strict) => {
+            return Err(Denial::UnsupportedVisibility);
+        }
         Lifecycle::MaterializationUnavailable => return Err(Denial::SourceUnavailable),
         Lifecycle::Live => {}
         _ => return Ok(None),

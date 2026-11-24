@@ -7,7 +7,7 @@ use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
 use syn::{
     Attribute, Data, DeriveInput, Fields, FieldsNamed, GenericArgument, Ident, LitStr,
-    PathArguments, Token, Type,
+    PathArguments, Token, Type, Variant,
 };
 
 const ATTRIBUTE: &str = "worth_query";
@@ -159,7 +159,28 @@ pub(crate) fn unit_struct(input: &DeriveInput, derive: &str) -> syn::Result<()> 
     }
 }
 
-fn no_generics(input: &DeriveInput, derive: &str) -> syn::Result<()> {
+/// The enum's variants, each `each` (such as "a role"); structs, unions and
+/// enums without a variant are refused at their defining token.
+pub(crate) fn enum_variants<'a>(
+    input: &'a DeriveInput,
+    derive: &str,
+    each: &str,
+) -> syn::Result<&'a Punctuated<Variant, Token![,]>> {
+    no_generics(input, derive)?;
+    let not_an_enum =
+        |span| syn::Error::new(span, format!("#[derive({derive})] applies only to enums"));
+    match &input.data {
+        Data::Enum(data) if data.variants.is_empty() => Err(syn::Error::new(
+            input.ident.span(),
+            format!("#[derive({derive})] needs at least one variant, each {each}"),
+        )),
+        Data::Enum(data) => Ok(&data.variants),
+        Data::Struct(data) => Err(not_an_enum(data.struct_token.span)),
+        Data::Union(data) => Err(not_an_enum(data.union_token.span)),
+    }
+}
+
+pub(crate) fn no_generics(input: &DeriveInput, derive: &str) -> syn::Result<()> {
     match input.generics.params.first() {
         Some(parameter) => Err(syn::Error::new(
             parameter.span(),
@@ -234,6 +255,21 @@ pub(crate) fn selection_column(
 /// The field's identifier without a raw prefix.
 pub(crate) fn member_name(member: &Ident) -> String {
     member.unraw().to_string()
+}
+
+/// The name `what` (such as "role") is persisted under: its explicit `name`
+/// key, else its Rust name. Refused when empty or holding whitespace, which
+/// no persisted naming identifier admits.
+pub(crate) fn wire_name(explicit: Option<LitStr>, rust: &Ident, what: &str) -> syn::Result<LitStr> {
+    let name = explicit.unwrap_or_else(|| LitStr::new(&member_name(rust), rust.span()));
+    let text = name.value();
+    if text.is_empty() || text.chars().any(|ch| ch.is_whitespace() || ch.is_control()) {
+        return Err(syn::Error::new(
+            name.span(),
+            format!("a {what} name is not empty and holds no whitespace"),
+        ));
+    }
+    Ok(name)
 }
 
 #[cfg(test)]

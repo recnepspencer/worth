@@ -82,6 +82,42 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             .map_err(Denial::Document)?;
         self.with_admitted_recording_output_authority(phase, read, origin, request, callback)
     }
+    /// An envelope's stages were each admitted under its constraint. The trees
+    /// record under the request those admissions retained, while the document
+    /// head is still the one the envelope's candidate was forked from.
+    pub(in crate::domain_computation::primary_graph) fn with_envelope_recording_output_authority<
+        'scope,
+        T,
+    >(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'scope>,
+        read: &CompletedMetadataRead<'_, 'scope>,
+        reservation: &WorthQueryDocumentHistoryReservation,
+        candidate: &crate::domain_computation::primary_graph::WorthQueryExpectedProductBranch<
+            'runtime,
+            S,
+        >,
+        constraint: &super::super::super::WorthQueryDocumentHistoryEnvelopeConstraint,
+        origin: &Arc<WorthQueryHistoryRecordingOutputOrigin>,
+        callback: impl FnOnce(&WorthQueryHistoryOutputAuthority<'_, 'scope>) -> T,
+    ) -> Result<T, WorthQueryHistoryNavigationDenial> {
+        use WorthQueryHistoryNavigationDenial as Denial;
+        self.validate_reservation(reservation)
+            .map_err(Denial::Document)?;
+        if !origin.matches_reservation(reservation, candidate)
+            || origin.recording_profile().model != self.model
+            || constraint.candidate() != candidate.branch()
+            || WorthQueryProductBranchReadIdentity::from_observation(
+                read.current_product().observation(),
+            ) != reservation.expected
+        {
+            return Err(Denial::ForeignDocument);
+        }
+        let request = constraint
+            .admitted_request()
+            .ok_or(Denial::ForeignDocument)?;
+        self.with_admitted_recording_output_authority(phase, read, origin, request, callback)
+    }
     fn with_admitted_recording_output_authority<'scope, T>(
         &self,
         phase: &WorthQueryAdvancementPhase<'scope>,

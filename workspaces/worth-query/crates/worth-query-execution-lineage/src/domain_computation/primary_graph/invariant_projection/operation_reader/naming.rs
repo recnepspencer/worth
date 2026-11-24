@@ -3,17 +3,17 @@
 //! Resolution, kind verification and dependency recording belong to
 //! `worth-query-execution-naming`; this module admits the read against the
 //! operation's declared entity contract and turns what the answer rested on
-//! into decision facts. A decision never seals a name dependency it cannot
-//! track:
+//! into decision facts (`relation_naming` does the same for relations). A
+//! decision never seals a name dependency it cannot track:
 //!
 //! - a live record's name, and every live descendant a resolution found, is
-//!   admitted into the realized read scope and keyed as that entity's fact,
+//!   admitted into the realized read scope and keyed as that record's fact,
 //!   so a split, merge, replacement or retirement ending it stales the
-//!   decision through ordinary entity-lifecycle invalidation;
+//!   decision through ordinary lifecycle invalidation;
 //! - an answer that also rested on ended names on the walked path (which a
-//!   later `Restore` revives), on a held name not yet born, or on a relation
-//!   record has no Query fact key for that part, so the projection refuses to
-//!   seal with [`FailedDecisionRead::PersistentName`];
+//!   later `Restore` revives), on a held name not yet born, or on a record
+//!   of the other subject kind has no Query fact key for that part, so the
+//!   projection refuses to seal with [`FailedDecisionRead::PersistentName`];
 //! - a name read that failed vetoes sealing the same way, even when the
 //!   handler swallowed the error.
 
@@ -21,7 +21,8 @@ use std::collections::BTreeMap;
 use std::fmt;
 
 use worth_query_declaration::facade::application_naming::{
-    NameResolutionDenial, NameSelection, ResolvedName, WorthQueryName,
+    NameOwnerScope, NameResolutionDenial, NameSelection, ResolvedName, WorthQueryName,
+    WorthQueryNamedKind,
 };
 use worth_query_declaration::facade::application_schema::ApplicationEntityMarkerIdentity;
 use worth_query_execution_naming::facade::{
@@ -30,6 +31,7 @@ use worth_query_execution_naming::facade::{
 use worth_query_installation::facade::{
     ApplicationOperationDecisionReadTarget, ApplicationSchema, OperationReads,
 };
+use worth_relational::facade::history::BranchId;
 use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::lineage::LineageRecordTarget;
 
@@ -37,7 +39,9 @@ use super::current_output::WorthQueryCurrentOutputDenial;
 use super::decision_plan::WorthQueryInvariantDecisionPlanDenial;
 use super::decision_reads::FailedDecisionRead;
 use super::WorthQueryApplicationOperationInvariantProjectionReader;
-use crate::domain_computation::primary_graph::WorthQueryInvariantEntityIdentity;
+use crate::domain_computation::primary_graph::{
+    WorthQueryInvariantEntityIdentity, WorthQueryInvariantProjectionTraversalDenial,
+};
 
 /// Why a decision that read a persistent name refuses to seal.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -45,7 +49,8 @@ pub enum PersistentNameReadVeto {
     /// A name read failed; its outcome rests on nothing a fact retains.
     ReadFailed,
     /// The answer rested on a dependency no Query fact key tracks: an ended
-    /// name a later `Restore` revives, an unborn held name, or a relation.
+    /// name a later `Restore` revives, an unborn held name, or a record of
+    /// another subject kind than the one resolved.
     UntrackedDependency,
 }
 
@@ -64,8 +69,8 @@ impl PersistentNameReadVeto {
     /// The veto a decision's `resolve` outcome needs: every read refusal
     /// and a pruned basis are failed reads; otherwise an answer resting on
     /// what no fact key tracks (`untracked`) is an untracked dependency.
-    pub fn for_resolve<H, K>(
-        resolved: &Result<ResolvedName<H>, ExecutionNameResolveDenial<K>>,
+    pub fn for_resolve<H, K, O>(
+        resolved: &Result<ResolvedName<H>, ExecutionNameResolveDenial<K, O>>,
         untracked: bool,
     ) -> Option<Self> {
         match resolved {
@@ -82,15 +87,23 @@ impl PersistentNameReadVeto {
 /// Why a decision reader refused a persistent-name read before reading.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryDecisionNameDenial {
-    /// The operation did not declare a decision read of the entity kind.
+    /// The operation did not declare a decision read of the entity or
+    /// relation kind.
     UndeclaredDecisionTarget(WorthQueryInvariantDecisionPlanDenial),
-    /// The identity was issued by another reader, phase or entity kind.
+    /// The identity was issued by another reader, phase or kind, or a
+    /// relation handle does not designate the live relation it claims.
     ForeignIdentity,
     /// Names are read only at a committed basis; an applied candidate has no
     /// published lineage to resolve against.
     CandidateBasis,
     /// A resolved live record could not be admitted as a local identity.
     Identity(WorthQueryCurrentOutputDenial),
+    /// A live relation's endpoint could not be admitted as a local identity.
+    Endpoint(WorthQueryInvariantProjectionTraversalDenial),
+    /// The kind declares no owner scope, so nothing can own its records.
+    OwnerScopeUndeclared,
+    /// A hop of the kind's declared owner chain could not be read.
+    OwnerRead(WorthQueryInvariantProjectionTraversalDenial),
     /// The name read itself refused.
     Read(ExecutionNameReadDenial),
 }
@@ -99,13 +112,15 @@ impl fmt::Display for WorthQueryDecisionNameDenial {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::UndeclaredDecisionTarget(denial) => write!(formatter, "{denial:?}"),
-            Self::ForeignIdentity => {
-                formatter.write_str("entity identity is foreign to this reader")
-            }
+            Self::ForeignIdentity => formatter.write_str("identity is foreign to this reader"),
             Self::CandidateBasis => {
                 formatter.write_str("persistent names are read only at a committed basis")
             }
             Self::Identity(denial) => write!(formatter, "{denial:?}"),
+            Self::Endpoint(denial) | Self::OwnerRead(denial) => write!(formatter, "{denial:?}"),
+            Self::OwnerScopeUndeclared => {
+                formatter.write_str("the name kind declares no owner scope")
+            }
             Self::Read(denial) => fmt::Display::fmt(denial, formatter),
         }
     }
@@ -113,9 +128,18 @@ impl fmt::Display for WorthQueryDecisionNameDenial {
 
 impl std::error::Error for WorthQueryDecisionNameDenial {}
 
-type Resolution<Schema, Entity> = Result<
+/// The owning entity kind `Entity`'s declared owner scope reaches.
+pub type NameOwnerOf<Entity> =
+    <<Entity as WorthQueryNamedKind>::OwnerScope as NameOwnerScope<Entity>>::Owner;
+
+/// Resolution's own typed outcome: local identities of the resolved records,
+/// or a refusal whose candidates carry their owners' local identities.
+pub type WorthQueryDecisionNameResolution<Schema, Entity> = Result<
     ResolvedName<WorthQueryInvariantEntityIdentity<Schema, Entity>>,
-    ExecutionNameResolveDenial<Entity>,
+    ExecutionNameResolveDenial<
+        Entity,
+        WorthQueryInvariantEntityIdentity<Schema, NameOwnerOf<Entity>>,
+    >,
 >;
 
 impl<Schema: ApplicationSchema, Operation>
@@ -154,33 +178,52 @@ impl<Schema: ApplicationSchema, Operation>
     /// as a tracked decision read. Resolved records come back as local
     /// identities the decision can read further. The outer result is the
     /// decision admission; the inner one is resolution's own typed outcome.
+    ///
+    /// Several live candidates under a selection that names one refuse
+    /// `Ambiguous`, each candidate with the owners its kind's declared owner
+    /// chain reaches (see `resolve_in`); resolution never picks one.
     pub fn resolve<Entity>(
         &mut self,
         held: &WorthQueryName<Entity>,
         selection: &NameSelection,
-    ) -> Result<Resolution<Schema, Entity>, WorthQueryDecisionNameDenial>
+    ) -> Result<WorthQueryDecisionNameResolution<Schema, Entity>, WorthQueryDecisionNameDenial>
     where
-        Entity: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Operation>,
+        Entity: ApplicationEntityMarkerIdentity<Schema>
+            + OperationReads<Operation>
+            + WorthQueryNamedKind,
+    {
+        self.resolve_scoped(None, held, selection)
+    }
+
+    /// Resolves `held` across every owner, or among the records `within`
+    /// holds. Owner reads run after the name index is released.
+    pub(super) fn resolve_scoped<Entity>(
+        &mut self,
+        within: Option<EntityId>,
+        held: &WorthQueryName<Entity>,
+        selection: &NameSelection,
+    ) -> Result<WorthQueryDecisionNameResolution<Schema, Entity>, WorthQueryDecisionNameDenial>
+    where
+        Entity: ApplicationEntityMarkerIdentity<Schema>
+            + OperationReads<Operation>
+            + WorthQueryNamedKind,
     {
         self.admit_name_read(Entity::IDENTIFIER)?;
         let mut dependencies = NameReadDependencies::new();
-        let (resolved, branch) = {
+        let (candidates, branch) = {
             let reader = self.name_reader()?;
-            let resolved =
-                reader.resolve_entity::<Schema, Entity>(held, selection, &mut dependencies);
-            (resolved, reader.branch().clone())
+            let candidates =
+                reader.entity_candidates::<Schema, Entity>(held, selection, &mut dependencies);
+            (candidates, reader.branch().clone())
         };
-        let untracked = !dependencies.ended_lineages_on(&branch).is_empty()
-            || dependencies.awaits_births_on(&branch)
-            || matches!(
-                resolved,
-                Err(ExecutionNameResolveDenial::Resolution(
-                    NameResolutionDenial::UnknownName
-                ))
-            );
-        if let Some(veto) = PersistentNameReadVeto::for_resolve(&resolved, untracked) {
-            self.decision_facts.veto_persistent_name(veto);
-        }
+        let candidates = match candidates {
+            Ok(candidates) => candidates,
+            Err(read) => {
+                self.decision_facts
+                    .veto_persistent_name(PersistentNameReadVeto::ReadFailed);
+                return Ok(Err(ExecutionNameResolveDenial::Read(read)));
+            }
+        };
         let mut identities = BTreeMap::new();
         for record in dependencies.live_records_on(&branch) {
             match record {
@@ -193,7 +236,31 @@ impl<Schema: ApplicationSchema, Operation>
                 }
             }
         }
-        Ok(resolved.map(|resolved| local_identities(resolved, &identities)))
+        let mut owners = BTreeMap::new();
+        let mut owners_of = |entity: &EntityId| {
+            let candidate = identities
+                .get(entity)
+                .expect("every matched record is a live footprint record admitted above");
+            let reached = self.name_owners::<Entity>(candidate).inspect_err(|_| {
+                self.decision_facts
+                    .veto_persistent_name(PersistentNameReadVeto::ReadFailed);
+            })?;
+            let held_by = reached.keys().copied().collect::<Vec<_>>();
+            owners.extend(reached);
+            Ok::<_, WorthQueryDecisionNameDenial>(held_by)
+        };
+        let resolved = match within {
+            Some(owner) => candidates.resolve_in(&owner, &mut owners_of),
+            None => candidates.resolve(&mut owners_of),
+        }?;
+        let resolved = resolved.map_err(ExecutionNameResolveDenial::Resolution);
+        let untracked = untracked_resolution(&resolved, &dependencies, &branch);
+        if let Some(veto) = PersistentNameReadVeto::for_resolve(&resolved, untracked) {
+            self.decision_facts.veto_persistent_name(veto);
+        }
+        Ok(resolved
+            .map(|resolved| local_handles(resolved, &identities))
+            .map_err(|denial| owner_handles(denial, &owners)))
     }
 
     fn admit_name_read(&self, entity: &str) -> Result<(), WorthQueryDecisionNameDenial> {
@@ -203,7 +270,9 @@ impl<Schema: ApplicationSchema, Operation>
         .map_err(WorthQueryDecisionNameDenial::UndeclaredDecisionTarget)
     }
 
-    fn name_reader(&self) -> Result<ExecutionNameReader<'_>, WorthQueryDecisionNameDenial> {
+    pub(super) fn name_reader(
+        &self,
+    ) -> Result<ExecutionNameReader<'_>, WorthQueryDecisionNameDenial> {
         let runtime = self
             .reader
             .native
@@ -241,21 +310,59 @@ impl FailedDecisionRead {
     }
 }
 
-fn local_identities<Schema, Entity>(
-    resolved: ResolvedName<EntityId>,
-    identities: &BTreeMap<EntityId, WorthQueryInvariantEntityIdentity<Schema, Entity>>,
-) -> ResolvedName<WorthQueryInvariantEntityIdentity<Schema, Entity>> {
-    let local = |entity: EntityId| {
-        identities
-            .get(&entity)
+/// Whether a resolution's answer rested on what no fact key tracks: an ended
+/// name on the walked path, or a held name not yet born.
+pub(super) fn untracked_resolution<H, K, O>(
+    resolved: &Result<ResolvedName<H>, ExecutionNameResolveDenial<K, O>>,
+    dependencies: &NameReadDependencies,
+    branch: &BranchId,
+) -> bool {
+    !dependencies.ended_lineages_on(branch).is_empty()
+        || dependencies.awaits_births_on(branch)
+        || matches!(
+            resolved,
+            Err(ExecutionNameResolveDenial::Resolution(
+                NameResolutionDenial::UnknownName
+            ))
+        )
+}
+
+/// The resolved records as the local handles they were admitted under.
+pub(super) fn local_handles<Record: Ord, Handle: Clone>(
+    resolved: ResolvedName<Record>,
+    handles: &BTreeMap<Record, Handle>,
+) -> ResolvedName<Handle> {
+    let local = |record: Record| {
+        handles
+            .get(&record)
             .cloned()
             .expect("every resolved record is a live footprint record admitted above")
     };
     match resolved {
-        ResolvedName::Exact(entity) => ResolvedName::Exact(local(entity)),
-        ResolvedName::Plural(entities) => {
-            ResolvedName::Plural(entities.into_iter().map(local).collect())
+        ResolvedName::Exact(record) => ResolvedName::Exact(local(record)),
+        ResolvedName::Plural(records) => {
+            ResolvedName::Plural(records.into_iter().map(local).collect())
         }
         ResolvedName::Retired { at_commit } => ResolvedName::Retired { at_commit },
+    }
+}
+
+/// A resolution refusal with each candidate's owners as the local identities
+/// the owner chain admitted them under.
+fn owner_handles<K, Schema, Owner>(
+    denial: ExecutionNameResolveDenial<K, EntityId>,
+    owners: &BTreeMap<EntityId, WorthQueryInvariantEntityIdentity<(), ()>>,
+) -> ExecutionNameResolveDenial<K, WorthQueryInvariantEntityIdentity<Schema, Owner>> {
+    match denial {
+        ExecutionNameResolveDenial::Read(read) => ExecutionNameResolveDenial::Read(read),
+        ExecutionNameResolveDenial::Resolution(denial) => {
+            ExecutionNameResolveDenial::Resolution(denial.map_owners(|owner| {
+                owners
+                    .get(&owner)
+                    .cloned()
+                    .expect("every reported owner was reached and admitted by the owner chain")
+                    .into_typed()
+            }))
+        }
     }
 }

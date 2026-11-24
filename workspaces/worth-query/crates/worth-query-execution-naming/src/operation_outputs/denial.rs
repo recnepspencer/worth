@@ -39,6 +39,21 @@ pub enum WorthQueryOutputNameDenial {
         subject: ApplicationNameSubjectKind,
         digest: [u8; 32],
     },
+    /// A discriminator references the same-commit name of an output this
+    /// candidate did not name before the referencing birth.
+    ForeignOutputReference { role_path: String },
+    /// A same-commit name was requested for a created output this candidate
+    /// has not named.
+    UnnamedOutputReference {
+        subject: ApplicationNameSubjectKind,
+        subject_name: String,
+    },
+    /// A discriminator references a same-commit name of another occurrence.
+    CrossOccurrenceReference {
+        role_path: String,
+        occurrence_key: String,
+        referenced_occurrence_key: String,
+    },
     /// The commit basis's name index could not be read.
     NameIndexUnavailable { detail: String },
     /// Scheme, role, occurrence or discriminator validation refused the birth.
@@ -78,6 +93,26 @@ impl fmt::Display for WorthQueryOutputNameDenial {
                 formatter,
                 "held {} name designates no single live record at the commit basis",
                 subject.canonical_name()
+            ),
+            Self::ForeignOutputReference { role_path } => write!(
+                formatter,
+                "role `{role_path}` references a same-commit name this candidate did not issue for an earlier named output"
+            ),
+            Self::UnnamedOutputReference {
+                subject,
+                subject_name,
+            } => write!(
+                formatter,
+                "created {} `{subject_name}` has no declared name to reference",
+                subject.canonical_name()
+            ),
+            Self::CrossOccurrenceReference {
+                role_path,
+                occurrence_key,
+                referenced_occurrence_key,
+            } => write!(
+                formatter,
+                "role `{role_path}` of occurrence `{occurrence_key}` references a same-commit name of occurrence `{referenced_occurrence_key}`"
             ),
             Self::NameIndexUnavailable { detail } => {
                 write!(formatter, "persistent-name index unavailable: {detail}")

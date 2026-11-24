@@ -20,7 +20,10 @@ use crate::domain_computation::primary_graph::{
             WorthQueryApplicationHistoryDenial as Denial,
             WorthQueryCapturedApplicationHistorySubjects,
         },
-        read_execution::{project_non_live_kernel_with_decode, read_bounded_root_rows},
+        read_execution::{
+            persistent_names::observe_persistent_names, project_non_live_kernel_with_decode,
+            read_bounded_root_rows,
+        },
         WorthQueryApplicationProjection,
     },
     value_decode::ValueDecodeState,
@@ -105,9 +108,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             &plan,
             |runtime, layout, security, plan| {
                 metadata.validate(execution, self, runtime, security, plan)?;
-                read_bounded_root_rows(runtime, execution, layout, plan, None)
+                let mut raw = read_bounded_root_rows(runtime, execution, layout, plan, None)
                     .map_err(WorthQueryAuthorizedApplicationReadDenial::Read)
-                    .map_err(Denial::from)
+                    .map_err(Denial::from)?;
+                if SubjectResult::<Schema, History>::PROJECTS_PERSISTENT_NAMES {
+                    observe_persistent_names(runtime, execution, plan, &mut raw);
+                }
+                Ok::<_, Denial>(raw)
             },
         )?;
         let decode = ValueDecodeState::new(self.installed_schema().value_bindings().clone());

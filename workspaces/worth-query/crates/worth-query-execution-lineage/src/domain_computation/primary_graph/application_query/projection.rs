@@ -8,6 +8,7 @@ use worth_query_declaration::facade::application_query::{
     ManyResults, OptionalOneResult,
 };
 use worth_query_declaration::facade::portable_identity::WorthQueryPortableType;
+use worth_query_execution_naming::facade::ObservedEntityNames;
 use worth_query_installation::facade::ApplicationReadableScalarValueBinding;
 use worth_relational::facade::identity::EntityId;
 
@@ -18,6 +19,7 @@ pub use denial::{
     WorthQueryApplicationProjectionDenial, WorthQueryApplicationProjectionDenialKind,
 };
 pub mod optional_aspect;
+pub mod persistent_name;
 pub mod prerequisite_selection;
 pub use prerequisite_selection::WorthQueryPrerequisiteSelection;
 pub mod projected_tree;
@@ -45,6 +47,7 @@ pub struct WorthQueryApplicationProjectionRow<'row, Schema, Query> {
     node: WorthQueryApplicationDisclosedProjectionNode<'row>,
     governance: &'row dyn crate::ports::QueryGovernancePort,
     decode: &'row ValueDecodeSession<'row>,
+    names: Option<&'row ObservedEntityNames>,
     _marker: PhantomData<fn() -> (Schema, Query)>,
 }
 
@@ -56,6 +59,7 @@ pub struct WorthQueryApplicationProjectionRows<'row, Schema, Query> {
     disclosure_parent: WorthQueryApplicationDisclosedProjectionNode<'row>,
     governance: &'row dyn crate::ports::QueryGovernancePort,
     decode: &'row ValueDecodeSession<'row>,
+    names: Option<&'row ObservedEntityNames>,
     _marker: PhantomData<fn() -> (Schema, Query)>,
 }
 
@@ -129,11 +133,7 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query
         let relation = self.relation(&selector)?;
         match relation.rows() {
             [] => Ok(None),
-            [row] => Ok(Some(WorthQueryApplicationProjectionRow::new(
-                self.node.child(row),
-                self.governance,
-                self.decode,
-            ))),
+            [row] => Ok(Some(self.related(row))),
             _ => Err(relation_cardinality_denial(relation)),
         }
     }
@@ -161,11 +161,7 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query
     {
         let relation = self.relation(&selector)?;
         match relation.rows() {
-            [row] => Ok(WorthQueryApplicationProjectionRow::new(
-                self.node.child(row),
-                self.governance,
-                self.decode,
-            )),
+            [row] => Ok(self.related(row)),
             _ => Err(relation_cardinality_denial(relation)),
         }
     }
@@ -197,6 +193,7 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query
             disclosure_parent: self.node,
             governance: self.governance,
             decode: self.decode,
+            names: self.names,
             _marker: PhantomData,
         })
     }
@@ -233,8 +230,25 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query
             node,
             governance,
             decode,
+            names: None,
             _marker: PhantomData,
         }
+    }
+
+    /// Lends the persistent names the same read observed for this row's
+    /// records, which its name slots and its related rows then project.
+    pub const fn with_persistent_names(mut self, names: Option<&'row ObservedEntityNames>) -> Self {
+        self.names = names;
+        self
+    }
+
+    /// A related row under this one, with the same disclosure and names.
+    pub(crate) fn related(
+        &self,
+        row: &'row WorthQueryApplicationProjectionNode,
+    ) -> WorthQueryApplicationProjectionRow<'row, Schema, Query> {
+        WorthQueryApplicationProjectionRow::new(self.node.child(row), self.governance, self.decode)
+            .with_persistent_names(self.names)
     }
 }
 
@@ -256,6 +270,7 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRows<'row, Schema, Quer
                 self.governance,
                 self.decode,
             )
+            .with_persistent_names(self.names)
         })
     }
 }
@@ -265,6 +280,12 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRows<'row, Schema, Quer
 /// Implement `project` by reading fields and relations through the row's
 /// query-bound selectors. Returning a denial refuses the whole read.
 pub trait WorthQueryApplicationProjection<Schema, Query>: Sized {
+    /// Whether `project` reads a row's persistent name, here or in a related
+    /// row. A read then observes its rows' names in the same pass; a
+    /// projection that leaves this `false` pays nothing and its name reads
+    /// refuse `PersistentNamesUnavailable`.
+    const PROJECTS_PERSISTENT_NAMES: bool = false;
+
     fn project(
         row: &WorthQueryApplicationProjectionRow<'_, Schema, Query>,
     ) -> Result<Self, WorthQueryApplicationProjectionDenial>;

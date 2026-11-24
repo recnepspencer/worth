@@ -21,6 +21,7 @@ use worth_query_testkit_document_retention::facade::document_retention_model::{
 mod allocation;
 mod capture_race;
 mod closing;
+mod envelope_scope;
 mod handoff;
 mod journeys;
 mod model_lifecycle;

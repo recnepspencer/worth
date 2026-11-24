@@ -37,31 +37,15 @@ where
     Schema: ApplicationSchema,
     Value: super::super::WorthQueryApplicationProjection<Schema, Query>,
 {
-    use AppliedSourceReadStop::{Projection, Read};
-    let selection =
-        root_selection::select_applied_source_root(pin, execution, graph, permission, interruption)
-            .map_err(Read)?;
-    validate_read_cardinality(
-        ApplicationQueryCardinality::ExactlyOne,
-        selection.candidates.len(),
-        permission,
-    )
-    .map_err(Read)?;
-    let mut tree = tree_materialization::materialize_applied_source_tree(
+    use AppliedSourceReadStop::Read;
+    let (selection, mut tree) = read_applied_tree(
         execution,
         pin,
         graph,
-        permission.contract,
-        permission.governance,
-        permission.parameters,
-        &selection.candidates,
-        selection.selected_predicate_source.as_ref(),
-        selection.root_path_source.as_ref(),
+        permission,
+        ApplicationQueryCardinality::ExactlyOne,
         interruption,
-        None,
-        permission.material_source,
-    )
-    .map_err(Read)?;
+    )?;
     let source_selection = selection.result_set_source.as_ref().ok_or_else(|| {
         Read(read_execution_denial(
             WorthQueryApplicationReadExecutionDenialKind::ProjectionUnavailable,
@@ -69,15 +53,13 @@ where
         ))
     })?;
     complete_single_source_selection(&mut tree.source_footprints, source_selection);
-    let mut values =
-        kernel_outcome::decode_projection_tree::<Schema, Query, Value, AppliedSourceReadStop>(
-            execution,
-            decode,
-            &tree.rows,
-            permission.governance,
-            || interruption.checkpoint(permission.name).map_err(Read),
-            Projection,
-        )?;
+    let mut values = decode_applied_rows::<Schema, Query, Value>(
+        execution,
+        decode,
+        &tree.rows,
+        permission,
+        interruption,
+    )?;
     if values.len() != 1 || tree.source_footprints.len() != 1 {
         return Err(Read(read_execution_denial(
             WorthQueryApplicationReadExecutionDenialKind::CardinalityMismatch,
@@ -93,6 +75,72 @@ where
             .next()
             .expect("one actual source footprint"),
     })
+}
+
+/// Both source and decision projections consume the same applied root selection
+/// and Native result tree. The entry supplies its installed cardinality.
+pub fn read_applied_tree(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+    graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+    permission: &read_plan::ReadPlan<'_>,
+    cardinality: ApplicationQueryCardinality,
+    interruption: ReadInterruption<'_>,
+) -> Result<
+    (
+        root_selection::BoundedRootSelection,
+        tree_materialization::MaterializedApplicationResultTree,
+    ),
+    AppliedSourceReadStop,
+> {
+    use AppliedSourceReadStop::Read;
+    let selection =
+        root_selection::select_applied_source_root(pin, execution, graph, permission, interruption)
+            .map_err(Read)?;
+    validate_read_cardinality(cardinality, selection.candidates.len(), permission).map_err(Read)?;
+    let tree = tree_materialization::materialize_applied_source_tree(
+        execution,
+        pin,
+        graph,
+        permission.contract,
+        permission.governance,
+        permission.parameters,
+        &selection.candidates,
+        selection.selected_predicate_source.as_ref(),
+        selection.root_path_source.as_ref(),
+        interruption,
+        None,
+        permission.material_source,
+    )
+    .map_err(Read)?;
+    Ok((selection, tree))
+}
+
+pub fn decode_applied_rows<Schema, Query, Value>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    decode: &ValueDecodeState,
+    tree: &super::super::projection::WorthQueryApplicationDisclosedProjectionTree,
+    permission: &read_plan::ReadPlan<'_>,
+    interruption: ReadInterruption<'_>,
+) -> Result<Vec<Value>, AppliedSourceReadStop>
+where
+    Schema: ApplicationSchema,
+    Value: super::super::WorthQueryApplicationProjection<Schema, Query>,
+{
+    kernel_outcome::decode_projection_tree::<Schema, Query, Value, AppliedSourceReadStop>(
+        execution,
+        decode,
+        tree,
+        permission.governance,
+        // An applied candidate has no published lineage to read names at.
+        None,
+        || {
+            interruption
+                .checkpoint(permission.name)
+                .map_err(AppliedSourceReadStop::Read)
+        },
+        AppliedSourceReadStop::Projection,
+    )
 }
 
 impl AppliedSourceReadStop {

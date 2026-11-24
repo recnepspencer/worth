@@ -69,9 +69,10 @@ where
                     .map_err(|cause| {
                         Denial::History(WorthQueryApplicationHistoryDenial::Installation(cause))
                     })?;
+                let candidate = self.candidate.as_ref().expect("actual candidate").branch();
                 document
                     .outputs
-                    .with_recording(&phase, |forest| {
+                    .with_recording(&phase, candidate, |forest| {
                         if forest.is_some_and(|forest| forest.completed().is_none()) {
                             return (Err(Denial::NotReady), false);
                         }

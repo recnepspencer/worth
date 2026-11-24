@@ -170,6 +170,42 @@ fn current_read_cutover_deadlines_keep_the_request_instruction() {
 }
 
 #[test]
+fn history_recording_refusals_separate_the_caller_from_the_installation() {
+    use worth_query_host::facade::application_entry::{
+        WorthQueryDocumentHistoryDenial as Document,
+        WorthQueryHistoryNavigationDenial as Navigation,
+    };
+    let producer = || String::from("statement_export");
+    let installation = BankHttpDenial::new(Kind::InternalDenied, Next::ContactOperator);
+    for (cause, expected) in [
+        (
+            Document::StepMetadataTooLarge {
+                length: 4097,
+                maximum: 4096,
+            },
+            BankHttpDenial::new(Kind::ResourceExhausted, Next::NarrowRequest),
+        ),
+        (
+            Document::WorkflowProducer {
+                producer: producer(),
+            },
+            installation,
+        ),
+        (
+            Document::ExternalEffectProducer {
+                producer: producer(),
+            },
+            installation,
+        ),
+    ] {
+        assert_eq!(
+            history_output::denial(Read::Authority(Navigation::Document(cause))),
+            expected
+        );
+    }
+}
+
+#[test]
 fn history_authority_reads_preserve_native_interruption() {
     use worth_query_host::facade::{
         application_entry::{

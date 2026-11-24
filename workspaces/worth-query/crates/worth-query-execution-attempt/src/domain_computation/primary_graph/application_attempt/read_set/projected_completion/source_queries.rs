@@ -84,6 +84,22 @@ impl<Schema, Operation, Input, Scope>
             },
         ))
     }
+    pub(super) fn observe_applied_source(
+        &self,
+        key: &crate::domain_computation::primary_graph::application_query::observed_source::fact_conversion::source_fact_locator::SourceFactLocator,
+    ) -> Result<
+        (super::super::InstalledScopePosition, WorthQueryApplicationObservedFact),
+        WorthQueryApplicationAttemptDenial,
+    > {
+        self.expected_facts.as_ref().and_then(|expected| expected.applied_source(
+            key, self.admission.admission_identity(), &self.admission.retain_graph_contract(),
+            self.lease.projection_origin(),
+        )).map(|fact| (super::super::InstalledScopePosition::SourceQuery, fact.clone()))
+            .ok_or_else(|| denial(
+                WorthQueryApplicationAttemptDenialKind::ProjectionAdmissionMismatch,
+                self.admission.operation(),
+            ))
+    }
     pub(super) fn observe_managed_source(
         &self,
         key: &ManagedSourceReadKey,

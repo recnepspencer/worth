@@ -35,6 +35,9 @@ pub struct ManagedSourceRead {
     authorization: Arc<super::SourceReadAuthorization>,
     native: Arc<ManagedIndexSourceObservation>,
     influence: Option<Arc<CapturedManagedInfluence>>,
+    /// Candidate support of a read a coupled decision took from this
+    /// committed observation; never part of the observation's identity.
+    alignment: Option<Arc<super::AppliedSourceAlignment>>,
     _allocation: Arc<crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation>,
 }
 pub struct CheckedManagedSource(CheckedSource);
@@ -79,8 +82,18 @@ impl ManagedSourceRead {
             native,
             authorization,
             influence,
+            alignment: None,
             _allocation: allocation,
         }
+    }
+    /// This observation as a coupled decision read it at an applied
+    /// candidate Native proved aligned with it.
+    pub fn with_applied_alignment(mut self, alignment: Arc<super::AppliedSourceAlignment>) -> Self {
+        self.alignment = Some(alignment);
+        self
+    }
+    pub fn applied_alignment(&self) -> Option<&Arc<super::AppliedSourceAlignment>> {
+        self.alignment.as_ref()
     }
     pub fn authorization(&self) -> &Arc<super::SourceReadAuthorization> {
         &self.authorization

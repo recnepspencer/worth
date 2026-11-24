@@ -53,6 +53,44 @@ impl WorthQueryApplicationProducerBinding<Catalog> for Producer {
             WorthQueryDecisionContextDependencies::NONE,
         ));
 }
+/// The same producer with source-owned publications (`SourceScopeCascade`):
+/// its route is owned by its source Directory, so a later member of one edit
+/// that changes what it read makes it derive again as a successor round.
+/// A court installs it in place of `Producer` by arming `SOURCE_OWNED`.
+pub struct OwnedProducer;
+std::thread_local! {
+    pub static SOURCE_OWNED: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+impl WorthQueryApplicationProducerProvider<Catalog, OwnedProducer> for Provider {
+    type DenialValue = WorthQueryUndeclaredProducerDenial;
+    const SEMANTIC_IDENTITY: &'static str = "maintained-generated.provider.v1";
+    fn operation_input(&self, source: &source::Row) -> operation::Generate {
+        <Self as WorthQueryApplicationProducerProvider<Catalog, Producer>>::operation_input(
+            self, source,
+        )
+    }
+    fn idempotency_key(&self, source: &source::Row, source_identity: &[u8; 32]) -> u64 {
+        <Self as WorthQueryApplicationProducerProvider<Catalog, Producer>>::idempotency_key(
+            self,
+            source,
+            source_identity,
+        )
+    }
+}
+impl WorthQueryApplicationProducerBinding<Catalog> for OwnedProducer {
+    type Operation = operation::Binding;
+    type OutputFamily = Family;
+    type Provider = Provider;
+    type OutputRole = operation::ItemOutput;
+    const IDENTITY: &'static str = <Producer as WorthQueryApplicationProducerBinding<Catalog>>::IDENTITY;
+    const APPLICABILITY: &'static [WorthQueryProducerApplicability] = &[INITIAL];
+    const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] =
+        <Producer as WorthQueryApplicationProducerBinding<Catalog>>::REQUIRED_INVARIANTS;
+    const OWNERSHIP: ProducerPublicationOwnership = ProducerPublicationOwnership::SourceScopeCascade;
+    const REUSE_POLICY: &'static str = "exact-source";
+    const INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> =
+        <Producer as WorthQueryApplicationProducerBinding<Catalog>>::INPUT_REUSE;
+}
 #[derive(Clone)]
 pub struct Demand {
     pub directory: String,

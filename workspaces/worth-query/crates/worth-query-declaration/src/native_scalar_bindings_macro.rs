@@ -6,7 +6,9 @@
 /// `Scalar<T>` per native carrier: `bool`, the signed and unsigned integers,
 /// `String`, `InternedString`, `CanonicalDate`, `CanonicalTime`,
 /// `CanonicalTimestamp`, `CanonicalTimestampTz`, `[u8; 16]` (UUID),
-/// `CanonicalF32`, `CanonicalF64` and `InlineBytes`.
+/// `CanonicalF32`, `CanonicalF64` and `InlineBytes`. It also stores a held
+/// persistent name (`WorthQueryName<K>`) and a held target (`NamedTarget<K>`)
+/// of every `WorthQueryNamedKind`, each as one string column.
 ///
 /// Records and further scalars stay explicit on the generated type:
 /// principal identity and mapping status, content references, entity
@@ -28,6 +30,38 @@
 /// registered::<String, Codecs>();
 /// registered::<worth_foundational::facade::CanonicalDate, Codecs>();
 /// registered::<WorthQueryExternalPrincipalIdentity, Codecs>();
+/// ```
+///
+/// A record column holds a persistent name or target directly:
+///
+/// ```
+/// use worth_query_declaration::facade::application_naming::{
+///     EntityNameSubject, NamedTarget, Unowned, WorthQueryName, WorthQueryNamedKind,
+/// };
+/// use worth_query_declaration::facade::application_schema::fragment::*;
+/// struct Edge;
+/// impl Entity for Edge {
+///     const NAME: &'static str = "Edge";
+///     type Aspects = ();
+///     type Relations = ();
+/// }
+/// impl WorthQueryNamedKind for Edge {
+///     type Subject = EntityNameSubject;
+///     type OwnerScope = Unowned;
+/// }
+/// fn registered<T: 'static, B: Scalar<T>>() {}
+/// registered::<WorthQueryName<Edge>, NativeScalars>();
+/// registered::<NamedTarget<Edge>, NativeScalars>();
+/// ```
+///
+/// A kind that declares no persistent-name subject has no stored form:
+///
+/// ```compile_fail,E0277
+/// use worth_query_declaration::facade::application_naming::WorthQueryName;
+/// use worth_query_declaration::facade::application_schema::fragment::*;
+/// struct Edge;
+/// fn registered<T: 'static, B: Scalar<T>>() {}
+/// registered::<WorthQueryName<Edge>, NativeScalars>();
 /// ```
 ///
 /// The stock set never registers a principal, content or entity-reference
@@ -76,6 +110,22 @@ macro_rules! worth_query_native_scalar_bindings {
             $crate::facade::application_schema::CanonicalF64 => CanonicalF64ApplicationValueBinding,
             $crate::facade::application_schema::InlineBytes => InlineBytesApplicationValueBinding
         );
+        impl<K: $crate::facade::application_naming::WorthQueryNamedKind>
+            $crate::facade::application_schema::fragment::Scalar<
+                $crate::facade::application_naming::WorthQueryName<K>,
+            > for $Bindings
+        {
+            type Binding =
+                $crate::facade::application_schema::WorthQueryNameApplicationValueBinding<K>;
+        }
+        impl<K: $crate::facade::application_naming::WorthQueryNamedKind>
+            $crate::facade::application_schema::fragment::Scalar<
+                $crate::facade::application_naming::NamedTarget<K>,
+            > for $Bindings
+        {
+            type Binding =
+                $crate::facade::application_schema::NamedTargetApplicationValueBinding<K>;
+        }
     };
 }
 
