@@ -2,6 +2,9 @@
 use super::*;
 use crate::branch::materialization::RelationalEntityMaterialization;
 use crate::branch::materialization::RelationalRelationMaterialization;
+use crate::mvcc::publication::application_publication::output_meaning::{
+    native_meaning_fixture, native_roles_fixture,
+};
 
 #[path = "materialization/incident_owner.rs"]
 mod incident_owner;
@@ -234,10 +237,8 @@ fn run(owned: bool, changed: u8, fieldless: bool) {
         &basis,
         "native-creator",
         &[1; 32],
-        &crate::mvcc::publication::application_publication::native_meaning_fixture(
-            "native-creator",
-        ),
-        &crate::mvcc::publication::application_publication::native_roles_fixture(
+        &native_meaning_fixture("native-creator"),
+        &native_roles_fixture(
             &ids.map(|id| (id, KindId(1))),
             RequiredOutputRolePosture::Create,
         ),
@@ -256,9 +257,7 @@ fn run(owned: bool, changed: u8, fieldless: bool) {
             execution,
             &runtime,
             &basis,
-            &crate::mvcc::publication::application_publication::native_meaning_fixture(
-                "native-creator"
-            )
+            &native_meaning_fixture("native-creator")
         )
         .unwrap(),
         Some(crate::history::data::RequiredOutputRoutePosition::Published(original_commit))
@@ -267,10 +266,7 @@ fn run(owned: bool, changed: u8, fieldless: bool) {
     assert_eq!(origin.birth, original_commit);
     assert_eq!(origin.birth_producer, "native-creator");
     assert_eq!(origin.producer, "native-creator");
-    assert_eq!(
-        origin.meaning,
-        crate::mvcc::publication::application_publication::native_meaning_fixture("native-creator")
-    );
+    assert_eq!(origin.meaning, native_meaning_fixture("native-creator"));
     let preserved = publish(
         &runtime,
         execution,
@@ -287,10 +283,8 @@ fn run(owned: bool, changed: u8, fieldless: bool) {
             &test_owner_main_basis(&runtime).unwrap(),
             "native-preserver",
             &[2; 32],
-            &crate::mvcc::publication::application_publication::native_meaning_fixture(
-                "native-creator",
-            ),
-            &crate::mvcc::publication::application_publication::native_roles_fixture(
+            &native_meaning_fixture("native-creator"),
+            &native_roles_fixture(
                 &ids.map(|id| (id, KindId(1))),
                 RequiredOutputRolePosture::Preserve,
             ),

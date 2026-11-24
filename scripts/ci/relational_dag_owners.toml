@@ -74,6 +74,7 @@ floor = 32000
 depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "indexes", "durability", "publication"]
 
 [paths]
+"derived_relation/read_shape.rs" = "contracts"
 "runtime/invariant_view.rs" = "runtime"
 "durability/authority/checkpoint_complete/interim/verified/freeze.rs" = "runtime"
 "derived_relation/read.rs" = "contracts"
@@ -361,7 +362,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 # Export authenticates the retained member against Durability's selected image.
 "branch/recorded_basis/export.rs" = "durability"
 "branch/recorded_basis/live_export.rs" = "runtime"
-"branch/recorded_basis/memory_component/capture_runtime.rs" = "runtime"
 "branch/recorded_basis/memory_component/live.rs" = "runtime"
 "branch/recorded_basis/memory_component/successor_runtime.rs" = "runtime"
 "branch/recorded_basis/refusal" = "contracts"
@@ -873,10 +873,29 @@ projection_view = ["branch/projection_view", "branch/managed_source_affinity.rs"
 
 [[boundaries]]
 owner = "mutation"
-allowed = []
+# Both consumers may acquire exact reads from the same registered relation
+# recipe. Acquisition has no dependency on either consumer's decisions.
+allowed = [["authorization_and_derivation", "derived_relation_reads"], ["candidate_source", "derived_relation_reads"]]
 [boundaries.paths]
 authorization_and_derivation = ["authorization", "derived_relation"]
 candidate_source = ["validation/candidate_source"]
+derived_relation_reads = [
+    "derived_relation/affected",
+    "derived_relation/evaluation.rs",
+    "derived_relation/evaluation",
+    "derived_relation/ordered_events.rs",
+    "derived_relation/ordered_events",
+    "derived_relation/pinned.rs",
+    "derived_relation/pinned",
+    "derived_relation/proof.rs",
+    "derived_relation/source.rs",
+    "derived_relation/source_buffer.rs",
+    "derived_relation/structural.rs",
+    "derived_relation/structural",
+    "derived_relation/support.rs",
+    "derived_relation/traversal.rs",
+    "derived_relation/traversal",
+]
 
 [[boundaries]]
 owner = "durability"
@@ -886,6 +905,7 @@ ordinary_checkpoint = ["durability/ordinary_checkpoint", "durability/checkpoints
 reconstruction = ["durability/reconstruction", "durability/recovery", "replay", "durability/authority/recovery", "durability/authority/runtime_rebuild"]
 
 [reassignments]
+"derived_relation/read_shape.rs" = "contracts"
 "runtime/invariant_view.rs" = "runtime"
 "durability/authority/checkpoint_complete/interim/verified/freeze.rs" = "runtime"
 "derived_relation/read.rs" = "contracts"
@@ -1146,7 +1166,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "branch/materialization/completion.rs" = "runtime"
 "branch/recorded_basis/export.rs" = "durability"
 "branch/recorded_basis/live_export.rs" = "runtime"
-"branch/recorded_basis/memory_component/capture_runtime.rs" = "runtime"
 "branch/recorded_basis/memory_component/live.rs" = "runtime"
 "branch/recorded_basis/memory_component/successor_runtime.rs" = "runtime"
 "branch/reference_checkpoint_data.rs" = "contracts"

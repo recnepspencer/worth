@@ -1,5 +1,6 @@
 //! Neither ordinary deletion nor producer Retire is a governed codec disposition.
 use super::*;
+use crate::mvcc::publication::application_publication::output_meaning::native_meaning_fixture;
 
 #[test]
 fn ordinary_deletion_and_producer_retire_never_reopen_a_birth_route_after_restore() {
@@ -89,9 +90,7 @@ fn ordinary_deletion_and_producer_retire_never_reopen_a_birth_route_after_restor
                 execution,
                 &installed,
                 &basis,
-                &crate::mvcc::publication::application_publication::native_meaning_fixture(
-                    "delete-does-not-vacate",
-                ),
+                &native_meaning_fixture("delete-does-not-vacate"),
             )
             .unwrap();
         assert!(

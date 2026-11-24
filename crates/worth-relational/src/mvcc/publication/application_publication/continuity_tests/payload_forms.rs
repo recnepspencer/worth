@@ -1,5 +1,8 @@
 //! Real installed publication of generic Query-shaped string struct outputs.
 use super::*;
+use crate::mvcc::publication::application_publication::output_meaning::{
+    native_meaning_fixture, native_roles_fixture,
+};
 use worth_foundational::facade::{
     ContractValidatedAspectValueView, PortableAspectContractBasis, PortableAspectPatchOperation,
     PortableRecordAspectPatch,
@@ -26,10 +29,7 @@ fn succession(
         admission,
         predecessor: previous,
         meaning,
-        roles: crate::mvcc::publication::application_publication::native_roles_fixture(
-            members,
-            RequiredOutputRolePosture::Preserve,
-        ),
+        roles: native_roles_fixture(members, RequiredOutputRolePosture::Preserve),
     }
 }
 
@@ -257,13 +257,8 @@ fn query_shaped_struct_birth_optional_clear_and_fieldless_incidence_keep_warm_an
             &basis,
             "generic-preserver",
             &[3; 32],
-            &crate::mvcc::publication::application_publication::native_meaning_fixture(
-                "generic-creator",
-            ),
-            &crate::mvcc::publication::application_publication::native_roles_fixture(
-                &members,
-                RequiredOutputRolePosture::Preserve,
-            ),
+            &native_meaning_fixture("generic-creator"),
+            &native_roles_fixture(&members, RequiredOutputRolePosture::Preserve),
         )
         .unwrap();
     assert_eq!(readmitted.origin.commit.commit_id, completed_at);
@@ -299,10 +294,8 @@ fn query_shaped_struct_birth_optional_clear_and_fieldless_incidence_keep_warm_an
             &basis,
             "generic-creator",
             &[1; 32],
-            &crate::mvcc::publication::application_publication::native_meaning_fixture(
-                "generic-creator"
-            ),
-            &crate::mvcc::publication::application_publication::native_roles_fixture(
+            &native_meaning_fixture("generic-creator"),
+            &native_roles_fixture(
                 &[(ordinary_id, KindId(1))],
                 RequiredOutputRolePosture::Create
             )

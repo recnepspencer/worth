@@ -6,7 +6,9 @@ mod physical;
 
 use super::read::{DerivedRelationAdjacency as Adjacency, DerivedRelationData as Data};
 use super::read::{DerivedRelationReadDenial as Denial, DerivedRelationReads};
-use super::{DerivedRelationDenial as DefinitionDenial, DerivedRelationHandle as Handle};
+use crate::derived_relation::definition::{
+    DerivedRelationDenial as DefinitionDenial, DerivedRelationHandle as Handle,
+};
 use crate::graph_member::NativeMemberKey as Member;
 use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::schema::data::RelationalSchemaRegistry;

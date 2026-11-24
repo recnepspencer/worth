@@ -5,10 +5,10 @@ use super::super::{
 };
 use super::*;
 use crate::derived_relation::definition::DerivedRelationHandle;
+use crate::derived_relation::pinned::PinnedDerivedRelationRead;
+use crate::derived_relation::proof::{DerivedRelationReadIdentity, PreparedDerivedRelationRead};
 use crate::derived_relation::read::DerivedRelationData;
-use crate::derived_relation::DerivedRelationReadShape;
-use crate::derived_relation::PinnedDerivedRelationRead;
-use crate::derived_relation::PreparedDerivedRelationRead;
+use crate::derived_relation::read_shape::DerivedRelationReadShape;
 use crate::visibility::materialization::read_records::projection::VisibilityProjectionView;
 use std::{
     cell::{Cell, RefCell},
@@ -90,7 +90,7 @@ impl ManagedIndexSourceProjection<'_> {
     pub(in crate::validation::candidate_source) fn scope_identity(
         &self,
         scope: EntityId,
-    ) -> Result<Option<crate::derived_relation::DerivedRelationReadIdentity>, Denial> {
+    ) -> Result<Option<DerivedRelationReadIdentity>, Denial> {
         match &self.backing {
             SourceProjectionBacking::Invariant { relations, .. } => {
                 Ok(Some(relations.derived_source_identity(

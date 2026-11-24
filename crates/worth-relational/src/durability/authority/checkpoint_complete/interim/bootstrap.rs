@@ -139,7 +139,12 @@ impl NativeInterimBootstrapContinuation {
         require_capture(&self.0.phase)?;
         self.require_owner(runtime)?;
         let captured = capture
-            .capture_current_component(runtime, &self.0.current, request)
+            .capture_current_component(
+                &runtime.services.origin_identity(),
+                &runtime.history,
+                &self.0.current,
+                request,
+            )
             .map_err(component_stop)?;
         comparison_work(&self.0.description, request)?;
         if captured.description() != &self.0.description {

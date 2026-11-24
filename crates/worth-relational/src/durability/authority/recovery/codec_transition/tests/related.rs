@@ -233,7 +233,7 @@ mod coupled_sibling {
                         admission,
                         predecessor: self.predecessor.clone(),
                         meaning: self.predecessor.origin.meaning.clone(),
-                        roles: crate::mvcc::native_roles_fixture(
+                        roles: crate::mvcc::publication::application_publication::output_meaning::native_roles_fixture(
                             &self.outputs.map(|id| (id, KindId(3))),
                             RequiredOutputRolePosture::Preserve,
                         ),

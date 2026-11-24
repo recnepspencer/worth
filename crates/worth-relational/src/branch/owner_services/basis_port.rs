@@ -50,7 +50,12 @@ impl RelationalBranchBasisPort {
         let runtime = self
             .admitted_runtime()
             .map_err(crate::branch::RelationalRecordedComponentRefusal::Basis)?;
-        capture.capture_current_component(&runtime, component, request)
+        capture.capture_current_component(
+            &runtime.services.origin_identity(),
+            &runtime.history,
+            component,
+            request,
+        )
     }
     pub fn capture_interim_memory_component(
         &self,
@@ -64,7 +69,12 @@ impl RelationalBranchBasisPort {
         let runtime = self
             .admitted_runtime()
             .map_err(crate::branch::RelationalRecordedComponentRefusal::Basis)?;
-        capture.capture_component(&runtime, component, request)
+        capture.capture_component(
+            &runtime.services.origin_identity(),
+            &runtime.history,
+            component,
+            request,
+        )
     }
 
     pub fn readmit_interim_memory_component(

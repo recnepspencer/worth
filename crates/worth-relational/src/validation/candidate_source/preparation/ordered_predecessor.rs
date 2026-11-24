@@ -3,7 +3,7 @@ use super::*;
 use crate::derived_relation::{
     evaluation::SourceRead,
     read::{DerivedRelationAdjacency, DerivedRelationReads},
-    StructuralSource,
+    structural::StructuralSource,
 };
 use crate::identity::data::KindId;
 use crate::validation::data::structural_read::StructuralRelationRecord;

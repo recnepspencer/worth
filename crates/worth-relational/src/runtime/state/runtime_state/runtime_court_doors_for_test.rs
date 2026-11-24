@@ -88,6 +88,6 @@ impl crate::runtime::RelationalRuntime {
 #[cfg(test)]
 impl crate::runtime::RelationalRuntime {
     pub(crate) fn fill_retired_branch_name_capacity_for_test(&self) {
-        self.history.fill_retired_branch_name_capacity_for_test();
+        self.history.exhaust_retired_branch_name_roster_for_test();
     }
 }

@@ -9,8 +9,8 @@ pub(crate) mod canonical;
 pub(crate) mod catalog;
 pub(crate) mod evaluation;
 mod ordered_events;
-mod pinned;
-mod proof;
+pub(crate) mod pinned;
+pub(crate) mod proof;
 mod source;
 pub(crate) mod source_buffer;
 pub(crate) mod support;
@@ -18,19 +18,19 @@ pub(crate) use pinned::read_projected_source;
 pub use pinned::{
     PinnedDerivedRelationDenial, PinnedDerivedRelationRead, PinnedDerivedRelationScope,
 };
-mod structural;
+pub(crate) mod structural;
 pub use proof::{
-    DerivedRelationReadIdentity, DerivedRelationReadShape, DerivedRelationWalkStep,
-    PreparedDerivedRelationRead,
+    DerivedRelationReadIdentity, DerivedRelationWalkStep, PreparedDerivedRelationRead,
 };
-pub(crate) use structural::StructuralSource;
 pub(crate) use structural::{prepare_changes, read_changes};
 pub use structural::{DerivedRelationChangeData, PreparedDerivedRelationChanges};
 pub(crate) mod read;
 pub(crate) mod read_denial;
+pub(crate) mod read_shape;
 pub use read::{
     DerivedRelationAdjacency, DerivedRelationData, DerivedRelationReadDenial, DerivedRelationReads,
 };
+pub use read_shape::DerivedRelationReadShape;
 pub(crate) mod definition;
 pub(crate) mod traversal;
 mod validation;

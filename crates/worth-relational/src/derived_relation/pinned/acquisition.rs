@@ -7,7 +7,7 @@ impl PinnedDerivedRelationRead {
         execution: &ExecutionRequest<'_, '_>,
         definition: &Handle,
         root: NativeMemberKey,
-        shape: super::super::DerivedRelationReadShape,
+        shape: crate::derived_relation::read_shape::DerivedRelationReadShape,
         maximum_work: Option<usize>,
     ) -> Result<PinnedDerivedRelationRead, Denial> {
         read_projected_source(

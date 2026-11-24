@@ -4,6 +4,9 @@ use super::{
     fixture::*,
 };
 use crate::identity::data::{KindId, PartitionId};
+use crate::mvcc::publication::application_publication::output_meaning::{
+    native_meaning_fixture, native_roles_fixture, RequiredOutputRolePosture,
+};
 use crate::mvcc::RelationalTransactionIntent;
 use crate::runtime::operation_control::RelationalOperationControl;
 use crate::transactions::data::*;
@@ -125,10 +128,10 @@ pub(super) fn complete_association(
         &basis(&world.runtime),
         "native.closed.producer",
         &[19; 32],
-        &crate::mvcc::native_meaning_fixture("native.closed.producer"),
-        &crate::mvcc::native_roles_fixture(
+        &native_meaning_fixture("native.closed.producer"),
+        &native_roles_fixture(
             &world.outputs.map(|id| (id, KindId(3))),
-            crate::mvcc::RequiredOutputRolePosture::Create,
+            RequiredOutputRolePosture::Create,
         ),
     )
     .map(|_| ())
@@ -253,9 +256,9 @@ fn owned_boundary_equal_write_and_rewire_refuse_warm_and_cold_before_effects() {
                     admission,
                     predecessor: previous,
                     meaning,
-                    roles: crate::mvcc::native_roles_fixture(
+                    roles: native_roles_fixture(
                         &world.outputs.map(|id| (id, KindId(3))),
-                        crate::mvcc::RequiredOutputRolePosture::Preserve,
+                        RequiredOutputRolePosture::Preserve,
                     ),
                 },
             )

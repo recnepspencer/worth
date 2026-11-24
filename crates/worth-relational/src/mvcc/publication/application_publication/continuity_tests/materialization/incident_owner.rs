@@ -1,5 +1,8 @@
 //! Relation custody follows its producer even when only its other endpoint suspends.
 use super::*;
+use crate::mvcc::publication::application_publication::output_meaning::{
+    native_meaning_fixture, native_roles_fixture,
+};
 
 #[test]
 fn retained_producer_keeps_owned_incident_relation_when_other_group_endpoint_is_suspended() {
@@ -174,11 +177,8 @@ fn run(replace_endpoint: bool) {
                 &basis,
                 producer,
                 &dependency,
-                &crate::mvcc::publication::application_publication::native_meaning_fixture(family),
-                &crate::mvcc::publication::application_publication::native_roles_fixture(
-                    &[(id, KindId(1))],
-                    posture,
-                ),
+                &native_meaning_fixture(family),
+                &native_roles_fixture(&[(id, KindId(1))], posture),
             )
             .expect(
                 "both complete groups retain custody, including the retained relation producer",
@@ -203,10 +203,7 @@ fn replace_birth_endpoint(
         kind_id: KindId(1),
         client_key: crate::symbols::data::ClientKey::raw("replacement-a"),
     };
-    let mut roles = crate::mvcc::publication::application_publication::native_roles_fixture(
-        &[(old, KindId(1))],
-        RequiredOutputRolePosture::Preserve,
-    );
+    let mut roles = native_roles_fixture(&[(old, KindId(1))], RequiredOutputRolePosture::Preserve);
     roles.push(RequiredOutputRoleTarget {
         role: "joined-a".into(),
         entity_name: "native-unit-output".into(),
@@ -238,17 +235,12 @@ fn replace_birth_endpoint(
     .unwrap();
     let joined = moved.created_entity(&replacement).unwrap();
     release_test_commit_snapshot(runtime, &moved);
-    let mut roles = crate::mvcc::publication::application_publication::native_roles_fixture(
-        &[(old, KindId(1))],
-        RequiredOutputRolePosture::Retire,
-    );
+    let mut roles = native_roles_fixture(&[(old, KindId(1))], RequiredOutputRolePosture::Retire);
     roles[0].role = "retired-a".into();
-    roles.extend(
-        crate::mvcc::publication::application_publication::native_roles_fixture(
-            &[(joined, KindId(1))],
-            RequiredOutputRolePosture::Preserve,
-        ),
-    );
+    roles.extend(native_roles_fixture(
+        &[(joined, KindId(1))],
+        RequiredOutputRolePosture::Preserve,
+    ));
     let retired = publish(
         runtime,
         execution,
@@ -273,10 +265,7 @@ fn replace_birth_endpoint(
         complete(
             owner,
             retired.required_output_publication(installed).unwrap(),
-            crate::mvcc::publication::application_publication::native_roles_fixture(
-                &[(joined, KindId(1))],
-                RequiredOutputRolePosture::Preserve,
-            ),
+            native_roles_fixture(&[(joined, KindId(1))], RequiredOutputRolePosture::Preserve),
             5,
         ),
     )
@@ -289,11 +278,8 @@ fn replace_birth_endpoint(
             &test_owner_main_basis(runtime).unwrap(),
             "group-a-current",
             &[5; 32],
-            &crate::mvcc::publication::application_publication::native_meaning_fixture("group-a"),
-            &crate::mvcc::publication::application_publication::native_roles_fixture(
-                &[(joined, KindId(1))],
-                RequiredOutputRolePosture::Preserve,
-            ),
+            &native_meaning_fixture("group-a"),
+            &native_roles_fixture(&[(joined, KindId(1))], RequiredOutputRolePosture::Preserve),
         )
         .expect("the later complete publication is valid before materialization");
     assert_eq!(cold.origin.commit.commit_id, current.commit.commit_id);

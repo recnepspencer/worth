@@ -157,7 +157,7 @@ pub(crate) fn native_birth_fixture(
     RequiredOutputPublication::Birth {
         admission,
         absence: None,
-        meaning: native_meaning_fixture(&family),
+        meaning: output_meaning::native_meaning_fixture(&family),
         roles: targets
             .into_iter()
             .enumerate()
@@ -172,47 +172,6 @@ pub(crate) fn native_birth_fixture(
     }
 }
 
-#[cfg(test)]
-pub(crate) fn native_roles_fixture(
-    roles: &[(
-        crate::identity::data::EntityId,
-        crate::identity::data::KindId,
-    )],
-    posture: RequiredOutputRolePosture,
-) -> Vec<RequiredOutputRoleTarget> {
-    roles
-        .iter()
-        .enumerate()
-        .map(|(index, (id, kind))| RequiredOutputRoleTarget {
-            role: match posture {
-                RequiredOutputRolePosture::Create => format!("output-{index}"),
-                _ => format!("preserved-{index}"),
-            },
-            entity_name: "native-unit-output".into(),
-            kind: *kind,
-            posture,
-            target: crate::transactions::data::primitives::EntityReference::Existing(*id),
-        })
-        .collect()
-}
-
-#[cfg(test)]
-pub(crate) fn native_meaning_fixture(family: &str) -> RequiredOutputPublicationMeaning {
-    RequiredOutputPublicationMeaning {
-        implementation: RequiredOutputProducingImplementation::from_checkpoint(
-            [0x11; 16], [0x22; 32],
-        )
-        .unwrap(),
-        family: family.to_owned(),
-        source_scope: crate::identity::data::EntityId::new(
-            crate::identity::data::PartitionId::main(),
-            0,
-            1,
-        ),
-        source_partition: worth_foundational::CanonicalDigestId::new([0; 32]),
-        source_epoch: worth_foundational::CanonicalDigestId::new([0; 32]),
-    }
-}
 #[cfg(test)]
 #[path = "application_publication_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;

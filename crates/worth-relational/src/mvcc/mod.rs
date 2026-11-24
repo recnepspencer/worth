@@ -107,10 +107,7 @@ pub use validation::{
 };
 
 #[cfg(test)]
-pub(crate) use publication::{native_birth_fixture, native_meaning_fixture};
-
-#[cfg(test)]
-pub(crate) use publication::native_roles_fixture;
+pub(crate) use publication::native_birth_fixture;
 
 pub(crate) use validation::ValidatedProposalState;
 #[cfg(test)]

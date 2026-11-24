@@ -78,10 +78,8 @@ pub use outcome::{
 };
 
 #[cfg(test)]
-pub(crate) use application_publication::{native_birth_fixture, native_meaning_fixture};
+pub(crate) use application_publication::native_birth_fixture;
 
-#[cfg(test)]
-pub(crate) use application_publication::native_roles_fixture;
 #[cfg(test)]
 #[path = "mod_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;

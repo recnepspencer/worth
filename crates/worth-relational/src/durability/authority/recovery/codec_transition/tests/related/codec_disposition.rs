@@ -3,6 +3,7 @@ use super::{
     super::fixture::{basis, capture},
     fixture::*,
 };
+use crate::mvcc::publication::application_publication::output_meaning::native_meaning_fixture;
 use crate::runtime::RelationalRuntime;
 use crate::transactions::data::{
     EntityMutationIntent, MutationIntent, RecordRef, RevalidateEntityIntent, WorkerIntentBatch,
@@ -182,7 +183,7 @@ fn cold_retirement_requires_every_sibling_group_before_route_eligibility() {
             execution,
             &installed,
             &basis(&cold),
-            &crate::mvcc::native_meaning_fixture("native.sibling.producer"),
+            &native_meaning_fixture("native.sibling.producer"),
         );
         if defect.is_some() {
             assert!(
@@ -301,7 +302,7 @@ pub(super) fn cold_retired_route(
                 execution,
                 &installed,
                 &basis(&rejected),
-                &crate::mvcc::native_meaning_fixture("native.closed.producer"),
+                &native_meaning_fixture("native.closed.producer"),
             )
             .unwrap_err();
         if incomplete {

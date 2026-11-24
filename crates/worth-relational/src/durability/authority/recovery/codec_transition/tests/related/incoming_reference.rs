@@ -4,6 +4,9 @@ use super::{
     fixture::*,
 };
 use crate::identity::data::{EntityId, KindId, PartitionId, RelationId};
+use crate::mvcc::publication::application_publication::output_meaning::{
+    native_meaning_fixture, native_roles_fixture,
+};
 use crate::mvcc::{
     RelationalInstalledApplicationPublicationAuthority, RelationalPublicationOutcome,
     RelationalRequiredOutputPublication, RelationalTransactionIntent, RequiredOutputPublication,
@@ -142,7 +145,7 @@ fn owned_boundary_and_independent_references_survive_cold_preserve_but_block_ret
                 admission,
                 predecessor: previous,
                 meaning,
-                roles: crate::mvcc::native_roles_fixture(
+                roles: native_roles_fixture(
                     &world.outputs.map(|id| (id, KindId(3))),
                     RequiredOutputRolePosture::Preserve,
                 ),
@@ -269,8 +272,8 @@ fn readmit(
                 "native.closed.producer"
             },
             if preserved { &[20; 32] } else { &[19; 32] },
-            &crate::mvcc::native_meaning_fixture("native.closed.producer"),
-            &crate::mvcc::native_roles_fixture(
+            &native_meaning_fixture("native.closed.producer"),
+            &native_roles_fixture(
                 &ids.map(|id| (id, KindId(3))),
                 if preserved {
                     RequiredOutputRolePosture::Preserve

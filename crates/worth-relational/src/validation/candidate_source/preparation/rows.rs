@@ -1,6 +1,6 @@
 //! Root occurrence issuance and current-loan scalar admission.
 use super::*;
-use crate::derived_relation::DerivedRelationReadShape;
+use crate::derived_relation::read_shape::DerivedRelationReadShape;
 
 /// Full-generation occurrence issued by an actual membership acquisition.
 #[derive(Clone, Debug, PartialEq, Eq)]

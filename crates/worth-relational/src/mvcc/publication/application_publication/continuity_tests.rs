@@ -1,6 +1,9 @@
 //! Real native partial/no-data completion and intervening-writer refusal.
 use super::*;
 use crate::identity::data::{EntityId, KindId, PartitionId};
+use crate::mvcc::publication::application_publication::output_meaning::{
+    native_meaning_fixture, native_roles_fixture,
+};
 use crate::tests::support::*;
 use crate::transactions::data::*;
 use worth_execution::ExecutionRequest;
@@ -174,8 +177,8 @@ fn complete_partial_and_executed_no_data_publications_keep_unpatched_members_and
             &basis,
             "native-preserver",
             &[4; 32],
-            &crate::mvcc::publication::application_publication::native_meaning_fixture("native-creator"),
-            &crate::mvcc::publication::application_publication::native_roles_fixture(
+            &native_meaning_fixture("native-creator"),
+            &native_roles_fixture(
                 &ids.map(|id| (id, KindId(1))),
                 crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture::Preserve,
             ),
@@ -186,9 +189,7 @@ fn complete_partial_and_executed_no_data_publications_keep_unpatched_members_and
         "membership wins over two different latest member writes"
     );
     for (build, edition) in [([0x33; 16], [0x22; 32]), ([0x11; 16], [0x44; 32])] {
-        let mut wrong = crate::mvcc::publication::application_publication::native_meaning_fixture(
-            "native-creator",
-        );
+        let mut wrong = native_meaning_fixture("native-creator");
         wrong.implementation =
             RequiredOutputProducingImplementation::from_checkpoint(build, edition).unwrap();
         assert!(
@@ -200,7 +201,7 @@ fn complete_partial_and_executed_no_data_publications_keep_unpatched_members_and
                     "native-preserver",
                     &[4; 32],
                     &wrong,
-                    &crate::mvcc::publication::application_publication::native_roles_fixture(
+                    &native_roles_fixture(
                         &ids.map(|id| (id, KindId(1))),
                         crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture::Preserve
                     ),
@@ -217,8 +218,8 @@ fn complete_partial_and_executed_no_data_publications_keep_unpatched_members_and
                 &basis,
                 "native-preserver",
                 &[4; 32],
-                &crate::mvcc::publication::application_publication::native_meaning_fixture("native-creator"),
-                &crate::mvcc::publication::application_publication::native_roles_fixture(
+                &native_meaning_fixture("native-creator"),
+                &native_roles_fixture(
                     &subset.iter().map(|id| (*id, KindId(1))).collect::<Vec<_>>(),
                     crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture::Preserve
                 )
@@ -285,8 +286,8 @@ fn complete_partial_and_executed_no_data_publications_keep_unpatched_members_and
             &basis,
             "native-preserver",
             &[4; 32],
-            &crate::mvcc::publication::application_publication::native_meaning_fixture("native-creator"),
-            &crate::mvcc::publication::application_publication::native_roles_fixture(
+            &native_meaning_fixture("native-creator"),
+            &native_roles_fixture(
                 &ids.map(|id| (id, KindId(1))),
                 crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture::Preserve
             )

@@ -1,7 +1,7 @@
 //! Iterative recipe navigation, retaining both Boolean branches' support.
 use super::memo::Key;
 use super::{insert_member, member_work, DefinitionDenial, Denial, Evaluation, SourceRead};
-use crate::derived_relation::DerivedRelationNode as Node;
+use crate::derived_relation::definition::DerivedRelationNode as Node;
 use std::collections::BTreeSet;
 
 pub(super) enum Frame {

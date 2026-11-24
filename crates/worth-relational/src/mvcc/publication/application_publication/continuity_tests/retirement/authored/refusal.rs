@@ -1,5 +1,6 @@
 //! New authored admission refuses incomplete, foreign, sibling, stale and stopped custody.
 use super::*;
+use crate::mvcc::publication::application_publication::output_meaning::native_roles_fixture;
 
 #[test]
 fn authored_retirement_refuses_partial_missing_and_foreign_members_before_publication() {
@@ -17,10 +18,8 @@ fn authored_retirement_refuses_partial_missing_and_foreign_members_before_public
     release_test_commit_snapshot(&runtime, &born);
     let unowned = create_entity(execution, &runtime, "ordinary-unowned-retirement");
     let basis = test_owner_main_basis(&runtime).unwrap();
-    let ordinary_roles = crate::mvcc::publication::application_publication::native_roles_fixture(
-        &[(unowned, KindId(1))],
-        RequiredOutputRolePosture::Retire,
-    );
+    let ordinary_roles =
+        native_roles_fixture(&[(unowned, KindId(1))], RequiredOutputRolePosture::Retire);
     assert!(
         runtime
             .readmit_authored_output_retirement(execution, &installed, &basis, &ordinary_roles)

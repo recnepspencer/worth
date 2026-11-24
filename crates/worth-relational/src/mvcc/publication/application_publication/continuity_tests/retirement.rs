@@ -1,5 +1,8 @@
 //! Complete publication position survives total membership replacement.
 use super::*;
+use crate::mvcc::publication::application_publication::output_meaning::{
+    native_meaning_fixture, native_roles_fixture,
+};
 #[path = "retirement/authored.rs"]
 mod authored;
 #[path = "retirement/ordinary.rs"]
@@ -174,10 +177,8 @@ fn all_retired_then_disjoint_create_rejects_stale_complete_predecessor_before_mo
             &basis,
             "native-preserver",
             &[5; 32],
-            &crate::mvcc::publication::application_publication::native_meaning_fixture(
-                "retirement-creator",
-            ),
-            &crate::mvcc::publication::application_publication::native_roles_fixture(
+            &native_meaning_fixture("retirement-creator"),
+            &native_roles_fixture(
                 &replacement_ids.map(|id| (id, KindId(1))),
                 RequiredOutputRolePosture::Preserve,
             ),
@@ -210,9 +211,7 @@ fn cold_replacement(
         .unwrap();
     let (owner, installed) = receipt.issue_application_publication_owner();
     let basis = test_owner_main_basis(&runtime).unwrap();
-    let meaning = crate::mvcc::publication::application_publication::native_meaning_fixture(
-        "retirement-creator",
-    );
+    let meaning = native_meaning_fixture("retirement-creator");
     let denied = runtime
         .readmit_required_output_publication(
             execution,

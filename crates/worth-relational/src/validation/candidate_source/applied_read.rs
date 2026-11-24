@@ -5,7 +5,8 @@ use super::{
     ManagedIndexSourcePreparationDenial as Denial, ManagedIndexSourceProgram,
     ManagedIndexSourceRows, NativeManagedSourceInterpretation,
 };
-use crate::derived_relation::{DerivedRelationDenial as Definition, DerivedRelationReadDenial};
+use crate::derived_relation::definition::DerivedRelationDenial as Definition;
+use crate::derived_relation::read_denial::DerivedRelationReadDenial;
 use crate::identity::data::EntityId;
 use crate::mvcc::publication::companion::preflight_stop::CompanionPreflightStop;
 use crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity;

@@ -99,35 +99,14 @@ impl RelationalRuntime {
         component: &ObservedRelationalMemoryComponent,
     ) -> Result<RecordedRelationalComponentReference, Refusal> {
         crate::execution::request_custody::check_request(execution).map_err(Refusal::Request)?;
+        let origin = self.services.origin_identity();
         let meaning = match component.original.as_ref() {
             MemoryComponentOrigin::Live(meaning) => meaning,
             MemoryComponentOrigin::Interim(meaning) => {
-                if !meaning.owner.same_origin(&self.services.origin_identity()) {
-                    return Err(Refusal::Basis(
-                        crate::branch::basis_denial::RelationalBranchBasisDenial::OwnerUnavailable,
-                    ));
-                }
-                if let Some(row) = &meaning.canonical {
-                    let artifact = self
-                        .history
-                        .commit_artifact(row.index().commit.commit_id)
-                        .ok_or(Refusal::MissingPerformedCommit {
-                            commit_id: row.index().commit.commit_id,
-                        })?;
-                    if !row.links_artifact(&artifact) {
-                        return Err(Refusal::CanonicalMismatch {
-                            commit_id: row.index().commit.commit_id,
-                        });
-                    }
-                }
-                return Ok(meaning.description.clone());
+                return meaning.export(&origin, &self.history)
             }
         };
-        if !meaning.owner.same_origin(&self.services.origin_identity()) {
-            return Err(Refusal::Basis(
-                crate::branch::basis_denial::RelationalBranchBasisDenial::OwnerUnavailable,
-            ));
-        }
+        super::capture::require_origin(&meaning.owner, &origin)?;
         let descriptor = &meaning.descriptor;
         match descriptor.reference().target() {
             FoundationalBranchTarget::Empty => {

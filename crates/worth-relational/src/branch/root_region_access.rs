@@ -1,8 +1,16 @@
 #[path = "root_region_access/kind_directory.rs"]
 mod kind_directory;
 use super::*;
+use crate::branch::projection_view::snapshot_head::SelectedSnapshotHead;
 
 impl RelationalBranchRoot {
+    pub(crate) fn project_selected_head(&self, partition: PartitionId) -> SelectedSnapshotHead<'_> {
+        SelectedSnapshotHead::new(
+            partition,
+            self.regions.get(partition).map(|region| &region.partition),
+        )
+    }
+
     pub(crate) fn reconstruct_region_head(
         &self,
         lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
@@ -34,10 +42,7 @@ impl RelationalBranchRoot {
         >,
         PartitionId,
     > {
-        match self.regions.get(id) {
-            None => Ok(None),
-            Some(region) => region.partition.accepted_head_lease().map(Some).ok_or(id),
-        }
+        self.project_selected_head(id).witness()
     }
 
     pub(crate) fn resident_full_region_witness(
@@ -78,9 +83,7 @@ impl RelationalBranchRoot {
         &self,
         id: PartitionId,
     ) -> Option<crate::storage::residency::RelationalRegionHeadView<'_>> {
-        self.regions
-            .get(id)
-            .and_then(|region| region.partition.accepted_head_view())
+        self.project_selected_head(id).view()
     }
 
     pub(crate) fn probe_head_region(
@@ -167,10 +170,8 @@ impl RelationalBranchRoot {
         id: PartitionId,
         symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
-        if let Some(lease) = self.demand_region_head(execution, id)? {
-            lease.admit_symbols(execution, symbols)?;
-        }
-        Ok(())
+        self.project_selected_head(id)
+            .demand_with_symbols(execution, symbols)
     }
     pub(crate) fn demand_all_full(
         &self,
@@ -263,10 +264,8 @@ impl RelationalBranchRoot {
         >,
         crate::storage::residency::RelationalResidencyDemandFailure,
     > {
-        self.regions
-            .get(partition)
-            .map(|region| region.partition.demand_head(execution, 1 << 30))
-            .transpose()
+        self.project_selected_head(partition)
+            .demand_lease(execution)
     }
     pub(crate) fn partition_state(
         &self,

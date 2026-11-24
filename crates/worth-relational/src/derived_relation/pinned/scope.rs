@@ -4,7 +4,7 @@ use super::*;
 pub struct PinnedDerivedRelationScope<'input> {
     pub(super) definition: &'input Handle,
     pub(super) root: NativeMemberKey,
-    pub(super) shape: super::super::DerivedRelationReadShape,
+    pub(super) shape: crate::derived_relation::read_shape::DerivedRelationReadShape,
     pub(super) maximum_work: Option<usize>,
     pub(super) control: Option<&'input dyn Fn() -> Result<(), Cause>>,
 }
@@ -12,7 +12,7 @@ impl<'input> PinnedDerivedRelationScope<'input> {
     pub fn new(
         definition: &'input Handle,
         root: impl Into<NativeMemberKey>,
-        shape: super::super::DerivedRelationReadShape,
+        shape: crate::derived_relation::read_shape::DerivedRelationReadShape,
     ) -> Self {
         Self {
             definition,

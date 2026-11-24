@@ -1,6 +1,9 @@
 //! Ordinary authored retirement carries complete relation custody into warm/cold reissue.
 use super::*;
 use crate::identity::data::RelationId;
+use crate::mvcc::publication::application_publication::output_meaning::{
+    native_meaning_fixture, native_roles_fixture,
+};
 #[path = "authored/refusal.rs"]
 mod refusal;
 #[path = "authored/request.rs"]
@@ -63,7 +66,7 @@ fn birth_with_edge(
 }
 
 fn retire_roles(ids: [EntityId; 2]) -> Vec<RequiredOutputRoleTarget> {
-    crate::mvcc::publication::application_publication::native_roles_fixture(
+    native_roles_fixture(
         &ids.map(|id| (id, KindId(1))),
         RequiredOutputRolePosture::Retire,
     )
@@ -177,9 +180,7 @@ fn ordinary_authored_complete_retirement_reissues_only_through_exact_warm_and_co
             "canonical authored succession survives real checkpoint reconstruction"
         );
         let basis = test_owner_main_basis(runtime).unwrap();
-        let meaning = crate::mvcc::publication::application_publication::native_meaning_fixture(
-            "authored-creator",
-        );
+        let meaning = native_meaning_fixture("authored-creator");
         assert!(
             runtime
                 .readmit_required_output_route_absence(execution, installed, &basis, &meaning)

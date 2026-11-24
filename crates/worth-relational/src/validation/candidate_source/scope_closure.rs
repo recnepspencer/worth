@@ -8,7 +8,7 @@ use crate::derived_relation::evaluation::{evaluate_position, SourceRead};
 use crate::derived_relation::read::DerivedRelationData;
 use crate::derived_relation::read::DerivedRelationReads;
 use crate::derived_relation::read_denial::DerivedRelationReadDenial as Denial;
-use crate::derived_relation::StructuralSource;
+use crate::derived_relation::structural::StructuralSource;
 use crate::graph_member::NativeMemberKey;
 use crate::identity::data::EntityId;
 use crate::schema::data::RelationalSchemaRegistry;

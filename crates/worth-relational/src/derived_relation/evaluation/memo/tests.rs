@@ -1,10 +1,11 @@
 //! Pure registered-recipe and owned-source mechanics; no runtime or session.
-use super::super::{Adjacency, DerivedRelationReads};
+use super::super::Adjacency;
 use super::*;
 use crate::config::data::{CascadeDeletePolicy, CrossContextPolicy};
-use crate::derived_relation::{
+use crate::derived_relation::definition::{
     DerivedRelationDefinitionParts, DerivedRelationIdentity, DerivedRelationNode as Node,
 };
+use crate::derived_relation::read::DerivedRelationReads;
 use crate::identity::data::{EntityId, KindId, PartitionId, RelationId};
 use crate::schema::data::*;
 use crate::validation::data::structural_read::StructuralRelationRecord;

@@ -17,6 +17,8 @@ use worth_testkit_relational::{
     ordinary_records::create_entity,
 };
 
+mod shared_members;
+
 const CHECKPOINT_MAGIC: &[u8] = b"WORTH-REL-CHK23\n";
 
 fn original(
@@ -68,8 +70,12 @@ fn map(bytes: &[u8], edit: impl FnOnce(&mut BTreeMap<String, Vec<u8>>)) -> Vec<u
     map_bytes(value)
 }
 /// Edit just one row while preserving every unrelated value's raw encoding.
-fn first_row(bytes: &[u8], edit: impl FnOnce(&mut BTreeMap<String, Vec<u8>>)) -> Vec<u8> {
-    let row = sequence(bytes)[0];
+fn rewrite_row(
+    bytes: &[u8],
+    index: usize,
+    edit: impl FnOnce(&mut BTreeMap<String, Vec<u8>>),
+) -> Vec<u8> {
+    let row = sequence(bytes)[index];
     let start = row.as_ptr() as usize - bytes.as_ptr() as usize;
     let end = start + row.len();
     [
@@ -235,7 +241,7 @@ fn restore_refuses_unknown_fields_before_publishing_any_model_state() {
             if matches!(owner, "manifest" | "record_identity") {
                 fields.insert("future_field".into(), vec![0xc0]);
             } else {
-                let rows = first_row(&fields[owner], |row| {
+                let rows = rewrite_row(&fields[owner], 0, |row| {
                     row.insert("future_field".into(), vec![0xc0]);
                 });
                 fields.insert(owner.into(), rows);

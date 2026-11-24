@@ -1,8 +1,13 @@
 //! The same recipe evaluator over one actual immutable published Native root.
 use super::evaluation::SourceRead;
-use super::{DerivedRelationAdjacency as Adjacency, DerivedRelationData as Data};
-use super::{DerivedRelationDenial as DefinitionDenial, DerivedRelationHandle as Handle};
-use super::{DerivedRelationReadDenial as Denial, DerivedRelationReads as Reads};
+use crate::derived_relation::definition::{
+    DerivedRelationDenial as DefinitionDenial, DerivedRelationHandle as Handle,
+};
+use crate::derived_relation::read::DerivedRelationReads as Reads;
+use crate::derived_relation::read::{
+    DerivedRelationAdjacency as Adjacency, DerivedRelationData as Data,
+};
+use crate::derived_relation::read_denial::DerivedRelationReadDenial as Denial;
 use crate::execution::RelationalExecutionDenialCause as Cause;
 use crate::graph_member::NativeMemberKey;
 use crate::identity::data::{EntityId, KindId};
@@ -22,8 +27,8 @@ pub use scope::{PinnedDerivedRelationDenial, PinnedDerivedRelationScope};
 /// no later source, decision, mutation or disclosure authority.
 pub struct PinnedDerivedRelationRead {
     data: Data,
-    steps: Vec<super::DerivedRelationWalkStep>,
-    shape: super::DerivedRelationReadShape,
+    steps: Vec<crate::derived_relation::proof::DerivedRelationWalkStep>,
+    shape: crate::derived_relation::read_shape::DerivedRelationReadShape,
     work: usize,
     _memory: Option<ExecutionMemoryReservation>,
 }
@@ -35,10 +40,10 @@ impl PinnedDerivedRelationRead {
     pub const fn work_units(&self) -> usize {
         self.work
     }
-    pub fn steps(&self) -> &[super::DerivedRelationWalkStep] {
+    pub fn steps(&self) -> &[crate::derived_relation::proof::DerivedRelationWalkStep] {
         &self.steps
     }
-    pub const fn shape(&self) -> super::DerivedRelationReadShape {
+    pub const fn shape(&self) -> crate::derived_relation::read_shape::DerivedRelationReadShape {
         self.shape
     }
 }

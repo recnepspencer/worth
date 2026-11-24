@@ -1,5 +1,6 @@
 //! The exact retained root and observation stay in their original allocation.
 use super::snapshot_projection_root::SnapshotProjectionRoot;
+use crate::branch::projection_view::snapshot_head::SelectedSnapshotHead;
 use crate::branch::root::RelationalBranchRoot;
 use crate::history::data::{BranchId, CommitId};
 use crate::identity::data::{PartitionId, VersionId};
@@ -19,32 +20,8 @@ pub(crate) struct VisibilitySnapshotBasis {
 pub(crate) struct SnapshotHeadSelection(Arc<RelationalBranchRoot>);
 
 impl SnapshotHeadSelection {
-    pub(crate) fn demand(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
-        partition: PartitionId,
-    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
-        self.0.demand_regions_head(execution, symbols, [partition])
-    }
-
-    pub(crate) fn region(
-        &self,
-        partition: PartitionId,
-    ) -> Option<crate::storage::residency::RelationalRegionHeadView<'_>> {
-        self.0.accepted_head_region_view(partition)
-    }
-
-    pub(crate) fn witness(
-        &self,
-        partition: PartitionId,
-    ) -> Result<
-        Option<
-            crate::storage::residency::RelationalResidencyLease<crate::storage::residency::Head>,
-        >,
-        PartitionId,
-    > {
-        self.0.accepted_head_region_witness(partition)
+    pub(crate) fn region(&self, partition: PartitionId) -> SelectedSnapshotHead<'_> {
+        self.0.project_selected_head(partition)
     }
 }
 

@@ -1,5 +1,8 @@
 //! Unrelated complete family publications must not supersede one another.
 use super::*;
+use crate::mvcc::publication::application_publication::output_meaning::{
+    native_meaning_fixture, native_roles_fixture,
+};
 
 #[test]
 fn reached_family_route_keeps_its_actual_predecessor_across_other_publications() {
@@ -63,8 +66,8 @@ fn reached_family_route_keeps_its_actual_predecessor_across_other_publications()
                 &basis,
                 "native-preserver",
                 &[2; 32],
-                &crate::mvcc::publication::application_publication::native_meaning_fixture(family),
-                &crate::mvcc::publication::application_publication::native_roles_fixture(
+                &native_meaning_fixture(family),
+                &native_roles_fixture(
                     &ids.map(|id| (id, KindId(1))),
                     RequiredOutputRolePosture::Preserve,
                 ),
