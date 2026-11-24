@@ -13,6 +13,9 @@
 "worth-store-live-query" = { "path" = "../worth-store-live-query" }
 "worth-store-testkit-executables" = { "path" = "../worth-store-testkit-executables" }
 
+[dev-dependencies]
+proptest = { version = "1", default-features = false, features = ["std", "bit-set"] }
+
 [[test]]
 name = "worth_store_court_branch_deltas"
 path = "tests/worth_store_court_branch_deltas.rs"

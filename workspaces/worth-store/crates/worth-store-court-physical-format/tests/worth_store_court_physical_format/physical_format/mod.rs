@@ -10,5 +10,7 @@ pub(crate) mod manifest_access;
 pub(crate) mod physical_record_access;
 #[path = "physical_work_obligation_v6_golden/mod.rs"]
 pub(crate) mod physical_work_obligation_v6_golden;
+#[path = "property_laws/mod.rs"]
+pub(crate) mod property_laws;
 #[path = "wal_frame_v1_golden/mod.rs"]
 pub(crate) mod wal_frame_v1_golden;
