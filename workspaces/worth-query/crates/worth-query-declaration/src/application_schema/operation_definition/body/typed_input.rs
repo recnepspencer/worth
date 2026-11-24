@@ -1,20 +1,21 @@
 //! Compile-time-typed input-field references for authored operation bodies.
 //!
-//! Each reference is constructed exclusively from a declared field slot on
-//! `Input` (`ApplicationInputFields` + `ApplicationInputFieldSlot<INDEX>`,
-//! emitted by `#[derive(WorthQueryAction)]`), carrying the owning `Input` type,
-//! scalar `Value` type, and canonical serialized member name without exposing
-//! any free-string constructor. Methods on [`ApplicationOperationBodyBuilder`]
-//! and [`ApplicationOperationBodyCreationBuilder`] delegate directly to the
-//! underlying member-name methods so typed and hand-written bodies produce
-//! identical canonical programs.
+//! Each reference is verified against the authoritative
+//! [`ApplicationStructuredValueBinding::DECLARED_INPUT_FIELDS`] metadata both
+//! at selector construction ([`ApplicationInputField::for_binding`],
+//! [`ApplicationOptionalInputField::for_binding`]) and when applied to an
+//! operation body via [`ApplicationOperationBodyBuilder`] /
+//! [`super::TypedApplicationOperationBodyBuilder`] against
+//! `Operation::InputBinding`. No free-string constructor exists.
 
+use std::any::TypeId;
 use std::fmt;
 use std::marker::PhantomData;
 
 use crate::application_query::ApplicationQueryRootPath;
 use crate::application_schema::{
-    fragment::RecordSelection, ApplicationIdentityScalarValueBinding, ApplicationRelationRef,
+    fragment::RecordSelection, ApplicationIdentityScalarValueBinding,
+    ApplicationOperationMarkerIdentity, ApplicationRelationRef, ApplicationStructuredValueBinding,
     OperationLinks, OperationReads, OperationUnlinks,
 };
 
@@ -23,81 +24,56 @@ use super::{
     ApplicationOperationBodyCreationBuilder,
 };
 
-/// Canonical metadata for one declared serialized field on an action `Input`.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct ApplicationDeclaredInputFieldSpec {
-    member: &'static str,
+/// Verifies that `Binding` declares exactly one canonical input member matching
+/// `(member, Value, optional)`.
+pub(super) fn verify_declared_input_member<Binding, Value>(
+    member: &str,
     optional: bool,
-}
-
-impl ApplicationDeclaredInputFieldSpec {
-    /// Macro-only constructor for a required field spec backed by a compile-time
-    /// field projection witness on `Input`.
-    #[doc(hidden)]
-    pub const fn required<Input, Value: 'static>(
-        member: &'static str,
-        _witness: fn(&Input) -> &Value,
-    ) -> Self {
-        Self {
-            member,
-            optional: false,
+) -> Result<(), Denial>
+where
+    Binding: ApplicationStructuredValueBinding,
+    Value: 'static,
+{
+    if member.is_empty() || member.trim() != member {
+        return Err(Denial::InvalidInputMember);
+    }
+    let expected_type = TypeId::of::<Value>();
+    let mut matched = false;
+    for declared in Binding::DECLARED_INPUT_FIELDS {
+        if declared.member() != member {
+            continue;
         }
-    }
-
-    /// Macro-only constructor for an optional field spec backed by a compile-time
-    /// field projection witness on `Input`.
-    #[doc(hidden)]
-    pub const fn optional<Input, Value: 'static>(
-        member: &'static str,
-        _witness: fn(&Input) -> &Option<Value>,
-    ) -> Self {
-        Self {
-            member,
-            optional: true,
+        if matched
+            || declared.is_optional() != optional
+            || declared.value_type_id() != expected_type
+        {
+            return Err(Denial::InvalidInputMember);
         }
+        matched = true;
     }
-
-    /// The canonical serialized member name on `Input`.
-    pub const fn member(self) -> &'static str {
-        self.member
+    if matched {
+        Ok(())
+    } else {
+        Err(Denial::InvalidInputMember)
     }
-
-    /// Whether this declared field carries `Option<Value>`.
-    pub const fn is_optional(self) -> bool {
-        self.optional
-    }
-}
-
-/// Complete declared serialized input-field inventory owned by `Input`.
-///
-/// Implemented by `#[derive(WorthQueryAction)]`.
-pub trait ApplicationInputFields: 'static {
-    const FIELDS: &'static [ApplicationDeclaredInputFieldSpec];
-}
-
-/// Compile-time binding of declared field slot `INDEX` on `Input` to its exact
-/// scalar `Value` type and optionality posture.
-pub trait ApplicationInputFieldSlot<const INDEX: usize>: ApplicationInputFields {
-    type Value: 'static;
-    const OPTIONAL: bool;
 }
 
 /// A compile-time-typed reference to one required scalar field on `Input`.
 ///
 /// Carries no runtime authority: only the canonical input member name verified
-/// against `Input`'s declared field slot and checked against the target
-/// operation and record column.
-///
-/// An undeclared type cannot fabricate a typed input field:
-/// ```compile_fail
-/// use worth_query_declaration::facade::application_schema::ApplicationInputField;
-/// let _ = ApplicationInputField::<(), String>::from_slot::<0>();
-/// ```
+/// against the bound input's authoritative declared field inventory and checked
+/// against the target operation's `InputBinding` and record column.
 ///
 /// No free-string constructor exists:
 /// ```compile_fail
 /// use worth_query_declaration::facade::application_schema::ApplicationInputField;
 /// let _ = ApplicationInputField::<(), String>::new("fabricated");
+/// ```
+///
+/// A non-binding type cannot construct a typed input field:
+/// ```compile_fail
+/// use worth_query_declaration::facade::application_schema::ApplicationInputField;
+/// let _ = ApplicationInputField::<(), String>::for_binding::<()>("fabricated");
 /// ```
 pub struct ApplicationInputField<Input, Value> {
     member: &'static str,
@@ -129,49 +105,37 @@ impl<Input, Value> PartialEq for ApplicationInputField<Input, Value> {
 
 impl<Input, Value> Eq for ApplicationInputField<Input, Value> {}
 
-impl<Input, Value: 'static> ApplicationInputField<Input, Value> {
-    /// Resolves the typed field reference for declared required slot `INDEX` on
-    /// `Input`. Fails at compile time if `Input` does not declare slot `INDEX`
-    /// with exact type `Value` and required (`!OPTIONAL`) posture.
-    pub const fn from_slot<const INDEX: usize>() -> Self
-    where
-        Input: ApplicationInputFieldSlot<INDEX, Value = Value>,
-    {
-        const {
-            assert!(
-                INDEX < Input::FIELDS.len(),
-                "declared input field slot out of bounds"
-            );
-            assert!(
-                !Input::OPTIONAL,
-                "declared input field slot is optional; use ApplicationOptionalInputField"
-            );
-            assert!(
-                !Input::FIELDS[INDEX].is_optional(),
-                "declared input field spec is optional"
-            );
-        }
-        Self {
-            member: Input::FIELDS[INDEX].member(),
-            marker: PhantomData,
-        }
-    }
-
+impl<Input, Value> ApplicationInputField<Input, Value> {
     /// The canonical serialized member name on `Input`.
     pub const fn member(self) -> &'static str {
         self.member
     }
 }
 
+impl<Input: 'static, Value: 'static> ApplicationInputField<Input, Value> {
+    /// Resolves a required typed input field verified against `Binding`'s
+    /// authoritative declared canonical member shape.
+    pub fn for_binding<Binding>(member: &'static str) -> Result<Self, Denial>
+    where
+        Binding: ApplicationStructuredValueBinding<Value = Input>,
+    {
+        verify_declared_input_member::<Binding, Value>(member, false)?;
+        Ok(Self {
+            member,
+            marker: PhantomData,
+        })
+    }
+}
+
 /// A compile-time-typed reference to one `Option<Value>` field on `Input`.
 ///
 /// Carries no runtime authority: only the canonical input member name verified
-/// against `Input`'s declared field slot and checked against the target
-/// operation and optional record column.
+/// against the bound input's authoritative declared field inventory and checked
+/// against the target operation's `InputBinding` and optional record column.
 ///
 /// ```compile_fail
 /// use worth_query_declaration::facade::application_schema::ApplicationOptionalInputField;
-/// let _ = ApplicationOptionalInputField::<(), String>::from_slot::<0>();
+/// let _ = ApplicationOptionalInputField::<(), String>::new("fabricated");
 /// ```
 pub struct ApplicationOptionalInputField<Input, Value> {
     member: &'static str,
@@ -203,47 +167,43 @@ impl<Input, Value> PartialEq for ApplicationOptionalInputField<Input, Value> {
 
 impl<Input, Value> Eq for ApplicationOptionalInputField<Input, Value> {}
 
-impl<Input, Value: 'static> ApplicationOptionalInputField<Input, Value> {
-    /// Resolves the typed field reference for declared optional slot `INDEX` on
-    /// `Input`. Fails at compile time if `Input` does not declare slot `INDEX`
-    /// with exact inner type `Value` and optional (`OPTIONAL`) posture.
-    pub const fn from_slot<const INDEX: usize>() -> Self
-    where
-        Input: ApplicationInputFieldSlot<INDEX, Value = Value>,
-    {
-        const {
-            assert!(
-                INDEX < Input::FIELDS.len(),
-                "declared input field slot out of bounds"
-            );
-            assert!(
-                Input::OPTIONAL,
-                "declared input field slot is required; use ApplicationInputField"
-            );
-            assert!(
-                Input::FIELDS[INDEX].is_optional(),
-                "declared input field spec is required"
-            );
-        }
-        Self {
-            member: Input::FIELDS[INDEX].member(),
-            marker: PhantomData,
-        }
-    }
-
+impl<Input, Value> ApplicationOptionalInputField<Input, Value> {
     /// The canonical serialized member name on `Input`.
     pub const fn member(self) -> &'static str {
         self.member
     }
 }
 
-impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation, Input> {
+impl<Input: 'static, Value: 'static> ApplicationOptionalInputField<Input, Value> {
+    /// Resolves an optional typed input field verified against `Binding`'s
+    /// authoritative declared canonical member shape.
+    pub fn for_binding<Binding>(member: &'static str) -> Result<Self, Denial>
+    where
+        Binding: ApplicationStructuredValueBinding<Value = Input>,
+    {
+        verify_declared_input_member::<Binding, Value>(member, true)?;
+        Ok(Self {
+            member,
+            marker: PhantomData,
+        })
+    }
+}
+
+impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation, Input>
+where
+    Operation: ApplicationOperationMarkerIdentity<Schema>,
+    Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+{
     /// Requires a present scope field equal to one typed required input field.
     pub fn expect_typed_input<Field: RecordSelection>(
         self,
         field: Field,
         input: ApplicationInputField<Input, Field::Value>,
     ) -> Result<Self, Denial> {
+        verify_declared_input_member::<Operation::InputBinding, Field::Value>(
+            input.member(),
+            false,
+        )?;
         self.expect_input(field, input.member())
     }
 
@@ -253,6 +213,10 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
         field: Field,
         input: ApplicationInputField<Input, Field::Value>,
     ) -> Result<Self, Denial> {
+        verify_declared_input_member::<Operation::InputBinding, Field::Value>(
+            input.member(),
+            false,
+        )?;
         self.assign_input(field, input.member())
     }
 
@@ -262,6 +226,10 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
         field: Field,
         input: ApplicationInputField<Input, Field::Value>,
     ) -> Result<Self, Denial> {
+        verify_declared_input_member::<Operation::InputBinding, Field::Value>(
+            input.member(),
+            false,
+        )?;
         self.set_optional_input(field, input.member())
     }
 
@@ -271,6 +239,10 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
         field: Field,
         input: ApplicationOptionalInputField<Input, Field::Value>,
     ) -> Result<Self, Denial> {
+        verify_declared_input_member::<Operation::InputBinding, Field::Value>(
+            input.member(),
+            true,
+        )?;
         self.assign_optional_input(field, input.member())
     }
 
@@ -286,6 +258,7 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
         Selected: OperationReads<Operation>,
         F: RecordSelection<Entity = Selected>,
     {
+        verify_declared_input_member::<Operation::InputBinding, F::Value>(input.member(), false)?;
         self.expect_input_from_path(path, field, input.member())
     }
 
@@ -304,12 +277,16 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
         F: RecordSelection<Entity = Selected>,
         F::Binding: ApplicationIdentityScalarValueBinding,
     {
+        verify_declared_input_member::<Operation::InputBinding, F::Value>(input.member(), true)?;
         self.replace_relation_from_input(relation, identity, input.member(), key)
     }
 }
 
 impl<Schema, Operation, Input, Entity>
     ApplicationOperationBodyCreationBuilder<Schema, Operation, Input, Entity>
+where
+    Operation: ApplicationOperationMarkerIdentity<Schema>,
+    Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
 {
     /// Initializes a created field from one typed required input field.
     pub fn initialize_typed_input<Selection: RecordSelection<Entity = Entity>>(
@@ -317,6 +294,10 @@ impl<Schema, Operation, Input, Entity>
         field: Selection,
         input: ApplicationInputField<Input, Selection::Value>,
     ) -> Result<Self, Denial> {
+        verify_declared_input_member::<Operation::InputBinding, Selection::Value>(
+            input.member(),
+            false,
+        )?;
         self.initialize_input(field, input.member())
     }
 
@@ -326,6 +307,10 @@ impl<Schema, Operation, Input, Entity>
         field: Selection,
         input: ApplicationOptionalInputField<Input, Selection::Value>,
     ) -> Result<Self, Denial> {
+        verify_declared_input_member::<Operation::InputBinding, Selection::Value>(
+            input.member(),
+            true,
+        )?;
         self.initialize_optional_input(field, input.member())
     }
 }

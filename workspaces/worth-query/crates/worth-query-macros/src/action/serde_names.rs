@@ -44,7 +44,7 @@ impl RenameRule {
     /// Matches `serde_derive_internals::attr::RenameRule::apply_to_field`.
     fn apply_to_field(self, field: &str) -> String {
         match self {
-            Self::Lower => field.to_ascii_lowercase(),
+            Self::Lower | Self::Snake => field.to_owned(),
             Self::Upper => field.to_ascii_uppercase(),
             Self::Pascal => {
                 let mut pascal = String::new();
@@ -69,7 +69,6 @@ impl RenameRule {
                     None => String::new(),
                 }
             }
-            Self::Snake => field.to_owned(),
             Self::ScreamingSnake => field.to_ascii_uppercase(),
             Self::Kebab => field.replace('_', "-"),
             Self::ScreamingKebab => field.to_ascii_uppercase().replace('_', "-"),

@@ -14,6 +14,7 @@ use syn::DeriveInput;
 
 mod emit;
 mod grammar;
+mod hygiene;
 #[cfg(test)]
 mod tests;
 

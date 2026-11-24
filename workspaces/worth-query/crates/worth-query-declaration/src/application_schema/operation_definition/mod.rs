@@ -10,8 +10,7 @@ mod registration;
 
 pub(crate) use body::validate_operation_bodies;
 pub use body::{
-    ApplicationDeclaredInputFieldSpec, ApplicationInputField, ApplicationInputFieldSlot,
-    ApplicationInputFields, ApplicationOperationBody, ApplicationOperationBodyAuthoringDenial,
+    ApplicationInputField, ApplicationOperationBody, ApplicationOperationBodyAuthoringDenial,
     ApplicationOperationBodyBuilder, ApplicationOperationBodyCaptureRole,
     ApplicationOperationBodyChildCreation, ApplicationOperationBodyChildCreationBuilder,
     ApplicationOperationBodyCreatedField, ApplicationOperationBodyCreation,

@@ -4,8 +4,9 @@
 use crate::application_query::ApplicationQueryRootPath;
 use crate::application_schema::{
     fragment::RecordSelection, ApplicationEntityRef, ApplicationIdentityScalarValueBinding,
-    ApplicationOperationDefinition, ApplicationOperationRef, ApplicationRelationRef,
-    OperationCreates, OperationLinks, OperationReads, OperationUnlinks,
+    ApplicationOperationDefinition, ApplicationOperationMarkerIdentity, ApplicationOperationRef,
+    ApplicationRelationRef, ApplicationStructuredValueBinding, OperationCreates, OperationLinks,
+    OperationReads, OperationUnlinks,
 };
 
 use super::typed_input::{ApplicationInputField, ApplicationOptionalInputField};
@@ -75,7 +76,11 @@ impl<Schema, Operation, Input> TypedApplicationOperationBodyBuilder<Schema, Oper
         self,
         field: Field,
         input: ApplicationInputField<Input, Field::Value>,
-    ) -> Self {
+    ) -> Self
+    where
+        Operation: ApplicationOperationMarkerIdentity<Schema>,
+        Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+    {
         self.step(|builder| builder.expect_typed_input(field, input))
     }
 
@@ -87,7 +92,11 @@ impl<Schema, Operation, Input> TypedApplicationOperationBodyBuilder<Schema, Oper
         self,
         field: Field,
         input: ApplicationInputField<Input, Field::Value>,
-    ) -> Self {
+    ) -> Self
+    where
+        Operation: ApplicationOperationMarkerIdentity<Schema>,
+        Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+    {
         self.step(|builder| builder.assign_typed_input(field, input))
     }
 
@@ -95,7 +104,11 @@ impl<Schema, Operation, Input> TypedApplicationOperationBodyBuilder<Schema, Oper
         self,
         field: Field,
         input: ApplicationInputField<Input, Field::Value>,
-    ) -> Self {
+    ) -> Self
+    where
+        Operation: ApplicationOperationMarkerIdentity<Schema>,
+        Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+    {
         self.step(|builder| builder.set_typed_optional_input(field, input))
     }
 
@@ -103,7 +116,11 @@ impl<Schema, Operation, Input> TypedApplicationOperationBodyBuilder<Schema, Oper
         self,
         field: Field,
         input: ApplicationOptionalInputField<Input, Field::Value>,
-    ) -> Self {
+    ) -> Self
+    where
+        Operation: ApplicationOperationMarkerIdentity<Schema>,
+        Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+    {
         self.step(|builder| builder.assign_typed_optional_input(field, input))
     }
 
@@ -129,6 +146,8 @@ impl<Schema, Operation, Input> TypedApplicationOperationBodyBuilder<Schema, Oper
         input: ApplicationInputField<Input, F::Value>,
     ) -> Self
     where
+        Operation: ApplicationOperationMarkerIdentity<Schema>,
+        Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
         Root: OperationReads<Operation>,
         Selected: OperationReads<Operation>,
         F: RecordSelection<Entity = Selected>,
@@ -144,6 +163,8 @@ impl<Schema, Operation, Input> TypedApplicationOperationBodyBuilder<Schema, Oper
         key: &str,
     ) -> Self
     where
+        Operation: ApplicationOperationMarkerIdentity<Schema>,
+        Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
         Root: OperationReads<Operation>,
         Selected: OperationReads<Operation>,
         R: OperationReads<Operation> + OperationLinks<Operation> + OperationUnlinks<Operation>,
@@ -227,7 +248,11 @@ impl<Schema, Operation, Input, Entity>
         self,
         field: Selection,
         input: ApplicationInputField<Input, Selection::Value>,
-    ) -> Self {
+    ) -> Self
+    where
+        Operation: ApplicationOperationMarkerIdentity<Schema>,
+        Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+    {
         self.step(|builder| builder.initialize_typed_input(field, input))
     }
 
@@ -235,7 +260,11 @@ impl<Schema, Operation, Input, Entity>
         self,
         field: Selection,
         input: ApplicationOptionalInputField<Input, Selection::Value>,
-    ) -> Self {
+    ) -> Self
+    where
+        Operation: ApplicationOperationMarkerIdentity<Schema>,
+        Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+    {
         self.step(|builder| builder.initialize_typed_optional_input(field, input))
     }
 

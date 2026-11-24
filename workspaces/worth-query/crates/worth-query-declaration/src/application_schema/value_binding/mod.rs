@@ -72,4 +72,6 @@ pub use scalar::{
     ApplicationValueSignedAggregateUnavailable, ErasedApplicationSignedAggregateDecode,
     ErasedApplicationValueAdmittedDecode, ErasedApplicationValueDecode,
 };
-pub use structured::{ApplicationStructuredValueBinding, UnitApplicationValueBinding};
+pub use structured::{
+    ApplicationDeclaredInputMember, ApplicationStructuredValueBinding, UnitApplicationValueBinding,
+};

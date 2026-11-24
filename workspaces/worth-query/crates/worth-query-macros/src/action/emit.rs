@@ -22,9 +22,23 @@ pub(super) fn action(input: &DeriveInput, action: &ActionDeclaration) -> TokenSt
         .validate
         .as_ref()
         .map(|validate| quote!(, validate: #validate));
+    let declared_fields = (!action.input_fields.is_empty()).then(|| {
+        let entries = action.input_fields.iter().map(|field| {
+            let member = &field.member;
+            let wire = &field.wire_name;
+            let value_ty = &field.value_ty;
+            let kind = if field.optional {
+                quote!(optional)
+            } else {
+                quote!(required)
+            };
+            quote_spanned!(value_ty.span()=> #kind(#wire, #member: #value_ty))
+        });
+        quote!(, fields: [#(#entries),*])
+    });
     quote! {
         #decl::worth_query_structured_value_binding!(#vis #input_binding for #intent {
-            identity: #input_identity #capture #validate
+            identity: #input_identity #capture #validate #declared_fields
         });
         #operation
         #binding
@@ -141,70 +155,35 @@ fn scope_value(input: &DeriveInput, action: &ActionDeclaration) -> Option<TokenS
     })
 }
 
-/// Compile-time-typed `<field>_input()` accessors backed by declared field
-/// slots on `Self` (`ApplicationInputFields` + `ApplicationInputFieldSlot`).
+/// Compile-time-typed `<field>_input()` accessors verified against this
+/// action's authoritative `InputBinding` declared field inventory. Each
+/// accessor inherits its field's own visibility so private member types on
+/// `pub` action structs never trigger `E0446`.
 fn input_fields(input: &DeriveInput, action: &ActionDeclaration) -> Option<TokenStream> {
     if action.input_fields.is_empty() {
         return None;
     }
-    let (decl, intent, vis) = (declaration(), &input.ident, &input.vis);
+    let (decl, intent, input_binding) = (declaration(), &input.ident, &action.input);
     let aschema = quote!(#decl::application_schema);
-    let specs = action.input_fields.iter().map(|field| {
-        let member = &field.member;
+    let accessors = action.input_fields.iter().map(|field| {
+        let field_vis = &field.vis;
+        let accessor = format_ident!("{}_input", field.member.unraw());
         let wire = &field.wire_name;
         let value_ty = &field.value_ty;
-        let ctor = if field.optional {
-            quote!(optional)
+        let carrier = if field.optional {
+            quote!(#aschema::ApplicationOptionalInputField)
         } else {
-            quote!(required)
+            quote!(#aschema::ApplicationInputField)
         };
         quote_spanned! {value_ty.span()=>
-            #aschema::ApplicationDeclaredInputFieldSpec::#ctor::<Self, #value_ty>(
-                #wire,
-                |__worth_input: &Self| &__worth_input.#member,
-            )
+            #[allow(dead_code, non_snake_case)]
+            #field_vis fn #accessor() -> #carrier<Self, #value_ty> {
+                #carrier::for_binding::<#input_binding>(#wire)
+                    .expect("derived WorthQueryAction field matches its declared input binding")
+            }
         }
     });
-    let slots = action
-        .input_fields
-        .iter()
-        .enumerate()
-        .map(|(index, field)| {
-            let value_ty = &field.value_ty;
-            let optional = field.optional;
-            quote_spanned! {value_ty.span()=>
-                impl #aschema::ApplicationInputFieldSlot<#index> for #intent {
-                    type Value = #value_ty;
-                    const OPTIONAL: bool = #optional;
-                }
-            }
-        });
-    let accessors = action
-        .input_fields
-        .iter()
-        .enumerate()
-        .map(|(index, field)| {
-            let accessor = format_ident!("{}_input", field.member.unraw());
-            let value_ty = &field.value_ty;
-            let carrier = if field.optional {
-                quote!(#aschema::ApplicationOptionalInputField)
-            } else {
-                quote!(#aschema::ApplicationInputField)
-            };
-            quote_spanned! {value_ty.span()=>
-                #[allow(dead_code, non_snake_case)]
-                #vis const fn #accessor() -> #carrier<Self, #value_ty> {
-                    #carrier::from_slot::<#index>()
-                }
-            }
-        });
     Some(quote! {
-        impl #aschema::ApplicationInputFields for #intent {
-            const FIELDS: &'static [#aschema::ApplicationDeclaredInputFieldSpec] = &[
-                #(#specs,)*
-            ];
-        }
-        #(#slots)*
         impl #intent {
             #(#accessors)*
         }

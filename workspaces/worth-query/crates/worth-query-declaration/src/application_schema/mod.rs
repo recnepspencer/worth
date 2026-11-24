@@ -236,8 +236,7 @@ pub use operation_component_read::{
     WorthQueryPortableOperationComponentReadParts,
 };
 pub use operation_definition::{
-    ApplicationDeclaredInputFieldSpec, ApplicationInputField, ApplicationInputFieldSlot,
-    ApplicationInputFields, ApplicationOperationBody, ApplicationOperationBodyAuthoringDenial,
+    ApplicationInputField, ApplicationOperationBody, ApplicationOperationBodyAuthoringDenial,
     ApplicationOperationBodyBuilder, ApplicationOperationBodyCaptureRole,
     ApplicationOperationBodyChildCreation, ApplicationOperationBodyChildCreationBuilder,
     ApplicationOperationBodyCreatedField, ApplicationOperationBodyCreation,
@@ -311,9 +310,9 @@ pub use value_binding::{
     encode_application_binary_value, encode_application_document, encode_canonical_value,
     encode_delegated_canonical_value, encode_stored_canonical_value, value_decode_error,
     ApplicationCanonicalValueContract, ApplicationCanonicalValueReference,
-    ApplicationCanonicalValueReferenceParts, ApplicationEncodedScalarValue,
-    ApplicationFieldBindingLocus, ApplicationFieldBindingOwnerKind, ApplicationFieldBindingRecipe,
-    ApplicationFrameIdentity, ApplicationIdentityScalarValueBinding,
+    ApplicationCanonicalValueReferenceParts, ApplicationDeclaredInputMember,
+    ApplicationEncodedScalarValue, ApplicationFieldBindingLocus, ApplicationFieldBindingOwnerKind,
+    ApplicationFieldBindingRecipe, ApplicationFrameIdentity, ApplicationIdentityScalarValueBinding,
     ApplicationNativeInputAdmissionDenial, ApplicationNativeInputDecodeProfile,
     ApplicationNativeInputDecodeResources, ApplicationReadableScalarValueBinding,
     ApplicationScalarValueBinding, ApplicationSignedAggregateValueBinding,

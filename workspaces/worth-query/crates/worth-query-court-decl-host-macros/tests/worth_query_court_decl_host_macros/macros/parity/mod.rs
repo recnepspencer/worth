@@ -13,6 +13,7 @@ mod body_and_scope;
 mod correction_and_program;
 mod ergonomics_edge_cases;
 mod host_negative_ergonomics;
+mod hygiene_and_typed_input_courts;
 mod projection;
 mod query;
 mod query_binding_conflict;

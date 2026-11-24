@@ -7,8 +7,9 @@ use crate::grammar::{
     Once,
 };
 use proc_macro2::TokenStream;
+use std::collections::BTreeSet;
 use syn::meta::ParseNestedMeta;
-use syn::{DeriveInput, FieldsNamed, Ident, LitStr, Path, Type};
+use syn::{DeriveInput, FieldsNamed, Ident, LitStr, Path, Type, Visibility};
 
 /// Inline capability families `worth_query_operation!` accepts.
 const CAPABILITIES: &[&str] = &[
@@ -68,6 +69,7 @@ pub(super) struct ActionDeclaration {
 }
 
 pub(super) struct InputField {
+    pub(super) vis: Visibility,
     pub(super) member: Ident,
     pub(super) wire_name: LitStr,
     /// The scalar value type (`T` for both `T` and `Option<T>`).
@@ -164,17 +166,28 @@ impl ActionDeclaration {
         };
         let rename_rule = container_rename_rule(&input.attrs)?;
         let mut input_fields = Vec::new();
+        let mut seen_wires = BTreeSet::new();
         if let Some(named) = fields {
             for field in &named.named {
                 let Some(wire_name) = field_wire_name(field, rename_rule)? else {
                     continue;
                 };
+                if !seen_wires.insert(wire_name.value()) {
+                    return Err(syn::Error::new(
+                        wire_name.span(),
+                        format!(
+                            "duplicate serialized input member name `{}`",
+                            wire_name.value()
+                        ),
+                    ));
+                }
                 let member = field.ident.clone().expect("named fields carry identifiers");
                 let (optional, value_ty) = match option_inner(&field.ty) {
                     Some(inner) => (true, inner.clone()),
                     None => (false, field.ty.clone()),
                 };
                 input_fields.push(InputField {
+                    vis: field.vis.clone(),
                     member,
                     wire_name,
                     value_ty,

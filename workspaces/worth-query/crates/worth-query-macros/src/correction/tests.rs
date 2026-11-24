@@ -82,21 +82,22 @@ fn recorded_inverse_correction_expands_source_body_preimage_and_dispatch() {
     .unwrap();
     let expanded = expand(&input).unwrap().to_string();
     for needle in [
-        "impl :: worth_query_decl :: facade :: application_aftermath :: ApplicationCorrectionBinding < Schema > for CorrectCompletion",
+        "type __WorthCorrectionSchema = Schema ;",
+        "impl :: worth_query_decl :: facade :: application_aftermath :: ApplicationCorrectionBinding < __WorthCorrectionSchema > for CorrectCompletion",
         "worth_query_identity ! (CORRECTION , binding)",
         "fn source_body ()",
-        "Some (complete_body ())",
+        "complete_body",
         "DeclaredPreImageLocus :: from_field (TaskFacts :: done ())",
         "RecordedInverse (__worth_correction_preimage)",
         "UnsupportedSourceMeaning",
-        "derive_restore (__worth_correction_original , __worth_correction_preimage)",
+        "derive_restore",
         "__worth_correction_dispatch . conventional ()",
     ] {
         assert!(expanded.contains(needle), "{needle}: {expanded}");
     }
 
     let with_cap = syn::parse_str(
-        "#[worth_query(schema = Schema, identity = \"app.fix.v1\", source = CompleteBinding, \
+        "#[worth_query(schema = __WorthCorrectionVisitor, identity = \"app.fix.v1\", source = CompleteBinding, \
          inverse = RestoreCompletion, disclosure = DetailsBinding, demand = build_demand, \
          derive = preimage, disclosure_parameters = original, inverse_key = key, capability = AdminCap)] \
          pub struct AdminCorrection;",
@@ -105,19 +106,31 @@ fn recorded_inverse_correction_expands_source_body_preimage_and_dispatch() {
     let expanded = expand(&with_cap).unwrap().to_string();
     assert!(expanded.contains("\"app.fix.v1\""), "{expanded}");
     assert!(
-        expanded.contains("original (__worth_correction_original)"),
+        expanded.contains("type __WorthCorrectionSchema = __WorthCorrectionVisitor ;"),
         "{expanded}"
     );
     assert!(
-        expanded.contains("preimage (__worth_correction_original , __worth_correction_preimage)"),
+        expanded.contains("fn visit < __WorthCorrectionVisitor_1 :"),
         "{expanded}"
     );
     assert!(
-        expanded.contains("key (__worth_correction_key)"),
+        expanded.contains("(__worth_correction_call_disclosure ()) (__worth_correction_original)"),
         "{expanded}"
     );
     assert!(
-        expanded.contains("__worth_correction_dispatch . capability :: < AdminCap > ()"),
+        expanded.contains(
+            "(__worth_correction_call_derive ()) (__worth_correction_original , __worth_correction_preimage)"
+        ),
+        "{expanded}"
+    );
+    assert!(
+        expanded.contains("(__worth_correction_call_inverse_key ()) (__worth_correction_key)"),
+        "{expanded}"
+    );
+    assert!(
+        expanded.contains(
+            "__worth_correction_dispatch . capability :: < __WorthCorrectionCapability > ()"
+        ),
         "{expanded}"
     );
     assert!(!expanded.contains("fn source_body"), "{expanded}");
