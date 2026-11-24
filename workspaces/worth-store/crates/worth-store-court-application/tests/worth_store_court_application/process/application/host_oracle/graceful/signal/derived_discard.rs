@@ -1,79 +1,26 @@
 //! D14 derived-cache discard across graceful close and real process kill.
 pub(in super::super::super) mod host;
-use std::collections::BTreeMap;
+mod host_wire;
+mod support;
+use self::support::{
+    cadence_by_name, entity_field_entries_snapshot, entity_name_index, ChildSummary,
+};
 use std::path::Path;
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::{
     history::{BranchId, CommitId},
-    indexes::{
-        DerivedIndexBuildRequest, DerivedIndexDefinition, DerivedIndexEntries, DerivedIndexId,
-        DerivedIndexKind,
-    },
+    indexes::{DerivedIndexBuildRequest, DerivedIndexDefinition, DerivedIndexId},
 };
 use worth_store::physical_runtime::AnchoredRecordName;
-use worth_store_application::{
-    ApplicationHomeCheckpointDenial, ApplicationHomeCheckpointInspection,
-    ApplicationHomeCloseOutcome,
-};
+use worth_store_application::{ApplicationHomeCheckpointDenial, ApplicationHomeCloseOutcome};
 use worth_store_testkit_application_oracle::{home_opening, world_home};
 
 const LOCATION: &str = "WORTH_DERIVED_DISCARD_HOME";
 const MARKERS: &str = "WORTH_DERIVED_DISCARD_MARKERS";
 const MODE: &str = "WORTH_DERIVED_DISCARD_MODE";
 const CHILD: &str = "process::application::host_oracle::graceful::signal::derived_discard::discard_derived_signal_child";
-
-#[derive(serde::Serialize, serde::Deserialize)]
-struct ChildSummary {
-    discard_generation: u64,
-    commit_id: u64,
-    index_id: u64,
-    pre_discard_member_count: usize,
-    index_entries_json: Vec<u8>,
-    record_bytes: Vec<u8>,
-}
-
-fn cadence_by_name(inspection: &ApplicationHomeCheckpointInspection) -> BTreeMap<&'static str, (u64, u64)> {
-    inspection
-        .journals
-        .iter()
-        .map(|journal| (journal.name, (journal.covered, journal.head)))
-        .collect()
-}
-
-fn entity_field_entries_snapshot(
-    entries: &DerivedIndexEntries,
-) -> Vec<(serde_json::Value, Vec<serde_json::Value>)> {
-    match entries {
-        DerivedIndexEntries::EntityField(map) => map
-            .iter()
-            .map(|(key, rows)| {
-                (
-                    serde_json::to_value(key).unwrap(),
-                    rows.iter()
-                        .map(|entity| serde_json::to_value(entity).unwrap())
-                        .collect(),
-                )
-            })
-            .collect(),
-        other => panic!("expected EntityField derived index entries, got {other:?}"),
-    }
-}
-
-fn entity_name_index() -> DerivedIndexDefinition {
-    DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "discard-derived-name-index".into(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: worth_relational::facade::transactions::planned_single_field_locator(
-                crate::batches::aspect_key("name"),
-                crate::batches::field_key("name"),
-            ),
-        },
-        branch_scoped: true,
-    }
-}
 
 #[test]
 fn discard_derived_graceful_close_recomputes_relational_index_and_derived_signal_on_demand() {
@@ -192,7 +139,10 @@ fn verify_reopened(location: &Path, build: &str, summary: &ChildSummary) {
         .unwrap()
         .expect("authoritative commit replay preserves exact registered index basis");
     assert_eq!(generation.source_commit_id, CommitId(summary.commit_id));
-    assert_eq!(entity_field_entries_snapshot(&generation.entries), expected_entries);
+    assert_eq!(
+        entity_field_entries_snapshot(&generation.entries),
+        expected_entries
+    );
     let rebuilt = runtime.index_authority().build_for_commit(
         &execution,
         DerivedIndexBuildRequest {
@@ -201,17 +151,29 @@ fn verify_reopened(location: &Path, build: &str, summary: &ChildSummary) {
             index_ids: vec![DerivedIndexId(summary.index_id)],
         },
     );
-    assert!(rebuilt.execution_denial.is_none() && rebuilt.failed_indexes.is_empty(), "{rebuilt:?}");
+    assert!(
+        rebuilt.execution_denial.is_none() && rebuilt.failed_indexes.is_empty(),
+        "{rebuilt:?}"
+    );
     let rebuilt_gen = runtime
         .index_access()
         .read_latest_generation(&execution, DerivedIndexId(summary.index_id), &branch)
         .unwrap()
         .expect("on-demand rebuild produces exact derived index generation");
     assert_eq!(rebuilt_gen.source_commit_id, CommitId(summary.commit_id));
-    assert_eq!(entity_field_entries_snapshot(&rebuilt_gen.entries), expected_entries);
-    assert_eq!(fixture.home.relational().cold_storage_reads().member_reads, 0);
+    assert_eq!(
+        entity_field_entries_snapshot(&rebuilt_gen.entries),
+        expected_entries
+    );
+    assert_eq!(
+        fixture.home.relational().cold_storage_reads().member_reads,
+        0
+    );
     let expected_artifacts: Vec<Vec<u8>> = serde_json::from_slice(&summary.record_bytes).unwrap();
-    assert_eq!(crate::workload::artifacts_of(&execution, runtime), expected_artifacts);
+    assert_eq!(
+        crate::workload::artifacts_of(&execution, runtime),
+        expected_artifacts
+    );
 
     // Signal derived values start strictly cold (calls == 0), recompute on first
     // demand to exact reference (calls == 3), and remain cached on repeat demand.
@@ -229,10 +191,15 @@ fn verify_reopened(location: &Path, build: &str, summary: &ChildSummary) {
         .close(&execution)
         .unwrap_or_else(|cause| panic!("reopened Home close after discard: {:?}", cause.reason()));
     match closed {
-        ApplicationHomeCloseOutcome::Closed { checkpoint: Ok(cp), .. } => {
+        ApplicationHomeCloseOutcome::Closed {
+            checkpoint: Ok(cp), ..
+        } => {
             assert_eq!(cp.generation(), summary.discard_generation + 1);
         }
-        ApplicationHomeCloseOutcome::Closed { checkpoint: Err(cause), .. } => {
+        ApplicationHomeCloseOutcome::Closed {
+            checkpoint: Err(cause),
+            ..
+        } => {
             panic!("expected fresh checkpoint on close after reopen, got Err({cause:?})");
         }
         ApplicationHomeCloseOutcome::CloseRefused { reason, .. } => {
@@ -248,7 +215,10 @@ fn verify_reopened(location: &Path, build: &str, summary: &ChildSummary) {
     );
     let reopened_after = world_home::open_with_derived_signal(opening_after, &execution).unwrap();
     let resumed_journals = cadence_by_name(
-        &reopened_after.home.inspect_checkpoint(Default::default(), &execution).unwrap(),
+        &reopened_after
+            .home
+            .inspect_checkpoint(Default::default(), &execution)
+            .unwrap(),
     );
     assert!(
         resumed_journals["relational.canonical-commits"].0 > 0
@@ -265,7 +235,13 @@ fn verify_reopened(location: &Path, build: &str, summary: &ChildSummary) {
         .home
         .close(&execution)
         .unwrap_or_else(|cause| panic!("second reopen close: {:?}", cause.reason()));
-    assert!(matches!(closed_after, ApplicationHomeCloseOutcome::Closed { checkpoint: Ok(_), .. }));
+    assert!(matches!(
+        closed_after,
+        ApplicationHomeCloseOutcome::Closed {
+            checkpoint: Ok(_),
+            ..
+        }
+    ));
 }
 
 #[test]
@@ -386,4 +362,14 @@ fn discard_derived_signal_child() {
             }
         ));
     }
+}
+
+pub(in super::super::super) fn checkpoint_and_discard_world_home(
+    fixture: &worth_store_testkit_application_oracle::world_home::WorldHomeFixture,
+    execution: &ExecutionRequest<'_, '_>,
+) -> (u64, u64) {
+    let cp = fixture.home.checkpoint(execution).unwrap().generation();
+    let discard = fixture.home.discard_derived_for_test(execution).unwrap();
+    assert_eq!(discard, cp + 1);
+    (cp, discard)
 }

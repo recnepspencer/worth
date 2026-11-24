@@ -5,7 +5,7 @@
 mod assertions;
 mod child;
 mod verify;
-mod wire;
+pub(super) mod wire;
 
 use self::assertions::{classify_signal_phase, SignalRef};
 use self::child::SignalSession;

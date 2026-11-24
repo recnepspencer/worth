@@ -4,6 +4,7 @@
 mod adoption_io_kills;
 mod correction_fixture;
 mod correction_io_kills;
+mod cumulative_oracle;
 mod dimensions_matrix;
 mod dimensions_signal;
 mod dispatch_io_kills;
@@ -28,9 +29,7 @@ use std::sync::{
 use std::time::Duration;
 use worth_foundational::facade::ApplicationBuildIdentity;
 use worth_store::physical_runtime::{
-    certification::{
-        CertificationMediaFaultActivation, MediaFaultDirective, MediaOperationRole,
-    },
+    certification::{CertificationMediaFaultActivation, MediaFaultDirective, MediaOperationRole},
     FilesystemAccessPosture, FilesystemMediaAdmission,
 };
 use worth_store_testkit_application_oracle::facade::host_interruption::opening::AdversarialPlacement;
@@ -149,7 +148,12 @@ pub(super) fn sync_barrier_placement(
     CertificationMediaFaultActivation,
     Option<std::thread::JoinHandle<()>>,
 ) {
-    role_barrier_placement(MediaOperationRole::SynchronizeFileState, nth, ready_marker, done)
+    role_barrier_placement(
+        MediaOperationRole::SynchronizeFileState,
+        nth,
+        ready_marker,
+        done,
+    )
 }
 
 pub(super) fn barrier_marker(role: MediaOperationRole, nth: u64) -> String {
@@ -175,9 +179,15 @@ pub(super) fn assert_all_reopen_phases_killed(
     label: &str,
     outcomes: &[(u64, BarrierKill, ReopenPhase)],
 ) {
-    let pre = outcomes.iter().any(|(_, k, p)| *k == BarrierKill::Killed && *p == ReopenPhase::PreOp);
-    let custody = outcomes.iter().any(|(_, k, p)| *k == BarrierKill::Killed && *p == ReopenPhase::Custody);
-    let committed = outcomes.iter().any(|(_, k, p)| *k == BarrierKill::Killed && *p == ReopenPhase::Committed);
+    let pre = outcomes
+        .iter()
+        .any(|(_, k, p)| *k == BarrierKill::Killed && *p == ReopenPhase::PreOp);
+    let custody = outcomes
+        .iter()
+        .any(|(_, k, p)| *k == BarrierKill::Killed && *p == ReopenPhase::Custody);
+    let committed = outcomes
+        .iter()
+        .any(|(_, k, p)| *k == BarrierKill::Killed && *p == ReopenPhase::Committed);
     assert!(
         pre && custody && committed,
         "{label}: sweep must genuinely kill pre-op ({pre}), custody ({custody}), and committed ({committed}) reopen states"

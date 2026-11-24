@@ -2,33 +2,32 @@
 //! D14 derived-state discard (Retained / BeforeKill / BetweenReopens /
 //! BeforeClose) matrix over real OS mid-operation kills, EVERY Store mutation
 //! seam, and EVERY physical/opening recovery stage in fresh OS processes.
-mod recovery;
-mod verify;
+mod cadence;
+pub(super) mod recovery;
+pub(super) mod verify;
 
+pub(super) use self::cadence::{
+    assert_cadence_checkpointed, assert_cadence_discarded, assert_cadence_retained,
+    EXPECTED_CADENCE_KEYS,
+};
 use self::verify::{
     assert_same_custody_rows, capture_seeded_coverage, checkpoint_and_discard,
     close_expecting_discarded, finish_cell_builds, inspect_cadence, settle_drift_and_follow,
 };
 use super::super::{opening, session::Session};
-use super::oracle_verifier::{build_reference, prepare_prefix, ReferenceSnapshots};
+use super::oracle_verifier::{
+    build_reference, prepare_prefix, ReferenceSnapshots, TARGET_KEY, TARGET_VAL,
+};
 use super::recovery_fixtures::{discover_mutate_ordinals, MutateSeamOrdinals};
 pub(super) use super::run_parallel_items;
-use super::seam_kill_sweep::{kill_at_seam, measure_appends, ALL_SEAMS};
+use super::seam_kill_sweep::{kill_at_seam_with_ctx, measure_appends, ALL_SEAMS};
 use super::{RestorableHome, BUILD_PRIMARY, BUILD_SECONDARY, BUILD_TERTIARY};
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 use worth_execution::ExecutionRequest;
 use worth_store_testkit_application_oracle::facade::host_observation::{
     adversarial_verdict::{classify_and_verify_reopen, RecoveredPrefix},
     comparison::HostOracleComparison,
 };
-
-pub(super) const EXPECTED_CADENCE_KEYS: [&str; 5] = [
-    "relational.branch-transitions",
-    "relational.canonical-commits",
-    "world.branches",
-    "world.custody",
-    "world.occurrences",
-];
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(super) struct SeededCoverage {
@@ -102,67 +101,6 @@ impl Posture {
     }
 }
 
-pub(super) fn assert_cadence_discarded(journals: &BTreeMap<String, (u64, u64)>, label: &str) {
-    let keys: Vec<&str> = journals.keys().map(String::as_str).collect();
-    assert_eq!(
-        keys, EXPECTED_CADENCE_KEYS,
-        "{label}: cadence journal roster"
-    );
-    assert!(
-        journals.values().all(|&(covered, _)| covered == 0),
-        "{label}: D14 discard requires covered==0 across all 5 journals: {journals:?}"
-    );
-    for key in [
-        "relational.canonical-commits",
-        "world.branches",
-        "world.occurrences",
-    ] {
-        assert!(
-            journals[key].1 > 0,
-            "{label}: authoritative head for {key} must stay > 0"
-        );
-    }
-}
-
-pub(super) fn assert_cadence_retained(
-    journals: &BTreeMap<String, (u64, u64)>,
-    seeded: SeededCoverage,
-    label: &str,
-) {
-    let keys: Vec<&str> = journals.keys().map(String::as_str).collect();
-    assert_eq!(
-        keys, EXPECTED_CADENCE_KEYS,
-        "{label}: cadence journal roster"
-    );
-    let (native_cov, native_head) = journals["relational.canonical-commits"];
-    let (world_cov, world_head) = journals["world.occurrences"];
-    assert!(
-        native_cov >= seeded.native_covered && native_cov > 0 && native_head >= native_cov,
-        "{label}: retained Native checkpoint lost (seeded={}, got {native_cov}/{native_head})",
-        seeded.native_covered
-    );
-    assert!(
-        world_cov >= seeded.world_covered && world_cov > 0 && world_head >= world_cov,
-        "{label}: retained World checkpoint lost (seeded={}, got {world_cov}/{world_head})",
-        seeded.world_covered
-    );
-}
-
-pub(super) fn assert_cadence_checkpointed(journals: &BTreeMap<String, (u64, u64)>, label: &str) {
-    let keys: Vec<&str> = journals.keys().map(String::as_str).collect();
-    assert_eq!(
-        keys, EXPECTED_CADENCE_KEYS,
-        "{label}: cadence journal roster"
-    );
-    for key in ["relational.canonical-commits", "world.occurrences"] {
-        let (covered, head) = journals[key];
-        assert!(
-            covered > 0 && covered == head,
-            "{label}: post-close checkpoint must cover {key} ({covered}/{head})"
-        );
-    }
-}
-
 #[test]
 fn host_mid_operation_kills_across_build_and_d14_discard_matrix() {
     let req = opening::serial();
@@ -201,14 +139,31 @@ fn host_mid_operation_kills_across_build_and_d14_discard_matrix() {
 
 #[test]
 fn host_all_store_seams_across_build_and_d14_discard() {
+    run_all_store_seams_exhaustive();
+}
+
+pub(super) fn run_all_store_seams_exhaustive() {
     let req = opening::serial();
     let execution = ExecutionRequest::serial(&req);
     let reference = build_reference(&execution);
     let probe = RestorableHome::prepare(|loc| prepare_prefix(loc, &execution));
-    let mutate_appends = measure_appends(&probe, "count_mutate");
-    let checkpoint_appends = measure_appends(&probe, "count_checkpoint");
-    let close_appends = measure_appends(&probe, "count_close");
-    assert!(mutate_appends >= 3 && checkpoint_appends >= 1 && close_appends >= 1);
+    let (mutate_appends, checkpoint_appends, close_appends) = (
+        measure_appends(&probe, "count_mutate"),
+        measure_appends(&probe, "count_checkpoint"),
+        measure_appends(&probe, "count_close"),
+    );
+    assert!(
+        mutate_appends >= 3,
+        "seam-dims/count_mutate: expected >= 3 appends, got {mutate_appends}"
+    );
+    assert!(
+        checkpoint_appends >= 1,
+        "seam-dims/count_checkpoint: expected >= 1 appends, got {checkpoint_appends}"
+    );
+    assert!(
+        close_appends >= 1,
+        "seam-dims/count_close: expected >= 1 appends, got {close_appends}"
+    );
 
     let mutate_modes = [
         DerivedDimension::DiscardedBeforeKill,
@@ -321,7 +276,14 @@ fn run_host_cut_cell(
         )
     };
 
-    kill_at_seam(&home_dir, seam_spec);
+    kill_at_seam_with_ctx(
+        &home_dir,
+        seam_spec,
+        TARGET_KEY,
+        TARGET_VAL,
+        BUILD_PRIMARY,
+        label,
+    );
 
     let (mut session, opening1) =
         Session::start_with_build(&home_dir, &next_chan("reopen1"), 0, Some(builds[0]));
@@ -344,7 +306,7 @@ fn run_host_cut_cell(
 
     let (reopened, verdict) = if derived_dim == DerivedDimension::DiscardedBetweenReopens {
         active_discard_gen = Some(checkpoint_and_discard(&mut session));
-        session.kill_live();
+        session.kill_live_with_ctx(&format!("{label}/d14-kill"));
         let (next_session, opening2) =
             Session::start_with_build(&home_dir, &next_chan("reopen2"), 0, Some(builds[1]));
         session = next_session;

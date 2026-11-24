@@ -36,8 +36,9 @@ struct AdvLabelDelivery;
 impl ApplicationSchemaContribution<IdentityExecutionSchema> for AdvLabelSurface {
     const IDENTITY: ApplicationSchemaContributionIdentity =
         <IdentityExecutionContribution as ApplicationSchemaContribution<IdentityExecutionSchema>>::IDENTITY;
-    type Members =
-        <IdentityExecutionContribution as ApplicationSchemaContribution<IdentityExecutionSchema>>::Members;
+    type Members = <IdentityExecutionContribution as ApplicationSchemaContribution<
+        IdentityExecutionSchema,
+    >>::Members;
 }
 impl WorthQueryApplicationContribution<IdentityExecutionSchema> for AdvLabelSurface {
     type Configuration = ();
@@ -98,6 +99,15 @@ pub(super) fn open_label_home(
     placement: Option<AdversarialPlacement>,
     execution: ExecutionRequest<'_, '_>,
 ) -> LabelHome {
+    open_label_home_with_build(location, BUILD_PRIMARY, placement, execution)
+}
+
+pub(super) fn open_label_home_with_build(
+    location: Location,
+    build: &str,
+    placement: Option<AdversarialPlacement>,
+    execution: ExecutionRequest<'_, '_>,
+) -> LabelHome {
     let declaration = IdentityExecutionSchema::declaration().unwrap();
     let mut req = WorthQueryApplicationHomeRequest::new(
         location,
@@ -108,12 +118,14 @@ pub(super) fn open_label_home(
         WorthQueryApplicationProgramRoster::new(),
         declaration,
         ((),),
-        build_id(BUILD_PRIMARY),
+        build_id(build),
         worth_query_testkit_document_retention::facade::document_retention_model::host::host_limits(
             WorthQueryAdmissionClock::system(),
         ),
         |_, graph, schema| {
-            let binding = schema.principal_binding(label::IdentityBinding::reference()).unwrap();
+            let binding = schema
+                .principal_binding(label::IdentityBinding::reference())
+                .unwrap();
             graph.bind_principal(
                 &binding,
                 WorthQueryApplicationPrincipalKey::new("principal-0").unwrap(),

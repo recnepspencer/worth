@@ -96,21 +96,25 @@ impl Session {
         }
         self.child.wait().unwrap();
     }
-    /// Explicitly terminate a STILL-LIVE child process with a real OS kill.
-    pub fn kill_live(&mut self) {
-        let exited = self.child.try_wait().expect("poll Host child before OS kill");
+    /// Explicitly terminate a STILL-LIVE child process with a real OS kill,
+    /// carrying the caller's replay context on every failure assertion.
+    pub fn kill_live_with_ctx(&mut self, ctx: &str) {
+        let exited = self
+            .child
+            .try_wait()
+            .unwrap_or_else(|e| panic!("{ctx}: poll Host child before OS kill: {e:?}"));
         assert!(
             exited.is_none(),
-            "Host child exited before parent-induced OS kill: {exited:?}"
+            "{ctx}: Host child exited before parent-induced OS kill: {exited:?}"
         );
         self.child
             .kill()
-            .expect("parent OS kill of live Host child must succeed");
-        let status = self.child.wait().expect("reap OS-killed Host child");
-        assert!(
-            !status.success(),
-            "OS-killed Host child must not report clean exit: {status:?}"
-        );
+            .unwrap_or_else(|e| panic!("{ctx}: parent OS kill of live Host child failed: {e:?}"));
+        let status = self
+            .child
+            .wait()
+            .unwrap_or_else(|e| panic!("{ctx}: reap OS-killed Host child: {e:?}"));
+        crate::killed_child::assert_os_killed(status, ctx);
     }
     pub fn finish(&mut self) {
         assert!(self.child.wait().unwrap().success(), "graceful child exit");
@@ -221,8 +225,13 @@ fn run_host_oracle_service_child(channel: PathBuf) {
                 };
                 closed = result.is_closed();
                 result.reclaim();
-                disposition = Some(super::protocol::Disposition::ClosedWithCheckpoint {
-                    generation,
+                disposition =
+                    Some(super::protocol::Disposition::ClosedWithCheckpoint { generation });
+            }
+            Request::Checkpoint => {
+                let checkpoint = home.as_ref().unwrap().checkpoint(&execution).unwrap();
+                disposition = Some(super::protocol::Disposition::Checkpointed {
+                    generation: checkpoint.generation(),
                 });
             }
             Request::CheckpointAndDiscard => {
@@ -252,12 +261,15 @@ fn run_host_oracle_service_child(channel: PathBuf) {
                 ));
                 closed = result.is_closed();
                 result.reclaim();
-                disposition = Some(super::protocol::Disposition::ClosedWithCheckpoint {
-                    generation: None,
-                });
+                disposition =
+                    Some(super::protocol::Disposition::ClosedWithCheckpoint { generation: None });
             }
             Request::InspectCadence => {
-                let inspection = home.as_ref().unwrap().inspect_checkpoint(&execution).unwrap();
+                let inspection = home
+                    .as_ref()
+                    .unwrap()
+                    .inspect_checkpoint(&execution)
+                    .unwrap();
                 let journals = inspection
                     .journals
                     .iter()

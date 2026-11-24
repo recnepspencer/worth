@@ -198,6 +198,14 @@ pub(in super::super) fn verify_recovered_bridge_definition(
     home: &SignalHome,
     branch: WorthQueryProductBranch,
 ) -> [u8; 32] {
+    verify_recovered_bridge_definition_with_graphs(home, branch, 1)
+}
+
+pub(in super::super) fn verify_recovered_bridge_definition_with_graphs(
+    home: &SignalHome,
+    branch: WorthQueryProductBranch,
+    expected_signal_graphs: usize,
+) -> [u8; 32] {
     let app = home.runtime();
     let insp = app.runtime().inspect_conditional_runtime();
     assert_eq!(
@@ -206,8 +214,8 @@ pub(in super::super) fn verify_recovered_bridge_definition(
             insp.managed_clock_count(),
             insp.signal_graph_count(),
         ),
-        (0, 0, 1),
-        "recovered Bridge conditional runtime must match MemoryOnly (definition_only: 1 live signal graph)"
+        (0, 0, expected_signal_graphs),
+        "recovered Bridge conditional runtime must hold exact live signal graphs"
     );
     let cond = app.conditional::<TemporalConditional>().unwrap();
     let installed = cond.as_ref().as_ref().unwrap();

@@ -2,10 +2,10 @@
 //! Query Host + Store Application Home, verified against MemoryOnly under a
 //! single run-wide DurableIdentityCorrespondence.
 use super::super::{opening, *};
-use super::RestorableHome;
 use super::oracle_verifier::{
-    build_reference, open_dir, prepare_prefix, verify_reopen_and_continue, TARGET_KEY, TARGET_VAL,
+    build_reference, prepare_prefix, verify_reopen_and_continue, TARGET_KEY, TARGET_VAL,
 };
+use super::RestorableHome;
 use host_interruption::opening::{AdversarialPlacement, PhysicalPauseHandle};
 use host_observation::{adversarial_verdict::RecoveredPrefix, requests, OracleHome};
 use std::collections::BTreeSet;
@@ -45,8 +45,15 @@ fn host_mutation_and_checkpoint_killed_at_every_store_seam_recovers_to_memory_or
     for append_ordinal in 1..=append_count {
         for (seam_name, _) in ALL_SEAMS {
             saved.restore();
-            kill_at_seam(saved.location(), &format!("mutate:{append_ordinal}:{seam_name}"));
             let label = format!("mutate#{append_ordinal}@{seam_name}");
+            kill_at_seam_with_ctx(
+                saved.location(),
+                &format!("mutate:{append_ordinal}:{seam_name}"),
+                TARGET_KEY,
+                TARGET_VAL,
+                super::BUILD_PRIMARY,
+                &label,
+            );
             let verdict =
                 verify_reopen_and_continue(saved.location(), &reference, &execution, &label);
             let tag = match verdict {
@@ -64,33 +71,47 @@ fn host_mutation_and_checkpoint_killed_at_every_store_seam_recovers_to_memory_or
     );
 
     let checkpoint_appends = measure_appends(&saved, "count_checkpoint");
-    assert!(checkpoint_appends >= 1, "checkpoint must issue at least one physical append");
+    assert!(
+        checkpoint_appends >= 1,
+        "checkpoint must issue at least one physical append"
+    );
     for append_ordinal in 1..=checkpoint_appends {
         for (seam_name, _) in ALL_SEAMS {
             saved.restore();
-            kill_at_seam(saved.location(), &format!("checkpoint:{append_ordinal}:{seam_name}"));
-            let verdict = verify_reopen_and_continue(
+            let label = format!("checkpoint#{append_ordinal}@{seam_name}");
+            kill_at_seam_with_ctx(
                 saved.location(),
-                &reference,
-                &execution,
-                &format!("checkpoint#{append_ordinal}@{seam_name}"),
+                &format!("checkpoint:{append_ordinal}:{seam_name}"),
+                TARGET_KEY,
+                TARGET_VAL,
+                super::BUILD_PRIMARY,
+                &label,
             );
+            let verdict =
+                verify_reopen_and_continue(saved.location(), &reference, &execution, &label);
             assert_eq!(verdict, RecoveredPrefix::PreOperation);
         }
     }
 
     let close_appends = measure_appends(&saved, "count_close");
-    assert!(close_appends >= 1, "dirty close must issue at least one physical append");
+    assert!(
+        close_appends >= 1,
+        "dirty close must issue at least one physical append"
+    );
     for append_ordinal in 1..=close_appends {
         for (seam_name, _) in ALL_SEAMS {
             saved.restore();
-            kill_at_seam(saved.location(), &format!("close:{append_ordinal}:{seam_name}"));
-            let verdict = verify_reopen_and_continue(
+            let label = format!("close#{append_ordinal}@{seam_name}");
+            kill_at_seam_with_ctx(
                 saved.location(),
-                &reference,
-                &execution,
-                &format!("close#{append_ordinal}@{seam_name}"),
+                &format!("close:{append_ordinal}:{seam_name}"),
+                TARGET_KEY,
+                TARGET_VAL,
+                super::BUILD_PRIMARY,
+                &label,
             );
+            let verdict =
+                verify_reopen_and_continue(saved.location(), &reference, &execution, &label);
             assert_eq!(verdict, RecoveredPrefix::CommittedInFlight);
         }
     }
@@ -99,7 +120,8 @@ fn host_mutation_and_checkpoint_killed_at_every_store_seam_recovers_to_memory_or
 pub(super) fn measure_appends(saved: &RestorableHome, spec: &str) -> usize {
     saved.restore();
     let markers = tempfile::tempdir().unwrap();
-    let end = crate::killed_child::run_and_kill(
+    let ctx = format!("measure-appends/{spec}");
+    let end = crate::killed_child::run_and_kill_with_ctx(
         SEAM_CHILD,
         &[
             (ENV_HOME, saved.location()),
@@ -108,32 +130,65 @@ pub(super) fn measure_appends(saved: &RestorableHome, spec: &str) -> usize {
         ],
         &markers.path().join("ready"),
         &markers.path().join("finished"),
+        &ctx,
     );
-    assert_eq!(end, crate::killed_child::ChildEnd::Finished);
-    std::fs::read_to_string(markers.path().join("finished"))
-        .unwrap()
-        .trim()
+    assert_eq!(
+        end,
+        crate::killed_child::ChildEnd::Finished,
+        "{ctx}: calibration child must finish"
+    );
+    let raw = std::fs::read_to_string(markers.path().join("finished"))
+        .unwrap_or_else(|e| panic!("{ctx}: read finished marker: {e:?}"));
+    raw.trim()
         .parse()
-        .unwrap()
+        .unwrap_or_else(|e| panic!("{ctx}: parse append count from {raw:?}: {e:?}"))
 }
 
 pub(super) fn kill_at_seam(home_dir: &Path, spec: &str) {
+    kill_at_seam_with_key_and_build(home_dir, spec, TARGET_KEY, TARGET_VAL, super::BUILD_PRIMARY);
+}
+
+pub(super) fn kill_at_seam_with_key_and_build(
+    home_dir: &Path,
+    spec: &str,
+    key: u64,
+    val: u64,
+    build: &str,
+) {
+    kill_at_seam_with_ctx(home_dir, spec, key, val, build, spec);
+}
+
+pub(super) fn kill_at_seam_with_ctx(
+    home_dir: &Path,
+    spec: &str,
+    key: u64,
+    val: u64,
+    build: &str,
+    ctx: &str,
+) {
     let markers = tempfile::tempdir().unwrap();
     let spec_path = PathBuf::from(spec);
-    let end = crate::killed_child::run_and_kill(
+    let key_path = PathBuf::from(key.to_string());
+    let val_path = PathBuf::from(val.to_string());
+    let build_path = PathBuf::from(build);
+    let end = crate::killed_child::run_and_kill_with_ctx(
         SEAM_CHILD,
         &[
             (ENV_HOME, home_dir),
             (ENV_MARKERS, markers.path()),
             (ENV_SPEC, &spec_path),
+            ("WORTH_ADV_SEAM_KEY", &key_path),
+            ("WORTH_ADV_SEAM_VAL", &val_path),
+            ("WORTH_ADV_SEAM_BUILD", &build_path),
         ],
         &markers.path().join("ready"),
         &markers.path().join("finished"),
+        ctx,
     );
     assert_eq!(
         end,
         crate::killed_child::ChildEnd::KilledAtPark,
-        "spec {spec} must park"
+        "{ctx}: spec {spec} must park"
     );
 }
 
@@ -144,12 +199,25 @@ fn host_seam_kill_child() {
     };
     let markers = PathBuf::from(std::env::var_os(ENV_MARKERS).unwrap());
     let spec = std::env::var(ENV_SPEC).unwrap();
+    let key: u64 = std::env::var("WORTH_ADV_SEAM_KEY")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(TARGET_KEY);
+    let val: u64 = std::env::var("WORTH_ADV_SEAM_VAL")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(TARGET_VAL);
+    let build =
+        std::env::var("WORTH_ADV_SEAM_BUILD").unwrap_or_else(|_| super::BUILD_PRIMARY.to_owned());
     let req = opening::serial();
     let execution = ExecutionRequest::serial(&req);
-    let (home, pause) = open_dir(
-        &location,
-        Some(AdversarialPlacement::new()),
-        Arc::new(AtomicUsize::new(0)),
+    let (home, pause) = super::oracle_verifier::open_dir_configured(
+        super::oracle_verifier::DirOpen {
+            location: &location,
+            build: &build,
+            placement: Some(AdversarialPlacement::new()),
+            contacts: Arc::new(AtomicUsize::new(0)),
+        },
         &execution,
     );
     let pause = pause.unwrap();
@@ -164,14 +232,14 @@ fn host_seam_kill_child() {
     let seam_name = parts.next().unwrap();
     let seam = ALL_SEAMS.iter().find(|(n, _)| *n == seam_name).unwrap().1;
     if op == "close" {
-        assert!(requests::set(home.runtime(), TARGET_KEY, TARGET_VAL).receipt().is_some());
+        assert!(requests::set(home.runtime(), key, val).receipt().is_some());
     }
     let mut gate = pause.pause_mutation(seam).unwrap();
     let deadline = std::time::Instant::now() + crate::killed_child::PARK_DEADLINE;
     std::thread::scope(|scope| {
         let worker = match op {
             "mutate" => scope.spawn(move || {
-                let _ = requests::set(home.runtime(), TARGET_KEY, TARGET_VAL);
+                let _ = requests::set(home.runtime(), key, val);
                 Ok::<(), String>(())
             }),
             "checkpoint" => scope.spawn(move || {
@@ -211,7 +279,9 @@ fn count_op_appends(
     execution: &ExecutionRequest<'_, '_>,
 ) -> usize {
     if spec == "count_close" {
-        assert!(requests::set(home.runtime(), TARGET_KEY, TARGET_VAL).receipt().is_some());
+        assert!(requests::set(home.runtime(), TARGET_KEY, TARGET_VAL)
+            .receipt()
+            .is_some());
     }
     let mut gate = pause.pause_mutation(Seam::BeforeWalAppend).unwrap();
     let deadline = std::time::Instant::now() + crate::killed_child::PARK_DEADLINE;

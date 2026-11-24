@@ -8,28 +8,28 @@ use worth_query_host::facade::primary_graph::{
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-pub(super) struct WireSnapshot {
-    pub(super) intent: (String, u64, String, String),
-    pub(super) world_commit_ordinal: u64,
-    pub(super) signal_generation: u64,
-    pub(super) world_reference_generation: u64,
-    pub(super) installed_conditional_definition_count: usize,
-    pub(super) installed_conditional_target_ref_count: usize,
-    pub(super) owned_signal_active_node_count: usize,
-    pub(super) head_attempt_ordinal: Option<u64>,
-    pub(super) head_native_commit_id: Option<u64>,
-    pub(super) head_native_version_id: Option<u64>,
-    pub(super) head_relational_changed: bool,
-    pub(super) head_signal_changed: bool,
-    pub(super) head_signal_movement: Option<String>,
-    pub(super) branch_id: String,
-    pub(super) truth_version: u64,
-    pub(super) schema_commitment: [u8; 32],
-    pub(super) posture: String,
+pub(in super::super) struct WireSnapshot {
+    pub(in super::super) intent: (String, u64, String, String),
+    pub(in super::super) world_commit_ordinal: u64,
+    pub(in super::super) signal_generation: u64,
+    pub(in super::super) world_reference_generation: u64,
+    pub(in super::super) installed_conditional_definition_count: usize,
+    pub(in super::super) installed_conditional_target_ref_count: usize,
+    pub(in super::super) owned_signal_active_node_count: usize,
+    pub(in super::super) head_attempt_ordinal: Option<u64>,
+    pub(in super::super) head_native_commit_id: Option<u64>,
+    pub(in super::super) head_native_version_id: Option<u64>,
+    pub(in super::super) head_relational_changed: bool,
+    pub(in super::super) head_signal_changed: bool,
+    pub(in super::super) head_signal_movement: Option<String>,
+    pub(in super::super) branch_id: String,
+    pub(in super::super) truth_version: u64,
+    pub(in super::super) schema_commitment: [u8; 32],
+    pub(in super::super) posture: String,
 }
 
 impl WireSnapshot {
-    pub(super) fn from_snapshot(s: &SignalSnapshot) -> Self {
+    pub(in super::super) fn from_snapshot(s: &SignalSnapshot) -> Self {
         Self {
             intent: s.intent.clone(),
             world_commit_ordinal: s.world_commit_ordinal,
@@ -55,7 +55,7 @@ impl WireSnapshot {
         }
     }
 
-    pub(super) fn same_durable_semantics(&self, other: &Self) -> bool {
+    pub(in super::super) fn same_durable_semantics(&self, other: &Self) -> bool {
         self.intent == other.intent
             && self.signal_generation == other.signal_generation
             && self.world_reference_generation == other.world_reference_generation
@@ -74,30 +74,30 @@ impl WireSnapshot {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-pub(super) struct WireCustody {
-    pub(super) owner_debug: String,
-    pub(super) custody_ordinal: u64,
-    pub(super) attempt_ordinal: u64,
-    pub(super) native_commit_id: Option<u64>,
-    pub(super) native_version_id: Option<u64>,
-    pub(super) expected_commit: u64,
-    pub(super) owner_effect_count: usize,
+pub(in super::super) struct WireCustody {
+    pub(in super::super) owner_debug: String,
+    pub(in super::super) custody_ordinal: u64,
+    pub(in super::super) attempt_ordinal: u64,
+    pub(in super::super) native_commit_id: Option<u64>,
+    pub(in super::super) native_version_id: Option<u64>,
+    pub(in super::super) expected_commit: u64,
+    pub(in super::super) owner_effect_count: usize,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-pub(super) struct WireReceipt {
-    pub(super) commit_id: u64,
-    pub(super) version_id: u64,
-    pub(super) truth_version: u64,
-    pub(super) idempotency_key: [u8; 32],
-    pub(super) product_incarnation: u64,
-    pub(super) product_generation: u64,
-    pub(super) composite_commit: u64,
-    pub(super) attempt_ordinal: u64,
+pub(in super::super) struct WireReceipt {
+    pub(in super::super) commit_id: u64,
+    pub(in super::super) version_id: u64,
+    pub(in super::super) truth_version: u64,
+    pub(in super::super) idempotency_key: [u8; 32],
+    pub(in super::super) product_incarnation: u64,
+    pub(in super::super) product_generation: u64,
+    pub(in super::super) composite_commit: u64,
+    pub(in super::super) attempt_ordinal: u64,
 }
 
 impl WireReceipt {
-    pub(super) fn from_live(r: &WorthQueryApplicationCommitReceipt) -> Self {
+    pub(in super::super) fn from_live(r: &WorthQueryApplicationCommitReceipt) -> Self {
         let p = r.committed_product_publication();
         Self {
             commit_id: r.commit_reference().commit_id.0,
@@ -111,7 +111,9 @@ impl WireReceipt {
         }
     }
 
-    pub(super) fn from_recovered(r: &WorthQueryRecoveredApplicationCommitReceipt) -> Self {
+    pub(in super::super) fn from_recovered(
+        r: &WorthQueryRecoveredApplicationCommitReceipt,
+    ) -> Self {
         let (inc, generation, commit) = match r.new_product_head() {
             RecordedProductBranchReference::Home(h) => (
                 h.incarnation().ordinal(),

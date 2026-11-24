@@ -20,7 +20,7 @@ use worth_store_testkit_application_oracle::facade::host_observation::{
     receipts::{self, MutationFate},
 };
 
-pub(super) fn inspect_cadence(session: &mut Session) -> BTreeMap<String, (u64, u64)> {
+pub(in super::super) fn inspect_cadence(session: &mut Session) -> BTreeMap<String, (u64, u64)> {
     let resp = session.send(Request::InspectCadence);
     let Some(Disposition::Cadence { journals }) = resp.disposition else {
         panic!("expected Cadence disposition, got {:?}", resp.disposition);
@@ -49,7 +49,7 @@ pub(super) fn capture_seeded_coverage(
     seeded
 }
 
-pub(super) fn checkpoint_and_discard(session: &mut Session) -> u64 {
+pub(in super::super) fn checkpoint_and_discard(session: &mut Session) -> u64 {
     let resp = session.send(Request::CheckpointAndDiscard);
     let Some(Disposition::Discarded {
         checkpoint_generation,
@@ -62,7 +62,7 @@ pub(super) fn checkpoint_and_discard(session: &mut Session) -> u64 {
     discard_generation
 }
 
-pub(super) fn close_expecting_discarded(session: &mut Session, label: &str) {
+pub(in super::super) fn close_expecting_discarded(session: &mut Session, label: &str) {
     let resp = session.send(Request::CloseExpectingDiscarded);
     assert!(resp.closed, "{label}: CloseExpectingDiscarded must close");
     assert_eq!(
@@ -73,7 +73,7 @@ pub(super) fn close_expecting_discarded(session: &mut Session, label: &str) {
     session.finish();
 }
 
-pub(super) fn close_normal(
+pub(in super::super) fn close_normal(
     session: &mut Session,
     expected_after_discard: Option<u64>,
     label: &str,

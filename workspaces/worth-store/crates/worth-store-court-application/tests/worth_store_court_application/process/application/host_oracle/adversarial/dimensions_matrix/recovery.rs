@@ -3,15 +3,17 @@
 //! across build-identity change (all 3 alternating builds) and D14 discard —
 //! every single reopen verified in a genuinely fresh OS `Session` process.
 use super::super::super::{opening, session::Session};
-use super::super::oracle_verifier::{build_reference, prepare_prefix, ReferenceSnapshots};
+use super::super::oracle_verifier::{
+    build_reference, prepare_prefix, ReferenceSnapshots, TARGET_KEY, TARGET_VAL,
+};
 use super::super::recovery_fixtures::{
     discover_mutate_ordinals, prepare_cleanup_wal_fixture, prepare_indeterminate_replacement,
     CLEANUP_WAL_BYTES,
 };
 use super::super::recovery_interruption_oracle::{
-    kill_recovery_with_build, opening_stage_index, PHYSICAL_STAGES,
+    kill_recovery_with_build_and_ctx, opening_stage_index, PHYSICAL_STAGES,
 };
-use super::super::seam_kill_sweep::kill_at_seam;
+use super::super::seam_kill_sweep::kill_at_seam_with_ctx;
 use super::super::{BUILD_PRIMARY, BUILD_SECONDARY, BUILD_TERTIARY};
 use super::verify::{
     assert_same_custody_rows, checkpoint_and_discard, close_expecting_discarded, close_normal,
@@ -31,6 +33,10 @@ use worth_store_testkit_application_oracle::facade::host_observation::{
 
 #[test]
 fn host_recovery_every_stage_across_build_change_and_d14_discard() {
+    run_all_recovery_stages_exhaustive();
+}
+
+pub(in super::super) fn run_all_recovery_stages_exhaustive() {
     let req = opening::serial();
     let execution = ExecutionRequest::serial(&req);
     let reference = build_reference(&execution);
@@ -45,35 +51,39 @@ fn host_recovery_every_stage_across_build_change_and_d14_discard() {
         let spec = format!("phys:{}", stage.label());
         match stage {
             PhysStage::CleanupFreshnessRead | PhysStage::CleanupRemoval => {
+                let ctx = format!("dims/{spec}");
                 cleanup.restore();
-                kill_recovery_with_build(
+                kill_recovery_with_build_and_ctx(
                     cleanup.location(),
                     &spec,
                     Some(CLEANUP_WAL_BYTES),
                     Some(BUILD_SECONDARY),
+                    &ctx,
                 );
                 verify_special_stage_with_d14(
                     cleanup.location(),
                     Some(CLEANUP_WAL_BYTES),
                     Posture::PreOp,
                     &cleanup_ref,
-                    &format!("dims/{spec}"),
+                    &ctx,
                 );
             }
             PhysStage::ObligationDischarge => {
+                let ctx = format!("dims/{spec}");
                 indeterminate.restore();
-                kill_recovery_with_build(
+                kill_recovery_with_build_and_ctx(
                     indeterminate.location(),
                     &spec,
                     None,
                     Some(BUILD_SECONDARY),
+                    &ctx,
                 );
                 verify_special_stage_with_d14(
                     indeterminate.location(),
                     None,
                     Posture::Committed,
                     &reference,
-                    &format!("dims/{spec}"),
+                    &ctx,
                 );
             }
             _ => standard_phys.push(spec),
@@ -130,7 +140,13 @@ fn host_recovery_every_stage_across_build_change_and_d14_discard() {
             &label,
         );
         for (spec, build) in &chain {
-            kill_recovery_with_build(&home_dir, spec, None, Some(build));
+            kill_recovery_with_build_and_ctx(
+                &home_dir,
+                spec,
+                None,
+                Some(build),
+                &format!("{label}/chain/{spec}/{build}"),
+            );
         }
         verify_recovered_d14_session(
             (&home_dir, root.path()),
@@ -171,7 +187,7 @@ fn verify_special_stage_with_d14(
 
     // Cross D14 discard + live OS kill + fresh OS reopen under BUILD_PRIMARY.
     let discard_gen = checkpoint_and_discard(&mut s1);
-    s1.kill_live();
+    s1.kill_live_with_ctx(&format!("{label}/d14-kill"));
     let (mut s2, o2) = Session::start_with_build_and_wal(
         home_dir,
         &ch.path().join("r2"),
@@ -239,7 +255,14 @@ fn prepare_discarded_then_kill(
     );
     let discard_gen = checkpoint_and_discard(&mut s0);
     close_expecting_discarded(&mut s0, label);
-    kill_at_seam(home_dir, &format!("mutate:{mutate_ordinal}:after_wal"));
+    kill_at_seam_with_ctx(
+        home_dir,
+        &format!("mutate:{mutate_ordinal}:after_wal"),
+        TARGET_KEY,
+        TARGET_VAL,
+        BUILD_PRIMARY,
+        label,
+    );
     discard_gen
 }
 
@@ -254,7 +277,7 @@ fn run_d14_recovery_stage(
     let home_dir = root.path().join("home");
     let discard_gen =
         prepare_discarded_then_kill(&home_dir, root.path(), committed_ordinal, execution, &label);
-    kill_recovery_with_build(&home_dir, spec, None, Some(BUILD_SECONDARY));
+    kill_recovery_with_build_and_ctx(&home_dir, spec, None, Some(BUILD_SECONDARY), &label);
     verify_recovered_d14_session(
         (&home_dir, root.path()),
         (discard_gen, Posture::Committed),
