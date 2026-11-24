@@ -32,6 +32,7 @@ pub(super) fn correction(input: &DeriveInput, spec: &CorrectionDeclaration) -> T
         inverse_alias,
         disclosure_alias,
         cap_alias,
+        identity_const,
         call_disclosure,
         call_source_def,
         call_source_body,
@@ -112,6 +113,7 @@ pub(super) fn correction(input: &DeriveInput, spec: &CorrectionDeclaration) -> T
             type #inverse_alias = #inverse;
             type #disclosure_alias = #disclosure;
             #cap_alias_def
+            const #identity_const: &'static str = #identity;
             #outer_helpers
 
             const _: () = {
@@ -133,7 +135,7 @@ pub(super) fn correction(input: &DeriveInput, spec: &CorrectionDeclaration) -> T
                 fn #dispatch() {}
 
                 impl #aftermath::ApplicationCorrectionBinding<#schema_alias> for #ident {
-                    const IDENTITY: &'static str = #identity;
+                    const IDENTITY: &'static str = #identity_const;
                     type Source = #source_alias;
                     type InverseIntent = #inverse_alias;
                     type Disclosure = #disclosure_alias;

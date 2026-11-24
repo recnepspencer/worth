@@ -339,6 +339,20 @@ mod correction_item_hygiene {
     )]
     pub struct ConstKeyDefaultParserTrapCorrection;
 
+    mod namespace_key_trap {
+        use super::*;
+        #[allow(non_upper_case_globals)]
+        const __worth_correction_key: ApplicationIdentityNamespace =
+            worth_query_identity_namespace!("macros.parity.namespace-key-trap.v1");
+        #[derive(WorthQueryCorrection)]
+        #[worth_query(
+            schema = Schema, namespace = __worth_correction_key, source = CompleteBinding,
+            inverse = RestoreCompletion, disclosure = DetailsBinding, source_body = complete_body,
+            preimage_fields(TaskFacts::done()), preimage_bytes = 8, derive = trap_derive,
+        )]
+        pub struct NamespaceKeyTrapCorrection;
+    }
+
     struct BoolPreImage(AspectValue);
     impl ApplicationCorrectionPreImage<Schema> for BoolPreImage {
         fn field(&self, _locus: &DeclaredPreImageLocus<Schema>) -> Option<&AspectValue> {
@@ -348,6 +362,7 @@ mod correction_item_hygiene {
 
     #[test]
     fn correction_survives_visitor_type_alias_and_const_key_item_collisions() {
+        use namespace_key_trap::NamespaceKeyTrapCorrection as NsTrap;
         let orig = Complete {
             task: 12,
             done: true,
@@ -362,15 +377,19 @@ mod correction_item_hygiene {
             Ok(99)
         );
         assert_eq!(
+            <NsTrap as ApplicationCorrectionBinding<Schema>>::IDENTITY,
+            "macros.parity.namespace-key-trap.v1.binding"
+        );
+        assert_eq!(
+            <NsTrap as ApplicationCorrectionBinding<Schema>>::inverse_key("7"),
+            Ok(7)
+        );
+        assert_eq!(
             <VisitorAliasAndConstKeyTrapCorrection as ApplicationCorrectionBinding<Schema>>::derive_correction(
                 &orig,
                 ApplicationCorrectionSourceMaterial::RecordedInverse(&pre),
             ),
-            Ok(RestoreCompletion {
-                task: 12,
-                expected: true,
-                done: false,
-            })
+            Ok(RestoreCompletion { task: 12, expected: true, done: false })
         );
     }
 }
