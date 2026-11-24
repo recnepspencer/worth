@@ -81,8 +81,8 @@ impl PreparedCommitPublicationExecution {
         self.admitted
             .value()
             .validation_input()
-            .home_target()
-            .and_then(|target| target.index_definitions.clone())
+            .prepared_home_indexes
+            .clone()
     }
 
     pub(crate) fn covers_home_definitions(

@@ -2,7 +2,7 @@
 use super::{branch_root_images, root_readmission};
 use crate::durability::data::{CheckpointRestoreWork, DurabilityError, DurableCheckpoint};
 use crate::history::data::VersionNode;
-use crate::runtime::{HistorySubsystem, RelationalRuntime};
+use crate::runtime::state::subsystems::history::HistorySubsystem;
 use std::sync::Arc;
 pub(super) struct PreparedCheckpointHistory {
     pub(super) history: HistorySubsystem,
@@ -11,21 +11,19 @@ pub(super) struct PreparedCheckpointHistory {
 
 pub(super) fn prepare_history(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    restored: &mut RelationalRuntime,
+    history: &HistorySubsystem,
+    registry: &crate::schema::data::RelationalSchemaRegistry,
     checkpoint: &DurableCheckpoint,
     mut branch_roots: branch_root_images::RestoredBranchRootImages,
     symbols: &crate::symbols::data::StringInterner,
     work: &mut CheckpointRestoreWork,
 ) -> Result<PreparedCheckpointHistory, crate::durability::data::RelationalRecoveryStop> {
-    let mut history = restored
-        .history
-        .detached_owner_snapshot()
-        .map_err(|denial| {
-            DurabilityError::new(
-                crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
-                format!("history snapshot denied: {denial:?}"),
-            )
-        })?;
+    let mut history = history.detached_owner_snapshot().map_err(|denial| {
+        DurabilityError::new(
+            crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
+            format!("history snapshot denied: {denial:?}"),
+        )
+    })?;
     let catalog = if let Some(directory) = checkpoint
         .directory
         .as_ref()
@@ -40,21 +38,21 @@ pub(super) fn prepare_history(
                 .cloned()
         })?
     } else {
-        let mut catalog = crate::history::RelationalCommitCatalog::default();
+        let mut catalog = crate::history::commit::RelationalCommitCatalog::default();
         for commit in &checkpoint.envelopes {
-            let original = crate::branch::RelationalOriginalRootCommitEvidence::prepare(
+            let original = crate::branch::root::RelationalOriginalRootCommitEvidence::prepare(
                 execution,
                 Arc::clone(commit.canonical_arc()),
             )
             .map_err(super::super::original_inputs::root_stop)?;
             let artifact = match checkpoint.commit_descriptors.get(&commit.commit.commit_id) {
                 Some(descriptor) => {
-                    crate::history::RelationalCommitArtifact::from_preencoded_with_descriptor(
+                    crate::history::commit::RelationalCommitArtifact::from_preencoded_with_descriptor(
                         original,
                         descriptor.clone(),
                     )
                 }
-                None => crate::history::RelationalCommitArtifact::from_preencoded(original),
+                None => crate::history::commit::RelationalCommitArtifact::from_preencoded(original),
             }
             .map_err(|cause| {
                 crate::durability::checkpoints::region_directory::corrupt(format!(
@@ -82,20 +80,6 @@ pub(super) fn prepare_history(
             .map(|commit| (commit.position(), commit.envelope().commit.commit_id))
             .collect();
     });
-    for commit in &checkpoint.envelopes {
-        history
-            .install_recovered_canonical_route(Arc::new(commit.clone()))
-            .map_err(|detail| {
-                DurabilityError::new(
-                    crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
-                    detail,
-                )
-            })?;
-        work.history_envelopes_routed += 1;
-    }
-    if let Some(position) = history.latest_recorded_patch_position() {
-        history.advance_canonical_stream_floor(position);
-    }
     let commit_graph = checkpoint
         .envelopes
         .iter()
@@ -139,7 +123,7 @@ pub(super) fn prepare_history(
             &checkpoint.branch_lifecycle,
             &checkpoint.retired_branch_names,
             &roots.roots,
-            &restored.config.schema.registry,
+            registry,
         )
         .map_err(|detail| {
             DurabilityError::new(
@@ -148,6 +132,5 @@ pub(super) fn prepare_history(
             )
         })?;
     work.branch_cells_readmitted += checkpoint.branch_cells.len();
-    history.restore_branch_transition_coverage(checkpoint.coverage.up_to_branch_transition);
     Ok(PreparedCheckpointHistory { history, roots })
 }

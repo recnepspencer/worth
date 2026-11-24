@@ -3,6 +3,7 @@ use super::authority_context::AuthoritativeCommitContext;
 use super::execution_admission::AdmittedCommitState;
 use super::history_preparation::{prepare_bound_history, HistoryPreparationInputs};
 use super::merge_draft::AcceptedMergeDraft;
+use super::publication_validation::DraftValidationInput;
 use crate::runtime::state::runtime_state::publication_lifecycle::RelationalRuntimePublicationBinding;
 use crate::runtime::state::subsystems::history::history_preparation_binding::RelationalPreparationHistory;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
@@ -58,15 +59,15 @@ pub(super) struct HistoryPreparedCandidate<'scope, 'authority> {
 
 // Later publication locals must not occupy the deep admission/draft call's frame.
 #[inline(never)]
-pub(super) fn prepare_history<'scope, 'authority, Draft>(
+pub(super) fn prepare_history<'scope, 'authority, V: DraftValidationInput, Draft>(
     execution: &worth_execution::ExecutionRequest<'scope, 'authority>,
     inputs: CandidateHistoryInputs<'_, Draft>,
-    mut context: AuthoritativeCommitContext,
+    mut context: AuthoritativeCommitContext<V>,
 ) -> Result<CommitPhaseBacking<HistoryPreparedCandidate<'scope, 'authority>>, TransactionCommitError>
 where
     Draft: FnOnce(
         &ExecutionRequest<'_, '_>,
-        &AdmittedCommitState,
+        &AdmittedCommitState<V>,
     ) -> Result<AcceptedMergeDraft, TransactionCommitError>,
 {
     let required_output_publication = context.required_output_publication.take();
@@ -74,7 +75,10 @@ where
     let required_output_materialization = context.required_output_materialization.take();
     let allocation_policy = execution.allocation_policy();
     let scope_control = crate::validation::engine::InvariantPreparationControl::for_transaction(
-        &context.validation_input,
+        crate::validation::engine::request::InvariantPreparationSource {
+            operation: context.validation_input.control(),
+            retention: &context.validation_input.basis().inner.retention_binding,
+        },
         allocation_policy,
         crate::runtime::operation_control::interruption_event::RelationalInterruptionBoundary::CandidatePreparation,
     );

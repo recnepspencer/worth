@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use crate::durability::data::{CheckpointRestoreWork, DurabilityError, DurableCheckpoint};
 use crate::history::data::CommitId;
-use crate::runtime::RelationalRuntime;
+use crate::schema::data::{AspectContractPlanCatalog, RelationalSchemaRegistry};
 
 use super::partition_images::{
     reject_duplicate_partition_images, restore_unique_partition_images_with_schema,
@@ -12,14 +12,17 @@ use super::root_schema_readmission::RootSchemaReadmissionCatalog;
 
 pub(super) struct RestoredBranchRootImages {
     pub(super) partitions: BTreeMap<CommitId, RestoredPartitions>,
-    pub(super) schema_authorities:
-        BTreeMap<CommitId, std::sync::Arc<crate::branch::RelationalBranchRootSchemaAuthority>>,
+    pub(super) schema_authorities: BTreeMap<
+        CommitId,
+        std::sync::Arc<crate::branch::root::schema::RelationalBranchRootSchemaAuthority>,
+    >,
 }
 
 pub(super) fn restore_branch_root_images(
     lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    restored: &mut RelationalRuntime,
+    configured: &RelationalSchemaRegistry,
+    aspect_plans: &AspectContractPlanCatalog,
     checkpoint: &DurableCheckpoint,
     work: &mut CheckpointRestoreWork,
     original_schemas: Option<&super::super::original_schemas::OriginalSchemaGraph>,
@@ -81,7 +84,7 @@ pub(super) fn restore_branch_root_images(
             }
             None => schema_catalog.as_mut()
                 .expect(/* Proof: the local catalog is constructed above exactly when original_schemas is None. */ "ordinary schema admission owns its catalog")
-                .readmit_root(lane, execution, restored, image, envelope)?,
+                .readmit_root(lane, execution, configured, aspect_plans, image, envelope)?,
         };
         let root_contracts = crate::durability::checkpoints::aspect_state_images::CheckpointAspectContractCatalog::from_contracts(
             schema_authority.retained_aspect_contracts(),

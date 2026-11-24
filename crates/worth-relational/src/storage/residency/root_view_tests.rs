@@ -10,7 +10,7 @@ fn full_admission_reuses_verified_content_without_recloning_regions() {
             [(fixture.cold.partition_id, fixture.cell.clone())],
         )
         .unwrap();
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let first = fixture
         .cell
@@ -41,7 +41,7 @@ fn a_shared_full_load_requires_a_separate_admitted_view_for_each_root() {
     };
     let first = make_root_view();
     let second = make_root_view();
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let first_full = first.demand_full(&execution, 1 << 24).unwrap();
     let reads = fixture.source.reads.load(Ordering::SeqCst);

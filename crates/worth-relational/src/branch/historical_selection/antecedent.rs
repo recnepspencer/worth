@@ -1,14 +1,14 @@
 //! A historical verifier admits only source commits on the selected basis's ancestry.
 use super::*;
 use crate::execution::request_stage::checkpoint;
-use crate::runtime::state::subsystems::history::HistorySubsystem;
+use crate::history::envelope_demand::CanonicalHistoryRead;
 use crate::visibility::materialization::read_records::reader::positioned_snapshot::PositionedRelationalSnapshot;
 use std::collections::BTreeSet;
 /// The exact canonical history and identity of an installed read owner.
 #[doc(hidden)]
 pub struct HistoricalSelectionAncestry<'a> {
     pub(crate) runtime_instance_id: u64,
-    pub(crate) history: &'a HistorySubsystem,
+    pub(crate) history: CanonicalHistoryRead<'a>,
 }
 
 impl RelationalHistoricalSelectionRead {
@@ -40,7 +40,7 @@ impl RelationalHistoricalSelectionRead {
         let Some(requested) = source.commit_id() else {
             return Ok(false);
         };
-        let bound = owner.history.catalog_len();
+        let bound = owner.history.branch.catalog_len();
         let mut visited = BTreeSet::new();
         let initial = execution
             .reserve_retained_memory(

@@ -1,14 +1,14 @@
 //! Restore a Released predecessor only when the next exact transition needs it.
 use super::*;
-use crate::branch::{
-    PositionedBranchTransition, RelationalBranchBasisPosture as Posture,
-    RelationalBranchTransition as Transition,
+use crate::branch::basis_descriptor::RelationalBranchBasisPosture as Posture;
+use crate::branch::transition::{
+    PositionedBranchTransition, RelationalBranchTransition as Transition,
 };
 impl WorldSelectionReplay {
     pub(in crate::durability::authority::runtime_rebuild) fn before_transition(
         &self,
         request: &ExecutionRequest<'_, '_>,
-        runtime: &RelationalRuntime,
+        inputs: &WorldReplayInputs<'_>,
         plan: &RecoveryPlan,
         roots: &mut RecoveredRootInventory,
         positioned: &PositionedBranchTransition,
@@ -21,13 +21,13 @@ impl WorldSelectionReplay {
             | Transition::Delete { .. } => transition.branch(),
             Transition::RetainedFork { .. } => return Ok(()),
         };
-        let Some(cell) = runtime.history.branch_cell(branch) else {
+        let Some(cell) = inputs.history.branch_cell(branch) else {
             return Ok(());
         };
         let Some(root) = cell.root() else {
             return Ok(());
         };
-        let current = crate::branch::descriptor_for_cell(&cell, &root)
+        let current = crate::branch::basis_admission::descriptor_for_cell(&cell, &root)
             .map_err(|_| corrupt("Native transition source cannot be described"))?;
         if matches_transition(&current, transition) {
             return Ok(());
@@ -52,7 +52,7 @@ impl WorldSelectionReplay {
             Source::Recorded(source) => source.descriptor().branch_id() == branch,
             Source::Published(coordinates) => {
                 &self
-                    .entry(coordinates.commit(), runtime, plan, request)?
+                    .entry(coordinates.commit(), inputs, plan, request)?
                     .commit
                     .branch_id
                     == branch
@@ -65,7 +65,7 @@ impl WorldSelectionReplay {
         }
         // The same owner validates the actual original receipt/body and exact
         // pre/post axes. Core transition replay still requires its full input.
-        self.select(request, runtime, plan, roots, original.source(), false)
+        self.select(request, inputs, plan, roots, original.source(), false)
     }
 }
 fn matches_transition(current: &RelationalBranchBasisDescriptor, transition: &Transition) -> bool {

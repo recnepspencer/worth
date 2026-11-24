@@ -69,3 +69,14 @@ impl crate::storage::overlay::CurrentPartitionAccess for SelectedRelationalBranc
         self.partitions.partition_ids_with_memory(memory)
     }
 }
+
+#[cfg(test)]
+#[test]
+fn selected_branch_read_cannot_implement_the_full_history_source_contract() {
+    trait WithoutFull<A> {
+        fn witness() {}
+    }
+    impl<T: ?Sized> WithoutFull<()> for T {}
+    impl<T: ?Sized + crate::storage::overlay::PartitionAccess> WithoutFull<u8> for T {}
+    let _ = <SelectedRelationalBranchRead<'_> as WithoutFull<_>>::witness;
+}

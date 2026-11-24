@@ -337,24 +337,21 @@ fn current_source_quote_refuses_malformed_missing_or_unknown_meaning() {
 fn corrective_owner_union_keeps_missing_extra_and_wrong_predecessor_refusals() {
     let host = crate::execution::test_policy::serial_request();
     let execution = ExecutionRequest::serial(&host);
-    let runtime = crate::tests::support::runtime_with_test_schema();
-    let source = crate::tests::support::create_entity(&execution, &runtime, "descriptive-owner");
-    let original = runtime
-        .history
-        .positioned_canonical_commits_snapshot()
-        .last()
-        .unwrap()
-        .canonical_arc()
-        .clone();
-    let admission =
-        crate::tests::support::test_owner_transaction_validation_input_for_main(&runtime);
+    let (_, basis) = crate::branch::basis_admission_tests::observed_empty_branch(1);
+    let source = EntityId::new(PartitionId::main(), 1, 1);
+    let receipt = crate::history::data::RelationalCommitReceipt {
+        commit_id: crate::history::data::CommitId(1),
+        version_id: crate::identity::data::VersionId(1),
+        branch_id: basis.descriptor().branch_id().clone(),
+        parents: Vec::new(),
+    };
     execution
         .in_scope(|lease| {
             worth_execution::ExecutionWorkCeiling::new(execution.work_ceiling())
                 .run_with_checkpoint(lease, None, |context| {
                     crate::history::data::source_scope_closure::assert_exact_owner_refusals(
-                        original,
-                        admission.basis().descriptor(),
+                        receipt,
+                        basis.descriptor(),
                         source,
                         context,
                     );
@@ -362,4 +359,25 @@ fn corrective_owner_union_keeps_missing_extra_and_wrong_predecessor_refusals() {
         })
         .unwrap()
         .unwrap();
+}
+
+#[test]
+fn unchanged_codec_loci_select_no_live_entities_from_populated_native_history() {
+    let host = crate::execution::test_policy::serial_request();
+    let execution = ExecutionRequest::serial(&host);
+    let fixture = crate::durability::native_region_fixture::populated_partition();
+    assert!(fixture.partition.entity_arena.occupied_slots_iter().count() > 1);
+    let mut retired_entities = Vec::new();
+    execution
+        .run_native_with_checkpoint(|context| {
+            crate::history::data::codec_retirement_closure::collect_affected_partition(
+                &fixture.partition,
+                &[],
+                context,
+                &mut retired_entities,
+            )
+            .unwrap();
+        })
+        .unwrap();
+    assert!(retired_entities.is_empty());
 }

@@ -2,7 +2,7 @@
 use super::*;
 use crate::identity::data::EntityId;
 use worth_execution::ExecutionRequest;
-impl crate::mvcc::ValidatedRelationalProposal {
+impl crate::mvcc::validation::validated_proposal::ValidatedRelationalProposal {
     /// The exact running writer's admitted predecessor; descriptive selectors issue no custody.
     pub fn output_observation_predecessor(
         &self,

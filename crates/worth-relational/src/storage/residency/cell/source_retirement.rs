@@ -18,7 +18,7 @@ impl RelationalRegionResidency {
     pub(in crate::storage::residency) fn source_retirement_symbols(
         &self,
         backing: bool,
-    ) -> Option<crate::runtime::RuntimeSymbolTable> {
+    ) -> Option<crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable> {
         if backing {
             self.backing.as_ref().map(|cold| cold.symbols.clone())
         } else {

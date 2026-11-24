@@ -45,25 +45,6 @@ impl HistorySubsystem {
             cell.bind_basis_registry_metrics(Arc::clone(&basis_registry_metrics));
         }
         branch_cells.restore_all(cells);
-        let canonical_publication_routes = Arc::new(
-            self.canonical_publication_routes
-                .detached_branch_transitions(),
-        );
-        canonical_publication_routes.install_checkpoint_catalog(self.commit_artifacts());
-        for positioned in self.canonical_publication_routes.performed_snapshot() {
-            let artifact = self.commit_artifact(positioned.commit.commit_id).ok_or(
-                crate::runtime::fork_denial::RelationalRuntimeForkDenial::CanonicalInventoryInvalid,
-            )?;
-            canonical_publication_routes
-                .install_recovered(
-                    positioned,
-                    artifact.envelope_residency(),
-                    artifact.roots().clone(),
-                )
-                .map_err(|_| {
-                    crate::runtime::fork_denial::RelationalRuntimeForkDenial::CanonicalInventoryInvalid
-                })?;
-        }
         let mut snapshot = Self {
             runtime_instance_id: self.runtime_instance_id,
             main_branch: self.main_branch.clone(),
@@ -87,7 +68,6 @@ impl HistorySubsystem {
             version_identity_allocator: Arc::new(AtomicU64::new(
                 self.version_identity_allocator.load(Ordering::Relaxed),
             )),
-            canonical_publication_routes,
         };
         snapshot
             .try_reset_retention_owner(snapshot.runtime_instance_id)

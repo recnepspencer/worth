@@ -1,6 +1,9 @@
 //! Portable aspect and aspected-record readmission funding.
 use super::*;
-use crate::durability::data::*;
+use crate::storage::data::partition_checkpoint_image::{
+    EntityExtraImage, RelationExtraImage, VersionedEntityMetadataImage,
+    VersionedRelationMetadataImage,
+};
 use crate::storage::substrate::*;
 use worth_foundational::facade::{PortableRecordAspectState, StructAspectValue};
 
@@ -321,7 +324,7 @@ pub(in crate::storage::residency) fn relation_metadata(
 }
 
 pub(in crate::storage::residency) fn contracts(
-    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
+    schema: &dyn crate::storage::residency::RelationalRegionSchema,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<(Funding, u64)> {
     use worth_foundational::facade::{
@@ -337,10 +340,8 @@ pub(in crate::storage::residency) fn contracts(
     let mut largest = 0;
     for contract in schema.retained_aspect_contracts() {
         work(request, 1)?;
-        let nested = crate::durability::checkpoints::aspect_state_images::contract_clone_bytes(
-            contract, request,
-        )
-        .map_err(Failure::Request)?;
+        let nested = super::aspect_contract::contract_clone_bytes(contract, request)
+            .map_err(Failure::Request)?;
         largest = largest.max(
             u64::try_from(contract.owned_allocation_capacity_bytes()).map_err(|_| overflow())?,
         );

@@ -111,9 +111,9 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
                     ),
                 );
             }
-            previous.resident_basis().root()
+            previous.resident_basis().basis().retain_root()
         } else {
-            &basis.inner.root
+            basis.inner.root.clone()
         };
         let answer = execution
             .run_native_with_checkpoint(|context| {
@@ -156,7 +156,7 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
                     .history
                     .capture_applied_candidate_root(
                         execution,
-                        previous_root,
+                        &previous_root,
                         state,
                         content,
                         &dictionary,

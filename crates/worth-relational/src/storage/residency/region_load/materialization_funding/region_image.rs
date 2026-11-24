@@ -3,8 +3,10 @@ use super::super::super::region_image::{
     RegionAdjacencyKinds, RegionHeadImage, RegionHistoryImage, RegionHistoryRow,
 };
 use super::*;
-use crate::durability::data::*;
 use crate::identity::data::{KindId, PartitionId, RelationId, VersionId};
+use crate::storage::data::partition_checkpoint_image::{
+    DurableAdjacencyEntry, VersionedEntityMetadataImage, VersionedRelationMetadataImage,
+};
 use crate::storage::{
     data::{RecordLifecycleState, RelationalFieldRevision},
     partition::{AdjacencySet, RegionRelationProjection},

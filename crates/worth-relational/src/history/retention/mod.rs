@@ -63,9 +63,10 @@ pub use terminal_accounting::RelationalExternalRetentionTerminalCounts;
 mod component_cut_tests;
 
 #[cfg(test)]
-pub(crate) use component_cut_tests::assert_controlled_component_capture_winner;
+pub(crate) use component_cut_tests::complete::assert_controlled_component_capture_winner;
 
 mod selected_snapshot;
+mod selected_snapshot_custody;
 mod snapshot_basis_retirement;
 pub(crate) use selected_snapshot::{SnapshotHeadSelection, VisibilitySnapshotBasis};
 pub(crate) use snapshot_basis_retirement::VisibilitySnapshotBasisRetirement;

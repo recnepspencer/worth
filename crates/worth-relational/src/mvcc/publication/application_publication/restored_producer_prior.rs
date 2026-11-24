@@ -59,8 +59,7 @@ pub(crate) fn readmit_restored_producer_prior(
                     publication.origin.commit.commit_id,
                     &mut |commit| {
                         inputs
-                            .projection
-                            .history
+                            .canonical_history
                             .demand_commit_envelope(execution, commit)
                             .map_err(Stop::Request)
                     },
@@ -79,7 +78,7 @@ pub(crate) fn readmit_restored_producer_prior(
                     checkpoint(context, 1).map_err(custody::execution_stop)?;
                     let meaning = origin.meaning.clone();
                     current = crate::history::data::historical_producer_antecedent(
-                        inputs.projection.history,
+                        inputs.canonical_history,
                         execution,
                         &current,
                         &origin,
@@ -123,8 +122,7 @@ pub(crate) fn readmit_restored_producer_prior(
                         predecessor,
                         &mut |commit| {
                             inputs
-                                .projection
-                                .history
+                                .canonical_history
                                 .demand_commit_envelope(execution, commit)
                                 .map_err(Stop::Request)
                         },

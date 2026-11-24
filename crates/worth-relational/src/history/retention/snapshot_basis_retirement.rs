@@ -1,12 +1,11 @@
 //! The removed binding keeps its real observation until owner retirement.
-use super::selected_snapshot::VisibilitySnapshotBasis;
-use crate::branch::root::RelationalBranchRoot;
+use super::selected_snapshot::{SelectedSnapshotSource, VisibilitySnapshotBasis};
 use std::sync::Arc;
 
 #[derive(Debug)]
 pub(crate) struct VisibilitySnapshotBasisRetirement {
     observation: Option<crate::mvcc::observation::RelationalObservationRetirement>,
-    _root: Arc<RelationalBranchRoot>,
+    _root: Arc<dyn SelectedSnapshotSource>,
 }
 
 impl VisibilitySnapshotBasis {

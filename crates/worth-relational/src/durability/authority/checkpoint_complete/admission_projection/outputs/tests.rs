@@ -20,8 +20,8 @@ fn codec_retirement_projection_keeps_meaning_and_omits_runtime_identity_slots() 
     .unwrap();
     let value = CanonicalRequiredOutputCodecRetirement {
         publication: CommitId(11),
-        meaning: crate::mvcc::RequiredOutputPublicationMeaning {
-            implementation: crate::mvcc::RequiredOutputProducingImplementation::from_checkpoint(
+        meaning: crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning {
+            implementation: crate::mvcc::publication::application_publication::producing_implementation::RequiredOutputProducingImplementation::from_checkpoint(
                 [1; 16], [2; 32],
             )
             .unwrap(),
@@ -38,7 +38,7 @@ fn codec_retirement_projection_keeps_meaning_and_omits_runtime_identity_slots() 
             parents: vec![CommitId(11)],
         },
         kinds: Arc::new(Vec::new()),
-        activation: Arc::new(crate::runtime::RecoveredCheckpointProgramActivationUpdate {
+        activation: Arc::new(crate::schema::data::program_activation::RecoveredCheckpointProgramActivationUpdate {
             entity_id: EntityId::new(PartitionId::main(), 1, 1),
             field_locator: AspectFieldLocator::new(
                 LocatorAuthority::Planned,

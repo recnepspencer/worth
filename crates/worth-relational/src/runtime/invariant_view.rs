@@ -57,9 +57,13 @@ impl From<&crate::mvcc::RelationalTransactionValidationInput>
     fn from(input: &crate::mvcc::RelationalTransactionValidationInput) -> Self {
         let catalog_receipt = input
             .home_target()
-            .map(|target| &target.meaning)
-            .or_else(|| input.basis().inner.root.execution_contracts.get())
-            .map(|meaning| meaning.catalog_receipt());
+            .map(|target| target.meaning.catalog_receipt())
+            .or_else(|| {
+                crate::runtime::home_program_transition::retain_root_execution_contracts(
+                    &input.basis().inner.root,
+                )
+                .map(|meaning| meaning.catalog_receipt())
+            });
         Self {
             physical_basis: input.basis().clone(),
             posture: input.intent().materialization_mode(),

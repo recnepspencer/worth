@@ -5,7 +5,7 @@ use crate::transactions::data::outcomes::transaction_commit_error::TransactionCo
 pub(crate) fn execute_authoritative_commit(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalRuntime,
-    context: AuthoritativeCommitContext,
+    context: AuthoritativeCommitContext<crate::mvcc::RelationalTransactionValidationInput>,
 ) -> Result<CommitResult, TransactionCommitError> {
     super::consult_stage(execution, super::CommitStage::Admission)?;
     let preparation = runtime.preparation_runtime_snapshot();

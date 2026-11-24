@@ -9,7 +9,7 @@ use crate::runtime::state::runtime_state::publication_settlement_registry::recor
     PendingRelationalPublicationSettlement, PerformedRelationalSettlement,
     RelationalSettlementClaim,
 };
-use crate::runtime::state::subsystems::history::HistorySubsystem;
+use crate::runtime::state::subsystems::history::history_canonical_routes::RelationalPublicationHistory;
 use crate::transactions::data::outcomes::commit_result::CommitResult;
 
 /// Terminal answer produced by the one executor of a pending settlement.
@@ -89,7 +89,7 @@ impl PublicationAuthority<'_> {
         &self,
         record: &Arc<PendingRelationalPublicationSettlement>,
         result_owner: RelationalSettlementResultOwner,
-        history: &HistorySubsystem,
+        history: &RelationalPublicationHistory,
         binding: &RelationalRuntimePublicationBinding,
         publish: impl FnOnce(SettlementPublication) -> PublishedCommitExecution,
     ) -> Result<RelationalSettlementCompletion, RelationalSettlementNotYetPerformed> {
@@ -137,7 +137,7 @@ impl PublicationAuthority<'_> {
         record: &Arc<PendingRelationalPublicationSettlement>,
         performed: PerformedRelationalSettlement,
         result_owner: RelationalSettlementResultOwner,
-        history: &HistorySubsystem,
+        history: &RelationalPublicationHistory,
         binding: &RelationalRuntimePublicationBinding,
         publish: impl FnOnce(SettlementPublication) -> PublishedCommitExecution,
     ) -> RelationalSettlementCompletion {

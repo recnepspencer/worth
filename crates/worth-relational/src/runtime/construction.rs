@@ -206,7 +206,9 @@ impl RelationalRuntime {
         .map_err(Denial::MainBranch)?;
         let services = extensions.build_runtime_services();
         services.symbols.replace(symbols);
-        let mut history = HistorySubsystem::from_main_cell(main_cell);
+        let mut history = crate::runtime::state::subsystems::history::history_canonical_routes::RelationalPublicationHistory::from_branch(
+            HistorySubsystem::from_main_cell(main_cell),
+        );
         history
             .set_runtime_instance_id(services.runtime_instance_id())
             .map_err(Denial::MainBranch)?;

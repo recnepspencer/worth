@@ -7,7 +7,7 @@ pub(super) fn replay_commit_closure_by_commit_id_order(
     commit_id: CommitId,
 ) -> Result<Vec<CommitId>, ReplayFailureClass> {
     let closure = crate::replay::planning::replay_commit_closure_by_commit_id_order(
-        &runtime.history,
+        runtime.history.canonical_read(),
         commit_id,
     );
     runtime

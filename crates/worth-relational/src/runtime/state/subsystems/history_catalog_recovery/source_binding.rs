@@ -3,69 +3,70 @@ use super::{HistorySubsystem, RelationalHistoryRecoveryDenial};
 use crate::history::data::{CanonicalCommitEnvelope, PositionedCanonicalCommit};
 use std::sync::Arc;
 
-impl HistorySubsystem {
-    /// Reconstructive single-commit update. The catalog's existing full-payload
-    /// classifier alone decides whether replay-issued private evidence survives.
-    pub(crate) fn synchronize_recovered_source_commit(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        source: &PositionedCanonicalCommit,
-        symbols: &crate::symbols::data::StringInterner,
-    ) -> Result<Arc<CanonicalCommitEnvelope>, RelationalHistoryRecoveryDenial> {
-        let prepared = prepare_recovered_source_catalog(self, execution, source)?;
-        let artifact = &prepared.artifact;
-        let canonical = artifact
-            .resident_envelope()
-            .ok_or_else(|| "prepared source has no admitted canonical body".to_owned())?;
-        let residency = artifact.envelope_residency();
-        let roots = artifact.roots().clone();
-        self.with_ledger_mut(|ledger| {
-            ledger
-                .commit_catalog
-                .install_source_recovery(prepared.expected.as_ref(), Arc::clone(artifact))
-                .map_err(RelationalHistoryRecoveryDenial::Catalog)?;
-            ledger
-                .commit_envelopes
-                .insert(source.commit.commit_id, Arc::clone(&residency));
-            ledger
-                .patch_stream_index
-                .insert(source.position(), source.commit.commit_id);
-            Ok::<_, RelationalHistoryRecoveryDenial>(())
-        })?;
-        let mut cell = self
-            .branch_cell(&source.branch_context)
-            .ok_or_else(|| "recovered source branch is unavailable".to_owned())?;
-        let Some(root) = cell.root() else {
-            return Ok(canonical);
-        };
-        if root.commit_id() != Some(source.commit.commit_id) {
-            return Ok(canonical);
-        }
-        self.canonical_publication_routes
-            .rebind_recovered_latest(source, residency, roots)
-            .map_err(str::to_owned)?;
-        if root.links_envelope(&canonical) {
-            return Ok(canonical);
-        }
-        let original = original_for_envelope(self, execution, &canonical)?;
-        let next = if Arc::ptr_eq(&canonical, source.canonical_arc()) {
-            root.readmit_canonical_envelope(execution, source, original, symbols)
-        } else {
-            root.relink_canonical_envelope(execution, original, symbols)
-        }
-        .map_err(RelationalHistoryRecoveryDenial::Root)?;
-        let retirement = self
-            .reserve_branch_head_retirement(cell.identity(), &root, cell.head_retention())
-            .map_err(|denial| format!("recovered source root retention denied: {denial:?}"))?;
-        cell.install_root(next.clone());
-        retirement.transfer_head(&next).replace_head();
-        Ok(canonical)
+/// Reconstructive single-commit update. The catalog's existing full-payload
+/// classifier alone decides whether replay-issued private evidence survives.
+pub(crate) fn synchronize_recovered_source_commit(
+    history: &HistorySubsystem,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    source: &PositionedCanonicalCommit,
+    symbols: &crate::symbols::data::StringInterner,
+    rebind_performed: impl FnOnce(
+        &PositionedCanonicalCommit,
+        Arc<crate::history::commit::RelationalCommitEnvelopeResidency>,
+        crate::branch::target::RelationalBranchRootDescriptor,
+    ) -> Result<(), &'static str>,
+) -> Result<Arc<CanonicalCommitEnvelope>, RelationalHistoryRecoveryDenial> {
+    let prepared = prepare_recovered_source_catalog(history, execution, source)?;
+    let artifact = &prepared.artifact;
+    let canonical = artifact
+        .resident_envelope()
+        .ok_or_else(|| "prepared source has no admitted canonical body".to_owned())?;
+    let residency = artifact.envelope_residency();
+    let roots = artifact.roots().clone();
+    history.with_ledger_mut(|ledger| {
+        ledger
+            .commit_catalog
+            .install_source_recovery(prepared.expected.as_ref(), Arc::clone(artifact))
+            .map_err(RelationalHistoryRecoveryDenial::Catalog)?;
+        ledger
+            .commit_envelopes
+            .insert(source.commit.commit_id, Arc::clone(&residency));
+        ledger
+            .patch_stream_index
+            .insert(source.position(), source.commit.commit_id);
+        Ok::<_, RelationalHistoryRecoveryDenial>(())
+    })?;
+    let mut cell = history
+        .branch_cell(&source.branch_context)
+        .ok_or_else(|| "recovered source branch is unavailable".to_owned())?;
+    let Some(root) = cell.root() else {
+        return Ok(canonical);
+    };
+    if root.commit_id() != Some(source.commit.commit_id) {
+        return Ok(canonical);
     }
+    rebind_performed(source, residency, roots).map_err(str::to_owned)?;
+    if root.links_envelope(&canonical) {
+        return Ok(canonical);
+    }
+    let original = original_for_envelope(history, execution, &canonical)?;
+    let next = if Arc::ptr_eq(&canonical, source.canonical_arc()) {
+        root.readmit_canonical_envelope(execution, source, original, symbols)
+    } else {
+        root.relink_canonical_envelope(execution, original, symbols)
+    }
+    .map_err(RelationalHistoryRecoveryDenial::Root)?;
+    let retirement = history
+        .reserve_branch_head_retirement(cell.identity(), &root, cell.head_retention())
+        .map_err(|denial| format!("recovered source root retention denied: {denial:?}"))?;
+    cell.install_root(next.clone());
+    retirement.transfer_head(&next).replace_head();
+    Ok(canonical)
 }
 
 pub(super) struct PreparedRecoveredSourceCatalog {
-    pub(super) expected: Option<Arc<crate::history::RelationalCommitArtifact>>,
-    pub(super) artifact: Arc<crate::history::RelationalCommitArtifact>,
+    pub(super) expected: Option<Arc<crate::history::commit::RelationalCommitArtifact>>,
+    pub(super) artifact: Arc<crate::history::commit::RelationalCommitArtifact>,
 }
 pub(super) fn prepare_recovered_source_catalog(
     history: &HistorySubsystem,
@@ -73,7 +74,7 @@ pub(super) fn prepare_recovered_source_catalog(
     positioned: &PositionedCanonicalCommit,
 ) -> Result<PreparedRecoveredSourceCatalog, RelationalHistoryRecoveryDenial> {
     use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact as Wire;
-    use crate::history::RelationalCommitArtifact as Artifact;
+    use crate::history::commit::RelationalCommitArtifact as Artifact;
     let expected = history.commit_artifact(positioned.commit.commit_id);
     if let Some(existing) = &expected
         && let Some(resident) = existing.resident_envelope()
@@ -116,7 +117,9 @@ pub(super) fn prepare_recovered_source_catalog(
             }
             artifact.prepare_catalog_owner(request).map_err(|cause| {
                 RelationalHistoryRecoveryDenial::Root(
-                    crate::branch::RelationalBranchRootCaptureDenial::Request(cause),
+                    crate::branch::root_capture_denial::RelationalBranchRootCaptureDenial::Request(
+                        cause,
+                    ),
                 )
             })?
         } else {
@@ -157,9 +160,10 @@ pub(super) fn prepare_catalog_artifact_for_envelope(
     history: &HistorySubsystem,
     request: &worth_execution::ExecutionRequest<'_, '_>,
     envelope: Arc<CanonicalCommitEnvelope>,
-    descriptor: Option<&crate::branch::RelationalBranchRootDescriptor>,
-) -> Result<Arc<crate::history::RelationalCommitArtifact>, RelationalHistoryRecoveryDenial> {
-    use crate::history::RelationalCommitArtifact as Artifact;
+    descriptor: Option<&crate::branch::target::RelationalBranchRootDescriptor>,
+) -> Result<Arc<crate::history::commit::RelationalCommitArtifact>, RelationalHistoryRecoveryDenial>
+{
+    use crate::history::commit::RelationalCommitArtifact as Artifact;
     let cell = history
         .ledger
         .read()
@@ -178,7 +182,7 @@ pub(super) fn prepare_catalog_artifact_for_envelope(
         .map_err(RelationalHistoryRecoveryDenial::Source)?;
         if entry.commit != envelope.commit || entry.payload_digest != digest {
             return Err(RelationalHistoryRecoveryDenial::Artifact(
-                crate::history::RelationalCommitArtifactDenial::RootLinkage,
+                crate::history::commit::artifact_denial::RelationalCommitArtifactDenial::RootLinkage,
             ));
         }
         let artifact = Artifact::from_index(entry.clone(), source)
@@ -206,7 +210,7 @@ pub(super) fn prepare_catalog_artifact_for_envelope(
             .or_else(|| root.as_ref().and_then(|root| root.canonical_payload()));
         let original = match carried {
             Some(original) => original,
-            None => crate::branch::RelationalOriginalRootCommitEvidence::prepare(request, envelope)
+            None => crate::history::commit::original_payload::RelationalOriginalRootCommitEvidence::prepare(request, envelope)
                 .map_err(RelationalHistoryRecoveryDenial::Root)?,
         };
         match (root, descriptor) {
@@ -222,7 +226,7 @@ pub(super) fn prepare_catalog_artifact_for_envelope(
     };
     artifact.prepare_catalog_owner(request).map_err(|cause| {
         RelationalHistoryRecoveryDenial::Root(
-            crate::branch::RelationalBranchRootCaptureDenial::Request(cause),
+            crate::branch::root_capture_denial::RelationalBranchRootCaptureDenial::Request(cause),
         )
     })
 }
@@ -231,8 +235,10 @@ pub(super) fn original_for_envelope(
     history: &HistorySubsystem,
     request: &worth_execution::ExecutionRequest<'_, '_>,
     envelope: &Arc<CanonicalCommitEnvelope>,
-) -> Result<Arc<crate::branch::RelationalOriginalRootCommitEvidence>, RelationalHistoryRecoveryDenial>
-{
+) -> Result<
+    Arc<crate::history::commit::original_payload::RelationalOriginalRootCommitEvidence>,
+    RelationalHistoryRecoveryDenial,
+> {
     let carried = history
         .ledger
         .read()
@@ -243,10 +249,12 @@ pub(super) fn original_for_envelope(
         .filter(|original| Arc::ptr_eq(original.envelope(), envelope));
     match carried {
         Some(original) => Ok(original),
-        None => crate::branch::RelationalOriginalRootCommitEvidence::prepare(
-            request,
-            Arc::clone(envelope),
-        )
-        .map_err(RelationalHistoryRecoveryDenial::Root),
+        None => {
+            crate::history::commit::original_payload::RelationalOriginalRootCommitEvidence::prepare(
+                request,
+                Arc::clone(envelope),
+            )
+            .map_err(RelationalHistoryRecoveryDenial::Root)
+        }
     }
 }

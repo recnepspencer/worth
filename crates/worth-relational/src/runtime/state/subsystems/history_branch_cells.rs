@@ -63,6 +63,16 @@ impl HistorySubsystem {
         recovered_root: Option<Arc<crate::branch::root::RelationalBranchRoot>>,
         recovered_provenance_root: Option<Arc<crate::branch::root::RelationalBranchRoot>>,
         schema_registry: &crate::schema::data::RelationalSchemaRegistry,
+        mut readmit_root: impl FnMut(
+            &worth_execution::ExecutionRequest<'_, '_>,
+            CommitId,
+            crate::branch::target::RelationalBranchRootDescriptor,
+            Arc<RelationalBranchRoot>,
+            &crate::symbols::data::StringInterner,
+        ) -> Result<
+            Arc<RelationalBranchRoot>,
+            super::history_recovery_denial::RelationalHistoryRecoveryDenial,
+        >,
         symbols: &crate::symbols::data::StringInterner,
     ) -> Result<(), super::history_recovery_denial::RelationalHistoryRecoveryDenial> {
         // A replayed commit's prior cell state that equals a cell recovery
@@ -95,7 +105,7 @@ impl HistorySubsystem {
             .map(|provenance| provenance.target())
         {
             let commit_id = CommitId(target.selected_commit_id());
-            self.readmit_replayed_root_descriptor(
+            readmit_root(
                 execution,
                 commit_id,
                 target.roots().clone(),
@@ -112,17 +122,14 @@ impl HistorySubsystem {
             )),
             FoundationalBranchTarget::Basis(target) => {
                 let commit_id = CommitId(target.selected_commit_id());
-                Some(
-                    self.readmit_replayed_root_descriptor(
-                        execution,
-                        commit_id,
-                        target.roots().clone(),
-                        recovered_root.ok_or_else(|| {
-                            format!("recovery root `{}` is unavailable", commit_id.0)
-                        })?,
-                        symbols,
-                    )?,
-                )
+                Some(readmit_root(
+                    execution,
+                    commit_id,
+                    target.roots().clone(),
+                    recovered_root
+                        .ok_or_else(|| format!("recovery root `{}` is unavailable", commit_id.0))?,
+                    symbols,
+                )?)
             }
         };
         history_recovery_validation::require_branch_target_artifact(

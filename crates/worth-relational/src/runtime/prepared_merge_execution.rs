@@ -1,9 +1,8 @@
 //! Consuming execution of one prepared merge.
 // Diagnostic counters keep their valid numeric prefix on unwind; they grant no authority.
 
-use crate::authority::commit::pipeline::{
-    execute_authoritative_commit, AuthoritativeCommitContext,
-};
+use crate::authority::commit::pipeline::execution::execute_authoritative_commit;
+use crate::authority::commit::pipeline::AuthoritativeCommitContext;
 use crate::merge::data::{MergeExecutionError, PreparedMergeExecution};
 use crate::runtime::RelationalRuntime;
 use crate::transactions::data::{

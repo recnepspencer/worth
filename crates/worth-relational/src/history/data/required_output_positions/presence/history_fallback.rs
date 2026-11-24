@@ -2,16 +2,16 @@
 use super::*;
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::history::data::RequiredOutputRoutePosition as Position;
+use crate::history::envelope_demand::CanonicalHistoryRead;
 use crate::publication::data::AuthoredRetirementRefusal as Cause;
 use crate::publication::data::PublicationError;
-use crate::runtime::state::subsystems::history::HistorySubsystem;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::transactions::data::primitives::RecordRef;
 use worth_execution::ExecutionRequest;
 
 pub(crate) fn require_current_owned_route(
     execution: &ExecutionRequest<'_, '_>,
-    history: &HistorySubsystem,
+    history: CanonicalHistoryRead<'_>,
     _basis: &AdmittedRelationalBranchBasis,
     meaning: &RequiredOutputPublicationMeaning,
     selected: Option<Position>,

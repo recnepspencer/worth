@@ -164,3 +164,5 @@ impl PartialEq for RelationalCanonicalCommitArtifact {
 }
 
 impl Eq for RelationalCanonicalCommitArtifact {}
+
+pub(crate) mod journal_source_read;

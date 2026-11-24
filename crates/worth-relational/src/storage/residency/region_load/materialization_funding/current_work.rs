@@ -145,7 +145,8 @@ pub(super) fn charge(
         for (_, set) in table.iter() {
             work(
                 request,
-                size_of::<crate::durability::data::DurableAdjacencyEntry>() as u64,
+                size_of::<crate::storage::data::partition_checkpoint_image::DurableAdjacencyEntry>()
+                    as u64,
             )?;
             work(request, array::<RelationId>(set.current_ids().len())?)?;
             work(
@@ -221,10 +222,8 @@ fn state_work(
             }
         };
         let Some(contract) = selected else { continue };
-        let nested = crate::durability::checkpoints::aspect_state_images::contract_clone_bytes(
-            contract, request,
-        )
-        .map_err(Failure::Request)?;
+        let nested = super::aspect_contract::contract_clone_bytes(contract, request)
+            .map_err(Failure::Request)?;
         work(request, sum(size_of::<AspectContract>() as u64, nested)?)?;
         match value.view() {
             View::Scalar(value) => work(

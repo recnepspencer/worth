@@ -1,14 +1,15 @@
 //! Release replayed envelopes only against their verified journal placement.
+use crate::durability::canonical_commit_artifact::journal_source_read::readmit_journal_commit;
 use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact;
 use crate::durability::data::{DurabilityError, RecoveryFailureClass, RelationalRecoveryStop};
-use crate::runtime::RelationalRuntime;
+use crate::runtime::state::subsystems::history::HistorySubsystem;
 use crate::storage::data::{
     RelationalStorageSubject, RelationalStorageUnavailable, RelationalStorageUnavailableCause,
 };
 
 pub(super) fn install(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
+    history: &HistorySubsystem,
     plan: &crate::durability::data::RecoveryPlan,
 ) -> Result<(), RelationalRecoveryStop> {
     for readmitted in &plan.tail_log {
@@ -19,8 +20,7 @@ pub(super) fn install(
         let Some((digest, source)) = readmitted.journal_placement() else {
             continue;
         };
-        let artifact = runtime
-            .history
+        let artifact = history
             .commit_artifact(readmitted.commit_id())
             .ok_or_else(|| corrupt("recovered journal entry has no catalog artifact"))?;
         let cell = artifact.envelope_residency();
@@ -36,11 +36,12 @@ pub(super) fn install(
             }
             .into());
         }
-        let entry = crate::history::RetainedCanonicalIndex::from_publication(
+        let entry = crate::history::commit::RetainedCanonicalIndex::from_publication(
             &positioned,
             artifact.roots(),
             digest,
             execution,
+            readmit_journal_commit,
         )
         .map_err(|cause| {
             RelationalRecoveryStop::from(

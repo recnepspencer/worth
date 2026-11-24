@@ -1,5 +1,5 @@
 use crate::history::data::CommitId;
-use crate::runtime::state::subsystems::history::HistorySubsystem;
+use crate::history::envelope_demand::CanonicalHistoryRead;
 use crate::schema::data::DescriptorSemanticsVersion;
 
 pub(in crate::replay) fn select_replay_checkpoint(
@@ -21,7 +21,7 @@ pub(in crate::replay) fn select_replay_checkpoint(
 }
 
 pub(in crate::replay) fn replay_tail_log(
-    history: &HistorySubsystem,
+    history: CanonicalHistoryRead<'_>,
     chain: &[CommitId],
     checkpoint: Option<&crate::durability::data::DurableCheckpoint>,
 ) -> Vec<crate::durability::migration::ReadmittedCanonicalCommit> {
@@ -34,13 +34,11 @@ pub(in crate::replay) fn replay_tail_log(
         .copied()
         .filter(|commit_id| tail_start.is_none_or(|start| *commit_id > start))
         .filter_map(|commit_id| {
-            history
-                .positioned_canonical_commit(commit_id)
-                .map(|commit| {
-                    crate::durability::migration::ReadmittedCanonicalCommit::exact(
-                        commit.as_ref().clone(),
-                    )
-                })
+            history.performed.positioned(commit_id).map(|commit| {
+                crate::durability::migration::ReadmittedCanonicalCommit::exact(
+                    commit.as_ref().clone(),
+                )
+            })
         })
         .collect()
 }
@@ -87,7 +85,7 @@ pub(in crate::replay) fn replay_fork_transitions(
 }
 
 pub(in crate::replay) fn authoritative_replay_envelopes(
-    history: &HistorySubsystem,
+    history: CanonicalHistoryRead<'_>,
     chain: &[CommitId],
 ) -> Vec<CommitId> {
     let target_commit_id = chain.last().copied();
@@ -109,7 +107,7 @@ pub(in crate::replay) fn authoritative_replay_envelopes(
 }
 
 pub(in crate::replay) fn target_descriptor_semantics_version(
-    history: &HistorySubsystem,
+    history: CanonicalHistoryRead<'_>,
     chain: &[CommitId],
 ) -> DescriptorSemanticsVersion {
     chain

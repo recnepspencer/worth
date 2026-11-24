@@ -31,7 +31,13 @@ impl RecoveredRelationalRuntimeAuthority {
             .ok_or_else(|| refused(Cause::OwnerUnavailable))?;
         let (root, descriptor) = self
             .recovered_roots
-            .exact_image(execution, runtime, recorded)
+            .exact_image(
+                execution,
+                &runtime.history,
+                &runtime.config.schema.registry,
+                &runtime.services.symbols,
+                recorded,
+            )
             .map_err(|cause| refused(Cause::Source(cause)))?
             .ok_or_else(|| refused(Cause::MissingRecoveredImage))?;
         match recorded.target() {

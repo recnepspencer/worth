@@ -3,8 +3,7 @@ use super::{
     RegionContentFailure, RelationalRegionKindCommitment, RelationalRegionResidency,
     RelationalRegionRetention,
 };
-use crate::branch::RelationalBranchRootSchemaAuthority;
-use crate::runtime::RuntimeSymbolTable;
+use crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable;
 use crate::storage::data::{
     RelationalStorageSubject, RelationalStorageUnavailable, RelationalStorageUnavailableCause,
 };
@@ -12,6 +11,7 @@ use crate::storage::overlay::{
     PartitionContentCommitment, PartitionMutationJournal, PartitionState,
     RelationalPartitionAllocationInventory,
 };
+use crate::storage::residency::RelationalRegionSchema;
 use crate::storage::substrate::{RecordArena, RecordKind};
 use std::sync::Arc;
 
@@ -45,7 +45,7 @@ impl PreparedResidentRegion {
         basis: RegionCaptureBasis<'_>,
         overlay: &PartitionState,
         journal: &PartitionMutationJournal,
-        schema: Arc<RelationalBranchRootSchemaAuthority>,
+        schema: impl FnOnce() -> Arc<dyn RelationalRegionSchema>,
         symbols: &RuntimeSymbolTable,
         change: Option<&crate::storage::substrate::maintenance::PartitionChange>,
     ) -> Result<Self, RegionContentFailure> {
@@ -151,13 +151,16 @@ impl PreparedResidentRegion {
         let live_counts = super::LiveRecordCounts::from_partition(&partition);
         let partition_id = partition.partition_id;
         let retention = if !history_presence.is_complete() {
+            let codec = basis.retention.cell().history_codec().ok_or_else(|| {
+                absent(RelationalStorageUnavailableCause::MissingResidentPublicationRegion)
+            })?;
+            let readmission = super::ResidentHistoryReadmission::new(schema(), symbols, codec);
             RelationalRegionRetention::from_head_lease(RelationalRegionResidency::resident_head(
                 partition,
                 commitment,
                 kind_indexes,
                 history_presence,
-                schema,
-                symbols,
+                readmission,
             ))
         } else {
             RelationalRegionRetention::from_lease(RelationalRegionResidency::resident(

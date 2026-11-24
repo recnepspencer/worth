@@ -217,6 +217,20 @@ impl RelationalBranchRootSchemaAuthority {
     }
 }
 
+impl crate::storage::residency::RelationalRegionSchema for RelationalBranchRootSchemaAuthority {
+    fn registry(&self) -> &RelationalSchemaRegistry {
+        self.registry()
+    }
+
+    fn aspect_plans(&self) -> &AspectContractPlanCatalog {
+        self.aspect_plans()
+    }
+
+    fn retained_aspect_contracts(&self) -> &[AspectContract] {
+        self.retained_aspect_contracts()
+    }
+}
+
 impl PortableAspectContractLookup for RelationalBranchRootSchemaAuthority {
     fn contract_for(&self, key: &AspectKey) -> Option<AspectContract> {
         self.retained_aspect_contracts.get(key).cloned()

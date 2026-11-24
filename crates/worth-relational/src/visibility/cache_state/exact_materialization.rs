@@ -33,7 +33,7 @@ pub(crate) fn materialize_exact_state<'a>(
     build: impl FnOnce() -> SnapshotState,
 ) -> Option<SnapshotState> {
     let inputs = inputs.into();
-    if key.version_id().as_u64() > inputs.history.history.current_version_id().as_u64() {
+    if key.version_id().as_u64() > inputs.history.history.branch.current_version_id().as_u64() {
         return None;
     }
     if let Some(state) = cached_state(inputs, key) {

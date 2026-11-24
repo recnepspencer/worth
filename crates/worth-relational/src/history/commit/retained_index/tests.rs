@@ -41,6 +41,16 @@ fn host(limit: u64) -> SerialRequest {
         None,
     )
 }
+fn never_read_journal(
+    _: &RelationalCommitIndexEntry,
+    _: &dyn crate::durability::medium::RelationalDurableColdSource,
+    _: &ExecutionRequest<'_, '_>,
+    _: u64,
+) -> Result<PositionedCanonicalCommit, crate::durability::data::recovery_stop::RelationalRecoveryStop>
+{
+    panic!("index allocation tests never read the journal")
+}
+
 #[test]
 fn retained_index_clone_keeps_exact_metadata_after_original_drop() {
     let input = input();
@@ -57,7 +67,8 @@ fn retained_index_clone_keeps_exact_metadata_after_original_drop() {
     assert!(input.commit.branch_id.0.capacity() > 4096);
     let host = host(64 * 1024);
     let request = ExecutionRequest::serial(&host);
-    let original = RetainedCanonicalIndex::copy_original(&input, &request).unwrap();
+    let original =
+        RetainedCanonicalIndex::copy_original(&input, &request, never_read_journal).unwrap();
     assert_eq!(original.as_ref(), &input);
     assert_eq!(host.memory().unwrap().charged_memory_bytes(), bill(&input));
     let clone = original.clone();
@@ -88,7 +99,8 @@ fn retained_index_copy_refuses_exact_bill_before_copy_or_cancellation() {
     assert!(controller > 0);
     let target = host(controller + bill(&input) - 1);
     let request = ExecutionRequest::serial(&target);
-    let cause = RetainedCanonicalIndex::copy_original(&input, &request).unwrap_err();
+    let cause =
+        RetainedCanonicalIndex::copy_original(&input, &request, never_read_journal).unwrap_err();
     let (requested, admitted) = match cause {
         crate::execution::denial_cause::RelationalExecutionDenialCause::PolicyMemoryExhausted {
             requested,
@@ -108,7 +120,7 @@ fn retained_index_copy_refuses_exact_bill_before_copy_or_cancellation() {
     );
     cancel.cancel();
     let request = ExecutionRequest::serial(&host);
-    assert!(RetainedCanonicalIndex::copy_original(&input, &request).is_err());
+    assert!(RetainedCanonicalIndex::copy_original(&input, &request, never_read_journal).is_err());
     assert_eq!(host.memory().unwrap().charged_memory_bytes(), 0);
     assert_eq!(input.commit.branch_id.0, "short-index");
     assert_eq!(input.commit.parents, [CommitId(1)]);

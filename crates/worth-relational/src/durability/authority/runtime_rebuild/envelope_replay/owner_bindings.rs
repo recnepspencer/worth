@@ -22,29 +22,3 @@ pub(super) fn owner_options_for_branch(
             )
         })
 }
-
-pub(super) fn owner_merge_parent_bases(
-    restored: &mut RelationalRuntime,
-    branches: &[BranchId],
-) -> Result<Vec<crate::branch::AdmittedRelationalBranchBasis>, DurabilityError> {
-    branches
-        .iter()
-        .map(|branch| {
-            let identity = restored.branch_identity(branch).map_err(|denial| {
-                DurabilityError::new(
-                    RecoveryFailureClass::ReplayFailure,
-                    format!("recovered merge parent identity was denied: {denial:?}"),
-                )
-            })?;
-            restored
-                .transaction_validation_input_for(&identity)
-                .map(|options| options.basis().clone())
-                .map_err(|denial| {
-                    DurabilityError::new(
-                        RecoveryFailureClass::ReplayFailure,
-                        format!("recovered merge parent binding was denied: {denial:?}"),
-                    )
-                })
-        })
-        .collect()
-}

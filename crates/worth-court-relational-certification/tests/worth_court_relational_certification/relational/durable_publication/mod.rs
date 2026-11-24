@@ -207,3 +207,5 @@ mod checkpoint_shipping_lookup;
 mod checkpoint_truth_equivalence;
 
 mod checkpoint_subscriber_source;
+
+mod native_checkpoint_partitions;

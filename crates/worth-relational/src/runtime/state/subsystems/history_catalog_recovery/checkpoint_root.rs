@@ -3,9 +3,9 @@ use super::*;
 
 pub(super) fn is_readmitted_checkpoint_root(
     history: &HistorySubsystem,
-    root: &crate::branch::RelationalBranchRoot,
+    root: &crate::branch::root::RelationalBranchRoot,
 ) -> Result<bool, String> {
-    let Some(crate::branch::RelationalRootCommitEvidence::Checkpoint(commit)) =
+    let Some(crate::branch::root::RelationalRootCommitEvidence::Checkpoint(commit)) =
         root.commit_evidence()
     else {
         return Ok(false);

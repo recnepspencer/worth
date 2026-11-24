@@ -7,7 +7,7 @@ impl<'a> From<&'a RelationalRuntime> for HistoricalSelectionAncestry<'a> {
     fn from(runtime: &'a RelationalRuntime) -> Self {
         Self {
             runtime_instance_id: runtime.runtime_instance_id(),
-            history: &runtime.history,
+            history: runtime.history.canonical_read(),
         }
     }
 }

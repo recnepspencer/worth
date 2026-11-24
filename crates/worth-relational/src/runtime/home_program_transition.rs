@@ -135,6 +135,26 @@ pub(crate) struct RelationalRootExecutionContracts {
     _memory: Option<ExecutionMemoryReservation>,
 }
 
+pub(crate) fn retain_root_execution_contracts(
+    root: &crate::branch::root::RelationalBranchRoot,
+) -> Option<Arc<RelationalRootExecutionContracts>> {
+    root.execution_contracts.get().map(|payload| {
+        let original: Arc<dyn std::any::Any + Send + Sync> = payload.clone();
+        original
+            .downcast::<RelationalRootExecutionContracts>()
+            .expect("the Home contract binder installed the root's original executor inventory")
+    })
+}
+
+pub(crate) fn install_root_execution_contracts(
+    root: &crate::branch::root::RelationalBranchRoot,
+    contracts: &Arc<RelationalRootExecutionContracts>,
+) -> Result<(), ()> {
+    root.execution_contracts
+        .set(contracts.clone())
+        .map_err(|_| ())
+}
+
 impl RelationalRuntime {
     /// Compile the complete successor without installing it or invoking a
     /// provider. Only a committed Home step can later admit it for execution.
@@ -152,7 +172,7 @@ impl RelationalRuntime {
             return Err(Denial::ForeignRuntime);
         }
         let snapshot = self.configuration_binding().snapshot();
-        let source_generation = predecessor.inner.root.execution_contracts.get().map_or(
+        let source_generation = retain_root_execution_contracts(&predecessor.inner.root).map_or(
             snapshot.schema_contract_runtime.custom_invariant_generation,
             |source| source.contracts.custom_invariant_generation,
         );

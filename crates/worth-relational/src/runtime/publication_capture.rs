@@ -22,10 +22,11 @@ impl RelationalPreparationRuntime {
             storage: &self.config.storage,
             attach_execution_inventory: move |root: &PreparedRelationalBranchRootCapture| {
                 if let Some(contracts) = inventory {
-                    root.root()
-                        .execution_contracts
-                        .set(Arc::clone(contracts))
-                        .expect("prepared Home root has not bound any executor");
+                    crate::runtime::home_program_transition::install_root_execution_contracts(
+                        root.root(),
+                        contracts,
+                    )
+                    .expect("prepared Home root has not bound any executor");
                 }
             },
         }

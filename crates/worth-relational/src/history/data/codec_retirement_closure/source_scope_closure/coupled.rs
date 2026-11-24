@@ -60,7 +60,7 @@ pub(super) fn validate_ancestry(
                     }
                     let retiring = select(&anchors, &preceding, context)?;
                     exact(
-                        &retiring,
+                        retiring.iter().map(|item| item.origin.as_ref()),
                         source.publications.iter().map(Arc::as_ref),
                         false,
                         context,
@@ -78,7 +78,7 @@ pub(super) fn validate_ancestry(
                         )?;
                     }
                     exact(
-                        &required,
+                        required.iter().map(|item| item.origin.as_ref()),
                         group
                             .participants
                             .iter()
@@ -157,7 +157,7 @@ pub(super) fn validate_ancestry(
                         )?;
                     }
                     exact(
-                        &required,
+                        required.iter().map(|item| item.origin.as_ref()),
                         group
                             .participants
                             .iter()
@@ -235,14 +235,13 @@ fn include_later<'a>(
     Ok(())
 }
 
-fn exact<'a>(
-    required: &[SelectedOutputPublication],
+fn exact<'a, 'b>(
+    required: impl Iterator<Item = &'b CanonicalRequiredOutputOrigin> + Clone,
     recorded: impl Iterator<Item = &'a CanonicalRequiredOutputOrigin> + Clone,
     preserve: bool,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), Failure> {
-    for expected in required {
-        let before = &expected.origin;
+    for before in required.clone() {
         for observed in recorded.clone() {
             charge(
                 context,
@@ -271,15 +270,15 @@ fn exact<'a>(
         }
     }
     for observed in recorded {
-        for expected in required {
+        for expected in required.clone() {
             charge(
                 context,
-                observed.meaning.family.len() + expected.origin.meaning.family.len() + 65,
+                observed.meaning.family.len() + expected.meaning.family.len() + 65,
             )?;
         }
         if !required
-            .iter()
-            .any(|item| item.origin.meaning.same_route(&observed.meaning))
+            .clone()
+            .any(|item| item.meaning.same_route(&observed.meaning))
         {
             return Err(Failure::at_source(
                 observed.meaning.source_scope,

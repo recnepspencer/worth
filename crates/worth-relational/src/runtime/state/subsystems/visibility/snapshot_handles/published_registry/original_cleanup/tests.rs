@@ -25,7 +25,7 @@ fn result_snapshot_cleanup_registry_contention_preserves_exact_cell_and_competin
     let registry = runtime.visibility.handles.published.clone();
     let original_root = registry
         .binding(result.snapshot.snapshot_id())
-        .map(|binding| Arc::downgrade(binding.basis.root()))
+        .map(|binding| Arc::downgrade(&binding.basis.retain_root()))
         .unwrap();
     let (_, fork_source) = runtime
         .observe_fork_source(runtime.main_branch_identity().branch_id())

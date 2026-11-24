@@ -1,5 +1,5 @@
 pub(crate) use recovery::{AdmittedRecoveredCodecPublication, RecoveredCodecPublicationCustody};
-pub(crate) use runtime_rebuild::RecoveredRootInventory;
+pub(crate) use runtime_rebuild::root_inventory::RecoveredRootInventory;
 pub(crate) mod associated_effects;
 mod authority_continuity;
 pub use associated_effects::{
@@ -55,9 +55,9 @@ pub use recovery::{
     RelationalHomeRecoveryPreparationDenial,
 };
 mod runtime_rebuild;
-pub(crate) use runtime_rebuild::replay_commit_stop;
-pub(crate) use runtime_rebuild::RecordedReplayResultSchema;
-pub(crate) use runtime_rebuild::RecoveredIndexCatalog;
+pub(crate) use runtime_rebuild::envelope_replay::commit_stop::replay_commit_stop;
+pub(crate) use runtime_rebuild::index_catalog::RecoveredIndexCatalog;
+pub(crate) use runtime_rebuild::recorded_result_schema::RecordedReplayResultSchema;
 
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 

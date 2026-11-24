@@ -11,3 +11,5 @@ pub(crate) use adjacency_direction::{AdjacencyDirection, AdjacencyKindBasis};
 pub(crate) use bitsets::*;
 pub(crate) use relation_projection::RegionRelationProjection;
 pub(crate) use sparse_adjacency_table::*;
+
+pub(crate) mod current_records;

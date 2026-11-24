@@ -1,6 +1,6 @@
 //! Lazy exact component images are read from this recovery's admitted directory.
 use super::*;
-use crate::branch::{
+use crate::branch::recorded_basis::{
     RecordedRelationalComponentReference as Recorded, RecordedRelationalComponentTarget as Target,
 };
 use crate::durability::data::RelationalRecoveryStop;
@@ -8,9 +8,9 @@ use crate::durability::data::RelationalRecoveryStop;
 impl RecoveredRootInventory {
     pub(super) fn install_checkpoint_headers(
         &mut self,
-        runtime: &RelationalRuntime,
+        checkpoint: &RelationalCheckpointManifestSelection,
     ) -> Result<(), DurabilityError> {
-        let Some(directory) = runtime.durability.checkpoint_selection().snapshot() else {
+        let Some(directory) = checkpoint.snapshot() else {
             return Ok(());
         };
         self.directory = Some(Arc::downgrade(&directory));
@@ -53,7 +53,9 @@ impl RecoveredRootInventory {
     pub(super) fn materialize_checkpoint_image(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &RelationalRuntime,
+        history: &HistorySubsystem,
+        schema: &RelationalSchemaRegistry,
+        symbols: &RuntimeSymbolTable,
         recorded: &Recorded,
         image: &RecoveredRootImage,
     ) -> Result<Arc<RelationalBranchRoot>, RelationalRecoveryStop> {
@@ -65,9 +67,9 @@ impl RecoveredRootInventory {
         let mut regions =
             crate::durability::checkpoints::region_directory::ReadmittedRegionDirectory::new(
                 directory.clone(),
-                runtime.services.symbols.clone(),
+                symbols.clone(),
                 execution,
-                &runtime.config.schema.registry,
+                schema,
             )?;
         let root = match recorded.target() {
             Target::Empty => {
@@ -93,8 +95,7 @@ impl RecoveredRootInventory {
                             && header.recorded_components.contains(recorded.descriptor())
                     })
                     .ok_or_else(|| corrupt("recorded canonical header unavailable"))?;
-                let artifact = runtime
-                    .history
+                let artifact = history
                     .commit_artifact(header.commit_id)
                     .ok_or_else(|| corrupt("recorded component has no actual catalog source"))?;
                 let (entry, source) = artifact
@@ -109,7 +110,7 @@ impl RecoveredRootInventory {
                 {
                     return Err(corrupt("recorded component source mismatch").into());
                 }
-                regions.readmit_root(&runtime.history, header, execution)?
+                regions.readmit_root(history, header, execution)?
             }
         };
         if let RecoveredRootHold::Checkpoint(materialized) = &image.root {
@@ -128,10 +129,10 @@ impl RecoveredRootInventory {
 /// Only the owner rebinds an exact admitted header after verifying its root.
 pub(super) fn bind_recorded_descriptor(
     descriptor: &RelationalBranchBasisDescriptor,
-    runtime: &RelationalRuntime,
+    runtime_id: u64,
     root: &Arc<RelationalBranchRoot>,
 ) -> Result<RelationalBranchBasisDescriptor, RelationalRecoveryStop> {
     descriptor
-        .bind_readmitted_root(runtime.runtime_instance_id(), root)
+        .bind_readmitted_root(runtime_id, root)
         .map_err(|cause| corrupt(format!("recorded component binding: {cause:?}")).into())
 }

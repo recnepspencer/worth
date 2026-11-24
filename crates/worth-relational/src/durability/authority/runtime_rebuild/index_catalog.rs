@@ -1,10 +1,9 @@
 //! Recovery-only original catalog payload, issued after actual source admission.
 use crate::durability::data::{DurabilityError, RecoveryFailureClass, RelationalRecoveryStop};
 use crate::history::data::CanonicalIndexDefinitionDelta;
-use crate::runtime::RelationalRuntime;
+use crate::runtime::state::subsystems::indexing::IndexingSubsystem;
 
-mod predecessor;
-pub(super) use predecessor::reconstruct_predecessor;
+pub(super) mod predecessor;
 
 #[derive(Debug, Clone)]
 pub(crate) struct RecoveredIndexCatalog {
@@ -21,7 +20,7 @@ impl RecoveredIndexCatalog {
             CanonicalIndexDefinitionDelta,
             crate::history::data::CanonicalAuthoredIndexWrites,
         ),
-        crate::transactions::data::TransactionCommitError,
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
     > {
         self.require_runtime(runtime)?;
         Ok((self.delta.clone(), self.authored.clone()))
@@ -30,11 +29,14 @@ impl RecoveredIndexCatalog {
     fn require_runtime(
         &self,
         runtime: u64,
-    ) -> Result<(), crate::transactions::data::TransactionCommitError> {
+    ) -> Result<
+        (),
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+    > {
         if runtime != self.runtime_instance_id {
-            return Err(crate::transactions::data::TransactionCommitError::conflict(
-                crate::transactions::data::CommitConflict::new(
-                    crate::transactions::data::ConflictClass::ForeignRuntime {
+            return Err(crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::conflict(
+                crate::transactions::data::outcomes::commit_conflict::CommitConflict::new(
+                    crate::transactions::data::outcomes::conflict_class::ConflictClass::ForeignRuntime {
                         expected_runtime_instance_id: runtime,
                         actual_runtime_instance_id: self.runtime_instance_id,
                     },
@@ -46,30 +48,29 @@ impl RecoveredIndexCatalog {
 }
 pub(super) fn readmit(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
+    indexes: &IndexingSubsystem,
+    runtime_instance_id: u64,
     original: &crate::durability::migration::ReadmittedCanonicalCommit,
+    recover_index_routing: impl FnOnce() -> Result<
+        (),
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    >,
 ) -> Result<RecoveredIndexCatalog, RelationalRecoveryStop> {
     let delta = &original.envelope().index_definition_delta;
     for _ in delta.definitions() {
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
     }
-    runtime
-        .indexes
-        .readmit_catalog_delta(delta)
-        .map_err(|detail| {
-            DurabilityError::new(RecoveryFailureClass::CorruptCanonicalArtifact, detail)
-        })?;
+    indexes.readmit_catalog_delta(delta).map_err(|detail| {
+        DurabilityError::new(RecoveryFailureClass::CorruptCanonicalArtifact, detail)
+    })?;
     if !delta.definitions().is_empty() {
         // A definition insert retires the installed routing, exactly as on the
         // live registration path; replay must derive index writes under the
         // same routing the original commit used.
-        runtime
-            .index_authority()
-            .recover_installed_index_routing(execution)
-            .map_err(RelationalRecoveryStop::Request)?;
+        recover_index_routing().map_err(RelationalRecoveryStop::Request)?;
     }
     Ok(RecoveredIndexCatalog {
-        runtime_instance_id: runtime.runtime_instance_id(),
+        runtime_instance_id,
         delta: delta.clone(),
         authored: original.envelope().authored_index_writes.clone(),
     })

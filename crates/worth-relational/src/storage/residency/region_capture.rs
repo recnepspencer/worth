@@ -1,29 +1,20 @@
 pub(super) mod complete;
+use super::region_capture_data::CapturedRegionMembers;
 use super::region_image::*;
-use crate::branch::RelationalBranchRootSchemaAuthority;
 use crate::durability::checkpoints::aspect_state_images::CheckpointAspectContractCatalog;
 use crate::durability::checkpoints::images::partition_to_image_with_contracts;
-use crate::durability::medium::RelationalDurableMemberLocator;
 use crate::storage::data::RelationalStorageUnavailableCause as Cause;
 use crate::storage::overlay::{PartitionContentCommitment, PartitionState};
 use crate::storage::partition::AdjacencyKindBasis;
+use crate::storage::residency::RelationalRegionSchema;
 use crate::storage::substrate::maintenance::ReconstructionLane;
-
-pub(crate) struct CapturedRegionMembers {
-    pub(crate) history_members:
-        std::sync::Arc<crate::durability::data::RelationalHistoryMemberDirectory>,
-    pub(crate) directory: std::sync::Arc<super::RegionRecordDirectory>,
-    pub(crate) kind_authority: super::RelationalRegionKindCommitment,
-    pub(crate) head: (RelationalDurableMemberLocator, Vec<u8>),
-    pub(crate) history: (RelationalDurableMemberLocator, Vec<u8>),
-}
 
 pub(crate) fn capture_region_members(
     lane: &ReconstructionLane<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     partition: &PartitionState,
     commitment: &PartitionContentCommitment,
-    schema: &RelationalBranchRootSchemaAuthority,
+    schema: &dyn RelationalRegionSchema,
     schema_carrier_digest: [u8; 32],
 ) -> Result<CapturedRegionMembers, super::RelationalResidencyDemandFailure> {
     let history_frontiers = commitment

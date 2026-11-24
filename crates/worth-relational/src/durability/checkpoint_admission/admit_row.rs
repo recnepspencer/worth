@@ -3,6 +3,7 @@ use super::admitted_commit::{require_encoded, CheckpointAdmittedCommit};
 use super::refusal::RelationalCheckpointAdmissionRefusal as Refusal;
 use super::row_custody::AdmissionCustody;
 use crate::branch::root::RelationalBranchVisibilityCommitment;
+use crate::durability::canonical_commit_artifact::journal_source_read::readmit_journal_commit;
 use crate::durability::data::RelationalCheckpointDirectory;
 use crate::history::commit::{RelationalCommitIndexEntry, RetainedCanonicalIndex};
 use serde::{Deserialize, Serialize};
@@ -56,7 +57,8 @@ pub(super) fn admit_row(
     {
         return Err(Refusal::InvalidProjectedMeaning);
     }
-    let index = RetainedCanonicalIndex::copy_original(entry, request).map_err(Refusal::Request)?;
+    let index = RetainedCanonicalIndex::copy_original(entry, request, readmit_journal_commit)
+        .map_err(Refusal::Request)?;
     CheckpointAdmittedCommit::retain(
         owner,
         image.clone(),

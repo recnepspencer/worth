@@ -1,65 +1,39 @@
-//! The exact retained root and observation stay in their original allocation.
+//! Restricted reads backed by the exact selected root allocation.
 use crate::branch::projection_view::snapshot_head::SelectedSnapshotHead;
 use crate::branch::root::projection::SnapshotProjectionRoot;
-use crate::branch::root::RelationalBranchRoot;
 use crate::history::data::{BranchId, CommitId};
 use crate::identity::data::{PartitionId, VersionId};
 use crate::visibility::snapshot_states::VisibilitySnapshotStateKey;
 use std::sync::Arc;
 
+pub(crate) trait SelectedSnapshotSource:
+    std::fmt::Debug + Send + Sync + std::any::Any
+{
+    fn project(&self) -> SnapshotProjectionRoot<'_>;
+    fn project_head(&self, partition: PartitionId) -> SelectedSnapshotHead<'_>;
+    fn root_id(&self) -> u64;
+    fn commit_id(&self) -> Option<CommitId>;
+}
+
 /// Owner-selected immutable root retained by a snapshot handle binding.
 #[derive(Clone, Debug)]
 pub(crate) struct VisibilitySnapshotBasis {
-    key: VisibilitySnapshotStateKey,
-    pub(super) root: Arc<RelationalBranchRoot>,
+    pub(super) key: VisibilitySnapshotStateKey,
+    pub(super) root: Arc<dyn SelectedSnapshotSource>,
     pub(super) _retained_observation: Option<crate::mvcc::observation::RelationalBranchObservation>,
 }
 
 /// Exact root custody restricted to the selected snapshot's Head regions.
 #[derive(Debug)]
-pub(crate) struct SnapshotHeadSelection(Arc<RelationalBranchRoot>);
+pub(crate) struct SnapshotHeadSelection(Arc<dyn SelectedSnapshotSource>);
 
 impl SnapshotHeadSelection {
     pub(crate) fn region(&self, partition: PartitionId) -> SelectedSnapshotHead<'_> {
-        self.0.project_selected_head(partition)
+        self.0.project_head(partition)
     }
 }
 
 impl VisibilitySnapshotBasis {
-    pub(crate) fn from_applied_root(
-        branch_id: BranchId,
-        version_id: VersionId,
-        root: Arc<RelationalBranchRoot>,
-    ) -> Self {
-        Self {
-            key: VisibilitySnapshotStateKey::for_selection(
-                branch_id,
-                version_id,
-                root.id(),
-                root.schema_authority().authority_digest(),
-            ),
-            root,
-            _retained_observation: None,
-        }
-    }
-
-    pub(crate) fn from_observation(
-        observation: &crate::mvcc::observation::RelationalBranchObservation,
-    ) -> Self {
-        let version_id = observation.version_id();
-        let root = Arc::clone(observation.selected_root());
-        Self {
-            key: VisibilitySnapshotStateKey::for_selection(
-                observation.identity().branch_id().clone(),
-                version_id,
-                root.id(),
-                root.schema_authority().authority_digest(),
-            ),
-            root,
-            _retained_observation: Some(observation.clone()),
-        }
-    }
-
     pub(crate) fn key(&self) -> &VisibilitySnapshotStateKey {
         &self.key
     }
@@ -77,7 +51,7 @@ impl VisibilitySnapshotBasis {
     }
 
     pub(crate) fn projection_root(&self) -> SnapshotProjectionRoot<'_> {
-        self.root.project_snapshot()
+        self.root.project()
     }
 
     pub(crate) fn take_observation_retirement(
@@ -88,12 +62,8 @@ impl VisibilitySnapshotBasis {
             .map(|value| value.into_retirement())
     }
 
-    pub(crate) fn root(&self) -> &Arc<RelationalBranchRoot> {
-        &self.root
-    }
-
     pub(crate) fn root_id(&self) -> u64 {
-        self.root.id()
+        self.root.root_id()
     }
 
     pub(crate) fn commit_id(&self) -> Option<CommitId> {

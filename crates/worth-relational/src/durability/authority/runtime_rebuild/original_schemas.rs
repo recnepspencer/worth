@@ -1,5 +1,5 @@
 //! One admitted schema graph is shared by source roles and selected roots.
-use crate::branch::RelationalBranchRootSchemaAuthority;
+use crate::branch::root::schema::RelationalBranchRootSchemaAuthority;
 use crate::durability::checkpoints::region_directory::corrupt;
 use crate::durability::data::{RecoveryPlan, RelationalRecoveryStop};
 use crate::durability::source_initial_inputs::schema_catalog::ReadmittedSourceSchemaCatalog;

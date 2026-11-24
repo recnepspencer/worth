@@ -5,9 +5,7 @@ use std::sync::{
 
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
 
-use crate::durability::data::{
-    RecoveryFailureClass, RecoveryPlan, RecoveryVerificationMode, RelationalRecoveryStop,
-};
+use crate::durability::data::{RecoveryPlan, RecoveryVerificationMode, RelationalRecoveryStop};
 use crate::execution::RelationalExecutionDenialCause as Cause;
 use crate::runtime::RelationalRuntime;
 use crate::tests::support::{create_entity, runtime_with_test_schema};
@@ -59,26 +57,6 @@ fn plan_from_bytes(source: &RelationalRuntime, bytes: &[u8]) -> RecoveryPlan {
 
 fn assert_interruption(error: RelationalRecoveryStop, cause: Cause) {
     assert_eq!(error, RelationalRecoveryStop::Request(cause));
-}
-
-#[test]
-fn verification_replay_returns_control_outside_its_serialized_outcome() {
-    let (source, _bytes) = fixture();
-    let cancellation = CancellationSource::new();
-    cancellation.cancel();
-    let host =
-        SerialRequest::from_memory(SerialMemoryBudget::new(None), cancellation.token(), None);
-    let request = crate::replay::data::RelationalReplayRequest {
-        commit_id: source.history().latest_commit().unwrap().commit_id,
-        branch_id: crate::history::data::BranchId("main".into()),
-        execution_mode: crate::replay::data::ReplayExecutionMode::SerialDeterministic,
-        verification_mode: crate::replay::data::ReplayVerificationMode::NormalRecoveryVerification,
-    };
-    let error = source
-        .replay_authority()
-        .replay_commit(request, &ExecutionRequest::serial(&host))
-        .unwrap_err();
-    assert_interruption(error, Cause::Cancelled);
 }
 
 fn live_retry(source: &RelationalRuntime, bytes: &[u8], target: &mut RelationalRuntime) {
@@ -250,78 +228,6 @@ fn recovery_entry_stops_change_no_record_or_diagnostic() {
             before,
             "{cause:?}: entry stop changed target or diagnostics"
         );
-    }
-}
-
-#[test]
-fn cancelled_checkpoint_restore_consults_before_decoding_corrupt_bytes() {
-    let mut target = runtime_with_test_schema();
-    let before = observable_state(&target);
-    let cancellation = CancellationSource::new();
-    cancellation.cancel();
-    let host =
-        SerialRequest::from_memory(SerialMemoryBudget::new(None), cancellation.token(), None);
-    let corrupt =
-        crate::durability::data::RelationalNativeCheckpoint::from_untrusted_bytes(vec![0xff]);
-    assert_eq!(
-        target
-            .durability_recovery()
-            .restore_native_checkpoint(&ExecutionRequest::serial(&host), &corrupt,)
-            .unwrap_err(),
-        RelationalRecoveryStop::Request(Cause::Cancelled),
-    );
-    assert_eq!(
-        observable_state(&target),
-        before,
-        "entry stop changed target or diagnostics"
-    );
-}
-
-#[test]
-fn corrupt_replay_keeps_its_durability_failure() {
-    let (source, bytes) = fixture();
-    let plan = plan_from_bytes(&source, &bytes);
-    let host = crate::test_execution_policy::serial_request();
-    let execution = &ExecutionRequest::serial(&host);
-    let mut envelope = plan.tail_log[0]
-        .envelope()
-        .copy_original_for_test(execution);
-    // A merge without its required execution authority is corrupt evidence.
-    let branch_context = envelope.branch_context.clone();
-    envelope
-        .body_mut_for_test()
-        .merge_parent_branches
-        .push(branch_context);
-    let mut target = runtime_with_test_schema();
-    let catalog = super::super::index_catalog::readmit(
-        &ExecutionRequest::serial(&host),
-        &target,
-        &plan.tail_log[0],
-    )
-    .unwrap();
-    let error = super::effect::replay_merge_commit(
-        &ExecutionRequest::serial(&host),
-        &mut target,
-        &envelope,
-        plan.tail_log[0].position(),
-        catalog,
-        None,
-    )
-    .unwrap_err();
-    match error {
-        RelationalRecoveryStop::AdmissionImage(cause) => {
-            panic!("corrupt original evidence became image refusal: {cause:?}")
-        }
-        RelationalRecoveryStop::Durability(error) => {
-            assert_eq!(error.class, RecoveryFailureClass::ReplayFailure)
-        }
-        RelationalRecoveryStop::Request(cause) => {
-            panic!("corrupt evidence became request control: {cause:?}")
-        }
-        RelationalRecoveryStop::Content(cause) => panic!("unexpected content refusal: {cause:?}"),
-        RelationalRecoveryStop::Allocation(cause) => {
-            panic!("corrupt evidence became allocation failure: {cause:?}")
-        }
     }
 }
 

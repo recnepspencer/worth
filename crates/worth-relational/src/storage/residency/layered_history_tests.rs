@@ -1,13 +1,14 @@
 //! Real encoded members cross Head capture, placement, reopen and Full demand.
 use super::*;
-use crate::durability::data::{RelationalCheckpointMember, RelationalHistoryMemberDirectory};
 use crate::identity::data::VersionId;
+use crate::storage::data::checkpoint_member::RelationalCheckpointMember;
+use crate::storage::data::history_member_directory::RelationalHistoryMemberDirectory;
 use crate::storage::overlay::PartitionState;
 use std::collections::BTreeSet;
 
 #[test]
 fn head_capture_acknowledges_and_carries_the_entire_layer_closure_without_loading() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let fixture = region_with_history();
     let mut cold = fixture.cold.clone();
@@ -26,9 +27,10 @@ fn head_capture_acknowledges_and_carries_the_entire_layer_closure_without_loadin
         let captured = cell
             .capture_checkpoint(
                 execution,
-                &cold.schema,
+                cold.schema.as_ref(),
                 cold.schema_carrier_digest,
                 &cold.symbols.interner_snapshot(),
+                cold.readmission.capture_members,
                 Some(&destination),
             )
             .unwrap();
@@ -42,9 +44,10 @@ fn head_capture_acknowledges_and_carries_the_entire_layer_closure_without_loadin
         let repeated = cell
             .capture_checkpoint(
                 execution,
-                &cold.schema,
+                cold.schema.as_ref(),
                 cold.schema_carrier_digest,
                 &cold.symbols.interner_snapshot(),
+                cold.readmission.capture_members,
                 Some(&current),
             )
             .unwrap();
@@ -93,29 +96,28 @@ fn head_capture_acknowledges_and_carries_the_entire_layer_closure_without_loadin
 #[test]
 fn appending_at_head_across_reopened_layers_matches_complete_history() {
     let fixture = region_with_history();
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let original = region_load::load_head(
-        &fixture.cold,
-        fixture.cold.source.as_ref().unwrap(),
-        execution,
-        1 << 24,
-    )
-    .unwrap();
-    let mut oracle = region_load::load_full(
-        &fixture.cold,
-        fixture.cold.source.as_ref().unwrap(),
-        &original,
-        execution,
-        1 << 24,
-    )
-    .unwrap()
-    .partition
-    .clone();
+    let original = fixture
+        .cold
+        .read_head(fixture.cold.source.as_ref().unwrap(), execution, 1 << 24)
+        .unwrap();
+    let mut oracle = fixture
+        .cold
+        .read_full(
+            fixture.cold.source.as_ref().unwrap(),
+            &original,
+            execution,
+            1 << 24,
+        )
+        .unwrap()
+        .partition
+        .clone();
     let mut cold = fixture.cold.clone();
     let mut source = fixture.source.clone();
     for version in 1_000..1_004 {
-        let head = region_load::load_head(&cold, cold.source.as_ref().unwrap(), execution, 1 << 24)
+        let head = cold
+            .read_head(cold.source.as_ref().unwrap(), execution, 1 << 24)
             .unwrap();
         let mut partial = head.partition.clone();
         let extra = partial
@@ -157,15 +159,12 @@ fn appending_at_head_across_reopened_layers_matches_complete_history() {
 #[test]
 fn ancestor_damage_is_sticky_and_aggregate_input_limits_are_retryable() {
     let fixture = region_with_history();
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let head = region_load::load_head(
-        &fixture.cold,
-        fixture.cold.source.as_ref().unwrap(),
-        execution,
-        1 << 24,
-    )
-    .unwrap();
+    let head = fixture
+        .cold
+        .read_head(fixture.cold.source.as_ref().unwrap(), execution, 1 << 24)
+        .unwrap();
     let (cold, source) = encode_layer(&fixture.cold, &fixture.source, &head.partition);
     let cell = RelationalRegionResidency::cold(cold.clone()).unwrap();
     head_demand(&cell, 1 << 24).unwrap();
@@ -201,22 +200,25 @@ pub(super) fn encode_layer(
     source: &Arc<CountedSource>,
     partition: &PartitionState,
 ) -> (RelationalColdRegion, Arc<CountedSource>) {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let symbols = cold.symbols.interner_snapshot();
-    let (commitment, _) = PartitionContentCommitment::capture_layered(
-        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-        &worth_execution::ExecutionRequest::serial(&crate::test_execution_policy::serial_request()),
-        partition,
-        &symbols,
-    )
-    .unwrap();
-    let captured = capture_region_members(
+    let (commitment, _) =
+        PartitionContentCommitment::capture_layered(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+            &worth_execution::ExecutionRequest::serial(
+                &crate::execution::test_policy::serial_request(),
+            ),
+            partition,
+            &symbols,
+        )
+        .unwrap();
+    let captured = (cold.readmission.capture_members)(
         &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
         execution,
         partition,
         &commitment,
-        &cold.schema,
+        cold.schema.as_ref(),
         cold.schema_carrier_digest,
     )
     .unwrap();

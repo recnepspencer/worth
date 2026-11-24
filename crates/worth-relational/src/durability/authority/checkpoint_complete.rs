@@ -67,5 +67,3 @@ fn root_stop(
 }
 
 mod runtime_capture;
-#[cfg(test)]
-mod tests;

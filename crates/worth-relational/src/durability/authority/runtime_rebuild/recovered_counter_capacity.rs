@@ -2,10 +2,13 @@
 //! `Create` and `Restore` event, so replay never reuses a recorded lineage id.
 use super::super::lineage_allocation::{allocated_lineage, maximum_allocated_lineage};
 use crate::durability::data::{DurabilityError, RecoveryFailureClass};
-use crate::runtime::RelationalRuntime;
+use crate::runtime::state::subsystems::{
+    durability::checkpoint_selection::RelationalCheckpointManifestSelection,
+    history::HistorySubsystem, lineage::LineageSubsystem,
+};
 
 pub(super) fn prepare_recovery_lineage_sequence(
-    restored: &mut RelationalRuntime,
+    lineage: &LineageSubsystem,
     envelope: &crate::history::data::CanonicalCommitEnvelope,
 ) {
     if let Some(first_event_id) = envelope
@@ -13,16 +16,12 @@ pub(super) fn prepare_recovery_lineage_sequence(
         .first()
         .map(|event| event.event_id())
     {
-        let next_lineage_id = restored.lineage.identity_frontiers().0;
-        restored
-            .lineage
-            .set_identity_frontiers(next_lineage_id, first_event_id);
+        let next_lineage_id = lineage.identity_frontiers().0;
+        lineage.set_identity_frontiers(next_lineage_id, first_event_id);
     }
     if let Some(first_allocated_lineage_id) = first_allocated_lineage(envelope.lineage_events()) {
-        let next_event_id = restored.lineage.identity_frontiers().1;
-        restored
-            .lineage
-            .set_identity_frontiers(first_allocated_lineage_id.0, next_event_id);
+        let next_event_id = lineage.identity_frontiers().1;
+        lineage.set_identity_frontiers(first_allocated_lineage_id.0, next_event_id);
     }
 }
 
@@ -72,9 +71,11 @@ pub(super) fn allocations_exhaust_allocator<'a>(
 }
 
 pub(super) fn refresh_checkpoint_counters(
-    restored: &mut RelationalRuntime,
+    history: &HistorySubsystem,
+    lineage: &LineageSubsystem,
+    checkpoint: &RelationalCheckpointManifestSelection,
 ) -> Result<(), DurabilityError> {
-    let recorded_envelopes = restored.history.commit_artifacts();
+    let recorded_envelopes = history.commit_artifacts();
     let next_commit_id = checked_checkpoint_successor(
         recorded_envelopes
             .iter()
@@ -89,7 +90,7 @@ pub(super) fn refresh_checkpoint_counters(
             .max(),
         "version id",
     )?;
-    let directory = restored.durability.checkpoint_selection().snapshot();
+    let directory = checkpoint.snapshot();
     let cold_node_max = directory
         .as_ref()
         .and_then(|directory| directory.manifest.lineage.last().map(|page| page.last));
@@ -110,25 +111,20 @@ pub(super) fn refresh_checkpoint_counters(
             .map(|page| page.last_node)
             .max()
     });
-    let resident_events = restored.lineage.shared_events();
+    let resident_events = lineage.shared_events();
     let next_lineage_id = recovered_lineage_frontier(
-        restored
-            .lineage
+        lineage
             .maximum_node_id()
             .max(cold_node_max)
             .max(cold_event_lineage_max),
         resident_events.iter().map(std::sync::Arc::as_ref),
     )?;
     let next_event_id = checked_checkpoint_successor(
-        restored.lineage.maximum_event_id().max(cold_event_max),
+        lineage.maximum_event_id().max(cold_event_max),
         "lineage event id",
     )?;
-    restored
-        .history
-        .install_recovered_sequence_floor(next_commit_id, next_version_id);
-    restored
-        .lineage
-        .set_identity_frontiers(next_lineage_id, next_event_id);
+    history.install_recovered_sequence_floor(next_commit_id, next_version_id);
+    lineage.set_identity_frontiers(next_lineage_id, next_event_id);
     Ok(())
 }
 

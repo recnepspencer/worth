@@ -193,7 +193,9 @@ fn adjacency(partition: &PartitionState, request: &ExecutionRequest<'_, '_>) -> 
         }
         bytes = sum(
             bytes,
-            vector::<crate::durability::data::DurableAdjacencyEntry>(count)?,
+            vector::<crate::storage::data::partition_checkpoint_image::DurableAdjacencyEntry>(
+                count,
+            )?,
         )?;
         bytes = sum(bytes, vector::<(usize, AdjacencySet)>(count)?)?;
     }

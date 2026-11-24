@@ -1,6 +1,6 @@
 //! Complete captures only original Full DATA; ACK retains displaced SDK nodes.
 use super::*;
-use crate::durability::data::RelationalRecoveryStop;
+use crate::durability::data::recovery_stop::RelationalRecoveryStop;
 use crate::storage::overlay::PartitionContentDigestError;
 use worth_execution::{ExecutionOrderedMap, ExecutionRequest};
 
@@ -44,9 +44,7 @@ impl RelationalCheckpointRegionPublication {
         candidate
             .insert_cloned_native_for_request(&self.schema_digest, &self.recorded, *request)
             .map_err(|cause| {
-                Denial::Stopped(crate::durability::checkpoint_history::capture::map_stop(
-                    cause,
-                ))
+                Denial::Stopped(crate::durability::data::recovery_stop::map_stop(cause))
             })?;
         let original = std::mem::replace(&mut *bindings, candidate);
         drop(bindings);
@@ -61,7 +59,7 @@ impl RelationalRegionResidency {
         lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         lease: &super::super::RelationalResidencyLease<super::super::Full>,
         request: &ExecutionRequest<'_, '_>,
-        schema: &RelationalBranchRootSchemaAuthority,
+        schema: &dyn RelationalRegionSchema,
         schema_digest: [u8; 32],
         symbols: &dyn crate::symbols::data::SymbolTextLookup,
     ) -> Result<CapturedCompleteRegion, RelationalRecoveryStop> {

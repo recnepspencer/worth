@@ -23,7 +23,7 @@ mod proposal_touches;
 mod proposal_validation;
 pub(in crate::mvcc) use proposal_validation::require_not_interrupted;
 #[path = "validation/validated_proposal.rs"]
-mod validated_proposal;
+pub(crate) mod validated_proposal;
 
 pub use crate::validation::data::CustomInvariantNonApplicability;
 pub use custom_invariant_execution_receipt::CustomInvariantExecutionReceipt;
@@ -339,12 +339,51 @@ impl RelationalTransactionValidationInput {
         transaction.naming_plan = self.naming_plan;
     }
 
-    pub(crate) fn release_transaction_retention(&mut self) {
-        self.retention = None;
-    }
-
     pub(crate) fn control(&self) -> &crate::mvcc::RelationalOperationControl {
         &self.control
+    }
+}
+
+impl crate::authority::commit::pipeline::publication_validation::DraftValidationInput
+    for RelationalTransactionValidationInput
+{
+    fn basis(&self) -> &AdmittedRelationalBranchBasis {
+        self.basis()
+    }
+
+    fn merge_parent_bases(&self) -> &[AdmittedRelationalBranchBasis] {
+        self.merge_parent_bases()
+    }
+
+    fn control(&self) -> &crate::runtime::operation_control::RelationalOperationControl {
+        self.control()
+    }
+
+    fn coupled_proposal(&self) -> Option<&RelationalMutationProposalIdentity> {
+        self.coupled_proposal()
+    }
+
+    fn into_publication(
+        self,
+    ) -> crate::authority::commit::pipeline::publication_validation::CommitPublicationValidationInput
+    {
+        use crate::authority::commit::pipeline::publication_validation::CommitPublicationValidationInput;
+        CommitPublicationValidationInput {
+            basis: self.basis,
+            merge_parent_bases: self.merge_parent_bases,
+            schema_authority: self.schema_authority,
+            schema_authority_input: self.schema_authority_input,
+            transition: self.intent.proposed_schema_transition,
+            reconciliation: self.intent.schema_reconciliation_policy,
+            appendix_adoption: self.appendix_adoption,
+            recovered_codec_publication_custody: self.recovered_codec_publication_custody,
+            prepared_home_indexes: self
+                .home_target
+                .and_then(|target| target.index_definitions.clone()),
+            home_step: self.home_step,
+            retention: self.retention,
+            naming_plan: self.naming_plan,
+        }
     }
 }
 

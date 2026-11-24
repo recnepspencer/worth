@@ -2,7 +2,6 @@ mod readmission_funding;
 mod readmission_work;
 #[cfg(test)]
 mod tests;
-pub(crate) use readmission_funding::contract_clone_bytes;
 pub(super) use readmission_funding::readmit_state_using;
 use worth_foundational::facade::{
     export_portable_record_aspect_state, readmit_portable_record_aspect_state, AspectContract,

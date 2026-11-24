@@ -1,5 +1,5 @@
 //! A small escaped index subject retains only its own actual metadata bill.
-use super::RelationalCommitIndexEntry;
+use super::{envelope_residency::JournalCommitReadmission, RelationalCommitIndexEntry};
 use crate::history::data::{PositionedCanonicalCommit, RelationalCommitReceipt};
 use crate::storage::substrate::allocation_witness::RelationalAllocationWitness;
 use std::{alloc::Layout, ops::Deref, sync::Arc};
@@ -7,11 +7,24 @@ use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 #[derive(Debug)]
 struct Backing {
     entry: RelationalCommitIndexEntry,
+    journal_readmission: JournalCommitReadmission,
     _memory: Option<ExecutionMemoryReservation>,
 }
 #[derive(Debug, Clone)]
 pub(crate) struct RetainedCanonicalIndex(Arc<Backing>);
 impl RetainedCanonicalIndex {
+    pub(super) fn readmit_journal(
+        &self,
+        source: &dyn crate::durability::medium::RelationalDurableColdSource,
+        request: &ExecutionRequest<'_, '_>,
+        limit: u64,
+    ) -> Result<
+        PositionedCanonicalCommit,
+        crate::durability::data::recovery_stop::RelationalRecoveryStop,
+    > {
+        (self.0.journal_readmission)(&self.0.entry, source, request, limit)
+    }
+
     pub(crate) fn same_owner(&self, other: &Self) -> bool {
         Arc::ptr_eq(&self.0, &other.0)
     }
@@ -53,6 +66,7 @@ impl RetainedCanonicalIndex {
         roots: &crate::branch::target::RelationalBranchRootDescriptor,
         digest: [u8; 32],
         request: &ExecutionRequest<'_, '_>,
+        journal_readmission: JournalCommitReadmission,
     ) -> Result<
         Self,
         crate::durability::canonical_commit_artifact::encode_denial::RelationalCanonicalCommitArtifactEncodeDenial,
@@ -72,26 +86,21 @@ impl RetainedCanonicalIndex {
         };
         Ok(Self(Arc::new(Backing {
             entry,
+            journal_readmission,
             _memory: memory,
         })))
     }
     pub(crate) fn copy_original(
         entry: &RelationalCommitIndexEntry,
         request: &ExecutionRequest<'_, '_>,
+        journal_readmission: JournalCommitReadmission,
     ) -> Result<Self, crate::execution::denial_cause::RelationalExecutionDenialCause> {
         let memory = Self::reserve(&entry.commit, request)?;
         Ok(Self(Arc::new(Backing {
             entry: entry.clone(),
+            journal_readmission,
             _memory: memory,
         })))
-    }
-    /// Existing ordinary value construction is explicitly outside controlled copy claims.
-    #[cfg(test)]
-    pub(crate) fn from_ordinary_owned(entry: RelationalCommitIndexEntry) -> Self {
-        Self(Arc::new(Backing {
-            entry,
-            _memory: None,
-        }))
     }
 }
 impl Deref for RetainedCanonicalIndex {

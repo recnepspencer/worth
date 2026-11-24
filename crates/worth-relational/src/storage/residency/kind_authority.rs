@@ -49,11 +49,11 @@ impl RelationalRegionKindAuthority {
 
     pub(crate) fn for_request(
         request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<Arc<Self>, crate::durability::data::RelationalRecoveryStop> {
+    ) -> Result<Arc<Self>, crate::durability::data::recovery_stop::RelationalRecoveryStop> {
         let layout = std::alloc::Layout::new::<[usize; 2]>()
             .extend(std::alloc::Layout::new::<Self>())
             .map_err(|_| {
-                crate::durability::checkpoints::region_directory::corrupt(
+                crate::durability::data::recovery_errors::DurabilityError::corrupt_checkpoint(
                     "kind authority layout overflow",
                 )
             })?
@@ -62,7 +62,9 @@ impl RelationalRegionKindAuthority {
         let memory = request
             .reserve_retained_memory(layout.size() as u64)
             .map_err(|cause| {
-                crate::durability::data::RelationalRecoveryStop::Request(cause.into())
+                crate::durability::data::recovery_stop::RelationalRecoveryStop::Request(
+                    cause.into(),
+                )
             })?;
         Ok(Arc::new(Self {
             regions: Default::default(),
@@ -74,25 +76,27 @@ impl RelationalRegionKindAuthority {
         _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         regions: impl IntoIterator<Item = (PartitionId, Arc<RelationalRegionResidency>)>,
         request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<(), crate::durability::data::RelationalRecoveryStop> {
+    ) -> Result<(), crate::durability::data::recovery_stop::RelationalRecoveryStop> {
         let mut rows = worth_execution::ExecutionOrderedMap::default();
         for (id, cell) in regions {
-            crate::durability::artifact_payload_emission::request::account_work(request, 1)?;
+            crate::durability::data::recovery_stop::account_work(request, 1)?;
             if rows.contains_key(&id) {
-                return Err(crate::durability::checkpoints::region_directory::corrupt(
-                    "duplicate kind authority region",
-                )
-                .into());
+                return Err(
+                    crate::durability::data::recovery_errors::DurabilityError::corrupt_checkpoint(
+                        "duplicate kind authority region",
+                    )
+                    .into(),
+                );
             }
             rows.insert_cloned_native_for_request(
                 &id,
                 &RelationalRegionResidency::downgrade(&cell),
                 *request,
             )
-            .map_err(crate::durability::checkpoint_history::capture::map_stop)?;
+            .map_err(crate::durability::data::recovery_stop::map_stop)?;
         }
         self.regions.set(rows).map_err(|_| {
-            crate::durability::checkpoints::region_directory::corrupt(
+            crate::durability::data::recovery_errors::DurabilityError::corrupt_checkpoint(
                 "kind authority already bound",
             )
             .into()

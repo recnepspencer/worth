@@ -38,6 +38,13 @@ mod recovery_plan;
 pub(crate) mod recovery_stop;
 pub(crate) mod recovery_verification;
 
+pub use crate::storage::data::checkpoint_member::RelationalCheckpointMember;
+pub use crate::storage::data::partition_checkpoint_image::{
+    DurableAdjacencyEntry, DurableBitSet, EntityCheckpointImageKind, EntityExtraImage,
+    PartitionCheckpointImage, RecordArenaCheckpointImage, RecordArenaCheckpointKind,
+    RelationCheckpointImageKind, RelationEndpointsImage, RelationExtraImage,
+    VersionedEntityMetadataImage, VersionedRelationMetadataImage,
+};
 pub(crate) use crate::storage::data::record_identity_image::{
     DurablePendingRecordReservation, DurableRecordGenerationClass,
     DurableRecordGenerationHighWater, DurableRecordIdentityState, DurableRecordReservationOrigin,
@@ -49,15 +56,9 @@ pub(crate) use branch_root_schema_images::{
 };
 pub use checkpoint_coverage::CheckpointCoverage;
 pub(crate) use checkpoint_images::{branch_root_image_digest, branch_root_partition_image_digest};
-pub use checkpoint_images::{
-    DurableAdjacencyEntry, DurableBitSet, DurableBranchRootImage, DurableCheckpoint,
-    EntityCheckpointImageKind, EntityExtraImage, PartitionCheckpointImage,
-    RecordArenaCheckpointImage, RecordArenaCheckpointKind, RelationCheckpointImageKind,
-    RelationEndpointsImage, RelationExtraImage, VersionedEntityMetadataImage,
-    VersionedRelationMetadataImage,
-};
+pub use checkpoint_images::{DurableBranchRootImage, DurableCheckpoint};
 pub(crate) use checkpoint_manifest::*;
-pub use checkpoint_member::{RelationalCheckpointArtifactPolicy, RelationalCheckpointMember};
+pub use checkpoint_member::RelationalCheckpointArtifactPolicy;
 pub use checkpoint_restore_work::CheckpointRestoreWork;
 pub use native_checkpoint::{
     NativeCheckpointSectionBytes, RelationalCheckpointComponentRoster, RelationalNativeCheckpoint,
@@ -107,3 +108,6 @@ mod checkpoint_schema_images;
 pub(crate) use checkpoint_schema_images::CheckpointSchemaImages;
 
 pub(crate) use crate::storage::data::symbol_page_roster::RelationalCheckpointSymbolBucket;
+
+#[cfg(test)]
+pub(crate) mod selected_region_archive;

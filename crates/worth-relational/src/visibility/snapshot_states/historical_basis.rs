@@ -66,7 +66,7 @@ impl HistoricalVisibilityBasis {
         version_id: VersionId,
     ) -> Result<Self, HistoricalVisibilityDenial> {
         let inputs = inputs.into();
-        let history = inputs.history;
+        let history = inputs.history.branch;
         let branch_id = crate::visibility::branch_scope::branch_for_version(inputs, version_id)
             .ok_or(HistoricalVisibilityDenial::UnknownVersion)?;
         let commit_id = history
@@ -93,7 +93,7 @@ impl HistoricalVisibilityBasis {
             .branch_cell(&branch_id)
             .ok_or(HistoricalVisibilityDenial::AuthoringBranchUnavailable)?;
         let Some(root) = cell.root() else {
-            if version_id.is_zero() && history.historical_latest_commit().is_none() {
+            if version_id.is_zero() && inputs.history.latest_receipt().is_none() {
                 return Ok(Self {
                     branch_id,
                     version_id,

@@ -19,10 +19,7 @@ mod weak;
 pub(super) use weak::RegionCellWeak;
 
 use super::cell_load_cache::{self, RegionLoadCache};
-use super::{
-    region_load, Full, Head, RelationalResidencyDemandFailure as Failure, RelationalResidencyLease,
-};
-use crate::branch::RelationalBranchRootSchemaAuthority;
+use super::{Full, Head, RelationalResidencyDemandFailure as Failure, RelationalResidencyLease};
 use crate::durability::medium::{RelationalDurableColdSource, RelationalDurableMemberLocator};
 use crate::identity::data::PartitionId;
 use crate::storage::data::{
@@ -30,20 +27,24 @@ use crate::storage::data::{
     RelationalStorageUnavailableCause as Cause,
 };
 use crate::storage::overlay::{PartitionContentCommitment, PartitionState};
+use crate::storage::residency::RelationalRegionSchema;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 
 #[derive(Debug, Clone)]
 pub(crate) struct RelationalColdRegion {
+    pub(crate) readmission: &'static super::cold_readmission::ColdRegionReadmission,
     pub(crate) kind_authority: super::RelationalRegionKindCommitment,
     pub(crate) source: Option<Arc<dyn RelationalDurableColdSource>>,
     pub(crate) partition_id: PartitionId,
     pub(crate) head: RelationalDurableMemberLocator,
     pub(crate) history: RelationalDurableMemberLocator,
-    pub(crate) history_members: Arc<crate::durability::data::RelationalHistoryMemberDirectory>,
-    pub(crate) schema: Arc<RelationalBranchRootSchemaAuthority>,
+    pub(crate) history_members:
+        Arc<crate::storage::data::history_member_directory::RelationalHistoryMemberDirectory>,
+    pub(crate) schema: Arc<dyn RelationalRegionSchema>,
     pub(crate) schema_carrier_digest: [u8; 32],
-    pub(crate) symbols: crate::runtime::RuntimeSymbolTable,
+    pub(crate) symbols:
+        crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     pub(crate) content_digest: [u8; 32],
     pub(crate) directory: std::sync::Arc<super::PortableRecordDirectory>,
     pub(crate) live_counts: crate::storage::residency::LiveRecordCounts,
@@ -131,7 +132,7 @@ impl RelationalRegionResidency {
                         &cold.schema_carrier_digest,
                         &super::RecordedRegionCheckpoint {
                             history_members: cold.history_members.clone(),
-                            leaf: crate::durability::data::RelationalCheckpointRegion {
+                            leaf: crate::storage::data::checkpoint_region::RelationalCheckpointRegion {
                                 kind_authority: cold.kind_authority,
                                 partition_id: cold.partition_id,
                                 content_digest: cold.content_digest,

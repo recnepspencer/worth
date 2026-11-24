@@ -2,7 +2,7 @@ pub(crate) mod access;
 mod authority;
 pub(crate) mod commit;
 pub mod data;
-mod envelope_demand;
+pub(crate) mod envelope_demand;
 pub mod retention;
 
 pub(crate) use access::relevant_writes::{

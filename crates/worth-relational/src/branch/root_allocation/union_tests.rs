@@ -124,7 +124,15 @@ fn cold_region_union_refuses_without_demanding_any_payload() {
         head: worth_foundational::CanonicalDigestId::new([0; 32]),
         history: worth_foundational::CanonicalDigestId::new([0; 32]),
     };
+    use crate::storage::residency::cold_readmission::ColdRegionReadmission;
+    static READMISSION: ColdRegionReadmission = ColdRegionReadmission::new(
+        |_, _, _, _| panic!("allocation inspection must not load Head"),
+        |_, _, _, _, _| panic!("allocation inspection must not load Full"),
+        |_, _, _, _, _, _| panic!("allocation inspection must not write region members"),
+        |_, _, _| panic!("allocation inspection must not reconstruct owned Head"),
+    );
     let cell = RelationalRegionResidency::cold(RelationalColdRegion {
+        readmission: &READMISSION,
         source: Some(source.clone()),
         partition_id: PartitionId(7),
         head: locator,

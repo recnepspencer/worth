@@ -62,6 +62,12 @@ impl RelationalCheckpointDirectory {
     pub(crate) fn member_basis(&self) -> RelationalDurableMemberCustody {
         self._basis.clone()
     }
+    pub(crate) fn region_member_basis(&self) -> crate::durability::medium::NativeSourceMemberState {
+        crate::durability::medium::NativeSourceMemberState::new(
+            Arc::clone(&self.source),
+            self.member_basis(),
+        )
+    }
     /// Attempt-local schema binding shares the original immutable custody;
     /// its distinct retirement storage is prepaid by this same request.
     pub(crate) fn with_source_schemas(
@@ -129,3 +135,5 @@ impl TryFrom<&Arc<RelationalCheckpointDirectory>>
         )
     }
 }
+
+mod canonical_source;

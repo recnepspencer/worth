@@ -1,17 +1,20 @@
 //! Join World descriptions to original Native artifacts or admitted image rows.
 use super::*;
-use crate::branch::{RecordedRelationalComponentTarget as Target, RelationalRootCommitEvidence};
-use crate::history::{data::CommitId, RetainedCanonicalIndex};
+use crate::branch::recorded_basis::RecordedRelationalComponentTarget as Target;
+use crate::branch::root::RelationalRootCommitEvidence;
+use crate::durability::canonical_commit_artifact::journal_source_read::readmit_journal_commit;
+use crate::history::commit::RetainedCanonicalIndex;
+use crate::history::data::CommitId;
 
 impl WorldSelectionReplay {
     pub(super) fn entry(
         &self,
         commit: CommitId,
-        runtime: &RelationalRuntime,
+        inputs: &WorldReplayInputs<'_>,
         plan: &RecoveryPlan,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<RetainedCanonicalIndex, Stop> {
-        let artifact = runtime
+        let artifact = inputs
             .history
             .commit_artifact(commit)
             .ok_or_else(|| corrupt("World component has no Native artifact"))?;
@@ -34,11 +37,16 @@ impl WorldSelectionReplay {
             if observed != digest {
                 return Err(corrupt("World component original payload digest mismatch"));
             }
-            RetainedCanonicalIndex::from_publication(&positioned, artifact.roots(), digest, request)
-                .map_err(|cause| {
-                    crate::durability::data::RelationalNativeCheckpointCaptureDenial::from(cause)
-                        .into()
-                })
+            RetainedCanonicalIndex::from_publication(
+                &positioned,
+                artifact.roots(),
+                digest,
+                request,
+                readmit_journal_commit,
+            )
+            .map_err(|cause| {
+                crate::durability::data::RelationalNativeCheckpointCaptureDenial::from(cause).into()
+            })
         } else {
             let (entry, source) = artifact
                 .envelope_residency()
@@ -46,16 +54,11 @@ impl WorldSelectionReplay {
                 .ok_or_else(|| {
                     corrupt("World component has no selected Native checkpoint source")
                 })?;
-            let admitted = runtime
-                .durability
-                .checkpoint_selection()
-                .admitted_commit(&entry)?
-                .ok_or_else(|| {
-                    corrupt("World component lacks an admitted Native checkpoint row")
-                })?;
-            if !runtime
-                .durability
-                .checkpoint_selection()
+            let admitted = inputs.checkpoint.admitted_commit(&entry)?.ok_or_else(|| {
+                corrupt("World component lacks an admitted Native checkpoint row")
+            })?;
+            if !inputs
+                .checkpoint
                 .matches_admitted_source(&admitted, &source)
             {
                 return Err(corrupt(
@@ -68,28 +71,28 @@ impl WorldSelectionReplay {
     pub(super) fn recorded_source(
         &self,
         source: &Source,
-        runtime: &RelationalRuntime,
+        inputs: &WorldReplayInputs<'_>,
         plan: &RecoveryPlan,
         roots: &RecoveredRootInventory,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Recorded, Stop> {
-        self.recorded_source_inner(source, runtime, plan, roots, request, false)?
+        self.recorded_source_inner(source, inputs, plan, roots, request, false)?
             .ok_or_else(|| corrupt("World occurrence has no matching actual Native source"))
     }
     pub(super) fn recorded_source_optional(
         &self,
         source: &Source,
-        runtime: &RelationalRuntime,
+        inputs: &WorldReplayInputs<'_>,
         plan: &RecoveryPlan,
         roots: &RecoveredRootInventory,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Option<Recorded>, Stop> {
-        self.recorded_source_inner(source, runtime, plan, roots, request, true)
+        self.recorded_source_inner(source, inputs, plan, roots, request, true)
     }
     fn recorded_source_inner(
         &self,
         source: &Source,
-        runtime: &RelationalRuntime,
+        inputs: &WorldReplayInputs<'_>,
         plan: &RecoveryPlan,
         roots: &RecoveredRootInventory,
         request: &ExecutionRequest<'_, '_>,
@@ -99,11 +102,14 @@ impl WorldSelectionReplay {
             Source::Recorded(recorded) => Ok(Some(recorded.clone())),
             Source::Published(coordinates) => {
                 if allow_absent
-                    && runtime.history.commit_artifact(coordinates.commit()).is_none()
+                    && inputs
+                        .history
+                        .commit_artifact(coordinates.commit())
+                        .is_none()
                 {
                     return Ok(None);
                 }
-                let entry = self.entry(coordinates.commit(), runtime, plan, request)?;
+                let entry = self.entry(coordinates.commit(), inputs, plan, request)?;
                 if coordinates.position() != entry.position
                     || coordinates.digest().bytes() != &entry.payload_digest
                 {
@@ -111,7 +117,8 @@ impl WorldSelectionReplay {
                         "World occurrence Native source coordinates mismatch",
                     ));
                 }
-                let Some(observations) = roots.publication_observations(coordinates.commit()) else {
+                let Some(observations) = roots.publication_observations(coordinates.commit())
+                else {
                     if allow_absent {
                         return Ok(None);
                     }
@@ -120,7 +127,8 @@ impl WorldSelectionReplay {
                 let mut selected = None;
                 for descriptor in observations {
                     if descriptor.branch_id() != &entry.commit.branch_id
-                        || descriptor.posture() != crate::branch::RelationalBranchBasisPosture::Live
+                        || descriptor.posture()
+                            != crate::branch::basis_descriptor::RelationalBranchBasisPosture::Live
                     {
                         continue;
                     }
@@ -162,21 +170,21 @@ impl WorldSelectionReplay {
     pub(super) fn require_present_recorded_entry(
         &self,
         recorded: &Recorded,
-        runtime: &RelationalRuntime,
+        inputs: &WorldReplayInputs<'_>,
         plan: &RecoveryPlan,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), Stop> {
         let Target::Canonical(target) = recorded.target() else {
             return Ok(());
         };
-        if runtime
+        if inputs
             .history
             .commit_artifact(target.receipt().commit_id)
             .is_none()
         {
             return Ok(());
         }
-        let entry = self.entry(target.receipt().commit_id, runtime, plan, request)?;
+        let entry = self.entry(target.receipt().commit_id, inputs, plan, request)?;
         if &entry.commit != target.receipt()
             || entry.position != target.position()
             || &entry.payload_digest != target.artifact_digest()
@@ -192,7 +200,7 @@ impl WorldSelectionReplay {
         &self,
         recorded: &Recorded,
         root: &Arc<RelationalBranchRoot>,
-        runtime: &RelationalRuntime,
+        inputs: &WorldReplayInputs<'_>,
         plan: &RecoveryPlan,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), Stop> {
@@ -206,7 +214,7 @@ impl WorldSelectionReplay {
                 }
             }
             Target::Canonical(target) => {
-                let entry = self.entry(target.receipt().commit_id, runtime, plan, request)?;
+                let entry = self.entry(target.receipt().commit_id, inputs, plan, request)?;
                 if &entry.commit != target.receipt()
                     || entry.position != target.position()
                     || &entry.payload_digest != target.artifact_digest()
@@ -243,10 +251,12 @@ impl WorldSelectionReplay {
         Ok(())
     }
 }
-fn description(cause: crate::branch::RelationalRecordedComponentRefusal) -> Stop {
+fn description(cause: crate::branch::recorded_basis::RelationalRecordedComponentRefusal) -> Stop {
     match cause {
-        crate::branch::RelationalRecordedComponentRefusal::Request(cause) => Stop::Request(cause),
-        crate::branch::RelationalRecordedComponentRefusal::Source(cause) => cause,
+        crate::branch::recorded_basis::RelationalRecordedComponentRefusal::Request(cause) => {
+            Stop::Request(cause)
+        }
+        crate::branch::recorded_basis::RelationalRecordedComponentRefusal::Source(cause) => cause,
         cause => crate::durability::data::DurabilityError::new(
             crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
             format!("World component description refused: {cause:?}"),

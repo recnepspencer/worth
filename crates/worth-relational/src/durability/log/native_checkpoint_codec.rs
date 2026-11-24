@@ -36,8 +36,6 @@ mod member_sequence;
 mod member_source;
 pub(crate) use checkpoint_decoding::{decode_checkpoint, decode_checkpoint_from_source};
 pub(crate) use checkpoint_decoding::{decode_checkpoint_with_image, decode_interim_with_image};
-#[cfg(test)]
-pub(crate) use checkpoint_encoding::encode_checkpoint;
 pub(crate) use checkpoint_encoding::{
     encode_captured, populate_expanded_canonical_members, CheckpointEncodingControl,
 };
@@ -49,11 +47,6 @@ pub(crate) use manifest_capture::CapturedManifest;
 pub(crate) struct DecodedNativeCheckpoint {
     pub(crate) checkpoint: DurableCheckpoint,
 }
-
-#[cfg(test)]
-mod kind_authentication_tests;
-#[cfg(test)]
-mod tests;
 
 mod inspection;
 pub(crate) use inspection::inspect as inspect_checkpoint;

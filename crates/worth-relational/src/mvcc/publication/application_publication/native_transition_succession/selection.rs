@@ -62,7 +62,7 @@ pub(super) fn select(
                 } else {
                     crate::history::data::current_route_presence::require_current_owned_route(
                         execution,
-                        inputs.projection.history,
+                        inputs.canonical_history,
                         basis,
                         meaning,
                         historical,
@@ -77,8 +77,7 @@ pub(super) fn select(
         return Ok(None);
     };
     let envelope = inputs
-        .projection
-        .history
+        .canonical_history
         .demand_commit_envelope(execution, commit)
         .map_err(custody::execution_stop)?
         .ok_or_else(|| origin_denial("selected retirement successor history absent"))?;

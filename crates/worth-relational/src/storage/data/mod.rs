@@ -120,3 +120,9 @@ pub(crate) mod record_identity_image;
 pub(crate) mod symbol_page_readmission;
 pub(crate) mod symbol_page_roster;
 pub(crate) mod symbol_residency;
+
+pub(crate) mod checkpoint_member;
+pub(crate) mod checkpoint_region;
+pub(crate) mod partition_checkpoint_image;
+
+pub(crate) mod directory_source_edge;

@@ -99,7 +99,7 @@ impl RelationalRegionResidency {
                 .backing
                 .as_ref()
                 .ok_or_else(|| self.failure(Cause::SourceUnavailable))?;
-            region_load::load_head(cold, source, execution, limit)
+            cold.read_head(source, execution, limit)
         })
     }
 
@@ -111,8 +111,7 @@ impl RelationalRegionResidency {
         source: Option<&Arc<dyn RelationalDurableColdSource>>,
     ) -> Result<Arc<ResidentRegion>, Failure> {
         cell_load_cache::load(&self.raw_full, self.partition_id, || match &self.backing {
-            Some(cold) => region_load::load_full(
-                cold,
+            Some(cold) => cold.read_full(
                 source.ok_or_else(|| self.failure(Cause::SourceUnavailable))?,
                 head,
                 execution,

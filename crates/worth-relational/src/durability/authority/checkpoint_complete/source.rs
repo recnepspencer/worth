@@ -40,6 +40,10 @@ impl FrozenOriginalInputs {
     /// Called while the actual complete capture still holds both epochs.
     pub(super) fn capture(
         history: &HistorySubsystem,
+        capture_branch_schema: impl FnOnce() -> Result<
+            OriginalBranchSchemaInputs,
+            OriginalBranchSchemaInputsDenial,
+        >,
         selection: &RelationalCheckpointManifestSelection,
         mut journal_source: Option<Arc<dyn crate::durability::medium::RelationalDurableColdSource>>,
         symbols: &RuntimeSymbolTable,
@@ -48,17 +52,15 @@ impl FrozenOriginalInputs {
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<Self, Denial> {
         let base = selection.freeze_capture_base()?;
-        let branches = history
-            .capture_original_branch_schema_inputs(execution)
-            .map_err(|cause| match cause {
-                OriginalBranchSchemaInputsDenial::Request(cause) => Denial::Request(cause.into()),
-                OriginalBranchSchemaInputsDenial::SizeOverflow => Denial::Request(
-                    crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow,
-                ),
-                OriginalBranchSchemaInputsDenial::OriginalPrefixMismatch => {
-                    Denial::OriginalAuthorityUnavailable
-                }
-            })?;
+        let branches = capture_branch_schema().map_err(|cause| match cause {
+            OriginalBranchSchemaInputsDenial::Request(cause) => Denial::Request(cause.into()),
+            OriginalBranchSchemaInputsDenial::SizeOverflow => Denial::Request(
+                crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow,
+            ),
+            OriginalBranchSchemaInputsDenial::OriginalPrefixMismatch => {
+                Denial::OriginalAuthorityUnavailable
+            }
+        })?;
         if branches.birth.is_none() {
             return Err(Denial::OriginalAuthorityUnavailable);
         }

@@ -1,6 +1,6 @@
 //! Checkpoint consolidation policy bounds restart-induced history folding.
-use crate::durability::data::RelationalHistoryMemberDirectory;
 use crate::durability::medium::RelationalDurableMemberLocator;
+use crate::storage::data::history_member_directory::RelationalHistoryMemberDirectory;
 
 pub(crate) const FULL_HISTORY_READ_LIMIT: u64 = 1 << 30;
 pub(crate) const HISTORY_CAPTURE_MAX_LAYERS: usize = 8;
@@ -20,7 +20,7 @@ pub(super) fn needs_consolidation(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::durability::data::RelationalCheckpointHistoryDependency;
+    use crate::storage::data::history_member_directory::RelationalCheckpointHistoryDependency;
 
     #[test]
     fn encoded_input_threshold_counts_shared_bases_once_and_exempts_flat_images() {

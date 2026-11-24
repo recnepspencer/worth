@@ -103,7 +103,7 @@ fn validate_before(
 
 pub(super) fn validate_root_predecessor(
     envelope: &crate::history::data::CanonicalCommitEnvelope,
-    prior: &std::sync::Arc<crate::branch::root::RelationalBranchRoot>,
+    prior: &crate::branch::root::RelationalBranchRoot,
 ) -> Result<(), Denial> {
     let checkpoint = envelope
         .branch_cell_checkpoint

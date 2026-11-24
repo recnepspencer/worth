@@ -5,15 +5,12 @@ use crate::identity::data::VersionId;
 #[test]
 fn an_owned_head_promotes_without_a_checkpoint_and_keeps_its_old_observation() {
     let fixture = region_with_history();
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let original = region_load::load_head(
-        &fixture.cold,
-        fixture.cold.source.as_ref().unwrap(),
-        execution,
-        1 << 24,
-    )
-    .unwrap();
+    let original = fixture
+        .cold
+        .read_head(fixture.cold.source.as_ref().unwrap(), execution, 1 << 24)
+        .unwrap();
     let mut partial = original.partition.clone();
     let mut meanings = fixture.cold.symbols.begin_pending_meanings();
     let family = meanings.reserve("owned-head-unpublished-family").unwrap();
@@ -88,7 +85,7 @@ fn an_owned_head_promotes_without_a_checkpoint_and_keeps_its_old_observation() {
         },
         &partial,
         &journal,
-        fixture.cold.schema.clone(),
+        || fixture.cold.schema.clone(),
         &candidate_symbols,
         None,
     )
@@ -102,9 +99,10 @@ fn an_owned_head_promotes_without_a_checkpoint_and_keeps_its_old_observation() {
         .cell()
         .capture_checkpoint(
             execution,
-            &fixture.cold.schema,
+            fixture.cold.schema.as_ref(),
             fixture.cold.schema_carrier_digest,
             &symbols,
+            fixture.cold.readmission.capture_members,
             None,
         )
         .unwrap();
@@ -143,16 +141,17 @@ fn an_owned_head_promotes_without_a_checkpoint_and_keeps_its_old_observation() {
             .unwrap(),
         captured.leaf.content_digest
     );
-    let mut oracle = region_load::load_full(
-        &fixture.cold,
-        fixture.cold.source.as_ref().unwrap(),
-        &original,
-        execution,
-        1 << 24,
-    )
-    .unwrap()
-    .partition
-    .clone();
+    let mut oracle = fixture
+        .cold
+        .read_full(
+            fixture.cold.source.as_ref().unwrap(),
+            &original,
+            execution,
+            1 << 24,
+        )
+        .unwrap()
+        .partition
+        .clone();
     oracle
         .entity_arena
         .apply_extra_update(fixture.entity.slot_index(), extra, VersionId(1_000))
@@ -173,22 +172,22 @@ fn an_owned_head_promotes_without_a_checkpoint_and_keeps_its_old_observation() {
 #[test]
 fn owned_head_base_damage_is_sticky_and_never_invalidates_an_accepted_view() {
     let fixture = region_with_history();
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let original = region_load::load_head(
-        &fixture.cold,
-        fixture.cold.source.as_ref().unwrap(),
-        execution,
-        1 << 24,
-    )
-    .unwrap();
+    let original = fixture
+        .cold
+        .read_head(fixture.cold.source.as_ref().unwrap(), execution, 1 << 24)
+        .unwrap();
     let head = RelationalRegionResidency::resident_head(
         original.partition.clone(),
         original.commitment.clone().unwrap(),
         original.kind_indexes.clone().unwrap(),
         original.history_presence,
-        fixture.cold.schema.clone(),
-        &fixture.cold.symbols,
+        ResidentHistoryReadmission::new(
+            fixture.cold.schema.clone(),
+            &fixture.cold.symbols,
+            fixture.cold.readmission,
+        ),
     );
     fixture.source.corrupt.store(true, Ordering::SeqCst);
     let accepted = head.head_view();
@@ -214,15 +213,12 @@ fn owned_head_base_damage_is_sticky_and_never_invalidates_an_accepted_view() {
 fn head_content_inspection_hashes_its_suffix_without_loading_the_base_or_trusting_a_cached_digest()
 {
     let fixture = region_with_history();
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let original = region_load::load_head(
-        &fixture.cold,
-        fixture.cold.source.as_ref().unwrap(),
-        execution,
-        1 << 24,
-    )
-    .unwrap();
+    let original = fixture
+        .cold
+        .read_head(fixture.cold.source.as_ref().unwrap(), execution, 1 << 24)
+        .unwrap();
     let mut partial = original.partition.clone();
     let extra = partial
         .entity_arena
@@ -240,8 +236,11 @@ fn head_content_inspection_hashes_its_suffix_without_loading_the_base_or_trustin
         original.commitment.clone().unwrap(),
         original.kind_indexes.clone().unwrap(),
         original.history_presence,
-        fixture.cold.schema.clone(),
-        &fixture.cold.symbols,
+        ResidentHistoryReadmission::new(
+            fixture.cold.schema.clone(),
+            &fixture.cold.symbols,
+            fixture.cold.readmission,
+        ),
     );
     let reads = fixture.source.reads.load(Ordering::SeqCst);
     let digest = owned
@@ -255,16 +254,17 @@ fn head_content_inspection_hashes_its_suffix_without_loading_the_base_or_trustin
         .unwrap();
     assert_eq!(fixture.source.reads.load(Ordering::SeqCst), reads);
     assert_ne!(digest, fixture.expected_digest);
-    let mut complete = region_load::load_full(
-        &fixture.cold,
-        fixture.cold.source.as_ref().unwrap(),
-        &original,
-        execution,
-        1 << 24,
-    )
-    .unwrap()
-    .partition
-    .clone();
+    let mut complete = fixture
+        .cold
+        .read_full(
+            fixture.cold.source.as_ref().unwrap(),
+            &original,
+            execution,
+            1 << 24,
+        )
+        .unwrap()
+        .partition
+        .clone();
     complete
         .entity_arena
         .apply_extra_update(fixture.entity.slot_index(), extra, VersionId(1_000))
@@ -284,21 +284,15 @@ fn head_content_inspection_hashes_its_suffix_without_loading_the_base_or_trustin
     );
 }
 
-#[path = "resident_history_tests/symbol_inheritance.rs"]
-mod symbol_inheritance;
-
 #[test]
 fn published_head_still_refuses_a_forged_owned_historical_kind_claim() {
     let fixture = region_with_history();
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let original = region_load::load_head(
-        &fixture.cold,
-        fixture.cold.source.as_ref().unwrap(),
-        execution,
-        1 << 24,
-    )
-    .unwrap();
+    let original = fixture
+        .cold
+        .read_head(fixture.cold.source.as_ref().unwrap(), execution, 1 << 24)
+        .unwrap();
     let mut partition = original.partition.clone();
     let forged = crate::identity::data::RelationId::new(
         fixture.relation.partition_id,
@@ -315,8 +309,11 @@ fn published_head_still_refuses_a_forged_owned_historical_kind_claim() {
         original.commitment.clone().unwrap(),
         original.kind_indexes.clone().unwrap(),
         original.history_presence,
-        fixture.cold.schema.clone(),
-        &fixture.cold.symbols,
+        ResidentHistoryReadmission::new(
+            fixture.cold.schema.clone(),
+            &fixture.cold.symbols,
+            fixture.cold.readmission,
+        ),
     );
     let accepted = published.head_view();
     let refused = full_demand(published.cell(), 1 << 24).unwrap_err();

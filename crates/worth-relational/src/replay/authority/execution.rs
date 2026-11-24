@@ -89,7 +89,9 @@ impl<'runtime> ReplayAuthority<'runtime> {
         &self,
         request: &RelationalReplayRequest,
     ) -> Result<ReplayAdmission, RelationalReplayOutcome> {
-        let Some(envelope) = load_replay_envelope(&self.runtime.history, request.commit_id) else {
+        let Some(envelope) =
+            load_replay_envelope(self.runtime.history.canonical_read(), request.commit_id)
+        else {
             return Err(self.fail_and_record(
                 request.clone(),
                 None,

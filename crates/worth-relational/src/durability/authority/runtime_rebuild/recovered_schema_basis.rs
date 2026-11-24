@@ -4,16 +4,15 @@ use crate::durability::data::{
     DurabilityError, RecoveryAuthorityContinuityMismatch, RecoveryFailureClass,
 };
 use crate::history::data::CanonicalCommitEnvelope;
-use crate::mvcc::RelationalTransactionValidationInput;
 use crate::schema::data::{
     DescriptorCanonicalBasisVersion, ProposedSchemaTransition, SchemaAuthoritySnapshot,
 };
 use crate::schema::{validate_schema_continuity_bundle, SchemaContinuityAuthorityInput};
 
 pub(super) struct RecoveredSchemaBasis {
-    authority_input: SchemaContinuityAuthorityInput,
-    proposed_transition: Option<ProposedSchemaTransition>,
-    reconciliation_policy: Option<crate::schema::data::SchemaReconciliationPolicy>,
+    pub(super) authority_input: SchemaContinuityAuthorityInput,
+    pub(super) proposed_transition: Option<ProposedSchemaTransition>,
+    pub(super) reconciliation_policy: Option<crate::schema::data::SchemaReconciliationPolicy>,
     expected: ExpectedRecoveredSchema,
 }
 
@@ -29,13 +28,13 @@ struct ExpectedRecoveredSchema {
 
 impl RecoveredSchemaBasis {
     pub(super) fn admit(
-        runtime: &mut crate::runtime::RelationalRuntime,
+        default_basis_version: DescriptorCanonicalBasisVersion,
         envelope: &CanonicalCommitEnvelope,
     ) -> Result<Self, DurabilityError> {
         validate_schema_continuity_bundle(envelope)
             .map_err(|issue| schema_mismatch(envelope, &issue.detail()))?;
         let schema_authority = canonical_authority_snapshot(envelope)?;
-        let canonical_basis_version = canonical_basis_version(runtime, envelope)?;
+        let canonical_basis_version = canonical_basis_version(default_basis_version, envelope)?;
         let proposed_transition =
             envelope
                 .schema_transition
@@ -70,19 +69,6 @@ impl RecoveredSchemaBasis {
                 reconciliation: envelope.schema_reconciliation_descriptor.clone(),
             },
         })
-    }
-
-    pub(super) fn apply(
-        &self,
-        mut options: RelationalTransactionValidationInput,
-    ) -> RelationalTransactionValidationInput {
-        options = options.with_schema_authority_input(self.authority_input.clone());
-        match self.proposed_transition.clone() {
-            Some(transition) => {
-                options.with_schema_transition(transition, self.reconciliation_policy)
-            }
-            None => options,
-        }
     }
 
     pub(super) fn validate_replayed(
@@ -179,12 +165,9 @@ fn canonical_authority_snapshot(
             .persistent_name_schemes
             .windows(2)
             .any(|pair| pair[0].scheme_id >= pair[1].scheme_id)
-        || snapshot
-            .kind_name_schemes
-            .windows(2)
-            .any(|pair| {
-                (pair[0].subject_kind, pair[0].kind_id) >= (pair[1].subject_kind, pair[1].kind_id)
-            })
+        || snapshot.kind_name_schemes.windows(2).any(|pair| {
+            (pair[0].subject_kind, pair[0].kind_id) >= (pair[1].subject_kind, pair[1].kind_id)
+        })
     {
         return Err(schema_mismatch(
             envelope,
@@ -249,7 +232,7 @@ fn canonical_authority_snapshot(
 }
 
 fn canonical_basis_version(
-    runtime: &mut crate::runtime::RelationalRuntime,
+    default_basis_version: DescriptorCanonicalBasisVersion,
     envelope: &CanonicalCommitEnvelope,
 ) -> Result<DescriptorCanonicalBasisVersion, DurabilityError> {
     match (
@@ -262,11 +245,7 @@ fn canonical_basis_version(
         {
             Ok(continuation.bridge.canonical_basis_version)
         }
-        (None, None) => Ok(runtime
-            .config
-            .schema
-            .descriptor_canonical_basis_policy
-            .current_write_version()),
+        (None, None) => Ok(default_basis_version),
         _ => Err(schema_mismatch(
             envelope,
             "schema descriptors disagree on canonical basis version",

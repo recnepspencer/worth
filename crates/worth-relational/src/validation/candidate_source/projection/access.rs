@@ -249,11 +249,9 @@ impl ManagedIndexSourceProjection<'_> {
                     None,
                 )?,
                 entry: Arc::clone(expected),
-                root: Arc::clone(
-                    projection
-                        .selected_root()
-                        .ok_or(Definition::RecordUnavailable)?,
-                ),
+                root: projection
+                    .retain_selected_root()
+                    .ok_or(Definition::RecordUnavailable)?,
             },
         };
         Ok(PreparedManagedIndexRelationRead {
@@ -299,7 +297,7 @@ impl ManagedIndexSourceProjection<'_> {
             ) if Arc::ptr_eq(expected, entry)
                 && projection
                     .selected_root()
-                    .is_some_and(|actual| Arc::ptr_eq(actual, root)) =>
+                    .is_some_and(|actual| std::ptr::eq(actual, root.as_ref())) =>
             {
                 Ok(read.data())
             }

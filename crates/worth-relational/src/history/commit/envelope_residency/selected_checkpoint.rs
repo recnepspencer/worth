@@ -1,6 +1,22 @@
 //! Transfer placement in the same cell; selected members never fall back to journals.
 use super::*;
-use crate::durability::data::RelationalCheckpointDirectory;
+use crate::durability::medium::RelationalCheckpointAcknowledgementDenial as Ack;
+use crate::storage::data::directory_source_edge::{DirectorySourceEdge, RetirableDirectory};
+
+/// A selected cell owns the same directory allocation it originally admitted.
+pub(crate) trait SelectedCanonicalDirectory: RetirableDirectory + std::any::Any {
+    fn source(&self) -> &Arc<dyn RelationalDurableColdSource>;
+    fn require_entry(&self, entry: &RelationalCommitIndexEntry) -> Result<(), Ack>;
+    fn readmit_canonical_member(
+        &self,
+        entry: &RelationalCommitIndexEntry,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        limit: u64,
+    ) -> Result<PositionedCanonicalCommit, RelationalRecoveryStop>;
+    fn preflight_retirement(&self, source: &dyn RelationalDurableColdSource) -> Result<(), Ack>;
+}
+pub(crate) type SelectedCheckpointEdge = DirectorySourceEdge<dyn SelectedCanonicalDirectory>;
+
 pub(crate) struct RetiredCanonicalPlacement {
     backing: Option<EnvelopeBacking>,
 }
@@ -22,7 +38,6 @@ impl RetiredCanonicalPlacement {
         &mut self,
         source: Option<&dyn crate::durability::medium::RelationalDurableColdSource>,
     ) -> Result<(), crate::durability::medium::RelationalCheckpointAcknowledgementDenial> {
-        use crate::durability::medium::RelationalCheckpointAcknowledgementDenial as Ack;
         match &mut self.backing {
             Some(EnvelopeBacking::Journal {
                 source: original, ..
@@ -40,7 +55,7 @@ impl RetiredCanonicalPlacement {
             Some(EnvelopeBacking::SelectedCheckpoint { .. })
         )
     }
-    pub(crate) fn take_directory(&mut self) -> Option<Arc<RelationalCheckpointDirectory>> {
+    pub(crate) fn take_directory(&mut self) -> Option<Arc<dyn SelectedCanonicalDirectory>> {
         if !self.has_directory() {
             return None;
         }
@@ -54,7 +69,7 @@ impl RetiredCanonicalPlacement {
     }
 }
 impl RelationalCommitEnvelopeResidency {
-    pub(crate) fn selected_directory(&self) -> Option<Arc<RelationalCheckpointDirectory>> {
+    pub(crate) fn selected_directory(&self) -> Option<Arc<dyn SelectedCanonicalDirectory>> {
         let state = self.state.lock().unwrap_or_else(|error| error.into_inner());
         match &state.backing {
             EnvelopeBacking::SelectedCheckpoint { directory, .. } => directory.snapshot(),
@@ -65,28 +80,12 @@ impl RelationalCommitEnvelopeResidency {
     pub(crate) fn install_selected(
         &self,
         entry: super::super::RetainedCanonicalIndex,
-        directory: Arc<RelationalCheckpointDirectory>,
+        directory: Arc<dyn SelectedCanonicalDirectory>,
     ) -> Result<
         RetiredCanonicalPlacement,
         crate::durability::medium::RelationalCheckpointAcknowledgementDenial,
     > {
-        use crate::durability::medium::RelationalCheckpointAcknowledgementDenial as Ack;
-        let row = directory
-            .manifest
-            .canonical_members
-            .member(entry.position)
-            .ok_or(Ack::Storage(Cause::MissingMember))?;
-        let ordinal = usize::try_from(
-            entry
-                .position
-                .0
-                .checked_sub(1)
-                .ok_or(Ack::Storage(Cause::IntegrityMismatch))?,
-        )
-        .map_err(|_| Ack::Storage(Cause::IntegrityMismatch))?;
-        if directory.manifest.commits.get(ordinal) != Some(entry.as_ref()) || row.length < 66 {
-            return Err(Ack::Storage(Cause::IntegrityMismatch));
-        }
+        directory.require_entry(entry.as_ref())?;
         let mut state = match self.state.try_lock() {
             Ok(state) => state,
             Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
@@ -103,7 +102,7 @@ impl RelationalCommitEnvelopeResidency {
                 source,
                 ..
             } => {
-                if !actual.same_owner(&entry) || !Arc::ptr_eq(source, &directory.source) {
+                if !actual.same_owner(&entry) || !Arc::ptr_eq(source, directory.source()) {
                     return Err(Ack::Storage(Cause::IntegrityMismatch));
                 }
             }
@@ -111,7 +110,7 @@ impl RelationalCommitEnvelopeResidency {
                 entry: actual,
                 directory: old,
             } => {
-                if !actual.same_owner(&entry) || !Arc::ptr_eq(&old.source, &directory.source) {
+                if !actual.same_owner(&entry) || !Arc::ptr_eq(old.source(), directory.source()) {
                     return Err(Ack::Storage(Cause::IntegrityMismatch));
                 }
             }
@@ -125,7 +124,7 @@ impl RelationalCommitEnvelopeResidency {
             &mut state.backing,
             EnvelopeBacking::SelectedCheckpoint {
                 entry,
-                directory: crate::durability::data::NativeCheckpointDirectoryEdge::new(directory),
+                directory: SelectedCheckpointEdge::new(directory),
             },
         );
         state.canonical_payload_bytes = None;
@@ -133,7 +132,7 @@ impl RelationalCommitEnvelopeResidency {
     }
     pub(crate) fn readmit_selected(
         entry: &RelationalCommitIndexEntry,
-        directory: &RelationalCheckpointDirectory,
+        directory: &dyn SelectedCanonicalDirectory,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         limit: u64,
     ) -> Result<PositionedCanonicalCommit, RelationalRecoveryStop> {

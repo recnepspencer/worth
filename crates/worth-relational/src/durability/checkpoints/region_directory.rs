@@ -214,6 +214,7 @@ impl ReadmittedRegionDirectory {
                 None => {
                     let cell = RelationalRegionResidency::from_selected_directory(
                         RelationalColdRegion {
+                            readmission: &crate::storage::residency::region_load::CHECKPOINT_REGION_READMISSION,
                             kind_authority: leaf.kind_authority,
                             source: Some(self.directory.source.clone()),
                             partition_id: leaf.partition_id,
@@ -230,7 +231,8 @@ impl ReadmittedRegionDirectory {
                             relation_slots: leaf.relation_slots,
                             unavailable_records: leaf.unavailable_records,
                         },
-                        &self.directory,
+                        self.directory.region_member_basis(),
+                        &self.directory.history_members,
                         request,
                     )?;
                     self.cells

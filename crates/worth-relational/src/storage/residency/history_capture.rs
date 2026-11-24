@@ -1,10 +1,10 @@
 //! Encode resident earlier suffixes and declare their cold member dependencies.
 pub(super) mod complete;
 use super::region_image::{RegionHistoryBase, RegionHistoryRow};
-use crate::durability::data::{
+use crate::durability::medium::RelationalDurableMemberLocator;
+use crate::storage::data::history_member_directory::{
     RelationalCheckpointHistoryDependency, RelationalHistoryMemberDirectory,
 };
-use crate::durability::medium::RelationalDurableMemberLocator;
 use crate::storage::data::RelationalStorageUnavailableCause as Cause;
 use crate::storage::overlay::PartitionState;
 use crate::storage::substrate::{RecordArena, RecordKind};

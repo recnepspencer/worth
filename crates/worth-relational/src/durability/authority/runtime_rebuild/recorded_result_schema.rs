@@ -1,5 +1,5 @@
 //! The result schema a durable schema-changing commit recorded for itself.
-use crate::branch::RelationalBranchRootSchemaAuthority;
+use crate::branch::root::schema::RelationalBranchRootSchemaAuthority;
 use crate::durability::data::{DurabilityError, RecoveryFailureClass};
 use crate::history::data::{CanonicalCommitEnvelope, CommitId};
 use crate::schema::data::SchemaAuthoritySnapshot;
@@ -60,7 +60,19 @@ mod tests {
             RecordedReplayResultSchema::admit_recorded(recorded.clone(), &own, CommitId(1))
                 .unwrap();
         assert!(Arc::ptr_eq(&admitted.into_schema(), &recorded));
-        let other = crate::tests::support::test_schema_registry().authority_snapshot();
+        use crate::schema::data::{
+            EntityKindRegistration, RelationalSchemaRegistry, SchemaId, SchemaVersionId,
+        };
+        let other = RelationalSchemaRegistry::new()
+            .register_entity_kind(EntityKindRegistration {
+                kind_id: crate::identity::data::KindId(1),
+                kind_name: "other-entity".into(),
+                schema_id: SchemaId("other-schema".into()),
+                schema_version_id: SchemaVersionId(1),
+                aspect_contract_declarations: Default::default(),
+            })
+            .unwrap()
+            .authority_snapshot();
         let refused =
             RecordedReplayResultSchema::admit_recorded(recorded, &other, CommitId(1)).unwrap_err();
         assert_eq!(refused.class, RecoveryFailureClass::SchemaMismatch);

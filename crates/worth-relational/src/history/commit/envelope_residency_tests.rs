@@ -1,5 +1,5 @@
 use super::envelope_residency::RelationalCommitEnvelopeResidency;
-use super::RelationalCommitIndexEntry;
+use super::RetainedCanonicalIndex;
 use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact;
 use crate::durability::medium::{RelationalDurableColdSource, RelationalDurableMemberLocator};
 use crate::publication::patch::data::PatchStreamPosition;
@@ -41,31 +41,18 @@ impl RelationalDurableColdSource for Source {
 fn selected(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     failure: Option<Cause>,
-) -> (RelationalCommitIndexEntry, Arc<Source>) {
-    let runtime = runtime_with_test_schema();
-    create_entity_outcome(execution, &runtime, "indexed-envelope-record");
-    let commit = runtime
+) -> (RetainedCanonicalIndex, Arc<Source>) {
+    let medium = OwnedTestDurableMedium::new();
+    let runtime = durable_runtime_for_medium(&medium);
+    let committed = create_entity_outcome(execution, &runtime, "indexed-envelope-record");
+    let cell = runtime
         .history
-        .positioned_canonical_commits_snapshot()
-        .pop()
-        .unwrap();
-    let artifact = runtime
-        .history
-        .commit_artifact(commit.commit.commit_id)
-        .unwrap();
-    let bytes = RelationalCanonicalCommitArtifact::from_positioned(
-        &commit,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .unwrap();
-    let index = RelationalCommitIndexEntry {
-        association_discovery: commit.envelope().association_discovery(),
-        commit: commit.commit.clone(),
-        position: commit.position(),
-        root: artifact.roots().clone(),
-        payload_digest: *bytes.payload_digest().as_bytes(),
-        schema_version: commit.schema_version,
-    };
+        .commit_artifact(committed.commit.commit_id)
+        .unwrap()
+        .envelope_residency();
+    let (index, _) = cell.journal_placement().unwrap();
+    let bytes = medium.latest_committed_artifact().unwrap();
+    release_test_commit_snapshot(&runtime, &committed);
     (
         index,
         Arc::new(Source {
@@ -82,12 +69,7 @@ fn an_indexed_envelope_remains_cold_until_explicit_readmission_and_loads_once() 
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let (entry, source) = selected(&execution, None);
     let expected = entry.commit.clone();
-    let cell = RelationalCommitEnvelopeResidency::cold(
-        super::RetainedCanonicalIndex::from_ordinary_owned(entry),
-        source.clone(),
-        None,
-        None,
-    );
+    let cell = RelationalCommitEnvelopeResidency::cold(entry, source.clone(), None, None);
     assert!(cell.get().is_none());
     assert_eq!(source.reads.load(Ordering::Relaxed), 0);
     let first = cell.demand(&execution, 1 << 30).unwrap();
@@ -105,12 +87,7 @@ fn an_indexed_envelope_storage_failure_is_typed_and_sticky() {
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let (entry, source) = selected(&execution, Some(Cause::Damaged));
     let position = entry.position;
-    let cell = RelationalCommitEnvelopeResidency::cold(
-        super::RetainedCanonicalIndex::from_ordinary_owned(entry),
-        source.clone(),
-        None,
-        None,
-    );
+    let cell = RelationalCommitEnvelopeResidency::cold(entry, source.clone(), None, None);
     for _ in 0..2 {
         let stop = cell.demand(&execution, 1 << 30).unwrap_err();
         let crate::storage::residency::RelationalResidencyDemandFailure::StorageUnavailable(
@@ -139,11 +116,7 @@ fn relinking_other_envelopes_preserves_an_index_even_while_its_body_is_in_flight
     let mut catalog = super::RelationalCommitCatalog::default();
     catalog
         .append_preencoded_recovery(Arc::new(
-            super::RelationalCommitArtifact::from_index(
-                super::RetainedCanonicalIndex::from_ordinary_owned(entry),
-                source,
-            )
-            .unwrap(),
+            super::RelationalCommitArtifact::from_index(entry, source).unwrap(),
         ))
         .unwrap();
     let body = catalog
@@ -172,13 +145,9 @@ fn settlement_releases_a_journal_flight_but_preserves_memory_history_and_positio
     let execution = worth_execution::ExecutionRequest::serial(&host);
     for journal_backed in [false, true] {
         let (entry, source) = selected(&execution, None);
-        let performed = RelationalCommitEnvelopeResidency::readmit_positioned(
-            &entry,
-            source.as_ref(),
-            &execution,
-            1 << 30,
-        )
-        .unwrap();
+        let performed = entry
+            .readmit_journal(source.as_ref(), &execution, 1 << 30)
+            .unwrap();
         let position = performed.position();
         let body = performed.canonical_arc().clone();
         let weak = Arc::downgrade(&body);
@@ -190,7 +159,7 @@ fn settlement_releases_a_journal_flight_but_preserves_memory_history_and_positio
             &performed,
             journal_backed.then(|| {
                 (
-                    super::RetainedCanonicalIndex::from_ordinary_owned(entry.clone()),
+                    entry.clone(),
                     source.clone() as Arc<dyn RelationalDurableColdSource>,
                 )
             }),
@@ -216,7 +185,7 @@ fn settlement_releases_a_journal_flight_but_preserves_memory_history_and_positio
         );
         assert_eq!(
             cell.journal_index().as_deref(),
-            journal_backed.then_some(&entry)
+            journal_backed.then_some(entry.as_ref())
         );
         let flight = cell.demand(&execution, 1 << 30).unwrap();
         assert_eq!(flight.commit, entry.commit);
@@ -234,12 +203,7 @@ fn positioned_demand_owns_its_result_across_journal_settlement() {
     let host = crate::execution::test_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let (entry, source) = selected(&execution, None);
-    let cell = RelationalCommitEnvelopeResidency::cold(
-        super::RetainedCanonicalIndex::from_ordinary_owned(entry.clone()),
-        source.clone(),
-        None,
-        None,
-    );
+    let cell = RelationalCommitEnvelopeResidency::cold(entry.clone(), source.clone(), None, None);
     let first = cell.demand_positioned(&execution, 1 << 30).unwrap();
     cell.settle();
     assert_eq!(first.position(), entry.position);
@@ -258,11 +222,7 @@ fn unpositioned_memory_envelopes_and_cold_digests_refuse_explicitly() {
     let mut catalog = super::RelationalCommitCatalog::default();
     catalog
         .append_preencoded_recovery(Arc::new(
-            super::RelationalCommitArtifact::from_index(
-                super::RetainedCanonicalIndex::from_ordinary_owned(entry),
-                source,
-            )
-            .unwrap(),
+            super::RelationalCommitArtifact::from_index(entry, source).unwrap(),
         ))
         .unwrap();
     let artifact = catalog.get(id).unwrap();

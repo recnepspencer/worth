@@ -1,4 +1,5 @@
 //! The original capture owns each covered cell and its bounded transfer cursor data.
+use crate::durability::canonical_commit_artifact::journal_source_read::readmit_journal_commit;
 use crate::durability::data::{
     RelationalCheckpointDirectory, RelationalCheckpointManifestDraft,
     RelationalNativeCheckpointCaptureDenial as Capture,
@@ -63,8 +64,10 @@ impl CanonicalCheckpointPublication {
                         ),
                     ))
                 }
-                None => RetainedCanonicalIndex::copy_original(original, request)
-                    .map_err(Capture::Request)?,
+                None => {
+                    RetainedCanonicalIndex::copy_original(original, request, readmit_journal_commit)
+                        .map_err(Capture::Request)?
+                }
             };
             rows.push(CapturedCell {
                 entry,
@@ -201,17 +204,18 @@ impl RetiredCanonicalPlacements {
             }
             // Each original directory carries its own prepaid retirement storage.
             let slot = &mut self.slots[self.next];
-            let directory = slot
-                .directory
-                .take()
-                .or_else(|| {
-                    slot.backing
-                        .as_mut()
-                        .and_then(|backing| backing.take_directory())
-                })
-                .expect("checked displaced directory is retained");
-            if let Some(directory) = Arc::into_inner(directory) {
-                self.active = Some(directory.into_retirement());
+            use crate::storage::data::directory_source_edge::RetirableDirectory;
+            let task = if let Some(directory) = slot.directory.take() {
+                directory.retire_last()
+            } else {
+                slot.backing
+                    .as_mut()
+                    .and_then(|backing| backing.take_directory())
+                    .expect("checked displaced directory is retained")
+                    .retire_last()
+            };
+            if let Some(task) = task {
+                self.active = Some(task);
             } else {
                 // Arc::into_inner atomically released only this genuine nonfinal share.
                 self.next += 1;

@@ -14,7 +14,7 @@ pub(in crate::replay) fn replay_recovery_plan_for_chain(
     verification_mode: crate::replay::data::ReplayVerificationMode,
 ) -> Result<RecoveryPlan, crate::durability::data::RelationalRecoveryStop> {
     let checkpoint = select_replay_checkpoint(source.durable_checkpoints(), chain);
-    let tail_log = replay_tail_log(&source.history, chain, checkpoint.as_ref());
+    let tail_log = replay_tail_log(source.history.canonical_read(), chain, checkpoint.as_ref());
     let covered = checkpoint
         .as_ref()
         .map_or(RelationalBranchTransitionSequence(0), |checkpoint| {
@@ -25,7 +25,7 @@ pub(in crate::replay) fn replay_recovery_plan_for_chain(
         .reconstruct_branch_transition_history(execution, covered)?;
     let branch_transitions = replay_fork_transitions(transitions, &tail_log);
     let restore_authoritative_envelope_commit_ids =
-        authoritative_replay_envelopes(&source.history, chain);
+        authoritative_replay_envelopes(source.history.canonical_read(), chain);
     let checkpoint_envelopes = checkpoint
         .as_ref()
         .map(|checkpoint| checkpoint.envelopes.as_slice())
@@ -43,7 +43,7 @@ pub(in crate::replay) fn replay_recovery_plan_for_chain(
         branch_transitions,
         authority_continuity,
         replay_verification_mode_to_recovery_mode(verification_mode),
-        target_descriptor_semantics_version(&source.history, chain),
+        target_descriptor_semantics_version(source.history.canonical_read(), chain),
         restore_authoritative_envelope_commit_ids,
         source.durability.cold_source(),
     )

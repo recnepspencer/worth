@@ -88,7 +88,7 @@ impl RelationalRuntime {
                             Denial::Ownership(super::RelationalModelOwnershipDenial::Request(stop))
                         })?;
                     graph_selection::prepare(
-                        &self.history,
+                        self.history.canonical_read(),
                         execution,
                         context,
                         entities,

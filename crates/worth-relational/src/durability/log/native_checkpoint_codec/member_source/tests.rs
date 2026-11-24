@@ -3,7 +3,7 @@ use super::*;
 use crate::durability::medium::{
     RelationalDurableOwnedReadRefusal as Refusal, RelationalDurableReadProtection,
 };
-use crate::tests::support::retained_byte_owner_bill;
+use crate::execution::packet_preparation::memory_tests::retained_byte_owner_bill;
 use sha2::{Digest, Sha256};
 use worth_execution::{
     CancellationSource, ExecutionImmutableBytes, ExecutionRequest, SerialMemoryBudget,

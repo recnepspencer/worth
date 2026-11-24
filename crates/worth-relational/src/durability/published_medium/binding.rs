@@ -1,3 +1,4 @@
+use crate::durability::canonical_commit_artifact::journal_source_read::readmit_journal_commit;
 use std::sync::{Arc, Mutex, MutexGuard, OnceLock};
 mod source_retirement;
 pub(crate) use source_retirement::SealedRelationalMediumBinding;
@@ -160,6 +161,7 @@ impl RelationalDurableMediumBinding {
             roots,
             *artifact.payload_digest().as_bytes(),
             execution,
+            readmit_journal_commit,
         )
         .map_err(|denial| refused(RelationalDurablePublicationRefusal::Encoding(denial)))?;
         crate::execution::request_custody::check_request(execution).map_err(|cause| {

@@ -2,11 +2,11 @@
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
-use crate::durability::data::{
-    PartitionCheckpointImage, VersionedEntityMetadataImage, VersionedRelationMetadataImage,
-};
 use crate::durability::medium::RelationalDurableMemberLocator;
 use crate::identity::data::{KindId, PartitionId, RelationId};
+use crate::storage::data::partition_checkpoint_image::{
+    PartitionCheckpointImage, VersionedEntityMetadataImage, VersionedRelationMetadataImage,
+};
 use crate::storage::data::RelationalStorageUnavailableCause as Cause;
 use crate::storage::overlay::PartitionHistoryFrontiers;
 
@@ -175,7 +175,7 @@ impl RelationalRegionImage<'_> {
             RelationalDurableMemberLocator,
             worth_execution::ExecutionImmutableBytes,
         ),
-        crate::durability::data::RelationalRecoveryStop,
+        crate::durability::data::recovery_stop::RelationalRecoveryStop,
     > {
         let mut header = [0u8; MAGIC.len() + 39];
         header[..MAGIC.len()].copy_from_slice(MAGIC);

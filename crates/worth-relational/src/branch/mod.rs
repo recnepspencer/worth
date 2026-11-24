@@ -80,6 +80,7 @@ pub(crate) use registry::RelationalSourceRootSlot;
 pub(crate) mod projection_view;
 pub(crate) mod root;
 pub(crate) mod root_checkpoint;
+mod root_execution_payload;
 mod root_partition_access;
 mod root_region;
 pub(crate) mod root_regions;

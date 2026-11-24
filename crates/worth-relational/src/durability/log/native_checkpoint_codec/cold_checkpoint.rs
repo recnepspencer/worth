@@ -33,7 +33,7 @@ pub(super) fn readmit(
     }) {
         let commit = crate::history::commit::RelationalCommitEnvelopeResidency::readmit_selected(
             entry,
-            &directory,
+            directory.as_ref(),
             execution,
             1 << 30,
         )?;

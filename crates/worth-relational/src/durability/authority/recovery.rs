@@ -12,7 +12,7 @@ pub use fork_effect::{
     RelationalForkReadmissionCause,
 };
 pub(super) mod admission;
-pub(super) mod codec_transition;
+pub(crate) mod codec_transition;
 mod declared_schema;
 pub(crate) mod prepared_home;
 pub use prepared_home::{PreparedRelationalHomeRecovery, RelationalHomeRecoveryPreparationDenial};

@@ -1,7 +1,10 @@
 //! Admit indexed cells before installing either eager or cold checkpoint routes.
+use crate::durability::canonical_commit_artifact::journal_source_read::readmit_journal_commit;
 use crate::durability::data::{RelationalCheckpointDirectory, RelationalRecoveryStop};
+use crate::history::commit::{
+    RelationalCommitCatalog, RelationalCommitIndexEntry, RetainedCanonicalIndex,
+};
 use crate::history::data::PositionedCanonicalCommit;
-use crate::history::{RelationalCommitCatalog, RelationalCommitIndexEntry, RetainedCanonicalIndex};
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 pub(super) fn admit(
@@ -11,9 +14,10 @@ pub(super) fn admit(
 ) -> Result<RelationalCommitCatalog, RelationalRecoveryStop> {
     let mut catalog = RelationalCommitCatalog::default();
     for entry in &directory.manifest.commits {
-        let actual = RetainedCanonicalIndex::copy_original(entry, execution)
-            .map_err(RelationalRecoveryStop::Request)?;
-        let artifact = crate::history::RelationalCommitArtifact::from_index(
+        let actual =
+            RetainedCanonicalIndex::copy_original(entry, execution, readmit_journal_commit)
+                .map_err(RelationalRecoveryStop::Request)?;
+        let artifact = crate::history::commit::RelationalCommitArtifact::from_index(
             actual.clone(),
             directory.source.clone(),
         )

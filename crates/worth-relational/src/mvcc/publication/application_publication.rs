@@ -91,7 +91,7 @@ impl RelationalInstalledApplicationPublicationAuthority {
     }
 }
 
-impl crate::mvcc::ValidatedRelationalProposal {
+impl crate::mvcc::validation::validated_proposal::ValidatedRelationalProposal {
     /// Bind a running installed producer before immutable publication preparation.
     /// Target references remain untrusted selectors until native allocation and
     /// canonical operation/payload coverage have been checked.

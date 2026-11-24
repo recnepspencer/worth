@@ -11,6 +11,7 @@ use worth_execution::{ExecutionRequest, MapKernelContext};
 pub(crate) struct RetirementHistoryInputs<'r> {
     pub(crate) plans: &'r AspectContractPlanCatalog,
     pub(crate) projection: ProjectionInputs<'r>,
+    pub(crate) canonical_history: crate::history::envelope_demand::CanonicalHistoryRead<'r>,
     pub(crate) deletion_grammar:
         super::codec_disposition::deletion_grammar::DeletionPublicationGrammar,
 }
@@ -39,8 +40,7 @@ impl<'r, 'q, 'l> RuntimeHistoryRequest<'r, 'q, 'l> {
         id: CommitId,
     ) -> Result<Option<Arc<CanonicalCommitEnvelope>>, Stop> {
         self.input
-            .projection
-            .history
+            .canonical_history
             .demand_commit_envelope(&self.execution, id)
             .map_err(Stop::Request)
     }
@@ -52,9 +52,9 @@ impl<'r, 'q, 'l> RuntimeHistoryRequest<'r, 'q, 'l> {
     ) -> Result<Option<Arc<CanonicalCommitEnvelope>>, Stop> {
         let id = self
             .input
-            .projection
-            .history
-            .commit_for_version_in_context(version, context)
+            .canonical_history
+            .performed
+            .find_version(version, context)
             .map_err(Stop::Request)?;
         match id {
             Some(id) => self.commit(id),

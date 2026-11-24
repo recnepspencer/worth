@@ -9,8 +9,6 @@ mod activation_commitment;
 mod schema_proposal;
 mod source_schema;
 mod target_publication;
-#[cfg(test)]
-mod tests;
 mod transition_admission;
 
 use crate::durability::authority::recovered_runtime::DurabilityRecoveryAuthority;

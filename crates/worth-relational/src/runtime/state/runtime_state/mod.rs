@@ -36,9 +36,8 @@ mod tenure;
 mod test_support;
 
 use super::{
-    CommitStrategiesSubsystem, DurabilitySubsystem, HistorySubsystem, LineageSubsystem,
-    PublicationSubsystem, RecordIdentitySubsystem, RuntimeServices, StorageSubsystem,
-    VisibilitySubsystem,
+    CommitStrategiesSubsystem, DurabilitySubsystem, LineageSubsystem, PublicationSubsystem,
+    RecordIdentitySubsystem, RuntimeServices, StorageSubsystem, VisibilitySubsystem,
 };
 
 pub(in crate::runtime) use close_authority::RelationalRuntimeCloseAuthority;
@@ -83,7 +82,8 @@ pub struct RelationalRuntimeState {
     pub(crate) partitions: StorageSubsystem,
     pub(crate) visibility: VisibilitySubsystem,
     pub(crate) publication: PublicationSubsystem,
-    pub(crate) history: HistorySubsystem,
+    pub(crate) history:
+        super::subsystems::history::history_canonical_routes::RelationalPublicationHistory,
     pub(crate) indexes: indexing::RuntimeIndexingSubsystem,
     pub(crate) lineage: LineageSubsystem,
     pub(crate) durability: DurabilitySubsystem,

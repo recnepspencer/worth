@@ -74,7 +74,47 @@ floor = 32000
 depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "indexes", "durability", "publication"]
 
 [paths]
+"durability/authority/runtime_rebuild/envelope_replay.rs" = "runtime"
+"durability/authority/runtime_rebuild/envelope_replay/committed_artifacts.rs" = "runtime"
+"durability/authority/runtime_rebuild/envelope_replay/effect.rs" = "runtime"
+"durability/authority/runtime_rebuild/source_schema_routes.rs" = "publication"
+"durability/authority/runtime_rebuild/envelope_replay/owner_bindings.rs" = "runtime"
+"durability/authority/runtime_rebuild/index_catalog/predecessor.rs" = "runtime"
+"durability/authority/runtime_rebuild/transition_replay.rs" = "runtime"
+"storage/residency/region_capture.rs" = "durability"
+"storage/residency/checkpoint_capture/complete/tests" = "durability"
+# Native-frame residency courts exercise the actual Durability writer and readmission.
+# Their inputs are exact arena histories and an independently emitted selected directory.
+"storage/residency/region_fixture" = "durability"
+"storage/residency/head_history_kind_tests.rs" = "durability"
+"storage/residency/head_metadata_tests.rs" = "durability"
+"storage/residency/head_probe_tests.rs" = "durability"
+"storage/residency/history_consolidation_tests.rs" = "durability"
+"storage/residency/history_fold_refusals.rs" = "durability"
+"storage/residency/history_prefix_tests.rs" = "durability"
+"storage/residency/kind_authority_tests.rs" = "durability"
+"storage/residency/layered_history_tests.rs" = "durability"
+"storage/residency/lease_transfer_tests.rs" = "durability"
+"storage/residency/member_custody_tests.rs" = "durability"
+"storage/residency/mixed_history_tests.rs" = "durability"
+"storage/residency/probe_tests.rs" = "durability"
+"storage/residency/projection_corruption_tests.rs" = "durability"
+"storage/residency/request_stop_tests.rs" = "durability"
+"storage/residency/resident_history_tests.rs" = "durability"
+"storage/residency/root_view_tests.rs" = "durability"
+"storage/residency/symbol_admission_tests.rs" = "durability"
+"storage/residency/tests.rs" = "durability"
+"storage/residency/region_load.rs" = "durability"
+"storage/residency/region_load/owned_partition.rs" = "durability"
+"storage/residency/region_load/admission.rs" = "durability"
+"storage/residency/region_load/head_validation.rs" = "durability"
+# Commit-stage visit observers are private to the whole-runtime request pipeline.
+"durability/authority/runtime_rebuild/envelope_replay/interruption_tests.rs" = "runtime"
+"durability/authority/runtime_rebuild/envelope_replay/interruption_tests/recovered_state_comparison.rs" = "runtime"
+"durability/authority/runtime_rebuild.rs" = "runtime"
+"durability/authority/runtime_rebuild/checkpoint_restore/installation.rs" = "runtime"
 "durability/canonical_commit_artifact/retained_frame_reads.rs" = "durability"
+"durability/canonical_commit_artifact/journal_source_read.rs" = "durability"
 "branch/historical_selection/chain.rs" = "runtime"
 "branch/historical_selection/runtime_reads.rs" = "runtime"
 "branch/root_snapshot_custody/exact_observation/runtime_reads.rs" = "runtime"
@@ -107,6 +147,10 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "authority/commit/pipeline/runtime_candidate_orchestration.rs" = "runtime"
 "authority/commit/pipeline/runtime_merge_draft.rs" = "runtime"
 "runtime/state/subsystems/history_catalog_recovery/court_catalog.rs" = "branch"
+"runtime/state/subsystems/history_catalog_recovery.rs" = "durability"
+"runtime/state/subsystems/history_catalog_recovery/inventory.rs" = "durability"
+"runtime/state/subsystems/history_catalog_recovery/source_binding.rs" = "durability"
+"runtime/state/subsystems/history_catalog_recovery/checkpoint_root.rs" = "durability"
 "runtime/state/subsystems/history_checkpoint_catalog.rs" = "branch"
 "runtime/state/subsystems/history_recovery.rs" = "branch"
 "validation/candidate_source/applied.rs" = "publication"
@@ -264,6 +308,7 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "history/retention/head_cell/memory_close_tests.rs" = "branch"
 "history/retention/lane/retirement/tests.rs" = "branch"
 "history/retention/selected_snapshot.rs" = "branch"
+"history/retention/selected_snapshot_custody.rs" = "branch"
 "history/retention/snapshot_basis_retirement.rs" = "branch"
 "branch/root_projection.rs" = "branch"
 "visibility/snapshot_states/historical_basis_custody.rs" = "branch"
@@ -779,7 +824,7 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "runtime/state/subsystems/history_identity_allocation" = "branch"
 "runtime/state/subsystems/history_ledger" = "branch"
 "runtime/state/subsystems/history_ledger_access" = "branch"
-"runtime/state/subsystems/history_committed_receipts.rs" = "branch"
+"runtime/state/subsystems/history_committed_receipts.rs" = "publication"
 "runtime/state/subsystems/history_memory_close" = "branch"
 "runtime/state/subsystems/history_preparation_binding" = "publication"
 # Prepared artifact accelerators and their sequence are consumed by the branch ledger.
@@ -915,7 +960,7 @@ root_custody = [
     "durability/authority/associated_effects/observed_memory_commit.rs",
     "durability/canonical_commit_artifact/decoded_quote/checkpoint_effect_data.rs",
     "authority/commit/preparation/storage_denial.rs",
-    "history/retention/selected_snapshot.rs",
+    "history/retention/selected_snapshot_custody.rs",
     "visibility/snapshot_observation_registration.rs",
     "visibility/materialization/read_records/projection/checkpoint_selection.rs",
     "visibility/snapshot_states/retained_state_building.rs",
@@ -926,7 +971,7 @@ root_custody = [
     "visibility/snapshot_states/historical_basis_custody.rs",
 ]
 envelope = ["branch/envelope", "history/data/canonical_commit_envelope", "history/commit", "publication/patch", "publication/ownership/record.rs", "publication/ownership/record_payload.rs", "durability/checkpoint_admission/read_image.rs", "durability/authority/associated_effects/created_row_read.rs"]
-projection_view = ["branch/projection_view", "branch/root_projection.rs", "branch/root_region/backing.rs", "branch/root_regions/backing.rs", "branch/root_regions/selected_access.rs", "branch/root_regions/partition_visitation.rs", "branch/symbol_read.rs", "branch/managed_source_affinity.rs", "validation/candidate_source/image", "visibility", "snapshots", "query", "runtime/state/subsystems/visibility"]
+projection_view = ["history/retention/selected_snapshot.rs", "branch/projection_view", "branch/root_projection.rs", "branch/root_region/backing.rs", "branch/root_regions/backing.rs", "branch/root_regions/selected_access.rs", "branch/root_regions/partition_visitation.rs", "branch/symbol_read.rs", "branch/managed_source_affinity.rs", "validation/candidate_source/image", "visibility", "snapshots", "query", "runtime/state/subsystems/visibility"]
 
 [[boundaries]]
 owner = "mutation"
@@ -962,7 +1007,47 @@ ordinary_checkpoint = ["durability/ordinary_checkpoint", "durability/checkpoints
 reconstruction = ["durability/reconstruction", "durability/recovery", "replay", "durability/authority/recovery", "durability/authority/runtime_rebuild"]
 
 [reassignments]
+"durability/authority/runtime_rebuild/envelope_replay.rs" = "runtime"
+"durability/authority/runtime_rebuild/envelope_replay/committed_artifacts.rs" = "runtime"
+"durability/authority/runtime_rebuild/envelope_replay/effect.rs" = "runtime"
+"durability/authority/runtime_rebuild/source_schema_routes.rs" = "publication"
+"durability/authority/runtime_rebuild/envelope_replay/owner_bindings.rs" = "runtime"
+"durability/authority/runtime_rebuild/index_catalog/predecessor.rs" = "runtime"
+"durability/authority/runtime_rebuild/transition_replay.rs" = "runtime"
+"storage/residency/region_capture.rs" = "durability"
+"storage/residency/checkpoint_capture/complete/tests" = "durability"
+# Native-frame residency courts exercise the actual Durability writer and readmission.
+# Their inputs are exact arena histories and an independently emitted selected directory.
+"storage/residency/region_fixture" = "durability"
+"storage/residency/head_history_kind_tests.rs" = "durability"
+"storage/residency/head_metadata_tests.rs" = "durability"
+"storage/residency/head_probe_tests.rs" = "durability"
+"storage/residency/history_consolidation_tests.rs" = "durability"
+"storage/residency/history_fold_refusals.rs" = "durability"
+"storage/residency/history_prefix_tests.rs" = "durability"
+"storage/residency/kind_authority_tests.rs" = "durability"
+"storage/residency/layered_history_tests.rs" = "durability"
+"storage/residency/lease_transfer_tests.rs" = "durability"
+"storage/residency/member_custody_tests.rs" = "durability"
+"storage/residency/mixed_history_tests.rs" = "durability"
+"storage/residency/probe_tests.rs" = "durability"
+"storage/residency/projection_corruption_tests.rs" = "durability"
+"storage/residency/request_stop_tests.rs" = "durability"
+"storage/residency/resident_history_tests.rs" = "durability"
+"storage/residency/root_view_tests.rs" = "durability"
+"storage/residency/symbol_admission_tests.rs" = "durability"
+"storage/residency/tests.rs" = "durability"
+"storage/residency/region_load.rs" = "durability"
+"storage/residency/region_load/owned_partition.rs" = "durability"
+"storage/residency/region_load/admission.rs" = "durability"
+"storage/residency/region_load/head_validation.rs" = "durability"
+# Commit-stage visit observers are private to the whole-runtime request pipeline.
+"durability/authority/runtime_rebuild/envelope_replay/interruption_tests.rs" = "runtime"
+"durability/authority/runtime_rebuild/envelope_replay/interruption_tests/recovered_state_comparison.rs" = "runtime"
+"durability/authority/runtime_rebuild.rs" = "runtime"
+"durability/authority/runtime_rebuild/checkpoint_restore/installation.rs" = "runtime"
 "durability/canonical_commit_artifact/retained_frame_reads.rs" = "durability"
+"durability/canonical_commit_artifact/journal_source_read.rs" = "durability"
 "branch/historical_selection/chain.rs" = "runtime"
 "branch/historical_selection/runtime_reads.rs" = "runtime"
 "branch/root_snapshot_custody/exact_observation/runtime_reads.rs" = "runtime"
@@ -995,6 +1080,10 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "authority/commit/pipeline/runtime_candidate_orchestration.rs" = "runtime"
 "authority/commit/pipeline/runtime_merge_draft.rs" = "runtime"
 "runtime/state/subsystems/history_catalog_recovery/court_catalog.rs" = "branch"
+"runtime/state/subsystems/history_catalog_recovery.rs" = "durability"
+"runtime/state/subsystems/history_catalog_recovery/inventory.rs" = "durability"
+"runtime/state/subsystems/history_catalog_recovery/source_binding.rs" = "durability"
+"runtime/state/subsystems/history_catalog_recovery/checkpoint_root.rs" = "durability"
 "runtime/state/subsystems/history_checkpoint_catalog.rs" = "branch"
 "runtime/state/subsystems/history_recovery.rs" = "branch"
 "validation/candidate_source/applied.rs" = "publication"
@@ -1490,7 +1579,7 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "publication/ownership/authored_retirement" = "publication"
 
 # Immutable receipt discovery has no root runtime or preparation receiver.
-"runtime/state/subsystems/history_committed_receipts.rs" = "branch"
+"runtime/state/subsystems/history_committed_receipts.rs" = "publication"
 
 # Paid merge mutation plan reconstruction uses the normalized-intent owner.
 "mvcc/transaction/reconstructed_merge_plan" = "mutation"
@@ -1516,6 +1605,7 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 
 # The selected root and retired raw shares remain with retention custody.
 "history/retention/selected_snapshot.rs" = "branch"
+"history/retention/selected_snapshot_custody.rs" = "branch"
 "history/retention/snapshot_basis_retirement.rs" = "branch"
 
 # Runtime lends exact history to authored read receivers.

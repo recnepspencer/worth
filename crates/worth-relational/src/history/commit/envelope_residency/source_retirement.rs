@@ -1,7 +1,7 @@
 //! Retire only this envelope cell's original physical source edges.
 use super::*;
-use crate::durability::data::NativeDirectoryRetirementHandoff;
 use crate::durability::medium::RelationalCheckpointAcknowledgementDenial as Ack;
+use crate::storage::data::directory_source_edge::NativeDirectoryRetirementHandoff;
 impl RelationalCommitEnvelopeResidency {
     fn try_source_state(&self) -> Result<std::sync::MutexGuard<'_, EnvelopeState>, Ack> {
         match self.state.try_lock() {

@@ -1,6 +1,5 @@
 //! Deterministic distinct-lane membership changes cross one real owner cut.
-use crate::branch::basis::RelationalBranchBasisDescriptor;
-use crate::history::data::{BranchId, CommitId};
+use crate::history::data::CommitId;
 use crate::tests::support::*;
 use std::sync::{
     mpsc::{sync_channel, Receiver, SyncSender},
@@ -129,60 +128,7 @@ fn native_custody_correction_current_lane_inventory_is_collected_inside_actual_c
     runtime.prepare_close().unwrap().finish();
 }
 
-/// Exact private assertion for the controlled component SDK leaf. No owner or
-/// request is constructed here, and the callback returns descriptive DATA only.
-pub(crate) fn assert_controlled_component_capture_winner(
-    runtime: &crate::runtime::RelationalRuntime,
-    basis_b: &crate::branch::basis::AdmittedRelationalBranchBasis,
-    lease_a: super::RelationalBranchRetentionLease,
-    capture: impl FnOnce() -> Vec<(BranchId, CommitId)> + Send,
-) {
-    let owner = runtime.history.retention_binding().owner.upgrade().unwrap();
-    let first = selected_component(lease_a.descriptor());
-    let second = selected_component(basis_b.descriptor());
-    let (entered_tx, entered_rx) = sync_channel(0);
-    let (resume_tx, resume_rx) = sync_channel(0);
-    *owner.component_capture_pause.lock().unwrap() = Some(Arc::new(CapturePause {
-        entered: entered_tx,
-        resume: Mutex::new(resume_rx),
-    }));
-    std::thread::scope(|scope| {
-        let selecting = scope.spawn(capture);
-        entered_rx.recv().unwrap();
-        assert!(
-            owner.external_cut.try_lock().is_err(),
-            "actual controlled capture owns the complete external cut"
-        );
-        let (started_tx, started_rx) = sync_channel(0);
-        let changing = scope.spawn(move || {
-            started_tx.send(()).unwrap();
-            runtime.release_component_basis(lease_a).unwrap();
-            runtime.retain_component_basis(basis_b).unwrap()
-        });
-        started_rx.recv().unwrap();
-        resume_tx.send(()).unwrap();
-        let selected = selecting.join().unwrap();
-        let lease_b = changing.join().unwrap();
-        *owner.component_capture_pause.lock().unwrap() = None;
-        assert!(
-            selected.contains(&first),
-            "original A external component is captured"
-        );
-        assert!(
-            !selected.contains(&second),
-            "A-old and B-old never coexist across the actual cut"
-        );
-        runtime.release_component_basis(lease_b).unwrap();
-    });
-}
-
-fn selected_component(descriptor: &RelationalBranchBasisDescriptor) -> (BranchId, CommitId) {
-    let selected = descriptor.reference().target().as_basis().unwrap();
-    (
-        descriptor.branch_id().clone(),
-        CommitId(selected.selected_commit_id()),
-    )
-}
+pub(super) mod complete;
 
 #[test]
 fn owner_reclamation_overflow_preserves_prior_removals_and_requeues_overflowing_root() {

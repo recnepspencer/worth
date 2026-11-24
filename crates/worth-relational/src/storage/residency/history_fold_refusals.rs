@@ -2,7 +2,7 @@
 use super::super::region_image::*;
 use super::layered_history_tests::{counted, encode_layer};
 use super::*;
-use crate::durability::data::{
+use crate::storage::data::history_member_directory::{
     RelationalCheckpointHistoryDependency, RelationalHistoryMemberDirectory,
 };
 use crate::storage::substrate::EntityRecordKind;
@@ -10,15 +10,12 @@ use crate::storage::substrate::EntityRecordKind;
 #[test]
 fn an_undeclared_base_is_refused_before_its_payload_is_read() {
     let fixture = region_with_history();
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let head = region_load::load_head(
-        &fixture.cold,
-        fixture.cold.source.as_ref().unwrap(),
-        execution,
-        1 << 24,
-    )
-    .unwrap();
+    let head = fixture
+        .cold
+        .read_head(fixture.cold.source.as_ref().unwrap(), execution, 1 << 24)
+        .unwrap();
     let (mut cold, source) = encode_layer(&fixture.cold, &fixture.source, &head.partition);
     cold.history_members = Arc::default();
     let cell = RelationalRegionResidency::cold(cold).unwrap();
@@ -37,25 +34,23 @@ fn an_undeclared_base_is_refused_before_its_payload_is_read() {
 #[test]
 fn shared_row_bases_cannot_expand_beyond_the_original_read_limit() {
     let fixture = region_with_history();
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let head = region_load::load_head(
-        &fixture.cold,
-        fixture.cold.source.as_ref().unwrap(),
-        execution,
-        1 << 24,
-    )
-    .unwrap();
-    let mut complete = region_load::load_full(
-        &fixture.cold,
-        fixture.cold.source.as_ref().unwrap(),
-        &head,
-        execution,
-        1 << 24,
-    )
-    .unwrap()
-    .partition
-    .clone();
+    let head = fixture
+        .cold
+        .read_head(fixture.cold.source.as_ref().unwrap(), execution, 1 << 24)
+        .unwrap();
+    let mut complete = fixture
+        .cold
+        .read_full(
+            fixture.cold.source.as_ref().unwrap(),
+            &head,
+            execution,
+            1 << 24,
+        )
+        .unwrap()
+        .partition
+        .clone();
     let slot = fixture.entity.slot_index();
     let extra = complete
         .entity_arena
@@ -132,7 +127,7 @@ fn shared_row_bases_cannot_expand_beyond_the_original_read_limit() {
         BTreeMap::from([encoded.clone(), (cold.history, bytes.clone())]),
         encoded.0,
     );
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let mut folder = super::super::history_fold::HistoryFolder::new(
         &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),

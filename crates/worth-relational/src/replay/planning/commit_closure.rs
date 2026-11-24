@@ -2,11 +2,11 @@ use std::collections::BTreeSet;
 
 use crate::history::data::CanonicalCommitEnvelope;
 use crate::history::data::CommitId;
+use crate::history::envelope_demand::CanonicalHistoryRead;
 use crate::replay::data::ReplayFailureClass;
-use crate::runtime::state::subsystems::history::HistorySubsystem;
 
 pub(in crate::replay) fn load_replay_envelope(
-    source: &HistorySubsystem,
+    source: CanonicalHistoryRead<'_>,
     commit_id: CommitId,
 ) -> Option<std::sync::Arc<CanonicalCommitEnvelope>> {
     #[cfg(test)]
@@ -15,7 +15,7 @@ pub(in crate::replay) fn load_replay_envelope(
 }
 
 pub(in crate::replay) fn replay_commit_closure_by_commit_id_order(
-    history: &HistorySubsystem,
+    history: CanonicalHistoryRead<'_>,
     commit_id: CommitId,
 ) -> ReplayCommitClosure {
     let mut ordered = Vec::new();
@@ -44,7 +44,7 @@ pub(in crate::replay) struct ReplayCommitClosure {
 }
 
 fn visit_replay_commit_closure(
-    history: &HistorySubsystem,
+    history: CanonicalHistoryRead<'_>,
     commit_id: CommitId,
     visiting: &mut BTreeSet<CommitId>,
     ordered: &mut Vec<CommitId>,

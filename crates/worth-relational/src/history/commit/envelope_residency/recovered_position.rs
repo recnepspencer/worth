@@ -41,7 +41,7 @@ impl RelationalCommitEnvelopeResidency {
             EnvelopeBacking::SelectedCheckpoint {
                 entry: actual,
                 directory,
-            } => actual.same_owner(&entry) && Arc::ptr_eq(&directory.source, &source),
+            } => actual.same_owner(&entry) && Arc::ptr_eq(directory.source(), &source),
             EnvelopeBacking::Memory { .. } => false,
         };
         if !same_source {

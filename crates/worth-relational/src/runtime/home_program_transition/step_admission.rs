@@ -81,11 +81,7 @@ impl RelationalRuntime {
                 RelationalHomeProgramStepContracts::AfterTarget,
                 HomeProgramTransitionStepRole::AfterTarget,
             ) => {
-                let inherited = basis
-                    .inner
-                    .root
-                    .execution_contracts
-                    .get()
+                let inherited = super::retain_root_execution_contracts(&basis.inner.root)
                     .ok_or(Denial::TargetCatalogMismatch)?;
                 if inherited.digest != envelope.catalog()
                     || inherited.schema.authority_digest() != plan.target_meaning().schema().bytes()

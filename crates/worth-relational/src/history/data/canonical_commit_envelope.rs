@@ -363,15 +363,13 @@ pub use replay_record::{RelationalReplayRecord, ReplaySchemaVersion};
 
 #[cfg(test)]
 #[path = "canonical_commit_envelope/tests.rs"]
-pub(in crate::history) mod tests;
+pub(crate) mod tests;
 #[path = "canonical_commit_envelope/text_wire.rs"]
 mod text_wire;
 pub(crate) use text_wire::{CanonicalEnvelopeSeed, CanonicalEnvelopeWire};
 #[cfg(test)]
 #[path = "canonical_commit_envelope_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
-#[cfg(test)]
-mod semantic_patch_fixture;
 
 #[cfg(test)]
 mod lineage_rebuild_test;
