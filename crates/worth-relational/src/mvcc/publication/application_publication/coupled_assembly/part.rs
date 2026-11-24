@@ -11,12 +11,27 @@ mod suffix;
 pub(super) use super::suffix_scope::SuffixWriter;
 
 impl RelationalAuthoredCoupledCandidate<'_> {
+    /// Append a producer part that declares no output names.
     pub fn append_publication(
+        &mut self,
+        execution: &ExecutionRequest<'_, '_>,
+        publication: RelationalCoupledProducerPosture,
+        content: &crate::content::RelationalContentAttachments,
+        batches: Vec<WorkerIntentBatch>,
+    ) -> Result<(), RelationalCoupledAssemblyFailure> {
+        self.append_named_publication(execution, publication, content, batches, None)
+    }
+
+    /// Append a producer part with the naming plan its attempt lowered. The
+    /// plan's create targets are rescoped with the part's commands, and the
+    /// envelope's one plan composes it at completion (`part_naming`).
+    pub fn append_named_publication(
         &mut self,
         execution: &ExecutionRequest<'_, '_>,
         mut publication: RelationalCoupledProducerPosture,
         content: &crate::content::RelationalContentAttachments,
         batches: Vec<WorkerIntentBatch>,
+        mut naming: Option<crate::lineage::data::CommitNamingPlan>,
     ) -> Result<(), RelationalCoupledAssemblyFailure> {
         let predecessor_origin = super::participant_admission::admit(
             self.binding,
@@ -56,6 +71,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             },
             content,
             batches,
+            naming.as_mut(),
         )?;
         let ordinary_ids = publication
             .resolve_ordinary_roles(execution, &self.mutation.outcome.created_entities)?;
@@ -82,6 +98,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             commands: applied.plan,
             records: applied.records,
             chain,
+            naming,
         });
         let latest = self.parts.last().expect("the actual part just appended");
         self.advance_pin(

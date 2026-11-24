@@ -20,11 +20,12 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         content: &crate::content::RelationalContentAttachments,
         batches: Vec<WorkerIntentBatch>,
     ) -> Result<(), RelationalCoupledAssemblyFailure> {
-        self.append_authored_stage_outputs(execution, source, content, batches, Vec::new())
+        self.append_authored_stage_outputs(execution, source, content, batches, Vec::new(), None)
     }
 
     /// Plain authored correspondence is resolved from the same actual suffix
     /// allocation as its commands. It grants no producer or lifetime custody.
+    /// The stage's naming plan is rescoped with its commands (`part_naming`).
     pub fn append_authored_stage_outputs(
         &mut self,
         execution: &ExecutionRequest<'_, '_>,
@@ -32,6 +33,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         content: &crate::content::RelationalContentAttachments,
         batches: Vec<WorkerIntentBatch>,
         mut roles: Vec<RequiredOutputRoleTarget>,
+        mut naming: Option<crate::lineage::data::CommitNamingPlan>,
     ) -> Result<(), RelationalCoupledAssemblyFailure> {
         if self.next_authored_stage() != Some(source) {
             return Err(part::reject(Cause::UnadmittedAuthoredStage, source).into());
@@ -51,6 +53,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             },
             content,
             batches,
+            naming.as_mut(),
         )?;
         self.authored_writes.retain(
             execution,
@@ -78,6 +81,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             input: applied.read,
             commands: applied.plan,
             records: applied.records,
+            naming,
         });
         let latest = self.stages.last().expect("the actual stage just appended");
         self.advance_pin(

@@ -71,6 +71,7 @@ pub(super) fn scope<'a>(
     created: &CommitCreatedEntityBindings,
     symbols: &StringInterner,
     batches: &mut [WorkerIntentBatch],
+    naming: Option<&mut crate::lineage::data::CommitNamingPlan>,
 ) -> Result<
     (
         CoupledFreshWriter,
@@ -87,7 +88,8 @@ pub(super) fn scope<'a>(
             roles,
             predecessor,
         } => {
-            let keys = local_keys::scope(execution, ordinal, created, symbols, batches, roles)?;
+            let keys =
+                local_keys::scope(execution, ordinal, created, symbols, batches, roles, naming)?;
             (
                 CoupledFreshWriter::Producer(index),
                 source,
@@ -107,7 +109,7 @@ pub(super) fn scope<'a>(
             Default::default(),
         ),
         SuffixWriter::Authored { source, roles } => {
-            local_keys::scope(execution, ordinal, created, symbols, batches, roles)?;
+            local_keys::scope(execution, ordinal, created, symbols, batches, roles, naming)?;
             (
                 CoupledFreshWriter::Authored,
                 source,

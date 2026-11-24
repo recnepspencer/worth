@@ -1,5 +1,6 @@
 //! Each admitted participant keeps its local Create coordinates in the combined transaction.
 use crate::execution::request_stage::checkpoint;
+use crate::lineage::data::{CommitNamingPlan, PendingBirthTarget};
 use crate::mvcc::publication::application_publication::custody;
 use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRoleTarget;
 use crate::symbols::data::ClientKey;
@@ -22,6 +23,7 @@ pub(super) fn scope(
     symbols: &StringInterner,
     batches: &mut [WorkerIntentBatch],
     roles: &mut [RequiredOutputRoleTarget],
+    naming: Option<&mut CommitNamingPlan>,
 ) -> Result<LocalKeys, TransactionCommitError> {
     let mut chosen = LocalKeys::new();
     execution
@@ -70,6 +72,9 @@ pub(super) fn scope(
                     rewrite(&mut created.client_key)?;
                 }
             }
+            if let Some(plan) = naming {
+                super::part_naming::visit_client_keys_mut(plan, &mut rewrite)?;
+            }
             Ok::<_, TransactionCommitError>(())
         })
         .map_err(custody::execution_stop)?
@@ -86,6 +91,7 @@ pub(super) fn rescope(
     symbols: &StringInterner,
     batches: &mut [WorkerIntentBatch],
     roles: &mut [RequiredOutputRoleTarget],
+    naming: Option<&mut CommitNamingPlan>,
 ) -> Result<Result<(), ()>, TransactionCommitError> {
     execution
         .run_native_with_checkpoint(|context| {
@@ -113,6 +119,9 @@ pub(super) fn rescope(
                     rewrite(&mut created.client_key)?;
                 }
             }
+            if let Some(plan) = naming {
+                super::part_naming::visit_client_keys_mut(plan, &mut rewrite)?;
+            }
             Ok(if unknown { Err(()) } else { Ok(()) })
         })
         .map_err(custody::execution_stop)?
@@ -129,6 +138,7 @@ pub(super) fn repartition(
     symbols: &StringInterner,
     batches: &mut [WorkerIntentBatch],
     roles: &mut [RequiredOutputRoleTarget],
+    naming: Option<&mut CommitNamingPlan>,
 ) -> Result<(), TransactionCommitError> {
     use crate::transactions::data::intents::mutation_intent::CreateIntent;
     use crate::transactions::data::intents::mutation_intent::MutationIntent;
@@ -192,6 +202,25 @@ pub(super) fn repartition(
             for role in roles {
                 checkpoint(context, 1).map_err(custody::execution_stop)?;
                 repartition(&mut role.target)?;
+            }
+            if let Some(plan) = naming {
+                super::part_naming::visit_targets_mut(plan, |target| {
+                    checkpoint(context, 1).map_err(custody::execution_stop)?;
+                    let (relation, key, partition) = match target {
+                        PendingBirthTarget::CreatedEntity(created) => {
+                            (false, &created.client_key, &mut created.partition_id)
+                        }
+                        PendingBirthTarget::CreatedRelation(created) => {
+                            repartition(&mut created.source)?;
+                            repartition(&mut created.target)?;
+                            (true, &created.client_key, &mut created.partition_id)
+                        }
+                    };
+                    if let Some(head) = head_partition(relation, key) {
+                        *partition = head;
+                    }
+                    Ok::<_, TransactionCommitError>(())
+                })?;
             }
             Ok::<_, TransactionCommitError>(())
         })

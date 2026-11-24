@@ -50,6 +50,7 @@ mod net_plan;
 mod ordinary_roles;
 mod part;
 mod part_corruption;
+mod part_naming;
 mod participant_admission;
 mod prepared_route;
 pub(crate) mod producer_posture;

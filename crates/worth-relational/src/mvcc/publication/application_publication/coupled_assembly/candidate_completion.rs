@@ -114,11 +114,20 @@ pub(crate) fn prepare_coupled_candidate(
         return Ok(false);
     }
     let RelationalAuthoredCoupledCandidate {
-        parts,
-        stages,
+        mut parts,
+        mut stages,
         authored_prefix,
         ..
     } = candidate;
+    // The envelope's one naming plan: once, after the last member appended.
+    let stage_plans = stages.iter_mut().map(|stage| stage.naming.take());
+    let part_plans = parts.iter_mut().map(|part| part.naming.take());
+    let root = transaction.naming_plan.clone();
+    if let Some(plan) =
+        super::part_naming::compose(execution, root.as_deref(), stage_plans.chain(part_plans))?
+    {
+        transaction.attach_naming_plan(plan);
+    }
     let source_effects = roster_completion::complete(
         execution,
         &binding.owners,

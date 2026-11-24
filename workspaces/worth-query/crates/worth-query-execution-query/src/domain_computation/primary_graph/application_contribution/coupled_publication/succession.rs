@@ -103,7 +103,9 @@ impl<'run, S: ApplicationSchema> CoupledApplicationAssembly<'_, 'run, '_, S> {
         index: usize,
         successor: crate::domain_computation::WorthQueryProviderSessionView<'_>,
         batch: &mut worth_relational::facade::transactions::WorkerIntentBatch,
+        naming: Option<&mut worth_relational::facade::lineage::CommitNamingPlan>,
     ) {
+        use worth_relational::facade::lineage::PendingBirthTarget;
         use worth_relational::facade::transactions::{CreateIntent, MutationIntent};
         let provider = &self.application.runtime.primary_provider;
         let head = self.head_key(index);
@@ -113,6 +115,34 @@ impl<'run, S: ApplicationSchema> CoupledApplicationAssembly<'_, 'run, '_, S> {
                 && spec.client_key.as_raw_str() == Some(own.as_str())
             {
                 spec.client_key = worth_relational::facade::symbols::ClientKey::raw(head.clone());
+            }
+        }
+        // The round's plan names the same create coordinate its batch does.
+        let Some(naming) = naming else { return };
+        let births = naming
+            .pending_births
+            .iter_mut()
+            .map(|birth| &mut birth.target);
+        let pieces = naming
+            .pending_splits
+            .iter_mut()
+            .flat_map(|split| split.children.iter_mut().map(|child| &mut child.target));
+        let survivors =
+            naming
+                .pending_merges
+                .iter_mut()
+                .filter_map(|merge| match &mut merge.target {
+                    worth_relational::facade::lineage::PendingMergeTarget::Created(target) => {
+                        Some(target)
+                    }
+                    worth_relational::facade::lineage::PendingMergeTarget::Existing(_) => None,
+                });
+        for target in births.chain(pieces).chain(survivors) {
+            if let PendingBirthTarget::CreatedEntity(created) = target
+                && created.client_key.as_raw_str() == Some(own.as_str())
+            {
+                created.client_key =
+                    worth_relational::facade::symbols::ClientKey::raw(head.clone());
             }
         }
     }
@@ -127,10 +157,11 @@ impl<'run, S: ApplicationSchema> CoupledApplicationAssembly<'_, 'run, '_, S> {
         candidate: &mut RelationalAuthoredCoupledCandidate<'_>,
         chain: Option<usize>,
         next: CoupledWriter<'run, S>,
-        (publication, content, batch): (
+        (publication, content, batch, naming): (
             worth_relational::facade::mvcc::RelationalCoupledProducerPosture,
             worth_relational::facade::content::RelationalContentAttachments,
             worth_relational::facade::transactions::WorkerIntentBatch,
+            Option<worth_relational::facade::lineage::CommitNamingPlan>,
         ),
     ) -> Result<usize, CoupledSourceReadStop> {
         let Some(index) = chain else {
@@ -149,7 +180,13 @@ impl<'run, S: ApplicationSchema> CoupledApplicationAssembly<'_, 'run, '_, S> {
                     vec![batch],
                     fault,
                 )?,
-                _ => candidate.append_publication(execution, publication, &content, vec![batch])?,
+                _ => candidate.append_named_publication(
+                    execution,
+                    publication,
+                    &content,
+                    vec![batch],
+                    naming,
+                )?,
             }
             return Ok(self.writers.borrow().len() - 1);
         };
@@ -157,12 +194,13 @@ impl<'run, S: ApplicationSchema> CoupledApplicationAssembly<'_, 'run, '_, S> {
         self.retire_part(superseded);
         self.replace_writer(execution, index, next);
         let token = candidate.next_producer_round(execution, index)?;
-        candidate.append_successor_publication(
+        candidate.append_named_successor_publication(
             execution,
             token,
             publication,
             &content,
             vec![batch],
+            naming,
         )?;
         Ok(index)
     }

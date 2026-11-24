@@ -4,6 +4,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use super::ops::{Op, Placement};
+
+mod coupled;
 use crate::persistent_naming::outputs::sculpt::{Held, Keeper, Plan, ScopeStep, Step};
 use crate::persistent_naming::outputs::{
     birth, naming_refusal, piece, read, MemberCut, Outcome, World,
@@ -28,8 +30,9 @@ pub struct Driver {
     pub names: BTreeMap<usize, WorthQueryName<Member>>,
     /// Every record key ever created, live or not.
     pub created: Vec<String>,
-    /// Committed plans, in order: the canonical authored history.
-    committed: Vec<Plan>,
+    /// Committed commits, in order, each its stages' plans (one for a
+    /// direct operation): the canonical authored history.
+    committed: Vec<Vec<Plan>>,
     /// Every native record identity this history ever held.
     seen: BTreeSet<RecordIdentity>,
     /// Model `a`'s context partition, where owned records are created.
@@ -196,6 +199,8 @@ impl Driver {
                 self.rebuild()?;
                 return Ok(Vec::new());
             }
+            Op::Coupled { names, at } => return self.coupled(*names, *at, step),
+            Op::CoupledDuplicate { name, at } => return self.coupled_duplicate(*name, *at, step),
         }
         self.commit(step, plan)?;
         for (key, placement) in created.iter().zip(placements(op)) {
@@ -210,7 +215,7 @@ impl Driver {
         if !matches!(outcome, Outcome::Committed { .. }) {
             return Err(format!("step {step} must commit: {outcome:?}"));
         }
-        self.committed.push(plan);
+        self.committed.push(vec![plan]);
         self.naming_commits += 1;
         Ok(())
     }
@@ -347,15 +352,9 @@ impl Driver {
         self.generation += 1;
         self.world = World::install();
         self.seen.clear();
-        for (ordinal, plan) in self.committed.clone().into_iter().enumerate() {
-            let token = self.token(ordinal, "replay");
-            let outcome = self.world.try_sculpt(&token, plan.clone())?;
-            if !matches!(outcome, Outcome::Committed { .. }) {
-                return Err(format!(
-                    "replayed commit {ordinal} must commit: {outcome:?}"
-                ));
-            }
-            for key in &plan.creates {
+        for (ordinal, plans) in self.committed.clone().into_iter().enumerate() {
+            self.replay(ordinal, &plans)?;
+            for key in plans.iter().flat_map(|plan| &plan.creates) {
                 if let Some(identity) = self.identity(key) {
                     self.seen.insert(identity);
                 }
@@ -379,12 +378,13 @@ fn placements(op: &Op) -> Vec<Placement> {
         | Op::Restore { at, .. }
         | Op::Preserve { at, .. }
         | Op::MergeMint { at, .. } => vec![*at],
-        Op::Split { at, .. } => at.to_vec(),
+        Op::Split { at, .. } | Op::Coupled { at, .. } => at.to_vec(),
         Op::Duplicate { .. }
         | Op::Unnamed { .. }
         | Op::MergeKeep { .. }
         | Op::MergeLeast { .. }
         | Op::Retire { .. }
-        | Op::Rebuild => Vec::new(),
+        | Op::Rebuild
+        | Op::CoupledDuplicate { .. } => Vec::new(),
     }
 }

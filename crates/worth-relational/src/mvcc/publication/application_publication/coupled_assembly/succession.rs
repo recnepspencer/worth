@@ -21,9 +21,32 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         &mut self,
         execution: &ExecutionRequest<'_, '_>,
         token: RelationalCoupledProducerContinuation,
+        publication: RelationalCoupledProducerPosture,
+        content: &crate::content::RelationalContentAttachments,
+        batches: Vec<WorkerIntentBatch>,
+    ) -> Result<(), RelationalCoupledAssemblyFailure> {
+        self.append_named_successor_publication(
+            execution,
+            token,
+            publication,
+            content,
+            batches,
+            None,
+        )
+    }
+
+    /// The same fold, carrying the round's naming plan. Its create targets
+    /// take the chain head's keys and partitions with its commands (a key the
+    /// head never chose refuses as a `StructuralEffect`), and the plan
+    /// replaces the superseded round's, whose batches are withdrawn.
+    pub fn append_named_successor_publication(
+        &mut self,
+        execution: &ExecutionRequest<'_, '_>,
+        token: RelationalCoupledProducerContinuation,
         mut publication: RelationalCoupledProducerPosture,
         content: &crate::content::RelationalContentAttachments,
         mut batches: Vec<WorkerIntentBatch>,
+        mut naming: Option<crate::lineage::data::CommitNamingPlan>,
     ) -> Result<(), RelationalCoupledAssemblyFailure> {
         let index = self
             .continuation
@@ -43,6 +66,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             self.mutation.candidate_symbols().interner(),
             &mut batches,
             publication.roles_mut(),
+            naming.as_mut(),
         )?
         .is_err()
         {
@@ -54,6 +78,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             self.mutation.candidate_symbols().interner(),
             &mut batches,
             publication.roles_mut(),
+            naming.as_mut(),
         )?;
         let redeleted = proof::prove_succession(
             execution,
@@ -89,6 +114,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             },
             content,
             batches,
+            naming.as_mut(),
         )?;
         fold::fold_records(
             execution,
@@ -134,6 +160,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                 record_range: first_record..records_end,
             },
         )?;
+        self.parts[index].naming = naming;
         self.successor_rounds += 1;
         let input = self.parts[index].input.clone();
         self.advance_pin(

@@ -39,6 +39,10 @@ pub(crate) struct CoupledPublicationPart {
     /// fragments, the local-key coordinates its head chose, and the end of the
     /// changed-record log when its latest round applied.
     pub(crate) chain: Chain,
+    /// The naming plan of the chain's latest round, rescoped with its
+    /// commands; a successor round's plan replaces its predecessor's, whose
+    /// batches are withdrawn. Taken once into the envelope's plan.
+    pub(crate) naming: Option<crate::lineage::data::CommitNamingPlan>,
 }
 
 /// One later authored stage applied over the candidate pin under the authored
@@ -51,4 +55,6 @@ pub(crate) struct CoupledAuthoredStagePart {
     pub(crate) input: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
     pub(crate) commands: crate::mvcc::transaction::normalized_plan::OwnedNormalizedPlan,
     pub(crate) records: Vec<crate::transactions::data::primitives::RecordRef>,
+    /// The stage's naming plan, rescoped with its commands.
+    pub(crate) naming: Option<crate::lineage::data::CommitNamingPlan>,
 }

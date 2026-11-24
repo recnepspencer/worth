@@ -5,6 +5,8 @@ pub struct InspectedAuthoredApplication<'run> {
     pub batch: worth_relational::facade::transactions::WorkerIntentBatch,
     pub content: worth_relational::facade::content::RelationalContentAttachments,
     pub roles: Vec<worth_relational::facade::mvcc::RequiredOutputRoleTarget>,
+    /// The stage's lowered output names, composed by coupled assembly.
+    pub naming: Option<worth_relational::facade::lineage::CommitNamingPlan>,
     pub demands: crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemands,
 }
 pub fn inspect_authored_application<'run, S, M>(
@@ -46,7 +48,7 @@ where
         Err(crate::domain_computation::WorthQueryInvariantExecutionFailure::missing_coupled_settlement(typed.admission.scope_entity_id()))
     };
     match commands {
-        Ok((batch, content, roles)) => Ok(InspectedAuthoredApplication {
+        Ok((batch, content, roles, naming)) => Ok(InspectedAuthoredApplication {
             writer: InspectedCoupledWriter {
                 custody,
                 inspection,
@@ -54,6 +56,7 @@ where
             batch,
             content,
             roles,
+            naming,
             demands: coupled_outputs,
         }),
         Err(cause) => {

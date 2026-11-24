@@ -23,6 +23,12 @@ EXTENDS Integers, Sequences, FiniteSets
     commit creating a record of a schemed kind without naming it refuses
     typed (Relational `MissingBirth`) with zero effects, so no record of a
     schemed kind is ever live unnamed.
+  - A coupled envelope (the authored stages of one edit envelope and the
+    coupled producers it runs) is one commit: every member's naming plan is
+    composed into the commit's one plan (Phase 5E Slice 3B-2), so all the
+    members' births append atomically, and a name two members both mint, or
+    a schemed record any member leaves unnamed, refuses the whole envelope
+    with zero effects from every member.
 *)
 
 CONSTANTS
@@ -281,6 +287,34 @@ CommitRestore(n, owner, part) ==
        /\ retired' = retired \ {n}
        /\ UNCHANGED <<unnamedLive, everBorn>>
 
+\* 10. One coupled envelope: two members (authored stages or coupled
+\*     producers) each birth a fresh name. Their plans compose into the one
+\*     commit's plan, so both births append atomically on fresh generations.
+CommitCoupledCreate(n1, o1, p1, n2, o2, p2) ==
+    /\ Len(events) + 2 <= MaxEvents
+    /\ n1 \in Names /\ n2 \in Names /\ n1 /= n2
+    /\ n1 \notin everBorn /\ n2 \notin everBorn
+    /\ o1 \in HolderOwners /\ o2 \in HolderOwners
+    /\ p1 \in Partitions /\ p2 \in Partitions
+    /\ LET h1 == Holder(nextGen, o1, p1)
+           h2 == Holder(nextGen + 1, o2, p2)
+           e1 == [kind |-> "Create", target |-> n1, gen |-> nextGen, owner |-> o1, part |-> p1]
+           e2 == [kind |-> "Create", target |-> n2, gen |-> nextGen + 1, owner |-> o2, part |-> p2]
+       IN
+       /\ nextGen' = nextGen + 2
+       /\ live' = [live EXCEPT ![n1] = h1, ![n2] = h2]
+       /\ derivedIndex' = [derivedIndex EXCEPT ![n1] = h1, ![n2] = h2]
+       /\ events' = events \o <<e1, e2>>
+       /\ everBorn' = everBorn \cup {n1, n2}
+       /\ UNCHANGED <<unnamedLive, retired>>
+
+\* 11. Two members of one envelope mint the same fresh name: the composed
+\*     plan refuses typed (`DuplicateBirth`) and no member's effect commits.
+\*     (A member leaving a schemed record unnamed is `RefuseUnnamedBirth`.)
+RefuseCoupledDuplicateBirth(n) ==
+    /\ n \in Names /\ n \notin everBorn
+    /\ UNCHANGED vars
+
 \* 9. Destroy the derived index and rebuild it from the canonical log.
 DestroyAndRebuildIndex ==
     /\ derivedIndex' = ReplayEvents(events, Len(events))
@@ -298,6 +332,9 @@ Next ==
             CommitMergeMintNew(p1, p2, m, o, p)
     \/ \E n \in Names: CommitRetire(n)
     \/ \E n \in Names, o \in HolderOwners, p \in Partitions: CommitRestore(n, o, p)
+    \/ \E n1, n2 \in Names, o1, o2 \in HolderOwners, p1, p2 \in Partitions:
+            CommitCoupledCreate(n1, o1, p1, n2, o2, p2)
+    \/ \E n \in Names: RefuseCoupledDuplicateBirth(n)
     \/ DestroyAndRebuildIndex
 
 Spec == Init /\ [][Next]_vars

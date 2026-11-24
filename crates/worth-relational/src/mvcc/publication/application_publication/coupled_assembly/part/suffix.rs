@@ -11,6 +11,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         writer: SuffixWriter<'_>,
         content: &crate::content::RelationalContentAttachments,
         mut batches: Vec<WorkerIntentBatch>,
+        mut naming: Option<&mut crate::lineage::data::CommitNamingPlan>,
     ) -> Result<AppliedSuffix, RelationalCoupledAssemblyFailure> {
         let redeleted = match &writer {
             SuffixWriter::Successor { redeleted, .. } => Some(*redeleted),
@@ -23,6 +24,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             &self.mutation.outcome.created_entities,
             self.mutation.candidate_symbols().interner(),
             &mut batches,
+            naming.as_deref_mut(),
         )?;
         self.transaction
             .attach_content(execution, content)
@@ -32,6 +34,15 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                 execution,
                 &self.mutation.outcome.created_entities,
                 &mut batch.intents,
+                None,
+            )?;
+        }
+        if let Some(plan) = naming {
+            super::super::fresh_references::retain(
+                execution,
+                &self.mutation.outcome.created_entities,
+                &mut [],
+                Some(plan),
             )?;
         }
         // Reserve and normalize only this incoming suffix, before it enters the
