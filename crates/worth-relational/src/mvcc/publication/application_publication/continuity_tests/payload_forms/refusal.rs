@@ -13,7 +13,7 @@ fn empty_required_struct_refusal_carries_numeric_member_and_redacts_proposal_str
 fn empty_struct_refusal(kind: u32, identity: u64, required: usize, optional: usize) {
     let request = crate::execution::test_policy::serial_request();
     let execution = &ExecutionRequest::serial(&request);
-    let mut runtime = schema::runtime();
+    let mut runtime = build_runtime();
     let receipt = runtime
         .prepare_initial_schema_installation()
         .unwrap()

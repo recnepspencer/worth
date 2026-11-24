@@ -154,9 +154,3 @@ impl ValidatedRelationalProposal {
         self.state.evidence.custom_invariant_execution_receipts()
     }
 }
-
-pub(crate) struct StrategyProposalDecoration {
-    pub(crate) artifacts: crate::commit_strategies::data::StrategyCommitArtifactBundle,
-    pub(crate) bulk_mutation_batch:
-        Option<crate::transactions::data::primitives::ProvenanceCompleteBulkMutationBatch>,
-}

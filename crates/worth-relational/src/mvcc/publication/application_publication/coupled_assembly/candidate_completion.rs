@@ -2,8 +2,6 @@
 use super::*;
 use crate::authority::mutation::MutationApplyDenial;
 use crate::branch::selected_read::SelectedRelationalBranchRead;
-use crate::execution::request_stage::checkpoint;
-use crate::publication::data::AuthoredRetirementRefusal as Cause;
 
 pub(crate) fn prepare_coupled_candidate(
     execution: &ExecutionRequest<'_, '_>,
@@ -121,34 +119,22 @@ pub(crate) fn prepare_coupled_candidate(
         authored_prefix,
         ..
     } = candidate;
-    if let Some(missing) = binding.owners.stages.get(stages.len()) {
-        return Err(part::reject(Cause::MissingAuthoredStage, *missing).into());
-    }
-    // Select actual authored appends before final patch composition. Producer
-    // fragments between authored stages never become authored source effects.
-    let source_effects = RelationalCoupledAuthoredSourceEffects::capture(
+    let source_effects = roster_completion::complete(
         execution,
+        &binding.owners,
+        &parts,
+        &stages,
         &mutation.outcome.effect.publication.patch_fragments,
-        std::iter::once(authored_prefix).chain(stages.iter().map(|stage| stage.fragments.clone())),
+        authored_prefix,
+        &mut authored_records,
     )?;
-    for stage in &stages {
-        authored_records.extend_from_slice(&stage.records);
+    if let Some(batches) =
+        super::succession::batches_after_withdrawal(execution, transaction.batches(), &parts)?
+    {
+        transaction
+            .restage_coupled_field_batches(batches, execution.allocation_policy())
+            .map_err(|cause| TransactionCommitError::conflict(cause.into_conflict()))?;
     }
-    execution.run_native_with_checkpoint(|context| {
-        for expected in binding.owners.required_owners() {
-            for part in &parts {
-                let meaning = part.publication.producing_meaning().expect("admitted producer route");
-                checkpoint(context, (meaning.family.len() + expected.origin.meaning.family.len() + 65) as u64)
-                    .map_err(custody::execution_stop)?;
-            }
-            if !parts.iter().any(|part| matches!(part.publication.owned(),
-                Some(RequiredOutputPublication::Preserve { meaning, .. }) if expected.origin.meaning.same_route(meaning))) {
-                return Err(part::reject(Cause::MissingCoupledOwner, expected.origin.meaning.source_scope));
-            }
-        }
-        Ok(())
-    }).map_err(custody::execution_stop)?.0?;
-    super::succession::withdraw_superseded(execution, transaction, &parts)?;
     if !parts.is_empty() || !stages.is_empty() {
         execution
             .run_native_with_checkpoint(|context| {

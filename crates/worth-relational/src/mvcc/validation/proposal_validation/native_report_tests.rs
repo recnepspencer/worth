@@ -3,131 +3,37 @@ use crate::facade::runtime::RelationalRuntime;
 use crate::facade::runtime::RelationalRuntimeApi;
 use crate::identity::data::KindId;
 use crate::identity::data::PartitionId;
-use crate::schema::data::EntityKindRegistration;
-use crate::schema::data::KindAspectContractDeclarations;
-use crate::schema::data::RelationalSchemaRegistry;
-use crate::schema::data::SchemaId;
-use crate::schema::data::SchemaVersionId;
 use crate::transactions::data::intents::mutation_intent::CreateIntent;
 use crate::transactions::data::intents::mutation_intent::MutationIntent;
 use crate::transactions::data::primitives::EntitySpec;
 use crate::transactions::data::primitives::WorkerIntentBatch;
 use crate::validation::{
-    custom_rule::{
-        CustomInvariantExecutionContext, CustomInvariantLeaseBudget, CustomInvariantRegistration,
-        CustomInvariantRule, CustomInvariantScopePlanner,
-    },
+    custom_rule::CustomInvariantRegistration,
     data::{
         catalog::{InvariantCatalog, InvariantRegistration},
-        custom_rule::errors::{
-            CustomInvariantExecutionError, CustomInvariantPreparationError, CustomInvariantVerdict,
-        },
-        descriptor::{
-            CustomInvariantAccessContract, CustomInvariantDescriptor,
-            CustomInvariantOperationalMetadata,
-        },
         execution::{
             InvariantDecisionKind, InvariantExecutionPoint, InvariantFailureEffect,
             InvariantReportedRule, InvariantVerdict,
         },
-        groups::{InvariantCostClass, InvariantGroupSet},
         non_applicability::CustomInvariantNonApplicability,
-        rule_id::{
-            CustomInvariantRuleId, CustomInvariantSemanticIdentity, CustomInvariantSemanticVersion,
-        },
+        rule_id::CustomInvariantRuleId,
         rules::InvariantRule,
     },
 };
-use std::{
-    num::{NonZeroU64, NonZeroUsize},
-    sync::Arc,
-};
+use std::num::NonZeroUsize;
+#[path = "native_report_fixture.rs"]
+mod fixture;
+use fixture::UNRELATED;
 use worth_execution::{CancellationToken, ExecutionRequest, ExecutionResourceLease, LeaseRequest};
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };
 
-const UNRELATED: KindId = KindId(1);
-const GOVERNED: KindId = KindId(2);
-
-struct ClosureRule;
-impl CustomInvariantRule for ClosureRule {
-    type Scope = ();
-    fn descriptor(&self) -> CustomInvariantDescriptor {
-        CustomInvariantDescriptor {
-            identity: CustomInvariantSemanticIdentity {
-                rule_id: CustomInvariantRuleId::new("basis.closure"),
-                semantic_version: CustomInvariantSemanticVersion::new(1, 0),
-            },
-            display_name: Arc::from("Closure rule"),
-            operational: CustomInvariantOperationalMetadata {
-                maximum_work_units: Some(NonZeroU64::new(1_000_000).unwrap()),
-                access: CustomInvariantAccessContract {
-                    read_entity_kinds: vec![GOVERNED],
-                    read_relation_kinds: vec![],
-                    affected_entity_kinds: vec![GOVERNED],
-                    affected_relation_kinds: vec![],
-                    include_relation_endpoint_entity_touches: false,
-                },
-                execution_point: InvariantExecutionPoint::CommitBoundary,
-                // Every group, so plan-contract group selection never hides the
-                // rule: these courts judge only the closure basis.
-                groups: InvariantGroupSet::all(),
-                cost_class: InvariantCostClass::Touched,
-                failure_effect: InvariantFailureEffect::BlockCommit,
-            },
-        }
-    }
-    fn supports_checked_preparation(&self) -> bool {
-        true
-    }
-    fn prepare_scope(
-        &self,
-        _: &mut CustomInvariantScopePlanner<'_>,
-    ) -> Result<(), CustomInvariantPreparationError> {
-        Ok(())
-    }
-    fn prepare_scope_checked(
-        &self,
-        _: &mut CustomInvariantScopePlanner<'_>,
-        _: &dyn CustomInvariantLeaseBudget,
-    ) -> Option<Result<(), CustomInvariantPreparationError>> {
-        Some(Ok(()))
-    }
-    fn evaluate(
-        &self,
-        _: &CustomInvariantExecutionContext<'_>,
-        _: &(),
-    ) -> Result<CustomInvariantVerdict, CustomInvariantExecutionError> {
-        Ok(CustomInvariantVerdict::Pass)
-    }
-    fn evaluate_checked(
-        &self,
-        _: &CustomInvariantExecutionContext<'_>,
-        _: &(),
-        _: &dyn CustomInvariantLeaseBudget,
-    ) -> Option<Result<CustomInvariantVerdict, CustomInvariantExecutionError>> {
-        Some(Ok(CustomInvariantVerdict::Pass))
-    }
-}
-
 fn runtime_with_native_rules(registrations: Vec<InvariantRegistration>) -> RelationalRuntime {
-    let mut schema = RelationalSchemaRegistry::new();
-    for (kind, name) in [(UNRELATED, "unrelated"), (GOVERNED, "governed")] {
-        schema = schema
-            .register_entity_kind(EntityKindRegistration {
-                kind_id: kind,
-                kind_name: name.into(),
-                schema_id: SchemaId("basis".into()),
-                schema_version_id: SchemaVersionId(1),
-                aspect_contract_declarations: KindAspectContractDeclarations::default(),
-            })
-            .unwrap();
-    }
     RelationalRuntimeApi::builder()
-        .schema_registry(schema)
+        .schema_registry(fixture::schema())
         .invariant_catalog(InvariantCatalog { registrations })
-        .custom_invariant(CustomInvariantRegistration::new(ClosureRule).unwrap())
+        .custom_invariant(CustomInvariantRegistration::new(fixture::ClosureRule).unwrap())
         .build()
         .expect("valid native runtime configuration")
 }

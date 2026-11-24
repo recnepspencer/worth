@@ -1,7 +1,7 @@
 //! Unrepresentable declared bounds and totals are refused before admission.
 use super::*;
 use crate::inspection::mvcc::partition_allocations::admitted_bytes;
-use crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial as Denial;
+use crate::inspection::mvcc::sharing::inspection_denial::RelationalBranchSharingInspectionDenial as Denial;
 use crate::storage::substrate::{StorageAllocationExtent, StorageAllocationObservation};
 
 fn carrier(bytes: u64) -> StorageAllocationObservation {

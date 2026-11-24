@@ -54,13 +54,7 @@ impl RelationalCanonicalPayloadObservation {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum RelationalExcludedAllocationLane {
-    Diagnostics,
-    RetentionMetadata,
-    AllocatorBookkeeping,
-    OptionalCache,
-}
+pub use super::sharing::allocation_inventory::RelationalExcludedAllocationLane;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct RelationalOwnerExcludedAllocationObservation {

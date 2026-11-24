@@ -1,5 +1,7 @@
 //! Issue and resolve exact prerequisite loans from the live coupled candidate.
 use super::*;
+#[path = "inputs/admission.rs"]
+mod admission;
 #[path = "inputs/settlement.rs"]
 mod settlement;
 use super::inputs::{InputIssuance, InputOrigin};
@@ -16,29 +18,14 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         source: crate::identity::data::EntityId,
         partition: &[u8; 32],
     ) -> Result<RelationalRequiredOutputInput, TransactionCommitError> {
-        let restoration = self
-            .binding
-            .owners
-            .source
-            .restoration()
-            .expect("restored owner");
-        let index = execution
-            .run_native_with_checkpoint(|context| {
-                for (index, publication) in restoration.publications.iter().enumerate() {
-                    let meaning = &publication.origin.meaning;
-                    checkpoint(context, (family.len() + meaning.family.len() + 65) as u64)
-                        .map_err(custody::execution_stop)?;
-                    if meaning.family == family
-                        && meaning.source_scope == original
-                        && meaning.source_partition.bytes() == partition
-                    {
-                        return Ok(index);
-                    }
-                }
-                Err(part::reject(Cause::ForeignCoupledOwner, source))
-            })
-            .map_err(custody::execution_stop)?
-            .0?;
+        let index = admission::restored_index(
+            self.binding,
+            execution,
+            family,
+            original,
+            source,
+            partition,
+        )?;
         Ok(RelationalRequiredOutputInput {
             proposal: self.identity.clone(),
             issuance: self.input_issuance(execution)?,
@@ -46,39 +33,6 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         })
     }
 
-    fn input_route<'a>(
-        &'a self,
-        input: &'a InputOrigin,
-    ) -> (
-        &'a RequiredOutputPublicationMeaning,
-        crate::identity::data::EntityId,
-    ) {
-        match input {
-            InputOrigin::Current(publication) => (
-                &publication.origin.meaning,
-                publication.origin.meaning.source_scope,
-            ),
-            InputOrigin::Applied(index) => {
-                let meaning = self.parts[*index]
-                    .publication
-                    .producing_meaning()
-                    .expect("admitted earlier part");
-                (meaning, meaning.source_scope)
-            }
-            InputOrigin::Restored { index, source } => (
-                &self
-                    .binding
-                    .owners
-                    .source
-                    .restoration()
-                    .expect("issued restored input")
-                    .publications[*index]
-                    .origin
-                    .meaning,
-                *source,
-            ),
-        }
-    }
     fn input_issuance(
         &self,
         execution: &ExecutionRequest<'_, '_>,
@@ -102,63 +56,12 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         execution: &ExecutionRequest<'_, '_>,
         publication: &RelationalRequiredOutputPublication,
     ) -> Result<RelationalRequiredOutputInput, TransactionCommitError> {
-        let origin = &publication.origin;
-        let subject = origin.meaning.source_scope;
-        let current = execution
-            .run_native_with_checkpoint(|context| {
-                checkpoint(context, origin.members.len() as u64 + 1)
-                    .map_err(custody::execution_stop)?;
-                if origin
-                    .members
-                    .iter()
-                    .all(|member| member.posture == RequiredOutputRolePosture::Retire)
-                {
-                    return Ok(false);
-                }
-                if publication.readmitted_at.as_ref() == Some(&self.binding.owners.before) {
-                    return Ok::<_, TransactionCommitError>(true);
-                }
-                for selected in &self.binding.owners.current {
-                    checkpoint(
-                        context,
-                        (origin.meaning.family.len() + selected.origin.meaning.family.len() + 65)
-                            as u64,
-                    )
-                    .map_err(custody::execution_stop)?;
-                    if selected.origin.same_publication(origin) {
-                        return Ok(true);
-                    }
-                }
-                Ok(false)
-            })
-            .map_err(custody::execution_stop)?
-            .0?;
-        if !current
-            || publication.runtime_instance_id != self.binding.installed.runtime_instance_id
-            || !self
-                .binding
-                .installed
-                .authority
-                .owns_required_output_publication(publication.authority())
-        {
-            return Err(part::reject(Cause::ForeignCoupledOwner, subject));
-        }
+        admission::require_current(self.binding, execution, publication)?;
         Ok(RelationalRequiredOutputInput {
             proposal: self.identity.clone(),
             issuance: self.input_issuance(execution)?,
             origin: InputOrigin::Current(publication.clone()),
         })
-    }
-
-    /// Whether part `parent`'s latest round appended before part
-    /// `consumer`'s latest round. Without successor rounds this is part order;
-    /// a round with no batch orders by its append ordinal like any other.
-    fn round_precedes(&self, parent: usize, consumer: usize) -> bool {
-        parent != consumer
-            && match (self.parts.get(parent), self.parts.get(consumer)) {
-                (Some(parent), Some(consumer)) => parent.chain.latest < consumer.chain.latest,
-                _ => false,
-            }
     }
 
     /// Only an actual earlier appended owned publication can supply this input.
@@ -203,135 +106,14 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         parents: &[&RelationalRequiredOutputInput],
     ) -> Result<(), TransactionCommitError> {
         let issuance = self.input_issuance.borrow().as_ref().cloned();
-        if consumer.proposal != *self.identity
-            || !issuance
-                .as_ref()
-                .is_some_and(|issuance| Arc::ptr_eq(issuance, &consumer.issuance))
-        {
-            return Err(super::super::origin_denial(
-                "foreign consumed-output proposal",
-            ));
-        }
-        let index = match &consumer.origin {
-            InputOrigin::Applied(index) => *index,
-            InputOrigin::Current(_) | InputOrigin::Restored { .. } => return Ok(()),
-        };
-        let part = self
-            .parts
-            .get(index)
-            .ok_or_else(|| super::super::origin_denial("consumed-output part is unavailable"))?;
-        let own = part.publication.producing_meaning().expect("admitted part");
-        let subject = own.source_scope;
-        let bytes = execution
-            .run_native_with_checkpoint(|context| {
-                let mut bytes = parents
-                    .len()
-                    .checked_mul(std::mem::size_of::<RequiredOutputPublicationMeaning>())
-                    .ok_or_else(|| super::super::origin_denial("consumed-output size overflow"))?;
-                for parent in parents {
-                    checkpoint(context, 1).map_err(custody::execution_stop)?;
-                    if parent.proposal != *self.identity
-                        || !Arc::ptr_eq(&parent.issuance, &consumer.issuance)
-                    {
-                        return Err(part::reject(Cause::ForeignCoupledOwner, subject));
-                    }
-                    // The parent's latest round applied before the consumer's
-                    // latest round: a successor folds into its chain's part
-                    // index, so part order alone no longer orders rounds.
-                    if matches!(&parent.origin, InputOrigin::Applied(previous) if !self.round_precedes(*previous, index)) {
-                        return Err(part::reject(Cause::ForeignCoupledOwner, subject));
-                    }
-                    let (meaning, source) = self.input_route(&parent.origin);
-                    checkpoint(
-                        context,
-                        (own.family.len() + meaning.family.len() + 65) as u64,
-                    )
-                    .map_err(custody::execution_stop)?;
-                    if own.family == meaning.family && own.source_scope == source
-                        && own.source_partition == meaning.source_partition {
-                        return Err(part::reject(Cause::ForeignCoupledOwner, subject));
-                    }
-                    bytes = bytes.checked_add(meaning.family.len()).ok_or_else(|| {
-                        super::super::origin_denial("consumed-output size overflow")
-                    })?;
-                }
-                Ok::<_, TransactionCommitError>(bytes)
-            })
-            .map_err(custody::execution_stop)?
-            .0?;
-        let memory = execution
-            .reserve_retained_memory(bytes as u64)
-            .map_err(custody::execution_stop)?;
-        let retained = execution
-            .run_native_with_checkpoint(|context| {
-                let mut retained: Vec<RequiredOutputPublicationMeaning> = Vec::new();
-                retained.try_reserve_exact(parents.len()).map_err(|_| {
-                    super::super::origin_denial("consumed-output allocation unavailable")
-                })?;
-                for parent in parents {
-                    let (meaning, source) = self.input_route(&parent.origin);
-                    checkpoint(context, (meaning.family.len() + retained.len() + 65) as u64)
-                        .map_err(custody::execution_stop)?;
-                    let mut found = None;
-                    for prior in &retained {
-                        checkpoint(
-                            context,
-                            (prior.family.len() + meaning.family.len() + 65) as u64,
-                        )
-                        .map_err(custody::execution_stop)?;
-                        if prior.family == meaning.family
-                            && prior.source_scope == source
-                            && prior.source_partition == meaning.source_partition
-                        {
-                            found = Some(prior);
-                            break;
-                        }
-                    }
-                    if let Some(prior) = found {
-                        if prior.implementation != meaning.implementation
-                            || prior.source_epoch != meaning.source_epoch
-                        {
-                            return Err(part::reject(Cause::ForeignCoupledOwner, subject));
-                        }
-                    } else {
-                        let mut meaning = meaning.clone();
-                        meaning.source_scope = source;
-                        retained.push(meaning);
-                    }
-                }
-                let comparisons = retained.len().saturating_mul(
-                    usize::BITS as usize - retained.len().leading_zeros() as usize + 1,
-                );
-                let width = retained
-                    .iter()
-                    .map(|input| input.family.len())
-                    .max()
-                    .unwrap_or(0)
-                    .saturating_add(65);
-                checkpoint(context, comparisons.saturating_mul(width) as u64)
-                    .map_err(custody::execution_stop)?;
-                retained.sort_by(|a, b| {
-                    (&a.family, a.source_scope, a.source_partition).cmp(&(
-                        &b.family,
-                        b.source_scope,
-                        b.source_partition,
-                    ))
-                });
-                Ok(retained)
-            })
-            .map_err(custody::execution_stop)?
-            .0?;
-        let part = &mut self.parts[index];
-        if let Some(prior) = &part.inputs {
-            if prior.meanings != retained {
-                return Err(part::reject(Cause::ForeignCoupledOwner, subject));
-            }
-        } else {
-            part.inputs = Some(RequiredOutputInputs {
-                meanings: retained,
-                memory,
-            });
-        }
-        Ok(())
+        admission::retain(
+            self.binding,
+            self.identity,
+            &mut self.parts,
+            execution,
+            issuance.as_ref(),
+            consumer,
+            parents,
+        )
     }
 }

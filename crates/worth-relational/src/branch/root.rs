@@ -48,6 +48,9 @@ mod owner_allocation_ledger;
 mod physical_linkage_tests;
 #[path = "root_projection.rs"]
 pub(crate) mod projection;
+#[cfg(test)]
+#[path = "root_projection_tests.rs"]
+mod projection_tests;
 #[path = "root_readmission.rs"]
 mod readmission;
 #[path = "root_region_access.rs"]

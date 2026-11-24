@@ -41,4 +41,15 @@ impl PublishedSnapshotHandleRegistry {
 }
 
 #[cfg(test)]
-mod tests;
+impl PublishedSnapshotHandleRegistry {
+    pub(in crate::runtime::state::subsystems::visibility::snapshot_handles) fn while_locked<R>(
+        &self,
+        expected: usize,
+        action: impl FnOnce() -> R,
+    ) -> R {
+        let locked = self.entries.lock().unwrap();
+        let answer = action();
+        assert_eq!(locked.by_id.len(), expected);
+        answer
+    }
+}

@@ -3,6 +3,8 @@
 use super::owned_medium::OwnedTestDurableMedium;
 use super::{Arc, CommitArt, Req};
 use crate::branch::RelationalBranchTransitionSequence;
+#[cfg(test)]
+use crate::durability::canonical_commit_artifact::checkpoint_body::copy_original_for_test;
 use crate::durability::data::{RelationalCheckpointMember, RelationalNativeCheckpoint};
 use crate::durability::published_medium::RelationalDurableCheckpointSource;
 use crate::publication::patch::data::PatchStreamPosition;
@@ -306,7 +308,7 @@ impl OwnedTestDurableMedium {
             .unwrap_or_else(|| panic!("medium holds no artifact at {position:?}"));
         let readmitted = CommitArt::readmit(&bytes, execution)
             .expect("the medium's own artifact readmits before it is rewritten");
-        let mut envelope = readmitted.envelope().copy_original_for_test(execution);
+        let mut envelope = copy_original_for_test(&readmitted.envelope(), execution);
         edit(envelope.body_mut_for_test());
         let rewritten = CommitArt::from_positioned(
             &crate::history::data::PositionedCanonicalCommit::for_test(

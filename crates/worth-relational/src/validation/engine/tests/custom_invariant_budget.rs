@@ -3,23 +3,28 @@ use super::validation_engine_fixtures::*;
 
 #[test]
 fn unrelated_custom_rule_returns_owner_proven_non_applicability() {
-    let runtime = RelationalRuntimeApi::builder()
-        .schema_registry(RelationalSchemaRegistry::new())
-        .custom_invariant(CustomInvariantRegistration::new(AlwaysViolatesCustomRule).unwrap())
-        .build()
-        .expect("valid native runtime configuration");
+    let instrumentation = crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation::default();
+    let version = crate::identity::data::VersionId(0);
+    let mut config = crate::config::data::RelationalRuntimeConfig::default();
+    config.schema.registry = RelationalSchemaRegistry::new();
+    let view = crate::validation::engine::test_view::invariant_view_with_custom_rules(
+        &instrumentation,
+        config,
+        version,
+        vec![CustomInvariantRegistration::new(AlwaysViolatesCustomRule).unwrap()],
+    );
+    let partitions = std::collections::BTreeMap::new();
     let plan = MergedCommitPlan {
         transaction_id: TransactionId(900),
         merged_intents: Vec::new(),
     };
-    runtime.performance_access().reset_counters();
 
-    let results = InvariantEngine::from_view(&runtime.invariant_validation_view()).execute_fixture(
+    let results = InvariantEngine::from_view(&view).execute_fixture(
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
-            &runtime.invariant_validation_view(),
-            InvariantObservation::committed(runtime.storage_access().current_edition()),
-            runtime.current_version_id(),
+            &view,
+            InvariantObservation::committed_branch(&partitions),
+            version,
             Some(&plan),
             None,
         ),
@@ -31,9 +36,8 @@ fn unrelated_custom_rule_returns_owner_proven_non_applicability() {
         crate::validation::data::execution::InvariantVerdict::NotApplicable
     );
     assert_eq!(
-        runtime
-            .performance_access()
-            .counters()
+        instrumentation
+            .complexity_snapshot()
             .custom_invariant_execution_count,
         0
     );
@@ -50,11 +54,17 @@ fn complete_kind_footprint_proves_non_applicability_before_rule_budget() {
             aspect_contract_declarations: KindAspectContractDeclarations::default(),
         })
         .unwrap();
-    let runtime = RelationalRuntimeApi::builder()
-        .schema_registry(schema)
-        .custom_invariant(CustomInvariantRegistration::new(TinyBudgetUnrelatedRule).unwrap())
-        .build()
-        .expect("valid native runtime configuration");
+    let instrumentation = crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation::default();
+    let version = crate::identity::data::VersionId(0);
+    let mut config = crate::config::data::RelationalRuntimeConfig::default();
+    config.schema.registry = schema;
+    let view = crate::validation::engine::test_view::invariant_view_with_custom_rules(
+        &instrumentation,
+        config,
+        version,
+        vec![CustomInvariantRegistration::new(TinyBudgetUnrelatedRule).unwrap()],
+    );
+    let partitions = std::collections::BTreeMap::new();
     let plan = MergedCommitPlan {
         transaction_id: TransactionId(901),
         merged_intents: ["first", "second"]
@@ -70,12 +80,12 @@ fn complete_kind_footprint_proves_non_applicability_before_rule_budget() {
             })
             .collect(),
     };
-    let results = InvariantEngine::from_view(&runtime.invariant_validation_view()).execute_fixture(
+    let results = InvariantEngine::from_view(&view).execute_fixture(
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
-            &runtime.invariant_validation_view(),
-            InvariantObservation::committed(runtime.storage_access().current_edition()),
-            runtime.current_version_id(),
+            &view,
+            InvariantObservation::committed_branch(&partitions),
+            version,
             Some(&plan),
             None,
         ),
@@ -99,11 +109,17 @@ fn unrelated_candidate_records_do_not_consume_restricted_scope_budget() {
             aspect_contract_declarations: KindAspectContractDeclarations::default(),
         })
         .unwrap();
-    let runtime = RelationalRuntimeApi::builder()
-        .schema_registry(schema)
-        .custom_invariant(CustomInvariantRegistration::new(BoundedBudgetUnrelatedRule).unwrap())
-        .build()
-        .expect("valid native runtime configuration");
+    let instrumentation = crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation::default();
+    let version = crate::identity::data::VersionId(0);
+    let mut config = crate::config::data::RelationalRuntimeConfig::default();
+    config.schema.registry = schema;
+    let view = crate::validation::engine::test_view::invariant_view_with_custom_rules(
+        &instrumentation,
+        config,
+        version,
+        vec![CustomInvariantRegistration::new(BoundedBudgetUnrelatedRule).unwrap()],
+    );
+    let partitions = std::collections::BTreeMap::new();
     let plan = MergedCommitPlan {
         transaction_id: TransactionId(902),
         merged_intents: (0..32)
@@ -118,12 +134,12 @@ fn unrelated_candidate_records_do_not_consume_restricted_scope_budget() {
             })
             .collect(),
     };
-    let results = InvariantEngine::from_view(&runtime.invariant_validation_view()).execute_fixture(
+    let results = InvariantEngine::from_view(&view).execute_fixture(
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
-            &runtime.invariant_validation_view(),
-            InvariantObservation::committed(runtime.storage_access().current_edition()),
-            runtime.current_version_id(),
+            &view,
+            InvariantObservation::committed_branch(&partitions),
+            version,
             Some(&plan),
             None,
         ),
@@ -135,9 +151,8 @@ fn unrelated_candidate_records_do_not_consume_restricted_scope_budget() {
         crate::validation::data::execution::InvariantVerdict::NotApplicable
     );
     assert_eq!(
-        runtime
-            .performance_access()
-            .counters()
+        instrumentation
+            .complexity_snapshot()
             .custom_invariant_execution_count,
         0
     );
@@ -145,9 +160,6 @@ fn unrelated_candidate_records_do_not_consume_restricted_scope_budget() {
 
 #[test]
 fn unrelated_bulk_relation_endpoint_scan_cannot_escape_work_budget() {
-    let host_request = crate::execution::test_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
     let schema = RelationalSchemaRegistry::new()
         .register_entity_kind(EntityKindRegistration {
             kind_id: KindId(1),
@@ -157,13 +169,22 @@ fn unrelated_bulk_relation_endpoint_scan_cannot_escape_work_budget() {
             aspect_contract_declarations: KindAspectContractDeclarations::default(),
         })
         .unwrap();
-    let runtime = RelationalRuntimeApi::builder()
-        .schema_registry(schema)
-        .custom_invariant(CustomInvariantRegistration::new(BoundedBudgetUnrelatedRule).unwrap())
-        .build()
-        .expect("valid native runtime configuration");
-    let source = crate::tests::support::create_entity(execution, &runtime, "bulk-source");
-    let target = crate::tests::support::create_entity(execution, &runtime, "bulk-target");
+    let partition_id = PartitionId::main();
+    let (partition, entities, _) =
+        crate::storage::overlay::small_relation_partition::relation_partition(partition_id, 2, &[]);
+    let partitions = std::collections::BTreeMap::from([(partition_id, partition)]);
+    let source = entities[0];
+    let target = entities[1];
+    let mut config = crate::config::data::RelationalRuntimeConfig::default();
+    config.schema.registry = schema;
+    let instrumentation = crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation::default();
+    let version = crate::identity::data::VersionId(1);
+    let view = crate::validation::engine::test_view::invariant_view_with_custom_rules(
+        &instrumentation,
+        config,
+        version,
+        vec![CustomInvariantRegistration::new(BoundedBudgetUnrelatedRule).unwrap()],
+    );
     let endpoints = (0..40)
         .map(|_| {
             (
@@ -189,12 +210,12 @@ fn unrelated_bulk_relation_endpoint_scan_cannot_escape_work_budget() {
             },
         ))],
     };
-    let results = InvariantEngine::from_view(&runtime.invariant_validation_view()).execute_fixture(
+    let results = InvariantEngine::from_view(&view).execute_fixture(
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
-            &runtime.invariant_validation_view(),
-            InvariantObservation::committed(runtime.storage_access().current_edition()),
-            runtime.current_version_id(),
+            &view,
+            InvariantObservation::committed_branch(&partitions),
+            version,
             Some(&plan),
             None,
         ),
@@ -206,9 +227,8 @@ fn unrelated_bulk_relation_endpoint_scan_cannot_escape_work_budget() {
         crate::validation::data::execution::InvariantVerdict::Violation(_)
     ));
     assert_eq!(
-        runtime
-            .performance_access()
-            .counters()
+        instrumentation
+            .complexity_snapshot()
             .custom_invariant_execution_count,
         0
     );
@@ -254,17 +274,23 @@ impl CustomInvariantRule for SwallowsWorkExhaustionRule {
 
 #[test]
 fn rule_overrunning_its_installed_work_is_an_execution_error_not_a_violation() {
-    let runtime = RelationalRuntimeApi::builder()
-        .schema_registry(RelationalSchemaRegistry::new())
-        .custom_invariant(CustomInvariantRegistration::new(SwallowsWorkExhaustionRule).unwrap())
-        .build()
-        .expect("valid native runtime configuration");
-    let results = InvariantEngine::from_view(&runtime.invariant_validation_view()).execute_fixture(
+    let instrumentation = crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation::default();
+    let version = crate::identity::data::VersionId(0);
+    let mut config = crate::config::data::RelationalRuntimeConfig::default();
+    config.schema.registry = RelationalSchemaRegistry::new();
+    let view = crate::validation::engine::test_view::invariant_view_with_custom_rules(
+        &instrumentation,
+        config,
+        version,
+        vec![CustomInvariantRegistration::new(SwallowsWorkExhaustionRule).unwrap()],
+    );
+    let partitions = std::collections::BTreeMap::new();
+    let results = InvariantEngine::from_view(&view).execute_fixture(
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
-            &runtime.invariant_validation_view(),
-            InvariantObservation::committed(runtime.storage_access().current_edition()),
-            runtime.current_version_id(),
+            &view,
+            InvariantObservation::committed_branch(&partitions),
+            version,
             None,
             None,
         ),

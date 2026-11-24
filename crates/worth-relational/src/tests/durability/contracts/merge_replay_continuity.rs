@@ -5,6 +5,8 @@
 //! inspected with the original authority take/restore allocation-inventory
 //! callback, resealed, and replayed through the owner's recovery plan.
 use super::*;
+#[cfg(test)]
+use crate::durability::canonical_commit_artifact::checkpoint_body::copy_original_for_test;
 use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact;
 use crate::durability::migration::ReadmittedCanonicalCommit;
 use crate::facade::merge::{MergeExecutionRequest, MergeIntent};
@@ -57,7 +59,7 @@ fn durability_contract_replays_merge_from_typed_authority_when_diagnostics_are_a
     let readmitted =
         RelationalCanonicalCommitArtifact::readmit(source_artifact.as_bytes(), execution).unwrap();
     let position = readmitted.position();
-    let mut merge_entry = readmitted.envelope().copy_original_for_test(execution);
+    let mut merge_entry = copy_original_for_test(&readmitted.envelope(), execution);
     {
         let body = merge_entry.body_mut_for_test();
         assert!(body.merge_execution_authority.is_some());

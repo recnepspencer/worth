@@ -1,3 +1,5 @@
+#[cfg(test)]
+use crate::durability::canonical_commit_artifact::checkpoint_body::copy_original_for_test;
 use crate::identity::data::{KindId, PartitionId};
 use crate::tests::support::*;
 use crate::transactions::data::intents::mutation_intent::EntityMutationIntent;
@@ -66,9 +68,7 @@ fn native_performed_origin_is_exact_and_an_ordinary_equal_write_revokes_retireme
     assert_eq!(origin.producer, "installed-producer");
     assert_eq!(*origin.dependency_identity.bytes(), [3; 32]);
     let entity = origin.outputs[0];
-    let mut copied = performed
-        .canonical_commit()
-        .copy_original_for_test(execution);
+    let mut copied = copy_original_for_test(&performed.canonical_commit(), execution);
     copied.body_mut_for_test().commit.commit_id.0 += 1;
     let copied_refusal = execution
         .run_native_with_checkpoint(|context| {

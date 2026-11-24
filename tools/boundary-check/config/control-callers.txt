@@ -221,7 +221,6 @@ crates/worth-relational/ workspaces/worth-query/crates/worth-query-court-decl-ho
 crates/worth-relational/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/synchronous_edit/envelope_cold.rs
 crates/worth-relational/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/producer_succession/courts.rs
 crates/worth-relational/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/producer_succession/locality.rs
-crates/worth-relational/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/producer_succession/route_degree/courts.rs
 crates/worth-relational/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-attempt/tests/worth_query_court_execution_primary_graph_application_attempt/cost/schema_projection.rs
 crates/worth-relational/ workspaces/worth-query/crates/worth-query-execution-lineage/src/domain_computation/primary_graph/output_lineage/historical_transport/denial/subject_capture_for_test.rs
 crates/worth-relational/ workspaces/worth-query/crates/worth-query-execution-query/src/domain_computation/primary_graph/application_contribution/coupled_publication/succession.rs

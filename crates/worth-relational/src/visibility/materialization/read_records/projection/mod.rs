@@ -13,7 +13,7 @@ mod borrowed_records;
 mod checkpoint_context;
 pub(crate) mod checkpoint_selection;
 pub(crate) mod contracts;
-mod creation;
+pub(crate) mod creation;
 pub(crate) use checkpoint_context::CheckpointProjectionContext;
 pub(crate) use creation::ProjectionInputs;
 mod current_adjacency;

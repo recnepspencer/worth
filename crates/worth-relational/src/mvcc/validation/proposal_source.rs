@@ -1,7 +1,6 @@
 //! Exactly one source of proposed meaning enters the ordinary judging round.
 use crate::authority::commit::semantic_plan::retained_entity_payload::PreparedRetainedEntityPayload;
 use crate::branch::root_selection::SelectedRelationalBranchState;
-use crate::mvcc::validation::validated_proposal::StrategyProposalDecoration;
 use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
 
 pub(super) enum RelationalProposalSource {
@@ -20,4 +19,10 @@ impl RelationalProposalSource {
             Self::RetainedEntitySelection(_) | Self::OwnedGraphSelection(_) => None,
         }
     }
+}
+
+pub(crate) struct StrategyProposalDecoration {
+    pub(crate) artifacts: crate::commit_strategies::data::StrategyCommitArtifactBundle,
+    pub(crate) bulk_mutation_batch:
+        Option<crate::transactions::data::primitives::ProvenanceCompleteBulkMutationBatch>,
 }

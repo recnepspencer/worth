@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::identity::data::{EntityId, KindId, PartitionId, RelationId, VersionId};
 
-use super::{
+use super::taxonomy::{
     InspectionAccessPath, InspectionAvailability, InspectionDegradation, InspectionOrigin,
     InspectionRecordClass, InspectionResolutionContext, InspectionScope,
 };

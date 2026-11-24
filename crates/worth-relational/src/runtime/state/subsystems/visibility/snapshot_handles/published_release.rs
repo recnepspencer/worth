@@ -147,3 +147,13 @@ impl PartialEq for PublishedSnapshotReleaseObservation {
     }
 }
 impl Eq for PublishedSnapshotReleaseObservation {}
+
+#[cfg(test)]
+impl PublishedSnapshotReleaseObservation {
+    pub(crate) fn while_removed_binding_locked<R>(&self, action: impl FnOnce() -> R) -> R {
+        let locked = self.retirement.lock().unwrap();
+        let answer = action();
+        assert!(matches!(*locked, PublishedSnapshotRetirement::Removed(_)));
+        answer
+    }
+}

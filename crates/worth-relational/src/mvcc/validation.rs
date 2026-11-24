@@ -38,13 +38,14 @@ pub use proposal_footprint::{
     ValidatedMutationFootprintWork, ValidatedRelationMutation, ValidatedRelationMutationFootprint,
 };
 pub use proposal_identity::RelationalMutationProposalIdentity;
+pub(crate) use proposal_source::StrategyProposalDecoration;
 pub(crate) use proposal_touches::project_applied_intents;
 pub use proposal_touches::{
     ValidatedEntityStructTouch, ValidatedMutationTouch, ValidatedMutationTouchProjectionError,
     ValidatedMutationTouchProjectionWork, ValidatedMutationTouches,
 };
+pub(crate) use validated_proposal::ValidatedProposalState;
 pub use validated_proposal::ValidatedRelationalProposal;
-pub(crate) use validated_proposal::{StrategyProposalDecoration, ValidatedProposalState};
 
 use crate::branch::{AdmittedRelationalBranchBasis, RelationalBranchRootSchemaAuthority};
 use crate::history::data::BranchId;
@@ -391,6 +392,3 @@ impl crate::authority::commit::pipeline::publication_validation::DraftValidation
         }
     }
 }
-
-#[cfg(test)]
-mod merge_history_tests;

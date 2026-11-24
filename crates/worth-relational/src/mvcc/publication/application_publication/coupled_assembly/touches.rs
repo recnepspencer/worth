@@ -1,53 +1,12 @@
 //! Append-time semantic touches and exclusive-write-set chain overlays for
 //! coupled candidates (PR C §1.4–§1.5).
-use super::*;
-use crate::execution::request_stage::checkpoint;
+use super::{continuation, part, touch_projection, RelationalAuthoredCoupledCandidate};
 use crate::identity::data::EntityId;
-use crate::mvcc::validation::proposal_touches::project_applied_intents;
-use crate::mvcc::validation::proposal_touches::ValidatedMutationTouch;
 use crate::publication::data::CoupledProvenancePostponement as Reason;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
-use crate::transactions::data::primitives::RecordRef;
-use std::collections::BTreeSet;
 use worth_execution::ExecutionRequest;
 
-/// Native-certified touches projected from one applied coupled member.
-#[derive(Clone, Debug)]
-pub struct RelationalCoupledAppendTouches {
-    touches: Vec<ValidatedMutationTouch>,
-    records: Vec<RecordRef>,
-}
-impl RelationalCoupledAppendTouches {
-    pub fn touches(&self) -> &[ValidatedMutationTouch] {
-        &self.touches
-    }
-    pub fn records(&self) -> &[RecordRef] {
-        &self.records
-    }
-}
-
-/// Native-certified exclusive-write-set overlay for reopening a coupled chain.
-/// `head_pre_pin` is the candidate image immediately before the chain's head
-/// appended; `exclusive_entities` are the entities the chain's earlier rounds
-/// created, published, or exclusively wrote; `prior_touches` are the union of
-/// Native-certified touches across all earlier rounds of this chain.
-#[derive(Clone)]
-pub struct RelationalCoupledChainOverlay {
-    head_pre_pin: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
-    exclusive_entities: Vec<EntityId>,
-    prior_touches: Vec<ValidatedMutationTouch>,
-}
-impl RelationalCoupledChainOverlay {
-    pub fn head_pre_pin(&self) -> &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
-        &self.head_pre_pin
-    }
-    pub fn exclusive_entities(&self) -> &[EntityId] {
-        &self.exclusive_entities
-    }
-    pub fn prior_touches(&self) -> &[ValidatedMutationTouch] {
-        &self.prior_touches
-    }
-}
+pub use touch_projection::{RelationalCoupledAppendTouches, RelationalCoupledChainOverlay};
 
 impl RelationalAuthoredCoupledCandidate<'_> {
     /// Certified touches of producer part `index`'s latest applied round.
@@ -62,15 +21,12 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                 self.authored_source(),
             ));
         };
-        let touches = project_applied_intents(
+        touch_projection::append_touches(
             execution,
             &self.mutation.state,
-            &part.commands.plan().merged_intents,
-        )?;
-        Ok(RelationalCoupledAppendTouches {
-            touches,
-            records: part.records.clone(),
-        })
+            part.commands.plan(),
+            &part.records,
+        )
     }
 
     /// Certified touches of later authored stage `stage` (0-based after prefix).
@@ -85,15 +41,12 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                 self.authored_source(),
             ));
         };
-        let touches = project_applied_intents(
+        touch_projection::append_touches(
             execution,
             &self.mutation.state,
-            &part.commands.plan().merged_intents,
-        )?;
-        Ok(RelationalCoupledAppendTouches {
-            touches,
-            records: part.records.clone(),
-        })
+            part.commands.plan(),
+            &part.records,
+        )
     }
 
     /// Verify non-intervention on chain `index`'s exclusive write set and return
@@ -111,52 +64,12 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                 self.authored_source(),
             ));
         };
-        let source = part
-            .publication
-            .producing_meaning()
-            .expect("admitted producer route")
-            .source_scope;
-        let changed = &self.mutation.outcome.effect.publication.changed_records;
-        execution
-            .run_native_with_checkpoint(|context| {
-                let own = part.records.iter().collect::<BTreeSet<_>>();
-                let mut charge =
-                    |units| checkpoint(context, units).map_err(custody::execution_stop);
-                if let Some(record) = part.chain.intervened(changed, &own, &mut charge)? {
-                    let subject = match record {
-                        RecordRef::Entity(entity) => *entity,
-                        RecordRef::Relation(_) => source,
-                    };
-                    return Err(continuation::postponed(Reason::IntervenedOutput, subject));
-                }
-                Ok::<_, TransactionCommitError>(())
-            })
-            .map_err(custody::execution_stop)?
-            .0?;
-        let mut prior_touches = part.chain.prior_touches.clone();
-        let latest = project_applied_intents(
+        touch_projection::chain_overlay(
             execution,
             &self.mutation.state,
-            &part.commands.plan().merged_intents,
-        )?;
-        prior_touches.extend(latest);
-        prior_touches.sort_unstable();
-        prior_touches.dedup();
-        let mut exclusive_entities = part
-            .records
-            .iter()
-            .filter_map(|record| match record {
-                RecordRef::Entity(entity) => Some(*entity),
-                RecordRef::Relation(_) => None,
-            })
-            .collect::<Vec<_>>();
-        exclusive_entities.sort_unstable();
-        exclusive_entities.dedup();
-        Ok(RelationalCoupledChainOverlay {
-            head_pre_pin: part.chain.head_input.clone(),
-            exclusive_entities,
-            prior_touches,
-        })
+            &self.mutation.outcome.effect.publication.changed_records,
+            part,
+        )
     }
 
     /// The #119 `PriorEffectRead` stop for chain `index`'s next round: Query,

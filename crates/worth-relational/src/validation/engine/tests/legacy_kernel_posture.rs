@@ -23,21 +23,27 @@ fn lease(posture: ExecutionPosture, workers: usize) -> ExecutionResourceLease<'s
 
 #[test]
 fn an_unchecked_custom_kernel_runs_only_when_the_request_cannot_run_in_parallel() {
-    let runtime = RelationalRuntimeApi::builder()
-        .schema_registry(RelationalSchemaRegistry::new())
-        .custom_invariant(CustomInvariantRegistration::new(AlwaysViolatesCustomRule).unwrap())
-        .build()
-        .expect("valid native runtime configuration");
+    let instrumentation = crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation::default();
+    let version = crate::identity::data::VersionId(0);
+    let mut config = crate::config::data::RelationalRuntimeConfig::default();
+    config.schema.registry = RelationalSchemaRegistry::new();
+    let view = crate::validation::engine::test_view::invariant_view_with_custom_rules(
+        &instrumentation,
+        config,
+        version,
+        vec![CustomInvariantRegistration::new(AlwaysViolatesCustomRule).unwrap()],
+    );
+    let partitions = std::collections::BTreeMap::new();
     let run = |execution: &ExecutionRequest<'_, '_>| {
         let request = InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
-            &runtime.invariant_validation_view(),
-            InvariantObservation::committed(runtime.storage_access().current_edition()),
-            runtime.current_version_id(),
+            &view,
+            InvariantObservation::committed_branch(&partitions),
+            version,
             None,
             None,
         );
-        InvariantEngine::from_view(&runtime.invariant_validation_view()).execute(execution, request)
+        InvariantEngine::from_view(&view).execute(execution, request)
     };
     let serial_request = crate::execution::test_policy::serial_request();
     let expected = run(&ExecutionRequest::serial(&serial_request)).unwrap();

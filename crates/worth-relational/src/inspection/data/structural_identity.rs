@@ -3,9 +3,9 @@ use serde::{Deserialize, Serialize};
 use crate::identity::data::{KindId, LineageId, PartitionId, StructuralFingerprint, VersionId};
 use crate::storage::data::RecordLifecycleState;
 use crate::symbols::data::Symbol;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
-use super::{
+use super::taxonomy::{
     InspectionAccessPath, InspectionAvailability, InspectionDegradation, InspectionOrigin,
     InspectionRecordClass, InspectionScope,
 };

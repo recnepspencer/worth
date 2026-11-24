@@ -64,12 +64,6 @@ impl From<worth_execution::WorkCeilingDenial> for CommitExecutionDenial {
 
 #[cfg(test)]
 pub(crate) mod observation;
-#[cfg(test)]
-mod tests;
-
-#[cfg(test)]
-mod stage_counts;
-
 impl From<worth_execution::WorkCeilingDenial> for TransactionCommitError {
     fn from(denial: worth_execution::WorkCeilingDenial) -> Self {
         Self::execution(denial.into())

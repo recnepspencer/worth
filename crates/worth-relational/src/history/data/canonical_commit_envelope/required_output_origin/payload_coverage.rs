@@ -325,4 +325,5 @@ pub(super) fn charge(
 }
 
 #[cfg(test)]
+#[path = "../../../../branch/root_payload_coverage_tests.rs"]
 mod tests;

@@ -1,11 +1,14 @@
-mod work_observation;
+pub(super) mod work_observation;
 use crate::authority::mutation::intents::{field_authoring_candidate, record_aspect_patch};
-use crate::capabilities::AspectPlanSource;
+use crate::schema::aspect_plan_source::AspectPlanSource;
 use crate::storage::data::{EntityReadRecord, RelationReadRecord};
-use crate::transactions::data::{
-    CommitConflict, EntityMutationIntent, EntityReference, RecordAspectPatchTarget,
-    RelationMutationIntent,
+use crate::transactions::data::intents::mutation_intent::{
+    EntityMutationIntent, RelationMutationIntent,
 };
+use crate::transactions::data::outcomes::{
+    commit_conflict::CommitConflict, conflict_class::RecordAspectPatchTarget,
+};
+use crate::transactions::data::primitives::EntityReference;
 use worth_foundational::facade::PortablePatchReadmissionPurpose;
 
 pub use super::relation_value::RelationalTransactionRelationValue;
@@ -15,7 +18,7 @@ pub(super) fn project_entity<'a>(
     schema: &impl AspectPlanSource,
     mut effective: Option<EntityReadRecord>,
     staged: impl IntoIterator<Item = &'a EntityMutationIntent>,
-) -> Result<Option<EntityReadRecord>, super::RelationalTransactionReadDenial> {
+) -> Result<Option<EntityReadRecord>, super::read_denial::RelationalTransactionReadDenial> {
     for intent in staged {
         work_observation::record();
         match intent {
@@ -125,7 +128,7 @@ fn apply_projection_state(
         }
         worth_proof::TransitionOutcome::Denied(denial) => Err(record_aspect_patch::conflict(
             target,
-            crate::transactions::data::RecordAspectPatchDenial::ApplicationDenied(denial),
+            crate::transactions::data::outcomes::conflict_class::RecordAspectPatchDenial::ApplicationDenied(denial),
         )),
     }
 }

@@ -171,33 +171,37 @@ fn execute(
 ) {
     let visits = Arc::new(AtomicUsize::new(0));
     let preparation_visits = Arc::new(AtomicUsize::new(0));
-    let runtime = RelationalRuntimeApi::builder()
-        .schema_registry(RelationalSchemaRegistry::new())
-        .custom_invariant(
-            CustomInvariantRegistration::new(CheckedCounterRule {
-                maximum_work_units,
-                steps,
-                visits: Arc::clone(&visits),
-                preparation_visits,
-                cancellation: None,
-                preparation_steps: 3,
-                preparation_scratch_bytes: 64,
-                target: None,
-            })
-            .unwrap(),
-        )
-        .build()
-        .expect("valid native runtime configuration");
+    let instrumentation = crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation::default();
+    let version = crate::identity::data::VersionId(0);
+    let mut config = crate::config::data::RelationalRuntimeConfig::default();
+    config.schema.registry = RelationalSchemaRegistry::new();
+    let view = crate::validation::engine::test_view::invariant_view_with_custom_rules(
+        &instrumentation,
+        config,
+        version,
+        vec![CustomInvariantRegistration::new(CheckedCounterRule {
+            maximum_work_units,
+            steps,
+            visits: Arc::clone(&visits),
+            preparation_visits,
+            cancellation: None,
+            preparation_steps: 3,
+            preparation_scratch_bytes: 64,
+            target: None,
+        })
+        .unwrap()],
+    );
+    let partitions = std::collections::BTreeMap::new();
     let lease = checked_lease(8 * 1024 * 1024, work_ceiling, CancellationToken::new());
     let request = InvariantExecutionRequest::from_profile_with_contract(
         InvariantRequestProfile::CommitBoundary,
-        &runtime.invariant_validation_view(),
-        InvariantObservation::committed(runtime.storage_access().current_edition()),
-        runtime.current_version_id(),
+        &view,
+        InvariantObservation::committed_branch(&partitions),
+        version,
         None,
         None,
     );
-    let result = InvariantEngine::from_view(&runtime.invariant_validation_view())
+    let result = InvariantEngine::from_view(&view)
         .execute(&worth_execution::ExecutionRequest::leased(&lease), request);
     (visits.load(Ordering::SeqCst), result)
 }

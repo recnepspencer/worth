@@ -18,8 +18,6 @@ mod pinning;
 use crate::indexes::data::applied_candidate_qualification::CandidateReadPhase;
 pub use crate::indexes::data::applied_candidate_qualification::RelationalAppliedCandidateReadQualification;
 pub use candidate::RelationalAppliedCandidateReadIdentity;
-#[cfg(test)]
-mod tests;
 
 /// An exact root, its schema/frontiers/revisions, isolated dictionary namespace,
 /// and selected index handles. Reads demand only reached regions and symbol

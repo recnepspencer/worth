@@ -1,9 +1,25 @@
 //! Scratch and work limits at the actual native invariant packet boundary.
 use super::super::validation_engine_fixtures::*;
-use super::fixture::*;
+use crate::branch::basis_admission_tests::installed_history;
+use crate::config::data::RelationalRuntimeConfig;
 use crate::execution::{execute_read_only_packets, PacketExecutionStop, ReadOnlyPacket};
-use worth_execution::CancellationToken;
+use crate::history::data::coordinates::BranchId;
+use crate::identity::data::{EntityId, VersionId};
+use crate::runtime::state::subsystems::{
+    history::HistorySubsystem,
+    services::instrumentation::RuntimeInstrumentation,
+    storage::{PartitionEditionCopyLane, StorageSubsystem},
+};
+use crate::transactions::data::aspect_field_patch::AspectFieldPatch;
+use crate::transactions::data::primitives::EntityReference;
+use crate::validation::engine::{
+    test_view::invariant_view_with_custom_rules, InvariantRuntimeView,
+};
+use worth_execution::{CancellationToken, ExecutionResourceLease, LeaseRequest};
 use worth_foundational::PartitionIdentity;
+use worth_foundational::{
+    DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
+};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum CallbackResult {
@@ -13,23 +29,22 @@ enum CallbackResult {
 }
 
 fn run(
-    fixture: &DagFixture,
+    fixture: &InvariantDag,
     forward_edges: usize,
     scratch: u64,
     work: u64,
 ) -> (Result<(), PacketExecutionStop>, u64, Option<CallbackResult>) {
-    let lease = request(1024 * 1024, work, CancellationToken::new(), None);
-    let plan = fixture.merged_plan(fixture.chain_batch(forward_edges));
-    let runtime = &fixture.runtime;
+    let lease = paid_dag_request(1024 * 1024, work, CancellationToken::new(), None);
+    let plan = fixture.plan(forward_edges);
+    let view = fixture.view();
     let request_view = InvariantExecutionRequest::from_profile_with_contract(
         InvariantRequestProfile::CommitBoundary,
-        &runtime.invariant_validation_view(),
-        InvariantObservation::committed(runtime.storage_access().current_edition()),
-        runtime.current_version_id(),
+        &view,
+        InvariantObservation::committed(fixture.storage.acquire()),
+        fixture.version(),
         Some(&plan),
         Some(crate::validation::data::contracts::InvariantPlanContract::from_merged_plan(&plan)),
     );
-    let view = runtime.invariant_validation_view();
     let prepared = crate::validation::execution::plan_invariant_execution(
         &view,
         worth_execution::ExecutionRequest::leased(&lease),
@@ -100,7 +115,7 @@ fn run(
 
 #[test]
 fn scratch_admission_covers_all_simultaneous_native_buffers_and_convergent_targets() {
-    let fixture = DagFixture::new(32);
+    let fixture = InvariantDag::without_custom_rules(32);
     let before = fixture.head();
     // Each prepared edge needs one borrowed pair and two potential vertices.
     // Both graph capacities coexist with a visited byte and frontier index for
@@ -139,7 +154,7 @@ fn scratch_admission_covers_all_simultaneous_native_buffers_and_convergent_targe
 
 #[test]
 fn repeated_searches_keep_work_charged_and_stop_one_unit_below_observed_need() {
-    let fixture = DagFixture::new(32);
+    let fixture = InvariantDag::without_custom_rules(32);
     let before = fixture.head();
     let (result, single_work, _) = run(&fixture, 1, 64 * 1024, 4_000_000);
     result.unwrap();
@@ -179,15 +194,15 @@ fn repeated_searches_keep_work_charged_and_stop_one_unit_below_observed_need() {
 
 #[test]
 fn caller_observed_scratch_need_grows_with_live_graph_not_repeated_visits() {
-    let small = minimum_scratch(&DagFixture::new(16));
-    let large = minimum_scratch(&DagFixture::new(64));
+    let small = minimum_scratch(&InvariantDag::without_custom_rules(16));
+    let large = minimum_scratch(&InvariantDag::without_custom_rules(64));
     assert!(large > small, "the larger live graph requires more scratch");
     // Four times the nodes, with headroom for endpoint rounding. Summing
     // freed buffers along every chain suffix grows quadratically instead.
     assert!(large <= small * 6, "scratch growth: {small} -> {large}");
 }
 
-fn minimum_scratch(fixture: &DagFixture) -> u64 {
+fn minimum_scratch(fixture: &InvariantDag) -> u64 {
     let before = fixture.head();
     // The fixed caller allowance also funds result and framework storage;
     // the probe's initial scratch declaration must leave that storage room.
@@ -215,4 +230,136 @@ fn minimum_scratch(fixture: &DagFixture) -> u64 {
     }
     assert_eq!(fixture.head(), before);
     funded
+}
+
+/// The native executor receives an installed Storage edition and a compiled
+/// rule view. Packet-level tests own these inputs directly.
+pub(super) struct InvariantDag {
+    storage: StorageSubsystem,
+    history: HistorySubsystem,
+    instrumentation: RuntimeInstrumentation,
+    config: RelationalRuntimeConfig,
+    rule: Option<CustomInvariantRegistration>,
+    pub(super) nodes: Vec<EntityId>,
+}
+
+impl InvariantDag {
+    fn without_custom_rules(count: usize) -> Self {
+        Self::new(count, None, None)
+    }
+
+    pub(super) fn new(
+        count: usize,
+        catalog: Option<InvariantCatalog>,
+        rule: Option<CustomInvariantRegistration>,
+    ) -> Self {
+        let partition = PartitionId::main();
+        let (state, nodes, _) =
+            crate::storage::overlay::small_relation_partition::typed_relation_partition(
+                partition,
+                std::iter::repeat_n(KindId(3), count),
+                &[],
+            );
+        let storage = StorageSubsystem::default();
+        storage.install_owned(
+            &Default::default(),
+            PartitionEditionCopyLane::Ordinary,
+            [(partition, state)],
+        );
+        let history = installed_history(1);
+        history.install_recovered_sequence_floor(2, 2);
+        let mut config = RelationalRuntimeConfig::default();
+        config.schema.registry = acyclicity_and_connectivity_registry();
+        if let Some(catalog) = catalog {
+            config.schema.invariant_catalog = catalog;
+        }
+        Self {
+            storage,
+            history,
+            instrumentation: RuntimeInstrumentation::default(),
+            config,
+            rule,
+            nodes,
+        }
+    }
+
+    pub(super) fn head(
+        &self,
+    ) -> crate::branch::reference::observation::RelationalBranchReferenceObservation {
+        self.history
+            .branch_cell(&BranchId("main".into()))
+            .unwrap()
+            .observation()
+    }
+
+    pub(super) fn version(&self) -> VersionId {
+        self.history.current_version_id()
+    }
+
+    pub(super) fn observation(&self) -> InvariantObservation<'_> {
+        InvariantObservation::committed(self.storage.acquire())
+    }
+
+    pub(super) fn view(&self) -> InvariantRuntimeView<'_> {
+        invariant_view_with_custom_rules(
+            &self.instrumentation,
+            self.config.clone(),
+            self.version(),
+            self.rule.clone().into_iter().collect(),
+        )
+    }
+
+    pub(super) fn plan(&self, forward_edges: usize) -> MergedCommitPlan {
+        let mut merged_intents = Vec::new();
+        for (index, &source) in self.nodes.iter().enumerate() {
+            for (offset, &target) in self
+                .nodes
+                .iter()
+                .skip(index + 1)
+                .take(forward_edges)
+                .enumerate()
+            {
+                merged_intents.push(edge(source, target, format!("dag-edge-{index}-{offset}")));
+            }
+        }
+        MergedCommitPlan {
+            transaction_id: TransactionId(2),
+            merged_intents,
+        }
+    }
+}
+
+pub(super) fn edge(
+    source: crate::identity::data::EntityId,
+    target: crate::identity::data::EntityId,
+    key: String,
+) -> MutationIntent {
+    MutationIntent::Create(CreateIntent::Relation(RelationSpec {
+        partition_id: PartitionId::main(),
+        kind_id: KindId(2),
+        client_key: ClientKey::raw(key),
+        source: EntityReference::Existing(source),
+        target: EntityReference::Existing(target),
+        fields: AspectFieldPatch::default(),
+    }))
+}
+
+pub(super) fn paid_dag_request(
+    bytes: u64,
+    work: u64,
+    cancellation: CancellationToken,
+    deadline: Option<std::time::Instant>,
+) -> ExecutionResourceLease<'static> {
+    crate::execution::test_authority::test_execution_authority()
+        .request_lease(LeaseRequest {
+            policy: ExecutionRequestPolicy::new(
+                ExecutionPosture::Serial,
+                DeterminismContract::CanonicalBitwise,
+                ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(bytes), Some(work)),
+            ),
+            cancellation,
+            deadline: deadline
+                .map(|instant| worth_execution::MonotonicClock::system().deadline_at(instant)),
+        })
+        .unwrap()
 }

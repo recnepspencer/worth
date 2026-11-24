@@ -1,3 +1,5 @@
+#[cfg(test)]
+use crate::durability::canonical_commit_artifact::checkpoint_body::copy_original_for_test;
 use std::sync::Arc;
 
 use super::{RelationalBranchRoot, RelationalBranchRootCaptureDenial};
@@ -261,14 +263,14 @@ fn schema_transition_descriptors_are_each_bound_into_the_committed_root() {
     let (root, envelope) =
         committed_root_and_envelope(execution, &runtime, outcome.commit.commit_id);
 
-    let mut transition = envelope.copy_original_for_test(execution);
+    let mut transition = copy_original_for_test(&envelope, execution);
     assert!(transition
         .body_mut_for_test()
         .schema_transition
         .take()
         .is_some());
     assert_axis_mutation_rejected(execution, &runtime, &root, transition, "schema transition");
-    let mut continuation = envelope.copy_original_for_test(execution);
+    let mut continuation = copy_original_for_test(&envelope, execution);
     assert!(continuation
         .body_mut_for_test()
         .schema_continuation_descriptor
@@ -315,7 +317,7 @@ fn committed_root_and_envelope(
     assert_eq!(envelope.commit.commit_id, commit_id);
     (
         Arc::clone(&root),
-        envelope.copy_original_for_test(execution),
+        copy_original_for_test(&envelope, execution),
     )
 }
 

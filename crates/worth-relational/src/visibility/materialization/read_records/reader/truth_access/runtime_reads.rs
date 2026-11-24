@@ -18,30 +18,16 @@ impl<'runtime> VisibilityReadContext<'runtime> {
             &edition,
             &self.runtime.services.symbols,
             |state| {
-                crate::visibility::materialization::read_records::read_work::point_with_quote(
+                crate::visibility::materialization::read_records::reader::projection_record_reader::ProjectionRecordReader::new(
+                    self.runtime.current_version_id(),
+                    &self.runtime.services.instrumentation,
+                )
+                .read_live_entity_at_version(
                     execution,
-                    || {
-                        super::super::super::read_work::record_quote::entity_for_id(
-                            state,
-                            &self.runtime.config.schema.registry,
-                            entity_id,
-                            KindScanVisibility::for_selected_version(
-                                self.runtime.current_version_id(),
-                                version_id,
-                            ),
-                        )
-                    },
-                    || {
-                        self.authoritative_entity_record_for_id_at_version(
-                            state, entity_id, version_id,
-                        )
-                        .filter(|record| record.lifecycle == RecordLifecycleState::Live)
-                    },
-                    |record| {
-                        record
-                            .as_ref()
-                            .map_or(0, super::super::super::read_footprint::entity)
-                    },
+                    state,
+                    &self.runtime.config.schema.registry,
+                    entity_id,
+                    version_id,
                 )
             },
         )

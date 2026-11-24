@@ -2,6 +2,7 @@
 mod field_projection;
 mod member_restoration;
 mod relation_mutations;
+mod relation_projection;
 mod relations;
 pub use member_restoration::{RecordedMemberRestoration, RecordedMemberRestorationRefusal};
 pub use relation_mutations::{ValidatedRelationMutation, ValidatedRelationMutationFootprint};

@@ -1,7 +1,11 @@
 //! Only the sealed, payload-checked Native inverse is outside application authoring.
 use super::*;
+use crate::mvcc::publication::application_publication::RelationalAuthoredRestoration;
 use crate::mvcc::validation::validated_proposal::ValidatedRelationalProposal;
-use crate::{mvcc::RelationalAuthoredRestoration, transactions::data::*};
+use crate::transactions::data::{
+    intents::mutation_intent::MutationIntent,
+    outcomes::transaction_commit_error::TransactionCommitError, primitives::RecordRef,
+};
 type Error = ValidatedMutationTouchProjectionError;
 fn plan(proposal: &ValidatedRelationalProposal) -> Option<&RelationalAuthoredRestoration> {
     proposal
@@ -78,66 +82,25 @@ pub(super) fn owns_create(
     let Some(restoration) = plan(proposal) else {
         return Ok(false);
     };
-    match intent {
-        MutationIntent::Create(CreateIntent::EntityAspects(spec)) => {
-            let created = &proposal.state.proposed_mutation.outcome.created_entities;
-            let target = CreatedEntityRef {
-                partition_id: spec.partition_id,
-                kind_id: spec.kind_id,
-                client_key: spec.client_key.clone(),
-            };
-            checkpoint(
-                created
-                    .resolve_work_bound(&target)
-                    .ok_or_else(collection::capacity)?,
-            )?;
-            let id = created.resolve(&target);
-            // Every anchor remains authored by its own inverse Create.
-            let anchors = restoration
-                .retirement
-                .authored_source_retirement()
-                .expect("Native restoration has its retirement")
-                .co_anchors
-                .len()
-                + 1;
-            for (_, target) in restoration.entities.iter().skip(anchors) {
-                checkpoint(
-                    created
-                        .resolve_work_bound(target)
-                        .ok_or_else(collection::capacity)?,
-                )?;
-                if id.is_some() && id == created.resolve(target) {
-                    return Ok(true);
-                }
-            }
-        }
-        MutationIntent::Create(CreateIntent::RelationAspects(spec)) => {
-            let created = &proposal.state.proposed_mutation.outcome.created_relations;
-            let target = CreatedRelationRef {
-                partition_id: spec.partition_id,
-                kind_id: spec.kind_id,
-                client_key: spec.client_key.clone(),
-                source: spec.source.clone(),
-                target: spec.target.clone(),
-            };
-            checkpoint(
-                created
-                    .resolve_work_bound(&target)
-                    .ok_or_else(collection::capacity)?,
-            )?;
-            let id = created.resolve(&target);
-            for (_, target) in &restoration.relations {
-                checkpoint(
-                    created
-                        .resolve_work_bound(target)
-                        .ok_or_else(collection::capacity)?,
-                )?;
-                if id.is_some() && id == created.resolve(target) {
-                    return Ok(true);
-                }
-            }
-        }
-        _ => {}
-    }
-    Ok(false)
+    let outcome = &proposal.state.proposed_mutation.outcome;
+    super::inverse_projection::owns_create(
+        super::inverse_projection::InverseProjection {
+            created_entities: &outcome.created_entities,
+            created_relations: &outcome.created_relations,
+            non_anchor_entities: || {
+                // Every anchor remains authored by its own inverse Create.
+                let anchors = restoration
+                    .retirement
+                    .authored_source_retirement()
+                    .expect("Native restoration has its retirement")
+                    .co_anchors
+                    .len()
+                    + 1;
+                restoration.entities.get(anchors..).unwrap_or_default()
+            },
+            relations: &restoration.relations,
+        },
+        intent,
+        checkpoint,
+    )
 }

@@ -11,6 +11,8 @@ mod authored_restoration;
 mod collection;
 #[path = "proposal_touches/intent_projection.rs"]
 mod intent_projection;
+#[path = "proposal_touches/inverse_projection.rs"]
+mod inverse_projection;
 #[path = "proposal_touches/owned_graph.rs"]
 mod owned_graph;
 #[path = "proposal_touches/preparation.rs"]

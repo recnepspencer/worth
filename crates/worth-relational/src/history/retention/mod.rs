@@ -60,6 +60,8 @@ pub(crate) use terminal_accounting::RelationalExternalRetentionTerminalAccountin
 pub use terminal_accounting::RelationalExternalRetentionTerminalCounts;
 
 #[cfg(test)]
+mod capture_pause;
+#[cfg(test)]
 mod component_cut_tests;
 
 #[cfg(test)]

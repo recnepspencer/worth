@@ -28,10 +28,13 @@ mod candidate_completion;
 mod chain;
 pub(crate) mod completion;
 mod continuation;
+mod corruption_commands;
 mod managed_source;
 mod managed_source_alignment;
 mod parent_read_footprint;
 pub(crate) mod retained_assembly;
+mod roster_completion;
+mod route_selection;
 pub use continuation::RelationalCoupledProducerContinuation;
 pub use managed_source_alignment::ManagedIndexParentReadFootprint;
 pub(crate) mod contribution;
@@ -51,9 +54,11 @@ mod participant_admission;
 mod prepared_route;
 pub(crate) mod producer_posture;
 mod stage;
+mod suffix_scope;
 pub use producer_posture::RelationalCoupledProducerPosture;
 mod scoped_preparation;
 mod succession;
+mod touch_projection;
 mod touches;
 pub use touches::{RelationalCoupledAppendTouches, RelationalCoupledChainOverlay};
 mod writer_custody;
@@ -175,7 +180,11 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         {
             execution
                 .run_native_with_checkpoint(|context| {
-                    part::require_unseen_route(context, &self.parts, &previous.origin.meaning)
+                    participant_admission::require_unseen_route(
+                        context,
+                        &self.parts,
+                        &previous.origin.meaning,
+                    )
                 })
                 .map_err(custody::execution_stop)?
                 .0?;

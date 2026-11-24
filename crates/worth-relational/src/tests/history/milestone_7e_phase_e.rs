@@ -1,3 +1,5 @@
+#[cfg(test)]
+use crate::durability::canonical_commit_artifact::checkpoint_body::copy_original_for_test;
 use crate::facade::history::BranchId;
 use crate::facade::merge::{MergeExecutionOutcome, MergeExecutionRequest, MergeIntent};
 use crate::facade::runtime::RelationalRuntime;
@@ -202,7 +204,7 @@ fn replay_rebuild_denies_summary_and_packet_drift() {
         .expect("merge execution authority")
         .retains_consistent_proof_packet_authority());
 
-    let mut digest_drifted = honest.copy_original_for_test(execution);
+    let mut digest_drifted = copy_original_for_test(&honest, execution);
     digest_drifted
         .body_mut_for_test()
         .merge_execution_authority
@@ -219,7 +221,7 @@ fn replay_rebuild_denies_summary_and_packet_drift() {
 
     // Inject request drift onto a fresh honest copy so rejection is proved
     // independently of the forged execution_digest above.
-    let mut request_drifted = honest.copy_original_for_test(execution);
+    let mut request_drifted = copy_original_for_test(&honest, execution);
     request_drifted
         .body_mut_for_test()
         .merge_execution_authority

@@ -17,12 +17,7 @@ impl crate::mvcc::validation::validated_proposal::ValidatedRelationalProposal {
                     _ => None,
                 },
             )?;
-        let part = group.stages.get(stage)?;
-        (part.source == source).then_some(RelationalCoupledContribution {
-            records: &part.records,
-            publication_required: false,
-            ordinary: Some((&part.roles, &part.output_ids)),
-        })
+        contribution::authored_stage(group.stages.get(stage)?, source)
     }
     /// Actual per-writer changes from the applied assembly, before publication.
     pub fn coupled_contribution_records(
@@ -38,23 +33,7 @@ impl crate::mvcc::validation::validated_proposal::ValidatedRelationalProposal {
                 else {
                     return None;
                 };
-                group.parts.iter().find_map(|part| {
-                    let (actual, _) = part.publication.lineage_attribution()?;
-                    let actual_meaning = part.publication.producing_meaning()?;
-                    (actual == producer && actual_meaning == meaning).then_some(
-                        RelationalCoupledContribution {
-                            records: &part.records,
-                            publication_required: part.publication.owned().is_some(),
-                            ordinary: match (&part.publication, &part.ordinary_ids) {
-                                (
-                                    RelationalCoupledProducerPosture::Ordinary { roles, .. },
-                                    Some(ids),
-                                ) => Some((roles.as_slice(), ids)),
-                                _ => None,
-                            },
-                        },
-                    )
-                })
+                contribution::produced(&group.parts, producer, meaning)
             })
     }
     pub fn coupled_participants(
@@ -68,16 +47,6 @@ impl crate::mvcc::validation::validated_proposal::ValidatedRelationalProposal {
                 _ => None,
             })
             .flat_map(|group| group.parts.iter())
-            .map(|part| {
-                let (producer, _) = part
-                    .publication
-                    .lineage_attribution()
-                    .expect("Native admitted a producer participant");
-                let meaning = part
-                    .publication
-                    .producing_meaning()
-                    .expect("Native admitted producing origin");
-                (producer, meaning)
-            })
+            .map(contribution::route)
     }
 }

@@ -373,3 +373,6 @@ pub(crate) mod inline_type_budget;
 
 #[cfg(test)]
 mod lineage_rebuild_test;
+
+#[cfg(test)]
+mod fixture_image;

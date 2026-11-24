@@ -1,4 +1,4 @@
-use super::{ComplexityContract, ComplexityStatus};
+use super::complexity_contract::{ComplexityContract, ComplexityStatus};
 
 #[cfg(test)]
 mod history_capture;

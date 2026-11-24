@@ -1,22 +1,8 @@
 //! Deterministic distinct-lane membership changes cross one real owner cut.
-use crate::history::data::CommitId;
 use crate::tests::support::*;
-use std::sync::{
-    mpsc::{sync_channel, Receiver, SyncSender},
-    Arc, Mutex,
-};
+use std::sync::{mpsc::sync_channel, Arc, Mutex};
 
-#[derive(Debug)]
-pub(super) struct CapturePause {
-    entered: SyncSender<()>,
-    resume: Mutex<Receiver<()>>,
-}
-impl CapturePause {
-    pub(super) fn wait(&self) {
-        let _ = self.entered.send(());
-        let _ = self.resume.lock().unwrap_or_else(|p| p.into_inner()).recv();
-    }
-}
+use super::capture_pause::CapturePause;
 struct ClearOnDrop<'a, T>(&'a Mutex<Option<T>>);
 impl<T> Drop for ClearOnDrop<'_, T> {
     fn drop(&mut self) {

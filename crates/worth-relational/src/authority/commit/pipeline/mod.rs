@@ -29,7 +29,7 @@ pub(crate) use publication_execution::PreparedCommitPublicationCompletion;
 pub(crate) use publication_execution::PreparedCommitPublicationExecution;
 pub(crate) use publication_execution::{publish_commit_execution, PublishedCommitExecution};
 
-mod request_checkpoints;
+pub(crate) mod request_checkpoints;
 #[cfg(test)]
 pub(crate) use request_checkpoints::observation as stage_observation;
 pub(crate) use request_checkpoints::{consult_stage, CommitStage};

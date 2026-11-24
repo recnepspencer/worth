@@ -1,12 +1,23 @@
 //! A real proposal cannot fund each native/custom dispatch from a reset allowance.
+use super::super::fixture::DagFixture;
 use super::*;
+use crate::facade::runtime::RelationalRuntimeApi;
+
+fn runtime_fixture(count: usize) -> (DagFixture, Arc<Hooks>) {
+    let hooks = Arc::new(Hooks::default());
+    let runtime = RelationalRuntimeApi::builder()
+        .schema_registry(acyclicity_and_connectivity_registry())
+        .custom_invariant(CustomInvariantRegistration::new(ScopeProbe(Arc::clone(&hooks))).unwrap())
+        .build()
+        .expect("valid native runtime configuration");
+    (DagFixture::from_runtime(runtime, count), hooks)
+}
 
 #[test]
 fn the_original_proposal_account_covers_both_stages_and_their_handoff() {
-    let (fixture, hooks) = fixture(16);
+    let (fixture, hooks) = runtime_fixture(16);
     let before = fixture.head();
-    let funded =
-        super::super::fixture::request(8 * 1024 * 1024, 4_000_000, CancellationToken::new(), None);
+    let funded = paid_dag_request(8 * 1024 * 1024, 4_000_000, CancellationToken::new(), None);
     let (candidate, charges) = crate::execution::request_work::account_observation::observe(|| {
         fixture.validate(&ExecutionRequest::leased(&funded), fixture.chain_batch(2))
     });
@@ -50,8 +61,7 @@ fn the_original_proposal_account_covers_both_stages_and_their_handoff() {
     // Each isolated dispatch fitted this bound on the completing run. Resetting
     // the allowance at a native/custom or validation/preparation handoff is not
     // allowed to turn it into a completing whole-proposal budget.
-    let constrained =
-        super::super::fixture::request(8 * 1024 * 1024, largest, CancellationToken::new(), None);
+    let constrained = paid_dag_request(8 * 1024 * 1024, largest, CancellationToken::new(), None);
     let error = fixture
         .validate(
             &ExecutionRequest::leased(&constrained),

@@ -4,11 +4,12 @@
 //! admitted values are identified by their real physical allocation so shared
 //! backing across distinct carriers is counted once. An unrepresentable extent
 //! refuses the walk.
-use super::allocation_ledger::RelationalExcludedAllocationLane;
-use super::sharing::{
+
+use super::sharing::allocation_inventory::{
     RelationalAuthoritativeAllocationKind, RelationalAuthoritativeAllocationLocator,
-    RelationalAuthoritativeAllocationObservation, RelationalBranchSharingInspectionDenial,
+    RelationalAuthoritativeAllocationObservation, RelationalExcludedAllocationLane,
 };
+use super::sharing::inspection_denial::RelationalBranchSharingInspectionDenial;
 use crate::identity::data::PartitionId;
 use crate::storage::{
     overlay::PartitionState,
@@ -31,7 +32,7 @@ pub(super) fn authoritative_partition_allocations(
     runtime_instance_id: u64,
     partition: &PartitionState,
     seen: &mut std::collections::BTreeSet<u64>,
-    work: Option<&mut super::retained_storage::RelationalRetainedStorageWork>,
+    work: Option<&mut super::retained_storage::work::RelationalRetainedStorageWork>,
 ) -> Result<
     Vec<RelationalAuthoritativeAllocationObservation>,
     RelationalBranchSharingInspectionDenial,
@@ -56,7 +57,7 @@ struct PartitionAllocationWalk<'a> {
     partition_id: PartitionId,
     seen: &'a mut std::collections::BTreeSet<u64>,
     allocations: Vec<RelationalAuthoritativeAllocationObservation>,
-    work: Option<&'a mut super::retained_storage::RelationalRetainedStorageWork>,
+    work: Option<&'a mut super::retained_storage::work::RelationalRetainedStorageWork>,
     denial: Option<RelationalBranchSharingInspectionDenial>,
 }
 
@@ -95,7 +96,7 @@ impl StorageAllocationVisitor for PartitionAllocationWalk<'_> {
 
 pub(super) fn excluded_partition_allocations(
     partition: &PartitionState,
-    root: &crate::branch::RelationalBranchRoot,
+    root: &crate::branch::root::RelationalBranchRoot,
     seen: &mut std::collections::BTreeSet<u64>,
 ) -> Vec<(
     RelationalExcludedAllocationLane,

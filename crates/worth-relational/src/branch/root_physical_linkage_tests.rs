@@ -48,7 +48,7 @@ fn equal_envelope_bytes_cannot_replace_exact_physical_catalog_custody() {
     distinct_custody.committed.as_mut().unwrap().evidence =
         RelationalRootCommitEvidence::original_for_request(
             execution,
-            Arc::new(envelope.copy_original_for_test(execution)),
+            Arc::new(envelope.independent_fixture_image()),
         )
         .unwrap();
     let distinct_custody = Arc::new(distinct_custody);
@@ -136,7 +136,7 @@ fn recovery_relinks_an_already_sealed_payload_without_reencoding_or_weakening_ro
             .expect("resident fixture has a canonical digest")
     );
 
-    let equal_but_unsealed = Arc::new(envelope.copy_original_for_test(execution));
+    let equal_but_unsealed = Arc::new(envelope.independent_fixture_image());
     assert!(matches!(
         preencoded.relink_preencoded_recovery(&equal_but_unsealed, Some(&root), None),
         Err(RelationalCommitArtifactDenial::RootLinkage)
@@ -149,4 +149,130 @@ fn recovery_relinks_an_already_sealed_payload_without_reencoding_or_weakening_ro
         preencoded.relink_preencoded_recovery(&envelope, None, Some(&mismatched_schema)),
         Err(RelationalCommitArtifactDenial::RootLinkage)
     ));
+}
+
+pub(super) fn committed_root_and_envelope(
+    request: &worth_execution::ExecutionRequest<'_, '_>,
+) -> (
+    crate::symbols::data::StringInterner,
+    Arc<RelationalBranchRoot>,
+    crate::history::data::CanonicalCommitEnvelope,
+) {
+    let root = capture_committed_fixture(request, 1, None);
+    let envelope = root
+        .canonical_envelope()
+        .unwrap()
+        .independent_fixture_image();
+    (Default::default(), root, envelope)
+}
+
+pub(super) fn capture_committed_fixture(
+    request: &worth_execution::ExecutionRequest<'_, '_>,
+    version: u64,
+    previous: Option<&Arc<RelationalBranchRoot>>,
+) -> Arc<RelationalBranchRoot> {
+    use crate::branch::reference::observation::relational_branch_observation;
+    use crate::branch::reference_checkpoint_data::{
+        RelationalBranchCellCheckpoint, CANONICAL_RUNTIME_INSTANCE_ID,
+    };
+    use crate::branch::target::RelationalBranchTarget;
+    use crate::branch::version::RelationalBranchVersion;
+    use crate::history::data::{
+        BranchId, CanonicalRecordAllocation, CommitId, RelationalCommitReceipt,
+    };
+    use crate::identity::data::{KindId, LineageId, VersionId};
+    use crate::lineage::data::{LineageEventKind, LineageEventRecord, LineageSubject};
+    use crate::schema::data::{
+        EntityKindRegistration, RelationalSchemaRegistry, SchemaId, SchemaVersionId,
+    };
+    use worth_foundational::{FoundationalBranchReferenceGeneration, FoundationalBranchTarget};
+
+    let partition_id = PartitionId::main();
+    let (partition, entities, _) =
+        crate::storage::overlay::small_relation_partition::relation_partition(partition_id, 1, &[]);
+    let record = RecordRef::Entity(entities[0]);
+    let branch_id = BranchId("main".into());
+    let receipt = RelationalCommitReceipt {
+        commit_id: CommitId(version),
+        version_id: VersionId(version),
+        branch_id: branch_id.clone(),
+        parents: previous
+            .iter()
+            .filter_map(|root| root.commit_id())
+            .collect(),
+    };
+    let mut envelope =
+        crate::history::data::canonical_commit_envelope::tests::envelope_with_patch_at(
+            record.clone(),
+            entities[0],
+            receipt.clone(),
+        );
+    let registry = RelationalSchemaRegistry::new()
+        .register_entity_kind(EntityKindRegistration {
+            kind_id: KindId(1),
+            kind_name: "fixture-entity".into(),
+            schema_id: SchemaId("fixture".into()),
+            schema_version_id: SchemaVersionId(1),
+            aspect_contract_declarations: Default::default(),
+        })
+        .unwrap();
+    let target = RelationalBranchTarget::new(
+        CANONICAL_RUNTIME_INSTANCE_ID,
+        receipt.commit_id.0,
+        receipt.version_id.0,
+        Vec::new(),
+        RelationalBranchTarget::roots_for_commit(&receipt),
+    );
+    let observation = relational_branch_observation(
+        CANONICAL_RUNTIME_INSTANCE_ID,
+        &branch_id.0,
+        FoundationalBranchTarget::basis(target),
+        FoundationalBranchReferenceGeneration::new(version),
+    )
+    .unwrap();
+    let body = envelope.body_mut_for_test();
+    body.schema_authority = registry.authority_snapshot();
+    body.branch_cell_checkpoint = Some(RelationalBranchCellCheckpoint {
+        runtime_instance_id: CANONICAL_RUNTIME_INSTANCE_ID,
+        branch_id: branch_id.clone(),
+        observation,
+        truth_version: RelationalBranchVersion::new(version),
+        fork_provenance: None,
+        fork_source_branch_id: None,
+    });
+    body.install_record_allocations(vec![CanonicalRecordAllocation::new(0, record)]);
+    body.published_lineage_mut_for_test()
+        .lineage_events_mut()
+        .push(LineageEventRecord {
+            event_id: version,
+            commit: receipt,
+            branch_id,
+            kind: LineageEventKind::Create,
+            sources: Vec::new(),
+            targets: vec![LineageId(version)],
+            subject: LineageSubject::Entity,
+            name_birth: None,
+            kept_name: None,
+            relation_id: None,
+            entity_id: None,
+        });
+    let mut journal = crate::storage::overlay::PartitionMutationJournal::default();
+    journal.entity_slots.insert(entities[0].slot_index());
+    let delta = crate::storage::RelationalPublishedPartitionDelta::from_committed_partitions(
+        &std::collections::BTreeMap::from([(partition_id, (partition.clone(), journal))]),
+    );
+    RelationalBranchRoot::prepare_capture(
+        request,
+        &RelationalBranchRootIdentityIssuer::default(),
+        &std::collections::BTreeMap::from([(partition_id, partition)]),
+        &delta,
+        previous,
+        Arc::new(envelope),
+        &Default::default(),
+        &registry,
+        &Default::default(),
+        None,
+    )
+    .unwrap()
+    .into_root()
 }

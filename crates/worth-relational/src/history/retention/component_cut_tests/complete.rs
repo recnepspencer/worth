@@ -1,5 +1,5 @@
 //! Coordinate a Complete capture with the actual external retention cut.
-use super::CapturePause;
+use super::super::capture_pause::CapturePause;
 use crate::branch::basis::RelationalBranchBasisDescriptor;
 use std::sync::{mpsc::sync_channel, Arc, Mutex};
 

@@ -61,7 +61,7 @@ fn canonical_artifact_accounting_excludes_nested_diagnostic_perturbation() {
     let baseline_artifact = RelationalCommitArtifact::from_preencoded(
         crate::history::commit::original_payload::RelationalOriginalRootCommitEvidence::prepare(
             execution,
-            Arc::new(envelope.copy_original_for_test(execution)),
+            Arc::new(envelope.independent_fixture_image()),
         )
         .unwrap(),
     )
@@ -79,7 +79,7 @@ fn canonical_artifact_accounting_excludes_nested_diagnostic_perturbation() {
     let baseline_diagnostic_bytes = baseline_artifact
         .excluded_allocation_inventory()
         .diagnostic_bytes;
-    let mut omitted_checkpoint = envelope.copy_original_for_test(execution);
+    let mut omitted_checkpoint = envelope.independent_fixture_image();
     omitted_checkpoint
         .body_mut_for_test()
         .branch_cell_checkpoint = None;
@@ -172,7 +172,7 @@ fn populated_derived_index_artifacts_only_change_the_optional_cache_lane() {
     let baseline = RelationalCommitArtifact::from_preencoded(
         crate::history::commit::original_payload::RelationalOriginalRootCommitEvidence::prepare(
             execution,
-            Arc::new(envelope.copy_original_for_test(execution)),
+            Arc::new(envelope.independent_fixture_image()),
         )
         .unwrap(),
     )

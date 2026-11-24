@@ -3,36 +3,12 @@ use super::chain::Chain;
 pub(super) use super::refusals::{reject, reject_extra_owner};
 use super::*;
 use crate::authority::commit::phases::prepare::prepare_authoritative_working_state_scope_for_base;
-use crate::execution::request_stage::checkpoint;
-use crate::publication::data::AuthoredRetirementRefusal as Cause;
 use crate::transactions::data::outcomes::plan_artifacts::AuthoritativeApplyPlan;
 use crate::transactions::data::primitives::RecordRef;
 use crate::transactions::data::primitives::WorkerIntentBatch;
 
-pub(super) fn require_unseen_route(
-    context: &mut worth_execution::MapKernelContext<'_, '_>,
-    parts: &[CoupledPublicationPart],
-    meaning: &RequiredOutputPublicationMeaning,
-) -> Result<(), TransactionCommitError> {
-    for part in parts {
-        let prior = part
-            .publication
-            .producing_meaning()
-            .expect("admitted producer route");
-        checkpoint(
-            context,
-            (meaning.family.len() + prior.family.len() + 65) as u64,
-        )
-        .map_err(custody::execution_stop)?;
-        if prior.same_route(meaning) {
-            return Err(reject(Cause::RepeatedCoupledOwner, meaning.source_scope));
-        }
-    }
-    Ok(())
-}
-
 mod suffix;
-pub(super) use suffix::SuffixWriter;
+pub(super) use super::suffix_scope::SuffixWriter;
 
 impl RelationalAuthoredCoupledCandidate<'_> {
     pub fn append_publication(
@@ -42,8 +18,14 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         content: &crate::content::RelationalContentAttachments,
         batches: Vec<WorkerIntentBatch>,
     ) -> Result<(), RelationalCoupledAssemblyFailure> {
-        let predecessor_origin =
-            super::participant_admission::admit(self, execution, &publication)?;
+        let predecessor_origin = super::participant_admission::admit(
+            self.binding,
+            self.runtime.services.runtime_instance_id(),
+            &self.mutation.outcome.created_entities,
+            &self.parts,
+            execution,
+            &publication,
+        )?;
         let source = publication
             .producing_meaning()
             .expect("admitted writer")

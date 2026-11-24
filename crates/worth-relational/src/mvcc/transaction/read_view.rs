@@ -66,6 +66,10 @@ impl RelationalTransactionRelationRead {
 }
 
 impl super::BranchBoundRelationalTransaction {
+    pub fn observe_read_projection_work<R>(observe: impl FnOnce() -> R) -> (R, u64) {
+        super::read_projection::work_observation::observe(observe)
+    }
+
     /// Read one existing entity from the immutable exact basis and include all
     /// staged mutations for that identity in authoring order.
     pub fn read_entity(

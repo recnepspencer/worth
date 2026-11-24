@@ -7,9 +7,6 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, Weak};
 mod source_registration;
 
-#[cfg(test)]
-mod memory_close_tests;
-
 /// Drop-governed publication authority owned directly by one runtime.
 #[derive(Debug)]
 pub(in crate::runtime) struct RelationalRuntimePublicationOwner {
@@ -324,5 +321,14 @@ impl RelationalRuntimePublicationBinding {
     #[cfg(test)]
     pub(crate) fn pending_settlement_owner_loss_count(&self) -> u64 {
         self.lifecycle.settlements.owner_loss_release_count()
+    }
+}
+
+#[cfg(test)]
+impl RelationalRuntimePublicationBinding {
+    pub(crate) fn while_empty_candidate_registry_locked(&self, action: impl FnOnce()) {
+        let locked = self.lifecycle.candidates.lock().unwrap();
+        action();
+        assert!(locked.is_empty());
     }
 }

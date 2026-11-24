@@ -58,6 +58,11 @@ impl RelationalBranchCoordinationCell {
         self.waits.load(Ordering::Relaxed)
     }
 
+    #[cfg(test)]
+    pub(crate) fn is_unlocked(&self) -> bool {
+        self.gate.try_lock().is_ok()
+    }
+
     /// Enter the bounded branch-local publication section. Contention is
     /// recorded only on this exact branch; no runtime-global gate is touched.
     pub(crate) fn enter(&self) -> RelationalBranchCoordinationGuard<'_> {
@@ -89,7 +94,3 @@ impl Drop for RelationalBranchCoordinationGuard<'_> {
         let _ = &self.guard;
     }
 }
-
-#[cfg(test)]
-#[path = "coordination/managed_fork_cleanup.rs"]
-mod managed_fork_cleanup;

@@ -1,12 +1,14 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use super::{
+use super::allocation_inventory::{
     RelationalAuthoritativeAllocationKind, RelationalAuthoritativeAllocationLocator,
     RelationalAuthoritativeAllocationObservation,
 };
-use crate::branch::{RelationalBranchRoot, RelationalRootAuthoritativeAllocationKind};
-use crate::history::{RelationalCommitArtifact, RelationalCommitAuthoritativeAllocationKind};
-use crate::inspection::mvcc::retained_storage::RelationalRetainedStorageWork;
+use crate::branch::root::{RelationalBranchRoot, RelationalRootAuthoritativeAllocationKind};
+use crate::history::commit::{
+    RelationalCommitArtifact, RelationalCommitAuthoritativeAllocationKind,
+};
+use crate::inspection::mvcc::retained_storage::work::RelationalRetainedStorageWork;
 #[cfg(test)]
 #[path = "sharing_accounting/byte_bound_overflow_tests.rs"]
 mod byte_bound_overflow_tests;
@@ -55,7 +57,7 @@ impl RelationalAuthoritativeAllocationAccounting {
         root: &RelationalBranchRoot,
         artifact: &RelationalCommitArtifact,
         derived_cache_bytes: u64,
-    ) -> Result<(), crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial> {
+    ) -> Result<(), crate::inspection::mvcc::sharing::inspection_denial::RelationalBranchSharingInspectionDenial>{
         self.observe_root(runtime_instance_id, root)?;
         self.observe_commit_allocation(runtime_instance_id, artifact, derived_cache_bytes)?;
         Ok(())
@@ -65,7 +67,7 @@ impl RelationalAuthoritativeAllocationAccounting {
         &mut self,
         runtime_instance_id: u64,
         root: &RelationalBranchRoot,
-    ) -> Result<(), crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial> {
+    ) -> Result<(), crate::inspection::mvcc::sharing::inspection_denial::RelationalBranchSharingInspectionDenial>{
         if let Some(work) = self.census_work.as_mut() {
             work.roots += 1;
         }
@@ -87,12 +89,12 @@ impl RelationalAuthoritativeAllocationAccounting {
     /// unrepresentable total is refused rather than saturated.
     pub(in crate::inspection::mvcc) fn unique_bytes(
         &self,
-    ) -> Result<u64, crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial>
-    {
+    ) -> Result<u64, crate::inspection::mvcc::sharing::inspection_denial::RelationalBranchSharingInspectionDenial>
+{
         self.allocations
             .values()
             .try_fold(0_u64, |total, bytes| total.checked_add(*bytes))
-            .ok_or(crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial::AuthoritativeByteBoundOverflow)
+            .ok_or(crate::inspection::mvcc::sharing::inspection_denial::RelationalBranchSharingInspectionDenial::AuthoritativeByteBoundOverflow)
     }
 
     /// A subset of the rows behind `unique_bytes`; read only after that total.
@@ -130,8 +132,8 @@ impl RelationalAuthoritativeAllocationAccounting {
 
     pub(super) fn logical_bytes(
         &self,
-    ) -> Result<u64, crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial>
-    {
+    ) -> Result<u64, crate::inspection::mvcc::sharing::inspection_denial::RelationalBranchSharingInspectionDenial>
+{
         [
             self.logical_region_object_bytes,
             self.logical_root_metadata_bytes,
@@ -140,7 +142,7 @@ impl RelationalAuthoritativeAllocationAccounting {
         ]
         .into_iter()
         .try_fold(self.logical_partition_bytes, u64::checked_add)
-        .ok_or(crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial::AuthoritativeByteBoundOverflow)
+        .ok_or(crate::inspection::mvcc::sharing::inspection_denial::RelationalBranchSharingInspectionDenial::AuthoritativeByteBoundOverflow)
     }
 
     pub(super) fn excluded_unique_bytes(&self) -> (u64, u64, u64, u64) {
@@ -161,11 +163,11 @@ impl RelationalAuthoritativeAllocationAccounting {
         &mut self,
         runtime_instance_id: u64,
         root: &RelationalBranchRoot,
-    ) -> Result<(), crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial> {
+    ) -> Result<(), crate::inspection::mvcc::sharing::inspection_denial::RelationalBranchSharingInspectionDenial>{
         let start = self.census_work.as_ref().map(|_| std::time::Instant::now());
         for region in root.storage_regions() {
             let region = region.map_err(|_| {
-                crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial::AuthoritativeByteBoundOverflow
+                crate::inspection::mvcc::sharing::inspection_denial::RelationalBranchSharingInspectionDenial::AuthoritativeByteBoundOverflow
             })?;
             if let Some(work) = self.census_work.as_mut() {
                 work.region_entries += 1;
@@ -173,15 +175,15 @@ impl RelationalAuthoritativeAllocationAccounting {
             self.logical_partition_bytes = self
                 .logical_partition_bytes
                 .checked_add(region.authoritative_bytes)
-                .ok_or(crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial::AuthoritativeByteBoundOverflow)?;
+                .ok_or(crate::inspection::mvcc::sharing::inspection_denial::RelationalBranchSharingInspectionDenial::AuthoritativeByteBoundOverflow)?;
             self.logical_region_object_bytes = self
                 .logical_region_object_bytes
                 .checked_add(region.root_region_bytes)
                 .and_then(|bytes| bytes.checked_add(region.partition_state_bytes))
-                .ok_or(crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial::AuthoritativeByteBoundOverflow)?;
+                .ok_or(crate::inspection::mvcc::sharing::inspection_denial::RelationalBranchSharingInspectionDenial::AuthoritativeByteBoundOverflow)?;
             let partition = root
-                .partition_state(region.partition_id).map_err(crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial::StorageUnavailable)?
-                .ok_or(crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial::RootUnavailable)?;
+                .partition_state(region.partition_id).map_err(crate::inspection::mvcc::sharing::inspection_denial::RelationalBranchSharingInspectionDenial::StorageUnavailable)?
+                .ok_or(crate::inspection::mvcc::sharing::inspection_denial::RelationalBranchSharingInspectionDenial::RootUnavailable)?;
             for allocation in
                 crate::inspection::mvcc::partition_allocations::authoritative_partition_allocations(
                     runtime_instance_id,
@@ -223,7 +225,7 @@ impl RelationalAuthoritativeAllocationAccounting {
                     &mut self.seen_excluded,
                 )
             {
-                use crate::inspection::mvcc::allocation_ledger::RelationalExcludedAllocationLane;
+                use crate::inspection::mvcc::sharing::allocation_inventory::RelationalExcludedAllocationLane;
                 let mut bytes = RelationalExcludedAllocationBytes::default();
                 match lane {
                     RelationalExcludedAllocationLane::Diagnostics => {
@@ -256,8 +258,8 @@ impl RelationalAuthoritativeAllocationAccounting {
         &mut self,
         runtime_instance_id: u64,
         root: &RelationalBranchRoot,
-    ) -> Result<(), crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial> {
-        use crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial::AuthoritativeByteBoundOverflow;
+    ) -> Result<(), crate::inspection::mvcc::sharing::inspection_denial::RelationalBranchSharingInspectionDenial>{
+        use crate::inspection::mvcc::sharing::inspection_denial::RelationalBranchSharingInspectionDenial::AuthoritativeByteBoundOverflow;
         let start = self.census_work.as_ref().map(|_| std::time::Instant::now());
         if let Some(work) = self.census_work.as_mut() {
             work.schema_inventory_computations += 1;
@@ -332,8 +334,8 @@ impl RelationalAuthoritativeAllocationAccounting {
         runtime_instance_id: u64,
         artifact: &RelationalCommitArtifact,
         derived_cache_bytes: u64,
-    ) -> Result<(), crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial> {
-        use crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial::AuthoritativeByteBoundOverflow;
+    ) -> Result<(), crate::inspection::mvcc::sharing::inspection_denial::RelationalBranchSharingInspectionDenial>{
+        use crate::inspection::mvcc::sharing::inspection_denial::RelationalBranchSharingInspectionDenial::AuthoritativeByteBoundOverflow;
         let start = self.census_work.as_ref().map(|_| std::time::Instant::now());
         for allocation in artifact.authoritative_allocation_observations() {
             let kind = match allocation.kind {

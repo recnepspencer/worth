@@ -113,6 +113,6 @@ impl ReadmittedCanonicalCommit {
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> &mut crate::history::data::CanonicalCommitEnvelopeBody {
         self.journal = None;
-        self.positioned.positioned_envelope_mut_for_test(request)
+        crate::durability::canonical_commit_artifact::checkpoint_body::mutable_positioned_fixture_body(&mut self.positioned, request)
     }
 }

@@ -40,7 +40,7 @@
 #[path = "sharing_accounting.rs"]
 pub(super) mod accounting;
 #[path = "sharing_allocation_inventory.rs"]
-mod allocation_inventory;
+pub(super) mod allocation_inventory;
 #[path = "sharing_authoritative_byte_metrics.rs"]
 mod authoritative_byte_metrics;
 #[path = "sharing_authoritative_evidence_metrics.rs"]
@@ -52,7 +52,7 @@ mod coordination_metrics;
 #[path = "sharing_inspection.rs"]
 mod inspection;
 #[path = "sharing_inspection_denial.rs"]
-mod inspection_denial;
+pub(super) mod inspection_denial;
 #[path = "sharing_inventory.rs"]
 mod inventory;
 #[path = "sharing_observation.rs"]

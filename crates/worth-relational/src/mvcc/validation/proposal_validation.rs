@@ -4,8 +4,8 @@ use crate::transactions::data::outcomes::conflict_class::ConflictClass;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 
 use super::proposal_invariants::stale_validated_proposal;
-use super::proposal_source::RelationalProposalSource;
-use super::validated_proposal::{StrategyProposalDecoration, ValidatedRelationalProposal};
+use super::proposal_source::{RelationalProposalSource, StrategyProposalDecoration};
+use super::validated_proposal::ValidatedRelationalProposal;
 
 impl RelationalPreparationRuntime {
     pub(crate) fn validate_consulted_branch_transaction(

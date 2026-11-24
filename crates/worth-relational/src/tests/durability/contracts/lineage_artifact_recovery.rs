@@ -1,4 +1,5 @@
 use super::*;
+use crate::durability::canonical_commit_artifact::checkpoint_body::mutable_positioned_fixture_body;
 use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 
 #[test]
@@ -24,7 +25,7 @@ fn checkpoint_duplicate_lineage_event_ids_deny() {
         .expect("checkpoint")
         .envelopes
         .iter_mut()
-        .map(|commit| commit.positioned_envelope_mut_for_test(execution))
+        .map(|commit| mutable_positioned_fixture_body(commit, execution))
         .flat_map(|envelope| {
             envelope
                 .published_lineage_mut_for_test()
@@ -35,9 +36,7 @@ fn checkpoint_duplicate_lineage_event_ids_deny() {
     events[1].event_id = first_id;
     drop(events);
     for envelope in &mut plan.checkpoint.as_mut().expect("checkpoint").envelopes {
-        envelope
-            .positioned_envelope_mut_for_test(execution)
-            .rebuild_lineage_basis_for_test();
+        mutable_positioned_fixture_body(envelope, execution).rebuild_lineage_basis_for_test();
     }
 
     let error = recover_error(execution, plan);
@@ -178,16 +177,14 @@ fn checkpoint_lineage_commit_cross_splice_denies() {
             RecoveryMode::NormalRecoveryVerification,
         )
         .unwrap();
-    let event = plan.checkpoint.as_mut().expect("checkpoint").envelopes[0]
-        .positioned_envelope_mut_for_test(execution)
+    let positioned = &mut plan.checkpoint.as_mut().expect("checkpoint").envelopes[0];
+    let event = mutable_positioned_fixture_body(positioned, execution)
         .published_lineage_mut_for_test()
         .lineage_events_mut()
         .first_mut()
         .expect("checkpoint event");
     event.commit.commit_id = crate::history::data::CommitId(event.commit.commit_id.0 + 10);
-    plan.checkpoint.as_mut().expect("checkpoint").envelopes[0]
-        .positioned_envelope_mut_for_test(execution)
-        .rebuild_lineage_basis_for_test();
+    mutable_positioned_fixture_body(positioned, execution).rebuild_lineage_basis_for_test();
 
     let error = recover_error(execution, plan);
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);

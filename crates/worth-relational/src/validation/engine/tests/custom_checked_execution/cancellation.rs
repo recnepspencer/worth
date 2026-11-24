@@ -1,45 +1,59 @@
 use super::*;
+use crate::branch::basis_admission_tests::installed_history;
+use crate::config::data::RelationalRuntimeConfig;
+use crate::runtime::state::subsystems::{
+    history::HistorySubsystem,
+    services::instrumentation::RuntimeInstrumentation,
+    storage::{PartitionEditionCopyLane, StorageSubsystem},
+};
+use crate::storage::overlay::small_relation_partition::relation_partition;
+use crate::validation::engine::test_view::invariant_view_with_custom_rules;
 
 #[test]
 fn checked_custom_evaluation_observes_cancellation_during_structural_views() {
     for leased in [false, true] {
-        let host_request = crate::execution::test_policy::serial_request();
-        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
         let cancellation = CancellationSource::new();
         let target = Arc::new(OnceLock::new());
         let visits = Arc::new(AtomicUsize::new(0));
-        let runtime = RelationalRuntimeApi::builder()
-            .schema_registry(crate::tests::support::test_schema_registry())
-            .custom_invariant(
-                CustomInvariantRegistration::new(CheckedCounterRule {
-                    maximum_work_units: None,
-                    steps: 1_000,
-                    visits: Arc::clone(&visits),
-                    preparation_visits: Arc::new(AtomicUsize::new(0)),
-                    cancellation: Some(cancellation.clone()),
-                    preparation_steps: 0,
-                    preparation_scratch_bytes: 0,
-                    target: Some(Arc::clone(&target)),
-                })
-                .unwrap(),
-            )
-            .build()
-            .expect("valid native runtime configuration");
-        target
-            .set(create_entity_of_kind(
-                execution,
-                &runtime,
-                KindId(1),
-                "checked-cancel",
-            ))
-            .unwrap();
+        let partition = PartitionId::main();
+        let (state, entities, _) = relation_partition(partition, 1, &[]);
+        let storage = StorageSubsystem::default();
+        let copy_counters = std::sync::Mutex::default();
+        storage.install_owned(
+            &copy_counters,
+            PartitionEditionCopyLane::Ordinary,
+            [(partition, state)],
+        );
+        let edition = storage.acquire();
+        target.set(entities[0]).unwrap();
+        let history: HistorySubsystem = installed_history(1);
+        history.install_recovered_sequence_floor(2, 2);
+        let head = history.current_version_id();
+        let instrumentation = RuntimeInstrumentation::default();
+        let mut config = RelationalRuntimeConfig::default();
+        config.schema.registry = super::preparation::checked_structural_registry();
+        let view = invariant_view_with_custom_rules(
+            &instrumentation,
+            config,
+            head,
+            vec![CustomInvariantRegistration::new(CheckedCounterRule {
+                maximum_work_units: None,
+                steps: 1_000,
+                visits: Arc::clone(&visits),
+                preparation_visits: Arc::new(AtomicUsize::new(0)),
+                cancellation: Some(cancellation.clone()),
+                preparation_steps: 0,
+                preparation_scratch_bytes: 0,
+                target: Some(Arc::clone(&target)),
+            })
+            .unwrap()],
+        );
         let lease = checked_lease(8 * 1024 * 1024, 10_000, cancellation.token());
         let request = InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
-            &runtime.invariant_validation_view(),
-            InvariantObservation::committed(runtime.storage_access().current_edition()),
-            runtime.current_version_id(),
+            &view,
+            InvariantObservation::committed(edition),
+            head,
             None,
             None,
         );
@@ -50,10 +64,8 @@ fn checked_custom_evaluation_observes_cancellation_during_structural_views() {
         } else {
             worth_execution::ExecutionRequest::serial(&serial)
         };
-        let head = runtime.current_version_id();
-        let result = InvariantEngine::from_view(&runtime.invariant_validation_view())
-            .execute(&original, request);
-        assert_eq!(runtime.current_version_id(), head);
+        let result = InvariantEngine::from_view(&view).execute(&original, request);
+        assert_eq!(history.current_version_id(), head);
         let visited = visits.load(Ordering::SeqCst);
         assert!(
             visited > 0 && visited < 1_000,

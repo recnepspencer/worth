@@ -4,8 +4,6 @@ use super::{RelationalHeadRetentionObligation, RelationalRetentionAcquisitionDen
 use crate::branch::identity::RelationalBranchIdentity;
 use crate::branch::root::RelationalBranchRoot;
 use std::sync::{Arc, Mutex};
-#[cfg(test)]
-mod memory_close_tests;
 
 #[derive(Debug)]
 pub(crate) struct RelationalBranchHeadRetentionCell {
@@ -130,5 +128,26 @@ impl CheckedHeadObligation {
             .lock()
             .unwrap_or_else(|error| error.into_inner())
             .consume();
+    }
+}
+
+#[cfg(test)]
+pub(crate) struct HeadObligationObservation(Arc<Mutex<RelationalHeadRetentionObligation>>);
+
+#[cfg(test)]
+impl HeadObligationObservation {
+    pub(crate) fn is_live(&self) -> bool {
+        self.0.lock().unwrap().is_live()
+    }
+}
+
+#[cfg(test)]
+impl RelationalBranchHeadRetentionCell {
+    pub(crate) fn while_obligation_locked<R>(
+        &self,
+        action: impl FnOnce(HeadObligationObservation) -> R,
+    ) -> R {
+        let locked = self.obligation.lock().unwrap();
+        action(HeadObligationObservation(locked.as_ref().unwrap().clone()))
     }
 }

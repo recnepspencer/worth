@@ -1,6 +1,8 @@
 //! Proposal-owned projection of exact applied commands.
 use super::*;
+use crate::authority::commit::pipeline::{consult_stage, CommitStage};
 use crate::mvcc::validation::validated_proposal::ValidatedRelationalProposal;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
 
 impl ValidatedRelationalProposal {
     /// Application-authored touches after checking the sealed Native restoration inverse.
@@ -9,7 +11,7 @@ impl ValidatedRelationalProposal {
         &self,
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<ValidatedMutationTouches<'_>, ValidatedMutationTouchProjectionError> {
-        preparation::project(self, execution, true)
+        self.project_touches(execution, true, None)
     }
 
     /// Actor-only authoring in an admitted coupled group. The complete proposal
@@ -29,7 +31,7 @@ impl ValidatedRelationalProposal {
             }
             _ => None,
         };
-        preparation::project_commands(self, execution, true, commands)
+        self.project_touches(execution, true, commands)
     }
 
     /// Actor-only authoring of one later authored stage (`stage` 0 is the
@@ -52,12 +54,7 @@ impl ValidatedRelationalProposal {
             }
             _ => return None,
         };
-        Some(preparation::project_commands(
-            self,
-            execution,
-            true,
-            Some(&part.commands.plan().merged_intents),
-        ))
+        Some(self.project_touches(execution, true, Some(&part.commands.plan().merged_intents)))
     }
 
     /// One concrete producer's touches use its own applied command contribution,
@@ -80,12 +77,7 @@ impl ValidatedRelationalProposal {
             })
             .flat_map(|group| group.parts.iter())
             .rfind(|part| part.publication.producing_meaning() == Some(meaning))?;
-        Some(preparation::project_commands(
-            self,
-            execution,
-            false,
-            Some(&part.commands.plan().merged_intents),
-        ))
+        Some(self.project_touches(execution, false, Some(&part.commands.plan().merged_intents)))
     }
 
     /// O(reached intents + prior/supplied fields), plus canonical sorting.
@@ -94,6 +86,58 @@ impl ValidatedRelationalProposal {
         &self,
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<ValidatedMutationTouches<'_>, ValidatedMutationTouchProjectionError> {
-        preparation::project(self, execution, false)
+        self.project_touches(execution, false, None)
+    }
+
+    /// Sums the validated intents every touch projection on this thread examines
+    /// while `observe` runs. A cost court compares two sizes; nothing is decided here.
+    pub fn observe_touch_projection_work<R>(observe: impl FnOnce() -> R) -> (R, u64) {
+        super::work_observation::observe(observe)
+    }
+
+    fn project_touches<'p>(
+        &'p self,
+        execution: &ExecutionRequest<'_, '_>,
+        application_only: bool,
+        commands: Option<&'p [MutationIntent]>,
+    ) -> Result<ValidatedMutationTouches<'p>, ValidatedMutationTouchProjectionError> {
+        let consult = || {
+            consult_stage(execution, CommitStage::Validation)
+                .map_err(|stop| collection::execution(stop.into()))
+        };
+        let inverse_create =
+            |intent: &MutationIntent,
+             checkpoint: &mut dyn FnMut(
+                u64,
+            )
+                -> Result<(), ValidatedMutationTouchProjectionError>| {
+                authored_restoration::owns_create(self, intent, checkpoint)
+            };
+        preparation::project(
+            preparation::ProjectionInputs {
+                plan: self.state.prepared.plan.view(),
+                before: &self.state.prepared.working_state,
+                after: self.state.proposed_mutation.state(),
+                schema: &self.state.prepared.schema_authority,
+                deltas: &self
+                    .state
+                    .proposed_mutation
+                    .outcome
+                    .effect
+                    .publication
+                    .canonical_deltas,
+                work_budget: self.state.commit_work_budget.as_ref(),
+                consult: &consult,
+                inverse_create: application_only.then_some(&inverse_create as &_),
+            },
+            execution,
+            commands,
+            || {
+                if application_only {
+                    authored_restoration::validate(self, execution)?;
+                }
+                Ok(())
+            },
+        )
     }
 }

@@ -298,14 +298,8 @@ fn complete_partial_and_executed_no_data_publications_keep_unpatched_members_and
 #[path = "continuity_tests/dynamic.rs"]
 mod dynamic;
 
-#[path = "continuity_tests/partial_fields.rs"]
-mod partial_fields;
-
 #[path = "continuity_tests/retirement.rs"]
 mod retirement;
-
-#[path = "continuity_tests/routes.rs"]
-mod routes;
 
 #[path = "continuity_tests/fieldless.rs"]
 mod fieldless;

@@ -34,6 +34,7 @@ mod restoration_header;
 mod transaction_staging;
 
 mod request_owned_retention;
+mod required_output_continuity;
 
 mod snapshot_retention;
 

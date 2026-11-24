@@ -1,4 +1,4 @@
-mod normalized_continuation_proof;
+pub(crate) mod normalized_continuation_proof;
 mod subscriber_checkpoint;
 pub(crate) mod subscriber_contract;
 pub use normalized_continuation_proof::NormalizedContinuationProof;

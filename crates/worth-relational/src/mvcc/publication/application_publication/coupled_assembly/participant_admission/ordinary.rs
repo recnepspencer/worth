@@ -3,15 +3,14 @@ use super::*;
 use crate::transactions::data::primitives::EntityReference;
 
 pub(super) fn require(
-    candidate: &RelationalAuthoredCoupledCandidate<'_>,
+    binding: &BoundAuthoredCoupling,
     execution: &ExecutionRequest<'_, '_>,
     admission: &worth_proof::AdmittedRequiredOutputPublication,
     absence: &RelationalRequiredOutputRouteAbsence,
     meaning: &RequiredOutputPublicationMeaning,
     roles: &[RequiredOutputRoleTarget],
 ) -> Result<(), TransactionCommitError> {
-    let binding = candidate.binding;
-    let foreign = || part::reject(Cause::ForeignCoupledOwner, meaning.source_scope);
+    let foreign = || reject(Cause::ForeignCoupledOwner, meaning.source_scope);
     if !binding.owners.source.is_edit() {
         return Err(foreign());
     }
@@ -43,10 +42,7 @@ pub(super) fn require(
                 )
                 .map_err(custody::execution_stop)?;
                 if owner.origin.meaning.same_route(meaning) {
-                    return Err(part::reject(
-                        Cause::MissingCoupledOwner,
-                        meaning.source_scope,
-                    ));
+                    return Err(reject(Cause::MissingCoupledOwner, meaning.source_scope));
                 }
             }
             // Recheck current Native route presence, not the caller's ordinary label.

@@ -5,22 +5,18 @@ use crate::validation::{execution::InvariantStage, reduction::ReducedInvariantPr
 #[test]
 fn native_backing_stays_on_the_original_lease_until_final_projection_is_dropped() {
     let (fixture, hooks) = fixture(2);
-    let plan = fixture.merged_plan(fixture.chain_batch(1));
+    let plan = fixture.plan(1);
     let request = InvariantExecutionRequest::from_profile_with_contract(
         InvariantRequestProfile::CommitBoundary,
-        &fixture.runtime.invariant_validation_view(),
-        InvariantObservation::committed(fixture.runtime.storage_access().current_edition()),
-        fixture.runtime.current_version_id(),
+        &fixture.view(),
+        fixture.observation(),
+        fixture.version(),
         Some(&plan),
         None,
     );
-    let lease =
-        super::super::fixture::request(8 * 1024 * 1024, 4_000_000, CancellationToken::new(), None);
+    let lease = paid_dag_request(8 * 1024 * 1024, 4_000_000, CancellationToken::new(), None);
     let execution = ExecutionRequest::leased(&lease);
-    let view = fixture
-        .runtime
-        .invariant_validation_view()
-        .with_candidate_input_plan(&request);
+    let view = fixture.view().with_candidate_input_plan(&request);
     let stage = crate::validation::engine::stage_execution::execute_stage(
         &view,
         execution,
@@ -141,13 +137,13 @@ fn native_backing_stays_on_the_original_lease_until_final_projection_is_dropped(
 #[test]
 fn native_serial_omission_stays_usable_and_an_existing_accounted_ancestor_remains_authoritative() {
     let (fixture, hooks) = fixture(2);
-    let plan = fixture.merged_plan(fixture.chain_batch(1));
+    let plan = fixture.plan(1);
     let request = || {
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
-            &fixture.runtime.invariant_validation_view(),
-            InvariantObservation::committed(fixture.runtime.storage_access().current_edition()),
-            fixture.runtime.current_version_id(),
+            &fixture.view(),
+            fixture.observation(),
+            fixture.version(),
             Some(&plan),
             None,
         )
@@ -165,7 +161,7 @@ fn native_serial_omission_stays_usable_and_an_existing_accounted_ancestor_remain
     *hooks.native_probe.lock().unwrap() = Some(Arc::clone(&serial));
     assert!(serial.memory().is_none());
     let native = ExecutionRequest::serial(&serial);
-    let result = InvariantEngine::from_view(&fixture.runtime.invariant_validation_view())
+    let result = InvariantEngine::from_view(&fixture.view())
         .execute(&native, request())
         .unwrap();
     assert_eq!(result.results().len(), 2);
@@ -183,10 +179,7 @@ fn native_serial_omission_stays_usable_and_an_existing_accounted_ancestor_remain
     let (result, report) = ExecutionRequest::serial(&ancestor)
         .run(
             worth_execution::ExecutionWorkCeiling::new(Some(4_000_000)),
-            |_| {
-                InvariantEngine::from_view(&fixture.runtime.invariant_validation_view())
-                    .execute(&native, request())
-            },
+            |_| InvariantEngine::from_view(&fixture.view()).execute(&native, request()),
         )
         .unwrap();
     assert_eq!(result.unwrap().results().len(), 2);

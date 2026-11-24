@@ -8,13 +8,8 @@ use crate::storage::overlay::small_relation_partition::relation_partition;
 use crate::validation::engine::test_view::invariant_view_with_custom_rules;
 use std::collections::BTreeMap;
 
-#[test]
-fn checked_custom_preparation_reads_declared_structural_state() {
-    let target = Arc::new(OnceLock::new());
-    let preparation_visits = Arc::new(AtomicUsize::new(0));
-    let evaluation_visits = Arc::new(AtomicUsize::new(0));
-    let mut config = RelationalRuntimeConfig::default();
-    config.schema.registry = RelationalSchemaRegistry::new()
+pub(super) fn checked_structural_registry() -> RelationalSchemaRegistry {
+    RelationalSchemaRegistry::new()
         .register_entity_kind(EntityKindRegistration {
             kind_id: KindId(1),
             kind_name: "checked-structural".to_owned(),
@@ -22,7 +17,16 @@ fn checked_custom_preparation_reads_declared_structural_state() {
             schema_version_id: SchemaVersionId(1),
             aspect_contract_declarations: Default::default(),
         })
-        .unwrap();
+        .unwrap()
+}
+
+#[test]
+fn checked_custom_preparation_reads_declared_structural_state() {
+    let target = Arc::new(OnceLock::new());
+    let preparation_visits = Arc::new(AtomicUsize::new(0));
+    let evaluation_visits = Arc::new(AtomicUsize::new(0));
+    let mut config = RelationalRuntimeConfig::default();
+    config.schema.registry = checked_structural_registry();
     let id = PartitionId::main();
     let (partition, entities, _) = relation_partition(id, 1, &[]);
     let partitions = BTreeMap::from([(id, partition)]);

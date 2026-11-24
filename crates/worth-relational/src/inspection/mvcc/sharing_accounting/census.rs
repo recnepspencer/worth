@@ -1,10 +1,10 @@
 //! Owner-allocation union without per-root logical or excluded-lane inventories.
 //! Nested persistent aspect backing is visited at physical node/value granularity.
 use super::*;
-use crate::branch::{
+use crate::branch::root::{
     RelationalRootAllocationVisitor, RelationalRootAuthoritativeAllocationObservation,
 };
-use crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial as Denial;
+use crate::inspection::mvcc::sharing::inspection_denial::RelationalBranchSharingInspectionDenial as Denial;
 use crate::storage::{data::RelationalStorageUnavailable, overlay::PartitionState};
 
 impl RelationalAuthoritativeAllocationAccounting {
@@ -72,7 +72,7 @@ impl RelationalRootAllocationVisitor for CensusRootWalk<'_> {
     fn region(
         &mut self,
         region: Result<
-            crate::branch::RelationalRootRegionObservation,
+            crate::branch::root::RelationalRootRegionObservation,
             crate::storage::substrate::StorageAllocationOverflow,
         >,
         partition: Result<&PartitionState, RelationalStorageUnavailable>,

@@ -15,18 +15,17 @@ fn native_pass_preserves_custom_preparation_refusal_and_original_cancellation() 
         } else {
             Preparation::Refuse
         };
-        let plan = fixture.merged_plan(fixture.chain_batch(1));
+        let plan = fixture.plan(1);
         let request = InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
-            &fixture.runtime.invariant_validation_view(),
-            InvariantObservation::committed(fixture.runtime.storage_access().current_edition()),
-            fixture.runtime.current_version_id(),
+            &fixture.view(),
+            fixture.observation(),
+            fixture.version(),
             Some(&plan),
             None,
         );
-        let lease =
-            super::super::fixture::request(8 * 1024 * 1024, 4_000_000, cancellation.token(), None);
-        let outcome = InvariantEngine::from_view(&fixture.runtime.invariant_validation_view())
+        let lease = paid_dag_request(8 * 1024 * 1024, 4_000_000, cancellation.token(), None);
+        let outcome = InvariantEngine::from_view(&fixture.view())
             .execute(&ExecutionRequest::leased(&lease), request);
         if cancel {
             let Err(TransactionCommitError::Execution { denial, .. }) = outcome else {

@@ -6,18 +6,24 @@ mod structural_world;
 
 #[test]
 fn engine_executes_custom_invariant_packets() {
-    let runtime = RelationalRuntimeApi::builder()
-        .schema_registry(RelationalSchemaRegistry::new())
-        .custom_invariant(CustomInvariantRegistration::new(AlwaysViolatesCustomRule).unwrap())
-        .build()
-        .expect("valid native runtime configuration");
+    let instrumentation = crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation::default();
+    let version = crate::identity::data::VersionId(0);
+    let mut config = crate::config::data::RelationalRuntimeConfig::default();
+    config.schema.registry = RelationalSchemaRegistry::new();
+    let view = crate::validation::engine::test_view::invariant_view_with_custom_rules(
+        &instrumentation,
+        config,
+        version,
+        vec![CustomInvariantRegistration::new(AlwaysViolatesCustomRule).unwrap()],
+    );
+    let partitions = std::collections::BTreeMap::new();
 
-    let results = InvariantEngine::from_view(&runtime.invariant_validation_view()).execute_fixture(
+    let results = InvariantEngine::from_view(&view).execute_fixture(
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
-            &runtime.invariant_validation_view(),
-            InvariantObservation::committed(runtime.storage_access().current_edition()),
-            runtime.current_version_id(),
+            &view,
+            InvariantObservation::committed_branch(&partitions),
+            version,
             None,
             None,
         ),
@@ -38,20 +44,26 @@ fn engine_executes_custom_invariant_packets() {
 
 #[test]
 fn leased_opaque_custom_rule_is_denied_before_evaluation() {
-    let runtime = RelationalRuntimeApi::builder()
-        .schema_registry(RelationalSchemaRegistry::new())
-        .custom_invariant(CustomInvariantRegistration::new(PanicDuringEvaluateRule).unwrap())
-        .build()
-        .expect("valid native runtime configuration");
+    let instrumentation = crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation::default();
+    let version = crate::identity::data::VersionId(0);
+    let mut config = crate::config::data::RelationalRuntimeConfig::default();
+    config.schema.registry = RelationalSchemaRegistry::new();
+    let view = crate::validation::engine::test_view::invariant_view_with_custom_rules(
+        &instrumentation,
+        config,
+        version,
+        vec![CustomInvariantRegistration::new(PanicDuringEvaluateRule).unwrap()],
+    );
+    let partitions = std::collections::BTreeMap::new();
     let request = InvariantExecutionRequest::from_profile_with_contract(
         InvariantRequestProfile::CommitBoundary,
-        &runtime.invariant_validation_view(),
-        InvariantObservation::committed(runtime.storage_access().current_edition()),
-        runtime.current_version_id(),
+        &view,
+        InvariantObservation::committed_branch(&partitions),
+        version,
         None,
         None,
     );
-    let denial = InvariantEngine::from_view(&runtime.invariant_validation_view())
+    let denial = InvariantEngine::from_view(&view)
         .execute(
             &worth_execution::ExecutionRequest::leased(
                 &crate::execution::test_authority::test_execution_lease(),
@@ -75,20 +87,24 @@ fn leased_opaque_custom_rule_is_denied_before_evaluation() {
 
 #[test]
 fn engine_executes_graph_composition_custom_invariant_packets() {
-    let runtime = RelationalRuntimeApi::builder()
-        .schema_registry(RelationalSchemaRegistry::new())
-        .custom_invariant(
-            CustomInvariantRegistration::new(GraphCompositionViolatesCustomRule).unwrap(),
-        )
-        .build()
-        .expect("valid native runtime configuration");
+    let instrumentation = crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation::default();
+    let version = crate::identity::data::VersionId(0);
+    let mut config = crate::config::data::RelationalRuntimeConfig::default();
+    config.schema.registry = RelationalSchemaRegistry::new();
+    let view = crate::validation::engine::test_view::invariant_view_with_custom_rules(
+        &instrumentation,
+        config,
+        version,
+        vec![CustomInvariantRegistration::new(GraphCompositionViolatesCustomRule).unwrap()],
+    );
+    let partitions = std::collections::BTreeMap::new();
 
-    let results = InvariantEngine::from_view(&runtime.invariant_validation_view()).execute_fixture(
+    let results = InvariantEngine::from_view(&view).execute_fixture(
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::GraphComposition,
-            &runtime.invariant_validation_view(),
-            InvariantObservation::committed(runtime.storage_access().current_edition()),
-            runtime.current_version_id(),
+            &view,
+            InvariantObservation::committed_branch(&partitions),
+            version,
             None,
             None,
         ),
@@ -117,18 +133,16 @@ fn engine_executes_graph_composition_custom_invariant_packets() {
 
 #[test]
 fn engine_executes_custom_packets_against_real_structural_surfaces() {
-    let host_request = crate::execution::test_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let structural = || CustomInvariantRegistration::new(StructuralSurfaceRule).unwrap();
     let rejects = || CustomInvariantRegistration::new(RejectsPlannedRelationRule).unwrap();
-    let shared = StructuralWorld::install(execution, [structural(), rejects()]);
+    let shared = StructuralWorld::install([structural(), rejects()]);
     // Each rule installed alone materializes every input it asks for. Sharing
     // must answer exactly that demand, so the shared lookups equal their sum,
     // and it must read fewer inputs physically: an input both rules ask for is
     // read once and reused, beyond what each rule already reuses alone.
     let alone = [
-        StructuralWorld::install(execution, [structural()]),
-        StructuralWorld::install(execution, [rejects()]),
+        StructuralWorld::install([structural()]),
+        StructuralWorld::install([rejects()]),
     ];
     let lookups_and_reuse_alone = |worlds: &[StructuralWorld; 2]| {
         worlds.iter().fold((0, 0), |(lookups, reuse), world| {
@@ -164,8 +178,10 @@ fn engine_executes_custom_packets_against_real_structural_surfaces() {
     assert!(counters.custom_invariant_candidate_reuse_hits > reuse);
     assert!(counters.custom_invariant_traversal_frontier_count >= 2);
 
-    shared.commit_edge(execution);
-    alone.iter().for_each(|world| world.commit_edge(execution));
+    shared.install_committed_edge();
+    alone
+        .iter()
+        .for_each(|world| world.install_committed_edge());
     let (after_topology_change, changed_counters) = shared.evaluate();
     assert_eq!(after_topology_change.results().len(), 2);
     assert!(matches!(
@@ -187,19 +203,24 @@ fn engine_executes_custom_packets_against_real_structural_surfaces() {
 
 #[test]
 fn engine_captures_custom_prepare_panics_as_typed_failures() {
-    let runtime = RelationalRuntimeApi::builder()
-        .schema_registry(RelationalSchemaRegistry::new())
-        .custom_invariant(CustomInvariantRegistration::new(PanicDuringPrepareRule).unwrap())
-        .build()
-        .expect("valid native runtime configuration");
-    runtime.performance_access().reset_counters();
+    let instrumentation = crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation::default();
+    let version = crate::identity::data::VersionId(0);
+    let mut config = crate::config::data::RelationalRuntimeConfig::default();
+    config.schema.registry = RelationalSchemaRegistry::new();
+    let view = crate::validation::engine::test_view::invariant_view_with_custom_rules(
+        &instrumentation,
+        config,
+        version,
+        vec![CustomInvariantRegistration::new(PanicDuringPrepareRule).unwrap()],
+    );
+    let partitions = std::collections::BTreeMap::new();
 
-    let results = InvariantEngine::from_view(&runtime.invariant_validation_view()).execute_fixture(
+    let results = InvariantEngine::from_view(&view).execute_fixture(
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
-            &runtime.invariant_validation_view(),
-            InvariantObservation::committed(runtime.storage_access().current_edition()),
-            runtime.current_version_id(),
+            &view,
+            InvariantObservation::committed_branch(&partitions),
+            version,
             None,
             None,
         ),
@@ -235,7 +256,7 @@ fn engine_captures_custom_prepare_panics_as_typed_failures() {
     }
     assert_eq!(results.summary().custom_failure_count(), 1);
     assert_eq!(results.summary().custom_panic_count(), 1);
-    let counters = runtime.performance_access().counters();
+    let counters = instrumentation.complexity_snapshot();
     assert_eq!(counters.custom_invariant_preparation_count, 1);
     assert_eq!(counters.custom_invariant_execution_count, 0);
     assert_eq!(counters.custom_invariant_panic_count, 1);
@@ -243,19 +264,24 @@ fn engine_captures_custom_prepare_panics_as_typed_failures() {
 
 #[test]
 fn engine_captures_custom_evaluate_panics_as_typed_failures() {
-    let runtime = RelationalRuntimeApi::builder()
-        .schema_registry(RelationalSchemaRegistry::new())
-        .custom_invariant(CustomInvariantRegistration::new(PanicDuringEvaluateRule).unwrap())
-        .build()
-        .expect("valid native runtime configuration");
-    runtime.performance_access().reset_counters();
+    let instrumentation = crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation::default();
+    let version = crate::identity::data::VersionId(0);
+    let mut config = crate::config::data::RelationalRuntimeConfig::default();
+    config.schema.registry = RelationalSchemaRegistry::new();
+    let view = crate::validation::engine::test_view::invariant_view_with_custom_rules(
+        &instrumentation,
+        config,
+        version,
+        vec![CustomInvariantRegistration::new(PanicDuringEvaluateRule).unwrap()],
+    );
+    let partitions = std::collections::BTreeMap::new();
 
-    let results = InvariantEngine::from_view(&runtime.invariant_validation_view()).execute_fixture(
+    let results = InvariantEngine::from_view(&view).execute_fixture(
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
-            &runtime.invariant_validation_view(),
-            InvariantObservation::committed(runtime.storage_access().current_edition()),
-            runtime.current_version_id(),
+            &view,
+            InvariantObservation::committed_branch(&partitions),
+            version,
             None,
             None,
         ),
@@ -291,7 +317,7 @@ fn engine_captures_custom_evaluate_panics_as_typed_failures() {
     }
     assert_eq!(results.summary().custom_failure_count(), 1);
     assert_eq!(results.summary().custom_panic_count(), 1);
-    let counters = runtime.performance_access().counters();
+    let counters = instrumentation.complexity_snapshot();
     assert_eq!(counters.custom_invariant_preparation_count, 1);
     assert_eq!(counters.custom_invariant_execution_count, 1);
     assert_eq!(counters.custom_invariant_panic_count, 1);
