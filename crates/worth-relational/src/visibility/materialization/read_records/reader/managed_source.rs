@@ -4,8 +4,6 @@ use crate::validation::candidate_source::denial::ManagedIndexSourcePreparationDe
 use crate::validation::candidate_source::program::ManagedIndexSourceProgram;
 use crate::visibility::materialization::read_records::reader::context::VisibilityReadContext;
 use crate::{identity::data::EntityId, snapshots::data::SnapshotHandle};
-use std::sync::Arc;
-use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 use worth_relational_branch::internal_port::branch::projection_view::managed_source::ManagedIndexSourceObservationOwnerPort as _;
 use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::view::VisibilityProjectionViewOwnerPort as _;
 use worth_relational_publication::internal_port::mvcc::publication::companion::cell::managed_source::{
@@ -142,10 +140,10 @@ impl VisibilityReadContext<'_> {
                             execution,
                             root,
                             &selected,
-                            |branch_id| {
-                                let branch = self.runtime.branch_identity(branch_id).ok()?;
-                                let basis = self.runtime.admit_branch_basis(&branch).ok()?;
-                                Some(Arc::clone(&basis.owner_inner().root))
+                            |branch_id, root| {
+                                self.runtime
+                                    .history
+                                    .branch_live_root_matches(branch_id, root)
                             },
                             &mut lookup_cleanup,
                         )

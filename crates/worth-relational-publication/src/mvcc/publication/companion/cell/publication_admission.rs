@@ -130,6 +130,18 @@ impl<T: Send + Sync + 'static> CompanionBranchCellSlot<T> {
             }
         }
     }
+    /// True only when an unpublished preflight cutover slot has expired with
+    /// no admitted cell and no live pending candidate retaining its core.
+    pub fn is_expired_pending(&self) -> bool {
+        match &self.source {
+            SlotSource::Head(_) => false,
+            SlotSource::Cutover(admission) => {
+                admission.cell.get().is_none()
+                    && admission.pending.upgrade().is_none()
+                    && admission.cell.get().is_none()
+            }
+        }
+    }
     /// Adopt a live, unpublished first candidate's exact cell. Native validates
     /// the runtime, branch, registration and expected head before rebinding the
     /// prepared wrapper to this candidate. Its topology pin admits one writer;

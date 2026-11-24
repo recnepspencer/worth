@@ -54,7 +54,11 @@ impl ManagedDerivedViewRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        if state.source_branches.contains_key(target.branch()) {
+        if state
+            .source_branches
+            .get(target.branch())
+            .is_some_and(|existing| !existing.slot.is_expired_pending())
+        {
             return Err(Stop::TopologyPending);
         }
         let slot = target.lookup_slot();
@@ -83,8 +87,9 @@ impl ManagedDerivedViewRegistry {
             slot,
             _allocation: Arc::clone(&entry.allocation),
         };
-        state.source_branches.insert(target.branch().clone(), entry);
+        let retired = state.source_branches.insert(target.branch().clone(), entry);
         drop(state);
+        drop(retired);
         Ok(Box::new(lookup))
     }
 }

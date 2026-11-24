@@ -257,6 +257,30 @@ impl HistorySubsystem {
         self.branch_cells.contains(branch_id)
     }
 
+    /// Compare a branch's live publication state directly to an already-pinned
+    /// root without allocating a basis or acquiring an observation obligation.
+    pub fn branch_live_root_matches(
+        &self,
+        branch_id: &BranchId,
+        root: &crate::branch::root::RelationalBranchRoot,
+    ) -> bool {
+        let Some(cell) = self.branch_cell(branch_id) else {
+            return false;
+        };
+        let publication = cell.publication_cell();
+        let state = publication.enter_state();
+        state.lifecycle_posture()
+            == crate::branch::lifecycle::RelationalBranchLifecyclePosture::Live
+            && state.selected_root().is_some_and(|current| {
+                std::ptr::eq(current.as_ref(), root)
+                    && crate::branch::basis_axis_validation::require_root_matches_reference(
+                        state.observation(),
+                        &current,
+                    )
+                    .is_ok()
+            })
+    }
+
     /// Require a branch cell already admitted by an exact checkpoint. Replay
     /// may not synthesize a cell from a legacy branch-head projection.
     pub fn require_recovered_branch(&self, branch_id: &BranchId) -> Result<(), String> {

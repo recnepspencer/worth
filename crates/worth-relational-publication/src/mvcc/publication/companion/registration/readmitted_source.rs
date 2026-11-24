@@ -27,7 +27,7 @@ pub fn install_readmitted_source_image(
     execution: &ExecutionRequest<'_, '_>,
     root: &RelationalBranchRoot,
     selected: &PositionedRelationalSnapshot,
-    admit_current_root: impl FnOnce(&BranchId) -> Option<Arc<RelationalBranchRoot>>,
+    matches_live_head: impl FnOnce(&BranchId, &RelationalBranchRoot) -> bool,
     lookup_cleanup: &mut Option<Box<dyn std::any::Any + Send + Sync>>,
 ) -> Result<ManagedSourceRootImage, Denial> {
     registry
@@ -43,11 +43,9 @@ pub fn install_readmitted_source_image(
             let _client = client.upgrade().ok_or(Denial::Registration(
                 PublicationCompanionRegistrationStop::RebindRequired,
             ))?;
-            let current_root =
-                admit_current_root(selected.branch_id()).ok_or(Denial::ForeignSource)?;
             if selected.runtime_instance_id() != runtime_instance_id
-                || !std::ptr::eq(current_root.as_ref(), root)
                 || !root.managed_source_image.is_readmitted()
+                || !matches_live_head(selected.branch_id(), root)
             {
                 return Err(Denial::ForeignSource);
             }
