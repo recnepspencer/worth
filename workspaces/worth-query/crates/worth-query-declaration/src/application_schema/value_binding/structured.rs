@@ -11,6 +11,32 @@ use super::ApplicationValueValidationDenial;
 /// (`Option<T>` vs `T`), and exact inner Rust [`TypeId`] (behind `fn() -> TypeId`
 /// so private field types on public action structs never leak into public
 /// signatures).
+///
+/// Exact field-type witnesses reject deref coercions such as `Box<u64>` for
+/// `required("field", field: u64)`:
+/// ```compile_fail,E0308
+/// use worth_query_declaration::worth_query_structured_value_binding;
+/// struct BoxedField {
+///     field: Box<u64>,
+/// }
+/// worth_query_structured_value_binding!(BoxedBinding for BoxedField {
+///     identity: "example.boxed-field.v1",
+///     fields: [required("field", field: u64)],
+/// });
+/// ```
+///
+/// Deref coercions are likewise rejected for optional fields (`Box<Option<u64>>`
+/// for `optional("opt", opt: u64)`):
+/// ```compile_fail,E0308
+/// use worth_query_declaration::worth_query_structured_value_binding;
+/// struct BoxedOptional {
+///     opt: Box<Option<u64>>,
+/// }
+/// worth_query_structured_value_binding!(BoxedOptBinding for BoxedOptional {
+///     identity: "example.boxed-opt.v1",
+///     fields: [optional("opt", opt: u64)],
+/// });
+/// ```
 #[derive(Clone, Copy, Debug)]
 pub struct ApplicationDeclaredInputMember {
     member: &'static str,
@@ -19,13 +45,32 @@ pub struct ApplicationDeclaredInputMember {
 }
 
 impl ApplicationDeclaredInputMember {
-    /// Macro-only constructor emitted by `worth_query_structured_value_binding!`
-    /// alongside a compile-time field projection check on the bound input struct.
+    /// Macro-only constructor for a required declared input member backed by an
+    /// exact-type raw-pointer field witness on `Input` (sized `*const T` has no
+    /// deref coercions).
     #[doc(hidden)]
-    pub const fn from_binding_macro<Value: 'static>(member: &'static str, optional: bool) -> Self {
+    pub const fn required_from_binding_macro<Input: 'static, Value: 'static>(
+        member: &'static str,
+        _exact_witness: fn(&Input) -> *const Value,
+    ) -> Self {
         Self {
             member,
-            optional,
+            optional: false,
+            value_type_id: TypeId::of::<Value>,
+        }
+    }
+
+    /// Macro-only constructor for an optional declared input member backed by an
+    /// exact-type `*const Option<Value>` field witness on `Input` (sized
+    /// `*const Option<T>` has no deref coercions).
+    #[doc(hidden)]
+    pub const fn optional_from_binding_macro<Input: 'static, Value: 'static>(
+        member: &'static str,
+        _exact_witness: fn(&Input) -> *const Option<Value>,
+    ) -> Self {
+        Self {
+            member,
+            optional: true,
             value_type_id: TypeId::of::<Value>,
         }
     }

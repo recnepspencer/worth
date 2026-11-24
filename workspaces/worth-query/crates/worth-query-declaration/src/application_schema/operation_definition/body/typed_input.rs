@@ -1,8 +1,8 @@
 //! Compile-time-typed input-field references for authored operation bodies.
 //!
-//! Each reference is verified against the authoritative
-//! [`ApplicationStructuredValueBinding::DECLARED_INPUT_FIELDS`] metadata both
-//! at selector construction ([`ApplicationInputField::for_binding`],
+//! Each reference carries its issuing [`ApplicationStructuredValueBinding`]
+//! identity alongside its canonical member name, verified both at selector
+//! construction ([`ApplicationInputField::for_binding`],
 //! [`ApplicationOptionalInputField::for_binding`]) and when applied to an
 //! operation body via [`ApplicationOperationBodyBuilder`] /
 //! [`super::TypedApplicationOperationBodyBuilder`] against
@@ -58,11 +58,29 @@ where
     }
 }
 
+/// Verifies that a typed selector was issued by `OperationBinding` itself and
+/// matches its authoritative declared field inventory.
+fn verify_typed_input_selector<OperationBinding, Value>(
+    member: &str,
+    issuing_binding: fn() -> TypeId,
+    optional: bool,
+) -> Result<(), Denial>
+where
+    OperationBinding: ApplicationStructuredValueBinding,
+    Value: 'static,
+{
+    if issuing_binding() != TypeId::of::<OperationBinding>() {
+        return Err(Denial::InvalidInputMember);
+    }
+    verify_declared_input_member::<OperationBinding, Value>(member, optional)
+}
+
 /// A compile-time-typed reference to one required scalar field on `Input`.
 ///
-/// Carries no runtime authority: only the canonical input member name verified
-/// against the bound input's authoritative declared field inventory and checked
-/// against the target operation's `InputBinding` and record column.
+/// Carries no runtime authority: only the canonical input member name and
+/// issuing `InputBinding` identity verified against the bound input's
+/// authoritative declared field inventory and checked against the target
+/// operation's `InputBinding` and record column.
 ///
 /// No free-string constructor exists:
 /// ```compile_fail
@@ -77,6 +95,7 @@ where
 /// ```
 pub struct ApplicationInputField<Input, Value> {
     member: &'static str,
+    binding_type_id: fn() -> TypeId,
     marker: PhantomData<fn(&Input) -> Value>,
 }
 
@@ -99,7 +118,7 @@ impl<Input, Value> fmt::Debug for ApplicationInputField<Input, Value> {
 
 impl<Input, Value> PartialEq for ApplicationInputField<Input, Value> {
     fn eq(&self, other: &Self) -> bool {
-        self.member == other.member
+        self.member == other.member && (self.binding_type_id)() == (other.binding_type_id)()
     }
 }
 
@@ -122,6 +141,7 @@ impl<Input: 'static, Value: 'static> ApplicationInputField<Input, Value> {
         verify_declared_input_member::<Binding, Value>(member, false)?;
         Ok(Self {
             member,
+            binding_type_id: TypeId::of::<Binding>,
             marker: PhantomData,
         })
     }
@@ -129,9 +149,10 @@ impl<Input: 'static, Value: 'static> ApplicationInputField<Input, Value> {
 
 /// A compile-time-typed reference to one `Option<Value>` field on `Input`.
 ///
-/// Carries no runtime authority: only the canonical input member name verified
-/// against the bound input's authoritative declared field inventory and checked
-/// against the target operation's `InputBinding` and optional record column.
+/// Carries no runtime authority: only the canonical input member name and
+/// issuing `InputBinding` identity verified against the bound input's
+/// authoritative declared field inventory and checked against the target
+/// operation's `InputBinding` and optional record column.
 ///
 /// ```compile_fail
 /// use worth_query_declaration::facade::application_schema::ApplicationOptionalInputField;
@@ -139,6 +160,7 @@ impl<Input: 'static, Value: 'static> ApplicationInputField<Input, Value> {
 /// ```
 pub struct ApplicationOptionalInputField<Input, Value> {
     member: &'static str,
+    binding_type_id: fn() -> TypeId,
     marker: PhantomData<fn(&Input) -> Option<Value>>,
 }
 
@@ -161,7 +183,7 @@ impl<Input, Value> fmt::Debug for ApplicationOptionalInputField<Input, Value> {
 
 impl<Input, Value> PartialEq for ApplicationOptionalInputField<Input, Value> {
     fn eq(&self, other: &Self) -> bool {
-        self.member == other.member
+        self.member == other.member && (self.binding_type_id)() == (other.binding_type_id)()
     }
 }
 
@@ -184,6 +206,7 @@ impl<Input: 'static, Value: 'static> ApplicationOptionalInputField<Input, Value>
         verify_declared_input_member::<Binding, Value>(member, true)?;
         Ok(Self {
             member,
+            binding_type_id: TypeId::of::<Binding>,
             marker: PhantomData,
         })
     }
@@ -200,8 +223,9 @@ where
         field: Field,
         input: ApplicationInputField<Input, Field::Value>,
     ) -> Result<Self, Denial> {
-        verify_declared_input_member::<Operation::InputBinding, Field::Value>(
+        verify_typed_input_selector::<Operation::InputBinding, Field::Value>(
             input.member(),
+            input.binding_type_id,
             false,
         )?;
         self.expect_input(field, input.member())
@@ -213,8 +237,9 @@ where
         field: Field,
         input: ApplicationInputField<Input, Field::Value>,
     ) -> Result<Self, Denial> {
-        verify_declared_input_member::<Operation::InputBinding, Field::Value>(
+        verify_typed_input_selector::<Operation::InputBinding, Field::Value>(
             input.member(),
+            input.binding_type_id,
             false,
         )?;
         self.assign_input(field, input.member())
@@ -226,8 +251,9 @@ where
         field: Field,
         input: ApplicationInputField<Input, Field::Value>,
     ) -> Result<Self, Denial> {
-        verify_declared_input_member::<Operation::InputBinding, Field::Value>(
+        verify_typed_input_selector::<Operation::InputBinding, Field::Value>(
             input.member(),
+            input.binding_type_id,
             false,
         )?;
         self.set_optional_input(field, input.member())
@@ -239,8 +265,9 @@ where
         field: Field,
         input: ApplicationOptionalInputField<Input, Field::Value>,
     ) -> Result<Self, Denial> {
-        verify_declared_input_member::<Operation::InputBinding, Field::Value>(
+        verify_typed_input_selector::<Operation::InputBinding, Field::Value>(
             input.member(),
+            input.binding_type_id,
             true,
         )?;
         self.assign_optional_input(field, input.member())
@@ -258,7 +285,11 @@ where
         Selected: OperationReads<Operation>,
         F: RecordSelection<Entity = Selected>,
     {
-        verify_declared_input_member::<Operation::InputBinding, F::Value>(input.member(), false)?;
+        verify_typed_input_selector::<Operation::InputBinding, F::Value>(
+            input.member(),
+            input.binding_type_id,
+            false,
+        )?;
         self.expect_input_from_path(path, field, input.member())
     }
 
@@ -277,7 +308,11 @@ where
         F: RecordSelection<Entity = Selected>,
         F::Binding: ApplicationIdentityScalarValueBinding,
     {
-        verify_declared_input_member::<Operation::InputBinding, F::Value>(input.member(), true)?;
+        verify_typed_input_selector::<Operation::InputBinding, F::Value>(
+            input.member(),
+            input.binding_type_id,
+            true,
+        )?;
         self.replace_relation_from_input(relation, identity, input.member(), key)
     }
 }
@@ -294,8 +329,9 @@ where
         field: Selection,
         input: ApplicationInputField<Input, Selection::Value>,
     ) -> Result<Self, Denial> {
-        verify_declared_input_member::<Operation::InputBinding, Selection::Value>(
+        verify_typed_input_selector::<Operation::InputBinding, Selection::Value>(
             input.member(),
+            input.binding_type_id,
             false,
         )?;
         self.initialize_input(field, input.member())
@@ -307,8 +343,9 @@ where
         field: Selection,
         input: ApplicationOptionalInputField<Input, Selection::Value>,
     ) -> Result<Self, Denial> {
-        verify_declared_input_member::<Operation::InputBinding, Selection::Value>(
+        verify_typed_input_selector::<Operation::InputBinding, Selection::Value>(
             input.member(),
+            input.binding_type_id,
             true,
         )?;
         self.initialize_optional_input(field, input.member())

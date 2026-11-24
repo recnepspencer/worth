@@ -143,15 +143,27 @@ fn fixed_inbox(_: &NoFieldsAction) -> u64 {
 )]
 pub struct NoFieldsAction;
 
-// A separate binding for `Rename` that declares NO closed field inventory, proving
-// `TypedApplicationOperationBodyBuilder` re-verifies every selector against
-// `Operation::InputBinding` (not merely the `Input` type).
+// A separate binding for `Rename` that declares NO closed field inventory,
+// plus a second binding that declares the EXACT SAME field shape (`title: String`),
+// proving `TypedApplicationOperationBodyBuilder` checks issuing binding identity
+// as well as canonical member shape.
 worth_query_structured_value_binding!(pub UnshapedRenameInput for Rename {
     identity: "macros.parity.unshaped-rename.input.v1",
     capture_input: true,
 });
 worth_query_operation!(
     pub UnshapedRenameOp for Schema, input UnshapedRenameInput;
+    access { read_fields: [TaskKey::at("TaskKey")]; };
+    reads [Task];
+    writes [Task]
+);
+worth_query_structured_value_binding!(pub SameShapeRenameInput for Rename {
+    identity: "macros.parity.same-shape-rename.input.v1",
+    capture_input: true,
+    fields: [required("task", task: u64), required("title", title: String)],
+});
+worth_query_operation!(
+    pub SameShapeRenameOp for Schema, input SameShapeRenameInput;
     access { read_fields: [TaskKey::at("TaskKey")]; };
     reads [Task];
     writes [Task]
@@ -229,6 +241,25 @@ fn private_member_compiles_without_e0446_and_unverified_selectors_are_refused() 
             .err(),
         Some(ApplicationOperationBodyAuthoringDenial::InvalidInputMember)
     );
+    // Even a distinct binding with the IDENTICAL field shape (`SameShapeRenameInput`)
+    // refuses a selector minted by `RenameInput`, and accepts only its own selector.
+    assert_eq!(
+        SameShapeRenameOp::reference()
+            .typed_body()
+            .assign_input(TaskFacts::title(), valid_for_rename)
+            .finish()
+            .err(),
+        Some(ApplicationOperationBodyAuthoringDenial::InvalidInputMember)
+    );
+    let own_same_shape =
+        ApplicationInputField::<Rename, String>::for_binding::<SameShapeRenameInput>("title")
+            .expect("same-shape binding mints its own selector");
+    assert_ne!(own_same_shape, valid_for_rename);
+    assert!(SameShapeRenameOp::reference()
+        .typed_body()
+        .assign_input(TaskFacts::title(), own_same_shape)
+        .finish()
+        .is_ok());
 }
 
 // --- Fix 3: Item-level correction hygiene traps ---
@@ -236,6 +267,10 @@ mod correction_item_hygiene {
     use super::*;
 
     type __WorthCorrectionVisitor = Schema;
+    #[allow(non_camel_case_types)]
+    type __WorthCorrectionSchema = Schema;
+    #[allow(non_upper_case_globals)]
+    const __worth_correction_call_demand: usize = 8;
     #[allow(non_upper_case_globals, dead_code)]
     const __worth_correction_key: &str = "sentinel";
     #[allow(non_upper_case_globals, dead_code)]
@@ -292,14 +327,14 @@ mod correction_item_hygiene {
 
     #[derive(WorthQueryCorrection)]
     #[worth_query(
-        schema = __WorthCorrectionVisitor,
+        schema = r#__WorthCorrectionSchema,
         identity = "macros.parity.item-hygiene-default-key.v1",
         source = CompleteBinding,
         inverse = RestoreCompletion,
         disclosure = DetailsBinding,
         source_body = complete_body,
         preimage_fields(TaskFacts::done()),
-        preimage_bytes = 8,
+        preimage_bytes = __worth_correction_call_demand,
         derive = trap_derive,
     )]
     pub struct ConstKeyDefaultParserTrapCorrection;

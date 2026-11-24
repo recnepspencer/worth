@@ -134,4 +134,21 @@ fn recorded_inverse_correction_expands_source_body_preimage_and_dispatch() {
         "{expanded}"
     );
     assert!(!expanded.contains("fn source_body"), "{expanded}");
+
+    let raw_and_demand = syn::parse_str(
+        "#[worth_query(schema = r#__WorthCorrectionSchema, namespace = NS, source = CompleteBinding, \
+         inverse = RestoreCompletion, disclosure = DetailsBinding, preimage_fields(TaskFacts::done()), \
+         preimage_bytes = __worth_correction_call_demand, derive = derive_restore)] \
+         pub struct RawAndDemandTrap;",
+    )
+    .unwrap();
+    let expanded = expand(&raw_and_demand).unwrap().to_string();
+    assert!(
+        expanded.contains("type __WorthCorrectionSchema_1 = r#__WorthCorrectionSchema ;"),
+        "{expanded}"
+    );
+    assert!(
+        expanded.contains("fn __worth_correction_call_demand_1 ()"),
+        "{expanded}"
+    );
 }

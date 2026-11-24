@@ -38,21 +38,18 @@ macro_rules! worth_query_structured_value_binding {
             }
         }
     };
-    (@field $Value:ty, required, $wire:literal, $field:ident, $fty:ty) => {{
-        const _: fn(&$Value) -> &$fty = |__worth_input: &$Value| &__worth_input.$field;
-        $crate::facade::application_schema::ApplicationDeclaredInputMember::from_binding_macro::<$fty>(
-            $wire,
-            false,
-        )
-    }};
-    (@field $Value:ty, optional, $wire:literal, $field:ident, $fty:ty) => {{
-        const _: fn(&$Value) -> &::core::option::Option<$fty> =
-            |__worth_input: &$Value| &__worth_input.$field;
-        $crate::facade::application_schema::ApplicationDeclaredInputMember::from_binding_macro::<$fty>(
-            $wire,
-            true,
-        )
-    }};
+    (@field $Value:ty, required, $wire:literal, $field:ident, $fty:ty) => {
+        $crate::facade::application_schema::ApplicationDeclaredInputMember::required_from_binding_macro::<
+            $Value,
+            $fty,
+        >($wire, |__worth_input: &$Value| &raw const __worth_input.$field)
+    };
+    (@field $Value:ty, optional, $wire:literal, $field:ident, $fty:ty) => {
+        $crate::facade::application_schema::ApplicationDeclaredInputMember::optional_from_binding_macro::<
+            $Value,
+            $fty,
+        >($wire, |__worth_input: &$Value| &raw const __worth_input.$field)
+    };
     (@validate $identity:expr, $value:ident, $validate:path) => {
         ($validate)($value).map_err(|reason| {
             $crate::facade::application_schema::ApplicationValueValidationDenial::rejected(

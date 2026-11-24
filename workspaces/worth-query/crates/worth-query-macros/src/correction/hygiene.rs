@@ -1,9 +1,11 @@
 //! Fresh def-site (`mixed_site`) identifiers for `#[derive(WorthQueryCorrection)]`.
 //!
-//! Ensures generated type aliases, outer callback helper names, and the
-//! `visit` generic parameter never collide with any caller identifier, while
-//! parameter/local names are isolated inside an inner `const _: ()` block.
-use super::grammar::CorrectionDeclaration;
+//! Walks every interpolated caller token stream (including `identity`
+//! namespaces, `demand` callbacks, `preimage_fields`, and `preimage_bytes`
+//! expressions) and normalizes `r#` raw identifiers before selecting fresh
+//! names for generated type aliases, outer callback helpers, and the `visit`
+//! generic parameter.
+use super::grammar::{CorrectionDeclaration, CorrectionIdentity, PreImageDemandSpec};
 use proc_macro2::{Span, TokenStream, TokenTree};
 use quote::ToTokens;
 use std::collections::BTreeSet;
@@ -63,12 +65,38 @@ impl HygienicNames {
 
 fn collect_used_idents(input: &DeriveInput, spec: &CorrectionDeclaration) -> BTreeSet<String> {
     let mut used = BTreeSet::new();
+    for reserved in [
+        "__worth_correction_bytes",
+        "__worth_correction_expected",
+        "__worth_correction_bounds",
+        "__worth_correction_original",
+        "__worth_correction_material",
+        "__worth_correction_preimage",
+        "__worth_correction_key",
+        "__worth_correction_dispatch",
+    ] {
+        used.insert(reserved.to_owned());
+    }
     collect_stream_idents(input.ident.to_token_stream(), &mut used);
     collect_stream_idents(spec.schema.to_token_stream(), &mut used);
     collect_stream_idents(spec.source.to_token_stream(), &mut used);
     collect_stream_idents(spec.inverse.to_token_stream(), &mut used);
     collect_stream_idents(spec.disclosure.to_token_stream(), &mut used);
     collect_stream_idents(spec.derive_fn.to_token_stream(), &mut used);
+    if let CorrectionIdentity::Namespace(ns) = &spec.identity {
+        collect_stream_idents(ns.to_token_stream(), &mut used);
+    }
+    match &spec.demand {
+        PreImageDemandSpec::Function(func) => {
+            collect_stream_idents(func.to_token_stream(), &mut used);
+        }
+        PreImageDemandSpec::Fields { fields, bytes } => {
+            for field in fields {
+                collect_stream_idents(field.to_token_stream(), &mut used);
+            }
+            collect_stream_idents(bytes.to_token_stream(), &mut used);
+        }
+    }
     if let Some(cap) = &spec.capability {
         collect_stream_idents(cap.to_token_stream(), &mut used);
     }
@@ -91,7 +119,9 @@ fn collect_stream_idents(stream: TokenStream, out: &mut BTreeSet<String>) {
     for tree in stream {
         match tree {
             TokenTree::Ident(ident) => {
-                out.insert(ident.to_string());
+                let text = ident.to_string();
+                let normalized = text.strip_prefix("r#").unwrap_or(&text);
+                out.insert(normalized.to_owned());
             }
             TokenTree::Group(group) => collect_stream_idents(group.stream(), out),
             TokenTree::Punct(_) | TokenTree::Literal(_) => {}
