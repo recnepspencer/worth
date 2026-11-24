@@ -56,6 +56,7 @@ where
             ));
         }
         Fact::Aggregate { .. }
+        | Fact::PersistentGroup { .. }
         | Fact::ManagedIndexSource { .. }
         | Fact::SourceReadAuthorization { .. } => {
             return Err(FactKeyProjectionStop::FullVerificationRequired(

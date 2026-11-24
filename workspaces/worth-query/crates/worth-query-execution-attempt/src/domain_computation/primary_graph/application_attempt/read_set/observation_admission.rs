@@ -127,6 +127,12 @@ pub(super) fn graph_read_scope_matches_key(
             WorthQueryOperationGraphReadScope::Entity(scope),
             WorthQueryApplicationFactKey::Entity { entity, .. },
         ) => scope.semantic_key() == entity,
+        // A group read rests on member names, admitted under the declared
+        // read of the member kind.
+        (
+            WorthQueryOperationGraphReadScope::Entity(scope),
+            WorthQueryApplicationFactKey::PersistentGroup(read),
+        ) => scope.semantic_key() == read.member_kind,
         (
             WorthQueryOperationGraphReadScope::NativeProjection(scope),
             WorthQueryApplicationFactKey::Field {
@@ -159,7 +165,13 @@ pub(super) fn graph_reads_exactly_cover_fact_keys<'key>(
     for scope in contract.roles().iter().flat_map(|role| role.read_scopes()) {
         let actual = keys
             .clone()
-            .filter(|key| !matches!(key, WorthQueryApplicationFactKey::AspectPresence { .. }))
+            .filter(|key| {
+                !matches!(
+                    key,
+                    WorthQueryApplicationFactKey::AspectPresence { .. }
+                        | WorthQueryApplicationFactKey::PersistentGroup(_)
+                )
+            })
             .filter(|key| graph_read_scope_matches_key(scope, key))
             .count();
         let covered = match scope {

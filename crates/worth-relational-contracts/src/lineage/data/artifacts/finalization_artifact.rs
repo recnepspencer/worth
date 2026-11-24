@@ -27,6 +27,8 @@ pub struct LineageFinalizationArtifact {
     counters: LineageArtifactCounters,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     relation_lineages: Vec<(RelationId, LineageId)>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    group_lineage: Vec<u8>,
 }
 
 impl LineageFinalizationArtifact {
@@ -54,6 +56,7 @@ impl LineageFinalizationArtifact {
             digest_basis,
             counters,
             relation_lineages: Vec::new(),
+            group_lineage: Vec::new(),
         }
     }
 
@@ -62,6 +65,12 @@ impl LineageFinalizationArtifact {
         relation_lineages: Vec<(RelationId, LineageId)>,
     ) -> Self {
         self.relation_lineages = relation_lineages;
+        self
+    }
+
+    /// Attaches this commit's canonical group lineage frame.
+    pub fn with_group_lineage(mut self, group_lineage: Vec<u8>) -> Self {
+        self.group_lineage = group_lineage;
         self
     }
 
@@ -95,6 +104,7 @@ impl LineageFinalizationArtifact {
             *self.counters(),
         )
         .with_relation_lineages(self.relation_lineages.clone())
+        .with_group_lineage(self.group_lineage.clone())
     }
 }
 
@@ -132,6 +142,11 @@ impl PreparedLineageFinalization {
         self
     }
 
+    /// Attaches the commit's canonical group lineage frame.
+    pub fn attach_group_lineage(&mut self, group_lineage: Vec<u8>) {
+        self.artifact.group_lineage = group_lineage;
+    }
+
     pub fn take_entity_bindings(&mut self) -> Vec<(crate::identity::data::EntityId, LineageId)> {
         std::mem::take(&mut self.entity_bindings)
     }
@@ -144,7 +159,7 @@ impl PreparedLineageFinalization {
         &self.new_relation_lineages
     }
 
-    pub(crate) fn new_nodes(&self) -> &[crate::lineage::data::LineageNode] {
+    pub fn new_nodes(&self) -> &[crate::lineage::data::LineageNode] {
         &self.new_nodes
     }
 

@@ -171,6 +171,7 @@ pub fn select(
             Fact::DerivedSource { .. } => return Err(unsupported("DerivedSource", fact)),
             Fact::StructuralWalk { .. } => return Err(unsupported("StructuralWalk", fact)),
             Fact::Aggregate { .. } => return Err(unsupported("Aggregate", fact)),
+            Fact::PersistentGroup { .. } => return Err(unsupported("PersistentGroup", fact)),
             Fact::ComponentSelection { .. } => return Err(unsupported("ComponentSelection", fact)),
             Fact::SourcePublication { .. } => return Err(unsupported("SourcePublication", fact)),
             Fact::ManagedIndexSource { observation } => {

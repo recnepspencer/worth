@@ -142,15 +142,13 @@ fn unsupported_format_versions_refuse_before_any_state() {
         PERSISTENT_NAME_DURABLE_FORMAT_VERSION
     );
     for at in [header_version, first_frame_version] {
-        for found in [0u8, 2] {
+        let supported = PERSISTENT_NAME_DURABLE_FORMAT_VERSION;
+        for found in [0u8, supported - 1, supported + 1] {
             let mut tampered = bytes.clone();
             tampered[at] = found;
             assert_eq!(
                 rebuild_name_index_from_durable_log(&tampered),
-                Err(PersistentNameDurabilityError::UnsupportedFormatVersion {
-                    found,
-                    supported: 1,
-                })
+                Err(PersistentNameDurabilityError::UnsupportedFormatVersion { found, supported })
             );
         }
     }

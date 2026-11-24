@@ -8,6 +8,9 @@ use super::naming::{
     PersistentNameBirthRequest, PersistentNameDiscriminatorReference, PersistentNameHolder,
     PersistentNameIdentity, PersistentNameSubjectKind,
 };
+use crate::aggregate_identity::transition::group::model::{
+    AggregateGroupScheme, AggregateMemberRole,
+};
 
 /// Exact entity or relation record targeted by a Phase 2 lineage posture claim.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -183,6 +186,37 @@ pub struct CommitNamingPlan {
     pub pending_splits: Vec<PendingSplitClaim>,
     pub pending_merges: Vec<PendingMergeClaim>,
     pub postures: Vec<LineagePostureClaim>,
+    /// Declared group partitions, one per installed group scheme.
+    pub groups: Vec<GroupPartitionClaim>,
+}
+
+impl CommitNamingPlan {
+    /// Declares one group scheme's partition (see [`GroupPartitionClaim`]).
+    pub fn declare_group_partition(
+        &mut self,
+        scheme: AggregateGroupScheme,
+        dissolved: Vec<worth_foundational::facade::AggregateIdentity>,
+        groups: Vec<Vec<(PersistentNameIdentity, AggregateMemberRole)>>,
+    ) {
+        let claim = GroupPartitionClaim {
+            scheme,
+            dissolved,
+            groups,
+        };
+        self.groups.push(claim);
+    }
+}
+
+/// One declared partition over an installed group scheme's changed scope.
+///
+/// Prior live groups sharing a member with `groups`, or losing a member this
+/// commit retires, join the scope; their undeclared live members stay grouped
+/// together unless the group is listed in `dissolved`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GroupPartitionClaim {
+    pub scheme: AggregateGroupScheme,
+    pub dissolved: Vec<worth_foundational::facade::AggregateIdentity>,
+    pub groups: Vec<Vec<(PersistentNameIdentity, AggregateMemberRole)>>,
 }
 
 /// Borrowed point-lookup view over authoritative branch naming state so commit

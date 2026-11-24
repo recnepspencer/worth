@@ -112,7 +112,7 @@ pub fn prepare_checkpoint_state(
     let lineage =
         contracts::storage::substrate::maintenance::reconstruction::ReconstructionLane::enter_reconstruction(|lane| {
             prepare_lineage(lane, inputs.lineage.snapshot(), checkpoint)
-        });
+        })?;
     let indexes =
         contracts::storage::substrate::maintenance::reconstruction::ReconstructionLane::enter_reconstruction(|lane| {
             prepare_indexes(lane, checkpoint, &prepared_history.history, work)
@@ -188,7 +188,7 @@ fn prepare_lineage(
     lane: &contracts::storage::substrate::maintenance::reconstruction::ReconstructionLane<'_>,
     mut lineage: LineageState,
     checkpoint: &DurableCheckpoint,
-) -> LineageState {
+) -> Result<LineageState, DurabilityError> {
     lineage.nodes = checkpoint
         .lineage
         .nodes()
@@ -208,6 +208,13 @@ fn prepare_lineage(
             );
         }
     }
+    super::recovered_group_lineage::install_recovered_group_lineage(
+        checkpoint
+            .envelopes
+            .iter()
+            .map(|positioned| positioned.envelope()),
+        |records| lineage.replace_group_lineage(records),
+    )?;
     for &(relation_id, lineage_id) in checkpoint.lineage.relation_lineages() {
         lineage.record_relation_lineage(relation_id, lineage_id);
     }
@@ -230,7 +237,7 @@ fn prepare_lineage(
     let mut events = events;
     events.sort_by_key(|(event, _)| *event.owner_event_id());
     lineage.replace_events(lane, events);
-    lineage
+    Ok(lineage)
 }
 
 fn prepare_indexes(

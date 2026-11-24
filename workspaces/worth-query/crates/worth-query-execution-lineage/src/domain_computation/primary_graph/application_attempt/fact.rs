@@ -14,6 +14,7 @@ pub mod locator_identity;
 pub mod applied_source_alignment;
 pub mod managed_source_read;
 pub mod movement;
+pub mod persistent_group;
 pub mod retirement_equality;
 pub mod source_currentness;
 pub mod source_read_authorization;
@@ -87,6 +88,8 @@ pub enum WorthQueryApplicationFactKey {
         direction: WorthQueryApplicationAdjacencyDirection,
         maximum_work_units: usize,
     },
+    /// A tracked persistent group read.
+    PersistentGroup(persistent_group::PersistentGroupRead),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -189,6 +192,11 @@ pub enum WorthQueryApplicationObservedFact {
         direction: WorthQueryApplicationAdjacencyDirection,
         maximum_work_units: usize,
         relations: Vec<WorthQueryApplicationObservedRelation>,
+    },
+    /// What a persistent group read observed in the derived name index.
+    PersistentGroup {
+        read: persistent_group::PersistentGroupRead,
+        answer: persistent_group::PersistentGroupAnswer,
     },
     /// Exact result of a bounded equality-index selection.
     ///

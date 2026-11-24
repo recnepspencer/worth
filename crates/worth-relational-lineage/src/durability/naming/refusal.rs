@@ -15,6 +15,8 @@ pub enum PersistentNameWireSection {
     LogHeader,
     FrameHeader,
     FramePayload,
+    /// A commit envelope's canonical group lineage frame.
+    GroupLineage,
 }
 
 /// Where an unverified 32-byte identity appeared.

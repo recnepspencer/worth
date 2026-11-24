@@ -208,6 +208,13 @@ pub fn readmit_lineage(
             lineage.record_relation_lineage(relation_id, lineage_id);
         }
     }
+    super::super::recovered_group_lineage::install_recovered_group_lineage(
+        checkpoint
+            .envelopes
+            .iter()
+            .map(|positioned| positioned.envelope()),
+        |records| lineage.replace_group_lineage(records),
+    )?;
     if has_naming_schemes {
         for page in &directory.manifest.lineage {
             lineage.demand_node(

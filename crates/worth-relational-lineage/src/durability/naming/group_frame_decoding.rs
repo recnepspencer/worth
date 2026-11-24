@@ -1,0 +1,170 @@
+//! Strict decoding of one commit's canonical group lineage frame.
+//!
+//! Every collection must appear in its one canonical ascending order and the
+//! frame must be consumed exactly. Member names are admitted as raw minted
+//! digests only for recovery to re-verify: the group naming authority re-runs
+//! each partition against the reconstructed prior groups, and the branch group
+//! state refuses any transition its own posture contradicts.
+
+use std::collections::BTreeSet;
+
+use worth_foundational::facade::AggregateIdentity;
+
+use crate::contracts::aggregate_identity::transition::group::model::{
+    AggregateContinuityRule, AggregateGroupAssignment, AggregateGroupMembers, AggregateGroupOrigin,
+    AggregateGroupScheme, AggregateGroupSchemeId, AggregateMemberRole,
+};
+use crate::contracts::aggregate_identity::transition::group::transition_result::AggregateGroupTransition;
+use crate::contracts::graph_member::NativeMemberKey;
+use crate::contracts::lineage::data::naming::{
+    PersistentNameIdentity, PersistentNameIdentityOwnerPort as _,
+};
+use crate::lineage::groups::{CommittedGroupTransition, GroupTransitionKind};
+
+use super::frame_decoding::{decode_entity, decode_group_event};
+use super::group_frame_encoding::{GROUP_FRAME_MAGIC, GROUP_FRAME_VERSION};
+use super::refusal::{PersistentNameDurabilityError as Refusal, PersistentNameWireSection};
+use super::wire::{read_strictly_ascending, WireReader};
+
+/// Decodes one commit's group lineage frame; no bytes decode to no
+/// transitions.
+///
+/// Complexity: O(frame bytes).
+pub fn decode_group_lineage_frame(bytes: &[u8]) -> Result<Vec<CommittedGroupTransition>, Refusal> {
+    if bytes.is_empty() {
+        return Ok(Vec::new());
+    }
+    let mut reader = WireReader::new(bytes, PersistentNameWireSection::GroupLineage);
+    if reader.take(GROUP_FRAME_MAGIC.len())? != GROUP_FRAME_MAGIC {
+        return Err(Refusal::UnrecognizedMagic {
+            section: PersistentNameWireSection::GroupLineage,
+        });
+    }
+    let version = reader.u8()?;
+    if version != GROUP_FRAME_VERSION {
+        return Err(Refusal::UnsupportedFormatVersion {
+            found: version,
+            supported: GROUP_FRAME_VERSION,
+        });
+    }
+    let transitions = read_strictly_ascending(
+        &mut reader,
+        "group transition scheme order",
+        decode_transition,
+        |committed| committed.scheme_id().to_owned(),
+    )?;
+    if transitions.is_empty() {
+        return Err(Refusal::NonCanonical {
+            field: "empty group lineage frame",
+        });
+    }
+    reader.finish()?;
+    Ok(transitions)
+}
+
+fn decode_transition(reader: &mut WireReader<'_>) -> Result<CommittedGroupTransition, Refusal> {
+    let kind_tag = reader.u8()?;
+    let kind = GroupTransitionKind::from_tag(kind_tag).ok_or(Refusal::InvalidTag {
+        field: "group transition kind",
+        tag: kind_tag,
+    })?;
+    let scheme_id = reader.text("group scheme id")?;
+    let scheme_id = AggregateGroupSchemeId::new(scheme_id).map_err(|_| Refusal::NonCanonical {
+        field: "group scheme id",
+    })?;
+    let rule = rule_from_tag(reader.u8()?)?;
+    let assignments = read_strictly_ascending(
+        reader,
+        "group assignment order",
+        decode_assignment,
+        |assignment| assignment.identity,
+    )?;
+    let retired = read_strictly_ascending(reader, "retired groups", read_group, |group| *group)?;
+    let lineage =
+        read_strictly_ascending(reader, "group lineage events", decode_group_event, |e| *e)?;
+    Ok(CommittedGroupTransition {
+        kind,
+        scheme: AggregateGroupScheme::new(scheme_id, rule),
+        transition: AggregateGroupTransition {
+            assignments,
+            retired: retired.into_iter().collect::<BTreeSet<_>>(),
+            lineage: lineage.into_iter().collect(),
+        },
+    })
+}
+
+fn read_group(reader: &mut WireReader<'_>) -> Result<AggregateIdentity, Refusal> {
+    Ok(AggregateIdentity::from_bytes(reader.digest()?))
+}
+
+fn decode_assignment(reader: &mut WireReader<'_>) -> Result<AggregateGroupAssignment, Refusal> {
+    let identity = read_group(reader)?;
+    let anchor = PersistentNameIdentity::from_minted_digest(reader.digest()?);
+    let sources = read_strictly_ascending(reader, "group sources", read_group, |source| *source)?;
+    let origin = match reader.u8()? {
+        1 => AggregateGroupOrigin::Kept,
+        2 => AggregateGroupOrigin::Born,
+        3 => AggregateGroupOrigin::Revived,
+        tag => {
+            return Err(Refusal::InvalidTag {
+                field: "group origin",
+                tag,
+            })
+        }
+    };
+    let members = read_strictly_ascending(reader, "group members", decode_member, |m| m.0)?;
+    let mut set = AggregateGroupMembers::new();
+    for (name, carrier, role) in members {
+        set.insert(name, carrier, role)
+            .map_err(|_| Refusal::NonCanonical {
+                field: "group members",
+            })?;
+    }
+    Ok(AggregateGroupAssignment {
+        identity,
+        anchor,
+        sources,
+        members: set,
+        origin,
+    })
+}
+
+type DecodedMember = (PersistentNameIdentity, NativeMemberKey, AggregateMemberRole);
+
+fn decode_member(reader: &mut WireReader<'_>) -> Result<DecodedMember, Refusal> {
+    let name = PersistentNameIdentity::from_minted_digest(reader.digest()?);
+    match reader.u8()? {
+        1 => {}
+        tag => {
+            return Err(Refusal::InvalidTag {
+                field: "group member carrier",
+                tag,
+            })
+        }
+    }
+    let carrier = NativeMemberKey::Entity(decode_entity(reader)?);
+    let role = match reader.u8()? {
+        1 => AggregateMemberRole::Ordinary,
+        2 => AggregateMemberRole::Anchor,
+        3 => AggregateMemberRole::Boundary,
+        tag => {
+            return Err(Refusal::InvalidTag {
+                field: "group member role",
+                tag,
+            })
+        }
+    };
+    Ok((name, carrier, role))
+}
+
+fn rule_from_tag(tag: u8) -> Result<AggregateContinuityRule, Refusal> {
+    match tag {
+        1 => Ok(AggregateContinuityRule::Anchor),
+        2 => Ok(AggregateContinuityRule::Boundary),
+        3 => Ok(AggregateContinuityRule::ProducerRole),
+        tag => Err(Refusal::InvalidTag {
+            field: "group continuity rule",
+            tag,
+        }),
+    }
+}

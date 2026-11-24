@@ -83,6 +83,7 @@ pub(super) fn readmit_commit_frame(
         relation_holders: frame.relation_holders,
         group_events: frame.group_events.into_iter().collect(),
         carriers,
+        group_schemes: frame.group_schemes,
     })
 }
 

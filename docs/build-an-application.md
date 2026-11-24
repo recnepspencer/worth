@@ -292,13 +292,38 @@ schema using `worth_query_decl::facade::application_naming`:
   `worth_query_decl::facade::worth_query_name_discriminator!`, encoding typed
   discriminator variants and any embedded `WorthQueryName<K>` references without
   raw floats or host-order maps.
-- **Group schemes** use `ApplicationGroupNameSchemeBuilder::<Schema, Group>::new(scheme_id, subject_name, rule)`
-  binding one closed `ApplicationGroupContinuityRule` (`Anchor`, `Boundary`, or
-  `ProducerRole`) to declared member roles, attached with
+- **Group schemes** bind one group kind (a type implementing
+  `ApplicationGroupKind`, whose `NAME` is the group name) to one closed
+  `ApplicationGroupContinuityRule` (`Anchor`, `Boundary`, or `ProducerRole`)
+  and typed member roles: `ApplicationGroupNameSchemeBuilder::<Schema, Group>::from_roles::<Role>(scheme_id, rule)`
+  with `.anchor(Role::Host)` / `.boundary(Role::Wall)`, attached with
   `ApplicationSchemaDeclarationBuilder::application_group_name_scheme::<Group>(scheme)`.
-  Installation validates and lowers group schemes, but no operation can yet
-  form or change a group, so Query has no tracked group reads (see the
-  [known gaps](capability-index.md#known-gaps)).
+  An operation never mints a group name. Its candidate writer (or a naming
+  scope's `declare_groups`) declares a `WorthQueryGroupPartition<Group>`:
+  which members belong together, each by `WorthQueryName`, `NameRef` or the
+  same-commit name of an output it just named, under a typed role, and which
+  held groups it `dissolve`s. Prior groups sharing a member, or losing a
+  member the commit retires, join the changed scope; their undeclared live
+  members stay grouped together unless dissolved. Relational's group naming
+  authority names the scope's next partition at commit finalization by the
+  declared rule (a keeper keeps its name; a successor is named from its
+  anchor and the groups it came from; re-forming a retired name revives it)
+  and refuses the whole commit typed (`LineageNameDenial::GroupNaming`:
+  `MemberNotLive`, `OverlappingMember`, `DuplicateMemberName`,
+  `MissingAnchorMember`, `UnknownGroup`, `LiveNameCollision`) with zero
+  effects. Edit-envelope stages and coupled producers compose their
+  partitions into the envelope's one plan. History navigation restores the
+  selected node's groups under their exact names. Each commit's group lineage
+  is one canonical frame in its envelope, so checkpoint restore, cold open
+  and journal replay rebuild every branch's groups byte for byte.
+  Decisions read groups with tracked `group_name_of::<Group, Member>` and
+  `resolve_group::<Group, Member>` (committed basis; a candidate-basis group
+  read refuses `CandidateGroupState`), with `Exact` / `Plural` / `Retired` /
+  `Ambiguous` parity: each read is a decision fact re-observed at seal, so a
+  commit that splits, merges, dissolves or re-members the group stales the
+  decision and an unrelated commit does not. `#[worth_query(group_name)]` on
+  a `WorthQueryProjection` field (`WorthQueryName<Group>` or `Option<..>`)
+  projects the group a row's own name belongs to in the same read.
 - **Commit-time birth minting** lowers installed schemes via
   `LoweredExecutionNameSchemeCatalog` and binds them into Relational's schema
   authority (`RelationalSchemaRegistry::install_persistent_name_schemes`).
@@ -633,8 +658,8 @@ replay:
   round retired. Every admitted read records the same decision facts as a
   committed read
   ([candidate-basis courts](../workspaces/worth-query/crates/worth-query-court-decl-host-persistent-naming/tests/worth_query_court_decl_host_persistent_naming/persistent_naming/coupled/candidate/mod.rs)).
-- Group names do not resolve at runtime yet: group transitions are not part
-  of the commit envelope.
+- Group reads answer at a committed basis: a candidate's own group
+  partitions publish only with its envelope.
 - Name reads refuse `SettlementInFlight` while any commit at or before the
   reader's basis is published but not yet settled, and read a runtime with
   no installed name schemes, including a cold-restored one, as having no
@@ -779,8 +804,11 @@ The runnable Slice 1B counterparts are the
 [fork-ancestry naming court](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_fork_ancestry.rs),
 [durable recovery court](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_durable_recovery.rs),
 [cold-directory checkpoint recovery court](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_cold_directory_recovery.rs),
-[durable naming schema-authority reopen court](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_schema_authority_reopen.rs), and
-[group-scheme installation court](../workspaces/worth-query/crates/worth-query-court-installation/tests/worth_query_court_installation/installation/naming_groups.rs).
+[durable naming schema-authority reopen court](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_schema_authority_reopen.rs),
+[group-scheme installation court](../workspaces/worth-query/crates/worth-query-court-installation/tests/worth_query_court_installation/installation/naming_groups.rs),
+[runtime group courts](../workspaces/worth-query/crates/worth-query-court-decl-host-persistent-naming/tests/worth_query_court_decl_host_persistent_naming/persistent_naming/groups/mod.rs),
+[durable group recovery court](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_group_durable_recovery.rs), and the
+[cell-complex consumer court](../workspaces/worth-query/crates/worth-query-court-decl-host-persistent-naming/tests/worth_query_court_decl_host_persistent_naming/persistent_naming/cell_complex.rs).
 
 ### 2.1 Declare operation access once
 

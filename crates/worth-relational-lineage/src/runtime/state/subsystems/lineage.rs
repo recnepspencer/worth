@@ -11,6 +11,7 @@ use worth_relational_storage::internal_port::storage::substrate::owned_state::Ru
 
 pub mod event_page;
 pub mod event_residency;
+pub mod group_states;
 pub mod name_indexes;
 pub mod naming_basis;
 pub mod naming_basis_binding;
@@ -306,6 +307,33 @@ impl LineageSubsystem {
         lane: &crate::contracts::storage::substrate::maintenance::reconstruction::ReconstructionLane<'_>,
     ) {
         self.state.write().finalize_cold_naming_basis(lane);
+    }
+
+    /// Replaces the published group lineage with recovered canonical records
+    /// after fork ancestry is recorded; refuses the first branch whose
+    /// records contradict its group posture.
+    pub fn replace_group_lineage(
+        &self,
+        records: Vec<(
+            BranchId,
+            CommitId,
+            Vec<crate::lineage::groups::CommittedGroupTransition>,
+        )>,
+    ) -> Result<(), (BranchId, crate::lineage::groups::GroupStateDenial)> {
+        self.state.write().replace_group_lineage(records)
+    }
+
+    /// The group transitions `branch` published at exactly `commit`.
+    pub fn published_group_lineage_at(
+        &self,
+        branch: &BranchId,
+        commit: CommitId,
+    ) -> Vec<crate::lineage::groups::CommittedGroupTransition> {
+        let state = self.state.read();
+        let record = state.group_lineage_at(branch, commit);
+        record
+            .map(|record| record.transitions.to_vec())
+            .unwrap_or_default()
     }
 
     pub fn replace_events(

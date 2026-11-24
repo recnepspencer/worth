@@ -3,6 +3,7 @@ use std::fmt;
 use super::events::LineageSubject;
 use super::naming::{PersistentNameHolder, PersistentNameIdentity};
 use super::postures::LineageRecordTarget;
+use crate::aggregate_identity::transition::group::denial::AggregateGroupNamingDenial;
 
 /// Posture kind named in a [`LineageNameDenial::LineagePostureMismatch`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -110,6 +111,11 @@ pub enum LineageNameDenial {
         target: LineageRecordTarget,
         scheme_id: String,
     },
+    /// A declared or derived group transition of `scheme_id` was refused.
+    GroupNaming {
+        scheme_id: String,
+        denial: AggregateGroupNamingDenial,
+    },
 }
 
 impl fmt::Display for LineageNameDenial {
@@ -201,6 +207,9 @@ impl fmt::Display for LineageNameDenial {
                 formatter,
                 "created record {target:?} requires a persistent-name birth under installed scheme `{scheme_id}`"
             ),
+            Self::GroupNaming { scheme_id, denial } => {
+                write!(formatter, "group scheme `{scheme_id}` refused: {denial:?}")
+            }
         }
     }
 }
