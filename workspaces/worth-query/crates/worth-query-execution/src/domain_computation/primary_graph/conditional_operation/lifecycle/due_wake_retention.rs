@@ -95,7 +95,7 @@ pub(super) fn complete_clock_receipt(
         >,
     totals: &mut super::operation_totals::WorthQueryTemporalOperationTotals,
 ) -> ErasedClockObservationReceipt {
-    receipt.due_work_remaining |= authoritative.work_remaining;
+    receipt.due_work_remaining |= authoritative.work_remaining || counts.rescheduled_due_now;
     receipt.authoritative_commit_count = authoritative.commit_count;
     receipt.authoritative_work_remaining = authoritative.work_remaining;
     receipt.granular_invalidations = released.deliveries;
@@ -199,9 +199,11 @@ pub(super) fn complete_continuation_receipt_for_test(
     )
 }
 
-pub(in crate::domain_computation::primary_graph::conditional_operation) fn prime_global_plateaus_for_test() {
+pub(in crate::domain_computation::primary_graph::conditional_operation) fn prime_global_plateaus_for_test(
+) {
     let _ = worth_query_execution_foundation::facade::domain_computation::application_outcome_identity::WorthQueryApplicationOutcomeIdentity::restore(100_000);
-    crate::domain_computation::provider_session::protocol::prime_protocol_session_plateau_for_test();
+    crate::domain_computation::provider_session::protocol::prime_protocol_session_plateau_for_test(
+    );
     crate::domain_computation::provider_session::execution_attempt_identity::prime_execution_attempt_plateau_for_test();
     crate::domain_computation::managed_run::prime_managed_logical_run_plateau_for_test();
     crate::domain_computation::artifact_owner::prime_artifact_occurrence_plateau_for_test();

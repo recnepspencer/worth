@@ -42,7 +42,7 @@ impl<
         Schema, ApplicationOperation, Input, D, O, F, Node, Provider, Clock, Source, Query, Parameters, QueryResult, Scope, Projector,
         PrincipalBinding, PrincipalMapping, Principal, PrincipalIdentity, PrincipalIdentityBinding, ScopeField, ScopeValue, PrincipalSource,
         QueryAuthorization, Invoker, IntentEntity, IdentityField, IdentityValue, RevisionField,
-        RevisionValue, LifecycleField, LifecycleValue, Authorization,
+        RevisionValue, LifecycleField, LifecycleValue, Authorization, DueField,
     > super::WorthQueryInstalledTemporalOperation<
         WorthQueryInstalledTemporalConditionalOperation<
             Schema, ApplicationOperation, Input, D, O, F, Node, Provider,
@@ -54,7 +54,7 @@ impl<
         >,
         super::super::operation_invocation::WorthQueryTemporalOperationExecution<
             Schema, ApplicationOperation, Input, Scope, Invoker, IntentEntity,
-            IdentityField, IdentityValue, RevisionField, RevisionValue, LifecycleField, LifecycleValue, Authorization,
+            IdentityField, IdentityValue, RevisionField, RevisionValue, LifecycleField, LifecycleValue, Authorization, DueField,
         >,
         Clock,
         Input,
@@ -132,8 +132,29 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         let predecessor = self.predecessor_binding_state(&selected_identity);
         let mut selected = self.fresh_evaluation_binding(execution, bridge, runtime, truth, predecessor.as_ref())?;
         if let Some(active_identity) = active_identity {
+            let superseded_on_same_branch = self.active_affinity.as_ref().is_some_and(|active| {
+                active.is_predecessor_of(&selected_identity)
+                    && active.signal_basis().signal_basis().branch_id()
+                        == truth.signal_basis().branch_id()
+            });
             self.swap_evaluation_binding(&mut selected);
-            self.inactive_bindings.insert(active_identity, selected);
+            if superseded_on_same_branch
+                && selected.pending_invalidations.retained_delivery_count() == 0
+                && selected.retained_wakes.iter().all(|wake| {
+                    matches!(
+                        wake.decision,
+                        super::super::signal_decision_reentry::WorthQueryRetainedConditionalDecision::OperationCommitted(_, _)
+                            | super::super::signal_decision_reentry::WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(_, _)
+                            | super::super::signal_decision_reentry::WorthQueryRetainedConditionalDecision::OperationRetiredNoEffect(_)
+                            | super::super::signal_decision_reentry::WorthQueryRetainedConditionalDecision::OperationProductStale(_, _)
+                            | super::super::signal_decision_reentry::WorthQueryRetainedConditionalDecision::Eligible(_)
+                    )
+                })
+            {
+                let _ = bridge.close_managed_clock(&selected.managed_clock);
+            } else {
+                self.inactive_bindings.insert(active_identity, selected);
+            }
         } else {
             self.activate_first_evaluation_binding(selected);
         }

@@ -29,7 +29,7 @@ impl<
         Schema, ApplicationOperation, Input, D, O, F, Node, Provider, Clock, Source, Query, Parameters, QueryResult, Scope, Projector,
         PrincipalBinding, PrincipalMapping, Principal, PrincipalIdentity, PrincipalIdentityBinding, ScopeField, ScopeValue, PrincipalSource,
         QueryAuthorization, Invoker, IntentEntity, IdentityField, IdentityValue, RevisionField,
-        RevisionValue, LifecycleField, LifecycleValue, Authorization,
+        RevisionValue, LifecycleField, LifecycleValue, Authorization, DueField,
     > WorthQueryInstalledConditionalOperation<Schema>
     for WorthQueryInstalledTemporalOperation<
         WorthQueryInstalledTemporalConditionalOperation<
@@ -42,7 +42,7 @@ impl<
         >,
         super::super::operation_invocation::WorthQueryTemporalOperationExecution<
             Schema, ApplicationOperation, Input, Scope, Invoker, IntentEntity,
-            IdentityField, IdentityValue, RevisionField, RevisionValue, LifecycleField, LifecycleValue, Authorization,
+            IdentityField, IdentityValue, RevisionField, RevisionValue, LifecycleField, LifecycleValue, Authorization, DueField,
         >,
         Clock,
         Input,
@@ -85,6 +85,7 @@ where
     LifecycleField::Binding: worth_query_installation::facade::ApplicationReadableScalarValueBinding<Value = LifecycleValue>,
     LifecycleValue: Clone + Send + Sync + 'static,
     Authorization: super::super::WorthQueryTemporalOperationAuthorization<Schema, ApplicationOperation, Input, Scope> + 'static,
+    DueField: super::super::operation_invocation::WorthQueryTemporalDueFieldWriter<Schema, IntentEntity>,
 {
     fn handoff_to_home(&mut self, request: &worth_execution::ExecutionRequest<'_, '_>, runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>) -> Result<(), crate::domain_computation::primary_graph::WorthQueryHomeRetirementDenial> {
         self.handoff_to_home(request, runtime)
@@ -104,7 +105,7 @@ where
         };
         let managed_clock = self.managed_clock.as_ref().expect("selected conditional operation retains a managed clock");
         let operation = self.definition.binding.clocked_node().provider().node().operation().application_operation();
-        match super::super::application_operation_reentry::reenter_retained_wakes(&execution, phase, runtime, truth.product(), bridge, managed_clock, operation, &self.definition.reconstruction, &self.definition.execution, &mut self.reconstructed_intents, &mut self.retained_wakes, &self.runtime_canonical_identity) {
+        match super::super::application_operation_reentry::reenter_retained_wakes(&execution, phase, runtime, truth.product(), bridge, managed_clock, operation, &self.definition.reconstruction, &self.definition.execution, &mut self.reconstructed_intents, &mut self.retained_wakes, &self.runtime_canonical_identity, 0) {
             Ok(counts) => ErasedClockObservationOutcome::Accepted(due_wake_retention::complete_continuation_receipt_for_test(counts, &mut self.retained_wakes, &mut self.operation_totals)),
             Err(cause) => ErasedClockObservationOutcome::Failed { detail: format!("conditional continuation publication refused: {cause:?}"), kind: super::WorthQueryConditionalClockObservationFailureKind::Obligation(cause) },
         }
@@ -346,6 +347,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
                 &mut self.reconstructed_intents,
                 &mut self.retained_wakes,
                 &self.runtime_canonical_identity,
+                coordinate,
             ) {
                 Ok(counts) => counts,
                 Err(cause) => { persistence_denial = Some(cause); Default::default() }

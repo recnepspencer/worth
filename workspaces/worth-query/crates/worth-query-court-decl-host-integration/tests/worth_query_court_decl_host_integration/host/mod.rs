@@ -13,4 +13,6 @@ pub(crate) mod conditional_authoring_surface;
 
 pub(crate) mod installed_contract_inspection;
 
+mod temporal_catchup;
+
 pub(crate) mod temporal_conditional_operation;

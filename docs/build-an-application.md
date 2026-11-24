@@ -9620,6 +9620,50 @@ authorize effect replay. Applications continue through the Query declaration
 and Host facades. See the [Signal owner contract](../crates/worth-signal/README.md#standalone-authored-owner-readmission)
 and [Bridge authored recovery](../crates/worth-runtime-bridge/README.md#authored-conditional-definition-recovery).
 
+#### Desktop temporal contribution and reopen catch-up
+
+Desktop applications that schedule one-shot or recurring timed intents do not
+need to hand-assemble domain operation definitions, canonical queries, resource
+envelopes, named-clock plumbing, and reconstruction bindings separately. Use
+`worth_query_host::facade::temporal_contribution`:
+
+1. **Derive the conditional package contract once** from typed schema field
+   selections with `WorthQueryDesktopTemporalNodeSpec::from_fields(..)`, then
+   call `.package_contract(..)` inside `WorthQueryApplicationConditionalBinding::package_contract`
+   and `.conditional_binding(..)` inside `install`.
+2. **Pair a caller-pumped monotonic clock** with `WorthQueryDesktopClockSource::new(..)`,
+   returning `(source, handle)`. It spawns zero background threads and reads no
+   ambient OS clock; the caller advances `WorthQueryDesktopClockHandle::advance_to`
+   explicitly on reopen or foreground ticks.
+3. **Install in one call** via `install_desktop_temporal_operation(installation, WorthQueryDesktopTemporalBindingSpec { .. })?.into_home_binding(clock_handle)`,
+   using `WorthQueryAlwaysReadyTemporalPredicate` when authoritative `active`
+   lifecycle and due coordinate alone govern execution. Returning
+   `WorthQueryInstalledDesktopTemporalClock` (which implements
+   `WorthQueryDesktopTemporalHomeBinding`) registers the temporal rule cleanly
+   with `WorthQueryApplicationHome`. Authoritative intent lifecycle, bounded
+   projection (`WorthQueryTemporalIntentBounds`), operation effects, and fresh
+   principal admission remain strictly caller-owned.
+4. **Support recurring schedules atomically** by implementing
+   `WorthQueryTemporalOperationInvoker::next_occurrence` to return
+   `WorthQueryTemporalOccurrenceOutcome::Reschedule { next_due_nanoseconds, next_input, next_input_identity, next_idempotency }`
+   (strictly increasing due coordinate) and passing `WorthQueryTemporalDueField::new(due_field)`
+   in the binding spec so Query observes and writes `revision`, `lifecycle`, and
+   `due` atomically in the same commit as `apply`.
+5. **Pump missed occurrences on reopen in one Home call** via
+   `home.catch_up_temporal::<MyTemporalBinding>(now, execution, WorthQueryTemporalCatchUpPolicy::bounded(64)?)?`
+   (or `home.pump_temporal::<MyTemporalBinding>(execution, policy)` / low-level
+   `pump_temporal_catch_up_until` & `pump_temporal_catch_up`, bounded by
+   `1..=MAX_TEMPORAL_CATCH_UP_STEPS`). Each step checks `execution.consult()`,
+   re-selects the fresh branch head, and returns an O(1)-memory
+   `WorthQueryTemporalCatchUpReport` exposing `fired()`, `skipped()`,
+   `remaining()`, and typed `status()` (`CaughtUp`, `StepLimitReached`,
+   `BudgetExhausted`, `Cancelled`, `AuthorizationRefused`, `Backpressured`,
+   `ClockStopped`, `BlockedByRetainedDecision`, or `ObservationFailed`).
+   Partial-batch stops leave durable state consistent for resumption on the
+   next pump without duplicating or skipping any occurrence. **OS background
+   wakes while the desktop application is closed remain outside WORTH**;
+   callers advance missed recurrences explicitly when the app reopens.
+
 The fresh Native-only Directory Host journey now opens the actual Home,
 initializes once, reads seeded data, publishes an ordinary mutation through the
 same World, and closes through the owning Home. A genuine retained runtime

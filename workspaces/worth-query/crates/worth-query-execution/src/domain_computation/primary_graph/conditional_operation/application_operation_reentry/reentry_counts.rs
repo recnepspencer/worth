@@ -10,4 +10,6 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) struct W
         Option<usize>,
     pub(in crate::domain_computation::primary_graph::conditional_operation) retention_capacity_backpressure:
         bool,
+    pub(in crate::domain_computation::primary_graph::conditional_operation) rescheduled_due_now:
+        bool,
 }

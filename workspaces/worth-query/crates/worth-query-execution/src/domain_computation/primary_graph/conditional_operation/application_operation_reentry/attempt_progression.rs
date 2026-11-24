@@ -5,6 +5,7 @@ use worth_query_installation::facade::{
 };
 
 use super::super::operation_invocation::{
+    WorthQueryTemporalDueFieldWriter, WorthQueryTemporalOccurrenceOutcome,
     WorthQueryTemporalOperationExecution, WorthQueryTemporalOperationInvoker,
 };
 use super::super::reconstruction_authority::{
@@ -39,6 +40,7 @@ pub(super) fn try_reentry<
     LifecycleField,
     LifecycleValue,
     Authorization,
+    DueField,
     Clock,
 >(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -74,10 +76,17 @@ pub(super) fn try_reentry<
         LifecycleField,
         LifecycleValue,
         Authorization,
+        DueField,
     >,
     candidate: &WorthQueryTemporalIntentCandidate<Clock, Input>,
     idempotency: &temporal_idempotency::WorthQueryPreparedTemporalIdempotency,
-) -> Result<WorthQueryTemporalReentryOutcome, WorthQueryTemporalReentryDenial>
+) -> Result<
+    (
+        WorthQueryTemporalReentryOutcome,
+        Option<WorthQueryTemporalOccurrenceOutcome<Input>>,
+    ),
+    WorthQueryTemporalReentryDenial,
+>
 where
     Schema: ApplicationSchema,
     Operation: 'static,
@@ -123,6 +132,7 @@ where
     LifecycleValue: Clone,
     Authorization:
         super::super::WorthQueryTemporalOperationAuthorization<Schema, Operation, Input, Scope>,
+    DueField: WorthQueryTemporalDueFieldWriter<Schema, IntentEntity>,
 {
     let selected = runtime
         .on_product(request_execution, product.retained_clone())
@@ -136,7 +146,7 @@ where
         &fresh.request,
     )?
     else {
-        return Ok(WorthQueryTemporalReentryOutcome::Obsolete);
+        return Ok((WorthQueryTemporalReentryOutcome::Obsolete, None));
     };
     let Some(projected) = execution.admit_current_projection(
         request_execution,
@@ -147,7 +157,7 @@ where
         &current,
     )?
     else {
-        return Ok(WorthQueryTemporalReentryOutcome::Obsolete);
+        return Ok((WorthQueryTemporalReentryOutcome::Obsolete, None));
     };
     Ok(execution.commit_projected_temporal_effect(
         request_execution,

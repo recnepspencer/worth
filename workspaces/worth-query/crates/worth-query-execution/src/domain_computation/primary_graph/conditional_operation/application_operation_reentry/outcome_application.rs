@@ -2,8 +2,11 @@ use super::{
     wake_retirement::{complete_wake, retire_wake_with_decision},
     WorthQueryTemporalReentryCounts, WorthQueryTemporalReentryOutcome,
 };
-use crate::domain_computation::primary_graph::conditional_operation::signal_decision_reentry::{
-    WorthQueryRetainedConditionalDecision, WorthQueryRetainedConditionalWake,
+use crate::domain_computation::primary_graph::conditional_operation::{
+    operation_invocation::WorthQueryTemporalOccurrenceOutcome,
+    signal_decision_reentry::{
+        WorthQueryRetainedConditionalDecision, WorthQueryRetainedConditionalWake,
+    },
 };
 use std::collections::BTreeMap;
 use worth_runtime_bridge::facade::BridgeConditionalExecutionView;
@@ -21,6 +24,8 @@ pub(super) fn apply_reentry_outcome<Clock, Input>(
     identity: String,
     evidence: BridgeConditionalDecisionEvidence,
     outcome: WorthQueryTemporalReentryOutcome,
+    observed_coordinate: u64,
+    rescheduled: Option<WorthQueryTemporalOccurrenceOutcome<Input>>,
     counts: &mut WorthQueryTemporalReentryCounts,
 ) {
     match outcome {
@@ -72,6 +77,8 @@ pub(super) fn apply_reentry_outcome<Clock, Input>(
             identity,
             evidence,
             counts,
+            observed_coordinate,
+            rescheduled,
             Ok(commit),
         ),
         WorthQueryTemporalReentryOutcome::AlreadyCommitted(commit) => complete_wake(
@@ -82,6 +89,8 @@ pub(super) fn apply_reentry_outcome<Clock, Input>(
             identity,
             evidence,
             counts,
+            observed_coordinate,
+            None,
             Err(commit),
         ),
         WorthQueryTemporalReentryOutcome::Obsolete => retire_wake_with_decision(

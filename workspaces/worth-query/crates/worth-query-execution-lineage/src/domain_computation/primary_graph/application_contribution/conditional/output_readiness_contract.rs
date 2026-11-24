@@ -45,6 +45,13 @@ impl From<super::super::native_field_contract::NativeFieldContractDenial>
 }
 
 impl WorthQueryOutputReadinessContractDenial {
+    pub fn from_detail(detail: impl Into<String>) -> Self {
+        Self {
+            locus: None,
+            detail: detail.into(),
+        }
+    }
+
     pub fn field_locus(
         &self,
     ) -> Option<&worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus>

@@ -1,0 +1,38 @@
+//! Higher-level desktop temporal contribution, caller-pumped monotonic clock,
+//! and bounded reopen catch-up loop helper.
+//!
+//! Derives the standard domain operation definition, conditional binding,
+//! named-clock registration, reconstruction access, and recurring execution
+//! wiring from an authored timed-intent model while keeping authoritative
+//! lifecycle, bounded projection, operation effects, and fresh execution
+//! authority strictly caller-owned.
+//!
+//! OS background wakes while the desktop application is closed remain outside
+//! WORTH: callers advance missed occurrences explicitly on reopen or foreground
+//! ticks through [`pump_temporal_catch_up_until`] or [`pump_temporal_catch_up`].
+
+mod catch_up;
+mod clock;
+mod contract;
+mod home_binding;
+mod installer;
+
+pub use catch_up::{
+    pump_temporal_catch_up, pump_temporal_catch_up_until, WorthQueryTemporalCatchUpClockStop,
+    WorthQueryTemporalCatchUpDenial, WorthQueryTemporalCatchUpPolicy,
+    WorthQueryTemporalCatchUpReport, WorthQueryTemporalCatchUpStatus, MAX_TEMPORAL_CATCH_UP_STEPS,
+};
+pub use clock::{
+    WorthQueryDesktopClockAdvanceDenial, WorthQueryDesktopClockHandle, WorthQueryDesktopClockSource,
+};
+pub use contract::{
+    WorthQueryAlwaysReadyTemporalPredicate, WorthQueryDesktopTemporalNodeSpec,
+    DEFAULT_DESKTOP_TEMPORAL_MAX_MEMORY_BYTES, DEFAULT_DESKTOP_TEMPORAL_MAX_WORK,
+};
+pub use home_binding::{
+    WorthQueryDesktopTemporalHomeBinding, WorthQueryInstalledDesktopTemporalClock,
+};
+pub use installer::{
+    install_desktop_temporal_operation, WorthQueryDesktopTemporalBindingSpec,
+    WorthQueryDesktopTemporalInstallationDenial, WorthQueryInstalledDesktopTemporal,
+};

@@ -23,8 +23,8 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) struct W
 }
 
 #[rustfmt::skip]
-impl<Schema, Operation, Input, Scope, Invoker, IntentEntity, IdentityField, IdentityValue, RevisionField, RevisionValue, LifecycleField, LifecycleValue, Authorization>
-    WorthQueryTemporalOperationExecution<Schema, Operation, Input, Scope, Invoker, IntentEntity, IdentityField, IdentityValue, RevisionField, RevisionValue, LifecycleField, LifecycleValue, Authorization>
+impl<Schema, Operation, Input, Scope, Invoker, IntentEntity, IdentityField, IdentityValue, RevisionField, RevisionValue, LifecycleField, LifecycleValue, Authorization, DueField>
+    WorthQueryTemporalOperationExecution<Schema, Operation, Input, Scope, Invoker, IntentEntity, IdentityField, IdentityValue, RevisionField, RevisionValue, LifecycleField, LifecycleValue, Authorization, DueField>
 where
     Invoker: WorthQueryTemporalOperationInvoker<Schema, Operation, Input, Scope>,
     IdentityField: worth_query_declaration::facade::application_schema::fragment::RecordSelection<Entity = IntentEntity, Value = IdentityValue>,
@@ -50,6 +50,7 @@ _execution: &worth_execution::ExecutionRequest<'_, '_>,
         RevisionValue: Clone,
         LifecycleField::Binding: ApplicationReadableScalarValueBinding<Value = LifecycleValue>,
         LifecycleValue: Clone,
+        DueField: super::WorthQueryTemporalDueFieldWriter<Schema, IntentEntity>,
     {
         let _read_observation = super::super::read_observation::IntentReadObservation::enter();
         let intent = match reader.resolve_entity(self.identity_field, identity) {
@@ -72,6 +73,7 @@ _execution: &worth_execution::ExecutionRequest<'_, '_>,
             .decision_field(&intent, self.lifecycle_field)
             .map_err(|denial| denial.to_string())?
             .ok_or_else(|| "temporal intent lifecycle is absent".to_string())?;
+        self.due_field.observe_due(reader, &intent)?;
         if RevisionField::Binding::encode(&revision).map_err(|denial| format!("{denial:?}"))?
             != RevisionField::Binding::encode(expected_revision)
                 .map_err(|denial| format!("{denial:?}"))?
@@ -105,6 +107,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         RevisionValue: Clone,
         LifecycleField::Binding: ApplicationReadableScalarValueBinding<Value = LifecycleValue>,
         LifecycleValue: Clone,
+        DueField: super::WorthQueryTemporalDueFieldWriter<Schema, IntentEntity>,
     {
         let _read_observation = super::super::read_observation::IntentReadObservation::enter();
         let identity_value = IdentityField::Binding::decode(record_identity)
