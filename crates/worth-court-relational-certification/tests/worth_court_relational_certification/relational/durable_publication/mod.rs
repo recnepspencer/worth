@@ -1,15 +1,16 @@
 //! Public Native durability workflows, independent of source-unit privacy.
 mod aggregate_validation;
 mod associated_effects;
+mod checkpoint_capture_custody;
+mod checkpoint_field_revisions;
+mod checkpoint_transition_compaction;
+mod checkpoint_transition_gap_replay;
 mod cold_envelope_custody;
 mod index_catalog;
 mod initial_schema_recovery;
-mod prepared_home_schema;
-mod checkpoint_capture_custody;
-mod checkpoint_transition_compaction;
-mod checkpoint_transition_gap_replay;
 mod lineage_frontiers;
 mod native_checkpoint_capture_owners;
+mod prepared_home_schema;
 mod recorded_basis;
 mod recorded_component_checkpoint;
 mod recorded_component_custody;
@@ -18,10 +19,10 @@ mod recorded_component_recovery;
 mod recorded_component_validation;
 mod recovered_associated_effects;
 mod recovered_publication;
-mod world_selection_disposed_source;
 mod result_snapshot_cleanup;
 mod semantic_result;
 pub(crate) mod source_initial_inputs;
+mod world_selection_disposed_source;
 
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::{
@@ -59,9 +60,11 @@ mod validation_posture;
 mod branch_aspect_history;
 mod branch_checkpoint_journeys;
 mod branch_endpoint_history;
-mod branch_history_publications;
+pub(in crate::relational) mod branch_history_publications;
 mod branch_history_recovery;
 mod definition_lookup_snapshot;
+mod entity_projection_history;
+mod field_revision_history;
 
 mod merge_history_planning;
 mod merge_policy_evidence;
@@ -204,3 +207,5 @@ mod checkpoint_shipping_lookup;
 mod checkpoint_truth_equivalence;
 
 mod checkpoint_subscriber_source;
+
+mod native_checkpoint_partitions;

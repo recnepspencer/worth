@@ -9,6 +9,8 @@ use crate::indexes::data::{
 use crate::indexes::data::{
     BoundedIndexParityMode, BoundedRelationJoinLookupRequest, DerivedIndexId,
 };
+use worth_relational_branch::internal_port::indexes::data::bounded_entity_field_lookup::BoundedEntityFieldLookupDenialOwnerPort as _;
+use worth_relational_branch::internal_port::indexes::data::bounded_relation_join_lookup::BoundedRelationJoinLookupDenialOwnerPort as _;
 fn stopped_backings(mut run: impl FnMut(&ExecutionRequest<'_, '_>, Cause)) {
     for deadline in [false, true] {
         let source = worth_execution::CancellationSource::new();

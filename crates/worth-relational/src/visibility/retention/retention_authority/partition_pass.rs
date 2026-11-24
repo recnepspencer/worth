@@ -1,9 +1,9 @@
 use crate::history::data::RecordAllocationClass;
-use crate::identity::data::{PartitionId, VersionId};
+use crate::identity::data::VersionId;
 use crate::runtime::RelationalRuntime;
 use crate::runtime::ResidentPartitionEntry;
 use crate::storage::data::RecordLifecycleState;
-use crate::storage::substrate::{EntityRecordKind, RecordKind, RelationRecordKind};
+use crate::storage::substrate::RecordKind;
 
 #[derive(Default)]
 pub(super) struct RetentionCounts {
@@ -25,52 +25,6 @@ pub(super) struct RetentionPassCounts {
     pub(super) chunks_scanned: usize,
     pub(super) reclaimable: usize,
     pub(super) reclaimed: usize,
-}
-
-pub(super) fn refresh_entity_retention_state(
-    runtime: &RelationalRuntime,
-    partition_id: PartitionId,
-    slot: usize,
-    retired_at: Option<VersionId>,
-    retention_fence: VersionId,
-) {
-    if retired_at.is_none() {
-        return;
-    }
-    let mut writer = runtime.edit_partitions();
-    if let Some(partition) = writer.partition_metadata_mut(partition_id) {
-        runtime
-            .storage_authority()
-            .refresh_retention_state::<EntityRecordKind>(
-                partition,
-                slot,
-                retired_at,
-                retention_fence,
-            );
-    }
-}
-
-pub(super) fn refresh_relation_retention_state(
-    runtime: &RelationalRuntime,
-    partition_id: PartitionId,
-    slot: usize,
-    retired_at: Option<VersionId>,
-    retention_fence: VersionId,
-) {
-    if retired_at.is_none() {
-        return;
-    }
-    let mut writer = runtime.edit_partitions();
-    if let Some(partition) = writer.partition_metadata_mut(partition_id) {
-        runtime
-            .storage_authority()
-            .refresh_retention_state::<RelationRecordKind>(
-                partition,
-                slot,
-                retired_at,
-                retention_fence,
-            );
-    }
 }
 
 pub(super) fn inspect_partition_retention<K: RecordKind>(
@@ -152,6 +106,9 @@ pub(super) fn run_partition_retention_pass<K: RecordKind>(
 
 #[cfg(test)]
 mod tests {
+    use worth_relational_storage::internal_port::runtime::state::subsystems::storage::edition_writer::PartitionEditionWriterFixturePort as _;
+use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::slot_lifecycle::metadata::RecordArenaFixturePort as _;
+
     use std::cell::Cell;
 
     use crate::history::data::RecordAllocationClass;
@@ -159,7 +116,7 @@ mod tests {
     use crate::runtime::{RelationalRuntime, RelationalRuntimeConfig};
     use crate::storage::overlay::PartitionState;
     use crate::storage::substrate::{
-        EntityArena, EntityExtra, EntityRecordKind, PinClass, RelationArena, SlotInit,
+        EntityArena, EntityExtra, EntityRecordKind, RelationArena, SlotInit,
     };
 
     use super::{
@@ -174,7 +131,7 @@ mod tests {
         let high_slot = 50_000;
         let mut entity_arena = EntityArena::with_capacity(0);
         entity_arena
-            .write_reserved_slot(
+            .write_reserved_slot_for_test(
                 SlotInit {
                     partition_id,
                     kind_id: KindId(11),
@@ -186,10 +143,10 @@ mod tests {
             )
             .unwrap();
         entity_arena
-            .adjust_named_pin(high_slot, PinClass::Branch, 1)
+            .adjust_named_pin(high_slot, worth_relational_storage::internal_port::storage::substrate::record_arena::arena::pinning::branch_pin_class_for_test(), 1)
             .unwrap();
         let adjacency_policy = runtime.config.storage.adjacency_policy.clone();
-        runtime.edit_partitions().insert(
+        runtime.edit_partitions().install_partition_for_test(
             partition_id,
             PartitionState {
                 partition_id,
@@ -210,7 +167,7 @@ mod tests {
             .partitions
             .demand_resident_edit(
                 &execution,
-                &runtime.services.instrumentation,
+                &runtime.services.instrumentation.complexity_counters,
                 &runtime.services.symbols,
             )
             .unwrap();

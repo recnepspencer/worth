@@ -1,0 +1,388 @@
+use crate::config::data::{AdjacencyBackend, AdjacencyPolicy};
+use crate::identity::data::{KindId, RelationId, VersionId};
+
+use crate::storage::substrate::SharedMap;
+pub mod allocation;
+pub mod carrier;
+#[cfg(test)]
+mod carrier_tests;
+pub mod checkpoint;
+pub mod ids;
+pub mod kind_delta;
+pub mod kind_memberships;
+pub mod request;
+pub use ids::AdjacencyIds;
+pub type HistoricalKindCustody = crate::storage::substrate::StorageAllocation<
+    std::sync::Mutex<worth_execution::ExecutionMemoryReservation>,
+>;
+
+type RelationSet = SharedMap<RelationId, ()>;
+
+#[derive(Debug, Clone)]
+pub enum AdjacencySet {
+    Inline(AdjacencyEntries),
+    Compressed(AdjacencyEntries),
+}
+
+#[derive(Debug, Clone)]
+// Optional kind indexes keep shallow root handles inline. Their nodes own all backing.
+pub struct AdjacencyEntries {
+    current: RelationSet,
+    current_by_kind: Option<SharedMap<KindId, RelationSet>>,
+    historical_by_kind: Option<SharedMap<KindId, RelationSet>>,
+    historical_kind_custody: Option<HistoricalKindCustody>,
+    structural_revision_by_kind: Option<SharedMap<KindId, VersionId>>,
+}
+
+impl AdjacencySet {
+    pub fn selected_kind_navigation_work_bound(&self, basis: super::AdjacencyKindBasis) -> usize {
+        let entries = self.entries();
+        let selected = match basis {
+            super::AdjacencyKindBasis::Current => &entries.current_by_kind,
+            super::AdjacencyKindBasis::Historical => &entries.historical_by_kind,
+        };
+        selected
+            .as_ref()
+            .map_or(1, |map| map.navigation_work_bound())
+    }
+    pub fn structural_revision_navigation_work_bound(&self) -> usize {
+        self.entries()
+            .structural_revision_by_kind
+            .as_ref()
+            .map_or(1, |map| map.navigation_work_bound())
+    }
+
+    pub fn changed_current_memberships(&self, previous: Option<&Self>) -> Vec<(RelationId, bool)> {
+        let empty = RelationSet::default();
+        let previous = previous.map(|set| &set.entries().current).unwrap_or(&empty);
+        self.entries()
+            .current
+            .changed_keys_since(previous)
+            .into_iter()
+            .map(|id| (id, self.entries().current.contains_key(&id)))
+            .collect()
+    }
+
+    pub fn new(policy: &AdjacencyPolicy) -> Self {
+        let entries = || AdjacencyEntries {
+            current: RelationSet::new(),
+            current_by_kind: None,
+            historical_by_kind: None,
+            historical_kind_custody: None,
+            structural_revision_by_kind: None,
+        };
+        match policy.backend {
+            AdjacencyBackend::InlineSmallDegreeAdjacency => Self::Inline(entries()),
+            AdjacencyBackend::CompressedFanoutAdjacency => Self::Compressed(entries()),
+        }
+    }
+
+    pub fn compressed_from_checkpoint(
+        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+        current: Vec<RelationId>,
+        structural_revisions: Vec<(KindId, VersionId)>,
+    ) -> Self {
+        Self::Compressed(AdjacencyEntries {
+            current: current.into_iter().map(|id| (id, ())).collect(),
+            current_by_kind: None,
+            historical_by_kind: None,
+            historical_kind_custody: None,
+            structural_revision_by_kind: (!structural_revisions.is_empty())
+                .then(|| structural_revisions.into_iter().collect()),
+        })
+    }
+
+    pub(crate) fn insert(&mut self, kind_id: KindId, relation_id: RelationId) {
+        let entries = self.entries_mut();
+        insert_sorted(&mut entries.current, relation_id);
+        insert_kind_relation(&mut entries.current_by_kind, kind_id, relation_id);
+        insert_kind_relation(&mut entries.historical_by_kind, kind_id, relation_id);
+    }
+
+    pub(crate) fn insert_at(
+        &mut self,
+        kind_id: KindId,
+        relation_id: RelationId,
+        version_id: VersionId,
+    ) {
+        self.insert(kind_id, relation_id);
+        self.index_structural_revision(kind_id, version_id);
+    }
+
+    pub fn reset_kind_buckets(&mut self) {
+        let entries = self.entries_mut();
+        entries.current_by_kind = None;
+        entries.historical_by_kind = None;
+        entries.historical_kind_custody = None;
+    }
+
+    pub fn reset_historical_kind_buckets_with_custody(
+        &mut self,
+        custody: Option<HistoricalKindCustody>,
+    ) {
+        let entries = self.entries_mut();
+        entries.historical_by_kind = None;
+        entries.historical_kind_custody = custody;
+    }
+
+    pub fn set_historical_kind_custody(&mut self, custody: Option<HistoricalKindCustody>) {
+        self.entries_mut().historical_kind_custody = custody;
+    }
+
+    pub fn historical_kind_custody(&self) -> Option<&HistoricalKindCustody> {
+        self.entries().historical_kind_custody.as_ref()
+    }
+
+    /// Persistent map path coexistence, including the separately owned values.
+    pub fn historical_kind_insertion_bound(&self, kind: KindId) -> Option<u64> {
+        let empty_kinds = SharedMap::new();
+        let empty_relations = RelationSet::new();
+        let kinds = match &self.entries().historical_by_kind {
+            Some(kinds) => kinds,
+            None => &empty_kinds,
+        };
+        let relations = match kinds.get(&kind) {
+            Some(relations) => relations,
+            None => &empty_relations,
+        };
+        kinds
+            .adoption_allocation_bound()?
+            .checked_add(relations.adoption_allocation_bound()?)?
+            .checked_add(256)
+    }
+
+    pub fn index_current_kind(&mut self, kind_id: KindId, relation_id: RelationId) {
+        insert_kind_relation(
+            &mut self.entries_mut().current_by_kind,
+            kind_id,
+            relation_id,
+        );
+    }
+
+    pub fn index_historical_kind(&mut self, kind_id: KindId, relation_id: RelationId) {
+        insert_kind_relation(
+            &mut self.entries_mut().historical_by_kind,
+            kind_id,
+            relation_id,
+        );
+    }
+
+    pub(crate) fn index_structural_revision(&mut self, kind_id: KindId, version_id: VersionId) {
+        let revisions = self
+            .entries_mut()
+            .structural_revision_by_kind
+            .get_or_insert_with(SharedMap::new);
+        let revision = revisions.entry(kind_id).or_insert_with(|| version_id);
+        *revision = (*revision).max(version_id);
+    }
+
+    pub(crate) fn remove(&mut self, kind_id: KindId, relation_id: &RelationId) {
+        let entries = self.entries_mut();
+        remove_sorted(&mut entries.current, relation_id);
+        if let Some(relations) = entries
+            .current_by_kind
+            .as_mut()
+            .and_then(|by_kind| by_kind.get_mut(&kind_id))
+        {
+            remove_sorted(relations, relation_id);
+        }
+    }
+
+    pub(crate) fn remove_at(
+        &mut self,
+        kind_id: KindId,
+        relation_id: &RelationId,
+        version_id: VersionId,
+    ) {
+        self.remove(kind_id, relation_id);
+        self.index_structural_revision(kind_id, version_id);
+    }
+
+    pub fn structural_revision_count(&self) -> usize {
+        self.entries()
+            .structural_revision_by_kind
+            .as_ref()
+            .map_or(0, |map| map.len())
+    }
+
+    pub fn structural_revision_entries(&self) -> impl Iterator<Item = (KindId, VersionId)> + '_ {
+        self.entries()
+            .structural_revision_by_kind
+            .iter()
+            .flat_map(|map| map.iter())
+            .map(|(&kind, &version)| (kind, version))
+    }
+
+    pub fn structural_revision(&self, kind_id: KindId) -> Option<VersionId> {
+        self.entries()
+            .structural_revision_by_kind
+            .as_ref()
+            .and_then(|revisions| revisions.get(&kind_id))
+            .copied()
+    }
+
+    pub fn structural_revisions(&self) -> Vec<(KindId, VersionId)> {
+        self.entries()
+            .structural_revision_by_kind
+            .as_ref()
+            .map(|revisions| {
+                revisions
+                    .iter()
+                    .map(|(&kind, &version)| (kind, version))
+                    .collect()
+            })
+            .unwrap_or_default()
+    }
+
+    pub fn current_kind_ids(&self, kind_id: KindId) -> AdjacencyIds<'_> {
+        AdjacencyIds::new(
+            self.entries()
+                .current_by_kind
+                .as_ref()
+                .and_then(|kinds| kinds.get(&kind_id)),
+        )
+    }
+
+    /// Borrow memberships one at a time; the receiver owns admission per item.
+    pub fn historical_kind_ids(&self, kind_id: KindId) -> AdjacencyIds<'_> {
+        AdjacencyIds::new(
+            self.entries()
+                .historical_by_kind
+                .as_ref()
+                .and_then(|kinds| kinds.get(&kind_id)),
+        )
+    }
+
+    fn entries(&self) -> &AdjacencyEntries {
+        match self {
+            Self::Inline(entries) | Self::Compressed(entries) => entries,
+        }
+    }
+
+    fn entries_mut(&mut self) -> &mut AdjacencyEntries {
+        match self {
+            Self::Inline(entries) | Self::Compressed(entries) => entries,
+        }
+    }
+
+    pub fn current_ids(&self) -> AdjacencyIds<'_> {
+        AdjacencyIds::new(Some(&self.entries().current))
+    }
+
+    pub fn ids(&self) -> Vec<RelationId> {
+        self.current_ids().to_vec()
+    }
+
+    pub fn extend_into(&self, target: &mut std::collections::BTreeSet<RelationId>) {
+        target.extend(self.current_ids().iter().copied())
+    }
+
+    #[cfg(test)]
+    pub fn authoritative_allocation_bytes(&self) -> u64 {
+        self.entries().current.allocation_bytes()
+    }
+
+    pub fn optional_cache_allocation_bytes(&self) -> u64 {
+        let entries = self.entries();
+        let custody_bytes = entries
+            .historical_kind_custody
+            .as_ref()
+            .map_or(0, |_| HistoricalKindCustody::layout_bytes());
+        [&entries.current_by_kind, &entries.historical_by_kind]
+            .into_iter()
+            .flatten()
+            .map(|kinds| {
+                kinds.allocation_bytes().saturating_add(
+                    kinds
+                        .values()
+                        .map(RelationSet::allocation_bytes)
+                        .sum::<u64>(),
+                )
+            })
+            .sum::<u64>()
+            .saturating_add(custody_bytes)
+            .saturating_add(
+                entries
+                    .structural_revision_by_kind
+                    .as_ref()
+                    .map_or(0, SharedMap::allocation_bytes),
+            )
+    }
+}
+
+fn insert_kind_relation(
+    buckets: &mut Option<SharedMap<KindId, RelationSet>>,
+    kind_id: KindId,
+    relation_id: RelationId,
+) {
+    let relations = buckets
+        .get_or_insert_with(SharedMap::new)
+        .entry(kind_id)
+        .or_default();
+    insert_sorted(relations, relation_id);
+}
+
+fn insert_sorted(relations: &mut RelationSet, relation_id: RelationId) {
+    if !relations.contains_key(&relation_id) {
+        relations.insert(relation_id, ());
+    }
+}
+
+fn remove_sorted(relations: &mut RelationSet, relation_id: &RelationId) {
+    relations.remove(relation_id);
+}
+
+#[cfg(test)]
+mod tests;
+
+/// Receiver-scoped fixtures for the Relational unit courts.
+#[doc(hidden)]
+pub trait AdjacencySetFixturePort: Sized {
+    fn index_structural_revision_for_test(&mut self, kind_id: KindId, version_id: VersionId);
+    fn insert_adjacent_id_for_test(&mut self, kind_id: KindId, relation_id: RelationId);
+    fn insert_adjacent_id_at_for_test(
+        &mut self,
+        kind_id: KindId,
+        relation_id: RelationId,
+        version_id: VersionId,
+    );
+    fn remove_adjacent_id_for_test(&mut self, kind_id: KindId, relation_id: &RelationId);
+    fn remove_adjacent_id_at_for_test(
+        &mut self,
+        kind_id: KindId,
+        relation_id: &RelationId,
+        version_id: VersionId,
+    );
+}
+
+impl AdjacencySetFixturePort for AdjacencySet {
+    fn index_structural_revision_for_test(&mut self, kind_id: KindId, version_id: VersionId) {
+        self.index_structural_revision(kind_id, version_id)
+    }
+
+    fn insert_adjacent_id_for_test(&mut self, kind_id: KindId, relation_id: RelationId) {
+        self.insert(kind_id, relation_id)
+    }
+
+    fn insert_adjacent_id_at_for_test(
+        &mut self,
+        kind_id: KindId,
+        relation_id: RelationId,
+        version_id: VersionId,
+    ) {
+        self.insert_at(kind_id, relation_id, version_id)
+    }
+
+    fn remove_adjacent_id_for_test(&mut self, kind_id: KindId, relation_id: &RelationId) {
+        self.remove(kind_id, relation_id)
+    }
+
+    fn remove_adjacent_id_at_for_test(
+        &mut self,
+        kind_id: KindId,
+        relation_id: &RelationId,
+        version_id: VersionId,
+    ) {
+        self.remove_at(kind_id, relation_id, version_id)
+    }
+}

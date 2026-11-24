@@ -16,6 +16,8 @@ use worth_query_host::facade::application_naming::{
 };
 
 mod execute;
+mod scoped;
+pub use scoped::ScopeStep;
 
 /// A held member name: one read by this run's decision, or one a court holds.
 #[derive(Clone, Debug)]
@@ -91,16 +93,31 @@ pub enum Step {
     Retire(Held),
     Split(Held, Vec<(String, WorthQueryOutputBirth)>),
     Merge(Vec<Held>, Keeper),
+    /// Declares `steps` through a naming scope over this occurrence.
+    Scoped(
+        worth_query_host::facade::application_naming::OccurrencePath,
+        Vec<ScopeStep>,
+    ),
 }
 
 /// What one run does. `reads` are resolved (and named) in the decision;
 /// `deletes` must be among them; `unlinks` remove the seams read `(from, to)`
 /// members hold; `seams` link `(key, from, to)` members; `seam_reads` name
 /// the seam between read `(label, from, to)` members in the decision.
+/// `owners` list a created `(member, model)` under that model instead of
+/// model `a`; `moves` re-own a read `(member, from model, to model)`;
+/// `issued` creates outside model `a`'s partition.
 #[derive(Clone, Debug, Default)]
 pub struct Plan {
+    /// Created without a context entity, in the partition the commit issues.
+    pub issued: bool,
+    pub owners: Vec<(String, String)>,
+    pub moves: Vec<(String, String, String)>,
     pub seam_reads: Vec<(String, String, String)>,
     pub reads: Vec<String>,
+    /// Read without asking their name: a record an earlier stage of the same
+    /// envelope created has none until the envelope commits.
+    pub plain_reads: Vec<String>,
     pub creates: Vec<String>,
     pub deletes: Vec<String>,
     pub unlinks: Vec<(String, String)>,
@@ -134,6 +151,8 @@ pub enum Refusal {
     CrossOccurrence,
     /// A same-commit name requested for an output the run has not named.
     UnnamedReference(String),
+    /// A least-keeper merge listed no parents.
+    EmptyMergeParents,
     Other(String),
 }
 
@@ -163,6 +182,7 @@ impl Refusal {
             WorthQueryOutputNameDenial::UnnamedOutputReference { subject_name, .. } => {
                 Self::UnnamedReference(subject_name.clone())
             }
+            WorthQueryOutputNameDenial::EmptyMergeParents { .. } => Self::EmptyMergeParents,
             other => Self::Other(other.to_string()),
         }
     }
@@ -199,8 +219,8 @@ pub struct Intent {
 worth_query_structured_value_binding!(pub Input for Intent { identity: "persistent-naming.sculpt.v1" });
 worth_query_operation!(pub Sculpt for Schema, input Input; access {
     read_entities: [Model, Member]; read_fields: [ModelKey::at("ModelKey"), MemberKey::at("MemberKey")];
-    read_relations: [Seam]; writes: [MemberKey::at("MemberKey"), MemberValue::at("MemberValue")];
-    creates: [Member]; deletes: [Member]; links: [ModelMember, Seam]; unlinks: [Seam];
+    read_relations: [Seam, ModelMember]; writes: [MemberKey::at("MemberKey"), MemberValue::at("MemberValue")];
+    creates: [Member]; deletes: [Member]; links: [ModelMember, Seam]; unlinks: [Seam, ModelMember];
 });
 fn scope(_: &Intent) -> String {
     "a".into()
@@ -224,6 +244,16 @@ impl OperationHandler<Schema, Binding> for Handler {
         let plan = plan.unwrap_or_default();
         let result = (|| {
             let model = reader.resolve_entity(ModelKey::at("ModelKey"), "a".to_owned())?;
+            for (_, owner) in &plan.owners {
+                reader.resolve_entity(ModelKey::at("ModelKey"), owner.clone())?;
+            }
+            for (_, from, to) in &plan.moves {
+                let from = reader.resolve_entity(ModelKey::at("ModelKey"), from.clone())?;
+                reader
+                    .relations_from(ModelMember::reference(), &from)
+                    .map_err(HandlerExecutionDenial::new)?;
+                reader.resolve_entity(ModelKey::at("ModelKey"), to.clone())?;
+            }
             let mut names = BTreeMap::new();
             let mut members = BTreeMap::new();
             for key in plan.reads {
@@ -240,6 +270,10 @@ impl OperationHandler<Schema, Binding> for Handler {
                     .map_err(HandlerExecutionDenial::new)?;
                 names.insert(key.clone(), name);
                 members.insert(key, member);
+            }
+            for key in plan.plain_reads {
+                let member = reader.resolve_entity(MemberKey::at("MemberKey"), key)?;
+                reader.entity(&member, Member::reference())?;
             }
             let mut seam_names = BTreeMap::new();
             for (label, from, to) in plan.seam_reads {

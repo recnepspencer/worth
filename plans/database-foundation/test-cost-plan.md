@@ -624,3 +624,88 @@ graph; fetching dependencies executes no UI build or test. Add no workspace
 registry. Fail on missing manifests/locks, preserve Cargo errors and stop on its
 original failure code. Prove preparation and command/environment routing with
 fixtures and a dry run. Hosted clean-runner success remains unrun locally.
+
+### B5 Part 2: Store test profile tuning, adversarial sweep speedups, nextest tiering, and Store `proptest` suites
+
+Boundary review: `workspaces/worth-store/Cargo.toml` previously left all 42 inner
+Store production crates, all 6 Store testkits/support crates, and 5 root path
+dependencies (`worth-proof`, `worth-foundational`, `worth-execution`,
+`worth-relational`, `worth-signal`) at `opt-level = 0` under `[profile.test]`.
+Because `[profile.test]` inherits `[profile.dev]` (whose named `opt-level = 0`
+overrides beat `[profile.test.package."*"]`), `[profile.test.package]` now sets
+explicit `opt-level = 2` overrides for those 5 root path dependencies alongside
+the 42 inner Store production crates and 6 Store testkits/support crates, while
+keeping `[profile.test]` at `opt-level = 0` (so all 26 `worth-store-court-*`
+crates and `store-test-runner` stay unoptimized) and cutting runtime dramatically
+without incurring an optimizing rebuild when editing a court test.
+`[profile.dev]`, `[profile.dev.package]`, and `[profile.ci-test]` stay untouched,
+`[build] rustflags` continues enforcing `-C overflow-checks=on`, and
+`[profile.diagnostic-test]` inherits `dev` (instead of `test`) so isolated
+compiler-boundary fixtures preserve their baseline `opt-level = 0` behavior and
+never inherit the new named `[profile.test.package]` `opt-level = 2` overrides.
+
+In `worth-store-court-application`'s adversarial media fault sweeps
+(`media_fault_sweep.rs`, `media_fault_ops.rs`, `parallel.rs`, and
+`support/killed_child/declarations.rs`):
+- Every cut retains real OS child process kills (`killed_child::run_and_kill`)
+  because dropping a faulted `WorthQueryApplicationHome` in-process does not
+  expose `abort_for_test()` and leaves the directory `OwnershipContended`.
+- `media_fault_sweep.rs` now uses `Arc<AtomicBool>` fail-fast across up to 8
+  parallel workers (reusing the calibrated home for worker 0 and preparing extra
+  homes in parallel), and reuses one sealed `RestorableHome` across all control
+  and frame-damage checks in `unrecoverable_media_damage_refuses_host_open_before_service`.
+- `media_fault_ops.rs` now prepares 2..=6 calibrated homes in parallel with
+  in-process calibration (removing redundant calibration child spawns), uses
+  `Arc<AtomicBool>` fail-fast, preserves exact role-set agreement across all
+  workers and exact count agreement on `checkpoint`, and fixes a pre-existing
+  `continue` flake on `origin/master` (`1215d0b521`, where independent custody
+  homes differed by ±2 tail ops across processes) using per-worker calibrated
+  dispatch plus bounded tail-variance retries (`MAX_TAIL_RETRIES = 4`, never
+  accepting `actual == 0` or an unkilled miss as coverage — every enumerated cut
+  must achieve `ChildEnd::KilledAtPark`).
+- `support/killed_child/declarations.rs` replaces fixed 10 ms polling with
+  adaptive 1 ms / 2 ms / 10 ms polling while preserving `PARK_DEADLINE` (240 s)
+  and all OS-kill assertions.
+- `parallel.rs` surfaces the first actual failing slot before any skipped (`None`)
+  fail-fast slots.
+
+Nextest tiering (`workspaces/worth-store/.config/nextest.toml`):
+- `[profile.default]` adds a `default-filter` excluding multi-minute exhaustive
+  media sweeps (`media_sweep::`, `media_fault_sweep::host_mutation_media_fault_sweep`,
+  `media_fault_ops::host_checkpoint_media_fault_sweep`,
+  `media_fault_ops::host_continuation_media_fault_sweep`, `adversarial::`
+  `*_io_kills`/`seam_kill_sweep`/`recovery_interruption_oracle`/`cumulative_oracle`,
+  and `certificate_roster_scale::`) so bare `cargo nextest run` stays fast
+  (279 of 319 tests in `worth-store-court-application`). Because Nextest
+  intersects `-E` with `default-filter`, excluded sweeps are run via
+  `--profile ci`, `--profile nightly`, `--ignore-default-filter`, or
+  `store-test-runner`.
+- `[profile.ci]` and `[profile.nightly]` both set `default-filter = 'all()'`
+  (selecting all 319 tests in `worth-store-court-application`), with full-pool
+  `threads-required = "num-test-threads"` reservations and dedicated
+  `slow-timeout` overrides (`15m` under `default` with `--ignore-default-filter`,
+  `30m` under `ci` and `nightly`) for the three Host OS-kill media fault sweeps.
+
+Measured before vs after telemetry (Windows x64, 32 logical cores, `origin/master`
+`1215d0b521` baseline vs tuned profile + sweep optimizations, non-gating telemetry):
+
+| Target / Check | Before (`opt-level = 0`) | After (`B5 Part 2`) | Speedup / Notes |
+|---|---:|---:|---|
+| `unrecoverable_media_damage_refuses_host_open_before_service` | 14.78 s | 2.12 s | **6.98x faster** (4.02 s with Store-only opt; 2.12 s with explicit 5-root-dep opt) |
+| `host_mutation_media_fault_sweep_recovers_to_memory_oracle` | 855.84 s | 494.64 s | **1.73x faster** (100% real OS kills; measured before final 5-root-dep opt) |
+| `host_checkpoint_media_fault_sweep_recovers_to_memory_oracle` | 1318.98 s | 577.26 s | **2.28x faster** (100% real OS kills; measured before final 5-root-dep opt) |
+| `host_continuation_media_fault_sweep_recovers_to_memory_oracle` | FAILED (2x on master) | 333.42 s (PASS) | Sequential calibration + observed-max dispatch + 100% parked OS kills |
+| Incremental court test edit (`worth-store-court-application`) | 25.10 s | 22.38 s | Court crates stay `opt-level = 0` |
+
+Store `proptest` 1.x property suites (dev-dependency only, aligned with root
+`Cargo.lock` `proptest = 1.12.0`, 32–48 bounded cases per property):
+- `worth-store-court-physical-format` (`physical_format::property_laws`, 4 properties, 192 cases, 0.08 s): WAL v1 frame, inline record page (append + generation restamp), extent chunk, and durable root selector round-trip + single-bit flip + truncation corruption denial laws.
+- `worth-store-court-layout-indexes` (`layout_indexes::property_laws`, 4 properties, 128 cases, 0.02 s): fixture-managed multi-leaf `BTreeNodeV1` codec, `first_child`/`cell.child` routing, `previous_sibling`/`next_sibling` chain verification, and bounded backup verifier oracle vs `BTreeMap`; unsorted/duplicate/forged-digest `verify_bounded_layout_index_artifact_from_reader` security laws; `BlobCatalogPointKey` lexicographic order across same-object byte-boundary generations and explicit zero denials; and `access_shapes` / degraded-scan within-budget admission plus over-budget denial laws.
+- `worth-store-court-buffer-pool` (`buffer_pool::property_laws`, 1 stateful model property, 48 sequences x <=48 steps, 0.01 s): exact-prediction `PhysicalResidencyPool` state machine predicting every legal success and typed `PhysicalResidencyDenial` across pin/unpin/dirty-candidate/dirty-replacement/writeback-flush/drain/invalidate/foreign-authority transitions, asserting exact drain counts, page byte identity, writeback byte-claim and clean-transition semantics, residency limits, and spotless shutdown.
+- `worth-store-court-snapshots` (`snapshots::property_laws`, 1 stateful property, 48 sequences x <=48 steps, <0.01 s): point-in-time snapshot handle isolation under deliberate same-ID republication with distinct metadata/bounds, read-bound admission/denial, cross-snapshot rejection, bundle forgery refusal, and saturating support estimates.
+- `worth-store-court-branch-deltas` (`branch_deltas::property_laws`, 1 stateful property, 48 sequences x <=48 steps, 0.01 s): branch lineage witness isolation, delta layout admission/raw-plan refusal, stable-basis support, continuation retention/window-resumption priority (`ContinuationRebindRequired` vs `ContinuationWindowOutOfRange`), and broadened-receipt refusal.
+
+Qualification checks verified on `b5/store-test-speed-part2`:
+- Store `proptest` suites: `11/11` tests passing across all 5 court crates (`cargo nextest run --profile ci -E 'test(property_laws::)'`, `0.146 s` warm; re-verified after the explicit 5-root-dep `opt-level = 2` rebuild).
+- Nextest profile inventory (`worth-store-court-application`): `default` = `279`, `ci` = `319`, `nightly` = `319`; `--ignore-default-filter -E 'test(host_continuation_media_fault_sweep)'` selects and passes `host_continuation_media_fault_sweep_recovers_to_memory_oracle` in `333.422 s` (crossing `300 s` under `default` without timeout thanks to the `15m` override); `unrecoverable_media_damage_refuses_host_open_before_service` passes in `2.116 s` after the final `Cargo.toml` + `media_fault_ops.rs` updates.
+- Static & governance gates: `scripts/ci/check_workspace_rust_line_caps.sh dirty` PASS (`16/16` Rust files `<= 400` lines, max 391), `rustfmt --edition 2024 --check` PASS, `git diff --check` PASS, `scripts/test_cost/test_nextest_build.py` `8/8` PASS, and `scripts/check-constitution.ps1` PASS (`boundary-check and agent-context are valid`).

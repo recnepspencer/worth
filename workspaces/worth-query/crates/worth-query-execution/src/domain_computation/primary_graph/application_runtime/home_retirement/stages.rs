@@ -102,6 +102,19 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         .inspection_port(),
                 )?;
         }
+        self.inner
+            .runtime
+            .primary_provider_ref()
+            .settle_correction_pins_for_close(
+                request,
+                &self
+                    .inner
+                    .runtime
+                    .product_runtime_ref()
+                    .owner_ref()
+                    .inspection_port(),
+            )
+            .map_err(WorthQueryHomeRetirementDenial::CorrectionMaterial)?;
         let transport = self
             .inner
             .runtime

@@ -1,3 +1,7 @@
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::shared::SharedCanonicalCommitEnvelopeOwnerPort as _;
+use worth_relational_durability::internal_port::replay::data::verification::RelationalReplayOutcomeOwnerPort as _;
+mod completed_comparison;
+
 use crate::durability::data::RelationalRecoveryStop;
 use std::ops::ControlFlow;
 mod comparison;
@@ -13,12 +17,14 @@ use crate::replay::data::{
 };
 use crate::runtime::RelationalRuntime;
 
-use super::super::diagnostics::record_replay_diagnostic;
 use super::super::planning::{
     demand_replay_envelopes, load_replay_envelope, promised_replay_surfaces,
-    replay_commit_closure_by_commit_id_order, replay_recovery_plan_for_chain,
 };
+use super::commit_closure::replay_commit_closure_by_commit_id_order;
 use super::continuity::validated_replay_continuity_envelope;
+use super::diagnostics::record_replay_diagnostic;
+use super::recovery_plan::replay_recovery_plan_for_chain;
+use super::snapshot_surface::snapshot_surface_is_authoritative;
 use super::strategy_replay::verify_strategy_reexecution_surface;
 use super::ReplayAuthority;
 
@@ -61,8 +67,14 @@ impl<'runtime> ReplayAuthority<'runtime> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<RelationalReplayOutcome, RelationalRecoveryStop> {
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
-        let _source_envelopes =
-            demand_replay_envelopes(self.runtime, execution, request.commit_id)?;
+        let _source_envelopes = demand_replay_envelopes(
+            &self.runtime.history,
+            execution,
+            self.runtime
+                .history()
+                .inspect_commit_ancestry(request.commit_id)
+                .commit_ids(),
+        )?;
         let admission = match self.admit_replay_target(&request) {
             Ok(admission) => admission,
             Err(outcome) => return Ok(outcome),
@@ -79,7 +91,11 @@ impl<'runtime> ReplayAuthority<'runtime> {
         &self,
         request: &RelationalReplayRequest,
     ) -> Result<ReplayAdmission, RelationalReplayOutcome> {
-        let Some(envelope) = load_replay_envelope(self.runtime, request.commit_id) else {
+        #[cfg(test)]
+        replay_contacts::observe();
+        let Some(envelope) =
+            load_replay_envelope(self.runtime.history.canonical_read(), request.commit_id)
+        else {
             return Err(self.fail_and_record(
                 request.clone(),
                 None,
@@ -97,22 +113,19 @@ impl<'runtime> ReplayAuthority<'runtime> {
                 None,
             ));
         }
-        let commit_closure = match replay_commit_closure_by_commit_id_order(
-            self.runtime,
-            self.runtime,
-            request.commit_id,
-        ) {
-            Ok(chain) => chain,
-            Err(failure) => {
-                return Err(self.fail_and_record(
-                    request.clone(),
-                    Some(&envelope),
-                    None,
-                    failure,
-                    None,
-                ));
-            }
-        };
+        let commit_closure =
+            match replay_commit_closure_by_commit_id_order(self.runtime, request.commit_id) {
+                Ok(chain) => chain,
+                Err(failure) => {
+                    return Err(self.fail_and_record(
+                        request.clone(),
+                        Some(&envelope),
+                        None,
+                        failure,
+                        None,
+                    ));
+                }
+            };
         let verification_plan = ReplayVerificationPlan::from_mode(request.verification_mode);
         if let Err(mismatch) =
             validated_replay_continuity_envelope(self.runtime, &envelope, &verification_plan)
@@ -124,8 +137,11 @@ impl<'runtime> ReplayAuthority<'runtime> {
                 mismatch,
             ));
         }
-        let compared_surfaces =
-            promised_replay_surfaces(self.runtime, &envelope, &commit_closure, None);
+        let compared_surfaces = promised_replay_surfaces(
+            snapshot_surface_is_authoritative(self.runtime, &envelope, &commit_closure),
+            &envelope,
+            None,
+        );
         let mut mismatches = Vec::new();
         audit_retained_envelope_authority(self.runtime, &mut mismatches, &envelope, None);
         if !mismatches.is_empty() {
@@ -235,117 +251,6 @@ impl<'runtime> ReplayAuthority<'runtime> {
         }))
     }
 
-    fn compare_replay_reconstruction(
-        &self,
-        request: RelationalReplayRequest,
-        admission: ReplayAdmission,
-        reconstruction: ReplayReconstruction,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<RelationalReplayOutcome, RelationalRecoveryStop> {
-        crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
-        let _reconstructed_envelopes =
-            demand_replay_envelopes(&reconstruction.runtime, execution, request.commit_id)?;
-        let compared_surfaces = promised_replay_surfaces(
-            self.runtime,
-            &admission.envelope,
-            &admission.commit_closure,
-            Some(&reconstruction.envelope),
-        );
-        let mut mismatches = Vec::new();
-        if compared_surfaces.contains(&ReplayObservableSurface::Strategy) {
-            verify_strategy_reexecution_surface(
-                self.runtime,
-                &mut mismatches,
-                &admission.envelope,
-                &admission.commit_closure,
-                request.verification_mode,
-                execution,
-            )?;
-        }
-        crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
-        let selected_lineage_authority =
-            if compared_surfaces.contains(&ReplayObservableSurface::Lineage) {
-                match select_replay_lineage_authority(
-                    self.runtime,
-                    &admission.envelope,
-                    request.verification_mode,
-                ) {
-                    Ok(selected) => Some(selected),
-                    Err(()) => {
-                        return Ok(self.fail_and_record(
-                            request,
-                            Some(&admission.envelope),
-                            Some(&admission.commit_closure),
-                            ReplayFailureClass::AuthoritativeBasisUnavailable,
-                            None,
-                        ));
-                    }
-                }
-            } else {
-                None
-            };
-        audit_retained_envelope_authority(
-            self.runtime,
-            &mut mismatches,
-            &admission.envelope,
-            selected_lineage_authority.as_ref(),
-        );
-        let validated_envelope = match validated_replay_continuity_envelope(
-            self.runtime,
-            &admission.envelope,
-            &admission.verification_plan,
-        ) {
-            Ok(validated) => validated,
-            Err(mismatch) => {
-                return Ok(self.record_continuity_rejection(
-                    request,
-                    &admission.envelope,
-                    &admission.commit_closure,
-                    mismatch,
-                ))
-            }
-        };
-        let validated_replayed_envelope = match validated_replay_continuity_envelope(
-            self.runtime,
-            &reconstruction.envelope,
-            &admission.verification_plan,
-        ) {
-            Ok(validated) => validated,
-            Err(mismatch) => {
-                return Ok(self.record_continuity_rejection(
-                    request,
-                    &admission.envelope,
-                    &admission.commit_closure,
-                    mismatch,
-                ))
-            }
-        };
-        compare_replay_surfaces(
-            execution,
-            self.runtime,
-            &admission.verification_plan,
-            &mut mismatches,
-            &compared_surfaces,
-            &admission.envelope,
-            &reconstruction.envelope,
-            &validated_envelope,
-            &validated_replayed_envelope,
-            &reconstruction.runtime,
-            &request,
-            selected_lineage_authority.as_ref(),
-        )?;
-        crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
-        let outcome = replay_comparison_outcome(
-            request,
-            &admission,
-            &compared_surfaces,
-            mismatches,
-            selected_lineage_authority.as_ref(),
-        );
-        record_replay_diagnostic(self.runtime, &outcome.requested, &outcome);
-        Ok(outcome)
-    }
-
     pub fn replay_range(
         &self,
         branch_id: BranchId,
@@ -392,6 +297,18 @@ impl<'runtime> ReplayAuthority<'runtime> {
             ReplayFailureClass::ObservableMismatch,
             Some(mismatch),
         )
+    }
+}
+
+#[cfg(test)]
+mod replay_contacts {
+    use std::cell::Cell;
+    thread_local! { static CONTACTS: Cell<usize> = const { Cell::new(0) }; }
+    pub(super) fn observe() {
+        CONTACTS.with(|count| count.set(count.get() + 1));
+    }
+    pub(super) fn count() -> usize {
+        CONTACTS.with(Cell::get)
     }
 }
 

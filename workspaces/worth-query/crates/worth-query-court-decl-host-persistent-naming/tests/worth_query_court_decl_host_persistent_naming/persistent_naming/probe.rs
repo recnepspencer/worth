@@ -10,7 +10,7 @@ use std::sync::Mutex;
 
 use super::*;
 use worth_query_decl::facade::application_naming::{
-    NameResolutionDenial, NameSelection, ResolvedName, WorthQueryName,
+    NameCandidate, NameResolutionDenial, NameSelection, ResolvedName, WorthQueryName,
 };
 use worth_query_host::facade::application_naming::ExecutionNameResolveDenial;
 
@@ -43,11 +43,42 @@ pub enum Observation {
         label: String,
         candidates: Vec<WorthQueryName<Member>>,
     },
+    /// Resolution refused with every live candidate and the keys of the
+    /// models that own it.
+    AmbiguousOwned {
+        label: String,
+        candidates: Vec<(WorthQueryName<Member>, Vec<String>)>,
+    },
+    /// The requested model owns none of the matching live candidates, listed
+    /// with the keys of the models that do.
+    NotInOwner {
+        label: String,
+        candidates: Vec<(WorthQueryName<Member>, Vec<String>)>,
+    },
+}
+
+/// Where a held name is resolved.
+#[derive(Clone)]
+enum Scope {
+    /// Across every model.
+    Anywhere,
+    /// Across every model, reporting each ambiguous candidate's owners.
+    AnywhereOwned,
+    /// Within the model keyed by this value.
+    In(String),
+}
+
+#[derive(Clone)]
+struct Held {
+    label: String,
+    name: WorthQueryName<Member>,
+    selection: NameSelection,
+    scope: Scope,
 }
 
 #[derive(Default)]
 struct Probe {
-    held: Vec<(String, WorthQueryName<Member>, NameSelection)>,
+    held: Vec<Held>,
     observed: Vec<Observation>,
 }
 
@@ -65,14 +96,47 @@ pub fn hold_selecting(
     name: WorthQueryName<Member>,
     selection: NameSelection,
 ) {
+    hold_scoped(token, label, name, selection, Scope::Anywhere);
+}
+
+/// Holds `name` resolved across every model, with each ambiguous
+/// candidate's owning models reported.
+pub fn hold_owned(
+    token: &str,
+    label: &str,
+    name: WorthQueryName<Member>,
+    selection: NameSelection,
+) {
+    hold_scoped(token, label, name, selection, Scope::AnywhereOwned);
+}
+
+/// Holds `name` resolved only within the model keyed `owner`.
+pub fn hold_in(
+    token: &str,
+    label: &str,
+    name: WorthQueryName<Member>,
+    selection: NameSelection,
+    owner: &str,
+) {
+    hold_scoped(token, label, name, selection, Scope::In(owner.to_owned()));
+}
+
+fn hold_scoped(
+    token: &str,
+    label: &str,
+    name: WorthQueryName<Member>,
+    selection: NameSelection,
+    scope: Scope,
+) {
     let mut probes = PROBES
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
-    probes
-        .entry(token.to_owned())
-        .or_default()
-        .held
-        .push((label.to_owned(), name, selection));
+    probes.entry(token.to_owned()).or_default().held.push(Held {
+        label: label.to_owned(),
+        name,
+        selection,
+        scope,
+    });
 }
 
 /// Takes what probe runs carrying `token` observed since the last take.
@@ -95,8 +159,9 @@ pub struct Intent {
 }
 worth_query_structured_value_binding!(pub Input for Intent { identity: "persistent-naming.probe.v1" });
 worth_query_operation!(pub ProbeNames for Schema, input Input; access {
-    read_entities: [Model, Member]; read_fields: [ModelKey::at("ModelKey"), ModelValue::at("ModelValue"), MemberKey::at("MemberKey")];
-    read_relations: [Seam]; writes: [ModelValue::at("ModelValue")];
+    read_entities: [Model, Member]; read_fields: [ModelKey::at("ModelKey"), ModelValue::at("ModelValue"), MemberKey::at("MemberKey"),
+        HeldTarget::at("HeldTarget"), HeldAnchor::at("HeldAnchor")];
+    read_relations: [Seam, ModelMember]; writes: [ModelValue::at("ModelValue")];
 });
 fn scope(_: &Intent) -> String {
     "a".into()
@@ -139,17 +204,67 @@ impl OperationHandler<Schema, Binding> for Handler {
                 });
                 live.push((key.clone(), member));
             }
-            let held = PROBES
+            let mut held = PROBES
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner)
                 .get(&input.token)
                 .map(|probe| probe.held.clone())
                 .unwrap_or_default();
-            for (label, name, selection) in held {
-                let resolved = reader
-                    .reader()
-                    .resolve(&name, &selection)
-                    .map_err(HandlerExecutionDenial::new)?;
+            // What model `a`'s own record holds, resolved like any held name.
+            if let Some(target) = reader.field(&model, HeldTarget::at("HeldTarget"))? {
+                held.push(Held {
+                    label: "stored-target".into(),
+                    name: target.name(),
+                    selection: target.selection().clone(),
+                    scope: Scope::Anywhere,
+                });
+            }
+            if let Some(anchor) = reader.field(&model, HeldAnchor::at("HeldAnchor"))? {
+                held.push(Held {
+                    label: "stored-anchor".into(),
+                    name: anchor,
+                    selection: NameSelection::Exact,
+                    scope: Scope::Anywhere,
+                });
+            }
+            let mut models = BTreeMap::from([("a".to_owned(), model.clone())]);
+            if held
+                .iter()
+                .any(|held| !matches!(held.scope, Scope::Anywhere))
+            {
+                let other = reader.resolve_entity(ModelKey::at("ModelKey"), "b".to_owned())?;
+                models.insert("b".to_owned(), other);
+            }
+            let owned = |candidates: &[NameCandidate<Member, _>]| {
+                candidates
+                    .iter()
+                    .map(|candidate| {
+                        let owners = candidate.owners().iter().map(|owner| {
+                            let key = models.iter().find(|(_, model)| *model == owner);
+                            key.map_or_else(|| "?".to_owned(), |(key, _)| key.clone())
+                        });
+                        (candidate.name(), owners.collect())
+                    })
+                    .collect::<Vec<(WorthQueryName<Member>, Vec<String>)>>()
+            };
+            for Held {
+                label,
+                name,
+                selection,
+                scope,
+            } in held
+            {
+                let resolved = match &scope {
+                    Scope::In(owner) => {
+                        reader
+                            .reader()
+                            .resolve_in(&models[owner], &name, &selection)
+                    }
+                    Scope::Anywhere | Scope::AnywhereOwned => {
+                        reader.reader().resolve(&name, &selection)
+                    }
+                }
+                .map_err(HandlerExecutionDenial::new)?;
                 observed.push(match resolved {
                     Ok(ResolvedName::Exact(identity)) => {
                         live.iter().find(|(_, member)| *member == identity).map_or(
@@ -176,7 +291,22 @@ impl OperationHandler<Schema, Binding> for Handler {
                     },
                     Err(ExecutionNameResolveDenial::Resolution(
                         NameResolutionDenial::Ambiguous { candidates },
-                    )) => Observation::Ambiguous { label, candidates },
+                    )) if matches!(scope, Scope::Anywhere) => Observation::Ambiguous {
+                        label,
+                        candidates: candidates.iter().map(NameCandidate::name).collect(),
+                    },
+                    Err(ExecutionNameResolveDenial::Resolution(
+                        NameResolutionDenial::Ambiguous { candidates },
+                    )) => Observation::AmbiguousOwned {
+                        label,
+                        candidates: owned(&candidates),
+                    },
+                    Err(ExecutionNameResolveDenial::Resolution(
+                        NameResolutionDenial::NoCandidateInOwner { candidates },
+                    )) => Observation::NotInOwner {
+                        label,
+                        candidates: owned(&candidates),
+                    },
                     Err(refusal) => Observation::ResolveRefused {
                         label,
                         refusal: format!("{refusal:?}"),

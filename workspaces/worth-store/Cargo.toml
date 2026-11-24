@@ -80,15 +80,87 @@ worth-proof.opt-level = 0
 worth-foundational.opt-level = 0
 worth-execution.opt-level = 0
 worth-relational.opt-level = 0
+worth-relational-contracts.opt-level = 0
+worth-relational-storage.opt-level = 0
+worth-relational-branch.opt-level = 0
+worth-relational-publication.opt-level = 0
+worth-relational-durability.opt-level = 0
+worth-relational-indexes.opt-level = 0
+worth-relational-lineage.opt-level = 0
+worth-relational-merge.opt-level = 0
+worth-relational-mutation.opt-level = 0
 worth-signal.opt-level = 0
 
 [profile.test.package]
 "*".opt-level = 2
-worth-proof.opt-level = 0
-worth-foundational.opt-level = 0
-worth-execution.opt-level = 0
-worth-relational.opt-level = 0
-worth-signal.opt-level = 0
+# Optimize the root path dependencies (overriding [profile.dev.package]'s
+# inherited opt-level = 0 entries), all 42 inner Store production crates, and
+# all 6 Store testkits/support crates in test builds. All 26 court crates and
+# store-test-runner stay on [profile.test] opt-level = 0 so editing a court test
+# stays fast and never triggers an optimizing rebuild. Overflow checks remain
+# enforced by workspace [build] rustflags.
+worth-proof.opt-level = 2
+worth-foundational.opt-level = 2
+worth-execution.opt-level = 2
+worth-relational.opt-level = 2
+worth-relational-contracts.opt-level = 2
+worth-relational-storage.opt-level = 2
+worth-relational-branch.opt-level = 2
+worth-relational-publication.opt-level = 2
+worth-relational-durability.opt-level = 2
+worth-relational-indexes.opt-level = 2
+worth-relational-lineage.opt-level = 2
+worth-relational-merge.opt-level = 2
+worth-relational-mutation.opt-level = 2
+worth-signal.opt-level = 2
+worth-store.opt-level = 2
+worth-store-analysis.opt-level = 2
+worth-store-application.opt-level = 2
+worth-store-aspect-native.opt-level = 2
+worth-store-authority.opt-level = 2
+worth-store-blob-chunks.opt-level = 2
+worth-store-branch-deltas.opt-level = 2
+worth-store-budgets.opt-level = 2
+worth-store-buffer-pool.opt-level = 2
+worth-store-bulk.opt-level = 2
+worth-store-certification.opt-level = 2
+worth-store-claim-boundaries.opt-level = 2
+worth-store-contracts.opt-level = 2
+worth-store-extensions.opt-level = 2
+worth-store-formal-models.opt-level = 2
+worth-store-io-scheduler.opt-level = 2
+worth-store-layout-indexes.opt-level = 2
+worth-store-live-query.opt-level = 2
+worth-store-lsm-authority.opt-level = 2
+worth-store-maintenance.opt-level = 2
+worth-store-modes.opt-level = 2
+worth-store-offline-integrity-observer.opt-level = 2
+worth-store-offline-verifier.opt-level = 2
+worth-store-operations.opt-level = 2
+worth-store-physical-backend.opt-level = 2
+worth-store-physical-certification.opt-level = 2
+worth-store-physical-format.opt-level = 2
+worth-store-physical-integrity.opt-level = 2
+worth-store-physical-isolation.opt-level = 2
+worth-store-readiness.opt-level = 2
+worth-store-reclaim-policy.opt-level = 2
+worth-store-recovery-physics.opt-level = 2
+worth-store-recovery-runtime.opt-level = 2
+worth-store-relational.opt-level = 2
+worth-store-replication.opt-level = 2
+worth-store-retention.opt-level = 2
+worth-store-schema-lineage.opt-level = 2
+worth-store-security.opt-level = 2
+worth-store-snapshots.opt-level = 2
+worth-store-subscription-support.opt-level = 2
+worth-store-test-support.opt-level = 2
+worth-store-testkit-application-oracle.opt-level = 2
+worth-store-testkit-executables.opt-level = 2
+worth-store-testkit-recovery-runtime.opt-level = 2
+worth-store-testkit-store.opt-level = 2
+worth-store-testkit-sweep.opt-level = 2
+worth-store-tiering.opt-level = 2
+worth-store-wal.opt-level = 2
 
 [profile.ci-test]
 inherits = "test"
@@ -96,12 +168,13 @@ debug = "line-tables-only"
 incremental = false
 
 [profile.diagnostic-test]
-inherits = "test"
+inherits = "dev"
 debug = 2
 incremental = false
 opt-level = 0
 
-# Isolated compiler fixtures see Store members as path dependencies. Keep all
-# type-checking dependencies unoptimized instead of inheriting test's wildcard.
+# Isolated compiler fixtures see Store members as path dependencies. Inherit
+# `dev` (not `test`) and keep "*" at opt-level = 0 so type-checking fixtures
+# stay unoptimized and never inherit [profile.test.package] opt-level = 2 rules.
 [profile.diagnostic-test.package]
 "*".opt-level = 0

@@ -1,5 +1,10 @@
 //! Relation custody follows its producer even when only its other endpoint suspends.
+#[cfg(not(test))]
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::custody::RelationalRequiredOutputPublicationFieldsPort as _;
 use super::*;
+use crate::mvcc::publication::application_publication::meaning_fixture::{
+    native_meaning_for_test, native_roles_for_test,
+};
 
 #[test]
 fn retained_producer_keeps_owned_incident_relation_when_other_group_endpoint_is_suspended() {
@@ -12,7 +17,7 @@ fn current_group_survives_owned_birth_endpoint_replacement_retirement_and_omissi
 }
 
 fn run(replace_endpoint: bool) {
-    let request = crate::test_execution_policy::serial_request();
+    let request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     let mut runtime = runtime_with_test_schema();
     let receipt = runtime
@@ -174,13 +179,13 @@ fn run(replace_endpoint: bool) {
                 &basis,
                 producer,
                 &dependency,
-                &crate::mvcc::native_meaning_fixture(family),
-                &crate::mvcc::native_roles_fixture(&[(id, KindId(1))], posture),
+                &native_meaning_for_test(family),
+                &native_roles_for_test(&[(id, KindId(1))], posture),
             )
             .expect(
                 "both complete groups retain custody, including the retained relation producer",
             );
-        assert_eq!(cold.origin.as_ref().birth, birth);
+        assert_eq!(cold.origin().as_ref().birth, birth);
     }
 }
 
@@ -200,8 +205,7 @@ fn replace_birth_endpoint(
         kind_id: KindId(1),
         client_key: crate::symbols::data::ClientKey::raw("replacement-a"),
     };
-    let mut roles =
-        crate::mvcc::native_roles_fixture(&[(old, KindId(1))], RequiredOutputRolePosture::Preserve);
+    let mut roles = native_roles_for_test(&[(old, KindId(1))], RequiredOutputRolePosture::Preserve);
     roles.push(RequiredOutputRoleTarget {
         role: "joined-a".into(),
         entity_name: "native-unit-output".into(),
@@ -233,10 +237,9 @@ fn replace_birth_endpoint(
     .unwrap();
     let joined = moved.created_entity(&replacement).unwrap();
     release_test_commit_snapshot(runtime, &moved);
-    let mut roles =
-        crate::mvcc::native_roles_fixture(&[(old, KindId(1))], RequiredOutputRolePosture::Retire);
+    let mut roles = native_roles_for_test(&[(old, KindId(1))], RequiredOutputRolePosture::Retire);
     roles[0].role = "retired-a".into();
-    roles.extend(crate::mvcc::native_roles_fixture(
+    roles.extend(native_roles_for_test(
         &[(joined, KindId(1))],
         RequiredOutputRolePosture::Preserve,
     ));
@@ -264,10 +267,7 @@ fn replace_birth_endpoint(
         complete(
             owner,
             retired.required_output_publication(installed).unwrap(),
-            crate::mvcc::native_roles_fixture(
-                &[(joined, KindId(1))],
-                RequiredOutputRolePosture::Preserve,
-            ),
+            native_roles_for_test(&[(joined, KindId(1))], RequiredOutputRolePosture::Preserve),
             5,
         ),
     )
@@ -280,14 +280,11 @@ fn replace_birth_endpoint(
             &test_owner_main_basis(runtime).unwrap(),
             "group-a-current",
             &[5; 32],
-            &crate::mvcc::native_meaning_fixture("group-a"),
-            &crate::mvcc::native_roles_fixture(
-                &[(joined, KindId(1))],
-                RequiredOutputRolePosture::Preserve,
-            ),
+            &native_meaning_for_test("group-a"),
+            &native_roles_for_test(&[(joined, KindId(1))], RequiredOutputRolePosture::Preserve),
         )
         .expect("the later complete publication is valid before materialization");
-    assert_eq!(cold.origin.commit.commit_id, current.commit.commit_id);
+    assert_eq!(cold.origin().commit.commit_id, current.commit.commit_id);
     joined
 }
 
@@ -297,7 +294,7 @@ fn complete(
     roles: Vec<RequiredOutputRoleTarget>,
     dependency: u8,
 ) -> RequiredOutputPublication {
-    let meaning = previous.origin.as_ref().meaning.clone();
+    let meaning = previous.origin().as_ref().meaning.clone();
     let admission = owner
         .admit_required_output_succession(
             owner.admit_required_output("group-a-current", [dependency; 32]),

@@ -3,7 +3,13 @@ use super::{RawNonLiveKernelOutcome, RawOneShotRows};
 use worth_execution::ChargedBytes;
 impl ChargedBytes for RawNonLiveKernelOutcome {
     fn additional_charged_bytes(&self) -> u64 {
-        let Self { raw } = self;
+        let Self {
+            raw,
+            persistent_names,
+        } = self;
+        let names = persistent_names
+            .as_ref()
+            .map_or(0, |names| names.retained_bytes() as u64);
         let RawOneShotRows {
             material_source: _material_source,
             rows,
@@ -38,7 +44,7 @@ impl ChargedBytes for RawNonLiveKernelOutcome {
             .as_ref()
             .is_some_and(|allocation| allocation.has_payment())
         {
-            return 0;
+            return names;
         }
         let sources = source_footprints.iter().fold(
             (source_footprints.capacity() as u64).saturating_mul(std::mem::size_of::<
@@ -56,6 +62,7 @@ impl ChargedBytes for RawNonLiveKernelOutcome {
             },
         );
         rows.additional_charged_bytes()
+            .saturating_add(names)
             .saturating_add(sources)
             .saturating_add(
                 result_set_source

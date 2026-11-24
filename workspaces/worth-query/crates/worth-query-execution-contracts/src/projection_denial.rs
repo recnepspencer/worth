@@ -22,6 +22,14 @@ pub enum WorthQueryApplicationProjectionDenialKind {
     RelationCardinalityMismatch,
     /// A required relation was withheld by governed disclosure.
     RelationOmitted,
+    /// Persistent names were not read for this projection: the read lane does
+    /// not project names, or the name index refused at the read's basis.
+    PersistentNamesUnavailable,
+    /// The row's record carries no persistent name a required name slot
+    /// could project.
+    PersistentNameMissing,
+    /// The row's record is named as another kind than the name slot's.
+    PersistentNameKindMismatch,
     /// Application projection code rejected the row with `reject`.
     DomainProjectionRejected,
 }

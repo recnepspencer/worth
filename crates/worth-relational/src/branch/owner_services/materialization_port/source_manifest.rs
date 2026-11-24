@@ -3,20 +3,21 @@
 //! C, selected entities E and their incident relations R; unrelated roots are
 //! never traversed. The actual selected root supplies ownership declarations.
 use super::*;
+use worth_relational_contracts::internal_port::schema::data::current_publication_storage::CurrentPublicationStorageOwnerPort as _;
+use worth_relational_contracts::internal_port::schema::data::relation_integrity::aggregate::AggregateIdentityContractDeclarationOwnerPort as _;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 pub(super) fn source_generated_manifest(
     root: &dyn crate::storage::overlay::PartitionAccess,
     registry: &crate::schema::data::RelationalSchemaRegistry,
     generated_entities: &[crate::identity::data::EntityId],
 ) -> Result<Vec<RelationalMaterializationRecord>, RelationalMaterializationError> {
-    let native_metadata = registry
-        .relation_kinds
+    let native_metadata = (*registry.owner_relation_kinds())
         .values()
         .filter_map(|kind| kind.relation_integrity.aggregate_identity.as_ref())
         .flat_map(|contract| contract.metadata_kinds())
         .chain(
-            registry
-                .current_publication_storage
+            (*registry.owner_current_publication_storage())
                 .iter()
                 .flat_map(|storage| storage.metadata_kinds()),
         )

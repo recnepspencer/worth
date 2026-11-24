@@ -1,46 +1,15 @@
 //! Judge one continued round by what it would actually apply, before it can publish.
-use super::super::{
-    custody, writer_custody, RelationalCoupledAssemblyFailure, RequiredOutputPublication,
-};
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::coupled_assembly::producer_posture::RelationalCoupledProducerPostureOwnerPort as _;
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::custody::RelationalRequiredOutputPublicationFieldsPort as _;
+use worth_relational_publication::internal_port::visibility::materialization::read_records::reader::pinned_read::RelationalPinnedReadOwnerPort as _;
+use super::super::{RelationalCoupledAssemblyFailure, RequiredOutputPublication};
 use super::{
-    checkpoint, part, Cause, ExecutionRequest, RelationalAuthoredCoupledCandidate,
-    RelationalCoupledProducerContinuation, TransactionCommitError,
+    application, postponed, ExecutionRequest, RelationalAuthoredCoupledCandidate,
+    RelationalCoupledProducerContinuation,
 };
-use crate::authority::commit::phases::prepare::prepare_authoritative_working_state_scope_for_base;
-use crate::publication::patch::data::preserves_application;
-use crate::transactions::data::{
-    AuthoritativeApplyPlan, EntityMutationIntent, MutationIntent, RelationMutationIntent,
-    WorkerIntentBatch,
-};
+use crate::transactions::data::primitives::WorkerIntentBatch;
 use std::sync::Arc;
-
-/// Publishing a second producing round needs multi-input provenance (public #119).
-const PROVENANCE_ISSUE: u16 = 119;
-
-/// The one #119 postponement refusal, for a continued round or a successor fold.
-pub(in crate::mvcc::publication::application_publication::coupled_assembly) fn postponed(
-    reason: crate::publication::data::CoupledProvenancePostponement,
-    subject: crate::identity::data::EntityId,
-) -> TransactionCommitError {
-    part::reject(
-        Cause::CoupledContinuationProvenancePostponed {
-            issue: PROVENANCE_ISSUE,
-            reason,
-        },
-        subject,
-    )
-}
-
-/// Only these commands can leave a record structurally as it was. Creation,
-/// deletion, replacement and endpoint changes are effects by their application.
-pub(super) fn patches_in_place(intent: &MutationIntent) -> bool {
-    matches!(
-        intent,
-        MutationIntent::Entity(
-            EntityMutationIntent::UpdateFields(_) | EntityMutationIntent::ApplyAspectPatch(_)
-        ) | MutationIntent::Relation(RelationMutationIntent::ApplyAspectPatch(_))
-    )
-}
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::coupled_assembly::continuation::round;
 
 impl RelationalAuthoredCoupledCandidate<'_> {
     /// Consume next-round custody and judge the continued round's body on a
@@ -85,35 +54,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         if !content.is_empty() {
             return Ok(false);
         }
-        let allocation = execution.allocation_policy();
-        let in_place = execution
-            .run_native_with_checkpoint(|context| {
-                let mut raw_keys = std::collections::BTreeSet::new();
-                for intent in batches.iter().flat_map(|batch| &batch.intents) {
-                    checkpoint(
-                        context,
-                        intent.owned_allocation_capacity_bytes().saturating_add(1),
-                    )
-                    .map_err(custody::execution_stop)?;
-                    intent
-                        .collect_raw_client_keys(&mut raw_keys, allocation)
-                        .map_err(|cause| {
-                            TransactionCommitError::conflict(
-                                crate::mvcc::transaction::RelationalTransactionStagingDenial::from(
-                                    cause,
-                                )
-                                .into_conflict(),
-                            )
-                        })?;
-                    if !patches_in_place(intent) || !raw_keys.is_empty() {
-                        return Ok(false);
-                    }
-                }
-                Ok::<_, TransactionCommitError>(true)
-            })
-            .map_err(custody::execution_stop)?
-            .0?;
-        if !in_place {
+        if !application::commands_are_in_place(execution, &batches)? {
             return Ok(false);
         }
         if batches.iter().all(|batch| batch.intents.is_empty()) {
@@ -121,7 +62,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         }
         let predecessor = match self.parts[index].publication.owned() {
             Some(RequiredOutputPublication::Preserve { predecessor, .. }) => {
-                Some(Arc::clone(&predecessor.origin))
+                Some(Arc::clone(predecessor.origin()))
             }
             _ => None,
         };
@@ -130,7 +71,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         let runtime = self
             .runtime
             .with_candidate_symbols(self.mutation.candidate_symbols());
-        let intents = crate::mvcc::OwnedNormalizedPlan::copy_batches(
+        let intents = crate::mvcc::transaction::normalized_plan::OwnedNormalizedPlan::copy_batches(
             self.transaction.transaction_id(),
             &batches,
             execution,
@@ -141,101 +82,18 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             intents,
             execution,
         )?;
-        let deferred_edges = writer_custody::require(
+        round::verify(
             execution,
+            root,
+            plan.plan(),
             &self.binding.owners,
-            writer_custody::Writer::Producer(predecessor.as_deref()),
-            plan.plan(),
-        )?;
-        let (_, mut state, _) = prepare_authoritative_working_state_scope_for_base(
-            &runtime,
-            root.as_ref(),
-            plan.plan(),
-            0,
-            None,
-        );
-        crate::aggregate_identity::guard::ordinary_plan(
-            execution,
+            predecessor.as_deref(),
+            runtime.config.as_ref(),
+            (&runtime).into(),
             runtime.commit_work_budget.as_ref(),
-            self.prepared.schema_authority.registry(),
-            &crate::validation::engine::state_view::InvariantStateView::new(
-                root.as_ref(),
-                self.identity.proposed_version_id(),
-            ),
-            &plan.plan().merged_intents,
-            None,
-        )?;
-        let mut symbols = self
-            .mutation
-            .candidate_symbols()
-            .discardable_copy()
-            .map_err(|cause| RelationalCoupledAssemblyFailure::from_apply(cause.into()))?;
-        let reserved = symbols.reserved_meaning_count();
-        let config = crate::config::data::MutationConfig {
-            cascade_delete_policy: runtime.config.storage.cascade_delete_policy,
-            adjacency_policy: runtime.config.storage.adjacency_policy.clone(),
-            cross_context_policy: runtime.config.storage.cross_context_policy,
-        };
-        let apply = AuthoritativeApplyPlan {
-            transaction_id: plan.plan().transaction_id,
-            version_id: self.identity.proposed_version_id(),
-            merged_intents: plan.plan().merged_intents.clone(),
-        };
-        let outcome = crate::authority::mutation::apply_plan_with_publication_edges(
-            execution,
-            &mut state,
-            &apply,
-            &config,
-            self.prepared.schema_authority.registry(),
-            self.prepared.schema_authority.aspect_plans(),
-            &mut symbols,
-            crate::authority::mutation::BranchLocalDeleteAllowance::default(),
-            &mut self.mutation.identities.records,
-            crate::authority::commit::pipeline::request_lease(execution),
-            runtime.commit_work_budget.clone(),
-            Some(&deferred_edges),
+            &self.prepared.schema_authority,
+            self.identity.proposed_version_id(),
+            &mut self.mutation.identities,
         )
-        .map_err(RelationalCoupledAssemblyFailure::from_apply)?;
-        if !outcome.effect.adjacency.deltas.is_empty()
-            || outcome
-                .created_entities
-                .allocated_identities()
-                .next()
-                .is_some()
-            || outcome.created_relations.iter().next().is_some()
-            || symbols.reserved_meaning_count() != reserved
-        {
-            return Ok(false);
-        }
-        let publication = &outcome.effect.publication;
-        Ok(execution
-            .run_native_with_checkpoint(|context| {
-                for fragment in &publication.patch_fragments {
-                    checkpoint(context, 1).map_err(custody::execution_stop)?;
-                    if !preserves_application(
-                        fragment.structural_change,
-                        fragment.contains_opaque_aspect,
-                        &fragment.semantic_changes,
-                        &fragment.published_patch,
-                        fragment.relation_birth.as_ref(),
-                    ) {
-                        return Ok(false);
-                    }
-                }
-                for record in &publication.changed_records {
-                    checkpoint(context, publication.patch_fragments.len() as u64 + 1)
-                        .map_err(custody::execution_stop)?;
-                    if !publication
-                        .patch_fragments
-                        .iter()
-                        .any(|fragment| &fragment.target == record)
-                    {
-                        return Ok(false);
-                    }
-                }
-                Ok::<_, TransactionCommitError>(true)
-            })
-            .map_err(custody::execution_stop)?
-            .0?)
     }
 }

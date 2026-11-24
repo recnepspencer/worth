@@ -11,7 +11,7 @@ use super::HistoryAccess;
 pub enum BoundedCanonicalCommitPatchDenial {
     CommitUnavailable,
     WorkExhausted { required_records: usize },
-    ReadRequest(crate::execution::RelationalExecutionDenialCause),
+    ReadRequest(crate::execution::denial_cause::RelationalExecutionDenialCause),
 }
 
 impl HistoryAccess<'_> {
@@ -25,7 +25,7 @@ impl HistoryAccess<'_> {
         maximum_records: NonZeroUsize,
     ) -> Result<Vec<PublishedAuthoritativeRecordPatch>, BoundedCanonicalCommitPatchDenial> {
         use BoundedCanonicalCommitPatchDenial as Denial;
-        crate::execution::check_request(execution).map_err(Denial::ReadRequest)?;
+        crate::execution::request_custody::check_request(execution).map_err(Denial::ReadRequest)?;
         let envelope = match self.runtime.history.commit_artifact(commit_id) {
             Some(artifact) => artifact
                 .demand_envelope(execution, 1 << 30)
@@ -44,7 +44,7 @@ impl HistoryAccess<'_> {
             });
         }
         let answer = patches.clone();
-        crate::execution::check_request(execution).map_err(Denial::ReadRequest)?;
+        crate::execution::request_custody::check_request(execution).map_err(Denial::ReadRequest)?;
         Ok(answer)
     }
 }

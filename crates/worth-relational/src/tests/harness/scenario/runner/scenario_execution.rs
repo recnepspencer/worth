@@ -5,6 +5,7 @@ use crate::tests::harness::scenario::seed::DeterministicGenerator;
 use crate::tests::support::{
     checkpoint_for_schema_version, create_entity_in_partition, SchemaVersionId,
 };
+use worth_relational_branch::internal_port::branch::root::content_tests::RelationalBranchRootFixturePort as _;
 
 use super::operation_application::apply_operation;
 use super::operation_selection::choose_operation;
@@ -124,7 +125,7 @@ pub(crate) fn run_property_scenario(
                 .unwrap();
             assert!(root.is_complete(execution, &symbols),
                 "step {step}, {operation:?}, branch {branch:?}: incremental root differs from cold truth");
-            root.assert_derived_inventory_matches_cold();
+            root.assert_derived_inventory_matches_cold_for_test();
         }
         record_any_new_checkpoint(&runtime, &mut checkpoints);
     }

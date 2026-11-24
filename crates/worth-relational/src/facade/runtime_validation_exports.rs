@@ -33,8 +33,7 @@ pub use crate::validation::engine::{InvariantExecutionResult, InvariantObservati
 
 pub use crate::mvcc::{ManagedIndexSourceObservation, ManagedIndexSourceRebuild};
 pub use crate::validation::candidate_source::{
-    ManagedIndexAppliedSourcePublication, ManagedIndexAppliedSourceRead, ManagedIndexBranchImage,
-    ManagedIndexPublishedSourceRoot, ManagedIndexSourceAvailability,
+    ManagedIndexBranchImage, ManagedIndexPublishedSourceRoot, ManagedIndexSourceAvailability,
     ManagedIndexSourceCacheRetirement, ManagedIndexSourceChanges, ManagedIndexSourceContextFactory,
     ManagedIndexSourceContextReceipt, ManagedIndexSourceContextShare, ManagedIndexSourceField,
     ManagedIndexSourceOccurrence, ManagedIndexSourcePreparation,
@@ -54,4 +53,8 @@ pub use worth_foundational::facade::AggregateLineageKind;
 
 pub use crate::validation::data::{
     CustomInvariantAccessDenial, CustomInvariantAccessDenialKind, CustomInvariantFailureCause,
+};
+
+pub use crate::validation::candidate_source::applied_read::{
+    ManagedIndexAppliedSourcePublication, ManagedIndexAppliedSourceRead,
 };

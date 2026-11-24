@@ -1,6 +1,8 @@
 use crate::transactions::data::{
     CommitConflict, ConflictClass, RollbackOutcome, RollbackSummary, SavepointId,
 };
+use worth_relational_contracts::internal_port::mvcc::transaction::staging::RelationalTransactionStagingDenialOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 
 #[derive(Clone, Debug)]
 pub(crate) struct RelationalTransactionSavepoint {

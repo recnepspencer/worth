@@ -122,18 +122,7 @@ impl ProjectionEntitySelection {
             return Ok(current);
         };
         let head = Self::applied(own.head(), prepared, value, limit, execution)?;
-        let mut candidates = current
-            .candidates
-            .into_iter()
-            .filter(|entity| !own.covers(*entity))
-            .chain(
-                head.candidates
-                    .into_iter()
-                    .filter(|entity| own.covers(*entity)),
-            )
-            .collect::<Vec<_>>();
-        candidates.sort_unstable();
-        candidates.dedup();
+        let candidates = own.serve_candidates(current.candidates, head.candidates);
         Ok(Self {
             definition: current.definition,
             examined: current.examined.saturating_add(head.examined),

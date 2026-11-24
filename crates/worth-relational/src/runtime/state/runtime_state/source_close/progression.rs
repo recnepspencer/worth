@@ -1,6 +1,7 @@
 //! The irreversible cut precedes all physical retirement and forbids resume.
 use super::*;
 use crate::runtime::state::RelationalReadCustodyHolders as Holders;
+use worth_relational_contracts::internal_port::change_source::read_custody::RelationalReadCustodyHoldersOwnerPort as _;
 impl RelationalSourceClose {
     /// Validate the complete original source graph while serving remains
     /// resumable. Each cursor step consults the caller's original request;
@@ -48,7 +49,7 @@ impl RelationalSourceClose {
                     .visibility
                     .cache
                     .try_has_memory_states()
-                    .map_err(|()| Denial::Busy)?
+                    .map_err(|_| Denial::Busy)?
                     && state.runtime.history.has_detached_retention_obligations()
                 {
                     return Err(Denial::Native(
@@ -106,7 +107,7 @@ impl RelationalSourceClose {
                     .visibility
                     .cache
                     .try_retire_memory_state(state.cache)
-                    .map_err(|()| Denial::Busy)?
+                    .map_err(|_| Denial::Busy)?
                 {
                     Some(true) => {
                         state.cache_retired = true;

@@ -77,14 +77,20 @@ where
             let mut read = ReadPlan::of(plan);
             read.managed_rows = Some(rows);
             read.material_source = Some(allocation);
-            read_execution::read_bounded_plan_rows(
+            let mut raw = read_execution::read_bounded_plan_rows(
                 runtime,
                 execution,
                 layout,
                 &read,
                 Some(&spent),
                 ReadInterruption::Query(plan.controls.request_scope()),
-            )
+            )?;
+            if ResultValue::<S, B>::PROJECTS_PERSISTENT_NAMES {
+                read_execution::persistent_names::observe_persistent_names(
+                    runtime, execution, plan, &mut raw,
+                );
+            }
+            Ok(raw)
         },
     )
     .map_err(|cause| {

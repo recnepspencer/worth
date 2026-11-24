@@ -1,4 +1,6 @@
 //! View input admission pins before lending the prepared field lookup.
+use worth_relational_indexes::internal_port::indexes::access::prepared_entity_field_lookup::PreparedEntityFieldLookupOwnerPort as _;
+use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::view::VisibilityProjectionViewOwnerPort as _;
 use super::super::prepared_entity_field_lookup::denied;
 use super::{IndexAccess, PreparedEntityFieldLookup};
 use crate::identity::data::KindId;
@@ -20,7 +22,7 @@ impl IndexAccess<'_> {
     ) -> Result<PreparedEntityFieldLookup, BoundedEntityFieldLookupDenial> {
         crate::execution::check_request(execution)
             .map_err(|cause| denied(Denial::Execution(cause), index))?;
-        if !view.is_exact_basis() || !view.is_from_runtime(self.runtime) {
+        if !view.is_exact_basis() || !view.is_from_runtime(self.runtime.runtime_instance_id()) {
             return Err(denied(Denial::SnapshotUnavailable, index));
         }
         let pinned = self.runtime.read_truth().pin_view_read_capability_checked(

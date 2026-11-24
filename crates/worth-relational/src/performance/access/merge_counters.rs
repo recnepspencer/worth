@@ -172,16 +172,4 @@ impl PerformanceAccess<'_> {
             counters.merge_execution_attempts += 1;
         });
     }
-
-    pub(crate) fn count_merge_execution_request(
-        &self,
-        admitted_records: usize,
-        emitted_mutation_intents: usize,
-    ) {
-        self.counters.count(|counters| {
-            counters.merge_execution_requests += 1;
-            counters.merge_execution_records_admitted += admitted_records;
-            counters.merge_execution_mutation_intents_emitted += emitted_mutation_intents;
-        });
-    }
 }

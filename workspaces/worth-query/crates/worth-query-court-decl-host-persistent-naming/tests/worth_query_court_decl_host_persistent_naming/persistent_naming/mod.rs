@@ -15,16 +15,26 @@ use worth_query_testkit_document_retention::facade::document_retention_model::{
 mod navigation_grant;
 mod schema;
 use schema::*;
+pub(crate) use schema::{Member, MemberRole, MEMBER_SCHEME};
+mod completeness;
+pub(crate) mod coupled;
 mod delete;
 mod edit;
+mod ergonomics;
 mod history;
 mod interleaving;
+mod lineage;
+mod named_read;
 mod navigation;
-mod outputs;
-mod probe;
+pub(crate) mod outputs;
+pub(crate) mod probe;
 mod query;
 mod refusals;
-mod world;
+mod scope;
+mod scoped;
+mod stored;
+mod unowned;
+pub(crate) mod world;
 
 pub struct History;
 worth_query_portable_type!(History => "worth.persistent-naming.history.v1");
@@ -45,24 +55,32 @@ impl<B: ApplicationMutationBinding<Schema>> ApplicationActionDelivery<Schema, B>
 pub struct Program;
 impl ApplicationProgramDefinition<Schema> for Program {
     type Contributions = (Contribution,);
-    type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
+    type Outputs = ApplicationProgramOutputs<coupled::producer::Graph>;
     type Rules = ApplicationRuleLeaf;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("owned-model.program.v1");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        vec![ApplicationFeatureSpec::root::<Schema, Entry>()
-            .action::<edit::model::Binding, Completion>()
-            .finish_action()
-            .action::<edit::member::Binding, Completion>()
-            .finish_action()
-            .action::<delete::Binding, Completion>()
-            .finish_action()
-            .action::<probe::Binding, Completion>()
-            .finish_action()
-            .action::<refusals::Binding, Completion>()
-            .finish_action()
-            .action::<outputs::sculpt::Binding, Completion>()
-            .finish_action()
-            .finish()]
+        vec![
+            ApplicationFeatureSpec::root::<Schema, Entry>()
+                .provides::<coupled::producer::EntryOutput>()
+                .action::<edit::model::Binding, Completion>()
+                .finish_action()
+                .action::<edit::member::Binding, Completion>()
+                .finish_action()
+                .action::<delete::Binding, Completion>()
+                .finish_action()
+                .action::<probe::Binding, Completion>()
+                .finish_action()
+                .action::<refusals::Binding, Completion>()
+                .finish_action()
+                .action::<outputs::sculpt::Binding, Completion>()
+                .finish_action()
+                .action::<stored::Binding, Completion>()
+                .finish_action()
+                .action::<coupled::producer::shape::Binding, Completion>()
+                .finish_action()
+                .finish(),
+            coupled::producer::feature(),
+        ]
     }
 }

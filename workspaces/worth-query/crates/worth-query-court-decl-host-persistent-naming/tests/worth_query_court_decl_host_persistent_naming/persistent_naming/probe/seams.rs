@@ -189,7 +189,13 @@ pub(super) fn observe(
             Ok(ResolvedName::Retired { .. }) => SeamObservation::Retired { label },
             Err(ExecutionNameResolveDenial::Resolution(NameResolutionDenial::Ambiguous {
                 candidates,
-            })) => SeamObservation::Ambiguous { label, candidates },
+            })) => SeamObservation::Ambiguous {
+                label,
+                candidates: candidates
+                    .iter()
+                    .map(|candidate| candidate.name())
+                    .collect(),
+            },
             Err(refusal) => SeamObservation::ResolveRefused {
                 label,
                 refusal: format!("{refusal:?}"),

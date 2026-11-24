@@ -1,3 +1,5 @@
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::basis_reads::VisibilityProjectionViewFixturePort as _;
 use crate::facade::branch::{
     RelationalBranchBasisDenial, RelationalBranchDeleteDenial, RelationalBranchTransitionStop,
     RelationalForkDenial,
@@ -8,6 +10,7 @@ use crate::facade::mvcc::{
     RelationalTransactionIntent,
 };
 use crate::facade::transactions::TransactionCommitError;
+use crate::runtime::state::subsystems::history::history_canonical_routes::pending_canonical_publication_route_count;
 use crate::tests::support::*;
 
 #[test]
@@ -205,9 +208,7 @@ fn head_and_retirement_capacity_fail_before_reference_movement() {
         reference_before,
     );
     assert_eq!(
-        publication_runtime
-            .history
-            .pending_canonical_publication_route_count(),
+        pending_canonical_publication_route_count(&publication_runtime.history),
         0
     );
     drop(basis);
@@ -334,7 +335,7 @@ fn prepared_root_cost_is_observational_and_system_publication_remains_current() 
     else {
         panic!("a prepared system-allocated root must publish");
     };
-    let cost = performed.next_basis().inner.root.publication_cost();
+    let cost = performed.next_basis().owner_inner().root.publication_cost();
     assert!(cost.new_authoritative_bytes > 0);
     assert_eq!(cost.touched_regions, 1);
     assert_eq!(
@@ -348,7 +349,7 @@ fn prepared_root_cost_is_observational_and_system_publication_remains_current() 
         .read_truth()
         .try_project_historical_version(committed.commit.version_id)
         .unwrap()
-        .all_authoritative_entity_records(execution)
+        .all_authoritative_entity_records_for_test(execution)
         .expect("read request remains live");
     let record = records
         .iter()
@@ -359,7 +360,7 @@ fn prepared_root_cost_is_observational_and_system_publication_remains_current() 
         Some("observed-root-cost".to_owned())
     );
     assert_eq!(
-        runtime.history.pending_canonical_publication_route_count(),
+        pending_canonical_publication_route_count(&runtime.history),
         0
     );
     release_test_commit_snapshot(&runtime, &committed);

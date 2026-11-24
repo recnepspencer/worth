@@ -1,4 +1,7 @@
 use std::collections::BTreeSet;
+use worth_relational_branch::internal_port::indexes::data::DerivedIndexArtifactsOwnerPort as _;
+use worth_relational_branch::internal_port::inspection::mvcc::sharing::allocation_inventory::RelationalAuthoritativeAllocationLocatorOwnerPort as _;
+use worth_relational_branch::internal_port::inspection::mvcc::sharing::allocation_inventory::RelationalAuthoritativeAllocationObservationOwnerPort as _;
 
 use crate::branch::{RelationalBranchIdentity, RelationalRootAuthoritativeAllocationKind};
 use crate::history::data::CommitId;
@@ -54,13 +57,7 @@ impl RelationalCanonicalPayloadObservation {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum RelationalExcludedAllocationLane {
-    Diagnostics,
-    RetentionMetadata,
-    AllocatorBookkeeping,
-    OptionalCache,
-}
+pub use super::sharing::allocation_inventory::RelationalExcludedAllocationLane;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct RelationalOwnerExcludedAllocationObservation {

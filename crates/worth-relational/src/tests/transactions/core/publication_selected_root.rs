@@ -1,8 +1,11 @@
 use crate::facade::history::BranchId;
 use crate::facade::mvcc::{RelationalPublicationFailureKind, RelationalPublicationOutcome};
+use crate::runtime::state::subsystems::history::history_canonical_routes::pending_canonical_publication_route_count;
 use crate::tests::support::{
     batch_create, runtime_with_test_schema, test_owner_begin_transaction_for_main,
 };
+use worth_relational_branch::internal_port::branch::reference::root_access::RelationalBranchReferenceCellFixturePort as _;
+use worth_relational_publication::internal_port::mvcc::publication::candidate::PreparedRelationalCommitCandidateOwnerPort as _;
 
 #[test]
 fn rootless_selected_publication_fails_before_movement_and_releases_preflight_residue() {
@@ -15,7 +18,7 @@ fn rootless_selected_publication_fails_before_movement_and_releases_preflight_re
     let identity = runtime.main_branch_identity();
     let immutable_commit_count_before = runtime.history().immutable_commit_count();
     let commit_envelopes_before = runtime.history().commit_envelopes_snapshot();
-    let pending_routes_before = runtime.history.pending_canonical_publication_route_count();
+    let pending_routes_before = pending_canonical_publication_route_count(&runtime.history);
     let patch_stream_before = runtime
         .publication()
         .read_patch_stream(
@@ -91,7 +94,7 @@ fn rootless_selected_publication_fails_before_movement_and_releases_preflight_re
         commit_envelopes_before
     );
     assert_eq!(
-        runtime.history.pending_canonical_publication_route_count(),
+        pending_canonical_publication_route_count(&runtime.history),
         pending_routes_before
     );
     assert_eq!(

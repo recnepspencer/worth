@@ -1,11 +1,10 @@
 use std::collections::BTreeSet;
+use worth_relational_branch::internal_port::mvcc::observation::RelationalBranchObservationOwnerPort as _;
 
 use crate::lineage::data::{HistoricalLineageResolution, HistoricalResolutionBoundednessBasis};
 
-use super::resolution::{
-    BranchScopedHistoricalResolutionRequest, HistoricalTraversalScope,
-    SelectedRootReachableCommitScope,
-};
+use super::historical_walk::BranchScopedHistoricalResolutionRequest;
+use super::resolution::{HistoricalTraversalScope, SelectedRootReachableCommitScope};
 use super::LineageAccess;
 
 impl<'runtime> LineageAccess<'runtime> {
@@ -123,7 +122,8 @@ impl<'runtime> LineageAccess<'runtime> {
     ) -> Result<bool, crate::execution::RelationalExecutionDenialCause> {
         if self.runtime.lineage.has_paged_events() {
             let ancestry = reachable_scope.ancestry(self);
-            self.demand_historical_events(
+            super::event_demand::demand_historical_events(
+                &self.runtime.lineage,
                 execution,
                 lineage_id,
                 ancestry.authoring_branches(),

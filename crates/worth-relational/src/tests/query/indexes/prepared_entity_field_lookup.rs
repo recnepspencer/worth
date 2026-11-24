@@ -1,4 +1,5 @@
 use super::*;
+use worth_relational_branch::internal_port::runtime::state::subsystems::visibility::VisibilitySubsystemFixturePort as _;
 mod certification_memory;
 mod population;
 use crate::facade::indexes::{
@@ -85,7 +86,9 @@ fn prepared_field_selection_keeps_its_root_without_reselecting_the_generation() 
     reconstruct_installed_at_head(execution, &runtime);
     update_entity(execution, &runtime, entity, "new-name");
     let before = runtime.index_access().generation_selection_counters();
-    let handles = runtime.visibility.snapshot_handle_registry_cost_counters();
+    let handles = runtime
+        .visibility
+        .snapshot_handle_registry_cost_counters_for_test();
     for (name, expected) in [
         ("pinned-name", vec![entity]),
         ("new-name", vec![]),
@@ -111,7 +114,9 @@ fn prepared_field_selection_keeps_its_root_without_reselecting_the_generation() 
         before
     );
     assert_eq!(
-        runtime.visibility.snapshot_handle_registry_cost_counters(),
+        runtime
+            .visibility
+            .snapshot_handle_registry_cost_counters_for_test(),
         handles
     );
     let certified = runtime

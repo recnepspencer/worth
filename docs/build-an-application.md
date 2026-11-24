@@ -296,6 +296,9 @@ schema using `worth_query_decl::facade::application_naming`:
   binding one closed `ApplicationGroupContinuityRule` (`Anchor`, `Boundary`, or
   `ProducerRole`) to declared member roles, attached with
   `ApplicationSchemaDeclarationBuilder::application_group_name_scheme::<Group>(scheme)`.
+  Installation validates and lowers group schemes, but no operation can yet
+  form or change a group, so Query has no tracked group reads (see the
+  [known gaps](capability-index.md#known-gaps)).
 - **Commit-time birth minting** lowers installed schemes via
   `LoweredExecutionNameSchemeCatalog` and binds them into Relational's schema
   authority (`RelationalSchemaRegistry::install_persistent_name_schemes`).
@@ -416,6 +419,31 @@ commit basis into one Relational naming plan, and Relational's commit
 finalization validates every one against the performed effects and mints.
 An unnamed program carries no naming plan at all.
 
+- **Naming scope (recommended).** `let mut names = writer.naming_scope(occurrence)`
+  binds one `OccurrencePath` for every declaration under it;
+  `names.sub_scope("hole")?` and `names.index("instance", 2)?` open child
+  occurrences on the same writer. `names.birth(Role::Piece)` is a birth under
+  a typed role in that occurrence (chain `.with_discriminator(&d)`), and the
+  scope declares through the writer exactly what the manual calls below
+  declare, so both mint byte-identical names: `create_entity` /
+  `create_entity_in_context` and `link_named` create and name in one call;
+  `name_entity` / `name_relation`, `preserve_entity` / `preserve_relation`,
+  `split_entity` / `split_relation`, `retire_entity` / `retire_relation`,
+  `merge_entity` / `merge_relation`, and `same_commit_entity_name` /
+  `same_commit_relation_name` (a `NameRef<K>` via `.into()`) forward to them.
+  `names.writer()` reaches the writer for other effects.
+- **Least-member merge.** `names.merge_least_entity(&parents, keeper)` (or
+  `merge_least_relation`) keeps the parent whose name sorts least
+  (`WorthQueryName`'s order), in place (`WorthQueryLeastMergeKeeper::InPlace`)
+  or carried onto a created record (`Onto(&target)`), whatever order
+  `parents` lists them in. No parents refuses
+  `WorthQueryOutputNameDenial::EmptyMergeParents` while authoring; one parent
+  refuses at commit like any merge of fewer than two (`LineagePostureMismatch`).
+- **Completeness.** Every installed scheme requires all births named
+  (`require_all_births_named` is the fixed posture, not an option): a commit
+  creating any record of a schemed entity or relation kind without a birth or
+  posture covering it, even beside named siblings, refuses `MissingBirth`
+  naming that record and scheme, with zero effects.
 - **Birth.** `writer.name_created_entity(&created, WorthQueryOutputBirth::new(occurrence, role))`
   names an entity the candidate created; `name_created_relation` names a
   relation linked with `link_for_initialization`. The occurrence key comes
@@ -462,7 +490,9 @@ An unnamed program carries no naming plan at all.
   `merge_relation_names`) with `WorthQueryOutputMergeKeeper::KeepParentInPlace(name)`,
   `KeepParentOnto { keeper, target }` or `MintNew { target, birth }` (a
   split-capable scheme requires the new birth's discriminator). Every held
-  parent name then resolves to the survivor.
+  parent name then resolves to the survivor. `KeepParentInPlace` leaves the
+  keeper's record untouched, so the keeper may live in a partition the
+  candidate never writes; Relational checks it against the commit basis.
 - **Kind safety.** A split parent, merge parent or keeper of another kind
   than the output handle does not compile.
 - **Refusals, all with zero effects.** Naming an output whose kind has no
@@ -493,17 +523,35 @@ An unnamed program carries no naming plan at all.
   same way; undo, redo and checkout then keep held names on each navigated
   node ([names across undo, redo and checkout](#names-across-undo-redo-checkout-and-rebuild)).
 
-Limits: coupled synchronous producers and authored-edit stages cannot yet
-declare output names; a part that does refuses (`ProviderUnsupported`) rather
-than commit its names unnamed. A merge keeping a parent in place refuses
-`LineagePostureMismatch` (`Merge parent must exist at commit basis`) when
-the operation changes no other record stored with the kept one (records one
-operation created are stored together); `KeepParentOnto` and `MintNew` have
-no such limit. An installed operation splits, merges and
+- **Coupled producers and edit-envelope stages.** Every member of one
+  envelope names its outputs exactly as a direct operation does: each later
+  authored stage of `request.edit_envelope()` (or a `HistoryDocument`
+  envelope) and each coupled producer the edit runs (`coupled_outputs`)
+  declares through its own candidate writer or `writer.naming_scope(..)`,
+  and its declarations lower against the envelope's commit basis. Relational's
+  coupled assembly gives each member's plan the same create coordinates its
+  commands take (scoped local keys, prefix-created endpoints, a successor
+  round's chain keys and partitions; a successor round's plan replaces the
+  round it supersedes) and composes the authored prefix's plan and every
+  member's into the envelope's one plan, which commit finalization judges
+  whole. Names are byte-identical to the direct route; a name two members
+  both mint refuses `DuplicateBirth`, a schemed record any member leaves
+  unnamed refuses `MissingBirth`, and a later stage deleting a record an
+  earlier stage created refuses as a stage conflict (`ConflictingIntent`),
+  each with zero effects from every member.
+  A coupled member's decision reads the envelope's unpublished candidate,
+  where names are not read (`WorthQueryDecisionNameDenial::CandidateBasis`):
+  it splits, merges and retires names it holds as values (an intent field
+  or a stored `NamedTarget<K>`), not names it reads there.
+
+Limits: an installed operation splits, merges and
 retires a relation by the name its decision reader read
 ([holding and resolving names](#holding-and-resolving-names)); unlinking a
 named relation with no declared posture still retires its name. Courts:
 [installed operation output names](../workspaces/worth-query/crates/worth-query-court-decl-host-persistent-naming/tests/worth_query_court_decl_host_persistent_naming/persistent_naming/outputs/mod.rs),
+[naming scopes and least-member merges](../workspaces/worth-query/crates/worth-query-court-decl-host-persistent-naming/tests/worth_query_court_decl_host_persistent_naming/persistent_naming/scope.rs),
+[completeness](../workspaces/worth-query/crates/worth-query-court-decl-host-persistent-naming/tests/worth_query_court_decl_host_persistent_naming/persistent_naming/completeness.rs),
+[coupled stages and producers](../workspaces/worth-query/crates/worth-query-court-decl-host-persistent-naming/tests/worth_query_court_decl_host_persistent_naming/persistent_naming/coupled/mod.rs),
 [relation output postures](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_operation_outputs.rs)
 and [same-commit references](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_same_commit_names.rs).
 
@@ -523,9 +571,10 @@ replay:
   name has moved on refuses `RecordNoLongerNamed`.
 - `resolve_entity::<Schema, Entity>(&held, &selection, &mut deps)` /
   `resolve_relation` return `ResolvedName::{Exact, Plural, Retired { at_commit }}`
-  or `NameResolutionDenial::{Ambiguous { candidates }, NoMatchingCandidate,
-  UnknownName, BasisPruned}`. `NameSelection::Exact` on two or more live
-  successors refuses with every candidate; it never picks a least member.
+  or `NameResolutionDenial::{Ambiguous { candidates }, NoCandidateInOwner,
+  NoMatchingCandidate, UnknownName, BasisPruned}`. `NameSelection::Exact` on
+  two or more live successors refuses with every candidate (a
+  `NameCandidate`, read with `name()`); it never picks a least member.
   Cost is O(lineage path), flat in unrelated records and commits.
 - Every read records what it rested on into `NameReadDependencies`;
   `currentness_after_commit(&commit)` reports `Stale` exactly when that
@@ -533,7 +582,8 @@ replay:
   rested on, or birthed a name it found unknown, and `Clean` otherwise.
 - Inside an operation's decision reader, `reader.name_of(&identity)` and
   `reader.resolve(&held, &selection)` require the entity kind to be a
-  declared decision read (`Entity: OperationReads<Operation>`). Every live
+  declared decision read (`Entity: OperationReads<Operation>`); `resolve`
+  also requires the kind's `WorthQueryNamedKind` declaration. Every live
   record the answer rested on is admitted into the read scope, returned as a
   local identity, and keyed as that entity's decision fact, so a split,
   merge, replacement or retirement ending it invalidates the decision. Any
@@ -582,6 +632,86 @@ continuity. Courts:
 [cold-directory restore](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_tracked_cold_directory.rs),
 [decision reader](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_decision_reader.rs), and
 [Bridge continuity](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_bridge_continuity.rs).
+
+#### Names as values, in rows and within an owner
+
+A kind whose names an application stores or resolves declares itself once,
+on its marker, with `decl::application_naming::WorthQueryNamedKind`:
+
+```rust
+impl WorthQueryNamedKind for Face {
+    type Subject = EntityNameSubject;               // or RelationNameSubject
+    type OwnerScope = OwnedThrough<(               // or Unowned
+        OwnerVia<IntroducedBy>,                     // face -> introducing feature
+        OwnerViaReverse<Features, Body>,            // feature <- the body listing it
+    )>;
+}
+```
+
+`Subject` takes the subject name from the marker's own declared `NAME`.
+`OwnerScope` is the chain of declared relations from a named record to the
+entity that owns it: `OwnerVia<R>` follows `R` from its declaring entity to
+`R::To`, `OwnerViaReverse<R, Source>` follows it back to `Source`, and a
+tuple chains up to four hops. A hop that does not start where the previous
+one arrived does not compile. Nothing is ever inferred from a name's text.
+
+- **Stored names.** `WorthQueryName<K>` and `NamedTarget<K>` are ordinary
+  column and input types. Every binding set declared with
+  `worth_query_native_scalar_bindings!` (and `fragment::NativeScalars`)
+  stores them, so `#[derive(WorthQueryRecord)]` takes them as fields with no
+  attribute, as `Option<..>` too; a hand-written set adds
+  `impl<K: WorthQueryNamedKind> Scalar<WorthQueryName<K>>` with
+  `WorthQueryNameApplicationValueBinding<K>` (and
+  `NamedTargetApplicationValueBinding<K>`). `#[derive(WorthQueryAction)]`
+  with `serde::Serialize` carries them as input fields directly. A struct
+  that derives `WorthValue` names the admitted delegate on such a field,
+  because that derive refuses generic owner types:
+  `#[worth_value(delegate = NamedTargetDelegate<Edge>)]` (or
+  `WorthQueryNameDelegate<Edge>`, inside `OptionalDelegate<..>` for an
+  `Option`). The stored form is one versioned, kind-tagged text. Text stored
+  as another kind, subject class or version, and any malformed value,
+  refuses typed (`StoredNameDenial`) and is never reinterpreted. A decoded
+  name is a held reference, not authority: `resolve`, carrier selections and
+  discriminators each admit it only against a recorded birth of that kind,
+  so a value that was never born resolves `UnknownName`.
+- **Projected names.** On `#[derive(WorthQueryProjection)]`, a field marked
+  `#[worth_query(name)]` of type `WorthQueryName<Root>` projects the name
+  the row's root entity carries; `Option<WorthQueryName<Root>>` projects
+  `None` for a record that carries no name. The read observes its rows'
+  names in the same kernel pass, only for a projection that declares a name
+  slot (`PROJECTS_PERSISTENT_NAMES`), and a nested row projects its own. A
+  required name on an unnamed record refuses `PersistentNameMissing`, a name
+  of another kind `PersistentNameKindMismatch`, and a read lane that does
+  not observe names `PersistentNamesUnavailable`: one-shot reads and
+  continuation pages observe them; live, managed-index and applied-candidate
+  reads do not yet. A projected name adds no dependency: a record's name
+  changes only when its lineage ends, which ends the record the row's
+  footprint already tracks. A hand-written projection declares
+  `const PROJECTS_PERSISTENT_NAMES: bool = true` on its
+  `WorthQueryApplicationProjection` impl and reads the same value with
+  `row.name::<Entity>()` / `row.optional_name::<Entity>()`.
+- **Owner-scoped resolution.** `reader.resolve_in(&owner, &held, &selection)`
+  on the decision reader resolves `held` among the live records `owner`
+  holds through the kind's declared owner chain. One resolves `Exact`,
+  several resolve `Plural` under `AllDescendants` and refuse `Ambiguous`
+  otherwise; an owner holding none refuses
+  `NameResolutionDenial::NoCandidateInOwner` with every candidate and the
+  owners that do hold it, and never falls back to another owner. Unscoped
+  `reader.resolve` now reports each `Ambiguous` candidate as a
+  `NameCandidate` carrying `name()` and `owners()` (local identities of the
+  owning entities; empty for an `Unowned` kind), so a caller can pick an
+  owner and call `resolve_in`. The operation declares a read of each
+  relation on the chain; each hop is a tracked adjacency fact of the
+  candidate, so re-owning a candidate invalidates the decision exactly as
+  splitting or retiring it does, and re-owning another record does not.
+  `ExecutionNameReader::resolve_entity_in` takes the owner read as a
+  closure for callers outside a decision reader, and
+  `entity_candidates` returns the matched records for a caller whose owner
+  read can fail.
+
+Courts:
+[stored and projected names](../workspaces/worth-query/crates/worth-query-court-decl-host-persistent-naming/tests/worth_query_court_decl_host_persistent_naming/persistent_naming/ergonomics.rs),
+[owner-scoped resolution](../workspaces/worth-query/crates/worth-query-court-decl-host-persistent-naming/tests/worth_query_court_decl_host_persistent_naming/persistent_naming/scoped.rs).
 
 #### Names across undo, redo, checkout and rebuild
 

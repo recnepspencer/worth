@@ -8,6 +8,7 @@ use crate::facade::schema::{
 };
 use crate::facade::transactions::{CreateIntent, EntitySpec, MutationIntent, WorkerIntentBatch};
 use crate::facade::{identity::PartitionId, symbols::ClientKey};
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 #[test]
 fn initial_schema_installation_moves_empty_exact_basis_without_revoking_retained_reads() {
@@ -122,9 +123,12 @@ fn initial_schema_installation_retains_existing_kinds_and_rejects_duplicates() {
         duplicate.kind(),
         RelationalInitialSchemaInstallationDenialKind::SchemaRejected
     );
-    assert_eq!(runtime.config().schema.registry.entity_kinds.len(), 1);
     assert_eq!(
-        runtime.config().schema.registry.entity_kinds[&KindId(4)].kind_name,
+        (*runtime.config().schema.registry.owner_entity_kinds()).len(),
+        1
+    );
+    assert_eq!(
+        (*runtime.config().schema.registry.owner_entity_kinds())[&KindId(4)].kind_name,
         "existing"
     );
     assert_eq!(
@@ -144,18 +148,8 @@ fn initial_schema_installation_retains_existing_kinds_and_rejects_duplicates() {
         .unwrap();
     assert_eq!(receipt.retained_entity_kind_count(), 2);
     assert_eq!(receipt.retained_relation_kind_count(), 1);
-    assert!(runtime
-        .config()
-        .schema
-        .registry
-        .entity_kinds
-        .contains_key(&KindId(4)));
-    assert!(runtime
-        .config()
-        .schema
-        .registry
-        .entity_kinds
-        .contains_key(&KindId(8)));
+    assert!((*runtime.config().schema.registry.owner_entity_kinds()).contains_key(&KindId(4)));
+    assert!((*runtime.config().schema.registry.owner_entity_kinds()).contains_key(&KindId(8)));
 
     let repeated = runtime
         .prepare_initial_schema_installation()
@@ -166,8 +160,14 @@ fn initial_schema_installation_retains_existing_kinds_and_rejects_duplicates() {
         repeated.kind(),
         RelationalInitialSchemaInstallationDenialKind::InitialInvariantsAlreadySealed
     );
-    assert_eq!(runtime.config().schema.registry.entity_kinds.len(), 2);
-    assert_eq!(runtime.config().schema.registry.relation_kinds.len(), 1);
+    assert_eq!(
+        (*runtime.config().schema.registry.owner_entity_kinds()).len(),
+        2
+    );
+    assert_eq!(
+        (*runtime.config().schema.registry.owner_relation_kinds()).len(),
+        1
+    );
 }
 
 #[test]

@@ -79,6 +79,10 @@ pub(super) fn derive(
             return Err(context.redo_block(basis.planning_counters_at_peak(allowance.peak()), None))
         }
     };
+    let release_head_replay = match &basis.custody {
+        crate::progression::PlanningCustody::PendingPrepared { replay, .. } => Some(replay.head()),
+        _ => None,
+    };
     let successor_candidate = if candidate_required {
         let remaining_observation_bytes = context
             .limits
@@ -93,6 +97,7 @@ pub(super) fn derive(
             media,
             selected.manifest(),
             selected.selector().format(),
+            release_head_replay,
             &mut basis.observed_pages.manifest_budget,
             remaining_observation_bytes,
             &mut context.integrity_trace,

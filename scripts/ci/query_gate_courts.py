@@ -15,7 +15,19 @@ def packages(*names):
     return [part for name in names for part in ("-p", name)]
 
 
-LOWER = ("worth-relational", "worth-execution", "worth-signal",
+RELATIONAL = (
+    "worth-relational",
+    "worth-relational-contracts",
+    "worth-relational-durability",
+    "worth-relational-publication",
+    "worth-relational-storage",
+    "worth-relational-branch",
+    "worth-relational-indexes",
+    "worth-relational-lineage",
+    "worth-relational-merge",
+    "worth-relational-mutation",
+)
+LOWER = (*RELATIONAL, "worth-execution", "worth-signal",
          "worth-runtime-bridge", "worth-runtime-world")
 FIXTURE_PACKAGES = ("worth-query-topology-entry", "worth-query-parameter-entry",
                     "worth-query-consumer-root")
@@ -71,13 +83,13 @@ def courts_only(binary):
 
 
 def root_rest(binary):
-    return not package_of("worth-relational", "worth-signal", "worth-signal-wasm",
+    return not package_of(*RELATIONAL, "worth-signal", "worth-signal-wasm",
                           "worth-execution")(binary)
 
 
 # suite -> (group, which binaries, tests per process, processes at once)
 TEST_SUITES = {
-    "relational": ("root", package_of("worth-relational"), 150, 4),
+    "relational": ("root", package_of(*RELATIONAL), 150, 4),
     "signal": ("root", package_of("worth-signal", "worth-signal-wasm"), 150, 4),
     "execution": ("root", package_of("worth-execution"), 150, 2),
     "root-rest": ("root", root_rest, 150, 4),

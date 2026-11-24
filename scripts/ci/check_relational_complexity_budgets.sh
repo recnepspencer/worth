@@ -4,38 +4,30 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT_DIR"
 
-echo "[relational-complexity] enforcing declared complexity contracts and budget proofs"
+registry="crates/worth-relational-contracts/src/performance/data/complexity_contract_inventory.rs"
+runner="$ROOT_DIR/scripts/ci/run_relational_named_test_selection.sh"
 
-module="crates/worth-relational/src/tests/complexity/contracts.rs"
-doc="plans/engineering/worth_relational_complexity_budgets.md"
+echo "[relational-complexity] checking declared complexity contracts and proof registrations"
 
-if [[ ! -f "$module" ]]; then
-  echo "FAIL: missing complexity contract test module: $module"
-  exit 1
-fi
+runtime_proofs=(
+  tests::complexity::contracts::commit_budgets::contract_registry::every_complexity_contract_proof_names_a_registered_test
+  tests::complexity::contracts::commit_budgets::contract_registry::complexity_contract_registry_covers_runtime_hot_paths
+  tests::complexity::contracts::commit_budgets::partition_local_commit::complexity_contract_partition_edition_acquisition_is_declared_and_measured
+  tests::complexity::contracts::visibility_budgets::snapshot_visibility::complexity_budget_snapshot_release_uses_only_the_carried_root_obligation
+  tests::complexity::contracts::visibility_budgets::snapshot_visibility::complexity_contract_visibility_scans_are_explicitly_measured
+  tests::complexity::contracts::visibility_budgets::invariant_materialization::complexity_contract_invariant_materialization_is_declared_and_measured
+  tests::complexity::contracts::visibility_budgets::retention_and_adjacency::live_history_trimming_runs_only_in_the_declared_full_retention_pass
+  tests::complexity::contracts::visibility_budgets::retention_and_adjacency::complexity_budget_bidirectional_adjacency_avoids_relation_scans
+)
+for proof in "${runtime_proofs[@]}"; do
+  bash "$runner" --lib --selection "$proof" --exact --expect-name "$proof"
+done
 
-if [[ ! -f "$doc" ]]; then
-  echo "FAIL: missing complexity budget doc: $doc"
-  exit 1
-fi
-
-if ! rg -q "^// CONTRACT:" "$module"; then
-  echo "FAIL: complexity contract tag missing in $module"
-  exit 1
-fi
-
-if ! rg -q "COMPLEXITY_CONTRACTS" crates/worth-relational/src/performance/data/mod.rs; then
-  echo "FAIL: missing runtime complexity registry"
-  exit 1
-fi
-
-echo "[relational-complexity] declaration and proof lanes"
-cargo test -p worth-relational tests::complexity::contracts::complexity_contract_registry_covers_runtime_hot_paths -- --nocapture
-cargo test -p worth-relational tests::complexity::contracts::complexity_contract_partition_edition_acquisition_is_declared_and_measured -- --nocapture
-cargo test -p worth-relational tests::complexity::contracts::complexity_budget_snapshot_pin_maintenance_is_incremental -- --nocapture
-cargo test -p worth-relational tests::complexity::contracts::complexity_contract_visibility_scans_are_explicitly_measured -- --nocapture
-cargo test -p worth-relational tests::complexity::contracts::complexity_contract_invariant_materialization_is_declared_and_measured -- --nocapture
-cargo test -p worth-relational tests::complexity::contracts::complexity_budget_live_history_trimming_is_touched_record_bounded -- --nocapture
-cargo test -p worth-relational tests::complexity::contracts::complexity_budget_bidirectional_adjacency_avoids_relation_scans -- --nocapture
+# The Runtime test enumerates its own binary. Validate names registered in
+# the Storage unit binary using the same exact names in the shared registry.
+storage_proofs="$(rg -o --no-filename '"internal_port::[a-z0-9_:]+"' "$registry" | tr -d '"' | sort -u)"
+while IFS= read -r proof; do
+  bash "$runner" --package worth-relational-storage --lib --selection "$proof" --exact --expect-name "$proof"
+done <<< "$storage_proofs"
 
 echo "[relational-complexity] PASS"

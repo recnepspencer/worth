@@ -4,6 +4,7 @@
 //! equivalence, and oracle-verified historical resolution.
 
 use std::collections::BTreeMap;
+use worth_relational_lineage::internal_port::lineage::index::batch::PersistentNameCommittedBatchFixturePort as _;
 
 use crate::facade::history::CommitId;
 use crate::facade::identity::VersionId;
@@ -12,9 +13,9 @@ use crate::facade::lineage::{
     LineageRecordTarget, LineageSubject, PersistentNameBranchIndex, PersistentNameCommittedBatch,
     PersistentNameHolder, PersistentNameKey,
 };
-use crate::lineage::data::LineageCommitPostureInput;
 use crate::facade::transactions::RecordRef;
-use crate::lineage::authority::finalize_postures_in_working_state;
+use crate::lineage::authority::finalize_postures_in_working_state_for_test;
+use crate::lineage::authority::posture_fixture::LineageCommitPostureInput;
 use crate::runtime::LineageIdentityAllocator;
 
 use super::name_index_fixtures::{all, exact, main_branch, resolve, retired, side, unknown};
@@ -39,7 +40,7 @@ fn remerge_mint_new_replays_retired_merged_name_as_birth_restore() {
     // Commit 1: Create A and B.
     let a1 = push_entity(&mut staged, VersionId(1));
     let b1 = push_entity(&mut staged, VersionId(1));
-    let c1 = finalize_postures_in_working_state(
+    let c1 = finalize_postures_in_working_state_for_test(
         &allocator,
         &mut staged,
         &receipt_at(1, 1),
@@ -77,13 +78,13 @@ fn remerge_mint_new_replays_retired_merged_name_as_birth_restore() {
             .identity()
     };
     let (a_name, b_name) = (name_for(&c1, a1_lin), name_for(&c1, b1_lin));
-    record(PersistentNameCommittedBatch::new(CommitId(1)).with_prepared_lineage(&c1));
+    record(PersistentNameCommittedBatch::new(CommitId(1)).with_prepared_lineage_for_test(&c1));
 
     // Commit 2: Merge(MintNew) A + B -> M.
     retire_entity(&mut staged, a1, VersionId(2));
     retire_entity(&mut staged, b1, VersionId(2));
     let m1 = push_entity(&mut staged, VersionId(2));
-    let c2 = finalize_postures_in_working_state(
+    let c2 = finalize_postures_in_working_state_for_test(
         &allocator,
         &mut staged,
         &receipt_at(2, 2),
@@ -125,11 +126,11 @@ fn remerge_mint_new_replays_retired_merged_name_as_birth_restore() {
     .expect("commit 2 merge succeeds");
     let m1_lin = staged_entity_lineage(&staged, m1).unwrap();
     let m_name = name_for(&c2, m1_lin);
-    record(PersistentNameCommittedBatch::new(CommitId(2)).with_prepared_lineage(&c2));
+    record(PersistentNameCommittedBatch::new(CommitId(2)).with_prepared_lineage_for_test(&c2));
 
     // Commit 3: Retire M.
     retire_entity(&mut staged, m1, VersionId(3));
-    let c3 = finalize_postures_in_working_state(
+    let c3 = finalize_postures_in_working_state_for_test(
         &allocator,
         &mut staged,
         &receipt_at(3, 3),
@@ -150,12 +151,12 @@ fn remerge_mint_new_replays_retired_merged_name_as_birth_restore() {
         },
     )
     .expect("commit 3 retire M succeeds");
-    record(PersistentNameCommittedBatch::new(CommitId(3)).with_prepared_lineage(&c3));
+    record(PersistentNameCommittedBatch::new(CommitId(3)).with_prepared_lineage_for_test(&c3));
 
     // Commit 4: Restore A and B.
     let a2 = push_entity(&mut staged, VersionId(4));
     let b2 = push_entity(&mut staged, VersionId(4));
-    let c4 = finalize_postures_in_working_state(
+    let c4 = finalize_postures_in_working_state_for_test(
         &allocator,
         &mut staged,
         &receipt_at(4, 4),
@@ -186,14 +187,14 @@ fn remerge_mint_new_replays_retired_merged_name_as_birth_restore() {
         staged_entity_lineage(&staged, a2).unwrap(),
         staged_entity_lineage(&staged, b2).unwrap(),
     );
-    record(PersistentNameCommittedBatch::new(CommitId(4)).with_prepared_lineage(&c4));
+    record(PersistentNameCommittedBatch::new(CommitId(4)).with_prepared_lineage_for_test(&c4));
 
     // Commit 5: Merge(MintNew) A + B replaying retired M birth.
     retire_entity(&mut staged, a2, VersionId(5));
     retire_entity(&mut staged, b2, VersionId(5));
     let m2 = push_entity(&mut staged, VersionId(5));
     let (lin_before, _) = allocator.frontiers();
-    let c5 = finalize_postures_in_working_state(
+    let c5 = finalize_postures_in_working_state_for_test(
         &allocator,
         &mut staged,
         &receipt_at(5, 5),
@@ -278,7 +279,7 @@ fn remerge_mint_new_replays_retired_merged_name_as_birth_restore() {
         1
     );
 
-    record(PersistentNameCommittedBatch::new(CommitId(5)).with_prepared_lineage(&c5));
+    record(PersistentNameCommittedBatch::new(CommitId(5)).with_prepared_lineage_for_test(&c5));
     let (ak, bk, mk) = (
         PersistentNameKey::Entity(a_name),
         PersistentNameKey::Entity(b_name),

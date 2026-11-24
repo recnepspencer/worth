@@ -1,3 +1,5 @@
+use worth_relational_publication::internal_port::publication::cdc::data::subscriber_failure::SubscriberStreamFailureOwnerPort as _;
+use worth_relational_publication::internal_port::publication::cdc::data::subscriber_recovery_plan::continuation_assessment::SubscriberContinuationAssessmentOwnerPort as _;
 use crate::publication::cdc::data::{
     NormalizedContinuationProof, SubscriberBoundaryAssessment, SubscriberContinuationAssessment,
     SubscriberContinuationSummary, SubscriberContractDeclaration, SubscriberStreamFailure,

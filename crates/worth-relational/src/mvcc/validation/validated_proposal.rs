@@ -1,48 +1,12 @@
 //! Validated mutation owner and invariant evidence.
 
+use super::invariant_evidence::RelationalMutationInvariantEvidence;
 use crate::authority::commit::phases::prepare::PreparedWorkingStateScope;
-use crate::branch::RelationalBranchVersion;
-use crate::history::data::{BranchId, CommitId};
+use crate::branch::version::RelationalBranchVersion;
+use crate::history::data::CommitId;
 use crate::identity::data::VersionId;
-use crate::transactions::data::CommitValidationSummary;
+use crate::transactions::data::outcomes::commit_validation::CommitValidationSummary;
 use crate::validation::engine::InvariantExecutionResult;
-
-/// Owner-minted evidence that Relational evaluated the exact proposed mutation
-/// through its installed commit-boundary, mutation-sensitive, and publication
-/// invariant families.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct RelationalMutationInvariantEvidence {
-    pub(crate) branch: BranchId,
-    pub(crate) proposed_version: VersionId,
-    pub(crate) proposal_identity: super::proposal_identity::RelationalMutationProposalIdentity,
-    pub(crate) summary: CommitValidationSummary,
-    pub(crate) custom_invariant_execution_receipts:
-        std::sync::Arc<[super::CustomInvariantExecutionReceipt]>,
-}
-
-impl RelationalMutationInvariantEvidence {
-    pub const fn branch(&self) -> &BranchId {
-        &self.branch
-    }
-
-    pub const fn proposed_version(&self) -> VersionId {
-        self.proposed_version
-    }
-
-    pub fn proposal_identity(
-        &self,
-    ) -> &super::proposal_identity::RelationalMutationProposalIdentity {
-        &self.proposal_identity
-    }
-
-    pub const fn summary(&self) -> CommitValidationSummary {
-        self.summary
-    }
-
-    pub fn custom_invariant_execution_receipts(&self) -> &[super::CustomInvariantExecutionReceipt] {
-        &self.custom_invariant_execution_receipts
-    }
-}
 
 /// Move-only Relational authority for one invariant-validated proposed state.
 ///
@@ -56,7 +20,7 @@ pub struct ValidatedRelationalProposal {
 }
 
 pub(crate) struct ValidatedProposalState {
-    pub(crate) caller_association: Option<crate::mvcc::RelationalCallerAssociation>,
+    pub(crate) caller_association: Option<crate::history::data::RelationalCallerAssociation>,
     pub(crate) required_output_publication: Option<crate::mvcc::RequiredOutputPublicationAdmission>,
     pub(crate) required_output_materialization:
         Option<std::sync::Arc<crate::history::data::CanonicalRequiredOutputMaterialization>>,
@@ -82,7 +46,7 @@ pub(crate) struct ValidatedProposalState {
     pub(crate) strategy_commit_artifacts:
         Option<crate::commit_strategies::data::StrategyCommitArtifactBundle>,
     pub(crate) strategy_bulk_mutation_batch:
-        Option<crate::transactions::data::ProvenanceCompleteBulkMutationBatch>,
+        Option<crate::transactions::data::primitives::ProvenanceCompleteBulkMutationBatch>,
     pub(crate) validation_complexity_delta: crate::performance::data::RuntimeComplexityCounters,
 }
 
@@ -118,7 +82,10 @@ impl ValidatedRelationalProposal {
     pub(crate) fn retain(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         state: ValidatedProposalState,
-    ) -> Result<Self, crate::transactions::data::TransactionCommitError> {
+    ) -> Result<
+        Self,
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+    > {
         let memory =
             execution.reserve_retained_memory(Self::state_backing_layout().size() as u64)?;
         Ok(Self {
@@ -153,7 +120,9 @@ impl ValidatedRelationalProposal {
         &self.state.evidence
     }
 
-    pub fn footprint(&self) -> &crate::mvcc::RelationalTransactionFootprint {
+    pub fn footprint(
+        &self,
+    ) -> &crate::mvcc::transaction::footprint::RelationalTransactionFootprint {
         &self.state.prepared.footprint
     }
 
@@ -181,88 +150,7 @@ impl ValidatedRelationalProposal {
         self.state.evidence.summary()
     }
 
-    pub fn custom_invariant_execution_receipts(&self) -> &[super::CustomInvariantExecutionReceipt] {
+    pub fn custom_invariant_execution_receipts(&self) -> &[crate::mvcc::validation::custom_invariant_execution_receipt::CustomInvariantExecutionReceipt]{
         self.state.evidence.custom_invariant_execution_receipts()
-    }
-}
-
-pub(crate) struct StrategyProposalDecoration {
-    pub(crate) artifacts: crate::commit_strategies::data::StrategyCommitArtifactBundle,
-    pub(crate) bulk_mutation_batch:
-        Option<crate::transactions::data::ProvenanceCompleteBulkMutationBatch>,
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::mvcc::RelationalBranchTransactionAdmissionDenial;
-    use crate::tests::support::{create_entity, runtime_with_test_schema};
-    use crate::transactions::data::{CommitConflict, ConflictClass, TransactionCommitError};
-
-    #[test]
-    fn stale_owner_binding_is_rejected_during_transaction_admission() {
-        let host_request = crate::test_execution_policy::serial_request();
-        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-        let runtime = runtime_with_test_schema();
-        let identity = runtime.main_branch_identity();
-        let stale_options = runtime
-            .transaction_validation_input_for(&identity)
-            .expect("main branch owner binding");
-        let _ = create_entity(execution, &runtime, "head-advance");
-
-        assert_eq!(
-            runtime
-                .begin_branch_transaction(stale_options.basis(), stale_options.intent().clone())
-                .unwrap_err(),
-            RelationalBranchTransactionAdmissionDenial::StaleBasis
-        );
-    }
-
-    #[test]
-    fn owner_rechecks_head_after_validation_before_commit() {
-        let host_request = crate::test_execution_policy::serial_request();
-        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-        let runtime = runtime_with_test_schema();
-        let identity = runtime.main_branch_identity();
-        let validation_input = runtime
-            .transaction_validation_input_for(&identity)
-            .expect("main branch owner binding");
-        let candidate = runtime
-            .begin_branch_transaction(validation_input.basis(), validation_input.intent().clone())
-            .expect("current basis belongs to the same runtime")
-            .validate(execution, &runtime)
-            .expect("head is current at validation");
-        let candidate_ordinal = candidate.state.proposal_identity.ordinal();
-
-        let _ = create_entity(execution, &runtime, "post-validation-advance");
-        let denied = runtime
-            .prepare_validated_proposal(execution, candidate)
-            .expect_err("Relational must close the validate/commit race");
-
-        assert!(matches!(
-            denied,
-            TransactionCommitError::Conflict {
-                error: CommitConflict {
-                    class: ConflictClass::StaleValidationBasis { .. },
-                    ..
-                },
-                ..
-            }
-        ));
-
-        let fresh_options = runtime
-            .transaction_validation_input_for(&runtime.main_branch_identity())
-            .expect("fresh main binding");
-        let fresh = runtime
-            .begin_branch_transaction(fresh_options.basis(), fresh_options.intent().clone())
-            .expect("fresh basis belongs to the same runtime")
-            .validate(execution, &runtime)
-            .expect("fresh validation remains admissible");
-        assert_eq!(
-            fresh.state.proposal_identity.ordinal(),
-            candidate_ordinal + 2,
-            "stale same-branch denial must not consume a proposal ordinal"
-        );
     }
 }

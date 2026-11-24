@@ -1,3 +1,5 @@
+use worth_relational_contracts::internal_port::merge::data::artifacts::schema_reconciliation_witness::RelationalSchemaReconciliationWitnessOwnerPort as _;
+use worth_relational_contracts::internal_port::merge::data::artifacts::schema_reconciliation_witness_rows::RelationalSchemaReconciliationWitnessRowOwnerPort as _;
 use crate::facade::history::BranchId;
 use crate::facade::identity::KindId;
 use crate::facade::merge::{

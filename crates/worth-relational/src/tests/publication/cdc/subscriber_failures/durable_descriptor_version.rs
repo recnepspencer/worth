@@ -1,6 +1,7 @@
 use crate::publication::cdc::data::{NormalizedContinuationProof, SubscriberContinuationSummary};
 use crate::schema::data::{DescriptorSemanticsVersion, SchemaContinuationClassification};
 use crate::tests::support::*;
+use worth_relational_publication::internal_port::publication::cdc::data::subscriber_checkpoint::SubscriberCheckpointFixturePort as _;
 
 #[test]
 fn memory_subscriber_stream_rejects_durable_only_checkpoint_with_descriptor_version_mismatch() {

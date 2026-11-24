@@ -1,4 +1,3 @@
-mod counter_sink;
 mod inspection_counters;
 mod lineage_counters;
 mod merge_counters;
@@ -9,11 +8,9 @@ mod replay_authority_basis_counters;
 mod schema_continuity_counters;
 #[cfg(test)]
 mod test_complexity_observability;
-mod validation_counters;
-mod working_state_counters;
 
+use super::complexity_counter_sink::ComplexityCounterSink;
 use crate::runtime::{RelationalRuntime, RuntimeInstrumentation};
-use counter_sink::ComplexityCounterSink;
 
 pub(crate) use replay_authority_basis_counters::ReplayLineageAuthorityIndexedSource;
 
@@ -44,22 +41,9 @@ impl<'runtime> PerformanceAccess<'runtime> {
         }
     }
 
-    pub(crate) fn accumulate_round_counts(
-        &self,
-        counts: crate::performance::data::RuntimeComplexityCounters,
-    ) {
-        self.counters.count(|target| {
-            crate::performance::operation_complexity_accounting::accumulate_complexity_counts(
-                target, counts,
-            );
-        });
-    }
-
     pub(crate) fn complexity_counters_snapshot(
         &self,
     ) -> crate::performance::data::RuntimeComplexityCounters {
         self.counters.snapshot()
     }
 }
-
-mod aggregate_counters;

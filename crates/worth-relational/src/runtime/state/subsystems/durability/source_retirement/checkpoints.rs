@@ -2,6 +2,7 @@
 use super::*;
 use crate::durability::data::NativeDirectoryRetirementHandoff;
 use crate::runtime::{RelationalRuntimeCloseDenial, RelationalSourceCloseDenial as Stop};
+use worth_relational_durability::internal_port::durability::data::checkpoint_images::DurableCheckpointOwnerPort as _;
 
 fn shared_checkpoint(index: usize, canonical: bool, shares: usize) -> Stop {
     Stop::Native(RelationalRuntimeCloseDenial::ReadCustodyRetained(
@@ -26,9 +27,9 @@ impl DurabilitySubsystem {
                 return Ok(false);
             };
             let directory = if canonical {
-                &checkpoint.canonical_directory
+                checkpoint.original_canonical_directory()
             } else {
-                &checkpoint.directory
+                checkpoint.selected_directory()
             };
             if directory.is_some() && Arc::strong_count(checkpoint) != 1 {
                 return Err(shared_checkpoint(
@@ -37,7 +38,7 @@ impl DurabilitySubsystem {
                     Arc::strong_count(checkpoint),
                 ));
             }
-            directory.as_ref().and_then(|edge| edge.snapshot())
+            directory.and_then(|edge| edge.snapshot())
         };
         // Provider preflight runs outside the Native metadata gate.
         if let Some(original) = original {
@@ -59,22 +60,17 @@ impl DurabilitySubsystem {
             return Ok(None);
         };
         if if canonical {
-            checkpoint.canonical_directory.is_none()
+            checkpoint.original_canonical_directory().is_none()
         } else {
-            checkpoint.directory.is_none()
+            checkpoint.selected_directory().is_none()
         } {
             return Ok(Some(true));
         }
         let shares = Arc::strong_count(checkpoint);
         let checkpoint =
             Arc::get_mut(checkpoint).ok_or_else(|| shared_checkpoint(index, canonical, shares))?;
-        let directory = if canonical {
-            &mut checkpoint.canonical_directory
-        } else {
-            &mut checkpoint.directory
-        };
-        directory
-            .as_mut()
+        checkpoint
+            .directory_for_retirement(canonical)
             .expect("same original directory edge")
             .loan(handoff)
             .map(Some)
@@ -95,13 +91,8 @@ impl DurabilitySubsystem {
         let shares = Arc::strong_count(checkpoint);
         let checkpoint =
             Arc::get_mut(checkpoint).ok_or_else(|| shared_checkpoint(index, canonical, shares))?;
-        let directory = if canonical {
-            &mut checkpoint.canonical_directory
-        } else {
-            &mut checkpoint.directory
-        };
-        directory
-            .as_mut()
+        checkpoint
+            .directory_for_retirement(canonical)
             .expect("same original directory loan")
             .return_handoff(handoff)
             .map_err(Stop::Checkpoint)

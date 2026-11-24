@@ -1,0 +1,160 @@
+//! Bind current and retained fork source admission to the live owner.
+use super::{
+    source_validation::{ForkSourceInput, ValidatedForkSource},
+    RelationalForkDenial,
+};
+use crate::branch::fork_source_basis::RelationalForkSourceDescriptor;
+use crate::branch::{
+    RelationalBranchLifecyclePosture, RelationalBranchReferenceObservation, RelationalBranchRoot,
+    RelationalBranchVersion, RelationalForkPort, CANONICAL_RUNTIME_INSTANCE_ID,
+};
+use crate::history::data::BranchId;
+use std::sync::Arc;
+use worth_foundational::FoundationalBranchTarget;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_branch::internal_port::branch::fork_source_basis::AdmittedRelationalForkSourceBasisOwnerPort as _;
+use worth_relational_branch::internal_port::branch::fork_source_basis::RelationalForkSourceDescriptorOwnerPort as _;
+use worth_relational_branch::internal_port::branch::retained_fork_source::AdmittedRelationalRetainedForkSourceFieldsPort as _;
+use worth_relational_contracts::internal_port::branch::target::RelationalBranchTargetOwnerPort as _;
+
+impl RelationalForkPort {
+    pub(super) fn validate_fork_input(
+        &self,
+        input: ForkSourceInput,
+    ) -> Result<ValidatedForkSource, RelationalForkDenial> {
+        match input {
+            ForkSourceInput::Current(source) => {
+                let (descriptor, _authority) = source.into_parts();
+                self.validate_fork_source(descriptor)
+            }
+            ForkSourceInput::Retained(source) => {
+                self.validate_retained_fork_profile()?;
+                let basis = source.into_basis();
+                self.validate_retained_basis(&basis)?;
+                let source_observation = basis.reference().clone();
+                let FoundationalBranchTarget::Basis(target) = source_observation.target() else {
+                    return Err(RelationalForkDenial::EmptySource);
+                };
+                Ok(ValidatedForkSource {
+                    descriptor: RelationalForkSourceDescriptor::new(
+                        self.runtime_instance_id,
+                        source_observation.clone(),
+                        basis.identity().branch_id().clone(),
+                        basis.truth_version(),
+                    ),
+                    source_head: target.rebind_runtime_instance_id(CANONICAL_RUNTIME_INSTANCE_ID),
+                    source_observation,
+                    source_truth_version: basis.truth_version(),
+                    source_root: Arc::clone(&basis.owner_inner().root),
+                    retained: Some(basis),
+                })
+            }
+        }
+    }
+
+    /// Require the source the token describes to be live and unchanged.
+    pub(super) fn validate_fork_source(
+        &self,
+        descriptor: RelationalForkSourceDescriptor,
+    ) -> Result<ValidatedForkSource, RelationalForkDenial> {
+        if descriptor.runtime_instance_id() != self.runtime_instance_id {
+            return Err(RelationalForkDenial::ForeignRuntime);
+        }
+        let (source_observation, source_truth_version, source_root) =
+            self.observe_live_source(descriptor.source_branch())?;
+        self.owner.record_lookup();
+        if descriptor.truth_version() != source_truth_version
+            || descriptor
+                .observation()
+                .compare(&source_observation)
+                .is_err()
+        {
+            return Err(RelationalForkDenial::StaleSource);
+        }
+        let source_head = match source_observation.target() {
+            FoundationalBranchTarget::Empty => return Err(RelationalForkDenial::EmptySource),
+            FoundationalBranchTarget::Basis(target) => {
+                target.rebind_runtime_instance_id(CANONICAL_RUNTIME_INSTANCE_ID)
+            }
+        };
+        Ok(ValidatedForkSource {
+            descriptor,
+            source_observation,
+            source_truth_version,
+            source_root: source_root.ok_or(RelationalForkDenial::MissingArtifact)?,
+            source_head,
+            retained: None,
+        })
+    }
+
+    /// Inside the patch-position reservation, where no commit or transition
+    /// can move the source: require it still to be exactly the validated
+    /// source, so the installed target never shares a superseded head.
+    ///
+    /// The source guard was acquired before the reservation. Rechecking never
+    /// locks a branch while holding the global reservation.
+    pub(super) fn recheck_fork_source(
+        &self,
+        validated: &ValidatedForkSource,
+        state: &crate::branch::reference_publication_cell::RelationalBranchPublicationStateGuard<
+            '_,
+        >,
+    ) -> Result<(), RelationalForkDenial> {
+        match state.lifecycle_posture() {
+            RelationalBranchLifecyclePosture::Live => {}
+            RelationalBranchLifecyclePosture::Archived => {
+                return Err(RelationalForkDenial::SourceArchived)
+            }
+            RelationalBranchLifecyclePosture::Deleting => {
+                return Err(RelationalForkDenial::SourceDeleting)
+            }
+        }
+        if validated.retained.is_some() {
+            // This distinct receiver guards lifecycle, not the old reference's
+            // currentness. Truth remains the original retained immutable root.
+            self.validate_retained_fork_profile()?;
+            return Ok(());
+        }
+        if state.truth_version() != validated.source_truth_version
+            || validated
+                .source_observation
+                .compare(state.observation())
+                .is_err()
+        {
+            return Err(RelationalForkDenial::StaleSource);
+        }
+        Ok(())
+    }
+
+    fn observe_live_source(
+        &self,
+        source_branch: &BranchId,
+    ) -> Result<
+        (
+            RelationalBranchReferenceObservation,
+            RelationalBranchVersion,
+            Option<Arc<RelationalBranchRoot>>,
+        ),
+        RelationalForkDenial,
+    > {
+        let source_cell = self
+            .owner
+            .branch_cell(source_branch)
+            .ok_or(RelationalForkDenial::SourceBranchMissing)?;
+        let snapshot = source_cell.atomic_snapshot();
+        match snapshot.lifecycle_posture() {
+            RelationalBranchLifecyclePosture::Live => {}
+            RelationalBranchLifecyclePosture::Archived => {
+                return Err(RelationalForkDenial::SourceArchived);
+            }
+            RelationalBranchLifecyclePosture::Deleting => {
+                return Err(RelationalForkDenial::SourceDeleting);
+            }
+        }
+        Ok((
+            snapshot.observation(),
+            snapshot.truth_version(),
+            snapshot.root(),
+        ))
+    }
+}

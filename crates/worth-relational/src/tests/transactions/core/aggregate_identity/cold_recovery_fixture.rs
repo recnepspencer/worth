@@ -1,5 +1,9 @@
 //! Real external native checkpoint input for aggregate cold-read integration.
-use crate::durability::{data::*, medium::*};
+use crate::durability::{
+    data::*,
+    medium::*,
+    published_medium::{RelationalDurableCheckpointSource, RelationalDurableRecoverySource},
+};
 use crate::publication::patch::data::PatchStreamPosition;
 use crate::storage::data::RelationalStorageUnavailableCause as Cause;
 use crate::tests::support::*;
@@ -160,9 +164,7 @@ pub(super) fn reopen(
         .commit_artifacts()
         .iter()
         .map(|entry| {
-            entry
-                .envelope_residency()
-                .require_original_artifact(execution, None)
+            crate::durability::canonical_commit_artifact::retained_frame_reads::require_original_artifact(&entry.envelope_residency(), execution, None)
                 .unwrap()
         })
         .collect::<Vec<_>>();

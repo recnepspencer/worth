@@ -1,368 +1,63 @@
-use worth_foundational::facade::{AspectFieldLocator, CanonicalFieldPath, LocatorAuthority};
-
-use crate::facade::durability::RecoveryVerificationMode;
-use crate::facade::history::BranchId;
-use crate::facade::identity::{EntityId, KindId, PartitionId};
-use crate::facade::mvcc::WorkerIntentBatch;
-use crate::facade::runtime::{RelationalFieldPresence, RelationalFieldRevision};
-use crate::facade::snapshots::SnapshotHandle;
-use crate::facade::transactions::{
-    ApplyEntityAspectPatchIntent, CreateIntent, EntityMutationIntent, MutationIntent,
-    UpdateEntityFieldsIntent,
-};
+use crate::durability::data::recovery_verification::RecoveryVerificationMode;
 use crate::tests::support::*;
-use worth_foundational::facade::{
-    PortableAspectContractBasis, PortableAspectPatchOperation, PortableRecordAspectPatch,
-};
-
-fn locator(aspect: &str, field: &str) -> AspectFieldLocator {
-    AspectFieldLocator::new(
-        LocatorAuthority::Authoritative,
-        aspect_key(aspect),
-        CanonicalFieldPath::single(field_key(field)),
-    )
-}
-
-#[test]
-fn checkpoint_restore_preserves_exact_field_revision() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(execution, &runtime, "same");
-    let entity = changed_entities(&created)[0];
-    let name = locator("name", "name");
-    let before = runtime
-        .read_truth()
-        .project_snapshot(&created.snapshot)
-        .unwrap()
-        .entity_field_revision(execution, entity, &name)
-        .expect("read request remains live")
-        .expect("created field has a native owner revision");
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
-    let recovery = runtime
-        .durability()
-        .recovery_plan(
-            execution,
-            RecoveryVerificationMode::NormalRecoveryVerification,
-        )
-        .unwrap();
-    let mut recovered = runtime_with_test_schema();
-    let outcome = recovered
-        .durability_recovery()
-        .recover(execution, recovery)
-        .unwrap();
-    assert_eq!(outcome.coverage.checkpoint_commits, 1);
-    let snapshot = snapshot_for_owner_branch(&recovered, &BranchId("main".to_owned()));
-    assert_eq!(
-        recovered
-            .read_truth()
-            .project_snapshot(&snapshot)
-            .unwrap()
-            .entity_field_revision(execution, entity, &name)
-            .expect("read request remains live"),
-        Some(before)
-    );
-    recovered.snapshots().release_snapshot(&snapshot).unwrap();
-    recovered
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
-    let second_recovery = recovered
-        .durability()
-        .recovery_plan(
-            execution,
-            RecoveryVerificationMode::NormalRecoveryVerification,
-        )
-        .unwrap();
-    let mut reopened = runtime_with_test_schema();
-    reopened
-        .durability_recovery()
-        .recover(execution, second_recovery)
-        .unwrap();
-    let reopened_snapshot = snapshot_for_owner_branch(&reopened, &BranchId("main".to_owned()));
-    assert_eq!(
-        reopened
-            .read_truth()
-            .project_snapshot(&reopened_snapshot)
-            .unwrap()
-            .entity_field_revision(execution, entity, &name)
-            .expect("read request remains live"),
-        Some(before)
-    );
-    reopened
-        .snapshots()
-        .release_snapshot(&reopened_snapshot)
-        .unwrap();
-    release_test_commit_snapshot(&runtime, &created);
-}
-
-#[test]
-fn checkpoint_restore_preserves_relation_field_revision() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let fixture = || {
-        AspectSchemaFixture {
-            relation_aspects: vec![relation_field_aspect(
-                aspect_key("label"),
-                field_key("label"),
-            )],
-            ..AspectSchemaFixture::default()
-        }
-        .build_runtime()
-    };
-    let runtime = fixture();
-    let source = create_entity_outcome(execution, &runtime, "source");
-    let target = create_entity_outcome(execution, &runtime, "target");
-    let created = create_relation_outcome(
-        execution,
-        &runtime,
-        changed_entities(&source)[0],
-        changed_entities(&target)[0],
-        "relation-label",
-    );
-    let relation = changed_relations(&created)[0];
-    let label = locator("label", "label");
-    let before = runtime
-        .read_truth()
-        .project_snapshot(&created.snapshot)
-        .unwrap()
-        .relation_field_revision(execution, relation, &label)
-        .expect("read request remains live")
-        .unwrap();
-    assert_eq!(before.presence(), RelationalFieldPresence::Present);
-
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
-    let recovery = runtime
-        .durability()
-        .recovery_plan(
-            execution,
-            RecoveryVerificationMode::NormalRecoveryVerification,
-        )
-        .unwrap();
-    let mut recovered = fixture();
-    recovered
-        .durability_recovery()
-        .recover(execution, recovery)
-        .unwrap();
-    let snapshot = snapshot_for_owner_branch(&recovered, &BranchId("main".to_owned()));
-    assert_eq!(
-        recovered
-            .read_truth()
-            .project_snapshot(&snapshot)
-            .unwrap()
-            .relation_field_revision(execution, relation, &label)
-            .expect("read request remains live"),
-        Some(before)
-    );
-    recovered.snapshots().release_snapshot(&snapshot).unwrap();
-    for outcome in [&source, &target, &created] {
-        release_test_commit_snapshot(&runtime, outcome);
-    }
-}
-
-#[test]
-fn checkpoint_restore_preserves_forked_field_revisions_and_absent_aba() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let binding = entity_summary_struct_aspect(aspect_key("summary"), field_key("summary"));
-    let contract = binding.contract.clone();
-    let fixture = || {
-        AspectSchemaFixture {
-            entity_aspects: vec![binding.clone()],
-            ..AspectSchemaFixture::default()
-        }
-        .build_runtime()
-    };
-    let runtime = fixture();
-    let mut create = test_owner_begin_transaction_for_main(&runtime);
-    create
-        .push_batch(
-            WorkerIntentBatch::new("checkpoint-field-create").push(MutationIntent::Create(
-                CreateIntent::Entity(crate::transactions::data::EntitySpec {
-                    partition_id: PartitionId::main(),
-                    kind_id: KindId(1),
-                    client_key: crate::symbols::data::ClientKey::raw("field-checkpoint"),
-                    fields: string_aspect_field_patch([(
-                        aspect_key("summary"),
-                        field_key("title"),
-                        "fixed",
-                    )]),
-                }),
-            )),
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    let created = create.commit(execution, &runtime).unwrap();
-    let entity = changed_entities(&created)[0];
-    let prior_branch = create_branch_from_main(&runtime, "field-prior");
-    let title = locator("summary", "title");
-    let status = locator("summary", "status");
-    let initial_title = field_at(execution, &runtime, &created.snapshot, entity, &title).unwrap();
-    let initial_absent = field_at(execution, &runtime, &created.snapshot, entity, &status).unwrap();
-    assert_eq!(initial_absent.presence(), RelationalFieldPresence::Absent);
-
-    let mut set = test_owner_begin_transaction_for_main(&runtime);
-    set.push_batch(
-        WorkerIntentBatch::new("checkpoint-field-set").push(MutationIntent::Entity(
-            EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
-                entity_id: entity,
-                fields: string_aspect_field_patch([(
-                    aspect_key("summary"),
-                    field_key("status"),
-                    "temporary",
-                )]),
-            }),
-        )),
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .unwrap();
-    let present = set.commit(execution, &runtime).unwrap();
-    let present_revision =
-        field_at(execution, &runtime, &present.snapshot, entity, &status).unwrap();
-    assert_eq!(
-        present_revision.presence(),
-        RelationalFieldPresence::Present
-    );
-    let present_branch = create_branch_from_main(&runtime, "field-present");
-
-    let mut clear = test_owner_begin_transaction_for_main(&runtime);
-    clear
-        .push_batch(
-            WorkerIntentBatch::new("checkpoint-field-clear").push(MutationIntent::Entity(
-                EntityMutationIntent::ApplyAspectPatch(ApplyEntityAspectPatchIntent {
-                    entity_id: entity,
-                    aspect_patch: PortableRecordAspectPatch::new([
-                        PortableAspectPatchOperation::PatchFields {
-                            basis: PortableAspectContractBasis::from_contract(&contract),
-                            selected_fields: vec![field_key("status")],
-                            field_sets: Vec::new(),
-                            field_clears: vec![field_key("status")],
-                        },
-                    ]),
-                }),
-            )),
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    let absent_again = clear.commit(execution, &runtime).unwrap();
-    let final_absent =
-        field_at(execution, &runtime, &absent_again.snapshot, entity, &status).unwrap();
-    assert_eq!(final_absent.presence(), RelationalFieldPresence::Absent);
-    assert_ne!(initial_absent, final_absent);
-    assert_eq!(
-        field_at(execution, &runtime, &absent_again.snapshot, entity, &title),
-        Some(initial_title)
-    );
-
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
-    let recovery = runtime
-        .durability()
-        .recovery_plan(
-            execution,
-            RecoveryVerificationMode::NormalRecoveryVerification,
-        )
-        .unwrap();
-    let mut recovered = fixture();
-    recovered
-        .durability_recovery()
-        .recover(execution, recovery)
-        .unwrap();
-    for (branch, expected) in [
-        (prior_branch, initial_absent),
-        (present_branch, present_revision),
-        (BranchId("main".to_owned()), final_absent),
-    ] {
-        let snapshot = snapshot_for_owner_branch(&recovered, &branch);
-        assert_eq!(
-            field_at(execution, &recovered, &snapshot, entity, &status),
-            Some(expected)
-        );
-        assert_eq!(
-            field_at(execution, &recovered, &snapshot, entity, &title),
-            Some(initial_title)
-        );
-        recovered.snapshots().release_snapshot(&snapshot).unwrap();
-    }
-    for outcome in [&created, &present, &absent_again] {
-        release_test_commit_snapshot(&runtime, outcome);
-    }
-}
+use worth_relational_durability::internal_port::durability::data::checkpoint_images::DurableCheckpointFieldsFixturePort as _;
 
 #[test]
 fn checkpoint_restore_rejects_incomplete_field_revision_column() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
+        let host_request = worth_harness::facade::execution_fixture::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(execution, &runtime, "same");
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
-    let mut recovery = runtime
-        .durability()
-        .recovery_plan(
-            execution,
-            RecoveryVerificationMode::NormalRecoveryVerification,
+        let runtime = runtime_with_test_schema();
+        let created = create_entity_outcome(execution, &runtime, "same");
+        runtime
+            .durability_authority()
+            .checkpoint(execution)
+            .unwrap();
+        let mut recovery = runtime
+            .durability()
+            .recovery_plan(
+                execution,
+                RecoveryVerificationMode::NormalRecoveryVerification,
+            )
+            .unwrap();
+        let root = &mut recovery
+            .checkpoint
+            .as_mut()
+            .unwrap()
+            .branch_roots_mut_for_test()[0];
+        let image = &mut root.partition_images[0].entity_arena;
+        assert!(!image.field_revisions.is_empty());
+        image.field_revisions.pop();
+        root.partition_image_digest = crate::durability::data::branch_root_partition_image_digest(
+            fixture_lane,
+            &root.partition_images,
         )
         .unwrap();
-    let root = &mut recovery.checkpoint.as_mut().unwrap().branch_roots[0];
-    let image = &mut root.partition_images[0].entity_arena;
-    assert!(!image.field_revisions.is_empty());
-    image.field_revisions.pop();
-    root.partition_image_digest = crate::durability::data::branch_root_partition_image_digest(
-        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-        &root.partition_images,
-    )
-    .unwrap();
-    root.root_image_digest = crate::durability::data::branch_root_image_digest(
-        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-        root.format_version,
-        root.commit_id,
-        root.partition_image_digest,
-        root.schema_carrier_digest,
-        &root.content_records,
-    );
+        root.root_image_digest = crate::durability::data::branch_root_image_digest(
+            fixture_lane,
+            root.format_version,
+            root.commit_id,
+            root.partition_image_digest,
+            root.schema_carrier_digest,
+            &root.content_records,
+        );
 
-    let mut recovered = runtime_with_test_schema();
-    let error = recovered
-        .durability_recovery()
-        .recover(execution, recovery)
-        .unwrap_err();
-    let error = crate::tests::support::expect_durability_failure(error);
-    assert_eq!(
-        error.class,
-        crate::durability::data::RecoveryFailureClass::CorruptCheckpoint
-    );
-    assert!(
-        error.detail.contains("column length") || error.detail.contains("field revision length"),
-        "{error:?}"
-    );
-    release_test_commit_snapshot(&runtime, &created);
-}
-
-fn field_at(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &crate::runtime::RelationalRuntime,
-    snapshot: &SnapshotHandle,
-    entity: EntityId,
-    locator: &AspectFieldLocator,
-) -> Option<RelationalFieldRevision> {
-    runtime
-        .read_truth()
-        .project_snapshot(snapshot)?
-        .entity_field_revision(execution, entity, locator)
-        .expect("read request remains live")
+        let mut recovered = runtime_with_test_schema();
+        let error = recovered
+            .durability_recovery()
+            .recover(execution, recovery)
+            .unwrap_err();
+        let error = crate::tests::support::expect_durability_failure(error);
+        assert_eq!(
+            error.class,
+            crate::durability::data::recovery_errors::RecoveryFailureClass::CorruptCheckpoint
+        );
+        assert!(
+            error.detail.contains("column length")
+                || error.detail.contains("field revision length"),
+            "{error:?}"
+        );
+        release_test_commit_snapshot(&runtime, &created);
+    })
 }

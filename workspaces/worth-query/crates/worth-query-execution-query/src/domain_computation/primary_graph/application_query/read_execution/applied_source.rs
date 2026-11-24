@@ -132,6 +132,8 @@ where
         decode,
         tree,
         permission.governance,
+        // An applied candidate has no published lineage to read names at.
+        None,
         || {
             interruption
                 .checkpoint(permission.name)

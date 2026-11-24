@@ -1,5 +1,10 @@
 //! Native fragment membership and original record shapes for this fixture.
 use super::*;
+use worth_query_decl::facade::application_naming::{
+    EntityNameSubject, NamedTarget, OwnedThrough, OwnerViaReverse, RelationNameSubject, Unowned,
+    WorthQueryName, WorthQueryNamedKind,
+};
+use worth_query_decl::facade::WorthQueryRecord;
 #[derive(Clone, Copy)]
 pub struct Storage;
 impl Fragment for Storage {
@@ -32,6 +37,22 @@ impl Scalar<String> for Bindings {
 impl Scalar<u64> for Bindings {
     type Binding = U64ApplicationValueBinding;
     const WRITABLE: bool = true;
+}
+/// A hand-written binding set stores held names with the stock codecs.
+impl<K: WorthQueryNamedKind> Scalar<WorthQueryName<K>> for Bindings {
+    type Binding = WorthQueryNameApplicationValueBinding<K>;
+}
+impl<K: WorthQueryNamedKind> Scalar<NamedTarget<K>> for Bindings {
+    type Binding = NamedTargetApplicationValueBinding<K>;
+}
+/// A member is owned by the model that lists it; a seam has no owner.
+impl WorthQueryNamedKind for Member {
+    type Subject = EntityNameSubject;
+    type OwnerScope = OwnedThrough<OwnerViaReverse<ModelMember, Model>>;
+}
+impl WorthQueryNamedKind for Seam {
+    type Subject = RelationNameSubject;
+    type OwnerScope = Unowned;
 }
 #[derive(Clone, Copy)]
 pub struct Mapping;
@@ -133,33 +154,21 @@ impl Record<PrincipalFactsRow> for Bindings {
             })
     }
 }
-pub struct ModelFacts;
-impl Aspect for ModelFacts {
-    const NAME: &'static str = "ModelFacts";
-    type Row = ModelFactsRow;
+/// The model's facts, derived: a model may hold a member by persistent name
+/// as an ordinary column, a `NamedTarget` and a bare `WorthQueryName`.
+#[derive(WorthQueryRecord)]
+#[worth_query(bindings = Bindings, aspect = ModelFacts, fragment = Storage, entity = Model)]
+pub struct ModelFactsRow {
+    #[worth_query(column = "ModelKey", equality, unique)]
+    pub modelkey: String,
+    #[worth_query(column = "ModelValue", equality)]
+    pub modelvalue: u64,
+    pub held_target: Option<NamedTarget<Member>>,
+    pub held_anchor: Option<WorthQueryName<Member>>,
 }
 impl ModelFacts {
     pub fn reference() -> AspectSelection<Storage, Model, Self> {
         aspect(Storage, Model, Self)
-    }
-}
-pub struct ModelFactsRow {
-    pub modelkey: String,
-    pub modelvalue: u64,
-}
-impl Record<ModelFactsRow> for Bindings {
-    fn record() -> impl Shape<ModelFactsRow, Self> {
-        field("ModelKey", |row: &ModelFactsRow| row.modelkey.clone())
-            .equality_queryable(true)
-            .unique()
-            .and("ModelValue", |row: &ModelFactsRow| row.modelvalue)
-            .equality_queryable(true)
-            .build(|modelkey, modelvalue, _: &mut ValueDecodeAdmission<'_>| {
-                Ok::<_, std::convert::Infallible>(ModelFactsRow {
-                    modelkey,
-                    modelvalue,
-                })
-            })
     }
 }
 pub struct MemberFacts;
@@ -195,8 +204,6 @@ pub type ExternalId =
     FieldSelection<Storage, Mapping, MappingFacts, WorthQueryExternalPrincipalIdentity>;
 pub type Status = FieldSelection<Storage, Mapping, MappingFacts, WorthQueryPrincipalMappingStatus>;
 pub type PrincipalId = FieldSelection<Storage, Principal, PrincipalFacts, u64>;
-pub type ModelKey = FieldSelection<Storage, Model, ModelFacts, String>;
-pub type ModelValue = FieldSelection<Storage, Model, ModelFacts, u64>;
 pub type MemberKey = FieldSelection<Storage, Member, MemberFacts, String>;
 pub type MemberValue = FieldSelection<Storage, Member, MemberFacts, u64>;
 pub struct MappingTarget;

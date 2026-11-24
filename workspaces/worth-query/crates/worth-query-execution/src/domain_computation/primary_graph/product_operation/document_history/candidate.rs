@@ -1,4 +1,4 @@
-//! Candidate creation uses the document's own stable runtime borrow and exact source.
+//! Candidate creation uses the document's own runtime custody and exact source.
 use super::{
     WorthQueryDocumentHistory, WorthQueryDocumentHistoryDenial as Denial,
     WorthQueryDocumentHistoryReservation,
@@ -61,7 +61,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
                 ))
             })?
             .components(|parts| parts.fork_relational().reuse_exact_signal_basis())
-            .create(phase)
+            .create_in(self.custody(), phase)
             .map_err(WorthQueryDocumentHistoryCandidateDenial::Creation)
     }
 }

@@ -1,3 +1,7 @@
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeFixturePort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::draft::CanonicalCommitEnvelopeDraftFixturePort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::descriptive_touches::RelationalDescriptiveTouchGraphOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::shared::SharedCanonicalCommitEnvelopeOwnerPort as _;
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
@@ -159,7 +163,7 @@ fn commit_envelope(commit_id: u64, version_id: u64) -> CanonicalCommitEnvelope {
     drop(runtime);
     let mut envelope = std::sync::Arc::try_unwrap(envelope)
         .expect("source owner and result released their actual envelope shares");
-    *envelope.body_mut_for_test() = draft.into_body();
+    *envelope.body_mut_for_test() = draft.into_body_for_test();
     envelope
 }
 

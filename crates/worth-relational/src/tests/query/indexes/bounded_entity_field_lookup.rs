@@ -3,6 +3,8 @@ use crate::facade::indexes::{
     BoundedEntityFieldLookupDenialKind, BoundedEntityFieldLookupRequest, BoundedIndexParityMode,
     DerivedIndexEntries,
 };
+use worth_relational_contracts::internal_port::indexes::data::entry_map::DerivedIndexEntryMapOwnerPort as _;
+use worth_relational_contracts::internal_port::indexes::data::entry_map::DerivedIndexRowsOwnerPort as _;
 
 #[test]
 fn entity_field_certification_rejects_a_missing_candidate() {
@@ -27,11 +29,11 @@ fn entity_field_certification_rejects_a_missing_candidate() {
     build_entity_field_generation(execution, &runtime, index.index_id);
     runtime
         .indexes
-        .corrupt_latest_generation(index.index_id, |generation| {
+        .corrupt_latest_generation_for_test(index.index_id, |generation| {
             let DerivedIndexEntries::EntityField(entries) = &mut generation.entries else {
                 panic!("entity-field generation expected");
             };
-            entries.clear();
+            entries.clear_index_entries_for_test();
         });
     let snapshot = runtime
         .visibility_authority()
@@ -177,11 +179,13 @@ fn corrupt_bucket_rejects_a_large_unrelated_field_before_encoding_it() {
     );
     runtime
         .indexes
-        .corrupt_latest_generation(index.index_id, |generation| {
+        .corrupt_latest_generation_for_test(index.index_id, |generation| {
             let DerivedIndexEntries::EntityField(entries) = &mut generation.entries else {
                 panic!("entity-field generation expected");
             };
-            let rows = entries.get_mut(&requested_key).expect("small entry exists");
+            let rows = entries
+                .index_rows_mut_for_test(&requested_key)
+                .expect("small entry exists");
             rows.remove(0);
             rows.insert(0, unrelated_id);
         });

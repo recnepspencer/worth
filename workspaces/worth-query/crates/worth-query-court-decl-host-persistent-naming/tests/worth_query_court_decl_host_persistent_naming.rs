@@ -3,3 +3,5 @@
 #![recursion_limit = "256"]
 #[path = "worth_query_court_decl_host_persistent_naming/persistent_naming/mod.rs"]
 mod persistent_naming;
+#[path = "worth_query_court_decl_host_persistent_naming/oracle/mod.rs"]
+mod oracle;

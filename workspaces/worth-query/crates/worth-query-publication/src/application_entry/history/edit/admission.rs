@@ -45,7 +45,8 @@ where
             WorthQueryDocumentHistoryDenial,
         >,
     ) -> WorthQueryHistoryEditAdvance<Self> {
-        let runtime = self.document.owner.application();
+        // The caller established that this request names the document's runtime.
+        let runtime = request.application;
         let mut already = None;
         let result = runtime.with_application_advancement(request.scope, |phase| {
             let current = WorthQueryApplicationRequest {

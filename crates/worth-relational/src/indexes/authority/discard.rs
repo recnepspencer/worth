@@ -1,8 +1,7 @@
+use super::live_access::IndexAuthority;
 use crate::indexes::data::{
     DerivedIndexDiscardDenial, DerivedIndexDiscardOutcome, DerivedIndexDiscardRequest,
 };
-
-use super::IndexAuthority;
 
 impl IndexAuthority<'_> {
     /// Remove all currently catalogued generations of one installed index.

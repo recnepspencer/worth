@@ -6,6 +6,7 @@ use crate::branch::{
 };
 use crate::tests::support::*;
 use crate::transactions::data::AspectFieldPatch;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 
 #[test]
 fn generated_payload_suspends_and_restores_while_native_orbit_custody_stays_materialized() {
@@ -63,7 +64,7 @@ fn generated_payload_suspends_and_restores_while_native_orbit_custody_stays_mate
         .unwrap();
     for relation in native {
         let slot = basis
-            .inner
+            .owner_inner()
             .root
             .partition_state(relation.partition_id)
             .unwrap()

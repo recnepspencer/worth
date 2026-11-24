@@ -1,5 +1,7 @@
 //! The evidence owner's recovered correlation candidates carry no live receipt.
-use super::super::super::committed_dispatch_outbox::recovered::RecoveredDispatchSelector;
+use super::super::super::committed_dispatch_outbox::recovered::{
+    PendingRecoveredDispatch, RecoveredDispatchSelector,
+};
 use super::*;
 use crate::domain_computation::application_aftermath::ExternalEffectCorrelationIdentity;
 
@@ -18,10 +20,13 @@ impl WorthQueryCompletedCommitEvidenceStore {
     pub fn readmit_dispatch_correlations(
         &mut self,
         sources: BTreeMap<ExternalEffectCorrelationIdentity, RecoveredDispatchSelector>,
+        pending: BTreeMap<ExternalEffectCorrelationIdentity, PendingRecoveredDispatch>,
     ) -> Result<(), ()> {
         if sources
             .keys()
+            .chain(pending.keys())
             .any(|key| self.by_dispatch_correlation.contains_key(key))
+            || sources.keys().any(|key| pending.contains_key(key))
         {
             return Err(());
         }
@@ -35,7 +40,18 @@ impl WorthQueryCompletedCommitEvidenceStore {
         {
             return Err(());
         }
+        if !self.pending_recovered_dispatch.is_empty()
+            && (pending.len() != self.pending_recovered_dispatch.len()
+                || pending.iter().any(|(key, source)| {
+                    self.pending_recovered_dispatch
+                        .get(key)
+                        .is_none_or(|old| !old.same_pending(source))
+                }))
+        {
+            return Err(());
+        }
         self.recovered_dispatch = sources;
+        self.pending_recovered_dispatch = pending;
         Ok(())
     }
 
@@ -49,5 +65,52 @@ impl WorthQueryCompletedCommitEvidenceStore {
             return Err(());
         }
         Ok(self.recovered_dispatch.get(correlation).cloned())
+    }
+
+    pub fn pending_recovered_dispatch_correlation(
+        &self,
+        correlation: &ExternalEffectCorrelationIdentity,
+    ) -> Result<Option<PendingRecoveredDispatch>, ()> {
+        if self.pending_recovered_dispatch.contains_key(correlation)
+            && (self.by_dispatch_correlation.contains_key(correlation)
+                || self.recovered_dispatch.contains_key(correlation))
+        {
+            return Err(());
+        }
+        Ok(self.pending_recovered_dispatch.get(correlation).cloned())
+    }
+
+    pub fn remove_released_pending_dispatch(
+        &mut self,
+        correlation: &ExternalEffectCorrelationIdentity,
+    ) {
+        self.pending_recovered_dispatch.remove(correlation);
+    }
+
+    pub fn promote_pending_recovered_dispatch(
+        &mut self,
+        correlation: ExternalEffectCorrelationIdentity,
+        selector: RecoveredDispatchSelector,
+    ) -> Result<(), ()> {
+        if self.by_dispatch_correlation.contains_key(&correlation) {
+            return Err(());
+        }
+        if let Some(existing) = self.recovered_dispatch.get(&correlation) {
+            return if existing.same_source(&selector) {
+                self.pending_recovered_dispatch.remove(&correlation);
+                Ok(())
+            } else {
+                Err(())
+            };
+        }
+        let Some(pending) = self.pending_recovered_dispatch.remove(&correlation) else {
+            return Err(());
+        };
+        if !pending.selector().same_source(&selector) {
+            self.pending_recovered_dispatch.insert(correlation, pending);
+            return Err(());
+        }
+        self.recovered_dispatch.insert(correlation, selector);
+        Ok(())
     }
 }

@@ -2,6 +2,7 @@ use crate::facade::history::CommitId;
 use crate::tests::support::*;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
+use worth_relational_publication::internal_port::mvcc::publication::candidate::PreparedRelationalCommitCandidateFixturePort as _;
 
 #[test]
 fn concurrent_reference_readers_observe_only_complete_old_or_new_roots() {

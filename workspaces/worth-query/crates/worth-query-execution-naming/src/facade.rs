@@ -64,7 +64,7 @@
 //! }
 //! ```
 
-pub use crate::admission::{same_commit_name_of, AdmittedCommitNames};
+pub use crate::admission::{same_commit_name_of, AdmittedCommitNames, ObservedEntityNames};
 pub use crate::birth_plan::{
     ExecutionNameBirthPlan, ExecutionNameBirthPlanBuilder, ExecutionNamedMergeKeeper,
     ExecutionPendingEntityBirth, ExecutionPendingRelationBirth, ExecutionSplitChildSpec,
@@ -74,18 +74,17 @@ pub use crate::denial::ExecutionNamingDenial;
 pub use crate::lowering::{LoweredExecutionGroupScheme, LoweredExecutionNameSchemeCatalog};
 pub use crate::operation_outputs::{
     admit_output_birth, admit_same_commit_names, AuthoredOperationNaming, BoundOperationNaming,
-    OperationMergeKeeper,
-    OperationNamedOutput, OperationNamingEntry, OperationNamingProgram, OperationOutputKey,
-    OutputBirthPosture,
-    WorthQueryOutputBirth, WorthQueryOutputMergeKeeper, WorthQueryOutputNameDenial,
+    OperationMergeKeeper, OperationNamedOutput, OperationNamingEntry, OperationNamingProgram,
+    OperationOutputKey, OutputBirthPosture, WorthQueryLeastMergeKeeper, WorthQueryOutputBirth,
+    WorthQueryOutputMergeKeeper, WorthQueryOutputNameDenial,
+};
+pub use crate::tracked_resolution::{
+    ExecutionNameReadDenial, ExecutionNameReader, ExecutionNameResolveDenial, NameReadCurrentness,
+    NameReadDependencies, NameReadStaleness, NameResolutionCandidates,
 };
 /// Relational's commit-time refusals of an operation's declared output names,
 /// as a commit denial carries them.
 pub use worth_relational::facade::lineage::{
     DiscriminatorBasisDenialReason, LineageNameDenial, LineagePostureKind, LineageRecordTarget,
     PersistentNameHolder,
-};
-pub use crate::tracked_resolution::{
-    ExecutionNameReadDenial, ExecutionNameReader, ExecutionNameResolveDenial, NameReadCurrentness,
-    NameReadDependencies, NameReadStaleness,
 };

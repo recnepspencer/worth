@@ -1,6 +1,7 @@
+use crate::runtime::state::subsystems::history::canonical_publication_routes::ForkTransitionRoutes;
 use std::sync::Arc;
 
-use crate::durability::medium::RelationalDurableMediumBinding;
+use crate::durability::published_medium::RelationalDurableMediumBinding;
 use crate::runtime::{RelationalForkOwnerBinding, RelationalRuntimeOwnerBinding};
 
 /// Cloneable branch-fork service bound to one live relational runtime owner.
@@ -11,6 +12,7 @@ pub struct RelationalForkPort {
     pub(super) runtime_instance_id: u64,
     pub(super) lifecycle: RelationalRuntimeOwnerBinding,
     pub(super) owner: RelationalForkOwnerBinding,
+    pub(super) transitions: ForkTransitionRoutes,
     pub(super) medium: Option<Arc<RelationalDurableMediumBinding>>,
     pub(super) indexes: crate::runtime::IndexDefinitionReadBinding,
     pub(super) publication: crate::runtime::RelationalRuntimePublicationBinding,
@@ -37,7 +39,7 @@ impl RelationalForkPort {
                 .ok_or(super::RelationalBranchTransitionStop::Denied(
                     super::RelationalForkDenial::OwnerUnavailable,
                 ))?;
-        self.owner
+        self.transitions
             .observe_original_frontiers(execution)
             .map_err(super::RelationalBranchTransitionStop::RequestStopped)
     }
@@ -46,6 +48,7 @@ impl RelationalForkPort {
         runtime_instance_id: u64,
         lifecycle: RelationalRuntimeOwnerBinding,
         owner: RelationalForkOwnerBinding,
+        transitions: ForkTransitionRoutes,
         medium: Option<Arc<RelationalDurableMediumBinding>>,
         publication: crate::runtime::RelationalRuntimePublicationBinding,
         indexes: crate::runtime::IndexDefinitionReadBinding,
@@ -55,6 +58,7 @@ impl RelationalForkPort {
             runtime_instance_id,
             lifecycle,
             owner,
+            transitions,
             medium,
             publication,
             indexes,

@@ -174,18 +174,74 @@
 //!     Some(CutBy { cutter: writer.same_commit_entity_name(cutter).ok()? })
 //! }
 //! ```
+//!
+//! A naming scope binds one authored occurrence for every declaration under
+//! it, takes typed roles, and merges keeping the least parent name:
+//!
+//! ```
+//! use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
+//! use worth_query_host::facade::application_naming::{
+//!     OccurrencePath, WorthQueryLeastMergeKeeper, WorthQueryName, WorthQueryNameRole,
+//! };
+//! use worth_query_host::facade::primary_graph::{
+//!     CandidateWriter, WorthQueryApplicationAttemptDenial, WorthQueryApplicationEffectEntity,
+//! };
+//! use worth_query_installation::facade::ApplicationSchema;
+//!
+//! fn arrange<S: ApplicationSchema, B: ApplicationMutationBinding<S>, Face, R: WorthQueryNameRole>(
+//!     writer: &mut CandidateWriter<'_, S, B>,
+//!     feature: OccurrencePath,
+//!     role: R,
+//!     piece: &WorthQueryApplicationEffectEntity<S, Face>,
+//!     coplanar: [WorthQueryName<Face>; 2],
+//!     merged: &WorthQueryApplicationEffectEntity<S, Face>,
+//! ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+//!     let mut names = writer.naming_scope(feature);
+//!     let mut instance = names.index("instance", 2).expect("a valid segment");
+//!     let birth = instance.birth(role);
+//!     instance.name_entity(piece, birth)?;
+//!     names.merge_least_entity(&coplanar, WorthQueryLeastMergeKeeper::Onto(merged))
+//! }
+//! ```
+//!
+//! A least-keeper target of another kind does not compile:
+//!
+//! ```compile_fail,E0308
+//! use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
+//! use worth_query_host::facade::application_naming::{
+//!     OccurrencePath, WorthQueryLeastMergeKeeper, WorthQueryName,
+//! };
+//! use worth_query_host::facade::primary_graph::{CandidateWriter, WorthQueryApplicationEffectEntity};
+//! use worth_query_installation::facade::ApplicationSchema;
+//!
+//! struct Face;
+//! struct Edge;
+//!
+//! fn misuse<S: ApplicationSchema, B: ApplicationMutationBinding<S>>(
+//!     writer: &mut CandidateWriter<'_, S, B>,
+//!     coplanar: [WorthQueryName<Face>; 2],
+//!     edge: &WorthQueryApplicationEffectEntity<S, Edge>,
+//! ) {
+//!     let mut names = writer.naming_scope(OccurrencePath::root("f").unwrap());
+//!     let _ = names.merge_least_entity(&coplanar, WorthQueryLeastMergeKeeper::Onto(edge));
+//! }
+//! ```
 
 pub use worth_query_declaration::facade::application_naming::{
-    ApplicationNameDiscriminator, ErasedWorthQueryName, IndexedRoleDiscriminator, NameRef,
-    NameResolutionDenial, NameSelection, NameSelectionDenial, NamedTarget, OccurrencePath,
-    OccurrencePathDenial, OccurrenceSegment, ResolvedName, WorthQueryName, WorthQueryNameRole,
-    WorthQuerySameCommitName,
+    ApplicationNameDiscriminator, EntityNameSubject, ErasedWorthQueryName,
+    IndexedRoleDiscriminator, NameCandidate, NameOwnerHop, NameOwnerHopDirection, NameOwnerPath,
+    NameOwnerScope, NameOwnerStep, NameRef, NameResolutionDenial, NameSelection,
+    NameSelectionDenial, NameSubjectRole, NamedTarget, NamedTargetDelegate, NoNameOwner,
+    OccurrencePath, OccurrencePathDenial, OccurrenceSegment, OwnedThrough, OwnerVia,
+    OwnerViaReverse, RelationNameSubject, ResolvedName, StoredNameDenial, Unowned, WorthQueryName,
+    WorthQueryNameDelegate, WorthQueryNameRole, WorthQueryNamedKind, WorthQuerySameCommitName,
 };
 pub use worth_query_execution::facade::application_naming::{
     DiscriminatorBasisDenialReason, ExecutionNameReadDenial, ExecutionNameReader,
     ExecutionNameResolveDenial, ExecutionNamingDenial, LineageNameDenial, LineagePostureKind,
-    LineageRecordTarget, NameReadCurrentness, NameReadDependencies, NameReadStaleness,
-    PersistentNameHolder, PersistentNameReadVeto, WorthQueryDecisionNameDenial,
+    LineageRecordTarget, NameOwnerOf, NameReadCurrentness, NameReadDependencies, NameReadStaleness,
+    NameResolutionCandidates, ObservedEntityNames, PersistentNameHolder, PersistentNameReadVeto,
+    WorthQueryDecisionNameDenial, WorthQueryDecisionNameResolution, WorthQueryLeastMergeKeeper,
     WorthQueryOutputBirth, WorthQueryOutputMergeKeeper, WorthQueryOutputNameDenial,
 };
 /// The derives of the two naming traits, beside the traits they implement.

@@ -8,6 +8,7 @@ pub mod model;
 pub mod navigation;
 pub mod preview;
 pub mod step;
+pub mod step_metadata;
 
 pub use authority_lifetime::HistoryAuthorityLifetime;
 pub use denial::{
@@ -23,3 +24,4 @@ pub use navigation::{
 };
 pub use preview::WorthQueryHistoryPreview;
 pub use step::{WorthQueryHistoryNodeId, WorthQueryHistoryStep};
+pub use step_metadata::WorthQueryHistoryStepMetadata;

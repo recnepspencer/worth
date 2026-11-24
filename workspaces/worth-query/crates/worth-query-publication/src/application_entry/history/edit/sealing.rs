@@ -22,7 +22,8 @@ where
         mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> WorthQueryHistoryEditAdvance<Self> {
-        let runtime = self.document.owner.application();
+        // The caller established that this request names the document's runtime.
+        let runtime = request.application;
         let result = runtime.with_application_advancement(request.scope, |phase| {
             self.document
                 .read_in_advancement(&phase, request)
@@ -59,9 +60,10 @@ where
                         WorthQueryDocumentHistoryDenial::ReceiptMismatch,
                     ),
                 ))?;
+            let candidate = state.candidate.as_ref().expect("actual candidate").branch();
             self.document
                     .outputs
-                    .with_recording(&phase, |mut recording| {
+                    .with_recording(&phase, candidate, |mut recording| {
                         let result = (|| {
                             if let Some(forest) = recording.as_deref_mut()
                                 && !super::recording::advance_output_recording::<

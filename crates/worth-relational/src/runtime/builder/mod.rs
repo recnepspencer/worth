@@ -230,14 +230,14 @@ impl RelationalRuntimeBuilder {
     /// rebuilt runtime, and a forked runtime never inherits it.
     pub fn build_durable(
         self,
-        medium: Box<dyn crate::durability::medium::RelationalDurableMedium>,
+        medium: Box<dyn crate::durability::published_medium::RelationalDurableMedium>,
     ) -> Result<RelationalRuntime, super::RelationalRuntimeConstructionDenial> {
         self.build_with(Some(medium))
     }
 
     fn build_with(
         self,
-        medium: Option<Box<dyn crate::durability::medium::RelationalDurableMedium>>,
+        medium: Option<Box<dyn crate::durability::published_medium::RelationalDurableMedium>>,
     ) -> Result<RelationalRuntime, super::RelationalRuntimeConstructionDenial> {
         self.resolve().build_with(medium)
     }

@@ -1,22 +1,23 @@
 //! Restore historical source meaning while retaining a distinct native target.
+use worth_relational_durability::internal_port::durability::authority::checkpoint_complete::interim::origin::CapturedNativeInterimOriginOwnerPort as _;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 mod output_correspondence;
-mod publication_custody;
-mod retirement_preparation;
+pub(crate) use worth_relational_durability::internal_port::durability::authority::recovery::codec_transition::{publication_custody, schema_proposal, source_schema};
 pub(crate) use publication_custody::{
     AdmittedRecoveredCodecPublication, RecoveredCodecPublicationCustody,
 };
 mod activation_commitment;
-mod schema_proposal;
-mod source_schema;
 mod target_publication;
-#[cfg(test)]
-mod tests;
 mod transition_admission;
 
-use super::super::{DurabilityRecoveryAuthority, RecoveredRelationalRuntimeAuthority};
+use crate::durability::authority::recovered_runtime::DurabilityRecoveryAuthority;
+use crate::durability::authority::recovered_runtime::RecoveredRelationalRuntimeAuthority;
 use crate::durability::data::{RelationalNativeCheckpoint, RelationalRecoveryStop};
-use crate::runtime::{RecoveredCheckpointProgramActivationUpdate, RelationalRuntime};
 use crate::schema::data::RelationalSchemaRegistry;
+use crate::{
+    runtime::RelationalRuntime,
+    schema::data::program_activation::RecoveredCheckpointProgramActivationUpdate,
+};
 
 #[derive(Debug)]
 pub(in crate::durability::authority) struct RecoveredCodecTransitionState {
@@ -25,7 +26,7 @@ pub(in crate::durability::authority) struct RecoveredCodecTransitionState {
     pub(in crate::durability::authority) retirement:
         Option<crate::history::data::OwnedCodecRetirementClosure>,
     pub(super) publication_custody: Option<std::sync::Arc<RecoveredCodecPublicationCustody>>,
-    pub(super) transaction_id: Option<crate::transactions::data::TransactionId>,
+    pub(super) transaction_id: Option<crate::transactions::data::primitives::TransactionId>,
 }
 
 impl DurabilityRecoveryAuthority<'_> {
@@ -38,7 +39,7 @@ impl DurabilityRecoveryAuthority<'_> {
         native: &RelationalNativeCheckpoint,
     ) -> Result<
         (
-            crate::runtime::RecoveryOutcome,
+            crate::durability::data::RecoveryOutcome,
             RecoveredRelationalRuntimeAuthority,
         ),
         RelationalRecoveryStop,
@@ -67,7 +68,7 @@ impl DurabilityRecoveryAuthority<'_> {
         origin: &super::super::CapturedNativeInterimOrigin,
     ) -> Result<
         (
-            crate::runtime::RecoveryOutcome,
+            crate::durability::data::RecoveryOutcome,
             RecoveredRelationalRuntimeAuthority,
         ),
         RelationalRecoveryStop,
@@ -78,7 +79,7 @@ impl DurabilityRecoveryAuthority<'_> {
             origin,
             &checkpoint,
             self.runtime.main_branch_identity().branch_id(),
-            &target_registry.content_formats,
+            target_registry.owner_content_formats(),
         )?;
         self.restore_codec_source(
             execution,
@@ -96,7 +97,7 @@ impl DurabilityRecoveryAuthority<'_> {
         native_bytes_read: usize,
     ) -> Result<
         (
-            crate::runtime::RecoveryOutcome,
+            crate::durability::data::RecoveryOutcome,
             RecoveredRelationalRuntimeAuthority,
         ),
         RelationalRecoveryStop,
@@ -105,7 +106,7 @@ impl DurabilityRecoveryAuthority<'_> {
         let source_registry = source_schema::readmit_current_source_schema(
             &checkpoint,
             self.runtime.main_branch_identity().branch_id(),
-            &target_registry.content_formats,
+            target_registry.owner_content_formats(),
         )?;
         self.restore_codec_source(
             execution,
@@ -125,7 +126,7 @@ impl DurabilityRecoveryAuthority<'_> {
         target_registry: RelationalSchemaRegistry,
     ) -> Result<
         (
-            crate::runtime::RecoveryOutcome,
+            crate::durability::data::RecoveryOutcome,
             RecoveredRelationalRuntimeAuthority,
         ),
         RelationalRecoveryStop,

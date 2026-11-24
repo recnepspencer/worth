@@ -100,47 +100,77 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
     /// Ordered identity/parent/provenance data, not the retention-bearing traversal.
     #[doc(hidden)]
     pub fn application_oracle_ancestry_for_test(&self) -> WorthQueryOracleHistoryPageForTest {
-        let head = self
-            .runtime
-            .product_runtime
-            .owner_ref()
+        let owner = self.runtime.product_runtime.owner_ref();
+        let head = owner
             .observation_port()
             .observe_root_product_branch()
             .expect("the inspected World remains available");
-        let history = self
-            .runtime
-            .product_runtime
-            .owner_ref()
+        let history = owner
             .inspection_port()
             .trace_ancestry(
                 head.selected_commit().clone(),
                 std::num::NonZeroUsize::new(256).unwrap(),
             )
             .expect("the bounded oracle history remains inspectable");
+        let mut seen = std::collections::BTreeSet::new();
+        let map_commit = |c: &worth_runtime_world::facade::CompositeRuntimeWorldCommit| {
+            WorthQueryOracleOccurrenceForTest {
+                identity: c.identity().clone(),
+                parent: c.parent().clone(),
+                provenance: c.provenance().clone(),
+                relational_publication: c.relational_publication_identity().cloned(),
+                relational_fork: c
+                    .relational_fork_target_identity()
+                    .map(|b| b.branch_id().clone()),
+                relational_change: c.relational_change(),
+                signal_change: c.signal_change(),
+                signal_movement: c.signal_publication_identity().map(|identity| {
+                    use worth_runtime_world::facade::CompositeSignalPublicationIdentity as S;
+                    match identity {
+                        S::Advanced(_) => WorthQueryOracleSignalMovementForTest::Advanced,
+                        S::Forked(_) => WorthQueryOracleSignalMovementForTest::Forked,
+                    }
+                }),
+            }
+        };
+        let mut occurrences = Vec::new();
+        for c in history.commits() {
+            if seen.insert(c.identity().ordinal()) {
+                occurrences.push(map_commit(c));
+            }
+        }
+        let mut complete = history.is_complete();
+        let mut crossed_retired = history.crossed_retired_history();
+        let host = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(None),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let exec = worth_execution::ExecutionRequest::serial(&host);
+        let branches = owner
+            .observation_port()
+            .observe_installed_product_branches(&exec)
+            .expect("the inspected installed product branches remain observable");
+        for branch in branches.branches() {
+            let branch_hist = owner
+                .inspection_port()
+                .trace_ancestry(
+                    branch.selected_commit().clone(),
+                    std::num::NonZeroUsize::new(256).unwrap(),
+                )
+                .expect("the bounded oracle branch history remains inspectable");
+            complete &= branch_hist.is_complete();
+            crossed_retired |= branch_hist.crossed_retired_history();
+            for c in branch_hist.commits() {
+                if seen.insert(c.identity().ordinal()) {
+                    occurrences.push(map_commit(c));
+                }
+            }
+        }
         WorthQueryOracleHistoryPageForTest {
-            complete: history.is_complete(),
-            crossed_retired: history.crossed_retired_history(),
-            occurrences: history
-                .commits()
-                .map(|c| WorthQueryOracleOccurrenceForTest {
-                    identity: c.identity().clone(),
-                    parent: c.parent().clone(),
-                    provenance: c.provenance().clone(),
-                    relational_publication: c.relational_publication_identity().cloned(),
-                    relational_fork: c
-                        .relational_fork_target_identity()
-                        .map(|b| b.branch_id().clone()),
-                    relational_change: c.relational_change(),
-                    signal_change: c.signal_change(),
-                    signal_movement: c.signal_publication_identity().map(|identity| {
-                        use worth_runtime_world::facade::CompositeSignalPublicationIdentity as S;
-                        match identity {
-                            S::Advanced(_) => WorthQueryOracleSignalMovementForTest::Advanced,
-                            S::Forked(_) => WorthQueryOracleSignalMovementForTest::Forked,
-                        }
-                    }),
-                })
-                .collect(),
+            complete,
+            crossed_retired,
+            occurrences,
         }
     }
 }

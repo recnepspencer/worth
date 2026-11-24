@@ -1,10 +1,12 @@
 //! Snapshot entry captures the exact join generation before verification.
+use worth_relational_publication::internal_port::visibility::materialization::read_records::reader::pinned_read::index_lookups::RelationalPinnedReadOwnerPort as _;
 use super::IndexAccess;
 use crate::indexes::data::{
     BoundedIndexParityMode, BoundedRelationJoinLookupDenial, BoundedRelationJoinLookupDenialKind,
     BoundedRelationJoinLookupOutcome, BoundedRelationJoinLookupRequest,
 };
-use crate::visibility::snapshot_states::resolve_snapshot_handle;
+use crate::visibility::snapshot_states::resolution::resolve_snapshot_handle;
+use worth_relational_branch::internal_port::indexes::data::bounded_relation_join_lookup::BoundedRelationJoinLookupDenialOwnerPort as _;
 fn denial(
     kind: BoundedRelationJoinLookupDenialKind,
     request: &BoundedRelationJoinLookupRequest,

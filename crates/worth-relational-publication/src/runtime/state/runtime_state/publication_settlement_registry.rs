@@ -1,0 +1,212 @@
+use contracts::publication::close_custody::RelationalPublicationRegistryCustody;
+use contracts::publication::close_custody::RelationalPublicationRegistryCustodyOwnerPort as _;
+use std::collections::HashMap;
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::{Arc, Mutex};
+use worth_relational_contracts::internal_port as contracts;
+
+use contracts::history::data::coordinates::CommitId;
+
+pub mod record;
+
+pub(crate) use record::PendingRelationalPublicationSettlement;
+pub use record::ReservedRelationalSettlement;
+
+/// Why one publication attempt could not install its pending-settlement record
+/// before movement.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RelationalSettlementReservationDenial {
+    DuplicateCommitIdentity,
+    OwnerUnavailable,
+}
+
+/// The one runtime-owned registry of pending publication settlements.
+///
+/// Admission, lookup, transition, and removal are O(1) by owner-issued commit
+/// identity.
+///
+/// Only a prepared candidate can reach admission. Every prepared candidate
+/// already owns a published-snapshot reservation, which remains accounted
+/// until its settled snapshot is released. When a finite policy is installed,
+/// preparation enforces it; absence never discards this custody or installs a
+/// second population allowance here.
+///
+/// The index lock below is taken only for those constant-bounded operations; it
+/// never spans branch waiting, durability I/O, derived work, or a test pause.
+#[derive(Debug, Default)]
+pub(crate) struct RelationalPublicationSettlementRegistry {
+    records: Mutex<HashMap<CommitId, Arc<PendingRelationalPublicationSettlement>>>,
+    contacts: AtomicU64,
+    owner_loss_releases: AtomicU64,
+    closed: AtomicBool,
+}
+
+/// Armed pre-effect reservation.
+///
+/// Dropping it releases the record and its capacity, so a no-movement path
+/// cannot leak a reservation by forgetting an explicit cleanup call. Only
+/// successful movement disarms it, through [`Self::authorize`].
+#[must_use = "an unauthorized settlement reservation must release its capacity"]
+pub struct RelationalPendingSettlementReservation {
+    registry: Arc<RelationalPublicationSettlementRegistry>,
+    record: Arc<PendingRelationalPublicationSettlement>,
+    armed: bool,
+}
+
+impl RelationalPublicationSettlementRegistry {
+    pub(super) fn close_custody(&self) -> RelationalPublicationRegistryCustody {
+        let records = self.records();
+        RelationalPublicationRegistryCustody::observed(
+            records.len(),
+            records.keys().next().map(|commit| commit.0),
+        )
+    }
+
+    pub(super) fn try_close_custody(&self) -> RelationalPublicationRegistryCustody {
+        let records = match self.records.try_lock() {
+            Ok(records) => records,
+            Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
+            Err(std::sync::TryLockError::WouldBlock) => {
+                return RelationalPublicationRegistryCustody::ContactHeld
+            }
+        };
+        RelationalPublicationRegistryCustody::observed(
+            records.len(),
+            records.keys().next().map(|commit| commit.0),
+        )
+    }
+
+    /// Reserve capacity and install one pending record before the publication
+    /// critical section.
+    pub(crate) fn reserve(
+        registry: &Arc<Self>,
+        commit_id: CommitId,
+        runtime_instance_id: u64,
+        reserved: ReservedRelationalSettlement,
+    ) -> Result<RelationalPendingSettlementReservation, RelationalSettlementReservationDenial> {
+        registry.contacts.fetch_add(1, Ordering::Relaxed);
+        if registry.closed.load(Ordering::Acquire) {
+            return Err(RelationalSettlementReservationDenial::OwnerUnavailable);
+        }
+        let record = Arc::new(PendingRelationalPublicationSettlement::reserved(
+            commit_id,
+            runtime_instance_id,
+            reserved,
+        ));
+        let mut records = registry.records();
+        if records.contains_key(&commit_id) {
+            return Err(RelationalSettlementReservationDenial::DuplicateCommitIdentity);
+        }
+        records.insert(commit_id, Arc::clone(&record));
+        drop(records);
+        Ok(RelationalPendingSettlementReservation {
+            registry: Arc::clone(registry),
+            record,
+            armed: true,
+        })
+    }
+
+    /// Whether a commit at or before `basis` has published without its
+    /// settlement having installed derived state yet.
+    ///
+    /// Complexity: O(in-flight settlements); the registry lock is released
+    /// before any record's own state is read.
+    pub(crate) fn has_unsettled_through(&self, basis: CommitId) -> bool {
+        let candidates: Vec<_> = self
+            .records()
+            .values()
+            .filter(|record| record.commit_id() <= basis)
+            .map(Arc::clone)
+            .collect();
+        candidates.iter().any(|record| !record.is_settled())
+    }
+
+    fn records(
+        &self,
+    ) -> std::sync::MutexGuard<'_, HashMap<CommitId, Arc<PendingRelationalPublicationSettlement>>>
+    {
+        self.records
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+    }
+
+    pub(crate) fn record(
+        &self,
+        commit_id: CommitId,
+    ) -> Option<Arc<PendingRelationalPublicationSettlement>> {
+        self.contacts.fetch_add(1, Ordering::Relaxed);
+        self.records().get(&commit_id).map(Arc::clone)
+    }
+
+    /// Remove one record, but only if it is still the exact record supplied.
+    pub(crate) fn release(&self, record: &Arc<PendingRelationalPublicationSettlement>) {
+        self.contacts.fetch_add(1, Ordering::Relaxed);
+        let mut records = self.records();
+        if records
+            .get(&record.commit_id())
+            .is_some_and(|installed| Arc::ptr_eq(installed, record))
+        {
+            records.remove(&record.commit_id());
+        }
+    }
+
+    pub(crate) fn is_closed(&self) -> bool {
+        self.closed.load(Ordering::Acquire)
+    }
+
+    /// Owner shutdown. Admission closes first, then remaining retention is
+    /// resolved with typed owner-loss accounting.
+    pub(crate) fn close(&self) {
+        self.closed.store(true, Ordering::Release);
+        let drained = std::mem::take(&mut *self.records());
+        self.owner_loss_releases
+            .fetch_add(drained.len() as u64, Ordering::Relaxed);
+    }
+
+    pub(crate) fn pending_count(&self) -> usize {
+        self.records().len()
+    }
+
+    pub(crate) fn contact_count(&self) -> u64 {
+        self.contacts.load(Ordering::Relaxed)
+    }
+
+    pub(crate) fn owner_loss_release_count(&self) -> u64 {
+        self.owner_loss_releases.load(Ordering::Relaxed)
+    }
+}
+
+impl RelationalPendingSettlementReservation {
+    pub(crate) fn install_prepared_indexes(&mut self) {
+        self.record.install_prepared_indexes();
+    }
+
+    /// Successful movement authorizes the already-installed record against its
+    /// exact positioned canonical commit and disarms pre-effect cleanup. After
+    /// this returns, the commit is recovery-addressable by identity alone.
+    pub fn authorize(
+        mut self,
+        positioned: Arc<worth_relational_branch::internal_port::history::data::positioned_canonical_commit::PositionedCanonicalCommit>,
+        settlement_retention: worth_relational_branch::internal_port::history::retention::obligation::RelationalPerformedSettlementObligation,
+        late_interruption: Option<
+            contracts::runtime::operation_control::interruption_event::RelationalInterruptionEvent,
+        >,
+    ) -> Arc<PendingRelationalPublicationSettlement> {
+        assert!(
+            /* Proof: The non-Clone RelationalPendingSettlementReservation owns the newly inserted Reserved record. Only its consuming authorize can transition Reserved to Performed; repair claim leaves Reserved unchanged, and Drop removes only an unconsumed reservation. */
+            self.record
+                .authorize_performed(positioned, settlement_retention, late_interruption),
+            "one linearized candidate authorizes its reservation exactly once"
+        );
+        self.armed = false;
+        Arc::clone(&self.record)
+    }
+}
+
+impl Drop for RelationalPendingSettlementReservation {
+    fn drop(&mut self) {
+        if self.armed {
+            self.registry.release(&self.record);
+        }
+    }
+}

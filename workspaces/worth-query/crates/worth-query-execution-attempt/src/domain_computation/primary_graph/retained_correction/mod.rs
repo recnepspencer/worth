@@ -161,13 +161,30 @@ impl CorrectionMaterialOwner {
                 worth_foundational::facade::CorrectionMaterialPinOwner::Recovery { .. } => continue,
                 worth_foundational::facade::CorrectionMaterialPinOwner::PreparedCommand {
                     ..
-                } => {}
+                } => {
+                    if originals.is_some_and(|history| {
+                        history.original_states().any(|state| {
+                            matches!(
+                                state.fate(),
+                                worth_foundational::facade::WorldOriginalFate::Open
+                                    | worth_foundational::facade::WorldOriginalFate::Continued
+                            )
+                        })
+                    }) {
+                        continue;
+                    }
+                }
                 worth_foundational::facade::CorrectionMaterialPinOwner::Publication {
                     original,
                 } => {
                     if originals.is_some_and(|history| {
                         history.original_state(original).is_some_and(|state| {
                             state.fate() == worth_foundational::facade::WorldOriginalFate::Open
+                                || (state.fate()
+                                    == worth_foundational::facade::WorldOriginalFate::Continued
+                                    && !history
+                                        .original_observations()
+                                        .any(|obs| obs.identity() == state.reserved_commit()))
                         })
                     }) {
                         continue;

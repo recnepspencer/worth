@@ -3,6 +3,8 @@ use crate::branch::AdmittedRelationalBranchBasis;
 use crate::symbols::data::selected_field_text::RelationalFieldText;
 use crate::symbols::data::RelationalFieldTextAdmissionDenial as Denial;
 use worth_execution::{ExecutionImmutableBytes, ExecutionRequest};
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisOwnerPort as _;
+use worth_relational_branch::internal_port::symbols::data::selected_field_text::assemble_field_text;
 impl super::RelationalRuntime {
     /// Adopts admitted backing or imports through the ORIGINAL selected policy.
     /// External text is copied and funded through the original request,
@@ -23,11 +25,7 @@ impl super::RelationalRuntime {
             return Err(Denial::StaleBasis);
         }
         let (symbol, text) = self.services.symbols.admit_field_text(execution, text)?;
-        Ok(RelationalFieldText {
-            basis: basis.clone(),
-            symbol,
-            text,
-        })
+        Ok(assemble_field_text(basis.clone(), symbol, text))
     }
 }
 

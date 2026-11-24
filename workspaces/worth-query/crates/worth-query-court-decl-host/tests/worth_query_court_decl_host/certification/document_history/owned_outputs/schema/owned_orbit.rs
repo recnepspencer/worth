@@ -5,7 +5,7 @@ pub struct Incidence;
 impl Entity for Incidence {
     const NAME: &'static str = "Incidence";
     type Aspects = (IncidenceFacts,);
-    type Relations = (OwnedNext,);
+    type Relations = (OwnedNext, Beside);
 }
 impl Incidence {
     pub fn reference() -> ApplicationEntityRef<Schema, Self> {
@@ -43,6 +43,18 @@ impl Relation for OwnedNext {
         ApplicationRelationDeletionPolicy::RejectDeleteWithLiveRelations;
 }
 impl OwnedNext {
+    pub fn reference() -> ApplicationRelationRef<Schema, Self, Incidence, Incidence> {
+        relation(Storage, Incidence, Self)
+    }
+}
+/// A plain relation between the same records, under no orbit law: one
+/// producer can link it on the records of another's ring.
+pub struct Beside;
+impl Relation for Beside {
+    const NAME: &'static str = "Beside";
+    type To = Incidence;
+}
+impl Beside {
     pub fn reference() -> ApplicationRelationRef<Schema, Self, Incidence, Incidence> {
         relation(Storage, Incidence, Self)
     }

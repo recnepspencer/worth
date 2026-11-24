@@ -5,7 +5,7 @@ import re
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "query_split"))
-from module_graph import LibraryModel
+from module_graph import LibraryModel, ProductionView
 from rust_source import pairs, tokens
 from src_families import test_gated
 from src_paths import flatten, following_colons, qualified_paths, resolve
@@ -134,7 +134,7 @@ def path_at(stream, i):
 
 def resolved_origin(surface, current, segments):
     """Resolve a type/import path through module or item aliases and globs."""
-    target = resolve(segments, current, surface.index)
+    target = surface.resolve(segments, current, surface.index)
     if target is None:
         found = surface.origin(current, segments[0])[0]
         rest = segments[1:]

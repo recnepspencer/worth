@@ -90,7 +90,7 @@ impl NativeHistorySourceRetirement {
             Stage::LiveRoots => match self
                 .original
                 .live_root(self.live)
-                .map_err(|()| RelationalSourceCloseDenial::Busy)?
+                .map_err(|_| RelationalSourceCloseDenial::Busy)?
             {
                 RelationalSourceRootSlot::Root(root) => {
                     self.live += 1;
@@ -102,7 +102,7 @@ impl NativeHistorySourceRetirement {
             Stage::RetiredRoots => match self
                 .original
                 .retired_root(self.retired)
-                .map_err(|()| RelationalSourceCloseDenial::Busy)?
+                .map_err(|_| RelationalSourceCloseDenial::Busy)?
             {
                 Some((key, root)) => {
                     self.retired = Some(key);
@@ -128,14 +128,14 @@ impl NativeHistorySourceRetirement {
                     None => self.stage = Stage::Performed,
                 }
             }
-            Stage::Performed => match self.performed.next() {
+            Stage::Performed => match self.performed.next_envelope() {
                 Some(cell) => self.envelope = Some(cell),
                 None => self.stage = Stage::CheckpointCatalog,
             },
             Stage::CheckpointCatalog => match self
                 .original
                 .checkpoint_envelope(self.commit)
-                .map_err(|()| RelationalSourceCloseDenial::Busy)?
+                .map_err(|_| RelationalSourceCloseDenial::Busy)?
             {
                 Some((id, cell)) => {
                     self.commit = Some(id);
@@ -149,7 +149,7 @@ impl NativeHistorySourceRetirement {
             Stage::Ledger => match self
                 .original
                 .ledger_envelope(self.commit)
-                .map_err(|()| RelationalSourceCloseDenial::Busy)?
+                .map_err(|_| RelationalSourceCloseDenial::Busy)?
             {
                 Some((id, cell)) => {
                     self.commit = Some(id);
@@ -167,7 +167,7 @@ impl NativeHistorySourceRetirement {
                     match self
                         .original
                         .retire_head(self.live)
-                        .map_err(|()| RelationalSourceCloseDenial::Busy)?
+                        .map_err(|_| RelationalSourceCloseDenial::Busy)?
                     {
                         None => {
                             return Err(RelationalSourceCloseDenial::Native(

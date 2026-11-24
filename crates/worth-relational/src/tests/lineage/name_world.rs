@@ -3,21 +3,23 @@
 //! batch to the derived name index courts.
 
 use std::collections::{BTreeMap, BTreeSet};
+use worth_relational_contracts::internal_port::lineage::data::artifacts::finalization_artifact::PreparedLineageFinalizationFixturePort as _;
+use worth_relational_lineage::internal_port::lineage::index::batch::PersistentNameCommittedBatchFixturePort as _;
 
 use crate::facade::history::CommitId;
 use crate::facade::identity::{EntityId, KindId, LineageId, PartitionId, VersionId};
 use crate::facade::lineage::{
-    InstalledPersistentNameSchemeRegistry, LineageEventKind,
-    LineageMergeKeeper, LineagePostureClaim, LineageRecordTarget, LineageSplitChild,
-    LineageSubject, PersistentNameBirthParts, PersistentNameBirthRequest,
-    PersistentNameCommittedBatch, PersistentNameHolder, PersistentNameIdentity, PersistentNameKey,
+    InstalledPersistentNameSchemeRegistry, LineageEventKind, LineageMergeKeeper,
+    LineagePostureClaim, LineageRecordTarget, LineageSplitChild, LineageSubject,
+    PersistentNameBirthParts, PersistentNameBirthRequest, PersistentNameCommittedBatch,
+    PersistentNameHolder, PersistentNameIdentity, PersistentNameKey,
 };
-use crate::lineage::data::LineageCommitPostureInput;
 use crate::facade::transactions::{
     AspectFieldPatch, EntityMutationIntent, EntitySpec, MutationIntent, RecordRef,
     ReplaceEntityIntent,
 };
-use crate::lineage::authority::finalize_postures_in_working_state;
+use crate::lineage::authority::finalize_postures_in_working_state_for_test;
+use crate::lineage::authority::posture_fixture::LineageCommitPostureInput;
 use crate::runtime::LineageIdentityAllocator;
 use crate::storage::overlay::WorkingState;
 use crate::symbols::data::ClientKey;
@@ -282,7 +284,7 @@ impl LineageWorld {
             retired_lineages: self.retired_lineages.clone(),
             postures: std::mem::take(&mut self.postures),
         };
-        let prepared = finalize_postures_in_working_state(
+        let prepared = finalize_postures_in_working_state_for_test(
             &self.allocator,
             &mut self.staged,
             &receipt_at(self.commit, self.commit),
@@ -291,11 +293,11 @@ impl LineageWorld {
             &input,
         )
         .expect("staged postures finalize as one canonical commit");
-        for node in prepared.new_nodes() {
+        for node in prepared.new_nodes_for_test() {
             let holder = PersistentNameHolder::Entity(node.entity_id());
             self.holders.insert(node.lineage_id(), holder);
         }
-        for (relation, lineage) in prepared.relation_lineages() {
+        for (relation, lineage) in prepared.relation_lineages_for_test() {
             self.holders
                 .insert(*lineage, PersistentNameHolder::Relation(*relation));
         }
@@ -344,8 +346,8 @@ impl LineageWorld {
                 }
             }
         }
-        let mut batch =
-            PersistentNameCommittedBatch::new(self.head()).with_prepared_lineage(&prepared);
+        let mut batch = PersistentNameCommittedBatch::new(self.head())
+            .with_prepared_lineage_for_test(&prepared);
         for (holder, carriers) in std::mem::take(&mut self.carriers) {
             batch = batch.with_carriers(self.key_of(&holder), carriers);
         }

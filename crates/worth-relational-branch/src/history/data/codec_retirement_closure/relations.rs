@@ -1,0 +1,142 @@
+//! Destructive retirement requires a closed set of authenticated incident relations.
+use super::{charge, memory_overflow, reserve, CodecRetirementClosureStop, OutputOrigin};
+use crate::branch::root::RelationalBranchRoot;
+use crate::history::data::canonical_commit_envelope::OutputOriginHistory;
+use crate::identity::data::RelationId;
+use worth_execution::{ExecutionMemoryReservation, ExecutionResourceLease, MapKernelContext};
+use worth_relational_contracts::internal_port::schema::data::current_publication_storage::CurrentPublicationStorageOwnerPort as _;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
+
+pub mod association;
+pub mod incident_boundary;
+
+#[derive(Clone, Copy)]
+pub(super) enum RelationClosurePurpose {
+    CodecRetirement,
+}
+
+pub(super) use association::validate_complete_publication;
+
+pub(super) fn derive_closed_relations(
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
+    root: &RelationalBranchRoot,
+    origins: &[OutputOrigin],
+    purpose: RelationClosurePurpose,
+    validated_history: &mut OutputOriginHistory,
+    context: &mut MapKernelContext<'_, '_>,
+    lease: Option<&ExecutionResourceLease<'_>>,
+) -> Result<(Vec<RelationId>, ExecutionMemoryReservation), CodecRetirementClosureStop> {
+    let capacity = root.relation_slot_count();
+    let bytes = capacity
+        .checked_mul(std::mem::size_of::<RelationId>())
+        .ok_or_else(memory_overflow)?;
+    let memory = reserve(lease, bytes)?;
+    let mut relations = Vec::with_capacity(capacity);
+    for partition_id in root.partition_ids_iter() {
+        charge(context, 1)?;
+        let partition = root
+            .partition_state(partition_id)?
+            .ok_or("native relation partition missing")?;
+        for slot in partition.relation_arena.occupied_slots_iter() {
+            charge(
+                context,
+                3 + 2 * (usize::BITS - origins.len().leading_zeros()) as usize,
+            )?;
+            let record = partition
+                .relation_arena
+                .get_slot(slot)
+                .ok_or("native relation disappeared")?;
+            if !record.is_live() {
+                continue;
+            }
+            // Current custody links are removed by publication completion in
+            // this same codec retirement, rather than claimed as producer edges.
+            if record.kind_id().is_some_and(|kind| {
+                (*root
+                    .schema_authority()
+                    .registry()
+                    .owner_current_publication_storage())
+                .as_ref()
+                .is_some_and(|storage| storage.metadata_kinds().contains(&kind))
+            }) {
+                continue;
+            }
+            let endpoints = record
+                .extra()
+                .endpoints
+                .as_ref()
+                .ok_or("live native relation has no endpoints")?;
+            let source = origins
+                .binary_search_by_key(&endpoints.source, |(id, _, _)| *id)
+                .ok();
+            let target = origins
+                .binary_search_by_key(&endpoints.target, |(id, _, _)| *id)
+                .ok();
+            if source.is_none() && target.is_none() {
+                continue;
+            }
+            let (Some(source), Some(target)) = (source, target) else {
+                return Err(incident_boundary::IncidentRelation {
+                    id: RelationId::new(partition_id, slot as u64, record.generation()),
+                    kind: record.kind_id(),
+                    source: endpoints.source,
+                    target: endpoints.target,
+                }
+                .outside_closure(purpose, (source, target), origins));
+            };
+            if origins[source].2.commit != origins[target].2.commit {
+                return Err(
+                    "incident relation endpoints have different native producer origins".into(),
+                );
+            }
+            relations.push(RelationId::new(
+                partition_id,
+                slot as u64,
+                record.generation(),
+            ));
+        }
+    }
+    for id in &relations {
+        let partition = root
+            .partition_state(id.partition_id)?
+            .ok_or("relation partition absent")?;
+        let row = partition
+            .relation_arena
+            .get(id)
+            .ok_or("relation generation absent")?;
+        let ends = row
+            .extra()
+            .endpoints
+            .as_ref()
+            .ok_or("relation endpoints absent")?;
+        let source = origins
+            .binary_search_by_key(&ends.source, |(id, _, _)| *id)
+            .map_err(|_| "relation source outside complete output closure")?;
+        let envelope = validated_history
+            .by_commit(
+                origins[source].2.commit.commit_id,
+                &mut |commit| runtime.commit(commit),
+                &runtime.execution(),
+                context,
+            )?
+            .ok_or("complete relation publication absent")?;
+        super::relation_payload::validate(
+            runtime,
+            root,
+            &envelope,
+            *id,
+            validated_history,
+            context,
+            lease,
+        )?;
+    }
+    charge(
+        context,
+        relations
+            .len()
+            .checked_mul((usize::BITS - relations.len().leading_zeros()) as usize + 1)
+            .ok_or_else(memory_overflow)?,
+    )?;
+    relations.sort_unstable();
+    Ok((relations, memory))
+}

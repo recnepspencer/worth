@@ -1,13 +1,5 @@
-mod conflict_digest_basis;
-mod digest_basis;
-
-mod lowered_plan_digest_basis;
-mod materialization;
+pub(crate) use worth_relational_merge::internal_port::merge::planning_artifact::{
+    materialization, schema_snapshot,
+};
 mod performance_counters;
-mod policy_digest_basis;
-mod schema_snapshot;
-mod summaries;
-
-pub(crate) use crate::merge::data::execution_authority_contract::lowered_artifact_execution_authority_contract;
-pub(crate) use materialization::{materialize_planning_artifact, materialize_planning_observation};
-pub(crate) use schema_snapshot::merge_schema_snapshot_for_execution_ready;
+pub(super) mod selected_basis;

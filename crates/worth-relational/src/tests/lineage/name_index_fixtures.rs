@@ -156,3 +156,10 @@ pub(super) fn mixed_history() -> (
     push(batch, &mut log);
     (log, incremental, vec![cutter_name, member(2), member(3)])
 }
+
+pub(super) fn selections(carriers: &[Name]) -> Vec<PersistentNameSelection> {
+    let mut selections = vec![exact(), all(), side("left"), side("top"), side("absent")];
+    selections.extend(carriers.iter().map(|carrier| bounded(&[*carrier])));
+    selections.push(bounded(carriers));
+    selections
+}

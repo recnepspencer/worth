@@ -127,7 +127,10 @@ fn reclamation_and_checkpoint_keep_sibling_head_generation() {
     runtime.run_index_generation_reclamation_pass();
     assert!(runtime.indexes.generation(sibling_generation).is_some());
     assert!(runtime.indexes.generation(main_generation).is_some());
-    runtime.durability_authority().checkpoint(execution).unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     let plan = runtime
         .durability()
         .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
@@ -162,7 +165,10 @@ fn reclamation_keeps_a_pinned_old_reader_until_release() {
     assert!(runtime.indexes.generation(first_generation).is_some());
     assert!(runtime.indexes.generation(latest_generation).is_some());
     assert!(runtime.indexes.generation(middle_generation).is_none());
-    runtime.durability_authority().checkpoint(execution).unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     let plan = runtime
         .durability()
         .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
@@ -179,4 +185,62 @@ fn reclamation_keeps_a_pinned_old_reader_until_release() {
     runtime.run_index_generation_reclamation_pass();
     assert!(runtime.indexes.generation(first_generation).is_none());
     assert!(runtime.indexes.generation(latest_generation).is_some());
+}
+
+// Fixture adaptation (C2.4): restores the 8283728aff private Complete codec
+// checks (format version, empty legacy artifacts, roots beside bases, exact
+// bindings, and `readmit`) on the Memory runtime.
+#[test]
+fn complete_checkpoint_saves_the_selection_carried_to_its_current_root() {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
+        use crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts;
+        let host = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host);
+        let (producer, _entity, changed, stable, current, carried) =
+            super::scoped_affinity::carried_index_producer(execution);
+        let branch = BranchId("main".into());
+        let head = producer.history().branch_head(&branch).unwrap();
+        let complete = producer
+            .durability_authority()
+            .complete_native_checkpoint_with_policy(
+                execution,
+                crate::durability::data::RelationalCheckpointArtifactPolicy::Embedded,
+            )
+            .unwrap();
+        let decoded = crate::durability::log::native_checkpoint_codec::decode_checkpoint(
+            execution,
+            complete.checkpoint().bytes(),
+        )
+        .unwrap()
+        .checkpoint;
+        assert_eq!(
+            decoded.derived_index_checkpoint_format_for_test(),
+            DerivedIndexCheckpointArtifacts::FORMAT_VERSION
+        );
+        assert!(decoded.derived_index_artifacts.is_empty());
+        let saved = decoded
+            .derived_index_checkpoint()
+            .expect("Complete emits selection payload");
+        assert!(saved.bases().iter().all(|b| decoded
+            .branch_roots_for_test()
+            .iter()
+            .any(|r| r.commit_id == b.commit)));
+        let basis = saved
+            .bases()
+            .iter()
+            .find(|b| b.branch == branch && b.commit == head.commit_id)
+            .expect("current root keeps its selection");
+        assert_eq!(basis.version, current.applicability.version_id);
+        assert_eq!(
+            basis.bindings,
+            vec![
+                (changed, current.generation_id),
+                (stable, carried.generation_id)
+            ]
+        );
+        let restored = saved.readmit(fixture_lane).unwrap();
+        for expected in [&carried, &current] {
+            assert!(restored.iter().any(|g| g == expected.as_ref()));
+        }
+    })
 }

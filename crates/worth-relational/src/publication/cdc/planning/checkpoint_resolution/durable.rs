@@ -8,9 +8,14 @@ pub(crate) fn durable_checkpoint_envelope(
     checkpoint: &SubscriberCheckpoint,
     preloaded_envelopes: Option<&[PositionedCanonicalCommit]>,
 ) -> Option<PositionedCanonicalCommit> {
-    retained_canonical_envelope_at_position(runtime, checkpoint.position(), preloaded_envelopes)
+    retained_canonical_envelope_at_position(
+        &runtime.history,
+        runtime.durability.canonical_coverage(),
+        checkpoint.position(),
+        preloaded_envelopes,
+    )
 }
 
 pub(crate) fn durable_envelopes(runtime: &RelationalRuntime) -> Vec<PositionedCanonicalCommit> {
-    durable_canonical_envelopes(runtime)
+    durable_canonical_envelopes(runtime.durability.canonical_coverage())
 }

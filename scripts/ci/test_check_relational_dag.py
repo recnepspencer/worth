@@ -1,11 +1,14 @@
 """Source fixtures for the Relational DAG ratchet."""
+from collections import Counter
 from pathlib import Path
 import sys
 import tempfile
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from check_relational_dag import Audit, SOURCE, compare, facade_failures, totals
+from check_relational_dag import (
+    Audit, SOURCE, compare, facade_failures, ordinary_storage_totals, totals,
+)
 
 
 class RelationalDagTests(unittest.TestCase):
@@ -87,6 +90,39 @@ class RelationalDagTests(unittest.TestCase):
         self.write('low.rs', '/* owner file */ #[cfg(test)] mod test_impl;')
         self.write('low/test_impl.rs', 'use crate::high::Other as Alias; impl Alias {}')
         self.assertEqual(totals(self.audit().ledger['inherent_impl']), {'low -> high': 1})
+
+    def test_ordinary_storage_ratchet_counts_both_sides_of_inherent_coherence(self):
+        references = {
+            'storage -> runtime': Counter({
+                ((SOURCE / 'storage/residency/cell.rs').as_posix(), 'runtime::Payer'): 3,
+                ((SOURCE / 'storage/partition/write.rs').as_posix(), 'runtime::Payer'): 1,
+            }),
+            'runtime -> storage': Counter({
+                ((SOURCE / 'runtime/edit.rs').as_posix(), 'storage::Partition'): 1,
+            }),
+            'storage -> durability': Counter({
+                ((SOURCE / 'storage/partition/write.rs').as_posix(), 'durability::Frame'): 1,
+                ((SOURCE / 'storage/residency/cell.rs').as_posix(), 'durability::Frame'): 2,
+            }),
+            'durability -> storage': Counter({
+                ((SOURCE / 'durability/data/capture.rs').as_posix(), 'storage::Partition'): 1,
+            }),
+        }
+        outgoing = {'storage -> runtime': 1, 'storage -> durability': 1}
+        for projection in ('production_explicit', 'production_resolved'):
+            with self.subTest(projection=projection):
+                self.assertEqual(ordinary_storage_totals(projection, references), outgoing)
+        self.assertEqual(
+            ordinary_storage_totals('inherent_impl', references),
+            {**outgoing, 'runtime -> storage': 1, 'durability -> storage': 1})
+
+    def test_ordinary_storage_test_ratchet_includes_durability(self):
+        reference = 'durability::Frame'
+        counts = {'storage -> durability': Counter({
+            ((SOURCE / 'storage/data/frame_tests.rs').as_posix(), reference): 2,
+            ((SOURCE / 'storage/residency/frame_tests.rs').as_posix(), reference): 3,
+        })}
+        self.assertEqual(ordinary_storage_totals('cfg_test', counts), {'storage -> durability': 2})
 
     def test_test_only_scope_including_associated_items_and_nested_use(self):
         self.write('lib.rs', '''
@@ -205,6 +241,84 @@ class RelationalDagTests(unittest.TestCase):
         expected = {'low/second -> low/first': 1}
         self.assertEqual(totals(audit.ledger['production_explicit']), expected)
         self.assertEqual(totals(audit.ledger['production_resolved']), expected)
+
+    def extract_low_owner(self):
+        self.config['owners']['low']['physical'] = True
+        self.config['paths'].pop('low')
+        (self.root / SOURCE / 'low.rs').unlink()
+        self.write('lib.rs', '''
+            use worth_relational_contracts::internal_port::low;
+            mod high;
+            mod runtime;
+            pub mod facade { pub use crate::low::Low; }
+        ''')
+        source = self.root / 'crates/worth-relational-contracts/src'
+        source.mkdir(parents=True)
+        (source / 'lib.rs').write_text('pub mod internal_port { pub mod low; }')
+        (source / 'internal_port').mkdir()
+        (source / 'internal_port/low.rs').write_text('pub struct Low;')
+        (source.parent / 'Cargo.toml').write_text('[dependencies]\n')
+        (self.root / SOURCE.parent / 'Cargo.toml').write_text(
+            '[dependencies]\nworth-relational-contracts.workspace = true\n')
+        return source
+
+    def test_facade_resolves_export_to_the_physical_owner(self):
+        self.extract_low_owner()
+        audit = self.audit()
+        self.assertEqual(audit.exports(), ['facade::Low'])
+        location = ('worth_relational_contracts', 'internal_port', 'low')
+        self.assertEqual(audit.locations[location], ('low', None))
+
+    def test_physical_glob_preserves_the_item_export_kind(self):
+        self.extract_low_owner()
+        self.write('lib.rs', """
+            mod bridge { pub use worth_relational_contracts::internal_port::*; }
+            mod high;
+            mod runtime;
+            pub mod facade { pub use crate::bridge::low::Low; }
+        """)
+        self.assertEqual(self.audit().exports(), ['facade::Low'])
+
+    def test_physical_owner_keeps_its_internal_direction(self):
+        source = self.extract_low_owner()
+        (source / 'internal_port/low.rs').write_text(
+            'pub mod custody; pub mod projection; pub struct Low;')
+        directory = source / 'internal_port/low'
+        directory.mkdir()
+        (directory / 'custody.rs').write_text('pub struct Custody;')
+        (directory / 'projection.rs').write_text('use super::custody::Custody;')
+        self.config['boundaries'] = [{
+            'owner': 'low',
+            'paths': {
+                'custody': ['internal_port/low/custody'],
+                'projection': ['internal_port/low/projection'],
+            },
+            'allowed': [['custody', 'projection']],
+        }]
+        audit = self.audit()
+        direction = {'low/projection -> low/custody': 1}
+        self.assertEqual(totals(audit.ledger['production_explicit']), direction)
+        self.assertEqual(totals(audit.ledger['production_resolved']), direction)
+
+    def test_physical_budget_cannot_include_remaining_runtime_paths(self):
+        self.extract_low_owner()
+        self.config['paths']['runtime.rs'] = 'low'
+        with self.assertRaisesRegex(ValueError, 'physical owner low cannot own Runtime path'):
+            self.audit()
+
+    def test_module_mount_into_a_sibling_package_is_rejected(self):
+        source = self.extract_low_owner()
+        (source / 'lib.rs').write_text(
+            '#[path = "../../worth-relational/src/high.rs"] mod escaped;')
+        with self.assertRaisesRegex(ValueError, 'module escapes its package'):
+            self.audit()
+
+    def test_physical_owner_cannot_add_a_relational_dev_dependency(self):
+        source = self.extract_low_owner()
+        (source.parent / 'Cargo.toml').write_text(
+            '[dev-dependencies]\nfixture = { package = "worth-relational", path = "../worth-relational" }\n')
+        with self.assertRaisesRegex(ValueError, 'worth-relational must be an ordinary dependency'):
+            self.audit()
 
 
 if __name__ == '__main__':

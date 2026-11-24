@@ -7,6 +7,7 @@ use crate::validation::data::CustomInvariantRegistration;
 use sha2::{Digest, Sha256};
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::HomeProgramTransitionCatalogDigest;
+use worth_relational_mutation::internal_port::validation::custom_rule::registration::CustomInvariantSourceCatalogOwnerPort as _;
 
 pub(super) fn digest(
     schema: [u8; 32],
@@ -72,8 +73,8 @@ fn digest_programs<'source>(
                 .access_contract()
                 .include_relation_endpoint_entity_touches,
         )]);
-        hash.update((invariant.managed_sources.len() as u64).to_le_bytes());
-        for source in invariant.managed_sources.iter() {
+        hash.update((invariant.managed_sources().len() as u64).to_le_bytes());
+        for source in invariant.managed_sources().iter() {
             hash.update(program_digest(source, request)?);
         }
         requirements.push(hash.finalize().into());

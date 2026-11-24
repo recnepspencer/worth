@@ -161,3 +161,36 @@ fn runtime_read_law_bounded_index_refusal_values() {
         }
     }
 }
+
+fn native_field_navigation_boundary(relations: bool) {
+    use crate::config::data::CascadeDeletePolicy;
+    use crate::tests::support::{
+        changed_relations, create_entity, create_relation_outcome, release_test_commit_snapshot,
+        runtime_with_declared_aspect_schema,
+    };
+    let setup = crate::test_execution_policy::serial_request();
+    let execution = ExecutionRequest::serial(&setup);
+    let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
+    let left = create_entity(&execution, &runtime, "left");
+    let right = create_entity(&execution, &runtime, "right");
+    let created = create_relation_outcome(&execution, &runtime, left, right, "edge");
+    let relation = changed_relations(&created)[0];
+    let view = runtime
+        .read_truth()
+        .project_snapshot(&created.snapshot)
+        .unwrap();
+    worth_relational_indexes::internal_port::indexes::projected_field_values::index_projection_source::native_fields::navigation_tests::verify_native_field_navigation_for_test(
+        test_execution_authority(), &view, left, right, relation, relations,
+    );
+    release_test_commit_snapshot(&runtime, &created);
+}
+
+#[test]
+fn native_entity_field_navigation_uses_inline_stack_and_keeps_request_stops() {
+    native_field_navigation_boundary(false);
+}
+
+#[test]
+fn native_relation_field_navigation_uses_inline_stack_and_keeps_request_stops() {
+    native_field_navigation_boundary(true);
+}

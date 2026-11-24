@@ -11,7 +11,7 @@ fn pre_cancelled_replay_has_no_reader_contact_or_diagnostic() {
     let host =
         SerialRequest::from_memory(SerialMemoryBudget::new(None), cancellation.token(), None);
     let before = format!("{runtime:#?}");
-    let contacts = crate::replay::planning::replay_contacts::count();
+    let contacts = super::replay_contacts::count();
     let result = runtime.replay_authority().replay_commit(
         crate::replay::data::RelationalReplayRequest {
             commit_id: crate::history::data::CommitId(1),
@@ -22,10 +22,7 @@ fn pre_cancelled_replay_has_no_reader_contact_or_diagnostic() {
         },
         &ExecutionRequest::serial(&host),
     );
-    assert_eq!(
-        crate::replay::planning::replay_contacts::count() - contacts,
-        0
-    );
+    assert_eq!(super::replay_contacts::count() - contacts, 0);
     assert_eq!(
         result,
         Err(RelationalRecoveryStop::Request(Cause::Cancelled))

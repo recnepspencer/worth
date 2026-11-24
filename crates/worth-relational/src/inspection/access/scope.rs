@@ -1,4 +1,5 @@
 use std::collections::BTreeSet;
+use worth_relational_branch::internal_port::snapshots::data::SnapshotHandleFieldsPort as _;
 
 use crate::identity::data::{KindId, PartitionId, VersionId};
 use crate::inspection::data::{
@@ -6,8 +7,9 @@ use crate::inspection::data::{
     GraphInspectionSummary, InspectionAccessPath, InspectionAvailability, InspectionDegradation,
     InspectionOrigin, InspectionScope,
 };
-use crate::storage::data::{RelationalReadView, RetentionPlan};
+use crate::storage::data::RetentionPlan;
 use crate::visibility::cache_state::cached_historical_state_for_version;
+use crate::visibility::snapshot_read_view::RelationalReadView;
 
 use super::InspectionAccess;
 
@@ -38,7 +40,7 @@ impl<'runtime> InspectionAccess<'runtime> {
         match scope {
             InspectionScope::Current => self.runtime.current_version_id(),
             InspectionScope::Version(version_id) => *version_id,
-            InspectionScope::Snapshot(handle) => handle.version_id,
+            InspectionScope::Snapshot(handle) => *handle.owner_version_id(),
         }
     }
 

@@ -8,9 +8,9 @@ fn truth_sequence_overflow_is_rejected_before_publication_effects() {
     let runtime = runtime_with_test_schema();
     let before_cells = runtime.history.branch_cells_snapshot();
     let before_catalog = runtime.history.catalog_len();
-    let before_graph = runtime.history.commit_graph_len();
+    let before_graph = runtime.history.commit_graph_len_for_test();
     let before_envelopes = runtime.history.recorded_commit_envelope_count();
-    let before_patch_index = runtime.history.recorded_patch_position_count();
+    let before_patch_index = runtime.history.recorded_patch_position_count_for_test();
     let before_slots: usize = runtime
         .acquire_partition_edition()
         .resident_full()
@@ -42,13 +42,13 @@ fn truth_sequence_overflow_is_rejected_before_publication_effects() {
     }
     assert_eq!(runtime.history.branch_cells_snapshot(), before_cells);
     assert_eq!(runtime.history.catalog_len(), before_catalog);
-    assert_eq!(runtime.history.commit_graph_len(), before_graph);
+    assert_eq!(runtime.history.commit_graph_len_for_test(), before_graph);
     assert_eq!(
         runtime.history.recorded_commit_envelope_count(),
         before_envelopes
     );
     assert_eq!(
-        runtime.history.recorded_patch_position_count(),
+        runtime.history.recorded_patch_position_count_for_test(),
         before_patch_index
     );
     let after_slots: usize = runtime

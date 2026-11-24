@@ -1,5 +1,6 @@
 use crate::branch::RelationalBranchIdentity;
 use crate::runtime::RelationalRuntime;
+use worth_relational_branch::internal_port::inspection::mvcc::sharing::allocation_inventory::RelationalStorageRegionLocatorOwnerPort as _;
 
 use super::inventory::inventory_sharing_scope;
 use super::scope::resolve_sharing_scope;

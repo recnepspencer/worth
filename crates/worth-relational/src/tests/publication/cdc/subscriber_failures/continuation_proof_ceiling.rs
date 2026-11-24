@@ -1,3 +1,5 @@
+use worth_relational_publication::internal_port::publication::cdc::data::normalized_continuation_proof::NormalizedContinuationProofFixturePort as _;
+use worth_relational_publication::internal_port::publication::cdc::data::subscriber_checkpoint::SubscriberCheckpointFixturePort as _;
 use super::fixtures::{install_schema_version, visible_bridge_transition_options};
 use crate::diagnostics::data::RelationalDiagnosticValue;
 use crate::publication::cdc::data::{NormalizedContinuationProof, SubscriberContinuationSummary};

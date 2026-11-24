@@ -1,4 +1,14 @@
-use super::*;
+use super::index_parity_execution::{
+    execute_index_backed_query_from_generation, record_index_execution_counters,
+    record_index_execution_shape,
+};
+use super::index_parity_routing::{admissible_access_path, should_verify_sampled_parity};
+use crate::indexes::access::IndexAccess;
+use crate::query::data::{
+    index_parity_outcome::IndexParityVerifiedQueryOutcome, query_index_parity_basis_digest,
+    snapshot_pinned_plan::SnapshotPinnedQueryPlan, IndexParityMode, QueryAccessContract,
+    QueryAccessPath,
+};
 
 impl IndexAccess<'_> {
     pub fn execute_query_plan_with_index_parity(
@@ -12,20 +22,20 @@ impl IndexAccess<'_> {
             .consult()
             .map_err(crate::runtime::QueryReadExecutionStop::Request)?;
         if plan.packet.access_contract == QueryAccessContract::DerivedIndexWithStorageParity {
-            self.runtime
+            self.runtime()
                 .performance_access()
                 .count_query_index_attempt();
         }
         let storage_execution = || {
-            self.runtime
+            self.runtime()
                 .read_truth()
                 .execute_query_plan(plan.clone(), request)
                 .map(|read| read.map(|read| read.outcome))
         };
-        let (execution, access_path) = match admissible_access_path(self.runtime, &plan) {
+        let (execution, access_path) = match admissible_access_path(self.runtime(), &plan) {
             QueryAccessPath::DerivedIndexGeneration { generation_id } => {
                 let Some(index_execution) = execute_index_backed_query_from_generation(
-                    self.runtime,
+                    self.runtime(),
                     &plan,
                     generation_id,
                     request,
@@ -35,8 +45,8 @@ impl IndexAccess<'_> {
                 };
                 match parity_mode {
                     IndexParityMode::ProductionAdmissibility => {
-                        self.runtime.performance_access().count_query_index_path();
-                        record_index_execution_counters(self.runtime, &index_execution);
+                        self.runtime().performance_access().count_query_index_path();
+                        record_index_execution_counters(self.runtime(), &index_execution);
                         (
                             index_execution,
                             QueryAccessPath::DerivedIndexGeneration { generation_id },
@@ -45,32 +55,32 @@ impl IndexAccess<'_> {
                     IndexParityMode::SampledParity
                         if !should_verify_sampled_parity(&plan, generation_id) =>
                     {
-                        self.runtime.performance_access().count_query_index_path();
-                        record_index_execution_counters(self.runtime, &index_execution);
+                        self.runtime().performance_access().count_query_index_path();
+                        record_index_execution_counters(self.runtime(), &index_execution);
                         (
                             index_execution,
                             QueryAccessPath::DerivedIndexGeneration { generation_id },
                         )
                     }
                     IndexParityMode::SampledParity | IndexParityMode::CertificationParity => {
-                        self.runtime
+                        self.runtime()
                             .performance_access()
                             .count_query_index_parity_verification();
                         let Some(storage_execution) = storage_execution()? else {
                             return Ok(None);
                         };
                         if storage_execution.result == index_execution.result {
-                            self.runtime.performance_access().count_query_index_path();
-                            record_index_execution_counters(self.runtime, &index_execution);
+                            self.runtime().performance_access().count_query_index_path();
+                            record_index_execution_counters(self.runtime(), &index_execution);
                             (
                                 index_execution,
                                 QueryAccessPath::DerivedIndexGeneration { generation_id },
                             )
                         } else {
-                            self.runtime
+                            self.runtime()
                                 .performance_access()
                                 .count_query_index_rejection();
-                            record_index_execution_shape(self.runtime, &index_execution);
+                            record_index_execution_shape(self.runtime(), &index_execution);
                             (
                                 storage_execution,
                                 QueryAccessPath::DerivedIndexRejectedStorageRead {
@@ -87,7 +97,7 @@ impl IndexAccess<'_> {
                     access_path,
                     QueryAccessPath::DerivedIndexRejectedStorageRead { .. }
                 ) {
-                    self.runtime
+                    self.runtime()
                         .performance_access()
                         .count_query_index_rejection();
                 }

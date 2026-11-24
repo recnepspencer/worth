@@ -10,7 +10,7 @@ mod membership;
 mod metadata;
 mod navigation;
 mod owned_model;
-mod owned_outputs;
+pub(crate) mod owned_outputs;
 mod page_descriptions;
 mod paging;
 mod payload;

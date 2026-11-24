@@ -1,4 +1,7 @@
 use super::*;
+#[cfg(test)]
+use crate::durability::canonical_commit_artifact::checkpoint_body::copy_original_for_test;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeFixturePort as _;
 
 #[test]
 fn schema_continuity_publication_rejects_incomplete_canonical_bundle() {
@@ -7,7 +10,7 @@ fn schema_continuity_publication_rejects_incomplete_canonical_bundle() {
 
     let runtime = runtime_with_test_schema();
     let outcome = create_entity_outcome(execution, &runtime, "a");
-    let mut envelope = outcome.envelope().copy_original_for_test(execution);
+    let mut envelope = copy_original_for_test(outcome.envelope(), execution);
     let fingerprint = SchemaBoundaryFingerprint::new([13_u8; 32]);
     let transition = SchemaTransitionArtifact::new(
         SchemaId("test".to_string()),
@@ -82,7 +85,7 @@ fn schema_continuity_publication_rejects_incomplete_canonical_bundle() {
 
     let preparation = runtime.preparation_runtime_snapshot();
     let error = validate_schema_continuity_publication(
-        &preparation,
+        preparation.preparation_diagnostics(),
         &BranchId("main".to_string()),
         &plan,
         &envelope,
@@ -161,7 +164,7 @@ fn schema_continuity_publication_rejects_descriptor_semantics_mismatch() {
             ),
         ),
     );
-    let mut envelope = outcome.envelope().copy_original_for_test(execution);
+    let mut envelope = copy_original_for_test(outcome.envelope(), execution);
     envelope.body_mut_for_test().schema_transition = Some(transition.clone());
     envelope.body_mut_for_test().schema_continuation_descriptor =
         Some(transition.continuation_descriptor.clone());
@@ -182,7 +185,7 @@ fn schema_continuity_publication_rejects_descriptor_semantics_mismatch() {
 
     let preparation = runtime.preparation_runtime_snapshot();
     let error = validate_schema_continuity_publication(
-        &preparation,
+        preparation.preparation_diagnostics(),
         &BranchId("main".to_string()),
         &plan,
         &envelope,
@@ -262,7 +265,7 @@ fn shared_continuity_bundle_validator_reports_boundary_fingerprint_mismatch() {
             ),
         ),
     );
-    let mut envelope = outcome.envelope().copy_original_for_test(execution);
+    let mut envelope = copy_original_for_test(outcome.envelope(), execution);
     envelope.body_mut_for_test().schema_transition = Some(transition.clone());
     envelope.body_mut_for_test().schema_continuation_descriptor =
         Some(transition.continuation_descriptor.clone());

@@ -1,3 +1,4 @@
+use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::slot_lifecycle::metadata::RecordArenaFixturePort as _;
 use super::RelationalRuntime;
 
 impl RelationalRuntime {
@@ -69,7 +70,7 @@ impl RelationalRuntime {
 
         arena.generations[slot] = next_generation;
         arena.lifecycle[slot] = crate::storage::data::RecordLifecycleState::Live;
-        arena.apply_extra_update(
+        arena.apply_extra_update_for_test(
             slot,
             crate::storage::substrate::EntityExtra::from_unbudgeted_parts(
                 structural_fingerprint,
@@ -97,7 +98,9 @@ impl RelationalRuntime {
         entity_id: crate::identity::data::EntityId,
     ) -> usize {
         self.partitions
-            .partition(entity_id.partition_id)
+            .acquire()
+            .try_full_partition(entity_id.partition_id)
+            .expect("fixture partition is resident")
             .and_then(|partition| {
                 partition
                     .entity_arena
@@ -112,7 +115,9 @@ impl RelationalRuntime {
         relation_id: crate::identity::data::RelationId,
     ) -> usize {
         self.partitions
-            .partition(relation_id.partition_id)
+            .acquire()
+            .try_full_partition(relation_id.partition_id)
+            .expect("fixture partition is resident")
             .and_then(|partition| {
                 partition
                     .relation_arena

@@ -1,6 +1,12 @@
 //! Real producer ownership must survive exact subset materialization maintenance.
+#[cfg(not(test))]
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::custody::RelationalRequiredOutputPublicationFieldsPort as _;
 use super::*;
-use crate::branch::{RelationalEntityMaterialization, RelationalRelationMaterialization};
+use crate::branch::materialization::RelationalEntityMaterialization;
+use crate::branch::materialization::RelationalRelationMaterialization;
+use crate::mvcc::publication::application_publication::meaning_fixture::{
+    native_meaning_for_test, native_roles_for_test,
+};
 
 #[path = "materialization/incident_owner.rs"]
 mod incident_owner;
@@ -23,7 +29,7 @@ fn fieldless_owned_relation_birth_survives_materialization_and_cold_succession()
 }
 
 fn run(owned: bool, changed: u8, fieldless: bool) {
-    let request = crate::test_execution_policy::serial_request();
+    let request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     let make_runtime = || {
         if fieldless {
@@ -233,8 +239,8 @@ fn run(owned: bool, changed: u8, fieldless: bool) {
         &basis,
         "native-creator",
         &[1; 32],
-        &crate::mvcc::native_meaning_fixture("native-creator"),
-        &crate::mvcc::native_roles_fixture(
+        &native_meaning_for_test("native-creator"),
+        &native_roles_for_test(
             &ids.map(|id| (id, KindId(1))),
             RequiredOutputRolePosture::Create,
         ),
@@ -253,19 +259,16 @@ fn run(owned: bool, changed: u8, fieldless: bool) {
             execution,
             &runtime,
             &basis,
-            &crate::mvcc::native_meaning_fixture("native-creator")
+            &native_meaning_for_test("native-creator")
         )
         .unwrap(),
         Some(crate::history::data::RequiredOutputRoutePosition::Published(original_commit))
     );
-    let origin = cold.origin.as_ref();
+    let origin = cold.origin().as_ref();
     assert_eq!(origin.birth, original_commit);
     assert_eq!(origin.birth_producer, "native-creator");
     assert_eq!(origin.producer, "native-creator");
-    assert_eq!(
-        origin.meaning,
-        crate::mvcc::native_meaning_fixture("native-creator")
-    );
+    assert_eq!(origin.meaning, native_meaning_for_test("native-creator"));
     let preserved = publish(
         &runtime,
         execution,
@@ -282,8 +285,8 @@ fn run(owned: bool, changed: u8, fieldless: bool) {
             &test_owner_main_basis(&runtime).unwrap(),
             "native-preserver",
             &[2; 32],
-            &crate::mvcc::native_meaning_fixture("native-creator"),
-            &crate::mvcc::native_roles_fixture(
+            &native_meaning_for_test("native-creator"),
+            &native_roles_for_test(
                 &ids.map(|id| (id, KindId(1))),
                 RequiredOutputRolePosture::Preserve,
             ),

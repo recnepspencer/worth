@@ -23,24 +23,47 @@ pub(super) fn execute(
     let context = writer.projected_entity(model)?;
     let mut members = BTreeMap::new();
     for key in &plan.creates {
-        let created = writer.create_entity_in_context(
-            &context,
-            Member::reference(),
-            WorthQueryApplicationEntityKey::new(key).unwrap(),
-        )?;
+        let member_key = WorthQueryApplicationEntityKey::new(key).unwrap();
+        let created = if plan.issued {
+            writer.create_entity(Member::reference(), member_key)?
+        } else {
+            writer.create_entity_in_context(&context, Member::reference(), member_key)?
+        };
         writer.initialize_field(&created, MemberKey::at("MemberKey"), key.clone())?;
         writer.initialize_field(&created, MemberValue::at("MemberValue"), 7)?;
-        writer.link(
-            ModelMember::reference(),
-            format!("owns:{key}"),
-            &context,
-            &created,
-        )?;
+        // An issued member stays unowned: owning links may not cross
+        // creation contexts.
+        let named_owner = plan.owners.iter().find(|(member, _)| member == key);
+        let named_owner = match named_owner {
+            Some((_, owner)) if !plan.issued => {
+                Some(writer.resolve_entity(ModelKey::at("ModelKey"), owner.clone())?)
+            }
+            _ => None,
+        };
+        if !plan.issued {
+            writer.link(
+                ModelMember::reference(),
+                format!("owns:{key}"),
+                named_owner.as_ref().unwrap_or(&context),
+                &created,
+            )?;
+        }
         members.insert(key.clone(), created);
     }
-    for key in &plan.reads {
+    for key in plan.reads.iter().chain(&plan.plain_reads) {
         let existing = writer.resolve_entity(MemberKey::at("MemberKey"), key.clone())?;
         members.entry(key.clone()).or_insert(existing);
+    }
+    for (key, from, to) in &plan.moves {
+        let from = writer.resolve_entity(ModelKey::at("ModelKey"), from.clone())?;
+        let to = writer.resolve_entity(ModelKey::at("ModelKey"), to.clone())?;
+        writer.unlink(ModelMember::reference(), &from, &members[key])?;
+        writer.link(
+            ModelMember::reference(),
+            format!("moved:{key}"),
+            &to,
+            &members[key],
+        )?;
     }
     for (from, to) in &plan.unlinks {
         writer.unlink(Seam::reference(), &members[from], &members[to])?;
@@ -176,6 +199,15 @@ pub(super) fn execute(
                     },
                 };
                 writer.merge_entity_names(&parents, keeper)?
+            }
+            Step::Scoped(occurrence, steps) => {
+                let mut scoped = super::scoped::Scoped {
+                    members: &members,
+                    seams: &mut seams,
+                    names: &held,
+                    seam_names: &held_seam,
+                };
+                super::scoped::execute(occurrence, steps, &mut scoped, writer)?
             }
         }
     }

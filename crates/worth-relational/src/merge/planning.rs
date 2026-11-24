@@ -1,15 +1,8 @@
-use std::collections::BTreeMap;
-use std::sync::Arc;
-
 use crate::history::data::{BranchId, CommitId};
 #[cfg(test)]
 use crate::merge::data::MergePlanningRequest;
-use crate::merge::data::{
-    BranchCommitDelta, BranchDeltaSummary, BranchTouchedRecordDelta, HistoryScopedMergePlan,
-    MergePlanningError,
-};
+use crate::merge::data::{BranchCommitDelta, HistoryScopedMergePlan, MergePlanningError};
 use crate::merge::MergeAccess;
-use crate::transactions::data::RecordRef;
 
 impl<'runtime> MergeAccess<'runtime> {
     pub(in crate::merge) fn plan_history_scope(
@@ -17,7 +10,8 @@ impl<'runtime> MergeAccess<'runtime> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: &crate::merge::request_normalization::BoundMergeInputs,
     ) -> Result<HistoryScopedMergePlan, MergePlanningError> {
-        crate::execution::check_request(execution).map_err(MergePlanningError::Execution)?;
+        crate::execution::request_custody::check_request(execution)
+            .map_err(MergePlanningError::Execution)?;
         let history = self.runtime.history();
         let crate::merge::request_normalization::BoundMergeInputs {
             request,
@@ -28,16 +22,16 @@ impl<'runtime> MergeAccess<'runtime> {
             .resolve_merge_branch_basis_from_bindings(source, target)
             .map_err(MergePlanningError::from)?;
         let merge_base_ancestors =
-            history.ancestor_closure_by_commit_id_order(basis.merge_base.commit.commit_id);
+            history.ancestor_closure_by_commit_id_order(basis.merge_base().commit().commit_id);
 
         let target_delta_commits = self.branch_local_unique_commit_closure_by_commit_id_order(
             request.target_branch().clone(),
-            basis.merge_base.supporting_left_ancestors.as_ref(),
+            basis.merge_base().supporting_left_ancestors(),
             merge_base_ancestors.as_slice(),
         );
         let source_delta_commits = self.branch_local_unique_commit_closure_by_commit_id_order(
             request.source_branch().clone(),
-            basis.merge_base.supporting_right_ancestors.as_ref(),
+            basis.merge_base().supporting_right_ancestors(),
             merge_base_ancestors.as_slice(),
         );
 
@@ -76,35 +70,18 @@ impl<'runtime> MergeAccess<'runtime> {
         commits: &[CommitId],
     ) -> Result<BranchCommitDelta, MergePlanningError> {
         let history = self.runtime.history();
-        let mut touched_records = BTreeMap::new();
-        for commit_id in commits {
-            let envelope = history
-                .demand_commit_envelope(execution, *commit_id)
-                .map_err(MergePlanningError::Execution)?
-                .ok_or(MergePlanningError::MissingDeltaCommit {
-                    commit_id: *commit_id,
-                })?;
-            for target in envelope.touched_record_refs() {
-                touched_records
-                    .entry(target)
-                    .or_insert_with(Vec::new)
-                    .push(envelope.clone());
-            }
-        }
-
-        let touched_records = touched_records
-            .into_iter()
-            .map(|(target, envelopes)| BranchTouchedRecordDelta {
-                target,
-                envelopes: Arc::from(envelopes),
-            })
-            .collect::<Vec<_>>();
-
-        Ok(BranchCommitDelta {
+        super::branch_delta::assemble_branch_delta(
             branch_id,
-            commits: Arc::from(commits.to_vec()),
-            touched_records: Arc::from(touched_records),
-        })
+            commits,
+            &mut commits.iter().map(|commit_id| {
+                history
+                    .demand_commit_envelope(execution, *commit_id)
+                    .map_err(MergePlanningError::Execution)?
+                    .ok_or(MergePlanningError::MissingDeltaCommit {
+                        commit_id: *commit_id,
+                    })
+            }),
+        )
     }
 
     fn branch_local_unique_commit_closure_by_commit_id_order(
@@ -114,45 +91,14 @@ impl<'runtime> MergeAccess<'runtime> {
         merge_base_ancestors: &[CommitId],
     ) -> Vec<CommitId> {
         let history = self.runtime.history();
-        let merge_base_ancestors = merge_base_ancestors
-            .iter()
-            .copied()
-            .collect::<std::collections::BTreeSet<_>>();
-        commits
-            .iter()
-            .copied()
-            .filter(|commit_id| !merge_base_ancestors.contains(commit_id))
-            .filter(|commit_id| {
+        super::branch_delta::branch_local_unique_commits(
+            commits,
+            merge_base_ancestors,
+            &|commit_id| {
                 history
-                    .immutable_commit_receipt(*commit_id)
-                    .map(|receipt| receipt.branch_id == branch_id)
-                    .unwrap_or(false)
-            })
-            .collect()
-    }
-}
-
-pub(super) fn branch_delta_summary(
-    head: &crate::history::data::RelationalCommitReceipt,
-    delta: &BranchCommitDelta,
-) -> BranchDeltaSummary {
-    let touched_entity_count = delta
-        .touched_records
-        .iter()
-        .filter(|record| matches!(record.target, RecordRef::Entity(_)))
-        .count();
-    let touched_relation_count = delta
-        .touched_records
-        .iter()
-        .filter(|record| matches!(record.target, RecordRef::Relation(_)))
-        .count();
-    BranchDeltaSummary {
-        branch_id: delta.branch_id.clone(),
-        head_commit_id: head.commit_id,
-        head_version_id: head.version_id,
-        unique_commit_count: delta.commits.len(),
-        touched_record_count: delta.touched_records.len(),
-        touched_entity_count,
-        touched_relation_count,
+                    .immutable_commit_receipt(commit_id)
+                    .is_some_and(|receipt| receipt.branch_id == branch_id)
+            },
+        )
     }
 }

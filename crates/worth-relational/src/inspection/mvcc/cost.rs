@@ -1,5 +1,9 @@
 use crate::branch::RelationalBranchIdentity;
+use crate::runtime::state::subsystems::history::history_canonical_routes::settlement_route_visit_count;
 use crate::runtime::RelationalRuntime;
+use worth_relational_branch::internal_port::runtime::state::subsystems::history::history_costs::RelationalBranchSharingCostCountersOwnerPort as _;
+use worth_relational_contracts::internal_port::history::retention::cost_counters::snapshot::RelationalRetentionCostCountersOwnerPort as _;
+use worth_relational_contracts::internal_port::runtime::interruption_counters::RelationalInterruptionCostCountersOwnerPort as _;
 
 use super::sharing::{RelationalBranchSharingInspectionDenial, RelationalBranchSharingObservation};
 
@@ -25,15 +29,14 @@ impl RelationalMvccCostScope {
         let baseline_retention = selected_retention_counters(runtime, &branches);
         let baseline_interruption = selected_interruption_counters(runtime, &branches);
         let baseline_maintenance = runtime.retention_cost_counters().maintenance_only();
-        let (baseline, baseline_overflowed) = match runtime
-            .try_branch_sharing_cost_counters_for_branches(&branch_ids)
-        {
-            Ok(counters) => (counters, false),
-            Err(_) => (
-                runtime.branch_sharing_cost_counters_for_branches(&branch_ids),
-                true,
-            ),
-        };
+        let (baseline, baseline_overflowed) =
+            match runtime.try_branch_sharing_cost_counters_for_branches(&branch_ids) {
+                Ok(counters) => (counters, false),
+                Err(_) => (
+                    runtime.branch_sharing_cost_counters_for_branches(&branch_ids),
+                    true,
+                ),
+            };
         Self {
             branches,
             baseline,
@@ -42,7 +45,7 @@ impl RelationalMvccCostScope {
             baseline_interruption,
             baseline_maintenance,
             baseline_global_population_scans: runtime.branch_population_scan_count(),
-            baseline_settlement_route_visits: runtime.history.settlement_route_visit_count(),
+            baseline_settlement_route_visits: settlement_route_visit_count(&runtime.history),
             baseline_coordination_contacts: branch_ids
                 .iter()
                 .filter_map(|branch_id| runtime.history.branch_cell(branch_id))
@@ -219,9 +222,7 @@ impl RelationalRuntime {
             .sum::<u64>()
             .saturating_sub(scope.baseline_coordination_contacts);
         Ok(RelationalMvccCounterObservation {
-            canonical_settlement_route_visits: self
-                .history
-                .settlement_route_visit_count()
+            canonical_settlement_route_visits: settlement_route_visit_count(&self.history)
                 .saturating_sub(scope.baseline_settlement_route_visits),
             retention_reclaim_batch_size: self.config.storage.retention.reclaim_batch_size,
             // Population traversal is a deliberately separate runtime-global

@@ -1,7 +1,7 @@
 use crate::application_naming::{
     ApplicationNameDiscriminator, ApplicationNameDiscriminatorEncoder, ErasedWorthQueryName,
-    NameResolutionDenial, NameSelection, NameSelectionDenial, ResolvedName, WorthQueryName,
-    NAME_DISCRIMINATOR_DOMAIN_TAG,
+    NameCandidate, NameResolutionDenial, NameSelection, NameSelectionDenial, ResolvedName,
+    WorthQueryName, NAME_DISCRIMINATOR_DOMAIN_TAG,
 };
 
 struct Face;
@@ -119,8 +119,11 @@ fn keep_side_refuses_a_malformed_discriminator_identity() {
 
 #[test]
 fn resolution_vocabulary_compares_and_renders_without_kind_bounds() {
-    let ambiguous = NameResolutionDenial::Ambiguous {
-        candidates: vec![face(0x01), face(0x02)],
+    let ambiguous: NameResolutionDenial<Face> = NameResolutionDenial::Ambiguous {
+        candidates: vec![
+            NameCandidate::new(face(0x01), Vec::new()),
+            NameCandidate::new(face(0x02), Vec::new()),
+        ],
     };
     assert_eq!(ambiguous.clone(), ambiguous);
     assert_ne!(
@@ -133,6 +136,16 @@ fn resolution_vocabulary_compares_and_renders_without_kind_bounds() {
         NameResolutionDenial::<Face>::BasisPruned,
         NameResolutionDenial::<Face>::UnknownName
     );
+    let elsewhere: NameResolutionDenial<Face, u8> = NameResolutionDenial::NoCandidateInOwner {
+        candidates: vec![NameCandidate::new(face(0x01), vec![7])],
+    };
+    assert_eq!(
+        elsewhere.clone().map_owners(u16::from),
+        NameResolutionDenial::NoCandidateInOwner {
+            candidates: vec![NameCandidate::new(face(0x01), vec![7_u16])],
+        }
+    );
+    assert!(elsewhere.to_string().contains("requested owner holds none"));
     assert!(ambiguous.to_string().contains("2 live candidates"));
     assert!(format!("{ambiguous:?}").starts_with("Ambiguous"));
     assert!(NameResolutionDenial::<Face>::BasisPruned

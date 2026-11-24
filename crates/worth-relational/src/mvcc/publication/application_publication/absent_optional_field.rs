@@ -1,13 +1,16 @@
 use crate::identity::data::{KindId, PartitionId};
 use crate::tests::support::*;
-use crate::transactions::data::{
-    CreateIntent, CreatedEntityRef, EntitySpec, MutationIntent, WorkerIntentBatch,
-};
+use crate::transactions::data::intents::mutation_intent::CreateIntent;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::primitives::CreatedEntityRef;
+use crate::transactions::data::primitives::EntitySpec;
+use crate::transactions::data::primitives::WorkerIntentBatch;
 use worth_foundational::facade::{AspectBinding, ContractValidatedAspectValueView};
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 
 #[test]
 fn absent_optional_codec_cell_does_not_bypass_present_aspect_provenance() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     for derived in [false, true] {
         let fixture = AspectSchemaFixture {
@@ -54,7 +57,7 @@ fn absent_optional_codec_cell_does_not_bypass_present_aspect_provenance() {
             proposal
                 .bind_required_output_publication(
                     &installed,
-                    crate::mvcc::native_birth_fixture(
+                    crate::mvcc::publication::application_publication::native_birth_fixture(
                         owner.admit_required_output("producer", [4; 32]),
                         vec![target],
                     ),
@@ -66,9 +69,10 @@ fn absent_optional_codec_cell_does_not_bypass_present_aspect_provenance() {
         let candidate = runtime
             .prepare_validated_proposal(execution, proposal)
             .unwrap();
-        let crate::mvcc::RelationalPublicationOutcome::Performed(performed) = runtime
-            .publication_port()
-            .compare_and_publish(execution, candidate)
+        let crate::mvcc::publication::outcome::RelationalPublicationOutcome::Performed(performed) =
+            runtime
+                .publication_port()
+                .compare_and_publish(execution, candidate)
         else {
             panic!("native optional-absent fixture must publish");
         };
@@ -77,7 +81,7 @@ fn absent_optional_codec_cell_does_not_bypass_present_aspect_provenance() {
         release_test_commit_snapshot(&runtime, &committed);
         let basis = test_owner_main_basis(&runtime).unwrap();
         let partition = basis
-            .inner
+            .owner_inner()
             .root
             .partition_state(entity.partition_id)
             .expect("fixture root has admitted Full custody")
@@ -94,7 +98,7 @@ fn absent_optional_codec_cell_does_not_bypass_present_aspect_provenance() {
         };
         assert!(value.get(&field_key("title")).is_some());
         assert!(value.get(&field_key("status")).is_none());
-        let loci = [crate::runtime::CodecFieldLocus {
+        let loci = [crate::schema::codec_field_comparison::CodecFieldLocus {
             kind_id: KindId(1),
             aspect_key: aspect_key("summary"),
             field_key: field_key("status"),

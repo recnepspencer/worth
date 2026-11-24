@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use worth_relational_branch::internal_port::snapshots::data::SnapshotHandleFixturePort as _;
 
 use crate::diagnostics::data::DiagnosticCode;
 use crate::facade::indexes::{
@@ -181,7 +182,7 @@ fn published_snapshot_read_diagnostics_use_authoritative_binding_version() {
     let entity = changed_entities(&created)[0];
     let updated = update_entity(execution, &runtime, entity, "mutated");
     let mut stale_handle = updated.snapshot.clone();
-    stale_handle.version_id = created.snapshot.version_id;
+    stale_handle.replace_snapshot_version_for_test(created.snapshot.version_id());
 
     let diagnostics = runtime
         .read_truth()
@@ -196,7 +197,7 @@ fn published_snapshot_read_diagnostics_use_authoritative_binding_version() {
     assert_eq!(
         diagnostic_field(publication_entry, "version_id"),
         &crate::diagnostics::data::RelationalDiagnosticValue::VersionId(
-            updated.snapshot.version_id
+            updated.snapshot.version_id()
         )
     );
 }

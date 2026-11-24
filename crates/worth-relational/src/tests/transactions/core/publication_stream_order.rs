@@ -1,5 +1,6 @@
 use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 use crate::tests::support::*;
+use worth_relational_durability::internal_port::durability::data::recovery_plan::RecoveryPlanOwnerPort as _;
 
 #[test]
 fn branch_head_index_moves_at_cutover_before_reverse_settlement() {
@@ -213,10 +214,10 @@ fn checkpoint_tail_recovery_follows_publication_order_with_exact_reserved_identi
         .durability()
         .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
         .unwrap();
-    assert_eq!(plan.tail_log.len(), 1);
-    assert_eq!(plan.tail_log[0].position(), prepared_first_position);
+    assert_eq!(plan.tail_log().len(), 1);
+    assert_eq!(plan.tail_log()[0].position(), prepared_first_position);
     assert_eq!(
-        plan.tail_log[0].envelope().commit.commit_id,
+        plan.tail_log()[0].envelope().commit.commit_id,
         prepared_first_id
     );
     let mut recovered = runtime_with_test_schema();

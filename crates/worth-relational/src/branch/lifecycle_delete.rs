@@ -1,26 +1,18 @@
 use super::{
-    require_local_identity, DeletedRelationalBranch, RelationalBranchDeleteDenial,
-    RelationalBranchDeletionOutcome, RelationalBranchDeletionPending,
+    require_local_identity, RelationalBranchDeleteDenial, RelationalBranchDeletionOutcome,
 };
+use crate::branch::transition::BranchTransitionRecordError;
 use crate::branch::{
-    LiveBranchTransitionStep, RelationalBranchIdentity, RelationalBranchLifecyclePosture,
-    RelationalBranchPublicationCell, RelationalBranchTransition,
-    RelationalBranchTransitionDurableStep, RelationalBranchTransitionStop,
+    RelationalBranchIdentity, RelationalBranchLifecyclePosture, RelationalBranchPublicationCell,
+    RelationalBranchTransition, RelationalBranchTransitionDurableStep,
+    RelationalBranchTransitionStop,
 };
+use crate::durability::published_medium::live_transition::LiveBranchTransitionStep;
 use crate::history::retention::RelationalRetentionAcquisitionDenial;
-use crate::runtime::BranchTransitionRecordError;
+use worth_relational_branch::internal_port::branch::lifecycle::outcomes::assemble_branch_deletion_pending;
+use worth_relational_branch::internal_port::branch::lifecycle::outcomes::assemble_deleted_relational_branch;
 
-/// Which deletion transition to perform.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum RelationalBranchDeletionKind {
-    /// Decide from the branch's active operations, as a live delete does:
-    /// request deletion while any remain, otherwise delete.
-    ByActiveOperations,
-    /// Mark the branch for deletion and retire its name.
-    Requested,
-    /// Remove the branch, retire its head and its name.
-    Delete,
-}
+use super::RelationalBranchDeletionKind;
 
 type Failure<S> = BranchTransitionRecordError<RelationalBranchDeleteDenial, S>;
 
@@ -64,8 +56,8 @@ impl crate::runtime::RelationalRuntime {
         kind: RelationalBranchDeletionKind,
     ) -> Result<RelationalBranchDeletionOutcome, Failure<S::Stop>> {
         let denied = BranchTransitionRecordError::Denied;
-        require_local_identity(self, identity)
-            .map_err(|()| denied(RelationalBranchDeleteDenial::ForeignRuntime))?;
+        require_local_identity(self.runtime_instance_id(), identity)
+            .map_err(|_| denied(RelationalBranchDeleteDenial::ForeignRuntime))?;
         if identity.branch_id() == &self.config.history.main_branch {
             return Err(denied(RelationalBranchDeleteDenial::MainBranch));
         }
@@ -74,7 +66,7 @@ impl crate::runtime::RelationalRuntime {
                 identity.branch_id().clone(),
             ))
         };
-        let publication = self.history.begin_branch_transition();
+        let publication = crate::runtime::state::subsystems::history::history_branch_transition::begin_branch_transition(&self.history);
         let publication_cell = self
             .history
             .branch_cell(identity.branch_id())
@@ -205,10 +197,7 @@ impl crate::runtime::RelationalRuntime {
             },
         )?;
         Ok(RelationalBranchDeletionOutcome::Deleted(
-            DeletedRelationalBranch {
-                identity: identity.clone(),
-                retired_root_identity,
-            },
+            assemble_deleted_relational_branch(identity.clone(), retired_root_identity),
         ))
     }
 
@@ -230,10 +219,10 @@ fn waiting(
     identity: &RelationalBranchIdentity,
     active_operation_count: u64,
 ) -> RelationalBranchDeletionOutcome {
-    RelationalBranchDeletionOutcome::WaitingForActiveOperations(RelationalBranchDeletionPending {
-        identity: identity.clone(),
+    RelationalBranchDeletionOutcome::WaitingForActiveOperations(assemble_branch_deletion_pending(
+        identity.clone(),
         active_operation_count,
-    })
+    ))
 }
 
 fn head_retirement_denial(

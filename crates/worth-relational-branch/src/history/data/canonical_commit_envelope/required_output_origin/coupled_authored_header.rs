@@ -1,0 +1,103 @@
+//! Structural header checks reuse the existing authored and producer components.
+use worth_relational_contracts::internal_port::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaningOwnerPort as _;
+use super::*;
+use crate::history::data::CodecRetirementClosureStop as Stop;
+use coupled_authored::{CanonicalCoupledAuthoredPublication, CanonicalCoupledAuthoredSources};
+use worth_execution::MapKernelContext;
+
+impl CanonicalCommitEnvelopeBody {
+    pub(super) fn validate_coupled_authored_header(
+        &self,
+        event: &CanonicalCoupledAuthoredPublication,
+        context: &mut MapKernelContext<'_, '_>,
+    ) -> Result<(), Stop> {
+        let charge = super::super::super::codec_retirement_closure::charge;
+        charge(context, event.participants.len() + 1)?;
+        if event
+            .sources
+            .edit_sources()
+            .is_some_and(|sources| sources.is_empty())
+        {
+            return Err("coupled edit source list has no authored prefix".into());
+        }
+        if self.required_output_origin.is_some()
+            || self.authored_cascade_retirement.is_some()
+            || self.authored_cascade_restoration.is_some()
+            || self.producer_cascade_retirement.is_some()
+            || event.participants.is_empty()
+        {
+            return Err("mixed or empty coupled authored publication".into());
+        }
+        match &event.sources {
+            CanonicalCoupledAuthoredSources::Edit { .. } => {}
+            CanonicalCoupledAuthoredSources::Retirement { prefix, .. }
+            | CanonicalCoupledAuthoredSources::MemberEditRetirement { prefix, .. } => {
+                self.validate_authored_retirement_components(prefix, true, context)?;
+            }
+            CanonicalCoupledAuthoredSources::Restoration { prefix, .. }
+            | CanonicalCoupledAuthoredSources::MemberEditRestoration { prefix, .. } => {
+                self.validate_authored_restoration_components(prefix, true, context)?;
+            }
+        }
+        for part in &event.participants {
+            if (matches!(event.sources, CanonicalCoupledAuthoredSources::Edit { .. })
+                && part.is_required())
+                || (!event.sources.is_edit() && !part.is_required())
+            {
+                return Err("coupled participant has a different source obligation".into());
+            }
+            self.validate_output_origin_header(&part.origin, context)?;
+            let producing = matches!(
+                part.origin.publication,
+                CanonicalOutputPublication::Preserve { .. }
+            ) || (event.sources.is_edit()
+                && matches!(
+                    part.origin.publication,
+                    CanonicalOutputPublication::Birth
+                        | CanonicalOutputPublication::BirthAfterCodecRetirement { .. }
+                ));
+            if (!part.origin.source_scope_owned && !event.sources.is_edit()) || !producing {
+                return Err("coupled participant is not an opted-in producing origin".into());
+            }
+            self.validate_producer_retirement_components(
+                Some(&part.origin),
+                part.retirement.as_deref(),
+                context,
+            )?;
+        }
+        for (index, origin) in event.output_origins().enumerate() {
+            for prior in event.output_origins().take(index) {
+                charge(
+                    context,
+                    origin.meaning.family.len()
+                        + prior.meaning.family.len()
+                        + 64
+                        + origin.members.len().saturating_mul(prior.members.len()),
+                )?;
+                charge(
+                    context,
+                    origin.relations.len().saturating_mul(
+                        1 + (usize::BITS - prior.relations.len().leading_zeros()) as usize,
+                    ),
+                )?;
+                if origin.relations.iter().any(|edge| {
+                    prior
+                        .relations
+                        .binary_search_by_key(&edge.id, |edge| edge.id)
+                        .is_ok()
+                }) {
+                    return Err("coupled publication repeats an owned relation".into());
+                }
+                if prior.meaning.same_route(&origin.meaning)
+                    || origin
+                        .members
+                        .iter()
+                        .any(|member| prior.outputs.binary_search(&member.id).is_ok())
+                {
+                    return Err("coupled publication repeats a route or output member".into());
+                }
+            }
+        }
+        Ok(())
+    }
+}

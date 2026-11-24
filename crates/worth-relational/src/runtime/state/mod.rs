@@ -3,31 +3,22 @@ pub use runtime_state::{
     RelationalPublicationCompanionCustody, RelationalPublicationCustodyHolders,
     RelationalPublicationRegistryCustody,
 };
-pub(crate) use subsystems::{
-    MutationRecordAllocations, MutationSymbolMeanings, OriginalBranchSchemaInputs,
-    OriginalBranchSchemaInputsDenial, OriginalEmptySchemaInstallation,
-    OriginalEmptySchemaObservation, RetainedBranchTransition,
-};
+pub(crate) use subsystems::OriginalBranchSchemaInputsDenial;
 pub use subsystems::{
     PreparedRelationalIndexDefinitions, RelationalIndexDefinitionPreparation,
     RelationalIndexDefinitionPreparationDenial,
 };
-mod runtime_state;
-mod subsystems;
+pub(crate) mod runtime_state;
+pub(crate) use runtime_state::indexing::RuntimeIndexDefinitionReadBinding;
+pub(crate) mod subsystems;
 
 pub use runtime_state::RelationalRuntime;
 pub(crate) use runtime_state::RelationalRuntimeState;
 pub(crate) use runtime_state::{
-    AdmittedRelationalRuntimeOperation, RelationalCandidateRegistrationDenial,
-    RelationalPreparationOwnerBinding, RelationalPreparationRuntime,
-    RelationalRuntimeConfiguration, RelationalRuntimeConfigurationBinding,
-    RelationalRuntimeConfigurationSnapshot, RelationalRuntimeOwnerBinding,
-    RelationalRuntimePublicationBinding,
-};
-pub(crate) use runtime_state::{
-    PendingRelationalPublicationSettlement, PerformedRelationalSettlement,
-    RelationalPendingSettlementReservation, RelationalSettlementClaim,
-    RelationalSettlementReservationDenial, ReservedRelationalSettlement,
+    AdmittedRelationalRuntimeOperation, RelationalPreparationOwnerBinding,
+    RelationalPreparationRuntime, RelationalRuntimeConfiguration,
+    RelationalRuntimeConfigurationBinding, RelationalRuntimeConfigurationSnapshot,
+    RelationalRuntimeOwnerBinding, RelationalRuntimePublicationBinding,
 };
 pub use runtime_state::{
     PreparedRelationalRuntimeClose, RelationalReadCustodyHolders, RelationalRuntimeCloseDenial,
@@ -37,40 +28,33 @@ pub use runtime_state::{
     PreparedRelationalSourceClose, RelationalSourceClose, RelationalSourceCloseDenial,
     RelationalSourceCloseProgress, RetiredSourceRelationalAllocation,
 };
+pub(crate) use runtime_state::{
+    RelationalPendingSettlementReservation, RelationalSettlementReservationDenial,
+    ReservedRelationalSettlement,
+};
 pub(in crate::runtime) use runtime_state::{
     RelationalRuntimeOwner, RelationalRuntimePublicationOwner,
 };
 pub(crate) use subsystems::{
-    authored_write_commit_denial, readmit_positioned_canonical_commit, AuthoredWriteGeneration,
-    BranchHeadVersionIndexAuthority, BranchTransitionPublication, BranchTransitionRecordError,
-    CanonicalCheckpointAdmissionError, CanonicalPositionAdmission, CanonicalPublicationRecordError,
-    CapturedIndexDefinitionCatalog, ColdSymbolDirectoryDenial, CommitStrategiesSubsystem,
-    DurabilitySubsystem, FrozenCheckpointIndexes, HistorySubsystem, IndexCatalogCoverage,
-    IndexDefinitionCatalog, IndexDefinitionReadBinding, IndexSelectionState, IndexingState,
-    IndexingSubsystem, LineageIdentityAllocator, LineageNamingBasisBinding, LineageState,
-    LineageSubsystem,
-    MirrorResidencyDemandBinding, OriginalCheckpointIndexes, PartitionEdition,
-    PatchPositionReservationAdmission, PendingRecordAllocations, PendingSymbolMeanings,
-    PerformedCheckpointSelection, PreparedCanonicalPublicationRoute, PreparedCommitSequence,
-    PreparedGenerationBatch, PreparedIndexBasisSelection,
-    PreparedRecoveredVersionedArtifactPublication, PreparedSymbolPublication,
-    PreparedVersionedArtifactAccelerators, PreparedVersionedArtifactPublication,
-    PublicationSubsystem, PublishedSnapshotCapacityOwner, PublishedSnapshotCloseout,
-    PublishedSnapshotReleaseObservation, PublishedSnapshotReservationDenial,
+    BranchHeadVersionIndexAuthority, BranchTransitionPublication,
+    CanonicalCheckpointAdmissionError, CommitStrategiesSubsystem, DurabilitySubsystem,
+    HistorySubsystem, IndexDefinitionReadBinding, LineageIdentityAllocator,
+    LineageNamingBasisBinding, LineageSubsystem, MirrorResidencyDemandBinding, PartitionEdition,
+    PendingSymbolMeanings, PerformedCheckpointSelection, PublicationSubsystem,
+    PublishedSnapshotCapacityOwner, PublishedSnapshotReservationDenial,
     PublishedSnapshotSlotReservation, ReclaimedRecordSlot, RecordIdentitySubsystem,
-    RelationalCanonicalPublicationRoutes, RelationalCheckpointManifestPublication,
-    RelationalCheckpointManifestSelection, RelationalDiagnosticArtifactStore,
-    RelationalDiagnosticOperationCapture, RelationalForkMaterializationCost,
-    RelationalForkOwnerBinding, RelationalPreparationHistory, ResidentLineageEventPage,
-    ResidentLineageNode, ResidentMirrorTarget, ResidentPartitionEdition, ResidentPartitionEntry,
-    RetainedCanonicalPosition, RuntimeInstrumentation, RuntimeServices, RuntimeSubsystem,
-    RuntimeSymbolTable, SchemaContractRuntimeSubsystem, SnapshotHandleBinding, StorageSubsystem,
-    SymbolReservationDenial, ValidatedLineageEventBatch, VisibilityResidency, VisibilitySubsystem,
+    RelationalCanonicalPublicationRoutes, RelationalCheckpointManifestSelection,
+    RelationalForkMaterializationCost, RelationalForkOwnerBinding, RelationalPreparationHistory,
+    ResidentLineageNode, ResidentPartitionEdition, ResidentPartitionEntry, RuntimeInstrumentation,
+    RuntimeServices, RuntimeSubsystem, RuntimeSymbolTable, SchemaContractRuntimeSubsystem,
+    StorageSubsystem, VisibilitySubsystem,
 };
 pub use subsystems::{
     RelationalBranchSharingCostCounters, RelationalCanonicalPositionAdmissionDenial,
     RelationalPatchPositionReservationCounters, RelationalPhase4ReferenceCostCounters,
 };
+#[cfg(test)]
+pub(crate) use subsystems::{SymbolReservationDenial, ValidatedLineageEventBatch};
 
 pub use subsystems::{
     RecordReservationObservation, RecordReservationObservationDenial, RecordReservationReport,

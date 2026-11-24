@@ -22,27 +22,50 @@
 
 #![forbid(unsafe_code)]
 #![deny(unreachable_patterns)]
+// These examples exercise the consumer facade. Their text also documents the Branch types.
+#![cfg_attr(doctest, doc = include_str!("../../worth-relational-branch/docs/facade_examples/canonical_envelope.md"))]
+#![cfg_attr(doctest, doc = include_str!("../../worth-relational-branch/docs/facade_examples/shared_canonical_envelope.md"))]
+#![cfg_attr(doctest, doc = include_str!("../../worth-relational-branch/docs/facade_examples/retired_branch_basis.md"))]
+#![cfg_attr(doctest, doc = include_str!("../../worth-relational-branch/docs/facade_examples/retained_fork_source.md"))]
+#![cfg_attr(doctest, doc = include_str!("../../worth-relational-branch/docs/facade_examples/pinned_entity_metadata.md"))]
+#![cfg_attr(doctest, doc = include_str!("../../worth-relational-branch/docs/facade_examples/caller_association.md"))]
+#![cfg_attr(doctest, doc = include_str!("../../worth-relational-mutation/docs/facade_examples/authorization_durable_dependencies.md"))]
+#![cfg_attr(doctest, doc = include_str!("../../worth-relational-mutation/docs/facade_examples/custom_invariant_managed_source.md"))]
+#![cfg_attr(doctest, doc = include_str!("../../worth-relational-durability/docs/facade_examples/associated_effects.md"))]
+#![cfg_attr(doctest, doc = include_str!("../../worth-relational-durability/docs/facade_examples/recovered_publication.md"))]
+#![cfg_attr(doctest, doc = include_str!("../../worth-relational-publication/docs/facade_examples/commit_result.md"))]
+#![cfg_attr(doctest, doc = include_str!("../../worth-relational-publication/docs/facade_examples/pinned_read.md"))]
+#![cfg_attr(doctest, doc = include_str!("../../worth-relational-publication/docs/facade_examples/caller_association.md"))]
+#![cfg_attr(doctest, doc = include_str!("../../worth-relational-publication/docs/facade_examples/predecessor_basis.md"))]
 
-mod aggregate_identity;
-mod aspect_wire;
+pub(crate) use worth_relational_branch::internal_port::{query, schema, snapshots, symbols};
+#[cfg(test)]
+pub(crate) use worth_relational_contracts::internal_port::canonical_basis_ready_sequence;
+pub(crate) use worth_relational_contracts::internal_port::{
+    aspect_wire, config, diagnostics, errors, graph_member, identity,
+};
+pub(crate) use worth_relational_mutation::internal_port::{aggregate_identity, derived_relation};
 mod authority;
 mod authorization;
 mod branch;
-mod canonical_basis_ready_sequence;
 mod capabilities;
 mod change_source;
 mod commit_strategies;
-mod config;
 mod content;
-mod derived_relation;
-mod diagnostics;
 mod durability;
-mod errors;
 mod execution;
-mod graph_member;
 mod history;
-mod identity;
-mod identity_authority;
+mod identity_authority {
+    pub(crate) use worth_relational_contracts::internal_port::identity_authority::authority::relational_source_truth_authority;
+    pub use worth_relational_contracts::internal_port::identity_authority::{
+        RelationalBranchIdentityKind, RelationalCanonicalDigestIdentityBasis,
+        RelationalCommitIdentityKind, RelationalEntityIdentityKind, RelationalRelationIdentityKind,
+        RelationalSnapshotIdentityKind, RelationalSourceTruthAuthorityIdentity,
+        RelationalSourceTruthBoundaryBridgedIdentity, RelationalSourceTruthDigestIdentityEvidence,
+        RelationalSourceTruthExternalIdentityToken, RelationalSourceTruthProjectionIdentity,
+        RelationalVersionIdentityKind, RelationalWorkspaceIdentityKind,
+    };
+}
 mod indexes;
 mod inspection;
 mod lineage;
@@ -52,15 +75,10 @@ mod performance;
 mod presentation;
 mod projected_member_domain;
 mod publication;
-mod query;
 mod replay;
 mod runtime;
-mod schema;
 mod simulation;
-mod snapshots;
 mod storage;
-mod structural_traversal;
-mod symbols;
 mod transactions;
 mod validation;
 mod visibility;
@@ -71,7 +89,11 @@ pub mod facade;
 mod tests;
 
 #[cfg(test)]
-mod test_execution_policy;
+mod test_execution_policy {
+    pub(crate) use worth_harness::facade::execution_fixture::{
+        serial_request, serial_request_with_memory,
+    };
+}
 #[cfg(test)]
 use worth_harness::facade::process_deadline;
 #[cfg(test)]

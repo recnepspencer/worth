@@ -39,8 +39,26 @@ where
         .execution_request_for(application.inner.runtime.product_runtime_ref())
         .map_err(|_| Denial::ForeignPhase)?;
     application.inner.runtime.primary_provider_ref().graph_ref().with_runtime(&execution, |runtime| {
+        let basis = target.product().relational_basis();
+        crate::domain_computation::primary_graph::index_currency::ensure_selected_field_indexes_admitted(
+            &execution,
+            runtime,
+            basis,
+            [Some(origin.layout().transition.identity_index_id)],
+        )
+        .map_err(|stop| match stop {
+            crate::domain_computation::primary_graph::index_currency::SelectedFieldIndexAdmissionStop::Admission(
+                worth_relational::facade::mvcc::CompanionPreflightStop::Execution(cause),
+            ) => Denial::Workflow(
+                crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial::relational_read_stopped(
+                    cause,
+                    "workflow correction settlement index",
+                ),
+            ),
+            _ => Denial::Workflow(unavailable("workflow correction settlement index is unavailable")),
+        })?;
         let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(
-            runtime, target.product().relational_basis(),
+            runtime, basis,
         ).map_err(Denial::Basis)?;
         let disposition = retain_current_continuation(&execution, runtime, &snapshot, origin)
             .map(Some).map_err(Denial::Workflow);

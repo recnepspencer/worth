@@ -7,7 +7,9 @@ use super::{NameSelection, WorthQueryName};
 /// that name's live descendants when it is resolved.
 ///
 /// It is built only from a name WORTH admitted, so it is no more forgeable
-/// than the name it holds.
+/// than the name it holds. Like the name, a target of a
+/// [`super::WorthQueryNamedKind`] is a canonical value a record column or an
+/// action input holds, with the selection stored beside the name.
 ///
 /// ```
 /// use worth_query_declaration::facade::application_naming::{

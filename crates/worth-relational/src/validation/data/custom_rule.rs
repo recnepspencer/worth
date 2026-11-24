@@ -1,34 +1,33 @@
-pub(crate) mod access_denial;
-pub(crate) mod failure_cause;
-mod memory_denial;
 pub use access_denial::{CustomInvariantAccessDenial, CustomInvariantAccessDenialKind};
 pub use failure_cause::CustomInvariantFailureCause;
-mod errors;
-pub(crate) mod refusal;
 pub use refusal::CustomInvariantRefusal;
-pub(crate) mod touched_scope;
+pub(crate) use worth_relational_contracts::internal_port::validation::data::custom_rule::access_denial;
+pub(crate) use worth_relational_contracts::internal_port::validation::data::custom_rule::errors;
+pub(crate) use worth_relational_contracts::internal_port::validation::data::custom_rule::failure_cause;
+pub(crate) use worth_relational_contracts::internal_port::validation::data::custom_rule::refusal;
+pub(crate) use worth_relational_contracts::internal_port::validation::data::custom_rule::touched_scope;
 
 pub use crate::validation::custom_rule::{
     CompleteStructuralWalk, CustomInvariantExecutionContext, CustomInvariantInterruption,
     CustomInvariantLeaseBudget, CustomInvariantNativeCheckpointDenial,
-    CustomInvariantNonApplicability, CustomInvariantProvenance, CustomInvariantReadBudget,
-    CustomInvariantRegistration, CustomInvariantRegistrationError, CustomInvariantRule,
-    CustomInvariantScopePlanner, CustomInvariantTraversalSummary, StructuralAspectStateView,
-    StructuralReadError, StructuralRelationRecord, StructuralRelationView, StructuralWalkDenial,
-    StructuralWalkDenialKind, StructuralWalkReads, StructuralWalkStep,
+    CustomInvariantNonApplicability, CustomInvariantReadBudget, CustomInvariantRegistration,
+    CustomInvariantRegistrationError, CustomInvariantRule, CustomInvariantScopePlanner,
+    StructuralAspectStateView, StructuralReadError, StructuralRelationRecord,
+    StructuralRelationView, StructuralWalkDenial, StructuralWalkDenialKind, StructuralWalkReads,
+    StructuralWalkStep,
+};
+#[cfg(test)]
+pub(crate) use crate::validation::custom_rule::{
+    CustomInvariantProvenance, CustomInvariantTraversalSummary,
 };
 pub use errors::{
     CustomInvariantExecutionError, CustomInvariantPreparationError, CustomInvariantVerdict,
 };
+#[cfg(test)]
+pub(crate) use touched_scope::TouchedStructuralSet;
 pub use touched_scope::{
-    CustomInvariantTouchedSummary, InvariantEntityIds, InvariantPartitionIds, InvariantRelationIds,
-    PlannedRelationEndpointUpdate, StructuralCountView,
+    InvariantEntityIds, InvariantPartitionIds, InvariantRelationIds, PlannedRelationEndpointUpdate,
 };
-pub(crate) use touched_scope::{PlannedEntityCreate, PlannedRelationCreate, TouchedStructuralSet};
 
-pub(crate) use crate::validation::custom_rule::PreparedCustomInvariantExecution;
-pub(crate) use crate::validation::custom_rule::PreparedCustomInvariantScope;
-pub(crate) use errors::{
-    CustomInvariantFailure, CustomInvariantFailureKind, CustomInvariantRuntimePhase,
-    CustomInvariantTraversalError, PreparedCustomInvariantExecutionOutcome,
-};
+#[cfg(test)]
+pub(crate) use touched_scope::StructuralCountView;

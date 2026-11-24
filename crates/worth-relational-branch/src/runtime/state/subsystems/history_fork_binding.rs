@@ -1,0 +1,187 @@
+use std::sync::Arc;
+
+use crate::branch::basis_registry::RelationalBranchBasisRegistryMetrics;
+use crate::branch::reference::RelationalBranchReferenceCell;
+use crate::branch::registry::RelationalBranchReferenceRegistry;
+use crate::branch::registry::RelationalForkTargetReservation;
+use crate::branch::registry::RelationalForkTargetReservationDenial;
+use crate::history::data::BranchId;
+use crate::history::retention::{
+    RelationalBranchRetentionBinding, RelationalRetentionAcquisitionDenial,
+};
+use crate::identity::data::VersionId;
+
+use super::{
+    BranchHeadVersionIndexAuthority, RelationalForkMaterializationCost,
+    RelationalPhase4ReferenceCostOwner,
+};
+
+/// Cloneable, branch-scoped owner binding used by fork services. It exposes
+/// no commit catalog, replay inventory, or mutable runtime access.
+#[derive(Debug, Clone)]
+pub struct RelationalForkOwnerBinding {
+    branches: RelationalBranchReferenceRegistry,
+    costs: RelationalPhase4ReferenceCostOwner,
+    head_versions: BranchHeadVersionIndexAuthority,
+    retention: RelationalBranchRetentionBinding,
+    basis_metrics: Arc<RelationalBranchBasisRegistryMetrics>,
+    visibility: Option<RelationalForkVisibilityBinding>,
+    root_issuer: crate::branch::root::RelationalBranchRootIdentityIssuer,
+}
+
+#[derive(Debug, Clone)]
+struct RelationalForkVisibilityBinding {
+    cache: Arc<super::super::visibility::VisibilityCache>,
+    protect_branch_heads: bool,
+    instrumentation:
+        crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation,
+}
+
+impl RelationalForkOwnerBinding {
+    pub fn root_identity_issuer(&self) -> &crate::branch::root::RelationalBranchRootIdentityIssuer {
+        &self.root_issuer
+    }
+
+    pub(super) fn new(
+        branches: RelationalBranchReferenceRegistry,
+        costs: RelationalPhase4ReferenceCostOwner,
+        head_versions: BranchHeadVersionIndexAuthority,
+        retention: RelationalBranchRetentionBinding,
+        basis_metrics: Arc<RelationalBranchBasisRegistryMetrics>,
+        root_issuer: crate::branch::root::RelationalBranchRootIdentityIssuer,
+    ) -> Self {
+        Self {
+            branches,
+            costs,
+            head_versions,
+            retention,
+            basis_metrics,
+            visibility: None,
+            root_issuer,
+        }
+    }
+
+    pub fn with_visibility(
+        mut self,
+        cache: Arc<super::super::visibility::VisibilityCache>,
+        protect_branch_heads: bool,
+        instrumentation: crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation,
+    ) -> Self {
+        self.visibility = Some(RelationalForkVisibilityBinding {
+            cache,
+            protect_branch_heads,
+            instrumentation,
+        });
+        self
+    }
+
+    pub fn branch_cell(&self, branch_id: &BranchId) -> Option<RelationalBranchReferenceCell> {
+        self.branches.get(branch_id)
+    }
+
+    pub fn reserve_target(
+        &self,
+        branch_id: BranchId,
+    ) -> Result<RelationalForkTargetReservation, RelationalForkTargetReservationDenial> {
+        self.branches.reserve_fork_target(branch_id)
+    }
+
+    pub fn install_target(
+        &self,
+        reservation: RelationalForkTargetReservation,
+        mut cell: RelationalBranchReferenceCell,
+    ) {
+        self.bind_target_basis_registry_metrics(&mut cell);
+        reservation.install(cell);
+    }
+
+    pub fn bind_target_basis_registry_metrics(&self, cell: &mut RelationalBranchReferenceCell) {
+        cell.bind_basis_registry_metrics(Arc::clone(&self.basis_metrics));
+    }
+
+    pub fn owns_reservation(&self, reservation: &RelationalForkTargetReservation) -> bool {
+        self.branches.owns_reservation(reservation)
+    }
+
+    pub fn install_head(
+        &self,
+        cell: &RelationalBranchReferenceCell,
+        root: &Arc<crate::branch::root::RelationalBranchRoot>,
+        source_root: &Arc<crate::branch::root::RelationalBranchRoot>,
+    ) -> Result<(), RelationalRetentionAcquisitionDenial> {
+        // The controlled fork shares operational custody, not just canonical
+        // coordinates. Keep the image alive until the new head owns its Arc.
+        let publication_bases = crate::history::retention::PublicationBasisImage::at_for_owner(
+            source_root,
+            &self.retention,
+        );
+        if !Arc::ptr_eq(root, source_root) {
+            root.publication_bases
+                .set(Arc::downgrade(&publication_bases))
+                .map_err(|_| RelationalRetentionAcquisitionDenial::BindingMismatch)?;
+        }
+        let obligation = self.retention.install_head(cell.identity().clone(), root)?;
+        cell.head_retention()
+            .install(obligation)
+            .map_err(|_| RelationalRetentionAcquisitionDenial::OwnerUnavailable)
+    }
+
+    pub fn record_lookup(&self) {
+        self.costs.record_branch_cell_lookup();
+        self.costs.record_branch_cell_contact();
+    }
+
+    pub fn record_install(
+        &self,
+        cell: &RelationalBranchReferenceCell,
+        cost: RelationalForkMaterializationCost,
+        head_version: Option<VersionId>,
+    ) {
+        self.costs.record_reference_allocation();
+        self.costs.record_branch_cell_contact();
+        cell.publication_cell()
+            .record_sharing_cost_checked(|costs| {
+                costs.shared_root_acquisitions = costs.shared_root_acquisitions.saturating_add(1);
+                costs.copied_commit_envelopes = costs
+                    .copied_commit_envelopes
+                    .saturating_add(cost.copied_commit_envelopes);
+                costs.fork_materialized_entity_count = costs
+                    .fork_materialized_entity_count
+                    .saturating_add(cost.entity_count);
+                costs.fork_materialized_relation_count = costs
+                    .fork_materialized_relation_count
+                    .saturating_add(cost.relation_count);
+                let next_copied_truth = costs
+                    .copied_truth_bytes
+                    .checked_add(cost.authoritative_bytes)?;
+                let next_fork_bytes = costs
+                    .fork_materialized_authoritative_bytes
+                    .checked_add(cost.authoritative_bytes)?;
+                costs.copied_truth_bytes = next_copied_truth;
+                costs.fork_materialized_authoritative_bytes = next_fork_bytes;
+                Some(())
+            });
+        self.head_versions.move_head(None, cell.root().as_deref());
+        if let (Some(visibility), Some(version_id)) = (&self.visibility, head_version)
+            && visibility.protect_branch_heads
+        {
+            let root = cell
+                .root()
+                .expect(/* Proof: Only successful fork preparation constructs this private target; it installs the selected source root and immutable fork provenance before returning it. */ "installed fork cell retains its exact source root");
+            let key = crate::visibility::snapshot_states::VisibilitySnapshotStateKey::for_root(
+                cell.identity().branch_id().clone(),
+                version_id,
+                &root,
+            );
+            visibility.cache.track_branch_head_state(&key);
+            visibility.cache.update_residency(&key, |residency| {
+                residency.branch_head_refs = residency.branch_head_refs.saturating_add(1);
+            });
+            visibility.instrumentation.count(|counters| {
+                counters.visibility_cache_branch_head_promotions = counters
+                    .visibility_cache_branch_head_promotions
+                    .saturating_add(1);
+            });
+        }
+    }
+}

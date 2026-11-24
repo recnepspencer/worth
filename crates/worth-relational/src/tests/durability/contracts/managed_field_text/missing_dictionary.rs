@@ -1,6 +1,7 @@
 //! A durable tail artifact keeps its symbolic payload while its required
 //! meaning is removed.
 use super::*;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 
 #[test]
 fn native_field_text_missing_tail_dictionary_refuses_without_target_or_source_effect() {
@@ -25,14 +26,14 @@ fn native_field_text_missing_tail_dictionary_refuses_without_target_or_source_ef
         let required =
             crate::symbols::data::required_commit_symbols(&tail.merged_plan, &tail.patch);
         let managed = tail
-            .symbol_texts
+            .owner_symbol_texts()
             .entries
             .iter()
             .find(|(_, text)| text.as_str() == JSON)
             .unwrap()
             .0;
         assert!(required.contains(&managed));
-        tail.symbol_texts
+        tail.owner_symbol_texts_mut()
             .entries
             .retain(|(symbol, _)| *symbol != managed);
         assert_eq!(
@@ -43,8 +44,7 @@ fn native_field_text_missing_tail_dictionary_refuses_without_target_or_source_ef
     let malformed = medium.artifact_bytes(tail_position).unwrap();
     let target = crate::runtime::RelationalRuntime::build_from_extensions(
         config,
-        crate::runtime::RuntimeExtensions::default()
-            .with_durable_medium(Some(medium.attachment())),
+        crate::runtime::RuntimeExtensions::default().with_durable_medium(Some(medium.attachment())),
     )
     .expect("valid native runtime configuration");
     let identity = target.main_branch_identity();

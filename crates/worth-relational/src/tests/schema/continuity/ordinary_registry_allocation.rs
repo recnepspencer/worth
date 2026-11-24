@@ -1,4 +1,5 @@
 use super::*;
+use worth_relational_branch::internal_port::branch::root::schema::compiled_retention::RetainedRelationalSchemaRegistryFixturePort as _;
 
 #[test]
 fn ordinary_continuity_reuses_registry_allocation_at_small_and_large_schema_scale() {
@@ -26,11 +27,10 @@ fn ordinary_continuity_reuses_registry_allocation_at_small_and_large_schema_scal
         )
         .expect("ordinary continuity resolves from the admitted branch root");
         let carried_registry = plan
-            .target_schema_registry
-            .as_ref()
+            .target_schema_registry()
             .expect("ordinary continuity carries its exact registry");
         assert!(
-            prior_registry.same_allocation(carried_registry),
+            prior_registry.same_allocation_for_test(carried_registry),
             "ordinary continuity must share the root registry allocation at width {additional_kind_count}"
         );
 

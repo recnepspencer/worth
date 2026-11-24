@@ -7,6 +7,7 @@ pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
         owner.field::<WorthQueryHistoryNodeId>("id");
         owner.field::<Option<WorthQueryHistoryNodeId>>("parent");
         owner.field::<Option<Arc<str>>>("label");
+        owner.field::<WorthQueryHistoryStepMetadata>("metadata");
         owner.field::<WorthQueryProductBranchReadIdentity>("endpoint");
     }
 }

@@ -1,0 +1,183 @@
+//! The descriptive assertions carried by a strategy lowering.
+use serde::{Deserialize, Serialize};
+
+use super::{
+    descriptor::CommitStrategyDescriptorDigest, execution::execution_draft::StrategyExecutionDraft,
+    execution::mutation_program::StrategyMutationProgramDigest,
+    execution::output_artifact::CanonicalStrategyOutputDigest,
+    request::CanonicalStrategyCommitRequest, request::CanonicalStrategyInputDigest,
+    strategy_id::CommitStrategyId,
+};
+use crate::transactions::data::outcomes::{
+    commit_conflict::CommitConflict, commit_preparation::CommitPreparationError,
+    transaction_commit_error::TransactionCommitError,
+};
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum StrategyLoweringError {
+    RequestExecutionMismatch { detail: String },
+    MutationConflict(CommitConflict),
+    Preparation(TransactionCommitError),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct StrategyLoweringProvenance {
+    strategy_id: CommitStrategyId,
+    descriptor_digest: CommitStrategyDescriptorDigest,
+    input_digest: CanonicalStrategyInputDigest,
+    output_digest: CanonicalStrategyOutputDigest,
+    mutation_program_digest: StrategyMutationProgramDigest,
+}
+
+impl StrategyLoweringProvenance {
+    pub fn strategy_id(&self) -> CommitStrategyId {
+        self.strategy_id
+    }
+
+    pub fn descriptor_digest(&self) -> CommitStrategyDescriptorDigest {
+        self.descriptor_digest
+    }
+
+    pub fn input_digest(&self) -> CanonicalStrategyInputDigest {
+        self.input_digest
+    }
+
+    pub fn output_digest(&self) -> CanonicalStrategyOutputDigest {
+        self.output_digest
+    }
+
+    pub fn mutation_program_digest(&self) -> StrategyMutationProgramDigest {
+        self.mutation_program_digest
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct StrategyLoweringSummary {
+    worker_batch_count: usize,
+    total_intent_count: usize,
+    touched_partition_count: usize,
+    cross_partition_relation_count: usize,
+    normalized_client_key_count: usize,
+    lineage_transition_count: usize,
+    projected_entity_record_reads: usize,
+    projected_relation_record_reads: usize,
+    projected_partition_reads: usize,
+}
+
+impl StrategyLoweringSummary {
+    pub fn worker_batch_count(&self) -> usize {
+        self.worker_batch_count
+    }
+
+    pub fn total_intent_count(&self) -> usize {
+        self.total_intent_count
+    }
+
+    pub fn touched_partition_count(&self) -> usize {
+        self.touched_partition_count
+    }
+
+    pub fn cross_partition_relation_count(&self) -> usize {
+        self.cross_partition_relation_count
+    }
+
+    pub fn normalized_client_key_count(&self) -> usize {
+        self.normalized_client_key_count
+    }
+
+    pub fn lineage_transition_count(&self) -> usize {
+        self.lineage_transition_count
+    }
+
+    pub fn projected_entity_record_reads(&self) -> usize {
+        self.projected_entity_record_reads
+    }
+
+    pub fn projected_relation_record_reads(&self) -> usize {
+        self.projected_relation_record_reads
+    }
+
+    pub fn projected_partition_reads(&self) -> usize {
+        self.projected_partition_reads
+    }
+}
+
+/// Operations used by the Relational owners.
+pub trait StrategyLoweringErrorOwnerPort: Sized {
+    fn mutation_conflict(conflict: CommitConflict) -> Self;
+    fn preparation(error: CommitPreparationError) -> Self;
+}
+
+impl StrategyLoweringErrorOwnerPort for StrategyLoweringError {
+    fn mutation_conflict(conflict: CommitConflict) -> Self {
+        Self::MutationConflict(conflict)
+    }
+
+    fn preparation(error: CommitPreparationError) -> Self {
+        Self::Preparation(TransactionCommitError::preparation(error))
+    }
+}
+
+/// Operations used by the Relational owners.
+pub trait StrategyLoweringProvenanceOwnerPort: Sized {
+    fn from_request_and_execution(
+        request: &CanonicalStrategyCommitRequest,
+        execution: &StrategyExecutionDraft,
+    ) -> Self;
+}
+
+impl StrategyLoweringProvenanceOwnerPort for StrategyLoweringProvenance {
+    fn from_request_and_execution(
+        request: &CanonicalStrategyCommitRequest,
+        execution: &StrategyExecutionDraft,
+    ) -> Self {
+        Self {
+            strategy_id: request.strategy_id(),
+            descriptor_digest: request.descriptor_digest(),
+            input_digest: request.canonical_input().digest(),
+            output_digest: execution.output().digest(),
+            mutation_program_digest: execution.mutation_program().digest(),
+        }
+    }
+}
+
+/// Operations used by the Relational owners.
+pub trait StrategyLoweringSummaryOwnerPort: Sized {
+    fn new(
+        worker_batch_count: usize,
+        total_intent_count: usize,
+        touched_partition_count: usize,
+        cross_partition_relation_count: usize,
+        normalized_client_key_count: usize,
+        lineage_transition_count: usize,
+        projected_entity_record_reads: usize,
+        projected_relation_record_reads: usize,
+        projected_partition_reads: usize,
+    ) -> Self;
+}
+
+impl StrategyLoweringSummaryOwnerPort for StrategyLoweringSummary {
+    fn new(
+        worker_batch_count: usize,
+        total_intent_count: usize,
+        touched_partition_count: usize,
+        cross_partition_relation_count: usize,
+        normalized_client_key_count: usize,
+        lineage_transition_count: usize,
+        projected_entity_record_reads: usize,
+        projected_relation_record_reads: usize,
+        projected_partition_reads: usize,
+    ) -> Self {
+        Self {
+            worker_batch_count,
+            total_intent_count,
+            touched_partition_count,
+            cross_partition_relation_count,
+            normalized_client_key_count,
+            lineage_transition_count,
+            projected_entity_record_reads,
+            projected_relation_record_reads,
+            projected_partition_reads,
+        }
+    }
+}

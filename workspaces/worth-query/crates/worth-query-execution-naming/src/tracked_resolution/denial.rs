@@ -2,7 +2,7 @@
 
 use std::fmt;
 
-use worth_query_declaration::facade::application_naming::NameResolutionDenial;
+use worth_query_declaration::facade::application_naming::{NameResolutionDenial, NoNameOwner};
 use worth_relational::facade::lineage::{
     LineageRecordTarget, PersistentNameSubjectKind, RelationalPersistentNameReadDenial,
 };
@@ -18,6 +18,8 @@ pub enum ExecutionNameReadDenial {
     /// record was retired, replaced, split or merged away. Resolve the held
     /// name instead.
     RecordNoLongerNamed { record: LineageRecordTarget },
+    /// The record is not one the batch read observed.
+    RecordNotObserved { record: LineageRecordTarget },
     /// The name was born under a scheme the runtime has not installed.
     UnknownScheme { scheme_id: Option<String> },
     /// The name belongs to another subject class than the one requested.
@@ -49,6 +51,9 @@ impl fmt::Display for ExecutionNameReadDenial {
                 formatter,
                 "record {record:?} is no longer designated by its persistent name at this basis"
             ),
+            Self::RecordNotObserved { record } => {
+                write!(formatter, "record {record:?} was not observed by this name read")
+            }
             Self::UnknownScheme { scheme_id } => {
                 write!(formatter, "persistent name scheme {scheme_id:?} is not installed")
             }
@@ -72,13 +77,14 @@ impl fmt::Display for ExecutionNameReadDenial {
 impl std::error::Error for ExecutionNameReadDenial {}
 
 /// Why a tracked `resolve` of a held `WorthQueryName<K>` refused: one of
-/// resolution's own typed outcomes, or a read refusal.
-pub enum ExecutionNameResolveDenial<K> {
-    Resolution(NameResolutionDenial<K>),
+/// resolution's own typed outcomes, or a read refusal. `O` is the owner
+/// handle its candidates carry.
+pub enum ExecutionNameResolveDenial<K, O = NoNameOwner> {
+    Resolution(NameResolutionDenial<K, O>),
     Read(ExecutionNameReadDenial),
 }
 
-impl<K> Clone for ExecutionNameResolveDenial<K> {
+impl<K, O: Clone> Clone for ExecutionNameResolveDenial<K, O> {
     fn clone(&self) -> Self {
         match self {
             Self::Resolution(denial) => Self::Resolution(denial.clone()),
@@ -87,7 +93,7 @@ impl<K> Clone for ExecutionNameResolveDenial<K> {
     }
 }
 
-impl<K> PartialEq for ExecutionNameResolveDenial<K> {
+impl<K, O: PartialEq> PartialEq for ExecutionNameResolveDenial<K, O> {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             (Self::Resolution(a), Self::Resolution(b)) => a == b,
@@ -97,9 +103,9 @@ impl<K> PartialEq for ExecutionNameResolveDenial<K> {
     }
 }
 
-impl<K> Eq for ExecutionNameResolveDenial<K> {}
+impl<K, O: Eq> Eq for ExecutionNameResolveDenial<K, O> {}
 
-impl<K> fmt::Debug for ExecutionNameResolveDenial<K> {
+impl<K, O: fmt::Debug> fmt::Debug for ExecutionNameResolveDenial<K, O> {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Resolution(denial) => formatter.debug_tuple("Resolution").field(denial).finish(),
@@ -108,7 +114,7 @@ impl<K> fmt::Debug for ExecutionNameResolveDenial<K> {
     }
 }
 
-impl<K> fmt::Display for ExecutionNameResolveDenial<K> {
+impl<K, O> fmt::Display for ExecutionNameResolveDenial<K, O> {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Resolution(denial) => fmt::Display::fmt(denial, formatter),
@@ -117,10 +123,16 @@ impl<K> fmt::Display for ExecutionNameResolveDenial<K> {
     }
 }
 
-impl<K> std::error::Error for ExecutionNameResolveDenial<K> {}
+impl<K, O: fmt::Debug> std::error::Error for ExecutionNameResolveDenial<K, O> {}
 
-impl<K> From<ExecutionNameReadDenial> for ExecutionNameResolveDenial<K> {
+impl<K, O> From<ExecutionNameReadDenial> for ExecutionNameResolveDenial<K, O> {
     fn from(denial: ExecutionNameReadDenial) -> Self {
         Self::Read(denial)
+    }
+}
+
+impl<K, O> From<NameResolutionDenial<K, O>> for ExecutionNameResolveDenial<K, O> {
+    fn from(denial: NameResolutionDenial<K, O>) -> Self {
+        Self::Resolution(denial)
     }
 }

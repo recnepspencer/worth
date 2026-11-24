@@ -19,17 +19,6 @@ pub(super) fn admit(
         })
         .collect::<std::collections::BTreeSet<_>>();
     if !prepared_keys.is_empty() {
-        // A decoded prepared row never proves absence of an unresolved original.
-        for original in originals.original_states() {
-            match original.fate() {
-                worth_foundational::facade::WorldOriginalFate::Published
-                | worth_foundational::facade::WorldOriginalFate::Released => {}
-                worth_foundational::facade::WorldOriginalFate::Open
-                | worth_foundational::facade::WorldOriginalFate::Continued => {
-                    return Err(Denial::PublicationPending)
-                }
-            }
-        }
         let layout = provider.graph.layout_ref().provider_idempotency();
         for subject in native
             .durability_authority()

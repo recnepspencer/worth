@@ -2,6 +2,7 @@
 //! regeneration and cross-commit restore (explicit or birth-classified).
 
 use std::collections::BTreeSet;
+use worth_relational_lineage::internal_port::lineage::index::batch::PersistentNameCommittedBatchFixturePort as _;
 
 use crate::facade::identity::LineageId;
 use crate::facade::lineage::{
@@ -219,7 +220,7 @@ fn summarize_restore_case(
     name: Name,
 ) -> RestoreTraversalCase {
     let start_lineage = world.log()[1]
-        .lineage_events
+        .lineage_events_for_test()
         .iter()
         .find(|e| e.name_birth().is_some_and(|b| b.identity() == name))
         .expect("initial birth event")
@@ -228,13 +229,13 @@ fn summarize_restore_case(
         .log()
         .last()
         .expect("restore commit")
-        .lineage_events
+        .lineage_events_for_test()
         .iter()
         .find(|e| e.kind() == LineageEventKind::Restore && e.kept_name() == Some(name))
         .expect("restore event emitted");
     let mut retired_lineages = BTreeSet::new();
     for batch in world.log() {
-        for ev in &batch.lineage_events {
+        for ev in batch.lineage_events_for_test() {
             if ev.kind() == LineageEventKind::Retire {
                 retired_lineages.extend(ev.sources().iter().copied());
             }

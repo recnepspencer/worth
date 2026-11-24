@@ -42,6 +42,28 @@ fn commit_boundary_short_circuits_when_plan_contract_cannot_touch_profile_groups
 }
 
 #[test]
+fn engine_marks_unrelated_commit_boundary_rules_not_applicable() {
+    let runtime = runtime_with_invariants(InvariantCatalog {
+        registrations: vec![InvariantRegistration::commit_boundary_blocking(
+            InvariantRule::unique_entity_aspect_field(aspect_key("name"), field_key("name")),
+        )],
+    });
+    let plan = MergedCommitPlan {
+        transaction_id: TransactionId(2),
+        merged_intents: vec![MutationIntent::Relation(RelationMutationIntent::Delete(
+            DeleteRelationIntent {
+                relation_id: crate::identity::data::RelationId::new(PartitionId::main(), 0, 1),
+            },
+        ))],
+    };
+
+    // This dispatch goes through the runtime's private selected-branch execution route.
+    let results = evaluate_main_commit_boundary_plan(&runtime, &plan);
+
+    assert!(results.results().is_empty());
+}
+
+#[test]
 fn graph_composition_plan_uses_graph_composition_execution_profile() {
     let runtime = runtime_with_invariants(InvariantCatalog::default());
     let plan = MergedCommitPlan {

@@ -1,15 +1,16 @@
 //! Carries verified native recovery lineage across one validated, settled commit.
+use worth_relational_publication::internal_port::mvcc::publication::candidate::PreparedRelationalCommitCandidateOwnerPort as _;
 mod outcome;
-mod snapshot_closeout;
+pub(crate) use worth_relational_durability::internal_port::durability::authority::checkpoint_transition::snapshot_closeout;
 pub use outcome::{
     RecoveredCheckpointTransition, RecoveredCheckpointTransitionDenial,
     RecoveredCheckpointTransitionError, RefusedRecoveredCheckpointTransition,
 };
 
-use crate::branch::RelationalBranchBasisDescriptor;
+use crate::branch::basis_descriptor::RelationalBranchBasisDescriptor;
+use crate::durability::authority::recovered_runtime::DurabilityRecoveryAuthority;
+use crate::durability::authority::recovered_runtime::RecoveredRelationalRuntimeAuthority;
 use crate::mvcc::{PreparedRelationalCommitCandidate, RelationalPublicationOutcome};
-
-use super::{DurabilityRecoveryAuthority, RecoveredRelationalRuntimeAuthority};
 
 impl DurabilityRecoveryAuthority<'_> {
     /// Publishes a candidate prepared against an exact recovered image and
@@ -79,7 +80,17 @@ impl DurabilityRecoveryAuthority<'_> {
         let successor = performed.next_basis().descriptor().clone();
         match self.runtime.settle_performed_publication(performed) {
             Ok(committed) => {
-                snapshot_closeout::release(self.runtime, &committed)?;
+                let release = self
+                    .runtime
+                    .snapshots()
+                    .release_snapshot(&committed.snapshot);
+                snapshot_closeout::closeout(committed.commit.commit_id, release.map(|_| ()))
+                    .map_err(|failure| {
+                        RecoveredCheckpointTransitionError::SnapshotCloseoutFailed {
+                            commit_id: failure.commit_id,
+                            denial: failure.denial,
+                        }
+                    })?;
                 self.install_acknowledged_codec_target(&mut recovered);
                 Ok(acknowledged(recovered, successor, committed.commit.clone()))
             }
@@ -144,6 +155,3 @@ fn acknowledged(
     );
     RecoveredCheckpointTransition { recovered, commit }
 }
-
-#[cfg(test)]
-mod tests;

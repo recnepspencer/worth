@@ -8,6 +8,7 @@ pub(super) enum Request {
         value: u64,
     },
     Close,
+    Checkpoint,
     CheckpointAndDiscard,
     CloseExpectingDiscarded,
     InspectCadence,
@@ -52,6 +53,9 @@ pub(super) enum Disposition {
     Continued(MutationProjection),
     Released(usize),
     ContinuedReleaseRefused,
+    Checkpointed {
+        generation: u64,
+    },
     Discarded {
         checkpoint_generation: u64,
         discard_generation: u64,

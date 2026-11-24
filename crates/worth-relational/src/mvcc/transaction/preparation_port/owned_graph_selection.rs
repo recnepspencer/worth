@@ -9,6 +9,9 @@ use crate::{
     },
 };
 use std::sync::Arc;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_mutation::internal_port::branch::model_ownership::graph_admission::RelationalOwnedModelGraphSelectionOwnerPort as _;
+use worth_relational_mutation::internal_port::branch::model_ownership::graph_selection::canonical::RelationalOwnedModelGraphSelectionOwnerPort as _;
 impl RelationalPreparationPort {
     pub fn admit_owned_graph_selection(
         &self,
@@ -42,7 +45,14 @@ impl RelationalPreparationPort {
         let installed = execution
             .run_native_with_checkpoint(|context| {
                 crate::execution::request_stage::checkpoint(context, count as u64)?;
-                graph.ownership_matches_installation(&runtime, context)
+                graph.ownership_matches_installation(
+                    runtime
+                        .schema_contract_runtime
+                        .custom_invariant_registries
+                        .model_ownership()
+                        .map(|(_, installed)| installed),
+                    context,
+                )
             })
             .map_err(Error::Request)?
             .0
@@ -55,8 +65,7 @@ impl RelationalPreparationPort {
         let funding = execution
             .reserve_retained_memory((count as u64).saturating_mul(128))
             .map_err(Error::Request)?;
-        let meaning = crate::history::data::CanonicalOwnedGraphSelection::from_prepared(&graph)
-            .map_err(Error::Preparation)?;
+        let meaning = graph.canonical_meaning().map_err(Error::Preparation)?;
         Ok(RelationalOwnedGraphSelection {
             transaction,
             retained: PreparedOwnedGraphSelection {
@@ -92,7 +101,7 @@ impl RelationalPreparationPort {
             .map_err(Error::Source)?;
         crate::mvcc::validation::require_not_interrupted(
             &input.transaction.control,
-            &input.transaction.basis.inner.retention_binding,
+            &input.transaction.basis.owner_inner().retention_binding,
             crate::mvcc::RelationalInterruptionBoundary::ProposalValidation,
         )
         .map_err(Error::Preparation)?;
@@ -103,10 +112,14 @@ impl RelationalPreparationPort {
         };
         let installed = execution
             .run_native_with_checkpoint(|context| {
-                input
-                    .retained
-                    .graph
-                    .ownership_matches_installation(&runtime, context)
+                input.retained.graph.ownership_matches_installation(
+                    runtime
+                        .schema_contract_runtime
+                        .custom_invariant_registries
+                        .model_ownership()
+                        .map(|(_, installed)| installed),
+                    context,
+                )
             })
             .map_err(Error::Request)?
             .0

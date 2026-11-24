@@ -1,3 +1,4 @@
+use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::basis_reads::VisibilityProjectionViewFixturePort as _;
 use crate::facade::config::AdjacencyBackend;
 use crate::facade::runtime::CompiledArtifactAuthorityStatus;
 use crate::tests::support::*;
@@ -264,7 +265,7 @@ fn chip_profile_branch_local_topology_pressure_preserves_relation_history_isolat
         .read_truth()
         .try_project_historical_version(main_commit.version_id)
         .unwrap()
-        .all_authoritative_relation_records(execution)
+        .all_authoritative_relation_records_for_test(execution)
         .expect("read request remains live");
     let feature_commit = runtime
         .history()
@@ -275,7 +276,7 @@ fn chip_profile_branch_local_topology_pressure_preserves_relation_history_isolat
         .read_truth()
         .try_project_historical_version(feature_commit.version_id)
         .unwrap()
-        .all_authoritative_relation_records(execution)
+        .all_authoritative_relation_records_for_test(execution)
         .expect("read request remains live");
     let feature_artifact = runtime
         .compiled_artifacts_authority()

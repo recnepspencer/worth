@@ -1,9 +1,16 @@
 //! Actual Empty producers, original DATA lifetime, and concrete roster admission.
 
 use super::*;
+use crate::branch::lifecycle::RelationalBranchLifecyclePosture;
+use crate::branch::transition::original_inputs::RetainedBranchTransition;
+use crate::branch::transition::{PositionedBranchTransition, RelationalBranchTransitionSequence};
+use crate::durability::source_initial_inputs::producer_roster::roster_bytes;
 use crate::schema::data::RelationalSchemaRegistry;
 use crate::tests::support::runtime_with_test_schema;
 use worth_execution::{CancellationSource, SerialMemoryBudget, SerialRequest};
+use worth_foundational::FoundationalBranchReferenceGeneration;
+use worth_relational_branch::internal_port::branch::transition::positioned::PositionedBranchTransitionOwnerPort as _;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 fn controller_memory() -> u64 {
     let budget = SerialMemoryBudget::new(Some(64 * 1024));
@@ -19,7 +26,7 @@ fn controller_memory() -> u64 {
 
 #[test]
 fn original_empty_schemas_survive_archived_installation_and_stream_replacement() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let request = ExecutionRequest::serial(&host);
     let mut runtime = runtime_with_test_schema();
     let birth = runtime
@@ -28,7 +35,7 @@ fn original_empty_schemas_survive_archived_installation_and_stream_replacement()
         .unwrap();
     let original = Arc::clone(&birth.birth.as_ref().unwrap().schema);
     let expected = original.registry().authority_snapshot();
-    assert!(!original.registry().entity_kinds.is_empty());
+    assert!(!(*original.registry().owner_entity_kinds()).is_empty());
     let identity = runtime.main_branch_identity();
     runtime.archive_branch(&request, &identity).unwrap();
     runtime
@@ -88,34 +95,31 @@ fn original_empty_schemas_survive_archived_installation_and_stream_replacement()
         assert!(source.retained_branch_transitions().1.is_empty());
         assert_eq!(
             source
-                .branch_transitions
-                .prepare_append(&request, &original_transition.positioned)
+                .prepare_original_transition_for_test(&request, &original_transition.positioned)
                 .unwrap(),
             Some(0)
         );
         let different = PositionedBranchTransition::admit(
             head,
             original_transition.positioned.follows(),
-            crate::branch::RelationalBranchTransition::Archive {
+            crate::branch::transition::RelationalBranchTransition::Archive {
                 branch: crate::history::data::BranchId("different-original-prefix".to_owned()),
                 prior_generation: FoundationalBranchReferenceGeneration::initial(),
-                prior_truth_version: crate::branch::RelationalBranchVersion::initial(),
+                prior_truth_version: crate::branch::version::RelationalBranchVersion::initial(),
             },
         );
         assert!(matches!(
-            source
-                .branch_transitions
-                .prepare_append(&request, &different),
+            source.prepare_original_transition_for_test(&request, &different),
             Err(OriginalBranchSchemaInputsDenial::OriginalPrefixMismatch)
         ));
-        assert_eq!(source.branch_transitions.state().log.len(), 1);
+        assert_eq!(source.original_transition_count_for_test(), 1);
         assert_eq!(source.branch_transition_head().0, 0);
     }
 }
 
 #[test]
 fn fresh_recovery_receiver_discards_only_its_unobserved_construction_seed() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let request = ExecutionRequest::serial(&host);
     let runtime = runtime_with_test_schema();
     let birth = runtime
@@ -149,7 +153,7 @@ fn fresh_recovery_receiver_discards_only_its_unobserved_construction_seed() {
 
 #[test]
 fn original_schema_capture_retains_exact_roster_and_refuses_before_copy() {
-    let ordinary = crate::test_execution_policy::serial_request();
+    let ordinary = worth_harness::facade::execution_fixture::serial_request();
     let ordinary_request = ExecutionRequest::serial(&ordinary);
     let mut runtime = runtime_with_test_schema();
     let identity = runtime.main_branch_identity();
@@ -199,14 +203,14 @@ fn original_schema_capture_retains_exact_roster_and_refuses_before_copy() {
         .unwrap();
     assert_eq!(host.memory().unwrap().charged_memory_bytes(), bill);
     drop(runtime);
-    assert!(!capture
+    assert!(!(*capture
         .birth
         .as_ref()
         .unwrap()
         .schema
         .registry()
-        .entity_kinds
-        .is_empty());
+        .owner_entity_kinds())
+    .is_empty());
     assert_eq!(capture.transitions().len(), 1);
     assert_eq!(host.memory().unwrap().charged_memory_bytes(), bill);
     drop(capture);
@@ -236,7 +240,7 @@ fn transition_backing_refusal_precedes_archive_and_retains_its_own_grant() {
     let identity = runtime.main_branch_identity();
     // Isolate the stream backing bill from the producer's independently owned
     // original schema carrier, now required before every transition durable step.
-    let setup = crate::test_execution_policy::serial_request();
+    let setup = worth_harness::facade::execution_fixture::serial_request();
     runtime
         .history
         .branch_cell(identity.branch_id())
@@ -259,7 +263,7 @@ fn transition_backing_refusal_precedes_archive_and_retains_its_own_grant() {
         CancellationSource::new().token(),
         None,
     );
-    let Err(crate::branch::RelationalBranchTransitionStop::RequestStopped(cause)) =
+    let Err(crate::branch::transition::RelationalBranchTransitionStop::RequestStopped(cause)) =
         runtime.archive_branch(&ExecutionRequest::serial(&denied_host), &identity)
     else {
         panic!("actual transition backing must refuse before archive");

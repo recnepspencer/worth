@@ -12,7 +12,7 @@ impl<'runtime> PublicationPatchStreamAccess<'runtime> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: PatchStreamRequest,
     ) -> Result<PatchStreamBatch, PatchStreamReadError> {
-        crate::publication::patch::read_patch_stream(execution, self.runtime, request)
+        super::stream_reading::read_patch_stream(execution, self.runtime, request)
     }
 }
 

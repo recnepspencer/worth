@@ -1,10 +1,9 @@
-use worth_foundational::facade::AspectKey;
-
 use super::RelationalObservationReadDenial;
-use crate::identity::data::{EntityId, KindId, RelationId};
+use crate::identity::data::{EntityId, RelationId};
 use crate::mvcc::RelationalBranchObservation;
 use crate::runtime::RelationalRuntime;
 use crate::storage::data::{EntityReadRecord, RelationReadRecord};
+use worth_relational_branch::internal_port::mvcc::observation::RelationalBranchObservationOwnerPort as _;
 
 impl RelationalRuntime {
     /// Read one entity exactly as `observation`'s retained root holds it.
@@ -71,29 +70,5 @@ impl RelationalRuntime {
                 root.schema_authority().registry(),
                 relation_id,
             ))
-    }
-}
-
-impl RelationalBranchObservation {
-    /// Whether the schema retained with this observation declares `aspect`
-    /// for entity kind `kind_id`. A later schema change never alters the
-    /// answer.
-    pub fn entity_kind_declares_aspect(&self, kind_id: KindId, aspect: &AspectKey) -> bool {
-        self.selected_root()
-            .schema_authority()
-            .entity_aspect_plan(kind_id)
-            .and_then(|plan| plan.contract_for(aspect))
-            .is_some()
-    }
-
-    /// Whether the schema retained with this observation declares `aspect`
-    /// for relation kind `kind_id`. A later schema change never alters the
-    /// answer.
-    pub fn relation_kind_declares_aspect(&self, kind_id: KindId, aspect: &AspectKey) -> bool {
-        self.selected_root()
-            .schema_authority()
-            .relation_aspect_plan(kind_id)
-            .and_then(|plan| plan.contract_for(aspect))
-            .is_some()
     }
 }

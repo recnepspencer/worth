@@ -1,5 +1,12 @@
 //! A region's dictionary closure is admitted once per runtime and view.
 use super::*;
+use crate::storage::data::checkpoint_page::RelationalCheckpointPage;
+use crate::storage::data::RelationalStorageUnavailableCause as Cause;
+use crate::storage::data::SymbolPageSelection;
+use crate::storage::residency::RelationalResidencyDemandFailure as Failure;
+use crate::symbols::data::Symbol;
+use std::collections::BTreeSet;
+use worth_relational_storage::internal_port::storage::data::symbol_residency::RuntimeSymbolResidency;
 
 #[test]
 fn region_symbol_admission_is_retryable_and_owned_by_each_fork() {
@@ -26,33 +33,52 @@ fn region_symbol_admission_is_retryable_and_owned_by_each_fork() {
             let symbol = all.entries[0].0;
             *source.failure.lock().unwrap() = Some(Cause::MemoryExhausted);
             assert!(
-                matches!(table.demand_region_symbols(&execution, lease.symbol_admission_identity(),
-            || BTreeSet::from([symbol])), Err(Failure::StorageUnavailable(failure))
+                matches!(table.demand_region_symbols_incremental(&execution, lease.symbol_admission_identity(),
+            None, || Ok(( BTreeSet::from([symbol]), 0))), Err(Failure::StorageUnavailable(failure))
             if failure.cause == Cause::MemoryExhausted)
             );
             *source.failure.lock().unwrap() = None;
             table
-                .demand_region_symbols(&execution, lease.symbol_admission_identity(), || {
-                    BTreeSet::from([symbol])
-                })
+                .demand_region_symbols_incremental(
+                    &execution,
+                    lease.symbol_admission_identity(),
+                    None,
+                    || Ok((BTreeSet::from([symbol]), 0)),
+                )
                 .unwrap();
             table
-                .demand_region_symbols(&execution, lease.symbol_admission_identity(), || {
-                    panic!("a warm region must not rescan its dictionary closure")
-                })
+                .demand_region_symbols_incremental(
+                    &execution,
+                    lease.symbol_admission_identity(),
+                    None,
+                    || panic!("a warm region must not rescan its dictionary closure"),
+                )
                 .unwrap();
             let admitted_fork = table.detached_owner_snapshot();
             admitted_fork
-                .demand_region_symbols(&execution, lease.symbol_admission_identity(), || {
-                    panic!("an admitted fork carries both meanings and the accepted closure")
-                })
+                .demand_region_symbols_incremental(
+                    &execution,
+                    lease.symbol_admission_identity(),
+                    None,
+                    || panic!("an admitted fork carries both meanings and the accepted closure"),
+                )
                 .unwrap();
             assert!(fork.with_read(|symbols| symbols.retained_text(symbol).is_none()));
             let required = std::cell::Cell::new(false);
-            fork.demand_region_symbols(&execution, lease.symbol_admission_identity(), || {
-                required.set(true);
-                BTreeSet::from([symbol])
-            })
+            fork.demand_region_symbols_incremental(
+                &execution,
+                lease.symbol_admission_identity(),
+                None,
+                || {
+                    Ok((
+                        {
+                            required.set(true);
+                            BTreeSet::from([symbol])
+                        },
+                        0,
+                    ))
+                },
+            )
             .unwrap();
             assert!(
                 required.get(),
@@ -73,8 +99,12 @@ fn dictionary_snapshot_shares_directory_and_page_owners_without_sharing_later_ed
              execution: request,
              ..
          }| {
-            let parent_pages =
-                RuntimeSymbolResidency::from_selected_directory(&directory, &request).unwrap();
+            let parent_pages = RuntimeSymbolResidency::from_selected_directory(
+                directory.manifest.symbol_page_roster(),
+                directory.symbol_member_custody(),
+                &request,
+            )
+            .unwrap();
             parent_pages
                 .demand_ids(
                     &table,
@@ -141,14 +171,18 @@ fn candidate_admission_transfers_only_after_publication_and_never_borrows_later_
                 .unwrap();
             let (table, _, _, _) = checkpoint_dictionary(&execution, &runtime);
             let ticket =
-                crate::storage::residency::SymbolPublicationAdmission::prepare(&root).unwrap();
+                crate::branch::symbol_publication::SymbolPublicationAdmission::prepare(&root)
+                    .unwrap();
             let before_acceptance = table.detached_owner_snapshot();
             let pending = table.begin_pending_meanings();
             let binding = pending.binding();
             binding
-                .demand_region_symbols(&execution, lease.symbol_admission_identity(), || {
-                    BTreeSet::from([symbol])
-                })
+                .demand_region_symbols_incremental(
+                    &execution,
+                    lease.symbol_admission_identity(),
+                    None,
+                    || Ok((BTreeSet::from([symbol]), 0)),
+                )
                 .unwrap();
             assert!(!table.region_symbols_admitted(lease.symbol_admission_identity()));
             assert!(table.with_read(|symbols| symbols.retained_text(symbol).is_none()));
@@ -161,8 +195,8 @@ fn candidate_admission_transfers_only_after_publication_and_never_borrows_later_
                 .demand_symbol_ids(&execution, ticket.required())
                 .unwrap();
             binding.register_symbol_publication(ticket.key());
-            assert!(!table.symbol_publication_admitted(ticket.key()));
-            assert!(!second_binding.symbol_publication_admitted(ticket.key()));
+            assert!(!table.symbol_publication_admitted_for_test(ticket.key()));
+            assert!(!second_binding.symbol_publication_admitted_for_test(ticket.key()));
             let sealed = pending
                 .seal_for_publication(
                     &crate::symbols::data::SymbolTableSnapshot { entries: vec![] },
@@ -172,8 +206,8 @@ fn candidate_admission_transfers_only_after_publication_and_never_borrows_later_
                 .unwrap();
             assert!(!table.region_symbols_admitted(lease.symbol_admission_identity()));
             sealed.publish().unwrap();
-            assert!(table.symbol_publication_admitted(ticket.key()));
-            assert!(!before_acceptance.symbol_publication_admitted(ticket.key()));
+            assert!(table.symbol_publication_admitted_for_test(ticket.key()));
+            assert!(!before_acceptance.symbol_publication_admitted_for_test(ticket.key()));
             assert!(!before_acceptance
                 .admit_region_from_publication(
                     &execution,
@@ -203,7 +237,7 @@ fn candidate_admission_transfers_only_after_publication_and_never_borrows_later_
                 .is_none());
             assert!(table
                 .detached_owner_snapshot()
-                .symbol_publication_admitted(ticket.key()));
+                .symbol_publication_admitted_for_test(ticket.key()));
             assert!(table.region_symbols_admitted(lease.symbol_admission_identity()));
             assert_eq!(
                 table.with_read(|symbols| symbols.resolve(symbol).map(str::to_owned)),
@@ -211,9 +245,12 @@ fn candidate_admission_transfers_only_after_publication_and_never_borrows_later_
             );
             let after = table.begin_pending_meanings().binding();
             after
-                .demand_region_symbols(&execution, lease.symbol_admission_identity(), || {
-                    panic!("published admission is inherited with its meaning")
-                })
+                .demand_region_symbols_incremental(
+                    &execution,
+                    lease.symbol_admission_identity(),
+                    None,
+                    || panic!("published admission is inherited with its meaning"),
+                )
                 .unwrap();
         },
     );
@@ -285,9 +322,12 @@ fn owned_successor_without_predecessor_admission_refuses_instead_of_rebuilding()
             // readmission of the producer's complete checkpoint namespace establishes
             // the predecessor; the ordinary successor never reconstructs that fact.
             table
-                .demand_region_symbols(&request, previous.symbol_admission_identity(), || {
-                    namespace.entries.iter().map(|(id, _)| *id).collect()
-                })
+                .demand_region_symbols_incremental(
+                    &request,
+                    previous.symbol_admission_identity(),
+                    None,
+                    || Ok(({ namespace.entries.iter().map(|(id, _)| *id).collect() }, 0)),
+                )
                 .unwrap();
             next.admit_symbols(&request, &table).unwrap();
         },
@@ -309,16 +349,20 @@ fn a_refused_page_cache_update_preserves_the_previous_shared_proof_and_dictionar
              refused,
              budget,
          }| {
-            let pages =
-                RuntimeSymbolResidency::from_selected_directory(&directory, &execution).unwrap();
+            let pages = RuntimeSymbolResidency::from_selected_directory(
+                directory.manifest.symbol_page_roster(),
+                directory.symbol_member_custody(),
+                &execution,
+            )
+            .unwrap();
             let symbol = all.entries.first().unwrap().0;
             pages.demand_ids(&table, &execution, [symbol]).unwrap();
             let page = RelationalCheckpointPage::find(&pages.by_id, u64::from(symbol.0)).unwrap();
-            let accepted = pages.pages.lock().unwrap().data.clone();
+            let accepted = (*pages.pages.lock().unwrap()).clone();
             let dictionary = table.interner_snapshot();
             let reads = source.reads.load(Ordering::SeqCst);
 
-            let result = pages.demand_page(
+            let result = pages.demand_page_for_test(
                 &table,
                 &refused,
                 page.member,

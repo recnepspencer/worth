@@ -1,3 +1,4 @@
+use worth_relational_durability::internal_port::durability::authority::checkpoint_complete::interim::component::CapturedNativeInterimAdmissionOwnerPort as _;
 use super::owner_binding::RelationalOwnerServiceBinding;
 use crate::branch::{
     AdmittedRelationalBranchBasis, RelationalBranchBasisDenial, RelationalBranchBasisDescriptor,
@@ -7,6 +8,7 @@ use crate::history::retention::{
     RelationalBranchRetentionLease, RelationalBranchRetentionReleaseDenial,
     RelationalBranchRetentionReleaseReceipt,
 };
+use worth_relational_branch::internal_port::history::retention::lease::RelationalBranchRetentionReleaseDenialOwnerPort as _;
 
 /// Cloneable basis service weakly bound to one Relational runtime owner.
 #[derive(Debug, Clone)]
@@ -18,7 +20,7 @@ impl RelationalBranchBasisPort {
     pub fn capture_interim_bootstrap_component(
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
-        continuation: &crate::durability::authority::NativeInterimBootstrapContinuation,
+        continuation: &crate::durability::authority::checkpoint_complete::interim::bootstrap::NativeInterimBootstrapContinuation,
         capture: &crate::durability::authority::CapturedNativeInterimAdmission,
     ) -> Result<
         crate::durability::authority::CapturedNativeInterimComponent,
@@ -30,8 +32,8 @@ impl RelationalBranchBasisPort {
     pub fn install_interim_bootstrap_receiver(
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
-        continuation: &crate::durability::authority::NativeInterimBootstrapContinuation,
-        receiver: &crate::durability::authority::AdmittedNativeInterimReceiver,
+        continuation: &crate::durability::authority::checkpoint_complete::interim::bootstrap::NativeInterimBootstrapContinuation,
+        receiver: &crate::durability::authority::checkpoint_complete::interim::receiver::AdmittedNativeInterimReceiver,
         basis: &AdmittedRelationalBranchBasis,
     ) -> Result<(), crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal>
     {
@@ -50,7 +52,12 @@ impl RelationalBranchBasisPort {
         let runtime = self
             .admitted_runtime()
             .map_err(crate::branch::RelationalRecordedComponentRefusal::Basis)?;
-        capture.capture_current_component(&runtime, component, request)
+        capture.capture_current_component(
+            &runtime.services.origin_identity(),
+            &runtime.history,
+            component,
+            request,
+        )
     }
     pub fn capture_interim_memory_component(
         &self,
@@ -64,13 +71,18 @@ impl RelationalBranchBasisPort {
         let runtime = self
             .admitted_runtime()
             .map_err(crate::branch::RelationalRecordedComponentRefusal::Basis)?;
-        capture.capture_component(&runtime, component, request)
+        capture.capture_component(
+            &runtime.services.origin_identity(),
+            &runtime.history,
+            component,
+            request,
+        )
     }
 
     pub fn readmit_interim_memory_component(
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
-        receiver: &crate::durability::authority::AdmittedNativeInterimReceiver,
+        receiver: &crate::durability::authority::checkpoint_complete::interim::receiver::AdmittedNativeInterimReceiver,
         component: &crate::durability::authority::CapturedNativeInterimComponent,
     ) -> Result<
         crate::branch::ObservedRelationalMemoryComponent,

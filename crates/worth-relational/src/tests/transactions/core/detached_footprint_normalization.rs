@@ -174,7 +174,11 @@ fn require_interned_normalizes_plan_and_created_footprint_to_identical_symbols()
         .expect("preview's exact dictionary custody reaches publication");
     for (symbol, expected) in expected_symbols {
         assert_eq!(
-            runtime.services.symbols.resolve(symbol).as_deref(),
+            runtime
+                .services
+                .symbols
+                .with_read(|symbols| symbols.resolve(symbol).map(str::to_owned))
+                .as_deref(),
             Some(expected)
         );
         assert!(runtime

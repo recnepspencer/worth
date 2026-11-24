@@ -5,13 +5,7 @@ pub use crate::change_source::RelationalReadCustodyHolders;
 #[cfg(test)]
 mod tests;
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub enum RelationalRuntimeCloseDenial {
-    NotOwner,
-    OperationsInFlight,
-    PublicationCustodyRetained(super::RelationalPublicationCustodyHolders),
-    ReadCustodyRetained(RelationalReadCustodyHolders),
-}
+pub use crate::runtime::close_denial::RelationalRuntimeCloseDenial;
 
 /// A refused close still owns the same serving runtime.
 #[derive(Debug)]

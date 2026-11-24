@@ -1,4 +1,5 @@
 //! Immutable successor execution meaning, prepared on the actual Native owner.
+use worth_relational_indexes::internal_port::runtime::state::subsystems::indexing::definition_preparation::PreparedIndexCatalogOwnerPort as _;
 use crate::branch::{AdmittedRelationalBranchBasis, RelationalBranchRootSchemaAuthority};
 use crate::runtime::{RelationalRuntime, SchemaContractRuntimeSubsystem};
 use crate::schema::data::RelationalSchemaRegistry;
@@ -7,30 +8,32 @@ use crate::validation::{data::CustomInvariantRegistration, FrozenCustomInvariant
 use std::sync::Arc;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, WorkCeilingDenial};
 use worth_foundational::facade::HomeProgramTransitionCatalogDigest;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 
-mod body_digest;
 mod body_validation;
 mod planning_request;
-pub use body_digest::{home_program_transition_body_digest, RelationalHomeProgramBodyDenial};
 pub use planning_request::RelationalHomeProgramPlanningSource;
+pub use worth_relational_durability::internal_port::durability::home_program_body_digest::{
+    home_program_transition_body_digest, RelationalHomeProgramBodyDenial,
+};
 mod catalog_digest;
 mod predecessor_catalog;
 mod retention;
 pub(crate) use predecessor_catalog::RelationalHomeProgramPredecessorCatalog;
 mod catalog_receipt;
-pub use catalog_receipt::RelationalHomeProgramCatalogReceipt;
+pub use crate::schema::home_program_catalog_receipt::RelationalHomeProgramCatalogReceipt;
 mod catalog_source;
 pub use catalog_source::RelationalHomeProgramCatalogReadmissionSource;
 pub(in crate::runtime) mod configuration;
-mod coverage;
+pub(crate) mod coverage;
 mod installation_readmission;
 mod promotion;
 pub use promotion::RelationalHomeProgramPromotionRefused;
 mod schema_compilation_denial;
 mod step_admission;
 mod target_step;
+pub(crate) use crate::branch::home_program_step::AdmittedRelationalHomeProgramStep;
 pub(crate) use coverage::RelationalHomeTargetCoverage;
-pub(crate) use step_admission::AdmittedRelationalHomeProgramStep;
 pub use step_admission::RelationalHomeProgramStepContracts;
 pub(crate) use target_step::AdmittedRelationalHomeProgramTarget;
 
@@ -48,7 +51,7 @@ pub enum RelationalHomeProgramContractDenial {
     CapacityOverflow,
     CatalogEncoding,
     UnboundHome,
-    TransitionPhase(crate::durability::medium::RelationalHomeProgramWriteDenial),
+    TransitionPhase(crate::durability::medium::home_write_denial::RelationalHomeProgramWriteDenial),
     Admission(worth_proof::HomeProgramTransitionAdmissionDenial),
     Plan(worth_foundational::facade::HomeProgramTransitionDescriptionDenial),
     TargetCatalogMismatch,
@@ -80,7 +83,7 @@ impl PreparedRelationalHomeProgramContracts {
         mut self,
         definitions: crate::runtime::PreparedRelationalIndexDefinitions,
     ) -> Result<Self, RelationalHomeProgramContractDenial> {
-        if definitions.runtime != self.meaning.runtime {
+        if definitions.runtime_identity() != self.meaning.runtime {
             return Err(RelationalHomeProgramContractDenial::ForeignRuntime);
         }
         self.index_definitions = Some(Arc::new(definitions));
@@ -127,12 +130,32 @@ impl PreparedRelationalHomeProgramContracts {
 /// construction configuration or borrows a disposable author's request.
 #[derive(Debug)]
 pub(crate) struct RelationalRootExecutionContracts {
-    identity: Arc<catalog_receipt::RelationalHomeProgramCatalogIdentity>,
+    identity: RelationalHomeProgramCatalogReceipt,
     pub(crate) runtime: u64,
     pub(crate) schema: Arc<RelationalBranchRootSchemaAuthority>,
     pub(crate) contracts: Arc<SchemaContractRuntimeSubsystem>,
     pub(crate) digest: HomeProgramTransitionCatalogDigest,
     _memory: Option<ExecutionMemoryReservation>,
+}
+
+pub(crate) fn retain_root_execution_contracts(
+    root: &crate::branch::root::RelationalBranchRoot,
+) -> Option<Arc<RelationalRootExecutionContracts>> {
+    root.execution_contracts.get().map(|payload| {
+        let original: Arc<dyn std::any::Any + Send + Sync> = payload.clone();
+        original
+            .downcast::<RelationalRootExecutionContracts>()
+            .expect("the Home contract binder installed the root's original executor inventory")
+    })
+}
+
+pub(crate) fn install_root_execution_contracts(
+    root: &crate::branch::root::RelationalBranchRoot,
+    contracts: &Arc<RelationalRootExecutionContracts>,
+) -> Result<(), ()> {
+    root.execution_contracts
+        .set(contracts.clone())
+        .map_err(|_| ())
 }
 
 impl RelationalRuntime {
@@ -152,10 +175,11 @@ impl RelationalRuntime {
             return Err(Denial::ForeignRuntime);
         }
         let snapshot = self.configuration_binding().snapshot();
-        let source_generation = predecessor.inner.root.execution_contracts.get().map_or(
-            snapshot.schema_contract_runtime.custom_invariant_generation,
-            |source| source.contracts.custom_invariant_generation,
-        );
+        let source_generation = retain_root_execution_contracts(&predecessor.owner_inner().root)
+            .map_or(
+                snapshot.schema_contract_runtime.custom_invariant_generation,
+                |source| source.contracts.custom_invariant_generation,
+            );
         let generation = source_generation
             .checked_add(1)
             .ok_or(Denial::GenerationExhausted)?;
@@ -168,7 +192,7 @@ impl RelationalRuntime {
                 .schema
                 .descriptor_semantics_policy
                 .current_write_version(),
-            predecessor.inner.root.schema_authority(),
+            predecessor.owner_inner().root.schema_authority(),
         )
         .map_err(schema_compilation_denial::translate)?;
         let digest =

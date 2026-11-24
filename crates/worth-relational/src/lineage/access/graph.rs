@@ -1,52 +1,5 @@
-use crate::lineage::access::LineageAccess;
-use crate::lineage::data::{
-    LineageGraphDigestBasis, LineageGraphDigestMode, LineageGraphMetrics, LineageGraphRequest,
-    LineageGraphSnapshot,
-};
-
-impl<'runtime> LineageAccess<'runtime> {
-    pub fn graph(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        request: LineageGraphRequest,
-    ) -> Result<LineageGraphSnapshot, crate::execution::RelationalExecutionDenialCause> {
-        crate::execution::check_request(execution)?;
-        let _events = self.runtime.lineage.demand_event_pages(
-            execution,
-            None,
-            Some(&std::collections::BTreeSet::from([request
-                .branch_id
-                .clone()])),
-        )?;
-        let mut nodes = self.branch_nodes_snapshot(execution, &request.branch_id)?;
-        nodes.sort_by_key(|node| node.lineage_id);
-        let mut events = self.branch_events_snapshot(&request.branch_id);
-        events.sort_by_key(|event| event.event_id);
-        self.runtime
-            .performance_access()
-            .count_lineage_graph_snapshot_request(nodes.len(), events.len());
-        let node_count = nodes.len();
-        let event_count = events.len();
-        let digest_basis = LineageGraphDigestBasis::new(
-            request.branch_id.clone(),
-            request.traversal_basis,
-            nodes.iter().map(|node| node.lineage_id).collect(),
-            events.iter().map(|event| event.event_id).collect(),
-            LineageGraphDigestMode::ExactDigestCanonicalOrder,
-        );
-        Ok(LineageGraphSnapshot::new(
-            request.branch_id.clone(),
-            nodes,
-            events,
-            request.traversal_basis,
-            digest_basis,
-            LineageGraphMetrics {
-                node_count,
-                event_count,
-            },
-        ))
-    }
-}
+//! Drive the exact cold-lineage failure classes through the installed Runtime.
+use crate::lineage::data::LineageGraphRequest;
 
 #[derive(Debug)]
 pub(super) struct ColdLineagePageSource {
@@ -103,9 +56,12 @@ impl crate::durability::medium::RelationalDurableColdSource for ColdLineagePageS
         request.check_live().map_err(|cause| {
             crate::durability::medium::RelationalDurableOwnedReadRefusal::Request(cause.into())
         })?;
-        self.reads.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        self.reads
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         if let Some(cause) = self.failures.lock().unwrap().get(&locator).copied() {
-            return Err(crate::durability::medium::RelationalDurableOwnedReadRefusal::Storage(cause));
+            return Err(
+                crate::durability::medium::RelationalDurableOwnedReadRefusal::Storage(cause),
+            );
         }
         self.members.get(&locator).cloned().ok_or(
             crate::durability::medium::RelationalDurableOwnedReadRefusal::Storage(
@@ -127,7 +83,8 @@ impl crate::durability::medium::RelationalDurableColdSource for ColdLineagePageS
         locator: crate::durability::medium::RelationalDurableMemberLocator,
         _: u64,
     ) -> Result<Vec<u8>, crate::storage::data::RelationalStorageUnavailableCause> {
-        self.reads.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        self.reads
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         if let Some(cause) = self.failures.lock().unwrap().get(&locator).copied() {
             return Err(cause);
         }
@@ -152,16 +109,25 @@ pub(super) fn with_cold_lineage_reopened(
         &crate::lineage::access::LineageAccess<'_>,
         &crate::facade::history::HistoryAccess<'_>,
         &ColdLineagePageSource,
-        (crate::durability::medium::RelationalDurableMemberLocator, u64, u64),
-        (crate::durability::medium::RelationalDurableMemberLocator, u64, u64),
+        (
+            crate::durability::medium::RelationalDurableMemberLocator,
+            u64,
+            u64,
+        ),
+        (
+            crate::durability::medium::RelationalDurableMemberLocator,
+            u64,
+            u64,
+        ),
     ),
 ) {
     use crate::durability::data::{
         RecoveryVerificationMode, RelationalCheckpointArtifactPolicy, RelationalCheckpointMember,
     };
-    use crate::durability::medium::{
+    use crate::durability::published_medium::{
         RelationalDurableCheckpointSource, RelationalDurableRecoverySource,
     };
+
     let producer = crate::tests::support::runtime_with_test_schema();
     let entity = crate::tests::support::create_entity(execution, &producer, "lineage-graph-seed");
     crate::tests::support::update_entity_and_release_snapshot(
@@ -213,10 +179,17 @@ pub(super) fn with_cold_lineage_reopened(
             RecoveryVerificationMode::NormalRecoveryVerification,
         )
         .unwrap();
-    runtime.durability_recovery().recover(execution, plan).unwrap();
+    runtime
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
     assert_eq!(runtime.lineage.node_count(), 0);
     assert_eq!(runtime.lineage.event_count(), 0);
-    let dir = runtime.durability.checkpoint_selection().snapshot().unwrap();
+    let dir = runtime
+        .durability
+        .checkpoint_selection()
+        .snapshot()
+        .unwrap();
     let node_page = &dir.manifest.lineage[0];
     let event_page = &dir.manifest.lineage_events[0];
     body(
@@ -225,7 +198,11 @@ pub(super) fn with_cold_lineage_reopened(
         &runtime.history(),
         &source,
         (node_page.member, node_page.first, node_page.last),
-        (event_page.member, event_page.first_node, event_page.last_node),
+        (
+            event_page.member,
+            event_page.first_node,
+            event_page.last_node,
+        ),
     );
 }
 
@@ -247,7 +224,13 @@ fn graph_cold_lineage_doors_preserve_every_failure_class() {
         (Cause::Damaged, true),
         (Cause::IntegrityMismatch, true),
         (Cause::MissingMember, true),
-        (Cause::LimitExceeded { length: 9, limit: 8 }, false),
+        (
+            Cause::LimitExceeded {
+                length: 9,
+                limit: 8,
+            },
+            false,
+        ),
         (Cause::MemoryExhausted, false),
         (Cause::SourceUnavailable, false),
     ];
@@ -262,7 +245,12 @@ fn graph_cold_lineage_doors_preserve_every_failure_class() {
     {
         with_cold_lineage_reopened(
             execution,
-            |lineage, access, history, source, (n_mem, n_first, n_last), (e_mem, e_first, e_last)| {
+            |lineage,
+             access,
+             history,
+             source,
+             (n_mem, n_first, n_last),
+             (e_mem, e_first, e_last)| {
                 let frontier = history.latest_patch_stream_position();
                 let (member, subject) = if event_fault {
                     (
@@ -281,21 +269,115 @@ fn graph_cold_lineage_doors_preserve_every_failure_class() {
                         },
                     )
                 };
-            source.failures.lock().unwrap().insert(member, cause);
-            let expected = Execution::StorageUnavailable(Unavailable { subject, cause });
-            assert_eq!(access.graph(execution, req()), Err(expected.clone()));
-            source.failures.lock().unwrap().clear();
-            let reads = source.reads.load(Ordering::Relaxed);
-            if sticky {
+                source.failures.lock().unwrap().insert(member, cause);
+                let expected = Execution::StorageUnavailable(Unavailable { subject, cause });
                 assert_eq!(access.graph(execution, req()), Err(expected));
-                assert_eq!(source.reads.load(Ordering::Relaxed), reads);
-            } else {
-                let graph = access.graph(execution, req()).unwrap();
-                assert!(!graph.nodes.is_empty() && !graph.events.is_empty());
-                assert!(source.reads.load(Ordering::Relaxed) > reads);
-                assert!(lineage.node(graph.nodes[0].lineage_id).is_some());
-            }
-            assert_eq!(history.latest_patch_stream_position(), frontier);
-        });
+                source.failures.lock().unwrap().clear();
+                let reads = source.reads.load(Ordering::Relaxed);
+                if sticky {
+                    assert_eq!(access.graph(execution, req()), Err(expected));
+                    assert_eq!(source.reads.load(Ordering::Relaxed), reads);
+                } else {
+                    let graph = access.graph(execution, req()).unwrap();
+                    assert!(!graph.nodes().is_empty() && !graph.events().is_empty());
+                    assert!(source.reads.load(Ordering::Relaxed) > reads);
+                    assert!(lineage.node(graph.nodes()[0].lineage_id()).is_some());
+                }
+                assert_eq!(history.latest_patch_stream_position(), frontier);
+            },
+        );
+    }
+}
+
+// Fixture adaptation (C2.4): restores the cfg(test)-only `Divergence` door
+// from ea2ffee250:cold_lineage_event_matrix and 81d41f5575:cold_lineage_matrix
+// across all six failure classes (sticky and transient).
+#[test]
+fn divergence_cold_lineage_doors_preserve_every_failure_class() {
+    use crate::execution::RelationalExecutionDenialCause as Execution;
+    use crate::identity::data::LineageId;
+    use crate::lineage::data::LineageDivergenceRequest;
+    use crate::storage::data::{
+        RelationalStorageSubject as Subject, RelationalStorageUnavailable as Unavailable,
+        RelationalStorageUnavailableCause as Cause,
+    };
+    use std::sync::atomic::Ordering;
+    let host = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host);
+    let failures = [
+        (Cause::Damaged, true),
+        (Cause::IntegrityMismatch, true),
+        (Cause::MissingMember, true),
+        (
+            Cause::LimitExceeded {
+                length: 9,
+                limit: 8,
+            },
+            false,
+        ),
+        (Cause::MemoryExhausted, false),
+        (Cause::SourceUnavailable, false),
+    ];
+    let req = || LineageDivergenceRequest {
+        left_branch: crate::history::data::BranchId("main".into()),
+        right_branch: crate::history::data::BranchId("peer".into()),
+        traversal_basis:
+            crate::lineage::data::LineageDivergenceTraversalBasis::FullBranchGraphComparison,
+    };
+    for (event_fault, (cause, sticky)) in [false, true]
+        .into_iter()
+        .flat_map(|ef| failures.into_iter().map(move |f| (ef, f)))
+    {
+        with_cold_lineage_reopened(
+            execution,
+            |lineage,
+             access,
+             history,
+             source,
+             (n_mem, n_first, n_last),
+             (e_mem, e_first, e_last)| {
+                let frontier = history.latest_patch_stream_position();
+                let (member, subject) = if event_fault {
+                    (
+                        e_mem,
+                        Subject::Lineage {
+                            first: LineageId(e_first),
+                            last: LineageId(e_last),
+                        },
+                    )
+                } else {
+                    (
+                        n_mem,
+                        Subject::Lineage {
+                            first: LineageId(n_first),
+                            last: LineageId(n_last),
+                        },
+                    )
+                };
+                source.failures.lock().unwrap().insert(member, cause);
+                let expected = Execution::StorageUnavailable(Unavailable { subject, cause });
+                assert_eq!(
+                    access.divergence_between_branches(execution, req()),
+                    Err(expected)
+                );
+                source.failures.lock().unwrap().clear();
+                let reads = source.reads.load(Ordering::Relaxed);
+                if sticky {
+                    assert_eq!(
+                        access.divergence_between_branches(execution, req()),
+                        Err(expected)
+                    );
+                    assert_eq!(source.reads.load(Ordering::Relaxed), reads);
+                } else {
+                    let summary = access
+                        .divergence_between_branches(execution, req())
+                        .unwrap();
+                    assert!(!summary.shared_lineage_ids().is_empty());
+                    assert!(source.reads.load(Ordering::Relaxed) > reads);
+                    assert!(lineage.node(summary.shared_lineage_ids()[0]).is_some());
+                }
+                assert_eq!(history.latest_patch_stream_position(), frontier);
+            },
+        );
     }
 }

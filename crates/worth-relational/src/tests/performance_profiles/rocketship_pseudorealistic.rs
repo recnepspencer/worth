@@ -78,9 +78,8 @@ pub(super) fn seed_pseudorealistic_rocketship_world(
         .enumerate()
     {
         let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
-        let mut batch = WorkerIntentBatch::new(format!(
-            "rocketship-pseudorealistic-entities-{chunk_index}"
-        ));
+        let mut batch =
+            WorkerIntentBatch::new(format!("rocketship-pseudorealistic-entities-{chunk_index}"));
         for intent in bulk_entity_create_intents(entity_chunk) {
             batch = batch.push(intent);
         }
@@ -97,8 +96,7 @@ pub(super) fn seed_pseudorealistic_rocketship_world(
     }
     let entity_commit_micros = entity_commit_started_at.elapsed().as_micros();
     assert_eq!(
-        created_entity_count,
-        node_count,
+        created_entity_count, node_count,
         "pseudorealistic rocketship should seed all entities"
     );
     let entities =

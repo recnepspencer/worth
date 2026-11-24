@@ -1,35 +1,24 @@
 mod access;
-mod aspect_components;
-mod aspect_plan_lookup;
-mod aspect_witness_digest;
-mod causal;
-mod conflicts;
-mod correspondence_witness;
-pub mod data;
+pub(crate) use worth_relational_merge::internal_port::merge::{
+    branch_delta, causal, conflicts, correspondence_witness, execution_diagnostics,
+    execution_mutation_plan, identity, lowering, planning_observation, proof_packet,
+    proof_packet_canonical, request_foundational_lowering, request_normalization,
+};
+mod correspondence_witness_access;
+pub use worth_relational_merge::internal_port::merge::data;
 mod execution;
-mod execution_diagnostics;
-mod execution_mutation_plan;
 pub mod facade;
-mod identity;
-mod identity_digest;
-mod identity_records;
-mod identity_target_index;
-mod lowering;
 mod planning;
 mod planning_artifact;
-mod planning_observation;
 mod policy;
-mod proof_packet;
-mod proof_packet_canonical;
-mod request_foundational_lowering;
-mod request_normalization;
-mod schema_reconciliation_witness;
-mod strategy_witness;
+mod proof_packet_access;
 
 pub use access::MergeAccess;
-#[cfg(test)]
-pub(crate) use data::execution_authority_contract::lowered_artifact_execution_authority_contract;
-pub(crate) use execution_diagnostics::{
-    merge_execution_success_artifact, merge_execution_summary_entry,
-};
 pub use planning_observation::RelationalMergePlanningObservation;
+
+mod causal_scope;
+mod conflict_scope;
+mod identity_scope;
+mod lowering_scope;
+mod schema_reconciliation_witness_access;
+mod strategy_witness_access;

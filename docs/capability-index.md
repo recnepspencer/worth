@@ -106,6 +106,21 @@ and `retire_*_name`, `split_*_name` and `merge_*_names`
 (`WorthQueryOutputMergeKeeper`) declare what its deletions do to held names;
 re-minting a retired name in the same operation is `Preserve` continuity
 ([operation output names](build-an-application.md#operation-output-names)).
+The recommended entry is `writer.naming_scope(occurrence)` (`host::primary_graph::NamingScope`):
+it binds one `OccurrencePath` (with `sub_scope` / `index` children), takes
+typed roles through `birth(role)`, creates and names in one call
+(`create_entity`, `link_named`), forwards every posture, and adds
+`merge_least_entity` / `merge_least_relation`
+(`host::application_naming::WorthQueryLeastMergeKeeper`), which keep the
+least parent name whatever order the parents are listed in. Every scheme is
+complete (`require_all_births_named` is fixed, not opt-in): a commit leaving
+any created record of a schemed kind unnamed refuses `MissingBirth`.
+Coupled members name their outputs the same way: every later authored stage
+of an edit envelope and every coupled producer an edit runs declares through
+its own writer, and Relational's coupled assembly rescopes each member's plan
+with its commands and composes them into the envelope's one plan, refusing
+the whole envelope typed (`DuplicateBirth`, `MissingBirth`) with zero effects
+([coupled stages and producers](build-an-application.md#operation-output-names)).
 A later-role output may tell itself apart by an output the same candidate
 named earlier in the same occurrence: `same_commit_entity_name` /
 `same_commit_relation_name` return a `WorthQuerySameCommitName<K>` that is
@@ -123,6 +138,30 @@ numeric index order; `WorthQueryOutputBirth::of_role` for a birth under a
 typed role (`IndexedRoleDiscriminator` selects an indexed role's split piece
 with `NameSelection::keep_side`); and `NamedTarget<K>` for a held name with
 its selection.
+The persistent-naming protocol is specified in
+[`specs/tla/persistent_naming/`](../specs/tla/persistent_naming/PersistentNaming.tla)
+and checked with `python3 tools/tla/run_tlc.py check`. The seeded simulation in
+`worth-query-court-decl-host-persistent-naming` (`oracle::persistent_naming_dst`;
+`WORTH_DST_SEEDS`, `WORTH_DST_TRACE_DIR`) drives real commits against a reference
+oracle of that model, including unnamed-birth refusals (`RefuseUnnamedBirth`),
+least-keeper merges and two-stage edit envelopes composed into one commit
+(`CommitCoupledCreate`, `RefuseCoupledDuplicateBirth`), and emits traces for
+`run_tlc.py trace`.
+Hold names as ordinary values
+([names as values, in rows and within an owner](build-an-application.md#names-as-values-in-rows-and-within-an-owner)):
+declare a kind once with `decl::application_naming::WorthQueryNamedKind`
+(its subject and its `OwnerScope`: `Unowned` or `OwnedThrough` a chain of
+`OwnerVia` / `OwnerViaReverse` relation hops); store `WorthQueryName<K>` and
+`NamedTarget<K>` as `#[derive(WorthQueryRecord)]` columns and
+`#[derive(WorthQueryAction)]` input fields (stock codecs on every
+`worth_query_native_scalar_bindings!` set; versioned, kind-tagged stored
+text that refuses another kind typed); project a row's own name with
+`#[worth_query(name)]` on `#[derive(WorthQueryProjection)]` in the same
+read; and resolve within one owner with the decision reader's
+`resolve_in(&owner, &held, &selection)`, which refuses `NoCandidateInOwner`
+instead of falling back, while unscoped `resolve` reports each `Ambiguous`
+candidate with its owners. Never keep a side table of names or a codec for
+them.
 `HistoryDocument` `undo_step` / `redo_to` / `checkout` keep held names on the
 checked-out node with no naming ceremony: Native appends `Retire` / `Restore`
 for every named record the selection retires or restores
@@ -839,6 +878,8 @@ The cost is the bounded relation roster traversal.
 | Record an isolated model edit | Consume the attached document with `document.edit(intent).idempotency_owned(&request, key)?.retain_in_program::<Program, Action>(host)`. Advance the owned edit, then `finish(&request)` to receive the document, sealed step and original action completion. Source-completion actions return `WorthQueryHistoryEditOutcome`; fixed required-output graphs return `WorthQueryFixedHistoryEditOutcome` with the original closed delivery or terminal evidence. Native qualifies the complete original output/discovery set at one retained basis before exact adoption. Both require no mutation source, workflow control or external effects. Reads use the selected head while candidate work remains private. Equivalent process-local retries return their original step without resetting selection; changed intent refuses. | [Record an edit and retain its original outcome](../workspaces/worth-query/docs/foundations/branches-and-previews.md#record-an-edit-and-retain-its-original-outcome) |
 | Group ordinary source and fixed-output edits into one user step | Consume the document with `group_edits::<Intent, Program, Action, N>(host, &request, group_key, members)`. The homogeneous group preserves payload/output modes, each original operation and its complete required tree; `parts()` separates shared document access from execution. Complete once at the last member's genuine endpoint, then finish or explicitly abort. Fixed completions retain original closed deliveries; earlier historical settlements survive later members. Installed member/result limits apply before effects; nested, workflow and external-effect groups are refused. | [Grouped edits](../workspaces/worth-query/docs/foundations/branches-and-previews.md#group-ordinary-edits-into-one-step) |
 | Group a runtime-length mix of authored actions | Open `document.gesture(host, request, key)`, then `push::<Intent, Action>(request, intent, member_key)` for each concrete action. The first advancement freezes membership; the existing group owner publishes one step atomically and retains typed original completions. Installed member/result limits bound and charge the list. | [Mixed gesture court](../workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_model/gesture.rs) |
+| Record several different operations as one atomic document step | Consume the document with `document.edit_envelope(&program, &request, key)`, author stages with the request envelope's own `push_stage::<R, I>(intent)` and `push_stage_with_source::<R, I, E>(intent, source)`, then `execute_recorded(metadata, allocation)`. The call is one-shot: every stage commits once on a private candidate and the head then moves, so one undo restores every stage. `Recorded { document, step, receipt }` carries the live stage results; `AlreadyRecorded { document, step }` names the step an equal same-key call recorded and runs nothing. A refusal returns the document at its prior head with nothing pending. Each stage must be an enrolled operation scoped to the model or an entity it owns, with no workflow or external effect. A stage whose outputs can reach a workflow or external-effect producer refuses `WorkflowProducer { producer }` or `ExternalEffectProducer { producer }` before any stage runs. Bound output trees are recorded at the commit before the head moves. After a stopped request, call `maintain_history` to close the kept candidate. | [Record a multi-stage envelope as one step](../workspaces/worth-query/docs/foundations/branches-and-previews.md#record-a-multi-stage-envelope-as-one-step), [envelope courts](../workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/history_envelope.rs), [stage ownership courts](../workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_model/history_envelope.rs) |
+| Keep an attached document in the same owner as its runtime | `request.attach_owned_history::<History, Program>(&runtime, &phase, head, access)` returns `WorthQueryOwnedApplicationHistoryDocument`: the ordinary move-only document with no runtime borrow, so every document operation applies unchanged. A foreign-runtime head or a request on another branch returns the original head. The open document holds the runtime alive: `close_conditional_runtime` refuses `RuntimeKeepaliveRetained` until `document.close(&phase)`. A document with bound output trees is not `Send`. | [Keep a document beside its runtime](../workspaces/worth-query/docs/foundations/branches-and-previews.md#keep-a-document-beside-its-runtime), [owned document courts](../workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/history_envelope/output_forest/owned_document.rs) |
 | Store an expected basis and freshly select it | Serialize `selected.describe_basis()` as ordinary application data. After a fresh ordinary READ of that record, deserialize `WorthQueryExpectedProductBasisDescription` and call `runtime.branches().select_expected(&description, &phase)`. World and Native admit the original exact current basis; stale, retired, foreign and unsupported descriptions refuse. The data retains no lease and grants no READ or mutation permission. Consume the returned selection with `fork_expected`. | [Stored expected basis](../workspaces/worth-query/docs/foundations/branches-and-previews.md#store-an-expected-basis-and-select-it-again) |
 | Record typed comparison data without moving the model basis | Create a separately owned storage branch with `parts.fork_relational()`. Write and read records through ordinary requests on that branch, with a canonical declared field codec for structured values. Retain its branch owner for explicit close. | [Storage and typed records](../workspaces/worth-query/docs/foundations/branches-and-previews.md#store-an-expected-basis-and-select-it-again) |
 | Bind a complete ordered attempt before checking its basis again | An ordinary registration action on a stable storage product gives native equivalent-outcome/intent-drift handling for the full selected input. Keep the original loaded meaning and issuing product, then freshly admit proposal/model/result READ and exact frozen mutation authorization before protected lookup. Registration grants no adoption authority. | [Build: register attempts on a stable product](build-an-application.md#register-attempts-on-a-stable-product) |
@@ -1156,6 +1197,22 @@ exercises this fresh-process handoff, including exact original-owner readmission
 and subsequent dependency-driven advancement.
 
 ## Known gaps
+
+A coupled member (a later edit-envelope stage or a coupled producer) decides
+against the envelope's unpublished candidate, where its decision reader
+refuses name reads (`WorthQueryDecisionNameDenial::CandidateBasis`). It can
+name, split, merge and retire outputs only by names it holds as values (an
+intent field or a stored `NamedTarget<K>`); reading a basis record's name, or
+resolving a held name, inside a coupled member waits on candidate-basis name
+reads.
+
+Group persistent names have no commit path yet. Installation validates and
+lowers `application_group_name_scheme`s, but no operation can form, split, merge
+or retire a group, and the runtime name index ingests only entity and relation
+lineage. Query therefore offers no tracked `group_name_of` / `resolve_group`
+and no `#[worth_query(group_name)]` projection
+([#334](https://github.com/recnepspencer/worth/issues/334)). Name entities and
+relations, and keep group meaning in the application until that lands.
 
 Forwarding a managed-index read/provider error from an invariant hook retains
 its typed `ManagedIndex` failure category and diagnostic detail, rather than the

@@ -1,4 +1,10 @@
 //! Original preflight lends a single cutover; all owning cleanup stays outside it.
+use worth_relational_publication::internal_port::mvcc::publication::candidate::PreparedRelationalCommitCandidateOwnerPort as _;
+use worth_relational_publication::internal_port::mvcc::publication::candidate::output_adoption::PreparedRelationalCommitCandidateOwnerPort as _;
+use worth_relational_publication::internal_port::mvcc::publication::candidate::publication_parts::PreparedRelationalCommitCandidateOwnerPort as _;
+use worth_relational_publication::internal_port::mvcc::publication::candidate::retained_selection::PreparedRelationalCommitCandidateOwnerPort as _;
+use worth_relational_publication::internal_port::mvcc::publication::outcome::RelationalPublicationOutcomeOwnerPort as _;
+use worth_relational_indexes::internal_port::runtime::state::subsystems::indexing::definition_preparation::PreparedRelationalIndexDefinitionsOwnerPort as _;
 use super::*;
 use worth_execution::ExecutionRequest;
 
@@ -291,7 +297,7 @@ impl RelationalPublicationPort {
                         },
                     )
                 })?;
-        let mut prepared = PreparedCanonicalBranchMovement::preflight(
+        let mut prepared = PreparedBranchPublicationPreflight::preflight(
             execution,
             parts,
             retention_binding,
