@@ -76,9 +76,17 @@ where
         self.operation.completion()
     }
 
+    /// Descriptive identity of the retained durable original, if one has been recorded.
+    /// Grants no admission or discharge authority.
+    pub fn original_identity(
+        &self,
+    ) -> Option<worth_foundational::facade::ProgramSupportObligationIdentity> {
+        self.operation.original_identity()
+    }
+
     /// Descriptive check for whether this completed owner holds an undischarged durable original.
     pub fn has_durable_original(&self) -> bool {
-        self.operation.original_identity().is_some()
+        self.original_identity().is_some()
     }
 
     /// Borrows the exact immutable input encoded for this completed operation.
@@ -193,9 +201,17 @@ where
             _ => None,
         }
     }
+    /// Descriptive identity of the retained durable original, if one has been recorded.
+    /// Grants no admission or discharge authority.
+    pub fn original_identity(
+        &self,
+    ) -> Option<worth_foundational::facade::ProgramSupportObligationIdentity> {
+        self.operation.original_identity()
+    }
+
     /// Descriptive check for whether this terminal owner holds an undischarged durable original.
     pub fn has_durable_original(&self) -> bool {
-        self.operation.original_identity().is_some()
+        self.original_identity().is_some()
     }
 
     pub fn close(

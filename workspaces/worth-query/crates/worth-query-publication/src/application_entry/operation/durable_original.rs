@@ -287,10 +287,20 @@ impl<S: ApplicationSchema + 'static, I: ApplicationMutationIntent<S>>
         Ok(())
     }
 
+    /// Descriptive identity of the retained durable original, if one has been recorded.
+    /// Grants no admission or discharge authority.
+    pub fn original_identity(
+        &self,
+    ) -> Option<worth_foundational::facade::ProgramSupportObligationIdentity> {
+        self.original
+            .as_ref()
+            .map(|original| original.owner.identity())
+    }
+
     /// Descriptive check for whether this description already carries a retained durable original.
     /// Grants no admission or discharge authority.
     pub fn has_durable_original(&self) -> bool {
-        self.original.is_some()
+        self.original_identity().is_some()
     }
 
     /// Lawfully withdraws an unconstructed description, discharging any durable original

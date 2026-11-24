@@ -56,19 +56,6 @@ where
         self.observe_committed_dispatch_outbox_for_correlation(&execution, correlation)
     }
 
-    /// Counts committed dispatch-outbox rows directly from the Relational owner's current main view.
-    pub fn observe_committed_dispatch_outbox_count(
-        &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
-    ) -> Result<usize, Denial> {
-        let execution = phase
-            .execution_request_for(&self.runtime.product_runtime)
-            .map_err(|_| Denial::ForeignPhase)?;
-        self.runtime
-            .primary_provider
-            .committed_dispatch_outbox_count(&execution)
-    }
-
     /// Reads this receipt's outbox from a fresh provider-owned Relational view.
     pub fn observe_committed_dispatch_outbox(
         &self,

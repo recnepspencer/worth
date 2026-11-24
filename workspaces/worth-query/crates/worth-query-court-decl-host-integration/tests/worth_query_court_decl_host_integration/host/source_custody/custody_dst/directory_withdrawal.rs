@@ -1,7 +1,7 @@
 //! Real Directory Home retained-withdrawal seeds for `custody_dst`, deriving `execCount` from
 //! the live handler contact counter and `durableOriginal` from `has_durable_original()`.
 use super::super::*;
-use super::{cancelled_scope, ObservedState, TraceLog};
+use super::{cancelled_scope, ledger_has_original, phase_label, ObservedState, TraceLog};
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
@@ -57,11 +57,11 @@ pub(super) fn run_directory_withdrawal_seeds(
         .unwrap();
     std::thread::sleep(brief + Duration::from_millis(15));
 
-    // Seed 60: Directory expired principal -> Retained (durable_original = true) -> cancelled
-    // withdraw refuses -> fresh erased `close_unexecuted` discharges durable original with 0
-    // handler contacts and unchanged balance.
+    // Seed 60: Directory expired principal -> Retained (exact durable original identity verified
+    // present in Home's ledger) -> cancelled withdraw preserves ledger entry -> fresh erased
+    // `close_unexecuted` discharges exact original from ledger with 0 handler contacts.
     log.reset();
-    {
+    let withdrawn_original = {
         let start_contacts = contacts.load(Ordering::SeqCst);
         let fresh = home.runtime().request(&principal, &live_scope);
         let expired_req = home.runtime().request(&expired, &live_scope);
@@ -79,7 +79,7 @@ pub(super) fn run_directory_withdrawal_seeds(
                 start_contacts,
                 &fresh,
                 55,
-                "Described",
+                phase_label(erased.phase()),
                 true,
                 erased.has_durable_original(),
             ),
@@ -97,9 +97,13 @@ pub(super) fn run_directory_withdrawal_seeds(
             }
             _ => panic!("seed 60 expired principal must retain durable original"),
         };
+        let orig_id = retained
+            .durable_original_identity()
+            .expect("Directory Retained owner must carry durable original identity");
+        let in_ledger_before = ledger_has_original(&home, execution, Some(orig_id));
         assert!(
-            retained.has_durable_original(),
-            "Directory Home Retained owner must observe a real durable original"
+            in_ledger_before && retained.has_durable_original(),
+            "exact durable original identity must be live in the Home ledger before withdrawal"
         );
         log.record(
             "ResumeRetainAndRefuse",
@@ -109,9 +113,9 @@ pub(super) fn run_directory_withdrawal_seeds(
                 start_contacts,
                 &fresh,
                 55,
-                "PendingAdvance",
+                phase_label(retained.phase()),
                 true,
-                retained.has_durable_original(),
+                in_ledger_before,
             ),
         );
 
@@ -122,7 +126,12 @@ pub(super) fn run_directory_withdrawal_seeds(
             denial,
             WorthQueryOperationCloseDenial::Execution(_)
         ));
-        assert!(retained.has_durable_original());
+        assert_eq!(retained.durable_original_identity(), Some(orig_id));
+        let in_ledger_after_cancel = ledger_has_original(&home, execution, Some(orig_id));
+        assert!(
+            in_ledger_after_cancel,
+            "cancelled withdrawal must leave exact durable original live in the Home ledger"
+        );
         log.record(
             "WithdrawUnexecuted",
             "\"succeeds\":false",
@@ -131,9 +140,9 @@ pub(super) fn run_directory_withdrawal_seeds(
                 start_contacts,
                 &fresh,
                 55,
-                "PendingAdvance",
+                phase_label(retained.phase()),
                 true,
-                retained.has_durable_original(),
+                in_ledger_after_cancel,
             ),
         );
 
@@ -144,6 +153,11 @@ pub(super) fn run_directory_withdrawal_seeds(
             withdrawal,
             WorthQuerySourceCustodyWithdrawal::Closed(_)
         ));
+        let in_ledger_after_withdraw = ledger_has_original(&home, execution, Some(orig_id));
+        assert!(
+            !in_ledger_after_withdraw,
+            "exact durable original identity must be absent from the Home ledger after close_unexecuted"
+        );
         log.record(
             "WithdrawUnexecuted",
             "\"succeeds\":true",
@@ -154,20 +168,28 @@ pub(super) fn run_directory_withdrawal_seeds(
                 55,
                 "TerminalWithdrawn",
                 true,
-                false,
+                in_ledger_after_withdraw,
             ),
         );
         assert_eq!(contacts.load(Ordering::SeqCst), 0);
         assert_eq!(read(&fresh, account()), Some(vec![7]));
-    }
+        orig_id
+    };
 
-    // Seed 61: Same idempotency key commits fresh on the same Directory Home, proving the
-    // withdrawn durable original was genuinely discharged on disk.
+    // Seed 61: Same idempotency key retains a new distinct durable original identity, verifies
+    // the prior withdrawn original stays absent, commits fresh, and verifies the new original is
+    // discharged from the Home ledger after terminal close.
     log.reset();
     {
         let start_contacts = contacts.load(Ordering::SeqCst);
         let fresh = home.runtime().request(&principal, &live_scope);
-        let described = capture(&fresh, set_balance(21), 0x4453_5460_u64);
+        let expired_req = home.runtime().request(&expired, &live_scope);
+        assert!(!ledger_has_original(
+            &home,
+            execution,
+            Some(withdrawn_original)
+        ));
+        let described = capture(&expired_req, set_balance(21), 0x4453_5460_u64);
         let erased = Custody::Described(described).erase();
         log.record(
             "AcceptOrdinary",
@@ -177,12 +199,43 @@ pub(super) fn run_directory_withdrawal_seeds(
                 start_contacts,
                 &fresh,
                 21,
-                "Described",
+                phase_label(erased.phase()),
                 true,
                 erased.has_durable_original(),
             ),
         );
-        match erased.resume(home.runtime(), &fresh) {
+        let retained = match erased.resume(home.runtime(), &expired_req) {
+            WorthQueryAnySourceCustodyStep::Pending { custody, cause } => {
+                assert!(matches!(
+                    cause,
+                    WorthQuerySourceCustodyPending::Refused(WorthQuerySourceOnlyDenial::Mutation(
+                        _
+                    ))
+                ));
+                custody
+            }
+            _ => panic!("seed 61 expired principal must retain new durable original"),
+        };
+        let second_orig = retained
+            .durable_original_identity()
+            .expect("seed 61 must mint a fresh durable original identity");
+        assert_ne!(second_orig, withdrawn_original);
+        let second_live = ledger_has_original(&home, execution, Some(second_orig));
+        assert!(second_live);
+        log.record(
+            "ResumeRetainAndRefuse",
+            "",
+            dir_obs(
+                &contacts,
+                start_contacts,
+                &fresh,
+                21,
+                phase_label(retained.phase()),
+                true,
+                second_live,
+            ),
+        );
+        match retained.resume(home.runtime(), &fresh) {
             WorthQueryAnySourceCustodyStep::Committed { evidence, .. } => {
                 assert!(matches!(
                     evidence.evidence::<u64>(),
@@ -191,6 +244,11 @@ pub(super) fn run_directory_withdrawal_seeds(
             }
             _ => panic!("seed 61 reused key after Directory withdrawal must commit fresh"),
         }
+        let second_after_commit = ledger_has_original(&home, execution, Some(second_orig));
+        assert!(
+            !second_after_commit,
+            "committed durable original must be discharged from the Home ledger"
+        );
         log.record(
             "ResumeCommitClosed",
             "",
@@ -201,7 +259,7 @@ pub(super) fn run_directory_withdrawal_seeds(
                 21,
                 "TerminalCommitted",
                 true,
-                false,
+                second_after_commit,
             ),
         );
         assert_eq!(contacts.load(Ordering::SeqCst), 1);

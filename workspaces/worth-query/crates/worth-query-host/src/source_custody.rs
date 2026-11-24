@@ -4,6 +4,7 @@
 //! performs at most one native retention, one advance and one close. It returns
 //! the command committed, declined, or pending with the exact owner it must be
 //! resumed from. No request, principal or advancement phase is retained.
+use worth_foundational::facade::ProgramSupportObligationIdentity;
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationIntent,
 };
@@ -17,7 +18,7 @@ use worth_query_publication::facade::application_entry::{
     WorthQueryOperationCloseDenial, WorthQueryOperationConstructionDenial,
     WorthQueryOperationDescription, WorthQuerySourceCompletion, WorthQuerySourceCompletionAction,
     WorthQuerySourceMutation, WorthQuerySourceOnlyAdvance, WorthQuerySourceOnlyDenial,
-    WorthQuerySourceOnlyOperation, WorthQueryTerminalSourceEvidence,
+    WorthQuerySourceOnlyOperation, WorthQuerySourceOnlyPosture, WorthQueryTerminalSourceEvidence,
     WorthQueryTerminalSourceOperation,
 };
 
@@ -114,22 +115,60 @@ impl std::fmt::Debug for WorthQuerySourceCustodyWithdrawal {
     }
 }
 
+/// Descriptive lifecycle phase of a pending Host source-custody owner.
+/// Read-only inspection; grants no admission, execution, or discharge authority.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQuerySourceCustodyPhase {
+    /// Captured input awaiting durable retention.
+    Described,
+    /// Retained unexecuted operation (`Initial` posture) awaiting its next advance.
+    RetainedInitial,
+    /// Retained operation holding a post-handler or native recovery obligation.
+    RetainedObligation,
+    /// Committed evidence awaiting cleanup close.
+    Completed,
+    /// Stopped terminal evidence awaiting cleanup close.
+    Terminal,
+}
+
 impl<S, I, P, A> WorthQuerySourceCustody<S, I, P, A>
 where
     S: ApplicationSchema + 'static,
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
 {
+    /// Descriptive lifecycle phase of the retained Publication owner.
+    /// Grants no admission, execution, or discharge authority.
+    pub fn phase(&self) -> WorthQuerySourceCustodyPhase {
+        match self {
+            Self::Described(_) => WorthQuerySourceCustodyPhase::Described,
+            Self::Retained(operation) => match operation.posture() {
+                WorthQuerySourceOnlyPosture::Initial => {
+                    WorthQuerySourceCustodyPhase::RetainedInitial
+                }
+                _ => WorthQuerySourceCustodyPhase::RetainedObligation,
+            },
+            Self::Completed(_) => WorthQuerySourceCustodyPhase::Completed,
+            Self::Terminal(_) => WorthQuerySourceCustodyPhase::Terminal,
+        }
+    }
+
+    /// Descriptive identity of the retained durable original, if one is currently held.
+    /// Grants no admission or discharge authority.
+    pub fn durable_original_identity(&self) -> Option<ProgramSupportObligationIdentity> {
+        match self {
+            Self::Described(description) => description.original_identity(),
+            Self::Retained(operation) => operation.original_identity(),
+            Self::Completed(completed) => completed.original_identity(),
+            Self::Terminal(terminal) => terminal.original_identity(),
+        }
+    }
+
     /// Descriptive check for whether the retained Publication owner currently holds an
     /// undischarged durable original (true on Directory Homes once retained, false on MemoryOnly).
     /// Grants no admission or discharge authority.
     pub fn has_durable_original(&self) -> bool {
-        match self {
-            Self::Described(description) => description.has_durable_original(),
-            Self::Retained(operation) => operation.original_identity().is_some(),
-            Self::Completed(completed) => completed.has_durable_original(),
-            Self::Terminal(terminal) => terminal.has_durable_original(),
-        }
+        self.durable_original_identity().is_some()
     }
 
     /// Lawfully withdraws an unexecuted command without running its handler, discharging any

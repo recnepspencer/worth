@@ -2,7 +2,10 @@
 use super::super::super::application_home::correction_material::numeric_home::{
     head_ordinal, limits, model, read_rows,
 };
-use super::{cancelled_scope, ErasedCustody, ObservedState, OtherAction, Rng, TraceLog};
+use super::{
+    cancelled_scope, ledger_has_original, phase_label, ErasedCustody, ObservedState, OtherAction,
+    Rng, TraceLog,
+};
 use model::{
     authentication::{authenticate_operator, request_scope},
     correction::RecordedEdit,
@@ -16,7 +19,7 @@ use worth_query_host::facade::{
     product::WorthQueryProductBranch,
     WorthQueryAnyCorrectionCustodyOutcome, WorthQueryAnySourceCustodyStep,
     WorthQueryApplicationHome, WorthQueryCorrectionCustodyOutcome, WorthQuerySourceCustody,
-    WorthQuerySourceCustodyStep,
+    WorthQuerySourceCustodyPending, WorthQuerySourceCustodyStep,
 };
 
 fn observe<P: ApplicationProgramDefinition<NumericSchema> + 'static>(
@@ -47,6 +50,7 @@ pub(super) fn run_correction_seed<P: ApplicationProgramDefinition<NumericSchema>
     rng: &mut Rng,
     home: &WorthQueryApplicationHome<NumericSchema, P>,
     branch: WorthQueryProductBranch,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     clock: &WorthQueryAdmissionClock,
     log: &mut TraceLog,
     expected_primary: &mut u64,
@@ -86,6 +90,7 @@ pub(super) fn run_correction_seed<P: ApplicationProgramDefinition<NumericSchema>
                 WorthQueryAnySourceCustodyStep::Committed { .. },
             ) => {
                 assert!(!cancel_close);
+                let in_ledger = ledger_has_original(home, execution, None);
                 log.record(
                     "AcceptCorrection",
                     &format!(
@@ -98,14 +103,21 @@ pub(super) fn run_correction_seed<P: ApplicationProgramDefinition<NumericSchema>
                         prior_primary,
                         "TerminalCommitted",
                         true,
-                        false,
+                        in_ledger,
                     ),
                 );
             }
             WorthQueryAnyCorrectionCustodyOutcome::Custody(
-                WorthQueryAnySourceCustodyStep::Pending { custody, .. },
+                WorthQueryAnySourceCustodyStep::Pending { custody, cause },
             ) => {
                 assert!(cancel_close);
+                assert!(matches!(
+                    cause,
+                    WorthQuerySourceCustodyPending::Close(
+                        WorthQueryOperationCloseDenial::Execution(_)
+                    )
+                ));
+                let orig_id = custody.durable_original_identity();
                 log.record(
                     "AcceptCorrection",
                     &format!(
@@ -116,7 +128,7 @@ pub(super) fn run_correction_seed<P: ApplicationProgramDefinition<NumericSchema>
                         branch,
                         start_ordinal,
                         prior_primary,
-                        "PendingCloseCommitted",
+                        phase_label(custody.phase()),
                         true,
                         custody.has_durable_original(),
                     ),
@@ -136,7 +148,7 @@ pub(super) fn run_correction_seed<P: ApplicationProgramDefinition<NumericSchema>
                         branch,
                         start_ordinal,
                         prior_primary,
-                        "PendingCloseCommitted",
+                        phase_label(custody.phase()),
                         true,
                         custody.has_durable_original(),
                     ),
@@ -145,6 +157,7 @@ pub(super) fn run_correction_seed<P: ApplicationProgramDefinition<NumericSchema>
                     custody.resume(home.runtime(), &fresh),
                     WorthQueryAnySourceCustodyStep::Committed { .. }
                 ));
+                let in_ledger = ledger_has_original(home, execution, orig_id);
                 log.record(
                     "ClosePending",
                     "\"succeeds\":true",
@@ -155,7 +168,7 @@ pub(super) fn run_correction_seed<P: ApplicationProgramDefinition<NumericSchema>
                         prior_primary,
                         "TerminalCommitted",
                         true,
-                        false,
+                        in_ledger,
                     ),
                 );
             }
@@ -167,6 +180,7 @@ pub(super) fn run_correction_seed<P: ApplicationProgramDefinition<NumericSchema>
                 WorthQuerySourceCustodyStep::Committed { .. },
             ) => {
                 assert!(!cancel_close);
+                let in_ledger = ledger_has_original(home, execution, None);
                 log.record(
                     "AcceptCorrection",
                     &format!(
@@ -179,15 +193,22 @@ pub(super) fn run_correction_seed<P: ApplicationProgramDefinition<NumericSchema>
                         prior_primary,
                         "TerminalCommitted",
                         false,
-                        false,
+                        in_ledger,
                     ),
                 );
             }
             WorthQueryCorrectionCustodyOutcome::Custody(WorthQuerySourceCustodyStep::Pending {
                 custody,
-                ..
+                cause,
             }) => {
                 assert!(cancel_close);
+                assert!(matches!(
+                    cause,
+                    WorthQuerySourceCustodyPending::Close(
+                        WorthQueryOperationCloseDenial::Execution(_)
+                    )
+                ));
+                let orig_id = custody.durable_original_identity();
                 log.record(
                     "AcceptCorrection",
                     &format!(
@@ -198,7 +219,7 @@ pub(super) fn run_correction_seed<P: ApplicationProgramDefinition<NumericSchema>
                         branch,
                         start_ordinal,
                         prior_primary,
-                        "PendingCloseCommitted",
+                        phase_label(custody.phase()),
                         false,
                         custody.has_durable_original(),
                     ),
@@ -218,7 +239,7 @@ pub(super) fn run_correction_seed<P: ApplicationProgramDefinition<NumericSchema>
                         branch,
                         start_ordinal,
                         prior_primary,
-                        "PendingCloseCommitted",
+                        phase_label(custody.phase()),
                         false,
                         custody.has_durable_original(),
                     ),
@@ -227,6 +248,7 @@ pub(super) fn run_correction_seed<P: ApplicationProgramDefinition<NumericSchema>
                     custody.resume(home.runtime(), &fresh),
                     WorthQuerySourceCustodyStep::Committed { .. }
                 ));
+                let in_ledger = ledger_has_original(home, execution, orig_id);
                 log.record(
                     "ClosePending",
                     "\"succeeds\":true",
@@ -237,7 +259,7 @@ pub(super) fn run_correction_seed<P: ApplicationProgramDefinition<NumericSchema>
                         prior_primary,
                         "TerminalCommitted",
                         false,
-                        false,
+                        in_ledger,
                     ),
                 );
             }

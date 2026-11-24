@@ -6,27 +6,6 @@ use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleI
 use worth_relational::facade::runtime::{EntityReadRecord, VisibilityProjectionView};
 
 impl WorthQueryPrimaryGraphProvider {
-    pub fn committed_dispatch_outbox_count(
-        &self,
-        execution: &ExecutionRequest<'_, '_>,
-    ) -> Result<usize, Denial> {
-        self.graph.with_runtime(execution, |runtime| {
-            let (_, basis) = runtime
-                .observe_branch(&runtime.main_branch_identity())
-                .map_err(|_| Denial::ExactCommitUnavailable)?;
-            let view = runtime
-                .read_truth()
-                .project_observation(&basis.observation())
-                .map_err(|_| Denial::ExactCommitUnavailable)?;
-            let layout = self.graph.layout_ref().provider_dispatch_outbox();
-            let outboxes = view
-                .bounded_entities_of_kind(execution, layout.entity_kind, usize::MAX)
-                .map_err(read_denial)?
-                .map_err(|_| Denial::Malformed)?;
-            Ok(outboxes.records().len())
-        })
-    }
-
     pub fn dispatch_readmission_catalog(
         &self,
     ) -> &worth_query_installation::facade::InstalledOperationCatalog {

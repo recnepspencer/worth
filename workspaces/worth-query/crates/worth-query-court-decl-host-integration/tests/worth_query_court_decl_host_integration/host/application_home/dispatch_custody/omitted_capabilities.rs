@@ -220,12 +220,11 @@ fn external_and_inbound_no_aftermath_handlers_refuse_when_required_capabilities_
         .unwrap()
     };
     let outbox_count = || {
-        let app = home.primary_graph();
-        let (_, probe_scope) = pending_support::scope();
-        app.with_application_advancement(&probe_scope, |phase| {
-            app.observe_committed_dispatch_outbox_count(&phase).unwrap()
-        })
-        .unwrap()
+        home.primary_graph()
+            .runtime_for_test()
+            .primary_provider_for_test()
+            .committed_dispatch_outbox_count_for_test(&execution)
+            .unwrap()
     };
     let before_commit = selected_commit();
     assert_eq!(

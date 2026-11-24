@@ -3,7 +3,8 @@ use super::super::super::application_home::correction_material::numeric_home::{
     head_ordinal, model, read_rows,
 };
 use super::{
-    cancelled_scope, ordinary_close, ObservedState, OtherAction, Rng, Slot, TraceLog, TypedCustody,
+    cancelled_scope, ordinary_close, ordinary_close::Observer, OtherAction, Rng, Slot, TraceLog,
+    TypedCustody,
 };
 use model::{
     authentication::{authenticate_operator, request_scope},
@@ -21,52 +22,13 @@ use worth_query_host::facade::{
     WorthQuerySourceCustodyWithdrawal,
 };
 
-pub(super) struct Observer<'a, P: ApplicationProgramDefinition<NumericSchema> + 'static> {
-    pub(super) home: &'a WorthQueryApplicationHome<NumericSchema, P>,
-    pub(super) branch: WorthQueryProductBranch,
-    pub(super) start_ordinal: u64,
-    pub(super) target_value: u64,
-}
-
-impl<'a, P: ApplicationProgramDefinition<NumericSchema> + 'static> Observer<'a, P> {
-    pub(super) fn slot(&self, phase: &'static str, slot: &Slot<P>) -> ObservedState {
-        if let Some(typed_phase) = slot.typed_phase() {
-            assert_eq!(typed_phase, phase, "observed typed phase mismatch");
-        }
-        let head = head_ordinal(self.home.runtime(), self.branch);
-        let exec_count = u8::try_from(head.saturating_sub(self.start_ordinal)).unwrap();
-        let row = read_rows(self.home.runtime(), self.branch)[0].primary;
-        ObservedState {
-            phase,
-            erased: slot.is_erased(),
-            durable_mode: self.home.is_directory(),
-            durable_original: slot.has_durable_original(),
-            exec_count,
-            committed_value: exec_count > 0 && row == self.target_value,
-        }
-    }
-
-    pub(super) fn terminal(&self, phase: &'static str, erased: bool) -> ObservedState {
-        let head = head_ordinal(self.home.runtime(), self.branch);
-        let exec_count = u8::try_from(head.saturating_sub(self.start_ordinal)).unwrap();
-        let row = read_rows(self.home.runtime(), self.branch)[0].primary;
-        ObservedState {
-            phase,
-            erased,
-            durable_mode: self.home.is_directory(),
-            durable_original: false,
-            exec_count,
-            committed_value: exec_count > 0 && row == self.target_value,
-        }
-    }
-}
-
 #[allow(clippy::too_many_arguments)]
 pub(super) fn run_ordinary_seed<P: ApplicationProgramDefinition<NumericSchema> + 'static>(
     seed: u64,
     rng: &mut Rng,
     home: &WorthQueryApplicationHome<NumericSchema, P>,
     branch: WorthQueryProductBranch,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     clock: &WorthQueryAdmissionClock,
     log: &mut TraceLog,
     expected_primary: &mut u64,
@@ -86,6 +48,7 @@ pub(super) fn run_ordinary_seed<P: ApplicationProgramDefinition<NumericSchema> +
     let obs = Observer {
         home,
         branch,
+        execution,
         start_ordinal: head_ordinal(home.runtime(), branch),
         target_value,
     };
@@ -103,6 +66,7 @@ pub(super) fn run_ordinary_seed<P: ApplicationProgramDefinition<NumericSchema> +
         .idempotency_owned(key.clone())
         .unwrap_or_else(|(_, _, denial)| panic!("seed {seed} capture: {denial:?}"));
 
+    let mut tracked_original = None;
     let start_erased = rng.coin();
     let mut slot = if start_erased {
         Slot::Erased(TypedCustody::<P>::Described(described).erase())
@@ -115,7 +79,7 @@ pub(super) fn run_ordinary_seed<P: ApplicationProgramDefinition<NumericSchema> +
             "\"erased\":{start_erased},\"durableMode\":{}",
             home.is_directory()
         ),
-        obs.slot("Described", &slot),
+        obs.slot(&slot, &mut tracked_original, &fresh),
     );
 
     if !slot.is_erased() && rng.coin() {
@@ -123,7 +87,7 @@ pub(super) fn run_ordinary_seed<P: ApplicationProgramDefinition<NumericSchema> +
             Slot::Typed(c) => Slot::Erased(c.erase()),
             other => other,
         };
-        log.record("Erase", "", obs.slot("Described", &slot));
+        log.record("Erase", "", obs.slot(&slot, &mut tracked_original, &fresh));
     }
     if slot.is_erased() && rng.coin() {
         if let Slot::Erased(e) = slot {
@@ -135,7 +99,7 @@ pub(super) fn run_ordinary_seed<P: ApplicationProgramDefinition<NumericSchema> +
             log.record(
                 "Downcast",
                 "\"matched\":false",
-                obs.slot("Described", &slot),
+                obs.slot(&slot, &mut tracked_original, &fresh),
             );
         }
     }
@@ -154,11 +118,17 @@ pub(super) fn run_ordinary_seed<P: ApplicationProgramDefinition<NumericSchema> +
         log.record(
             "ResumeRetentionRefused",
             &format!("\"retainedOriginal\":{retained_orig}"),
-            obs.slot("Described", &slot),
+            obs.slot(&slot, &mut tracked_original, &fresh),
         );
     }
 
-    let mode = if want_drift { 3 } else { rng.pick(5) };
+    let mode = if want_drift {
+        3
+    } else if home.is_directory() {
+        4
+    } else {
+        rng.pick(5)
+    };
     if mode == 0 {
         let was_erased = slot.is_erased();
         match slot {
@@ -177,7 +147,7 @@ pub(super) fn run_ordinary_seed<P: ApplicationProgramDefinition<NumericSchema> +
         log.record(
             "WithdrawUnexecuted",
             "\"succeeds\":true",
-            obs.terminal("TerminalWithdrawn", was_erased),
+            obs.terminal("TerminalWithdrawn", was_erased, tracked_original, &fresh),
         );
         assert_eq!(
             read_rows(home.runtime(), branch)[0].primary,
@@ -194,7 +164,11 @@ pub(super) fn run_ordinary_seed<P: ApplicationProgramDefinition<NumericSchema> +
                     .try_into_typed::<Edit, Action>()
                     .unwrap_or_else(|_| panic!("seed {seed} exact downcast"));
                 let s = Slot::Typed(c);
-                log.record("Downcast", "\"matched\":true", obs.slot("Described", &s));
+                log.record(
+                    "Downcast",
+                    "\"matched\":true",
+                    obs.slot(&s, &mut tracked_original, &fresh),
+                );
                 let Slot::Typed(c) = s else { unreachable!() };
                 c
             }
@@ -213,14 +187,14 @@ pub(super) fn run_ordinary_seed<P: ApplicationProgramDefinition<NumericSchema> +
         log.record(
             "ResumeRetainAndRefuse",
             "",
-            obs.slot("PendingAdvance", &typed_slot),
+            obs.slot(&typed_slot, &mut tracked_original, &fresh),
         );
         let Slot::Typed(retained) = typed_slot else {
             unreachable!()
         };
         slot = if rng.coin() {
             let s = Slot::Erased(retained.erase());
-            log.record("Erase", "", obs.slot("PendingAdvance", &s));
+            log.record("Erase", "", obs.slot(&s, &mut tracked_original, &fresh));
             s
         } else {
             Slot::Typed(retained)
@@ -241,7 +215,7 @@ pub(super) fn run_ordinary_seed<P: ApplicationProgramDefinition<NumericSchema> +
             log.record(
                 "ResumeAdvanceRefused",
                 "",
-                obs.slot("PendingAdvance", &slot),
+                obs.slot(&slot, &mut tracked_original, &fresh),
             );
         }
     }
@@ -256,7 +230,7 @@ pub(super) fn run_ordinary_seed<P: ApplicationProgramDefinition<NumericSchema> +
                 log.record(
                     "WithdrawUnexecuted",
                     "\"succeeds\":false",
-                    obs.slot("PendingAdvance", &s),
+                    obs.slot(&s, &mut tracked_original, &fresh),
                 );
                 s
             }
@@ -268,7 +242,7 @@ pub(super) fn run_ordinary_seed<P: ApplicationProgramDefinition<NumericSchema> +
                 log.record(
                     "WithdrawUnexecuted",
                     "\"succeeds\":false",
-                    obs.slot("PendingAdvance", &s),
+                    obs.slot(&s, &mut tracked_original, &fresh),
                 );
                 s
             }
@@ -289,7 +263,7 @@ pub(super) fn run_ordinary_seed<P: ApplicationProgramDefinition<NumericSchema> +
         log.record(
             "WithdrawUnexecuted",
             "\"succeeds\":true",
-            obs.terminal("TerminalWithdrawn", was_erased),
+            obs.terminal("TerminalWithdrawn", was_erased, tracked_original, &fresh),
         );
         assert_eq!(
             read_rows(home.runtime(), branch)[0].primary,
@@ -304,6 +278,7 @@ pub(super) fn run_ordinary_seed<P: ApplicationProgramDefinition<NumericSchema> +
             rng,
             &obs,
             slot,
+            &mut tracked_original,
             &fresh,
             &cancelled,
             log,
@@ -348,7 +323,7 @@ pub(super) fn run_ordinary_seed<P: ApplicationProgramDefinition<NumericSchema> +
         log.record(
             "ResumeCommitClosed",
             "",
-            obs.terminal("TerminalCommitted", was_erased),
+            obs.terminal("TerminalCommitted", was_erased, tracked_original, &fresh),
         );
         *expected_primary = target_value;
         assert_eq!(
@@ -360,7 +335,7 @@ pub(super) fn run_ordinary_seed<P: ApplicationProgramDefinition<NumericSchema> +
         log.record(
             "ResumeDeclineClosed",
             "",
-            obs.terminal("TerminalDenied", was_erased),
+            obs.terminal("TerminalDenied", was_erased, tracked_original, &fresh),
         );
         assert_eq!(
             read_rows(home.runtime(), branch)[0].primary,

@@ -183,7 +183,14 @@ fn close_unexecuted_refuses_retryable_no_effect_after_handler_contact() {
         });
 
         entered_decide.wait();
+        struct ReleaseGuard<'a>(&'a Barrier);
+        impl Drop for ReleaseGuard<'_> {
+            fn drop(&mut self) {
+                self.0.wait();
+            }
+        }
         {
+            let _release = ReleaseGuard(&release_decide);
             let scope = request_scope();
             let principal = authenticate_operator(home.primary_graph().installed_schema(), &scope);
             let req = home.runtime().request(&principal, &scope).on_branch(branch);
@@ -204,7 +211,6 @@ fn close_unexecuted_refuses_retryable_no_effect_after_handler_contact() {
                 _ => panic!("competing edit must commit first"),
             }
         }
-        release_decide.wait();
 
         match loser.join().unwrap() {
             WorthQuerySourceCustodyStep::Pending { custody, cause } => {

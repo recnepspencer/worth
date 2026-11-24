@@ -20,13 +20,14 @@ use model::{
     program::{Action, NumericFeature, OtherCompletion},
     schema::NumericSchema,
 };
+use worth_foundational::facade::ProgramSupportObligationIdentity;
 use worth_query_decl::facade::application_program::{
     ApplicationActionReference, ApplicationProgramDefinition, ApplicationRootComposition,
 };
 use worth_query_host::facade::{
     admission::authenticated_principal::{WorthQueryCancellationSource, WorthQueryRequestScope},
     primary_graph::WorthQueryApplicationCommitReceipt,
-    WorthQueryAnySourceCustody,
+    WorthQueryAnySourceCustody, WorthQueryApplicationHome, WorthQuerySourceCustodyPhase,
 };
 
 pub(self) type OtherAction = ApplicationActionReference<
@@ -59,6 +60,50 @@ impl Rng {
     }
 }
 
+pub(self) fn phase_label(phase: WorthQuerySourceCustodyPhase) -> &'static str {
+    match phase {
+        WorthQuerySourceCustodyPhase::Described => "Described",
+        WorthQuerySourceCustodyPhase::RetainedInitial => "PendingAdvance",
+        WorthQuerySourceCustodyPhase::RetainedObligation => "NativeObligationRetained",
+        WorthQuerySourceCustodyPhase::Completed => "PendingCloseCommitted",
+        WorthQuerySourceCustodyPhase::Terminal => "PendingCloseDeclined",
+    }
+}
+
+/// Queries the Home's actual `QueryObligationHistory` durable original ledger for an exact
+/// `ProgramSupportObligationIdentity`. Returns `true` iff that exact original is still live in
+/// the ledger, and `false` if it was discharged (`UnknownObligation`) or never issued.
+pub(self) fn ledger_has_original<S, P>(
+    home: &WorthQueryApplicationHome<S, P>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    identity: Option<ProgramSupportObligationIdentity>,
+) -> bool
+where
+    S: ApplicationSchema + 'static,
+    P: ApplicationProgramDefinition<S>,
+{
+    let Some(support) = home.primary_graph().installed_program_support_for_test() else {
+        assert!(
+            identity.is_none(),
+            "MemoryOnly Home has no durable original ledger"
+        );
+        return false;
+    };
+    let Some(identity) = identity else {
+        return false;
+    };
+    match support.lifecycle().original_operation(execution, identity) {
+        Ok(row) => {
+            assert_eq!(row.identity, identity);
+            true
+        }
+        Err(
+            worth_query_execution::facade::query_obligations::QueryObligationDenial::UnknownObligation,
+        ) => false,
+        Err(denial) => panic!("unexpected durable original ledger probe denial: {denial:?}"),
+    }
+}
+
 pub(self) enum Slot<P: ApplicationProgramDefinition<NumericSchema>> {
     Typed(TypedCustody<P>),
     Erased(ErasedCustody<P>),
@@ -69,6 +114,13 @@ impl<P: ApplicationProgramDefinition<NumericSchema> + 'static> Slot<P> {
         matches!(self, Self::Erased(_))
     }
 
+    pub(self) fn durable_original_identity(&self) -> Option<ProgramSupportObligationIdentity> {
+        match self {
+            Self::Typed(c) => c.durable_original_identity(),
+            Self::Erased(e) => e.durable_original_identity(),
+        }
+    }
+
     pub(self) fn has_durable_original(&self) -> bool {
         match self {
             Self::Typed(c) => c.has_durable_original(),
@@ -76,13 +128,10 @@ impl<P: ApplicationProgramDefinition<NumericSchema> + 'static> Slot<P> {
         }
     }
 
-    pub(self) fn typed_phase(&self) -> Option<&'static str> {
+    pub(self) fn phase_label(&self) -> &'static str {
         match self {
-            Self::Typed(WorthQuerySourceCustody::Described(_)) => Some("Described"),
-            Self::Typed(WorthQuerySourceCustody::Retained(_)) => Some("PendingAdvance"),
-            Self::Typed(WorthQuerySourceCustody::Completed(_)) => Some("PendingCloseCommitted"),
-            Self::Typed(WorthQuerySourceCustody::Terminal(_)) => Some("PendingCloseDeclined"),
-            Self::Erased(_) => None,
+            Self::Typed(c) => phase_label(c.phase()),
+            Self::Erased(e) => phase_label(e.phase()),
         }
     }
 }
@@ -181,6 +230,7 @@ fn host_custody_dst_64_seeds() {
                 &mut rng,
                 &mem_home,
                 mem_branch,
+                &execution,
                 &clock,
                 &mut log,
                 &mut expected_primary,
@@ -195,6 +245,7 @@ fn host_custody_dst_64_seeds() {
                 &mut rng,
                 &mem_home,
                 mem_branch,
+                &execution,
                 &clock,
                 &mut log,
                 &mut expected_primary,
@@ -207,7 +258,7 @@ fn host_custody_dst_64_seeds() {
     drop((last_committed, mem_home));
 
     // Seeds 60..62: real Directory Home retained withdrawal + same-key reuse with live handler
-    // contact counter and live `has_durable_original()` observations (durableMode = true).
+    // contact counter and live `QueryObligationHistory` durable original ledger probes.
     directory_withdrawal::run_directory_withdrawal_seeds(&clock, &execution, &mut log);
 
     // Seeds 62..64: real Directory Home commit + correction PendingCloseCommitted (durableMode = true).
@@ -224,6 +275,7 @@ fn host_custody_dst_64_seeds() {
                 &mut rng,
                 &dir_home,
                 dir_branch,
+                &execution,
                 &clock,
                 &mut log,
                 &mut dir_expected,
@@ -237,6 +289,7 @@ fn host_custody_dst_64_seeds() {
                 &mut rng,
                 &dir_home,
                 dir_branch,
+                &execution,
                 &clock,
                 &mut log,
                 &mut dir_expected,

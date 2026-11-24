@@ -27,10 +27,22 @@ pub enum WorthQueryAnySourceCustodyStep<S, P> {
 }
 
 impl<S: 'static, P: 'static> WorthQueryAnySourceCustody<S, P> {
+    /// Descriptive lifecycle phase of the erased owner.
+    /// Grants no admission, execution, or discharge authority.
+    pub fn phase(&self) -> WorthQuerySourceCustodyPhase {
+        self.0.phase()
+    }
+
+    /// Descriptive identity of the retained durable original, if one is currently held.
+    /// Grants no admission or discharge authority.
+    pub fn durable_original_identity(&self) -> Option<ProgramSupportObligationIdentity> {
+        self.0.durable_original_identity()
+    }
+
     /// Descriptive check for whether the erased owner currently holds an undischarged durable
     /// original. Grants no admission or discharge authority.
     pub fn has_durable_original(&self) -> bool {
-        self.0.has_durable_original()
+        self.0.durable_original_identity().is_some()
     }
 
     pub fn resume(
@@ -125,7 +137,8 @@ where
 
 trait ErasedCustody<S, P>: Any {
     fn into_any(self: Box<Self>) -> Box<dyn Any>;
-    fn has_durable_original(&self) -> bool;
+    fn phase(&self) -> WorthQuerySourceCustodyPhase;
+    fn durable_original_identity(&self) -> Option<ProgramSupportObligationIdentity>;
     fn resume(
         self: Box<Self>,
         runtime: &WorthQueryProgramApplicationRuntime<S, P>,
@@ -155,10 +168,16 @@ where
         self
     }
 
-    fn has_durable_original(&self) -> bool {
+    fn phase(&self) -> WorthQuerySourceCustodyPhase {
         self.as_ref()
             .expect("erased custody owns one command")
-            .has_durable_original()
+            .phase()
+    }
+
+    fn durable_original_identity(&self) -> Option<ProgramSupportObligationIdentity> {
+        self.as_ref()
+            .expect("erased custody owns one command")
+            .durable_original_identity()
     }
 
     fn resume(
