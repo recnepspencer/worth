@@ -74,9 +74,13 @@ impl<Schema: ApplicationSchema, Operation>
     where
         Entity: WorthQueryNamedKind,
     {
+        let hops = <Entity::OwnerScope as NameOwnerScope<Entity>>::hops();
+        if hops.is_empty() {
+            return Ok(BTreeMap::new());
+        }
         let mut frontier =
             BTreeMap::from([(candidate.entity_id, candidate.fragment_schema::<()>())]);
-        for hop in <Entity::OwnerScope as NameOwnerScope<Entity>>::hops() {
+        for hop in hops {
             let mut reached = BTreeMap::new();
             for near in frontier.values() {
                 for far in self.owner_hop(&hop, near)? {

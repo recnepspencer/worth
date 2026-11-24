@@ -216,3 +216,89 @@ fn a_read_projects_each_rows_own_persistent_name() {
     );
     assert!(rendered.contains("PersistentNameMissing"), "{rendered}");
 }
+
+#[test]
+fn a_history_capture_projects_each_rows_own_persistent_name() {
+    use std::num::NonZeroUsize;
+    let token = "history-capture-projected-names";
+    let world = World::install();
+    world.committed(
+        &format!("{token}-seed"),
+        Plan {
+            creates: keys(&["base"]),
+            steps: vec![Step::Birth("base".into(), birth("base", "authored"))],
+            ..Plan::default()
+        },
+    );
+    let observed = world.probe(token, &["direct", "base"], 0);
+    let (direct, base) = (named(&observed, "direct"), named(&observed, "base"));
+    let runtime = world.host.runtime();
+    let scope = request_scope();
+    let external = authenticate_operator(runtime.installed_schema(), &scope);
+    let limits = WorthQueryApplicationHistoryCaptureLimits {
+        maximum_subjects: NonZeroUsize::MIN,
+        maximum_aspects: NonZeroUsize::MIN,
+        maximum_source_visits: NonZeroUsize::new(16).unwrap(),
+        maximum_owned_bytes: NonZeroUsize::new(64 * 1024).unwrap(),
+    };
+    for (key, expected) in [("direct", direct), ("base", base)] {
+        let rows = runtime
+            .with_application_advancement(&scope, |phase| {
+                let history = runtime
+                    .installed_schema()
+                    .installed_history_query::<named_read::MemberHistory>()
+                    .expect("MemberHistory is installed");
+                let selected = runtime
+                    .on_branch(runtime.current_world())
+                    .select(&phase)
+                    .unwrap();
+                let principal = selected
+                    .resolve_authenticated_principal(
+                        &phase,
+                        history.subject_read().principal_binding(),
+                        &external,
+                        &scope,
+                        WorthQueryPrincipalResolutionMode::Ordinary,
+                    )
+                    .unwrap();
+                let entity = selected
+                    .resolve_entity(
+                        &phase,
+                        MemberKey::at("MemberKey"),
+                        key.to_owned(),
+                        &scope,
+                        WorthQueryPrincipalResolutionMode::Ordinary,
+                    )
+                    .unwrap();
+                let access = WorthQueryApplicationQueryAccessContext::new(&principal, &entity);
+                let plan = selected
+                    .admit_application_query(
+                        &phase,
+                        history.subject_read().query(),
+                        &access,
+                        ApplicationQueryParameterSet::new(),
+                        WorthQueryProductQueryControls::new(NonZeroUsize::MIN, &scope),
+                    )
+                    .unwrap();
+                let execution = phase
+                    .checked_execution_request_for(runtime.product_runtime())
+                    .unwrap();
+                let capture = runtime
+                    .admit_application_history_capture(&execution, &history, plan, limits)
+                    .unwrap();
+                let (read, _) = runtime
+                    .execute_application_history_capture(&phase, capture)
+                    .unwrap_or_else(|cause| panic!("{key}: {cause:?}"))
+                    .into_parts();
+                read.rows().to_vec()
+            })
+            .unwrap();
+        assert_eq!(
+            rows,
+            vec![NamedMember {
+                key: key.to_owned(),
+                name: expected,
+            }]
+        );
+    }
+}

@@ -124,8 +124,25 @@ named_read!(
     "StrictlyNamedModel",
     "owned-model.strictly-named-model.v1"
 );
+/// History capture over `NamedMember`: exercises the history-capture one-shot
+/// read lane with `#[worth_query(name)]`.
+pub struct MemberHistory;
+worth_query_portable_type!(MemberHistory => "owned-model.named-member-history.v1");
+impl ApplicationHistoryQueryBinding<Schema> for MemberHistory {
+    type SubjectRead = member::Binding;
+    const IDENTITY: &'static str = "NamedMemberHistory";
+}
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    strict_model::declare(model::declare(member::declare(schema)))
+    let schema = strict_model::declare(model::declare(member::declare(schema)));
+    let history = ApplicationHistoryQueryDefinition::<Schema, MemberHistory>::entity(
+        Member::reference(),
+        ApplicationQueryDisclosureContract::public(),
+    )
+    .aspect(MemberFacts::reference(), &schema)
+    .expect("MemberFacts aspect is registered")
+    .finish()
+    .expect("named member history query is well-formed");
+    schema.application_history_query(history)
 }

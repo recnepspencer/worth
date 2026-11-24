@@ -28,6 +28,7 @@ mod query;
 mod refusals;
 mod scoped;
 mod stored;
+mod unowned;
 mod world;
 
 pub struct History;
