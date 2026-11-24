@@ -539,10 +539,10 @@ An unnamed program carries no naming plan at all.
   unnamed refuses `MissingBirth`, and a later stage deleting a record an
   earlier stage created refuses as a stage conflict (`ConflictingIntent`),
   each with zero effects from every member.
-  A coupled member's decision reads the envelope's unpublished candidate,
-  where names are not read (`WorthQueryDecisionNameDenial::CandidateBasis`):
-  it splits, merges and retires names it holds as values (an intent field
-  or a stored `NamedTarget<K>`), not names it reads there.
+  A coupled member's decision reads the envelope's unpublished candidate
+  and reads names there too ([holding and resolving
+  names](#holding-and-resolving-names)), so it splits, merges and retires
+  names it read as well as names it holds as values.
 
 Limits: an installed operation splits, merges and
 retires a relation by the name its decision reader read
@@ -610,6 +610,26 @@ replay:
   `RecordNotNamed`, an ended name on the walked path or an unborn held name
   never seals. The handler then passes the names it read to
   `retire_relation_name`, `split_relation_name` and `merge_relation_names`.
+- A coupled member (a later edit-envelope stage or a coupled producer)
+  makes these reads against the envelope's unpublished candidate. The
+  candidate has no name index until the envelope commits, so a read answers
+  from the committed index at the envelope's commit basis, on the runtime
+  and branch observation the candidate was proposed on
+  (`WorthQueryDecisionNameDenial::CandidateBasis` when the reader cannot be
+  aligned with it). Relational's posture law makes that the candidate's
+  answer exactly while every record it rests on is live at the same
+  identity in both: a field edit, a re-owning or an in-place merge keeper
+  keeps the answer, and owner chains are read on the candidate itself, so
+  `resolve_in` sees a same-envelope re-owning. Otherwise the read refuses
+  typed and vetoes the envelope with zero effects: a record an earlier
+  member created has no published name (`UnpublishedCandidateRecord`); a
+  record it deleted, retired, split or merged away (any one of a resolved
+  name's live records, never silently dropped) refuses `EndedInCandidate`;
+  and an answer resting on an ended or unborn name refuses
+  `CandidateNameHistory`, because the candidate may restore, regenerate or
+  bear it. Every admitted read records the same decision facts as a
+  committed read
+  ([candidate-basis courts](../workspaces/worth-query/crates/worth-query-court-decl-host-persistent-naming/tests/worth_query_court_decl_host_persistent_naming/persistent_naming/coupled/candidate/mod.rs)).
 - Group names do not resolve at runtime yet: group transitions are not part
   of the commit envelope.
 - Name reads refuse `SettlementInFlight` while any commit at or before the

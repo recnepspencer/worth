@@ -16,9 +16,13 @@
 //!   projection refuses to seal with [`FailedDecisionRead::PersistentName`];
 //! - a name read that failed vetoes sealing the same way, even when the
 //!   handler swallowed the error.
+//!
+//! On an applied candidate the reads run against the committed name index at
+//! the candidate's commit basis and are admitted only where the candidate left
+//! every record the answer rests on live at the same identity
+//! (`candidate_naming`).
 
 use std::collections::BTreeMap;
-use std::fmt;
 
 use worth_query_declaration::facade::application_naming::{
     NameOwnerScope, NameResolutionDenial, NameSelection, ResolvedName, WorthQueryName,
@@ -26,7 +30,7 @@ use worth_query_declaration::facade::application_naming::{
 };
 use worth_query_declaration::facade::application_schema::ApplicationEntityMarkerIdentity;
 use worth_query_execution_naming::facade::{
-    ExecutionNameReadDenial, ExecutionNameReader, ExecutionNameResolveDenial, NameReadDependencies,
+    ExecutionNameReadDenial, ExecutionNameResolveDenial, NameReadDependencies,
 };
 use worth_query_installation::facade::{
     ApplicationOperationDecisionReadTarget, ApplicationSchema, OperationReads,
@@ -35,13 +39,12 @@ use worth_relational::facade::history::BranchId;
 use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::lineage::LineageRecordTarget;
 
-use super::current_output::WorthQueryCurrentOutputDenial;
-use super::decision_plan::WorthQueryInvariantDecisionPlanDenial;
 use super::decision_reads::FailedDecisionRead;
 use super::WorthQueryApplicationOperationInvariantProjectionReader;
-use crate::domain_computation::primary_graph::{
-    WorthQueryInvariantEntityIdentity, WorthQueryInvariantProjectionTraversalDenial,
-};
+use crate::domain_computation::primary_graph::WorthQueryInvariantEntityIdentity;
+
+mod denial;
+pub use denial::WorthQueryDecisionNameDenial;
 
 /// Why a decision that read a persistent name refuses to seal.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -84,50 +87,6 @@ impl PersistentNameReadVeto {
     }
 }
 
-/// Why a decision reader refused a persistent-name read before reading.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum WorthQueryDecisionNameDenial {
-    /// The operation did not declare a decision read of the entity or
-    /// relation kind.
-    UndeclaredDecisionTarget(WorthQueryInvariantDecisionPlanDenial),
-    /// The identity was issued by another reader, phase or kind, or a
-    /// relation handle does not designate the live relation it claims.
-    ForeignIdentity,
-    /// Names are read only at a committed basis; an applied candidate has no
-    /// published lineage to resolve against.
-    CandidateBasis,
-    /// A resolved live record could not be admitted as a local identity.
-    Identity(WorthQueryCurrentOutputDenial),
-    /// A live relation's endpoint could not be admitted as a local identity.
-    Endpoint(WorthQueryInvariantProjectionTraversalDenial),
-    /// The kind declares no owner scope, so nothing can own its records.
-    OwnerScopeUndeclared,
-    /// A hop of the kind's declared owner chain could not be read.
-    OwnerRead(WorthQueryInvariantProjectionTraversalDenial),
-    /// The name read itself refused.
-    Read(ExecutionNameReadDenial),
-}
-
-impl fmt::Display for WorthQueryDecisionNameDenial {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::UndeclaredDecisionTarget(denial) => write!(formatter, "{denial:?}"),
-            Self::ForeignIdentity => formatter.write_str("identity is foreign to this reader"),
-            Self::CandidateBasis => {
-                formatter.write_str("persistent names are read only at a committed basis")
-            }
-            Self::Identity(denial) => write!(formatter, "{denial:?}"),
-            Self::Endpoint(denial) | Self::OwnerRead(denial) => write!(formatter, "{denial:?}"),
-            Self::OwnerScopeUndeclared => {
-                formatter.write_str("the name kind declares no owner scope")
-            }
-            Self::Read(denial) => fmt::Display::fmt(denial, formatter),
-        }
-    }
-}
-
-impl std::error::Error for WorthQueryDecisionNameDenial {}
-
 /// The owning entity kind `Entity`'s declared owner scope reaches.
 pub type NameOwnerOf<Entity> =
     <<Entity as WorthQueryNamedKind>::OwnerScope as NameOwnerScope<Entity>>::Owner;
@@ -158,13 +117,13 @@ impl<Schema: ApplicationSchema, Operation>
         if !self.reader.identity_is_local(identity, Entity::IDENTIFIER) {
             return Err(WorthQueryDecisionNameDenial::ForeignIdentity);
         }
-        let named = {
-            let reader = self.name_reader()?;
+        self.require_candidate_unaltered(LineageRecordTarget::Entity(identity.entity_id))?;
+        let named = self.with_name_reader(|reader| {
             reader.entity_name_of::<Schema, Entity>(
                 identity.entity_id,
                 &mut NameReadDependencies::new(),
             )
-        };
+        })?;
         if let Some(veto) = PersistentNameReadVeto::for_name_of(&named) {
             self.decision_facts.veto_persistent_name(veto);
         }
@@ -210,12 +169,11 @@ impl<Schema: ApplicationSchema, Operation>
     {
         self.admit_name_read(Entity::IDENTIFIER)?;
         let mut dependencies = NameReadDependencies::new();
-        let (candidates, branch) = {
-            let reader = self.name_reader()?;
+        let (candidates, branch) = self.with_name_reader(|reader| {
             let candidates =
                 reader.entity_candidates::<Schema, Entity>(held, selection, &mut dependencies);
             (candidates, reader.branch().clone())
-        };
+        })?;
         let candidates = match candidates {
             Ok(candidates) => candidates,
             Err(read) => {
@@ -224,6 +182,7 @@ impl<Schema: ApplicationSchema, Operation>
                 return Ok(Err(ExecutionNameResolveDenial::Read(read)));
             }
         };
+        self.require_candidate_footprint(&dependencies, &branch)?;
         let mut identities = BTreeMap::new();
         for record in dependencies.live_records_on(&branch) {
             match record {
@@ -268,21 +227,6 @@ impl<Schema: ApplicationSchema, Operation>
             entity: entity.to_owned(),
         })
         .map_err(WorthQueryDecisionNameDenial::UndeclaredDecisionTarget)
-    }
-
-    pub(super) fn name_reader(
-        &self,
-    ) -> Result<ExecutionNameReader<'_>, WorthQueryDecisionNameDenial> {
-        let runtime = self
-            .reader
-            .native
-            .committed_runtime()
-            .ok_or(WorthQueryDecisionNameDenial::CandidateBasis)?;
-        Ok(ExecutionNameReader::at_observation(
-            runtime,
-            self.reader.execution,
-            &self.reader.observation,
-        ))
     }
 
     /// Admits a live record into the realized read scope as a local identity

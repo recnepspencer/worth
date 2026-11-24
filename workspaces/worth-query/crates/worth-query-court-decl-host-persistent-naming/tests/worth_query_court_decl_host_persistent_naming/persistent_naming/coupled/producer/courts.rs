@@ -37,7 +37,7 @@ impl World {
             .unwrap_or_else(|cause| panic!("{idempotency}: {cause:?}"))
     }
 
-    fn member_value(&self, key: &str) -> u64 {
+    pub(crate) fn member_value(&self, key: &str) -> u64 {
         self.request()
             .query(query::member::Read(key.to_owned()))
             .execute()
@@ -46,7 +46,7 @@ impl World {
             .value
     }
 
-    fn model_value(&self, key: &str) -> u64 {
+    pub(crate) fn model_value(&self, key: &str) -> u64 {
         self.request()
             .query(query::model::Read(key.to_owned()))
             .execute()
