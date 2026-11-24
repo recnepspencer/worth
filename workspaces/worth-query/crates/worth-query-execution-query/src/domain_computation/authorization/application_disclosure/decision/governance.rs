@@ -160,6 +160,20 @@ impl WorthQueryApplicationQueryGovernance {
         }
     }
 
+    /// Transfers the retained disclosure compilation reservation onto this
+    /// governance owner so compiled rule tables remain funded until dropped.
+    pub fn attach_disclosure_memory(
+        &mut self,
+        memory: Option<worth_execution::ExecutionMemoryReservation>,
+    ) {
+        if let Self::Governed {
+            disclosure_memory, ..
+        } = self
+        {
+            *disclosure_memory = memory;
+        }
+    }
+
     pub fn authorization_mut(&mut self) -> Option<&mut WorthQueryRetainedCapabilityAuthorization> {
         match self {
             Self::Public => None,

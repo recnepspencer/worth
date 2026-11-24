@@ -63,6 +63,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             plan,
             obligation_identity,
             disclosure,
+            disclosure_memory: None,
             canonical_work,
             continuation_index_id: None,
         })

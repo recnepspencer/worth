@@ -106,6 +106,7 @@ impl WorthQueryPreparedApplicationGovernance {
                 },
                 disclosure,
                 authorization: pending.authorization,
+                disclosure_memory: None,
             },
         }
     }

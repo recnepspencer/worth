@@ -29,12 +29,20 @@ enum StageError {
 type Failure = MapKernelFailure<StageError>;
 
 /// Compiles a query's disclosure contract under the caller's `ExecutionRequest`,
-/// charging work and reserving temporary/output compilation memory before allocation.
+/// charging work and reserving temporary/output compilation memory before
+/// allocation. Returns the live `ExecutionMemoryReservation` alongside the
+/// compiled contract so the caller keeps the backing accounted until drop.
 pub fn compile_funded_disclosure_contract<Schema, Query, Parameters, QueryResult, Scope>(
     query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
     layout: &WorthQueryPrimaryGraphLayout,
     execution: &ExecutionRequest<'_, '_>,
-) -> Result<WorthQueryAdmittedApplicationDisclosureContract, FundedDisclosureCompilationDenial> {
+) -> Result<
+    (
+        WorthQueryAdmittedApplicationDisclosureContract,
+        Option<worth_execution::ExecutionMemoryReservation>,
+    ),
+    FundedDisclosureCompilationDenial,
+> {
     let mut memory = None;
     let compiled = run_retained_stage(execution, &mut memory, |context, memory| {
         checkpoint(context, 1).map_err(MapKernelFailure::Stop)?;
@@ -66,7 +74,9 @@ pub fn compile_funded_disclosure_contract<Schema, Query, Parameters, QueryResult
             }
         })
     });
-    compiled.map_err(map_stop)
+    compiled
+        .map(|contract| (contract, memory))
+        .map_err(map_stop)
 }
 
 fn map_stop(stop: CaptureStop<StageError>) -> FundedDisclosureCompilationDenial {
@@ -203,6 +213,7 @@ fn backing_bytes<Schema, Query, Parameters, QueryResult, Scope>(
         .size();
     for rule in contract.rules() {
         checkpoint(context, 1).map_err(MapKernelFailure::Stop)?;
+        bytes = add(bytes, result_slot_key_bytes(rule.selector())?)?;
         bytes = add(bytes, header)?;
         bytes = add(
             bytes,
@@ -244,6 +255,7 @@ fn backing_bytes<Schema, Query, Parameters, QueryResult, Scope>(
             bytes = add(bytes, names)?;
         }
     }
+    bytes = add(bytes, validation_lookup_key_bytes(query, context)?)?;
     let vocabulary = ApplicationQueryObservableInfluence::ALL.len();
     let cone_bytes = tree_clone_bytes::<ApplicationQueryObservableInfluence>(vocabulary)
         .and_then(|b| b.checked_mul(2))
@@ -255,6 +267,128 @@ fn backing_bytes<Schema, Query, Parameters, QueryResult, Scope>(
             .map_err(|_| ovf())?
             .size(),
     )
+}
+
+/// Accounts heap backing for every `ApplicationQueryResultSlotKey` variant
+/// that the one-shot disclosure compiler allocates into `result_rules`.
+fn result_slot_key_bytes(selector: &ApplicationQueryDisclosureSelector) -> Result<usize, Failure> {
+    let ovf = || MapKernelFailure::Domain(StageError::Memory);
+    let sum = |lens: &[usize]| -> Result<usize, Failure> {
+        lens.iter()
+            .try_fold(0usize, |acc, &n| acc.checked_add(n))
+            .ok_or_else(ovf)
+    };
+    match selector {
+        ApplicationQueryDisclosureSelector::Field {
+            query_type,
+            slot_type,
+            entity,
+            aspect,
+            field,
+            output_name,
+            value_type,
+            ..
+        } => sum(&[
+            entity.capacity(),
+            aspect.capacity(),
+            field.capacity(),
+            output_name.capacity(),
+            query_type.retained_heap_bytes(),
+            slot_type.retained_heap_bytes(),
+            value_type.retained_heap_bytes(),
+        ]),
+        ApplicationQueryDisclosureSelector::Relation {
+            query_type,
+            slot_type,
+            relation,
+            from,
+            to,
+            output_name,
+            ..
+        } => sum(&[
+            relation.capacity(),
+            from.capacity(),
+            to.capacity(),
+            output_name.capacity(),
+            query_type.retained_heap_bytes(),
+            slot_type.retained_heap_bytes(),
+        ]),
+        ApplicationQueryDisclosureSelector::Orbit(o) => sum(&[
+            o.query_type().len(),
+            o.slot_type().len(),
+            o.relation().len(),
+            o.from().len(),
+            o.to().len(),
+            o.output_name().len(),
+        ]),
+        ApplicationQueryDisclosureSelector::Components(c) => sum(&[
+            c.query_type().len(),
+            c.slot_type().len(),
+            c.set().len(),
+            c.member().len(),
+            c.output_name().len(),
+        ]),
+        _ => Ok(0),
+    }
+}
+
+/// Accounts temporary lookup keys built by `validate_influence` even when a
+/// required internal rule is absent.
+fn validation_lookup_key_bytes<Schema, Query, Parameters, QueryResult, Scope>(
+    query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
+    context: &mut MapKernelContext<'_, '_>,
+) -> Result<usize, Failure> {
+    let ovf = || MapKernelFailure::Domain(StageError::Memory);
+    let mut total = 0usize;
+    let mut add3 = |a: &str, b: &str, c: &str| -> Result<(), Failure> {
+        total = total
+            .checked_add(a.len())
+            .and_then(|n| n.checked_add(b.len()))
+            .and_then(|n| n.checked_add(c.len()))
+            .ok_or_else(ovf)?;
+        Ok(())
+    };
+    let graph = query.read_graph();
+    for f in graph
+        .predicates()
+        .iter()
+        .map(|p| p.field())
+        .chain(
+            graph
+                .where_filter()
+                .map_or(&[][..], |w| w.fields())
+                .iter()
+                .map(|f| f.field()),
+        )
+        .chain(graph.ordering().iter().map(|o| o.field()))
+    {
+        checkpoint(context, 1).map_err(MapKernelFailure::Stop)?;
+        add3(f.0, f.1, f.2)?;
+    }
+    for related in graph.related_predicates() {
+        checkpoint(context, 1).map_err(MapKernelFailure::Stop)?;
+        add3(related.relation(), related.from(), related.to())?;
+        for t in related.target_predicates() {
+            let f = t.field();
+            add3(f.0, f.1, f.2)?;
+        }
+        for f in related
+            .target_where_filter()
+            .map_or(&[][..], |w| w.fields())
+        {
+            let f = f.field();
+            add3(f.0, f.1, f.2)?;
+        }
+    }
+    for guard in graph.root_paths().iter().flat_map(|p| p.guards()) {
+        checkpoint(context, 1).map_err(MapKernelFailure::Stop)?;
+        add3(
+            guard.entity(),
+            guard.aspect().as_str(),
+            guard.field().as_str(),
+        )?;
+    }
+    Ok(total)
 }
 
 fn add(bytes: u64, extra: usize) -> Result<u64, Failure> {

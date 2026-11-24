@@ -96,6 +96,7 @@ pub enum WorthQueryApplicationQueryGovernance {
         disclosure: WorthQueryApplicationDisclosureDecision,
         authorization: WorthQueryRetainedCapabilityAuthorization,
         authorization_canonical_work: WorthQueryCanonicalWorkEvidence,
+        disclosure_memory: Option<worth_execution::ExecutionMemoryReservation>,
     },
 }
 

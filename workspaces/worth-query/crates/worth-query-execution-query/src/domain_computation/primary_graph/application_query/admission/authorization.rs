@@ -51,6 +51,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         parameters: &WorthQueryAdmittedApplicationQueryParameters,
         mut pending_governance: Option<WorthQueryPendingApplicationQueryGovernance>,
         disclosure: WorthQueryAdmittedApplicationDisclosureContract,
+        disclosure_memory: Option<worth_execution::ExecutionMemoryReservation>,
     ) -> Result<AdmittedApplicationQueryAuthorities, WorthQueryApplicationQueryAdmissionDenial>
     {
         if let Some(pending) = pending_governance.as_mut() {
@@ -61,7 +62,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             )
             .map_err(WorthQueryApplicationQueryAdmissionDenial::from_authorization)?;
         }
-        let governance = admit_application_query_governance(
+        let mut governance = admit_application_query_governance(
             disclosure,
             pending_governance,
             WorthQueryApplicationGovernanceBinding::from_session(
@@ -73,6 +74,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             ),
         )
         .map_err(|kind| governance_denial(kind, query.name()))?;
+        governance.attach_disclosure_memory(disclosure_memory);
         let security = match index_posture {
             WorthQueryQueryIndexPosture::HistoricalAllPrimary => {
                 self.admit_query_product_security_basis(execution, security_product, basis)
