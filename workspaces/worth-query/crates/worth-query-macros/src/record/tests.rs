@@ -62,3 +62,36 @@ fn a_record_missing_a_mapping_or_with_an_unsupported_shape_is_refused() {
         assert!(message.contains(expected), "{source}: {message}");
     }
 }
+
+#[test]
+fn zero_string_selectors_are_emitted_on_row_and_aspect_while_keeping_aliases() {
+    let input = syn::parse_str(
+        "#[worth_query(bindings = C, aspect = TaskFacts, fragment = Board, entity = Task)] \
+         pub struct TaskFactsValue { #[worth_query(column = \"TaskKey\")] pub key: u64, pub due_window: Option<u32> }",
+    )
+    .unwrap();
+    let expanded = expand(&input).unwrap().to_string();
+    assert!(expanded.contains("pub type TaskKey ="), "{expanded}");
+    assert!(expanded.contains("pub type DueWindow ="), "{expanded}");
+    assert!(
+        expanded.contains("pub const KEY : TaskKey = < TaskKey > :: at (\"TaskKey\") ;"),
+        "{expanded}"
+    );
+    assert!(
+        expanded.contains("pub const fn select_key () -> TaskKey"),
+        "{expanded}"
+    );
+    assert!(
+        expanded.contains("pub const fn select_due_window () -> DueWindow"),
+        "{expanded}"
+    );
+    assert!(expanded.contains("impl TaskFacts"), "{expanded}");
+    assert!(
+        expanded.contains("pub const fn due_window () -> DueWindow"),
+        "{expanded}"
+    );
+    assert!(
+        expanded.contains("pub const DUE_WINDOW : DueWindow = < DueWindow > :: at (\"DueWindow\") ;"),
+        "{expanded}"
+    );
+}

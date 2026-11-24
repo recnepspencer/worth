@@ -4,6 +4,9 @@
 /// schema supplies it from one `ApplicationBindingContext`; see
 /// `__worth_query_contextual_query_binding`. The binding identity accepts any
 /// `&'static str` constant expression, including `worth_query_identity!`.
+/// With a context, `parameters => bind` (or an omitted `parameters` clause for
+/// parameterless queries) and an omitted `result` inherit both value bindings
+/// from the named query.
 #[macro_export]
 macro_rules! worth_query_query_binding {
     ($vis:vis $Binding:ident for $Input:ty, schema $Schema:ty, context $($rest:tt)*) => {
@@ -16,8 +19,8 @@ macro_rules! worth_query_query_binding {
         identity $identity:expr,
         input $InputBinding:path,
         query $Query:path,
-        parameters $ParameterBinding:path => $parameters:expr,
-        result $ResultBinding:path,
+        parameters $($ParameterBinding:path)? => $parameters:expr,
+        $(result $ResultBinding:path,)?
         principal $PrincipalBinding:ty, mapping $Mapping:ty, principal_entity $Principal:ty,
             principal_identity $PrincipalIdentity:ty, identity_binding $PrincipalIdentityBinding:ty,
         scope $Selected:ty,
@@ -28,7 +31,10 @@ macro_rules! worth_query_query_binding {
         $crate::worth_query_query_binding!(@binding
             $vis $Binding for $Input, schema $Schema,
             identity $identity, input $InputBinding, query $Query,
-            parameters $ParameterBinding, result $ResultBinding,
+            parameters $crate::__worth_query_binding_context!(@query_type [$($ParameterBinding)?]
+                $Schema, $Query, ParameterBinding),
+            result $crate::__worth_query_binding_context!(@query_type [$($ResultBinding)?]
+                $Schema, $Query, ResultBinding),
             principal $PrincipalBinding, mapping $Mapping, principal_entity $Principal,
             principal_identity $PrincipalIdentity, identity_binding $PrincipalIdentityBinding,
             scope_binding $crate::facade::application_query::ApplicationQueryFieldScope<
@@ -59,8 +65,8 @@ macro_rules! worth_query_query_binding {
         identity $identity:expr,
         input $InputBinding:path,
         query $Query:path,
-        parameters $ParameterBinding:path => $parameters:expr,
-        result $ResultBinding:path,
+        parameters $($ParameterBinding:path)? => $parameters:expr,
+        $(result $ResultBinding:path,)?
         principal $PrincipalBinding:ty, mapping $Mapping:ty, principal_entity $Principal:ty,
             principal_identity $PrincipalIdentity:ty, identity_binding $PrincipalIdentityBinding:ty,
         scope $Selected:ty,
@@ -70,7 +76,10 @@ macro_rules! worth_query_query_binding {
         $crate::worth_query_query_binding!(@binding
             $vis $Binding for $Input, schema $Schema,
             identity $identity, input $InputBinding, query $Query,
-            parameters $ParameterBinding, result $ResultBinding,
+            parameters $crate::__worth_query_binding_context!(@query_type [$($ParameterBinding)?]
+                $Schema, $Query, ParameterBinding),
+            result $crate::__worth_query_binding_context!(@query_type [$($ResultBinding)?]
+                $Schema, $Query, ResultBinding),
             principal $PrincipalBinding, mapping $Mapping, principal_entity $Principal,
             principal_identity $PrincipalIdentity, identity_binding $PrincipalIdentityBinding,
             scope_binding $crate::facade::application_query::ApplicationQueryPrincipalScope<
@@ -96,7 +105,7 @@ macro_rules! worth_query_query_binding {
     (@binding
         $vis:vis $Binding:ident for $Input:ty, schema $Schema:ty,
         identity $identity:expr, input $InputBinding:path, query $Query:path,
-        parameters $ParameterBinding:path, result $ResultBinding:path,
+        parameters $ParameterBinding:ty, result $ResultBinding:ty,
         principal $PrincipalBinding:ty, mapping $Mapping:ty, principal_entity $Principal:ty,
         principal_identity $PrincipalIdentity:ty, identity_binding $PrincipalIdentityBinding:ty,
         scope_binding $ScopeBinding:ty,

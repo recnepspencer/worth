@@ -1,11 +1,14 @@
 //! The aspect marker, its `Record` shape and its column selection aliases,
 //! written as the `field(..).and(..).build(..)` chain a hand-written record uses.
 use super::grammar::{Column, RecordDeclaration};
+use crate::case::screaming_snake_case;
 use crate::facade_paths::fragment;
+use crate::grammar::member_name;
 use proc_macro2::TokenStream;
-use quote::{quote, quote_spanned};
+use quote::{format_ident, quote, quote_spanned};
+use syn::ext::IdentExt;
 use syn::spanned::Spanned;
-use syn::DeriveInput;
+use syn::{DeriveInput, Ident};
 
 pub(super) fn record(input: &DeriveInput, record: &RecordDeclaration) -> TokenStream {
     let (frag, row, vis) = (fragment(), &input.ident, &input.vis);
@@ -70,22 +73,61 @@ fn shape(row: &syn::Ident, columns: &[Column]) -> TokenStream {
         .collect()
 }
 
-/// One alias per column. An application uses only some of them, so an unused
-/// alias is not a warning in the application's code.
+/// One alias per column, plus zero-string typed selectors on both the row
+/// (`Row::select_<field>()`, `Row::<FIELD>`) and its aspect marker
+/// (`Aspect::<field>()`, `Aspect::<FIELD>`). An application uses only some of
+/// them, so unused items never warn.
 fn selections(input: &DeriveInput, record: &RecordDeclaration) -> TokenStream {
     let Some((fragment_type, entity)) = &record.selections else {
         return TokenStream::new();
     };
-    let (frag, vis, aspect) = (fragment(), &input.vis, &record.aspect);
-    record
+    let (frag, row, vis, aspect) = (fragment(), &input.ident, &input.vis, &record.aspect);
+    let columns: Vec<_> = record
         .columns
         .iter()
         .filter_map(|column| {
-            let (alias, stored) = (column.alias.as_ref()?, &column.stored);
-            Some(quote_spanned! {column.stored.span()=>
-                #[allow(dead_code)]
-                #vis type #alias = #frag::FieldSelection<#fragment_type, #entity, #aspect, #stored>;
-            })
+            let alias = column.alias.as_ref()?;
+            let stored = &column.stored;
+            let name = &column.column;
+            let member = &column.member;
+            let select_fn = format_ident!("select_{}", member.unraw());
+            let const_name = Ident::new(&screaming_snake_case(&member_name(member)), member.span());
+            Some((alias, stored, name, member, select_fn, const_name))
         })
-        .collect()
+        .collect();
+    let aliases = columns.iter().map(|(alias, stored, ..)| {
+        quote_spanned! {stored.span()=>
+            #[allow(dead_code)]
+            #vis type #alias = #frag::FieldSelection<#fragment_type, #entity, #aspect, #stored>;
+        }
+    });
+    let row_selectors = columns.iter().map(|(alias, _, name, _, select_fn, const_name)| {
+        quote! {
+            #[allow(dead_code)]
+            #vis const #const_name: #alias = <#alias>::at(#name);
+            #[allow(dead_code)]
+            #vis const fn #select_fn() -> #alias {
+                <#alias>::at(#name)
+            }
+        }
+    });
+    let aspect_selectors = columns.iter().map(|(alias, _, name, member, _, const_name)| {
+        quote! {
+            #[allow(dead_code)]
+            #vis const #const_name: #alias = <#alias>::at(#name);
+            #[allow(dead_code)]
+            #vis const fn #member() -> #alias {
+                <#alias>::at(#name)
+            }
+        }
+    });
+    quote! {
+        #(#aliases)*
+        impl #row {
+            #(#row_selectors)*
+        }
+        impl #aspect {
+            #(#aspect_selectors)*
+        }
+    }
 }

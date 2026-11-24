@@ -19,3 +19,7 @@ pub trait ApplicationStructuredValueBinding: 'static {
 
     fn validate(value: &Self::Value) -> Result<(), ApplicationValueValidationDenial>;
 }
+
+crate::worth_query_structured_value_binding!(pub UnitApplicationValueBinding for () {
+    identity: "worth.rust.unit"
+});

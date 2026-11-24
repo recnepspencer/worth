@@ -1,79 +1,40 @@
-//! One feature, contribution and program; an in-memory Host under bounded
+//! One feature, contribution and program collapsed through
+//! `worth_query_application_program!`; an in-memory Host under bounded
 //! serial limits; and the local-process principal that uses it.
 use super::completion_correction::{self, CorrectCompletion, RestoreDoneBinding, RestoredDone};
 use super::{actions::*, reads, relations, schema::*};
 use std::time::Duration;
-use worth_query_decl::facade::application_schema::fragment::Registration;
 use worth_query_decl::facade::{application_program::*, application_schema::*, authentication::*};
 use worth_query_host::facade::admission::authenticated_principal::*;
 use worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema;
 use worth_query_host::facade::{
-    application_contribution::*, application_installation::*, primary_graph::*,
-    worth_query_application_contribution,
+    application_installation::*, primary_graph::*, worth_query_application_program,
 };
 
-pub struct BoardFeature;
-impl ApplicationFeature<Schema> for BoardFeature {
-    type Inputs = ApplicationFeatureInputLeaf;
-    const IDENTITY: &'static str = "macros.board.feature.v1";
-}
-worth_query_application_contribution! {
-    pub feature BoardDefinition<Schema> for BoardFeature => BoardRuntime {
-        schema: |schema| {
-            schema
-                .application_query(reads::search())
-                .application_query_binding::<reads::SearchBinding>()
-                .application_query(reads::due())
-                .application_query_binding::<reads::DueBinding>()
-                .application_query(relations::outline())
-                .application_query_binding::<relations::OutlineQueryBinding>()
-                .application_query(completion_correction::task_details())
-                .declared_operation(completion_correction::restore_done())
-        };
-        body_action(RenameBinding, Renamed) { operation: rename_definition(); };
-        body_action(RescheduleBinding, Rescheduled) { operation: reschedule_definition(); };
-        body_action_ref(CompleteBinding, Completed) {};
-        body_action_ref(RestoreDoneBinding, RestoredDone) {};
-    }
-}
-
-pub struct Contribution;
-impl ApplicationSchemaContribution<Schema> for Contribution {
-    const IDENTITY: ApplicationSchemaContributionIdentity =
-        ApplicationSchemaContributionIdentity::new("macros.board-contribution.v1");
-    type Members = (Board, PrincipalBinding, CorrectCompletion, Features);
-}
-/// Registers the feature definition's declared members.
-pub struct Features;
-impl Registration<Schema> for Features {
-    fn register(
-        schema: ApplicationSchemaDeclarationBuilder<Schema>,
-    ) -> Result<ApplicationSchemaDeclarationBuilder<Schema>, ApplicationSchemaDeclarationDenial>
-    {
-        Ok(BoardDefinition::declare_members(schema))
-    }
-}
-impl WorthQueryApplicationContribution<Schema> for Contribution {
-    type Configuration = <BoardDefinition as WorthQueryFeatureDefinition<Schema>>::Configuration;
-    fn configure(
-        configuration: Self::Configuration,
-        setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
-    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-        BoardDefinition::configure(configuration, setup)
-    }
-}
-
-pub struct Program;
-impl ApplicationProgramDefinition<Schema> for Program {
-    type Contributions = (Contribution,);
-    type Outputs = ApplicationProgramOutputs<
-        <BoardDefinition as ApplicationFeatureDefinition<Schema>>::Outputs,
-    >;
-    type Rules = ApplicationRuleLeaf;
-    const IDENTITY: ApplicationProgramIdentity =
-        ApplicationProgramIdentity::new("macros.program.v1");
-    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        BoardDefinition::feature_specs()
+worth_query_application_program! {
+    pub program Program for Schema {
+        identity: "macros.program.v1",
+        contribution: Contribution {
+            identity: "macros.board-contribution.v1",
+            members: [Board, PrincipalBinding, CorrectCompletion],
+        },
+        feature: BoardFeature => BoardDefinition / BoardRuntime {
+            identity: "macros.board.feature.v1",
+            schema: |schema| {
+                schema
+                    .application_query(completion_correction::task_details())
+                    .declared_operation(completion_correction::restore_done())
+            };
+            query(reads::SearchBinding) { definition: reads::search(); };
+            query(reads::DueBinding) { definition: reads::due(); };
+            query(reads::TitleSearchBinding) { definition: reads::title_search(); };
+            query(relations::OutlineQueryBinding) { definition: relations::outline(); };
+            body_action(RenameBinding, Renamed) as RenameAction { operation: rename_definition(); };
+            body_action(RescheduleBinding, Rescheduled) as RescheduleAction { operation: reschedule_definition(); };
+            body_action(RetitleFirstBinding, RetitledFirst) as RetitleFirstAction { operation: retitle_first_definition(); };
+            body_action_ref(CompleteBinding, Completed) as CompleteAction {};
+            body_action_ref(RestoreDoneBinding, RestoredDone) as RestoreAction {};
+        }
     }
 }
 pub type Host = WorthQueryProgramApplicationRuntime<Schema, Program>;

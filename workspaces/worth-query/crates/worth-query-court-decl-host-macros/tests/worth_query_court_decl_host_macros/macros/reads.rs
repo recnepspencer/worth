@@ -6,7 +6,7 @@ use worth_query_decl::facade::application_identity::ApplicationIdentityNamespace
 use worth_query_decl::facade::{
     application_query::*, application_schema::*, worth_query_application_query,
     worth_query_identity, worth_query_identity_namespace, worth_query_query_binding,
-    worth_query_structured_value_binding, WorthQueryProjection,
+    worth_query_structured_value_binding, WorthQuery, WorthQueryProjection,
 };
 
 pub const ROWS: ApplicationIdentityNamespace =
@@ -15,6 +15,8 @@ pub const SEARCH: ApplicationIdentityNamespace =
     worth_query_identity_namespace!("macros.tasks.search.v1");
 pub const DUE: ApplicationIdentityNamespace =
     worth_query_identity_namespace!("macros.tasks.due.v1");
+pub const TITLE_SEARCH: ApplicationIdentityNamespace =
+    worth_query_identity_namespace!("macros.tasks.title-search.v1");
 
 /// One task as every board read returns it.
 #[derive(Clone, Debug, Eq, PartialEq, WorthQueryProjection)]
@@ -38,7 +40,7 @@ worth_query_structured_value_binding!(pub ParametersBinding for () {
 worth_query_application_query!(pub SearchQuery for Schema, identity worth_query_identity!(SEARCH, query),
     parameters ParametersBinding, result RowBinding, scope Project => "Project", name "task_search");
 worth_query_application_query!(pub DueQuery for Schema, identity worth_query_identity!(DUE, query),
-    parameters ParametersBinding, result RowBinding, scope Project => "Project", name "task_due");
+    result RowBinding, scope Project => "Project", name "task_due");
 
 pub struct SearchText;
 pub struct MaxDue;
@@ -136,6 +138,40 @@ worth_query_query_binding!(pub SearchBinding for Search, schema Schema, context 
 );
 worth_query_query_binding!(pub DueBinding for DueBy, schema Schema, context BoardContext,
     identity worth_query_identity!(DUE, binding), input DueInput, query DueQuery,
-    parameters ParametersBinding => due_parameters, result RowBinding,
+    parameters => due_parameters,
     scope ProjectKey, field ProjectKey::at("ProjectKey"), value due_project, limits results 32
 );
+
+/// Parameterized read derived in one item via `#[derive(WorthQuery)]`.
+#[derive(Clone, Debug, WorthValue, WorthQuery)]
+#[worth_query(
+    schema = Schema,
+    context = BoardContext,
+    namespace = TITLE_SEARCH,
+    query = TitleSearchQuery,
+    binding = TitleSearchBinding,
+    result = RowBinding,
+    root = Task,
+    limits = 32,
+    name = "task_title_search",
+)]
+pub struct TitleSearch {
+    #[worth_query(scope = ProjectKey)]
+    pub project: u64,
+    pub q: String,
+}
+
+pub fn title_search(
+) -> ApplicationQueryDefinitionBuilder<Schema, TitleSearchQuery, (), TaskRow, Project> {
+    let filter = ApplicationQueryWhereFilterOperands::new()
+        .field("title", TaskFacts::title())
+        .and_then(|operands| operands.parameter("q", TitleSearchQuery::q()))
+        .and_then(|operands| operands.parse("contains_ignore_ascii_case(title, q)"))
+        .expect("title search filter admits");
+    TitleSearchQuery::definition()
+        .root_path(
+            ApplicationQueryRootPath::from(Project::reference()).forward(Contains::reference()),
+        )
+        .order_by(TaskRow::key(), ApplicationQueryOrderingDirection::Ascending)
+        .where_filter(filter)
+}

@@ -24,6 +24,18 @@ fn a_marker_without_exactly_one_role_or_with_a_foreign_key_is_refused() {
             "`owner` does not apply to an `entity`",
         ),
         (
+            "#[worth_query(entity, aspects(A), acyclic)] struct Task;",
+            "`acyclic` does not apply to an `entity`",
+        ),
+        (
+            "#[worth_query(entity, aspects(A), self_edges = false)] struct Task;",
+            "`self_edges` does not apply to an `entity`",
+        ),
+        (
+            "#[worth_query(entity, aspects(A), symmetric)] struct Task;",
+            "`symmetric` does not apply to an `entity`",
+        ),
+        (
             "#[worth_query(fragment)] struct Board;",
             "requires `#[worth_query(members = ..)]`",
         ),

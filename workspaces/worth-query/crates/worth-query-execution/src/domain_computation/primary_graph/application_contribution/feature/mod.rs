@@ -3,6 +3,7 @@ mod configuration;
 mod contract;
 mod definition;
 mod definition_macro;
+mod program_macro;
 pub use configuration::install;
 pub use configuration::{
     WorthQueryFeatureConfiguration, WorthQueryFeaturePairConfiguration,

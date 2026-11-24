@@ -1,6 +1,9 @@
 //! Public contract for the internal execution authority.
 
-pub use crate::{__worth_query_complete_feature, worth_query_application_contribution};
+pub use crate::{
+    __worth_query_complete_feature, worth_query_application_contribution,
+    worth_query_application_program,
+};
 #[doc(hidden)]
 pub use worth_query_declaration::facade as declaration;
 #[doc(hidden)]

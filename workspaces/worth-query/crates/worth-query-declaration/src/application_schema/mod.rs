@@ -130,6 +130,7 @@ pub use signing_supersession::{
     ApplicationSigningSupersessionParts,
 };
 mod value_binding;
+pub use value_binding::UnitApplicationValueBinding;
 mod values;
 
 #[cfg(test)]
@@ -234,7 +235,7 @@ pub use operation_component_read::{
     WorthQueryPortableOperationComponentReadParts,
 };
 pub use operation_definition::{
-    ApplicationOperationBody, ApplicationOperationBodyAuthoringDenial,
+    ApplicationInputField, ApplicationOperationBody, ApplicationOperationBodyAuthoringDenial,
     ApplicationOperationBodyBuilder, ApplicationOperationBodyCaptureRole,
     ApplicationOperationBodyChildCreation, ApplicationOperationBodyChildCreationBuilder,
     ApplicationOperationBodyCreatedField, ApplicationOperationBodyCreation,
@@ -257,8 +258,9 @@ pub use operation_definition::{
     ApplicationOperationBodySuccession, ApplicationOperationBodySuccessionOutputMatch,
     ApplicationOperationBodyValue, ApplicationOperationBodyValueProgram,
     ApplicationOperationBodyValueSnapshot, ApplicationOperationDefinition,
-    ApplicationOperationDefinitionBuilder, ApplicationSigningEvidenceRef,
-    ApplicationSigningEvidenceSource,
+    ApplicationOperationDefinitionBuilder, ApplicationOptionalInputField,
+    ApplicationSigningEvidenceRef, ApplicationSigningEvidenceSource,
+    TypedApplicationOperationBodyBuilder, TypedApplicationOperationBodyCreationBuilder,
 };
 pub use operation_dependency_locus::ApplicationOperationDependencyLocus;
 pub use operation_marker_identity::ApplicationOperationMarkerIdentity;

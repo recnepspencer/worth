@@ -4,7 +4,10 @@ use super::schema::{Board, PrincipalBinding, Schema};
 use worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationBuilder;
 
 mod action;
+mod body_and_scope;
+mod correction_and_program;
 mod projection;
+mod query;
 mod record;
 mod relation;
 

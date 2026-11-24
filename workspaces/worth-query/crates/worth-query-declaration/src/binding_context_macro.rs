@@ -94,8 +94,8 @@ macro_rules! __worth_query_contextual_query_binding {
         identity $identity:expr,
         input $InputBinding:path,
         query $Query:path,
-        parameters $ParameterBinding:path => $parameters:expr,
-        result $ResultBinding:path,
+        $(parameters $($ParameterBinding:path)? => $parameters:expr,)?
+        $(result $ResultBinding:path,)?
         $(principal $PrincipalBinding:ty, mapping $Mapping:ty, principal_entity $Principal:ty,
             principal_identity $PrincipalIdentity:ty, identity_binding $PrincipalIdentityBinding:ty,)?
         scope $Selected:ty,
@@ -104,7 +104,10 @@ macro_rules! __worth_query_contextual_query_binding {
         $crate::worth_query_query_binding!(@binding
             $vis $Binding for $Input, schema $Schema,
             identity $identity, input $InputBinding, query $Query,
-            parameters $ParameterBinding, result $ResultBinding,
+            parameters $crate::__worth_query_binding_context!(@query_type [$($($ParameterBinding)?)?]
+                $Schema, $Query, ParameterBinding),
+            result $crate::__worth_query_binding_context!(@query_type [$($ResultBinding)?]
+                $Schema, $Query, ResultBinding),
             principal $crate::__worth_query_binding_context!(@type [$($PrincipalBinding)?]
                 $Context, $Schema, PrincipalBinding),
             mapping $crate::__worth_query_binding_context!(@type [$($Mapping)?]
@@ -123,7 +126,9 @@ macro_rules! __worth_query_contextual_query_binding {
                 @principal_reference [$($PrincipalBinding)?] $Context, $Schema)
         );
         $crate::__worth_query_binding_context!(
-            @query_intent $Binding, $Input, $Schema, $Query, $parameters; $($scope)*
+            @query_intent $Binding, $Input, $Schema, $Query,
+            $crate::__worth_query_binding_context!(@query_parameters [$($parameters)?]);
+            $($scope)*
         );
     };
 }
@@ -132,6 +137,14 @@ macro_rules! __worth_query_contextual_query_binding {
 #[doc(hidden)]
 #[macro_export]
 macro_rules! __worth_query_binding_context {
+    (@query_type [$Stated:path] $Schema:ty, $Query:path, $Item:ident) => { $Stated };
+    (@query_type [] $Schema:ty, $Query:path, $Item:ident) => {
+        <$Query as $crate::facade::application_query::ApplicationQueryMarkerIdentity<$Schema>>::$Item
+    };
+    (@query_parameters [$parameters:expr]) => { $parameters };
+    (@query_parameters []) => {
+        |_: &_| $crate::facade::application_query::ApplicationQueryParameterSet::new()
+    };
     (@type [$Stated:ty] $Context:ty, $Schema:ty, $Item:ident) => { $Stated };
     (@type [] $Context:ty, $Schema:ty, $Item:ident) => {
         <$Context as $crate::facade::application_schema::ApplicationBindingContext<$Schema>>::$Item

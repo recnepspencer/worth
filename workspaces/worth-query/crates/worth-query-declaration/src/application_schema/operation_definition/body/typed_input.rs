@@ -1,0 +1,213 @@
+//! Compile-time-typed input-field references for authored operation bodies.
+//!
+//! Each reference carries the owning `Input` type, the scalar `Value` type, and
+//! the canonical serialized member name. Methods on
+//! [`ApplicationOperationBodyBuilder`] and
+//! [`ApplicationOperationBodyCreationBuilder`] delegate directly to the
+//! underlying member-name methods so typed and hand-written bodies produce
+//! identical canonical programs.
+
+use std::fmt;
+use std::marker::PhantomData;
+
+use crate::application_query::ApplicationQueryRootPath;
+use crate::application_schema::{
+    fragment::RecordSelection, ApplicationIdentityScalarValueBinding, ApplicationRelationRef,
+    OperationLinks, OperationReads, OperationUnlinks,
+};
+
+use super::{
+    ApplicationOperationBodyAuthoringDenial as Denial, ApplicationOperationBodyBuilder,
+    ApplicationOperationBodyCreationBuilder,
+};
+
+/// A compile-time-typed reference to one required scalar field on `Input`.
+///
+/// Carries no runtime authority: only the canonical input member name and the
+/// Rust types checked against the target operation and record column.
+pub struct ApplicationInputField<Input, Value> {
+    member: &'static str,
+    marker: PhantomData<fn(&Input) -> Value>,
+}
+
+impl<Input, Value> Copy for ApplicationInputField<Input, Value> {}
+
+impl<Input, Value> Clone for ApplicationInputField<Input, Value> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<Input, Value> fmt::Debug for ApplicationInputField<Input, Value> {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("ApplicationInputField")
+            .field("member", &self.member)
+            .finish()
+    }
+}
+
+impl<Input, Value> PartialEq for ApplicationInputField<Input, Value> {
+    fn eq(&self, other: &Self) -> bool {
+        self.member == other.member
+    }
+}
+
+impl<Input, Value> Eq for ApplicationInputField<Input, Value> {}
+
+impl<Input, Value> ApplicationInputField<Input, Value> {
+    /// Declares a typed reference to canonical input member `member`.
+    pub const fn new(member: &'static str) -> Self {
+        Self {
+            member,
+            marker: PhantomData,
+        }
+    }
+
+    /// The canonical serialized member name on `Input`.
+    pub const fn member(self) -> &'static str {
+        self.member
+    }
+}
+
+/// A compile-time-typed reference to one `Option<Value>` field on `Input`.
+///
+/// Carries no runtime authority: only the canonical input member name and the
+/// Rust types checked against the target operation and optional record column.
+pub struct ApplicationOptionalInputField<Input, Value> {
+    member: &'static str,
+    marker: PhantomData<fn(&Input) -> Option<Value>>,
+}
+
+impl<Input, Value> Copy for ApplicationOptionalInputField<Input, Value> {}
+
+impl<Input, Value> Clone for ApplicationOptionalInputField<Input, Value> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<Input, Value> fmt::Debug for ApplicationOptionalInputField<Input, Value> {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("ApplicationOptionalInputField")
+            .field("member", &self.member)
+            .finish()
+    }
+}
+
+impl<Input, Value> PartialEq for ApplicationOptionalInputField<Input, Value> {
+    fn eq(&self, other: &Self) -> bool {
+        self.member == other.member
+    }
+}
+
+impl<Input, Value> Eq for ApplicationOptionalInputField<Input, Value> {}
+
+impl<Input, Value> ApplicationOptionalInputField<Input, Value> {
+    /// Declares a typed reference to optional canonical input member `member`.
+    pub const fn new(member: &'static str) -> Self {
+        Self {
+            member,
+            marker: PhantomData,
+        }
+    }
+
+    /// The canonical serialized member name on `Input`.
+    pub const fn member(self) -> &'static str {
+        self.member
+    }
+}
+
+impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation, Input> {
+    /// Requires a present scope field equal to one typed required input field.
+    pub fn expect_typed_input<Field: RecordSelection>(
+        self,
+        field: Field,
+        input: ApplicationInputField<Input, Field::Value>,
+    ) -> Result<Self, Denial> {
+        self.expect_input(field, input.member())
+    }
+
+    /// Assigns a scope scalar from one typed required input field.
+    pub fn assign_typed_input<Field: RecordSelection>(
+        self,
+        field: Field,
+        input: ApplicationInputField<Input, Field::Value>,
+    ) -> Result<Self, Denial> {
+        self.assign_input(field, input.member())
+    }
+
+    /// Sets an optional scope scalar from one typed required input field.
+    pub fn set_typed_optional_input<Field: RecordSelection>(
+        self,
+        field: Field,
+        input: ApplicationInputField<Input, Field::Value>,
+    ) -> Result<Self, Denial> {
+        self.set_optional_input(field, input.member())
+    }
+
+    /// Replaces an optional scope scalar from one typed `Option<T>` input field.
+    pub fn assign_typed_optional_input<Field: RecordSelection>(
+        self,
+        field: Field,
+        input: ApplicationOptionalInputField<Input, Field::Value>,
+    ) -> Result<Self, Denial> {
+        self.assign_optional_input(field, input.member())
+    }
+
+    /// Requires a present terminal field along `path` equal to one typed input field.
+    pub fn expect_typed_input_from_path<Root, Selected, F>(
+        self,
+        path: ApplicationQueryRootPath<Schema, Root, Selected>,
+        field: F,
+        input: ApplicationInputField<Input, F::Value>,
+    ) -> Result<Self, Denial>
+    where
+        Root: OperationReads<Operation>,
+        Selected: OperationReads<Operation>,
+        F: RecordSelection<Entity = Selected>,
+    {
+        self.expect_input_from_path(path, field, input.member())
+    }
+
+    /// Replaces a nullable at-most-one outgoing reference from a typed `Option<T>` input field.
+    pub fn replace_relation_from_typed_input<R, Root, Selected, F>(
+        self,
+        relation: ApplicationRelationRef<Schema, R, Root, Selected>,
+        identity: F,
+        input: ApplicationOptionalInputField<Input, F::Value>,
+        key: &str,
+    ) -> Result<Self, Denial>
+    where
+        Root: OperationReads<Operation>,
+        Selected: OperationReads<Operation>,
+        R: OperationReads<Operation> + OperationLinks<Operation> + OperationUnlinks<Operation>,
+        F: RecordSelection<Entity = Selected>,
+        F::Binding: ApplicationIdentityScalarValueBinding,
+    {
+        self.replace_relation_from_input(relation, identity, input.member(), key)
+    }
+}
+
+impl<Schema, Operation, Input, Entity>
+    ApplicationOperationBodyCreationBuilder<Schema, Operation, Input, Entity>
+{
+    /// Initializes a created field from one typed required input field.
+    pub fn initialize_typed_input<Selection: RecordSelection<Entity = Entity>>(
+        self,
+        field: Selection,
+        input: ApplicationInputField<Input, Selection::Value>,
+    ) -> Result<Self, Denial> {
+        self.initialize_input(field, input.member())
+    }
+
+    /// Initializes an optional created field from one typed `Option<T>` input field.
+    pub fn initialize_typed_optional_input<Selection: RecordSelection<Entity = Entity>>(
+        self,
+        field: Selection,
+        input: ApplicationOptionalInputField<Input, Selection::Value>,
+    ) -> Result<Self, Denial> {
+        self.initialize_optional_input(field, input.member())
+    }
+}

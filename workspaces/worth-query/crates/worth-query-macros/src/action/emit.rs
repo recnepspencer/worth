@@ -2,7 +2,8 @@
 use super::grammar::{ActionDeclaration, Scope};
 use crate::facade_paths::{declaration, fragment};
 use proc_macro2::{Span, TokenStream};
-use quote::{quote, quote_spanned};
+use quote::{format_ident, quote, quote_spanned};
+use syn::ext::IdentExt;
 use syn::spanned::Spanned;
 use syn::{DeriveInput, Ident};
 
@@ -13,6 +14,7 @@ pub(super) fn action(input: &DeriveInput, action: &ActionDeclaration) -> TokenSt
     let operation = operation(input, action);
     let binding = mutation_binding(input, action);
     let scope_value = scope_value(input, action);
+    let input_fields = input_fields(input, action);
     let delivery = delivery(input, action);
     // An authored body reads input members; other handlers keep the default.
     let capture = action.body.then(|| quote!(, capture_input: true));
@@ -27,6 +29,7 @@ pub(super) fn action(input: &DeriveInput, action: &ActionDeclaration) -> TokenSt
         #operation
         #binding
         #scope_value
+        #input_fields
         #delivery
     }
 }
@@ -43,10 +46,15 @@ fn operation(input: &DeriveInput, action: &ActionDeclaration) -> TokenStream {
     let decl = declaration();
     let (vis, operation, schema, input_binding) =
         (&input.vis, &action.operation, &action.schema, &action.input);
-    let access = action
-        .access
-        .as_ref()
-        .map(|access| quote!(; access { #access }));
+    let access = action.access.as_ref().map_or_else(
+        || {
+            action.body.then(|| {
+                let (selection, column) = action.scope.selected_column();
+                quote!(; access { read_fields: [<#selection>::at(#column)]; })
+            })
+        },
+        |access| Some(quote!(; access { #access })),
+    );
     let capabilities = action
         .capabilities
         .iter()
@@ -88,6 +96,13 @@ fn mutation_binding(input: &DeriveInput, action: &ActionDeclaration) -> TokenStr
         Scope::Principal { selection, column } => quote! {
             scope #selection, principal_field <#selection>::at(#column),
         },
+        Scope::Value {
+            selection,
+            column,
+            function,
+        } => quote! {
+            scope #selection, field <#selection>::at(#column), value #function,
+        },
     };
     quote! {
         #decl::worth_query_mutation_binding!(
@@ -122,6 +137,35 @@ fn scope_value(input: &DeriveInput, action: &ActionDeclaration) -> Option<TokenS
             fn worth_query_scope(input: &Self) -> <#selection as #frag::RecordSelection>::Value {
                 #read
             }
+        }
+    })
+}
+
+/// Compile-time-typed `<field>_input()` accessors for authored body builders.
+fn input_fields(input: &DeriveInput, action: &ActionDeclaration) -> Option<TokenStream> {
+    if action.input_fields.is_empty() {
+        return None;
+    }
+    let (decl, intent, vis) = (declaration(), &input.ident, &input.vis);
+    let accessors = action.input_fields.iter().map(|field| {
+        let accessor = format_ident!("{}_input", field.member.unraw());
+        let wire = &field.wire_name;
+        let value_ty = &field.value_ty;
+        let carrier = if field.optional {
+            quote!(#decl::application_schema::ApplicationOptionalInputField)
+        } else {
+            quote!(#decl::application_schema::ApplicationInputField)
+        };
+        quote_spanned! {value_ty.span()=>
+            #[allow(dead_code)]
+            #vis const fn #accessor() -> #carrier<Self, #value_ty> {
+                #carrier::new(#wire)
+            }
+        }
+    });
+    Some(quote! {
+        impl #intent {
+            #(#accessors)*
         }
     })
 }

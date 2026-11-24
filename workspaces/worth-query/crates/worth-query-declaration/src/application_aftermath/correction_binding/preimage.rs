@@ -92,3 +92,21 @@ pub trait ApplicationCorrectionPreImage<Schema> {
         None
     }
 }
+
+/// Reads and decodes one recorded pre-image field using the column's declared
+/// scalar codec, preserving typed missing and invalid pre-image denials.
+pub fn decode_preimage_field<Schema, Field>(
+    preimage: &dyn ApplicationCorrectionPreImage<Schema>,
+    field: Field,
+) -> Result<Field::Value, super::ApplicationCorrectionDerivationDenial>
+where
+    Field: crate::application_schema::fragment::RecordSelection,
+{
+    let raw = preimage
+        .field(&DeclaredPreImageLocus::from_field(field))
+        .ok_or(super::ApplicationCorrectionDerivationDenial::MissingPreImage)?;
+    <Field::Binding as crate::application_schema::ApplicationReadableScalarValueBinding>::decode(
+        raw,
+    )
+    .map_err(|_| super::ApplicationCorrectionDerivationDenial::InvalidPreImage)
+}
