@@ -1,5 +1,4 @@
 //! One real succession replaces a dynamic member and retains its complete roster.
-use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::*;
 use crate::mvcc::publication::application_publication::meaning_fixture::{
     native_meaning_fixture, native_roles_fixture,

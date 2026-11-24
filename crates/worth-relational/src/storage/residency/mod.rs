@@ -6,8 +6,10 @@ pub(crate) use worth_relational_storage::internal_port::storage::residency::hist
 pub(crate) use worth_relational_storage::internal_port::storage::residency::history_presence;
 pub(crate) use worth_relational_storage::internal_port::storage::residency::kind_admission;
 pub(crate) use worth_relational_storage::internal_port::storage::residency::kind_commitment;
+#[cfg(test)]
 pub(crate) use worth_relational_storage::internal_port::storage::residency::kind_incremental;
 pub(crate) use worth_relational_storage::internal_port::storage::residency::kind_projection;
+#[cfg(test)]
 pub(crate) use worth_relational_storage::internal_port::storage::residency::source_retirement;
 pub(crate) mod region_capture;
 pub(crate) use worth_relational_storage::internal_port::storage::residency::region_capture_data;
@@ -17,6 +19,7 @@ pub(crate) use worth_relational_storage::internal_port::storage::residency::resi
 pub(crate) mod checkpoint_capture;
 #[cfg(test)]
 pub(crate) mod tests;
+#[cfg(test)]
 pub(crate) use worth_relational_storage::internal_port::storage::residency::probe;
 pub(crate) use worth_relational_storage::internal_port::storage::residency::required_symbols;
 pub use worth_relational_storage::internal_port::storage::residency::*;

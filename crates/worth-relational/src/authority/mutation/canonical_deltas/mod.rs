@@ -24,8 +24,6 @@ use data::CanonicalDeltaError;
 pub(crate) use data::{
     CanonicalAspectDeltaEvidence, CanonicalRecordAspectDelta, EvaluatedAspectBinding,
 };
-pub(crate) use patch_fragments::{
-    authoritative_patch_with_delta_supplements, published_patch_for_delta,
-    FoundationalPatchFragment,
-};
-pub(crate) use semantic_change_projection::semantic_changes;
+#[cfg(test)]
+pub(crate) use patch_fragments::authoritative_patch_with_delta_supplements;
+pub(crate) use patch_fragments::FoundationalPatchFragment;

@@ -1,5 +1,4 @@
 //! Whole-result enumeration retained only as a court oracle.
-use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::*;
 impl ExactProjectionReader<'_> {
     pub(super) fn collect_entity_records(

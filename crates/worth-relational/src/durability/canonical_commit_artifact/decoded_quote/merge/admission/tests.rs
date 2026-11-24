@@ -10,10 +10,7 @@ use worth_relational_contracts::internal_port::merge::data::artifacts::strategy_
 use worth_relational_contracts::internal_port::merge::data::artifacts::strategy_witness_policy_rows::RelationalMergeAspectPolicyWitnessRowOwnerPort as _;
 use super::*;
 mod optional_fields;
-use crate::history::data::{
-    BranchId, CommitId, MergeBaseSelectionRule, RelationalCommitReceipt,
-    RelationalMergeBranchBasis, ResolvedMergeBase,
-};
+use crate::history::data::{BranchId, CommitId, MergeBaseSelectionRule, RelationalCommitReceipt};
 use crate::identity::data::{EntityId, PartitionId, VersionId};
 use crate::merge::data::*;
 use crate::transactions::data::outcomes::plan_artifacts::{

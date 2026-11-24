@@ -8,9 +8,7 @@ pub(crate) use index_projection_source::verify_native_field_navigation;
 mod related_entity_ordering;
 mod relation_field_index_values;
 mod relation_join;
-pub(in crate::indexes) use field_projection_scope::{
-    entity_index_projection_scope, relation_index_projection_scope,
-};
+pub(in crate::indexes) use field_projection_scope::entity_index_projection_scope;
 
 pub(super) use checked_entry_map::checked_finish;
 pub(super) use entity_field_index_values::{

@@ -1,4 +1,5 @@
 //! Bind a candidate's native publication inputs and its exact Home inventory.
+#[cfg(test)]
 use std::sync::Arc;
 
 use super::RelationalPreparationRuntime;

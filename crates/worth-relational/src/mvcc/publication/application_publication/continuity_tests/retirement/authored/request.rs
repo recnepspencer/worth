@@ -1,5 +1,4 @@
 //! Both retirement readmission checkpoints retain the original cancellation.
-use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::*;
 use crate::authority::commit::pipeline::{stage_observation as observation, CommitStage};
 use crate::mvcc::publication::application_publication::meaning_fixture::native_roles_fixture;

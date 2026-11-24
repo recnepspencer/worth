@@ -1,11 +1,10 @@
-use worth_relational_contracts::internal_port::lineage::data::graph::LineageDivergenceSummaryParts;
-use worth_relational_contracts::internal_port::lineage::data::graph::assemble_lineage_divergence_summary;
+use std::collections::BTreeSet;
 use worth_relational_contracts::internal_port::lineage::data::events::LineageEventRecordFieldsPort as _;
-use worth_relational_contracts::internal_port::lineage::data::graph::LineageNodeFieldsPort as _;
+use worth_relational_contracts::internal_port::lineage::data::graph::assemble_lineage_divergence_summary;
+use worth_relational_contracts::internal_port::lineage::data::graph::LineageDivergenceSummaryParts;
 use worth_relational_contracts::internal_port::lineage::data::graph::LineageGraphDigestBasisOwnerPort as _;
 use worth_relational_contracts::internal_port::lineage::data::graph::LineageGraphSnapshotOwnerPort as _;
-use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
-use std::collections::BTreeSet;
+use worth_relational_contracts::internal_port::lineage::data::graph::LineageNodeFieldsPort as _;
 
 use crate::lineage::access::LineageAccess;
 use crate::lineage::data::{
@@ -106,9 +105,9 @@ impl<'runtime> LineageAccess<'runtime> {
                 .clone()])),
         )?;
         let mut nodes = self.branch_nodes_snapshot(execution, &request.branch_id)?;
-        nodes.sort_by_key(|node| (*node.owner_lineage_id()));
+        nodes.sort_by_key(|node| *node.owner_lineage_id());
         let mut events = self.branch_events_snapshot(&request.branch_id);
-        events.sort_by_key(|event| (*event.owner_event_id()));
+        events.sort_by_key(|event| *event.owner_event_id());
         self.runtime
             .performance_access()
             .count_lineage_graph_snapshot_request(nodes.len(), events.len());
@@ -118,14 +117,8 @@ impl<'runtime> LineageAccess<'runtime> {
             crate::lineage::data::LineageGraphDigestBasis::graph_digest_basis_for_test(
                 request.branch_id.clone(),
                 request.traversal_basis,
-                nodes
-                    .iter()
-                    .map(|node| (*node.owner_lineage_id()))
-                    .collect(),
-                events
-                    .iter()
-                    .map(|event| (*event.owner_event_id()))
-                    .collect(),
+                nodes.iter().map(|node| *node.owner_lineage_id()).collect(),
+                events.iter().map(|event| *event.owner_event_id()).collect(),
                 crate::lineage::data::LineageGraphDigestMode::ExactDigestCanonicalOrder,
             );
         Ok(

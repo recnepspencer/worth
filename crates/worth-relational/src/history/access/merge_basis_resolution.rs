@@ -2,7 +2,7 @@
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::history::data::{
     BranchId, CommitId, MergeBaseSelectionRule, RelationalCommitReceipt,
-    RelationalMergeBranchBasis, RelationalMergeBranchBasisDenial, ResolvedMergeBase,
+    RelationalMergeBranchBasis, RelationalMergeBranchBasisDenial,
 };
 use crate::runtime::state::subsystems::history::HistorySubsystem;
 use std::collections::BTreeSet;

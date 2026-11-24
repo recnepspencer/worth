@@ -190,7 +190,7 @@ pub(super) fn capture_committed_fixture(
         BranchId, CanonicalRecordAllocation, CommitId, RelationalCommitReceipt,
     };
     use crate::identity::data::{KindId, LineageId, VersionId};
-    use crate::lineage::data::{LineageEventKind, LineageEventRecord, LineageSubject};
+    use crate::lineage::data::{LineageEventKind, LineageSubject};
     use crate::schema::data::{
         EntityKindRegistration, RelationalSchemaRegistry, SchemaId, SchemaVersionId,
     };

@@ -1,5 +1,4 @@
 use std::collections::BTreeMap;
-use worth_relational_contracts::internal_port::indexes::data::entry_map::DerivedIndexRowsOwnerPort as _;
 
 use worth_foundational::{
     aspects, validate_aspect_value, AspectContract, AspectContractRevision, AspectIdentity,

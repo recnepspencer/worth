@@ -116,7 +116,7 @@ use worth_relational_storage::internal_port::storage::substrate::record_arena::a
     use crate::runtime::{RelationalRuntime, RelationalRuntimeConfig};
     use crate::storage::overlay::PartitionState;
     use crate::storage::substrate::{
-        EntityArena, EntityExtra, EntityRecordKind, PinClass, RelationArena, SlotInit,
+        EntityArena, EntityExtra, EntityRecordKind, RelationArena, SlotInit,
     };
 
     use super::{

@@ -114,12 +114,12 @@ fn replay_and_recovery_preserve_aspect_bearing_truth_across_a_hostile_mixed_work
         .checkpoint(execution)
         .unwrap();
 
-    let start_lineage = (*runtime
+    let start_lineage = *runtime
         .lineage_access()
         .for_record(execution, anchor)
         .unwrap()
         .unwrap()
-        .owner_lineage_id());
+        .owner_lineage_id();
 
     let replay = runtime
         .replay_authority()
@@ -269,12 +269,12 @@ fn hostile_commit_replay_equivalence_test() {
         .checkpoint(execution)
         .unwrap();
 
-    let anchor_lineage = (*runtime
+    let anchor_lineage = *runtime
         .lineage_access()
         .for_record(execution, anchor)
         .unwrap()
         .unwrap()
-        .owner_lineage_id());
+        .owner_lineage_id();
     let original_bundle = capture_aspect_truth_bundle(
         execution,
         &runtime,

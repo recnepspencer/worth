@@ -20,7 +20,6 @@ use crate::schema::data::{
 };
 use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
 use crate::transactions::data::primitives::TransactionId;
-use worth_relational_contracts::internal_port::publication::patch::data::semantic_change::PublishedAuthoritativeAspectChangeOwnerPort as _;
 
 pub(crate) fn canonical_schema_envelope_input(
     registry: &RelationalSchemaRegistry,

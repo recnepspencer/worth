@@ -215,7 +215,7 @@ fn digest_work_refusal_keeps_the_exact_value_checkpoint_cause() {
 fn historical_kind_reconstruction_preserves_original_work_stop_and_releases_scratch() {
     crate::storage::residency::resident_history::with_reconstruction_fixture(|fixture_lane| {
         use crate::execution::RelationalExecutionDenialCause as Stop;
-        use crate::storage::substrate::maintenance::{MaintenanceRefusal, ReconstructionLane};
+        use crate::storage::substrate::maintenance::MaintenanceRefusal;
         use kind_admission::maintained::{preserve_original_stop, KindMaintenanceError};
         let lane = fixture_lane;
         let budget = SerialMemoryBudget::new(Some(1 << 20));

@@ -9,7 +9,6 @@ use crate::transactions::data::{
     intents::MutationIntent, outcomes::transaction_commit_error::TransactionCommitError,
     primitives::RecordRef,
 };
-use worth_relational_contracts::internal_port::indexes::data::entry_map::DerivedIndexEntryMapOwnerPort as _;
 
 pub(crate) fn finalize_postures_in_working_state(
     allocator: &LineageIdentityAllocator,

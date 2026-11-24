@@ -1,7 +1,5 @@
 use worth_relational_storage::internal_port::storage::partition::adjacency::AdjacencySetFixturePort as _;
 use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::slot_lifecycle::RecordArenaFixturePort as _;
-use worth_relational_contracts::internal_port::indexes::data::entry_map::DerivedIndexEntryMapOwnerPort as _;
-use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use crate::config::data::{CascadeDeletePolicy, CrossContextPolicy, RelationalRuntimeConfig};
 use crate::identity::data::{EntityId, KindId, PartitionId, RelationId, VersionId};
 use crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;

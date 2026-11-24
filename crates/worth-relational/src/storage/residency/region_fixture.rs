@@ -1,8 +1,6 @@
 //! Producer-written region members and their immutable counted archive.
-use worth_relational_contracts::internal_port::indexes::data::entry_map::DerivedIndexEntryMapOwnerPort as _;
-use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
-use worth_relational_storage::internal_port::durability::medium::member_custody::RelationalDurableMemberCustodyOwnerPort as _;
 use super::super::{RelationalColdRegion, RelationalRegionResidency};
+use worth_relational_storage::internal_port::durability::medium::member_custody::RelationalDurableMemberCustodyOwnerPort as _;
 #[path = "region_fixture/placement_registration.rs"]
 mod placement_registration;
 pub(super) use super::checkpoint_inputs::CountedSource;
@@ -248,7 +246,6 @@ use crate::indexes::data::DerivedIndexArtifacts;
 use crate::storage::data::checkpoint_member::RelationalCheckpointMember;
 use crate::storage::data::member_frame::{self, MemberKind};
 use crate::storage::residency::PreparedResidentRegion;
-use crate::storage::substrate::maintenance::ReconstructionLane;
 
 #[derive(Debug)]
 pub(super) struct SelectedRegionArchive {

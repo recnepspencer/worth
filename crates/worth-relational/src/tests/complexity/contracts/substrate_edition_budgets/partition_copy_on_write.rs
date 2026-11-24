@@ -7,7 +7,6 @@
 //! the spine cost and the partition cost apart, and pair every positive witness
 //! with the unobserved run that must charge nothing.
 
-use crate::storage::substrate::PinClass;
 use crate::tests::support::*;
 
 #[test]

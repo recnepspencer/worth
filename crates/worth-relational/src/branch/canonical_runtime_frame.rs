@@ -14,9 +14,7 @@ use super::basis_descriptor::{
     RelationalBranchBasisDescriptor, RelationalLiveBranchBasisDescriptorAxes,
 };
 use super::reference_checkpoint_data::canonical_observation;
-pub(crate) use super::reference_checkpoint_data::{
-    CANONICAL_RUNTIME_INSTANCE_ID, CANONICAL_TRANSACTION_ID,
-};
+pub(crate) use super::reference_checkpoint_data::CANONICAL_RUNTIME_INSTANCE_ID;
 use crate::branch::reference::observation::RelationalBranchObservationConstructionDenial;
 
 /// Recorded basis descriptors carry no process-local root allocation: root

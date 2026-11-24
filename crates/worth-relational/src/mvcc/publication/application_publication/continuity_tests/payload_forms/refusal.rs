@@ -1,5 +1,4 @@
 //! Actual installed publication denial exposes metadata, never proposal strings.
-use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::*;
 #[test]
 fn empty_optional_struct_refusal_carries_numeric_member_and_redacts_proposal_strings() {

@@ -4,9 +4,9 @@ use super::root::{RelationalBranchRoot, RelationalBranchRootCaptureDenial as Den
 use crate::history::data::{CanonicalCommitEnvelope, RelationalDescriptiveTouch as Touch};
 use crate::identity::data::PartitionId;
 use crate::storage::residency::{PartitionHeadProbe, RelationalRegionHeadView};
+use crate::storage::substrate::maintenance::partition_records::project_records;
 use crate::storage::substrate::maintenance::{
-    partition_records::project_records, ChangeWork, ChangedRecord, MaintenanceRefusal,
-    MaintenanceRoute, PartitionChange,
+    ChangeWork, ChangedRecord, MaintenanceRefusal, MaintenanceRoute,
 };
 use crate::storage::RelationalPublishedPartitionDelta;
 use crate::transactions::data::primitives::RecordRef;

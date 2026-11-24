@@ -23,8 +23,7 @@ pub use access::{
 };
 pub use authority::{HistoryAuthority, OutputOriginHeaderCorruptionForTest};
 pub(crate) use commit::{
-    OriginalCanonicalInputs, RelationalCommitArtifact, RelationalCommitAuthoritativeAllocationKind,
-    RelationalCommitCatalog,
+    RelationalCommitArtifact, RelationalCommitAuthoritativeAllocationKind, RelationalCommitCatalog,
 };
 pub use commit::{
     RelationalCommitArtifactDenial, RelationalCommitCatalogAppendDenial,
@@ -33,10 +32,9 @@ pub use commit::{
     RelationalRetainedSelectionArtifactDenial,
 };
 
-pub(crate) use commit::{
-    RelationalCommitEnvelopeResidency, RelationalCommitIndexEntry, RetainedCanonicalIndex,
-    RetiredCanonicalPlacement,
-};
+pub(crate) use commit::RelationalCommitEnvelopeResidency;
+#[cfg(test)]
+pub(crate) use commit::{RelationalCommitIndexEntry, RetainedCanonicalIndex};
 #[cfg(test)]
 #[path = "mod_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;

@@ -6,8 +6,7 @@ use crate::identity::data::{KindId, VersionId};
 use crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable;
 use crate::storage::overlay::PartitionMutationJournal;
 use crate::storage::residency::{PreparedResidentRegion, RegionCaptureBasis};
-use crate::storage::substrate::{maintenance::ReconstructionLane, EntityExtra, SlotInit};
-use crate::storage::substrate::{EntityArena, RelationArena};
+use crate::storage::substrate::{EntityArena, EntityExtra, RelationArena, SlotInit};
 use crate::symbols::data::StringInterner;
 use worth_execution::{CancellationSource, SerialMemoryBudget, SerialRequest};
 use worth_foundational::facade::{

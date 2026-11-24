@@ -1,3 +1,4 @@
+#[cfg(test)]
 use crate::internal_port::validation::data::rules::InvariantRuleOwnerPort as _;
 pub mod canonical_registration_identity;
 pub mod canonical_registration_tags;

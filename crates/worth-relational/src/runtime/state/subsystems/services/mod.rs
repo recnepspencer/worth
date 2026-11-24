@@ -10,10 +10,9 @@ use crate::runtime::state::subsystems::RuntimeSubsystem;
 pub(crate) use compiled_artifacts::CompiledArtifactStore;
 pub(crate) use instrumentation::RuntimeInstrumentation;
 use sequence::RuntimeSequenceState;
-pub(crate) use symbol_table::{
-    MutationSymbolMeanings, PendingSymbolMeanings, PreparedSymbolPublication, RuntimeSymbolTable,
-    SymbolReservationDenial,
-};
+#[cfg(test)]
+pub(crate) use symbol_table::SymbolReservationDenial;
+pub(crate) use symbol_table::{PendingSymbolMeanings, RuntimeSymbolTable};
 
 #[derive(Debug, Clone)]
 pub(crate) struct RuntimeServices {

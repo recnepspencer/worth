@@ -2,7 +2,7 @@ use std::num::NonZeroU64;
 use std::sync::Arc;
 
 use super::{structural_views::StructuralRelationView, CustomInvariantWorkMeter};
-use crate::identity::data::{EntityId, KindId, PartitionId, RelationId, VersionId};
+use crate::identity::data::{EntityId, PartitionId, VersionId};
 use crate::storage::overlay::PartitionState;
 use crate::validation::data::descriptor::CustomInvariantAccessContract;
 use crate::validation::engine::state_view::InvariantStateView;

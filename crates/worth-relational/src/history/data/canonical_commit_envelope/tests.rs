@@ -25,10 +25,7 @@ use crate::transactions::data::intents::mutation_intent::EntityMutationIntent;
 use crate::transactions::data::intents::mutation_intent::MutationIntent;
 use crate::transactions::data::intents::mutation_intent::UpdateEntityFieldsIntent;
 use crate::transactions::data::mutation_planning::CommitTopology;
-use crate::transactions::data::outcomes::commit_semantic_result::{
-    RelationalCommitPublicationMeaning, RelationalCommitSemanticResult,
-    RelationalCommitStructuralMeaning,
-};
+use crate::transactions::data::outcomes::commit_semantic_result::{RelationalCommitPublicationMeaning, RelationalCommitStructuralMeaning};
 use crate::transactions::data::outcomes::commit_summaries::CommitSchemaSummary;
 use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
 use crate::transactions::data::primitives::RecordRef;

@@ -42,21 +42,17 @@ mod position_retention;
 pub(crate) mod retained_position;
 #[path = "canonical_publication_routes/source_retirement.rs"]
 mod source_retirement;
-pub(crate) use crate::branch::transition::BranchTransitionRecordError;
 use branch_transition_stream::BranchTransitionStream;
 pub(crate) use branch_transition_stream::{
     BranchTransitionPublication, ForkTransitionRoutes, OriginalBranchSchemaInputs,
-    OriginalBranchSchemaInputsDenial, OriginalEmptySchemaInstallation,
-    OriginalEmptySchemaObservation, RetainedBranchTransition,
+    OriginalBranchSchemaInputsDenial, OriginalEmptySchemaObservation,
 };
 pub(crate) use patch_position_reservation::PatchPositionReservationAdmission;
 pub use patch_position_reservation::RelationalPatchPositionReservationCounters;
 pub(crate) use performed_stream::PerformedCheckpointSelection;
 use performed_stream::PerformedPublicationStream;
+pub(crate) use position_admission::CanonicalPositionAdmission;
 pub use position_admission::RelationalCanonicalPositionAdmissionDenial;
-pub(crate) use position_admission::{
-    readmit_positioned_canonical_commit, CanonicalPositionAdmission,
-};
 pub(crate) use source_retirement::RelationalPerformedSourceWalk;
 
 pub(crate) struct RelationalCanonicalPublicationRoutes {

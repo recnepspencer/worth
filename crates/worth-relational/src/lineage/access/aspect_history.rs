@@ -1,4 +1,3 @@
-use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use crate::history::data::{LineageAspectHistory, LineageAspectHistoryQueryResult};
 use crate::lineage::access::LineageAccess;
 use crate::lineage::data::HistoricalResolutionRequest;

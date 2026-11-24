@@ -3,7 +3,7 @@ mod replay_retention;
 mod snapshot_handle_binding;
 mod snapshot_handles;
 
-pub(crate) use cache::{VisibilityCache, VisibilityResidency};
+pub(crate) use cache::VisibilityCache;
 use replay_retention::ReplayRetentionIndex;
 pub(crate) use snapshot_handle_binding::SnapshotHandleBinding;
 pub(crate) use snapshot_handles::{

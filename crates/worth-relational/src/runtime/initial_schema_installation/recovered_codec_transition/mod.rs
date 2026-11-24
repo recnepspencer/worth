@@ -2,7 +2,6 @@
 use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 #[path = "field_comparison_request.rs"]
 mod physical_field_basis;
-pub(crate) use crate::schema::codec_field_comparison::CodecFieldLocus;
 pub(crate) use physical_field_basis::codec_field_changes;
 
 use crate::runtime::RelationalRuntime;

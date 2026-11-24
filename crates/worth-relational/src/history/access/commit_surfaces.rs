@@ -3,7 +3,6 @@ use crate::branch::{RelationalBranchReferenceObservation, RelationalBranchVersio
 use crate::history::data::CanonicalCommitEnvelope;
 use crate::history::data::{BranchId, CommitId, RelationalCommitReceipt};
 use crate::publication::patch::data::PatchStreamPosition;
-use worth_relational_contracts::internal_port::indexes::data::entry_map::DerivedIndexRowsOwnerPort as _;
 
 use super::HistoryAccess;
 

@@ -1,5 +1,4 @@
 //! Ordinary authored retirement carries complete relation custody into warm/cold reissue.
-use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::*;
 use crate::identity::data::RelationId;
 use crate::mvcc::publication::application_publication::meaning_fixture::{

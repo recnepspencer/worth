@@ -2,7 +2,6 @@
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{mpsc, Mutex};
 use std::time::{Duration, Instant};
-use worth_relational_contracts::internal_port::indexes::data::entry_map::DerivedIndexEntryMapOwnerPort as _;
 
 #[derive(Default)]
 pub(super) struct LifecycleOrderControl {

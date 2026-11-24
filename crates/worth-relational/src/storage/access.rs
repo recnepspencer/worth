@@ -7,6 +7,7 @@ use crate::storage::data::{
     StorageStats,
 };
 use crate::storage::substrate::RecordKind;
+#[cfg(test)]
 use worth_relational_storage::internal_port::storage::residency::cell::observation::RelationalRegionResidencyFixturePort as _;
 
 pub struct StorageAccess<'runtime> {

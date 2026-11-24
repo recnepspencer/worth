@@ -14,7 +14,6 @@ use crate::validation::data::{
     rules::InvariantRule,
 };
 use serde::Serialize;
-use worth_relational_contracts::internal_port::validation::data::rules::InvariantRuleOwnerPort as _;
 
 pub(super) fn schema() -> (Vec<u8>, Vec<u8>) {
     let detail = SchemaDiffDetail::AddedField {

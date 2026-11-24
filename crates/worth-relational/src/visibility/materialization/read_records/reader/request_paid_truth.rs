@@ -1,5 +1,4 @@
 //! Each truth seam must refuse without returning a partial row set.
-use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::super::read_prices::{
     ASPECT_BINDING, ASPECT_COMPARISON, EXAMINE_SLOT, KEYED_RECORD, RESERVE_RECORD,
 };

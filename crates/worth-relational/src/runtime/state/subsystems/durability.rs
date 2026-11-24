@@ -14,9 +14,7 @@ pub(crate) mod checkpoint_selection;
 pub(crate) mod commit_log;
 mod source_retirement;
 mod state;
-pub(crate) use checkpoint_selection::{
-    RelationalCheckpointManifestPublication, RelationalCheckpointManifestSelection,
-};
+pub(crate) use checkpoint_selection::RelationalCheckpointManifestSelection;
 
 use state::DurabilityState;
 

@@ -6,7 +6,6 @@ use worth_execution::{
     ChargedBytes, ExecutionRequest, ExecutionScan, MapKernelFailure, ScanOutcome,
 };
 use worth_foundational::{facade::AspectKey, PartitionIdentity};
-use worth_relational_contracts::internal_port::content::registry::RelationalContentFormatRegistryOwnerPort as _;
 
 struct ReadVersions {
     versions: Vec<(AspectKey, u64)>,

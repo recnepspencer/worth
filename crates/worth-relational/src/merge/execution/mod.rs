@@ -1,3 +1,4 @@
+#[cfg(test)]
 use worth_relational_contracts::internal_port::history::data::merge_branch_basis::RelationalMergeBranchBasisFieldsPort as _;
 mod aspect_plan_compilation;
 mod authority_verification;

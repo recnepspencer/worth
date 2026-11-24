@@ -1,4 +1,3 @@
-use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::native_strategy_fixtures::*;
 
 macro_rules! assert_target_state_unchanged {

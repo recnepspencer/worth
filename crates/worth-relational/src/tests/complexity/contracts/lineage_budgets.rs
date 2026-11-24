@@ -18,12 +18,12 @@ fn complexity_budget_lineage_historical_resolution_reports_branch_scoped_work() 
     let runtime = runtime_with_test_schema();
     let created = create_entity_outcome(execution, &runtime, "source");
     let entity = changed_entities(&created)[0];
-    let start_lineage = (*runtime
+    let start_lineage = *runtime
         .lineage_access()
         .for_record(execution, entity)
         .unwrap()
         .unwrap()
-        .owner_lineage_id());
+        .owner_lineage_id();
 
     for index in 0..5 {
         let label = format!("noise-{index}");

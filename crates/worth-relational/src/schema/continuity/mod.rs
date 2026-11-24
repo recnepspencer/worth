@@ -1,6 +1,7 @@
 mod authority_input;
 mod bundle_admission;
 pub(crate) use worth_relational_contracts::internal_port::schema::continuity::errors;
+#[cfg(test)]
 pub(crate) use worth_relational_contracts::internal_port::schema::continuity::transition_classification;
 pub(crate) use worth_relational_contracts::internal_port::schema::continuity::transition_lowering;
 pub(crate) use worth_relational_contracts::internal_port::schema::continuity::transition_validation;

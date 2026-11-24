@@ -6,7 +6,6 @@ use crate::storage::substrate::{
     SlotInit,
 };
 use std::collections::BTreeMap;
-use worth_relational_contracts::internal_port::indexes::data::entry_map::DerivedIndexRowsOwnerPort as _;
 
 #[test]
 fn consequence_demand_recovers_untouched_adjacency_after_sequential_promotion() {

@@ -1,5 +1,3 @@
-use worth_relational_contracts::internal_port::indexes::data::entry_map::DerivedIndexRowsOwnerPort as _;
-use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 #[cfg(test)]
 mod tests {
     use super::super::aspect_version_read::read_versions;

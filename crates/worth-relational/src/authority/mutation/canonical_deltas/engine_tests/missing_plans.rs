@@ -1,4 +1,3 @@
-use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use crate::authority::mutation::outcomes::RecordMutation;
 use crate::identity::data::{EntityId, KindId, PartitionId, RelationId};
 use crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable;

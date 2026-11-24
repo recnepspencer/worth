@@ -17,10 +17,13 @@ pub use owned_graph_selection::{
     RelationalOwnedGraphSelection, RelationalOwnedGraphSelectionPreparationError,
 };
 pub(crate) mod transaction;
+#[cfg(test)]
 pub(crate) use transaction::normalized_plan as plan_copy_admission;
+#[cfg(test)]
 pub(crate) use transaction::normalized_plan::OwnedNormalizedPlan;
 #[cfg(test)]
 pub(crate) use transaction::split_contacts;
+#[cfg(test)]
 pub(crate) use transaction::OwnedMergePlan;
 pub(crate) mod validation;
 
@@ -32,9 +35,7 @@ pub use crate::runtime::{
 };
 pub use observation::RelationalBranchObservation;
 pub use publication::RelationalInstalledApplicationPublicationAuthority;
-pub(crate) use publication::{
-    origin_denial, RequiredOutputInputs, RequiredOutputPublicationAdmission,
-};
+pub(crate) use publication::RequiredOutputPublicationAdmission;
 pub use publication::{
     AuthoredOwnedMemberKind, CompanionBranchCell, CompanionBranchCellSlot, CompanionBranchImage,
     CompanionCellEditStop, CompanionDerivedRootCleanup, CompanionDerivedRootInstalled,
@@ -51,11 +52,7 @@ pub use publication::{
     RelationalPublicationProjectionPosture, ReservedCompanionBranchCell,
     StaleRelationalBranchObservation,
 };
-pub(crate) use publication::{
-    PreparedManagedIndexSourceFork, PreparedRelationalCandidateAdmissionStop,
-    PreparedRelationalPublication, PreparedRelationalPublicationAccelerators,
-    PublicationPreparationDenial,
-};
+pub(crate) use publication::{PreparedManagedIndexSourceFork, PublicationPreparationDenial};
 pub use publication::{
     RelationalAuthoredCoupledOwners, RelationalAuthoredRestoration, RelationalAuthoredRetirement,
     RelationalCoupledAssemblyFailure, RelationalCoupledAuthoredPublication,
@@ -97,9 +94,6 @@ pub use validation::{
     ValidatedMutationTouchProjectionWork, ValidatedMutationTouches, ValidatedRelationMutation,
     ValidatedRelationMutationFootprint, ValidatedRelationalProposal,
 };
-
-#[cfg(test)]
-pub(crate) use publication::native_birth_fixture;
 
 pub(crate) use validation::ValidatedProposalState;
 #[cfg(test)]

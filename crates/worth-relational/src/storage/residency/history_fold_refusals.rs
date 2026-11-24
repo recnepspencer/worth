@@ -1,6 +1,5 @@
 //! Directory disagreement and row amplification refuse bounded reconstruction.
 use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::slot_lifecycle::metadata::RecordArenaFixturePort as _;
-use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::super::region_image::*;
 use super::layered_history_tests::{counted, encode_layer};
 use super::*;

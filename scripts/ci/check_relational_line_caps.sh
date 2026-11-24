@@ -10,7 +10,9 @@ ALLOWLIST="scripts/ci/relational_line_cap_allowlist.txt"
 echo "[relational-line-caps] enforcing ${CAP}-line source file cap"
 
 violations=0
+checked=0
 while IFS= read -r file; do
+  checked=$((checked + 1))
   line_count="$(wc -l < "$file" | tr -d ' ')"
   if (( line_count > CAP )); then
     if [[ -f "$ALLOWLIST" ]] && grep -Fxq "$file" "$ALLOWLIST"; then
@@ -20,10 +22,15 @@ while IFS= read -r file; do
       violations=1
     fi
   fi
-done < <(find crates/worth-relational{,-contracts,-storage}/src -type f -name '*.rs' | sort)
+done < <(find crates/worth-relational/src crates/worth-relational-contracts/src crates/worth-relational-storage/src -type f -name '*.rs' | sort)
+
+if (( checked == 0 )); then
+  echo "[relational-line-caps] FAIL: no Rust source files found" >&2
+  exit 1
+fi
 
 if (( violations != 0 )); then
   exit 1
 fi
 
-echo "[relational-line-caps] PASS"
+echo "[relational-line-caps] PASS: checked ${checked} Rust files"

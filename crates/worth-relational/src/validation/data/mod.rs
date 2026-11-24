@@ -15,20 +15,23 @@ pub(crate) use worth_relational_contracts::internal_port::validation::data::stru
 
 pub use catalog::{InvariantCatalog, InvariantRegistration};
 pub use contracts::InvariantPlanContract;
+#[cfg(test)]
+pub(crate) use custom_rule::TouchedStructuralSet;
 pub use custom_rule::{
     CompleteStructuralWalk, CustomInvariantExecutionContext, CustomInvariantExecutionError,
     CustomInvariantInterruption, CustomInvariantLeaseBudget, CustomInvariantNativeCheckpointDenial,
-    CustomInvariantNonApplicability, CustomInvariantPreparationError, CustomInvariantProvenance,
-    CustomInvariantReadBudget, CustomInvariantRefusal, CustomInvariantRegistration,
-    CustomInvariantRegistrationError, CustomInvariantRule, CustomInvariantScopePlanner,
-    CustomInvariantTouchedSummary, CustomInvariantTraversalSummary, CustomInvariantVerdict,
-    InvariantEntityIds, InvariantPartitionIds, InvariantRelationIds, PlannedRelationEndpointUpdate,
-    StructuralAspectStateView, StructuralCountView, StructuralReadError, StructuralRelationRecord,
+    CustomInvariantNonApplicability, CustomInvariantPreparationError, CustomInvariantReadBudget,
+    CustomInvariantRefusal, CustomInvariantRegistration, CustomInvariantRegistrationError,
+    CustomInvariantRule, CustomInvariantScopePlanner, CustomInvariantVerdict, InvariantEntityIds,
+    InvariantPartitionIds, InvariantRelationIds, PlannedRelationEndpointUpdate,
+    StructuralAspectStateView, StructuralReadError, StructuralRelationRecord,
     StructuralRelationView, StructuralWalkDenial, StructuralWalkDenialKind, StructuralWalkReads,
     StructuralWalkStep,
 };
-pub(crate) use custom_rule::{PlannedEntityCreate, PlannedRelationCreate, TouchedStructuralSet};
-pub(crate) use custom_rule::{PreparedCustomInvariantExecution, PreparedCustomInvariantScope};
+#[cfg(test)]
+pub use custom_rule::{
+    CustomInvariantProvenance, CustomInvariantTraversalSummary, StructuralCountView,
+};
 pub use descriptor::{
     CustomInvariantAccessContract, CustomInvariantDescriptor, CustomInvariantOperationalMetadata,
 };
@@ -36,14 +39,13 @@ pub use descriptor::{
 pub use execution::InvariantWitnessBasis;
 pub use execution::{
     InvariantClass, InvariantDecisionKind, InvariantDecisionRecord, InvariantExecutionPoint,
-    InvariantFailureEffect, InvariantReportedRule, InvariantVerdict, InvariantWitnessKey,
+    InvariantFailureEffect, InvariantReportedRule, InvariantVerdict,
 };
 pub use groups::{InvariantCostClass, InvariantGroup, InvariantGroupSet};
 pub use results::{
     CustomInvariantFailureIdentity, CustomInvariantFailureKind as ResultCustomInvariantFailureKind,
     CustomInvariantFailurePhase, InvariantViolation, InvariantViolationFields,
-    RelationCardinalityBoundary, RelationEndpointBoundary, StorageInconsistencyFailure,
-    StorageInconsistencyLookup, StorageInconsistencyScan,
+    RelationCardinalityBoundary,
 };
 pub use rule_id::{
     CustomInvariantRuleId, CustomInvariantSemanticIdentity, CustomInvariantSemanticVersion,

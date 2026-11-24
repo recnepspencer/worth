@@ -1,6 +1,8 @@
 //! Predecode admissions mirror only the actual escaping merge leaf owners.
 use worth_relational_contracts::internal_port::history::data::merge_branch_basis::ancestors::MergeBasisAncestorsOwnerPort as _;
+#[cfg(test)]
 use worth_relational_contracts::internal_port::merge::data::artifacts::proof_packet::RelationalMergeAdmittedSurfaceRowOwnerPort as _;
+#[cfg(test)]
 use worth_relational_contracts::internal_port::merge::data::artifacts::schema_reconciliation_witness_rows::RelationalSchemaReconciliationWitnessRowOwnerPort as _;
 use super::*;
 use crate::history::data::MergeBasisAncestors;

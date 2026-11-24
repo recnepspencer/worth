@@ -9,7 +9,6 @@ use crate::lineage::data::LineageNode;
 use crate::visibility::cache_state::cached_historical_state_for_version;
 #[cfg(test)]
 use std::collections::BTreeSet;
-use worth_relational_contracts::internal_port::indexes::data::entry_map::DerivedIndexRowsOwnerPort as _;
 
 impl LineageAccess<'_> {
     pub fn for_record(

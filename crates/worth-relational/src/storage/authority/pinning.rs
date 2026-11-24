@@ -1,6 +1,7 @@
 use crate::identity::data::VersionId;
 use crate::storage::residency::{Full, RelationalResidencyLease};
 use crate::storage::substrate::{PinClass, RecordKind};
+#[cfg(test)]
 use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::pinning::RecordArenaFixturePort as _;
 
 use super::StorageAuthority;

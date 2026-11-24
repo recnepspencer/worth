@@ -1,4 +1,3 @@
-use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use crate::identity::data::{KindId, PartitionId};
 use crate::tests::support::*;
 use crate::transactions::data::intents::mutation_intent::CreateIntent;

@@ -2,7 +2,6 @@
 use super::*;
 use crate::config::data::{AdjacencyBackend, AdjacencyPolicy};
 use crate::storage::substrate::{EntityArena, RelationArena};
-use worth_relational_contracts::internal_port::indexes::data::entry_map::DerivedIndexRowsOwnerPort as _;
 
 fn empty_region(id: PartitionId) -> RelationalRegionRetention {
     RelationalRegionRetention::resident(PartitionState {

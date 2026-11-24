@@ -1,4 +1,3 @@
-use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::RelationalObservationReadDenial;
 use crate::identity::data::{EntityId, RelationId};
 use crate::mvcc::RelationalBranchObservation;

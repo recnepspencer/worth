@@ -10,9 +10,7 @@ use crate::durability::{
 use crate::history::data::{BranchId, CommitId, RelationalCommitReceipt};
 use crate::identity::data::{EntityId, LineageId, PartitionId, VersionId};
 use crate::indexes::data::*;
-use crate::lineage::data::{
-    LineageCheckpointDigestBasis, LineageEventKind, LineageEventRecord, LineageNode,
-};
+use crate::lineage::data::{LineageCheckpointDigestBasis, LineageEventKind};
 use crate::schema::data::SchemaVersionId;
 use crate::symbols::data::{StoredSymbolText, Symbol, SymbolTableSnapshot};
 use std::{alloc::Layout, sync::Arc};

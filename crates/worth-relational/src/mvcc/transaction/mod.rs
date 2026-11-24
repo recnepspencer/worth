@@ -21,6 +21,7 @@ pub(crate) mod staged_plan_normalization;
 pub(crate) use normalized_plan::OwnedNormalizedPlan;
 mod normalized_key_cache;
 pub(crate) mod reconstructed_merge_plan;
+#[cfg(test)]
 pub(crate) use reconstructed_merge_plan::OwnedMergePlan;
 mod overlay_indexing;
 mod overlay_normalization;

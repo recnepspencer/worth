@@ -1,6 +1,7 @@
 //! Preserve request control while retaining the replay failure for bad evidence.
+#[cfg(test)]
 use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
-use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_preparation::CommitPreparationErrorOwnerPort as _;
+#[cfg(test)]
 use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use crate::durability::data::{DurabilityError, RecoveryFailureClass, RelationalRecoveryStop};
 use crate::execution::RelationalExecutionDenialCause as Cause;

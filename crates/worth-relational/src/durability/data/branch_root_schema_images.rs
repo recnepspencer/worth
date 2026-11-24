@@ -3,9 +3,7 @@ use crate::branch::root::schema::RelationalBranchRootSchemaAuthority;
 use crate::history::data::canonical_commit_envelope::schema_carrier::RecordedBranchSchemaImage;
 use serde::{Deserialize, Serialize};
 
-pub(crate) use crate::history::data::canonical_commit_envelope::schema_carrier::{
-    DurableEntitySchemaRegistration, DurableSchemaDeclarationMemory,
-};
+pub(crate) use crate::history::data::canonical_commit_envelope::schema_carrier::DurableEntitySchemaRegistration;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(transparent)]
