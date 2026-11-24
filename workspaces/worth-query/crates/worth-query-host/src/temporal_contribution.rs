@@ -18,7 +18,8 @@ mod home_binding;
 mod installer;
 
 pub use catch_up::{
-    pump_temporal_catch_up, pump_temporal_catch_up_until, WorthQueryTemporalCatchUpClockStop,
+    pump_temporal_catch_up, pump_temporal_catch_up_observing, pump_temporal_catch_up_until,
+    pump_temporal_catch_up_until_observing, WorthQueryTemporalCatchUpClockStop,
     WorthQueryTemporalCatchUpDenial, WorthQueryTemporalCatchUpPolicy,
     WorthQueryTemporalCatchUpReport, WorthQueryTemporalCatchUpStatus, MAX_TEMPORAL_CATCH_UP_STEPS,
 };
@@ -30,7 +31,8 @@ pub use contract::{
     DEFAULT_DESKTOP_TEMPORAL_MAX_MEMORY_BYTES, DEFAULT_DESKTOP_TEMPORAL_MAX_WORK,
 };
 pub use home_binding::{
-    WorthQueryDesktopTemporalHomeBinding, WorthQueryInstalledDesktopTemporalClock,
+    install_desktop_temporal_clock_operation, WorthQueryDesktopTemporalHomeBinding,
+    WorthQueryInstalledDesktopTemporalClock,
 };
 pub use installer::{
     install_desktop_temporal_operation, WorthQueryDesktopTemporalBindingSpec,

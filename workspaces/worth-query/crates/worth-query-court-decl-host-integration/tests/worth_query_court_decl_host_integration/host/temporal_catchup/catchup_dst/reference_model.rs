@@ -119,9 +119,24 @@ impl ScheduleOracle {
             assert_eq!(tla_lifecycle(&actual.lifecycle), expected.lifecycle);
             assert_eq!(actual.revision, expected.rev);
             assert_eq!(actual.due, expected.due);
+            assert_eq!(actual.interval, expected.interval);
+            assert_eq!(actual.max_fires, expected.max_fires);
             assert_eq!(actual.fired_count, expected.fired_count);
         }
     }
+}
+
+pub(super) fn passive_due_active_count(
+    rows: &BTreeMap<String, ReminderRow>,
+    at_clock: u64,
+) -> usize {
+    INTENTS
+        .iter()
+        .filter(|&&id| {
+            let row = &rows[id];
+            row.lifecycle == "active" && row.due <= at_clock
+        })
+        .count()
 }
 
 pub(super) fn passive_total_fired(rows: &BTreeMap<String, ReminderRow>) -> usize {
@@ -201,6 +216,8 @@ impl TraceEmitter {
                     "lifecycle": tla_lifecycle(&row.lifecycle),
                     "rev": row.revision,
                     "due": row.due,
+                    "interval": row.interval,
+                    "maxFires": row.max_fires,
                     "firedCount": row.fired_count,
                 }),
             );

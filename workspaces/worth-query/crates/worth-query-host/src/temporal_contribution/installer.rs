@@ -30,10 +30,6 @@ use worth_query_installation::facade::{
     WorthQueryTemporalIntentProjector, WorthQueryTemporalIntentRevisionValue,
 };
 
-use super::{
-    clock::WorthQueryDesktopClockHandle, home_binding::WorthQueryInstalledDesktopTemporalClock,
-};
-
 /// Refusal while assembling and installing a desktop temporal contribution.
 #[derive(Debug)]
 pub enum WorthQueryDesktopTemporalInstallationDenial {
@@ -80,16 +76,6 @@ impl<Schema, Node, Clock> WorthQueryInstalledDesktopTemporal<Schema, Node, Clock
         &self,
     ) -> &Arc<WorthQueryApplicationInvariantProjectionAuthority<Schema>> {
         &self.invariant
-    }
-
-    /// Pairs this installed temporal handle with its caller-pumped
-    /// [`WorthQueryDesktopClockHandle`] for single-call Home catch-up via
-    /// [`crate::application_home::WorthQueryApplicationHome::catch_up_temporal`].
-    pub const fn into_home_binding(
-        self,
-        desktop_clock: WorthQueryDesktopClockHandle<Clock>,
-    ) -> WorthQueryInstalledDesktopTemporalClock<Schema, Node, Clock> {
-        WorthQueryInstalledDesktopTemporalClock::new(self, desktop_clock)
     }
 }
 

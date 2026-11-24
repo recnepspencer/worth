@@ -2,18 +2,67 @@ use super::{
     wake_retirement::{complete_wake, retire_wake_with_decision},
     WorthQueryTemporalReentryCounts, WorthQueryTemporalReentryOutcome,
 };
-use crate::domain_computation::primary_graph::conditional_operation::{
-    operation_invocation::WorthQueryTemporalOccurrenceOutcome,
-    signal_decision_reentry::{
-        WorthQueryRetainedConditionalDecision, WorthQueryRetainedConditionalWake,
+use crate::domain_computation::{
+    primary_graph::{
+        application_contribution::advancement_denial,
+        conditional_operation::{
+            operation_invocation::WorthQueryTemporalOccurrenceOutcome,
+            signal_decision_reentry::{
+                WorthQueryRetainedConditionalDecision, WorthQueryRetainedConditionalWake,
+            },
+        },
+        WorthQueryApplicationCommitDenialKind, WorthQueryManagedComputationResourceDenial,
     },
+    WorthQueryProviderSessionControlStopKind, WorthQueryProviderSessionDenialKind,
 };
 use std::collections::BTreeMap;
 use worth_runtime_bridge::facade::BridgeConditionalExecutionView;
 use worth_runtime_bridge::facade::{BridgeConditionalDecisionEvidence, BridgeManagedClockBinding};
 
+pub(super) fn consult_retryable(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Option<WorthQueryTemporalReentryOutcome> {
+    let denial = execution.consult().err()?;
+    Some(match denial {
+        worth_execution::WorkCeilingDenial::Stopped(worth_execution::MapKernelStop::Cancelled) => {
+            WorthQueryTemporalReentryOutcome::RetryableExecutionControlStopped(
+                WorthQueryProviderSessionControlStopKind::Cancelled,
+            )
+        }
+        worth_execution::WorkCeilingDenial::Stopped(
+            worth_execution::MapKernelStop::DeadlineElapsed,
+        ) => WorthQueryTemporalReentryOutcome::RetryableExecutionControlStopped(
+            WorthQueryProviderSessionControlStopKind::TimedOut,
+        ),
+        other => match advancement_denial(other).provider_denial_cause() {
+            Err(control) => {
+                WorthQueryTemporalReentryOutcome::RetryableExecutionControlStopped(control)
+            }
+            Ok(WorthQueryProviderSessionDenialKind::ExecutionResource {
+                denial,
+                partition_identity,
+                policy_ancestor,
+            }) => WorthQueryTemporalReentryOutcome::RetryableCommitFailure(
+                WorthQueryApplicationCommitDenialKind::ExecutionResource {
+                    denial,
+                    partition_identity,
+                    policy_ancestor,
+                },
+            ),
+            Ok(_) => WorthQueryTemporalReentryOutcome::RetryableCommitFailure(
+                WorthQueryApplicationCommitDenialKind::ExecutionResource {
+                    denial: WorthQueryManagedComputationResourceDenial::WorkExhausted,
+                    partition_identity: None,
+                    policy_ancestor: None,
+                },
+            ),
+        },
+    })
+}
+
 #[allow(clippy::too_many_arguments)]
 pub(super) fn apply_reentry_outcome<Clock, Input>(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     bridge: &BridgeConditionalExecutionView<'_>,
     clock: &BridgeManagedClockBinding,
     candidates: &mut BTreeMap<
@@ -70,6 +119,7 @@ pub(super) fn apply_reentry_outcome<Clock, Input>(
             counts.failed += 1;
         }
         WorthQueryTemporalReentryOutcome::Committed(commit) => complete_wake(
+            request_execution,
             bridge,
             clock,
             candidates,
@@ -82,6 +132,7 @@ pub(super) fn apply_reentry_outcome<Clock, Input>(
             Ok(commit),
         ),
         WorthQueryTemporalReentryOutcome::AlreadyCommitted(commit) => complete_wake(
+            request_execution,
             bridge,
             clock,
             candidates,

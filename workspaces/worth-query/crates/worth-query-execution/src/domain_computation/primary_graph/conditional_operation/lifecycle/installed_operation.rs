@@ -105,8 +105,8 @@ pub trait WorthQueryInstalledConditionalOperation<Schema>: Send {
 
     fn observe_clock(
         &mut self,
+        caller_execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
-
         bridge: &BridgeConditionalExecutionView<'_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         truth: &WorthQueryConditionalTruthBasis,
@@ -145,8 +145,9 @@ pub trait WorthQueryInstalledConditionalOperation<Schema>: Send {
         _revision: u64,
         _host_idempotency: &str,
         _input_identity: &str,
-    ) -> Option<Result<([u8; 32], [u8; 32]), worth_foundational::facade::CanonicalDigestDerivationDenial>>
-    {
+    ) -> Option<
+        Result<([u8; 32], [u8; 32]), worth_foundational::facade::CanonicalDigestDerivationDenial>,
+    > {
         None
     }
 }

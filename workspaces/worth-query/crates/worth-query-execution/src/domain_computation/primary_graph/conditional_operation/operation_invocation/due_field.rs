@@ -1,6 +1,6 @@
 use worth_query_installation::facade::{
-    ApplicationReadableScalarValueBinding, ApplicationSchema, ApplicationSchemaMember,
-    WorthQueryTemporalIntentDueValue,
+    ApplicationReadableScalarValueBinding, ApplicationScalarValueBinding, ApplicationSchema,
+    ApplicationSchemaMember, WorthQueryTemporalIntentDueValue,
 };
 
 use super::{WorthQueryTemporalInvocationFailure, WorthQueryTemporalInvocationFailureKind};
@@ -9,18 +9,27 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationOperationInvariantProjectionReader, WorthQueryInvariantEntityIdentity,
 };
 
+mod sealed {
+    pub trait Sealed {}
+}
+
 /// Marker indicating that no recurring due-coordinate field is configured on
 /// [`super::WorthQueryTemporalOperationExecution`]. Returning `Reschedule`
 /// fails closed before any effect commits.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct WorthQueryNoTemporalDueField;
 
+impl sealed::Sealed for WorthQueryNoTemporalDueField {}
+
 /// Typed due-coordinate field selection installed on
 /// [`super::WorthQueryTemporalOperationExecution::with_due_field`] so Query
-/// atomically observes and writes the next due coordinate alongside `revision`
-/// and `lifecycle`.
+/// atomically observes, verifies against the projected due coordinate, and
+/// writes the next due coordinate alongside `revision` and `lifecycle` on one
+/// single installed field binding.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryTemporalDueField<Field>(pub(super) Field);
+
+impl<Field> sealed::Sealed for WorthQueryTemporalDueField<Field> {}
 
 impl<Field> WorthQueryTemporalDueField<Field> {
     pub const fn new(field: Field) -> Self {
@@ -28,9 +37,10 @@ impl<Field> WorthQueryTemporalDueField<Field> {
     }
 }
 
-/// Authoritative due-field validation, read observation, and atomic effect-writing contract.
+/// Sealed authoritative due-field validation, decision-read verification, and
+/// atomic effect-writing contract.
 pub trait WorthQueryTemporalDueFieldWriter<Schema, IntentEntity>:
-    Copy + Send + Sync + 'static
+    sealed::Sealed + Copy + Send + Sync + 'static
 where
     Schema: ApplicationSchema,
 {
@@ -41,7 +51,7 @@ where
         next_due_nanoseconds: u64,
     ) -> Result<(), WorthQueryTemporalInvocationFailure>;
 
-    fn observe_due<Operation>(
+    fn observe_and_verify_due<Operation>(
         &self,
         reader: &mut WorthQueryApplicationOperationInvariantProjectionReader<
             '_,
@@ -50,7 +60,8 @@ where
             Operation,
         >,
         intent: &WorthQueryInvariantEntityIdentity<Schema, IntentEntity>,
-    ) -> Result<(), String>;
+        expected_due_nanoseconds: u64,
+    ) -> Result<(), WorthQueryTemporalInvocationFailure>;
 
     fn write_due<Operation, Input, Scope>(
         &self,
@@ -79,7 +90,7 @@ where
         ))
     }
 
-    fn observe_due<Operation>(
+    fn observe_and_verify_due<Operation>(
         &self,
         _reader: &mut WorthQueryApplicationOperationInvariantProjectionReader<
             '_,
@@ -88,7 +99,8 @@ where
             Operation,
         >,
         _intent: &WorthQueryInvariantEntityIdentity<Schema, IntentEntity>,
-    ) -> Result<(), String> {
+        _expected_due_nanoseconds: u64,
+    ) -> Result<(), WorthQueryTemporalInvocationFailure> {
         Ok(())
     }
 
@@ -166,7 +178,7 @@ where
         }
     }
 
-    fn observe_due<Operation>(
+    fn observe_and_verify_due<Operation>(
         &self,
         reader: &mut WorthQueryApplicationOperationInvariantProjectionReader<
             '_,
@@ -175,11 +187,48 @@ where
             Operation,
         >,
         intent: &WorthQueryInvariantEntityIdentity<Schema, IntentEntity>,
-    ) -> Result<(), String> {
-        reader
+        expected_due_nanoseconds: u64,
+    ) -> Result<(), WorthQueryTemporalInvocationFailure> {
+        let actual = reader
             .decision_field(intent, self.0)
-            .map_err(|denial| denial.to_string())?
-            .ok_or_else(|| "temporal intent due coordinate is absent".to_string())?;
+            .map_err(|denial| {
+                WorthQueryTemporalInvocationFailure::new(
+                    WorthQueryTemporalInvocationFailureKind::InvocationRejected,
+                    denial.to_string(),
+                )
+            })?
+            .ok_or_else(|| {
+                WorthQueryTemporalInvocationFailure::new(
+                    WorthQueryTemporalInvocationFailureKind::InvocationRejected,
+                    "temporal intent due coordinate is absent on configured due field",
+                )
+            })?;
+        let expected = Field::Binding::from_due_nanoseconds(expected_due_nanoseconds).ok_or_else(
+            || {
+                WorthQueryTemporalInvocationFailure::new(
+                    WorthQueryTemporalInvocationFailureKind::InvocationRejected,
+                    "projected temporal due coordinate is not representable by configured due field",
+                )
+            },
+        )?;
+        let actual_encoded = Field::Binding::encode(&actual).map_err(|denial| {
+            WorthQueryTemporalInvocationFailure::new(
+                WorthQueryTemporalInvocationFailureKind::InvocationRejected,
+                format!("configured due field encoding failed: {denial:?}"),
+            )
+        })?;
+        let expected_encoded = Field::Binding::encode(&expected).map_err(|denial| {
+            WorthQueryTemporalInvocationFailure::new(
+                WorthQueryTemporalInvocationFailureKind::InvocationRejected,
+                format!("projected due coordinate encoding failed: {denial:?}"),
+            )
+        })?;
+        if actual_encoded != expected_encoded {
+            return Err(WorthQueryTemporalInvocationFailure::new(
+                WorthQueryTemporalInvocationFailureKind::InvocationRejected,
+                "configured due field value does not match projected temporal intent due coordinate",
+            ));
+        }
         Ok(())
     }
 

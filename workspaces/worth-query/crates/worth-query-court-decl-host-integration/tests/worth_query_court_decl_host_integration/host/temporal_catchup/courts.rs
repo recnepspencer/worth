@@ -18,7 +18,7 @@ fn desktop_temporal_reopen_catch_up_fires_missed_recurrences_and_completes_idemp
     let fire_log = ReminderFireLog::default();
     let auth = AuthControl::valid();
 
-    with_leased_request(128 * 1024 * 1024, None, |execution| {
+    with_leased_request(512 * 1024 * 1024, None, |execution| {
         let home = open_directory_home(dir.clone(), fire_log.clone(), auth.clone(), execution);
         mutate_reminder(
             &home,
@@ -45,6 +45,7 @@ fn desktop_temporal_reopen_catch_up_fires_missed_recurrences_and_completes_idemp
         assert_eq!(early.skipped(), 0);
         assert!(!early.remaining());
         assert!(fire_log.snapshot().is_empty());
+        drop(early);
 
         home.close(execution)
             .expect("directory home closes cleanly before simulated offline gap")
@@ -128,7 +129,7 @@ fn desktop_temporal_catch_up_handles_step_limit_cancellation_and_budget_exhausti
     let fire_log = ReminderFireLog::default();
     let auth = AuthControl::valid();
 
-    with_leased_request(128 * 1024 * 1024, None, |execution| {
+    with_leased_request(512 * 1024 * 1024, None, |execution| {
         let home = open_directory_home(dir.clone(), fire_log.clone(), auth.clone(), execution);
         mutate_reminder(
             &home,
@@ -224,7 +225,7 @@ fn desktop_temporal_catch_up_handles_step_limit_cancellation_and_budget_exhausti
 fn desktop_temporal_catch_up_refuses_expired_principal_and_resumes_after_refresh() {
     let fire_log = ReminderFireLog::default();
     let auth = AuthControl::valid();
-    with_leased_request(128 * 1024 * 1024, None, |execution| {
+    with_leased_request(512 * 1024 * 1024, None, |execution| {
         let home = open_memory_home(fire_log.clone(), auth.clone(), execution);
         mutate_reminder(
             &home,
@@ -274,7 +275,7 @@ fn desktop_temporal_cancelled_intent_never_fires_across_directory_reopen() {
     let dir = unique_temp_dir("cancelled-reopen");
     let fire_log = ReminderFireLog::default();
     let auth = AuthControl::valid();
-    with_leased_request(128 * 1024 * 1024, None, |execution| {
+    with_leased_request(512 * 1024 * 1024, None, |execution| {
         let home = open_directory_home(dir.clone(), fire_log.clone(), auth.clone(), execution);
         mutate_reminder(
             &home,

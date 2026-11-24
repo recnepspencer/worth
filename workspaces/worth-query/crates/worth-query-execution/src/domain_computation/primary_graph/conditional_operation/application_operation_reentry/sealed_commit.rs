@@ -63,7 +63,7 @@ where
             self.invoker.next_occurrence(
                 candidate.input(),
                 &projected.host_projection,
-                candidate.due().nanoseconds(),
+                current.expected_due_nanoseconds,
                 next_revision_ordinal,
             )
         })
@@ -76,7 +76,7 @@ where
             ..
         } = &occurrence
         {
-            if *next_due_nanoseconds <= candidate.due().nanoseconds() {
+            if *next_due_nanoseconds <= current.expected_due_nanoseconds {
                 return Err(super::super::WorthQueryConditionalReentryFailure::Invocation(
                     WorthQueryTemporalInvocationFailure::new(
                         WorthQueryTemporalInvocationFailureKind::InvocationRejected,
@@ -89,10 +89,10 @@ where
                 .map_err(super::super::WorthQueryConditionalReentryFailure::Invocation)?;
         }
         let reads = runtime
-            .begin_projected_application_read_attempt_with_request(execution, projected.admission, projected.projection, worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+            .begin_projected_application_read_attempt_with_request(execution, projected.admission, projected.projection, execution.allocation_policy())
             .map_err(|denial| super::super::WorthQueryConditionalReentryFailure::ApplicationAttempt(denial.kind()))?;
         let mut effects = reads
-            .complete_projected_dependencies_with_request(execution, crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
+            .complete_projected_dependencies_with_request(execution, execution.allocation_policy())
             .map_err(|denial| super::super::WorthQueryConditionalReentryFailure::ApplicationAttempt(denial.kind()))?
             .begin_effect_program();
         isolate_invoker(|| {
@@ -133,6 +133,9 @@ where
             }
         }
         let program = effects.finish().map_err(|denial| super::super::WorthQueryConditionalReentryFailure::ApplicationAttempt(denial.kind()))?;
+        if let Some(outcome) = super::outcome_application::consult_retryable(execution) {
+            return Ok((outcome, None));
+        }
         let outcome = classify_commit(
             runtime.compare_and_commit_conditional_operation(execution, phase, program, idempotency.binding()),
         );

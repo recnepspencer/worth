@@ -116,6 +116,10 @@ impl<Clock: WorthQueryNamedClock> WorthQueryDesktopClockHandle<Clock> {
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .closed
     }
+
+    pub(super) fn shares_state_with(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.state.0, &other.state.0)
+    }
 }
 
 /// Caller-pumped monotonic [`WorthQueryNamedClockSource`] with zero background
@@ -151,6 +155,14 @@ impl<Clock: WorthQueryNamedClock> WorthQueryDesktopClockSource<Clock> {
             marker: PhantomData,
         };
         (source, handle)
+    }
+
+    /// Derives a handle bound to this exact clock source's shared state.
+    pub fn handle(&self) -> WorthQueryDesktopClockHandle<Clock> {
+        WorthQueryDesktopClockHandle {
+            state: AssertUnwindSafe(Arc::clone(&self.state.0)),
+            marker: PhantomData,
+        }
     }
 }
 

@@ -182,9 +182,12 @@ where
             )
             | WorthQueryRetainedConditionalDecision::OperationRetryable(evidence, _)
             | WorthQueryRetainedConditionalDecision::OperationBackpressured(evidence, _)
-            | WorthQueryRetainedConditionalDecision::OperationIndeterminate(evidence, _) => {
-                evidence
-            }
+            | WorthQueryRetainedConditionalDecision::OperationIndeterminate(evidence, _)
+            | WorthQueryRetainedConditionalDecision::OperationControlStopped(
+                evidence,
+                super::WorthQueryTemporalControlStop::Cancelled
+                | super::WorthQueryTemporalControlStop::TimedOut,
+            ) => evidence,
             WorthQueryRetainedConditionalDecision::OperationCleanupRequired(evidence, cleanup) => {
                 wake.decision = WorthQueryRetainedConditionalDecision::OperationCleanupRequired(
                     evidence, cleanup,
@@ -194,7 +197,10 @@ where
             }
             other @ (WorthQueryRetainedConditionalDecision::Suppressed(_)
             | WorthQueryRetainedConditionalDecision::Deferred(_)
-            | WorthQueryRetainedConditionalDecision::OperationControlStopped(_, _)
+            | WorthQueryRetainedConditionalDecision::OperationControlStopped(
+                _,
+                super::WorthQueryTemporalControlStop::Authorization(_),
+            )
             | WorthQueryRetainedConditionalDecision::OperationTerminalFailure(_, _)
             | WorthQueryRetainedConditionalDecision::OperationProductUnpublished(
                 _,
@@ -232,6 +238,7 @@ where
                     cont.intent,
                 );
                 apply_reentry_outcome(
+                    request_execution,
                     bridge,
                     clock,
                     candidates,
@@ -250,6 +257,22 @@ where
                 );
             }
             continue;
+        }
+        if let Some(outcome) = super::outcome_application::consult_retryable(request_execution) {
+            apply_reentry_outcome(
+                request_execution,
+                bridge,
+                clock,
+                candidates,
+                wake,
+                identity.to_string(),
+                evidence,
+                outcome,
+                observed_coordinate,
+                None,
+                &mut counts,
+            );
+            break;
         }
         let candidate = candidates.get(identity).expect("checked candidate above");
         wake.application_attempted = true;
@@ -290,6 +313,7 @@ where
         wake.continuation_identity = attempt.continuation_identity;
         wake.application_admission_canonical_work = attempt.admission_canonical_work;
         apply_reentry_outcome(
+            request_execution,
             bridge,
             clock,
             candidates,

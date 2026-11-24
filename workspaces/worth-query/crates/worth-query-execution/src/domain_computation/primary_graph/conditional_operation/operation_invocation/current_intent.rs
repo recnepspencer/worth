@@ -20,6 +20,8 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) struct W
         WorthQueryApplicationEntityIdentity<Schema, IntentEntity>,
     pub(in crate::domain_computation::primary_graph::conditional_operation) expected_revision:
         RevisionValue,
+    pub(in crate::domain_computation::primary_graph::conditional_operation) expected_due_nanoseconds:
+        u64,
 }
 
 #[rustfmt::skip]
@@ -41,6 +43,7 @@ _execution: &worth_execution::ExecutionRequest<'_, '_>,
         reader: &mut WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>,
         identity: IdentityValue,
         expected_revision: &RevisionValue,
+        expected_due_nanoseconds: u64,
     ) -> Result<bool, WorthQueryTemporalReentryDenial>
     where
         Schema: ApplicationSchema,
@@ -73,7 +76,6 @@ _execution: &worth_execution::ExecutionRequest<'_, '_>,
             .decision_field(&intent, self.lifecycle_field)
             .map_err(|denial| denial.to_string())?
             .ok_or_else(|| "temporal intent lifecycle is absent".to_string())?;
-        self.due_field.observe_due(reader, &intent)?;
         if RevisionField::Binding::encode(&revision).map_err(|denial| format!("{denial:?}"))?
             != RevisionField::Binding::encode(expected_revision)
                 .map_err(|denial| format!("{denial:?}"))?
@@ -88,7 +90,13 @@ _execution: &worth_execution::ExecutionRequest<'_, '_>,
         }
         Ok(())
         })();
-        Ok(currentness.is_ok())
+        if currentness.is_err() {
+            return Ok(false);
+        }
+        self.due_field
+            .observe_and_verify_due(reader, &intent, expected_due_nanoseconds)
+            .map_err(super::super::WorthQueryConditionalReentryFailure::Invocation)?;
+        Ok(true)
     }
 
     pub(in crate::domain_computation::primary_graph::conditional_operation) fn resolve_current_intent(
@@ -97,6 +105,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         product: &WorthQuerySelectedProductOperation<'_, Schema>,
         record_identity: &worth_foundational::facade::AspectValue,
         revision: u64,
+        expected_due_nanoseconds: u64,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     ) -> Result<Option<WorthQueryCurrentTemporalIntent<Schema, IntentEntity, IdentityValue, RevisionValue>>, WorthQueryTemporalReentryDenial>
     where
@@ -125,14 +134,15 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         let current = self
             .invariant
             .project_operation_on_product::<Operation, _>(execution, product.product(), |reader| {
-                self.observe_current_intent(execution, reader, identity_value.clone(), &expected_revision)
-            }, worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+                self.observe_current_intent(execution, reader, identity_value.clone(), &expected_revision, expected_due_nanoseconds)
+            }, execution.allocation_policy())
         .map_err(WorthQueryTemporalReentryDenial::from_invariant)?;
         let is_current = current.into_output()?;
         Ok(is_current.then_some(WorthQueryCurrentTemporalIntent {
             identity_value,
             entity,
             expected_revision,
+            expected_due_nanoseconds,
         }))
     }
 }

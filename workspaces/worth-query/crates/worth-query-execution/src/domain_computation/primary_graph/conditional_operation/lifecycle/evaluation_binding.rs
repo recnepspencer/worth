@@ -138,20 +138,14 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
                         == truth.signal_basis().branch_id()
             });
             self.swap_evaluation_binding(&mut selected);
-            if superseded_on_same_branch
+            let can_reclaim = superseded_on_same_branch
                 && selected.pending_invalidations.retained_delivery_count() == 0
-                && selected.retained_wakes.iter().all(|wake| {
-                    matches!(
-                        wake.decision,
-                        super::super::signal_decision_reentry::WorthQueryRetainedConditionalDecision::OperationCommitted(_, _)
-                            | super::super::signal_decision_reentry::WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(_, _)
-                            | super::super::signal_decision_reentry::WorthQueryRetainedConditionalDecision::OperationRetiredNoEffect(_)
-                            | super::super::signal_decision_reentry::WorthQueryRetainedConditionalDecision::OperationProductStale(_, _)
-                            | super::super::signal_decision_reentry::WorthQueryRetainedConditionalDecision::Eligible(_)
-                    )
-                })
-            {
-                let _ = bridge.close_managed_clock(&selected.managed_clock);
+                && super::predecessor_custody::wakes_disposable_metered(
+                    execution,
+                    &selected.retained_wakes,
+                );
+            if can_reclaim && bridge.close_managed_clock(&selected.managed_clock).is_ok() {
+                // Predecessor closed and reclaimed with zero live continuations or owed deliveries.
             } else {
                 self.inactive_bindings.insert(active_identity, selected);
             }

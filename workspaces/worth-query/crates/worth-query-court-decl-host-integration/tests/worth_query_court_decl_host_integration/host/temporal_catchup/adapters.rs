@@ -160,8 +160,71 @@ fn projection_failure(
     )
 }
 
+#[derive(Clone, Default)]
+pub struct InvokerControls {
+    state: Arc<Mutex<InvokerBehavior>>,
+}
+
+#[derive(Default)]
+struct InvokerBehavior {
+    cancel_on_project: Option<worth_execution::CancellationSource>,
+    force_unobserved_write: bool,
+    next_gate_write: Option<String>,
+}
+
+impl InvokerControls {
+    pub fn set_cancel_on_project(&self, source: Option<worth_execution::CancellationSource>) {
+        self.state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .cancel_on_project = source;
+    }
+
+    pub fn set_force_unobserved_write(&self, enabled: bool) {
+        self.state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .force_unobserved_write = enabled;
+    }
+
+    pub fn set_next_gate_write(&self, gate: Option<String>) {
+        self.state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .next_gate_write = gate;
+    }
+
+    pub(super) fn next_gate_write(&self) -> Option<String> {
+        self.state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .next_gate_write
+            .clone()
+    }
+
+    fn trigger_project_cancel(&self) {
+        let cancel = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .cancel_on_project
+            .clone();
+        if let Some(source) = cancel {
+            source.cancel();
+        }
+    }
+
+    fn force_unobserved_write(&self) -> bool {
+        self.state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .force_unobserved_write
+    }
+}
+
 pub struct ReminderInvoker {
     pub fire_log: ReminderFireLog,
+    pub controls: InvokerControls,
 }
 
 impl
@@ -200,6 +263,7 @@ impl
             ReminderIntent,
         >,
     ) -> Result<Self::Projection, primary_graph::WorthQueryTemporalInvocationFailure> {
+        self.controls.trigger_project_cancel();
         let intent = reader
             .resolve_entity(identity_field(), input.identity.clone())
             .map_err(projection_rejected)?;
@@ -273,6 +337,11 @@ impl
         effects
             .write_field(&entity, fired_count_field(), next_count)
             .map_err(invocation_rejected)?;
+        if self.controls.force_unobserved_write() {
+            effects
+                .write_field(&entity, interval_field(), input.interval.saturating_add(1))
+                .map_err(invocation_rejected)?;
+        }
         self.fire_log.record(FiredOccurrence {
             id: input.identity,
             rev: input.revision,

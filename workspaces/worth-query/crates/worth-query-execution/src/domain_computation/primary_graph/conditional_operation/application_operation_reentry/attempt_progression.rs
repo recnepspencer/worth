@@ -143,6 +143,7 @@ where
         &selected,
         candidate.record_identity(),
         candidate.revision(),
+        candidate.due().nanoseconds(),
         &fresh.request,
     )?
     else {

@@ -104,12 +104,14 @@ impl Registration<DesktopReminderSchema> for MutateReminder {
             .operation_read_field(op, max_fires_field())
             .operation_read_field(op, fired_count_field())
             .operation_read_field(op, lifecycle_field())
+            .operation_read_field(op, gate_field())
             .operation_write(op, revision_field())
             .operation_write(op, due_field())
             .operation_write(op, interval_field())
             .operation_write(op, max_fires_field())
             .operation_write(op, fired_count_field())
-            .operation_write(op, lifecycle_field()))
+            .operation_write(op, lifecycle_field())
+            .operation_write(op, gate_field()))
     }
 }
 

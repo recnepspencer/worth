@@ -1,9 +1,11 @@
 //! Single-harness 64-seed DST + TLC trace emitter.
 //!
 //! Seeds 0..56 run on MemoryOnly Homes; seeds 56..64 run on real Directory Homes with
-//! genuine close/reopen cycles and offline clock jumps. Set `WORTH_DST_TRACE_DIR` to emit
-//! `temporal_catchup.ndjson` for `python3 tools/tla/run_tlc.py trace
-//! specs/tla/temporal_catchup/TemporalCatchupTrace.tla`.
+//! genuine close/reopen cycles and offline clock jumps. All action selection,
+//! mutation inputs, and emitted trace coordinates come strictly from the seed
+//! and passively observed Relational/runtime state — never from the oracle.
+//! Set `WORTH_DST_TRACE_DIR` to emit `temporal_catchup.ndjson` for
+//! `python3 tools/tla/run_tlc.py trace specs/tla/temporal_catchup/TemporalCatchupTrace.tla`.
 
 mod actions;
 mod reference_model;
@@ -25,18 +27,10 @@ const DIRECTORY_SEED_START: u64 = 56;
 struct SeedState {
     oracle: ScheduleOracle,
     clock: u64,
+    last_accepted_clock: u64,
     cmd_key: u64,
     last_status: &'static str,
     closed_rows: std::collections::BTreeMap<String, ReminderRow>,
-}
-
-fn passive_observed_clock(home: &ReminderHome) -> u64 {
-    let inst = installed(home);
-    if inst.desktop_clock().last_sequence() == 0 {
-        0
-    } else {
-        inst.desktop_clock().current_time().nanoseconds()
-    }
 }
 
 #[test]
@@ -57,7 +51,7 @@ fn run_seed(seed: u64, is_directory: bool, trace: &mut TraceEmitter) {
     let auth = AuthControl::valid();
     let dir = is_directory.then(|| unique_temp_dir(&format!("dst-{seed}")));
 
-    with_leased_request(128 * 1024 * 1024, None, |execution| {
+    with_leased_request(512 * 1024 * 1024, None, |execution| {
         let mut home = Some(open_seed_home(
             dir.as_ref(),
             fire_log.clone(),
@@ -67,6 +61,7 @@ fn run_seed(seed: u64, is_directory: bool, trace: &mut TraceEmitter) {
         let mut st = SeedState {
             oracle: ScheduleOracle::new(),
             clock: 0,
+            last_accepted_clock: 0,
             cmd_key: 1,
             last_status: "Idle",
             closed_rows: empty_rows(),
@@ -99,12 +94,13 @@ fn run_seed(seed: u64, is_directory: bool, trace: &mut TraceEmitter) {
             let reopened = open_seed_home(dir.as_ref(), fire_log.clone(), auth.clone(), execution);
             let rows = read_reminders(&reopened);
             st.oracle.verify_against_rows(&rows);
+            st.last_accepted_clock = 0;
             trace.push(
                 "ReopenApp",
                 serde_json::json!({}),
                 "Open",
                 st.clock,
-                passive_observed_clock(&reopened),
+                st.last_accepted_clock,
                 auth.is_valid(),
                 "Idle",
                 passive_total_fired(&rows),
@@ -114,20 +110,13 @@ fn run_seed(seed: u64, is_directory: bool, trace: &mut TraceEmitter) {
         }
         let h = home.as_ref().unwrap();
         for _ in 0..16 {
-            st.last_status = pump_one_step(
-                h,
-                st.clock,
-                &fire_log,
-                &auth,
-                &mut st.oracle,
-                execution,
-                trace,
-            );
+            st.last_status = pump_one_step(h, &fire_log, &auth, &mut st, execution, trace);
             if st.last_status == "CaughtUp" {
                 break;
             }
         }
         assert_eq!(st.last_status, "CaughtUp", "seed {seed} must converge");
+        assert_eq!(passive_due_active_count(&read_reminders(h), st.clock), 0);
         assert_eq!(st.oracle.due_active_count(st.clock), 0);
         if let Some(h) = home.take()
             && is_directory
@@ -188,7 +177,7 @@ fn install_initial_intents(
             serde_json::json!({ "id": id, "due": due, "interval": interval, "maxFires": max_fires }),
             "Open",
             st.clock,
-            passive_observed_clock(home),
+            st.last_accepted_clock,
             auth.is_valid(),
             st.last_status,
             passive_total_fired(&rows),
@@ -228,13 +217,14 @@ fn step_seed(
             let reopened = open_seed_home(dir, fire_log.clone(), auth.clone(), execution);
             let rows = read_reminders(&reopened);
             st.oracle.verify_against_rows(&rows);
+            st.last_accepted_clock = 0;
             st.last_status = "Idle";
             trace.push(
                 "ReopenApp",
                 serde_json::json!({}),
                 "Open",
                 st.clock,
-                passive_observed_clock(&reopened),
+                st.last_accepted_clock,
                 auth.is_valid(),
                 st.last_status,
                 passive_total_fired(&rows),
@@ -256,7 +246,7 @@ fn step_seed(
                 serde_json::json!({ "newClock": st.clock }),
                 "Open",
                 st.clock,
-                passive_observed_clock(h),
+                st.last_accepted_clock,
                 auth.is_valid(),
                 st.last_status,
                 passive_total_fired(&rows),
@@ -267,6 +257,7 @@ fn step_seed(
             let h = home.take().unwrap();
             st.closed_rows = read_reminders(&h);
             h.close(execution).expect("directory close").reclaim();
+            st.last_accepted_clock = 0;
             st.last_status = "Closed";
             trace.push(
                 "CloseApp",
@@ -286,15 +277,7 @@ fn step_seed(
         7 => exercise_user_edit(home.as_ref().unwrap(), rng, fire_log, auth, st, trace),
         _ => {
             let h = home.as_ref().unwrap();
-            st.last_status = pump_one_step(
-                h,
-                st.clock,
-                fire_log,
-                auth,
-                &mut st.oracle,
-                execution,
-                trace,
-            );
+            st.last_status = pump_one_step(h, fire_log, auth, st, execution, trace);
         }
     }
 }

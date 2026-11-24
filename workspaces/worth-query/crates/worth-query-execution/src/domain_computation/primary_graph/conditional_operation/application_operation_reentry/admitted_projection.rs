@@ -82,13 +82,14 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
                         reader,
                         current.identity_value.clone(),
                         &current.expected_revision,
+                        current.expected_due_nanoseconds,
                     );
                     let host_projection = matches!(current_intent, Ok(true)).then(|| {
                         self.invoker
                             .project(candidate.input(), reader, projected_scope)
                     });
                     (host_projection, current_intent)
-                }, worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+                }, execution.allocation_policy())
         })
         .map_err(|super::invoker_isolation::TemporalInvokerPanicked| super::super::WorthQueryConditionalReentryFailure::ProjectionInvokerPanicked)?
         .map_err(WorthQueryTemporalReentryDenial::from_projection)?;

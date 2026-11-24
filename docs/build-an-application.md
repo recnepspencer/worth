@@ -9635,8 +9635,12 @@ envelopes, named-clock plumbing, and reconstruction bindings separately. Use
    returning `(source, handle)`. It spawns zero background threads and reads no
    ambient OS clock; the caller advances `WorthQueryDesktopClockHandle::advance_to`
    explicitly on reopen or foreground ticks.
-3. **Install in one call** via `install_desktop_temporal_operation(installation, WorthQueryDesktopTemporalBindingSpec { .. })?.into_home_binding(clock_handle)`,
-   using `WorthQueryAlwaysReadyTemporalPredicate` when authoritative `active`
+3. **Install in one call** via `install_desktop_temporal_clock_operation(installation, WorthQueryDesktopTemporalBindingSpec { .. })`,
+   which derives the paired `WorthQueryDesktopClockHandle` directly from the
+   installed `WorthQueryDesktopClockSource` (preventing foreign clock handle
+   pairing; low-level `pump_temporal_catch_up_until` also rejects foreign
+   handles with `ForeignClockHandle`). Use
+   `WorthQueryAlwaysReadyTemporalPredicate` when authoritative `active`
    lifecycle and due coordinate alone govern execution. Returning
    `WorthQueryInstalledDesktopTemporalClock` (which implements
    `WorthQueryDesktopTemporalHomeBinding`) registers the temporal rule cleanly
@@ -9647,22 +9651,25 @@ envelopes, named-clock plumbing, and reconstruction bindings separately. Use
    `WorthQueryTemporalOperationInvoker::next_occurrence` to return
    `WorthQueryTemporalOccurrenceOutcome::Reschedule { next_due_nanoseconds, next_input, next_input_identity, next_idempotency }`
    (strictly increasing due coordinate) and passing `WorthQueryTemporalDueField::new(due_field)`
-   in the binding spec so Query observes and writes `revision`, `lifecycle`, and
-   `due` atomically in the same commit as `apply`.
+   in the binding spec so Query observes, verifies against the projected due
+   coordinate, and writes `revision`, `lifecycle`, and `due` atomically in the
+   same commit as `apply`.
 5. **Pump missed occurrences on reopen in one Home call** via
    `home.catch_up_temporal::<MyTemporalBinding>(now, execution, WorthQueryTemporalCatchUpPolicy::bounded(64)?)?`
-   (or `home.pump_temporal::<MyTemporalBinding>(execution, policy)` / low-level
-   `pump_temporal_catch_up_until` & `pump_temporal_catch_up`, bounded by
-   `1..=MAX_TEMPORAL_CATCH_UP_STEPS`). Each step checks `execution.consult()`,
-   re-selects the fresh branch head, and returns an O(1)-memory
-   `WorthQueryTemporalCatchUpReport` exposing `fired()`, `skipped()`,
-   `remaining()`, and typed `status()` (`CaughtUp`, `StepLimitReached`,
-   `BudgetExhausted`, `Cancelled`, `AuthorizationRefused`, `Backpressured`,
-   `ClockStopped`, `BlockedByRetainedDecision`, or `ObservationFailed`).
-   Partial-batch stops leave durable state consistent for resumption on the
-   next pump without duplicating or skipping any occurrence. **OS background
-   wakes while the desktop application is closed remain outside WORTH**;
-   callers advance missed recurrences explicitly when the app reopens.
+   (or `home.catch_up_temporal_observing::<MyTemporalBinding>(now, execution, policy, |batch| ..)` /
+   `home.pump_temporal::<MyTemporalBinding>(execution, policy)`, bounded by
+   `1..=MAX_TEMPORAL_CATCH_UP_STEPS`). Every step runs under the caller's funded
+   `ExecutionRequest` control and accounting end-to-end, retains owed granular
+   invalidation batches on the returned `WorthQueryTemporalCatchUpReport`
+   (`take_granular_invalidation_batches()`) or streams them directly to the
+   callback, and exposes `fired()`, `skipped()`, `remaining()`, and typed
+   `status()` (`CaughtUp`, `StepLimitReached`, `BudgetExhausted`, `Cancelled`,
+   `AuthorizationRefused`, `OperationRefused`, `Backpressured`, `ClockStopped`,
+   `BlockedByRetainedDecision`, or `ObservationFailed`). Partial-batch stops
+   leave durable state consistent for resumption on the next pump without
+   duplicating or skipping any occurrence. **OS background wakes while the
+   desktop application is closed remain outside WORTH**; callers advance missed
+   recurrences explicitly when the app reopens.
 
 The fresh Native-only Directory Host journey now opens the actual Home,
 initializes once, reads seeded data, publishes an ordinary mutation through the

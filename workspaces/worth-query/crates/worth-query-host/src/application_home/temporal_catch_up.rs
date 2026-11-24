@@ -1,12 +1,16 @@
 //! Single-call caller-pumped temporal catch-up on [`WorthQueryApplicationHome`].
 
 use worth_execution::ExecutionRequest;
-use worth_query_execution::facade::application_contribution::WorthQueryApplicationConditionalBinding;
+use worth_query_execution::facade::{
+    application_contribution::WorthQueryApplicationConditionalBinding,
+    primary_graph::WorthQueryGranularInvalidationDeliveryBatch,
+};
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryClockCoordinate};
 
 use super::WorthQueryApplicationHome;
 use crate::temporal_contribution::{
-    pump_temporal_catch_up, pump_temporal_catch_up_until, WorthQueryDesktopTemporalHomeBinding,
+    pump_temporal_catch_up, pump_temporal_catch_up_observing, pump_temporal_catch_up_until,
+    pump_temporal_catch_up_until_observing, WorthQueryDesktopTemporalHomeBinding,
     WorthQueryTemporalCatchUpDenial, WorthQueryTemporalCatchUpPolicy,
     WorthQueryTemporalCatchUpReport,
 };
@@ -21,6 +25,10 @@ where
     ///
     /// Strictly idempotent across close/reopen cycles and bounded by
     /// `execution` (`Work`/`Memory`/`Cancellation`) and `policy` (`max_steps`).
+    /// Non-empty granular invalidation delivery batches remain attached to the
+    /// returned report via `take_granular_invalidation_batches()`; consume or
+    /// drop the report before `close()` (or use [`Self::catch_up_temporal_observing`]
+    /// to stream deliveries directly without retaining Home custody on the report).
     /// OS background wake while the desktop application is closed remains
     /// outside WORTH.
     pub fn catch_up_temporal<B>(
@@ -46,11 +54,47 @@ where
         pump_temporal_catch_up_until(
             self.query.runtime(),
             self.query.current_world(),
-            installed.clock_handle(),
+            installed.as_ref(),
             installed.desktop_clock(),
             now,
             execution,
             policy,
+        )
+    }
+
+    /// Streaming variant of [`Self::catch_up_temporal`] forwarding every
+    /// non-empty [`WorthQueryGranularInvalidationDeliveryBatch`] to
+    /// `on_invalidations` immediately with O(1) accumulator memory.
+    pub fn catch_up_temporal_observing<B>(
+        &self,
+        now: WorthQueryClockCoordinate<
+            <B::Installed as WorthQueryDesktopTemporalHomeBinding<Schema>>::Clock,
+        >,
+        execution: &ExecutionRequest<'_, '_>,
+        policy: WorthQueryTemporalCatchUpPolicy,
+        on_invalidations: impl FnMut(WorthQueryGranularInvalidationDeliveryBatch),
+    ) -> Result<
+        WorthQueryTemporalCatchUpReport<
+            <B::Installed as WorthQueryDesktopTemporalHomeBinding<Schema>>::Clock,
+        >,
+        WorthQueryTemporalCatchUpDenial,
+    >
+    where
+        B: WorthQueryApplicationConditionalBinding<Schema> + 'static,
+        B::Installed: WorthQueryDesktopTemporalHomeBinding<Schema>,
+    {
+        let Some(installed) = self.query.conditional::<B>() else {
+            return Err(WorthQueryTemporalCatchUpDenial::TemporalBindingNotInstalled);
+        };
+        pump_temporal_catch_up_until_observing(
+            self.query.runtime(),
+            self.query.current_world(),
+            installed.as_ref(),
+            installed.desktop_clock(),
+            now,
+            execution,
+            policy,
+            on_invalidations,
         )
     }
 
@@ -79,6 +123,36 @@ where
             installed.clock_handle(),
             execution,
             policy,
+        )
+    }
+
+    /// Streaming variant of [`Self::pump_temporal`] delivering each step's
+    /// non-empty granular invalidation batch directly to `on_invalidations`.
+    pub fn pump_temporal_observing<B>(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        policy: WorthQueryTemporalCatchUpPolicy,
+        on_invalidations: impl FnMut(WorthQueryGranularInvalidationDeliveryBatch),
+    ) -> Result<
+        WorthQueryTemporalCatchUpReport<
+            <B::Installed as WorthQueryDesktopTemporalHomeBinding<Schema>>::Clock,
+        >,
+        WorthQueryTemporalCatchUpDenial,
+    >
+    where
+        B: WorthQueryApplicationConditionalBinding<Schema> + 'static,
+        B::Installed: WorthQueryDesktopTemporalHomeBinding<Schema>,
+    {
+        let Some(installed) = self.query.conditional::<B>() else {
+            return Err(WorthQueryTemporalCatchUpDenial::TemporalBindingNotInstalled);
+        };
+        pump_temporal_catch_up_observing(
+            self.query.runtime(),
+            self.query.current_world(),
+            installed.clock_handle(),
+            execution,
+            policy,
+            on_invalidations,
         )
     }
 }

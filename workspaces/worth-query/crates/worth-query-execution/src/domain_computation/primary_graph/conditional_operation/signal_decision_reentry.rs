@@ -255,6 +255,62 @@ pub(super) fn reconsider_retained_wake(
     };
 }
 
+pub(super) fn reconsider_execution_denied_wake(
+    execution: worth_execution::ExecutionRequest<'_, '_>,
+    bridge: &BridgeConditionalExecutionView<'_>,
+    wake: &mut WorthQueryRetainedConditionalWake,
+    signal_basis: &worth_runtime_bridge::facade::BridgeConditionalSignalBasisBinding,
+    query_binding_identity: &str,
+    query_capability_identity: u64,
+    truth: &WorthQueryConditionalTruthBasis,
+    triggering_correspondence: Option<
+        &worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryReceipt,
+    >,
+) {
+    if !matches!(
+        &wake.decision,
+        WorthQueryRetainedConditionalDecision::Failed(denial)
+            if matches!(
+                denial.kind(),
+                worth_runtime_bridge::facade::BridgeConditionalDenialKind::ExecutionDenied(_)
+            )
+    ) {
+        return;
+    }
+    wake.attempt = wake.attempt.saturating_add(1);
+    let mut compute = QueryConditionalComputeContext {
+        output_version: wake.attempt,
+    };
+    let lowering = signal_basis.installed_lowering_ref();
+    let result = bridge.execute_managed_due_wake(
+        execution,
+        BridgeManagedConditionalExecutionRequest {
+            due_wake: &wake.due,
+            lowering,
+            signal_basis,
+            query_binding_identity,
+            query_capability_identity,
+            snapshot_identity: truth.snapshot_projection(),
+            truth_branch_identity: Some(truth.branch_projection()),
+            bridge_snapshot_identity: Some(truth.snapshot()),
+            triggering_correspondence,
+            attempt: wake.attempt,
+        },
+        &mut compute,
+    );
+    wake.last_signal_decision = result
+        .as_ref()
+        .ok()
+        .map(|evidence| super::execution_provenance::signal_decision(evidence.signal().class()));
+    wake.application_attempted = false;
+    wake.application_admission_canonical_work =
+        worth_query_installation::facade::WorthQueryCanonicalWorkEvidence::zero();
+    wake.decision = match result {
+        Ok(evidence) => classify(evidence),
+        Err(denial) => WorthQueryRetainedConditionalDecision::Failed(denial),
+    };
+}
+
 fn classify(evidence: BridgeConditionalDecisionEvidence) -> WorthQueryRetainedConditionalDecision {
     match classify_bridge_signal(&evidence) {
         super::WorthQueryConditionalSignalDecision::Eligible => {

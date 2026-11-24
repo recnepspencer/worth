@@ -19,6 +19,7 @@ use super::WorthQueryTemporalReentryCounts;
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn complete_wake<Clock, Input>(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     bridge: &BridgeConditionalExecutionView<'_>,
     clock: &BridgeManagedClockBinding,
     candidates: &mut BTreeMap<String, WorthQueryReconstructedTemporalIntent<Clock, Input>>,
@@ -69,15 +70,28 @@ pub(super) fn complete_wake<Clock, Input>(
             return;
         }
         if let Some(existing) = candidates.get(&identity) {
-            let successor_candidate = existing.candidate().rescheduled_successor(
-                revision,
-                WorthQueryClockCoordinate::from_nanoseconds(next_due_nanoseconds),
-                next_input,
-                next_input_identity,
-                next_idempotency,
-            );
-            let successor = existing.rescheduled(successor_candidate, scheduled_due);
-            candidates.insert(identity, successor);
+            let successor_bytes =
+                std::mem::size_of::<WorthQueryReconstructedTemporalIntent<Clock, Input>>()
+                    .saturating_add(existing.candidate().identity().as_str().len())
+                    .saturating_add(next_input_identity.as_str().len())
+                    .saturating_add(next_idempotency.as_str().len()) as u64;
+            if request_execution.consult().is_ok()
+                && request_execution
+                    .reserve_retained_memory(successor_bytes)
+                    .is_ok()
+            {
+                let successor_candidate = existing.candidate().rescheduled_successor(
+                    revision,
+                    WorthQueryClockCoordinate::from_nanoseconds(next_due_nanoseconds),
+                    next_input,
+                    next_input_identity,
+                    next_idempotency,
+                );
+                let successor = existing.rescheduled(successor_candidate, scheduled_due);
+                candidates.insert(identity, successor);
+            } else {
+                candidates.remove(&identity);
+            }
         }
         if next_due_nanoseconds <= observed_coordinate {
             counts.rescheduled_due_now = true;

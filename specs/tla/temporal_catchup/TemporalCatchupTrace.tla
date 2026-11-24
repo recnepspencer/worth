@@ -85,6 +85,8 @@ MatchesPost(step) ==
             /\ intentLifecycle'[i] = step.postIntents[i].lifecycle
             /\ intentRev'[i] = step.postIntents[i].rev
             /\ intentDue'[i] = step.postIntents[i].due
+            /\ intentInterval'[i] = step.postIntents[i].interval
+            /\ intentMaxFires'[i] = step.postIntents[i].maxFires
             /\ intentFiredCount'[i] = step.postIntents[i].firedCount
 
 TraceStep ==

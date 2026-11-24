@@ -145,8 +145,8 @@ impl WorthQueryInstalledConditionalOperation<TestSchema> for InstalledClock {
 
     fn observe_clock(
         &mut self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _phase: &WorthQueryAdvancementPhase<'_>,
-
         _bridge: &BridgeConditionalExecutionView<'_>,
         _runtime: &worth_query_execution::facade::domain_computation::WorthQueryPrimaryGraphApplicationRuntime<
                 TestSchema,

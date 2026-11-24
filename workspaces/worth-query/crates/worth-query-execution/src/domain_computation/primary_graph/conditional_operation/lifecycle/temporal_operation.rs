@@ -227,18 +227,15 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
 
     fn observe_clock(
         &mut self,
+        caller_execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
         bridge: &BridgeConditionalExecutionView<'_>,
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         truth: &WorthQueryConditionalTruthBasis,
     ) -> ErasedClockObservationOutcome {
-        let execution = match phase.execution_request_for(runtime.inner.runtime.product_runtime_ref()) {
-            Ok(execution) => execution,
-            Err(cause) => return ErasedClockObservationOutcome::Failed {
-                kind: super::WorthQueryConditionalClockObservationFailureKind::ExecutionRequest(
-                    cause.into()),
-                detail: "foreign conditional advancement phase".to_string(),
-            },
+        let phase_exec = match self.prepare_observe_execution(caller_execution, phase, bridge, runtime) {
+            Ok(exec) => exec,
+            Err(outcome) => return outcome,
         };
         super::super::retained_managed_cleanup::retry_wakes(self.retained_wakes.iter_mut()
             .chain(self.inactive_bindings.values_mut().flat_map(|binding| binding.retained_wakes.iter_mut())), phase);
@@ -318,7 +315,8 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         let mut persistence_denial = None;
         let retain_and_reenter = |accepted| {
             let mut released = self.pending_invalidations.release();
-            let receipt = due_wake_retention::retain_due(phase,
+            let receipt = due_wake_retention::retain_due(
+                phase,
                 accepted,
                 bridge,
                 truth,
@@ -336,7 +334,9 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
                 .node()
                 .operation()
                 .application_operation();
-            let counts = match super::super::application_operation_reentry::reenter_retained_wakes(&execution, phase,
+            let counts = match super::super::application_operation_reentry::reenter_retained_wakes(
+                &phase_exec,
+                phase,
                 runtime,
                 truth.product(),
                 bridge,

@@ -114,6 +114,7 @@
 # C2 ruling 2026-11-21: exact certification callers of the Native capture/finalize split and recovered-retirement gate doors.
 # History envelope courts count real producer contacts, request work and journal accesses, and stop the real request at its own consults.
 # Existing Relational references crossing extracted owner boundaries.
+# Daymark P4A: desktop temporal catch-up court exercises existing indeterminate-answer controls to prove live continuation preservation across fresh branch selection.
 crates/worth-execution/ crates/worth-court-execution/tests/worth_court_execution/execution/interruption_view/stop_settlement.rs
 crates/worth-execution/ crates/worth-court-execution/tests/worth_court_execution/process/serial/execution/work_ceiling/scope_observation.rs
 crates/worth-execution/ crates/worth-court-execution/tests/worth_court_execution/process/serial/execution/work_ceiling/single_stage.rs
@@ -613,6 +614,7 @@ workspaces/worth-query/crates/worth-query-execution-attempt/ workspaces/worth-qu
 workspaces/worth-query/crates/worth-query-execution-attempt/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/host/application_home/dispatch_custody/omitted_capabilities.rs
 workspaces/worth-query/crates/worth-query-execution-attempt/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/host/application_home/temporal/indeterminate_live.rs
 workspaces/worth-query/crates/worth-query-execution-attempt/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/host/application_home/temporal/indeterminate_memory.rs
+workspaces/worth-query/crates/worth-query-execution-attempt/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/host/temporal_catchup/custody_courts.rs
 workspaces/worth-query/crates/worth-query-execution-attempt/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/process/host/durable_retry/conditional_indeterminate.rs
 workspaces/worth-query/crates/worth-query-execution-attempt/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/process/host/durable_retry/temporal_reexecution.rs
 workspaces/worth-query/crates/worth-query-execution-attempt/ workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/workflow_start_intent/mod.rs
@@ -1660,6 +1662,7 @@ workspaces/worth-query/crates/worth-query-execution-query/ workspaces/worth-quer
 workspaces/worth-query/crates/worth-query-execution-query/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/host/application_home/managed_runs.rs
 workspaces/worth-query/crates/worth-query-execution-query/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/host/application_home/temporal/indeterminate_live.rs
 workspaces/worth-query/crates/worth-query-execution-query/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/host/application_home/temporal/indeterminate_memory.rs
+workspaces/worth-query/crates/worth-query-execution-query/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/host/temporal_catchup/custody_courts.rs
 workspaces/worth-query/crates/worth-query-execution-query/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/process/certification/managed_phase_storage.rs
 workspaces/worth-query/crates/worth-query-execution-query/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/process/host/durable_retry/conditional_indeterminate.rs
 workspaces/worth-query/crates/worth-query-execution-query/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/process/host/durable_retry/temporal_reexecution.rs
@@ -3078,6 +3081,7 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/host/application_home/workflow_durability/killed_resume.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/host/application_runtime_surface/mod.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/host/source_custody/custody_dst.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/host/temporal_catchup/custody_courts.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/host/temporal_conditional_operation/conditional_clock_observation_preserves_real_snapshot_capacity_d/mod.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/host/temporal_conditional_operation/contribution_installation/checkpoint_transition/funded_capture/mod.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/host/temporal_conditional_operation/contribution_installation/checkpoint_transition/original_request/mod.rs

@@ -1,4 +1,8 @@
-//! Individual DST step actions and passive-observation pump helpers.
+//! Individual DST step actions and strictly passive-observation pump helpers.
+//!
+//! Action eligibility, mutation inputs, and emitted trace coordinates are
+//! derived strictly from the RNG seed, live Relational rows, and real Host
+//! catch-up receipts — NEVER from the reference oracle.
 
 use worth_execution::ExecutionRequest;
 use worth_query_host::facade::{
@@ -7,8 +11,7 @@ use worth_query_host::facade::{
 };
 
 use super::{
-    passive_observed_clock,
-    reference_model::{passive_total_fired, Rng, ScheduleOracle, TraceEmitter, INTENTS},
+    reference_model::{passive_due_active_count, passive_total_fired, Rng, TraceEmitter, INTENTS},
     SeedState,
 };
 use crate::host::temporal_catchup::{
@@ -43,7 +46,7 @@ pub(super) fn exercise_cancelled_pump(
         serde_json::json!({}),
         "Open",
         st.clock,
-        passive_observed_clock(h),
+        st.last_accepted_clock,
         auth.is_valid(),
         st.last_status,
         passive_total_fired(&rows),
@@ -58,8 +61,8 @@ pub(super) fn exercise_budget_pump(
     st: &mut SeedState,
     trace: &mut TraceEmitter,
 ) {
-    let obs = passive_observed_clock(h);
-    if st.oracle.due_active_count(obs) == 0 {
+    let pre_rows = read_reminders(h);
+    if passive_due_active_count(&pre_rows, st.last_accepted_clock) == 0 {
         return;
     }
     with_leased_request(128 * 1024 * 1024, Some(1), |tiny_exec| {
@@ -83,7 +86,7 @@ pub(super) fn exercise_budget_pump(
         serde_json::json!({}),
         "Open",
         st.clock,
-        passive_observed_clock(h),
+        st.last_accepted_clock,
         auth.is_valid(),
         st.last_status,
         passive_total_fired(&rows),
@@ -99,22 +102,21 @@ pub(super) fn exercise_auth_refusal(
     execution: &ExecutionRequest<'_, '_>,
     trace: &mut TraceEmitter,
 ) {
-    let obs = passive_observed_clock(h);
-    if !auth.is_valid() || st.oracle.due_active_count(obs) == 0 {
+    let pre_rows = read_reminders(h);
+    if !auth.is_valid() || passive_due_active_count(&pre_rows, st.last_accepted_clock) == 0 {
         return;
     }
     auth.set_valid(false);
-    let rows = read_reminders(h);
     trace.push(
         "ExpireAuth",
         serde_json::json!({}),
         "Open",
         st.clock,
-        obs,
+        st.last_accepted_clock,
         false,
         st.last_status,
-        passive_total_fired(&rows),
-        &rows,
+        passive_total_fired(&pre_rows),
+        &pre_rows,
     );
     let report = h
         .pump_temporal::<DesktopReminderConditional>(
@@ -126,6 +128,7 @@ pub(super) fn exercise_auth_refusal(
         report.status(),
         &WorthQueryTemporalCatchUpStatus::AuthorizationRefused
     );
+    assert_eq!(report.fired(), 0);
     let rows = read_reminders(h);
     st.oracle.verify_against_rows(&rows);
     st.last_status = "AuthorizationRefused";
@@ -134,7 +137,7 @@ pub(super) fn exercise_auth_refusal(
         serde_json::json!({}),
         "Open",
         st.clock,
-        passive_observed_clock(h),
+        st.last_accepted_clock,
         false,
         st.last_status,
         passive_total_fired(&rows),
@@ -146,7 +149,7 @@ pub(super) fn exercise_auth_refusal(
         serde_json::json!({}),
         "Open",
         st.clock,
-        passive_observed_clock(h),
+        st.last_accepted_clock,
         true,
         st.last_status,
         passive_total_fired(&rows),
@@ -163,16 +166,17 @@ pub(super) fn exercise_user_edit(
     trace: &mut TraceEmitter,
 ) {
     let id = INTENTS[rng.pick(INTENTS.len())];
-    if st.oracle.intents[id].lifecycle != "Active" {
+    let pre_rows = read_reminders(h);
+    let cur = &pre_rows[id];
+    if cur.lifecycle != "active" {
         return;
     }
-    let cur = st.oracle.intents[id].clone();
     if rng.pick(2) == 0 {
         mutate_reminder(
             h,
             MutateReminderInput {
                 identity: id.to_owned(),
-                revision: cur.rev + 1,
+                revision: cur.revision + 1,
                 due: cur.due,
                 interval: cur.interval,
                 max_fires: cur.max_fires,
@@ -192,7 +196,7 @@ pub(super) fn exercise_user_edit(
             serde_json::json!({ "id": id }),
             "Open",
             st.clock,
-            passive_observed_clock(h),
+            st.last_accepted_clock,
             auth.is_valid(),
             st.last_status,
             passive_total_fired(&rows),
@@ -204,7 +208,7 @@ pub(super) fn exercise_user_edit(
             h,
             MutateReminderInput {
                 identity: id.to_owned(),
-                revision: cur.rev + 1,
+                revision: cur.revision + 1,
                 due: new_due,
                 interval: cur.interval,
                 max_fires: cur.max_fires,
@@ -227,7 +231,7 @@ pub(super) fn exercise_user_edit(
             serde_json::json!({ "id": id, "newDue": new_due }),
             "Open",
             st.clock,
-            passive_observed_clock(h),
+            st.last_accepted_clock,
             auth.is_valid(),
             st.last_status,
             passive_total_fired(&rows),
@@ -238,13 +242,13 @@ pub(super) fn exercise_user_edit(
 
 pub(super) fn pump_one_step(
     home: &ReminderHome,
-    target_now: u64,
     _fire_log: &ReminderFireLog,
     auth: &AuthControl,
-    oracle: &mut ScheduleOracle,
+    st: &mut SeedState,
     execution: &ExecutionRequest<'_, '_>,
     trace: &mut TraceEmitter,
 ) -> &'static str {
+    let target_now = st.clock;
     let before_rows = read_reminders(home);
     let report = home
         .catch_up_temporal::<DesktopReminderConditional>(
@@ -253,8 +257,12 @@ pub(super) fn pump_one_step(
             WorthQueryTemporalCatchUpPolicy::bounded(1).unwrap(),
         )
         .unwrap();
+    let accepted_now = report
+        .last_observed_time()
+        .expect("accepted catch-up step must report its actual observed coordinate")
+        .nanoseconds();
+    st.last_accepted_clock = accepted_now;
     let rows = read_reminders(home);
-    let obs = passive_observed_clock(home);
     let committed: Vec<crate::host::temporal_catchup::adapters::FiredOccurrence> = INTENTS
         .iter()
         .filter_map(|&id| {
@@ -277,9 +285,9 @@ pub(super) fn pump_one_step(
         "committed Relational rows must match receipt fired count"
     );
     for fired in &committed {
-        oracle.record_fire(fired, target_now);
+        st.oracle.record_fire(fired, accepted_now);
     }
-    oracle.verify_against_rows(&rows);
+    st.oracle.verify_against_rows(&rows);
     assert!(
         committed.len() <= 1,
         "single-commit-per-snapshot advancement commits at most one wake per step"
@@ -287,10 +295,10 @@ pub(super) fn pump_one_step(
     if let [fired] = committed.as_slice() {
         trace.push(
             "PumpFire",
-            serde_json::json!({ "id": fired.id, "targetNow": target_now }),
+            serde_json::json!({ "id": fired.id, "targetNow": accepted_now }),
             "Open",
             target_now,
-            obs,
+            accepted_now,
             auth.is_valid(),
             "Progress",
             passive_total_fired(&rows),
@@ -299,13 +307,14 @@ pub(super) fn pump_one_step(
     }
     match report.status() {
         WorthQueryTemporalCatchUpStatus::CaughtUp => {
-            assert_eq!(oracle.due_active_count(target_now), 0);
+            assert_eq!(passive_due_active_count(&rows, accepted_now), 0);
+            assert_eq!(st.oracle.due_active_count(accepted_now), 0);
             trace.push(
                 "PumpCatchUpComplete",
-                serde_json::json!({ "targetNow": target_now }),
+                serde_json::json!({ "targetNow": accepted_now }),
                 "Open",
                 target_now,
-                obs,
+                accepted_now,
                 auth.is_valid(),
                 "CaughtUp",
                 passive_total_fired(&rows),
@@ -314,13 +323,14 @@ pub(super) fn pump_one_step(
             "CaughtUp"
         }
         WorthQueryTemporalCatchUpStatus::StepLimitReached => {
-            assert!(oracle.due_active_count(target_now) > 0);
+            assert!(passive_due_active_count(&rows, accepted_now) > 0);
+            assert!(st.oracle.due_active_count(accepted_now) > 0);
             trace.push(
                 "PumpStepLimit",
-                serde_json::json!({ "targetNow": target_now }),
+                serde_json::json!({ "targetNow": accepted_now }),
                 "Open",
                 target_now,
-                obs,
+                accepted_now,
                 auth.is_valid(),
                 "StepLimitReached",
                 passive_total_fired(&rows),
@@ -332,7 +342,7 @@ pub(super) fn pump_one_step(
             let obligations = home.runtime().conditional_decision_obligations();
             let runs = home.runtime().managed_run_obligations();
             panic!(
-                "unexpected pump status in DST step: {other:?}, report={report:?}, target_now={target_now}, obs={obs}, rows={rows:?}, obligations={obligations:?}, runs={runs:?}"
+                "unexpected pump status in DST step: {other:?}, report={report:?}, target_now={target_now}, accepted_now={accepted_now}, rows={rows:?}, obligations={obligations:?}, runs={runs:?}"
             );
         }
     }

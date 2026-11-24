@@ -9,7 +9,8 @@ use super::{
 use crate::domain_computation::primary_graph::conditional_operation::{
     application_operation_reentry::WorthQueryTemporalReentryCounts,
     signal_decision_reentry::{
-        evaluate_due_wake, retained_decision_counts, WorthQueryRetainedConditionalDecision,
+        evaluate_due_wake, reconsider_execution_denied_wake, retained_decision_counts,
+        WorthQueryRetainedConditionalDecision,
     },
 };
 
@@ -27,6 +28,28 @@ pub(super) fn retain_due(
             crate::domain_computation::primary_graph::conditional_operation::signal_decision_reentry::WorthQueryRetainedConditionalWake,
         >,
 ) -> ErasedClockObservationReceipt {
+    for wake in retained_wakes.iter_mut() {
+        let triggering_correspondence = authoritative_deliveries
+            .iter()
+            .map(|delivery| delivery.correspondence_receipt())
+            .find(|receipt| {
+                receipt.change_set().changes().iter().any(|change| {
+                    change.relational_record_identity() == Some(wake.due.source_record_identity())
+                })
+            });
+        reconsider_execution_denied_wake(
+            phase
+                .request_for_owner(truth.owner_identity())
+                .expect("private conditional progression uses its admitted runtime"),
+            bridge,
+            wake,
+            signal_basis,
+            runtime_binding_identity,
+            runtime_capability_identity,
+            truth,
+            triggering_correspondence,
+        );
+    }
     let sequence = accepted.sequence();
     let observed_coordinate = accepted.observed_coordinate();
     let due = accepted.into_due();

@@ -81,7 +81,9 @@ impl ApplicationMutationIntent<DesktopReminderSchema> for MutateReminderIntent {
     }
 }
 
-pub struct MutateReminderHandler;
+pub struct MutateReminderHandler {
+    pub controls: super::InvokerControls,
+}
 impl OperationHandler<DesktopReminderSchema, MutateReminderBinding> for MutateReminderHandler {
     fn declared_durable_capabilities() -> Option<&'static [WorthQueryOperationDurableCapability]> {
         Some(&[WorthQueryOperationDurableCapability::RelationalMutation])
@@ -108,6 +110,11 @@ impl OperationHandler<DesktopReminderSchema, MutateReminderBinding> for MutateRe
             }
         }
         if let Err(cause) = reader.field(&entity, lifecycle_field()) {
+            return HandlerResult::ExecutionDenied(cause);
+        }
+        if self.controls.next_gate_write().is_some()
+            && let Err(cause) = reader.field(&entity, gate_field())
+        {
             return HandlerResult::ExecutionDenied(cause);
         }
         match reader.mutation_target(&entity) {
@@ -143,6 +150,11 @@ impl OperationHandler<DesktopReminderSchema, MutateReminderBinding> for MutateRe
             return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
         }
         if let Err(cause) = writer.write_field(&entity, lifecycle_field(), input.lifecycle.clone())
+        {
+            return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
+        }
+        if let Some(gate) = self.controls.next_gate_write()
+            && let Err(cause) = writer.write_field(&entity, gate_field(), gate)
         {
             return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
         }

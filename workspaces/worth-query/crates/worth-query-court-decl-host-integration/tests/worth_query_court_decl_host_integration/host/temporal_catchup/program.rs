@@ -1,14 +1,10 @@
 //! Application program, desktop temporal contribution installation, and Home helpers.
 
-use std::{
-    collections::BTreeMap,
-    marker::PhantomData,
-    path::PathBuf,
-    sync::{
-        atomic::{AtomicU64, Ordering},
-        Arc,
-    },
-};
+mod runtime_ops;
+use runtime_ops::seed_reminder_graph;
+pub use runtime_ops::{mutate_reminder, read_reminders, unique_temp_dir};
+
+use std::{marker::PhantomData, path::PathBuf, sync::Arc};
 use worth_execution::ExecutionRequest;
 use worth_query_decl::facade::{
     application_program::{
@@ -21,7 +17,6 @@ use worth_query_decl::facade::{
     application_schema::{
         ApplicationSchema, ApplicationSchemaComposition, ErasedApplicationSchemaDeclaration,
     },
-    authentication::{WorthQueryExternalPrincipalIdentity, WorthQueryPrincipalMappingStatus},
 };
 use worth_query_host::facade::{
     application_contribution::{
@@ -31,15 +26,14 @@ use worth_query_host::facade::{
         WorthQueryApplicationContributionContracts, WorthQueryApplicationContributionSetup,
         WorthQueryOutputReadinessContractDenial,
     },
-    application_entry::{WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestExt},
     application_installation::{
         ApplicationBuildIdentity, WorthQueryApplicationLimits, WorthQueryApplicationProgramRoster,
     },
-    domain, primary_graph, runtime,
+    domain, primary_graph,
     temporal_contribution::{
-        install_desktop_temporal_operation, WorthQueryAlwaysReadyTemporalPredicate,
-        WorthQueryDesktopClockHandle, WorthQueryDesktopClockSource,
-        WorthQueryDesktopTemporalBindingSpec, WorthQueryInstalledDesktopTemporalClock,
+        install_desktop_temporal_clock_operation, WorthQueryAlwaysReadyTemporalPredicate,
+        WorthQueryDesktopClockSource, WorthQueryDesktopTemporalBindingSpec,
+        WorthQueryInstalledDesktopTemporalClock,
     },
     WorthQueryApplicationHome, WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeRequest,
 };
@@ -88,9 +82,10 @@ pub fn validated_program(
 
 pub struct DesktopReminderConfig {
     pub clock_source: WorthQueryDesktopClockSource<DesktopReminderClock>,
-    pub clock_handle: WorthQueryDesktopClockHandle<DesktopReminderClock>,
     pub fire_log: ReminderFireLog,
     pub auth: AuthControl,
+    pub controls: InvokerControls,
+    pub use_mismatched_due_field: bool,
 }
 
 pub type InstalledDesktopReminder = WorthQueryInstalledDesktopTemporalClock<
@@ -133,47 +128,92 @@ impl WorthQueryApplicationConditionalBinding<DesktopReminderSchema> for DesktopR
             .conditional_binding(declaration.erased(), FireReminder::reference())
             .expect("desktop temporal node spec binds");
         let adapter = Arc::new(admit_local_adapter(installation.installed_schema()));
-        let temporal = install_desktop_temporal_operation(
-            installation,
-            WorthQueryDesktopTemporalBindingSpec {
-                operation: FireReminder::reference(),
-                conditional_binding,
-                node: DesktopReminderNode::reference(),
-                predicate: WorthQueryAlwaysReadyTemporalPredicate,
-                clock_source: config.clock_source,
-                parameters: ApplicationQueryParameterSet::new(),
-                projector: ReminderProjector,
-                bounds: domain::WorthQueryTemporalIntentBounds::new(8, 16, 8).unwrap(),
-                principal_binding: ReminderPrincipalBinding::reference(),
-                principal_source: DesktopPrincipalSource {
-                    adapter,
-                    auth: config.auth.clone(),
+        let temporal = if config.use_mismatched_due_field {
+            install_desktop_temporal_clock_operation(
+                installation,
+                WorthQueryDesktopTemporalBindingSpec {
+                    operation: FireReminder::reference(),
+                    conditional_binding,
+                    node: DesktopReminderNode::reference(),
+                    predicate: WorthQueryAlwaysReadyTemporalPredicate,
+                    clock_source: config.clock_source,
+                    parameters: ApplicationQueryParameterSet::new(),
+                    projector: ReminderProjector,
+                    bounds: domain::WorthQueryTemporalIntentBounds::new(8, 16, 8).unwrap(),
+                    principal_binding: ReminderPrincipalBinding::reference(),
+                    principal_source: DesktopPrincipalSource {
+                        adapter,
+                        auth: config.auth.clone(),
+                    },
+                    scope_field: identity_field(),
+                    scope_value: "hub".to_owned(),
+                    invoker: ReminderInvoker {
+                        fire_log: config.fire_log.clone(),
+                        controls: config.controls.clone(),
+                    },
+                    identity_field: identity_field(),
+                    revision_field: revision_field(),
+                    lifecycle_field: lifecycle_field(),
+                    active_lifecycle: "active".to_owned(),
+                    completed_lifecycle: "completed".to_owned(),
+                    due_field: primary_graph::WorthQueryTemporalDueField::new(interval_field()),
+                    authorization: primary_graph::WorthQueryPublicTemporalOperationAuthorization,
+                    query_authorization: primary_graph::WorthQueryPublicTemporalQueryAuthorization,
+                    _marker: PhantomData::<
+                        fn() -> (
+                            DesktopReminderClock,
+                            ReminderTargetsReadBinding,
+                            ReminderIntent,
+                            ReminderIntent,
+                        ),
+                    >,
                 },
-                scope_field: identity_field(),
-                scope_value: "hub".to_owned(),
-                invoker: ReminderInvoker {
-                    fire_log: config.fire_log.clone(),
+            )
+            .expect("mismatched due field desktop temporal installs")
+        } else {
+            install_desktop_temporal_clock_operation(
+                installation,
+                WorthQueryDesktopTemporalBindingSpec {
+                    operation: FireReminder::reference(),
+                    conditional_binding,
+                    node: DesktopReminderNode::reference(),
+                    predicate: WorthQueryAlwaysReadyTemporalPredicate,
+                    clock_source: config.clock_source,
+                    parameters: ApplicationQueryParameterSet::new(),
+                    projector: ReminderProjector,
+                    bounds: domain::WorthQueryTemporalIntentBounds::new(8, 16, 8).unwrap(),
+                    principal_binding: ReminderPrincipalBinding::reference(),
+                    principal_source: DesktopPrincipalSource {
+                        adapter,
+                        auth: config.auth.clone(),
+                    },
+                    scope_field: identity_field(),
+                    scope_value: "hub".to_owned(),
+                    invoker: ReminderInvoker {
+                        fire_log: config.fire_log.clone(),
+                        controls: config.controls.clone(),
+                    },
+                    identity_field: identity_field(),
+                    revision_field: revision_field(),
+                    lifecycle_field: lifecycle_field(),
+                    active_lifecycle: "active".to_owned(),
+                    completed_lifecycle: "completed".to_owned(),
+                    due_field: primary_graph::WorthQueryTemporalDueField::new(due_field()),
+                    authorization: primary_graph::WorthQueryPublicTemporalOperationAuthorization,
+                    query_authorization: primary_graph::WorthQueryPublicTemporalQueryAuthorization,
+                    _marker: PhantomData::<
+                        fn() -> (
+                            DesktopReminderClock,
+                            ReminderTargetsReadBinding,
+                            ReminderIntent,
+                            ReminderIntent,
+                        ),
+                    >,
                 },
-                identity_field: identity_field(),
-                revision_field: revision_field(),
-                lifecycle_field: lifecycle_field(),
-                active_lifecycle: "active".to_owned(),
-                completed_lifecycle: "completed".to_owned(),
-                due_field: primary_graph::WorthQueryTemporalDueField::new(due_field()),
-                authorization: primary_graph::WorthQueryPublicTemporalOperationAuthorization,
-                query_authorization: primary_graph::WorthQueryPublicTemporalQueryAuthorization,
-                _marker: PhantomData::<
-                    fn() -> (
-                        DesktopReminderClock,
-                        ReminderTargetsReadBinding,
-                        ReminderIntent,
-                        ReminderIntent,
-                    ),
-                >,
-            },
-        )
-        .expect("desktop temporal operation installs cleanly");
-        Ok(temporal.into_home_binding(config.clock_handle))
+            )
+            .expect("desktop temporal operation installs cleanly")
+        };
+        Ok(temporal)
     }
 }
 
@@ -191,9 +231,45 @@ impl WorthQueryApplicationContribution<DesktopReminderSchema> for DesktopReminde
         configuration: Self::Configuration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, DesktopReminderSchema>,
     ) -> Result<(), primary_graph::WorthQueryPrimaryGraphInstallationDenial> {
-        setup.handler::<MutateReminderBinding, _>(MutateReminderHandler)?;
+        setup.handler::<MutateReminderBinding, _>(MutateReminderHandler {
+            controls: configuration.controls.clone(),
+        })?;
         setup.conditional::<DesktopReminderConditional>(configuration)
     }
+}
+
+pub fn open_memory_home_with_mismatched_due_field(
+    fire_log: ReminderFireLog,
+    auth: AuthControl,
+    execution: &ExecutionRequest<'_, '_>,
+) -> ReminderHome {
+    open_home_at(
+        WorthQueryApplicationHomeLocation::MemoryOnly,
+        fire_log,
+        auth,
+        InvokerControls::default(),
+        true,
+        None,
+        execution,
+    )
+}
+
+pub fn open_memory_home_with_controls(
+    fire_log: ReminderFireLog,
+    auth: AuthControl,
+    controls: InvokerControls,
+    limits: Option<WorthQueryApplicationLimits>,
+    execution: &ExecutionRequest<'_, '_>,
+) -> ReminderHome {
+    open_home_at(
+        WorthQueryApplicationHomeLocation::MemoryOnly,
+        fire_log,
+        auth,
+        controls,
+        false,
+        limits,
+        execution,
+    )
 }
 
 pub fn open_memory_home(
@@ -205,6 +281,9 @@ pub fn open_memory_home(
         WorthQueryApplicationHomeLocation::MemoryOnly,
         fire_log,
         auth,
+        InvokerControls::default(),
+        false,
+        None,
         execution,
     )
 }
@@ -219,6 +298,9 @@ pub fn open_directory_home(
         WorthQueryApplicationHomeLocation::Directory(location),
         fire_log,
         auth,
+        InvokerControls::default(),
+        false,
+        None,
         execution,
     )
 }
@@ -227,9 +309,12 @@ fn open_home_at(
     location: WorthQueryApplicationHomeLocation,
     fire_log: ReminderFireLog,
     auth: AuthControl,
+    controls: InvokerControls,
+    use_mismatched_due_field: bool,
+    custom_limits: Option<WorthQueryApplicationLimits>,
     execution: &ExecutionRequest<'_, '_>,
 ) -> ReminderHome {
-    let (clock_source, clock_handle) = WorthQueryDesktopClockSource::new(
+    let (clock_source, _clock_handle) = WorthQueryDesktopClockSource::new(
         domain::WorthQueryClockSourceIdentity::declare(
             "worth.query.court.desktop-reminder.clock-source",
         )
@@ -242,14 +327,17 @@ fn open_home_at(
     );
     let config = DesktopReminderConfig {
         clock_source,
-        clock_handle,
         fire_log,
         auth,
+        controls,
+        use_mismatched_due_field,
     };
-    let limits = WorthQueryApplicationLimits::ordinary_serial(
-        worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system(),
-    )
-    .with_signal_budget(primary_graph::SignalConditionalEvaluationBudget::development());
+    let limits = custom_limits.unwrap_or_else(|| {
+        WorthQueryApplicationLimits::ordinary_serial(
+            worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system(),
+        )
+        .with_signal_budget(primary_graph::SignalConditionalEvaluationBudget::development())
+    });
     let request = WorthQueryApplicationHomeRequest::new(
         location,
         validated_program(),
@@ -271,115 +359,8 @@ fn open_home_at(
         .unwrap_or_else(|denial| panic!("desktop reminder Home open failed: {denial:?}"))
 }
 
-fn seed_reminder_graph(
-    graph: &mut primary_graph::WorthQueryPrimaryGraphBootstrap<DesktopReminderSchema>,
-    principal_binding: &domain::WorthQueryInstalledPrincipalBinding<
-        DesktopReminderSchema,
-        ReminderPrincipalBinding,
-        ExternalMapping,
-        Principal,
-        u64,
-        worth_query_decl::facade::application_schema::U64ApplicationValueBinding,
-    >,
-) {
-    graph
-        .bind_principal(
-            principal_binding,
-            primary_graph::WorthQueryApplicationPrincipalKey::new("daymark-user").unwrap(),
-            1_u64,
-            WorthQueryExternalPrincipalIdentity::new("https://local.desktop", "daymark-user")
-                .unwrap(),
-            WorthQueryPrincipalMappingStatus::Enabled,
-        )
-        .unwrap();
-    for (row_key, id) in [("row-hub", "hub"), ("row-i1", "i1"), ("row-i2", "i2")] {
-        graph
-            .bind_entity(
-                primary_graph::WorthQueryApplicationEntitySeed::new(
-                    ReminderIntent::reference(),
-                    primary_graph::WorthQueryApplicationEntityKey::new(row_key).unwrap(),
-                )
-                .field(identity_field(), id.to_owned())
-                .field(revision_field(), 0_u64)
-                .field(due_field(), 0_u64)
-                .field(interval_field(), 0_u64)
-                .field(max_fires_field(), 0_u64)
-                .field(fired_count_field(), 0_u64)
-                .field(lifecycle_field(), "absent".to_owned())
-                .field(gate_field(), "ready".to_owned()),
-            )
-            .unwrap();
-    }
-    for (rel_id, target_key) in [("hub-to-i1", "row-i1"), ("hub-to-i2", "row-i2")] {
-        graph
-            .bind_relation(primary_graph::WorthQueryApplicationRelationSeed::new(
-                ReminderTarget::reference(),
-                rel_id,
-                primary_graph::WorthQueryApplicationEntityKey::new("row-hub").unwrap(),
-                primary_graph::WorthQueryApplicationEntityKey::new(target_key).unwrap(),
-            ))
-            .unwrap();
-    }
-}
-
 pub fn installed(home: &ReminderHome) -> Arc<InstalledDesktopReminder> {
     home.runtime()
         .conditional::<DesktopReminderConditional>()
         .expect("desktop reminder conditional installed")
-}
-
-pub fn mutate_reminder(home: &ReminderHome, input: MutateReminderInput, command_key: u64) {
-    let runtime = home.runtime();
-    let scope = fresh_request_scope();
-    let adapter = admit_local_adapter(runtime.installed_schema());
-    let principal = adapter.authenticate_local(&scope).unwrap();
-    let outcome = runtime
-        .request(&principal, &scope)
-        .advanced()
-        .mutate(MutateReminderIntent(input))
-        .without_source()
-        .idempotency(&command_key)
-        .execute_in_program(
-            runtime,
-            runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("reminder mutation executes");
-    assert!(
-        matches!(
-            outcome,
-            WorthQueryApplicationMutationOutcome::Committed { .. }
-        ),
-        "expected committed reminder mutation, got {outcome:?}"
-    );
-}
-
-pub fn read_reminders(home: &ReminderHome) -> BTreeMap<String, ReminderRow> {
-    let runtime = home.runtime();
-    let scope = fresh_request_scope();
-    let adapter = admit_local_adapter(runtime.installed_schema());
-    let principal = adapter.authenticate_local(&scope).unwrap();
-    let result = runtime
-        .request(&principal, &scope)
-        .query(ReminderTargetsReadRequest {
-            hub: "hub".to_owned(),
-        })
-        .execute()
-        .expect("reminder targets query executes");
-    result
-        .rows()
-        .iter()
-        .cloned()
-        .map(|row| (row.identity.clone(), row))
-        .collect()
-}
-
-pub fn unique_temp_dir(tag: &str) -> PathBuf {
-    static COUNTER: AtomicU64 = AtomicU64::new(0);
-    let seq = COUNTER.fetch_add(1, Ordering::Relaxed);
-    let dir = std::env::temp_dir().join(format!(
-        "worth-temporal-catchup-{tag}-{}-{seq}",
-        std::process::id()
-    ));
-    let _ = std::fs::remove_dir_all(&dir);
-    dir
 }
