@@ -37,10 +37,12 @@
 use proc_macro::TokenStream;
 
 mod action;
+mod binary_value;
 mod case;
 mod correction;
 mod facade_paths;
 mod grammar;
+mod managed_index;
 mod name_discriminator;
 mod name_role;
 mod projection;
@@ -48,6 +50,21 @@ mod query;
 mod record;
 mod relation;
 mod schema;
+
+/// Declares a versioned, fixed-width, metered `BinaryValueDelegate`,
+/// `ApplicationScalarValueBinding`, `ApplicationReadableScalarValueBinding`,
+/// `WorthQueryDefaultValueBinding`, and `WorthBinaryWireField` from a struct.
+#[proc_macro_derive(WorthBinaryValue, attributes(worth_query))]
+pub fn derive_worth_binary_value(input: TokenStream) -> TokenStream {
+    expand(input, binary_value::expand)
+}
+
+/// Declares a unit struct's `ApplicationManagedIndexBinding<Schema>` with
+/// checked binary-source-tree defaults.
+#[proc_macro_derive(WorthManagedIndex, attributes(worth_query))]
+pub fn derive_worth_managed_index(input: TokenStream) -> TokenStream {
+    expand(input, managed_index::expand)
+}
 
 /// Declares a unit struct's schema role: `schema` (an installation root),
 /// `fragment`, `entity` or `relation`.

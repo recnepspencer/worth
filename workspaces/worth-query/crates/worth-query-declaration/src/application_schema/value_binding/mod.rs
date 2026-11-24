@@ -22,6 +22,7 @@ pub use worth_foundational::facade::{
 mod admitted;
 #[cfg(test)]
 mod admitted_tests;
+mod binary_wire;
 #[cfg(test)]
 mod canonical_tests;
 mod denial;
@@ -35,6 +36,9 @@ mod representation_identity;
 mod scalar;
 mod structured;
 
+pub use binary_wire::{
+    worth_binary_checked_wire_bytes, WorthBinaryWireField, WorthQueryDefaultValueBinding,
+};
 pub use denial::{
     ApplicationValueDecodeDenial, ApplicationValueEncodeDenial, ApplicationValueValidationDenial,
 };

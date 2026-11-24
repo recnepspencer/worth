@@ -168,4 +168,81 @@ where
             .map_err(WorthQueryApplicationRequestQueryDenial::ExecutionRequest);
         super::completion::completed_effect(advancement, completed)
     }
+
+    /// Opens the shared registration and rebuilds ONLY when status is `Created`,
+    /// after fresh current capability admission.
+    pub fn ensure_index_ready_governed<I, Capability, Operation, Input>(
+        self,
+        capability: ApplicationCapabilityRef<Schema, Capability>,
+        operation: ApplicationOperationRef<Schema, Operation, Input>,
+        input: Input,
+    ) -> Result<WorthQueryManagedIndex<Schema, I>, WorthQueryApplicationRequestQueryDenial>
+    where
+        I: ApplicationManagedIndexBinding<Schema>,
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+        Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+        Input: ApplicationCapabilityRequest<Schema, Capability, Scope = Scope<Schema, Intent>>
+            + 'static,
+    {
+        self.ensure_index_ready_with_approval(None, capability, operation, input)
+    }
+
+    /// Opens the shared registration and rebuilds ONLY when status is `Created`,
+    /// after a genuine approval and current capability admission.
+    pub fn ensure_index_ready_approved<I, Capability, Operation, Input>(
+        self,
+        approved: &WorthQueryApprovedElevation,
+        capability: ApplicationCapabilityRef<Schema, Capability>,
+        operation: ApplicationOperationRef<Schema, Operation, Input>,
+        input: Input,
+    ) -> Result<WorthQueryManagedIndex<Schema, I>, WorthQueryApplicationRequestQueryDenial>
+    where
+        I: ApplicationManagedIndexBinding<Schema>,
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+        Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+        Input: ApplicationCapabilityRequest<Schema, Capability, Scope = Scope<Schema, Intent>>
+            + 'static,
+    {
+        self.ensure_index_ready_with_approval(Some(approved), capability, operation, input)
+    }
+
+    fn ensure_index_ready_with_approval<I, Capability, Operation, Input>(
+        self,
+        approved: Option<&WorthQueryApprovedElevation>,
+        capability: ApplicationCapabilityRef<Schema, Capability>,
+        operation: ApplicationOperationRef<Schema, Operation, Input>,
+        input: Input,
+    ) -> Result<WorthQueryManagedIndex<Schema, I>, WorthQueryApplicationRequestQueryDenial>
+    where
+        I: ApplicationManagedIndexBinding<Schema>,
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+        Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+        Input: ApplicationCapabilityRequest<Schema, Capability, Scope = Scope<Schema, Intent>>
+            + 'static,
+    {
+        let application = self.application;
+        let request = self.scope;
+        let mut completed = None;
+        let advancement = application
+            .with_application_advancement(request, |phase| {
+                if self.retained.is_some() {
+                    completed = Some(Err(WorthQueryApplicationRequestQueryDenial::RequestMode));
+                    return;
+                }
+                completed = Some(self.with_admitted_governed_query(
+                    &phase,
+                    approved,
+                    capability,
+                    operation,
+                    input,
+                    |application, binding, external, plan| {
+                        application
+                            .ensure_application_managed_index_ready(&phase, binding, external, plan)
+                            .map_err(WorthQueryApplicationRequestQueryDenial::ManagedIndex)
+                    },
+                ));
+            })
+            .map_err(WorthQueryApplicationRequestQueryDenial::ExecutionRequest);
+        super::completion::completed_effect(advancement, completed)
+    }
 }

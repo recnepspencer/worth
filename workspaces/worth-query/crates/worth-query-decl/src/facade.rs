@@ -50,8 +50,8 @@ pub use worth_query_declaration::{
 /// Expansions name `::worth_query_decl`; `WorthQueryProjection` also names
 /// `::worth_query_host`, so a crate deriving it depends on both.
 pub use worth_query_macros::{
-    WorthQuery, WorthQueryAction, WorthQueryCorrection, WorthQueryProjection, WorthQueryRecord,
-    WorthQueryRelation, WorthQuerySchema,
+    WorthBinaryValue, WorthManagedIndex, WorthQuery, WorthQueryAction, WorthQueryCorrection,
+    WorthQueryProjection, WorthQueryRecord, WorthQueryRelation, WorthQuerySchema,
 };
 
 /// Canonical proof-carrying query artifact for declaration consumers.

@@ -215,3 +215,66 @@ fn unit_struct_query_with_scope_value_and_overridden_defaults_expands_cleanly() 
     );
     assert!(!expanded.contains("worth_query_parameters"), "{expanded}");
 }
+
+#[test]
+fn managed_index_query_wires_probe_binding_defaults_and_refuses_malformed_shapes() {
+    let cases = [
+        (
+            format!(
+                "{HEADER} struct Read {{ #[worth_query(scope = ProjectKey)] project: u64, \
+                 #[worth_query(probe)] p: String }}"
+            ),
+            "`probe` requires struct-level `#[worth_query(managed_index = Index)]`",
+        ),
+        (
+            format!(
+                "#[worth_query(managed_index = MyIdx)] {HEADER} \
+                 struct Read {{ #[worth_query(scope = ProjectKey)] project: u64, p: String }}"
+            ),
+            "`managed_index` requires one field marked `#[worth_query(probe)]`",
+        ),
+        (
+            format!(
+                "#[worth_query(managed_index = MyIdx)] {HEADER} \
+                 struct Read {{ #[worth_query(scope = ProjectKey)] project: u64, \
+                 #[worth_query(probe)] a: String, #[worth_query(probe)] b: String }}"
+            ),
+            "at most one `probe` field",
+        ),
+        (
+            format!(
+                "#[worth_query(managed_index_refined)] {HEADER} \
+                 struct Read {{ #[worth_query(scope = ProjectKey)] project: u64 }}"
+            ),
+            "`managed_index_refined` does not apply to a query without `managed_index = Index`",
+        ),
+    ];
+    for (source, expected) in cases {
+        let message = refusal(&source);
+        assert!(message.contains(expected), "{source}: {message}");
+    }
+
+    let input = syn::parse_str(
+        "#[worth_query(schema = Schema, context = ShopContext, namespace = FIND, \
+         scope = FloorId, managed_index = EquipmentBoxIndex, lanes = OneShotAndLive, limits = 64)] \
+         pub struct FindEquipmentInBox { \
+             #[worth_query(scope)] pub floor: String, \
+             #[worth_query(probe)] pub region: QueryBox2D, \
+         }",
+    )
+    .unwrap();
+    let expanded = expand(&input).unwrap().to_string();
+    assert!(expanded.contains("FindEquipmentInBoxQuery"), "{expanded}");
+    assert!(expanded.contains("FindEquipmentInBoxBinding"), "{expanded}");
+    assert!(expanded.contains("ProbeBinding"), "{expanded}");
+    assert!(expanded.contains(". managed_index ("), "{expanded}");
+    assert!(
+        !expanded.contains(". parameter (Self :: region ())"),
+        "{expanded}"
+    );
+    assert!(expanded.contains(". with_live ()"), "{expanded}");
+    assert!(
+        expanded.contains("worth_query_try_parameters"),
+        "{expanded}"
+    );
+}

@@ -183,3 +183,38 @@ binding = "FocusWindowProbeBinding"
 posture = "domain"
 reason = "Reference-free half-open integer interval value exercised by public ordered managed-index adapter courts."
 forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-host/src/ordered_index/probes.rs"
+binding = "WorthQueryInterval1DBinding"
+posture = "domain"
+reason = "Reference-free fixed-width 1D i64 interval probe for the stock ordered managed-index adapter."
+forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-host/src/ordered_index/probes.rs"
+binding = "WorthQueryBox2DBinding"
+posture = "domain"
+reason = "Reference-free fixed-width 2D i64 box probe for the stock ordered managed-index adapter."
+forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-host/src/ordered_index/probes.rs"
+binding = "WorthQueryBox3DBinding"
+posture = "domain"
+reason = "Reference-free fixed-width 3D i64 box probe for the stock ordered managed-index adapter."
+forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-host/src/ordered_index/probes/f64_probes.rs"
+binding = "WorthQueryBox2DF64Binding"
+posture = "domain"
+reason = "Reference-free fixed-width 2D CanonicalF64 box probe for the stock ordered managed-index adapter."
+forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-host/src/ordered_index/probes/f64_probes.rs"
+binding = "WorthQueryBox3DF64Binding"
+posture = "domain"
+reason = "Reference-free fixed-width 3D CanonicalF64 box probe for the stock ordered managed-index adapter."
+forbidden_types = []

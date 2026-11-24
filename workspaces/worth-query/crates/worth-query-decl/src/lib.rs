@@ -24,6 +24,7 @@
 
 mod derive_contract;
 pub mod facade;
+mod managed_index_derive_contract;
 mod naming_derive_contract;
 mod stored_name_derive_contract;
 

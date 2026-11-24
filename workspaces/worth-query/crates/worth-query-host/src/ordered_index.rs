@@ -7,7 +7,14 @@
 //! deterministic slot tie-breaking, and summary propagation.
 
 mod bounds;
+mod box_2d;
+mod box_3d;
+mod box_nd;
+mod coord;
+mod interval_1d;
+mod probes;
 mod sources;
+mod text_prefix;
 mod tree;
 
 use std::cmp::Ordering;
@@ -31,7 +38,23 @@ pub use bounds::{
     prefix_watch_bounds_may_match_metered, read_ordered_field, WorthQueryOrderedPrefixOrder,
     WorthQueryOrderedSlotBounds, WorthQueryOrderedTextOrder,
 };
+pub use box_2d::{WorthQueryBox2DDomain, WorthQueryBox2DEnvelope, WorthQueryBox2DIndex};
+pub use box_3d::{WorthQueryBox3DDomain, WorthQueryBox3DEnvelope, WorthQueryBox3DIndex};
+pub use coord::{
+    WorthQueryAxisEnvelope, WorthQueryOrderedCoord, WorthQueryRangeInclusion,
+    WorthQueryStockIndexDenial,
+};
+pub use interval_1d::{
+    WorthQueryInterval1DDomain, WorthQueryInterval1DEnvelope, WorthQueryInterval1DIndex,
+};
+pub use probes::{
+    WorthQueryBox2D, WorthQueryBox2DBinding, WorthQueryBox2DF64, WorthQueryBox2DF64Binding,
+    WorthQueryBox2DProbe, WorthQueryBox3D, WorthQueryBox3DBinding, WorthQueryBox3DF64,
+    WorthQueryBox3DF64Binding, WorthQueryBox3DProbe, WorthQueryInterval1D,
+    WorthQueryInterval1DBinding, WorthQueryInterval1DProbe,
+};
 pub use sources::{WorthQueryOrderedIndexNode, WorthQueryOrderedIndexSources};
+pub use text_prefix::{WorthQueryTextPrefixDomain, WorthQueryTextPrefixIndex};
 
 /// Pure metered domain contract for a checked ordered managed index.
 ///

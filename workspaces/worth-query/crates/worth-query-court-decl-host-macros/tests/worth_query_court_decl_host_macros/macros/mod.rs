@@ -11,4 +11,5 @@ mod relations;
 mod schema;
 
 mod journey;
+mod managed_index_hard_dx;
 mod parity;

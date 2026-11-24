@@ -1504,6 +1504,21 @@ also names `::worth_query_host`.
   `ApplicationCorrectionBinding<Schema>` (`source`, `inverse`, `disclosure`,
   optional `source_body`, `preimage_fields(..)` + `preimage_bytes` or `demand`,
   and `derive = fn`, using `decode_preimage_field` for typed pre-image reads).
+- `WorthBinaryValue` on a fixed-width struct declares a versioned, metered
+  `BinaryValueDelegate`, `ApplicationScalarValueBinding`,
+  `ApplicationReadableScalarValueBinding`, `WorthQueryDefaultValueBinding`, and
+  `WorthBinaryWireField` (`worth.domain-binary.v1`), rejecting raw `f32`/`f64`,
+  unbounded fields, non-canonical field bits, version mismatches, and sizes
+  exceeding `InlineBytes::MAXIMUM_LENGTH` at compile time, with optional
+  `validate = fn_path`.
+- `WorthManagedIndex` on a unit marker declares
+  `ApplicationManagedIndexBinding<Schema>` with checked `BinarySourceTree`,
+  `CheckedSummarySourceTree`, and `Native { cold: AdmitRebuild }` defaults and
+  `probe = ValueType` (resolved via `WorthQueryDefaultValueBinding`) or
+  `probe_binding = Binding`. `WorthQuery` accepts `managed_index = Index` and
+  `#[worth_query(probe)]` (plus struct-level `scope = Selection` paired with
+  field-level `#[worth_query(scope)]`) to wire the probe parameter, fallible
+  `prepare_parameters`, and `.managed_index(..)` in one derive.
 - On the host side, `worth_query_application_contribution!` accepts
   `query(Binding) { definition: expr; };` to register a query and its binding
   together, optional `as ActionAlias` on action entries to declare typed
@@ -8665,18 +8680,66 @@ maintained prefix/geometry compositions use this same strategy. Prefix summaries
 keep exact UTF-8 extrema; geometry summaries use the numerical owner's closed
 bounds and union, without Query-specific tolerances or field policy.
 
-For standard ordered point/prefix or interval-overlap indexes, you do not need
-to author a balanced binary source tree by hand. Use
-`host::ordered_index::WorthQueryOrderedIndexAdapter` and implement
+For standard ordered point/prefix, 1D interval-overlap, and 2D/3D bounding-box
+overlap indexes, you do not need to author a balanced binary source tree, byte
+codec, or 10-constant index trait by hand. Combine `#[derive(WorthBinaryValue)]`,
+`#[derive(WorthManagedIndex)]`, `#[derive(WorthQuery)]` (`managed_index` +
+`#[worth_query(probe)]`), and the four stock checked adapters in
+`host::ordered_index` (`WorthQueryTextPrefixIndex`, `WorthQueryInterval1DIndex`,
+`WorthQueryBox2DIndex`, `WorthQueryBox3DIndex`), then use
+`request.query(q).ensure_index_ready::<Index>()` on startup or cold reopen (which
+opens the index and rebuilds ONLY when status is `Created`, returning warm
+`Ready` indexes without reading Source and refusing `Evicted`/budget/authority
+denials honestly):
+
+<!-- illustrative -->
+```rust,ignore
+// Shop Floor 2D equipment bounding-box overlap (~15 lines total, zero JSON):
+#[derive(Copy, Clone, WorthBinaryValue)]
+#[worth_query(identity = "shopfloor.query_box.v1", version = 1, validate = check_box2d)]
+pub struct QueryBox2D { pub min_x: i64, pub min_y: i64, pub max_x: i64, pub max_y: i64 }
+impl WorthQueryBox2DProbe<i64> for QueryBox2D {
+    fn box_2d_bounds(&self) -> ([i64; 2], [i64; 2]) { ([self.min_x, self.min_y], [self.max_x, self.max_y]) }
+}
+
+#[derive(WorthManagedIndex)]
+#[worth_query(schema = Schema, entity = Equipment, source = EquipmentSourceBinding, probe = QueryBox2D)]
+pub struct EquipmentBoxIndex;
+
+#[derive(Clone, WorthQuery)]
+#[worth_query(schema = Schema, context = ShopContext, namespace = FIND_EQ,
+    scope = FloorId, managed_index = EquipmentBoxIndex, lanes = OneShotAndLive, limits = 64)]
+pub struct FindEquipmentInBox {
+    #[worth_query(scope)] pub floor: String,
+    #[worth_query(probe)] pub region: QueryBox2D,
+}
+
+// Install with one line in `WorthQueryApplicationContribution::configure`:
+setup.managed_index_provider::<EquipmentBoxIndex, _>(
+    WorthQueryBox2DIndex::half_open(
+        EquipmentRow::min_x(), EquipmentRow::min_y(),
+        EquipmentRow::max_x(), EquipmentRow::max_y(),
+    ),
+).with_predicate_routing().install()?;
+
+// Daymark title-prefix & calendar interval use the same one-line stock adapters:
+//   WorthQueryTextPrefixIndex::ascii_case_insensitive(TaskRow::title())
+//   WorthQueryInterval1DIndex::half_open(TaskRow::start_min(), TaskRow::end_min())
+// Cold reopen / startup:
+let index = request.query(q).ensure_index_ready::<EquipmentBoxIndex>()?;
+```
+
+For custom ordered domains beyond the four stock families, wrap a pure
 `WorthQueryOrderedIndexDomain` (plus `WorthQueryOrderedIndexPredicateDomain`
-when live watches are needed). Your domain supplies only metered row ordering,
-a source summary with associative summary combination, and the exact metered
-probe predicate (with `WorthQueryOrderedSlotBounds`, `read_ordered_field`, and
-the metered text/prefix helpers in `host::ordered_index` for string keys). The
-adapter owns the height-balanced binary source tree, incremental
-insert/update/delete, deterministic slot tie-breaking, bottom-up summary
-propagation, and checked `WorthQueryManagedIndexProvider` /
-`WorthQueryManagedIndexPredicateProvider` wiring.
+when live watches are needed) in `host::ordered_index::WorthQueryOrderedIndexAdapter`.
+Your domain supplies only metered row ordering, a `Copy + Eq` source summary
+with associative summary combination, and the exact metered probe predicate
+(with `WorthQueryOrderedSlotBounds`, `read_ordered_field`, and the metered
+text/prefix helpers in `host::ordered_index` for string keys). The adapter owns
+the height-balanced binary source tree, incremental insert/update/delete,
+deterministic slot tie-breaking, bottom-up summary propagation, and checked
+`WorthQueryManagedIndexProvider` / `WorthQueryManagedIndexPredicateProvider`
+wiring.
 
 Both complete strategies record the actual visited regions and checked prunes.
 Before releasing slots, Query verifies that this cut covers the checked tree and

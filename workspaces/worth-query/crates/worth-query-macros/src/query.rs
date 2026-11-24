@@ -26,6 +26,7 @@
 use proc_macro2::TokenStream;
 use syn::DeriveInput;
 
+mod defaults;
 mod emit;
 mod fields;
 mod grammar;

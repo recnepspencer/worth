@@ -1,12 +1,13 @@
 //! Lowers `#[derive(WorthQuery)]` into the public declaration macros and
 //! typed query-definition defaults.
-use super::grammar::{bare_ident, QueryDeclaration, QueryScope};
+use super::defaults::{basis_expr, cardinality_expr, disclosure_expr, lanes_expr};
+use super::grammar::{QueryDeclaration, QueryScope};
 use crate::case::snake_case;
 use crate::facade_paths::{declaration, fragment};
 use proc_macro2::{Span, TokenStream};
 use quote::{format_ident, quote, quote_spanned};
 use syn::spanned::Spanned;
-use syn::{DeriveInput, Expr, Ident};
+use syn::{DeriveInput, Ident};
 
 pub(super) fn query(input: &DeriveInput, decl_spec: &QueryDeclaration) -> TokenStream {
     let marker = query_marker(input, decl_spec);
@@ -107,10 +108,16 @@ fn parameter_items(input: &DeriveInput, decl_spec: &QueryDeclaration) -> Option<
             &param.wire_name,
             &param.value_ty,
         );
-        let scalar_binding = param.binding.as_ref().map_or_else(
-            || quote!(<#bindings as #frag::Scalar<#ty>>::Binding),
-            |explicit| quote!(#explicit),
-        );
+        let scalar_binding = if let Some(explicit) = param.binding.as_ref() {
+            quote!(#explicit)
+        } else if param.is_probe
+            && let Some(mi) = decl_spec.managed_index.as_ref()
+        {
+            let (idx, schema) = (&mi.index, &decl_spec.schema);
+            quote!(<#idx as #decl::application_query::ApplicationManagedIndexBinding<#schema>>::ProbeBinding)
+        } else {
+            quote!(<#bindings as #frag::Scalar<#ty>>::Binding)
+        };
         let doc = format!("Typed parameter reference for `{}`.", wire.value());
         quote_spanned! {ty.span()=>
             #[doc = #doc]
@@ -249,9 +256,29 @@ fn definition_builder(input: &DeriveInput, decl_spec: &QueryDeclaration) -> Opti
         || quote!(.public()),
         |ability| quote!(.requires_ability(#ability)),
     );
-    let params = decl_spec.params.iter().map(|param| {
-        let selector = &param.selector;
-        quote!(.parameter(Self::#selector()))
+    let params = decl_spec
+        .params
+        .iter()
+        .filter(|param| !param.is_probe)
+        .map(|param| {
+            let selector = &param.selector;
+            quote!(.parameter(Self::#selector()))
+        });
+    let managed_index_step = decl_spec.managed_index.as_ref().and_then(|mi| {
+        let probe = decl_spec.params.iter().find(|param| param.is_probe)?;
+        let selector = &probe.selector;
+        let idx = &mi.index;
+        let method = if mi.refined {
+            quote!(managed_index_refined)
+        } else {
+            quote!(managed_index)
+        };
+        Some(quote! {
+            .#method(
+                <#idx as #aq::ApplicationManagedIndexBinding<#schema>>::reference(),
+                Self::#selector(),
+            )
+        })
     });
     let default_definition = (!def.explicit_shape).then(|| {
         quote! {
@@ -305,67 +332,8 @@ fn definition_builder(input: &DeriveInput, decl_spec: &QueryDeclaration) -> Opti
                     .lanes(#lanes)
                     #auth
                     #(#params)*
+                    #managed_index_step
             }
         }
     })
-}
-
-fn cardinality_expr(expr: Option<&Expr>) -> TokenStream {
-    let aq = quote!(::worth_query_decl::facade::application_query);
-    match expr {
-        None => quote!(#aq::ApplicationQueryCardinality::Many),
-        Some(expr) => match bare_ident(expr) {
-            Some((ident, _))
-                if matches!(
-                    ident.to_string().as_str(),
-                    "Many" | "ExactlyOne" | "OptionalOne"
-                ) =>
-            {
-                quote!(#aq::ApplicationQueryCardinality::#ident)
-            }
-            _ => quote!(#expr),
-        },
-    }
-}
-
-fn disclosure_expr(expr: Option<&Expr>) -> TokenStream {
-    let aq = quote!(::worth_query_decl::facade::application_query);
-    match expr {
-        None => quote!(#aq::ApplicationQueryDisclosureContract::public()),
-        Some(expr) => match bare_ident(expr) {
-            Some((ident, _)) if ident == "Public" => {
-                quote!(#aq::ApplicationQueryDisclosureContract::public())
-            }
-            _ => quote!(#expr),
-        },
-    }
-}
-
-fn basis_expr(expr: Option<&Expr>) -> TokenStream {
-    let aq = quote!(::worth_query_decl::facade::application_query);
-    match expr {
-        None => quote!(#aq::ApplicationQueryBasisSupport::current_and_pinned()),
-        Some(expr) => match bare_ident(expr) {
-            Some((ident, _)) if ident == "CurrentAndPinned" => {
-                quote!(#aq::ApplicationQueryBasisSupport::current_and_pinned())
-            }
-            Some((ident, _)) if ident == "CurrentOnly" => {
-                quote!(#aq::ApplicationQueryBasisSupport::current_only())
-            }
-            _ => quote!(#expr),
-        },
-    }
-}
-
-fn lanes_expr(expr: Option<&Expr>) -> TokenStream {
-    let aq = quote!(::worth_query_decl::facade::application_query);
-    match expr {
-        None => quote!(#aq::ApplicationQueryLaneEligibility::one_shot()),
-        Some(expr) => match bare_ident(expr) {
-            Some((ident, _)) if ident == "OneShot" => {
-                quote!(#aq::ApplicationQueryLaneEligibility::one_shot())
-            }
-            _ => quote!(#expr),
-        },
-    }
 }
