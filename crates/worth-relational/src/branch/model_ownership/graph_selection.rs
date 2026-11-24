@@ -4,9 +4,9 @@ use super::{
     RelationalOwnedModelForeignRelation, RelationalOwnedModelSelectionDenial as Denial,
 };
 use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::history::envelope_demand::CanonicalHistoryRead;
 use crate::identity::data::EntityId;
 use crate::identity::data::RelationId;
-use crate::runtime::state::subsystems::history::HistorySubsystem;
 use crate::validation::data::structural_read::StructuralRelationRecord;
 use std::collections::{BTreeMap, BTreeSet};
 mod canonical;
@@ -101,7 +101,7 @@ fn insert(
     Ok(())
 }
 pub(super) fn prepare(
-    history: &HistorySubsystem,
+    history: CanonicalHistoryRead<'_>,
     execution: &ExecutionRequest<'_, '_>,
     context: &mut MapKernelContext<'_, '_>,
     entities: RelationalOwnedModelEntityBoundary,
@@ -116,7 +116,7 @@ pub(super) fn prepare(
     let transferred = &restoration.transferred;
     let in_domain = |id: EntityId| restoration.current.contains(&id) || restored.contains(&id);
     let (current_relations, current_memory) = basis::read(
-        history.runtime_instance_id,
+        history.branch.runtime_instance_id,
         execution,
         current,
         context,
@@ -162,7 +162,7 @@ pub(super) fn prepare(
         },
     )?;
     let (selected_relations, selected_memory) = basis::read(
-        history.runtime_instance_id,
+        history.branch.runtime_instance_id,
         execution,
         selected,
         context,
@@ -192,7 +192,7 @@ pub(super) fn prepare(
         },
     )?;
     let ((), validation_memory) = basis::read(
-        history.runtime_instance_id,
+        history.branch.runtime_instance_id,
         execution,
         current,
         context,

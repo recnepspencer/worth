@@ -11,9 +11,8 @@ pub(crate) struct PreparedCheckpointDirectoryRetirement {
     storage: Box<MaybeUninit<DirectoryRetirementPayload>>,
     memory: Option<ExecutionMemoryReservation>,
 }
-pub(crate) struct CheckpointDirectoryRetirement {
-    payload: Box<DirectoryRetirementPayload>,
-}
+pub(crate) type CheckpointDirectoryRetirement =
+    Box<dyn crate::storage::data::directory_source_edge::DirectoryRetirement>;
 struct DirectoryRetirementPayload {
     _admission_image:
         Option<crate::durability::checkpoint_admission::RelationalCheckpointAdmissionArtifact>,
@@ -72,20 +71,23 @@ impl RelationalCheckpointDirectory {
             retired_member: None,
             _memory: retirement.memory,
         };
-        CheckpointDirectoryRetirement {
-            payload: Box::write(retirement.storage, payload),
-        }
+        Box::write(retirement.storage, payload)
     }
 }
 
-impl CheckpointDirectoryRetirement {
-    pub(crate) fn advance(&mut self, request: &ExecutionRequest<'_, '_>) -> Result<bool, Ack> {
-        self.payload.advance(request)
+impl crate::storage::data::directory_source_edge::RetirableDirectory
+    for RelationalCheckpointDirectory
+{
+    fn retire_last(self: Arc<Self>) -> Option<CheckpointDirectoryRetirement> {
+        Arc::into_inner(self).map(RelationalCheckpointDirectory::into_retirement)
     }
 }
-impl DirectoryRetirementPayload {
+
+impl crate::storage::data::directory_source_edge::DirectoryRetirement
+    for DirectoryRetirementPayload
+{
     /// No allocation, arbitrary Drop or source replacement occurs in this step.
-    pub(crate) fn advance(&mut self, request: &ExecutionRequest<'_, '_>) -> Result<bool, Ack> {
+    fn advance(&mut self, request: &ExecutionRequest<'_, '_>) -> Result<bool, Ack> {
         let Some(source) = &self.source else {
             return Ok(true);
         };
@@ -146,18 +148,15 @@ impl std::fmt::Debug for PreparedCheckpointDirectoryRetirement {
         f.write_str("PreparedCheckpointDirectoryRetirement")
     }
 }
-impl std::fmt::Debug for CheckpointDirectoryRetirement {
+impl std::fmt::Debug for DirectoryRetirementPayload {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("CheckpointDirectoryRetirement")
             .field(
                 "canonical_members",
-                &self.payload.manifest.canonical_members.entries().len(),
+                &self.manifest.canonical_members.entries().len(),
             )
-            .field(
-                "history_owners",
-                &Arc::strong_count(&self.payload.history_members),
-            )
-            .field("member_active", &self.payload.member.is_some())
+            .field("history_owners", &Arc::strong_count(&self.history_members))
+            .field("member_active", &self.member.is_some())
             .finish_non_exhaustive()
     }
 }

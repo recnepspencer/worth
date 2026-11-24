@@ -33,14 +33,19 @@ impl PublicationBasisRoute {
     }
 }
 
+/// The original applied read is retained here for the publication that issued it.
+pub(crate) trait RetainedAppliedPublicationPin:
+    std::fmt::Debug + Send + Sync + std::any::Any
+{
+}
+
 #[derive(Debug)]
 pub(crate) struct RetainedPublicationBasis {
     pub(crate) publication: CommitId,
     pub(crate) descriptor: RelationalBranchBasisDescriptor,
     pub(crate) root: Arc<RelationalBranchRoot>,
     pub(crate) binding: super::RelationalBranchRetentionBinding,
-    pub(crate) applied:
-        Option<Arc<dyn crate::publication::live_publication_inputs::AppliedPublicationInputAccess>>,
+    pub(crate) applied: Option<Arc<dyn RetainedAppliedPublicationPin>>,
     /// The publishing branch's own cell, so issuing this input does not
     /// depend on that branch still being registered after it is deleted.
     pub(crate) publication_cell:

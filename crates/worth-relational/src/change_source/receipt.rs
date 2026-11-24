@@ -39,9 +39,7 @@ pub enum RelationalChangeReceiptStale {
 /// Relational's proof that one retained commit's change is self-consistent,
 /// together with that change.
 ///
-/// Only [`RelationalRuntime::mint_change_receipt`](crate::runtime::RelationalRuntime::mint_change_receipt)
-/// mints it, after the consistency checks pass, so holding one proves they
-/// did. The patch is canonical and already narrowed to the requested
+/// The runtime mints it after the consistency checks pass. The patch is canonical and already narrowed to the requested
 /// partition. The receipt names no consumer concept; a consumer supplies its
 /// own when it lowers the receipt.
 #[must_use = "a change receipt proves one commit's change; lower it or drop it deliberately"]

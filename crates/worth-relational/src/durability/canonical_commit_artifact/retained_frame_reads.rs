@@ -38,7 +38,12 @@ pub(crate) fn require_original_artifact(
             )
         };
         if let EnvelopeBacking::SelectedCheckpoint { entry, directory } = loan.backing() {
-            return selected_artifact(entry, directory, execution, 1 << 30);
+            return selected_artifact(
+                entry,
+                native_directory(directory.as_ref()),
+                execution,
+                1 << 30,
+            );
         }
         let bytes = match loan.backing() {
             EnvelopeBacking::Memory {
@@ -97,7 +102,7 @@ pub(crate) fn export_artifact(
     if let EnvelopeBacking::SelectedCheckpoint { entry, directory } = loan.backing() {
         let result = selected_artifact(
             entry,
-            directory,
+            native_directory(directory.as_ref()),
             execution,
             crate::durability::canonical_commit_artifact::frame_contract::MAXIMUM_ARTIFACT_BYTES
                 as u64,
@@ -245,4 +250,13 @@ pub(crate) fn selected_artifact(
     let artifact = Artifact::from_owned_original(bytes, execution).map_err(original_frame_stop)?;
     artifact.check_index(entry)?;
     Ok(artifact)
+}
+
+fn native_directory(
+    directory: &dyn crate::history::commit::envelope_residency::selected_checkpoint::SelectedCanonicalDirectory,
+) -> &RelationalCheckpointDirectory {
+    let directory: &dyn std::any::Any = directory;
+    directory
+        .downcast_ref::<RelationalCheckpointDirectory>()
+        .expect("the selected canonical source retains its original Native checkpoint directory")
 }

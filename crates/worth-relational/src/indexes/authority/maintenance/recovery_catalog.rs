@@ -25,11 +25,11 @@ pub(super) fn missing_build_request(
     let branch = observation.identity().branch_id();
     let projection = project(&observation).map_err(Denial::Basis)?;
     let root = projection
-        .selected_root()
+        .retain_selected_root()
         .ok_or(Denial::SnapshotUnavailable)?;
     let selected = indexes.prepare_reconstruction_basis(
         lane,
-        root,
+        &root,
         branch,
         &mut |units, bytes| work.prepare(units, bytes),
         None,

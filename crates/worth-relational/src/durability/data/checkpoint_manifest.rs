@@ -1,5 +1,6 @@
 //! The eager directory of the current native checkpoint. Record payloads,
 //! history, and rebuildable projections belong to members, never this directory.
+pub(crate) use crate::storage::data::checkpoint_region::RelationalCheckpointRegion;
 use serde::{Deserialize, Serialize};
 
 use super::*;
@@ -233,21 +234,6 @@ impl RelationalCheckpointManifestDraft {
         )
         .map(std::sync::Arc::new)
     }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub(crate) struct RelationalCheckpointRegion {
-    pub(crate) kind_authority: crate::storage::residency::RelationalRegionKindCommitment,
-    pub(crate) partition_id: PartitionId,
-    pub(crate) content_digest: [u8; 32],
-    pub(crate) directory: std::sync::Arc<crate::storage::residency::PortableRecordDirectory>,
-    pub(crate) live_counts: crate::storage::residency::LiveRecordCounts,
-    pub(crate) entity_slots: usize,
-    pub(crate) relation_slots: usize,
-    pub(crate) unavailable_records: usize,
-    pub(crate) head: RelationalDurableMemberLocator,
-    pub(crate) history: RelationalDurableMemberLocator,
 }
 
 /// Exact owner-recorded Empty observation with its executable schema carrier.

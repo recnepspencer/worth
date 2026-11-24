@@ -1,26 +1,57 @@
 //! Reconstructed original DATA enters the same stream and commit catalog owners.
 use super::original_schemas::OriginalSchemaGraph;
+use crate::branch::transition::original_inputs::{
+    OriginalEmptySchemaInstallation, OriginalEmptySchemaObservation, RetainedBranchTransition,
+};
+use crate::branch::transition::sequence::RelationalBranchTransitionSequence;
 use crate::durability::checkpoints::region_directory::corrupt;
 use crate::durability::data::{RecoveryPlan, RelationalRecoveryStop};
+use crate::durability::source_initial_inputs::producer_roster::{
+    OriginalBranchSchemaInputs, OriginalBranchSchemaInputsDenial,
+};
 use crate::durability::source_initial_inputs::{
     image::*, recorded::RecordedEmptySchemaObservation,
 };
-use crate::runtime::{
-    OriginalEmptySchemaInstallation, OriginalEmptySchemaObservation, RelationalRuntime,
-    RetainedBranchTransition,
-};
+use crate::history::data::BranchId;
+use crate::runtime::state::subsystems::durability::checkpoint_selection::RelationalCheckpointManifestSelection;
+use crate::runtime::state::subsystems::history::HistorySubsystem;
+use crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable;
 use std::sync::Arc;
 mod transition;
 use transition::copy_transition;
 use worth_execution::ExecutionRequest;
 
+pub(super) trait RecoveredBranchSchemaRoutes {
+    fn restore_prefix(
+        &self,
+        birth: OriginalEmptySchemaObservation,
+        installation: Option<OriginalEmptySchemaInstallation>,
+        initial: Arc<InitialInputsImage>,
+        transitions: Vec<RetainedBranchTransition>,
+        memory: Option<worth_execution::ExecutionMemoryReservation>,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), OriginalBranchSchemaInputsDenial>;
+
+    fn capture(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<OriginalBranchSchemaInputs, OriginalBranchSchemaInputsDenial>;
+
+    fn transition_head(&self) -> RelationalBranchTransitionSequence;
+
+    fn retain_installation(&self, installation: OriginalEmptySchemaInstallation);
+}
+
 pub(super) fn restore_prefix(
-    runtime: &RelationalRuntime,
+    history: &HistorySubsystem,
+    routes: &impl RecoveredBranchSchemaRoutes,
+    main: &BranchId,
+    selection: &RelationalCheckpointManifestSelection,
     graph: &OriginalSchemaGraph,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<(), RelationalRecoveryStop> {
     let original = &graph.original;
-    if original.current.main != runtime.config.history.main_branch {
+    if &original.current.main != main {
         return Err(corrupt("original main branch mismatch").into());
     }
     let Some(InitialInputEntry::Birth(birth)) = original.current.entries.first() else {
@@ -28,14 +59,11 @@ pub(super) fn restore_prefix(
     };
     let birth = observation(birth, graph)?;
     crate::durability::checkpoint_admission::SelectedCheckpointCaptureBase::restore_original(
-        runtime, original, request,
+        selection, original, request,
     )?;
     let covered = original.covered.as_ref();
     if let Some(artifact) = covered.and_then(|image| image.artifact.as_ref()) {
-        runtime
-            .durability
-            .checkpoint_selection()
-            .restore_initial_inputs(artifact.clone());
+        selection.restore_initial_inputs(artifact.clone());
     }
     let installation = covered
         .and_then(|image| image.entries.get(1))
@@ -59,10 +87,8 @@ pub(super) fn restore_prefix(
             transitions.push(retained);
         }
     }
-    runtime
-        .history
-        .canonical_checkpoint_gate()
-        .restore_source_schema_inputs(
+    routes
+        .restore_prefix(
             birth.clone(),
             installation.clone(),
             original.current.clone(),
@@ -71,16 +97,13 @@ pub(super) fn restore_prefix(
             request,
         )
         .map_err(capture)?;
-    if let Some(cell) = runtime
-        .history
-        .branch_cell(&runtime.config.history.main_branch)
+    if let Some(cell) = history.branch_cell(main)
         && let Some(mut empty) = OriginalEmptySchemaObservation::from_empty_cell(&cell)
     {
         empty.schema = installation
             .as_ref()
             .map_or_else(|| birth.schema.clone(), |entry| entry.after.schema.clone());
-        runtime
-            .history
+        history
             .restore_source_empty_schema(&empty, false)
             .map_err(corrupt)?;
     }
@@ -88,7 +111,8 @@ pub(super) fn restore_prefix(
 }
 
 pub(super) fn install_if_due(
-    runtime: &RelationalRuntime,
+    history: &HistorySubsystem,
+    routes: &impl RecoveredBranchSchemaRoutes,
     graph: &OriginalSchemaGraph,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<(), RelationalRecoveryStop> {
@@ -103,26 +127,19 @@ pub(super) fn install_if_due(
     let Some(entry) = source.current.entries.get(1) else {
         return Ok(());
     };
-    let original = runtime
-        .history
-        .capture_original_branch_schema_inputs(request)
-        .map_err(capture)?;
+    let original = routes.capture(request).map_err(capture)?;
     if original.installation.is_some() {
         return Ok(());
     }
     let install = installation(entry, graph)?;
-    let head = runtime
-        .history
-        .canonical_checkpoint_gate()
-        .branch_transition_head();
+    let head = routes.transition_head();
     if head < install.follows_transition {
         return Ok(());
     }
     if head != install.follows_transition {
         return Err(corrupt("original installation cut was skipped").into());
     }
-    let current = runtime
-        .history
+    let current = history
         .branch_cell(&source.current.main)
         .and_then(|cell| OriginalEmptySchemaObservation::from_empty_cell(&cell))
         .ok_or_else(|| corrupt("original installation requires its Empty predecessor"))?;
@@ -133,30 +150,25 @@ pub(super) fn install_if_due(
     {
         return Err(corrupt("original installation predecessor disagrees").into());
     }
-    runtime
-        .history
+    history
         .restore_source_empty_schema(&install.after, true)
         .map_err(corrupt)?;
-    runtime
-        .history
-        .canonical_checkpoint_gate()
-        .retain_original_empty_installation(install.before, install.after);
+    routes.retain_installation(install);
     Ok(())
 }
 
 pub(super) fn restore_catalog(
-    runtime: &RelationalRuntime,
+    history: &HistorySubsystem,
     graph: &OriginalSchemaGraph,
     plan: &RecoveryPlan,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<(), RelationalRecoveryStop> {
-    let artifacts = runtime
-        .history
+    let artifacts = history
         .commit_artifacts_for_request(request)
         .map_err(|cause| {
             crate::durability::checkpoint_history::capture::array_capture_stop(cause)
         })?;
-    let mut catalog = crate::history::RelationalCommitCatalog::default();
+    let mut catalog = crate::history::commit::RelationalCommitCatalog::default();
     for artifact in artifacts.iter() {
         crate::execution::check_request(request).map_err(RelationalRecoveryStop::Request)?;
         let position = artifact
@@ -202,7 +214,7 @@ pub(super) fn restore_catalog(
                 )
             }
         };
-        let inputs = crate::history::OriginalCanonicalInputs {
+        let inputs = crate::history::commit::OriginalCanonicalInputs {
             prestate_schema: graph.get(prestate)?,
             result_schema: graph.get(result)?,
             mutation,
@@ -214,16 +226,12 @@ pub(super) fn restore_catalog(
             .append_preencoded_recovery(Arc::new(artifact))
             .map_err(|cause| corrupt(format!("original catalog installation: {cause:?}")))?;
     }
-    runtime.history.install_commit_catalog(catalog);
-    runtime
-        .history
-        .canonical_checkpoint_gate()
-        .install_checkpoint_catalog(runtime.history.commit_artifacts());
+    history.install_commit_catalog(catalog);
     Ok(())
 }
 
 pub(super) fn require_replay_prestate(
-    runtime: &RelationalRuntime,
+    history: &HistorySubsystem,
     graph: &OriginalSchemaGraph,
     envelope: &crate::history::data::CanonicalCommitEnvelope,
 ) -> Result<(), RelationalRecoveryStop> {
@@ -231,8 +239,7 @@ pub(super) fn require_replay_prestate(
         .recorded_original_inputs()
         .ok_or_else(|| corrupt("tail original attribution missing"))?;
     let expected = graph.get(input.prestate_schema)?;
-    let actual = runtime
-        .history
+    let actual = history
         .branch_cell(&envelope.branch_context)
         .and_then(|cell| cell.root())
         .ok_or_else(|| corrupt("tail original predecessor missing"))?;
@@ -247,21 +254,22 @@ pub(super) fn require_replay_prestate(
 pub(super) fn recorded_result_schema(
     graph: &OriginalSchemaGraph,
     envelope: &crate::history::data::CanonicalCommitEnvelope,
-) -> Result<Option<crate::mvcc::RecordedReplayResultSchema>, RelationalRecoveryStop> {
+) -> Result<Option<crate::durability::authority::runtime_rebuild::recorded_result_schema::RecordedReplayResultSchema>, RelationalRecoveryStop>{
     let inputs = envelope
         .recorded_original_inputs()
         .ok_or_else(|| corrupt("tail original attribution missing"))?;
     if inputs.result_schema == inputs.prestate_schema {
         return Ok(None);
     }
-    crate::mvcc::RecordedReplayResultSchema::admit(graph.get(inputs.result_schema)?, envelope)
+    crate::durability::authority::runtime_rebuild::recorded_result_schema::RecordedReplayResultSchema::admit(graph.get(inputs.result_schema)?, envelope)
         .map(Some)
         .map_err(Into::into)
 }
 
 pub(super) fn bind_replayed_schema(
     lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
-    runtime: &mut RelationalRuntime,
+    history: &HistorySubsystem,
+    symbols: &RuntimeSymbolTable,
     graph: &OriginalSchemaGraph,
     positioned: &crate::history::data::PositionedCanonicalCommit,
     request: &ExecutionRequest<'_, '_>,
@@ -271,15 +279,14 @@ pub(super) fn bind_replayed_schema(
         .recorded_original_inputs()
         .ok_or_else(|| corrupt("replayed source role missing"))?;
     let schema = graph.get(inputs.result_schema)?;
-    let root = runtime
-        .history
+    let root = history
         .branch_cell(&envelope.branch_context)
         .and_then(|cell| cell.root())
         .ok_or_else(|| corrupt("replayed source current root missing"))?;
     if Arc::ptr_eq(&root.retained_schema_authority(), &schema) {
         return Ok(());
     }
-    let issuer = crate::branch::RelationalBranchRootIdentityIssuer::for_request(request)
+    let issuer = crate::branch::root::RelationalBranchRootIdentityIssuer::for_request(request)
         .map_err(root_stop)?;
     let descriptor = root
         .descriptor()
@@ -291,7 +298,7 @@ pub(super) fn bind_replayed_schema(
     let original = root
         .canonical_payload()
         .ok_or_else(|| corrupt("replayed source root Original carrier missing"))?;
-    let replacement = crate::branch::RelationalBranchRoot::readmit_unchanged_for_request(
+    let replacement = crate::branch::root::RelationalBranchRoot::readmit_unchanged_for_request(
         lane,
         &issuer,
         &root,
@@ -302,28 +309,27 @@ pub(super) fn bind_replayed_schema(
         request,
     )
     .map_err(root_stop)?;
-    runtime
-        .history
-        .readmit_replayed_root_descriptor(
+    crate::runtime::state::subsystems::history::history_catalog_recovery::readmit_replayed_root_descriptor(
+            history,
             request,
             envelope.commit.commit_id,
             descriptor,
             replacement,
-            &runtime.services.symbols.interner_snapshot(),
+            &symbols.interner_snapshot(),
         )
         .map_err(RelationalRecoveryStop::from)?;
     Ok(())
 }
 pub(super) fn root_stop(
-    cause: crate::branch::RelationalBranchRootCaptureDenial,
+    cause: crate::branch::root_capture_denial::RelationalBranchRootCaptureDenial,
 ) -> RelationalRecoveryStop {
     match cause {
-        crate::branch::RelationalBranchRootCaptureDenial::Request(cause)
-        | crate::branch::RelationalBranchRootCaptureDenial::Execution(cause) => {
+        crate::branch::root_capture_denial::RelationalBranchRootCaptureDenial::Request(cause)
+        | crate::branch::root_capture_denial::RelationalBranchRootCaptureDenial::Execution(cause) => {
             RelationalRecoveryStop::Request(cause)
         }
-        crate::branch::RelationalBranchRootCaptureDenial::Content(cause) => cause.into(),
-        crate::branch::RelationalBranchRootCaptureDenial::StorageUnavailable(cause) => cause.into(),
+        crate::branch::root_capture_denial::RelationalBranchRootCaptureDenial::Content(cause) => cause.into(),
+        crate::branch::root_capture_denial::RelationalBranchRootCaptureDenial::StorageUnavailable(cause) => cause.into(),
         cause => corrupt(format!("root readmission: {cause:?}")).into(),
     }
 }
@@ -358,17 +364,19 @@ fn installation(
         }
     }
 }
-fn capture(cause: crate::runtime::OriginalBranchSchemaInputsDenial) -> RelationalRecoveryStop {
+fn capture(
+    cause: crate::durability::source_initial_inputs::producer_roster::OriginalBranchSchemaInputsDenial,
+) -> RelationalRecoveryStop {
     match cause {
-        crate::runtime::OriginalBranchSchemaInputsDenial::Request(cause) => {
+        crate::durability::source_initial_inputs::producer_roster::OriginalBranchSchemaInputsDenial::Request(cause) => {
             RelationalRecoveryStop::Request(cause.into())
         }
-        crate::runtime::OriginalBranchSchemaInputsDenial::SizeOverflow => {
+        crate::durability::source_initial_inputs::producer_roster::OriginalBranchSchemaInputsDenial::SizeOverflow => {
             RelationalRecoveryStop::Request(
                 crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow,
             )
         }
-        crate::runtime::OriginalBranchSchemaInputsDenial::OriginalPrefixMismatch => {
+        crate::durability::source_initial_inputs::producer_roster::OriginalBranchSchemaInputsDenial::OriginalPrefixMismatch => {
             corrupt("reconstructed original stream prefix mismatch").into()
         }
     }

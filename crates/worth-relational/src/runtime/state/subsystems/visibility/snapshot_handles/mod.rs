@@ -232,3 +232,23 @@ impl SnapshotHandles {
         }
     }
 }
+
+#[cfg(test)]
+impl SnapshotHandles {
+    pub(crate) fn observe_published_root(
+        &self,
+        id: crate::snapshots::data::SnapshotId,
+    ) -> Option<std::sync::Weak<crate::branch::root::RelationalBranchRoot>> {
+        self.published
+            .binding(id)
+            .map(|binding| std::sync::Arc::downgrade(&binding.basis.retain_root()))
+    }
+
+    pub(crate) fn while_published_registry_locked<R>(
+        &self,
+        expected: usize,
+        action: impl FnOnce() -> R,
+    ) -> R {
+        self.published.while_locked(expected, action)
+    }
+}

@@ -1,91 +1,14 @@
-use crate::durability::data::{DurabilityError, RecoveryFailureClass, RelationalRecoveryStop};
+use crate::durability::data::{DurabilityError, RecoveryFailureClass};
 use crate::history::data::CanonicalCommitEnvelope;
-use crate::history::data::{HistoryDriftClass, VersionNode};
-use crate::runtime::RelationalRuntime;
-
-use super::super::super::derived_index_artifacts::admit_envelope_derived_index_artifacts;
-
-pub(super) fn apply_authoritative_commit_artifacts(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
-    positioned: &crate::history::data::PositionedCanonicalCommit,
-    allow_reconstructed_replacement: bool,
-    advance_branch_currentness: bool,
-) -> Result<(), RelationalRecoveryStop> {
-    super::unshared_state(runtime)?;
-    let envelope = positioned.envelope();
-    let index_artifacts = admit_envelope_derived_index_artifacts(envelope)?;
-    if runtime
-        .history
-        .recorded_commit_envelope(envelope.commit.commit_id)
-        .is_some_and(|existing| existing.as_ref() != envelope)
-        && !allow_reconstructed_replacement
-    {
-        return Err(DurabilityError::new(
-            RecoveryFailureClass::CorruptCheckpoint,
-            format!(
-                "recovery commit envelope conflicts for commit {}",
-                envelope.commit.commit_id.0
-            ),
-        )
-        .into());
-    }
-    let catalog_matches = runtime
-        .history
-        .commit_artifact(envelope.commit.commit_id)
-        .map(|existing| existing.matches_envelope(envelope))
-        .transpose()
-        .map_err(|denial| {
-            DurabilityError::new(
-                RecoveryFailureClass::CorruptCheckpoint,
-                format!("recovered catalog comparison denied: {denial:?}"),
-            )
-        })?;
-    if catalog_matches == Some(false) && !allow_reconstructed_replacement {
-        return Err(DurabilityError::new(
-            RecoveryFailureClass::CorruptCheckpoint,
-            format!(
-                "recovery commit artifact conflicts for commit {}",
-                envelope.commit.commit_id.0
-            ),
-        )
-        .into());
-    }
-    runtime.history.insert_commit_graph_node(
-        envelope.commit.commit_id,
-        VersionNode {
-            commit: envelope.commit.clone(),
-        },
-    );
-    let symbols = runtime.services.symbols.interner_snapshot();
-    // Recovery owns an isolated rebuild runtime. Any failure discards it before
-    // target publication; copying its entire history here cannot protect a caller.
-    (|| {
-        let canonical = runtime
-            .history
-            .synchronize_recovered_source_commit(execution, positioned, &symbols)?;
-        runtime.history.record_recovered_commit(
-            execution,
-            &canonical,
-            allow_reconstructed_replacement,
-            advance_branch_currentness,
-            &symbols,
-        )
-    })()
-    .map_err(RelationalRecoveryStop::from)?;
-
-    index_artifacts.install(runtime);
-    Ok(())
-}
+use crate::history::data::HistoryDriftClass;
+use crate::runtime::state::subsystems::history::HistorySubsystem;
 
 pub(super) fn validate_recovered_history_parity(
-    runtime: &mut RelationalRuntime,
+    recovered_envelope: Option<&CanonicalCommitEnvelope>,
     durable_envelope: &CanonicalCommitEnvelope,
+    record_parent_comparisons: impl FnOnce(usize),
 ) -> Result<(), DurabilityError> {
-    let Some(recovered_envelope) = runtime
-        .history
-        .canonical_envelope(durable_envelope.commit.commit_id)
-    else {
+    let Some(recovered_envelope) = recovered_envelope else {
         return Err(DurabilityError::new(
             RecoveryFailureClass::ReplayFailure,
             format!(
@@ -95,16 +18,14 @@ pub(super) fn validate_recovered_history_parity(
         )
         .with_history_drift_class(HistoryDriftClass::DurabilityParityDrift));
     };
-    runtime
-        .performance_access()
-        .count_merge_history_parent_comparisons(
-            durable_envelope
-                .commit
-                .ordered_parents()
-                .len()
-                .max(recovered_envelope.commit.ordered_parents().len()),
-        );
-    let drifted_axes = canonical_effect_drift(durable_envelope, &recovered_envelope);
+    record_parent_comparisons(
+        durable_envelope
+            .commit
+            .ordered_parents()
+            .len()
+            .max(recovered_envelope.commit.ordered_parents().len()),
+    );
+    let drifted_axes = canonical_effect_drift(durable_envelope, recovered_envelope);
     if !drifted_axes.is_empty() {
         return Err(DurabilityError::new(
             RecoveryFailureClass::ReplayFailure,
@@ -168,8 +89,8 @@ fn canonical_effect_drift(
 }
 
 fn branch_cell_checkpoint_truth_matches(
-    durable: Option<&crate::branch::RelationalBranchCellCheckpoint>,
-    replayed: Option<&crate::branch::RelationalBranchCellCheckpoint>,
+    durable: Option<&crate::branch::reference_checkpoint_data::RelationalBranchCellCheckpoint>,
+    replayed: Option<&crate::branch::reference_checkpoint_data::RelationalBranchCellCheckpoint>,
 ) -> bool {
     match (durable, replayed) {
         (Some(durable), Some(replayed)) => {
@@ -194,8 +115,8 @@ fn branch_cell_checkpoint_truth_matches(
 }
 
 fn branch_observation_truth_matches(
-    durable: &crate::branch::RelationalBranchReferenceObservation,
-    replayed: &crate::branch::RelationalBranchReferenceObservation,
+    durable: &crate::branch::reference::RelationalBranchReferenceObservation,
+    replayed: &crate::branch::reference::RelationalBranchReferenceObservation,
 ) -> bool {
     use worth_foundational::FoundationalBranchTarget;
 
@@ -215,13 +136,12 @@ fn branch_observation_truth_matches(
 }
 
 pub(super) fn validate_expected_recovery_parent_shape(
-    runtime: &mut RelationalRuntime,
+    history: &HistorySubsystem,
     envelope: &CanonicalCommitEnvelope,
 ) -> Result<(), DurabilityError> {
     let ordered_parents = envelope.commit.ordered_parents();
     let observed_parents = ordered_parents.as_slice();
-    let current_branch_head = runtime
-        .history
+    let current_branch_head = history
         .branch_cell(&envelope.branch_context)
         .and_then(|cell| match cell.observation().target() {
             worth_foundational::FoundationalBranchTarget::Basis(target) => {
@@ -254,8 +174,7 @@ pub(super) fn validate_expected_recovery_parent_shape(
         expected.push(target_head);
     }
     for branch in &envelope.merge_parent_branches {
-        let branch_head = runtime
-            .history
+        let branch_head = history
             .branch_cell(branch)
             .and_then(|cell| match cell.observation().target() {
                 worth_foundational::FoundationalBranchTarget::Basis(target) => {

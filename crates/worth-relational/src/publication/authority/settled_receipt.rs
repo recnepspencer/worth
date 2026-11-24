@@ -1,8 +1,8 @@
 use crate::history::data::{CommitId, RelationalCommitReceipt};
 use crate::publication::data::PublicationSettlementRepairError;
 use crate::runtime::state::subsystems::durability::checkpoint_selection::RelationalCheckpointManifestSelection;
-use crate::runtime::state::subsystems::history::{
-    history_canonical_routes::publication_requires_settlement, HistorySubsystem,
+use crate::runtime::state::subsystems::history::history_canonical_routes::{
+    publication_requires_settlement, RelationalPublicationHistory,
 };
 
 /// Resolve a settled commit identity that no longer has a pending record.
@@ -11,7 +11,7 @@ use crate::runtime::state::subsystems::history::{
 /// recovery-admitted checkpoint catalog. This does not promote recovered
 /// meaning to a live performed effect or execute derived work again.
 pub(crate) fn settled_receipt_without_record(
-    history: &HistorySubsystem,
+    history: &RelationalPublicationHistory,
     checkpoint: &RelationalCheckpointManifestSelection,
     commit_id: CommitId,
 ) -> Result<RelationalCommitReceipt, PublicationSettlementRepairError> {

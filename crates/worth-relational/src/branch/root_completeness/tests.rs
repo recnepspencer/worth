@@ -1,14 +1,8 @@
 use super::*;
-use crate::history::data::{
-    BranchId, CanonicalCommitAuthorityKind, CanonicalCommitEnvelopeDraft, CommitId,
-    RelationalCommitReceipt, RelationalDescriptiveTouchGraph,
-};
-use crate::identity::data::{EntityId, PartitionId, VersionId};
-use crate::publication::patch::data::*;
-use crate::schema::data::*;
-use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
+use crate::history::data::canonical_commit_envelope::tests::envelope_with_patch_and_update;
+use crate::identity::data::{EntityId, PartitionId};
+use crate::schema::data::schema_authority_snapshot_digest_bytes;
 use crate::transactions::data::primitives::RecordRef;
-use crate::transactions::data::primitives::TransactionId;
 
 #[test]
 fn completeness_recomputes_visibility_commitment() {
@@ -151,84 +145,13 @@ fn binding(
     )
 }
 
-// Pure predicate inputs, using the same actual-original/body-control recipe
-// as root_physical_linkage_tests. No altered value enters publication or recovery.
 fn body(opaque: bool) -> CanonicalCommitEnvelope {
-    use crate::diagnostics::data::*;
-    use crate::lineage::data::*;
-    let branch = BranchId("completeness-value".into());
-    let draft = CanonicalCommitEnvelopeDraft::new(
-        Default::default(),
-        crate::history::data::CanonicalIndexDefinitionDelta::prepared(1, 1, vec![], None),
-        RelationalCommitReceipt {
-            commit_id: CommitId(1),
-            version_id: VersionId(1),
-            branch_id: branch.clone(),
-            parents: vec![],
-        },
-        branch.clone(),
-        CanonicalCommitAuthorityKind::VersionedTransaction,
-        None,
-        None,
-        vec![],
-        vec![],
-        SchemaVersionId(1),
-        RelationalSchemaRegistry::new().authority_snapshot(),
-        MergedCommitPlan {
-            transaction_id: TransactionId(1),
-            merged_intents: vec![],
-        },
-        CanonicalAuthoritativePatch {
-            ordering: PatchOrdering::CanonicalCommitOrder,
-            publication_mode: PatchPublicationMode::CommitNative,
-            authoritative_record_patches: vec![PublishedAuthoritativeRecordPatch {
-                target: RecordRef::Entity(EntityId::new(PartitionId::main(), 1, 1)),
-                structural_change: RecordStructuralChange::Updated,
-                relation_birth: None,
-                authoritative_patch: PublishedAuthoritativePatch::empty(),
-                semantic_changes: vec![],
-                contains_opaque_aspect: opaque,
-                detail: PatchDetail::DenseBitset(vec![1]),
-            }],
-        },
-        RelationalDescriptiveTouchGraph::exact(vec![]),
-        RelationalDiagnosticArtifact::new(
-            DiagnosticsScope::Replay,
-            DiagnosticsArtifactKind::MinimalSummary,
-            DeterminismExpectation::Required,
-            vec![],
-        ),
-        LineageFinalizationArtifact::new(
-            branch,
-            FinalizedLineageEventBatch::new(vec![]),
-            LineageDecisionLog::new(vec![]),
-        )
-        .publish(),
-        crate::indexes::data::DerivedIndexArtifacts::default(),
-        None,
-        None,
-        None,
-        DescriptorSemanticsVersion(1),
-    )
-    .into_body();
-    crate::tests::support::with_memory_record_publication(
-        crate::tests::support::test_schema_registry(),
-        "completeness-semantic-source",
-        |world| {
-            let root = world
-                .runtime
-                .history
-                .branch_cell(&BranchId("main".into()))
-                .unwrap()
-                .root()
-                .unwrap();
-            let envelope = root.canonical_envelope().unwrap().clone();
-            drop(root);
-            drop(world);
-            let mut envelope = std::sync::Arc::try_unwrap(envelope)
-                .expect("the actual Memory source has retired its Original shares");
-            *envelope.body_mut_for_test() = draft;
-            envelope
-        },
-    )
+    let entity = EntityId::new(PartitionId::main(), 1, 1);
+    let mut envelope = envelope_with_patch_and_update(RecordRef::Entity(entity), entity);
+    envelope
+        .body_mut_for_test()
+        .patch
+        .authoritative_record_patches[0]
+        .contains_opaque_aspect = opaque;
+    envelope
 }

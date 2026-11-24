@@ -1,7 +1,9 @@
 //! Preserve request control while retaining the replay failure for bad evidence.
 use crate::durability::data::{DurabilityError, RecoveryFailureClass, RelationalRecoveryStop};
 use crate::execution::RelationalExecutionDenialCause as Cause;
-use crate::transactions::data::{CommitExecutionDenialKind, TransactionCommitError};
+use crate::transactions::data::outcomes::transaction_commit_error::{
+    CommitExecutionDenialKind, TransactionCommitError,
+};
 
 pub(crate) fn replay_commit_stop(
     error: TransactionCommitError,
@@ -14,12 +16,12 @@ pub(crate) fn replay_commit_stop(
         },
         TransactionCommitError::Interrupted { interruption, .. } => {
             RelationalRecoveryStop::Request(match interruption.interruption() {
-                crate::mvcc::RelationalOperationInterruption::Cancelled => Cause::Cancelled,
-                crate::mvcc::RelationalOperationInterruption::TimedOut => Cause::DeadlineElapsed,
+                crate::runtime::operation_control::interruption_event::RelationalOperationInterruption::Cancelled => Cause::Cancelled,
+                crate::runtime::operation_control::interruption_event::RelationalOperationInterruption::TimedOut => Cause::DeadlineElapsed,
             })
         }
         TransactionCommitError::Conflict { error, .. } => match &error.class {
-            crate::transactions::data::ConflictClass::ContentAdmission { denial } => (*denial).into(),
+            crate::transactions::data::outcomes::conflict_class::ConflictClass::ContentAdmission { denial } => (*denial).into(),
             _ => match error.allocation_denial() {
             Some(denial) => crate::symbols::data::field_text_recovery_stop(
                 crate::symbols::data::RelationalFieldTextAdmissionDenial::Allocation(
@@ -30,7 +32,7 @@ pub(crate) fn replay_commit_stop(
             },
         },
         TransactionCommitError::Preparation { error, .. } => match error.reason() {
-            crate::transactions::data::CommitPreparationReason::StorageUnavailable(failure) => failure.into(),
+            crate::transactions::data::outcomes::commit_preparation::CommitPreparationReason::StorageUnavailable(failure) => failure.into(),
             _ => DurabilityError::new(RecoveryFailureClass::ReplayFailure, detail).into(),
         },
         TransactionCommitError::Publication { .. }
@@ -56,11 +58,12 @@ mod tests {
             ),
             cause: crate::storage::data::RelationalStorageUnavailableCause::Damaged,
         };
-        let error =
-            TransactionCommitError::execution(crate::transactions::data::CommitExecutionDenial {
+        let error = TransactionCommitError::execution(
+            crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial {
                 kind: CommitExecutionDenialKind::Cause(Cause::StorageUnavailable(failure)),
                 partition_identity: None,
-            });
+            },
+        );
         let RelationalRecoveryStop::Durability(error) =
             replay_commit_stop(error, "storage read refused".into())
         else {
@@ -71,23 +74,18 @@ mod tests {
     }
     #[test]
     fn replay_interrupted_commit_preserves_each_control_cause_by_value() {
-        use crate::mvcc::{
-            RelationalInterruptionBoundary, RelationalOperationControl,
-            RelationalOperationInterruption as Interrupt,
+        use crate::runtime::operation_control::interruption_event::{
+            RelationalInterruptionBoundary, RelationalInterruptionEvent,
         };
-        for (interruption, cause) in [
-            (Interrupt::Cancelled, Cause::Cancelled),
-            (Interrupt::TimedOut, Cause::DeadlineElapsed),
+        for (stop, cause) in [
+            (worth_execution::MapKernelStop::Cancelled, Cause::Cancelled),
+            (
+                worth_execution::MapKernelStop::DeadlineElapsed,
+                Cause::DeadlineElapsed,
+            ),
         ] {
             let boundary = RelationalInterruptionBoundary::ProposalValidation;
-            let event = RelationalOperationControl::uninterrupted()
-                .with_injected_interruption_for_test(
-                    boundary,
-                    interruption,
-                    std::num::NonZeroUsize::MIN,
-                )
-                .observe(boundary)
-                .unwrap();
+            let event = RelationalInterruptionEvent::from_request_stop(stop, boundary).unwrap();
             let stop = replay_commit_stop(
                 TransactionCommitError::interrupted(event),
                 "not corrupt evidence".into(),
@@ -97,8 +95,8 @@ mod tests {
     }
     #[test]
     fn replay_conflict_keeps_its_durability_failure_by_value() {
-        let conflict = crate::transactions::data::CommitConflict::new(
-            crate::transactions::data::ConflictClass::InvalidMergeParent {
+        let conflict = crate::transactions::data::outcomes::commit_conflict::CommitConflict::new(
+            crate::transactions::data::outcomes::conflict_class::ConflictClass::InvalidMergeParent {
                 detail: "corrupt merge".into(),
             },
         );

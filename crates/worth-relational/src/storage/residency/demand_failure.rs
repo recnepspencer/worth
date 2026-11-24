@@ -27,7 +27,9 @@ impl From<RelationalResidencyDemandFailure> for crate::execution::RelationalExec
     }
 }
 
-impl From<RelationalResidencyDemandFailure> for crate::durability::data::RelationalRecoveryStop {
+impl From<RelationalResidencyDemandFailure>
+    for crate::durability::data::recovery_stop::RelationalRecoveryStop
+{
     fn from(failure: RelationalResidencyDemandFailure) -> Self {
         match failure {
             RelationalResidencyDemandFailure::StorageUnavailable(failure) => failure.into(),

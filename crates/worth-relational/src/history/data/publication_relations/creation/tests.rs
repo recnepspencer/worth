@@ -1,15 +1,10 @@
-//! Real retention exercises Created-endpoint evidence without synthesizing a branch root.
+//! The branch owner reads exact creation evidence after storage trims birth metadata.
 use super::*;
-use crate::mvcc::{RelationalPublicationOutcome, RelationalTransactionIntent};
+use crate::history::data::canonical_commit_envelope::required_output_origin::created_relation_members::capture_created_relations;
 use crate::publication::patch::data::{
     PublishedAuthoritativePatch, PublishedAuthoritativePatchOperation as Op,
 };
-use crate::symbols::data::ClientKey;
-use crate::tests::support::{
-    create_entity, relation_source_aspect, relation_target_aspect, release_test_commit_snapshot,
-    test_owner_begin_transaction_for_main, AspectSchemaFixture,
-};
-use crate::transactions::data::*;
+use crate::transactions::data::primitives::RecordRef;
 use worth_execution::{ExecutionRequest, ExecutionWorkCeiling};
 use worth_foundational::facade::AspectBinding;
 
@@ -17,139 +12,22 @@ use worth_foundational::facade::AspectBinding;
 fn trimmed_birth_uses_created_endpoints_and_refuses_forged_or_missing_evidence() {
     let request = crate::execution::test_policy::serial_request();
     let execution = &ExecutionRequest::serial(&request);
-    let schema = AspectSchemaFixture {
-        relation_aspects: vec![relation_source_aspect(), relation_target_aspect()],
-        ..AspectSchemaFixture::default()
-    };
-    let mut runtime = crate::facade::runtime::RelationalRuntimeApi::builder()
-        .profile(crate::config::data::RelationalRuntimeProfile::CertificationCore)
-        .schema_registry(schema.build_registry())
-        .build()
-        .expect("valid native runtime configuration");
-    let receipt = runtime
-        .prepare_initial_schema_installation()
-        .unwrap()
-        .install_with_custom_invariants(
-            crate::schema::data::RelationalSchemaRegistry::new(),
-            Vec::new(),
-        )
-        .unwrap();
-    let left = create_entity(execution, &runtime, "external-left");
-    let right = create_entity(execution, &runtime, "external-right");
-    let output = CreatedEntityRef {
-        partition_id: left.partition_id,
-        kind_id: KindId(1),
-        client_key: ClientKey::raw("output"),
-    };
-    let incidental = CreatedRelationRef {
-        partition_id: left.partition_id,
-        kind_id: KindId(2),
-        client_key: ClientKey::raw("incidental"),
-        source: EntityReference::Existing(left),
-        target: EntityReference::Existing(right),
-    };
-    let owned = CreatedRelationRef {
-        client_key: ClientKey::raw("owned"),
-        source: EntityReference::Created(output.clone()),
-        target: EntityReference::Existing(left),
-        ..incidental.clone()
-    };
-    let mut batch = WorkerIntentBatch::new("real producer with incidental reference").push(
-        MutationIntent::Create(CreateIntent::Entity(EntitySpec {
-            partition_id: output.partition_id,
-            kind_id: output.kind_id,
-            client_key: output.client_key.clone(),
-            fields: AspectFieldPatch::default(),
-        })),
-    );
-    for edge in [&incidental, &owned] {
-        batch = batch.push(MutationIntent::Create(CreateIntent::Relation(
-            RelationSpec {
-                partition_id: edge.partition_id,
-                kind_id: edge.kind_id,
-                client_key: edge.client_key.clone(),
-                source: edge.source.clone(),
-                target: edge.target.clone(),
-                fields: AspectFieldPatch::default(),
-            },
-        )));
-    }
-    let (owner, installed) = receipt.issue_application_publication_owner();
-    let basis = runtime
-        .admit_branch_basis(&runtime.main_branch_identity())
-        .unwrap();
-    let mut publication = crate::mvcc::publication::application_publication::native_birth_fixture(
-        owner.admit_required_output("native.trimmed.producer", [19; 32]),
-        vec![output.clone()],
-    );
-    if let crate::mvcc::RequiredOutputPublication::Birth {
-        absence, meaning, ..
-    } = &mut publication
-    {
-        *absence = runtime
-            .readmit_required_output_route_absence(execution, &installed, &basis, meaning)
-            .unwrap();
-        assert!(absence.is_some());
-    }
-    let mut transaction = runtime
-        .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
-        .unwrap();
-    transaction
-        .push_batch(batch, execution.allocation_policy())
-        .unwrap();
-    let proposal = transaction
-        .validate(execution, &runtime)
-        .unwrap()
-        .bind_required_output_publication(&installed, publication)
-        .unwrap();
-    let candidate = runtime
-        .prepare_validated_proposal(execution, proposal)
-        .unwrap();
-    let RelationalPublicationOutcome::Performed(performed) = runtime
-        .publication_port()
-        .compare_and_publish(execution, candidate)
-    else {
-        panic!("real producer birth must publish");
-    };
-    let birth = runtime.settle_performed_publication(performed).unwrap();
-    let id = birth.created_relation(&incidental).unwrap();
-    let owned_id = birth.created_relation(&owned).unwrap();
-    let output_id = birth.created_entity(&output).unwrap();
-    let birth_envelope = birth.publication().envelope.clone().into_arc();
+    let CommittedImages {
+        edition,
+        id,
+        owned_id,
+        output_id,
+        right,
+        birth: birth_envelope,
+        write: write_envelope,
+    } = committed_images(|inputs| capture_birth(execution, inputs));
     let origin = birth_envelope.required_output_origin.as_ref().unwrap();
     assert_eq!(origin.relations.len(), 1);
     assert_eq!(origin.relations[0].id, owned_id);
     assert!(!origin.relations.iter().any(|row| row.id == id));
-
-    let mut transaction = test_owner_begin_transaction_for_main(&runtime);
-    transaction
-        .push_batch(
-            WorkerIntentBatch::new("real incidental endpoint rewrite").push(
-                MutationIntent::Relation(RelationMutationIntent::UpdateEndpoints(
-                    UpdateRelationEndpointsIntent {
-                        relation_id: id,
-                        kind_id: KindId(2),
-                        source: EntityReference::Existing(output_id),
-                        target: EntityReference::Existing(right),
-                    },
-                )),
-            ),
-            execution.allocation_policy(),
-        )
-        .unwrap();
-    let rewritten = transaction.commit(execution, &runtime).unwrap();
-    let write_version = rewritten.commit.version_id;
-    let write_envelope = rewritten.publication().envelope.clone().into_arc();
     assert!(write_envelope.required_output_origin.is_none());
-    // Release snapshots before exercising the actual storage retention owner.
-    release_test_commit_snapshot(&runtime, &rewritten);
-    release_test_commit_snapshot(&runtime, &birth);
-    runtime.retention().run_pass(execution).unwrap();
-    let edition = runtime
-        .acquire_partition_edition()
-        .resident_full()
-        .expect("resident fixture has Full custody");
-    let partition = edition.partition(id.partition_id).unwrap();
+    let write_version = write_envelope.commit.version_id;
+    let partition = edition.get(&id.partition_id).unwrap();
     let history = partition
         .relation_arena
         .metadata_history_at(id.slot_index())
@@ -193,7 +71,7 @@ fn trimmed_birth_uses_created_endpoints_and_refuses_forged_or_missing_evidence()
     claim.target = right;
     forged_origin.relations.push(claim);
     forged_origin.relations.sort_unstable_by_key(|row| row.id);
-    let mut forged = birth_envelope.copy_original_for_test(execution);
+    let mut forged = birth_envelope.independent_fixture_image();
     forged.body_mut_for_test().required_output_origin = Some(Arc::new(forged_origin));
     let forged = Arc::new(forged);
     let denied = run(
@@ -211,7 +89,7 @@ fn trimmed_birth_uses_created_endpoints_and_refuses_forged_or_missing_evidence()
         "{denied:?}"
     );
 
-    let mut contradictory_endpoints = birth_envelope.copy_original_for_test(execution);
+    let mut contradictory_endpoints = birth_envelope.independent_fixture_image();
     contradictory_endpoints
         .body_mut_for_test()
         .patch
@@ -237,7 +115,7 @@ fn trimmed_birth_uses_created_endpoints_and_refuses_forged_or_missing_evidence()
         .is_err(),
         "structural birth and exposed endpoint operations must agree"
     );
-    let mut missing = Arc::new(birth_envelope.copy_original_for_test(execution));
+    let mut missing = Arc::new(birth_envelope.independent_fixture_image());
     let patch = Arc::get_mut(&mut missing)
         .expect("the fixture owns its mutable twin")
         .body_mut_for_test()
@@ -265,7 +143,7 @@ fn trimmed_birth_uses_created_endpoints_and_refuses_forged_or_missing_evidence()
         .is_ok(),
         "retired metadata plus absent endpoint aspects still has the actual structural birth"
     );
-    let mut contradictory = birth_envelope.copy_original_for_test(execution);
+    let mut contradictory = birth_envelope.independent_fixture_image();
     let changed_patch = &missing
         .patch
         .authoritative_record_patches
@@ -331,6 +209,30 @@ fn trimmed_birth_uses_created_endpoints_and_refuses_forged_or_missing_evidence()
     );
 }
 
+fn capture_birth(
+    execution: &ExecutionRequest<'_, '_>,
+    inputs: BirthRelationInputs<'_>,
+) -> Vec<crate::history::data::CanonicalRequiredOutputRelation> {
+    execution
+        .run_native_with_checkpoint(|context| {
+            capture_created_relations(
+                inputs.body,
+                inputs.allocated_entities,
+                inputs.allocated_relations,
+                inputs.edition,
+                &[inputs.output_id],
+                0,
+                inputs.registry,
+                None,
+                crate::execution::request_custody::request_lease(execution),
+                context,
+            )
+        })
+        .unwrap()
+        .0
+        .unwrap()
+}
+
 fn run(
     execution: &ExecutionRequest<'_, '_>,
     state: &dyn CurrentPartitionAccess,
@@ -386,4 +288,6 @@ fn run(
         .0
 }
 
+mod committed_images;
 mod endpoint_aspect_inputs;
+use committed_images::{committed_images, BirthRelationInputs, CommittedImages};

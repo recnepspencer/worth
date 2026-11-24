@@ -52,7 +52,7 @@ use crate::visibility::cache_state::VisibilityCacheInputs;
 impl<'a> From<&'a RelationalRuntime> for HistoricalBasisInputs<'a> {
     fn from(runtime: &'a RelationalRuntime) -> Self {
         Self {
-            history: &runtime.history,
+            history: runtime.history.canonical_read(),
             genesis_branch: &runtime.config.history.main_branch,
         }
     }

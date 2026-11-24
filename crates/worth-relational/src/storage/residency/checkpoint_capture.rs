@@ -1,4 +1,4 @@
-use crate::durability::data::RelationalRecoveryStop;
+use crate::durability::data::recovery_stop::RelationalRecoveryStop;
 use complete::CapturedCompleteRegion;
 use worth_execution::ExecutionRequest;
 mod complete;
@@ -6,16 +6,17 @@ pub(crate) use complete::{RegionCheckpointAcknowledgementDenial, RetiredRegionCh
 use std::sync::Arc;
 
 use super::RelationalRegionResidency;
-use crate::branch::RelationalBranchRootSchemaAuthority;
-use crate::durability::data::{
+use crate::storage::data::checkpoint_member::RelationalCheckpointMember;
+use crate::storage::data::checkpoint_region::RelationalCheckpointRegion;
+use crate::storage::data::history_member_directory::{
     RelationalCheckpointHistoryDependency, RelationalHistoryMemberDirectory,
 };
-use crate::durability::data::{RelationalCheckpointMember, RelationalCheckpointRegion};
 use crate::storage::data::{
     RelationalStorageSubject, RelationalStorageUnavailable,
     RelationalStorageUnavailableCause as Cause,
 };
 use crate::storage::overlay::PartitionContentCommitment;
+use crate::storage::residency::RelationalRegionSchema;
 use crate::symbols::data::StringInterner;
 
 #[derive(Debug, Clone)]
@@ -70,14 +71,18 @@ impl RelationalRegionResidency {
     pub(crate) fn capture_checkpoint(
         self: &Arc<Self>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        schema: &RelationalBranchRootSchemaAuthority,
+        schema: &dyn RelationalRegionSchema,
         schema_digest: [u8; 32],
         symbols: &StringInterner,
+        capture_members: super::region_capture_data::RegionMemberCapture,
         current_members: Option<
             &std::collections::BTreeSet<crate::durability::medium::RelationalDurableMemberLocator>,
         >,
     ) -> Result<RelationalCapturedRegionCheckpoint, super::RelationalResidencyDemandFailure> {
         self.check_damage()?;
+        let capture_members = self
+            .history_codec()
+            .map_or(capture_members, |codec| codec.capture_members);
         let binding = self
             .checkpoint_bindings
             .lock()
@@ -132,7 +137,7 @@ impl RelationalRegionResidency {
                 let (commitment, captured, directory) = crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
                     let (commitment, _) = PartitionContentCommitment::capture_layered(lane, execution, partition, &content_symbols)
                         .map_err(|error| super::content_capture::restore_failure_with_cause(partition.partition_id, error, Cause::IntegrityMismatch))?;
-                    let captured = super::capture_region_members(lane, execution, partition, &commitment, schema, schema_digest)?;
+                    let captured = capture_members(lane, execution, partition, &commitment, schema, schema_digest)?;
                     let directory = captured.directory.portable(lane, execution).map_err(|error| error.into_failure(partition.partition_id))?;
                     Ok::<_,super::RelationalResidencyDemandFailure>((commitment,captured,directory))
                 })?;
@@ -232,7 +237,7 @@ impl RelationalRegionResidency {
     pub(crate) fn capture_complete_for_request(
         self: &Arc<Self>,
         request: &ExecutionRequest<'_, '_>,
-        schema: &RelationalBranchRootSchemaAuthority,
+        schema: &dyn RelationalRegionSchema,
         schema_digest: [u8; 32],
         symbols: &dyn crate::symbols::data::SymbolTextLookup,
     ) -> Result<CapturedCompleteRegion, RelationalRecoveryStop> {
@@ -256,7 +261,7 @@ impl super::RelationalResidencyLease<super::Full> {
     pub(crate) fn capture_checkpoint_data_for_request(
         &self,
         request: &ExecutionRequest<'_, '_>,
-        schema: &RelationalBranchRootSchemaAuthority,
+        schema: &dyn RelationalRegionSchema,
         schema_digest: [u8; 32],
         symbols: &dyn crate::symbols::data::SymbolTextLookup,
     ) -> Result<CapturedCompleteRegion, RelationalRecoveryStop> {

@@ -99,7 +99,7 @@ fn captured_native_clones_preserve_sections_and_share_payload_custody() {
         bytes,
         sections,
         crate::publication::patch::data::PatchStreamPosition(0),
-        crate::branch::RelationalBranchTransitionSequence(0),
+        crate::branch::transition::sequence::RelationalBranchTransitionSequence(0),
     );
     let cloned = checkpoint.clone();
     assert_eq!(checkpoint.bytes().as_ptr(), cloned.bytes().as_ptr());
@@ -127,7 +127,7 @@ fn native_region_retains_the_whole_admitted_enclosing_backing_charge() {
         DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
     };
     let payload = b"prefixnative-suffix";
-    let lease = crate::tests::support::test_execution_authority()
+    let lease = crate::execution::test_authority::test_execution_authority()
         .request_lease(LeaseRequest {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Serial,

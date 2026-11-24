@@ -35,7 +35,8 @@ pub struct RecoveredRelationalRuntimeAuthority {
     pub(super) home_program_predecessor:
         Option<crate::runtime::RelationalHomeProgramPredecessorCatalog>,
     pub(super) runtime_instance_id: u64,
-    pub(super) recovered_roots: std::sync::Arc<runtime_rebuild::RecoveredRootInventory>,
+    pub(super) recovered_roots:
+        std::sync::Arc<runtime_rebuild::root_inventory::RecoveredRootInventory>,
     pub(super) recovered_branch_images: std::collections::BTreeMap<
         BranchId,
         (

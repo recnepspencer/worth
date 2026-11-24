@@ -179,7 +179,7 @@ impl RelationalRegionRetention {
     pub(crate) fn admit_own_symbols(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        symbols: &crate::runtime::RuntimeSymbolTable,
+        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     ) -> Result<(), RelationalResidencyDemandFailure> {
         if let Some(lease) = self.admitted_full_lease() {
             lease.admit_symbols(execution, symbols)

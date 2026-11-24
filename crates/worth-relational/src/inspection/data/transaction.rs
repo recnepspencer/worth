@@ -1,9 +1,9 @@
 use serde::{Deserialize, Serialize};
 
 use crate::history::data::BranchId;
-use crate::transactions::data::{RecordRef, SavepointId, TransactionId};
+use crate::transactions::data::primitives::{RecordRef, SavepointId, TransactionId};
 
-use super::{InspectionAccessPath, InspectionAvailability, InspectionOrigin};
+use super::taxonomy::{InspectionAccessPath, InspectionAvailability, InspectionOrigin};
 
 /// How many staged intents of each kind one transaction is carrying.
 ///

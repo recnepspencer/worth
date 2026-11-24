@@ -41,10 +41,9 @@ pub(super) struct RelationalBranchRetentionOwnerInner {
     /// root as an outside holder of shared regions or backing.
     pub(super) reclamation_gate: Mutex<()>,
     #[cfg(test)]
-    pub(super) component_capture_pause:
-        Mutex<Option<Arc<super::component_cut_tests::CapturePause>>>,
+    pub(super) component_capture_pause: Mutex<Option<Arc<super::capture_pause::CapturePause>>>,
     #[cfg(test)]
-    pub(super) reclamation_drop_pause: Mutex<Option<Arc<super::component_cut_tests::CapturePause>>>,
+    pub(super) reclamation_drop_pause: Mutex<Option<Arc<super::capture_pause::CapturePause>>>,
     #[cfg(test)]
     pub(super) reclamation_gate_contended: Mutex<Option<std::sync::mpsc::SyncSender<()>>>,
     max_live_root_obligations: usize,

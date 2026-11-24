@@ -1,8 +1,8 @@
 use super::bulk_mutation_telemetry::{telemetry_from_strategy_batch, BulkMutationPlanTelemetry};
+use super::publication_validation::DraftValidationInput;
 use super::rejection::invalid_merge_context;
 use crate::authority::commit::semantic_plan::PreparedRelationalCommitPlan;
 use crate::commit_strategies::data::StrategyCommitArtifactBundle;
-use crate::mvcc::RelationalTransactionValidationInput;
 use crate::transactions::data::outcomes::commit_result::CommitPhaseTiming;
 use crate::transactions::data::outcomes::plan_artifacts::MergeCommitMutationPlan;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
@@ -16,7 +16,7 @@ pub(super) enum CommitAuthorityInput {
 }
 
 #[derive(Debug)]
-pub(crate) struct AuthoritativeCommitContext {
+pub(crate) struct AuthoritativeCommitContext<V> {
     pub(super) recovered_index_catalog: Option<crate::durability::authority::RecoveredIndexCatalog>,
     pub(super) caller_association: Option<crate::history::data::RelationalCallerAssociation>,
     pub(super) required_output_publication: Option<
@@ -28,7 +28,7 @@ pub(crate) struct AuthoritativeCommitContext {
     pub(super) _mutation_authority:
         Option<crate::branch::authority::RelationalBranchMutationAuthority>,
     pub(super) transaction_id: TransactionId,
-    pub(super) validation_input: RelationalTransactionValidationInput,
+    pub(super) validation_input: V,
     pub(super) phase_timing: CommitPhaseTiming,
     pub(super) authority_input: CommitAuthorityInput,
     pub(super) prepared_scope: Option<PreparedAuthorityScope>,
@@ -68,7 +68,7 @@ pub(super) struct MergeExecutionAccounting {
 }
 
 /// The original admitted operands consumed by one publication round.
-pub(crate) struct SelectedCommitMutation {
+pub(crate) struct SelectedCommitMutation<V> {
     pub(crate) caller_association: Option<crate::history::data::RelationalCallerAssociation>,
     pub(crate) required_output_publication: Option<
         crate::mvcc::publication::application_publication::RequiredOutputPublicationAdmission,
@@ -78,7 +78,7 @@ pub(crate) struct SelectedCommitMutation {
     pub(crate) commit_work_budget: Option<crate::execution::RequestWorkBudget>,
     pub(crate) mutation_authority: crate::branch::authority::RelationalBranchMutationAuthority,
     pub(crate) transaction_id: TransactionId,
-    pub(crate) validation_input: RelationalTransactionValidationInput,
+    pub(crate) validation_input: V,
     pub(crate) prepared: crate::authority::commit::phases::prepare::PreparedWorkingStateScope,
     pub(crate) proposed_mutation:
         crate::authority::commit::phases::applied_mutation::AppliedMutationDraft,
@@ -96,7 +96,7 @@ pub(crate) struct SelectedCommitMutation {
         crate::performance::data::runtime_complexity_counters::RuntimeComplexityCounters,
 }
 
-impl AuthoritativeCommitContext {
+impl<V: DraftValidationInput> AuthoritativeCommitContext<V> {
     pub(crate) fn with_recovered_index_catalog(
         mut self,
         catalog: crate::durability::authority::RecoveredIndexCatalog,
@@ -109,7 +109,7 @@ impl AuthoritativeCommitContext {
         candidate.into()
     }
 
-    pub(crate) fn from_selected_mutation(selected: SelectedCommitMutation) -> Self {
+    pub(crate) fn from_selected_mutation(selected: SelectedCommitMutation<V>) -> Self {
         let SelectedCommitMutation {
             caller_association,
             required_output_publication,
@@ -171,14 +171,14 @@ impl AuthoritativeCommitContext {
     }
 
     pub(crate) fn from_merge(
-        validation_input: RelationalTransactionValidationInput,
+        validation_input: V,
         merge_plan: crate::mvcc::transaction::reconstructed_merge_plan::OwnedMergePlan,
     ) -> Result<Self, TransactionCommitError> {
         Self::from_merge_execution(validation_input, merge_plan, None, None)
     }
 
     pub(crate) fn from_prepared_merge(
-        validation_input: RelationalTransactionValidationInput,
+        validation_input: V,
         merge_plan: MergeCommitMutationPlan,
         diagnostics_plan: crate::merge::data::MergeExecutionDiagnosticsPlan,
         complexity_baseline: crate::performance::data::runtime_complexity_counters::RuntimeComplexityCounters,
@@ -194,7 +194,7 @@ impl AuthoritativeCommitContext {
     }
 
     fn from_merge_execution(
-        validation_input: RelationalTransactionValidationInput,
+        validation_input: V,
         merge_plan: crate::mvcc::transaction::reconstructed_merge_plan::OwnedMergePlan,
         diagnostics_plan: Option<crate::merge::data::MergeExecutionDiagnosticsPlan>,
         complexity_baseline: Option<
@@ -236,7 +236,7 @@ impl AuthoritativeCommitContext {
 }
 
 fn validate_merge_context_proof(
-    validation_input: &RelationalTransactionValidationInput,
+    validation_input: &impl DraftValidationInput,
     merge_plan: &MergeCommitMutationPlan,
 ) -> Result<(), TransactionCommitError> {
     if validation_input.target_branch() != &merge_plan.target_branch {

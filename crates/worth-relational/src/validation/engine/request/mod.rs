@@ -7,7 +7,7 @@ pub(crate) mod relation_law_sources;
 mod scope_admission;
 mod scope_types;
 #[cfg(test)]
-mod test_support;
+pub(crate) mod test_support;
 #[cfg(test)]
 mod tests;
 

@@ -20,7 +20,9 @@ impl IndexRootView {
         Self { root, version }
     }
     pub(super) fn from_projection(view: &VisibilityProjectionView) -> Result<Self, Denial> {
-        let root = view.selected_root().ok_or(Denial::SnapshotUnavailable)?;
+        let root = view
+            .retain_selected_root()
+            .ok_or(Denial::SnapshotUnavailable)?;
         if root
             .axes()
             .is_some_and(|axes| axes.storage_version != view.version_id().0)
@@ -28,7 +30,7 @@ impl IndexRootView {
             return Err(Denial::BeforeRootMismatch);
         }
         Ok(Self {
-            root: Arc::clone(root),
+            root,
             version: view.version_id(),
         })
     }

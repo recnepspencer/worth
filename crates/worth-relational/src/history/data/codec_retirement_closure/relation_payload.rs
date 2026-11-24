@@ -126,7 +126,7 @@ pub(super) fn reconstruct(
             crate::history::data::CanonicalOutputPublication::HistoricalSelection { .. }
         ) {
             current = super::historical_selection::antecedent(
-                runtime.input.projection.history,
+                runtime.input.canonical_history,
                 &runtime.execution(),
                 &current,
                 origin,

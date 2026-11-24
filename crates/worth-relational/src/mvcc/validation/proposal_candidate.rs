@@ -7,10 +7,9 @@ use crate::authority::commit::phases::prepare::{
     prepare_lowered_working_state_scope, prepare_working_state_scope, PreparedWorkingStateScope,
 };
 use crate::authority::commit::pipeline::{CommitPhaseBacking, CommitPhaseReservation};
-use crate::mvcc::{
-    BranchBoundRelationalTransaction, RelationalMutationProposalIdentity,
-    RelationalTransactionValidationInput,
-};
+use crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity;
+use crate::mvcc::BranchBoundRelationalTransaction;
+use crate::mvcc::RelationalTransactionValidationInput;
 use crate::runtime::RelationalPreparationRuntime;
 
 use super::proposal_round::PreparedProposalRound;
@@ -64,7 +63,9 @@ pub(super) fn prepare(
             &runtime,
             transaction,
             selected,
-            crate::mvcc::OwnedNormalizedPlan::copy_for_request(plan, execution)?,
+            crate::mvcc::transaction::normalized_plan::OwnedNormalizedPlan::copy_for_request(
+                plan, execution,
+            )?,
         ),
         RelationalProposalSource::Transaction { lowered: None, .. } => {
             prepare_working_state_scope(&runtime, transaction, selected, execution)?
@@ -157,7 +158,7 @@ pub(super) fn validate(
     let control = crate::validation::engine::InvariantPreparationControl::for_transaction(
         &validation_input,
         execution.allocation_policy(),
-        crate::mvcc::RelationalInterruptionBoundary::ProposalValidation,
+        crate::runtime::operation_control::interruption_event::RelationalInterruptionBoundary::ProposalValidation,
     );
     let pending = runtime.invariant_authority().begin_proposed_state(
         &selected,

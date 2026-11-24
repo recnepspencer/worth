@@ -1,6 +1,6 @@
 use crate::durability::data::{DurabilityError, DurableCheckpoint};
 use crate::history::data::RecordAllocationClass;
-use crate::runtime::RecordIdentitySubsystem;
+use crate::runtime::state::subsystems::record_identity::RecordIdentitySubsystem;
 
 pub(super) fn prepare_record_identity(
     checkpoint: &DurableCheckpoint,

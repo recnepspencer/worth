@@ -1,22 +1,28 @@
 //! One structural-surface world per installed rule set, so a shared run can be
 //! compared with the same rules installed alone.
 use super::super::validation_engine_fixtures::*;
-use crate::identity::data::EntityId;
+use crate::config::data::RelationalRuntimeConfig;
+use crate::identity::data::VersionId;
 use crate::performance::data::runtime_complexity_counters::RuntimeComplexityCounters;
+use crate::runtime::state::subsystems::{
+    services::instrumentation::RuntimeInstrumentation,
+    storage::{PartitionEditionCopyLane, StorageSubsystem},
+};
+use crate::storage::overlay::small_relation_partition::relation_partition;
+use crate::validation::engine::test_view::invariant_view_with_custom_rules;
 use crate::validation::engine::InvariantExecutionResult;
+use std::cell::Cell;
 
 pub(super) struct StructuralWorld {
-    runtime: RelationalRuntime,
-    source: EntityId,
-    target: EntityId,
+    storage: StorageSubsystem,
+    config: RelationalRuntimeConfig,
+    rules: Vec<CustomInvariantRegistration>,
+    version: Cell<VersionId>,
     plan: MergedCommitPlan,
 }
 
 impl StructuralWorld {
-    pub(super) fn install(
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        rules: impl IntoIterator<Item = CustomInvariantRegistration>,
-    ) -> Self {
+    pub(super) fn install(rules: impl IntoIterator<Item = CustomInvariantRegistration>) -> Self {
         let schema = RelationalSchemaRegistry::new()
             .register_entity_kind(EntityKindRegistration {
                 kind_id: KindId(1),
@@ -38,16 +44,20 @@ impl StructuralWorld {
                 })
             })
             .expect("the structural fixture schema should register");
-        let runtime = rules
-            .into_iter()
-            .fold(
-                RelationalRuntimeApi::builder().schema_registry(schema),
-                |builder, rule| builder.custom_invariant(rule),
-            )
-            .build()
-            .expect("valid native runtime configuration");
-        let source = create_entity_of_kind(execution, &runtime, KindId(1), "structural-source");
-        let target = create_entity_of_kind(execution, &runtime, KindId(1), "structural-target");
+        let mut config = RelationalRuntimeConfig::default();
+        config.schema.registry = schema;
+        let rules = rules.into_iter().collect();
+        let partition_id = PartitionId::main();
+        let (partition, entities, _) = relation_partition(partition_id, 2, &[]);
+        let [source, target] = entities[..] else {
+            unreachable!("the lower owner admitted two entity slots");
+        };
+        let storage = StorageSubsystem::default();
+        storage.install_owned(
+            &Default::default(),
+            PartitionEditionCopyLane::Ordinary,
+            [(partition_id, partition)],
+        );
         let relation = |client_key: &str| {
             MutationIntent::Create(CreateIntent::Relation(RelationSpec {
                 partition_id: PartitionId::main(),
@@ -73,38 +83,46 @@ impl StructuralWorld {
             ],
         };
         Self {
-            runtime,
-            source,
-            target,
+            storage,
+            config,
+            rules,
+            version: Cell::new(VersionId(2)),
             plan,
         }
     }
 
     /// Run the planned candidate at the commit boundary from zeroed counters.
     pub(super) fn evaluate(&self) -> (InvariantExecutionResult, RuntimeComplexityCounters) {
-        self.runtime.performance_access().reset_counters();
-        let results = InvariantEngine::new(&self.runtime).execute_fixture(
+        let instrumentation = RuntimeInstrumentation::default();
+        let version = self.version.get();
+        let view = invariant_view_with_custom_rules(
+            &instrumentation,
+            self.config.clone(),
+            version,
+            self.rules.clone(),
+        );
+        let results = InvariantEngine::from_view(&view).execute_fixture(
             InvariantExecutionRequest::from_profile_with_contract(
                 InvariantRequestProfile::CommitBoundary,
-                &self.runtime,
-                InvariantObservation::committed(self.runtime.storage_access().current_edition()),
-                self.runtime.current_version_id(),
+                &view,
+                InvariantObservation::committed(self.storage.acquire()),
+                version,
                 Some(&self.plan),
                 None,
             ),
         );
-        (results, self.runtime.performance_access().counters())
+        (results, instrumentation.complexity_snapshot())
     }
 
-    pub(super) fn commit_edge(&self, execution: &worth_execution::ExecutionRequest<'_, '_>) {
-        create_relation_of_kind(
-            execution,
-            &self.runtime,
-            KindId(2),
-            self.source,
-            self.target,
-            "committed-edge",
+    pub(super) fn install_committed_edge(&self) {
+        let partition_id = PartitionId::main();
+        let (partition, _, _) = relation_partition(partition_id, 2, &[(0, 1, KindId(2))]);
+        self.storage.install_owned(
+            &Default::default(),
+            PartitionEditionCopyLane::Ordinary,
+            [(partition_id, partition)],
         );
+        self.version.set(VersionId(3));
     }
 }
 

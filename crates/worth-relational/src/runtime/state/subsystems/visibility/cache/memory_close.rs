@@ -1,7 +1,5 @@
 //! Sealed owner traversal, retaining the original table and state allocations.
 use super::*;
-#[cfg(test)]
-mod tests;
 
 #[derive(Debug)]
 pub(super) struct CachedSnapshotState {
@@ -49,5 +47,30 @@ impl VisibilityCache {
             /* Proof: Only this sealed transition takes state; it installs retirement in the same exclusive table hold before returning. Ordinary lookup requires Some(state), and no stopped service can replace the entry. */
             "a consumed cache entry owns its actual retirement"
         ).advance().map(Some)
+    }
+}
+
+#[cfg(test)]
+impl VisibilityCache {
+    pub(crate) fn memory_close_entry_count(&self) -> usize {
+        self.states.read().unwrap().len()
+    }
+
+    pub(crate) fn while_live_entries_locked(&self, count: usize, action: impl FnOnce()) {
+        let locked = self.states.write().unwrap();
+        action();
+        assert_eq!(locked.len(), count);
+        assert!(locked
+            .values()
+            .all(|entry| entry.state.is_some() && entry.retirement.is_none()));
+    }
+
+    pub(crate) fn assert_entries_retired(&self, count: usize) -> VisibilitySnapshotStateKey {
+        let states = self.states.read().unwrap();
+        assert_eq!(states.len(), count, "no shrink/rehash/payload accumulation");
+        assert!(states
+            .values()
+            .all(|entry| entry.state.is_none() && entry.retirement.is_some()));
+        states.first().unwrap().0.clone()
     }
 }

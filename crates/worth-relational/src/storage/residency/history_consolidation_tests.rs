@@ -1,14 +1,14 @@
 //! Repeated real member placement and readmission exercise capture's fold bound.
 use super::layered_history_tests::{counted, place};
 use super::*;
-use crate::durability::data::RelationalHistoryMemberDirectory;
+use crate::storage::data::history_member_directory::RelationalHistoryMemberDirectory;
 use crate::storage::residency::history_capture_bound::{
     HISTORY_CAPTURE_INPUT_TARGET, HISTORY_CAPTURE_MAX_LAYERS,
 };
 
 #[test]
 fn a_legacy_overdeep_cold_binding_is_consolidated_instead_of_carried() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let fixture = region_with_history();
     let mut cold = fixture.cold;
@@ -27,9 +27,10 @@ fn a_legacy_overdeep_cold_binding_is_consolidated_instead_of_carried() {
     let captured = cell
         .capture_checkpoint(
             execution,
-            &cold.schema,
+            cold.schema.as_ref(),
             cold.schema_carrier_digest,
             &cold.symbols.interner_snapshot(),
+            cold.readmission.capture_members,
             Some(&destination),
         )
         .unwrap();
@@ -39,7 +40,7 @@ fn a_legacy_overdeep_cold_binding_is_consolidated_instead_of_carried() {
 
 #[test]
 fn restart_cycles_keep_full_history_input_bounded_with_headroom() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let fixture = region_with_history();
     let flat_bytes = fixture.cold.history.length;
@@ -69,7 +70,10 @@ fn restart_cycles_keep_full_history_input_bounded_with_headroom() {
             .map(|member| members[member].len() as u64)
             .sum::<u64>();
         assert_eq!(input, actual);
-        assert!(actual < flat_bytes * (HISTORY_CAPTURE_MAX_LAYERS as u64 + 4));
+        assert!(
+            actual < flat_bytes * (HISTORY_CAPTURE_MAX_LAYERS as u64 + 4),
+            "actual history input is {actual} bytes for a {flat_bytes}-byte flattened history"
+        );
         consolidations += usize::from(layers < prior);
         let source = counted(members, captured.leaf.history);
         cold = RelationalColdRegion {
@@ -107,7 +111,7 @@ fn restart_cycles_keep_full_history_input_bounded_with_headroom() {
 
 #[test]
 fn consolidation_damage_is_sticky_and_a_stopped_capture_is_retryable() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let fixture = region_with_history();
     let mut cold = fixture.cold;
@@ -134,9 +138,10 @@ fn consolidation_damage_is_sticky_and_a_stopped_capture_is_retryable() {
         .collect();
     let refusal = cell.capture_checkpoint(
         &stopped,
-        &cold.schema,
+        cold.schema.as_ref(),
         cold.schema_carrier_digest,
         &cold.symbols.interner_snapshot(),
+        cold.readmission.capture_members,
         Some(&destination),
     );
     assert!(matches!(
@@ -160,9 +165,10 @@ fn consolidation_damage_is_sticky_and_a_stopped_capture_is_retryable() {
         let before = damaged_source.reads.load(Ordering::SeqCst);
         let refusal = damaged.capture_checkpoint(
             execution,
-            &cold.schema,
+            cold.schema.as_ref(),
             cold.schema_carrier_digest,
             &cold.symbols.interner_snapshot(),
+            cold.readmission.capture_members,
             Some(&destination),
         );
         assert!(
@@ -203,9 +209,10 @@ fn capture_next(
     let destination = cold.history_members.members(cold.history);
     cell.capture_checkpoint(
         execution,
-        &cold.schema,
+        cold.schema.as_ref(),
         cold.schema_carrier_digest,
         &cold.symbols.interner_snapshot(),
+        cold.readmission.capture_members,
         Some(&destination),
     )
     .unwrap()

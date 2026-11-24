@@ -39,8 +39,7 @@ impl AuthoredPublicationReads<'_> {
         }
         let original = self
             .history
-            .projection
-            .history
+            .canonical_history
             .demand_commit_envelope(execution, original_commit)
             .map_err(custody::execution_stop)?
             .ok_or_else(refuse)?;

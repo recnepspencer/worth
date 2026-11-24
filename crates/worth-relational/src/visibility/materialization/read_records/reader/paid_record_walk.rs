@@ -207,39 +207,93 @@ mod runtime_reads;
 
 #[cfg(test)]
 mod tests {
-    use crate::identity::data::KindId;
-    use crate::tests::support::*;
+    use super::{KindScanVisibility, ProjectionRecordReader};
+    use crate::identity::data::{KindId, PartitionId, VersionId};
+    use crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;
+    use crate::schema::data::{
+        EntityKindRegistration, RelationKindRegistration, RelationalSchemaRegistry, SchemaId,
+        SchemaVersionId,
+    };
+    use crate::storage::overlay::small_relation_partition::relation_partition;
+    use crate::visibility::materialization::read_records::read_work;
+    use std::collections::BTreeMap;
+
     #[test]
     fn paid_record_walk_reports_materializations_and_historical_slot_visits() {
         let host = crate::execution::test_policy::serial_request();
         let execution = worth_execution::ExecutionRequest::serial(&host);
-        let runtime = runtime_with_test_schema();
-        let left = create_entity(&execution, &runtime, "left");
-        let right = create_entity(&execution, &runtime, "right");
-        let relation = create_relation_outcome(&execution, &runtime, left, right, "edge");
-        let later = create_entity_outcome(&execution, &runtime, "later");
-        let truth = runtime.read_truth();
-        let current = truth.project_snapshot(&later.snapshot).unwrap();
-        let historical = truth
-            .try_project_historical_version(relation.version_id)
+        let registry = RelationalSchemaRegistry::new()
+            .register_entity_kind(EntityKindRegistration {
+                kind_id: KindId(1),
+                kind_name: "record".into(),
+                schema_id: SchemaId("record-walk".into()),
+                schema_version_id: SchemaVersionId(1),
+                aspect_contract_declarations: Default::default(),
+            })
+            .unwrap()
+            .register_relation_kind(RelationKindRegistration {
+                kind_id: KindId(2),
+                kind_name: "edge".into(),
+                schema_id: SchemaId("record-walk".into()),
+                schema_version_id: SchemaVersionId(1),
+                cross_context_policy: crate::config::data::CrossContextPolicy::Forbid,
+                cascade_delete_policy:
+                    crate::config::data::CascadeDeletePolicy::CascadeDeleteRelations,
+                aspect_contract_declarations: Default::default(),
+                relation_integrity: Default::default(),
+            })
             .unwrap();
-        for (view, entities, entity_scans, relation_scans) in
-            [(&current, 3, 0, 0), (&historical, 2, 2, 1)]
-        {
-            runtime.performance_access().reset_counters();
-            assert_eq!(
-                view.authoritative_entity_records(&execution, KindId(1))
-                    .unwrap()
-                    .len(),
-                entities
-            );
-            assert_eq!(
-                view.authoritative_relation_records(&execution, KindId(2))
-                    .unwrap()
-                    .len(),
-                1
-            );
-            let counters = runtime.performance_access().counters();
+        let partition_id = PartitionId::main();
+        for (visibility, entities, entity_scans, relation_scans) in [
+            (KindScanVisibility::Live, 3, 0, 0),
+            (KindScanVisibility::AtVersion(VersionId(1)), 2, 2, 1),
+        ] {
+            let (partition, _, _) =
+                relation_partition(partition_id, entities, &[(0, 1, KindId(2))]);
+            let partitions = BTreeMap::from([(partition_id, partition)]);
+            let instrumentation = RuntimeInstrumentation::default();
+            let reader = ProjectionRecordReader::new(VersionId(2), &instrumentation);
+            let found_entities = read_work::metered_with_memory(
+                &execution,
+                |context, memory| {
+                    reader
+                        .paid_entities_in_partition(
+                            &partitions,
+                            &registry,
+                            partition_id,
+                            Some(KindId(1)),
+                            visibility,
+                            &mut |units| context.checkpoint(units),
+                            memory,
+                        )
+                        .map(|rows| rows.len())
+                },
+                |_| 0,
+            )
+            .unwrap()
+            .unwrap();
+            assert_eq!(found_entities, entities);
+            let found_relations = read_work::metered_with_memory(
+                &execution,
+                |context, memory| {
+                    reader
+                        .paid_relations_in_partition(
+                            &partitions,
+                            &registry,
+                            partition_id,
+                            Some(KindId(2)),
+                            visibility,
+                            &mut |units| context.checkpoint(units),
+                            memory,
+                        )
+                        .map(|rows| rows.len())
+                },
+                |_| 0,
+            )
+            .unwrap()
+            .unwrap();
+            assert_eq!(found_relations, 1);
+            let counters = instrumentation.complexity_snapshot();
             assert_eq!(
                 counters.visible_authoritative_entity_records_materialized,
                 entities
@@ -251,8 +305,6 @@ mod tests {
             assert_eq!(counters.visibility_entity_slot_scans, entity_scans);
             assert_eq!(counters.visibility_relation_slot_scans, relation_scans);
         }
-        release_test_commit_snapshot(&runtime, &relation);
-        release_test_commit_snapshot(&runtime, &later);
     }
 }
 

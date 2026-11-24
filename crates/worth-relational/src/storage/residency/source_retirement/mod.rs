@@ -4,7 +4,7 @@ use crate::durability::medium::{
     NativeMemberRetirementHandoff, NativeMemberSlotDenial, RelationalDurableColdSource,
     RelationalDurableMemberRetirementRefusal,
 };
-use crate::runtime::RuntimeSymbolTable;
+use crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable;
 use crate::storage::substrate::RecordHistoryCustody;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;

@@ -23,7 +23,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
     ) -> Option<RelationalDiagnosticArtifact> {
         let inputs = VisibilityCacheInputs::from(self.runtime);
         if version_id.is_zero()
-            || version_id.as_u64() > inputs.history.history.current_version_id().as_u64()
+            || version_id.as_u64() > inputs.history.history.branch.current_version_id().as_u64()
         {
             return None;
         }

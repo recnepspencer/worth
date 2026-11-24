@@ -4,110 +4,26 @@ use crate::identity::data::{EntityId, KindId, PartitionId};
 use crate::storage::residency::region_image::{
     RegionHeadImage, RegionHistoryImage, RelationalRegionImage, RelationalRegionImageKind,
 };
-use crate::storage::residency::PreparedResidentRegion;
-use crate::tests::support::*;
-use crate::transactions::data::*;
+use crate::storage::residency::{PreparedResidentRegion, RelationalRegionSchema};
 use worth_execution::{CancellationSource, SerialMemoryBudget, SerialRequest};
-use worth_foundational::facade::{AspectValue, ContractValidationInput};
-
+use worth_foundational::facade::ContractValidationInput;
+#[path = "tests/fixture.rs"]
+mod fixture_data;
 struct Fixture {
     prepared: PreparedResidentRegion,
-    schema: Arc<RelationalBranchRootSchemaAuthority>,
+    schema: Arc<dyn RelationalRegionSchema>,
     symbols: crate::symbols::data::StringInterner,
     schema_digest: [u8; 32],
 }
-// The sole Runtime factory is the existing genuine support schema fixture.
+
 fn fixture() -> Fixture {
-    let host = crate::test_execution_policy::serial_request();
+    let (partition, schema) = fixture_data::original_partition();
+    let host = crate::execution::test_policy::serial_request();
     let request = ExecutionRequest::serial(&host);
-    let runtime = AspectSchemaFixture {
-        entity_aspects: vec![
-            entity_field_aspect(aspect_key("name"), field_key("name")),
-            entity_summary_struct_aspect(aspect_key("summary"), field_key("summary")),
-        ],
-        ..AspectSchemaFixture::default()
-    }
-    .build_runtime();
-    let make_entity = |name: &str| -> EntityId {
-        let fields = std::collections::BTreeMap::from([
-            (
-                planned_single_field_locator(aspect_key("name"), field_key("name")),
-                AspectValue::String(name.into()),
-            ),
-            (
-                planned_single_field_locator(aspect_key("summary"), field_key("title")),
-                AspectValue::String(format!("title-{name}").into()),
-            ),
-            (
-                planned_single_field_locator(aspect_key("summary"), field_key("status")),
-                AspectValue::String("open".into()),
-            ),
-        ]);
-        let mut transaction = test_owner_begin_transaction_for_main(&runtime);
-        transaction
-            .push_batch(
-                WorkerIntentBatch::new(name).push(MutationIntent::Create(CreateIntent::Entity(
-                    EntitySpec {
-                        partition_id: PartitionId::main(),
-                        kind_id: KindId(1),
-                        client_key: crate::symbols::data::ClientKey::raw(name),
-                        fields: AspectFieldPatch::new(fields),
-                    },
-                ))),
-                request.allocation_policy(),
-            )
-            .unwrap();
-        let committed = transaction.commit(&request, &runtime).unwrap();
-        let entity = changed_entities(&committed)[0];
-        release_test_commit_snapshot(&runtime, &committed);
-        entity
-    };
-    let source = make_entity("original-source");
-    let target = make_entity("original-target");
-    let later = make_entity("original-later");
-    let relation = create_relation(&request, &runtime, source, target, "original-edge");
-    for next in [later, target, later] {
-        let mut transaction = test_owner_begin_transaction_for_main(&runtime);
-        transaction
-            .push_batch(
-                WorkerIntentBatch::new("original-endpoints").push(MutationIntent::Relation(
-                    RelationMutationIntent::UpdateEndpoints(UpdateRelationEndpointsIntent {
-                        relation_id: relation,
-                        kind_id: KindId(2),
-                        source: EntityReference::Existing(source),
-                        target: EntityReference::Existing(next),
-                    }),
-                )),
-                request.allocation_policy(),
-            )
-            .unwrap();
-        let committed = transaction.commit(&request, &runtime).unwrap();
-        release_test_commit_snapshot(&runtime, &committed);
-    }
-    let root = runtime
-        .history
-        .branch_cell(runtime.main_branch_identity().branch_id())
-        .unwrap()
-        .root()
-        .unwrap();
-    let partition = root
-        .partition_state(source.partition_id)
-        .unwrap()
-        .unwrap()
-        .clone();
-    assert!(
-        partition
-            .relation_arena
-            .metadata_history_at(relation.slot_index())
-            .unwrap()
-            .len()
-            > 2
-    );
-    let schema = root.retained_schema_authority();
     let schema_digest = crate::durability::data::DurableBranchRootSchemaImage::capture(&schema)
         .unwrap()
         .carrier_digest();
-    let symbols = runtime.services.symbols.interner_snapshot();
+    let symbols = crate::symbols::data::StringInterner::default();
     let prepared = PreparedResidentRegion::initial(
         &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
         &request,
@@ -115,8 +31,6 @@ fn fixture() -> Fixture {
         &symbols,
     )
     .unwrap();
-    drop(root);
-    drop(runtime);
     Fixture {
         prepared,
         schema,
@@ -124,6 +38,7 @@ fn fixture() -> Fixture {
         schema_digest,
     }
 }
+
 fn captured(fixture: &Fixture, request: &ExecutionRequest<'_, '_>) -> CapturedCompleteRegion {
     fixture
         .prepared
@@ -131,7 +46,7 @@ fn captured(fixture: &Fixture, request: &ExecutionRequest<'_, '_>) -> CapturedCo
         .cell()
         .capture_complete_for_request(
             request,
-            &fixture.schema,
+            fixture.schema.as_ref(),
             fixture.schema_digest,
             &fixture.symbols,
         )
@@ -152,15 +67,15 @@ fn complete_full_current_wire_matches_prior_nontrivial_head_and_history_bytes() 
         .capture_region()
         .unwrap()
         .unwrap();
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let request = ExecutionRequest::serial(&host);
     let lane = crate::storage::substrate::maintenance::ReconstructionLane::oracle();
-    let old = crate::storage::residency::capture_region_members(
+    let old = crate::storage::residency::region_capture::capture_region_members(
         &lane,
         &request,
         &region.partition,
         region.commitment.as_ref().unwrap(),
-        &fixture.schema,
+        fixture.schema.as_ref(),
         fixture.schema_digest,
     )
     .unwrap();
@@ -299,7 +214,7 @@ fn complete_region_emitted_byte_alias_retains_only_its_actual_grant() {
             .cell()
             .capture_complete_for_request(
                 &ExecutionRequest::serial(&denied),
-                &fixture.schema,
+                fixture.schema.as_ref(),
                 fixture.schema_digest,
                 &fixture.symbols
             ),

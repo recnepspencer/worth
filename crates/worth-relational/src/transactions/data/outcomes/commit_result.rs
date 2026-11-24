@@ -393,4 +393,4 @@ impl CommitResult {
 
 mod authored_source;
 #[cfg(test)]
-mod snapshot_cleanup_tests;
+mod snapshot_fixture;

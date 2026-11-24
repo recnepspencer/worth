@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use super::*;
-use crate::identity::data::{KindId, VersionId};
+use crate::identity::data::{KindId, PartitionId, VersionId};
+use crate::storage::overlay::small_relation_partition::relation_partition;
 use crate::symbols::data::ClientKey;
-use crate::tests::support::{create_entity, create_relation, runtime_with_test_schema};
 use crate::transactions::data::intents::mutation_intent::CreateIntent;
 use crate::transactions::data::intents::mutation_intent::DeleteEntityIntent;
 use crate::transactions::data::intents::mutation_intent::DeleteRelationIntent;
@@ -16,7 +16,9 @@ use crate::transactions::data::primitives::EntityReference;
 use crate::transactions::data::primitives::EntitySpec;
 use crate::transactions::data::primitives::RelationSpec;
 use crate::transactions::data::primitives::TransactionId;
-use crate::transactions::data::primitives::WorkerIntentBatch;
+use crate::validation::data::custom_rule::errors::CustomInvariantExecutionError;
+use crate::validation::data::custom_rule::errors::CustomInvariantPreparationError;
+use crate::validation::data::custom_rule::errors::CustomInvariantVerdict;
 use crate::validation::data::descriptor::CustomInvariantOperationalMetadata;
 use crate::validation::data::execution::InvariantExecutionPoint;
 use crate::validation::data::execution::InvariantFailureEffect;
@@ -25,45 +27,11 @@ use crate::validation::data::groups::InvariantGroup;
 use crate::validation::data::groups::InvariantGroupSet;
 use crate::validation::data::rule_id::CustomInvariantSemanticIdentity;
 use crate::validation::data::rule_id::CustomInvariantSemanticVersion;
-use crate::validation::data::CustomInvariantExecutionError;
-use crate::validation::data::CustomInvariantPreparationError;
-use crate::validation::data::CustomInvariantVerdict;
-use crate::validation::engine::{
-    InvariantObservation, InvariantRuntimeInputs, InvariantRuntimeView,
-};
+use crate::validation::engine::{test_view::empty_invariant_view, InvariantObservation};
 
 mod touched_scope_tests;
 
 struct TestRule;
-
-fn empty_invariant_view(
-    instrumentation: &crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation,
-) -> InvariantRuntimeView<'_> {
-    use crate::runtime::state::subsystems::schema_contract_runtime::SchemaContractRuntimeSubsystem;
-
-    let config = Arc::new(crate::config::data::RelationalRuntimeConfig::default());
-    let schema_contract_runtime = Arc::new(SchemaContractRuntimeSubsystem::for_schema(
-        &config.schema.registry,
-        &config.schema.invariant_catalog.registrations,
-        Default::default(),
-        Default::default(),
-        0,
-        false,
-    ));
-    InvariantRuntimeView::from_inputs(InvariantRuntimeInputs {
-        selected_registry: crate::schema::SchemaRegistryCustody::Runtime(Arc::clone(&config)),
-        prior_registry: None,
-        commit_work_budget: None,
-        config,
-        schema_contract_runtime,
-        instrumentation,
-        current_version_id: VersionId(0),
-        entity_count: 0,
-        relation_count: 0,
-        version_depth: 0,
-        snapshot_pressure: false,
-    })
-}
 
 fn prepared_scope(
     current_version: VersionId,
@@ -98,19 +66,15 @@ fn unrelated_shared_endpoint_does_not_expand_its_existing_adjacency() {
     let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = runtime_with_test_schema();
-    let shared = create_entity(execution, &runtime, "shared");
-    for index in 0..64 {
-        let leaf = create_entity(execution, &runtime, &format!("leaf-{index}"));
-        create_relation(
-            execution,
-            &runtime,
-            shared,
-            leaf,
-            &format!("existing-{index}"),
-        );
-    }
-    let target = create_entity(execution, &runtime, "new-target");
+    let id = PartitionId::main();
+    let edges = (1..=64)
+        .map(|leaf| (0, leaf, KindId(2)))
+        .collect::<Vec<_>>();
+    let (partition, entities, _) = relation_partition(id, 66, &edges);
+    let partitions = std::collections::BTreeMap::from([(id, partition)]);
+    let shared = entities[0];
+    let target = entities[65];
+    let version = VersionId(1);
     let relation = MutationIntent::Create(CreateIntent::Relation(RelationSpec {
         partition_id: crate::identity::data::PartitionId::main(),
         kind_id: KindId(2),
@@ -130,20 +94,16 @@ fn unrelated_shared_endpoint_does_not_expand_its_existing_adjacency() {
         affected_relation_kinds: vec![KindId(2)],
         include_relation_endpoint_entity_touches: true,
     };
-    let observation = InvariantObservation::committed(runtime.storage_access().current_edition());
-    let prepared = scope_with_access(
-        runtime.current_version_id(),
-        &observation,
-        Some(&merged_plan),
-        &access,
-    );
-    let view = runtime.invariant_validation_view();
+    let observation = InvariantObservation::committed_branch(&partitions);
+    let prepared = scope_with_access(version, &observation, Some(&merged_plan), &access);
+    let instrumentation = crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation::default();
+    let view = empty_invariant_view(&instrumentation);
     let planner = CustomInvariantScopePlanner::new_at_current_version(
         &view,
         *execution,
         &observation,
-        runtime.current_version_id(),
-        runtime.current_version_id(),
+        version,
+        version,
         &prepared,
         super::CustomInvariantWorkMeter::new(Some(std::num::NonZeroU64::new(4096).unwrap())),
         Arc::new(access),

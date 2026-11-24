@@ -34,7 +34,7 @@ pub(super) fn read<Value: ChargedBytes, Output>(
             context
                 .poll()
                 .map_err(|stop| FundingFailure::Execution(stop.into()))?;
-            let root = RelationalBranchRootState::new(std::sync::Arc::clone(basis.root()));
+            let root = RelationalBranchRootState::new(basis.retain_root());
             let view = InvariantStateView::new(&root, basis.version_id());
             let mut checkpoint = |units| read_checkpoint(limits, &mut work, units);
             let (value, retention) =

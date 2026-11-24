@@ -24,7 +24,7 @@ struct PendingMergeDraft {
 pub(crate) fn prepare_merge_draft(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalPreparationRuntime,
-    admitted: &AdmittedCommitState,
+    admitted: &AdmittedCommitState<crate::mvcc::RelationalTransactionValidationInput>,
 ) -> Result<AcceptedMergeDraft, TransactionCommitError> {
     let mut cleanup =
         crate::authority::commit::phases::applied_mutation::CoupledPreparationCleanup::new(
@@ -89,7 +89,7 @@ pub(crate) fn prepare_merge_draft(
 fn prepare_symbol_round(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalPreparationRuntime,
-    admitted: &AdmittedCommitState,
+    admitted: &AdmittedCommitState<crate::mvcc::RelationalTransactionValidationInput>,
     selected: SelectedRelationalBranchRead<'_>,
 ) -> Result<PendingMergeDraft, TransactionCommitError> {
     let input = admitted.validation_input();

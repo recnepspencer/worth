@@ -1,0 +1,124 @@
+//! The same canonical occurrences survive accelerator disposal and durable recovery.
+use super::*;
+use crate::relational::durable_publication::branch_history_publications::fork;
+use worth_relational::facade::durability::RecoveryVerificationMode;
+
+#[test]
+fn adjacency_occurrence_identities_rebuild_from_cold_canonical_history() {
+    let host = serial_request();
+    let execution = ExecutionRequest::serial(&host);
+    let runtime = runtime_with_test_schema();
+    let a = create_entity(&execution, &runtime, "source");
+    let b = create_entity(&execution, &runtime, "target");
+    let c = create_entity(&execution, &runtime, "new-target");
+    fork(&execution, &runtime, "adjacency-source");
+    let source = admit_main(&runtime).unwrap();
+    let created = create_relation_outcome(&execution, &runtime, a, b, "edge");
+    let relation = changed_relations(&created)[0];
+    let moved = endpoints(&runtime, execution, relation, a, c);
+    let noop = endpoints(&runtime, execution, relation, a, c);
+    let removed =
+        delete_relation_on_branch(&execution, &runtime, relation, BranchId("main".into()));
+    let target = admit_main(&runtime).unwrap();
+    let expected = [
+        created.commit.commit_id,
+        moved.commit.commit_id,
+        noop.commit.commit_id,
+        removed.commit.commit_id,
+    ];
+    assert_eq!(
+        scan(
+            &runtime,
+            execution,
+            &source,
+            &target,
+            a,
+            Direction::Outgoing
+        ),
+        expected
+    );
+    runtime
+        .discard_authored_write_generation(execution, selected(&runtime, &target))
+        .unwrap();
+    runtime
+        .rebuild_authored_write_generation(execution, selected(&runtime, &target))
+        .unwrap();
+    assert_eq!(
+        scan(
+            &runtime,
+            execution,
+            &source,
+            &target,
+            a,
+            Direction::Outgoing
+        ),
+        expected
+    );
+    runtime
+        .durability_authority()
+        .checkpoint(&execution)
+        .unwrap();
+    let plan = runtime
+        .durability()
+        .recovery_plan(
+            &execution,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
+    let mut recovered = runtime_with_test_schema();
+    recovered
+        .durability_recovery()
+        .recover(&execution, plan)
+        .unwrap();
+    let recovered_source = recovered
+        .admit_branch_basis(
+            &recovered
+                .branch_identity(&BranchId("adjacency-source".into()))
+                .unwrap(),
+        )
+        .unwrap();
+    let recovered_target = admit_main(&recovered).unwrap();
+    recovered
+        .rebuild_authored_write_generation(execution, selected(&recovered, &recovered_target))
+        .unwrap();
+    assert_eq!(
+        scan(
+            &recovered,
+            execution,
+            &recovered_source,
+            &recovered_target,
+            a,
+            Direction::Outgoing
+        ),
+        expected
+    );
+    assert_eq!(
+        scan(
+            &recovered,
+            execution,
+            &recovered_source,
+            &recovered_target,
+            b,
+            Direction::Incoming
+        ),
+        [created.commit.commit_id, moved.commit.commit_id]
+    );
+    assert_eq!(
+        scan(
+            &recovered,
+            execution,
+            &recovered_source,
+            &recovered_target,
+            c,
+            Direction::Incoming
+        ),
+        [
+            moved.commit.commit_id,
+            noop.commit.commit_id,
+            removed.commit.commit_id
+        ]
+    );
+    for outcome in [&created, &moved, &noop, &removed] {
+        release_test_commit_snapshot(&runtime, outcome);
+    }
+}

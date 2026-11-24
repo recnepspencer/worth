@@ -2,7 +2,7 @@
 use super::{settlement::*, *};
 use std::collections::BTreeSet;
 use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
-use worth_relational::facade::{identity::EntityId, runtime::CurrentOwnershipContactsForTest};
+use worth_relational::facade::identity::EntityId;
 
 fn settle_parameter(app: &world::App, request: &Request<'_, '_, '_>, parameter: u64) {
     let mut operation = request
@@ -83,7 +83,7 @@ fn assert_touches(
         1,
         "real unrelated publication"
     );
-    let reads = Arc::new(Mutex::new(Vec::<CurrentOwnershipContactsForTest>::new()));
+    let reads = Arc::new(Mutex::new(Vec::new()));
     let sink = reads.clone();
     let guard = app
         .runtime()

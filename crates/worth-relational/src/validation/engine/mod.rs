@@ -14,6 +14,8 @@ pub(crate) use runtime_view::{InvariantRuntimeInputs, InvariantRuntimeView};
 pub(crate) mod result;
 pub(crate) mod state_view;
 #[cfg(test)]
+pub(crate) mod test_view;
+#[cfg(test)]
 mod tests;
 
 pub(crate) use engine::{

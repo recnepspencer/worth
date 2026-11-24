@@ -164,5 +164,4 @@ fn current_sources_cannot_implement_the_full_history_source_contract() {
     let _ = <HeadReadRound<'_, '_> as WithoutFull<_>>::witness;
     let _ = <crate::storage::overlay::WorkingState as WithoutFull<_>>::witness;
     let _ = <crate::storage::overlay::OverlayStateView<'_, crate::storage::overlay::WorkingState> as WithoutFull<_>>::witness;
-    let _ = <crate::branch::SelectedRelationalBranchRead<'_> as WithoutFull<_>>::witness;
 }

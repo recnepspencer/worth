@@ -1,8 +1,8 @@
 use super::authority_context::AuthoritativeCommitContext;
 use super::bulk_mutation_telemetry::record_bulk_mutation_telemetry;
+use super::publication_validation::{CommitPublicationValidationInput, DraftValidationInput};
 use super::rejection::stale_strategy_validation_basis;
 use crate::authority::commit::semantic_plan::RelationalSemanticPlan;
-use crate::mvcc::RelationalTransactionValidationInput;
 use crate::runtime::state::subsystems::history::history_preparation_binding::RelationalPreparationHistory;
 use crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;
 use crate::transactions::data::commit_log::CommitLog;
@@ -14,15 +14,15 @@ use crate::transactions::data::outcomes::transaction_commit_error::TransactionCo
 use crate::transactions::data::primitives::TransactionId;
 
 /// Admission owns the exact draft only until the consuming Draft handoff.
-pub(super) struct AdmittedCommitExecution {
+pub(super) struct AdmittedCommitExecution<V> {
     prepared_scope: Option<super::authority_context::PreparedAuthorityScope>,
-    state: AdmittedCommitState,
+    state: AdmittedCommitState<V>,
 }
-impl AdmittedCommitExecution {
+impl<V> AdmittedCommitExecution<V> {
     pub(super) fn into_parts(
         self,
     ) -> (
-        AdmittedCommitState,
+        AdmittedCommitState<V>,
         Option<super::authority_context::PreparedAuthorityScope>,
     ) {
         (self.state, self.prepared_scope)
@@ -30,9 +30,9 @@ impl AdmittedCommitExecution {
 }
 
 /// Metadata that remains live after the exact draft leaves admission.
-pub(crate) struct AdmittedCommitState {
+pub(crate) struct AdmittedCommitState<V = CommitPublicationValidationInput> {
     transaction_id: TransactionId,
-    validation_input: RelationalTransactionValidationInput,
+    validation_input: V,
     selected_branch_state: crate::branch::root_selection::SelectedRelationalBranchState,
     phase_timing: CommitPhaseTiming,
     commit_log: CommitLog,
@@ -48,20 +48,20 @@ pub(crate) struct AdmittedCommitState {
         crate::performance::data::runtime_complexity_counters::RuntimeComplexityCounters,
 }
 
-pub(super) struct AdmittedCommitPhaseView<'a> {
+pub(super) struct AdmittedCommitPhaseView<'a, V> {
     transaction_id: TransactionId,
-    validation_input: &'a RelationalTransactionValidationInput,
+    validation_input: &'a V,
     authority_input: &'a super::authority_context::CommitAuthorityInput,
     commit_log: &'a mut CommitLog,
     phase_timing: &'a mut CommitPhaseTiming,
 }
 
-impl<'a> AdmittedCommitPhaseView<'a> {
+impl<'a, V> AdmittedCommitPhaseView<'a, V> {
     pub(super) fn into_parts(
         self,
     ) -> (
         TransactionId,
-        &'a RelationalTransactionValidationInput,
+        &'a V,
         RelationalSemanticPlan<'a>,
         Option<&'a crate::transactions::data::outcomes::plan_artifacts::MergeCommitMutationPlan>,
         &'a mut CommitLog,
@@ -85,7 +85,7 @@ impl<'a> AdmittedCommitPhaseView<'a> {
     }
 }
 
-impl AdmittedCommitState {
+impl<V> AdmittedCommitState<V> {
     pub(super) fn transaction_id(&self) -> TransactionId {
         self.transaction_id
     }
@@ -124,12 +124,8 @@ impl AdmittedCommitState {
         }
     }
 
-    pub(super) fn validation_input(&self) -> &RelationalTransactionValidationInput {
+    pub(super) fn validation_input(&self) -> &V {
         &self.validation_input
-    }
-
-    pub(super) fn release_transaction_retention(&mut self) {
-        self.validation_input.release_transaction_retention();
     }
 
     pub(super) fn accept_merge_draft(
@@ -150,7 +146,7 @@ impl AdmittedCommitState {
         (&mut self.commit_log, &mut self.phase_timing)
     }
 
-    pub(super) fn phase_view(&mut self) -> AdmittedCommitPhaseView<'_> {
+    pub(super) fn phase_view(&mut self) -> AdmittedCommitPhaseView<'_, V> {
         AdmittedCommitPhaseView {
             transaction_id: self.transaction_id,
             validation_input: &self.validation_input,
@@ -212,6 +208,14 @@ impl AdmittedCommitState {
     }
 }
 
+impl AdmittedCommitState {
+    pub(super) fn release_transaction_retention(&mut self) {
+        self.validation_input.retention = None;
+    }
+}
+
+mod publication_handoff;
+
 /// The admitted commit reads the same branch cells and records in its own round.
 pub(crate) struct CommitExecutionAdmission<'a> {
     pub(crate) history: &'a RelationalPreparationHistory,
@@ -220,10 +224,10 @@ pub(crate) struct CommitExecutionAdmission<'a> {
 }
 
 /// Admit the selected context after its caller's Admission stage consult.
-pub(super) fn admit_commit_execution(
+pub(super) fn admit_commit_execution<V: DraftValidationInput>(
     inputs: CommitExecutionAdmission<'_>,
-    context: AuthoritativeCommitContext,
-) -> Result<AdmittedCommitExecution, TransactionCommitError> {
+    context: AuthoritativeCommitContext<V>,
+) -> Result<AdmittedCommitExecution<V>, TransactionCommitError> {
     let complexity_before = context
         .complexity_baseline
         .clone()

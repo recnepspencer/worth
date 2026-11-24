@@ -8,7 +8,7 @@ use worth_foundational::{ExecutionReport, PartitionIdentity};
 use crate::execution::read_only_packets::{PacketExecutionStop, ReadOnlyPacket};
 
 #[cfg(test)]
-mod memory_tests;
+pub(crate) mod memory_tests;
 
 pub(crate) struct PacketPreparationBudget<'a, 'b, 'c, 'memory> {
     context: &'a mut MapKernelContext<'b, 'c>,

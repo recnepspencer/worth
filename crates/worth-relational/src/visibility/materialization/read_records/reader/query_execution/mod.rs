@@ -10,7 +10,7 @@ mod leased_traversal;
 mod outcome;
 mod packet_charge;
 mod packet_metrics;
-mod pinned_walk;
+pub(crate) mod pinned_walk;
 
 pub(super) use fragment_execution::execute_explicit_query_fragments_from_exact_basis;
 pub(super) use leased_map::execute_leased_query_packets;

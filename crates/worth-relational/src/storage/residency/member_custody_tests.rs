@@ -58,12 +58,14 @@ fn cold_cell_custody_refusal_preserves_the_region_failure_and_is_retryable_witho
         RelationalStorageSubject::Region(fixture.entity.partition_id)
     );
     assert_eq!(failure.cause, Cause::SourceUnavailable);
-    let crate::durability::data::RelationalRecoveryStop::Durability(stop) = failure.into() else {
+    let crate::durability::data::recovery_stop::RelationalRecoveryStop::Durability(stop) =
+        failure.into()
+    else {
         panic!("placement refusal is a typed cold storage recovery stop");
     };
     assert_eq!(
         stop.class,
-        crate::durability::data::RecoveryFailureClass::ColdStorageUnavailable
+        crate::durability::data::recovery_errors::RecoveryFailureClass::ColdStorageUnavailable
     );
     assert_eq!(active.load(Ordering::SeqCst), 0);
     *source.refusal.lock().unwrap() = None;

@@ -1,12 +1,15 @@
 //! A selected directory transfers its existing member custody into funded cells.
 use super::*;
-use crate::durability::data::{RelationalCheckpointDirectory, RelationalRecoveryStop as Stop};
+use crate::durability::data::recovery_stop::RelationalRecoveryStop as Stop;
+use crate::durability::medium::NativeSourceMemberState;
+use crate::storage::data::history_member_directory::RelationalHistoryMemberDirectory;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 
 impl RelationalRegionResidency {
     pub(crate) fn from_selected_directory(
         mut cold: RelationalColdRegion,
-        directory: &RelationalCheckpointDirectory,
+        physical: NativeSourceMemberState,
+        selected_history: &Arc<RelationalHistoryMemberDirectory>,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Arc<Self>, Stop> {
         crate::execution::check_request(request).map_err(Stop::Request)?;
@@ -14,8 +17,10 @@ impl RelationalRegionResidency {
             .source
             .take()
             .ok_or_else(|| directory_error("cold region source missing"))?;
-        if !Arc::ptr_eq(&source, &directory.source)
-            || !Arc::ptr_eq(&cold.history_members, &directory.history_members)
+        if !physical
+            .source()
+            .is_some_and(|selected| Arc::ptr_eq(&source, selected))
+            || !Arc::ptr_eq(&cold.history_members, selected_history)
         {
             return Err(directory_error(
                 "cold region differs from its selected directory",
@@ -28,7 +33,7 @@ impl RelationalRegionResidency {
                 &cold.schema_carrier_digest,
                 &super::super::RecordedRegionCheckpoint {
                     history_members: cold.history_members.clone(),
-                    leaf: crate::durability::data::RelationalCheckpointRegion {
+                    leaf: crate::storage::data::checkpoint_region::RelationalCheckpointRegion {
                         kind_authority: cold.kind_authority,
                         partition_id: cold.partition_id,
                         content_digest: cold.content_digest,
@@ -43,14 +48,10 @@ impl RelationalRegionResidency {
                 },
                 *request,
             )
-            .map_err(crate::durability::checkpoint_history::capture::map_stop)?;
+            .map_err(crate::durability::data::recovery_stop::map_stop)?;
         // The original directory already admitted this complete semantic member
         // roster. Sharing its intrinsic token performs no second registration,
         // dependency walk or member read. Each cell retires its actual share.
-        let physical = crate::durability::medium::NativeSourceMemberState::new(
-            source,
-            directory.member_basis(),
-        );
         Ok(Arc::new(Self {
             partition_id: cold.partition_id,
             checkpoint_bindings: Mutex::new(bindings),
@@ -86,5 +87,5 @@ fn control_memory(
         .map_err(|cause| Stop::Request(cause.into()))
 }
 fn directory_error(detail: &str) -> Stop {
-    crate::durability::checkpoints::region_directory::corrupt(detail).into()
+    crate::durability::data::recovery_errors::DurabilityError::corrupt_checkpoint(detail).into()
 }

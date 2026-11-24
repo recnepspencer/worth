@@ -1,9 +1,16 @@
 //! Native-applied authored writes obey one writer per record (D1612).
-use super::*;
-use crate::transactions::data::{
-    CommitConflict, ConflictClass, EntityMutationIntent, ExistingRecordTarget, MergedCommitPlan,
-    MutationIntent, RecordRef, RelationMutationIntent,
-};
+use super::assembly_failure::RelationalCoupledAssemblyFailure;
+use crate::mvcc::publication::application_publication::custody;
+use crate::transactions::data::intents::mutation_intent::EntityMutationIntent;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::intents::mutation_intent::RelationMutationIntent;
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::ExistingRecordTarget;
+use crate::transactions::data::primitives::RecordRef;
+use worth_execution::ExecutionRequest;
 use worth_execution::{ExecutionOrderedMap, ExecutionOrderedMapDenial};
 
 #[derive(Default)]

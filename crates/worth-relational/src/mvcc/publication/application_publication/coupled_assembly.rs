@@ -1,31 +1,45 @@
 //! Query supplies producer execution; Native owns the applied image and writer roster.
-use super::*;
-use crate::execution::request_stage::checkpoint;
-use crate::{
-    authority::commit::phases::{
-        applied_mutation::AppliedMutationCore, prepare::PreparedWorkingStateScope,
-    },
-    mvcc::{BranchBoundRelationalTransaction, RelationalMutationProposalIdentity},
-    runtime::{
-        RelationalAppliedCandidateReadIdentity, RelationalPinnedRead, RelationalPreparationRuntime,
-    },
+use self::retained_assembly::{
+    BoundAuthoredCoupling, CoupledAuthoredStagePart, CoupledPublicationPart,
 };
+use super::custody;
+use super::*;
+use crate::authority::commit::phases::applied_mutation::AppliedMutationCore;
+use crate::authority::commit::phases::prepare::PreparedWorkingStateScope;
+use crate::execution::request_stage::checkpoint;
+use crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity;
+use crate::mvcc::BranchBoundRelationalTransaction;
+use crate::runtime::RelationalPreparationRuntime;
+use crate::visibility::materialization::read_records::reader::pinned_read::candidate::RelationalAppliedCandidateReadIdentity;
+use crate::visibility::materialization::read_records::reader::pinned_read::RelationalPinnedRead;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 mod adoption;
-mod inputs;
+pub(crate) mod assembly_failure;
+mod input_issuance;
+pub(crate) mod inputs;
+mod patch_target;
+mod refusals;
 pub use inputs::RelationalRequiredOutputInput;
 pub(crate) use inputs::RequiredOutputInputs;
 mod aggregate_read;
 mod authored_writes;
-mod completion;
+mod candidate_completion;
+mod chain;
+pub(crate) mod completion;
 mod continuation;
+mod corruption_commands;
 mod managed_source;
 mod managed_source_alignment;
+mod parent_read_footprint;
+pub(crate) mod retained_assembly;
+mod roster_completion;
+mod route_selection;
 pub use continuation::RelationalCoupledProducerContinuation;
 pub use managed_source_alignment::ManagedIndexParentReadFootprint;
-mod contribution;
-mod source_effects;
+pub(crate) mod contribution;
+mod proposal_contribution;
+pub(crate) mod source_effects;
 pub use contribution::RelationalCoupledContribution;
 pub use source_effects::RelationalCoupledAuthoredSourceEffects;
 mod disjoint_aspect_patches;
@@ -38,11 +52,13 @@ mod part;
 mod part_corruption;
 mod participant_admission;
 mod prepared_route;
-mod producer_posture;
+pub(crate) mod producer_posture;
 mod stage;
+mod suffix_scope;
 pub use producer_posture::RelationalCoupledProducerPosture;
 mod scoped_preparation;
 mod succession;
+mod touch_projection;
 mod touches;
 pub use touches::{RelationalCoupledAppendTouches, RelationalCoupledChainOverlay};
 mod writer_custody;
@@ -57,53 +73,6 @@ pub trait RelationalAuthoredCoupledProducerAssembly {
         execution: &ExecutionRequest<'_, '_>,
         candidate: &mut RelationalAuthoredCoupledCandidate<'_>,
     ) -> Result<std::ops::ControlFlow<()>, RelationalCoupledAssemblyFailure>;
-}
-
-/// Retains Native cold-symbol discovery so the ordinary round can retry it.
-#[derive(Debug)]
-pub struct RelationalCoupledAssemblyFailure {
-    pub(crate) cause: crate::authority::mutation::MutationApplyDenial,
-    stage_conflict: Option<(crate::transactions::data::RecordRef, usize, usize)>,
-}
-impl From<TransactionCommitError> for RelationalCoupledAssemblyFailure {
-    fn from(error: TransactionCommitError) -> Self {
-        Self {
-            cause: error.into(),
-            stage_conflict: None,
-        }
-    }
-}
-impl RelationalCoupledAssemblyFailure {
-    /// Exact conflicting record and physical authored-stage positions (prefix
-    /// is zero). Descriptive evidence for Query's typed stage refusal only.
-    pub fn authored_stage_conflict(
-        &self,
-    ) -> Option<(&crate::transactions::data::RecordRef, usize, usize)> {
-        self.stage_conflict
-            .as_ref()
-            .map(|(record, earlier, later)| (record, *earlier, *later))
-    }
-    pub(crate) fn from_apply(cause: crate::authority::mutation::MutationApplyDenial) -> Self {
-        Self {
-            cause,
-            stage_conflict: None,
-        }
-    }
-}
-
-pub(crate) struct BoundAuthoredCoupling {
-    pub(crate) owners: RelationalAuthoredCoupledOwners,
-    pub(crate) installed: RelationalInstalledApplicationPublicationAuthority,
-    pub(crate) applied: std::sync::Mutex<Option<CoupledAppliedCandidate>>,
-    pub(crate) completed: std::sync::Mutex<Option<RequiredOutputPublicationAdmission>>,
-    pub(crate) retirement_admission: Option<Arc<worth_proof::AdmittedAuthoredOutputRetirement>>,
-}
-impl std::fmt::Debug for BoundAuthoredCoupling {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("BoundAuthoredCoupling")
-            .field("owners", &self.owners)
-            .finish_non_exhaustive()
-    }
 }
 
 /// A transaction whose authored anchors and exact dependent owner set were
@@ -134,32 +103,6 @@ pub struct RelationalAuthoredCoupledCandidate<'a> {
     /// Successor rounds folded into earlier parts; each is still one applied
     /// part in the pin, local-key and continuation sequence.
     successor_rounds: usize,
-}
-
-pub(crate) struct CoupledPublicationPart {
-    pub(crate) inputs: Option<RequiredOutputInputs>,
-    pub(crate) ordinary_ids:
-        Option<worth_execution::ExecutionArray<crate::identity::data::EntityId>>,
-    pub(crate) input: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
-    pub(crate) publication: RelationalCoupledProducerPosture,
-    pub(crate) commands: crate::mvcc::OwnedNormalizedPlan,
-    pub(crate) records: Vec<crate::transactions::data::RecordRef>,
-    /// This route's chain in the candidate: its transaction batches, its patch
-    /// fragments, the local-key coordinates its head chose, and the end of the
-    /// changed-record log when its latest round applied.
-    pub(crate) chain: succession::Chain,
-}
-
-/// One later authored stage applied over the candidate pin under the authored
-/// writer's custody. It is never a producer posture and owns no output route.
-pub(crate) struct CoupledAuthoredStagePart {
-    pub(crate) fragments: std::ops::Range<usize>,
-    pub(crate) roles: Vec<RequiredOutputRoleTarget>,
-    pub(crate) output_ids: worth_execution::ExecutionArray<crate::identity::data::EntityId>,
-    pub(crate) source: crate::identity::data::EntityId,
-    pub(crate) input: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
-    pub(crate) commands: crate::mvcc::OwnedNormalizedPlan,
-    pub(crate) records: Vec<crate::transactions::data::RecordRef>,
 }
 
 impl RelationalAuthoredCoupledCandidate<'_> {
@@ -237,7 +180,11 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         {
             execution
                 .run_native_with_checkpoint(|context| {
-                    part::require_unseen_route(context, &self.parts, &previous.origin.meaning)
+                    participant_admission::require_unseen_route(
+                        context,
+                        &self.parts,
+                        &previous.origin.meaning,
+                    )
                 })
                 .map_err(custody::execution_stop)?
                 .0?;

@@ -1,6 +1,5 @@
 //! Journal and selected singleton bytes share the complete existing admission.
 use super::*;
-use crate::durability::canonical_commit_artifact::verified_frame::VerifiedCanonicalCommitFrame;
 impl RelationalCommitEnvelopeResidency {
     pub(crate) fn original_source_damage(&self) -> Option<RelationalStorageUnavailable> {
         self.state
@@ -14,33 +13,6 @@ impl RelationalCommitEnvelopeResidency {
             .lock()
             .unwrap_or_else(|error| error.into_inner())
             .remember_original_failure(stop);
-    }
-
-    pub(crate) fn readmit_positioned(
-        entry: &RelationalCommitIndexEntry,
-        source: &dyn RelationalDurableColdSource,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        limit: u64,
-    ) -> Result<PositionedCanonicalCommit, RelationalRecoveryStop> {
-        let failure = |cause| RelationalStorageUnavailable {
-            subject: RelationalStorageSubject::Envelope(entry.position),
-            cause,
-        };
-        let read_limit = limit.min(
-            crate::durability::canonical_commit_artifact::frame_contract::MAXIMUM_ARTIFACT_BYTES
-                as u64,
-        );
-        let reservation = execution
-            .reserve_retained_memory(read_limit)
-            .map_err(|cause| RelationalRecoveryStop::Request(cause.into()))?;
-        let bytes = source
-            .read_commit(entry.position, read_limit)
-            .map_err(failure)?;
-        let artifact = VerifiedCanonicalCommitFrame::copy_frame_original(&bytes, execution)
-            .map_err(original_frame_stop)?;
-        drop(bytes);
-        drop(reservation);
-        artifact.readmit_indexed(entry, execution)
     }
 }
 

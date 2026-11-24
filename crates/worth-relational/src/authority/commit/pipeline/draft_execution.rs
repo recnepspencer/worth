@@ -2,6 +2,7 @@ use super::authority_context::PreparedAuthorityScope;
 use super::draft_preparation_phase::record_draft_preparation_phase;
 use super::execution_admission::{AdmittedCommitExecution, AdmittedCommitState};
 use super::phase_backing::CommitPhaseBacking;
+use super::publication_validation::DraftValidationInput;
 use crate::authority::commit::phases::applied_mutation::AppliedMutationDraft;
 
 pub(super) struct PreparedCommitState {
@@ -55,18 +56,18 @@ impl PreparedCommitExecution {
     }
 }
 
-pub(super) fn prepare_commit_execution(
+pub(super) fn prepare_commit_execution<V: DraftValidationInput>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     instrumentation: &crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation,
     descriptor_semantics: crate::schema::data::DescriptorSemanticsVersion,
     merge_draft: impl FnOnce(
         &worth_execution::ExecutionRequest<'_, '_>,
-        &AdmittedCommitState,
+        &AdmittedCommitState<V>,
     ) -> Result<
         super::merge_draft::AcceptedMergeDraft,
         crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
     >,
-    admitted: AdmittedCommitExecution,
+    admitted: AdmittedCommitExecution<V>,
 ) -> Result<
     CommitPhaseBacking<PreparedCommitExecution>,
     crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
@@ -105,7 +106,7 @@ pub(super) fn prepare_commit_execution(
         );
         PreparedCommitExecution {
             state: PreparedCommitState {
-                admitted,
+                admitted: admitted.into_publication(),
                 public_structural_summary,
                 proposal_identity,
             },

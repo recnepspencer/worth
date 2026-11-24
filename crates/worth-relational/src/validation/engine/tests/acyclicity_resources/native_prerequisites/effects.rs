@@ -1,5 +1,4 @@
 //! Run the real native intent limit with the configured failure effect.
-mod administration;
 mod publication;
 use super::*;
 use crate::validation::data::execution::InvariantExecutionPoint as Point;
@@ -83,45 +82,33 @@ fn native_advisory_continues_custom_preparation_and_harness_audit_collects_even_
         ),
     ] {
         let hooks = Arc::new(Hooks::default());
-        let runtime = RelationalRuntimeApi::builder()
-            .schema_registry(acyclicity_and_connectivity_registry())
-            .invariant_catalog(InvariantCatalog {
-                registrations: vec![InvariantRegistration::for_rule(
-                    InvariantRule::MaxMergedIntents(1),
-                    profile.execution_point(),
-                    effect,
-                )],
-            })
-            .custom_invariant(
-                CustomInvariantRegistration::new(AtPoint {
-                    probe: ScopeProbe(Arc::clone(&hooks)),
-                    point: profile.execution_point(),
-                    checked: true,
-                })
-                .unwrap(),
-            )
-            .build()
-            .expect("valid native runtime configuration");
-        // The ordinary one-intent node bootstrap satisfies the same limit.
-        let fixture = DagFixture::from_runtime(runtime, 3);
+        let catalog = InvariantCatalog {
+            registrations: vec![InvariantRegistration::for_rule(
+                InvariantRule::MaxMergedIntents(1),
+                profile.execution_point(),
+                effect,
+            )],
+        };
+        let rule = CustomInvariantRegistration::new(AtPoint {
+            probe: ScopeProbe(Arc::clone(&hooks)),
+            point: profile.execution_point(),
+            checked: true,
+        })
+        .unwrap();
+        let fixture = InvariantDag::new(3, Some(catalog), Some(rule));
         let before = fixture.head();
-        let plan = fixture.merged_plan(fixture.chain_batch(1));
+        let plan = fixture.plan(1);
         assert_eq!(plan.merged_intents.len(), 2);
         let request = InvariantExecutionRequest::from_profile_with_contract(
             profile,
-            &fixture.runtime,
-            InvariantObservation::committed(fixture.runtime.storage_access().current_edition()),
-            fixture.runtime.current_version_id(),
+            &fixture.view(),
+            fixture.observation(),
+            fixture.version(),
             Some(&plan),
             None,
         );
-        let lease = super::super::fixture::request(
-            8 * 1024 * 1024,
-            4_000_000,
-            CancellationToken::new(),
-            None,
-        );
-        let result = InvariantEngine::new(&fixture.runtime)
+        let lease = paid_dag_request(8 * 1024 * 1024, 4_000_000, CancellationToken::new(), None);
+        let result = InvariantEngine::from_view(&fixture.view())
             .execute(&ExecutionRequest::leased(&lease), request)
             .unwrap();
         let limit = result

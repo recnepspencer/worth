@@ -1,5 +1,4 @@
 //! Semantic mutation touches projected from one owner-validated plan.
-use super::ValidatedRelationalProposal;
 use crate::identity::data::{EntityId, KindId, RelationId};
 use std::sync::Arc;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
@@ -12,10 +11,14 @@ mod authored_restoration;
 mod collection;
 #[path = "proposal_touches/intent_projection.rs"]
 mod intent_projection;
+#[path = "proposal_touches/inverse_projection.rs"]
+mod inverse_projection;
 #[path = "proposal_touches/owned_graph.rs"]
 mod owned_graph;
 #[path = "proposal_touches/preparation.rs"]
 mod preparation;
+#[path = "proposal_touches/proposal_projection.rs"]
+mod proposal_projection;
 #[path = "proposal_touches/work_observation.rs"]
 mod work_observation;
 
@@ -161,127 +164,37 @@ pub enum ValidatedMutationTouchProjectionError {
     AuthoredRestoration(crate::publication::data::PublicationError),
     MissingEntityKind(EntityId),
     MissingRelationKind(RelationId),
-    Execution(crate::transactions::data::CommitExecutionDenial),
+    Execution(crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial),
     Allocation(worth_execution::ExecutionAllocationDenial),
 }
-impl ValidatedRelationalProposal {
-    /// Application-authored touches after checking the sealed Native restoration inverse.
-    /// Complete mutation inspection remains available through `mutation_touches`.
-    pub fn application_mutation_touches(
-        &self,
-        execution: &ExecutionRequest<'_, '_>,
-    ) -> Result<ValidatedMutationTouches<'_>, ValidatedMutationTouchProjectionError> {
-        preparation::project(self, execution, true)
-    }
-
-    /// Actor-only authoring in an admitted coupled group. The complete proposal
-    /// remains available through `mutation_touches` for Native inspection.
-    pub fn authored_mutation_touches(
-        &self,
-        execution: &ExecutionRequest<'_, '_>,
-    ) -> Result<ValidatedMutationTouches<'_>, ValidatedMutationTouchProjectionError> {
-        let commands = match self
-            .state
-            .required_output_publication
-            .as_ref()
-            .map(|p| &p.publication)
-        {
-            Some(crate::mvcc::RequiredOutputPublication::CoupledAuthored { group }) => {
-                Some(group.authored_commands.plan().merged_intents.as_slice())
-            }
-            _ => None,
-        };
-        preparation::project_commands(self, execution, true, commands)
-    }
-
-    /// Actor-only authoring of one later authored stage (`stage` 0 is the
-    /// first stage after the prefix), from that stage's own applied commands.
-    /// Each stage's invariants are judged on its own contribution, as each
-    /// producer's are; `None` when the group has no such stage.
-    pub fn authored_stage_mutation_touches(
-        &self,
-        execution: &ExecutionRequest<'_, '_>,
-        stage: usize,
-    ) -> Option<Result<ValidatedMutationTouches<'_>, ValidatedMutationTouchProjectionError>> {
-        let part = match self
-            .state
-            .required_output_publication
-            .as_ref()
-            .map(|p| &p.publication)
-        {
-            Some(crate::mvcc::RequiredOutputPublication::CoupledAuthored { group }) => {
-                group.stages.get(stage)?
-            }
-            _ => return None,
-        };
-        Some(preparation::project_commands(
-            self,
-            execution,
-            true,
-            Some(&part.commands.plan().merged_intents),
-        ))
-    }
-
-    /// One concrete producer's touches use its own applied command contribution,
-    /// under the final proposal's single invariant judgment and request budgets.
-    /// The participant is the part whose producing meaning equals `meaning`
-    /// exactly, implementation and epoch included; only that part is projected.
-    /// O(parts) meaning comparisons, then O(that part's intents).
-    pub fn coupled_producer_mutation_touches<'a>(
-        &'a self,
-        execution: &ExecutionRequest<'_, '_>,
-        meaning: &crate::mvcc::RequiredOutputPublicationMeaning,
-    ) -> Option<Result<ValidatedMutationTouches<'a>, ValidatedMutationTouchProjectionError>> {
-        let part = self
-            .state
-            .required_output_publication
-            .iter()
-            .filter_map(|p| match &p.publication {
-                crate::mvcc::RequiredOutputPublication::CoupledAuthored { group } => Some(group),
-                _ => None,
-            })
-            .flat_map(|group| group.parts.iter())
-            .rfind(|part| part.publication.producing_meaning() == Some(meaning))?;
-        Some(preparation::project_commands(
-            self,
-            execution,
-            false,
-            Some(&part.commands.plan().merged_intents),
-        ))
-    }
-
-    /// O(reached intents + prior/supplied fields), plus canonical sorting.
-    /// Native retained before/after state supplies presence; no history is read.
-    pub fn mutation_touches(
-        &self,
-        execution: &ExecutionRequest<'_, '_>,
-    ) -> Result<ValidatedMutationTouches<'_>, ValidatedMutationTouchProjectionError> {
-        preparation::project(self, execution, false)
-    }
-}
-
 /// Project semantic touches directly from an applied suffix's normalized intents
 /// and current working state, charged to `execution` (PR C append-time touches).
 pub(crate) fn project_applied_intents(
     execution: &ExecutionRequest<'_, '_>,
     state: &crate::storage::overlay::WorkingState,
-    intents: &[crate::transactions::data::MutationIntent],
-) -> Result<Vec<ValidatedMutationTouch>, crate::transactions::data::TransactionCommitError> {
+    intents: &[crate::transactions::data::intents::mutation_intent::MutationIntent],
+) -> Result<
+    Vec<ValidatedMutationTouch>,
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+> {
     use crate::execution::request_stage::checkpoint;
-    use crate::transactions::data::{EntityMutationIntent, MutationIntent};
+    use crate::transactions::data::intents::mutation_intent::EntityMutationIntent;
+    use crate::transactions::data::intents::mutation_intent::MutationIntent;
 
-    let map_err = |err: ValidatedMutationTouchProjectionError| match err {
+    let map_err = |err: ValidatedMutationTouchProjectionError| {
+        match err {
         ValidatedMutationTouchProjectionError::Execution(cause) => {
-            crate::transactions::data::TransactionCommitError::execution(cause)
+            crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(cause)
         }
         ValidatedMutationTouchProjectionError::Allocation(denial) => {
-            crate::transactions::data::TransactionCommitError::conflict(
-                crate::transactions::data::CommitConflict::new(
-                    crate::transactions::data::ConflictClass::ExecutionAllocationDenied { denial },
+            crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::conflict(
+                crate::transactions::data::outcomes::commit_conflict::CommitConflict::new(
+                    crate::transactions::data::outcomes::conflict_class::ConflictClass::ExecutionAllocationDenied { denial },
                 ),
             )
         }
-        other => crate::mvcc::origin_denial(format!("applied touch projection failed: {other:?}")),
+        other => crate::transactions::data::outcomes::transaction_commit_error::origin_denial(format!("applied touch projection failed: {other:?}")),
+    }
     };
     let mut touches = Vec::new();
     execution
@@ -325,15 +238,20 @@ pub(crate) fn project_applied_intents(
                 usize::BITS as usize - touches.len().max(1).leading_zeros() as usize,
             );
             checkpoint(context, comparisons as u64 + 1)
-                .map_err(crate::mvcc::publication::custody_stop)?;
+                .map_err(applied_touch_execution_stop)?;
             touches.sort_unstable();
             touches.dedup();
-            Ok::<_, crate::transactions::data::TransactionCommitError>(())
+            Ok::<_, crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError>(())
         })
-        .map_err(crate::mvcc::publication::custody_stop)?
+        .map_err(applied_touch_execution_stop)?
         .0?;
     Ok(touches)
 }
-#[cfg(test)]
-#[path = "proposal_touches/tests.rs"]
-mod tests;
+
+fn applied_touch_execution_stop(
+    cause: impl Into<crate::execution::RelationalExecutionDenialCause>,
+) -> crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError {
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(
+        cause.into().into(),
+    )
+}

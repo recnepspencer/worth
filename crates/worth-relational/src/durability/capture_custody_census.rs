@@ -80,9 +80,10 @@ impl RelationalRuntime {
                         RelationalAllocationWitness::of(positioned.canonical_arc())
                     }),
                     resident_payload_bytes: cell.resident_payload_bytes(),
-                    selected_directory: cell
-                        .selected_directory()
-                        .map(|directory| RelationalAllocationWitness::of(&directory)),
+                    selected_directory: cell.selected_directory().map(|directory| {
+                        let directory: std::sync::Arc<dyn std::any::Any + Send + Sync> = directory;
+                        RelationalAllocationWitness::of_erased(&directory)
+                    }),
                     source_placement: cell
                         .source_placement()
                         .map(|(entry, _)| entry.allocation_witness()),

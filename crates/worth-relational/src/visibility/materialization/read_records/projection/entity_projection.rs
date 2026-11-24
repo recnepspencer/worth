@@ -138,6 +138,3 @@ impl SelectedEntityProjection<'_> {
         ))
     }
 }
-
-#[cfg(test)]
-mod tests;

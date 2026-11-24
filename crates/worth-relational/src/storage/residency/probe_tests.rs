@@ -10,7 +10,7 @@ fn related_sources_do_not_confuse_equal_partition_ids() {
         fixtures[1].entity.partition_id
     );
     let editions = fixtures.each_ref().map(|fixture| {
-        crate::runtime::PartitionEdition::new(
+        crate::runtime::state::subsystems::storage::partition_edition::PartitionEdition::new(
             [(
                 fixture.entity.partition_id,
                 RelationalRegionRetention::new(fixture.cell.clone(), None),
@@ -19,8 +19,9 @@ fn related_sources_do_not_confuse_equal_partition_ids() {
             .collect(),
         )
     });
-    let symbols = crate::runtime::RuntimeSymbolTable::default();
-    let host = crate::test_execution_policy::serial_request();
+    let symbols =
+        crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable::default();
+    let host = crate::execution::test_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let id = fixtures[0].entity.partition_id;
     let mut rounds = 0;
@@ -55,22 +56,24 @@ fn a_resident_overlay_does_not_hide_its_cold_before_image() {
         base.entity.partition_id,
         resident.full_view().partition().clone(),
     )]);
-    let edition = crate::runtime::PartitionEdition::new(
-        [(
-            base.entity.partition_id,
-            RelationalRegionRetention::new(base.cell.clone(), None),
-        )]
-        .into_iter()
-        .collect(),
-    );
-    let symbols = crate::runtime::RuntimeSymbolTable::default();
+    let edition =
+        crate::runtime::state::subsystems::storage::partition_edition::PartitionEdition::new(
+            [(
+                base.entity.partition_id,
+                RelationalRegionRetention::new(base.cell.clone(), None),
+            )]
+            .into_iter()
+            .collect(),
+        );
+    let symbols =
+        crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable::default();
     let source = edition.with_symbol_admission(&symbols);
     let overlay = FullCompositeSource {
         base: &source,
         staged: &staged,
         current: crate::storage::overlay::OverlayStateView::new(&edition, &staged),
     };
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let mut rounds = 0;
     let history = probe_full_sources(&execution, [&overlay], |[view]| {
@@ -94,16 +97,18 @@ fn a_resident_overlay_does_not_hide_its_cold_before_image() {
 #[test]
 fn a_cold_round_discards_absence_before_accepting_the_resident_answer() {
     let fixture = region_with_history();
-    let edition = crate::runtime::PartitionEdition::new(
-        [(
-            fixture.entity.partition_id,
-            RelationalRegionRetention::new(fixture.cell.clone(), None),
-        )]
-        .into_iter()
-        .collect(),
-    );
-    let symbols = crate::runtime::RuntimeSymbolTable::default();
-    let host = crate::test_execution_policy::serial_request();
+    let edition =
+        crate::runtime::state::subsystems::storage::partition_edition::PartitionEdition::new(
+            [(
+                fixture.entity.partition_id,
+                RelationalRegionRetention::new(fixture.cell.clone(), None),
+            )]
+            .into_iter()
+            .collect(),
+        );
+    let symbols =
+        crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable::default();
+    let host = crate::execution::test_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let mut rounds = 0;
     let answer = probe_full(
@@ -138,16 +143,18 @@ fn a_cold_round_discards_absence_before_accepting_the_resident_answer() {
 fn a_provisional_denial_cannot_mask_sticky_storage_damage() {
     let fixture = region_with_history();
     fixture.source.corrupt.store(true, Ordering::SeqCst);
-    let edition = crate::runtime::PartitionEdition::new(
-        [(
-            fixture.entity.partition_id,
-            RelationalRegionRetention::new(fixture.cell.clone(), None),
-        )]
-        .into_iter()
-        .collect(),
-    );
-    let symbols = crate::runtime::RuntimeSymbolTable::default();
-    let host = crate::test_execution_policy::serial_request();
+    let edition =
+        crate::runtime::state::subsystems::storage::partition_edition::PartitionEdition::new(
+            [(
+                fixture.entity.partition_id,
+                RelationalRegionRetention::new(fixture.cell.clone(), None),
+            )]
+            .into_iter()
+            .collect(),
+        );
+    let symbols =
+        crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable::default();
+    let host = crate::execution::test_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let attempt = || {
         probe_full(
@@ -276,7 +283,7 @@ impl Drop for DiscoveryAnswer {
 fn deep_or_wide_discovery_loads_only_observed_misses_after_dropping_the_round() {
     let fixture = region_with_history();
     let full = full_demand(&fixture.cell, 1 << 24).unwrap();
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     for stop_on_first_miss in [true, false] {
         let source = DiscoverySource {

@@ -84,7 +84,7 @@ pub(super) fn capture(
                     }
                     None => {
                         let captured = region.cell.capture_complete_for_request(
-                            request, &group.schema, *group.carrier.bytes(), dictionary,
+                            request, group.schema.as_ref(), *group.carrier.bytes(), dictionary,
                         ).map_err(crate::durability::checkpoint_history::capture::capture_stop)?;
                         for member in captured.members {
                             let locator = member.locator();

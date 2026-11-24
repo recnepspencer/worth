@@ -22,7 +22,7 @@ pub(crate) mod history_branch_transition;
 #[path = "history_canonical_routes.rs"]
 pub(crate) mod history_canonical_routes;
 #[path = "history_catalog_recovery.rs"]
-mod history_catalog_recovery;
+pub(crate) mod history_catalog_recovery;
 #[path = "history_checkpoint_catalog.rs"]
 mod history_checkpoint_catalog;
 #[path = "history_construction.rs"]
@@ -56,7 +56,7 @@ mod history_publication;
 #[path = "history_recovery.rs"]
 mod history_recovery;
 #[path = "history_recovery_denial.rs"]
-mod history_recovery_denial;
+pub(crate) mod history_recovery_denial;
 #[path = "history_recovery_index_basis.rs"]
 mod history_recovery_index_basis;
 #[path = "history_recovery_lineage.rs"]
@@ -69,7 +69,6 @@ mod history_retention;
 mod history_root_capture;
 #[path = "history_source_retirement.rs"]
 pub(crate) mod history_source_retirement;
-use canonical_publication_routes::RelationalCanonicalPublicationRoutes;
 use history_costs::RelationalBranchSharingCostCounters;
 pub(crate) use history_costs::RelationalForkMaterializationCost;
 pub(crate) use history_costs::RelationalPhase4ReferenceCostOwner;
@@ -118,7 +117,6 @@ pub(crate) struct HistorySubsystem {
     ledger: RuntimeOwnedState<HistoryLedger>,
     commit_identity_allocator: Arc<AtomicU64>,
     version_identity_allocator: Arc<AtomicU64>,
-    canonical_publication_routes: Arc<RelationalCanonicalPublicationRoutes>,
 }
 
 impl HistorySubsystem {
@@ -152,7 +150,6 @@ impl HistorySubsystem {
             ledger: RuntimeOwnedState::default(),
             commit_identity_allocator: Arc::new(AtomicU64::new(1)),
             version_identity_allocator: Arc::new(AtomicU64::new(1)),
-            canonical_publication_routes: Arc::new(RelationalCanonicalPublicationRoutes::default()),
         }
     }
 
@@ -224,69 +221,6 @@ impl HistorySubsystem {
         self.version_identity_allocator
             .store(version_id.0, Ordering::Relaxed);
         Ok(())
-    }
-
-    pub(crate) fn fork_snapshot(
-        &self,
-    ) -> Result<Self, crate::runtime::fork_denial::RelationalRuntimeForkDenial> {
-        let _fork_guard = self.canonical_publication_routes.enter_fork()?;
-        if let Some(commit_id) = self
-            .canonical_publication_routes
-            .has_unsettled_performed_publication()
-        {
-            return Err(
-                crate::runtime::fork_denial::RelationalRuntimeForkDenial::PerformedPublicationRequiresSettlement {
-                    commit_id,
-                },
-            );
-        }
-        let positioned = self.canonical_publication_routes.performed_snapshot();
-        let mut fork = self.detached_owner_snapshot()?;
-        let (next_commit_id, next_version_id) = {
-            let mut ledger = fork.ledger.write();
-            if let Some(maximum) = positioned
-                .iter()
-                .map(|commit| commit.envelope().commit.commit_id.0)
-                .max()
-            {
-                ledger.next_commit_id = ledger.next_commit_id.max(maximum.checked_add(1).ok_or(
-                    crate::runtime::fork_denial::RelationalRuntimeForkDenial::IdentityCapacityExhausted,
-                )?);
-            }
-            if let Some(maximum) = positioned
-                .iter()
-                .map(|commit| commit.envelope().commit.version_id.0)
-                .max()
-            {
-                ledger.next_version_id = ledger.next_version_id.max(maximum.checked_add(1).ok_or(
-                    crate::runtime::fork_denial::RelationalRuntimeForkDenial::IdentityCapacityExhausted,
-                )?);
-            }
-            (ledger.next_commit_id, ledger.next_version_id)
-        };
-        fork.commit_identity_allocator = Arc::new(AtomicU64::new(next_commit_id));
-        fork.version_identity_allocator = Arc::new(AtomicU64::new(next_version_id));
-        let routes = Arc::new(
-            self.canonical_publication_routes
-                .detached_branch_transitions(),
-        );
-        routes.install_checkpoint_catalog(fork.commit_artifacts());
-        for commit in positioned {
-            let artifact = fork.commit_artifact(commit.commit.commit_id).ok_or(
-                crate::runtime::fork_denial::RelationalRuntimeForkDenial::CanonicalInventoryInvalid,
-            )?;
-            routes
-                .install_recovered(
-                    commit,
-                    artifact.envelope_residency(),
-                    artifact.roots().clone(),
-                )
-                .map_err(|_| {
-                    crate::runtime::fork_denial::RelationalRuntimeForkDenial::CanonicalInventoryInvalid
-                })?;
-        }
-        fork.canonical_publication_routes = routes;
-        Ok(fork)
     }
 
     pub(crate) fn bind_fork_runtime(

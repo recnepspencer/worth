@@ -222,3 +222,11 @@ impl RelationalStorageRegionLocator {
         self.partition_id
     }
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum RelationalExcludedAllocationLane {
+    Diagnostics,
+    RetentionMetadata,
+    AllocatorBookkeeping,
+    OptionalCache,
+}

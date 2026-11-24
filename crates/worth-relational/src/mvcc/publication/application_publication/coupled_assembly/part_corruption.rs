@@ -9,7 +9,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         execution: &ExecutionRequest<'_, '_>,
         posture: RelationalCoupledProducerPosture,
         content: &crate::content::RelationalContentAttachments,
-        mut batches: Vec<crate::transactions::data::WorkerIntentBatch>,
+        mut batches: Vec<crate::transactions::data::primitives::WorkerIntentBatch>,
         fault: u8,
     ) -> Result<(), RelationalCoupledAssemblyFailure> {
         if fault == 4 {
@@ -22,46 +22,14 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             return self.continued_round_probe(execution, posture, content, batches, fault);
         }
         if matches!(fault, 5 | 6) {
-            let target = if fault == 6 {
-                posture
-                    .producing_meaning()
-                    .expect("actual writer route")
-                    .source_scope
-            } else {
-                let prior = self
-                    .parts
-                    .first()
-                    .and_then(|part| part.publication.owned())
-                    .ok_or_else(|| {
-                        part::reject(
-                            crate::publication::data::AuthoredRetirementRefusal::CorruptPublication,
-                            self.authored_source(),
-                        )
-                    })?;
-                let roles = match prior {
-                    RequiredOutputPublication::Birth { roles, .. }
-                    | RequiredOutputPublication::Preserve { roles, .. } => roles,
-                    _ => unreachable!("a real producer part"),
-                };
-                let role = roles
-                    .first()
-                    .expect("the actual producer has its output role");
-                match &role.target {
-                    crate::transactions::data::EntityReference::Existing(id) => *id,
-                    crate::transactions::data::EntityReference::Created(reference) => {
-                        self.mutation.outcome.created_entities.resolve(reference).ok_or_else(||
-                            part::reject(crate::publication::data::AuthoredRetirementRefusal::CorruptPublication, self.authored_source()))?
-                    }
-                }
-            };
-            let batch = batches.first_mut().expect("actual writer batch");
-            batch
-                .intents
-                .push(crate::transactions::data::MutationIntent::Entity(
-                    crate::transactions::data::EntityMutationIntent::Delete(
-                        crate::transactions::data::DeleteEntityIntent { entity_id: target },
-                    ),
-                ));
+            corruption_commands::delete_entity(
+                &posture,
+                &self.parts,
+                &self.mutation.outcome.created_entities,
+                self.authored_source(),
+                &mut batches,
+                fault == 6,
+            )?;
             return self.append_publication(execution, posture, content, batches);
         }
         let RelationalCoupledProducerPosture::Publication(mut publication) = posture else {
@@ -84,35 +52,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                 .root
                 .schema_authority()
                 .registry();
-            let edge = predecessor
-                .origin
-                .relations
-                .iter()
-                .find(|edge| {
-                    registry.relation_kinds.get(&edge.kind).is_some_and(|kind| {
-                        kind.kind_name.starts_with("worth-aggregate-membership-")
-                    })
-                })
-                .ok_or_else(|| {
-                    part::reject(
-                        crate::publication::data::AuthoredRetirementRefusal::CorruptPublication,
-                        predecessor.origin.meaning.source_scope,
-                    )
-                })?;
-            let Some(batch) = batches.first_mut() else {
-                return Err(
-                    crate::mvcc::origin_denial("real coupled writer has no command batch").into(),
-                );
-            };
-            batch
-                .intents
-                .push(crate::transactions::data::MutationIntent::Relation(
-                    crate::transactions::data::RelationMutationIntent::Delete(
-                        crate::transactions::data::DeleteRelationIntent {
-                            relation_id: edge.id,
-                        },
-                    ),
-                ));
+            corruption_commands::delete_membership(predecessor, registry, &mut batches)?;
         } else if fault == 2 {
             let RequiredOutputPublication::Preserve {
                 predecessor,

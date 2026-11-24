@@ -5,7 +5,7 @@ pub(super) fn copy_transition(
     graph: &OriginalSchemaGraph,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<RetainedBranchTransition, RelationalRecoveryStop> {
-    use crate::branch::{PositionedBranchTransition, RelationalBranchTransition};
+    use crate::branch::transition::{PositionedBranchTransition, RelationalBranchTransition};
     let dynamic = match &entry.transition {
         RelationalBranchTransition::Fork {
             target,

@@ -2,7 +2,9 @@
 use crate::authority::commit::pipeline::{AuthoritativeCommitContext, SelectedCommitMutation};
 use crate::mvcc::{ValidatedProposalState, ValidatedRelationalProposal};
 
-impl From<ValidatedRelationalProposal> for AuthoritativeCommitContext {
+impl From<ValidatedRelationalProposal>
+    for AuthoritativeCommitContext<crate::mvcc::RelationalTransactionValidationInput>
+{
     fn from(candidate: ValidatedRelationalProposal) -> Self {
         let ValidatedProposalState {
             caller_association,

@@ -12,6 +12,13 @@ mod refusal;
 #[path = "payload_forms/schema.rs"]
 mod schema;
 
+fn build_runtime() -> crate::runtime::RelationalRuntime {
+    crate::facade::runtime::RelationalRuntimeApi::builder()
+        .schema_registry(schema::registry())
+        .build()
+        .expect("valid native runtime configuration")
+}
+
 fn succession(
     owner: &worth_proof::InstalledApplicationPublicationOwner,
     previous: RelationalRequiredOutputPublication,
@@ -37,7 +44,7 @@ fn succession(
 fn query_shaped_struct_birth_optional_clear_and_fieldless_incidence_keep_warm_and_cold_custody() {
     let request = crate::execution::test_policy::serial_request();
     let execution = &ExecutionRequest::serial(&request);
-    let mut runtime = schema::runtime();
+    let mut runtime = build_runtime();
     let receipt = runtime
         .prepare_initial_schema_installation()
         .unwrap()
@@ -204,7 +211,7 @@ fn query_shaped_struct_birth_optional_clear_and_fieldless_incidence_keep_warm_an
         .durability_authority()
         .native_checkpoint(execution, execution.allocation_policy())
         .unwrap();
-    let mut cold = schema::runtime();
+    let mut cold = build_runtime();
     let receipt = cold
         .prepare_initial_schema_installation()
         .unwrap()

@@ -1,7 +1,7 @@
 //! Exact member transport shares the selected region's terminal damage state.
 use super::*;
-use crate::durability::data::RelationalCheckpointMember;
 use crate::durability::medium::RelationalDurableMemberCustody;
+use crate::storage::data::checkpoint_member::RelationalCheckpointMember;
 use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Debug)]
@@ -131,9 +131,7 @@ impl RelationalDurableColdSource for RegionMemberExport {
             source.read_member(member, limit)
         }
         .and_then(|bytes| {
-            if crate::durability::log::native_checkpoint_codec::member_frame::locator(&bytes)
-                != member
-            {
+            if crate::storage::data::member_frame::locator(&bytes) != member {
                 return Err(Cause::IntegrityMismatch);
             }
             Ok(bytes)

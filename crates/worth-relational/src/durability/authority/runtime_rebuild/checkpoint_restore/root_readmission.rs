@@ -1,10 +1,10 @@
 //! Bind selected materialized root images to their canonical head envelopes.
 use crate::durability::data::{DurabilityError, DurableCheckpoint};
-use crate::runtime::HistorySubsystem;
+use crate::runtime::state::subsystems::history::HistorySubsystem;
 pub(super) struct ReadmittedRootImages {
     pub(super) roots: std::collections::BTreeMap<
         crate::history::data::CommitId,
-        std::sync::Arc<crate::branch::RelationalBranchRoot>,
+        std::sync::Arc<crate::branch::root::RelationalBranchRoot>,
     >,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
@@ -63,14 +63,14 @@ pub(super) fn readmit_selected_images(
                 symbols,
             )
             .map_err(|denial| match denial {
-                crate::branch::RelationalBranchRootCaptureDenial::Content(cause) => {
+                crate::branch::root_capture_denial::RelationalBranchRootCaptureDenial::Content(cause) => {
                     crate::durability::data::RelationalRecoveryStop::from(cause)
                 }
-                crate::branch::RelationalBranchRootCaptureDenial::StorageUnavailable(cause) => {
+                crate::branch::root_capture_denial::RelationalBranchRootCaptureDenial::StorageUnavailable(cause) => {
                     crate::durability::data::RelationalRecoveryStop::from(cause)
                 }
-                crate::branch::RelationalBranchRootCaptureDenial::Execution(cause)
-                | crate::branch::RelationalBranchRootCaptureDenial::Request(cause) => {
+                crate::branch::root_capture_denial::RelationalBranchRootCaptureDenial::Execution(cause)
+                | crate::branch::root_capture_denial::RelationalBranchRootCaptureDenial::Request(cause) => {
                     crate::durability::data::RelationalRecoveryStop::from(cause)
                 }
                 other => DurabilityError::new(
@@ -83,9 +83,9 @@ pub(super) fn readmit_selected_images(
             .len()
             .checked_add(1)
             .ok_or(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)?;
-        let bytes = crate::branch::retained_compilation_tree_bytes::<
+        let bytes = crate::branch::root::retained_compilation_tree_bytes::<
             crate::history::data::CommitId,
-            std::sync::Arc<crate::branch::RelationalBranchRoot>,
+            std::sync::Arc<crate::branch::root::RelationalBranchRoot>,
         >(count)
         .map_err(|_| crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)?;
         crate::durability::artifact_payload_emission::request::account_work(

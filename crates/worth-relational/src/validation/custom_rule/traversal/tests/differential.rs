@@ -69,7 +69,7 @@ fn complete_walk_matches_independent_bfs_and_retains_non_discovery_edges() {
         if case % 2 == 0 {
             edges.reverse();
         }
-        let graph = Graph::new(&execution, count, &edges);
+        let graph = Graph::new(count, &edges);
         for incoming in [false, true] {
             for roots in [vec![0], vec![3, 0, 3, 17], vec![17, 0, 3]] {
                 let distances = model(count, &edges, &roots, incoming);
@@ -122,7 +122,7 @@ fn thousand_hops_complete_and_disconnected_growth_adds_no_reads() {
     let edges = (0..1000)
         .map(|index| (index, index + 1, KindId(2)))
         .collect::<Vec<_>>();
-    let mut graph = Graph::new(&execution, 1001, &edges);
+    let mut graph = Graph::new(1001, &edges);
     let root = graph.entities[0];
     let walk = graph
         .read(&execution, unbounded(), |view| {
@@ -139,13 +139,13 @@ fn thousand_hops_complete_and_disconnected_growth_adds_no_reads() {
             .map(|(distance, entity)| (entity, distance))
             .collect::<Vec<_>>()
     );
-    graph.add_entities(&execution, 10);
+    graph.add_entities(10);
     let small = graph
         .read(&execution, unbounded(), |view| {
             view.walk_outgoing_from(&[root], KindId(2))
         })
         .unwrap();
-    graph.add_entities(&execution, 9990);
+    graph.add_entities(9990);
     let large = graph
         .read(&execution, unbounded(), |view| {
             view.walk_outgoing_from(&[root], KindId(2))

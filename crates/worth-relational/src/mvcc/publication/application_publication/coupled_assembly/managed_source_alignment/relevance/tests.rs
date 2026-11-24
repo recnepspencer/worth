@@ -3,14 +3,16 @@
 //! only for a shape where nothing else reads the scope or the order relation.
 use super::*;
 use crate::authority::mutation::{AdjacencyDelta, AdjacencyDeltaKind, MutationEffect};
+use crate::config::data::CrossContextPolicy;
 use crate::derived_relation::DerivedRelationNode as Node;
 use crate::identity::data::{EntityId, KindId, PartitionId, RelationId};
 use crate::publication::patch::data::RecordStructuralChange as Change;
-use crate::config::data::CrossContextPolicy;
 use crate::schema::data::{
     EndpointKindContractDeclaration, EntityKindRegistration, RelationIntegrityDeclarations,
     RelationalSchemaRegistry,
 };
+use crate::validation::candidate_source::program::schema_fixture::managed_cache_schema;
+
 mod footprint;
 mod reach;
 
@@ -19,11 +21,6 @@ const MEMBER: KindId = KindId(3);
 const PREDECESSOR: KindId = KindId(4);
 const INTRODUCES: KindId = KindId(5);
 const ROW: KindId = KindId(6);
-
-/// The base managed-cache fixture shared by the alignment unit tests.
-pub(super) fn managed_cache_schema() -> (RelationalSchemaRegistry, ManagedIndexSourceProgram) {
-    crate::tests::support::managed_cache_schema()
-}
 
 /// The registry with a row kind and the relations an event chain needs.
 fn event_registry() -> RelationalSchemaRegistry {
@@ -66,9 +63,12 @@ fn event_registry() -> RelationalSchemaRegistry {
 
 /// A Source whose root path is `[Derived(source)]` over `nodes`, from the
 /// scope to `row`; its compiled ordered recipe is absent.
-fn behind_derived(row: KindId, nodes: Vec<Node>) -> (RelationalSchemaRegistry, ManagedIndexSourceProgram) {
+fn behind_derived(
+    row: KindId,
+    nodes: Vec<Node>,
+) -> (RelationalSchemaRegistry, ManagedIndexSourceProgram) {
     let registry = event_registry();
-    let (_, template) = crate::tests::support::managed_cache_schema();
+    let (_, template) = managed_cache_schema();
     let mut membership = template.0.path.parts().clone();
     membership.identity.name = "event-membership".into();
     membership.to = row.into();
@@ -77,19 +77,41 @@ fn behind_derived(row: KindId, nodes: Vec<Node>) -> (RelationalSchemaRegistry, M
     source.identity.name = "event-source".into();
     source.nodes = vec![Node::Derived(membership.identity.clone())];
     let identity = source.identity.clone();
-    let registry = registry.register_derived_relations(vec![membership, source]).unwrap();
+    let registry = registry
+        .register_derived_relations(vec![membership, source])
+        .unwrap();
     let program = registry
-        .bind_managed_index_source(&registry.derived_relation(&identity).unwrap(), vec![], vec![])
+        .bind_managed_index_source(
+            &registry.derived_relation(&identity).unwrap(),
+            vec![],
+            vec![],
+        )
         .unwrap();
     (registry, program)
 }
 
 fn events(row: KindId, introduced: KindId) -> Vec<Node> {
     vec![
-        Node::Stored { relation: PREDECESSOR, from: SCOPE, to: SCOPE },
-        Node::Stored { relation: introduced, from: SCOPE, to: row },
-        Node::Stored { relation: introduced, from: SCOPE, to: row },
-        Node::OrderedEvents { predecessor: 0, introduced: 1, retired: 2 },
+        Node::Stored {
+            relation: PREDECESSOR,
+            from: SCOPE,
+            to: SCOPE,
+        },
+        Node::Stored {
+            relation: introduced,
+            from: SCOPE,
+            to: row,
+        },
+        Node::Stored {
+            relation: introduced,
+            from: SCOPE,
+            to: row,
+        },
+        Node::OrderedEvents {
+            predecessor: 0,
+            introduced: 1,
+            retired: 2,
+        },
     ]
 }
 
@@ -136,7 +158,10 @@ pub(super) fn unread(_: EntityId) -> Option<worth_foundational::facade::AspectVa
 #[test]
 fn derived_ordered_source_admits_only_a_born_scope_predecessor() {
     let (registry, program) = behind_derived(ROW, events(ROW, INTRODUCES));
-    assert!(program.0.ordered.is_none(), "the same-scope Source has no compiled recipe");
+    assert!(
+        program.0.ordered.is_none(),
+        "the same-scope Source has no compiled recipe"
+    );
     let (probed, peer, born, older) = (entity(1), entity(2), entity(3), entity(4));
     let footprint = ManagedIndexParentReadFootprint::default();
     // The candidate created `born`: its delta, not the court, marks it.

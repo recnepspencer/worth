@@ -8,21 +8,32 @@ use super::branch_root_images::RestoredBranchRootImages;
 
 pub(super) type RestoredPartitions = BTreeMap<PartitionId, PartitionState>;
 
+pub(super) struct CheckpointMirrorImages<'a> {
+    pub(super) partitions: &'a [PartitionCheckpointImage],
+    pub(super) kinds: &'a crate::storage::residency::CheckpointRegionKindImages,
+}
+
+pub(super) struct CheckpointRootPartitions<'a> {
+    pub(super) commit_id: crate::history::data::CommitId,
+    pub(super) partitions: &'a [PartitionCheckpointImage],
+}
+
 /// Reuse only byte-equal partitions from a root readmitted under the same
 /// schema interpretation. A divergent mirror partition is reconstructed from
 /// its own image, even when every sibling partition can share the substrate.
-pub(super) fn restore_partition_mirror(
+pub(super) fn restore_partition_mirror<'image>(
     lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    checkpoint: &crate::durability::data::DurableCheckpoint,
+    images: CheckpointMirrorImages<'_>,
+    root_images: impl IntoIterator<Item = CheckpointRootPartitions<'image>>,
     branch_roots: &RestoredBranchRootImages,
     plans: &crate::schema::data::AspectContractPlanCatalog,
     contracts: &crate::durability::checkpoints::aspect_state_images::CheckpointAspectContractCatalog,
     work: &mut CheckpointRestoreWork,
 ) -> Result<RestoredPartitions, crate::durability::data::RelationalRecoveryStop> {
-    reject_duplicate_partition_images(&checkpoint.partition_images, "checkpoint")?;
+    reject_duplicate_partition_images(images.partitions, "checkpoint")?;
     let mut candidates = Vec::new();
-    for root_image in &checkpoint.branch_roots {
+    for root_image in root_images {
         let Some(schema) = branch_roots.schema_authorities.get(&root_image.commit_id) else {
             continue;
         };
@@ -39,7 +50,7 @@ pub(super) fn restore_partition_mirror(
             continue;
         };
         let by_id = root_image
-            .partition_images
+            .partitions
             .iter()
             .map(|image| (image.partition_id, image))
             .collect::<BTreeMap<_, _>>();
@@ -48,7 +59,7 @@ pub(super) fn restore_partition_mirror(
 
     let mut reused = BTreeMap::new();
     let mut fallback = Vec::new();
-    for image in &checkpoint.partition_images {
+    for image in images.partitions {
         work.mirror_partition_images_examined += 1;
         let matching = candidates.iter().find_map(|(by_id, restored)| {
             (by_id.get(&image.partition_id).copied() == Some(image))
@@ -66,8 +77,8 @@ pub(super) fn restore_partition_mirror(
     let mut reconstructed =
         restore_owned_partition_images_with_schema(lane, fallback, plans, contracts, "checkpoint")?;
     reconstructed.extend(reused);
-    checkpoint
-        .mirror_kind_images
+    images
+        .kinds
         .restore(lane, execution, &mut reconstructed)
         .map_err(|cause| {
             crate::durability::checkpoints::kind_reconstruction::stop(

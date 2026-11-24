@@ -1,5 +1,6 @@
 mod head_validation;
 pub(super) mod materialization_funding;
+mod owned_partition;
 use super::region_image::*;
 use super::resident_history::projection_funding;
 use super::{RelationalColdRegion, RelationalResidencyDemandFailure as Failure, ResidentRegion};
@@ -19,14 +20,23 @@ use materialization_funding as funding;
 use std::collections::BTreeMap;
 use std::sync::{Arc, OnceLock};
 
-pub(super) fn load_head(
+pub(crate) static CHECKPOINT_REGION_READMISSION: super::cold_readmission::ColdRegionReadmission =
+    super::cold_readmission::ColdRegionReadmission::new(
+        load_head,
+        load_full,
+        super::region_capture::capture_region_members,
+        owned_partition::with_codec,
+    );
+
+fn load_head(
     cold: &RelationalColdRegion,
     source: &Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     limit: u64,
 ) -> Result<Arc<ResidentRegion>, Failure> {
     ReconstructionLane::enter_reconstruction(|lane| {
-        let (_contract_memory, contract_bound) = funding::contracts(&cold.schema, execution)?;
+        let (_contract_memory, contract_bound) =
+            funding::contracts(cold.schema.as_ref(), execution)?;
         check_member_limit(cold.head.length, limit).map_err(|cause| unavailable(cold, cause))?;
         let _read = funding::Funding::reserve(
             funding::vector::<u8>(
@@ -89,7 +99,7 @@ pub(super) fn load_head(
                 &contracts,
                 execution,
             )
-            .map_err(|cause| funding::image(cause, cold.partition_id))?;
+            .map_err(|cause| owned_partition::image_failure(cause, cold.partition_id))?;
             super::kind_projection::rebuild_for_request(
                 lane,
                 &mut partition,
@@ -176,7 +186,7 @@ pub(super) fn load_head(
     })
 }
 
-pub(super) fn load_full(
+fn load_full(
     cold: &RelationalColdRegion,
     source: &Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
     head: &ResidentRegion,
@@ -184,7 +194,7 @@ pub(super) fn load_full(
     limit: u64,
 ) -> Result<Arc<ResidentRegion>, Failure> {
     ReconstructionLane::enter_reconstruction(|lane| {
-        let (_contract_memory, _) = funding::contracts(&cold.schema, execution)?;
+        let (_contract_memory, _) = funding::contracts(cold.schema.as_ref(), execution)?;
         let (_projection_memory, _) = projection_funding(&head.partition, execution)?;
         let retained = cold.schema.retained_aspect_contracts();
         let current_quote = funding::current(&head.partition, retained, execution)?;
@@ -262,7 +272,7 @@ pub(super) fn load_full(
                 &contracts,
                 execution,
             )
-            .map_err(|cause| funding::image(cause, cold.partition_id))?;
+            .map_err(|cause| owned_partition::image_failure(cause, cold.partition_id))?;
             partition.adjacency = head.partition.adjacency.clone();
             partition.reverse_adjacency = head.partition.reverse_adjacency.clone();
             super::kind_projection::rebuild_for_request(

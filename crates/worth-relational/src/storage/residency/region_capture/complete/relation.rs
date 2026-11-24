@@ -2,10 +2,7 @@
 use super::{arena::WireKind, aspects::State, *};
 use crate::storage::substrate::{RelationExtra, RelationRecordKind, VersionedRelationMetadata};
 impl WireKind for RelationRecordKind {
-    fn plan(
-        schema: &RelationalBranchRootSchemaAuthority,
-        kind: crate::identity::data::KindId,
-    ) -> bool {
+    fn plan(schema: &dyn RelationalRegionSchema, kind: crate::identity::data::KindId) -> bool {
         schema.aspect_plans().relation_plans.contains_key(&kind)
     }
     fn meta_kind(meta: &Self::Meta) -> crate::identity::data::KindId {

@@ -5,6 +5,7 @@ use super::execution_admission::{AdmittedCommitState, CommitExecutionAdmission};
 use super::history_binding::HistoryBoundCommitExecution;
 use super::merge_draft::AcceptedMergeDraft;
 use super::phase_backing::CommitPhaseBacking;
+use super::publication_validation::DraftValidationInput;
 use crate::authority::commit::phases::schema_continuity::inputs::SchemaContinuityInputs;
 use crate::schema::data::DescriptorSemanticsVersion;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
@@ -19,15 +20,15 @@ pub(crate) struct HistoryPreparationInputs<'a, Draft> {
 }
 
 #[inline(never)]
-pub(super) fn prepare_bound_history<Draft>(
+pub(super) fn prepare_bound_history<V: DraftValidationInput, Draft>(
     execution: &ExecutionRequest<'_, '_>,
     inputs: HistoryPreparationInputs<'_, Draft>,
-    context: AuthoritativeCommitContext,
+    context: AuthoritativeCommitContext<V>,
 ) -> Result<CommitPhaseBacking<HistoryBoundCommitExecution>, TransactionCommitError>
 where
     Draft: FnOnce(
         &ExecutionRequest<'_, '_>,
-        &AdmittedCommitState,
+        &AdmittedCommitState<V>,
     ) -> Result<AcceptedMergeDraft, TransactionCommitError>,
 {
     let instrumentation = inputs.admission.instrumentation;
@@ -50,17 +51,17 @@ where
 }
 
 #[inline(never)]
-fn prepare_draft<Draft>(
+fn prepare_draft<V: DraftValidationInput, Draft>(
     execution: &ExecutionRequest<'_, '_>,
     admission: CommitExecutionAdmission<'_>,
     descriptor_semantics: DescriptorSemanticsVersion,
     merge_draft: Draft,
-    context: AuthoritativeCommitContext,
+    context: AuthoritativeCommitContext<V>,
 ) -> Result<CommitPhaseBacking<PreparedCommitExecution>, TransactionCommitError>
 where
     Draft: FnOnce(
         &ExecutionRequest<'_, '_>,
-        &AdmittedCommitState,
+        &AdmittedCommitState<V>,
     ) -> Result<AcceptedMergeDraft, TransactionCommitError>,
 {
     let instrumentation = admission.instrumentation;

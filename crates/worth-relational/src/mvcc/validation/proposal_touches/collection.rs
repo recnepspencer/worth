@@ -84,10 +84,11 @@ impl<'p> TouchCollection<'p, '_> {
         if self.reach(bytes, false)
             && let Some(backing) = &mut self.backing
         {
-            let locator = crate::transactions::data::planned_aspect_field_locator(
-                basis.key().clone(),
-                CanonicalFieldPath::single(field.clone()),
-            );
+            let locator =
+                crate::transactions::data::aspect_field_patch::planned_aspect_field_locator(
+                    basis.key().clone(),
+                    CanonicalFieldPath::single(field.clone()),
+                );
             backing
                 .touches
                 .push(ValidatedMutationTouch::WriteEntityField { kind, locator });
@@ -125,10 +126,12 @@ pub(super) fn capacity() -> Error {
     execution(crate::execution::RelationalExecutionDenialCause::ResultCapacityExceeded)
 }
 pub(super) fn execution(cause: crate::execution::RelationalExecutionDenialCause) -> Error {
-    Error::Execution(crate::transactions::data::CommitExecutionDenial {
-        kind: crate::transactions::data::CommitExecutionDenialKind::Cause(cause),
-        partition_identity: None,
-    })
+    Error::Execution(
+        crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial {
+            kind: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(cause),
+            partition_identity: None,
+        },
+    )
 }
 impl Extent {
     pub fn bytes(self) -> Result<u64, Error> {

@@ -48,6 +48,9 @@ mod owner_allocation_ledger;
 mod physical_linkage_tests;
 #[path = "root_projection.rs"]
 pub(crate) mod projection;
+#[cfg(test)]
+#[path = "root_projection_tests.rs"]
+mod projection_tests;
 #[path = "root_readmission.rs"]
 mod readmission;
 #[path = "root_region_access.rs"]
@@ -135,11 +138,17 @@ pub(crate) struct RelationalBranchRoot {
         crate::history::data::RequiredOutputPublicationPositions,
     schema_authority: Arc<RelationalBranchRootSchemaAuthority>,
     pub(crate) execution_contracts:
-        std::sync::OnceLock<Arc<crate::runtime::RelationalRootExecutionContracts>>,
+        std::sync::OnceLock<Arc<dyn super::root_execution_payload::RootExecutionPayload>>,
     committed: Option<RelationalCommittedBranchRoot>,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
     pub(crate) managed_source_image:
         std::sync::OnceLock<crate::branch::projection_view::managed_source::ManagedSourceRootImage>,
+}
+
+impl AsRef<RelationalBranchRoot> for RelationalBranchRoot {
+    fn as_ref(&self) -> &Self {
+        self
+    }
 }
 
 #[path = "root_managed_fork.rs"]

@@ -19,7 +19,7 @@ impl ResidentRegionLease {
         retire_native: bool,
     ) -> (
         std::sync::Arc<RelationalRegionResidency>,
-        Option<crate::runtime::RuntimeSymbolTable>,
+        Option<crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable>,
     ) {
         match self {
             Self::Head { lease, readmission } => {

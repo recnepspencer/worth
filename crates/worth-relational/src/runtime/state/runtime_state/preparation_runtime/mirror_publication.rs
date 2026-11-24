@@ -89,6 +89,7 @@ fn prepare_symbol_readmission(
     Ok(crate::storage::residency::ResidentHistoryReadmission::new(
         root.retained_schema_authority(),
         symbols,
+        &crate::storage::residency::region_load::CHECKPOINT_REGION_READMISSION,
     )
     .with_symbol_publication(symbols_for_region))
 }

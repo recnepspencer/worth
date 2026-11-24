@@ -52,25 +52,14 @@ impl PositionedCanonicalCommit {
     }
 
     #[cfg(test)]
-    pub(crate) fn synchronize_patch_semantics_for_test(
-        &mut self,
-        request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) {
-        self.canonical = Arc::new(self.canonical.copy_original_for_test(request));
-        Arc::get_mut(&mut self.canonical)
-            .expect("the complete original-request fixture copy is actually unique")
-            .synchronize_patch_semantics_for_test(request);
-    }
-
-    #[cfg(test)]
     pub(crate) fn positioned_envelope_mut_for_test(
         &mut self,
-        request: &worth_execution::ExecutionRequest<'_, '_>,
+        copy: impl FnOnce(&CanonicalCommitEnvelope) -> CanonicalCommitEnvelope,
     ) -> &mut super::CanonicalCommitEnvelopeBody {
         // Preserve unique actual ownership when available. Aliased originals
         // need an explicitly admitted complete data copy, never deep Clone.
         if Arc::get_mut(&mut self.canonical).is_none() {
-            self.canonical = Arc::new(self.canonical.copy_original_for_test(request));
+            self.canonical = Arc::new(copy(&self.canonical));
         }
         Arc::get_mut(&mut self.canonical)
             .expect("the mutable test copy is unique")

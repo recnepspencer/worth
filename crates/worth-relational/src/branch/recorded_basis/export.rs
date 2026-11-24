@@ -13,6 +13,11 @@ pub(super) fn export_retained_component(
     runtime_instance_id: u64,
     history: &HistorySubsystem,
     checkpoint_selection: &RelationalCheckpointManifestSelection,
+    performed_envelope: impl FnOnce(
+        crate::history::data::CommitId,
+    ) -> Option<
+        std::sync::Arc<crate::history::commit::RelationalCommitEnvelopeResidency>,
+    >,
 ) -> Result<RecordedRelationalComponentReference, Refusal> {
     crate::execution::request_custody::check_request(execution).map_err(Refusal::Request)?;
     super::super::basis_identity_validation::require_local_branch_identity(
@@ -28,7 +33,7 @@ pub(super) fn export_retained_component(
             let cell = history
                 .commit_artifact(commit_id)
                 .map(|artifact| artifact.envelope_residency())
-                .or_else(|| history.performed_envelope_residency(commit_id))
+                .or_else(|| performed_envelope(commit_id))
                 .ok_or(Refusal::MissingPerformedCommit { commit_id })?;
             if let Some(crate::branch::root::RelationalRootCommitEvidence::Checkpoint(commit)) =
                 basis.inner.root.commit_evidence()

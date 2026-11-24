@@ -26,16 +26,23 @@ impl VisibilitySnapshotStateKey {
 }
 
 impl VisibilityProjectionView {
-    pub(crate) fn selected_root(&self) -> Option<&Arc<RelationalBranchRoot>> {
+    pub(crate) fn selected_root(&self) -> Option<&RelationalBranchRoot> {
         match self.snapshot_basis() {
             SnapshotStateBasis::Exact(basis) => Some(basis.root()),
-            SnapshotStateBasis::Historical(basis) => basis.retained_root(),
+            SnapshotStateBasis::Historical(basis) => basis.retained_root().map(Arc::as_ref),
+        }
+    }
+
+    pub(crate) fn retain_selected_root(&self) -> Option<Arc<RelationalBranchRoot>> {
+        match self.snapshot_basis() {
+            SnapshotStateBasis::Exact(basis) => Some(basis.retain_root()),
+            SnapshotStateBasis::Historical(basis) => basis.retained_root().cloned(),
         }
     }
 }
 
 impl ResidentVisibilitySnapshotBasis {
-    pub(crate) fn root(&self) -> &Arc<RelationalBranchRoot> {
+    pub(crate) fn root(&self) -> &RelationalBranchRoot {
         self.basis().root()
     }
 }

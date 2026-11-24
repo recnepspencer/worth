@@ -94,5 +94,3 @@ impl ComponentCaptureCustody {
         }
     }
 }
-#[cfg(test)]
-mod tests;

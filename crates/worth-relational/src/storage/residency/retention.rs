@@ -154,7 +154,7 @@ impl RelationalRegionRetention {
 
     pub(crate) fn head_symbols_admitted(
         &self,
-        symbols: &crate::runtime::RuntimeSymbolTable,
+        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     ) -> bool {
         let identity = self
             .full
@@ -213,7 +213,7 @@ impl RelationalRegionRetention {
     /// admitted in `symbols`. Never queries the shared cell or installs a lease.
     pub(crate) fn peek_full_partition_with_symbols(
         &self,
-        symbols: &crate::runtime::RuntimeSymbolTable,
+        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     ) -> Option<&PartitionState> {
         let lease = self.full.get()?;
         symbols
@@ -226,7 +226,7 @@ impl RelationalRegionRetention {
     /// installs a lease.
     pub(crate) fn peek_head_view_with_symbols(
         &self,
-        symbols: &crate::runtime::RuntimeSymbolTable,
+        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     ) -> Option<super::RelationalRegionHeadView<'_>> {
         let view = self.accepted_head_view()?;
         self.head_symbols_admitted(symbols).then_some(view)

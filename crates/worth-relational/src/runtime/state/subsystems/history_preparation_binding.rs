@@ -19,7 +19,7 @@ use crate::branch::root::RelationalBranchRootIdentityIssuer;
 use crate::history::data::{BranchId, CanonicalCommitEnvelope, CommitId};
 use crate::identity::data::VersionId;
 
-use super::{reserve_identity, RelationalCanonicalPublicationRoutes};
+use super::{canonical_publication_routes::RelationalCanonicalPublicationRoutes, reserve_identity};
 
 /// Live preparation-only binding to branch truth and identity reservation.
 #[derive(Debug, Clone)]
@@ -270,7 +270,9 @@ impl RelationalPreparationHistory {
     }
 }
 
-pub(crate) fn bind_preparation(history: &super::HistorySubsystem) -> RelationalPreparationHistory {
+pub(crate) fn bind_preparation(
+    history: &super::history_canonical_routes::RelationalPublicationHistory,
+) -> RelationalPreparationHistory {
     let ledger = history.ledger.read();
     RelationalPreparationHistory::new(
         history.branch_cells.clone(),

@@ -154,6 +154,7 @@ impl CapturedCheckpointBasis {
                         schema,
                         schema_digest,
                         &symbols,
+                        crate::storage::residency::region_capture::capture_region_members,
                         current_members.as_ref(),
                     )?;
                     super::checkpoint_region_consistency::validate(
@@ -213,6 +214,7 @@ impl CapturedCheckpointBasis {
                         &schema,
                         digest,
                         &symbols,
+                        crate::storage::residency::region_capture::capture_region_members,
                         current_members.as_ref(),
                     )?)
                 })?;

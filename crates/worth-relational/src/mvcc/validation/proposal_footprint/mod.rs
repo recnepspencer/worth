@@ -1,18 +1,22 @@
 //! Exact mutation truth projected from one owner-validated mutation.
+mod field_projection;
 mod member_restoration;
+mod relation_mutations;
+mod relation_projection;
 mod relations;
 pub use member_restoration::{RecordedMemberRestoration, RecordedMemberRestorationRefusal};
-pub use relations::{ValidatedRelationMutation, ValidatedRelationMutationFootprint};
+pub use relation_mutations::{ValidatedRelationMutation, ValidatedRelationMutationFootprint};
 
 use worth_foundational::facade::{
     AspectFieldLocator, AspectKey, CanonicalFieldPath, PortableAspectPatchOperation,
 };
 
-use super::ValidatedRelationalProposal;
-use crate::transactions::data::{
-    planned_aspect_field_locator, EntityMutationIntent, MutationIntent, RecordRef,
-    RelationMutationIntent,
-};
+use crate::authority::commit::semantic_plan::meaning::RelationalSemanticPlan;
+use crate::transactions::data::aspect_field_patch::planned_aspect_field_locator;
+use crate::transactions::data::intents::mutation_intent::EntityMutationIntent;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::intents::mutation_intent::RelationMutationIntent;
+use crate::transactions::data::primitives::RecordRef;
 
 /// Operation-local work performed while projecting a validated mutation.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -139,20 +143,15 @@ impl ValidatedMutationFootprint {
     }
 }
 
-impl ValidatedRelationalProposal {
-    /// Projects field mutation truth only when the consumer supplies demand.
-    pub fn mutation_footprint<Demand: ?Sized>(
-        &self,
-        demand: Option<&Demand>,
-    ) -> ValidatedMutationFootprintProjection {
-        if demand.is_none() {
+impl ValidatedMutationFootprintProjection {
+    pub(super) fn from_plan(plan: Option<RelationalSemanticPlan<'_>>) -> Self {
+        let Some(plan) = plan else {
             return ValidatedMutationFootprintProjection::NotRequested(
                 ValidatedMutationFootprintNotRequested {
                     work: ValidatedMutationFootprintWork::default(),
                 },
             );
-        }
-        let plan = self.state.prepared.plan.view();
+        };
         let validated_intents = &plan.commands().merged_intents;
         let mut targets = Vec::new();
         let mut work = ValidatedMutationFootprintWork::default();
@@ -269,7 +268,3 @@ fn patch_targets(
         })
         .collect()
 }
-
-#[cfg(test)]
-#[path = "tests.rs"]
-mod tests;

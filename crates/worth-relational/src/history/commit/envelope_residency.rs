@@ -1,7 +1,7 @@
 //! One envelope cell owns memory history or a journal-backed publication flight.
 mod artifact_source;
 mod authored_writes;
-mod selected_checkpoint;
+pub(crate) mod selected_checkpoint;
 pub(crate) use selected_checkpoint::RetiredCanonicalPlacement;
 mod demand;
 mod interim_original;
@@ -21,6 +21,14 @@ use crate::storage::data::{
 use crate::storage::residency::RelationalResidencyDemandFailure as Failure;
 use std::sync::{Arc, Mutex};
 
+pub(crate) type JournalCommitReadmission =
+    fn(
+        &RelationalCommitIndexEntry,
+        &dyn RelationalDurableColdSource,
+        &worth_execution::ExecutionRequest<'_, '_>,
+        u64,
+    ) -> Result<PositionedCanonicalCommit, RelationalRecoveryStop>;
+
 #[derive(Debug)]
 pub(crate) struct RelationalCommitEnvelopeResidency {
     state: Mutex<EnvelopeState>,
@@ -34,7 +42,7 @@ pub(crate) enum EnvelopeBacking {
     },
     SelectedCheckpoint {
         entry: super::RetainedCanonicalIndex,
-        directory: crate::durability::data::NativeCheckpointDirectoryEdge,
+        directory: selected_checkpoint::SelectedCheckpointEdge,
     },
     Journal {
         entry: super::RetainedCanonicalIndex,
@@ -249,7 +257,7 @@ impl RelationalCommitEnvelopeResidency {
                 Some((entry.clone(), Arc::clone(source)))
             }
             EnvelopeBacking::SelectedCheckpoint { entry, directory } => {
-                Some((entry.clone(), directory.source.clone()))
+                Some((entry.clone(), directory.source().clone()))
             }
             EnvelopeBacking::Memory { .. } => None,
         }

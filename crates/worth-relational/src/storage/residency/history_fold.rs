@@ -6,11 +6,12 @@ use super::region_image::{
 use super::{
     region_load::materialization_funding as funding, RelationalResidencyDemandFailure as Failure,
 };
-use crate::durability::data::{
-    RelationalHistoryMemberDirectory, VersionedEntityMetadataImage, VersionedRelationMetadataImage,
-};
 use crate::durability::medium::{RelationalDurableColdSource, RelationalDurableMemberLocator};
 use crate::identity::data::PartitionId;
+use crate::storage::data::history_member_directory::RelationalHistoryMemberDirectory;
+use crate::storage::data::partition_checkpoint_image::{
+    VersionedEntityMetadataImage, VersionedRelationMetadataImage,
+};
 use crate::storage::data::{
     RelationalStorageSubject, RelationalStorageUnavailable,
     RelationalStorageUnavailableCause as Cause,

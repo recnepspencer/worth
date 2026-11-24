@@ -1,5 +1,6 @@
 //! Verify the emitted index against the exact captured originals and actual roots.
 use super::*;
+use crate::durability::canonical_commit_artifact::journal_source_read::readmit_journal_commit;
 use crate::durability::{
     authority::checkpoint_complete::{admission_projection, roots::CapturedRoots},
     data::RelationalCheckpointManifest,
@@ -55,7 +56,8 @@ impl FrozenMemoryOriginals {
             )?)
             .map_err(array_stop)?;
             let retained =
-                RetainedCanonicalIndex::copy_original(entry, request).map_err(Denial::Request)?;
+                RetainedCanonicalIndex::copy_original(entry, request, readmit_journal_commit)
+                    .map_err(Denial::Request)?;
             canonical
                 .insert_cloned_native_for_request(&entry.commit.commit_id, &retained, *request)
                 .map_err(map_stop)?;

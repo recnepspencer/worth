@@ -22,7 +22,11 @@ pub(super) fn transaction(
         .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
         .unwrap()
 }
-pub(super) fn fork(request: &ExecutionRequest<'_, '_>, runtime: &RelationalRuntime, name: &str) {
+pub(in crate::relational) fn fork(
+    request: &ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    name: &str,
+) {
     let (_, basis) = runtime
         .observe_fork_source(&BranchId("main".into()))
         .unwrap();
@@ -30,7 +34,7 @@ pub(super) fn fork(request: &ExecutionRequest<'_, '_>, runtime: &RelationalRunti
         .fork_branch(request, BranchId(name.into()), basis)
         .unwrap();
 }
-pub(super) fn create_entity_outcome_on_branch(
+pub(in crate::relational) fn create_entity_outcome_on_branch(
     request: &ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     key: &str,
@@ -76,7 +80,7 @@ pub(super) fn create_entity(
     release_test_commit_snapshot(runtime, &created);
     id
 }
-pub(super) fn update_entity_on_branch(
+pub(in crate::relational) fn update_entity_on_branch(
     request: &ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     entity: EntityId,
@@ -96,7 +100,7 @@ pub(super) fn update_entity_on_branch(
     .unwrap();
     txn.commit(request, runtime).unwrap()
 }
-pub(super) fn update_entity(
+pub(in crate::relational) fn update_entity(
     request: &ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     entity: EntityId,
@@ -104,7 +108,7 @@ pub(super) fn update_entity(
 ) -> CommitResult {
     update_entity_on_branch(request, runtime, entity, value, BranchId("main".into()))
 }
-pub(super) fn create_relation_outcome(
+pub(in crate::relational) fn create_relation_outcome(
     request: &ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     source: EntityId,
@@ -145,7 +149,7 @@ pub(super) fn relation_with_fields(
     .unwrap();
     txn.commit(request, runtime).unwrap()
 }
-pub(super) fn changed_relations(result: &CommitResult) -> Vec<RelationId> {
+pub(in crate::relational) fn changed_relations(result: &CommitResult) -> Vec<RelationId> {
     result
         .changed_records
         .iter()
@@ -170,7 +174,7 @@ pub(super) fn delete_entity(
     .unwrap();
     txn.commit(request, runtime).unwrap()
 }
-pub(super) fn delete_relation_on_branch(
+pub(in crate::relational) fn delete_relation_on_branch(
     request: &ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     relation_id: RelationId,

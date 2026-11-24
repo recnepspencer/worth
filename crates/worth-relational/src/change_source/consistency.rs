@@ -108,9 +108,7 @@ type RuleBreach = (RelationalChangeConsistencyDenialKind, String);
 
 impl PublishedAuthoritativePatchEnvelope {
     /// Check that every record's semantic changes describe exactly its
-    /// canonical patch operations: the rules
-    /// [`RelationalRuntime::mint_change_receipt`](crate::runtime::RelationalRuntime::mint_change_receipt)
-    /// applies before it mints.
+    /// canonical patch operations. Receipt minting applies these same rules.
     ///
     /// A receipt's patch has already passed. A consumer that holds a patch by
     /// any other route, decoded from storage for instance, checks it here.

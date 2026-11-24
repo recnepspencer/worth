@@ -1,4 +1,5 @@
-use crate::publication::cdc::data::{NormalizedContinuationProof, SubscriberContinuationSummary};
+use crate::publication::cdc::data::normalized_continuation_proof::NormalizedContinuationProof;
+use crate::publication::cdc::data::subscriber_contract::SubscriberContinuationSummary;
 use crate::schema::data::{
     DescriptorSemanticsVersion, SchemaBoundaryFingerprint, SchemaContinuationClassification,
 };

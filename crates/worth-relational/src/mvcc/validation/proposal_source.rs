@@ -1,8 +1,7 @@
 //! Exactly one source of proposed meaning enters the ordinary judging round.
-use super::StrategyProposalDecoration;
-use crate::authority::commit::semantic_plan::PreparedRetainedEntityPayload;
-use crate::branch::SelectedRelationalBranchState;
-use crate::transactions::data::MergedCommitPlan;
+use crate::authority::commit::semantic_plan::retained_entity_payload::PreparedRetainedEntityPayload;
+use crate::branch::root_selection::SelectedRelationalBranchState;
+use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
 
 pub(super) enum RelationalProposalSource {
     Transaction {
@@ -10,7 +9,7 @@ pub(super) enum RelationalProposalSource {
         strategy: Option<StrategyProposalDecoration>,
     },
     RetainedEntitySelection(PreparedRetainedEntityPayload),
-    OwnedGraphSelection(crate::mvcc::owned_graph_selection::PreparedOwnedGraphSelection),
+    OwnedGraphSelection(crate::mvcc::owned_graph_selection::prepared::PreparedOwnedGraphSelection),
 }
 
 impl RelationalProposalSource {
@@ -20,4 +19,10 @@ impl RelationalProposalSource {
             Self::RetainedEntitySelection(_) | Self::OwnedGraphSelection(_) => None,
         }
     }
+}
+
+pub(crate) struct StrategyProposalDecoration {
+    pub(crate) artifacts: crate::commit_strategies::data::StrategyCommitArtifactBundle,
+    pub(crate) bulk_mutation_batch:
+        Option<crate::transactions::data::primitives::ProvenanceCompleteBulkMutationBatch>,
 }

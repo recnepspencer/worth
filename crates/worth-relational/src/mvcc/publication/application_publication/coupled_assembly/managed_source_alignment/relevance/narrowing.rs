@@ -49,7 +49,11 @@ impl SourceRelevance<'_> {
     /// rewritten to it. An opaque or unreadable key counts. This holds on
     /// any scope, read by the probed Source or not, since the key would then
     /// no longer name the probed scope alone.
-    pub(super) fn takes_probed_key(&self, delta: &CanonicalRecordAspectDelta, id: EntityId) -> bool {
+    pub(super) fn takes_probed_key(
+        &self,
+        delta: &CanonicalRecordAspectDelta,
+        id: EntityId,
+    ) -> bool {
         let Some((kind, aspect, field)) = &self.footprint.scope_key else {
             return false;
         };

@@ -10,7 +10,7 @@ use crate::history::data::{
 };
 use crate::identity::data::LineageId;
 use crate::lineage::data::LineageEventRecord;
-use crate::runtime::RelationalRuntime;
+use crate::runtime::state::subsystems::lineage::LineageSubsystem;
 
 pub(super) fn validate_recovered_lineage_artifacts<'a>(
     checkpoint: Option<&DurableCheckpoint>,
@@ -205,11 +205,11 @@ impl RecoveredLineageIdentityLedger {
 
 pub(super) fn reconcile_recovered_lineage_artifacts(
     lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
-    restored: &mut RelationalRuntime,
+    lineage: &LineageSubsystem,
     tail_log: &[PositionedCanonicalCommit],
 ) -> Result<(), DurabilityError> {
     let mut events_by_id = BTreeMap::new();
-    for (event, publication_commit_id) in restored.lineage.drain_events() {
+    for (event, publication_commit_id) in lineage.drain_events() {
         match events_by_id.entry(event.event_id()) {
             Entry::Vacant(entry) => {
                 entry.insert((event, publication_commit_id));
@@ -249,19 +249,14 @@ pub(super) fn reconcile_recovered_lineage_artifacts(
     let next_event_id = events_by_id
         .last_key_value()
         .and_then(|(event_id, _)| event_id.checked_add(1));
-    let next_lineage_id = restored
-        .lineage
+    let next_lineage_id = lineage
         .maximum_node_id()
         .max(maximum_allocated_lineage(
             events_by_id.values().map(|(event, _)| event),
         ))
         .and_then(|lineage_id| lineage_id.checked_add(1));
-    restored
-        .lineage
-        .replace_events(lane, events_by_id.into_values().collect());
-    restored
-        .lineage
-        .advance_identity_to(next_lineage_id, next_event_id);
+    lineage.replace_events(lane, events_by_id.into_values().collect());
+    lineage.advance_identity_to(next_lineage_id, next_event_id);
     Ok(())
 }
 

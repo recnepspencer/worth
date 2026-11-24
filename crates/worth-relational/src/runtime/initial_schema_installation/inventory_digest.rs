@@ -1,10 +1,11 @@
 //! Canonical invariant meaning uses one borrowed, admitted ordering roster.
 use crate::execution::RelationalExecutionDenialCause as Denial;
 use crate::schema::SchemaCompilationControl;
-use crate::validation::data::{
-    CustomInvariantAccessContract, CustomInvariantRegistration, CustomInvariantSemanticVersion,
-    InvariantCostClass, InvariantExecutionPoint, InvariantFailureEffect,
-};
+use crate::validation::custom_rule::CustomInvariantRegistration;
+use crate::validation::data::descriptor::CustomInvariantAccessContract;
+use crate::validation::data::execution::{InvariantExecutionPoint, InvariantFailureEffect};
+use crate::validation::data::groups::InvariantCostClass;
+use crate::validation::data::rule_id::CustomInvariantSemanticVersion;
 use sha2::{Digest, Sha256};
 
 type BorrowedIdentity<'a> = (

@@ -1,6 +1,5 @@
 //! Fixed edits at independent scales; observe the production engine's quotes.
 use super::*;
-use worth_testkit_relational::maintenance::assert_change_bounded;
 
 fn work(records: usize, history: usize) -> u64 {
     let mut partition = fixture::partition(records);
@@ -16,7 +15,7 @@ fn work(records: usize, history: usize) -> u64 {
         &mut partition,
     )
     .unwrap();
-    let prior = Arc::new(cold(&partition));
+    let prior = cold(&partition);
     let previous = partition.clone();
     let journal = fixture::edit(&mut partition, 0, base_step + 2);
     let mut charged = 0;
@@ -45,6 +44,11 @@ fn fixed_kind_edits_do_not_grow_with_model_or_retained_history() {
     eprintln!(
         "kind commitment charged work: model {base}->{model}; history {history}->{longer_history}"
     );
-    assert_change_bounded("kind commitment", "model", base, model);
-    assert_change_bounded("kind commitment", "history", history, longer_history);
+    for (axis, base, doubled) in [("model", base, model), ("history", history, longer_history)] {
+        assert!(
+            u128::from(doubled) * 2 < u128::from(base.max(1)) * 3,
+            "kind commitment: work grows with {axis}: base={base}, doubled={doubled}, ratio={:.3}",
+            doubled as f64 / base.max(1) as f64
+        );
+    }
 }

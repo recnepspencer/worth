@@ -1,4 +1,6 @@
 use super::HistoryAuthority;
+#[cfg(test)]
+use crate::durability::canonical_commit_artifact::checkpoint_body::copy_original_for_test;
 
 impl<'runtime> HistoryAuthority<'runtime> {
     pub(crate) fn remove_commit_envelope_for_test(
@@ -64,7 +66,7 @@ impl<'runtime> HistoryAuthority<'runtime> {
         let Some(envelope) = self.runtime.history.recorded_commit_envelope(commit_id) else {
             return false;
         };
-        let mut replacement = envelope.copy_original_for_test(execution);
+        let mut replacement = copy_original_for_test(&envelope, execution);
         mutate(&mut replacement.body_mut_for_test().patch);
         let original = crate::branch::RelationalOriginalRootCommitEvidence::prepare(
             execution,
@@ -94,7 +96,7 @@ impl<'runtime> HistoryAuthority<'runtime> {
         let Some(envelope) = self.runtime.history.recorded_commit_envelope(commit_id) else {
             return false;
         };
-        let mut replacement = envelope.copy_original_for_test(execution);
+        let mut replacement = copy_original_for_test(&envelope, execution);
         if replacement.derived_index_artifacts().is_empty() {
             let generations = self
                 .runtime

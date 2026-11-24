@@ -2,13 +2,13 @@
 use super::*;
 
 pub(super) fn participants(
-    history: &HistorySubsystem,
+    history: CanonicalHistoryRead<'_>,
     execution: &ExecutionRequest<'_, '_>,
     current: &AdmittedRelationalBranchBasis,
     model: EntityId,
     read: &mut basis::BasisRead<'_, '_, '_, '_, '_, '_>,
 ) -> Result<BTreeSet<EntityId>, Denial> {
-    let bound = history.catalog_len();
+    let bound = history.branch.catalog_len();
     let mut next = current.inner.root.commit_id();
     for _ in 0..bound {
         let Some(commit) = next else {

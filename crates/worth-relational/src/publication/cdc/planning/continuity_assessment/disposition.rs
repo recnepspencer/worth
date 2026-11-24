@@ -1,4 +1,4 @@
-use crate::publication::cdc::data::SubscriberRecoveryDisposition;
+use crate::publication::cdc::data::subscriber_decision::SubscriberRecoveryDisposition;
 use crate::publication::patch::data::PatchStreamPosition;
 use crate::schema::data::SchemaContinuationClassification;
 

@@ -1,5 +1,7 @@
 //! Digest-valid checkpoint index artifacts must still carry complete, current meaning.
 use super::*;
+#[cfg(test)]
+use crate::durability::canonical_commit_artifact::checkpoint_body::copy_original_for_test;
 use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 use crate::indexes::data::{
     DerivedIndexArtifacts, DerivedIndexEntries, RelationJoinDefinition, RelationJoinLeg,
@@ -209,7 +211,7 @@ fn envelope_index_affinity_requires_admission_before_installation() {
     let index = name_index(&runtime);
     let id = build(execution, &runtime, index.index_id, &committed);
     let actual = runtime.indexes.generation(id).unwrap();
-    let mut envelope = committed.envelope().copy_original_for_test(execution);
+    let mut envelope = copy_original_for_test(&committed.envelope(), execution);
     envelope.body_mut_for_test().derived_index_artifacts =
         DerivedIndexArtifacts::new(vec![actual.as_ref().clone()]);
     crate::durability::derived_index_artifacts::admit_envelope_derived_index_artifacts(&envelope)

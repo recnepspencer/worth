@@ -58,10 +58,10 @@ impl RelationalCommitEnvelopeResidency {
                 })
             }
             EnvelopeBacking::Journal { entry, source, .. } => {
-                Self::readmit_positioned(entry, source.as_ref(), execution, limit)
+                entry.readmit_journal(source.as_ref(), execution, limit)
             }
             EnvelopeBacking::SelectedCheckpoint { entry, directory } => {
-                Self::readmit_selected(entry, directory, execution, limit)
+                Self::readmit_selected(entry, directory.as_ref(), execution, limit)
             }
         }
         .map_err(|stop| match stop {

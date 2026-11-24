@@ -10,56 +10,6 @@ use worth_execution::{ExecutionAllocationPolicy, ExecutionImmutableBytes};
 mod writer;
 pub(crate) use writer::{copy_bytes, count_value, encode_value, CheckpointEncodingControl};
 
-#[cfg(test)]
-pub(crate) fn encode_checkpoint(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    checkpoint: &DurableCheckpoint,
-    policy: ExecutionAllocationPolicy<'_, '_>,
-) -> Result<
-    (ExecutionImmutableBytes, NativeCheckpointSectionBytes),
-    RelationalNativeCheckpointCaptureDenial,
-> {
-    let (bytes, sections, _) = encode_checkpoint_members(
-        execution,
-        checkpoint,
-        policy,
-        &RelationalCheckpointArtifactPolicy::Embedded,
-    )?;
-    Ok((bytes, sections))
-}
-
-#[cfg(test)]
-pub(crate) fn encode_checkpoint_members(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    checkpoint: &DurableCheckpoint,
-    policy: ExecutionAllocationPolicy<'_, '_>,
-    placement: &RelationalCheckpointArtifactPolicy<'_>,
-) -> Result<
-    (
-        ExecutionImmutableBytes,
-        NativeCheckpointSectionBytes,
-        crate::durability::data::CapturedCheckpointMembers,
-    ),
-    RelationalNativeCheckpointCaptureDenial,
-> {
-    policy.check_live()?;
-    let mut captured =
-        crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
-            CapturedManifest::capture(lane, execution, checkpoint, policy)
-        })?;
-    // These existing hostile codec fixtures deliberately encode changed DATA.
-    // They are never an original-source capture or publication witness.
-    populate_expanded_canonical_members(&mut captured, checkpoint, execution)?;
-    let (bytes, sections, members, _) = encode_captured(
-        captured.seal_ordinary(),
-        execution,
-        policy,
-        placement,
-        &mut CheckpointEncodingControl::Policy(policy),
-    )?;
-    Ok((bytes, sections, members))
-}
-
 pub(crate) fn populate_expanded_canonical_members(
     captured: &mut CapturedManifest,
     checkpoint: &DurableCheckpoint,

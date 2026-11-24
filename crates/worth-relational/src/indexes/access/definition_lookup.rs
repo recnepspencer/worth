@@ -56,16 +56,21 @@ mod tests {
 
     use super::DerivedIndexDefinitionLookup;
     use crate::indexes::data::{DerivedIndexDefinition, DerivedIndexId, DerivedIndexKind};
-    use crate::tests::support::{aspect_field_locator, aspect_key, field_key};
+    use worth_foundational::facade::{
+        AspectFieldLocator, AspectKey, CanonicalFieldPath, FieldKey, LocatorAuthority,
+    };
 
     #[test]
     fn exact_lookup_preserves_restored_numeric_identity_and_disambiguates_name() {
-        let kind = DerivedIndexKind::EntityField {
-            field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+        let entity_field = |field| DerivedIndexKind::EntityField {
+            field_locator: AspectFieldLocator::new(
+                LocatorAuthority::Planned,
+                AspectKey::new("name").unwrap(),
+                CanonicalFieldPath::single(FieldKey::new(field).unwrap()),
+            ),
         };
-        let wrong_kind = DerivedIndexKind::EntityField {
-            field_locator: aspect_field_locator(aspect_key("name"), field_key("other")),
-        };
+        let kind = entity_field("name");
+        let wrong_kind = entity_field("other");
         let installed = |id, kind, branch_scoped| DerivedIndexDefinition {
             index_id: DerivedIndexId(id),
             name: "same-name".to_owned(),

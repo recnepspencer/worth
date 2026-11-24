@@ -8,6 +8,37 @@ use crate::visibility::materialization::read_records::visibility::{
 };
 
 impl ProjectionRecordReader<'_> {
+    pub(crate) fn read_live_entity_at_version(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        state: &(impl PartitionAccess + ?Sized),
+        registry: &crate::schema::data::RelationalSchemaRegistry,
+        entity_id: crate::identity::data::EntityId,
+        version_id: crate::identity::data::VersionId,
+    ) -> Result<Option<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+        use super::super::kind_scan_visibility::KindScanVisibility;
+        use crate::storage::data::RecordLifecycleState;
+        use crate::visibility::materialization::read_records::{read_footprint, read_work};
+        read_work::point_with_quote(
+            execution,
+            || {
+                read_work::record_quote::entity_for_id(
+                    state,
+                    registry,
+                    entity_id,
+                    KindScanVisibility::for_selected_version(self.current_version, version_id),
+                )
+            },
+            || {
+                self.authoritative_entity_record_for_id_at_version_with_registry(
+                    state, registry, entity_id, version_id,
+                )
+                .filter(|record| record.lifecycle == RecordLifecycleState::Live)
+            },
+            |record| record.as_ref().map_or(0, read_footprint::entity),
+        )
+    }
+
     pub(crate) fn authoritative_entity_record_for_id_from_exact_state(
         &self,
         state: &(impl PartitionAccess + ?Sized),

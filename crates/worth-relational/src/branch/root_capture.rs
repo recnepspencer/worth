@@ -134,7 +134,7 @@ pub(super) fn build_incremental_regions(
                 },
                 overlay,
                 journal,
-                schema.clone(),
+                || schema.clone(),
                 symbols,
                 change
                     .map(|change| {

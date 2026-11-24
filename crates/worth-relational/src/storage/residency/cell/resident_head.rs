@@ -5,20 +5,30 @@ impl RelationalRegionResidency {
     pub(crate) fn current_readmission(&self) -> Option<super::super::ResidentHistoryReadmission> {
         self.head_readmission.clone().or_else(|| {
             self.backing.as_ref().map(|cold| {
-                super::super::ResidentHistoryReadmission::new(cold.schema.clone(), &cold.symbols)
+                super::super::ResidentHistoryReadmission::new(
+                    cold.schema.clone(),
+                    &cold.symbols,
+                    cold.readmission,
+                )
             })
         })
     }
+    pub(in crate::storage::residency) fn history_codec(
+        &self,
+    ) -> Option<&'static super::super::cold_readmission::ColdRegionReadmission> {
+        self.head_readmission
+            .as_ref()
+            .map(|inputs| inputs.codec)
+            .or_else(|| self.backing.as_ref().map(|cold| cold.readmission))
+    }
+
     pub(in crate::storage::residency) fn resident_head(
         partition: PartitionState,
         commitment: PartitionContentCommitment,
         kind_indexes: Arc<super::super::kind_incremental::RegionKindIndexes>,
         history_presence: super::super::history_presence::HistoryPresence,
-        schema: Arc<RelationalBranchRootSchemaAuthority>,
-        symbols: &crate::runtime::RuntimeSymbolTable,
+        readmission: super::super::ResidentHistoryReadmission,
     ) -> RelationalResidencyLease<Head> {
-        let readmission =
-            super::super::resident_history::ResidentHistoryReadmission::new(schema, symbols);
         Self::owned_head(
             partition,
             Some(commitment),

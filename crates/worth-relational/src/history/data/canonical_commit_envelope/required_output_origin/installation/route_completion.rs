@@ -147,7 +147,7 @@ pub(super) fn install_route(
         context,
     )?;
     let outputs = members.iter().map(|member| member.id).collect::<Vec<_>>();
-    let mut relations = relation_installation::capture_created_relations(
+    let mut relations = super::super::created_relation_members::capture_created_relations(
         envelope,
         created,
         created_relations,

@@ -166,51 +166,7 @@ fn derive_metered(
         let partition = root
             .partition_state(partition_id)?
             .ok_or("native partition disappeared")?;
-        for slot in partition.entity_arena.occupied_slots_iter() {
-            charge(context, 1)?;
-            let record = partition
-                .entity_arena
-                .get_slot(slot)
-                .ok_or("native record disappeared")?;
-            if !record.is_live() {
-                continue;
-            }
-            let Some(payload) = record.extra().authoritative_aspect_state() else {
-                continue;
-            };
-            let mut has_changed_present_aspect = false;
-            for locus in changed_fields {
-                charge(context, 1)?;
-                if Some(locus.kind_id) != record.kind_id() {
-                    continue;
-                }
-                for (key, _) in payload.aspects().entries() {
-                    charge(
-                        context,
-                        key.as_str()
-                            .len()
-                            .saturating_add(locus.aspect_key.as_str().len())
-                            .saturating_add(1),
-                    )?;
-                    if key == &locus.aspect_key {
-                        has_changed_present_aspect = true;
-                        break;
-                    }
-                }
-                if has_changed_present_aspect {
-                    break;
-                }
-            }
-            // The enclosing aspect carries old contract identity/revision even
-            // when the changed optional field itself has no present bytes.
-            if has_changed_present_aspect {
-                affected.push(EntityId::new(
-                    partition_id,
-                    slot as u64,
-                    record.generation(),
-                ));
-            }
-        }
+        collect_affected_partition(partition, changed_fields, context, &mut affected)?;
     }
     let mut origin_frames = OutputOriginHistory::default();
     let validated_history = &mut origin_frames;
@@ -274,6 +230,61 @@ fn derive_metered(
         _memory: memory,
         _relation_memory: relation_memory,
     })
+}
+
+pub(crate) fn collect_affected_partition(
+    partition: &crate::storage::overlay::PartitionState,
+    changed_fields: &[CodecFieldLocus],
+    context: &mut worth_execution::MapKernelContext<'_, '_>,
+    affected: &mut Vec<EntityId>,
+) -> Result<(), CodecRetirementClosureStop> {
+    let partition_id = partition.partition_id;
+    for slot in partition.entity_arena.occupied_slots_iter() {
+        charge(context, 1)?;
+        let record = partition
+            .entity_arena
+            .get_slot(slot)
+            .ok_or("native record disappeared")?;
+        if !record.is_live() {
+            continue;
+        }
+        let Some(payload) = record.extra().authoritative_aspect_state() else {
+            continue;
+        };
+        let mut has_changed_present_aspect = false;
+        for locus in changed_fields {
+            charge(context, 1)?;
+            if Some(locus.kind_id) != record.kind_id() {
+                continue;
+            }
+            for (key, _) in payload.aspects().entries() {
+                charge(
+                    context,
+                    key.as_str()
+                        .len()
+                        .saturating_add(locus.aspect_key.as_str().len())
+                        .saturating_add(1),
+                )?;
+                if key == &locus.aspect_key {
+                    has_changed_present_aspect = true;
+                    break;
+                }
+            }
+            if has_changed_present_aspect {
+                break;
+            }
+        }
+        // The enclosing aspect carries old contract identity/revision even
+        // when the changed optional field itself has no present bytes.
+        if has_changed_present_aspect {
+            affected.push(EntityId::new(
+                partition_id,
+                slot as u64,
+                record.generation(),
+            ));
+        }
+    }
+    Ok(())
 }
 
 fn intent_writes_entity(

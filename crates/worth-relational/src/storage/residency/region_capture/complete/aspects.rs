@@ -11,7 +11,7 @@ pub(super) struct Contracts<'a> {
 }
 impl<'a> Contracts<'a> {
     pub(super) fn capture(
-        schema: &'a RelationalBranchRootSchemaAuthority,
+        schema: &'a dyn RelationalRegionSchema,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Self, Stop> {
         let mut entries = ExecutionOrderedMap::default();
@@ -27,7 +27,7 @@ impl<'a> Contracts<'a> {
             } else {
                 entries
                     .insert_cloned_native_for_request(&key, &contract, *request)
-                    .map_err(crate::durability::checkpoint_history::capture::map_stop)?;
+                    .map_err(crate::durability::data::recovery_stop::map_stop)?;
             }
         }
         Ok(Self { entries })

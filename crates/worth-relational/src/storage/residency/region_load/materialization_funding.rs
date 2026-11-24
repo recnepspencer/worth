@@ -1,4 +1,5 @@
 //! Preflight and lifetime custody for ordinary region reconstruction.
+mod aspect_contract;
 pub(in crate::storage::residency) mod aspect_state;
 mod current_image;
 mod current_work;
@@ -7,12 +8,12 @@ pub(in crate::storage::residency) mod region_image;
 #[cfg(test)]
 mod tests;
 use super::super::{RelationalResidencyDemandFailure as Failure, ResidentRegion};
-use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal;
-use crate::durability::data::{
+use crate::durability::canonical_commit_artifact::readmission_refusal::RelationalCanonicalCommitArtifactRefusal;
+use crate::identity::data::PartitionId;
+use crate::storage::data::partition_checkpoint_image::{
     EntityExtraImage, RelationExtraImage, VersionedEntityMetadataImage,
     VersionedRelationMetadataImage,
 };
-use crate::identity::data::PartitionId;
 use crate::storage::data::{
     RelationalStorageSubject, RelationalStorageUnavailable, RelationalStorageUnavailableCause,
 };
@@ -290,28 +291,10 @@ pub(in crate::storage::residency) fn ordered(
     }
 }
 
-pub(in crate::storage::residency) use super::admission::{at_region, content, scalars};
+pub(in crate::storage::residency) mod region;
 pub(in crate::storage::residency) use current_image::current;
+pub(in crate::storage::residency) use region::{at_region, content, scalars};
 
-pub(in crate::storage::residency) fn image(
-    cause: crate::durability::data::RelationalRecoveryStop,
-    partition: PartitionId,
-) -> Failure {
-    use crate::durability::data::RelationalRecoveryStop as Stop;
-    match cause {
-        Stop::Request(cause) => Failure::Request(cause),
-        Stop::Content(cause) => Failure::Content(cause),
-        Stop::Allocation(cause) => match cause.classify() {
-            worth_execution::ExecutionAllocationDenialClass::Request(cause) => {
-                Failure::Request(cause.into())
-            }
-            worth_execution::ExecutionAllocationDenialClass::Physical(_) => {
-                Failure::Request(crate::execution::RelationalExecutionDenialCause::AllocationFailed)
-            }
-        },
-        Stop::Durability(_) | Stop::AdmissionImage(_) => at_region(damaged(), partition),
-    }
-}
 pub(in crate::storage::residency) fn owned_read(
     cause: crate::durability::medium::RelationalDurableOwnedReadRefusal,
     partition: PartitionId,

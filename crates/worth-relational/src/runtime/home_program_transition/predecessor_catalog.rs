@@ -31,11 +31,7 @@ impl RelationalRuntime {
             .map_err(RelationalHomeProgramContractDenial::Request)?;
         // Recovery is still exclusive here. The exact source root was admitted
         // against declared A; no current B registry or execution is substituted.
-        basis
-            .inner
-            .root
-            .execution_contracts
-            .set(contracts.meaning.clone())
+        super::install_root_execution_contracts(&basis.inner.root, &contracts.meaning)
             .map_err(|_| RelationalHomeProgramContractDenial::SourceContractChanged)?;
         Ok(RelationalHomeProgramPredecessorCatalog {
             source: source.clone(),

@@ -14,17 +14,20 @@ use std::{
     sync::{Arc, Weak},
 };
 
-// The concrete reader retains a root with weak route images. This boundary
-// closes auto-trait recursion while retaining typed access to the original pin.
-pub(crate) trait AppliedPublicationInputAccess: std::fmt::Debug + Send + Sync {
-    fn read(&self) -> &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>;
-}
-impl AppliedPublicationInputAccess
-    for RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>
-{
-    fn read(&self) -> &Self {
-        self
-    }
+use crate::history::retention::publication_basis::RetainedAppliedPublicationPin;
+
+type AppliedPublicationRead = RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>;
+
+// The trait object breaks auto-trait recursion through weak root route images.
+impl RetainedAppliedPublicationPin for AppliedPublicationRead {}
+
+pub(crate) fn retained_applied_read(
+    pin: &dyn RetainedAppliedPublicationPin,
+) -> &AppliedPublicationRead {
+    let original: &dyn std::any::Any = pin;
+    original
+        .downcast_ref::<AppliedPublicationRead>()
+        .expect("the publication owner retained its original applied read")
 }
 
 /// Applied inputs collected by the original output installation.
@@ -34,7 +37,7 @@ pub(crate) struct LivePublicationInputs {
         PublicationBasisRoute,
         (
             Arc<CanonicalRequiredOutputOrigin>,
-            Arc<dyn AppliedPublicationInputAccess>,
+            Arc<dyn RetainedAppliedPublicationPin>,
         ),
     >,
 }
@@ -74,7 +77,7 @@ impl BoundLivePublicationInputs {
         &mut self,
         envelope: &Arc<CanonicalCommitEnvelope>,
         origin: &Arc<CanonicalRequiredOutputOrigin>,
-    ) -> Option<Arc<dyn AppliedPublicationInputAccess>> {
+    ) -> Option<Arc<dyn RetainedAppliedPublicationPin>> {
         if !Weak::ptr_eq(&self.owner, &Arc::downgrade(envelope)) {
             return None;
         }
@@ -83,8 +86,7 @@ impl BoundLivePublicationInputs {
             .routes
             .remove(&PublicationBasisRoute::of(&origin.meaning))?;
         (Arc::ptr_eq(&issued, origin)
-            && read
-                .read()
+            && retained_applied_read(read.as_ref())
                 .candidate_identity()
                 .proposal()
                 .proposed_version_id()

@@ -45,15 +45,12 @@ fn head_contains_current_metadata_and_history_contains_only_earlier_versions() {
 #[test]
 fn a_head_append_matches_a_separately_recomputed_full_history_root() {
     let fixture = region_with_history();
-    let backing = crate::test_execution_policy::serial_request();
+    let backing = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&backing);
-    let head = region_load::load_head(
-        &fixture.cold,
-        fixture.cold.source.as_ref().unwrap(),
-        execution,
-        1 << 24,
-    )
-    .unwrap();
+    let head = fixture
+        .cold
+        .read_head(fixture.cold.source.as_ref().unwrap(), execution, 1 << 24)
+        .unwrap();
     let symbols = fixture.cold.symbols.interner_snapshot();
     let slot = fixture.entity.slot_index();
     let mut written_head = head.partition.clone();
@@ -121,26 +118,30 @@ fn a_head_append_matches_a_separately_recomputed_full_history_root() {
         "retiring and appending under the carried frontier loads no history"
     );
 
-    let full = region_load::load_full(
-        &fixture.cold,
-        fixture.cold.source.as_ref().unwrap(),
-        &head,
-        execution,
-        1 << 24,
-    )
-    .unwrap();
+    let full = fixture
+        .cold
+        .read_full(
+            fixture.cold.source.as_ref().unwrap(),
+            &head,
+            execution,
+            1 << 24,
+        )
+        .unwrap();
     let mut written_full = full.partition.clone();
     written_full
         .entity_arena
         .apply_extra_update(slot, extra, version)
         .expect("fixture slot is materialized");
-    let (oracle, _) = PartitionContentCommitment::capture(
-        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-        &worth_execution::ExecutionRequest::serial(&crate::test_execution_policy::serial_request()),
-        &written_full,
-        &symbols,
-    )
-    .unwrap();
+    let (oracle, _) =
+        PartitionContentCommitment::capture(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+            &worth_execution::ExecutionRequest::serial(
+                &crate::execution::test_policy::serial_request(),
+            ),
+            &written_full,
+            &symbols,
+        )
+        .unwrap();
     assert_eq!(
         appended.digest(fixture.entity.partition_id),
         oracle.digest(fixture.entity.partition_id)

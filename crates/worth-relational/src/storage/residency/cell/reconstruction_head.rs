@@ -53,7 +53,7 @@ impl RelationalRegionResidency {
                         .ok_or_else(|| self.failure(Cause::SourceUnavailable))?
                 };
                 cell_load_cache::load(&self.raw_head, self.partition_id, || {
-                    region_load::load_head(cold, &source, execution, 1 << 30)
+                    cold.read_head(&source, execution, 1 << 30)
                 })?
             }
         };

@@ -4,18 +4,40 @@ use crate::history::data::{CanonicalCommitEnvelope, CommitId};
 use crate::identity::data::VersionId;
 use crate::publication::patch::data::PatchStreamPosition;
 
-use super::HistorySubsystem;
+use super::{canonical_publication_routes::RelationalCanonicalPublicationRoutes, HistorySubsystem};
+use std::sync::atomic::AtomicU64;
+#[path = "history_canonical_routes/fork_snapshot.rs"]
+mod fork_snapshot;
 
-impl HistorySubsystem {
-    pub(crate) fn commit_for_version_in_context(
-        &self,
-        version: VersionId,
-        context: &mut worth_execution::MapKernelContext<'_, '_>,
-    ) -> Result<Option<CommitId>, crate::execution::RelationalExecutionDenialCause> {
-        self.canonical_publication_routes
-            .commit_for_version_in_context(version, context)
+#[derive(Debug)]
+pub(crate) struct RelationalPublicationHistory {
+    pub(super) branch: HistorySubsystem,
+    pub(super) canonical_publication_routes: Arc<RelationalCanonicalPublicationRoutes>,
+}
+
+impl RelationalPublicationHistory {
+    pub(crate) fn into_parts(
+        self,
+    ) -> (HistorySubsystem, Arc<RelationalCanonicalPublicationRoutes>) {
+        (self.branch, self.canonical_publication_routes)
     }
+}
 
+impl std::ops::Deref for RelationalPublicationHistory {
+    type Target = HistorySubsystem;
+
+    fn deref(&self) -> &Self::Target {
+        &self.branch
+    }
+}
+
+impl std::ops::DerefMut for RelationalPublicationHistory {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.branch
+    }
+}
+
+impl RelationalPublicationHistory {
     pub(crate) fn discard_unobserved_construction_schema_inputs_for_recovery(&self) {
         self.canonical_publication_routes
             .discard_unobserved_construction_schema_inputs_for_recovery();
@@ -89,13 +111,6 @@ impl HistorySubsystem {
             .or_else(|| self.canonical_publication_routes.by_commit(commit_id))
     }
 
-    pub(crate) fn canonical_envelope_for_version(
-        &self,
-        version_id: VersionId,
-    ) -> Option<Arc<CanonicalCommitEnvelope>> {
-        self.canonical_publication_routes.by_version(version_id)
-    }
-
     pub(crate) fn canonical_envelope_at_patch(
         &self,
         position: PatchStreamPosition,
@@ -162,9 +177,7 @@ impl HistorySubsystem {
         self.canonical_publication_routes.performed_snapshot()
     }
 
-    pub(crate) fn canonical_checkpoint_gate(
-        &self,
-    ) -> Arc<super::RelationalCanonicalPublicationRoutes> {
+    pub(crate) fn canonical_checkpoint_gate(&self) -> Arc<RelationalCanonicalPublicationRoutes> {
         Arc::clone(&self.canonical_publication_routes)
     }
 
@@ -246,18 +259,21 @@ impl HistorySubsystem {
     }
 }
 
-pub(crate) fn mark_publication_settled(history: &HistorySubsystem, commit_id: CommitId) -> bool {
+pub(crate) fn mark_publication_settled(
+    history: &RelationalPublicationHistory,
+    commit_id: CommitId,
+) -> bool {
     history.canonical_publication_routes.mark_settled(commit_id)
 }
 
-pub(crate) fn settlement_route_visit_count(history: &HistorySubsystem) -> u64 {
+pub(crate) fn settlement_route_visit_count(history: &RelationalPublicationHistory) -> u64 {
     history
         .canonical_publication_routes
         .settlement_route_visit_count()
 }
 
 pub(crate) fn publication_requires_settlement(
-    history: &HistorySubsystem,
+    history: &RelationalPublicationHistory,
     commit_id: CommitId,
 ) -> bool {
     history
@@ -266,17 +282,19 @@ pub(crate) fn publication_requires_settlement(
 }
 
 pub(crate) fn canonical_publication_reservation_counters(
-    history: &HistorySubsystem,
+    history: &RelationalPublicationHistory,
 ) -> super::canonical_publication_routes::RelationalPatchPositionReservationCounters {
     history.canonical_publication_routes.reservation_counters()
 }
 
-pub(crate) fn pending_canonical_publication_route_count(history: &HistorySubsystem) -> usize {
+pub(crate) fn pending_canonical_publication_route_count(
+    history: &RelationalPublicationHistory,
+) -> usize {
     history.canonical_publication_routes.pending_count()
 }
 
 pub(crate) fn retain_original_empty_birth(
-    history: &HistorySubsystem,
+    history: &RelationalPublicationHistory,
     schema: Arc<crate::branch::root::schema::RelationalBranchRootSchemaAuthority>,
 ) {
     history
@@ -289,4 +307,62 @@ pub(crate) fn retain_original_empty_birth(
                 schema,
             },
         );
+}
+
+impl crate::history::envelope_demand::PerformedCanonicalHistory
+    for RelationalCanonicalPublicationRoutes
+{
+    fn resident_envelope(&self, commit: CommitId) -> Option<Arc<CanonicalCommitEnvelope>> {
+        self.by_commit(commit)
+    }
+
+    fn by_version(&self, version: VersionId) -> Option<Arc<CanonicalCommitEnvelope>> {
+        RelationalCanonicalPublicationRoutes::by_version(self, version)
+    }
+
+    fn by_patch(&self, position: PatchStreamPosition) -> Option<Arc<CanonicalCommitEnvelope>> {
+        RelationalCanonicalPublicationRoutes::by_patch(self, position)
+    }
+
+    fn latest_patch(&self) -> Option<PatchStreamPosition> {
+        self.latest_visible_patch().map(|(position, _)| position)
+    }
+
+    fn positioned(
+        &self,
+        commit: CommitId,
+    ) -> Option<Arc<crate::history::data::PositionedCanonicalCommit>> {
+        self.positioned_commit(commit)
+    }
+
+    fn find_version(
+        &self,
+        version: VersionId,
+        context: &mut worth_execution::MapKernelContext<'_, '_>,
+    ) -> Result<Option<CommitId>, crate::execution::RelationalExecutionDenialCause> {
+        self.commit_for_version_in_context(version, context)
+    }
+}
+
+impl RelationalPublicationHistory {
+    pub(crate) fn canonical_read(
+        &self,
+    ) -> crate::history::envelope_demand::CanonicalHistoryRead<'_> {
+        crate::history::envelope_demand::CanonicalHistoryRead {
+            branch: &self.branch,
+            performed: &*self.canonical_publication_routes,
+        }
+    }
+
+    pub(crate) fn demand_commit_envelope(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        commit: CommitId,
+    ) -> Result<
+        Option<Arc<CanonicalCommitEnvelope>>,
+        crate::execution::RelationalExecutionDenialCause,
+    > {
+        self.canonical_read()
+            .demand_commit_envelope(execution, commit)
+    }
 }

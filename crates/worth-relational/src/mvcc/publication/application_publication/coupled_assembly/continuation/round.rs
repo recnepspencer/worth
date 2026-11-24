@@ -1,46 +1,13 @@
 //! Judge one continued round by what it would actually apply, before it can publish.
-use super::super::{
-    custody, writer_custody, RelationalCoupledAssemblyFailure, RequiredOutputPublication,
-};
+use super::super::{writer_custody, RelationalCoupledAssemblyFailure, RequiredOutputPublication};
 use super::{
-    checkpoint, part, Cause, ExecutionRequest, RelationalAuthoredCoupledCandidate,
-    RelationalCoupledProducerContinuation, TransactionCommitError,
+    application, postponed, ExecutionRequest, RelationalAuthoredCoupledCandidate,
+    RelationalCoupledProducerContinuation,
 };
 use crate::authority::commit::phases::prepare::prepare_authoritative_working_state_scope_for_base;
-use crate::publication::patch::data::preserves_application;
-use crate::transactions::data::{
-    AuthoritativeApplyPlan, EntityMutationIntent, MutationIntent, RelationMutationIntent,
-    WorkerIntentBatch,
-};
+use crate::transactions::data::outcomes::plan_artifacts::AuthoritativeApplyPlan;
+use crate::transactions::data::primitives::WorkerIntentBatch;
 use std::sync::Arc;
-
-/// Publishing a second producing round needs multi-input provenance (public #119).
-const PROVENANCE_ISSUE: u16 = 119;
-
-/// The one #119 postponement refusal, for a continued round or a successor fold.
-pub(in crate::mvcc::publication::application_publication::coupled_assembly) fn postponed(
-    reason: crate::publication::data::CoupledProvenancePostponement,
-    subject: crate::identity::data::EntityId,
-) -> TransactionCommitError {
-    part::reject(
-        Cause::CoupledContinuationProvenancePostponed {
-            issue: PROVENANCE_ISSUE,
-            reason,
-        },
-        subject,
-    )
-}
-
-/// Only these commands can leave a record structurally as it was. Creation,
-/// deletion, replacement and endpoint changes are effects by their application.
-pub(super) fn patches_in_place(intent: &MutationIntent) -> bool {
-    matches!(
-        intent,
-        MutationIntent::Entity(
-            EntityMutationIntent::UpdateFields(_) | EntityMutationIntent::ApplyAspectPatch(_)
-        ) | MutationIntent::Relation(RelationMutationIntent::ApplyAspectPatch(_))
-    )
-}
 
 impl RelationalAuthoredCoupledCandidate<'_> {
     /// Consume next-round custody and judge the continued round's body on a
@@ -85,35 +52,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         if !content.is_empty() {
             return Ok(false);
         }
-        let allocation = execution.allocation_policy();
-        let in_place = execution
-            .run_native_with_checkpoint(|context| {
-                let mut raw_keys = std::collections::BTreeSet::new();
-                for intent in batches.iter().flat_map(|batch| &batch.intents) {
-                    checkpoint(
-                        context,
-                        intent.owned_allocation_capacity_bytes().saturating_add(1),
-                    )
-                    .map_err(custody::execution_stop)?;
-                    intent
-                        .collect_raw_client_keys(&mut raw_keys, allocation)
-                        .map_err(|cause| {
-                            TransactionCommitError::conflict(
-                                crate::mvcc::transaction::RelationalTransactionStagingDenial::from(
-                                    cause,
-                                )
-                                .into_conflict(),
-                            )
-                        })?;
-                    if !patches_in_place(intent) || !raw_keys.is_empty() {
-                        return Ok(false);
-                    }
-                }
-                Ok::<_, TransactionCommitError>(true)
-            })
-            .map_err(custody::execution_stop)?
-            .0?;
-        if !in_place {
+        if !application::commands_are_in_place(execution, &batches)? {
             return Ok(false);
         }
         if batches.iter().all(|batch| batch.intents.is_empty()) {
@@ -130,7 +69,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         let runtime = self
             .runtime
             .with_candidate_symbols(self.mutation.candidate_symbols());
-        let intents = crate::mvcc::OwnedNormalizedPlan::copy_batches(
+        let intents = crate::mvcc::transaction::normalized_plan::OwnedNormalizedPlan::copy_batches(
             self.transaction.transaction_id(),
             &batches,
             execution,
@@ -196,46 +135,11 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             Some(&deferred_edges),
         )
         .map_err(RelationalCoupledAssemblyFailure::from_apply)?;
-        if !outcome.effect.adjacency.deltas.is_empty()
-            || outcome
-                .created_entities
-                .allocated_identities()
-                .next()
-                .is_some()
-            || outcome.created_relations.iter().next().is_some()
-            || symbols.reserved_meaning_count() != reserved
-        {
-            return Ok(false);
-        }
-        let publication = &outcome.effect.publication;
-        Ok(execution
-            .run_native_with_checkpoint(|context| {
-                for fragment in &publication.patch_fragments {
-                    checkpoint(context, 1).map_err(custody::execution_stop)?;
-                    if !preserves_application(
-                        fragment.structural_change,
-                        fragment.contains_opaque_aspect,
-                        &fragment.semantic_changes,
-                        &fragment.published_patch,
-                        fragment.relation_birth.as_ref(),
-                    ) {
-                        return Ok(false);
-                    }
-                }
-                for record in &publication.changed_records {
-                    checkpoint(context, publication.patch_fragments.len() as u64 + 1)
-                        .map_err(custody::execution_stop)?;
-                    if !publication
-                        .patch_fragments
-                        .iter()
-                        .any(|fragment| &fragment.target == record)
-                    {
-                        return Ok(false);
-                    }
-                }
-                Ok::<_, TransactionCommitError>(true)
-            })
-            .map_err(custody::execution_stop)?
-            .0?)
+        Ok(application::preserves_applied_records(
+            execution,
+            &outcome,
+            reserved,
+            symbols.reserved_meaning_count(),
+        )?)
     }
 }

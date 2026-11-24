@@ -2,7 +2,10 @@
 use crate::history::data::{BranchId, RelationalCommitReceipt};
 use crate::identity::data::KindId;
 use crate::schema::data::*;
-use crate::tests::support::{canonical_schema_envelope_input, AspectSchemaFixture};
+use crate::tests::support::AspectSchemaFixture;
+use schema_input::canonical_schema_envelope_input;
+#[path = "payload_encoding_tests/schema_input.rs"]
+mod schema_input;
 use serde::de::IgnoredAny;
 use serde::Deserialize;
 #[path = "payload_encoding_tests/transition_source.rs"]

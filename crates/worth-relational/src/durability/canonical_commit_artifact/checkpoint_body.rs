@@ -70,54 +70,34 @@ fn decode(
     Ok(envelope)
 }
 
+/// Copy a source into a completely readmitted body under the caller's request.
 #[cfg(test)]
-impl CanonicalCommitEnvelope {
-    /// Ordinary fixture preparation serializes the actual source projection;
-    /// that input encoding/import is explicitly outside the funded copy claim.
-    /// The same caller request admits every newly decoded/copied allocation.
-    pub(crate) fn copy_original_for_test(&self, request: &ExecutionRequest<'_, '_>) -> Self {
-        let bytes = rmp_serde::to_vec_named(
-            &crate::history::data::EmbeddedCheckpointEnvelopeRef::new(self),
-        )
-        .expect("the actual original checkpoint projection encodes");
-        let input = ExecutionImmutableBytes::from_external_bytes(std::sync::Arc::new(
-            bytes.into_boxed_slice(),
-        ));
-        self.copy_from_checkpoint_input_for_test(&input, request)
-            .expect("the funded copy preserves the complete original meaning")
-    }
+pub(crate) fn copy_original_for_test(
+    source: &CanonicalCommitEnvelope,
+    request: &ExecutionRequest<'_, '_>,
+) -> CanonicalCommitEnvelope {
+    let bytes = rmp_serde::to_vec_named(&crate::history::data::EmbeddedCheckpointEnvelopeRef::new(
+        source,
+    ))
+    .expect("the actual original checkpoint projection encodes");
+    let input =
+        ExecutionImmutableBytes::from_external_bytes(std::sync::Arc::new(bytes.into_boxed_slice()));
+    let extra = source
+        .derived_index_artifacts
+        .clone_header_storage_bytes()
+        .ok_or_else(super::borrowed_payload::malformed)
+        .expect("the exact derived-index header must be quotable");
+    let mut copied = decode(input.bytes(), Some(input.clone()), request, extra)
+        .expect("the funded copy preserves the complete original meaning");
+    source.restore_fixture_custody(&mut copied);
+    copied
+}
 
-    /// Tests prepare the actual original checkpoint projection as ordinary
-    /// caller-owned input, outside this controlled decode/copy operation.
-    /// All newly copied backing is admitted before decoder/clone growth.
-    pub(crate) fn copy_from_checkpoint_input_for_test(
-        &self,
-        input: &ExecutionImmutableBytes,
-        request: &ExecutionRequest<'_, '_>,
-    ) -> Result<Self, Refusal> {
-        let extra = self
-            .derived_index_artifacts
-            .clone_header_storage_bytes()
-            .ok_or_else(super::borrowed_payload::malformed)?;
-        let mut copied = decode(input.bytes(), Some(input.clone()), request, extra)?;
-        // im 15.1 OrdMap clones only its pool/root refs; Vector clones only
-        // pool refs or its bounded inline Arc elements. No nodes/row payloads
-        // are rebuilt. Only this actual new generation roster and two branch
-        // strings per generation need new allocation admission.
-        copied.body_mut_for_test().derived_index_artifacts = self.derived_index_artifacts.clone();
-        if &copied != self {
-            return Err(Refusal::NonCanonicalPayload);
-        }
-        // Preserve only the original owner's existing exact-payload private
-        // index proof. Parsed data never creates that live verification.
-        copied.body_mut_for_test().authored_index_writes = self.authored_index_writes.clone();
-        if let Some(original) = self.recorded_original_inputs() {
-            copied
-                .retain_recorded_original_inputs(original.clone())
-                .map_err(|detail| Refusal::PayloadDecode {
-                    detail: detail.into(),
-                })?;
-        }
-        Ok(copied)
-    }
+/// Give a recovery fixture an independently funded original body to corrupt.
+#[cfg(test)]
+pub(crate) fn mutable_positioned_fixture_body<'subject>(
+    positioned: &'subject mut crate::history::data::PositionedCanonicalCommit,
+    request: &ExecutionRequest<'_, '_>,
+) -> &'subject mut crate::history::data::CanonicalCommitEnvelopeBody {
+    positioned.positioned_envelope_mut_for_test(|source| copy_original_for_test(source, request))
 }

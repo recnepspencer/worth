@@ -1,4 +1,4 @@
-impl crate::mvcc::ValidatedRelationalProposal {
+impl crate::mvcc::validation::validated_proposal::ValidatedRelationalProposal {
     /// Bind opaque caller meaning before the one canonical preparation.
     /// Consuming the proposal prevents a sealed candidate from being rebound.
     pub fn bind_caller_association(

@@ -32,7 +32,7 @@ pub(super) fn expand(
         envelopes.push(
             crate::history::commit::RelationalCommitEnvelopeResidency::readmit_selected(
                 entry,
-                &directory,
+                directory.as_ref(),
                 execution,
                 MEMBER_LIMIT,
             )?,
@@ -280,6 +280,7 @@ fn expand_regions(
         .iter()
         .map(|leaf| {
             let cell = RelationalRegionResidency::cold(RelationalColdRegion {
+                readmission: &crate::storage::residency::region_load::CHECKPOINT_REGION_READMISSION,
                 kind_authority: leaf.kind_authority,
                 source: Some(source.clone()),
                 partition_id: leaf.partition_id,

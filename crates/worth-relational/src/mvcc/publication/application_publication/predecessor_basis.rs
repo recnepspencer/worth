@@ -19,7 +19,7 @@ pub struct RelationalPredecessorInput {
     before: AdmittedRelationalBranchBasis,
     applied: Option<
         std::sync::Arc<
-            dyn crate::publication::live_publication_inputs::AppliedPublicationInputAccess,
+            dyn crate::history::retention::publication_basis::RetainedAppliedPublicationPin,
         >,
     >,
 }
@@ -36,7 +36,9 @@ impl RelationalPredecessorInput {
             crate::visibility::materialization::read_records::reader::pinned_read::RelationalAppliedCandidateReadIdentity,
         >,
     >{
-        self.applied.as_ref().map(|input| input.read())
+        self.applied
+            .as_deref()
+            .map(crate::publication::live_publication_inputs::retained_applied_read)
     }
 }
 

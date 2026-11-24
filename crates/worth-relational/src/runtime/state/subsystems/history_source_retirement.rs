@@ -1,5 +1,8 @@
 //! Read-only retirement binding to the same original history owners.
-use super::{HistorySubsystem, RelationalCanonicalPublicationRoutes};
+use super::{
+    canonical_publication_routes::RelationalCanonicalPublicationRoutes,
+    history_canonical_routes::RelationalPublicationHistory,
+};
 use crate::branch::registry::RelationalBranchReferenceRegistry;
 use crate::branch::registry::RelationalSourceRootSlot;
 use crate::branch::root::RelationalBranchRoot;
@@ -12,11 +15,20 @@ pub(crate) struct RelationalSourceHistoryBinding {
     catalog: Arc<RelationalCanonicalPublicationRoutes>,
     ledger: super::RuntimeOwnedState<super::HistoryLedger>,
 }
-pub(crate) fn bind_source_retirement(history: &HistorySubsystem) -> RelationalSourceHistoryBinding {
+pub(crate) fn bind_source_retirement(
+    history: &RelationalPublicationHistory,
+) -> RelationalSourceHistoryBinding {
+    bind_detached_source_retirement(history, history.canonical_publication_routes.clone())
+}
+
+pub(crate) fn bind_detached_source_retirement(
+    history: &super::HistorySubsystem,
+    catalog: Arc<RelationalCanonicalPublicationRoutes>,
+) -> RelationalSourceHistoryBinding {
     RelationalSourceHistoryBinding {
         branches: history.branch_cells.clone(),
         retention: history.retention_owner.clone(),
-        catalog: history.canonical_publication_routes.clone(),
+        catalog,
         ledger: history.ledger.share(),
     }
 }

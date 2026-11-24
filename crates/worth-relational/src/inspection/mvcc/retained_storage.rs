@@ -9,7 +9,7 @@ use crate::runtime::RelationalRuntime;
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
-mod work;
+pub(super) mod work;
 pub use work::RelationalRetainedStorageWork;
 
 /// Failure yields no partial or weakened byte total.

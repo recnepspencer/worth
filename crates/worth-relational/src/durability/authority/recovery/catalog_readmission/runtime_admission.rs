@@ -197,12 +197,8 @@ fn require_root(
     {
         return Err(Denial::RootSchemaMismatch);
     }
-    if basis
-        .inner
-        .root
-        .execution_contracts
-        .get()
-        .is_some_and(|installed| !Arc::ptr_eq(installed, &asset.meaning))
+    if crate::runtime::home_program_transition::retain_root_execution_contracts(&basis.inner.root)
+        .is_some_and(|installed| !Arc::ptr_eq(&installed, &asset.meaning))
     {
         return Err(Denial::ConflictingInventory);
     }
@@ -212,12 +208,13 @@ fn install_root(
     basis: &AdmittedRelationalBranchBasis,
     asset: &PreparedRelationalHomeProgramContracts,
 ) {
-    if basis.inner.root.execution_contracts.get().is_none() {
-        basis
-            .inner
-            .root
-            .execution_contracts
-            .set(asset.meaning.clone())
-            .expect("serialized preflight excluded a conflicting catalog");
+    if crate::runtime::home_program_transition::retain_root_execution_contracts(&basis.inner.root)
+        .is_none()
+    {
+        crate::runtime::home_program_transition::install_root_execution_contracts(
+            &basis.inner.root,
+            &asset.meaning,
+        )
+        .expect("serialized preflight excluded a conflicting catalog");
     }
 }

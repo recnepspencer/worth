@@ -6,21 +6,20 @@ use std::collections::BTreeSet;
 
 use super::root_inventory::RecoveredRootInventory;
 
-mod commit_stop;
-pub(crate) use commit_stop::replay_commit_stop;
+pub(in crate::durability::authority) mod commit_stop;
+mod committed_artifacts;
 mod effect;
 mod naming_recovery;
 mod owner_bindings;
+mod path;
 mod preparation;
 
 #[cfg(test)]
 mod interruption_tests;
 
-use effect::{
-    is_metadata_only_merge_commit, replay_envelope_effect,
-    restore_authoritative_artifacts_when_required,
-};
-use preparation::prepare_replay_context;
+use effect::{replay_envelope_effect, restore_authoritative_artifacts_when_required};
+use path::{is_metadata_only_merge_commit, validate_replay_path};
+use preparation::{prepare_replay_context, ReplayPreparationInputs};
 
 pub(super) fn replay_readmitted_envelope(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -29,29 +28,22 @@ pub(super) fn replay_readmitted_envelope(
     available_commit_ids: &BTreeSet<crate::history::data::CommitId>,
     restore_authoritative_envelope: bool,
     recovered_roots: &mut RecoveredRootInventory,
-    recorded_result_schema: Option<crate::mvcc::RecordedReplayResultSchema>,
+    recorded_result_schema: Option<crate::durability::authority::runtime_rebuild::recorded_result_schema::RecordedReplayResultSchema>,
 ) -> Result<crate::history::data::PositionedCanonicalCommit, RelationalRecoveryStop> {
     crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
         let envelope = readmitted.envelope();
-        if matches!(
-            envelope.authority_kind,
-            CanonicalCommitAuthorityKind::OwnedGraphSelection(_)
-        ) {
-            return Err(DurabilityError::new(
-                RecoveryFailureClass::UnsupportedOwnedGraphSelectionReplay,
-                "owned graph selection cannot be reconstructed from a canonical tail without its original source custody",
-            ).into());
-        }
-        if matches!(
-            envelope.authority_kind,
-            CanonicalCommitAuthorityKind::RetainedEntitySelection(_)
-        ) {
-            return Err(DurabilityError::new(
-                RecoveryFailureClass::UnsupportedRetainedEntitySelectionReplay,
-                "retained entity selection cannot be reconstructed from a canonical tail without its original source custody",
-            ).into());
-        }
-        let catalog = super::index_catalog::readmit(execution, restored, &readmitted)?;
+        validate_replay_path(envelope)?;
+        let catalog = super::index_catalog::readmit(
+            execution,
+            &restored.indexes,
+            restored.runtime_instance_id(),
+            &readmitted,
+            || {
+                restored
+                    .index_authority()
+                    .recover_installed_index_routing(execution)
+            },
+        )?;
         for (_, text) in &envelope.symbol_texts.entries {
             restored
                 .services
@@ -67,12 +59,26 @@ pub(super) fn replay_readmitted_envelope(
             })?;
         let had_checkpoint_artifact = prepare_replay_context(
             execution,
-            restored,
+            ReplayPreparationInputs {
+                history: &restored.history,
+                lineage: &restored.lineage,
+                registry: &restored.config.schema.registry,
+                symbols: &restored.services.symbols,
+            },
             envelope,
-            readmitted.position(),
             available_commit_ids,
             recovered_roots,
+            |nodes, parents| {
+                restored
+                    .performance_access()
+                    .count_merge_history_durability_validation(nodes, parents);
+            },
         )?;
+        restored.history.advance_canonical_stream_floor(
+            crate::publication::patch::data::PatchStreamPosition(
+                readmitted.position().0.saturating_sub(1),
+            ),
+        );
         let positioned = readmitted.positioned().clone();
         let replays_mutation_pipeline = envelope.authority_kind()
             == CanonicalCommitAuthorityKind::VersionedTransaction

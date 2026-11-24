@@ -1,13 +1,14 @@
 //! Value-free, bounded projection of one sealed publication candidate.
 
-use crate::branch::{RelationalBranchBasisDescriptor, RelationalBranchRoot};
+use crate::branch::basis_descriptor::RelationalBranchBasisDescriptor;
+use crate::branch::root::RelationalBranchRoot;
 use crate::history::data::{BranchId, CommitId};
 use crate::identity::data::{EntityId, KindId, RelationId, VersionId};
 use crate::publication::patch::data::{
     PublishedAuthoritativePatchOperation, RecordStructuralChange,
 };
 use crate::storage::data::RecordLifecycleState;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 use worth_foundational::facade::{AspectKey, CanonicalFieldPath};
 use worth_foundational::FoundationalBranchTarget;
 
@@ -72,7 +73,7 @@ pub struct PreparedRelationalChangeSummary {
 }
 
 pub(super) fn summarize(
-    candidate: &crate::mvcc::PreparedRelationalCommitCandidate,
+    candidate: &crate::mvcc::publication::candidate::PreparedRelationalCommitCandidate,
     budget: PreparedRelationalChangeSummaryBudget,
 ) -> Result<PreparedRelationalChangeSummary, PreparedRelationalChangeSummaryDenial> {
     use PreparedRelationalChangeSummaryDenial as Denial;
@@ -93,7 +94,8 @@ pub(super) fn summarize(
         .ok_or(Denial::CanonicalEnvelopeMismatch)?;
     if envelope.branch_context != *candidate.branch()
         || envelope.commit.branch_id != *candidate.branch()
-        || envelope.merged_plan.transaction_id != crate::branch::CANONICAL_TRANSACTION_ID
+        || envelope.merged_plan.transaction_id
+            != crate::branch::reference_checkpoint_data::CANONICAL_TRANSACTION_ID
         || after_root.commit_id() != Some(envelope.commit.commit_id)
         || after_root.axes().map(|axes| axes.storage_version) != Some(envelope.commit.version_id.0)
     {

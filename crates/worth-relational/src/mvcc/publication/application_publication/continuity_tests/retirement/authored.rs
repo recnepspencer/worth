@@ -4,8 +4,6 @@ use crate::identity::data::RelationId;
 use crate::mvcc::publication::application_publication::output_meaning::{
     native_meaning_fixture, native_roles_fixture,
 };
-#[path = "authored/refusal.rs"]
-mod refusal;
 #[path = "authored/request.rs"]
 mod request;
 

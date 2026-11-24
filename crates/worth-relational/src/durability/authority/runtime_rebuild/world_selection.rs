@@ -1,20 +1,28 @@
 //! Select World predecessors only from exact terminally released Native effects.
-use super::RecoveredRootInventory;
-use crate::branch::{
-    RecordedRelationalComponentReference as Recorded, RelationalBranchBasisDescriptor,
-    RelationalBranchRoot,
-};
-use crate::durability::{
-    data::{RecoveryPlan, RelationalRecoveryStop as Stop},
+use super::root_inventory::RecoveredRootInventory;
+use crate::branch::basis_descriptor::RelationalBranchBasisDescriptor;
+use crate::branch::recorded_basis::RecordedRelationalComponentReference as Recorded;
+use crate::branch::reference::world_selection::WorldSourceSelection;
+use crate::branch::root::RelationalBranchRoot;
+use crate::durability::data::{RecoveryPlan, RelationalRecoveryStop as Stop};
+use crate::durability::home_world_catalog::{
     RelationalWorldSourceCatalog, RelationalWorldSourceDescription as Source,
 };
-use crate::runtime::RelationalRuntime;
 use std::sync::Arc;
 use worth_execution::{ExecutionOrderedMap, ExecutionRequest};
 use worth_foundational::{CanonicalDigestId, WorldOriginalFate};
 use worth_proof::VerifiedHomeWorldSelection;
 mod sources;
 mod transitions;
+
+pub(super) struct WorldReplayInputs<'a> {
+    pub(super) history: &'a crate::runtime::state::subsystems::history::HistorySubsystem,
+    pub(super) registry: &'a crate::schema::data::RelationalSchemaRegistry,
+    pub(super) symbols: &'a crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
+    pub(super) checkpoint: &'a crate::runtime::state::subsystems::durability::checkpoint_selection::RelationalCheckpointManifestSelection,
+    pub(super) runtime_instance_id: u64,
+    pub(super) visibility: crate::branch::head_visibility_inputs::BranchHeadVisibilityInputs<'a>,
+}
 
 pub(super) struct WorldSelectionReplay {
     admitted: Arc<VerifiedHomeWorldSelection<Arc<RelationalWorldSourceCatalog>>>,
@@ -65,7 +73,7 @@ impl WorldSelectionReplay {
     pub(super) fn before(
         &self,
         request: &ExecutionRequest<'_, '_>,
-        runtime: &RelationalRuntime,
+        inputs: &WorldReplayInputs<'_>,
         plan: &RecoveryPlan,
         roots: &mut RecoveredRootInventory,
         pending: &crate::durability::migration::ReadmittedCanonicalCommit,
@@ -79,7 +87,7 @@ impl WorldSelectionReplay {
         };
         self.select(
             request,
-            runtime,
+            inputs,
             plan,
             roots,
             self.admitted.source().originals()[*index].source(),
@@ -89,12 +97,12 @@ impl WorldSelectionReplay {
     pub(super) fn finish(
         &self,
         request: &ExecutionRequest<'_, '_>,
-        runtime: &RelationalRuntime,
+        inputs: &WorldReplayInputs<'_>,
         plan: &RecoveryPlan,
         roots: &mut RecoveredRootInventory,
-    ) -> Result<(), Stop> {
+    ) -> Result<Arc<VerifiedHomeWorldSelection<Arc<RelationalWorldSourceCatalog>>>, Stop> {
         for source in self.admitted.source().heads() {
-            self.select(request, runtime, plan, roots, source, true)?;
+            self.select(request, inputs, plan, roots, source, true)?;
         }
         // Every non-disposed original product predecessor is needed by later
         // full World reconciliation, even when it stopped being a Native head.
@@ -104,60 +112,75 @@ impl WorldSelectionReplay {
         for row in self.admitted.source().originals() {
             let recorded = if row.source_disposed() {
                 let Some(recorded) =
-                    self.recorded_source_optional(row.source(), runtime, plan, roots, request)?
+                    self.recorded_source_optional(row.source(), inputs, plan, roots, request)?
                 else {
                     continue;
                 };
                 recorded
             } else {
-                self.recorded_source(row.source(), runtime, plan, roots, request)?
+                self.recorded_source(row.source(), inputs, plan, roots, request)?
             };
-            let Some((root, _)) = roots.exact_image(request, runtime, &recorded)? else {
+            let Some((root, _)) = roots.exact_image(
+                request,
+                inputs.history,
+                inputs.registry,
+                inputs.symbols,
+                &recorded,
+            )?
+            else {
                 if row.source_disposed() {
-                    self.require_present_recorded_entry(&recorded, runtime, plan, request)?;
+                    self.require_present_recorded_entry(&recorded, inputs, plan, request)?;
                     continue;
                 }
                 return Err(corrupt("World handoff source image is unavailable"));
             };
-            self.require_source(&recorded, &root, runtime, plan, request)?;
+            self.require_source(&recorded, &root, inputs, plan, request)?;
             roots.retain_world_selection_root(root.commit_id(), root, request)?;
         }
         for source in self.admitted.source().heads() {
-            let recorded = self.recorded_source(source, runtime, plan, roots, request)?;
+            let recorded = self.recorded_source(source, inputs, plan, roots, request)?;
             let (root, _) = roots
-                .exact_image(request, runtime, &recorded)?
+                .exact_image(
+                    request,
+                    inputs.history,
+                    inputs.registry,
+                    inputs.symbols,
+                    &recorded,
+                )?
                 .ok_or_else(|| corrupt("World handoff source image is unavailable"))?;
             roots.retain_world_selection_root(root.commit_id(), root, request)?;
         }
         roots.install_world_selection_handoff(self.admitted.authority().clone());
-        runtime
-            .history
-            .canonical_checkpoint_gate()
-            .retain_home_world_selection(self.admitted.clone());
-        Ok(())
+        Ok(self.admitted.clone())
     }
     fn select(
         &self,
         request: &ExecutionRequest<'_, '_>,
-        runtime: &RelationalRuntime,
+        inputs: &WorldReplayInputs<'_>,
         plan: &RecoveryPlan,
         roots: &mut RecoveredRootInventory,
         source: &Source,
         final_selection: bool,
     ) -> Result<(), Stop> {
-        let recorded = self.recorded_source(source, runtime, plan, roots, request)?;
+        let recorded = self.recorded_source(source, inputs, plan, roots, request)?;
         let (root, descriptor) = roots
-            .exact_image(request, runtime, &recorded)?
+            .exact_image(
+                request,
+                inputs.history,
+                inputs.registry,
+                inputs.symbols,
+                &recorded,
+            )?
             .ok_or_else(|| corrupt("World selected source image is unavailable"))?;
-        self.require_source(&recorded, &root, runtime, plan, request)?;
-        let cell = runtime
+        self.require_source(&recorded, &root, inputs, plan, request)?;
+        let cell = inputs
             .history
             .branch_cell(descriptor.branch_id())
             .ok_or_else(|| corrupt("World selected branch is unavailable"))?;
         let previous = cell
             .root()
             .ok_or_else(|| corrupt("World selected branch has no head"))?;
-        let current = crate::branch::descriptor_for_cell(&cell, &previous)
+        let current = crate::branch::basis_admission::descriptor_for_cell(&cell, &previous)
             .map_err(|_| corrupt("World selected head is not describable"))?;
         if current == descriptor && Arc::ptr_eq(&root, &previous) {
             return Ok(());
@@ -165,7 +188,7 @@ impl WorldSelectionReplay {
         let commit = previous
             .commit_id()
             .ok_or_else(|| corrupt("World cannot displace an unaccounted Empty head"))?;
-        let entry = self.entry(commit, runtime, plan, request)?;
+        let entry = self.entry(commit, inputs, plan, request)?;
         let caller = match entry.association_discovery.association() {
             Some(caller) => caller,
             None if final_selection => {
@@ -224,14 +247,21 @@ impl WorldSelectionReplay {
                 "World release cannot authorize a different or Home-step caller",
             ));
         }
-        self.require_release_axes(&previous, &current, &descriptor, &root, runtime, request)?;
+        self.require_release_axes(&previous, &current, &descriptor, &root, inputs, request)?;
         // Admit staging custody before changing the actual selected cell. Later
         // World reconciliation must still reach this exact displaced image.
         roots.retain_world_selection_root(Some(commit), previous.clone(), request)?;
         request
             .consult()
             .map_err(|cause| Stop::Request(cause.into()))?;
-        cell.select_recovered_world_source(runtime, &descriptor, root)?;
+        cell.select_recovered_world_source(
+            WorldSourceSelection {
+                history: inputs.history,
+                visibility: inputs.visibility,
+            },
+            &descriptor,
+            root,
+        )?;
         Ok(())
     }
     fn require_release_axes(
@@ -240,33 +270,36 @@ impl WorldSelectionReplay {
         current: &RelationalBranchBasisDescriptor,
         selected: &RelationalBranchBasisDescriptor,
         selected_root: &Arc<RelationalBranchRoot>,
-        runtime: &RelationalRuntime,
+        inputs: &WorldReplayInputs<'_>,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), Stop> {
         match previous
             .commit_evidence()
             .ok_or_else(|| corrupt("released Native effect has no source evidence"))?
         {
-            crate::branch::RelationalRootCommitEvidence::Original(original) => {
+            crate::branch::root::RelationalRootCommitEvidence::Original(original) => {
                 let checkpoint = original
                     .envelope()
                     .branch_cell_checkpoint
                     .clone()
                     .ok_or_else(|| corrupt("released Native original has no predecessor cell"))?;
                 let predecessor =
-                    crate::branch::RelationalBranchReferenceCell::from_checkpoint_with_root(
-                        runtime.runtime_instance_id(),
+                    crate::branch::reference::RelationalBranchReferenceCell::from_checkpoint_with_root(
+                        inputs.runtime_instance_id,
                         checkpoint,
                         Some(selected_root.clone()),
                     )
                     .map_err(|_| corrupt("released Native original predecessor is invalid"))?;
-                let actual = crate::branch::descriptor_for_cell(&predecessor, selected_root)
-                    .map_err(|_| corrupt("released Native predecessor cannot be described"))?;
+                let actual = crate::branch::basis_admission::descriptor_for_cell(
+                    &predecessor,
+                    selected_root,
+                )
+                .map_err(|_| corrupt("released Native predecessor cannot be described"))?;
                 if &actual != selected {
                     return Err(corrupt("released Native original predecessor mismatch"));
                 }
             }
-            crate::branch::RelationalRootCommitEvidence::Checkpoint(commit) => {
+            crate::branch::root::RelationalRootCommitEvidence::Checkpoint(commit) => {
                 commit.require_publication_axes(selected, current, request)?;
             }
         }

@@ -4,12 +4,12 @@ use crate::history::data::canonical_commit_envelope::{
     OutputOriginHistory, OwnedValidatedOutputOrigins,
 };
 use crate::history::data::CanonicalOutputPublication;
+use crate::history::envelope_demand::CanonicalHistoryRead;
 use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture as Posture;
-use crate::runtime::state::subsystems::history::HistorySubsystem;
 use worth_execution::MapKernelContext;
 
 pub(crate) fn antecedent(
-    history: &HistorySubsystem,
+    history: CanonicalHistoryRead<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     envelope: &OwnedValidatedOutputOrigins,
     origin: &crate::history::data::CanonicalRequiredOutputOrigin,

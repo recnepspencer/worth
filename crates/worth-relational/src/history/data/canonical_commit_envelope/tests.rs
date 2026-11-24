@@ -43,6 +43,14 @@ pub(crate) fn envelope_with_patch_and_update(
         branch_id: BranchId("main".to_owned()),
         parents: Vec::new(),
     };
+    envelope_with_patch_at(patch_target, update_target, receipt)
+}
+
+pub(crate) fn envelope_with_patch_at(
+    patch_target: RecordRef,
+    update_target: EntityId,
+    receipt: RelationalCommitReceipt,
+) -> CanonicalCommitEnvelope {
     let descriptor_semantics_version = DescriptorSemanticsVersion(1);
     let draft = crate::history::data::CanonicalCommitEnvelopeDraft::new(
         Default::default(),
@@ -100,6 +108,7 @@ pub(crate) fn envelope_with_patch_and_update(
     );
     // Seal directly at the canonical owner. These descriptor predicates
     // require one admitted wire value, with no claim of performed publication.
+    let parent_count = receipt.parents.len();
     let semantic = RelationalCommitSemanticResult {
         receipt,
         created_entities: Vec::new(),
@@ -119,9 +128,9 @@ pub(crate) fn envelope_with_patch_and_update(
             target_branch: "main".to_owned(),
             requested_merge_parent_count: 0,
             effective_merge_parent_count: 0,
-            parent_count: 0,
+            parent_count,
             merge_base_count: 0,
-            had_previous_branch_head: false,
+            had_previous_branch_head: parent_count != 0,
         },
         change: CommitChangeSummary {
             changed_record_count: 1,
@@ -137,7 +146,7 @@ pub(crate) fn envelope_with_patch_and_update(
         publication: RelationalCommitPublicationMeaning {
             patch_record_count: 1,
             lineage_event_count: 0,
-            merge_parent_count: 0,
+            merge_parent_count: parent_count.saturating_sub(1),
         },
         validation: Vec::new(),
         decoded_memory: None,

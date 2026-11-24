@@ -1,8 +1,6 @@
 //! Check exact owner-recorded component headers without reading artifact bodies.
 use super::*;
 
-#[cfg(test)]
-mod tests;
 use crate::branch::basis_descriptor::{
     RelationalBranchBasisDescriptor as Descriptor, RELATIONAL_BRANCH_BASIS_DESCRIPTOR_VERSION,
 };

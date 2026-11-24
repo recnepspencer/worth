@@ -48,7 +48,7 @@ impl<Level> RelationalResidencyLease<Level> {
     fn admit_symbols_at(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        symbols: &crate::runtime::RuntimeSymbolTable,
+        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
         identity: super::RelationalRegionSymbolAdmissionIdentity,
         scope: SymbolScope,
     ) -> Result<(), RelationalResidencyDemandFailure> {
@@ -99,7 +99,7 @@ impl<Level> RelationalResidencyLease<Level> {
         &self,
         lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        symbols: &crate::runtime::RuntimeSymbolTable,
+        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     ) -> Result<(), RelationalResidencyDemandFailure> {
         let full = self.has_complete_history();
         let identity = if full {
@@ -157,7 +157,7 @@ impl RelationalResidencyLease<Head> {
     pub(crate) fn admit_owned_symbols(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        symbols: &crate::runtime::RuntimeSymbolTable,
+        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     ) -> Result<(), RelationalResidencyDemandFailure> {
         self.admit_symbols_at(
             execution,
@@ -174,7 +174,7 @@ impl RelationalResidencyLease<Head> {
     pub(crate) fn admit_symbols(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        symbols: &crate::runtime::RuntimeSymbolTable,
+        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     ) -> Result<(), RelationalResidencyDemandFailure> {
         self.admit_symbols_at(
             execution,
@@ -201,7 +201,7 @@ impl RelationalResidencyLease<Full> {
     pub(crate) fn admit_symbols(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        symbols: &crate::runtime::RuntimeSymbolTable,
+        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     ) -> Result<(), RelationalResidencyDemandFailure> {
         self.admit_symbols_at(
             execution,

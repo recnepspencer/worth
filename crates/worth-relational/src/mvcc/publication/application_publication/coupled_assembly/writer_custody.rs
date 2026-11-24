@@ -1,12 +1,19 @@
 //! A participant's admission never transfers another writer's record custody.
-use super::*;
 use crate::execution::request_stage::checkpoint;
-use crate::{
-    history::data::{source_scope_closure, CanonicalRequiredOutputOrigin},
-    mvcc::RequiredOutputRolePosture as Posture,
-    publication::data::{AuthoredRetirementRefusal as Cause, PublicationError},
-    transactions::data::{EntityMutationIntent, MutationIntent, RecordRef, RelationMutationIntent},
-};
+use crate::history::data::source_scope_closure;
+use crate::history::data::CanonicalRequiredOutputOrigin;
+use crate::mvcc::publication::application_publication::custody;
+use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture as Posture;
+use crate::mvcc::publication::application_publication::RelationalAuthoredCoupledOwners;
+use crate::publication::data::AuthoredRetirementRefusal as Cause;
+use crate::publication::data::PublicationError;
+use crate::transactions::data::intents::mutation_intent::EntityMutationIntent;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::intents::mutation_intent::RelationMutationIntent;
+use crate::transactions::data::outcomes::transaction_commit_error::origin_denial;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::RecordRef;
+use worth_execution::ExecutionRequest;
 
 pub(super) enum Writer<'a> {
     AuthoredPrefix,
@@ -17,7 +24,7 @@ pub(super) fn require(
     execution: &ExecutionRequest<'_, '_>,
     custody: &RelationalAuthoredCoupledOwners,
     posture: Writer<'_>,
-    plan: &crate::transactions::data::MergedCommitPlan,
+    plan: &crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan,
 ) -> Result<std::collections::BTreeSet<crate::identity::data::RelationId>, TransactionCommitError> {
     let (writer, authored) = match posture {
         Writer::AuthoredPrefix => (None, true),

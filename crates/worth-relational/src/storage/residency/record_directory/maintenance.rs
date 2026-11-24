@@ -5,7 +5,7 @@ use crate::storage::substrate::maintenance::{
     ChangeWork, MaintenanceRefusal, PartitionChange, RecordChangeState,
 };
 use crate::storage::substrate::{RecordArena, RecordKind};
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
 #[derive(Debug)]
 pub(crate) enum DirectoryError {

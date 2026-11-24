@@ -1,5 +1,7 @@
 //! Publication gates on publication failures, using the actual proposed state.
+use super::super::super::fixture::DagFixture;
 use super::*;
+use crate::facade::runtime::RelationalRuntimeApi;
 
 #[test]
 fn a_native_publication_failure_blocks_custom_preparation_while_a_commit_effect_at_that_point_continues(
@@ -39,12 +41,7 @@ fn a_native_publication_failure_blocks_custom_preparation_while_a_commit_effect_
                 fields: crate::transactions::data::aspect_field_patch::AspectFieldPatch::default(),
             }),
         ));
-        let lease = super::super::super::fixture::request(
-            8 * 1024 * 1024,
-            4_000_000,
-            CancellationToken::new(),
-            None,
-        );
+        let lease = paid_dag_request(8 * 1024 * 1024, 4_000_000, CancellationToken::new(), None);
         let outcome = fixture.validate(&ExecutionRequest::leased(&lease), batch);
         if effect == Effect::BlockPublication {
             let Err(TransactionCommitError::Publication { error, .. }) = outcome else {

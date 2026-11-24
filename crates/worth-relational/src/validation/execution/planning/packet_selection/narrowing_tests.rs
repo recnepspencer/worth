@@ -1,9 +1,10 @@
 //! Candidate applicability belongs to the request, never to an unrelated rule.
 use super::*;
-use crate::facade::runtime::RelationalRuntime;
-use crate::facade::runtime::RelationalRuntimeApi;
+use crate::config::data::RelationalRuntimeConfig;
 use crate::identity::data::KindId;
 use crate::identity::data::PartitionId;
+use crate::identity::data::VersionId;
+use crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;
 use crate::schema::data::EntityKindRegistration;
 use crate::schema::data::KindAspectContractDeclarations;
 use crate::schema::data::RelationalSchemaRegistry;
@@ -14,19 +15,36 @@ use crate::transactions::data::intents::mutation_intent::MutationIntent;
 use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
 use crate::transactions::data::primitives::EntitySpec;
 use crate::transactions::data::primitives::TransactionId;
-use crate::transactions::data::primitives::WorkerIntentBatch;
+use crate::validation::engine::InvariantRuntimeView;
 use crate::validation::{
-    custom_rule::{CustomPreparationBudget, CustomPreparationStop},
-    data::*,
+    custom_rule::{
+        CustomInvariantExecutionContext, CustomInvariantLeaseBudget, CustomInvariantRegistration,
+        CustomInvariantRule, CustomInvariantScopePlanner, CustomPreparationBudget,
+        CustomPreparationStop,
+    },
+    data::{
+        catalog::InvariantCatalog,
+        custom_rule::errors::{
+            CustomInvariantExecutionError, CustomInvariantPreparationError, CustomInvariantVerdict,
+        },
+        descriptor::{
+            CustomInvariantAccessContract, CustomInvariantDescriptor,
+            CustomInvariantOperationalMetadata,
+        },
+        execution::{InvariantExecutionPoint, InvariantFailureEffect},
+        groups::{InvariantCostClass, InvariantGroup, InvariantGroupSet},
+        rule_id::{
+            CustomInvariantRuleId, CustomInvariantSemanticIdentity, CustomInvariantSemanticVersion,
+        },
+    },
     engine::{InvariantObservation, InvariantRequestProfile},
 };
+use std::collections::BTreeMap;
 use std::{
     num::{NonZeroU64, NonZeroUsize},
     sync::Arc,
 };
-use worth_execution::{
-    CancellationToken, ExecutionRequest, ExecutionResourceLease, ExecutionWorkCeiling, LeaseRequest,
-};
+use worth_execution::{CancellationToken, ExecutionRequest, ExecutionResourceLease, LeaseRequest};
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };
@@ -89,7 +107,7 @@ impl CustomInvariantRule for TinyRule {
         Some(Ok(CustomInvariantVerdict::Pass))
     }
 }
-fn runtime() -> RelationalRuntime {
+fn view(instrumentation: &RuntimeInstrumentation) -> InvariantRuntimeView<'_> {
     let mut schema = RelationalSchemaRegistry::new();
     for (id, name) in [(1, "unrelated"), (2, "rule-kind")] {
         schema = schema
@@ -102,16 +120,22 @@ fn runtime() -> RelationalRuntime {
             })
             .unwrap();
     }
-    RelationalRuntimeApi::builder()
-        .schema_registry(schema)
-        .invariant_catalog(InvariantCatalog {
-            registrations: vec![],
-        })
-        .custom_invariant(CustomInvariantRegistration::new(TinyRule(0)).unwrap())
-        .custom_invariant(CustomInvariantRegistration::new(TinyRule(1)).unwrap())
-        .build()
-        .expect("valid native runtime configuration")
+    let mut config = RelationalRuntimeConfig::default();
+    config.schema.registry = schema;
+    config.schema.invariant_catalog = InvariantCatalog {
+        registrations: vec![],
+    };
+    crate::validation::engine::test_view::invariant_view_with_custom_rules(
+        instrumentation,
+        config,
+        VersionId(0),
+        vec![
+            CustomInvariantRegistration::new(TinyRule(0)).unwrap(),
+            CustomInvariantRegistration::new(TinyRule(1)).unwrap(),
+        ],
+    )
 }
+
 fn request(serial: bool) -> ExecutionResourceLease<'static> {
     let request = LeaseRequest {
         policy: ExecutionRequestPolicy::new(
@@ -140,9 +164,10 @@ fn intent(kind: u32, key: &str) -> MutationIntent {
 }
 #[test]
 fn an_untouched_rule_spends_zero_and_narrowing_is_paid_once_at_both_postures() {
-    let mut totals = Vec::new();
     for serial in [false, true] {
-        let runtime = runtime();
+        let instrumentation = RuntimeInstrumentation::new();
+        let view = view(&instrumentation);
+        let partitions = BTreeMap::new();
         let lease = request(serial);
         let plan = MergedCommitPlan {
             transaction_id: TransactionId(1),
@@ -150,13 +175,12 @@ fn an_untouched_rule_spends_zero_and_narrowing_is_paid_once_at_both_postures() {
         };
         let candidate = InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
-            &runtime,
-            InvariantObservation::committed(runtime.storage_access().current_edition()),
-            runtime.current_version_id(),
+            &view,
+            InvariantObservation::committed_branch(&partitions),
+            VersionId(0),
             Some(&plan),
             None,
         );
-        let view = runtime.invariant_validation_view();
         let budget = CustomPreparationBudget::new(lease.status(), Some(1_000_000), Some(1_000_000));
         let selected = eligible_registrations(
             &view,
@@ -214,26 +238,15 @@ fn an_untouched_rule_spends_zero_and_narrowing_is_paid_once_at_both_postures() {
                 "reporting a skipped rule cannot spend its allowance"
             );
         }
-        let mut tx = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
-        tx.push_batch(
-            WorkerIntentBatch::new("untouched").push(intent(1, "committed")),
-            ExecutionRequest::leased(&lease).allocation_policy(),
-        )
-        .unwrap();
-        let (_, report) = ExecutionRequest::leased(&lease)
-            .run(ExecutionWorkCeiling::new(Some(1_000_000)), |_| {
-                tx.commit(&ExecutionRequest::leased(&lease), &runtime)
-                    .expect("untouched tiny rules accept the real commit")
-            })
-            .unwrap();
-        totals.push((report.charged_work(), report.charged_span()));
     }
-    assert_eq!(totals[0], totals[1]);
 }
+
 #[test]
 fn a_touched_rule_keeps_its_typed_local_ceiling() {
     for serial in [false, true] {
-        let runtime = runtime();
+        let instrumentation = RuntimeInstrumentation::new();
+        let view = view(&instrumentation);
+        let partitions = BTreeMap::new();
         let lease = request(serial);
         let plan = MergedCommitPlan {
             transaction_id: TransactionId(2),
@@ -241,15 +254,15 @@ fn a_touched_rule_keeps_its_typed_local_ceiling() {
         };
         let candidate = InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
-            &runtime,
-            InvariantObservation::committed(runtime.storage_access().current_edition()),
-            runtime.current_version_id(),
+            &view,
+            InvariantObservation::committed_branch(&partitions),
+            VersionId(0),
             Some(&plan),
             None,
         );
         let budget = CustomPreparationBudget::new(lease.status(), Some(1_000_000), Some(1_000_000));
         eligible_registrations(
-            &runtime.invariant_validation_view(),
+            &view,
             ExecutionRequest::leased(&lease),
             &candidate,
             Some(&budget),
@@ -265,16 +278,18 @@ fn a_touched_rule_keeps_its_typed_local_ceiling() {
 
 #[test]
 fn narrowing_keeps_request_work_and_cancellation_stops() {
-    let runtime = runtime();
+    let instrumentation = RuntimeInstrumentation::new();
+    let view = view(&instrumentation);
+    let partitions = BTreeMap::new();
     let plan = MergedCommitPlan {
         transaction_id: TransactionId(3),
         merged_intents: vec![intent(1, "one"), intent(1, "two")],
     };
     let candidate = InvariantExecutionRequest::from_profile_with_contract(
         InvariantRequestProfile::CommitBoundary,
-        &runtime,
-        InvariantObservation::committed(runtime.storage_access().current_edition()),
-        runtime.current_version_id(),
+        &view,
+        InvariantObservation::committed_branch(&partitions),
+        VersionId(0),
         Some(&plan),
         None,
     );

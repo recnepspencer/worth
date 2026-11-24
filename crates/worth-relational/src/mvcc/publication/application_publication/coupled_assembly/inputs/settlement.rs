@@ -3,19 +3,12 @@
 //! between an old consumed parent and its chain replacement, settling the
 //! consumer's `RequiredOutputInputs` only on exact Native equality.
 use super::*;
-use crate::identity::data::{EntityId, KindId};
-use crate::storage::overlay::CurrentPartitionAccess;
+use compare::RoleSignature;
+
+#[path = "settlement/compare.rs"]
+mod compare;
 
 type CandidatePin = RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>;
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-struct RoleSignature<'a> {
-    role: &'a str,
-    entity_name: &'a str,
-    kind: KindId,
-    entity: EntityId,
-    retiring: bool,
-}
 
 impl RelationalAuthoredCoupledCandidate<'_> {
     /// Compare Native consumption identity and payload between `old_parent` (at
@@ -130,18 +123,8 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         let current_pin = self.pin_source(execution)?;
         let old_root = old_parent_pin.resident_basis().root();
         let new_root = current_pin.resident_basis().root();
-        let payload_equal = execution
-            .run_native_with_checkpoint(|context| {
-                for role in &rep_roles {
-                    checkpoint(context, 1).map_err(custody::execution_stop)?;
-                    if !entity_payload_equal(old_root.as_ref(), new_root.as_ref(), role.entity) {
-                        return Ok::<_, TransactionCommitError>(false);
-                    }
-                }
-                Ok(true)
-            })
-            .map_err(custody::execution_stop)?
-            .0?;
+        let payload_equal =
+            compare::payloads_equal(execution, old_root.as_ref(), new_root.as_ref(), &rep_roles)?;
         if !payload_equal {
             return Ok(false);
         }
@@ -161,7 +144,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
     ) -> Result<Vec<RoleSignature<'_>>, TransactionCommitError> {
         let part = &self.parts[index];
         let roles = part.publication.roles();
-        let resolved = super::ordinary_roles::resolve_applied_roles(
+        let resolved = super::producer_posture::resolve_applied_roles(
             execution,
             roles,
             &self.mutation.outcome.created_entities,
@@ -178,30 +161,4 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             })
             .collect())
     }
-}
-
-fn entity_payload_equal(
-    old_root: &impl CurrentPartitionAccess,
-    new_root: &impl CurrentPartitionAccess,
-    entity: EntityId,
-) -> bool {
-    let slot = entity.slot_index();
-    let old_slot = old_root
-        .get_current_partition(entity.partition_id)
-        .and_then(|p| p.entity_arena().get_slot(slot));
-    let new_slot = new_root
-        .get_current_partition(entity.partition_id)
-        .and_then(|p| p.entity_arena().get_slot(slot));
-    let (Some(old_slot), Some(new_slot)) = (old_slot, new_slot) else {
-        return false;
-    };
-    if old_slot.record_id() != entity
-        || new_slot.record_id() != entity
-        || !old_slot.is_live()
-        || !new_slot.is_live()
-        || old_slot.kind_id() != new_slot.kind_id()
-    {
-        return false;
-    }
-    old_slot.extra().authoritative_aspect_state() == new_slot.extra().authoritative_aspect_state()
 }

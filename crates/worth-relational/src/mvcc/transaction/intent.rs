@@ -10,7 +10,7 @@ pub struct RelationalTransactionIntent {
     pub(crate) materialization_mode: Option<RelationalMaterializationTransactionMode>,
     restoration: Option<crate::validation::candidate_source::NativeSourceRestorationOrigin>,
     materialization_source: Option<(
-        crate::branch::AdmittedRelationalBranchBasis,
+        crate::branch::basis::AdmittedRelationalBranchBasis,
         std::sync::Arc<crate::validation::candidate_source::NativeMaterializationSource>,
     )>,
 }
@@ -72,7 +72,7 @@ impl RelationalTransactionIntent {
 
     pub(crate) fn with_materialization_source(
         mut self,
-        basis: &crate::branch::AdmittedRelationalBranchBasis,
+        basis: &crate::branch::basis::AdmittedRelationalBranchBasis,
         source: std::sync::Arc<crate::validation::candidate_source::NativeMaterializationSource>,
     ) -> Self {
         self.materialization_source = Some((basis.clone(), source));
@@ -81,8 +81,8 @@ impl RelationalTransactionIntent {
 
     pub(crate) fn with_materialization_custody(
         self,
-        basis: &crate::branch::AdmittedRelationalBranchBasis,
-        custody: &crate::branch::RelationalMaterializationCustody,
+        basis: &crate::branch::basis::AdmittedRelationalBranchBasis,
+        custody: &crate::branch::materialization::RelationalMaterializationCustody,
     ) -> Self {
         let mut intent =
             self.with_materialization_source(basis, std::sync::Arc::clone(&custody.data().source));
@@ -111,7 +111,7 @@ impl RelationalTransactionIntent {
 
     pub(crate) fn admits_materialization_source(
         &self,
-        basis: &crate::branch::AdmittedRelationalBranchBasis,
+        basis: &crate::branch::basis::AdmittedRelationalBranchBasis,
     ) -> bool {
         self.materialization_source
             .as_ref()

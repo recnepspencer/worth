@@ -3,9 +3,13 @@
 //! kind and actual endpoints, and the fold keeps the head's relation, so the
 //! chain still creates each relation once and its batches name it as the
 //! head's correspondence does.
-use super::*;
+use super::super::refusals::{overflow, postponed};
+use crate::identity::data::EntityId;
 use crate::identity::data::KindId;
-use crate::transactions::data::EntityReference;
+use crate::publication::data::CoupledProvenancePostponement as Reason;
+use crate::transactions::data::intents::mutation_intent::{CreateIntent, MutationIntent};
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::EntityReference;
 
 /// One relation creation: its key text, partition, kind and actual endpoints.
 pub(super) type Relink = (
@@ -20,7 +24,7 @@ pub(super) type Relink = (
 /// for any other intent. A relation with fields, a relation-aspect create or a
 /// bulk relation create is a structural effect the fold does not lower.
 pub(super) fn relink(
-    bindings: &crate::transactions::data::CommitCreatedEntityBindings,
+    bindings: &crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings,
     symbols: &crate::symbols::data::StringInterner,
     intent: &MutationIntent,
     source: EntityId,
@@ -34,7 +38,7 @@ pub(super) fn relink(
         CreateIntent::Relation(_)
         | CreateIntent::RelationAspects(_)
         | CreateIntent::BulkRelations(_) => {
-            return Err(continuation::postponed(Reason::StructuralEffect, source))
+            return Err(postponed(Reason::StructuralEffect, source))
         }
         CreateIntent::Entity(_)
         | CreateIntent::EntityAspects(_)
@@ -44,7 +48,9 @@ pub(super) fn relink(
         .client_key
         .resolve_with_interner(symbols)
         .ok_or_else(|| {
-            crate::mvcc::origin_denial("coupled local key has no actual Native symbol meaning")
+            crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                "coupled local key has no actual Native symbol meaning",
+            )
         })?;
     charge(key.len() as u64 + 1)?;
     Ok(Some((
@@ -57,7 +63,7 @@ pub(super) fn relink(
 }
 
 fn endpoint(
-    bindings: &crate::transactions::data::CommitCreatedEntityBindings,
+    bindings: &crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings,
     reference: &EntityReference,
     source: EntityId,
     charge: &mut impl FnMut(u64) -> Result<(), TransactionCommitError>,
@@ -68,7 +74,7 @@ fn endpoint(
             charge(bindings.resolve_work_bound(created).ok_or_else(overflow)?)?;
             bindings
                 .resolve(created)
-                .ok_or_else(|| continuation::postponed(Reason::StructuralEffect, source))
+                .ok_or_else(|| postponed(Reason::StructuralEffect, source))
         }
     }
 }

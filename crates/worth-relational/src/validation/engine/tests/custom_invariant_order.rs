@@ -156,29 +156,33 @@ struct Run {
 fn run(workers: usize, wait: Duration) -> Run {
     let finished = Arc::new(Finished::default());
     let overlapped = Arc::new(Mutex::new(false));
-    let runtime = RelationalRuntimeApi::builder()
-        .schema_registry(RelationalSchemaRegistry::new())
-        .invariant_catalog(InvariantCatalog {
-            registrations: vec![InvariantRegistration::commit_boundary_blocking(
-                InvariantRule::MaxMergedIntents(usize::MAX),
-            )],
-        })
-        .custom_invariant(
+    let instrumentation = crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation::default();
+    let version = crate::identity::data::VersionId(0);
+    let mut config = crate::config::data::RelationalRuntimeConfig::default();
+    config.schema.registry = RelationalSchemaRegistry::new();
+    config.schema.invariant_catalog = InvariantCatalog {
+        registrations: vec![InvariantRegistration::commit_boundary_blocking(
+            InvariantRule::MaxMergedIntents(usize::MAX),
+        )],
+    };
+    let view = crate::validation::engine::test_view::invariant_view_with_custom_rules(
+        &instrumentation,
+        config,
+        version,
+        vec![
             CustomInvariantRegistration::new(First {
                 finished: Arc::clone(&finished),
                 wait,
                 overlapped: Arc::clone(&overlapped),
             })
             .unwrap(),
-        )
-        .custom_invariant(
             CustomInvariantRegistration::new(Second {
                 finished: Arc::clone(&finished),
             })
             .unwrap(),
-        )
-        .build()
-        .expect("valid native runtime configuration");
+        ],
+    );
+    let partitions = std::collections::BTreeMap::new();
     let lease = crate::execution::test_authority::test_execution_authority()
         .request_lease(LeaseRequest {
             policy: ExecutionRequestPolicy::new(
@@ -196,13 +200,13 @@ fn run(workers: usize, wait: Duration) -> Run {
         .unwrap();
     let request = InvariantExecutionRequest::from_profile_with_contract(
         InvariantRequestProfile::CommitBoundary,
-        &runtime,
-        InvariantObservation::committed(runtime.storage_access().current_edition()),
-        runtime.current_version_id(),
+        &view,
+        InvariantObservation::committed_branch(&partitions),
+        version,
         None,
         None,
     );
-    let result = InvariantEngine::new(&runtime)
+    let result = InvariantEngine::from_view(&view)
         .execute(&worth_execution::ExecutionRequest::leased(&lease), request)
         .expect("both rules evaluate");
     assert_eq!(

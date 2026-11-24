@@ -5,12 +5,14 @@ mod context;
 mod correspondence;
 pub(crate) mod denial;
 mod interpretation;
+mod interpretation_identity;
 pub(crate) mod opaque_custody;
+pub(crate) mod registration_observation;
 pub use context::{
     ManagedIndexSourceContextFactory, ManagedIndexSourceContextReceipt,
     ManagedIndexSourceContextShare, ManagedIndexSourcePreparationMetadata,
 };
-pub use interpretation::NativeSourceInterpretationIdentity;
+pub use interpretation_identity::NativeSourceInterpretationIdentity;
 pub(crate) mod program;
 pub use denial::ManagedIndexSourcePreparationDenial;
 pub(crate) use program::SourceProgramCommitmentDenial;
@@ -39,8 +41,7 @@ pub use observation::{ManagedIndexSourceRead, PreparedManagedIndexSourceRead};
 pub(crate) use preparation::SourceViews;
 pub(crate) mod applied;
 mod applied_affinity;
-mod applied_read;
-pub use applied_read::{ManagedIndexAppliedSourcePublication, ManagedIndexAppliedSourceRead};
+pub(crate) mod applied_read;
 pub(crate) mod authored_history;
 pub(crate) mod routing;
 pub use preparation::{

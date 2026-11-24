@@ -1,53 +1,49 @@
-//! Install immutable leaves and indexed history. No member is read here.
+//! Admit immutable leaves and indexed history without reading any member.
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use crate::durability::checkpoints::region_directory::{corrupt, ReadmittedRegionDirectory};
 use crate::durability::data::{CheckpointRestoreWork, DurableCheckpoint, RelationalRecoveryStop};
 use crate::history::data::VersionNode;
-use crate::runtime::RelationalRuntime;
+use crate::runtime::state::subsystems::history::HistorySubsystem;
+use crate::runtime::state::subsystems::lineage::LineageSubsystem;
+use crate::runtime::state::subsystems::record_identity::RecordIdentitySubsystem;
+use crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable;
+use crate::schema::data::RelationalSchemaRegistry;
 use crate::storage::residency::RelationalRegionRetention;
 
-pub(super) fn restore(
+pub(super) struct PreparedColdDirectory {
+    pub(super) history: HistorySubsystem,
+    pub(super) symbols: RuntimeSymbolTable,
+    pub(super) record_identity: RecordIdentitySubsystem,
+    pub(super) mirror: crate::runtime::state::subsystems::storage::partition_edition::PartitionMap,
+    pub(super) schemas: crate::durability::checkpoints::region_directory::ReadmittedSchemas,
+    pub(super) has_naming_schemes: bool,
+}
+
+pub(super) fn prepare(
     lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut RelationalRuntime,
+    source_history: &HistorySubsystem,
+    source_symbols: &RuntimeSymbolTable,
+    registry: &RelationalSchemaRegistry,
     checkpoint: &DurableCheckpoint,
-    directory: Arc<crate::durability::data::RelationalCheckpointDirectory>,
+    directory: &Arc<crate::durability::data::RelationalCheckpointDirectory>,
     work: &mut CheckpointRestoreWork,
-) -> Result<
-    crate::durability::checkpoints::region_directory::ReadmittedSchemas,
-    RelationalRecoveryStop,
-> {
-    crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
-    if directory.admission_image.is_some() {
-        let owner = crate::durability::checkpoint_admission::CheckpointAdmissionOwner::bind(
-            &directory, execution,
-        )
-        .map_err(RelationalRecoveryStop::AdmissionImage)?;
-        runtime
-            .durability
-            .checkpoint_selection()
-            .install_admission_owner(owner)
-            .map_err(RelationalRecoveryStop::AdmissionImage)?;
-    }
-    let mut history = runtime
-        .history
+) -> Result<PreparedColdDirectory, RelationalRecoveryStop> {
+    let mut history = source_history
         .detached_owner_snapshot()
         .map_err(|denial| corrupt(format!("cold history snapshot denied: {denial:?}")))?;
-    let mut symbols = runtime.services.symbols.interner_snapshot();
+    let mut symbols = source_symbols.interner_snapshot();
     symbols.restore_snapshot(lane, checkpoint.symbol_table.clone());
     let paged_symbols = if directory.admission_image.is_some() {
-        runtime
-            .services
-            .symbols
-            .from_selected_directory_for_request(
-                directory.manifest.symbol_page_roster(),
-                directory.symbol_member_custody(),
-                execution,
-            )?
+        source_symbols.from_selected_directory_for_request(
+            directory.manifest.symbol_page_roster(),
+            directory.symbol_member_custody(),
+            execution,
+        )?
     } else {
-        let paged = runtime.services.symbols.detached_owner_snapshot();
+        let paged = source_symbols.detached_owner_snapshot();
         paged.replace(symbols);
         paged.install_cold_symbol_pages(
             directory.manifest.symbol_page_roster(),
@@ -59,7 +55,7 @@ pub(super) fn restore(
         directory.clone(),
         paged_symbols.clone(),
         execution,
-        &runtime.config.schema.registry,
+        registry,
     )?;
     let mut head_ids = worth_execution::ExecutionOrderedMap::default();
     for cell in &checkpoint.branch_cells {
@@ -80,7 +76,7 @@ pub(super) fn restore(
         .iter()
         .map(|entry| (entry.commit.commit_id, entry.clone()))
         .collect::<BTreeMap<_, _>>();
-    let catalog = super::selected_catalog::admit(execution, &directory, |entry| {
+    let catalog = super::selected_catalog::admit(execution, directory, |entry| {
         positioned.get(&entry.commit.commit_id).cloned()
     })?;
     let head_cells = head_ids
@@ -115,13 +111,6 @@ pub(super) fn restore(
             .map(|entry| (entry.position, entry.commit.commit_id))
             .collect();
     });
-    for commit in &checkpoint.envelopes {
-        history
-            .install_recovered_canonical_route(Arc::new(commit.clone()))
-            .map_err(corrupt)?;
-        work.history_envelopes_routed += 1;
-    }
-    history.advance_canonical_stream_floor(directory.manifest.covered_position);
     let mut roots = BTreeMap::new();
     let mut authorities = BTreeMap::new();
     for image in directory
@@ -147,7 +136,7 @@ pub(super) fn restore(
             partitions: BTreeMap::new(),
             schema_authorities: authorities,
         },
-        &runtime.config.schema.registry,
+        registry,
     )?;
     history
         .restore_branch_cells(
@@ -155,13 +144,9 @@ pub(super) fn restore(
             &checkpoint.branch_lifecycle,
             &checkpoint.retired_branch_names,
             &roots,
-            &runtime.config.schema.registry,
+            registry,
         )
         .map_err(corrupt)?;
-    history.restore_branch_transition_coverage(checkpoint.coverage.up_to_branch_transition);
-    history
-        .canonical_checkpoint_gate()
-        .install_checkpoint_catalog(history.commit_artifacts());
     work.branch_cells_readmitted += checkpoint.branch_cells.len();
     let mirror = match directory.manifest.mirror_schema {
         Some(schema) => regions
@@ -179,25 +164,33 @@ pub(super) fn restore(
         None => return Err(corrupt("mirror has no schema carrier").into()),
     };
     let record_identity = super::record_identity::prepare_record_identity(checkpoint)?;
-    let has_naming_schemes = !runtime
-        .config
-        .schema
-        .registry
-        .persistent_name_schemes()
-        .is_empty()
+    let has_naming_schemes = !registry.persistent_name_schemes().is_empty()
         || regions.schemas.has_persistent_name_schemes();
-    let runtime = super::super::unshared_state(runtime)?;
-    runtime.services.symbols = paged_symbols;
-    runtime.record_identity = record_identity;
-    runtime.partitions.install_cells(mirror);
-    runtime.history = history;
-    runtime.lineage.install_cold_pages(&directory)?;
+    Ok(PreparedColdDirectory {
+        history,
+        symbols: paged_symbols,
+        record_identity,
+        mirror,
+        schemas: regions.schemas,
+        has_naming_schemes,
+    })
+}
+
+pub(super) fn readmit_lineage(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    lineage: &LineageSubsystem,
+    checkpoint: &DurableCheckpoint,
+    directory: &Arc<crate::durability::data::RelationalCheckpointDirectory>,
+    has_naming_schemes: bool,
+) -> Result<(), RelationalRecoveryStop> {
+    lineage.install_cold_pages(directory)?;
     for cell in &checkpoint.branch_cells {
         if let (Some(source_branch), Some(provenance)) =
             (&cell.fork_source_branch_id, &cell.fork_provenance)
             && let worth_foundational::FoundationalBranchTarget::Basis(target) = provenance.target()
         {
-            runtime.lineage.record_fork_ancestry_metadata(
+            lineage.record_fork_ancestry_metadata(
                 cell.branch_id.clone(),
                 source_branch.clone(),
                 crate::history::data::CommitId(target.selected_commit_id()),
@@ -205,29 +198,19 @@ pub(super) fn restore(
         }
     }
     for &(relation_id, lineage_id) in checkpoint.lineage.relation_lineages() {
-        runtime
-            .lineage
-            .record_relation_lineage(relation_id, lineage_id);
+        lineage.record_relation_lineage(relation_id, lineage_id);
     }
     for envelope in &checkpoint.envelopes {
         for &(relation_id, lineage_id) in envelope.envelope().lineage_relation_lineages() {
-            runtime
-                .lineage
-                .record_relation_lineage(relation_id, lineage_id);
+            lineage.record_relation_lineage(relation_id, lineage_id);
         }
     }
     if has_naming_schemes {
         for page in &directory.manifest.lineage {
-            runtime
-                .lineage
-                .demand_node(execution, crate::identity::data::LineageId(page.first))?;
+            lineage.demand_node(execution, crate::identity::data::LineageId(page.first))?;
         }
-        let _event_leases = runtime.lineage.demand_event_pages(execution, None, None)?;
-        runtime.lineage.finalize_cold_naming_basis(lane);
+        let _event_leases = lineage.demand_event_pages(execution, None, None)?;
+        lineage.finalize_cold_naming_basis(lane);
     }
-    runtime
-        .durability
-        .checkpoint_selection()
-        .restore_selected(directory);
-    Ok(regions.schemas)
+    Ok(())
 }

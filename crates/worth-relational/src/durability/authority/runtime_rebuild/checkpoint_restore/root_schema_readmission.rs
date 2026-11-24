@@ -5,7 +5,7 @@ use crate::durability::data::{
     DurabilityError, DurableBranchRootImage, DurableBranchRootSchemaImage, DurableCheckpoint,
     RelationalRecoveryStop,
 };
-use crate::runtime::RelationalRuntime;
+use crate::schema::data::{AspectContractPlanCatalog, RelationalSchemaRegistry};
 
 type ReadmittedCarrier = (
     DurableBranchRootSchemaImage,
@@ -15,7 +15,8 @@ type ReadmittedCarrier = (
 
 pub(super) struct RootSchemaReadmissionCatalog {
     carriers: BTreeMap<[u8; 32], ReadmittedCarrier>,
-    admitted: BTreeMap<[u8; 32], Arc<crate::branch::RelationalBranchRootSchemaAuthority>>,
+    admitted:
+        BTreeMap<[u8; 32], Arc<crate::branch::root::schema::RelationalBranchRootSchemaAuthority>>,
     next_authority_id: u64,
 }
 
@@ -48,13 +49,16 @@ impl RootSchemaReadmissionCatalog {
         &mut self,
         lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        restored: &RelationalRuntime,
+        configured: &RelationalSchemaRegistry,
+        aspect_plans: &AspectContractPlanCatalog,
         image: &DurableBranchRootImage,
         envelope: &crate::history::data::CanonicalCommitEnvelope,
-    ) -> Result<Arc<crate::branch::RelationalBranchRootSchemaAuthority>, RelationalRecoveryStop>
-    {
+    ) -> Result<
+        Arc<crate::branch::root::schema::RelationalBranchRootSchemaAuthority>,
+        RelationalRecoveryStop,
+    > {
         if image.format_version == 0 {
-            return self.readmit_legacy_root(execution, restored, image, envelope);
+            return self.readmit_legacy_root(execution, configured, aspect_plans, image, envelope);
         }
         validate_root_image_integrity(lane, image)?;
         if let Some(authority) = self.admitted.get(&image.schema_carrier_digest) {
@@ -68,21 +72,21 @@ impl RootSchemaReadmissionCatalog {
             }
             return Ok(Arc::clone(authority));
         }
-        self.readmit_new_carrier(execution, restored, image, envelope)
+        self.readmit_new_carrier(execution, configured, image, envelope)
     }
 
     fn readmit_legacy_root(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        restored: &RelationalRuntime,
+        configured: &RelationalSchemaRegistry,
+        aspect_plans: &AspectContractPlanCatalog,
         image: &DurableBranchRootImage,
         envelope: &crate::history::data::CanonicalCommitEnvelope,
-    ) -> Result<Arc<crate::branch::RelationalBranchRootSchemaAuthority>, RelationalRecoveryStop>
-    {
-        let expected = restored
-            .config
-            .schema
-            .registry
+    ) -> Result<
+        Arc<crate::branch::root::schema::RelationalBranchRootSchemaAuthority>,
+        RelationalRecoveryStop,
+    > {
+        let expected = configured
             .snapshot_for_compilation(crate::schema::SchemaCompilationControl::Request(*execution))
             .map_err(RelationalRecoveryStop::Request)?;
         if expected != envelope.schema_authority {
@@ -93,10 +97,10 @@ impl RootSchemaReadmissionCatalog {
             .into());
         }
         let allocation_id = self.issue_authority_id()?;
-        crate::branch::RelationalBranchRootSchemaAuthority::readmit_exact(
+        crate::branch::root::schema::RelationalBranchRootSchemaAuthority::readmit_exact(
             allocation_id,
-            restored.config.schema.registry.clone(),
-            active_contracts(&restored.schema_contract_runtime.aspect_contract_plans),
+            configured.clone(),
+            active_contracts(aspect_plans),
             &expected,
             envelope.descriptor_semantics_version,
             crate::schema::SchemaCompilationControl::Request(*execution),
@@ -114,11 +118,13 @@ impl RootSchemaReadmissionCatalog {
     fn readmit_new_carrier(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        restored: &RelationalRuntime,
+        configured: &RelationalSchemaRegistry,
         image: &DurableBranchRootImage,
         envelope: &crate::history::data::CanonicalCommitEnvelope,
-    ) -> Result<Arc<crate::branch::RelationalBranchRootSchemaAuthority>, RelationalRecoveryStop>
-    {
+    ) -> Result<
+        Arc<crate::branch::root::schema::RelationalBranchRootSchemaAuthority>,
+        RelationalRecoveryStop,
+    > {
         let (carrier, registry, retained_contracts) = self
             .carriers
             .get(&image.schema_carrier_digest)
@@ -152,7 +158,6 @@ impl RootSchemaReadmissionCatalog {
             ))
             .into());
         }
-        let configured = &restored.config.schema.registry;
         let registry = if (!envelope.schema_authority.derived_relations.is_empty()
             || !envelope
                 .schema_authority
@@ -178,21 +183,22 @@ impl RootSchemaReadmissionCatalog {
             .bind_recorded(&configured.content_formats)
             .map_err(RelationalRecoveryStop::from)?;
         let allocation_id = self.issue_authority_id()?;
-        let authority = crate::branch::RelationalBranchRootSchemaAuthority::readmit_exact(
-            allocation_id,
-            registry,
-            retained_contracts,
-            &expected,
-            envelope.descriptor_semantics_version,
-            crate::schema::SchemaCompilationControl::Request(*execution),
-        )
-        .map_err(RelationalRecoveryStop::Request)?
-        .ok_or_else(|| {
-            schema_mismatch(format!(
-                "branch-root image `{}` executable schema differs from its envelope",
-                image.commit_id.0
-            ))
-        })?;
+        let authority =
+            crate::branch::root::schema::RelationalBranchRootSchemaAuthority::readmit_exact(
+                allocation_id,
+                registry,
+                retained_contracts,
+                &expected,
+                envelope.descriptor_semantics_version,
+                crate::schema::SchemaCompilationControl::Request(*execution),
+            )
+            .map_err(RelationalRecoveryStop::Request)?
+            .ok_or_else(|| {
+                schema_mismatch(format!(
+                    "branch-root image `{}` executable schema differs from its envelope",
+                    image.commit_id.0
+                ))
+            })?;
         self.admitted
             .insert(image.schema_carrier_digest, Arc::clone(&authority));
         Ok(authority)

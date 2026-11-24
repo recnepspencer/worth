@@ -141,3 +141,24 @@ fn tracked_artifacts_keep_original_cancellation_deadline_and_release_scope_memor
         assert_eq!(lease.charged_memory_bytes(), 0);
     }
 }
+
+/// The retained bill of a public immutable byte owner holding `bytes`,
+/// measured after its original controller scope is gone: payload plus control.
+pub(crate) fn retained_byte_owner_bill(bytes: &[u8]) -> u64 {
+    let budget = worth_execution::SerialMemoryBudget::new(Some(
+        (bytes.len() as u64).checked_add(64 * 1024).unwrap(),
+    ));
+    let host = crate::execution::test_policy::serial_request_with_memory(budget.clone());
+    let request = worth_execution::ExecutionRequest::serial(&host);
+    let mut building =
+        worth_execution::ExecutionRequestArrayBuilder::<u8>::allocate(request, bytes.len())
+            .unwrap();
+    building.extend_from_slice(bytes).unwrap();
+    let owned = building.seal_immutable_bytes().unwrap();
+    assert_eq!(owned.charged_payload_bytes(), Some(bytes.len() as u64));
+    let total = budget.charged_memory_bytes();
+    assert!(total > bytes.len() as u64);
+    drop(owned);
+    assert_eq!(budget.charged_memory_bytes(), 0);
+    total
+}

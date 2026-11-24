@@ -7,20 +7,15 @@ mod work_account;
 
 use super::super::custom_rules::AlwaysViolatesCustomRule;
 use super::super::validation_engine_fixtures::*;
-use super::fixture::DagFixture;
-use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+use super::packet_capacity::{paid_dag_request, InvariantDag};
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
-use crate::transactions::data::primitives::EntityReference;
-use crate::transactions::data::primitives::RecordRef;
 use crate::validation::custom_rule::CustomInvariantLeaseBudget;
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
 };
-use worth_execution::{CancellationToken, ExecutionRequest, LeaseRequest};
-use worth_foundational::{
-    DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
-};
+use worth_execution::{CancellationToken, ExecutionRequest};
+use worth_foundational::{DeterminismContract, ExecutionPosture, ExecutionRequestPolicy};
 
 #[derive(Default)]
 struct Hooks {
@@ -50,14 +45,10 @@ impl Hooks {
 
 struct ScopeProbe(Arc<Hooks>);
 
-fn fixture(count: usize) -> (DagFixture, Arc<Hooks>) {
+fn fixture(count: usize) -> (InvariantDag, Arc<Hooks>) {
     let hooks = Arc::new(Hooks::default());
-    let runtime = RelationalRuntimeApi::builder()
-        .schema_registry(acyclicity_and_connectivity_registry())
-        .custom_invariant(CustomInvariantRegistration::new(ScopeProbe(Arc::clone(&hooks))).unwrap())
-        .build()
-        .expect("valid native runtime configuration");
-    (DagFixture::from_runtime(runtime, count), hooks)
+    let rule = CustomInvariantRegistration::new(ScopeProbe(Arc::clone(&hooks))).unwrap();
+    (InvariantDag::new(count, None, Some(rule)), hooks)
 }
 
 impl CustomInvariantRule for ScopeProbe {
@@ -136,170 +127,5 @@ impl CustomInvariantRule for ScopeProbe {
         _: &dyn CustomInvariantLeaseBudget,
     ) -> Option<Result<CustomInvariantVerdict, CustomInvariantExecutionError>> {
         Some(self.evaluate(context, scope))
-    }
-}
-
-#[test]
-fn a_native_cycle_refuses_before_custom_preparation_and_its_one_edge_twin_commits() {
-    for posture in [
-        None,
-        Some(ExecutionPosture::Serial),
-        Some(ExecutionPosture::Automatic),
-    ] {
-        let hooks = Arc::new(Hooks::default());
-        let runtime = RelationalRuntimeApi::builder()
-            .schema_registry(acyclicity_and_connectivity_registry())
-            .custom_invariant(
-                CustomInvariantRegistration::new(ScopeProbe(Arc::clone(&hooks))).unwrap(),
-            )
-            .build()
-            .expect("valid native runtime configuration");
-        let fixture = DagFixture::from_runtime(runtime, 2);
-        let source = fixture.nodes[0];
-        let target = fixture.nodes[1];
-        let lease = crate::execution::test_authority::test_execution_authority()
-            .request_lease(LeaseRequest {
-                policy: ExecutionRequestPolicy::new(
-                    posture.unwrap_or(ExecutionPosture::Serial),
-                    DeterminismContract::CanonicalBitwise,
-                    ExecutionBudget::new(
-                        std::num::NonZeroUsize::new(4).unwrap(),
-                        Some(8 * 1024 * 1024),
-                        Some(4_000_000),
-                    ),
-                ),
-                cancellation: CancellationToken::new(),
-                deadline: None,
-            })
-            .unwrap();
-        let serial = worth_execution::SerialRequest::from_policy(
-            lease.policy(),
-            CancellationToken::new(),
-            None,
-        );
-        let execution = if posture.is_some() {
-            ExecutionRequest::leased(&lease)
-        } else {
-            ExecutionRequest::serial(&serial)
-        };
-        let charged_memory = || match posture {
-            Some(_) => lease.charged_memory_bytes(),
-            None => serial
-                .memory()
-                .expect("this finite serial request owns its memory budget")
-                .charged_memory_bytes(),
-        };
-        let seeded = fixture
-            .publish(
-                &execution,
-                fixture.edge_batch(target, source, "existing-reverse"),
-            )
-            .unwrap();
-        let reverse = seeded
-            .changed_records
-            .iter()
-            .filter_map(|record| match record {
-                RecordRef::Relation(id) => Some(*id),
-                _ => None,
-            })
-            .collect::<Vec<_>>();
-        assert_eq!(reverse.len(), 1);
-        crate::tests::support::release_test_commit_snapshot(&fixture.runtime, &seeded);
-        let retained_seed_memory = charged_memory();
-        let before = fixture.head();
-        let baseline = hooks.observed();
-        assert_eq!(
-            baseline,
-            (1, 1),
-            "the same installed hook handles the lawful seed"
-        );
-
-        let failure = fixture
-            .validate(&execution, fixture.edge_batch(source, target, "closing"))
-            .expect_err("the single proposed edge closes the committed reverse edge");
-        let TransactionCommitError::Conflict { error, .. } = failure else {
-            panic!("original native conflict required: {failure:?}");
-        };
-        let ConflictClass::InvariantViolation {
-            fields:
-                InvariantViolationFields::Acyclicity {
-                    contract_id,
-                    relation_kind_id,
-                    source: refused_source,
-                    target: refused_target,
-                },
-            ..
-        } = error.class
-        else {
-            panic!("original acyclicity fields required: {error:?}");
-        };
-        assert_eq!(contract_id.as_str(), "no_cycles");
-        assert_eq!(relation_kind_id, KindId(2));
-        assert_eq!(refused_source, EntityReference::Existing(source));
-        assert_eq!(refused_target, EntityReference::Existing(target));
-        assert_eq!(
-            hooks.observed(),
-            baseline,
-            "native denial must protect custom preparation, {posture:?}"
-        );
-        assert_eq!(fixture.head(), before);
-        assert_eq!(charged_memory(), retained_seed_memory);
-
-        let twin = fixture
-            .edge_batch(source, target, "closing")
-            .push(MutationIntent::Relation(RelationMutationIntent::Delete(
-                DeleteRelationIntent {
-                    relation_id: reverse[0],
-                },
-            )));
-        let committed = fixture
-            .publish(&execution, twin)
-            .expect("removing one edge makes the same proposal acyclic");
-        assert_ne!(fixture.head(), before);
-        assert_eq!(hooks.observed(), (baseline.0 + 1, baseline.1 + 1));
-        let boundary = committed
-            .invariant_executions()
-            .iter()
-            .filter(|result| {
-                result.metadata().execution_point()
-                    == crate::validation::data::execution::InvariantExecutionPoint::ProposedState
-            })
-            .collect::<Vec<_>>();
-        assert_eq!(boundary.len(), 1, "both stages retain one boundary result");
-        let result = boundary[0];
-        let results = result
-            .results()
-            .iter()
-            .filter(|r| {
-                r.execution_point
-                    == crate::validation::data::execution::InvariantExecutionPoint::CommitBoundary
-            })
-            .collect::<Vec<_>>();
-        assert_eq!(results.len(), 2);
-        assert!(matches!(
-            &results[0].rule,
-            InvariantReportedRule::Native(InvariantRule::AcyclicityContract(_))
-        ));
-        assert!(
-            matches!(&results[1].rule, InvariantReportedRule::Custom(identity)
-            if identity.rule_id.as_str() == "test.native-prerequisite.scope")
-        );
-        assert_eq!(result.decision_log().len(), result.results().len());
-        assert_eq!(
-            result.metadata().proof_boundary().unwrap().packet_count(),
-            result.results().len()
-        );
-        assert_eq!(
-            result
-                .metadata()
-                .proof_boundary()
-                .unwrap()
-                .touched_partition_count(),
-            1
-        );
-        crate::tests::support::release_test_commit_snapshot(&fixture.runtime, &committed);
-        drop(boundary);
-        drop((fixture, seeded, committed));
-        assert_eq!(charged_memory(), 0);
     }
 }

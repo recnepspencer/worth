@@ -12,6 +12,9 @@ impl RelationalAllocationWitness {
             Arc::downgrade(owner) as Weak<dyn Any + Send + Sync>;
         Self(weak)
     }
+    pub(crate) fn of_erased(owner: &Arc<dyn Any + Send + Sync>) -> Self {
+        Self(Arc::downgrade(owner))
+    }
     /// Whether some owner still retains the witnessed allocation.
     pub fn is_retained(&self) -> bool {
         self.0.strong_count() != 0

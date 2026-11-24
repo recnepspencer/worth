@@ -8,15 +8,12 @@ use std::collections::BTreeSet;
 #[test]
 fn a_head_history_prefix_survives_reset_and_reuse_until_its_rows_are_suspended() {
     let fixture = region_with_history();
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let head = region_load::load_head(
-        &fixture.cold,
-        fixture.cold.source.as_ref().unwrap(),
-        execution,
-        1 << 24,
-    )
-    .unwrap();
+    let head = fixture
+        .cold
+        .read_head(fixture.cold.source.as_ref().unwrap(), execution, 1 << 24)
+        .unwrap();
     let mut arena = head.partition.entity_arena.clone();
     let slot = fixture.entity.slot_index();
     let physical = arena.physical_index(slot).unwrap();
@@ -82,15 +79,12 @@ fn a_head_history_prefix_survives_reset_and_reuse_until_its_rows_are_suspended()
 #[test]
 fn sparse_adoption_preserves_the_source_history_row_when_the_physical_row_changes() {
     let fixture = region_with_history();
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let head = region_load::load_head(
-        &fixture.cold,
-        fixture.cold.source.as_ref().unwrap(),
-        execution,
-        1 << 24,
-    )
-    .unwrap();
+    let head = fixture
+        .cold
+        .read_head(fixture.cold.source.as_ref().unwrap(), execution, 1 << 24)
+        .unwrap();
     let slot = fixture.entity.slot_index();
     let selected = BTreeSet::from([slot]);
     let mut overlay = head
@@ -133,15 +127,12 @@ fn sparse_adoption_preserves_the_source_history_row_when_the_physical_row_change
 #[test]
 fn a_prefix_carries_its_authenticated_slot_opening_and_accounts_for_its_owner() {
     let fixture = region_with_history();
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let head = region_load::load_head(
-        &fixture.cold,
-        fixture.cold.source.as_ref().unwrap(),
-        execution,
-        1 << 24,
-    )
-    .unwrap();
+    let head = fixture
+        .cold
+        .read_head(fixture.cold.source.as_ref().unwrap(), execution, 1 << 24)
+        .unwrap();
     let physical = head
         .partition
         .entity_arena
@@ -190,22 +181,19 @@ fn a_prefix_carries_its_authenticated_slot_opening_and_accounts_for_its_owner() 
 #[test]
 fn capture_preserves_a_cold_basis_and_full_admission_replaces_it_with_complete_rows() {
     let fixture = region_with_history();
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let head = region_load::load_head(
-        &fixture.cold,
-        fixture.cold.source.as_ref().unwrap(),
-        execution,
-        1 << 24,
-    )
-    .unwrap();
+    let head = fixture
+        .cold
+        .read_head(fixture.cold.source.as_ref().unwrap(), execution, 1 << 24)
+        .unwrap();
     let symbols = fixture.cold.symbols.interner_snapshot();
-    let layered = capture_region_members(
+    let layered = (fixture.cold.readmission.capture_members)(
         &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
         execution,
         &head.partition,
         head.commitment.as_ref().unwrap(),
-        &fixture.cold.schema,
+        fixture.cold.schema.as_ref(),
         fixture.cold.schema_carrier_digest,
     )
     .unwrap();
@@ -214,14 +202,15 @@ fn capture_preserves_a_cold_basis_and_full_admission_replaces_it_with_complete_r
         .members(layered.history.0)
         .contains(&fixture.cold.history));
     assert_eq!(fixture.source.history_reads.load(Ordering::SeqCst), 0);
-    let full = region_load::load_full(
-        &fixture.cold,
-        fixture.cold.source.as_ref().unwrap(),
-        &head,
-        execution,
-        1 << 24,
-    )
-    .unwrap();
+    let full = fixture
+        .cold
+        .read_full(
+            fixture.cold.source.as_ref().unwrap(),
+            &head,
+            execution,
+            1 << 24,
+        )
+        .unwrap();
     assert!(full
         .partition
         .entity_arena
@@ -242,19 +231,22 @@ fn capture_preserves_a_cold_basis_and_full_admission_replaces_it_with_complete_r
             .len(),
         fixture.expected_history
     );
-    let (commitment, _) = PartitionContentCommitment::capture(
-        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-        &worth_execution::ExecutionRequest::serial(&crate::test_execution_policy::serial_request()),
-        &full.partition,
-        &symbols,
-    )
-    .unwrap();
-    let captured = capture_region_members(
+    let (commitment, _) =
+        PartitionContentCommitment::capture(
+            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+            &worth_execution::ExecutionRequest::serial(
+                &crate::execution::test_policy::serial_request(),
+            ),
+            &full.partition,
+            &symbols,
+        )
+        .unwrap();
+    let captured = (fixture.cold.readmission.capture_members)(
         &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
         execution,
         &full.partition,
         &commitment,
-        &fixture.cold.schema,
+        fixture.cold.schema.as_ref(),
         fixture.cold.schema_carrier_digest,
     )
     .unwrap();

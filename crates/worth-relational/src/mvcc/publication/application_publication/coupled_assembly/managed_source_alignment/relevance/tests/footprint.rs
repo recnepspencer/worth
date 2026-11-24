@@ -8,21 +8,33 @@ use worth_foundational::facade::{AspectValue, FieldKey, InternedString, StructAs
 /// their own Sources.
 pub(super) fn root_only() -> (RelationalSchemaRegistry, ManagedIndexSourceProgram) {
     let registry = event_registry();
-    let (_, template) = crate::tests::support::managed_cache_schema();
+    let (_, template) = managed_cache_schema();
     let mut source = template.0.path.parts().clone();
     source.identity.name = "rooted-source".into();
     source.to = ROW.into();
-    source.nodes = vec![Node::Stored { relation: INTRODUCES, from: SCOPE, to: ROW }];
+    source.nodes = vec![Node::Stored {
+        relation: INTRODUCES,
+        from: SCOPE,
+        to: ROW,
+    }];
     let identity = source.identity.clone();
     let registry = registry.register_derived_relations(vec![source]).unwrap();
     let program = registry
-        .bind_managed_index_source(&registry.derived_relation(&identity).unwrap(), vec![], vec![])
+        .bind_managed_index_source(
+            &registry.derived_relation(&identity).unwrap(),
+            vec![],
+            vec![],
+        )
         .unwrap();
     (registry, program)
 }
 
 pub(super) fn key() -> (KindId, AspectKey, FieldKey) {
-    (SCOPE, AspectKey::new("facts").unwrap(), FieldKey::new("key".to_string()).unwrap())
+    (
+        SCOPE,
+        AspectKey::new("facts").unwrap(),
+        FieldKey::new("key".to_string()).unwrap(),
+    )
 }
 
 pub(super) fn text(value: &str) -> AspectValue {
@@ -30,39 +42,50 @@ pub(super) fn text(value: &str) -> AspectValue {
 }
 
 /// An update whose aspect evidence keeps the old and new struct values.
-pub(super) fn updated(entity: EntityId, key_before: &str, key_after: &str, note_after: &str) -> CanonicalRecordAspectDelta {
+pub(super) fn updated(
+    entity: EntityId,
+    key_before: &str,
+    key_after: &str,
+    note_after: &str,
+) -> CanonicalRecordAspectDelta {
     let (_, aspect, field) = key();
     let note = FieldKey::new("note".to_string()).unwrap();
     let value = |key: &str, note_value: &str| {
-        StructAspectValue::new([(field.clone(), text(key)), (note.clone(), text(note_value))]).unwrap()
+        StructAspectValue::new([(field.clone(), text(key)), (note.clone(), text(note_value))])
+            .unwrap()
     };
     let mut delta = lifecycle(entity, Change::Updated);
     delta.changed_aspects = vec![aspect.clone()];
-    delta.evaluated_bindings = smallvec::smallvec![crate::authority::mutation::EvaluatedAspectBinding {
-        aspect_key: aspect.clone(),
-        contract: worth_foundational::aspects()
-            .contract()
-            .for_key(aspect.clone())
-            .identified_by(worth_foundational::AspectIdentity(9))
-            .at_revision(worth_foundational::AspectContractRevision(1))
-            .scalar(worth_foundational::ScalarAspectType::String),
-        binding: worth_foundational::facade::AspectBinding::EntityField { field: field.clone() },
-        changed: true,
-        aspect_shape: worth_foundational::AspectShape::Scalar(worth_foundational::ScalarAspectType::String),
-        evidence: Evidence::StructAspectValueTransition {
-            locator: worth_foundational::facade::AspectValueLocator::whole_aspect(
-                worth_foundational::facade::AspectLocator::new(
-                    worth_foundational::facade::LocatorAuthority::Authoritative,
-                    aspect,
-                ),
+    delta.evaluated_bindings =
+        smallvec::smallvec![crate::authority::mutation::EvaluatedAspectBinding {
+            aspect_key: aspect.clone(),
+            contract: worth_foundational::aspects()
+                .contract()
+                .for_key(aspect.clone())
+                .identified_by(worth_foundational::AspectIdentity(9))
+                .at_revision(worth_foundational::AspectContractRevision(1))
+                .scalar(worth_foundational::ScalarAspectType::String),
+            binding: worth_foundational::facade::AspectBinding::EntityField {
+                field: field.clone()
+            },
+            changed: true,
+            aspect_shape: worth_foundational::AspectShape::Scalar(
+                worth_foundational::ScalarAspectType::String
             ),
-            old_present: true,
-            new_present: true,
-            old_value: Some(value(key_before, "")),
-            new_value: Some(value(key_after, note_after)),
-        },
-        field_revision_changes: None,
-    }];
+            evidence: Evidence::StructAspectValueTransition {
+                locator: worth_foundational::facade::AspectValueLocator::whole_aspect(
+                    worth_foundational::facade::AspectLocator::new(
+                        worth_foundational::facade::LocatorAuthority::Authoritative,
+                        aspect,
+                    ),
+                ),
+                old_present: true,
+                new_present: true,
+                old_value: Some(value(key_before, "")),
+                new_value: Some(value(key_after, note_after)),
+            },
+            field_revision_changes: None,
+        }];
     delta
 }
 
@@ -100,7 +123,11 @@ fn a_parent_read_scope_kind_keeps_every_lifecycle_change() {
         ..Default::default()
     };
     let parent = SourceRelevance::of(&registry, &program, probed, &read, &effect, &unread);
-    for change in [Change::Created, Change::Deleted, Change::MaterializationSuspended] {
+    for change in [
+        Change::Created,
+        Change::Deleted,
+        Change::MaterializationSuspended,
+    ] {
         assert!(parent.delta(&lifecycle(other, change)), "{change:?}");
     }
 }

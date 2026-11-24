@@ -215,9 +215,12 @@ fn merge_copy_funds_headers_without_rebilling_shared_leaves() {
     let serial =
         SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None);
     let request = ExecutionRequest::serial(&serial);
-    let copied = OwnedMergePlan::copy_recovered(&original, &request)
-        .unwrap()
+    let source =
+        crate::mvcc::transaction::reconstructed_merge_plan::RecordedMergePlanSource::from_envelope(
+            &original,
+        )
         .expect("actual governed merge authority");
+    let copied = OwnedMergePlan::copy_recovered(source, &request).unwrap();
     let source = &original
         .merge_execution_authority
         .as_ref()

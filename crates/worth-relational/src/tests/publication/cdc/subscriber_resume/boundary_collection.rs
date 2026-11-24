@@ -1,3 +1,5 @@
+#[cfg(test)]
+use crate::durability::canonical_commit_artifact::checkpoint_body::copy_original_for_test;
 use crate::publication::cdc::execution::collect_crossed_boundaries;
 use crate::schema::data::{
     DescriptorCanonicalBasisVersion, DescriptorSemanticsVersion,
@@ -20,7 +22,7 @@ fn crossed_boundary_collection_deduplicates_without_losing_first_seen_order() {
     let fingerprint_a = SchemaBoundaryFingerprint::new([1_u8; 32]);
     let fingerprint_b = SchemaBoundaryFingerprint::new([2_u8; 32]);
 
-    let mut first_envelope = first.envelope().copy_original_for_test(execution);
+    let mut first_envelope = copy_original_for_test(&first.envelope(), execution);
     first_envelope
         .body_mut_for_test()
         .schema_continuation_descriptor = Some(SchemaContinuationDescriptor::new(
@@ -37,7 +39,7 @@ fn crossed_boundary_collection_deduplicates_without_losing_first_seen_order() {
         1,
     ));
 
-    let mut second_envelope = second.envelope().copy_original_for_test(execution);
+    let mut second_envelope = copy_original_for_test(&second.envelope(), execution);
     second_envelope
         .body_mut_for_test()
         .schema_continuation_descriptor = first_envelope
@@ -45,7 +47,7 @@ fn crossed_boundary_collection_deduplicates_without_losing_first_seen_order() {
         .schema_continuation_descriptor
         .clone();
 
-    let mut third_envelope = third.envelope().copy_original_for_test(execution);
+    let mut third_envelope = copy_original_for_test(&third.envelope(), execution);
     third_envelope
         .body_mut_for_test()
         .schema_continuation_descriptor = Some(SchemaContinuationDescriptor::new(

@@ -1,5 +1,4 @@
 pub(super) use crate::config::data::{CascadeDeletePolicy, CrossContextPolicy};
-pub(super) use crate::facade::runtime::{RelationalRuntime, RelationalRuntimeApi};
 pub(super) use crate::identity::data::KindId;
 pub(super) use crate::identity::data::PartitionId;
 pub(super) use crate::identity::data::RelationId;
@@ -15,10 +14,6 @@ pub(super) use crate::schema::data::{
     PartitionIsolationMode, RelationIntegrityDeclarations,
 };
 pub(super) use crate::symbols::data::ClientKey;
-pub(super) use crate::tests::support::{
-    aspect_field_patch_from_values, aspect_key, entity_field_aspect, entity_summary_struct_aspect,
-    field_key, string_aspect_value, AspectSchemaFixture,
-};
 pub(super) use crate::transactions::data::intents::mutation_intent::CreateIntent;
 pub(super) use crate::transactions::data::intents::mutation_intent::DeleteRelationIntent;
 pub(super) use crate::transactions::data::intents::mutation_intent::MutationIntent;
@@ -34,6 +29,9 @@ pub(super) use crate::validation::custom_rule::CustomInvariantRule;
 pub(super) use crate::validation::custom_rule::CustomInvariantScopePlanner;
 pub(super) use crate::validation::data::catalog::InvariantCatalog;
 pub(super) use crate::validation::data::catalog::InvariantRegistration;
+pub(super) use crate::validation::data::custom_rule::errors::CustomInvariantExecutionError;
+pub(super) use crate::validation::data::custom_rule::errors::CustomInvariantPreparationError;
+pub(super) use crate::validation::data::custom_rule::errors::CustomInvariantVerdict;
 pub(super) use crate::validation::data::descriptor::CustomInvariantDescriptor;
 pub(super) use crate::validation::data::descriptor::CustomInvariantOperationalMetadata;
 pub(super) use crate::validation::data::execution::InvariantReportedRule;
@@ -44,23 +42,12 @@ pub(super) use crate::validation::data::rule_id::CustomInvariantRuleId;
 pub(super) use crate::validation::data::rule_id::CustomInvariantSemanticIdentity;
 pub(super) use crate::validation::data::rule_id::CustomInvariantSemanticVersion;
 pub(super) use crate::validation::data::rules::InvariantRule;
-pub(super) use crate::validation::data::CustomInvariantExecutionError;
-pub(super) use crate::validation::data::CustomInvariantPreparationError;
-pub(super) use crate::validation::data::CustomInvariantVerdict;
 pub(super) use crate::validation::engine::{
     InvariantEngine, InvariantExecutionRequest, InvariantObservation, InvariantRequestProfile,
 };
 
-pub(super) fn runtime_with_invariants(invariant_catalog: InvariantCatalog) -> RelationalRuntime {
-    RelationalRuntimeApi::builder()
-        .schema_registry(RelationalSchemaRegistry::new())
-        .invariant_catalog(invariant_catalog)
-        .build()
-        .expect("valid native runtime configuration")
-}
-
-pub(super) fn runtime_with_partition_isolation() -> RelationalRuntime {
-    let registry = RelationalSchemaRegistry::new()
+pub(super) fn partition_isolation_registry() -> RelationalSchemaRegistry {
+    RelationalSchemaRegistry::new()
         .register_entity_kind(EntityKindRegistration {
             kind_id: KindId(1),
             kind_name: "geom.vertex".to_string(),
@@ -86,16 +73,11 @@ pub(super) fn runtime_with_partition_isolation() -> RelationalRuntime {
                     ]),
             })
         })
-        .unwrap();
-
-    RelationalRuntimeApi::builder()
-        .schema_registry(registry)
-        .build()
-        .expect("valid native runtime configuration")
+        .unwrap()
 }
 
-pub(super) fn runtime_with_cardinality_minimum() -> RelationalRuntime {
-    let registry = RelationalSchemaRegistry::new()
+pub(super) fn cardinality_minimum_registry() -> RelationalSchemaRegistry {
+    RelationalSchemaRegistry::new()
         .register_entity_kind(EntityKindRegistration {
             kind_id: KindId(1),
             kind_name: "geom.node".to_string(),
@@ -141,12 +123,7 @@ pub(super) fn runtime_with_cardinality_minimum() -> RelationalRuntime {
                 ),
             })
         })
-        .unwrap();
-
-    RelationalRuntimeApi::builder()
-        .schema_registry(registry)
-        .build()
-        .expect("valid native runtime configuration")
+        .unwrap()
 }
 
 pub(super) fn acyclicity_and_connectivity_registry() -> RelationalSchemaRegistry {
@@ -195,171 +172,4 @@ pub(super) fn acyclicity_and_connectivity_registry() -> RelationalSchemaRegistry
             })
         })
         .unwrap()
-}
-
-pub(super) fn runtime_with_acyclicity_and_connectivity() -> RelationalRuntime {
-    RelationalRuntimeApi::builder()
-        .schema_registry(acyclicity_and_connectivity_registry())
-        .build()
-        .expect("valid native runtime configuration")
-}
-
-pub(super) fn create_entity_of_kind(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
-    kind_id: KindId,
-    client_key: &str,
-) -> crate::identity::data::EntityId {
-    let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
-    txn.push_batch(
-        WorkerIntentBatch::new(format!("entity-{client_key}")).push(MutationIntent::Create(
-            CreateIntent::Entity(EntitySpec {
-                partition_id: PartitionId::main(),
-                kind_id,
-                client_key: ClientKey::raw(client_key),
-                fields: crate::transactions::data::aspect_field_patch::AspectFieldPatch::default(),
-            }),
-        )),
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .expect("test staging stays within configured resource budgets");
-    let outcome = txn
-        .commit(execution, runtime)
-        .expect("entity creation must succeed");
-    outcome
-        .changed_records
-        .iter()
-        .find_map(|record| match record {
-            crate::transactions::data::primitives::RecordRef::Entity(entity_id) => Some(*entity_id),
-            crate::transactions::data::primitives::RecordRef::Relation(_) => None,
-        })
-        .expect("created entity id")
-}
-
-pub(super) fn create_relation_of_kind(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
-    kind_id: KindId,
-    source: crate::identity::data::EntityId,
-    target: crate::identity::data::EntityId,
-    client_key: &str,
-) -> RelationId {
-    let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
-    txn.push_batch(
-        WorkerIntentBatch::new(format!("relation-{client_key}")).push(MutationIntent::Create(
-            CreateIntent::Relation(RelationSpec {
-                partition_id: PartitionId::main(),
-                kind_id,
-                client_key: ClientKey::raw(client_key),
-                source: crate::transactions::data::primitives::EntityReference::Existing(source),
-                target: crate::transactions::data::primitives::EntityReference::Existing(target),
-                fields: crate::transactions::data::aspect_field_patch::AspectFieldPatch::default(),
-            }),
-        )),
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .expect("test staging stays within configured resource budgets");
-    let outcome = txn
-        .commit(execution, runtime)
-        .expect("relation creation must succeed");
-    outcome
-        .changed_records
-        .iter()
-        .find_map(|record| match record {
-            crate::transactions::data::primitives::RecordRef::Relation(relation_id) => {
-                Some(*relation_id)
-            }
-            crate::transactions::data::primitives::RecordRef::Entity(_) => None,
-        })
-        .expect("created relation id")
-}
-
-pub(super) fn runtime_with_summary_title_uniqueness() -> RelationalRuntime {
-    RelationalRuntimeApi::builder()
-        .schema_registry(
-            AspectSchemaFixture {
-                entity_aspects: vec![
-                    entity_field_aspect(aspect_key("name"), field_key("name")),
-                    entity_summary_struct_aspect(aspect_key("summary"), field_key("summary")),
-                ],
-                ..AspectSchemaFixture::default()
-            }
-            .build_registry(),
-        )
-        .invariant_catalog(InvariantCatalog {
-            registrations: vec![InvariantRegistration::mutation_sensitive_blocking(
-                InvariantRule::unique_entity_aspect_field(
-                    aspect_key("summary"),
-                    field_key("title"),
-                ),
-            )],
-        })
-        .build()
-        .expect("valid native runtime configuration")
-}
-
-pub(super) fn runtime_with_summary_title_commit_boundary_uniqueness() -> RelationalRuntime {
-    RelationalRuntimeApi::builder()
-        .schema_registry(
-            AspectSchemaFixture {
-                entity_aspects: vec![
-                    entity_field_aspect(aspect_key("name"), field_key("name")),
-                    entity_summary_struct_aspect(aspect_key("summary"), field_key("summary")),
-                ],
-                ..AspectSchemaFixture::default()
-            }
-            .build_registry(),
-        )
-        .invariant_catalog(InvariantCatalog {
-            registrations: vec![InvariantRegistration::commit_boundary_blocking(
-                InvariantRule::unique_entity_aspect_field(
-                    aspect_key("summary"),
-                    field_key("title"),
-                ),
-            )],
-        })
-        .build()
-        .expect("valid native runtime configuration")
-}
-
-pub(super) fn commit_entity_with_summary(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
-    client_key: &str,
-    title: &str,
-    status: &str,
-) -> Result<
-    crate::facade::transactions::CommitResult,
-    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
-> {
-    let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
-    txn.push_batch(
-        WorkerIntentBatch::new(format!("entity-{client_key}")).push(MutationIntent::Create(
-            CreateIntent::Entity(EntitySpec {
-                partition_id: PartitionId::main(),
-                kind_id: KindId(1),
-                client_key: ClientKey::raw(client_key),
-                fields: aspect_field_patch_from_values([
-                    (
-                        aspect_key("name"),
-                        field_key("name"),
-                        string_aspect_value(client_key),
-                    ),
-                    (
-                        aspect_key("summary"),
-                        field_key("title"),
-                        string_aspect_value(title),
-                    ),
-                    (
-                        aspect_key("summary"),
-                        field_key("status"),
-                        string_aspect_value(status),
-                    ),
-                ]),
-            }),
-        )),
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .expect("test staging stays within configured resource budgets");
-    txn.commit(execution, runtime)
 }

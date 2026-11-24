@@ -1,7 +1,6 @@
 use crate::history::data::RelationalCommitReceipt;
-use crate::runtime::state::subsystems::{
-    history::HistorySubsystem, visibility::VisibilitySubsystem,
-};
+use crate::history::envelope_demand::CanonicalHistoryRead;
+use crate::runtime::state::subsystems::visibility::VisibilitySubsystem;
 use crate::snapshots::data::{SnapshotHandle, SnapshotReadPolicy};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -158,7 +157,7 @@ impl<T> RelationalRetainedCommitEntityProjection<T> {
 }
 
 pub(crate) fn open_retained_commit_snapshot(
-    history: &HistorySubsystem,
+    history: CanonicalHistoryRead<'_>,
     visibility: &VisibilitySubsystem,
     runtime_instance_id: u64,
     expected_runtime_instance_id: u64,
@@ -171,8 +170,7 @@ pub(crate) fn open_retained_commit_snapshot(
         ));
     }
 
-    let Some(committed) = history.immutable_commit_receipt_for_version(requested_commit.version_id)
-    else {
+    let Some(committed) = history.receipt_for_version(requested_commit.version_id) else {
         return Err(denial(
             RelationalRetainedCommitSnapshotDenialKind::VersionUnavailable,
             "requested version has no canonical commit in this runtime",

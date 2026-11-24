@@ -139,7 +139,7 @@ pub(crate) fn readmit_required_output_route_absence(
                             ).map_err(super::custody::cold_stop)?;
                             if installed.source_scope_ownership.is_empty() {historical} else {
                                 crate::history::data::current_route_presence::require_current_owned_route(
-                                    execution,inputs.projection.history,basis,meaning,historical,
+                                    execution,inputs.canonical_history,basis,meaning,historical,
                                 )?
                             }
                         }

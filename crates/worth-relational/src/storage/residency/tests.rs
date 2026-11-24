@@ -192,14 +192,14 @@ fn region_limit_refuses_before_admitting_a_lease_and_recovery_preserves_the_caus
         failure.cause,
         Cause::LimitExceeded { limit: 1, .. }
     ));
-    let crate::durability::data::RelationalRecoveryStop::Durability(error) =
-        crate::durability::data::RelationalRecoveryStop::from(failure)
+    let crate::durability::data::recovery_stop::RelationalRecoveryStop::Durability(error) =
+        crate::durability::data::recovery_stop::RelationalRecoveryStop::from(failure)
     else {
         panic!("durability stop")
     };
     assert_eq!(
         error.class,
-        crate::durability::data::RecoveryFailureClass::ColdStorageUnavailable
+        crate::durability::data::recovery_errors::RecoveryFailureClass::ColdStorageUnavailable
     );
     assert_eq!(error.storage_unavailable, Some(failure));
     assert_eq!(fixture.cell.leases.load(Ordering::SeqCst), 0);
@@ -212,23 +212,24 @@ mod root_view_tests;
 
 #[test]
 fn capture_of_a_cold_region_carries_members_without_loading_or_leasing() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let fixture = region_with_history();
     let captured = fixture
         .cell
         .capture_checkpoint(
             execution,
-            &fixture.cold.schema,
+            fixture.cold.schema.as_ref(),
             fixture.cold.schema_carrier_digest,
             &fixture.cold.symbols.interner_snapshot(),
+            fixture.cold.readmission.capture_members,
             None,
         )
         .unwrap();
     assert_eq!(captured.leaf.content_digest, fixture.expected_digest);
     assert!(captured.members.iter().all(|member| matches!(
         member,
-        crate::durability::data::RelationalCheckpointMember::Carried { .. }
+        crate::storage::data::checkpoint_member::RelationalCheckpointMember::Carried { .. }
     )));
     assert_eq!(fixture.source.reads.load(Ordering::SeqCst), 0);
     assert_eq!(fixture.cell.leases.load(Ordering::SeqCst), 0);
@@ -238,7 +239,7 @@ fn head_demand(
     cell: &Arc<RelationalRegionResidency>,
     limit: u64,
 ) -> Result<RelationalResidencyLease<Head>, crate::storage::data::RelationalStorageUnavailable> {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     cell.demand_head(
         &worth_execution::ExecutionRequest::serial(&request),
         limit,
@@ -250,7 +251,7 @@ fn full_demand(
     cell: &Arc<RelationalRegionResidency>,
     limit: u64,
 ) -> Result<RelationalResidencyLease<Full>, crate::storage::data::RelationalStorageUnavailable> {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     cell.demand_full(
         &worth_execution::ExecutionRequest::serial(&request),
         limit,
@@ -280,7 +281,7 @@ mod head_probe_tests;
 fn reconstructed_heads_reuse_original_custody_without_serving_and_retire_it() {
     use super::source_retirement::OriginalResidentSlot::RawHead;
     let fixture = region_with_history();
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let checkpoint = checkpoint_inputs::readmit(&fixture, &execution);
     let cell = checkpoint.cell;
@@ -328,7 +329,7 @@ fn reconstructed_heads_reuse_original_custody_without_serving_and_retire_it() {
 fn reconstructed_heads_do_not_alias_distinct_cells_with_equal_partition_ids() {
     let fixtures = [region_with_history(), region_with_history()];
     assert_eq!(fixtures[0].cold.partition_id, fixtures[1].cold.partition_id);
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let lane = crate::storage::substrate::maintenance::ReconstructionLane::oracle();
     let first = fixtures[0]
@@ -354,9 +355,9 @@ fn reconstructed_heads_check_stopped_requests_and_retain_only_proven_damage() {
     let cancellation = worth_execution::CancellationSource::new();
     cancellation.cancel();
     let stopped =
-        crate::test_execution_policy::serial_request().with_cancellation(cancellation.token());
+        crate::execution::test_policy::serial_request().with_cancellation(cancellation.token());
     let stopped = worth_execution::ExecutionRequest::serial(&stopped);
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let lane = crate::storage::substrate::maintenance::ReconstructionLane::oracle();
     for expected_reads in [0, 1] {

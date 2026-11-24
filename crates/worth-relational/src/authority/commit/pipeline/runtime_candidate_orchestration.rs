@@ -7,7 +7,7 @@ use worth_execution::ExecutionRequest;
 pub(crate) fn prepare_consulted_authoritative_commit(
     execution: &ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalPreparationRuntime,
-    mut context: AuthoritativeCommitContext,
+    mut context: AuthoritativeCommitContext<crate::mvcc::RelationalTransactionValidationInput>,
 ) -> Result<crate::mvcc::publication::PreparedRelationalCommitCandidate, TransactionCommitError> {
     if matches!(&context.authority_input,
         super::authority_context::CommitAuthorityInput::Mutation(plan) if plan.retained().is_some())

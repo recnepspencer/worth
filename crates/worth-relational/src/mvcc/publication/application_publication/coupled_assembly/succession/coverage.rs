@@ -1,7 +1,14 @@
 //! What a chain round writes and publishes, as the units and roles the
 //! succession proof compares.
-use super::*;
-use crate::transactions::data::EntityReference;
+use super::super::refusals::overflow;
+use crate::identity::data::EntityId;
+use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRoleTarget;
+use crate::transactions::data::intents::mutation_intent::{
+    CreateIntent, EntityMutationIntent, MutationIntent,
+};
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::EntityReference;
+use std::collections::BTreeSet;
 use worth_foundational::facade::{AspectKey, CanonicalFieldPath, PortableAspectPatchOperation};
 
 /// One coverage unit: an entity aspect's field path, or the whole aspect.
@@ -87,7 +94,7 @@ pub(super) type Role<'a> = (
 /// A posture's roles as one canonical set over actual records; `None` when a
 /// created target has no allocation.
 pub(super) fn roles<'a>(
-    bindings: &crate::transactions::data::CommitCreatedEntityBindings,
+    bindings: &crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings,
     roles: &'a [RequiredOutputRoleTarget],
     charge: &mut impl FnMut(u64) -> Result<(), TransactionCommitError>,
 ) -> Result<Option<BTreeSet<Role<'a>>>, TransactionCommitError> {

@@ -16,6 +16,11 @@ pub(in super::super) fn capture(
         .with_checkpoint_selection(|selection| {
             let original = FrozenOriginalInputs::capture(
                 &runtime.history,
+                || {
+                    runtime
+                        .history
+                        .capture_original_branch_schema_inputs(request)
+                },
                 runtime.durability.checkpoint_selection(),
                 runtime.durability.cold_source(),
                 &runtime.services.symbols,

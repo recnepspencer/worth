@@ -5,8 +5,7 @@ use crate::publication::close_custody::{
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, Weak};
-#[cfg(test)]
-mod memory_close_tests;
+mod source_registration;
 
 /// Drop-governed publication authority owned directly by one runtime.
 #[derive(Debug)]
@@ -322,5 +321,14 @@ impl RelationalRuntimePublicationBinding {
     #[cfg(test)]
     pub(crate) fn pending_settlement_owner_loss_count(&self) -> u64 {
         self.lifecycle.settlements.owner_loss_release_count()
+    }
+}
+
+#[cfg(test)]
+impl RelationalRuntimePublicationBinding {
+    pub(crate) fn while_empty_candidate_registry_locked(&self, action: impl FnOnce()) {
+        let locked = self.lifecycle.candidates.lock().unwrap();
+        action();
+        assert!(locked.is_empty());
     }
 }

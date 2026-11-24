@@ -80,26 +80,7 @@ pub(crate) fn create_branch_from_main(runtime: &RelationalRuntime, branch_name: 
     branch_id
 }
 
-/// The retained bill of a public immutable byte owner holding `bytes`,
-/// measured after its original controller scope is gone: payload plus control.
-pub(crate) fn retained_byte_owner_bill(bytes: &[u8]) -> u64 {
-    let budget = worth_execution::SerialMemoryBudget::new(Some(
-        (bytes.len() as u64).checked_add(64 * 1024).unwrap(),
-    ));
-    let host = crate::test_execution_policy::serial_request_with_memory(budget.clone());
-    let request = Req::serial(&host);
-    let mut building =
-        worth_execution::ExecutionRequestArrayBuilder::<u8>::allocate(request, bytes.len())
-            .unwrap();
-    building.extend_from_slice(bytes).unwrap();
-    let owned = building.seal_immutable_bytes().unwrap();
-    assert_eq!(owned.charged_payload_bytes(), Some(bytes.len() as u64));
-    let total = budget.charged_memory_bytes();
-    assert!(total > bytes.len() as u64);
-    drop(owned);
-    assert_eq!(budget.charged_memory_bytes(), 0);
-    total
-}
+pub(crate) use crate::execution::packet_preparation::memory_tests::retained_byte_owner_bill;
 
 /// Measure counted work charged to `execution` during `operation`.
 pub(crate) fn measure_counted_work<T>(

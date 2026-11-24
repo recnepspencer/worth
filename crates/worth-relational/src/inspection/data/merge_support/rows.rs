@@ -1,8 +1,9 @@
-use crate::facade::merge::{
-    MergePolicyDecisionBoundary, RelationalMergeCorrespondenceWitnessPosture,
-    RelationalMergeProofPacketAdmissionPosture, RelationalSchemaReconciliationWitnessPosture,
+use crate::merge::data::artifacts::{
+    RelationalMergeCorrespondenceWitnessPosture, RelationalMergeProofPacketAdmissionPosture,
+    RelationalSchemaReconciliationWitnessPosture,
 };
-use crate::transactions::data::RecordRef;
+use crate::merge::data::policy::MergePolicyDecisionBoundary;
+use crate::transactions::data::primitives::RecordRef;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
@@ -34,9 +35,9 @@ pub enum RelationalMergeSupportInspectionCompatibilityPosture {
 pub enum RelationalMergeSupportInspectionRow {
     BranchBasis {
         basis_digest: String,
-        source_head_commit_id: crate::facade::history::CommitId,
-        target_head_commit_id: crate::facade::history::CommitId,
-        merge_base_commit_id: crate::facade::history::CommitId,
+        source_head_commit_id: crate::history::data::coordinates::CommitId,
+        target_head_commit_id: crate::history::data::coordinates::CommitId,
+        merge_base_commit_id: crate::history::data::coordinates::CommitId,
         row_digest: String,
     },
     RequestAdmission {
@@ -110,9 +111,9 @@ impl RelationalMergeSupportInspectionRow {
 
     pub(crate) fn branch_basis(
         basis_digest: String,
-        source_head_commit_id: crate::facade::history::CommitId,
-        target_head_commit_id: crate::facade::history::CommitId,
-        merge_base_commit_id: crate::facade::history::CommitId,
+        source_head_commit_id: crate::history::data::coordinates::CommitId,
+        target_head_commit_id: crate::history::data::coordinates::CommitId,
+        merge_base_commit_id: crate::history::data::coordinates::CommitId,
     ) -> Self {
         let row_digest = row_digest(&(
             "worth.relational.merge_support.branch_basis.v1",

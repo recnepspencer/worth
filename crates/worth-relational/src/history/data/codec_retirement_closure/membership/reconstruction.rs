@@ -150,7 +150,7 @@ fn reconstruct_chain(
             }
             CanonicalOutputPublication::HistoricalSelection { .. } => {
                 current = super::super::historical_selection::antecedent(
-                    runtime.input.projection.history,
+                    runtime.input.canonical_history,
                     &runtime.execution(),
                     &current,
                     current_origin,

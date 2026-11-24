@@ -1,9 +1,12 @@
 use std::sync::Arc;
 
-use crate::validation::data::{
-    CustomInvariantNonApplicability, CustomInvariantProvenance, CustomInvariantSemanticIdentity,
-    InvariantDecisionKind, InvariantExecutionPoint, InvariantReportedRule, InvariantVerdict,
-};
+use crate::validation::custom_rule::CustomInvariantProvenance;
+use crate::validation::data::execution::InvariantDecisionKind;
+use crate::validation::data::execution::InvariantExecutionPoint;
+use crate::validation::data::execution::InvariantReportedRule;
+use crate::validation::data::execution::InvariantVerdict;
+use crate::validation::data::non_applicability::CustomInvariantNonApplicability;
+use crate::validation::data::rule_id::CustomInvariantSemanticIdentity;
 use crate::validation::engine::InvariantExecutionResult;
 
 /// Immutable evidence of an installed custom invariant's execution or
@@ -26,13 +29,13 @@ impl CustomInvariantExecutionReceipt {
         self.work_units
     }
 
-    pub fn rule_id(&self) -> &crate::validation::data::CustomInvariantRuleId {
+    pub fn rule_id(&self) -> &crate::validation::data::rule_id::CustomInvariantRuleId {
         &self.identity.rule_id
     }
 
     pub const fn semantic_version(
         &self,
-    ) -> crate::validation::data::CustomInvariantSemanticVersion {
+    ) -> crate::validation::data::rule_id::CustomInvariantSemanticVersion {
         self.identity.semantic_version
     }
 
@@ -56,7 +59,7 @@ impl CustomInvariantExecutionReceipt {
 
 pub(crate) fn collect_custom_invariant_execution_receipts<'a>(
     executions: impl IntoIterator<Item = &'a InvariantExecutionResult>,
-    registry: &crate::validation::FrozenCustomInvariantRegistry,
+    registry: &crate::validation::custom_registry::FrozenCustomInvariantRegistry,
 ) -> Arc<[CustomInvariantExecutionReceipt]> {
     let mut receipts = executions
         .into_iter()

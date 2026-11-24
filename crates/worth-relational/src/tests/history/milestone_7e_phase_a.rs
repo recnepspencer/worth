@@ -107,11 +107,7 @@ fn merge_branch_basis_denial_happens_before_planning_for_disconnected_branch() {
     assert_eq!(
         runtime.merge().inspect_planning_scope(
             execution,
-            MergePlanningRequest::new(
-                main_branch,
-                orphan_branch,
-                MergeIntent::ReconcileIntoTarget,
-            )
+            MergePlanningRequest::new(main_branch, orphan_branch, MergeIntent::ReconcileIntoTarget,)
         ),
         Err(
             crate::merge::data::MergePlanningError::RequestNormalization(
@@ -142,19 +138,21 @@ fn graft_disconnected_branch_head(
     orphan_head.branch_id = branch_id.clone();
     orphan_head.parents.clear();
 
-    let mut envelope = disconnected
+    let source_envelope = disconnected
         .history
         .recorded_commit_envelope(source_head.commit_id)
-        .expect("source envelope")
-        .copy_original_for_test(execution);
+        .expect("source envelope");
+    let mut envelope =
+        crate::durability::canonical_commit_artifact::checkpoint_body::copy_original_for_test(
+            &source_envelope,
+            execution,
+        );
     envelope.body_mut_for_test().commit = orphan_head.clone();
     envelope.body_mut_for_test().branch_context = branch_id.clone();
 
-    let original = crate::branch::RelationalOriginalRootCommitEvidence::prepare(
-        execution,
-        Arc::new(envelope),
-    )
-    .expect("disconnected commit evidence prepares");
+    let original =
+        crate::branch::RelationalOriginalRootCommitEvidence::prepare(execution, Arc::new(envelope))
+            .expect("disconnected commit evidence prepares");
     let artifact = Arc::new(
         crate::history::RelationalCommitArtifact::from_preencoded(Arc::clone(&original))
             .expect("disconnected commit artifact encodes"),

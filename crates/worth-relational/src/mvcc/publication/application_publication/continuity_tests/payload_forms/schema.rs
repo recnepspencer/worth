@@ -1,9 +1,10 @@
 //! Generic Query-shaped declarations; no proprietary codecs or values.
-use super::*;
-use crate::facade::runtime::RelationalRuntimeApi;
+use crate::config::data::{CascadeDeletePolicy, CrossContextPolicy};
+use crate::identity::data::KindId;
 use crate::schema::data::*;
 use worth_foundational::facade::{
-    aspects, AspectBinding, AspectIdentity, ScalarAspectType, StructFieldBuilder,
+    aspects, AspectBinding, AspectIdentity, AspectKey, FieldKey, ScalarAspectType,
+    StructFieldBuilder,
 };
 
 pub(super) fn binding(
@@ -21,11 +22,11 @@ pub(super) fn binding(
     }
     DeclaredAspectContractBinding {
         binding: AspectBinding::EntityField {
-            field: field_key(name),
+            field: FieldKey::new(name).unwrap(),
         },
         contract: aspects()
             .contract()
-            .for_key(aspect_key(name))
+            .for_key(AspectKey::new(name).unwrap())
             .identified_by(AspectIdentity(identity))
             .at_revision(aspects().vocabulary().revision(1))
             .struct_aspect(fields.finish().unwrap()),
@@ -34,8 +35,28 @@ pub(super) fn binding(
 pub(super) fn facts() -> DeclaredAspectContractBinding {
     binding("facts", 3002, &["a", "b", "c"], &["note"])
 }
-pub(super) fn runtime() -> crate::runtime::RelationalRuntime {
-    let mut registry = AspectSchemaFixture::default().build_registry();
+pub(super) fn registry() -> RelationalSchemaRegistry {
+    let mut registry = RelationalSchemaRegistry::new()
+        .register_entity_kind(EntityKindRegistration {
+            kind_id: KindId(1),
+            kind_name: "test.entity".into(),
+            schema_id: SchemaId("test".into()),
+            schema_version_id: SchemaVersionId(1),
+            aspect_contract_declarations: KindAspectContractDeclarations::default(),
+        })
+        .and_then(|schema| {
+            schema.register_relation_kind(RelationKindRegistration {
+                kind_id: KindId(2),
+                kind_name: "test.relation".into(),
+                schema_id: SchemaId("test".into()),
+                schema_version_id: SchemaVersionId(1),
+                cross_context_policy: CrossContextPolicy::AllowExplicit,
+                cascade_delete_policy: CascadeDeletePolicy::CascadeDeleteRelations,
+                aspect_contract_declarations: KindAspectContractDeclarations::default(),
+                relation_integrity: RelationIntegrityDeclarations::default(),
+            })
+        })
+        .unwrap();
     for (kind, declarations) in [
         (
             3,
@@ -65,8 +86,5 @@ pub(super) fn runtime() -> crate::runtime::RelationalRuntime {
             })
             .unwrap();
     }
-    RelationalRuntimeApi::builder()
-        .schema_registry(registry)
-        .build()
-        .expect("valid native runtime configuration")
+    registry
 }

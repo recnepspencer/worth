@@ -1,14 +1,15 @@
 //! Entity aspect patches resolve through the validated proposal's exact native binding.
+use super::preparation::ProjectionInputs;
 use super::{collection::TouchCollection, *};
 use crate::storage::overlay::{CurrentPartitionAccess, WorkingState};
-use crate::transactions::data::EntityMutationIntent;
+use crate::transactions::data::intents::mutation_intent::EntityMutationIntent;
 use worth_foundational::facade::{
     AspectBinding, AspectContract, AspectShape, ContractValidatedAspectValueView,
     ContractValidationInput, PortableAspectPatchOperation as Op, StructAspectValue,
 };
 
 pub(super) fn project<'p>(
-    proposal: &'p ValidatedRelationalProposal,
+    inputs: &ProjectionInputs<'p, '_>,
     intent: &'p EntityMutationIntent,
     sink: &mut TouchCollection<'p, '_>,
     work: &mut ValidatedMutationTouchProjectionWork,
@@ -17,10 +18,8 @@ pub(super) fn project<'p>(
         unreachable!(/* Proof: preparation::run dispatches only EntityMutationIntent::ApplyAspectPatch to this receiver. */ )
     };
     work.owner_state_lookups += 1;
-    let kind = proposal
-        .state
-        .prepared
-        .working_state
+    let kind = inputs
+        .before
         .get_current_partition(spec.entity_id.partition_id)
         .and_then(|p| p.entity_arena().get(&spec.entity_id))
         .and_then(|r| r.kind_id())
@@ -44,18 +43,11 @@ pub(super) fn project<'p>(
             continue;
         }
         let basis = operation.basis();
-        if let Some(plan) = proposal
-            .state
-            .prepared
-            .schema_authority
-            .entity_aspect_plan(kind)
-        {
+        if let Some(plan) = inputs.schema.entity_aspect_plan(kind) {
             (sink.checkpoint)(plan.executable_bindings.len() as u64)?;
         }
-        let binding = proposal
-            .state
-            .prepared
-            .schema_authority
+        let binding = inputs
+            .schema
             .entity_aspect_plan(kind)
             .filter(|p| p.kind_id == kind)
             .and_then(|p| {
@@ -98,16 +90,8 @@ pub(super) fn project<'p>(
             continue;
         }
         work.owner_state_lookups += 2;
-        let before = aspect(
-            &proposal.state.prepared.working_state,
-            spec.entity_id,
-            contract,
-        );
-        let after = aspect(
-            proposal.state.proposed_mutation.state(),
-            spec.entity_id,
-            contract,
-        );
+        let before = aspect(inputs.before, spec.entity_id, contract);
+        let after = aspect(inputs.after, spec.entity_id, contract);
         let (Ok(before), Ok(after)) = (before, after) else {
             sink.insert(ValidatedMutationTouch::UnrepresentableEntityMutation { kind });
             continue;

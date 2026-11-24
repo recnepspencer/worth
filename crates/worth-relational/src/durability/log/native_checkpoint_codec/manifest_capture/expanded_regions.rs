@@ -53,7 +53,7 @@ pub(super) fn capture_partitions(
                     ),
                 )
             })?;
-            let captured = crate::storage::residency::capture_region_members(
+            let captured = crate::storage::residency::region_capture::capture_region_members(
                 lane,
                 execution,
                 partition,

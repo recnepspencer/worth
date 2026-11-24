@@ -15,7 +15,7 @@ pub(crate) mod request_work;
 pub(crate) use request_work::{
     run_with_remaining_request_work, transaction_stage, RequestWorkBudget,
 };
-mod packet_preparation;
+pub(crate) mod packet_preparation;
 
 pub(crate) use packet_preparation::{
     packet_preparation_bytes, prepare_borrowed_artifact, prepare_borrowed_packets,
@@ -35,7 +35,6 @@ pub(crate) mod request_custody;
 pub(crate) use request_custody::check_request;
 
 #[cfg(test)]
-#[path = "../tests/support/runtime.rs"]
 pub(crate) mod test_authority;
 
 pub(crate) mod content_stage;

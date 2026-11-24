@@ -1,27 +1,23 @@
-use crate::config::data::{CascadeDeletePolicy, CrossContextPolicy};
-use crate::facade::runtime::RelationalRuntimeApi;
-use crate::identity::data::{KindId, PartitionId};
-use crate::schema::data::EntityKindRegistration;
-use crate::schema::data::KindAspectContractDeclarations;
-use crate::schema::data::RelationKindRegistration;
-use crate::schema::data::RelationalSchemaRegistry;
-use crate::schema::data::SchemaId;
-use crate::schema::data::SchemaVersionId;
-use crate::schema::data::{EndpointKindContractDeclaration, RelationIntegrityDeclarations};
-use crate::transactions::data::intents::mutation_intent::CreateIntent;
-use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::config::data::{CascadeDeletePolicy, CrossContextPolicy, RelationalRuntimeConfig};
+use crate::identity::data::{EntityId, KindId, PartitionId, RelationId, VersionId};
+use crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;
+use crate::schema::data::{
+    EndpointKindContractDeclaration, EntityKindRegistration, KindAspectContractDeclarations,
+    RelationIntegrityDeclarations, RelationKindRegistration, RelationalSchemaRegistry, SchemaId,
+    SchemaVersionId,
+};
+use crate::storage::overlay::{small_relation_partition::relation_partition, PartitionState};
 use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
-use crate::transactions::data::primitives::EntityReference;
-use crate::transactions::data::primitives::EntitySpec;
-use crate::transactions::data::primitives::RelationSpec;
-use crate::transactions::data::primitives::WorkerIntentBatch;
 use crate::validation::data::contracts::InvariantPlanContract;
 use crate::validation::engine::{
-    InvariantExecutionRequest, InvariantObservation, InvariantRequestProfile,
+    test_view::invariant_view, InvariantExecutionRequest, InvariantObservation,
+    InvariantPreparationControl, InvariantRequestProfile, InvariantRuntimeView,
 };
+use std::collections::BTreeMap;
+use worth_execution::ExecutionRequest;
 
-pub(super) fn relation_integrity_runtime() -> crate::runtime::RelationalRuntime {
-    let registry = RelationalSchemaRegistry::new()
+fn schema() -> RelationalSchemaRegistry {
+    RelationalSchemaRegistry::new()
         .register_entity_kind(EntityKindRegistration {
             kind_id: KindId(1),
             kind_name: "test.entity".to_string(),
@@ -77,88 +73,67 @@ pub(super) fn relation_integrity_runtime() -> crate::runtime::RelationalRuntime 
                 ),
             })
         })
-        .unwrap();
-    RelationalRuntimeApi::builder()
-        .schema_registry(registry)
-        .build()
-        .expect("valid native runtime configuration")
+        .unwrap()
 }
 
-pub(super) fn create_relation_of_kind(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &crate::runtime::RelationalRuntime,
-    kind_id: KindId,
-    source: crate::identity::data::EntityId,
-    target: crate::identity::data::EntityId,
-    client_key: &str,
-) -> crate::identity::data::RelationId {
-    let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
-    txn.push_batch(
-        WorkerIntentBatch::new(format!("relation-{client_key}")).push(MutationIntent::Create(
-            CreateIntent::Relation(RelationSpec {
-                partition_id: PartitionId::main(),
-                kind_id,
-                client_key: crate::symbols::data::ClientKey::raw(client_key),
-                source: EntityReference::Existing(source),
-                target: EntityReference::Existing(target),
-                fields: crate::transactions::data::aspect_field_patch::AspectFieldPatch::default(),
-            }),
-        )),
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .expect("test staging stays within configured resource budgets");
-    let outcome = txn.commit(execution, runtime).unwrap();
-    outcome
-        .changed_records
-        .iter()
-        .find_map(|record| match record {
-            crate::transactions::data::primitives::RecordRef::Relation(relation_id) => {
-                Some(*relation_id)
-            }
-            crate::transactions::data::primitives::RecordRef::Entity(_) => None,
-        })
-        .expect("created relation")
+pub(crate) struct RequestGraph {
+    partitions: BTreeMap<PartitionId, PartitionState>,
+    pub(crate) entities: Vec<EntityId>,
+    pub(super) relations: Vec<RelationId>,
 }
 
-pub(super) fn create_entity(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &crate::runtime::RelationalRuntime,
-    name: &str,
-) -> crate::identity::data::EntityId {
-    let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
-    txn.push_batch(
-        WorkerIntentBatch::new(format!("entity-{name}")).push(MutationIntent::Create(
-            CreateIntent::Entity(EntitySpec {
-                partition_id: PartitionId::main(),
-                kind_id: KindId(1),
-                client_key: crate::symbols::data::ClientKey::raw(name),
-                fields: crate::transactions::data::aspect_field_patch::AspectFieldPatch::default(),
-            }),
-        )),
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .expect("test staging stays within configured resource budgets");
-    let outcome = txn.commit(execution, runtime).unwrap();
-    outcome
-        .changed_records
-        .iter()
-        .find_map(|record| match record {
-            crate::transactions::data::primitives::RecordRef::Entity(entity_id) => Some(*entity_id),
-            crate::transactions::data::primitives::RecordRef::Relation(_) => None,
-        })
-        .expect("created entity")
-}
+impl RequestGraph {
+    pub(crate) fn new(entity_count: usize, edges: &[(usize, usize, KindId)]) -> Self {
+        let id = PartitionId::main();
+        let (partition, entities, relations) = relation_partition(id, entity_count, edges);
+        Self {
+            partitions: BTreeMap::from([(id, partition)]),
+            entities,
+            relations,
+        }
+    }
 
-pub(super) fn request_for_plan<'runtime>(
-    runtime: &'runtime crate::runtime::RelationalRuntime,
-    plan: &'runtime MergedCommitPlan,
-) -> InvariantExecutionRequest<'runtime> {
-    InvariantExecutionRequest::from_profile_with_contract(
-        InvariantRequestProfile::CommitBoundary,
-        runtime,
-        InvariantObservation::committed(runtime.storage_access().current_edition()),
-        runtime.current_version_id(),
-        Some(plan),
-        Some(InvariantPlanContract::from_merged_plan(plan)),
-    )
+    pub(super) fn suspend(&mut self, relation: RelationId, endpoints: (EntityId, EntityId)) {
+        let partition = self.partitions.get_mut(&relation.partition_id).unwrap();
+        partition
+            .relation_arena
+            .suspend_materialization(relation.slot_index())
+            .unwrap();
+        partition
+            .adjacency
+            .get_mut(endpoints.0.slot_index())
+            .unwrap()
+            .remove(KindId(2), &relation);
+        partition
+            .reverse_adjacency
+            .get_mut(endpoints.1.slot_index())
+            .unwrap()
+            .remove(KindId(2), &relation);
+    }
+
+    pub(crate) fn view(instrumentation: &RuntimeInstrumentation) -> InvariantRuntimeView<'_> {
+        let mut config = RelationalRuntimeConfig::default();
+        config.schema.registry = schema();
+        invariant_view(instrumentation, config, VersionId(1))
+    }
+
+    pub(crate) fn request<'state>(
+        &'state self,
+        view: &InvariantRuntimeView<'_>,
+        plan: Option<&'state MergedCommitPlan>,
+    ) -> InvariantExecutionRequest<'state> {
+        let host = crate::execution::test_policy::serial_request();
+        InvariantExecutionRequest::from_profile_with_contract_at_current_version(
+            &ExecutionRequest::serial(&host),
+            InvariantRequestProfile::CommitBoundary,
+            view,
+            InvariantObservation::committed_branch(&self.partitions),
+            VersionId(1),
+            VersionId(1),
+            plan,
+            plan.map(InvariantPlanContract::from_merged_plan),
+            &InvariantPreparationControl::uninterrupted_proposal_validation(),
+        )
+        .unwrap()
+    }
 }

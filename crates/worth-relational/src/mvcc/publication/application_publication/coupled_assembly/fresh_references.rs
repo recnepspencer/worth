@@ -1,7 +1,11 @@
 //! Keep actual prefix allocations and their symbolic transaction references together.
-use super::*;
 use crate::execution::request_stage::checkpoint;
-use crate::transactions::data::{CommitCreatedEntityBindings, EntityReference, MutationIntent};
+use crate::mvcc::publication::application_publication::custody;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::EntityReference;
+use worth_execution::ExecutionRequest;
 
 /// A producer sees real allocated IDs in its candidate reads. The enclosing
 /// transaction keeps their original Create references for the final full plan.

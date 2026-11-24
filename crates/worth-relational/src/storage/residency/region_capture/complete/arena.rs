@@ -8,10 +8,7 @@ use serde::ser::{SerializeMap, SerializeSeq, SerializeStruct};
 use worth_foundational::facade::AuthoritativeRecordAspectState;
 
 pub(in crate::storage::residency) trait WireKind: RecordKind {
-    fn plan(
-        schema: &RelationalBranchRootSchemaAuthority,
-        kind: crate::identity::data::KindId,
-    ) -> bool;
+    fn plan(schema: &dyn RelationalRegionSchema, kind: crate::identity::data::KindId) -> bool;
     fn meta_kind(meta: &Self::Meta) -> crate::identity::data::KindId;
     fn meta_state(meta: &Self::Meta) -> Option<&AuthoritativeRecordAspectState>;
     fn extra_state(extra: &Self::Extra) -> Option<&AuthoritativeRecordAspectState>;
@@ -27,7 +24,7 @@ pub(in crate::storage::residency) trait WireKind: RecordKind {
 
 pub(super) fn validate<K: WireKind>(
     arena: &RecordArena<K>,
-    schema: &RelationalBranchRootSchemaAuthority,
+    schema: &dyn RelationalRegionSchema,
     contracts: &aspects::Contracts<'_>,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<(), Stop> {

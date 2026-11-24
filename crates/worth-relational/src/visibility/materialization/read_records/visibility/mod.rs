@@ -9,7 +9,6 @@ pub(super) use kind_matching::{
 };
 pub(super) use lifecycle::{
     historical_lifecycle, historical_relation_lifecycle, historical_retired_at,
-    lifecycle_storage_visible,
 };
 pub(super) use slot_sets::{
     entity_visible_in_partition_at_version, relation_visible_in_partition_at_version,

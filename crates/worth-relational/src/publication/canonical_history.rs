@@ -2,7 +2,7 @@ use crate::history::data::{CommitId, PositionedCanonicalCommit};
 use crate::publication::patch::data::stream_commit_ref::PatchStreamCommitRef;
 use crate::publication::patch::data::PatchStreamPosition;
 use crate::runtime::state::subsystems::durability::commit_log::read_coverage::DurableCanonicalCoverage;
-use crate::runtime::state::subsystems::history::HistorySubsystem;
+use crate::runtime::state::subsystems::history::history_canonical_routes::RelationalPublicationHistory;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct RetainedCanonicalEnvelopeGap {
@@ -11,7 +11,7 @@ pub(crate) struct RetainedCanonicalEnvelopeGap {
 }
 
 pub(crate) fn retained_canonical_envelopes_after(
-    history: &HistorySubsystem,
+    history: &RelationalPublicationHistory,
     durability: DurableCanonicalCoverage<'_>,
     after_position: Option<PatchStreamPosition>,
     max_commits: usize,
@@ -21,7 +21,7 @@ pub(crate) fn retained_canonical_envelopes_after(
 }
 
 pub(crate) fn retained_canonical_envelope_at_position(
-    history: &HistorySubsystem,
+    history: &RelationalPublicationHistory,
     durability: DurableCanonicalCoverage<'_>,
     position: PatchStreamPosition,
     preloaded_durable_envelopes: Option<&[PositionedCanonicalCommit]>,
@@ -65,7 +65,7 @@ pub(crate) fn durable_canonical_envelopes(
 }
 
 fn resolve_retained_commit_refs(
-    history: &HistorySubsystem,
+    history: &RelationalPublicationHistory,
     durability: DurableCanonicalCoverage<'_>,
     commit_refs: &[PatchStreamCommitRef],
 ) -> Result<Vec<PositionedCanonicalCommit>, RetainedCanonicalEnvelopeGap> {
@@ -101,7 +101,7 @@ fn resolve_retained_commit_refs(
 }
 
 pub(crate) fn patch_stream_commits_after(
-    history: &HistorySubsystem,
+    history: &RelationalPublicationHistory,
     after_position: Option<PatchStreamPosition>,
     max_commits: usize,
 ) -> Vec<PatchStreamCommitRef> {

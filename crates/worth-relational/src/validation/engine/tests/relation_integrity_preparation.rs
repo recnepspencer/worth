@@ -1,22 +1,29 @@
 use super::validation_engine_fixtures::*;
-use crate::mvcc::RelationalTransactionIntent;
+use crate::config::data::RelationalRuntimeConfig;
+use crate::identity::data::VersionId;
 use crate::runtime::operation_control::interruption_event::RelationalInterruptionBoundary as Boundary;
-use crate::runtime::operation_control::interruption_event::RelationalOperationInterruption as Interruption;
 use crate::runtime::operation_control::RelationalOperationControl;
+use crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;
 use crate::transactions::data::intents::mutation_intent::BulkEntityCreateIntent;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::validation::engine::test_view::invariant_view;
 use crate::validation::engine::InvariantPreparationControl;
+use std::collections::BTreeMap;
 use worth_execution::ExecutionAllocationPolicy as Allocation;
 
 #[test]
 fn complete_relation_scope_retains_more_than_former_touched_entity_limit() {
-    let runtime = runtime_with_cardinality_minimum();
+    let mut config = RelationalRuntimeConfig::default();
+    config.schema.registry = cardinality_minimum_registry();
+    let instrumentation = RuntimeInstrumentation::default();
+    let view = invariant_view(&instrumentation, config, VersionId(0));
+    let partitions = BTreeMap::new();
     let plan = entity_plan(32_769);
     let request = InvariantExecutionRequest::from_profile_with_contract(
         InvariantRequestProfile::CertificationBoundary,
-        &runtime,
-        InvariantObservation::committed(runtime.storage_access().current_edition()),
-        runtime.current_version_id(),
+        &view,
+        InvariantObservation::committed_branch(&partitions),
+        VersionId(0),
         Some(&plan),
         Some(crate::validation::data::contracts::InvariantPlanContract::from_merged_plan(&plan)),
     );
@@ -34,7 +41,7 @@ fn complete_relation_scope_retains_more_than_former_touched_entity_limit() {
     }
     // Full candidate retention must still reach the real minimum-cardinality
     // rule, rather than a preparation count refusal or a silently empty scope.
-    let result = InvariantEngine::new(&runtime).execute_fixture(request);
+    let result = InvariantEngine::from_view(&view).execute_fixture(request);
     assert!(result.results().iter().any(|result| matches!(
         &result.verdict,
         crate::validation::data::execution::InvariantVerdict::Violation(violation)
@@ -46,78 +53,12 @@ fn complete_relation_scope_retains_more_than_former_touched_entity_limit() {
 }
 
 #[test]
-fn relation_scope_preparation_interruption_preserves_head_and_allows_retry() {
-    let host_request = crate::execution::test_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    for interruption in [Interruption::Cancelled, Interruption::TimedOut] {
-        let runtime = runtime_with_partition_isolation();
-        let identity = runtime.main_branch_identity();
-        let (_, basis) = runtime.observe_branch(&identity).unwrap();
-        let before = runtime
-            .branch_reference_state(&crate::history::data::BranchId("main".into()))
-            .unwrap();
-        // The original validation boundary polls only three times. Visit eight
-        // requires the scope collector's actual per-item safe points.
-        let control = RelationalOperationControl::uninterrupted()
-            .with_injected_interruption_for_test(
-                Boundary::ProposalValidation,
-                interruption,
-                std::num::NonZeroUsize::new(8).expect("positive fixture visit"),
-            );
-        let mut transaction = runtime
-            .begin_branch_transaction_with_control(
-                &basis,
-                RelationalTransactionIntent::ordinary(),
-                control,
-            )
-            .unwrap();
-        transaction
-            .push_batch(entity_batch(3), Allocation::SystemAllocation)
-            .unwrap();
-        let error = match transaction.validate(execution, &runtime) {
-            Err(error) => error,
-            Ok(_) => panic!("scope scan must observe the requested stop"),
-        };
-        match error {
-            TransactionCommitError::Interrupted {
-                interruption: event,
-                ..
-            } => {
-                assert_eq!(event.interruption(), interruption);
-                assert_eq!(event.boundary(), Boundary::ProposalValidation);
-            }
-            other => panic!("expected exact native interruption, got {other:?}"),
-        }
-        assert_eq!(
-            runtime
-                .branch_reference_state(&crate::history::data::BranchId("main".into()))
-                .unwrap(),
-            before
-        );
-        let mut retry = runtime
-            .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
-            .unwrap();
-        retry
-            .push_batch(entity_batch(3), Allocation::SystemAllocation)
-            .unwrap();
-        let outcome = retry.commit(execution, &runtime).unwrap();
-        for index in 0..3 {
-            assert!(outcome
-                .created_entity(&crate::transactions::data::primitives::CreatedEntityRef {
-                    partition_id: PartitionId::main(),
-                    kind_id: KindId(1),
-                    client_key: ClientKey::raw(format!("node-{index}")),
-                })
-                .is_some());
-        }
-        crate::tests::support::release_test_commit_snapshot(&runtime, &outcome);
-    }
-}
-
-#[test]
 fn relation_scope_preparation_preserves_supplied_allocation_stop() {
-    let runtime = runtime_with_cardinality_minimum();
+    let mut config = RelationalRuntimeConfig::default();
+    config.schema.registry = cardinality_minimum_registry();
+    let instrumentation = RuntimeInstrumentation::default();
+    let view = invariant_view(&instrumentation, config, VersionId(0));
+    let partitions = BTreeMap::new();
     let cancellation = worth_execution::CancellationSource::new();
     let lease = crate::execution::test_authority::test_execution_authority()
         .request_lease(worth_execution::LeaseRequest {
@@ -140,15 +81,14 @@ fn relation_scope_preparation_preserves_supplied_allocation_stop() {
         Allocation::Execution(&lease),
         Boundary::ProposalValidation,
     );
-    let view = runtime.invariant_validation_view();
     let plan = entity_plan(1);
     let error = match InvariantExecutionRequest::from_profile_with_contract_at_current_version(
         &worth_execution::ExecutionRequest::leased(&lease),
         InvariantRequestProfile::CertificationBoundary,
         &view,
-        InvariantObservation::committed(runtime.storage_access().current_edition()),
-        runtime.current_version_id(),
-        runtime.current_version_id(),
+        InvariantObservation::committed_branch(&partitions),
+        VersionId(0),
+        VersionId(0),
         Some(&plan),
         Some(crate::validation::data::contracts::InvariantPlanContract::from_merged_plan(&plan)),
         &control,
@@ -178,10 +118,6 @@ fn entity_plan(count: usize) -> MergedCommitPlan {
         transaction_id: TransactionId(20),
         merged_intents: vec![entity_intent(count)],
     }
-}
-
-fn entity_batch(count: usize) -> WorkerIntentBatch {
-    WorkerIntentBatch::new("complete-relation-scope").push(entity_intent(count))
 }
 
 fn entity_intent(count: usize) -> MutationIntent {

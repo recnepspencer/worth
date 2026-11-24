@@ -156,14 +156,24 @@ fn routed() -> (RelationalSchemaRegistry, ManagedIndexSourceProgram) {
     let mut source = template.0.path.parts().clone();
     source.identity.name = "routed-source".into();
     source.to = ROW.into();
-    source.nodes = vec![Node::Stored { relation: INTRODUCES, from: SCOPE, to: ROW }];
+    source.nodes = vec![Node::Stored {
+        relation: INTRODUCES,
+        from: SCOPE,
+        to: ROW,
+    }];
     let mut route = source.clone();
     route.identity.name = "row-tag".into();
     route.from = ROW.into();
     route.to = SCOPE.into();
-    route.nodes = vec![Node::Stored { relation: TAGGED, from: ROW, to: SCOPE }];
+    route.nodes = vec![Node::Stored {
+        relation: TAGGED,
+        from: ROW,
+        to: SCOPE,
+    }];
     let (source_identity, route_identity) = (source.identity.clone(), route.identity.clone());
-    let registry = registry.register_derived_relations(vec![source, route]).unwrap();
+    let registry = registry
+        .register_derived_relations(vec![source, route])
+        .unwrap();
     let route = crate::validation::candidate_source::ManagedIndexSourceProjectionRoute::new(
         "tag".into(),
         registry.derived_relation(&route_identity).unwrap(),

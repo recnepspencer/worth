@@ -1,49 +1,8 @@
 //! Apply one writer's suffix over the current candidate pin. Producers and
 //! authored stages share this one apply owner; only their custody differs.
+use super::super::suffix_scope::{self, AppliedSuffix, SuffixWriter};
 use super::*;
-use crate::history::data::CanonicalRequiredOutputOrigin;
 use crate::storage::overlay::WorkingState;
-
-/// Who writes this suffix, and under which custody.
-pub(in crate::mvcc::publication::application_publication::coupled_assembly) enum SuffixWriter<'a> {
-    /// An admitted producer route, `index` in the producer roster.
-    Producer {
-        index: usize,
-        source: crate::identity::data::EntityId,
-        roles: &'a mut [RequiredOutputRoleTarget],
-        predecessor: Option<&'a CanonicalRequiredOutputOrigin>,
-    },
-    /// A successor round of producer part `index`, already rescoped to the
-    /// coordinates its chain head chose.
-    Successor {
-        index: usize,
-        source: crate::identity::data::EntityId,
-        predecessor: Option<&'a CanonicalRequiredOutputOrigin>,
-    },
-    /// The authored writer: one later stage editing an admitted stage source.
-    Authored {
-        source: crate::identity::data::EntityId,
-        roles: &'a mut [RequiredOutputRoleTarget],
-    },
-}
-
-pub(in crate::mvcc::publication::application_publication::coupled_assembly) struct AppliedSuffix {
-    pub(in crate::mvcc::publication::application_publication::coupled_assembly) read:
-        RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
-    pub(in crate::mvcc::publication::application_publication::coupled_assembly) plan:
-        crate::mvcc::OwnedNormalizedPlan,
-    pub(in crate::mvcc::publication::application_publication::coupled_assembly) records:
-        Vec<RecordRef>,
-    pub(in crate::mvcc::publication::application_publication::coupled_assembly) content:
-        crate::content::publication::ContentPublication,
-    pub(in crate::mvcc::publication::application_publication::coupled_assembly) delta_state:
-        WorkingState,
-    pub(in crate::mvcc::publication::application_publication::coupled_assembly) local_keys:
-        super::super::local_keys::LocalKeys,
-    /// The entities this suffix allocated.
-    pub(in crate::mvcc::publication::application_publication::coupled_assembly) created:
-        Vec<crate::identity::data::EntityId>,
-}
 
 impl RelationalAuthoredCoupledCandidate<'_> {
     pub(in crate::mvcc::publication::application_publication::coupled_assembly) fn apply_suffix(
@@ -54,55 +13,14 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         mut batches: Vec<WorkerIntentBatch>,
     ) -> Result<AppliedSuffix, RelationalCoupledAssemblyFailure> {
         let successor = matches!(writer, SuffixWriter::Successor { .. });
-        let (creator, source, custody, local_keys) = match writer {
-            SuffixWriter::Producer {
-                index,
-                source,
-                roles,
-                predecessor,
-            } => {
-                let keys = super::super::local_keys::scope(
-                    execution,
-                    self.applied_parts(),
-                    &self.mutation.outcome.created_entities,
-                    self.mutation.candidate_symbols().interner(),
-                    &mut batches,
-                    roles,
-                )?;
-                (
-                    crate::publication::data::CoupledFreshWriter::Producer(index),
-                    source,
-                    super::super::writer_custody::Writer::Producer(predecessor),
-                    keys,
-                )
-            }
-            SuffixWriter::Successor {
-                index,
-                source,
-                predecessor,
-            } => (
-                crate::publication::data::CoupledFreshWriter::Producer(index),
-                source,
-                super::super::writer_custody::Writer::Producer(predecessor),
-                Default::default(),
-            ),
-            SuffixWriter::Authored { source, roles } => {
-                super::super::local_keys::scope(
-                    execution,
-                    self.applied_parts(),
-                    &self.mutation.outcome.created_entities,
-                    self.mutation.candidate_symbols().interner(),
-                    &mut batches,
-                    roles,
-                )?;
-                (
-                    crate::publication::data::CoupledFreshWriter::Authored,
-                    source,
-                    super::super::writer_custody::Writer::AuthoredPrefix,
-                    Default::default(),
-                )
-            }
-        };
+        let (creator, source, custody, local_keys) = suffix_scope::scope(
+            execution,
+            writer,
+            self.applied_parts(),
+            &self.mutation.outcome.created_entities,
+            self.mutation.candidate_symbols().interner(),
+            &mut batches,
+        )?;
         self.transaction
             .attach_content(execution, content)
             .map_err(crate::content::publication::commit_denial)?;
@@ -135,31 +53,13 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         // endpoints are lowered, for either producer or authored-stage suffixes.
         // A successor's relation creates are proved re-creates the head already
         // applied; lowering drops them, so they have no original to complete.
-        let originals = crate::transactions::data::CoupledOriginalRelationCreates::capture(
+        let (intents, recorded, originals) = suffix_scope::normalize(
             execution,
-            if successor {
-                &[]
-            } else {
-                &intents.plan().merged_intents
-            },
+            intents,
+            successor,
+            &self.mutation.outcome.created_entities,
+            self.prepared.schema_authority.aspect_plans(),
         )?;
-        let mut intents =
-            intents.into_coupled_suffix(0, &self.mutation.outcome.created_entities, execution)?;
-        // A successor records its commands as authored (re-creates stay
-        // creates, so its touches match the one-round answer) but applies them
-        // lowered onto the chain's allocations.
-        let recorded = if successor {
-            let recorded =
-                crate::mvcc::OwnedNormalizedPlan::copy_for_request(intents.plan(), execution)?;
-            intents = intents.lower_coupled_recreates(
-                &self.mutation.outcome.created_entities,
-                self.prepared.schema_authority.aspect_plans(),
-                execution,
-            )?;
-            Some(recorded)
-        } else {
-            None
-        };
         let read = self.pin_source(execution)?;
         let root = read.resident_basis().root();
         let plan = self.transaction.build_merged_plan_for_state(
@@ -249,30 +149,13 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         )?;
         self.fresh_records
             .retain(execution, creator, source, &outcome)?;
-        let records = outcome.effect.publication.changed_records.clone();
-        let created = outcome.created_entities.allocated_identities().collect();
-        self.mutation
-            .outcome
-            .created_entities
-            .append_owned(outcome.created_entities)
-            .map_err(TransactionCommitError::conflict)?;
-        self.mutation
-            .outcome
-            .created_relations
-            .append_owned(outcome.created_relations)
-            .map_err(TransactionCommitError::conflict)?;
-        self.mutation
-            .outcome
-            .preparation_telemetry
-            .accumulate(outcome.preparation_telemetry);
-        self.mutation.outcome.effect.accumulate(outcome.effect);
-        // Retain only this part's actual sparse state for the next physical pin.
-        // Applying it over the previous D reuses the ordinary root-region owner.
-        let delta_state = state.clone();
-        self.mutation
-            .state
-            .adopt_sequential_apply(state, execution)
-            .map_err(custody::execution_stop)?;
+        let (records, created, delta_state) = suffix_scope::adopt(
+            execution,
+            &mut self.mutation.outcome,
+            &mut self.mutation.state,
+            outcome,
+            state,
+        )?;
         self.mutation.content = content.clone();
         self.mutation.aggregate = crate::aggregate_identity::AggregateProposal::capture(
             &self.prepared.schema_authority,

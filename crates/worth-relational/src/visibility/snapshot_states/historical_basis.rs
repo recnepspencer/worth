@@ -46,19 +46,12 @@ impl HistoricalVisibilityBasis {
             .retain_historical_root(commit_id)
             .map_err(historical_retention_denial)?
             .ok_or(HistoricalVisibilityDenial::CertificationReconstructionRequired)?;
-        let source_root_id = retained.root().id();
         if retained.root().commit_id() != Some(commit_id) {
             return Err(HistoricalVisibilityDenial::MvccIntervalUnavailable);
         }
-        Ok(Self {
-            branch_id,
-            version_id,
-            root: Some(Arc::new(retained)),
-            coverage: HistoricalVisibilityCoverage::RetainedInterval {
-                source_root_id,
-                source_version: version_id,
-            },
-        })
+        Ok(Self::from_retained_interval(
+            branch_id, version_id, version_id, retained,
+        ))
     }
 
     pub(crate) fn resolve<'a>(
@@ -66,7 +59,7 @@ impl HistoricalVisibilityBasis {
         version_id: VersionId,
     ) -> Result<Self, HistoricalVisibilityDenial> {
         let inputs = inputs.into();
-        let history = inputs.history;
+        let history = inputs.history.branch;
         let branch_id = crate::visibility::branch_scope::branch_for_version(inputs, version_id)
             .ok_or(HistoricalVisibilityDenial::UnknownVersion)?;
         let commit_id = history
@@ -78,22 +71,15 @@ impl HistoricalVisibilityBasis {
             .map_err(historical_retention_denial)?
             .flatten()
         {
-            let source_root_id = root.root().id();
-            return Ok(Self {
-                branch_id,
-                version_id,
-                coverage: HistoricalVisibilityCoverage::RetainedInterval {
-                    source_root_id,
-                    source_version: version_id,
-                },
-                root: Some(Arc::new(root)),
-            });
+            return Ok(Self::from_retained_interval(
+                branch_id, version_id, version_id, root,
+            ));
         }
         let cell = history
             .branch_cell(&branch_id)
             .ok_or(HistoricalVisibilityDenial::AuthoringBranchUnavailable)?;
         let Some(root) = cell.root() else {
-            if version_id.is_zero() && history.historical_latest_commit().is_none() {
+            if version_id.is_zero() && inputs.history.latest_receipt().is_none() {
                 return Ok(Self {
                     branch_id,
                     version_id,
@@ -119,7 +105,6 @@ impl HistoricalVisibilityBasis {
             }
             source_version = version_id;
         }
-        let source_root_id = root.id();
         let binding = cell
             .head_retention()
             .binding()
@@ -127,15 +112,12 @@ impl HistoricalVisibilityBasis {
         let root =
             crate::history::retention::RelationalRetainedHistoricalRoot::acquire(&binding, root)
                 .map_err(historical_retention_denial)?;
-        Ok(Self {
+        Ok(Self::from_retained_interval(
             branch_id,
             version_id,
-            root: Some(Arc::new(root)),
-            coverage: HistoricalVisibilityCoverage::RetainedInterval {
-                source_root_id,
-                source_version,
-            },
-        })
+            source_version,
+            root,
+        ))
     }
 
     pub(crate) fn branch_id(&self) -> &BranchId {

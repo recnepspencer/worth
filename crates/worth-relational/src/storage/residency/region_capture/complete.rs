@@ -5,14 +5,13 @@ mod aspects;
 mod entity;
 mod relation;
 use super::super::region_image::{RelationalRegionImage, RelationalRegionImageKind};
-use crate::branch::RelationalBranchRootSchemaAuthority;
-use crate::durability::data::{
-    DurabilityError, RecoveryFailureClass, RelationalHistoryMemberDirectory,
-    RelationalRecoveryStop as Stop,
-};
+use crate::durability::data::recovery_errors::{DurabilityError, RecoveryFailureClass};
+use crate::durability::data::recovery_stop::RelationalRecoveryStop as Stop;
 use crate::durability::medium::RelationalDurableMemberLocator;
+use crate::storage::data::history_member_directory::RelationalHistoryMemberDirectory;
 use crate::storage::overlay::{PartitionContentCommitment, PartitionState};
 use crate::storage::partition::AdjacencyKindBasis;
+use crate::storage::residency::RelationalRegionSchema;
 use crate::storage::residency::{
     kind_commitment::FullProjectionEncoding, kind_projection::full::FullKindProjection,
     RegionContentFailure,
@@ -50,7 +49,7 @@ pub(in crate::storage::residency) fn capture(
     lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     partition: &PartitionState,
     commitment: &PartitionContentCommitment,
-    schema: &RelationalBranchRootSchemaAuthority,
+    schema: &dyn RelationalRegionSchema,
     schema_digest: [u8; 32],
     _symbols: &dyn SymbolTextLookup,
     request: &ExecutionRequest<'_, '_>,

@@ -1,8 +1,11 @@
 //! Admit publication before taking branch coordination or changing a cell.
-use super::{canonical_publication_routes::BranchTransitionPublication, HistorySubsystem};
+use super::{
+    canonical_publication_routes::BranchTransitionPublication,
+    history_canonical_routes::RelationalPublicationHistory,
+};
 
 pub(crate) fn begin_branch_transition(
-    history: &HistorySubsystem,
+    history: &RelationalPublicationHistory,
 ) -> BranchTransitionPublication<'_> {
     history
         .canonical_publication_routes

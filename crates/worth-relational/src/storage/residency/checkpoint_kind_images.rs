@@ -58,7 +58,7 @@ impl CheckpointRegionKindImages {
 
     pub(crate) fn omit_deleted_current_records(
         &mut self,
-        partitions: &[crate::durability::data::PartitionCheckpointImage],
+        partitions: &[crate::storage::data::partition_checkpoint_image::PartitionCheckpointImage],
     ) {
         let mut removed = std::collections::BTreeSet::new();
         for partition in partitions {
@@ -88,7 +88,7 @@ impl CheckpointRegionKindImages {
     /// claim in both head and retained metadata. Re-record their kind projections.
     pub(crate) fn repoint_current_claims_for_test(
         &mut self,
-        partitions: &[crate::durability::data::PartitionCheckpointImage],
+        partitions: &[crate::storage::data::partition_checkpoint_image::PartitionCheckpointImage],
         kind: crate::identity::data::KindId,
     ) {
         let mut endpoints = BTreeMap::new();

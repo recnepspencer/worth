@@ -5,7 +5,7 @@ use crate::authority::commit::pipeline::PublishedCommitExecution;
 use crate::publication::data::PublicationSettlementRepairError;
 use crate::runtime::state::runtime_state::publication_lifecycle::RelationalRuntimePublicationBinding;
 use crate::runtime::state::subsystems::durability::checkpoint_selection::RelationalCheckpointManifestSelection;
-use crate::runtime::state::subsystems::history::HistorySubsystem;
+use crate::runtime::state::subsystems::history::history_canonical_routes::RelationalPublicationHistory;
 use crate::transactions::data::outcomes::commit_result::CommitResult;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 
@@ -17,7 +17,7 @@ use super::pending_settlement::{
 pub(crate) struct RelationalSettlementBinding<'runtime> {
     pub(crate) runtime_instance_id: u64,
     pub(crate) publication: RelationalRuntimePublicationBinding,
-    pub(crate) history: &'runtime HistorySubsystem,
+    pub(crate) history: &'runtime RelationalPublicationHistory,
     pub(crate) checkpoint: &'runtime RelationalCheckpointManifestSelection,
 }
 

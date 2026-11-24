@@ -2,7 +2,9 @@
 //! schema, invariant, footprint, and publication validation.
 
 #[path = "validation/custom_invariant_execution_receipt.rs"]
-mod custom_invariant_execution_receipt;
+pub(crate) mod custom_invariant_execution_receipt;
+#[path = "validation/invariant_evidence.rs"]
+mod invariant_evidence;
 #[path = "validation/invariant_plan.rs"]
 mod invariant_plan;
 mod proposal_candidate;
@@ -16,30 +18,34 @@ mod proposal_invariants;
 #[path = "validation/proposal_revalidation.rs"]
 mod proposal_revalidation;
 mod proposal_round;
+#[path = "validation/proposal_identity/sequence.rs"]
+mod proposal_sequence;
 mod proposal_source;
 #[path = "validation/proposal_touches.rs"]
-mod proposal_touches;
+pub(crate) mod proposal_touches;
 #[path = "validation/proposal_validation.rs"]
 mod proposal_validation;
 pub(in crate::mvcc) use proposal_validation::require_not_interrupted;
 #[path = "validation/validated_proposal.rs"]
-mod validated_proposal;
+pub(crate) mod validated_proposal;
 
 pub use crate::validation::data::CustomInvariantNonApplicability;
 pub use custom_invariant_execution_receipt::CustomInvariantExecutionReceipt;
+pub use invariant_evidence::RelationalMutationInvariantEvidence;
 pub use proposal_footprint::{
     RecordedMemberRestoration, RecordedMemberRestorationRefusal, ValidatedMutationFootprint,
     ValidatedMutationFootprintNotRequested, ValidatedMutationFootprintProjection,
     ValidatedMutationFootprintWork, ValidatedRelationMutation, ValidatedRelationMutationFootprint,
 };
 pub use proposal_identity::RelationalMutationProposalIdentity;
+pub(crate) use proposal_source::StrategyProposalDecoration;
 pub(crate) use proposal_touches::project_applied_intents;
 pub use proposal_touches::{
     ValidatedEntityStructTouch, ValidatedMutationTouch, ValidatedMutationTouchProjectionError,
     ValidatedMutationTouchProjectionWork, ValidatedMutationTouches,
 };
-pub use validated_proposal::{RelationalMutationInvariantEvidence, ValidatedRelationalProposal};
-pub(crate) use validated_proposal::{StrategyProposalDecoration, ValidatedProposalState};
+pub(crate) use validated_proposal::ValidatedProposalState;
+pub use validated_proposal::ValidatedRelationalProposal;
 
 use crate::branch::{AdmittedRelationalBranchBasis, RelationalBranchRootSchemaAuthority};
 use crate::history::data::BranchId;
@@ -339,14 +345,50 @@ impl RelationalTransactionValidationInput {
         transaction.naming_plan = self.naming_plan;
     }
 
-    pub(crate) fn release_transaction_retention(&mut self) {
-        self.retention = None;
-    }
-
     pub(crate) fn control(&self) -> &crate::mvcc::RelationalOperationControl {
         &self.control
     }
 }
 
-#[cfg(test)]
-mod merge_history_tests;
+impl crate::authority::commit::pipeline::publication_validation::DraftValidationInput
+    for RelationalTransactionValidationInput
+{
+    fn basis(&self) -> &AdmittedRelationalBranchBasis {
+        self.basis()
+    }
+
+    fn merge_parent_bases(&self) -> &[AdmittedRelationalBranchBasis] {
+        self.merge_parent_bases()
+    }
+
+    fn control(&self) -> &crate::runtime::operation_control::RelationalOperationControl {
+        self.control()
+    }
+
+    fn coupled_proposal(&self) -> Option<&RelationalMutationProposalIdentity> {
+        self.coupled_proposal()
+    }
+
+    fn into_publication(
+        self,
+    ) -> crate::authority::commit::pipeline::publication_validation::CommitPublicationValidationInput
+    {
+        use crate::authority::commit::pipeline::publication_validation::CommitPublicationValidationInput;
+        CommitPublicationValidationInput {
+            basis: self.basis,
+            merge_parent_bases: self.merge_parent_bases,
+            schema_authority: self.schema_authority,
+            schema_authority_input: self.schema_authority_input,
+            transition: self.intent.proposed_schema_transition,
+            reconciliation: self.intent.schema_reconciliation_policy,
+            appendix_adoption: self.appendix_adoption,
+            recovered_codec_publication_custody: self.recovered_codec_publication_custody,
+            prepared_home_indexes: self
+                .home_target
+                .and_then(|target| target.index_definitions.clone()),
+            home_step: self.home_step,
+            retention: self.retention,
+            naming_plan: self.naming_plan,
+        }
+    }
+}

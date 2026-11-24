@@ -1,14 +1,13 @@
 //! Exact registered owners remain distinct even when their descriptions agree.
 use super::{DerivedAdmissionCache, PROBES};
-use crate::config::data::CrossContextPolicy;
+use crate::config::data::{CascadeDeletePolicy, CrossContextPolicy};
 use crate::derived_relation::*;
 use crate::graph_member::NativeMemberDomain;
 use crate::identity::data::KindId;
 use crate::schema::data::{
-    EndpointKindContractDeclaration, RelationIntegrityDeclarations, RelationalSchemaRegistry,
-    SchemaId, SchemaVersionId,
+    EndpointKindContractDeclaration, EntityKindRegistration, RelationIntegrityDeclarations,
+    RelationKindRegistration, RelationalSchemaRegistry, SchemaId, SchemaVersionId,
 };
-use crate::tests::support::RelationIntegritySchemaFixture;
 
 fn catalog() -> (RelationalSchemaRegistry, Vec<DerivedRelationHandle>) {
     let parts = (0..10)
@@ -32,25 +31,40 @@ fn catalog() -> (RelationalSchemaRegistry, Vec<DerivedRelationHandle>) {
         .iter()
         .map(|parts| parts.identity.clone())
         .collect::<Vec<_>>();
-    let registry = RelationIntegritySchemaFixture {
-        relation_integrity: RelationIntegrityDeclarations::new(
-            vec![EndpointKindContractDeclaration {
-                contract_id: "admission-endpoints".into(),
-                allowed_source_kinds: vec![KindId(1)],
-                allowed_target_kinds: vec![KindId(1)],
-                self_edges_allowed: true,
-                cross_context_policy: CrossContextPolicy::AllowExplicit,
-            }],
-            vec![],
-            vec![],
-            vec![],
-            vec![],
-        ),
-        ..Default::default()
-    }
-    .build_registry()
-    .register_derived_relations(parts)
-    .unwrap();
+    let registry = RelationalSchemaRegistry::new()
+        .register_entity_kind(EntityKindRegistration {
+            kind_id: KindId(1),
+            kind_name: "test.entity".into(),
+            schema_id: SchemaId("test".into()),
+            schema_version_id: SchemaVersionId(1),
+            aspect_contract_declarations: Default::default(),
+        })
+        .unwrap()
+        .register_relation_kind(RelationKindRegistration {
+            kind_id: KindId(2),
+            kind_name: "test.relation".into(),
+            schema_id: SchemaId("test".into()),
+            schema_version_id: SchemaVersionId(1),
+            cross_context_policy: CrossContextPolicy::AllowExplicit,
+            cascade_delete_policy: CascadeDeletePolicy::CascadeDeleteRelations,
+            aspect_contract_declarations: Default::default(),
+            relation_integrity: RelationIntegrityDeclarations::new(
+                vec![EndpointKindContractDeclaration {
+                    contract_id: "admission-endpoints".into(),
+                    allowed_source_kinds: vec![KindId(1)],
+                    allowed_target_kinds: vec![KindId(1)],
+                    self_edges_allowed: true,
+                    cross_context_policy: CrossContextPolicy::AllowExplicit,
+                }],
+                vec![],
+                vec![],
+                vec![],
+                vec![],
+            ),
+        })
+        .unwrap()
+        .register_derived_relations(parts)
+        .unwrap();
     let handles = identities
         .iter()
         .map(|id| registry.derived_relation(id).unwrap())

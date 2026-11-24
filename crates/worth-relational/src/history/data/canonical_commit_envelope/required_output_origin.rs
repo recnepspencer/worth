@@ -24,6 +24,9 @@ pub(crate) mod installation;
 pub(crate) use authored_cascade::CanonicalAuthoredRetirement;
 pub(crate) use authored_restoration::CanonicalAuthoredRestoration;
 pub(crate) use installation::CanonicalProducerRetirement;
+pub(in crate::history::data) mod created_relation_members;
+#[cfg(test)]
+pub(in crate::history::data) mod fixture_birth;
 mod group_selection;
 pub(in crate::history) mod header_corruption;
 mod header_work;

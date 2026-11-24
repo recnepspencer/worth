@@ -49,12 +49,8 @@ impl RelationalRuntime {
         {
             return Err(Refusal::Preparation(Denial::ForeignRuntime));
         }
-        if !source
-            .inner
-            .root
-            .execution_contracts
-            .get()
-            .is_some_and(|meaning| Arc::ptr_eq(meaning, &target.meaning))
+        if !super::retain_root_execution_contracts(&source.inner.root)
+            .is_some_and(|meaning| Arc::ptr_eq(&meaning, &target.meaning))
         {
             return Err(Refusal::Preparation(Denial::TargetCatalogMismatch));
         }

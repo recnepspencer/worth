@@ -1,11 +1,11 @@
 //! Seal the validated successor only after candidate preparation has retired.
+use super::invariant_evidence::RelationalMutationInvariantEvidence;
 use super::proposal_source::RelationalProposalSource;
 use super::proposal_validation::require_not_interrupted;
-use super::validated_proposal::{
-    RelationalMutationInvariantEvidence, ValidatedProposalState, ValidatedRelationalProposal,
-};
+use super::validated_proposal::{ValidatedProposalState, ValidatedRelationalProposal};
 use crate::runtime::RelationalPreparationRuntime;
-use crate::transactions::data::{CommitValidation, TransactionCommitError};
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::CommitValidation;
 #[inline(never)]
 pub(super) fn complete(
     owner: &RelationalPreparationRuntime,
@@ -32,7 +32,7 @@ pub(super) fn complete(
     require_not_interrupted(
         &transaction.control,
         &transaction.basis.inner.retention_binding,
-        crate::mvcc::RelationalInterruptionBoundary::ProposalValidation,
+        crate::runtime::operation_control::interruption_event::RelationalInterruptionBoundary::ProposalValidation,
     )?;
     let transaction_id = transaction.transaction_id;
     let proposed_version = proposal_identity.proposed_version_id();
@@ -70,7 +70,7 @@ pub(super) fn complete(
     require_not_interrupted(
         &transaction.control,
         &transaction.basis.inner.retention_binding,
-        crate::mvcc::RelationalInterruptionBoundary::ProposalValidation,
+        crate::runtime::operation_control::interruption_event::RelationalInterruptionBoundary::ProposalValidation,
     )?;
     // All inner and outer abandoning probes have completed. Transfer the exact
     // draft and its existing coupled posture to validated proposal custody.

@@ -3,13 +3,11 @@ use super::VisibilityProjectionView;
 use crate::identity::data::VersionId;
 use crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;
 use crate::visibility::snapshot_states::{ResidentVisibilitySnapshotBasis, SnapshotStateBasis};
-pub(in crate::visibility::materialization::read_records) struct PinnedProjectionSource<'a> {
-    pub(in crate::visibility::materialization::read_records) resident:
-        &'a ResidentVisibilitySnapshotBasis,
-    pub(in crate::visibility::materialization::read_records) runtime_identity: u64,
-    pub(in crate::visibility::materialization::read_records) current_version: VersionId,
-    pub(in crate::visibility::materialization::read_records) instrumentation:
-        &'a RuntimeInstrumentation,
+pub(crate) struct PinnedProjectionSource<'a> {
+    pub(crate) resident: &'a ResidentVisibilitySnapshotBasis,
+    pub(crate) runtime_identity: u64,
+    pub(crate) current_version: VersionId,
+    pub(crate) instrumentation: &'a RuntimeInstrumentation,
 }
 
 impl VisibilityProjectionView {

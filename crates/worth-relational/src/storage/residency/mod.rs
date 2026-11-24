@@ -12,6 +12,7 @@ pub(crate) use record_directory::{
 mod live_counts;
 pub(crate) use live_counts::LiveRecordCounts;
 mod cell;
+pub(crate) mod cold_readmission;
 mod content_capture;
 pub(crate) use content_capture::RegionContentFailure;
 mod kind_admission;
@@ -38,10 +39,13 @@ pub(crate) mod history_capture_bound;
 mod history_fold;
 mod history_kind_cache;
 mod history_presence;
-mod region_capture;
+pub(crate) mod region_capture;
+mod region_capture_data;
 mod region_image;
 mod region_initialization;
-mod region_load;
+pub(crate) mod region_load;
+mod region_schema;
+pub(crate) use region_schema::RelationalRegionSchema;
 mod region_publication;
 mod resident_history;
 pub(crate) use region_publication::{PreparedResidentRegion, RegionCaptureBasis};
@@ -52,7 +56,6 @@ mod views;
 pub(crate) use head_arena::RelationalRecordHeadArenaView;
 
 pub(crate) use lease::{Full, Head, RelationalResidencyLease};
-pub(crate) use region_capture::capture_region_members;
 pub(crate) use views::{RelationalRegionFullView, RelationalRegionHeadView};
 
 use cell::ResidentRegion;

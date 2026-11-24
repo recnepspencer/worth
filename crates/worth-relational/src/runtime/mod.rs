@@ -198,3 +198,18 @@ mod merge_ownership_probe;
 mod metadata_guard_probe;
 
 pub use crate::visibility::materialization::read_records::reader::context::VisibilityReadContext;
+
+#[cfg(test)]
+mod merge_history_tests;
+
+#[cfg(test)]
+mod managed_fork_cleanup;
+
+#[cfg(test)]
+mod commit_request_tests;
+
+#[cfg(test)]
+mod root_content_tests;
+
+#[cfg(test)]
+mod commit_result_cleanup_tests;

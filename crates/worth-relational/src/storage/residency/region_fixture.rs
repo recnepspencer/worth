@@ -1,99 +1,24 @@
 //! Producer-written region members and their immutable counted archive.
-use super::super::{capture_region_members, RelationalColdRegion, RelationalRegionResidency};
+use super::super::{RelationalColdRegion, RelationalRegionResidency};
 #[path = "region_fixture/placement_registration.rs"]
 mod placement_registration;
+pub(super) use super::checkpoint_inputs::CountedSource;
 use crate::durability::medium::{RelationalDurableColdSource, RelationalDurableMemberLocator};
 use crate::durability::medium::{
     RelationalDurableMemberCustody, RelationalDurableMemberRetirementObservation,
     RelationalDurableMemberRetirementRefusal, RelationalDurableOwnedReadRefusal,
 };
-use crate::history::data::BranchId;
-use crate::identity::data::KindId;
 use crate::publication::patch::data::PatchStreamPosition;
 use crate::storage::data::RelationalStorageUnavailableCause as Cause;
-use crate::storage::overlay::PartitionContentCommitment;
-use crate::tests::support::*;
-use crate::transactions::data::{MutationIntent, WorkerIntentBatch};
 use placement_registration::{ControlledCustodyOwner, CustodyOwner};
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
-use worth_execution::{ExecutionImmutableBytes, ExecutionRequest, ExecutionRequestArrayBuilder};
+use worth_execution::{ExecutionImmutableBytes, ExecutionRequest};
 
-#[derive(Debug)]
-pub(super) struct CountedSource {
-    pub(super) members: BTreeMap<RelationalDurableMemberLocator, Vec<u8>>,
-    pub(super) reads: AtomicUsize,
-    pub(super) history_reads: AtomicUsize,
-    pub(super) history: RelationalDurableMemberLocator,
-    pub(super) corrupt: AtomicBool,
-}
-
-impl RelationalDurableColdSource for CountedSource {
-    fn checkpoint_selected_read_protection(
-        &self,
-        request: &ExecutionRequest<'_, '_>,
-    ) -> Result<
-        crate::durability::medium::RelationalDurableReadPayload,
-        RelationalDurableOwnedReadRefusal,
-    > {
-        request.check_live().map_err(|c| RelationalDurableOwnedReadRefusal::Request(c.into()))?;
-        Ok(Box::new(()))
-    }
-    fn read_member_owned(
-        &self,
-        request: &ExecutionRequest<'_, '_>,
-        original: &(dyn std::any::Any + Send + Sync),
-        locator: RelationalDurableMemberLocator,
-        limit: u64,
-    ) -> Result<ExecutionImmutableBytes, RelationalDurableOwnedReadRefusal> {
-        use crate::durability::medium::RelationalDurableOwnedReadRefusal as Refusal;
-        request.check_live().map_err(|cause| Refusal::Request(cause.into()))?;
-        if !original.is::<()>() {
-            return Err(Refusal::ForeignProtection);
-        }
-        self.funded_member(request, locator, limit)
-    }
-    fn retain_members_for_request(
-        &self,
-        request: &ExecutionRequest<'_, '_>,
-        _members: &[RelationalDurableMemberLocator],
-        issuer: std::sync::Weak<dyn RelationalDurableColdSource>,
-    ) -> Result<RelationalDurableMemberCustody, RelationalDurableOwnedReadRefusal> {
-        RelationalDurableMemberCustody::try_new_from_source_for_request(issuer, request, || Ok(()))
-    }
-    fn validate_member_custody_retirement(
-        &self,
-        original: &(dyn std::any::Any + Send + Sync),
-    ) -> Result<(), RelationalDurableMemberRetirementRefusal> {
-        if original.is::<()>() { Ok(()) } else { Err(RelationalDurableMemberRetirementRefusal::ForeignCustody) }
-    }
-    fn advance_member_custody_retirement(
-        &self,
-        _request: &ExecutionRequest<'_, '_>,
-        original: &mut (dyn std::any::Any + Send + Sync),
-    ) -> RelationalDurableMemberRetirementObservation {
-        use crate::durability::medium::RelationalDurableMemberRetirementObservation as Observation;
-        match self.validate_member_custody_retirement(original) {
-            Ok(()) => Observation::Complete,
-            Err(cause) => Observation::Refused(cause),
-        }
-    }
-    fn retain_members(&self, _: &[RelationalDurableMemberLocator]) -> Result<RelationalDurableMemberCustody, Cause> {
-        Ok(RelationalDurableMemberCustody::new(()))
-    }
-    fn read_member(&self, locator: RelationalDurableMemberLocator, limit: u64) -> Result<Vec<u8>, Cause> {
-        let mut bytes = self.member(locator, limit)?.to_vec();
-        if self.corrupt.load(Ordering::SeqCst) { bytes[0] ^= 1; }
-        Ok(bytes)
-    }
-    fn read_commit(&self, _: PatchStreamPosition, _: u64) -> Result<Vec<u8>, Cause> {
-        Err(Cause::SourceUnavailable)
-    }
-}
+use crate::durability::native_region_fixture;
 
 pub(super) struct RegionFixture {
-    pub(super) runtime: crate::runtime::RelationalRuntime,
     pub(super) cell: Arc<RelationalRegionResidency>,
     pub(super) cold: RelationalColdRegion,
     pub(super) source: Arc<CountedSource>,
@@ -101,68 +26,44 @@ pub(super) struct RegionFixture {
     pub(super) relation: crate::identity::data::RelationId,
     pub(super) expected_digest: [u8; 32],
     pub(super) expected_history: usize,
+    pub(super) partition: crate::storage::overlay::PartitionState,
 }
 
 pub(super) fn region_with_history() -> RegionFixture {
-    let request = crate::test_execution_policy::serial_request();
-    let execution = &ExecutionRequest::serial(&request);
-    let runtime = runtime_with_test_schema();
-    let entity = create_entity(execution, &runtime, "cold-first");
-    for label in ["cold-second", "cold-third", "cold-fourth"] {
-        update_entity_and_release_snapshot(execution, &runtime, entity, label);
-    }
-    let target = create_entity(execution, &runtime, "cold-target");
-    let relation_commit = create_relation_outcome(execution, &runtime, entity, target, "cold-edge");
-    let relation = changed_relations(&relation_commit)[0];
-    release_test_commit_snapshot(&runtime, &relation_commit);
-    let other = create_entity(execution, &runtime, "cold-other-target");
-    for target in [other, target] {
-        let mut transaction = test_owner_begin_transaction_for_main(&runtime);
-        transaction
-            .push_batch(
-                WorkerIntentBatch::new("relation-history").push(MutationIntent::Relation(
-                    crate::transactions::data::RelationMutationIntent::UpdateEndpoints(
-                        crate::transactions::data::UpdateRelationEndpointsIntent {
-                            relation_id: relation,
-                            kind_id: KindId(2),
-                            source: crate::transactions::data::EntityReference::Existing(entity),
-                            target: crate::transactions::data::EntityReference::Existing(target),
-                        },
-                    ),
-                )),
-                execution.allocation_policy(),
-            )
-            .unwrap();
-        let committed = transaction.commit(execution, &runtime).unwrap();
-        release_test_commit_snapshot(&runtime, &committed);
-    }
-    let root = runtime
-        .history
-        .branch_cell(&BranchId("main".into()))
-        .and_then(|cell| cell.root())
-        .unwrap();
-    let partition = root
-        .partition_state(entity.partition_id)
-        .expect("fixture root has admitted Full custody")
-        .unwrap();
-    let symbols = Arc::new(runtime.services.symbols.interner_snapshot());
-    let (commitment, _) = PartitionContentCommitment::capture(
-        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-        &ExecutionRequest::serial(&crate::test_execution_policy::serial_request()),
+    let native_region_fixture::HistoryPartition {
         partition,
-        symbols.as_ref(),
+        entity,
+        relation,
+        schema,
+        symbols,
+    } = native_region_fixture::populated_partition();
+    let host = crate::execution::test_policy::serial_request();
+    let execution = &ExecutionRequest::serial(&host);
+    let lane = crate::storage::substrate::maintenance::ReconstructionLane::oracle();
+    let expected_history = partition
+        .entity_arena
+        .metadata_history_at(entity.slot_index())
+        .unwrap()
+        .len();
+    assert!(
+        expected_history > 1,
+        "fixture must have real committed history"
+    );
+    let (commitment, _) = crate::storage::overlay::PartitionContentCommitment::capture(
+        &lane, execution, &partition, &symbols,
     )
     .unwrap();
-    let schema = Arc::new(root.schema_authority().clone());
+    let expected_digest = commitment.digest(partition.partition_id);
     let schema_digest = crate::durability::data::DurableBranchRootSchemaImage::capture(&schema)
         .unwrap()
         .carrier_digest();
-    let members = capture_region_members(
-        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+    let codec = &crate::storage::residency::region_load::CHECKPOINT_REGION_READMISSION;
+    let members = (codec.capture_members)(
+        &lane,
         execution,
-        partition,
+        &partition,
         &commitment,
-        &schema,
+        schema.as_ref(),
         schema_digest,
     )
     .unwrap();
@@ -173,26 +74,12 @@ pub(super) fn region_with_history() -> RegionFixture {
         history_reads: AtomicUsize::new(0),
         corrupt: AtomicBool::new(false),
     });
-    let expected_digest = commitment.digest(partition.partition_id);
-    let expected_history = partition
-        .entity_arena
-        .metadata_history_at(entity.slot_index())
-        .unwrap()
-        .len();
-    assert!(
-        expected_history > 1,
-        "fixture must have real committed history"
-    );
-    let symbol_authority = crate::runtime::RuntimeSymbolTable::default();
-    symbol_authority.replace((*symbols).clone());
+    let symbol_authority =
+        crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable::default();
+    symbol_authority.replace(symbols);
     let cold = RelationalColdRegion {
-        directory: members
-            .directory
-            .portable(
-                &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-                &ExecutionRequest::serial(&crate::test_execution_policy::serial_request()),
-            )
-            .unwrap(),
+        readmission: codec,
+        directory: members.directory.portable(&lane, execution).unwrap(),
         history_members: members.history_members,
         kind_authority: members.kind_authority,
         source: Some(source.clone()),
@@ -203,14 +90,13 @@ pub(super) fn region_with_history() -> RegionFixture {
         schema_carrier_digest: schema_digest,
         symbols: symbol_authority,
         content_digest: expected_digest,
-        live_counts: super::LiveRecordCounts::from_partition(partition),
+        live_counts: super::LiveRecordCounts::from_partition(&partition),
         entity_slots: partition.entity_arena.slot_count(),
         relation_slots: partition.relation_arena.slot_count(),
         unavailable_records: partition.entity_arena.lifecycle_counts().unavailable
             + partition.relation_arena.lifecycle_counts().unavailable,
     };
     RegionFixture {
-        runtime,
         cell: RelationalRegionResidency::cold(cold.clone()).unwrap(),
         cold,
         source,
@@ -218,6 +104,7 @@ pub(super) fn region_with_history() -> RegionFixture {
         relation,
         expected_digest,
         expected_history,
+        partition,
     }
 }
 
@@ -346,44 +233,60 @@ pub(super) fn with_memory_request<R>(
     memory: worth_execution::SerialMemoryBudget,
     observe: impl FnOnce(ExecutionRequest<'_, '_>) -> R,
 ) -> R {
-    let host = crate::test_execution_policy::serial_request_with_memory(memory);
+    let host = crate::execution::test_policy::serial_request_with_memory(memory);
     observe(ExecutionRequest::serial(&host))
 }
 
-impl CountedSource {
-    fn member(&self, locator: RelationalDurableMemberLocator, limit: u64) -> Result<&[u8], Cause> {
-        self.reads.fetch_add(1, Ordering::SeqCst);
-        if locator == self.history {
-            self.history_reads.fetch_add(1, Ordering::SeqCst);
-        }
-        let bytes = self.members.get(&locator).ok_or(Cause::MissingMember)?;
-        if bytes.len() as u64 > limit {
-            return Err(Cause::LimitExceeded {
-                length: bytes.len() as u64,
-                limit,
-            });
-        }
-        Ok(bytes)
-    }
-    fn funded_member(
-        &self,
-        request: &ExecutionRequest<'_, '_>,
-        locator: RelationalDurableMemberLocator,
-        limit: u64,
-    ) -> Result<ExecutionImmutableBytes, RelationalDurableOwnedReadRefusal> {
-        use crate::durability::medium::RelationalDurableOwnedReadRefusal as Refusal;
-        let bytes = self.member(locator, limit).map_err(Refusal::Storage)?;
-        let mut copy = ExecutionRequestArrayBuilder::allocate(*request, bytes.len())
-            .map_err(Refusal::Buffer)?;
-        if let Some((&first, rest)) = bytes.split_first() {
-            copy.push(if self.corrupt.load(Ordering::SeqCst) {
-                first ^ 1
-            } else {
-                first
-            })
-            .map_err(Refusal::Buffer)?;
-            copy.extend_from_slice(rest).map_err(Refusal::Buffer)?;
-        }
-        copy.seal_immutable_bytes().map_err(Refusal::Buffer)
+use crate::durability::data::{CapturedCheckpointMembers, RelationalCheckpointManifest};
+use crate::indexes::data::DerivedIndexArtifacts;
+use crate::storage::data::checkpoint_member::RelationalCheckpointMember;
+use crate::storage::data::member_frame::{self, MemberKind};
+use crate::storage::residency::PreparedResidentRegion;
+use crate::storage::substrate::maintenance::ReconstructionLane;
+
+#[derive(Debug)]
+pub(super) struct SelectedRegionArchive {
+    pub(crate) manifest: RelationalCheckpointManifest,
+    pub(crate) members: CapturedCheckpointMembers,
+}
+
+pub(super) fn selected_region_archive(
+    partition: &crate::storage::overlay::PartitionState,
+    schema: &dyn crate::storage::residency::RelationalRegionSchema,
+    schema_digest: [u8; 32],
+    symbols: &crate::symbols::data::StringInterner,
+    request: &ExecutionRequest<'_, '_>,
+) -> SelectedRegionArchive {
+    let prepared = PreparedResidentRegion::initial(
+        &ReconstructionLane::oracle(),
+        request,
+        partition.clone(),
+        symbols,
+    )
+    .unwrap();
+    let captured = prepared
+        .retention
+        .cell()
+        .capture_complete_for_request(request, schema, schema_digest, symbols)
+        .unwrap();
+    let (derived_indexes, indexes) = member_frame::encode(
+        MemberKind::DerivedIndex,
+        &(DerivedIndexArtifacts::default(), Option::<()>::None, 0_u16),
+    )
+    .unwrap();
+    let mut members = Vec::from(captured.members);
+    members.push(RelationalCheckpointMember::New {
+        locator: derived_indexes,
+        bytes: ExecutionImmutableBytes::from_external_bytes(Arc::new(indexes.into_boxed_slice())),
+    });
+    let manifest = crate::durability::data::selected_region_archive::selected_region_manifest(
+        captured.leaf,
+        schema_digest,
+        derived_indexes,
+    );
+    manifest.assert_original_flat_wire();
+    SelectedRegionArchive {
+        manifest,
+        members: CapturedCheckpointMembers::capture(request, members.len(), members).unwrap(),
     }
 }

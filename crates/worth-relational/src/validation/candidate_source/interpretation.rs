@@ -1,11 +1,13 @@
 //! Live Source custody stays with the proposal/materialization owner, not its receipts.
+use super::registration_observation::ManagedSourceRegistration;
+use super::NativeSourceInterpretationIdentity;
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 pub(crate) use crate::branch::materialization::source::NativeMaterializationSource;
 use crate::identity::data::VersionId;
 use crate::mvcc::transaction::intent::materialization_mode::RelationalMaterializationTransactionMode;
 use crate::runtime::home_program_transition::coverage::captured_records::RelationalHomeTargetCoverage;
 use crate::schema::home_program_catalog_receipt::RelationalHomeProgramCatalogReceipt;
-use std::sync::{Arc, Weak};
+use std::sync::Arc;
 use worth_foundational::facade::HomeProgramTransitionStepAssociation;
 mod content;
 mod restoration;
@@ -27,7 +29,7 @@ pub(crate) struct ManagedSourceIssueInputs {
 #[derive(Debug)]
 pub(crate) struct NativeManagedSourceInterpretation {
     content: std::sync::OnceLock<content::ContentViews>,
-    publication: crate::runtime::RelationalRuntimePublicationBinding,
+    registration: Arc<dyn ManagedSourceRegistration>,
     physical_basis: AdmittedRelationalBranchBasis,
     proposed_version: VersionId,
     posture: Option<RelationalMaterializationTransactionMode>,
@@ -46,12 +48,12 @@ impl NativeManagedSourceInterpretation {
     pub(crate) fn issue(
         input: impl Into<ManagedSourceIssueInputs>,
         proposed_version: VersionId,
-        publication: crate::runtime::RelationalRuntimePublicationBinding,
+        registration: Arc<dyn ManagedSourceRegistration>,
     ) -> Arc<Self> {
         let inputs = input.into();
         Arc::new(Self {
             content: std::sync::OnceLock::new(),
-            publication,
+            registration,
             physical_basis: inputs.physical_basis,
             proposed_version,
             posture: inputs.posture,
@@ -67,7 +69,7 @@ impl NativeManagedSourceInterpretation {
     }
 
     pub(crate) fn identity(self: &Arc<Self>) -> NativeSourceInterpretationIdentity {
-        NativeSourceInterpretationIdentity(Arc::downgrade(self))
+        NativeSourceInterpretationIdentity::from_owner(self)
     }
 
     pub(crate) fn suspension_source_version(&self) -> Option<VersionId> {
@@ -82,14 +84,9 @@ impl NativeManagedSourceInterpretation {
         &self,
     ) -> Result<u64, super::ManagedIndexSourcePreparationDenial> {
         use super::ManagedIndexSourcePreparationDenial as Denial;
-        let epoch = self
-            .publication
-            .companion_epoch()
-            .map_err(Denial::Registration)?;
-        epoch
-            .active()
+        self.registration
+            .active_generation()
             .map_err(Denial::Registration)?
-            .map(|(generation, _)| generation)
             .ok_or(Denial::MissingParticipant)
     }
 
@@ -121,14 +118,7 @@ impl NativeManagedSourceInterpretation {
         if prepared.programs.is_empty() {
             return Ok(());
         }
-        let epoch = self
-            .publication
-            .companion_epoch()
-            .map_err(Denial::Registration)?;
-        let (generation, _) = epoch
-            .active()
-            .map_err(Denial::Registration)?
-            .ok_or(Denial::MissingParticipant)?;
+        let generation = self.current_registration_generation()?;
         if generation != prepared.registration_generation {
             return Err(Denial::Publication(
                 crate::mvcc::publication::companion::preflight_stop::CompanionPreflightStop::RegistrationChanged,
@@ -137,25 +127,6 @@ impl NativeManagedSourceInterpretation {
         Ok(())
     }
 }
-
-/// Receipts compare the actual owner identity without keeping its roots alive.
-/// Upgrading this weak link is not Source admission; installed audience and the
-/// exact actual observation still have to be checked by the receiving owner.
-#[derive(Clone, Debug)]
-pub struct NativeSourceInterpretationIdentity(Weak<NativeManagedSourceInterpretation>);
-
-impl NativeSourceInterpretationIdentity {
-    pub(crate) fn owner(&self) -> Option<Arc<NativeManagedSourceInterpretation>> {
-        self.0.upgrade()
-    }
-}
-
-impl PartialEq for NativeSourceInterpretationIdentity {
-    fn eq(&self, other: &Self) -> bool {
-        Weak::ptr_eq(&self.0, &other.0)
-    }
-}
-impl Eq for NativeSourceInterpretationIdentity {}
 
 impl NativeManagedSourceInterpretation {
     pub(crate) fn prepared_source_impact_history(

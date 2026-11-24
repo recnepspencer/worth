@@ -191,3 +191,7 @@ impl VisibilityReadContext<'_> {
         Ok((basis, indexes))
     }
 }
+
+#[cfg(test)]
+#[path = "pinning_tests.rs"]
+mod tests;

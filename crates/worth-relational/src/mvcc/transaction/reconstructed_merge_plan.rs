@@ -2,12 +2,30 @@
 use super::normalized_plan::{intent_bytes, reserve_copy};
 use crate::history::data::{CanonicalCommitEnvelope, OrderedParentList};
 use crate::transactions::data::outcomes::plan_artifacts::{
-    merge_commit_mutation_plan_token, MergeCommitMutationPlan,
+    merge_commit_mutation_plan_token, MergeCommitMutationPlan, PublishedMergeExecutionAuthority,
 };
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 
 mod copy_storage;
+
+/// The recorded executable merge material borrowed from its own canonical commit.
+#[derive(Debug)]
+pub(crate) struct RecordedMergePlanSource<'envelope> {
+    envelope: &'envelope CanonicalCommitEnvelope,
+    authority: &'envelope PublishedMergeExecutionAuthority,
+}
+impl<'envelope> RecordedMergePlanSource<'envelope> {
+    pub(crate) fn from_envelope(envelope: &'envelope CanonicalCommitEnvelope) -> Option<Self> {
+        let authority = envelope.merge_execution_authority.as_ref()?;
+        authority
+            .retains_consistent_proof_packet_authority()
+            .then_some(Self {
+                envelope,
+                authority,
+            })
+    }
+}
 
 #[derive(Debug)]
 pub(crate) struct OwnedMergePlan {
@@ -29,18 +47,13 @@ impl OwnedMergePlan {
     }
 
     pub(crate) fn copy_recovered(
-        envelope: &CanonicalCommitEnvelope,
+        source: RecordedMergePlanSource<'_>,
         request: &ExecutionRequest<'_, '_>,
-    ) -> Result<Option<Self>, TransactionCommitError> {
-        request
-            .consult()
-            .map_err(super::normalized_plan::request_denial)?;
-        let Some(authority) = &envelope.merge_execution_authority else {
-            return Ok(None);
-        };
-        if !authority.retains_consistent_proof_packet_authority() {
-            return Ok(None);
-        }
+    ) -> Result<Self, TransactionCommitError> {
+        let RecordedMergePlanSource {
+            envelope,
+            authority,
+        } = source;
         let summary = &authority.execution_summary;
         let packet = summary.proof_packet();
         let bytes = intent_bytes(&envelope.merged_plan.merged_intents).and_then(|bytes| {
@@ -65,7 +78,7 @@ impl OwnedMergePlan {
                 .checked_add(copy_storage::summary(summary)?)
         });
         let memory = reserve_copy(request, bytes)?;
-        Ok(Some(Self {
+        Ok(Self {
             plan: MergeCommitMutationPlan {
                 transaction_id: envelope.merged_plan.transaction_id,
                 target_branch: packet.request().target_branch().clone(),
@@ -84,6 +97,6 @@ impl OwnedMergePlan {
                 proof_token: merge_commit_mutation_plan_token(),
             },
             _memory: memory,
-        }))
+        })
     }
 }

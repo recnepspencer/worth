@@ -2,6 +2,7 @@
 mod tests {
     use super::super::position_admission::CanonicalPositionAdmission;
     use super::super::retained_position::RetainedCanonicalPosition;
+    use crate::durability::canonical_commit_artifact::checkpoint_body::copy_original_for_test;
     use crate::history::data::PositionedCanonicalCommit;
     use crate::tests::support::*;
     use std::sync::Arc;
@@ -45,12 +46,12 @@ mod tests {
                 .pop()
                 .unwrap()
         };
-        let copy = Arc::new(sealed.envelope().copy_original_for_test(execution));
+        let copy = Arc::new(copy_original_for_test(sealed.envelope(), execution));
         let admitted = CanonicalPositionAdmission::equivalent(&sealed, copy.clone()).unwrap();
         let rebound = PositionedCanonicalCommit::admit(admitted);
         assert_eq!(rebound.position(), sealed.position());
         assert!(Arc::ptr_eq(rebound.canonical_arc(), &copy));
-        let mut different = copy.copy_original_for_test(execution);
+        let mut different = copy_original_for_test(&copy, execution);
         different.body_mut_for_test().commit.commit_id.0 += 1;
         assert!(CanonicalPositionAdmission::equivalent(&sealed, Arc::new(different)).is_err());
     }

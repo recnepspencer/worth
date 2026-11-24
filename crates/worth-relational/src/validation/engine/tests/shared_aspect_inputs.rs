@@ -1,14 +1,14 @@
 use std::sync::{Arc, OnceLock};
 use worth_foundational::facade::{AspectValue, ContractValidatedAspectValueView, InternedString};
 
-use super::aspect_field_uniqueness::{assert_entity_summary, whole_summary_patch};
 use super::validation_engine_fixtures::*;
 use crate::execution::test_authority::test_execution_lease;
 use crate::identity::data::EntityId;
-use crate::schema::aspect_plan_source::AspectPlanSource;
-use crate::tests::support::test_owner_begin_transaction_for_main;
-use crate::transactions::data::intents::mutation_intent::ApplyEntityAspectPatchIntent;
-use crate::transactions::data::intents::mutation_intent::EntityMutationIntent;
+use crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;
+use crate::validation::engine::test_view::invariant_view_with_custom_rules;
+
+mod summary_image;
+use summary_image::{aspect_key, field_key, SummaryImage};
 
 struct ReadsSummary {
     id: &'static str,
@@ -131,148 +131,72 @@ impl CustomInvariantRule for ReadsSummary {
 
 #[test]
 fn overlapping_field_reads_are_shared_without_sharing_verdicts_or_changed_basis() {
-    let host_request = crate::execution::test_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    assert_overlapping_field_reads(execution, false);
+    assert_overlapping_field_reads(false);
 }
 
 #[test]
 fn leased_opaque_field_read_rules_are_denied_before_execution() {
-    let host_request = crate::execution::test_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    assert_overlapping_field_reads(execution, true);
+    assert_overlapping_field_reads(true);
 }
 
-fn assert_overlapping_field_reads(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    leased: bool,
-) {
-    let target = Arc::new(OnceLock::new());
-    let schema = AspectSchemaFixture {
-        entity_aspects: vec![
-            entity_field_aspect(aspect_key("name"), field_key("name")),
-            entity_summary_struct_aspect(aspect_key("summary"), field_key("summary")),
-        ],
-        ..AspectSchemaFixture::default()
-    }
-    .build_registry();
-    let runtime = RelationalRuntimeApi::builder()
-        .schema_registry(schema)
-        .custom_invariant(
-            CustomInvariantRegistration::new(ReadsSummary {
-                id: "test.summary.accept",
-                target: Arc::clone(&target),
-                reject_title: None,
-                allow_read: true,
-            })
-            .unwrap(),
-        )
-        .custom_invariant(
-            CustomInvariantRegistration::new(ReadsSummary {
-                id: "test.summary.reject",
-                target: Arc::clone(&target),
-                reject_title: Some("before"),
-                allow_read: true,
-            })
-            .unwrap(),
-        )
-        .build()
-        .expect("valid native runtime configuration");
-    let created = commit_entity_with_summary(execution, &runtime, "subject", "before", "open")
-        .expect("subject publication");
-    let entity = created
-        .changed_records
-        .iter()
-        .find_map(|record| match record {
-            crate::transactions::data::primitives::RecordRef::Entity(id) => Some(*id),
-            _ => None,
+fn assert_overlapping_field_reads(leased: bool) {
+    let mut image = SummaryImage::new();
+    let target = Arc::new(OnceLock::from(image.entity));
+    let rules = vec![
+        CustomInvariantRegistration::new(ReadsSummary {
+            id: "test.summary.accept",
+            target: Arc::clone(&target),
+            reject_title: None,
+            allow_read: true,
         })
-        .expect("created subject");
-    target.set(entity).expect("bind subject after creation");
-    assert_shared_field_reads(&runtime, true, leased);
-
-    let contract = runtime
-        .entity_aspect_plan(KindId(1))
-        .expect("entity aspect plan")
-        .contract_for(&aspect_key("summary"))
-        .expect("summary contract")
-        .clone();
-    let mut transaction = test_owner_begin_transaction_for_main(&runtime);
-    transaction
-        .push_batch(
-            WorkerIntentBatch::new("change-summary").push(MutationIntent::Entity(
-                EntityMutationIntent::ApplyAspectPatch(ApplyEntityAspectPatchIntent {
-                    entity_id: entity,
-                    aspect_patch: whole_summary_patch(&contract, "after", "open"),
-                }),
-            )),
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("stage summary change");
-    transaction
-        .commit(execution, &runtime)
-        .expect("summary change publication");
-    assert_entity_summary(execution, &runtime, entity, "after", "open");
-    assert_shared_field_reads(&runtime, false, leased);
+        .unwrap(),
+        CustomInvariantRegistration::new(ReadsSummary {
+            id: "test.summary.reject",
+            target,
+            reject_title: Some("before"),
+            allow_read: true,
+        })
+        .unwrap(),
+    ];
+    assert_shared_field_reads(&image, &rules, true, leased);
+    image.replace_title("after");
+    image.assert_summary("after", "open");
+    assert_shared_field_reads(&image, &rules, false, leased);
 }
 
 #[test]
 fn cached_candidate_metadata_does_not_bypass_sibling_access_denial() {
-    let host_request = crate::execution::test_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let target = Arc::new(OnceLock::new());
-    let schema = AspectSchemaFixture {
-        entity_aspects: vec![
-            entity_field_aspect(aspect_key("name"), field_key("name")),
-            entity_summary_struct_aspect(aspect_key("summary"), field_key("summary")),
-        ],
-        ..AspectSchemaFixture::default()
-    }
-    .build_registry();
-    let runtime = RelationalRuntimeApi::builder()
-        .schema_registry(schema)
-        .custom_invariant(
-            CustomInvariantRegistration::new(ReadsSummary {
-                id: "test.summary.allowed",
-                target: Arc::clone(&target),
-                reject_title: None,
-                allow_read: true,
-            })
-            .unwrap(),
-        )
-        .custom_invariant(
-            CustomInvariantRegistration::new(ReadsSummary {
-                id: "test.summary.denied",
-                target: Arc::clone(&target),
-                reject_title: None,
-                allow_read: false,
-            })
-            .unwrap(),
-        )
-        .build()
-        .expect("valid native runtime configuration");
-    let created =
-        commit_entity_with_summary(execution, &runtime, "subject", "before", "open").unwrap();
-    let entity = created
-        .changed_records
-        .iter()
-        .find_map(|record| match record {
-            crate::transactions::data::primitives::RecordRef::Entity(id) => Some(*id),
-            _ => None,
+    let image = SummaryImage::new();
+    let target = Arc::new(OnceLock::from(image.entity));
+    let rules = vec![
+        CustomInvariantRegistration::new(ReadsSummary {
+            id: "test.summary.allowed",
+            target: Arc::clone(&target),
+            reject_title: None,
+            allow_read: true,
         })
-        .unwrap();
-    target.set(entity).unwrap();
-    runtime.performance_access().reset_counters();
-
-    let results = InvariantEngine::new(&runtime).execute_fixture(
+        .unwrap(),
+        CustomInvariantRegistration::new(ReadsSummary {
+            id: "test.summary.denied",
+            target,
+            reject_title: None,
+            allow_read: false,
+        })
+        .unwrap(),
+    ];
+    let instrumentation = RuntimeInstrumentation::default();
+    let view = invariant_view_with_custom_rules(
+        &instrumentation,
+        image.config.clone(),
+        image.version,
+        rules,
+    );
+    let results = InvariantEngine::from_view(&view).execute_fixture(
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
-            &runtime,
-            InvariantObservation::committed(runtime.storage_access().current_edition()),
-            runtime.current_version_id(),
+            &view,
+            InvariantObservation::committed(image.storage.acquire()),
+            image.version,
             None,
             None,
         ),
@@ -287,25 +211,35 @@ fn cached_candidate_metadata_does_not_bypass_sibling_access_denial() {
     ));
     assert!(format!("{:?}", results.results()[1].verdict).contains("OutsideDeclaredAccess"));
     assert_eq!(
-        runtime
-            .performance_access()
-            .counters()
+        instrumentation
+            .complexity_snapshot()
             .custom_invariant_candidate_entity_aspect_reads,
         1
     );
 }
 
-fn assert_shared_field_reads(runtime: &RelationalRuntime, expect_violation: bool, leased: bool) {
-    runtime.performance_access().reset_counters();
+fn assert_shared_field_reads(
+    image: &SummaryImage,
+    rules: &[CustomInvariantRegistration],
+    expect_violation: bool,
+    leased: bool,
+) {
+    let instrumentation = RuntimeInstrumentation::default();
+    let view = invariant_view_with_custom_rules(
+        &instrumentation,
+        image.config.clone(),
+        image.version,
+        rules.to_vec(),
+    );
     let request = InvariantExecutionRequest::from_profile_with_contract(
         InvariantRequestProfile::CommitBoundary,
-        runtime,
-        InvariantObservation::committed(runtime.storage_access().current_edition()),
-        runtime.current_version_id(),
+        &view,
+        InvariantObservation::committed(image.storage.acquire()),
+        image.version,
         None,
         None,
     );
-    let engine = InvariantEngine::new(runtime);
+    let engine = InvariantEngine::from_view(&view);
     let results = if leased {
         let denial = engine
             .execute(
@@ -325,7 +259,7 @@ fn assert_shared_field_reads(runtime: &RelationalRuntime, expect_violation: bool
                 ..
             }
         ));
-        let counters = runtime.performance_access().counters();
+        let counters = instrumentation.complexity_snapshot();
         assert_eq!(counters.custom_invariant_execution_count, 0);
         return;
     } else {
@@ -343,7 +277,7 @@ fn assert_shared_field_reads(runtime: &RelationalRuntime, expect_violation: bool
         ),
         expect_violation,
     );
-    let counters = runtime.performance_access().counters();
+    let counters = instrumentation.complexity_snapshot();
     assert_eq!(counters.custom_invariant_preparation_count, 2);
     assert_eq!(counters.custom_invariant_execution_count, 2);
     assert_eq!(counters.custom_invariant_candidate_entity_aspect_reads, 1);

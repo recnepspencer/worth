@@ -134,10 +134,7 @@ pub(super) fn prepare_commit_publication_execution<
             work,
             &predecessor_root,
             publication.value().prepared_root(),
-            admitted
-                .validation_input()
-                .home_target()
-                .and_then(|target| target.index_definitions.as_deref()),
+            admitted.validation_input().prepared_home_indexes.as_deref(),
             admitted
                 .validation_input()
                 .home_step()

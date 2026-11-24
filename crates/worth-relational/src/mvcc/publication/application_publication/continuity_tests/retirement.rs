@@ -5,8 +5,6 @@ use crate::mvcc::publication::application_publication::output_meaning::{
 };
 #[path = "retirement/authored.rs"]
 mod authored;
-#[path = "retirement/ordinary.rs"]
-mod ordinary;
 
 fn creates(keys: [&str; 2]) -> (WorkerIntentBatch, [CreatedEntityRef; 2]) {
     let targets = keys.map(|key| CreatedEntityRef {

@@ -54,3 +54,6 @@ pub use home_world_catalog::{
 
 pub(crate) mod checkpoint_coverage;
 pub(crate) mod checkpoint_selection_denial;
+
+#[cfg(test)]
+pub(crate) mod native_region_fixture;

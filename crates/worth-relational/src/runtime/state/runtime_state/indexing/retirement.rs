@@ -7,7 +7,7 @@ use crate::durability::medium::{
     RelationalDurableMemberLocator, RelationalDurableMemberRetirementObservation as Observation,
 };
 use crate::runtime::state::subsystems::history::history_source_retirement::{
-    bind_source_retirement, RelationalSourceHistoryBinding,
+    bind_detached_source_retirement, RelationalSourceHistoryBinding,
 };
 use std::sync::Arc;
 
@@ -16,18 +16,15 @@ impl RuntimeIndexingSubsystem {
         self.cold
             .read()
             .as_ref()
-            .map(|image| image.directory().manifest.derived_indexes)
+            .map(|image| image.image.directory().manifest.derived_indexes)
     }
 
     pub(crate) fn source_retirement_history(
         &self,
     ) -> Result<Option<RelationalSourceHistoryBinding>, ()> {
-        Ok(self
-            .cold
-            .try_read()
-            .ok_or(())?
-            .as_ref()
-            .map(|image| bind_source_retirement(image.history())))
+        Ok(self.cold.try_read().ok_or(())?.as_ref().map(|owner| {
+            bind_detached_source_retirement(owner.image.history(), owner.history_routes.clone())
+        }))
     }
 
     pub(crate) fn preflight_source_retirement(
@@ -39,8 +36,8 @@ impl RuntimeIndexingSubsystem {
             let Some(original) = cold.as_mut() else {
                 return Ok(());
             };
-            Arc::get_mut(original).ok_or(Ack::Busy)?;
-            original.clone()
+            Arc::get_mut(&mut original.image).ok_or(Ack::Busy)?;
+            original.image.clone()
         };
         image.preflight_retirement(source)
     }
@@ -52,7 +49,7 @@ impl RuntimeIndexingSubsystem {
         let cold = self.cold.try_read().ok_or(Denial::Busy)?;
         match cold.as_ref() {
             None => Ok(true),
-            Some(image) => image.loan_source_member(handoff),
+            Some(image) => image.image.loan_source_member(handoff),
         }
     }
 
@@ -66,6 +63,7 @@ impl RuntimeIndexingSubsystem {
             .ok_or(Denial::Busy)?
             .as_ref()
             .expect("original image loan")
+            .image
             .return_source_member(handoff, source)
     }
 
@@ -76,7 +74,7 @@ impl RuntimeIndexingSubsystem {
         let cold = self.cold.try_read().ok_or(Ack::Busy)?;
         match cold.as_ref() {
             None => Ok(true),
-            Some(image) => image.loan_source_directory(handoff),
+            Some(image) => image.image.loan_source_directory(handoff),
         }
     }
 
@@ -89,6 +87,7 @@ impl RuntimeIndexingSubsystem {
             .ok_or(Ack::Busy)?
             .as_ref()
             .expect("original directory loan")
+            .image
             .return_source_directory(handoff)
     }
 }
