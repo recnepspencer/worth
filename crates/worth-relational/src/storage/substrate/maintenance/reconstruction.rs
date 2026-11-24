@@ -1,5 +1,5 @@
 //! Explicit, scoped entrance to reconstructive work; no ordinary fallback.
-use super::{ChangeWork, MaintenanceRefusal};
+use super::{refusal::MaintenanceRefusal, work::ChangeWork};
 
 /// A sealed cost-lane capability. It grants no record, schema or business
 /// authority. SDK cold methods require this explicit trust-boundary scope.

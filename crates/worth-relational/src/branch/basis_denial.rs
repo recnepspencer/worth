@@ -1,4 +1,4 @@
-use crate::history::data::BranchId;
+use crate::history::data::coordinates::BranchId;
 use serde::{Deserialize, Serialize};
 
 /// Exact descriptor/root axis that failed owner readmission.

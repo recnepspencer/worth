@@ -1,13 +1,13 @@
-use crate::commit_strategies::data::CommitStrategyRegistration;
+use crate::commit_strategies::data::registration::CommitStrategyRegistration;
 use crate::config::data::*;
 use crate::diagnostics::data::RelationalDiagnosticsProfile;
-use crate::history::data::{BranchId, HistoryRetentionClass, VersionGraphPolicy};
+use crate::history::data::coordinates::{BranchId, HistoryRetentionClass, VersionGraphPolicy};
 use crate::schema::data::{
     runtime_descriptor_canonical_basis_policy, runtime_descriptor_semantics_policy,
     RelationalSchemaRegistry,
 };
 use crate::symbols::data::{ClientKeySymbolPolicy, StringInterner};
-use crate::validation::data::InvariantCatalog;
+use crate::validation::data::catalog::InvariantCatalog;
 
 pub(super) fn default_profile_config(profile: RelationalRuntimeProfile) -> RelationalRuntimeConfig {
     let base = |runtime_name: &str,

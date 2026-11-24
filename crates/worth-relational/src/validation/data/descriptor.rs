@@ -43,13 +43,15 @@ impl Default for CustomInvariantAccessContract {
 
 impl CustomInvariantAccessContract {
     pub fn canonicalize(self) -> Self {
-        self.canonicalize_for_compilation(crate::schema::SchemaCompilationControl::Configuration)
-            .expect("configuration access canonicalization has no request refusal")
+        self.canonicalize_for_compilation(
+            crate::schema::compilation_control::SchemaCompilationControl::Configuration,
+        )
+        .expect("configuration access canonicalization has no request refusal")
     }
     pub(crate) fn canonicalize_for_compilation(
         mut self,
-        control: crate::schema::SchemaCompilationControl<'_, '_>,
-    ) -> Result<Self, crate::execution::RelationalExecutionDenialCause> {
+        control: crate::schema::compilation_control::SchemaCompilationControl<'_, '_>,
+    ) -> Result<Self, crate::execution::denial_cause::RelationalExecutionDenialCause> {
         for kinds in [
             &mut self.read_entity_kinds,
             &mut self.read_relation_kinds,
@@ -140,7 +142,7 @@ pub struct CustomInvariantDescriptor {
 
 #[cfg(test)]
 mod tests {
-    use super::CustomInvariantAccessContract;
+    use crate::validation::data::descriptor::CustomInvariantAccessContract;
     use serde::{Deserialize, Serialize};
 
     #[derive(Serialize, Deserialize)]

@@ -19,11 +19,11 @@
 //! inside the digested payload, so a rewritten header cannot pass
 //! readmission.
 
-mod encode_denial;
+pub(crate) mod encode_denial;
 mod encoding;
 mod frame;
-mod frame_refusal;
-mod payload_digest;
+pub(crate) mod frame_refusal;
+pub(crate) mod payload_digest;
 mod payload_wire;
 mod readmission;
 mod readmission_refusal;

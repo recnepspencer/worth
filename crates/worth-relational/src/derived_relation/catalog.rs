@@ -3,9 +3,13 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
 use super::definition::RegisteredDerivedRelation;
-use super::DerivedRelationNode as Node;
-use super::{DerivedRelationDefinitionParts as Parts, DerivedRelationDenial as Denial};
-use super::{DerivedRelationHandle as Handle, DerivedRelationIdentity as Identity};
+use crate::derived_relation::definition::DerivedRelationNode as Node;
+use crate::derived_relation::definition::{
+    DerivedRelationDefinitionParts as Parts, DerivedRelationDenial as Denial,
+};
+use crate::derived_relation::definition::{
+    DerivedRelationHandle as Handle, DerivedRelationIdentity as Identity,
+};
 use crate::schema::data::RelationalSchemaRegistry;
 
 impl RelationalSchemaRegistry {

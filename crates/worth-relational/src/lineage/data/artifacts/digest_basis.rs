@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::history::data::{BranchId, CommitId};
+use crate::history::data::coordinates::{BranchId, CommitId};
 use crate::identity::data::{EntityId, LineageId};
 use crate::lineage::data::{LineageEventKind, LineageEventRecord};
 

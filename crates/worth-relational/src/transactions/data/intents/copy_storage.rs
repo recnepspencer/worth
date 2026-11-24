@@ -3,7 +3,8 @@ use super::{
     CreateIntent, EntityMutationIntent, MaterializationMutationIntent, MutationIntent,
     RelationMutationIntent,
 };
-use crate::transactions::data::{AspectFieldPatch, EntityReference};
+use crate::transactions::data::aspect_field_patch::AspectFieldPatch;
+use crate::transactions::data::primitives::EntityReference;
 use std::alloc::Layout;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue, FieldKey};
 

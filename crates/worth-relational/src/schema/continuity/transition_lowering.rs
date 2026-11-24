@@ -6,10 +6,11 @@ use crate::schema::data::{
     SchemaReconciliationOrderingMode, SchemaReconciliationPolicy, ValidatedSchemaTransition,
 };
 
-use super::{
-    fingerprint_transition, is_contract_upgrade_policy, strongest_boundary_visibility,
-    strongest_historical_interpretation,
+use crate::schema::continuity::transition_canonical_fingerprint::fingerprint_writer::fingerprint_transition;
+use crate::schema::continuity::transition_canonical_fingerprint::transition_strength::{
+    strongest_boundary_visibility, strongest_historical_interpretation,
 };
+use crate::schema::continuity::transition_classification::is_contract_upgrade_policy;
 
 pub fn lower_schema_transition(
     validated: ValidatedSchemaTransition,

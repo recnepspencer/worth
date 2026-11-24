@@ -59,7 +59,7 @@ pub(super) fn prepare_semantic_result(
                 .validation
                 .iter()
                 .map(|execution| {
-                    crate::transactions::data::RelationalInvariantExecutionMeaning::from_original(
+                    crate::transactions::data::outcomes::commit_semantic_result::validation::production::from_original(
                         execution, symbols,
                     )
                 })

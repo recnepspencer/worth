@@ -2,18 +2,7 @@
 use super::*;
 use worth_proof::{HomeProgramTransitionBindingCommitted, HomeProgramTransitionRequired};
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum RelationalHomeProgramWriteDenial {
-    TransitionRequired,
-    BodyMismatch,
-    BodyCapacityOverflow,
-    BodyEncoding,
-    UnsupportedBody,
-    TransitionAlreadyBound,
-    TransitionNotRequested,
-    MediumMoved,
-    Admission(worth_proof::HomeProgramTransitionAdmissionDenial),
-}
+pub use crate::durability::medium::home_write_denial::RelationalHomeProgramWriteDenial;
 
 #[derive(Debug)]
 pub(super) enum RelationalHomeProgramPhase {

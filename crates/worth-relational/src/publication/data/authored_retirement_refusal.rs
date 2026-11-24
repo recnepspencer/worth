@@ -37,11 +37,11 @@ pub enum AuthoredRetirementRefusal {
     OrdinaryMetadataWrite,
     CurrentOwnershipStorageMissing,
     OwnedPublicationRequiresCascade {
-        publication: crate::history::data::CommitId,
+        publication: crate::history::data::coordinates::CommitId,
         owner: crate::identity::data::EntityId,
     },
     PublicationOwnerUnavailable {
-        publication: crate::history::data::CommitId,
+        publication: crate::history::data::coordinates::CommitId,
         owner: crate::identity::data::EntityId,
     },
     ForeignFreshCoupledRecord {
@@ -78,13 +78,13 @@ pub enum AuthoredRetirementRefusal {
     InvalidAuthoredAnchor,
     CorruptPublication,
     CorruptCurrentOwnership {
-        publication: crate::history::data::CommitId,
+        publication: crate::history::data::coordinates::CommitId,
     },
     IncompleteRestoration,
     HistoricalSelectionBasisChanged,
     HistoricalSelectionRouteMissing,
     HistoricalSelectionNotOwned {
-        publication: crate::history::data::CommitId,
+        publication: crate::history::data::coordinates::CommitId,
     },
     CoupledSourceNotLive,
     /// An authored stage appended out of the Native-admitted stage roster order.

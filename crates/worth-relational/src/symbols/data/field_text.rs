@@ -1,12 +1,9 @@
-//! Native text custody is data, never a permission or workflow grant.
-use super::{StoredSymbolText, Symbol};
-use crate::branch::AdmittedRelationalBranchBasis;
-use worth_foundational::facade::{AspectValue, InternedString};
+//! Typed refusals for admission of Native field text.
 #[derive(Debug)]
 pub enum RelationalFieldTextAdmissionDenial {
     InvalidUtf8,
-    StorageUnavailable(crate::storage::data::RelationalStorageUnavailable),
-    Request(crate::execution::RelationalExecutionDenialCause),
+    StorageUnavailable(crate::storage::data::storage_unavailable::RelationalStorageUnavailable),
+    Request(crate::execution::denial_cause::RelationalExecutionDenialCause),
     InvalidSymbolDictionary,
     ForeignBasis,
     StaleBasis,
@@ -14,39 +11,12 @@ pub enum RelationalFieldTextAdmissionDenial {
     Stopped(worth_execution::MapKernelStop),
     Allocation(worth_execution::ExecutionAllocationDenial),
 }
-#[derive(Clone, Debug)]
-pub struct RelationalFieldText {
-    pub(crate) basis: AdmittedRelationalBranchBasis,
-    pub(crate) symbol: Symbol,
-    pub(crate) text: StoredSymbolText,
-}
-impl RelationalFieldText {
-    pub fn as_str(&self) -> &str {
-        self.text.as_str()
-    }
-    pub fn charged_payload_bytes(&self) -> Option<u64> {
-        self.text.charged_payload_bytes()
-    }
-    pub fn field_value_for(
-        &self,
-        basis: &AdmittedRelationalBranchBasis,
-    ) -> Result<AspectValue, RelationalFieldTextAdmissionDenial> {
-        if self.basis.descriptor() != basis.descriptor() {
-            return Err(RelationalFieldTextAdmissionDenial::ForeignBasis);
-        }
-        if !basis.is_current() {
-            return Err(RelationalFieldTextAdmissionDenial::StaleBasis);
-        }
-        Ok(AspectValue::String(InternedString::Symbol(
-            worth_foundational::facade::Symbol(self.symbol.0),
-        )))
-    }
-}
 
 pub(crate) fn field_text_recovery_stop(
     denial: RelationalFieldTextAdmissionDenial,
-) -> crate::durability::data::RelationalRecoveryStop {
-    use crate::durability::data::{DurabilityError, RecoveryFailureClass, RelationalRecoveryStop};
+) -> crate::durability::data::recovery_stop::RelationalRecoveryStop {
+    use crate::durability::data::recovery_errors::{DurabilityError, RecoveryFailureClass};
+    use crate::durability::data::recovery_stop::RelationalRecoveryStop;
     match denial {
         RelationalFieldTextAdmissionDenial::StorageUnavailable(failure) => failure.into(),
         RelationalFieldTextAdmissionDenial::Request(cause) => {
@@ -61,7 +31,7 @@ pub(crate) fn field_text_recovery_stop(
             }
         },
         RelationalFieldTextAdmissionDenial::Stopped(stop) => RelationalRecoveryStop::Request(
-            crate::execution::RelationalExecutionDenialCause::from(stop),
+            crate::execution::denial_cause::RelationalExecutionDenialCause::from(stop),
         ),
         other => DurabilityError::new(
             RecoveryFailureClass::CorruptCheckpoint,

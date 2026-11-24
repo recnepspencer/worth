@@ -2,7 +2,7 @@
 use super::*;
 use crate::identity::data::{EntityId, KindId, PartitionId, RelationId};
 use crate::symbols::data::{ClientKey, StringInterner};
-use crate::transactions::data::CreatedEntityRef;
+use crate::transactions::data::primitives::CreatedEntityRef;
 
 fn entity(key: &str) -> CreatedEntityRef {
     CreatedEntityRef {

@@ -4,17 +4,20 @@ use super::mutation_program::{
     compute_mutation_program_digest, forged_mutation_program_for_digest_test,
 };
 use super::output_artifact::{compute_output_digest, forged_output_artifact_for_digest_test};
-use super::{
-    CanonicalStrategyOutputArtifact, StrategyMutationProgram, StrategyMutationProgramDigest,
+use crate::commit_strategies::data::execution::mutation_program::{
+    StrategyMutationProgram, StrategyMutationProgramDigest,
 };
+use crate::commit_strategies::data::execution::output_artifact::CanonicalStrategyOutputArtifact;
 use crate::commit_strategies::data::{PersistentArtifactName, StrategyOutputSchemaName};
-use crate::facade::transactions::{CreateIntent, MutationIntent, WorkerIntentBatch};
 use crate::identity::data::{EntityId, KindId, PartitionId};
 use crate::symbols::data::ClientKey;
-use crate::transactions::data::{
-    AspectFieldPatch, DeleteEntityIntent, EntityMutationIntent, EntitySpec, RevalidateEntityIntent,
-    UpdateEntityFieldsIntent,
+use crate::transactions::data::aspect_field_patch::AspectFieldPatch;
+use crate::transactions::data::intents::mutation_intent::{CreateIntent, MutationIntent};
+use crate::transactions::data::intents::mutation_intent::{
+    DeleteEntityIntent, EntityMutationIntent, RevalidateEntityIntent, UpdateEntityFieldsIntent,
 };
+use crate::transactions::data::primitives::EntitySpec;
+use crate::transactions::data::primitives::WorkerIntentBatch;
 use worth_foundational::facade::{AspectKey, AspectValue, FieldKey, InternedString};
 
 fn artifact() -> CanonicalStrategyOutputArtifact {
@@ -32,7 +35,7 @@ fn mutation_program() -> StrategyMutationProgram {
             kind_id: KindId(1),
             client_key: ClientKey::from("deployment-a"),
             fields: AspectFieldPatch::from_locator(
-                crate::transactions::data::planned_single_field_locator(
+                crate::transactions::data::aspect_field_patch::planned_single_field_locator(
                     AspectKey::new("name").expect("valid name aspect key"),
                     FieldKey::new("name").expect("valid name field key"),
                 ),

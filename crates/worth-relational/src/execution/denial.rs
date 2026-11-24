@@ -5,7 +5,8 @@ use worth_execution::{
 use worth_foundational::PartitionIdentity;
 
 use super::read_only_packets::PacketAdmissionDenial;
-use super::{PacketBudgetDenial, PacketExecutionStop, RelationalExecutionDenialCause as Cause};
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
+use crate::execution::read_only_packets::{PacketBudgetDenial, PacketExecutionStop};
 
 pub(crate) fn lease_denial(denial: LeaseDenial) -> Cause {
     match denial {
@@ -43,9 +44,11 @@ pub(crate) fn lease_denial(denial: LeaseDenial) -> Cause {
 /// refuses before packet execution. Physical layout and allocator refusals
 /// retain the allocation owner's conflict and checked quote.
 pub(crate) fn allocation_commit_error(
-    error: crate::transactions::data::TransactionCommitError,
-) -> crate::transactions::data::TransactionCommitError {
-    use crate::transactions::data::{CommitExecutionDenial, TransactionCommitError};
+    error: crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+) -> crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError {
+    use crate::transactions::data::outcomes::transaction_commit_error::{
+        CommitExecutionDenial, TransactionCommitError,
+    };
     use worth_execution::ExecutionAllocationDenialClass as Class;
 
     match error {
@@ -143,21 +146,27 @@ fn packet_denial(stop: PacketExecutionStop) -> (Cause, Option<u64>) {
     }
 }
 
-impl From<PacketExecutionStop> for crate::transactions::data::CommitExecutionDenial {
+impl From<PacketExecutionStop>
+    for crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial
+{
     fn from(stop: PacketExecutionStop) -> Self {
         let (cause, partition_identity) = packet_denial(stop);
         Self {
-            kind: crate::transactions::data::CommitExecutionDenialKind::Cause(cause),
+            kind: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(cause),
             partition_identity,
         }
     }
 }
 
-impl From<PacketExecutionStop> for crate::indexes::data::DerivedIndexExecutionDenial {
+impl From<PacketExecutionStop>
+    for crate::indexes::data::execution_denial::DerivedIndexExecutionDenial
+{
     fn from(stop: PacketExecutionStop) -> Self {
         let (cause, partition_identity) = packet_denial(stop);
         Self {
-            kind: crate::indexes::data::DerivedIndexExecutionDenialKind::Cause(cause),
+            kind: crate::indexes::data::execution_denial::DerivedIndexExecutionDenialKind::Cause(
+                cause,
+            ),
             partition_identity,
         }
     }
@@ -180,12 +189,12 @@ impl From<worth_execution::WorkCeilingDenial> for Cause {
     }
 }
 
-impl From<crate::execution::RelationalExecutionDenialCause>
-    for crate::transactions::data::CommitExecutionDenial
+impl From<crate::execution::denial_cause::RelationalExecutionDenialCause>
+    for crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial
 {
-    fn from(cause: crate::execution::RelationalExecutionDenialCause) -> Self {
+    fn from(cause: crate::execution::denial_cause::RelationalExecutionDenialCause) -> Self {
         Self {
-            kind: crate::transactions::data::CommitExecutionDenialKind::Cause(cause),
+            kind: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(cause),
             partition_identity: None,
         }
     }

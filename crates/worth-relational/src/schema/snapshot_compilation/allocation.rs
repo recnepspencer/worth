@@ -1,10 +1,10 @@
 //! Before-copy admission for the canonical carried descriptor and its Arc.
-use crate::execution::RelationalExecutionDenialCause as Denial;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Denial;
 use crate::schema::data::*;
 
 pub(super) fn retained(
     registry: &RelationalSchemaRegistry,
-    control: crate::schema::SchemaCompilationControl<'_, '_>,
+    control: crate::schema::compilation_control::SchemaCompilationControl<'_, '_>,
 ) -> Result<u64, Denial> {
     let mut bytes = SchemaAuthoritySnapshot::projection_allocation_bytes()?;
     add(
@@ -46,7 +46,7 @@ pub(super) fn retained(
     }
     add(
         &mut bytes,
-        array::<crate::derived_relation::DerivedRelationDefinitionParts>(
+        array::<crate::derived_relation::definition::DerivedRelationDefinitionParts>(
             registry.derived_relations.len(),
         )?,
     )?;

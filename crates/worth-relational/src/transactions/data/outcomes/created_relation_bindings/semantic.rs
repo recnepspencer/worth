@@ -52,11 +52,11 @@ impl CommitCreatedRelationBindings {
 // still names their Create coordinates. Normalize only IDs in this commit's
 // actual allocation roster; existing committed endpoints retain Existing.
 fn endpoint(
-    reference: &crate::transactions::data::EntityReference,
+    reference: &crate::transactions::data::primitives::EntityReference,
     symbols: &StringInterner,
     created: &BTreeMap<crate::identity::data::EntityId, &RelationalCreatedEntityKey>,
 ) -> Result<RelationalCreatedEndpoint, Refusal> {
-    if let crate::transactions::data::EntityReference::Existing(id) = reference
+    if let crate::transactions::data::primitives::EntityReference::Existing(id) = reference
         && let Some(key) = created.get(id)
     {
         return Ok(RelationalCreatedEndpoint::Created((*key).clone()));

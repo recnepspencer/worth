@@ -5,7 +5,8 @@ use crate::diagnostics::data::{
     RelationalDiagnosticArtifact, RelationalDiagnosticsEntry,
 };
 use crate::identity::data::KindId;
-use crate::merge::data::{AspectMergePolicyDeclaration, IdentityBasisDeclaration};
+use crate::merge::data::identity::IdentityBasisDeclaration;
+use crate::merge::data::policy::AspectMergePolicyDeclaration;
 use worth_foundational::facade::AspectKey;
 
 use super::{

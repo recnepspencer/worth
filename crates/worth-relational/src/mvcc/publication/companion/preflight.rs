@@ -4,9 +4,7 @@ use std::sync::Arc;
 
 use crate::history::data::{BranchId, CanonicalCommitEnvelope, CommitId};
 use crate::publication::patch::data::PatchStreamPosition;
-use crate::runtime::{
-    RelationalInterruptionBoundary, RelationalInterruptionEvent, RelationalOperationControl,
-};
+use crate::runtime::{RelationalInterruptionBoundary, RelationalOperationControl};
 
 use super::cell::publication_admission::PublicationCellAdmission;
 use super::cell::{CompanionBranchCellCore, CompanionRootImage};
@@ -19,31 +17,7 @@ pub use cutover::PreparedPublicationCompanionEffect;
 mod observer;
 pub use observer::{CompanionPublicationCompletion, CompanionPublicationCompletionObserver};
 
-/// The original reason native companion admission or preparation stopped.
-///
-/// Execution retains the actual request refusal; counter overflow carries no
-/// inferred requirement. Structural variants name
-/// pending topology, a mismatched source or position, a foreign cell, or changed
-/// registration, without implying resource exhaustion. Execution and interruption
-/// variants retain the native cause and, when supplied, its boundary.
-///
-/// This is diagnostic data, not publication, currentness or cleanup authority.
-/// The receiving owner supplies the reporting stage and decides recovery;
-/// a stop alone neither identifies that stage nor promises a successful retry.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum CompanionPreflightStop {
-    Execution(crate::execution::RelationalExecutionDenialCause),
-    TopologyPending,
-    SelectedSourceMismatch,
-    SelectedPositionUnavailable { commit_id: CommitId },
-    ForeignCell,
-    RegistrationChanged,
-    ManagedSourceNotPrepared,
-    ManagedSourceChanged,
-    WorkCounterOverflow,
-    PreparationMemoryCounterOverflow,
-    Interrupted(RelationalInterruptionEvent),
-}
+pub use super::preflight_stop::CompanionPreflightStop;
 
 /// Query-owned preparation runs here, before Relational's irreversible cutover.
 pub trait RelationalPublicationCompanion: Debug + Send + Sync {

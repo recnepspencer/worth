@@ -1,8 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::indexes::data::DerivedIndexGenerationId;
-
-use super::QueryExecutionOutcome;
+use crate::indexes::data::definition::DerivedIndexGenerationId;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum IndexParityMode {
@@ -30,12 +28,4 @@ pub enum QueryAccessPath {
     DerivedIndexRejectedStorageRead {
         rejection: IndexQueryRejectionClass,
     },
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct IndexParityVerifiedQueryOutcome {
-    pub execution: QueryExecutionOutcome,
-    pub access_path: QueryAccessPath,
-    pub parity_mode: IndexParityMode,
-    pub parity_basis_digest: String,
 }

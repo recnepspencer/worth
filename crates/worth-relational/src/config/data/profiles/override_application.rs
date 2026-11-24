@@ -288,7 +288,7 @@ fn provenance_entry(overridden: bool) -> ConfigProvenanceEntry {
 }
 
 fn commit_strategy_override_detail(
-    registrations: &[crate::commit_strategies::data::CommitStrategyRegistration],
+    registrations: &[crate::commit_strategies::data::registration::CommitStrategyRegistration],
 ) -> String {
     let digest = commit_strategy_registration_set_digest_hex(registrations);
     format!(

@@ -3,7 +3,7 @@
 mod affected_record_filter;
 mod derived_changes;
 mod execution_context;
-mod interruption;
+pub(crate) mod interruption;
 pub use interruption::CustomInvariantInterruption;
 mod read_budget;
 pub use read_budget::{CustomInvariantNativeCheckpointDenial, CustomInvariantReadBudget};
@@ -13,7 +13,7 @@ mod provenance_decode_tests;
 mod registration;
 mod scope_planner;
 mod structural_source;
-mod structural_views;
+pub(crate) mod structural_views;
 pub(crate) use structural_views::StructuralPresenceDenial;
 #[cfg(test)]
 mod tests;
@@ -21,7 +21,7 @@ mod touched_scope_collection;
 mod traversal;
 #[cfg(test)]
 mod work_budget_tests;
-mod work_meter;
+pub(crate) mod work_meter;
 
 pub use execution_context::{
     CustomInvariantExecutionContext, CustomInvariantNonApplicability, CustomInvariantProvenance,

@@ -1,6 +1,6 @@
 mod artifact_terms;
 mod descriptor_terms;
-mod mutation_program_terms;
+pub(crate) mod mutation_program_terms;
 mod portable_aspect_patch_terms;
 mod primitive_terms;
 
@@ -12,7 +12,6 @@ pub(crate) use artifact_terms::{
 pub(crate) use descriptor_terms::{
     commit_strategy_descriptor_digest, commit_strategy_registry_digest,
 };
-pub(crate) use mutation_program_terms::strategy_mutation_program_digest;
 
 use primitive_terms::StrategyDigestBytes;
 

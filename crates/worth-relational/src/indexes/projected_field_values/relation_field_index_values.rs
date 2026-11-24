@@ -1,3 +1,4 @@
+use super::field_projection_scope::relation_index_projection_scope;
 use std::collections::BTreeMap;
 
 use worth_foundational::facade::AspectFieldLocator;
@@ -6,9 +7,7 @@ use crate::identity::data::RelationId;
 use crate::storage::data::AuthoritativeFieldComparisonKey;
 
 use super::checked_entry_map::{checked_push, IndexKernelStop};
-use super::field_projection_scope::{
-    relation_index_projection_scope, relation_index_projection_scopes,
-};
+use super::selected_projection_scopes::relation_index_projection_scopes;
 use super::IndexProjectionSource;
 
 pub(in crate::indexes) fn build_relation_aspect_field_index(

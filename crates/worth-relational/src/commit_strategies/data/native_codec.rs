@@ -8,7 +8,7 @@ use crate::aspect_wire::{
     AspectValueCanonicalCodecError,
 };
 use crate::identity::data::{EntityId, PartitionId};
-use crate::transactions::data::AspectFieldPatch;
+use crate::transactions::data::aspect_field_patch::AspectFieldPatch;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NativeCodecError {

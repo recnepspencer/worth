@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use crate::history::data::{CanonicalCommitEnvelope, PositionedCanonicalCommit};
-use crate::history::RelationalCommitArtifactDenial;
 use crate::publication::patch::data::PatchStreamPosition;
 
 /// Owner-issued admission for binding one canonical envelope to one runtime
@@ -12,19 +11,7 @@ pub(crate) struct CanonicalPositionAdmission {
     canonical: Arc<CanonicalCommitEnvelope>,
 }
 
-/// Why a decoded canonical envelope could not be readmitted at a stream
-/// position. Each variant names the violated admission contract.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[non_exhaustive]
-pub enum RelationalCanonicalPositionAdmissionDenial {
-    /// Position zero precedes every published commit and is never assigned.
-    PositionZero,
-    /// The envelope's branch context differs from its commit provenance.
-    BranchContextMismatch,
-    /// The envelope fails its own commit-artifact invariants.
-    CommitArtifact(RelationalCommitArtifactDenial),
-    SemanticResult(crate::transactions::data::RelationalCommitSemanticResultRefusal),
-}
+pub use crate::publication::patch::data::position_denial::RelationalCanonicalPositionAdmissionDenial;
 
 impl CanonicalPositionAdmission {
     pub(super) fn equivalent(
@@ -72,10 +59,11 @@ pub(crate) fn readmit_positioned_canonical_commit(
     if canonical.branch_context != canonical.commit.branch_id {
         return Err(RelationalCanonicalPositionAdmissionDenial::BranchContextMismatch);
     }
-    canonical
-        .semantic_result()
-        .validate_envelope(&canonical)
-        .map_err(RelationalCanonicalPositionAdmissionDenial::SemanticResult)?;
+    crate::transactions::data::outcomes::commit_semantic_result::readmission::validate_envelope(
+        canonical.semantic_result(),
+        &canonical,
+    )
+    .map_err(RelationalCanonicalPositionAdmissionDenial::SemanticResult)?;
     crate::history::RelationalCommitCatalog::validate_detached_envelope(&canonical)
         .map_err(RelationalCanonicalPositionAdmissionDenial::CommitArtifact)?;
     Ok(PositionedCanonicalCommit::admit(
@@ -85,24 +73,3 @@ pub(crate) fn readmit_positioned_canonical_commit(
         },
     ))
 }
-
-impl std::fmt::Display for RelationalCanonicalPositionAdmissionDenial {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::PositionZero => {
-                formatter.write_str("canonical patch-stream position zero is not admissible")
-            }
-            Self::BranchContextMismatch => formatter
-                .write_str("canonical envelope branch context does not match commit provenance"),
-            Self::CommitArtifact(denial) => {
-                write!(formatter, "canonical envelope admission failed: {denial:?}")
-            }
-            Self::SemanticResult(denial) => write!(
-                formatter,
-                "canonical semantic result admission failed: {denial:?}"
-            ),
-        }
-    }
-}
-
-impl std::error::Error for RelationalCanonicalPositionAdmissionDenial {}

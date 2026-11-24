@@ -8,7 +8,7 @@ use std::sync::Arc;
 use super::correspondence_witness_rows::{
     RelationalMergeCorrespondenceWitnessPosture, RelationalMergeCorrespondenceWitnessRow,
 };
-use crate::merge::data::{IdentityMatchCandidate, IdentityResolutionReason};
+use crate::merge::data::identity::{IdentityMatchCandidate, IdentityResolutionReason};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct RelationalMergeCorrespondenceWitness {
@@ -154,17 +154,17 @@ pub(crate) fn correspondence_posture_for_candidate(
 }
 
 fn correspondence_posture_for_match_class(
-    class: &crate::merge::data::IdentityMatchClass,
+    class: &crate::merge::data::identity::IdentityMatchClass,
 ) -> RelationalMergeCorrespondenceWitnessPosture {
     match class {
-        crate::merge::data::IdentityMatchClass::Exact
-        | crate::merge::data::IdentityMatchClass::Reconciliable => {
+        crate::merge::data::identity::IdentityMatchClass::Exact
+        | crate::merge::data::identity::IdentityMatchClass::Reconciliable => {
             RelationalMergeCorrespondenceWitnessPosture::Admitted
         }
-        crate::merge::data::IdentityMatchClass::Ambiguous => {
+        crate::merge::data::identity::IdentityMatchClass::Ambiguous => {
             RelationalMergeCorrespondenceWitnessPosture::DeniedAmbiguous
         }
-        crate::merge::data::IdentityMatchClass::MissingTarget => {
+        crate::merge::data::identity::IdentityMatchClass::MissingTarget => {
             RelationalMergeCorrespondenceWitnessPosture::UnavailableMissingTarget
         }
     }
@@ -219,8 +219,8 @@ impl Write for CorrespondenceHashWriter<'_> {
 }
 
 struct SchemaDeclaredCorrespondenceCounts {
-    source_records: Vec<crate::transactions::data::RecordRef>,
-    target_records: Vec<crate::transactions::data::RecordRef>,
+    source_records: Vec<crate::transactions::data::primitives::RecordRef>,
+    target_records: Vec<crate::transactions::data::primitives::RecordRef>,
 }
 
 fn schema_declared_correspondence_counts(
@@ -245,8 +245,8 @@ fn schema_declared_correspondence_counts(
     }
 }
 fn record_occurrences(
-    records: &[crate::transactions::data::RecordRef],
-    target: &crate::transactions::data::RecordRef,
+    records: &[crate::transactions::data::primitives::RecordRef],
+    target: &crate::transactions::data::primitives::RecordRef,
 ) -> usize {
     records.partition_point(|record| record <= target)
         - records.partition_point(|record| record < target)
@@ -263,8 +263,10 @@ fn digest_is_lowercase_sha256_hex(value: &str) -> bool {
 mod tests {
     use super::*;
     use crate::identity::data::{EntityId, PartitionId};
-    use crate::merge::data::{IdentityBasisKind, IdentityMatchClass, MergeRecordIdentity};
-    use crate::transactions::data::RecordRef;
+    use crate::merge::data::identity::{
+        IdentityBasisKind, IdentityMatchClass, MergeRecordIdentity,
+    };
+    use crate::transactions::data::primitives::RecordRef;
     #[test]
     fn owned_decode_correspondence_digest_and_frequency_readmission_keep_original_codec() {
         let source = RecordRef::Entity(EntityId::new(PartitionId(1), 2, 1));

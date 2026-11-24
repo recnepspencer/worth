@@ -1,12 +1,13 @@
 use serde::{Deserialize, Serialize};
 
+use super::execution_summary::StrategyExecutionSummary;
 use super::mutation_program::StrategyMutationProgram;
-use super::observation_context::StrategyExecutionSummary;
 use super::output_artifact::CanonicalStrategyOutputArtifact;
-use crate::commit_strategies::data::{
-    CanonicalStrategyCommitRequest, CanonicalStrategyInputDigest, CommitStrategyDescriptorDigest,
-    CommitStrategyId,
+use crate::commit_strategies::data::descriptor::descriptor_record::CommitStrategyDescriptorDigest;
+use crate::commit_strategies::data::request::{
+    CanonicalStrategyCommitRequest, CanonicalStrategyInputDigest,
 };
+use crate::commit_strategies::data::strategy_id::CommitStrategyId;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct StrategyRequestBinding {

@@ -56,13 +56,15 @@ pub(crate) fn validate_binding(
         (storage.position_kind, POSITION, storage.position_aspect),
     ] {
         let actual = registry.entity_kinds.get(&kind).ok_or_else(invalid)?;
-        let expected = crate::schema::canonicalize_entity_registration(EntityKindRegistration {
-            kind_id: kind,
-            kind_name: name.into(),
-            schema_id: relation.schema_id.clone(),
-            schema_version_id: relation.schema_version_id,
-            aspect_contract_declarations: declarations(name, identity, false),
-        })?;
+        let expected = crate::schema::aspect_plans::canonicalize_entity_registration(
+            EntityKindRegistration {
+                kind_id: kind,
+                kind_name: name.into(),
+                schema_id: relation.schema_id.clone(),
+                schema_version_id: relation.schema_version_id,
+                aspect_contract_declarations: declarations(name, identity, false),
+            },
+        )?;
         if actual != &expected {
             return Err(invalid());
         }
@@ -114,8 +116,8 @@ pub(crate) fn validate_binding(
         if kind == storage.scope_link {
             integrity = integrity.with_current_publication_storage(storage.clone());
         }
-        let expected =
-            crate::schema::canonicalize_relation_registration(RelationKindRegistration {
+        let expected = crate::schema::aspect_plans::canonicalize_relation_registration(
+            RelationKindRegistration {
                 kind_id: kind,
                 kind_name: name.into(),
                 schema_id: relation.schema_id.clone(),
@@ -124,7 +126,8 @@ pub(crate) fn validate_binding(
                 cascade_delete_policy: CascadeDeletePolicy::RetainDanglingForAudit,
                 aspect_contract_declarations: declarations(LINK, storage.link_aspect, true),
                 relation_integrity: integrity,
-            })?;
+            },
+        )?;
         if actual != &expected {
             return Err(invalid());
         }

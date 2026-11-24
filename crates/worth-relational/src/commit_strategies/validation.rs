@@ -1,5 +1,6 @@
 use crate::capabilities::RuntimeConfigSource;
-use crate::commit_strategies::data::{LoweredStrategyCommitPlan, StrategyCommitArtifactBundle};
+use crate::commit_strategies::data::lowering::LoweredStrategyCommitPlan;
+use crate::commit_strategies::data::StrategyCommitArtifactBundle;
 use crate::mvcc::validation::StrategyProposalDecoration;
 use crate::mvcc::ValidatedRelationalProposal;
 use crate::runtime::RelationalRuntime;

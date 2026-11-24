@@ -2,8 +2,8 @@ mod client_key_visit;
 mod client_keys;
 pub(crate) mod copy_storage;
 mod entity_references;
-mod materialization_intent;
-mod mutation_intent;
+pub(crate) mod materialization_intent;
+pub(crate) mod mutation_intent;
 
 pub use materialization_intent::{
     MaterializationMutationIntent, RematerializeEntityIntent, RematerializeRelationIntent,

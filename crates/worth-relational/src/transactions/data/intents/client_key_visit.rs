@@ -1,6 +1,7 @@
 //! One exhaustive visit of transaction-local key coordinates.
 use super::{CreateIntent, EntityMutationIntent, MutationIntent, RelationMutationIntent};
-use crate::{symbols::data::ClientKey, transactions::data::EntityReference};
+use crate::symbols::data::ClientKey;
+use crate::transactions::data::primitives::EntityReference;
 impl MutationIntent {
     pub(crate) fn visit_client_keys_mut<E>(
         &mut self,

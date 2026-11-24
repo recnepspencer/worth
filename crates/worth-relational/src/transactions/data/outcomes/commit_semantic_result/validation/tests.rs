@@ -1,5 +1,5 @@
 use super::*;
-use crate::validation::engine::InvariantExecutionMetadata;
+use crate::validation::engine::result::metadata::InvariantExecutionMetadata;
 
 fn execution_metadata(ceiling: InvariantCostClass) -> InvariantExecutionMetadata {
     InvariantExecutionMetadata::new(
@@ -26,16 +26,15 @@ fn snapshot_pressure_ceiling_does_not_change_original_validation_metadata() {
     let partition = execution_metadata(InvariantCostClass::Partition);
     assert_ne!(global.max_cost(), partition.max_cost());
     assert_eq!(
-        RelationalInvariantMetadataMeaning::from_original(&global),
-        RelationalInvariantMetadataMeaning::from_original(&partition),
+        super::production::metadata_from_original(&global),
+        super::production::metadata_from_original(&partition),
     );
 }
 
 #[test]
 fn previous_snapshot_pressure_metadata_refuses_decode() {
-    let current = RelationalInvariantMetadataMeaning::from_original(&execution_metadata(
-        InvariantCostClass::Global,
-    ));
+    let current =
+        super::production::metadata_from_original(&execution_metadata(InvariantCostClass::Global));
     let mut previous = serde_json::to_value(&current).unwrap();
     previous.as_object_mut().unwrap().insert(
         "declared_cost".into(),
@@ -51,13 +50,13 @@ fn previous_snapshot_pressure_metadata_refuses_decode() {
 }
 
 fn composed_meaning() -> RelationalInvariantExecutionMeaning {
-    use crate::validation::data::{
-        InvariantCheckResult, InvariantRule, InvariantWitnessKey, TouchedStructuralSet,
-    };
-    use crate::validation::engine::InvariantExecutionResult;
-    let mut metadata = RelationalInvariantMetadataMeaning::from_original(&execution_metadata(
-        InvariantCostClass::Global,
-    ));
+    use crate::validation::data::custom_rule::touched_scope::TouchedStructuralSet;
+    use crate::validation::data::execution::InvariantWitnessKey;
+    use crate::validation::data::rules::InvariantRule;
+    use crate::validation::engine::result::InvariantCheckResult;
+    use crate::validation::engine::result::InvariantExecutionResult;
+    let mut metadata =
+        super::production::metadata_from_original(&execution_metadata(InvariantCostClass::Global));
     metadata.execution_point = InvariantExecutionPoint::ProposedState;
     let mut checks = Vec::new();
     let touched = TouchedStructuralSet::new(

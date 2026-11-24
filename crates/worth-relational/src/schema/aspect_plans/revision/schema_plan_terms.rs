@@ -1,9 +1,9 @@
 use worth_foundational::facade::{AspectKey, FieldKey};
 
-use crate::merge::data::{
-    AspectMergePolicyDeclaration, AspectMergePolicyKind, IdentityBasisDeclaration,
-    IdentityBasisKind, IdentityBasisScope,
+use crate::merge::data::identity::{
+    IdentityBasisDeclaration, IdentityBasisKind, IdentityBasisScope,
 };
+use crate::merge::data::policy::{AspectMergePolicyDeclaration, AspectMergePolicyKind};
 use crate::schema::data::{AspectBinding, DeclaredAspectContractBinding};
 
 const FNV_OFFSET: u128 = 0x6c62272e07bb014262b821756295c58d;

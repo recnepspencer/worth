@@ -7,13 +7,16 @@ mod value_terms;
 use sha2::{Digest, Sha256};
 
 use crate::aspect_wire;
-use crate::history::data::CommitId;
-use crate::merge::data::{
-    BoundExecutableMergeRecordPlan, ExecutedMergeRecordDiagnosticRow,
-    MergeSchemaSnapshotDigestBasis, NormalizedRelationalMergeRequest,
-    RelationalMergeCorrespondencePosture, RelationalMergeRequestFamily,
-    RelationalMergeSchemaReconciliationPosture, RelationalMergeTopologyIntent, VisibleMergeRecord,
+use crate::history::data::coordinates::CommitId;
+use crate::merge::data::artifacts::schema_snapshot_digest_basis::MergeSchemaSnapshotDigestBasis;
+use crate::merge::data::execution::executable_plan::BoundExecutableMergeRecordPlan;
+use crate::merge::data::execution_artifacts::ExecutedMergeRecordDiagnosticRow;
+use crate::merge::data::requests::normalized::{
+    NormalizedRelationalMergeRequest, RelationalMergeCorrespondencePosture,
+    RelationalMergeRequestFamily, RelationalMergeSchemaReconciliationPosture,
+    RelationalMergeTopologyIntent,
 };
+use crate::merge::data::visible_record::VisibleMergeRecord;
 
 pub(crate) fn compiled_executable_plan_digest(
     request: &NormalizedRelationalMergeRequest,

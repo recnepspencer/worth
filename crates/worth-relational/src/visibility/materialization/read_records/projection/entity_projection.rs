@@ -120,9 +120,10 @@ impl SelectedEntityProjection<'_> {
         )
             -> Result<Option<T>, crate::execution::RelationalExecutionDenialCause>,
     ) -> Result<Option<T>, crate::execution::RelationalExecutionDenialCause> {
-        project(EntityProjectionRecord::from_slot(
+        project(EntityProjectionRecord::from_selected_record(
             self.actual,
-            &self.slot,
+            self.slot.lifecycle(),
+            self.slot.extra().authoritative_aspect_state(),
             &self.kind,
             self.created,
             scope,

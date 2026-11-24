@@ -7,7 +7,7 @@ use crate::identity::data::{EntityId, KindId, PartitionId, RelationId};
 #[cfg(test)]
 use crate::symbols::data::StringInterner;
 use crate::symbols::data::SymbolTextLookup;
-use crate::transactions::data::{CreatedRelationRef, EntityReference};
+use crate::transactions::data::primitives::{CreatedRelationRef, EntityReference};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 enum StableEntityReference {
@@ -41,7 +41,7 @@ impl CommitCreatedRelationBindings {
     pub(crate) fn append_owned(
         &mut self,
         generated: Self,
-    ) -> Result<(), crate::transactions::data::CommitConflict> {
+    ) -> Result<(), crate::transactions::data::outcomes::commit_conflict::CommitConflict> {
         if generated
             .by_exact_reference
             .keys()
@@ -51,8 +51,8 @@ impl CommitCreatedRelationBindings {
                 .keys()
                 .any(|key| self.by_stable_reference.contains_key(key))
         {
-            return Err(crate::transactions::data::CommitConflict::new(
-                crate::transactions::data::ConflictClass::KindSchemaMismatch {
+            return Err(crate::transactions::data::outcomes::commit_conflict::CommitConflict::new(
+                crate::transactions::data::outcomes::conflict_class::ConflictClass::KindSchemaMismatch {
                     detail:
                         "Native consequence create correspondence collides with an earlier apply"
                             .into(),

@@ -4,8 +4,8 @@ use crate::merge::aspect_plan_lookup::lowered_plan_for_record;
 use crate::merge::data::{
     HistoryScopedMergePlan, IdentityBasisDeclaration, IdentityBasisKind, IdentityBasisScope,
     IdentityMatchCandidate, IdentityMatchClass, IdentityResolutionReason, IdentityScopedMergePlan,
-    MergeAncestrySummary, MergePlanningError, MergeRecordIdentity,
-    NormalizedRelationalMergeRequest, VisibleMergeRecord, VisibleMergeRecordKind,
+    MergeAncestrySummary, MergePlanningError, MergeRecordIdentity, VisibleMergeRecord,
+    VisibleMergeRecordKind,
 };
 use crate::merge::identity_records::{
     effective_identity_declarations, identity_summary, source_visible_records,
@@ -19,10 +19,10 @@ use crate::merge::MergeAccess;
 use crate::transactions::data::RecordRef;
 
 impl<'runtime> MergeAccess<'runtime> {
-    pub(crate) fn plan_identity_scope(
+    pub(in crate::merge) fn plan_identity_scope(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        request: NormalizedRelationalMergeRequest,
+        request: &crate::merge::request_normalization::BoundMergeInputs,
     ) -> Result<IdentityScopedMergePlan, MergePlanningError> {
         let history_plan = self.plan_history_scope(execution, request)?;
         self.discover_identity_scope(execution, history_plan)

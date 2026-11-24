@@ -1,12 +1,6 @@
 //! Original-request work and memory admission for a change-scoped maintainer.
-use crate::execution::{request_stage, RelationalExecutionDenialCause};
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum MaintenanceRefusal {
-    MissingPredecessor,
-    UnavailableChange,
-    Execution(RelationalExecutionDenialCause),
-}
+use super::refusal::MaintenanceRefusal;
+use crate::execution::{denial_cause::RelationalExecutionDenialCause, request_stage};
 
 /// Only the driver can construct a work scope, using the original request.
 pub struct ChangeWork<'scope> {

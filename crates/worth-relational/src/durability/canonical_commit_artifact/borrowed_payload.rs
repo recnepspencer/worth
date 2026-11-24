@@ -1,11 +1,15 @@
 //! Allocation-free slicing of this artifact's MessagePack input for typed quotes.
-use super::RelationalCanonicalCommitArtifactRefusal as Refusal;
+use super::readmission_refusal::RelationalCanonicalCommitArtifactRefusal as Refusal;
 /// Traversal consumes interruption control, never execution construction authority.
 pub(crate) trait PayloadCheckpoint {
-    fn check_payload(&self) -> Result<(), crate::execution::RelationalExecutionDenialCause>;
+    fn check_payload(
+        &self,
+    ) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause>;
 }
 impl PayloadCheckpoint for worth_execution::ExecutionRequest<'_, '_> {
-    fn check_payload(&self) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+    fn check_payload(
+        &self,
+    ) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause> {
         self.check_live().map_err(Into::into)
     }
 }

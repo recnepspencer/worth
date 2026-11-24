@@ -113,7 +113,7 @@ impl InvariantGroup {
 
 #[cfg(test)]
 mod tests {
-    use super::{InvariantGroup, InvariantGroupSet};
+    use crate::validation::data::groups::{InvariantGroup, InvariantGroupSet};
 
     #[test]
     fn group_sets_intersect_when_they_share_a_group() {

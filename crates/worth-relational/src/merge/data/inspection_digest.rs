@@ -1,16 +1,22 @@
 use sha2::{Digest, Sha256};
 
-use crate::history::data::BranchId;
-use crate::merge::data::{
-    DeletionExecutionClass, DeletionMergeClass, LoweredMergeBlockedReason,
-    LoweredMergeRejectedReason, LoweredRecordDecisionKind, MergeConflictClass,
-    MergeExecutionReadiness, MergeIntent, MergeResolutionClass, NormalizedRelationalMergeRequest,
-    RelationalMergeCorrespondencePosture, RelationalMergeInspectionAdmission,
-    RelationalMergeInspectionRow, RelationalMergeRequestFamily,
-    RelationalMergeSchemaReconciliationPosture, RelationalMergeTopologyIntent,
+use crate::history::data::coordinates::BranchId;
+use crate::merge::data::artifacts::inspection_artifact::{
+    RelationalMergeInspectionAdmission, RelationalMergeInspectionRow,
+};
+use crate::merge::data::conflicts::{DeletionMergeClass, MergeConflictClass};
+use crate::merge::data::policy::{
+    DeletionExecutionClass, LoweredMergeBlockedReason, LoweredMergeRejectedReason,
+    LoweredRecordDecisionKind, MergeExecutionReadiness, MergeResolutionClass,
     TopologyExecutionClass,
 };
-use crate::transactions::data::RecordRef;
+use crate::merge::data::requests::normalized::{
+    NormalizedRelationalMergeRequest, RelationalMergeCorrespondencePosture,
+    RelationalMergeRequestFamily, RelationalMergeSchemaReconciliationPosture,
+    RelationalMergeTopologyIntent,
+};
+use crate::merge::data::requests::raw::MergeIntent;
+use crate::transactions::data::primitives::RecordRef;
 
 pub(crate) fn merge_inspection_row_digest(
     record: &RecordRef,

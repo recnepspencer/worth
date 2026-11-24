@@ -1,26 +1,9 @@
-use crate::branch::AdmittedRelationalBranchBasis;
-use crate::history::data::BranchId;
-use serde::{Deserialize, Serialize};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::history::data::coordinates::BranchId;
 
 use super::{MergeExecutionRequest, MergeIntent, MergePlanningRequest};
 
-/// Denial returned when the runtime cannot bind a descriptive merge selector
-/// to an exact owner-owned branch cell.  A descriptive `BranchId` is never
-/// sufficient to enter planning or execution by itself.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub enum RelationalMergeRequestBindingDenial {
-    ForeignRuntime {
-        expected_runtime_instance_id: u64,
-        actual_runtime_instance_id: u64,
-    },
-    UnknownBranch(BranchId),
-    ArchivedBranch(BranchId),
-    DeletingBranch(BranchId),
-    RetentionCapacityExhausted,
-    RetentionIdentityExhausted,
-    SnapshotIdentityExhausted,
-    IdentityMismatch,
-}
+pub use super::binding_denial::RelationalMergeRequestBindingDenial;
 
 /// Owner-issued planning request.  The raw request remains available as
 /// descriptive workflow data, while this value carries exact, proof-backed
@@ -122,7 +105,9 @@ impl OwnerBoundMergeExecutionRequest {
     }
 }
 
-impl From<RelationalMergeRequestBindingDenial> for crate::branch::RelationalBranchBasisDenial {
+impl From<RelationalMergeRequestBindingDenial>
+    for crate::branch::basis_denial::RelationalBranchBasisDenial
+{
     fn from(value: RelationalMergeRequestBindingDenial) -> Self {
         match value {
             RelationalMergeRequestBindingDenial::ForeignRuntime {
@@ -150,9 +135,9 @@ impl From<RelationalMergeRequestBindingDenial> for crate::branch::RelationalBran
             RelationalMergeRequestBindingDenial::SnapshotIdentityExhausted => {
                 Self::SnapshotIdentityExhausted
             }
-            RelationalMergeRequestBindingDenial::IdentityMismatch => {
-                Self::MixedAxis(crate::branch::RelationalBranchBasisMismatchAxis::Branch)
-            }
+            RelationalMergeRequestBindingDenial::IdentityMismatch => Self::MixedAxis(
+                crate::branch::basis_denial::RelationalBranchBasisMismatchAxis::Branch,
+            ),
         }
     }
 }

@@ -1,8 +1,8 @@
 pub use state::CompleteRelationalCheckpointPreparation;
 pub(crate) use state::{
     LineageNamingBasisBinding, MutationRecordAllocations, MutationSymbolMeanings,
-    OriginalBranchSchemaInputs, OriginalBranchSchemaInputsDenial,
-    OriginalEmptySchemaInstallation, OriginalEmptySchemaObservation, RetainedBranchTransition,
+    OriginalBranchSchemaInputs, OriginalBranchSchemaInputsDenial, OriginalEmptySchemaInstallation,
+    OriginalEmptySchemaObservation, RetainedBranchTransition,
 };
 pub mod builder;
 mod construction;
@@ -25,7 +25,7 @@ pub(crate) use home_program_transition::{
     RelationalRootExecutionContracts,
 };
 mod interruption_counters;
-mod operation_control;
+pub(crate) mod operation_control;
 mod schema_transition_admission;
 mod state;
 pub use state::{

@@ -1,7 +1,6 @@
 //! Descriptive replay records carry committed payload meaning.
 use super::*;
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct ReplaySchemaVersion(pub u32);
+pub use crate::history::data::replay_version::ReplaySchemaVersion;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RelationalReplayRecord {

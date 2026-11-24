@@ -5,10 +5,10 @@ use worth_execution::ExecutionAllocationDenial;
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum RelationalCanonicalCommitArtifactEncodeDenial {
-    Readmission(crate::durability::data::RelationalRecoveryStop),
-    Frame(super::RelationalCanonicalCommitArtifactFrameRefusal),
-    Request(crate::execution::RelationalExecutionDenialCause),
-    StorageUnavailable(crate::storage::data::RelationalStorageUnavailable),
+    Readmission(crate::durability::data::recovery_stop::RelationalRecoveryStop),
+    Frame(crate::durability::canonical_commit_artifact::frame_refusal::RelationalCanonicalCommitArtifactFrameRefusal),
+    Request(crate::execution::denial_cause::RelationalExecutionDenialCause),
+    StorageUnavailable(crate::storage::data::storage_unavailable::RelationalStorageUnavailable),
     /// The caller's allocation policy refused, was cancelled or expired.
     Allocation(ExecutionAllocationDenial),
     /// The envelope projection failed to serialize.
@@ -31,21 +31,6 @@ pub enum RelationalCanonicalCommitArtifactEncodeDenial {
 impl From<ExecutionAllocationDenial> for RelationalCanonicalCommitArtifactEncodeDenial {
     fn from(denial: ExecutionAllocationDenial) -> Self {
         Self::Allocation(denial)
-    }
-}
-
-impl From<crate::durability::artifact_payload_emission::ArtifactPayloadEmissionDenial>
-    for RelationalCanonicalCommitArtifactEncodeDenial
-{
-    fn from(
-        denial: crate::durability::artifact_payload_emission::ArtifactPayloadEmissionDenial,
-    ) -> Self {
-        use crate::durability::artifact_payload_emission::ArtifactPayloadEmissionDenial as Emission;
-        match denial {
-            Emission::Allocation(denial) => Self::Allocation(denial),
-            Emission::PayloadEncoding { detail } => Self::PayloadEncoding { detail },
-            Emission::FrameSizeOverflow => Self::FrameSizeOverflow,
-        }
     }
 }
 

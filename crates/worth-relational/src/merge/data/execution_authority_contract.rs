@@ -1,4 +1,4 @@
-use crate::merge::data::{
+use super::artifacts::execution_authority_contract::{
     MergeExecutionAuthorityContract, MergeExecutionAuthorizationRule,
     MergeExecutionConsumptionRule, MergeExecutionDecisionSurface,
 };

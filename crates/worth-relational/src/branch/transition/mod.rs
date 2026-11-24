@@ -11,7 +11,7 @@ mod committed_evidence;
 mod durable_step;
 mod positioned;
 mod record;
-mod sequence;
+pub(crate) mod sequence;
 mod stop;
 
 pub use committed_evidence::RelationalCommittedTransitionEvidence;

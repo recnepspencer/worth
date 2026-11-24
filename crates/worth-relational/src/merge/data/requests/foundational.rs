@@ -2,7 +2,7 @@ use worth_foundational::{
     FoundationalMergeIntent, FoundationalMergeScope, FoundationalMergeScopeFamily,
 };
 
-use super::NormalizedRelationalMergeRequest;
+use crate::merge::data::requests::normalized::NormalizedRelationalMergeRequest;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RelationalFoundationalMergeRequest {

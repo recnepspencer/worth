@@ -4,15 +4,7 @@ use crate::branch::{
     RelationalBranchPublicationCell, RelationalBranchPublicationStateGuard,
 };
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum RelationalPublicationReadDependencyDenial {
-    EmptySourceUnsupported,
-    ForeignOwner,
-    AlreadyRequired,
-    CandidateUnavailable,
-    ConflictingSource,
-    NotCurrent,
-}
+pub use super::read_dependency_denial::RelationalPublicationReadDependencyDenial;
 
 /// Coordination precedes state acquisition, preserving the ordinary receiver's
 /// stop/latch boundaries. Both kinds of locks follow actual branch identity.

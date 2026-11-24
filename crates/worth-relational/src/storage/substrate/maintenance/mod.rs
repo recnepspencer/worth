@@ -3,15 +3,15 @@ mod application;
 pub use application::apply_change;
 mod change;
 mod construction;
-mod reconstruction;
-mod routes;
+pub(crate) mod reconstruction;
+pub(crate) mod routes;
 mod work;
 pub use super::digest_index::{DigestIndex, DigestIndexError};
 pub use change::{ChangedRecord, CommitChange, PartitionChange, RecordChangeState};
 pub use reconstruction::{ReconstructionLane, ReconstructionWork};
 pub use routes::MaintenanceRoute;
 use std::sync::Arc;
-pub use work::{ChangeWork, MaintenanceRefusal};
+pub use work::ChangeWork;
 
 /// Whether derived state must be ready before the canonical publication.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -49,3 +49,6 @@ pub trait Maintained {
         work: &mut ChangeWork<'_>,
     ) -> Result<Arc<Self::State>, Self::Error>;
 }
+
+pub(crate) mod refusal;
+pub use refusal::MaintenanceRefusal;

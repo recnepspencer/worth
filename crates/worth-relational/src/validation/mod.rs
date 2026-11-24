@@ -1,6 +1,6 @@
 pub(crate) mod candidate_source;
 mod custom_registry;
-mod custom_rule;
+pub(crate) mod custom_rule;
 pub mod data;
 pub mod engine;
 pub mod execution;

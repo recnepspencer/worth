@@ -5,7 +5,7 @@ use worth_execution::{
 };
 use worth_foundational::{ExecutionReport, PartitionIdentity};
 
-use super::{PacketExecutionStop, ReadOnlyPacket};
+use crate::execution::read_only_packets::{PacketExecutionStop, ReadOnlyPacket};
 
 #[cfg(test)]
 mod memory_tests;
@@ -24,7 +24,7 @@ impl PacketPreparationBudget<'_, '_, '_, '_> {
     pub(crate) fn checkpoint(
         &mut self,
         units: u64,
-    ) -> Result<(), MapKernelFailure<super::PacketBudgetDenial>> {
+    ) -> Result<(), MapKernelFailure<crate::execution::read_only_packets::PacketBudgetDenial>> {
         self.context
             .checkpoint(units)
             .map_err(MapKernelFailure::Stop)
@@ -33,11 +33,11 @@ impl PacketPreparationBudget<'_, '_, '_, '_> {
     pub(crate) fn claim(
         &mut self,
         bytes: u64,
-    ) -> Result<(), MapKernelFailure<super::PacketBudgetDenial>> {
+    ) -> Result<(), MapKernelFailure<crate::execution::read_only_packets::PacketBudgetDenial>> {
         let next = self.claimed.checked_add(bytes).ok_or_else(|| {
             if self.ceiling.is_none() {
-                MapKernelFailure::Domain(super::PacketBudgetDenial::ReadRequest(
-                    super::RelationalExecutionDenialCause::ChargedBytesOverflow,
+                MapKernelFailure::Domain(crate::execution::read_only_packets::PacketBudgetDenial::ReadRequest(
+                    crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow,
                 ))
             } else {
                 MapKernelFailure::ResultCapacityExceeded
@@ -48,11 +48,13 @@ impl PacketPreparationBudget<'_, '_, '_, '_> {
         }
         if let Some(memory) = self.memory.as_mut() {
             memory.resize(next).map_err(|denial| {
-                MapKernelFailure::Domain(super::PacketBudgetDenial::ReadRequest(
-                    super::denial::lease_denial(worth_execution::LeaseDenial::MemoryExhausted(
-                        denial,
-                    )),
-                ))
+                MapKernelFailure::Domain(
+                    crate::execution::read_only_packets::PacketBudgetDenial::ReadRequest(
+                        super::denial::lease_denial(worth_execution::LeaseDenial::MemoryExhausted(
+                            denial,
+                        )),
+                    ),
+                )
             })?;
         }
         self.claimed = next;
@@ -61,7 +63,7 @@ impl PacketPreparationBudget<'_, '_, '_, '_> {
 
     pub(crate) fn claim_packet<T>(
         &mut self,
-    ) -> Result<(), MapKernelFailure<super::PacketBudgetDenial>> {
+    ) -> Result<(), MapKernelFailure<crate::execution::read_only_packets::PacketBudgetDenial>> {
         self.checkpoint(1)?;
         // The dispatcher subsequently holds this descriptor, an identity,
         // and a MapPartition wrapper concurrently until map admission.
@@ -90,16 +92,19 @@ impl<T> ChargedBytes for PreparedArtifact<T> {
 /// used by packet construction. The caller claims each allocation before growth.
 pub(crate) fn prepare_borrowed_artifact<T>(
     lease: &ExecutionResourceLease<'_>,
-    work_budget: Option<&super::RequestWorkBudget>,
+    work_budget: Option<&crate::execution::request_work::RequestWorkBudget>,
     ceiling: u64,
     build: impl FnOnce(
         &mut PacketPreparationBudget<'_, '_, '_, '_>,
-    ) -> Result<(T, u64), MapKernelFailure<super::PacketBudgetDenial>>,
+    ) -> Result<
+        (T, u64),
+        MapKernelFailure<crate::execution::read_only_packets::PacketBudgetDenial>,
+    >,
 ) -> Result<T, PacketExecutionStop> {
     let identity = PartitionIdentity::new(1);
-    let scan = crate::execution::admit_ordered_scan(vec![(identity, ())])?;
+    let scan = crate::execution::ordered_scan::admit_ordered_scan(vec![(identity, ())])?;
     let mut build = Some(build);
-    let outcome = super::run_with_remaining_request_work(
+    let outcome = crate::execution::request_work::run_with_remaining_request_work(
         lease,
         work_budget,
         |child_lease| {
@@ -138,20 +143,22 @@ impl<T> ChargedBytes for PreparedPackets<T> {
 /// in the caller's immutable intent and are cloned only inside a checked map.
 pub(crate) fn prepare_borrowed_packets<T>(
     lease: &ExecutionResourceLease<'_>,
-    work_budget: Option<&super::RequestWorkBudget>,
+    work_budget: Option<&crate::execution::request_work::RequestWorkBudget>,
     declared_bytes: u64,
     build: impl FnOnce(
         &mut PacketPreparationBudget<'_, '_, '_, '_>,
-    )
-        -> Result<Vec<ReadOnlyPacket<T>>, MapKernelFailure<super::PacketBudgetDenial>>,
+    ) -> Result<
+        Vec<ReadOnlyPacket<T>>,
+        MapKernelFailure<crate::execution::read_only_packets::PacketBudgetDenial>,
+    >,
 ) -> Result<(Vec<ReadOnlyPacket<T>>, ExecutionReport), PacketExecutionStop> {
     let identity = PartitionIdentity::new(1);
-    let scan = crate::execution::admit_ordered_scan(vec![(identity, ())])?;
+    let scan = crate::execution::ordered_scan::admit_ordered_scan(vec![(identity, ())])?;
     // Preparation declares the descriptors it will hold; the lease's own
     // memory policy admits that declaration, not a fixed share of the policy.
     let ceiling = declared_bytes;
     let mut build = Some(build);
-    let outcome = super::run_with_remaining_request_work(
+    let outcome = crate::execution::request_work::run_with_remaining_request_work(
         lease,
         work_budget,
         |child_lease| {

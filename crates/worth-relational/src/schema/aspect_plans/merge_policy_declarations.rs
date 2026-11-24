@@ -2,7 +2,7 @@ use std::collections::BTreeSet;
 
 use worth_foundational::{AspectShape, ScalarAspectType};
 
-use crate::merge::data::{AspectMergePolicyDeclaration, AspectMergePolicyKind};
+use crate::merge::data::policy::{AspectMergePolicyDeclaration, AspectMergePolicyKind};
 use crate::schema::data::{AspectBinding, DeclaredAspectContractBinding, SchemaRegistryError};
 
 pub(super) fn canonicalize_merge_policy_declarations(

@@ -29,7 +29,7 @@ mod compilation_quote;
 #[path = "root_schema/compiled_plans.rs"]
 mod compiled_plans;
 #[path = "root_schema/compiled_retention.rs"]
-mod compiled_retention;
+pub(crate) mod compiled_retention;
 #[path = "root_schema/continuity.rs"]
 mod continuity;
 #[path = "root_schema/home_executables.rs"]
@@ -37,7 +37,7 @@ mod home_executables;
 #[path = "root_schema/home_target.rs"]
 mod home_target;
 #[path = "root_schema/quote_denial.rs"]
-mod quote_denial;
+pub(crate) mod quote_denial;
 #[path = "root_schema/readmission.rs"]
 mod readmission;
 #[path = "root_schema/recorded_image.rs"]
@@ -47,7 +47,7 @@ mod registry_quote;
 #[path = "root_schema/snapshot_match.rs"]
 mod snapshot_match;
 #[path = "root_schema/standard_tree_quote.rs"]
-mod standard_tree_quote;
+pub(crate) mod standard_tree_quote;
 pub(crate) use compiled_retention::{
     RetainedRelationalAspectPlans, RetainedRelationalSchemaRegistry,
 };

@@ -1,15 +1,17 @@
 pub(super) use super::super::CommitStrategiesAuthorityFacade;
+use crate::commit_strategies::data::execution::executor_registration::{
+    CommitStrategyExecutionRegistration, CommitStrategyExecutor,
+};
 pub(super) use crate::commit_strategies::data::{
     CanonicalStrategyCommitRequest, CanonicalStrategyInputArtifact, CanonicalStrategyInputDigest,
-    CanonicalStrategyOutputArtifact, CommitStrategyDescriptor, CommitStrategyExecutionRegistration,
-    CommitStrategyExecutor, CommitStrategyFamilyName, CommitStrategyId, CommitStrategyRegistration,
-    CommitStrategySemanticName, CommitStrategyVersion, PersistentArtifactName,
-    StrategyCallerProvenance, StrategyExecutionDraft, StrategyExecutionResult,
-    StrategyExecutionSummary, StrategyExecutorFailure, StrategyInputSchemaName,
-    StrategyInputSchemaVersion, StrategyIntentName, StrategyMutationProgram,
-    StrategyOutputSchemaName, StrategyPacketContract, StrategyReadContract, StrategyReadCostClass,
-    StrategyReadLocalityClass, StrategyReadScopeClass, StrategyRequestOrigin,
-    StrategyTraversalBasis,
+    CanonicalStrategyOutputArtifact, CommitStrategyDescriptor, CommitStrategyFamilyName,
+    CommitStrategyId, CommitStrategyRegistration, CommitStrategySemanticName,
+    CommitStrategyVersion, PersistentArtifactName, StrategyCallerProvenance,
+    StrategyExecutionDraft, StrategyExecutionResult, StrategyExecutionSummary,
+    StrategyExecutorFailure, StrategyInputSchemaName, StrategyInputSchemaVersion,
+    StrategyIntentName, StrategyMutationProgram, StrategyOutputSchemaName, StrategyPacketContract,
+    StrategyReadContract, StrategyReadCostClass, StrategyReadLocalityClass, StrategyReadScopeClass,
+    StrategyRequestOrigin, StrategyTraversalBasis,
 };
 pub(super) use crate::commit_strategies::strategies::{
     AspectFieldReconciliationInput, AspectFieldReconciliationStrategy,
@@ -136,7 +138,7 @@ impl CommitStrategyExecutor for PlanningExecutor {
         &self,
         _execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: &CanonicalStrategyCommitRequest,
-        _observation: &crate::commit_strategies::data::StrategyObservationContext<'_>,
+        _observation: &crate::commit_strategies::data::execution::observation_context::StrategyObservationContext<'_>,
     ) -> Result<StrategyExecutionResult, StrategyExecutorFailure> {
         Ok(execution_result(request))
     }
@@ -150,7 +152,7 @@ impl CommitStrategyExecutor for DeterministicFailureExecutor {
         &self,
         _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _request: &CanonicalStrategyCommitRequest,
-        _observation: &crate::commit_strategies::data::StrategyObservationContext<'_>,
+        _observation: &crate::commit_strategies::data::execution::observation_context::StrategyObservationContext<'_>,
     ) -> Result<StrategyExecutionResult, StrategyExecutorFailure> {
         Err(StrategyExecutorFailure::new(
             crate::commit_strategies::data::StrategyExecutorFailureClass::DomainRejection,
@@ -354,7 +356,7 @@ pub(super) fn execution_draft(request: &CanonicalStrategyCommitRequest) -> Strat
 
 pub(crate) fn lowered_commit_fixture() -> (
     crate::runtime::RelationalRuntime,
-    crate::commit_strategies::data::LoweredStrategyCommitPlan,
+    crate::commit_strategies::data::lowering::LoweredStrategyCommitPlan,
 ) {
     let runtime = RelationalRuntimeBuilder::new()
         .schema_registry(strategy_schema_registry())

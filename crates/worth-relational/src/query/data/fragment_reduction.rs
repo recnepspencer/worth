@@ -1,12 +1,12 @@
 use serde::{Deserialize, Serialize};
 
-use crate::storage::data::{EntityReadRecord, RelationReadRecord};
+use crate::storage::data::read_records::{EntityReadRecord, RelationReadRecord};
 
-use super::{
-    DeterministicQueryFragmentKey, DeterministicQueryPlanKey, QueryExecutionShape,
-    QueryOrderingContract, SnapshotPinnedQueryPlan,
-};
 use crate::identity::data::EntityId;
+use crate::query::data::planned_packets::{
+    DeterministicQueryFragmentKey, DeterministicQueryPlanKey, QueryExecutionShape,
+    QueryOrderingContract,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct QueryFragmentCounters {
@@ -67,13 +67,6 @@ pub struct QueryComplexitySummary {
     pub authoritative_relation_records_emitted: usize,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct QueryExecutionOutcome {
-    pub plan: SnapshotPinnedQueryPlan,
-    pub result: CanonicalQueryResult,
-    pub complexity: QueryComplexitySummary,
-}
-
 #[cfg(test)]
 pub fn reduce_query_fragments(
     execution_shape: QueryExecutionShape,
@@ -112,7 +105,9 @@ pub fn reduce_query_fragments(
         QueryOrderingContract::CanonicalTraversalOrder => reduce_traversal_fragments(fragments),
     };
 
-    let reduction_digest = super::query_result_reduction_digest(ordering, &entities, &relations);
+    let reduction_digest = crate::query::data::canonical_digest::query_result_reduction_digest(
+        ordering, &entities, &relations,
+    );
     CanonicalQueryResult {
         execution_shape,
         ordering,
@@ -184,8 +179,12 @@ fn reduce_traversal_entities(
 
     keyed_entities.sort_by(|left, right| {
         left.0.cmp(&right.0).then_with(|| {
-            super::query_authoritative_entity_record_digest(&left.1)
-                .cmp(&super::query_authoritative_entity_record_digest(&right.1))
+            crate::query::data::canonical_digest::query_authoritative_entity_record_digest(&left.1)
+                .cmp(
+                    &crate::query::data::canonical_digest::query_authoritative_entity_record_digest(
+                        &right.1,
+                    ),
+                )
         })
     });
     let mut seen = std::collections::BTreeSet::new();
@@ -210,8 +209,14 @@ fn reduce_traversal_relations(
 
     keyed_relations.sort_by(|left, right| {
         left.0.cmp(&right.0).then_with(|| {
-            super::query_authoritative_relation_record_digest(&left.1)
-                .cmp(&super::query_authoritative_relation_record_digest(&right.1))
+            crate::query::data::canonical_digest::query_authoritative_relation_record_digest(
+                &left.1,
+            )
+            .cmp(
+                &crate::query::data::canonical_digest::query_authoritative_relation_record_digest(
+                    &right.1,
+                ),
+            )
         })
     });
     let mut seen = std::collections::BTreeSet::new();

@@ -1,3 +1,4 @@
+use crate::commit_strategies::data::artifact_basis::StrategyArtifactBasis;
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
@@ -6,13 +7,16 @@ use worth_foundational::facade::AspectFieldLocator;
 mod intent_scope_targets;
 
 use crate::commit_strategies::data::canonical_digest::serial_intent_scope_digest;
+use crate::commit_strategies::data::descriptor::descriptor_record::{
+    CommitStrategyDescriptor, CommitStrategyDescriptorDigest,
+};
+use crate::commit_strategies::data::descriptor::read_contract::CommitStrategyVersion;
 use crate::commit_strategies::data::native_strategy_intent_scope::{
     native_strategy_intent_scope_digest, native_strategy_intent_scope_targets,
 };
+use crate::commit_strategies::data::strategy_id::CommitStrategyId;
 use crate::commit_strategies::data::{
-    CommitStrategyDescriptor, CommitStrategyDescriptorDigest, CommitStrategyFamilyName,
-    CommitStrategyId, CommitStrategySemanticName, CommitStrategyVersion, LoweredStrategyCommitPlan,
-    StrategyIntentName,
+    CommitStrategyFamilyName, CommitStrategySemanticName, StrategyIntentName,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -91,7 +95,7 @@ pub struct StrategyMergeDescriptor {
 impl StrategyMergeDescriptor {
     pub fn from_descriptor_and_lowered(
         descriptor: &CommitStrategyDescriptor,
-        lowered: &LoweredStrategyCommitPlan,
+        lowered: &StrategyArtifactBasis,
     ) -> Self {
         Self {
             strategy_id: descriptor.id(),
@@ -176,7 +180,7 @@ fn merge_semantics_for_descriptor(descriptor: &CommitStrategyDescriptor) -> Stra
 
 fn strategy_intent_scope_digest(
     descriptor: &CommitStrategyDescriptor,
-    lowered: &LoweredStrategyCommitPlan,
+    lowered: &StrategyArtifactBasis,
 ) -> StrategyIntentScopeDigest {
     if let Some(digest) = native_strategy_intent_scope_digest(descriptor, lowered) {
         return StrategyIntentScopeDigest::new(digest);
@@ -200,7 +204,7 @@ fn strategy_intent_scope_digest(
 
 fn strategy_intent_scope_targets(
     descriptor: &CommitStrategyDescriptor,
-    lowered: &LoweredStrategyCommitPlan,
+    lowered: &StrategyArtifactBasis,
 ) -> Arc<[AspectFieldLocator]> {
     native_strategy_intent_scope_targets(descriptor, lowered)
         .unwrap_or_default()

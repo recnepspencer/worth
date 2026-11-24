@@ -229,3 +229,26 @@ pub(crate) fn lineage_aspect_history_digest_on_branch(
         ).unwrap()
         .lineage_aspect_resolution_digest()
 }
+
+pub(crate) fn snapshot_for_owner_identity(
+    runtime: &RelationalRuntime,
+    identity: &crate::branch::RelationalBranchIdentity,
+) -> crate::snapshots::data::SnapshotHandle {
+    let (_, basis) = runtime
+        .observe_branch(identity)
+        .expect("test branch basis is owner-admitted");
+    runtime
+        .snapshots()
+        .snapshot_for_observation(&basis.observation())
+        .expect("owner-admitted observation opens its exact snapshot")
+}
+
+pub(crate) fn snapshot_for_owner_branch(
+    runtime: &RelationalRuntime,
+    branch_id: &BranchId,
+) -> crate::snapshots::data::SnapshotHandle {
+    let identity = runtime
+        .branch_identity(branch_id)
+        .expect("test branch identity is owner-issued");
+    snapshot_for_owner_identity(runtime, &identity)
+}

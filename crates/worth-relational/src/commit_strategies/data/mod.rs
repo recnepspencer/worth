@@ -1,19 +1,18 @@
-mod artifacts;
-mod canonical_digest;
-mod descriptor;
-mod execution;
+pub(crate) mod artifacts;
+pub(crate) mod canonical_digest;
+pub(crate) mod descriptor;
+pub(crate) mod execution;
 mod execution_failure;
-mod lowering;
-mod native_codec;
+pub(crate) mod lowering;
+pub(crate) mod native_codec;
 mod native_strategy_intent_scope;
-mod registration;
-mod request;
+pub(crate) mod registration;
+pub(crate) mod request;
 mod strategy_aspect_read_record;
-mod strategy_id;
-mod validation;
+pub(crate) mod strategy_id;
+pub(crate) mod validation;
 
 pub(crate) use canonical_digest::commit_strategy_registry_digest;
-pub(super) use canonical_digest::strategy_mutation_program_digest;
 
 pub use artifacts::{
     StrategyCommitArtifactBundle, StrategyIntentScopeDigest, StrategyMergeConflictClass,
@@ -27,17 +26,17 @@ pub use descriptor::{
     StrategyReadLocalityClass, StrategyReadScopeClass, StrategyTraversalBasis,
 };
 pub use execution::{
-    CanonicalStrategyOutputArtifact, CanonicalStrategyOutputDigest,
-    CommitStrategyExecutionRegistration, CommitStrategyExecutor, StrategyExecutionDraft,
+    CanonicalStrategyOutputArtifact, CanonicalStrategyOutputDigest, StrategyExecutionDraft,
     StrategyExecutionResult, StrategyExecutionSummary, StrategyMutationProgram,
-    StrategyMutationProgramDigest, StrategyObservationContext, StrategyVisibilityReadView,
+    StrategyMutationProgramDigest,
 };
 pub use execution_failure::{
     StrategyExecutorFailure, StrategyExecutorFailureClass, StrategyExecutorFailureEvidence,
 };
-pub use lowering::{
-    LoweredStrategyCommitPlan, StrategyLoweringError, StrategyLoweringProvenance,
-    StrategyLoweringSummary,
+pub(crate) mod artifact_basis;
+pub(crate) mod lowering_meaning;
+pub use lowering_meaning::{
+    StrategyLoweringError, StrategyLoweringProvenance, StrategyLoweringSummary,
 };
 pub(crate) use native_codec::*;
 pub use registration::{CommitStrategyRegistration, CommitStrategyRegistrationError};

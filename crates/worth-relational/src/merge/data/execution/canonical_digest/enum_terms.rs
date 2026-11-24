@@ -1,14 +1,18 @@
-use crate::merge::data::{
-    AspectMergePolicyKind, DeletedOnBothSidesSemantics, MergeConflictClass,
-    MergeLineageContinuityVerdict, MergeManualResolutionClass, MergePolicyDecisionBoundary,
+use crate::merge::data::causal::MergeRecordCausalDisposition;
+use crate::merge::data::conflicts::MergeConflictClass;
+use crate::merge::data::execution::executable_plan::{
+    DeletedOnBothSidesSemantics, MergeLineageContinuityVerdict,
+};
+use crate::merge::data::policy::{
+    AspectMergePolicyKind, MergeManualResolutionClass, MergePolicyDecisionBoundary,
     MergePolicyOwnershipSurface, MergePolicyProofBoundary, MergePolicyRejectClass,
-    MergeRecordCausalDisposition, MergeResolutionClass, TopologyExecutionClass,
+    MergeResolutionClass, TopologyExecutionClass,
 };
 
 impl super::CanonicalDigestBytes {
-    pub(super) fn merge_intent(&mut self, value: crate::merge::data::MergeIntent) {
+    pub(super) fn merge_intent(&mut self, value: crate::merge::data::requests::raw::MergeIntent) {
         match value {
-            crate::merge::data::MergeIntent::ReconcileIntoTarget => self.tag(1),
+            crate::merge::data::requests::raw::MergeIntent::ReconcileIntoTarget => self.tag(1),
         }
     }
 
@@ -71,13 +75,15 @@ impl super::CanonicalDigestBytes {
 
     pub(super) fn merge_executable_class(
         &mut self,
-        value: crate::merge::data::MergeExecutableClass,
+        value: crate::merge::data::policy::MergeExecutableClass,
     ) {
         match value {
-            crate::merge::data::MergeExecutableClass::AdoptSourceRecord => self.tag(1),
-            crate::merge::data::MergeExecutableClass::PreserveSharedRecord => self.tag(2),
-            crate::merge::data::MergeExecutableClass::ReconcileRecord => self.tag(3),
-            crate::merge::data::MergeExecutableClass::ConvergeDeletedOnBothSides => self.tag(4),
+            crate::merge::data::policy::MergeExecutableClass::AdoptSourceRecord => self.tag(1),
+            crate::merge::data::policy::MergeExecutableClass::PreserveSharedRecord => self.tag(2),
+            crate::merge::data::policy::MergeExecutableClass::ReconcileRecord => self.tag(3),
+            crate::merge::data::policy::MergeExecutableClass::ConvergeDeletedOnBothSides => {
+                self.tag(4)
+            }
         }
     }
 

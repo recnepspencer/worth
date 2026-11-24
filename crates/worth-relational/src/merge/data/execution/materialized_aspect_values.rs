@@ -4,7 +4,7 @@ use worth_foundational::facade::{
 };
 
 use crate::aspect_wire::serde_canonical_aspect_value_locator;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum MergeValueMaterialization {

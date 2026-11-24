@@ -4,11 +4,11 @@ use serde::{Deserialize, Serialize};
 /// Memory refusals retain the refusing limit and its remaining room.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RelationalExecutionDenialCause {
-    HistoricalVisibility(crate::visibility::snapshot_states::HistoricalVisibilityDenial),
+    HistoricalVisibility(crate::visibility::snapshot_states::historical_denial::HistoricalVisibilityDenial),
     ProjectionContract(
-        crate::visibility::materialization::read_records::RelationalProjectionContractDenial,
+        crate::visibility::materialization::read_records::projection::contracts::denial::RelationalProjectionContractDenial,
     ),
-    StorageUnavailable(crate::storage::data::RelationalStorageUnavailable),
+    StorageUnavailable(crate::storage::data::storage_unavailable::RelationalStorageUnavailable),
     WorkerLimitExceedsParent,
     MemoryLimitExceedsParent,
     WorkLimitExceedsParent,
@@ -45,7 +45,7 @@ pub enum RelationalExecutionDenialCause {
     /// Independently checked retained content disagrees with its identity.
     ContentInconsistency,
     /// The exact semantic refusal from Native content readmission.
-    Content(crate::content::RelationalContentRejection),
+    Content(crate::content::denial::RelationalContentRejection),
 }
 
 impl RelationalExecutionDenialCause {

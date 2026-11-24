@@ -14,7 +14,8 @@ pub(crate) use retirement::VisibilitySnapshotBasisRetirement;
 
 pub(crate) use exact_state_building::build_visibility_state;
 pub(crate) use historical_basis::HistoricalVisibilityBasis;
-pub use historical_basis::HistoricalVisibilityDenial;
+pub(crate) mod historical_denial;
+pub use historical_denial::HistoricalVisibilityDenial;
 pub(crate) use historical_state_building::build_historical_visibility_state;
 pub(crate) use read_views::read_view_from_snapshot_state;
 pub(crate) use resolution::{

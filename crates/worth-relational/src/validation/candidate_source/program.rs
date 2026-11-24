@@ -3,15 +3,14 @@ use std::sync::Arc;
 use worth_foundational::facade::AspectFieldLocator;
 use worth_proof::{ManagedIndexSourceAudienceAuthority, ManagedIndexSourceAudienceIssuer};
 
-use crate::derived_relation::{DerivedRelationDenial as Denial, DerivedRelationHandle};
+use crate::derived_relation::definition::{DerivedRelationDenial as Denial, DerivedRelationHandle};
 use crate::identity::data::KindId;
 use crate::schema::data::RelationalSchemaRegistry;
-use crate::validation::data::CustomInvariantAccessContract;
+use crate::validation::data::descriptor::CustomInvariantAccessContract;
 
-mod bindings;
+pub(crate) mod bindings;
 mod catalog_commitment;
 mod ordered_predecessor;
-pub(crate) use bindings::SourceBindingCache;
 pub(crate) use catalog_commitment::SourceProgramCommitmentDenial;
 mod projection_routes;
 pub use projection_routes::ManagedIndexSourceProjectionRoute;
@@ -145,9 +144,10 @@ impl ManagedIndexSourceProgram {
     pub(crate) fn require_registry(
         &self,
         registry: &RelationalSchemaRegistry,
-        control: crate::schema::SchemaCompilationControl<'_, '_>,
-    ) -> Result<(), crate::validation::CustomInvariantCompilationDenial> {
-        use crate::validation::CustomInvariantCompilationDenial as CompilationDenial;
+        control: crate::schema::compilation_control::SchemaCompilationControl<'_, '_>,
+    ) -> Result<(), crate::validation::data::compilation_denial::CustomInvariantCompilationDenial>
+    {
+        use crate::validation::data::compilation_denial::CustomInvariantCompilationDenial as CompilationDenial;
         for path in self.paths() {
             control.checkpoint().map_err(CompilationDenial::Execution)?;
             if !registry.admits_derived_relation(path) {
@@ -191,3 +191,6 @@ impl ManagedIndexSourceProgram {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod schema_fixture;

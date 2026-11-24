@@ -10,7 +10,7 @@ use super::RelationalBranchVersion;
 use crate::history::data::BranchId;
 
 #[path = "reference_observation.rs"]
-mod observation;
+pub(crate) mod observation;
 pub use observation::{
     relational_branch_observation, RelationalBranchComparisonBasis, RelationalBranchForkBasis,
     RelationalBranchObservationConstructionDenial, RelationalBranchReferenceObservation,

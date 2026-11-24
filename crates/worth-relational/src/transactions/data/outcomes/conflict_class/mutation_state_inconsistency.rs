@@ -1,7 +1,7 @@
 use crate::identity::data::EntityId;
 use crate::symbols::data::ClientKeySymbolPolicy;
-use crate::transactions::data::RecordRef;
-use crate::transactions::data::TransactionId;
+use crate::transactions::data::primitives::RecordRef;
+use crate::transactions::data::primitives::TransactionId;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

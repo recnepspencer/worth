@@ -49,7 +49,7 @@ mod readmission;
 #[path = "root_region_access.rs"]
 mod region_access;
 #[path = "root_schema.rs"]
-mod schema;
+pub(crate) mod schema;
 #[path = "root_schema_meaning.rs"]
 mod schema_meaning;
 #[cfg(test)]
@@ -364,6 +364,21 @@ impl RelationalBranchRoot {
             (Some(target), Some(source)) => target.evidence.shares_owner(&source.evidence),
             (None, None) => true,
             _ => false,
+        }
+    }
+}
+
+impl From<schema::quote_denial::SchemaCompilationQuoteDenial>
+    for RelationalBranchRootCaptureDenial
+{
+    fn from(cause: schema::quote_denial::SchemaCompilationQuoteDenial) -> Self {
+        match cause {
+            schema::quote_denial::SchemaCompilationQuoteDenial::AllocationLayoutOverflow => {
+                Self::AllocationLayoutOverflow
+            }
+            schema::quote_denial::SchemaCompilationQuoteDenial::Request(cause) => {
+                Self::Request(cause)
+            }
         }
     }
 }

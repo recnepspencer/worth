@@ -1,7 +1,8 @@
 //! Checked storage of the concrete lowered plans and copied native rules.
-use crate::execution::RelationalExecutionDenialCause as Denial;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Denial;
 use crate::identity::data::KindId;
-use crate::schema::{data::*, SchemaCompilationControl};
+use crate::schema::compilation_control::SchemaCompilationControl;
+use crate::schema::data::*;
 
 pub(crate) struct RelationIntegrityLoweringBacking {
     pub(crate) plan: usize,

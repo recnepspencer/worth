@@ -44,13 +44,7 @@ impl RelationalCommitArtifactCloneTripwire for RelationalCommitArtifact {}
 #[allow(dead_code)]
 impl<T: Clone> RelationalCommitArtifactCloneTripwire for T {}
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum RelationalCommitArtifactDenial {
-    Parentage,
-    RootLinkage,
-    CanonicalPayloadEncoding,
-    RetainedEntitySelection(RelationalRetainedSelectionArtifactDenial),
-}
+pub use super::artifact_denial::RelationalCommitArtifactDenial;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum RelationalCommitAuthoritativeAllocationKind {

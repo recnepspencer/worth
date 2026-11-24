@@ -1,4 +1,4 @@
-use crate::history::data::CommitId;
+use crate::history::data::coordinates::CommitId;
 use crate::publication::patch::data::{PatchStreamPosition, PublishedAuthoritativePatchEnvelope};
 use serde::{Deserialize, Serialize};
 

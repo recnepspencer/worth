@@ -1,4 +1,4 @@
-use super::RelationalExecutionDenialCause as Cause;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
 
 pub(crate) fn check_request(
     request: &worth_execution::ExecutionRequest<'_, '_>,

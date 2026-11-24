@@ -5,8 +5,8 @@ mod relation_integrity;
 mod relation_integrity_lowering;
 mod revision;
 
-use crate::execution::RelationalExecutionDenialCause as CompilationDenial;
-use crate::schema::SchemaCompilationControl;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as CompilationDenial;
+use crate::schema::compilation_control::SchemaCompilationControl;
 use smallvec::SmallVec;
 
 use crate::schema::data::{
@@ -118,8 +118,8 @@ fn lower_kind_plan(
 fn derive_kind_plan_revision(
     kind_id: crate::identity::data::KindId,
     aspects: &[crate::schema::data::DeclaredAspectContractBinding],
-    identity_declarations: &[crate::merge::data::IdentityBasisDeclaration],
-    merge_policy_declarations: &[crate::merge::data::AspectMergePolicyDeclaration],
+    identity_declarations: &[crate::merge::data::identity::IdentityBasisDeclaration],
+    merge_policy_declarations: &[crate::merge::data::policy::AspectMergePolicyDeclaration],
 ) -> Result<crate::schema::data::AspectContractPlanRevision, SchemaRegistryError> {
     derive_plan_revision(
         kind_id,

@@ -32,7 +32,7 @@ pub(crate) fn derive_relation_integrity_plan_revision(
     current_publication_storage: Option<&crate::schema::data::CurrentPublicationStorage>,
 ) -> RelationIntegrityPlanRevision {
     derive_relation_integrity_plan_revision_for_compilation(
-        crate::schema::SchemaCompilationControl::Configuration,
+        crate::schema::compilation_control::SchemaCompilationControl::Configuration,
         endpoint_kind_contracts,
         cardinality_contracts,
         uniqueness_contracts,
@@ -48,7 +48,7 @@ pub(crate) fn derive_relation_integrity_plan_revision(
 }
 
 pub(crate) fn derive_relation_integrity_plan_revision_for_compilation(
-    control: crate::schema::SchemaCompilationControl<'_, '_>,
+    control: crate::schema::compilation_control::SchemaCompilationControl<'_, '_>,
     endpoint_kind_contracts: &[EndpointKindContractDeclaration],
     cardinality_contracts: &[CardinalityContractDeclaration],
     uniqueness_contracts: &[UniquenessContractDeclaration],
@@ -59,7 +59,10 @@ pub(crate) fn derive_relation_integrity_plan_revision_for_compilation(
     connectivity_minimum_contracts: &[ConnectivityMinimumContractDeclaration],
     aggregate_identity: Option<&super::AggregateIdentityContractDeclaration>,
     current_publication_storage: Option<&crate::schema::data::CurrentPublicationStorage>,
-) -> Result<RelationIntegrityPlanRevision, crate::execution::RelationalExecutionDenialCause> {
+) -> Result<
+    RelationIntegrityPlanRevision,
+    crate::execution::denial_cause::RelationalExecutionDenialCause,
+> {
     let mut digest = RelationIntegrityRevisionDigest::new(control);
     digest.mix_endpoint_kind_contracts(endpoint_kind_contracts)?;
     digest.mix_cardinality_contracts(cardinality_contracts)?;

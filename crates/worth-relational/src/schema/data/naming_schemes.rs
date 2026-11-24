@@ -6,12 +6,11 @@ use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
-use crate::facade::schema::SchemaRegistryError;
 use crate::identity::data::KindId;
 use crate::lineage::data::{
-    InstalledPersistentNameScheme, InstalledPersistentNameSchemeRegistry,
-    PersistentNameSubjectKind,
+    InstalledPersistentNameScheme, InstalledPersistentNameSchemeRegistry, PersistentNameSubjectKind,
 };
+use crate::schema::data::registry_errors::SchemaRegistryError;
 
 use super::RelationalSchemaRegistry;
 
@@ -200,7 +199,10 @@ impl RelationalSchemaRegistry {
         &self.persistent_name_schemes
     }
 
-    pub fn persistent_name_scheme(&self, scheme_id: &str) -> Option<&InstalledPersistentNameScheme> {
+    pub fn persistent_name_scheme(
+        &self,
+        scheme_id: &str,
+    ) -> Option<&InstalledPersistentNameScheme> {
         self.persistent_name_schemes.get(scheme_id)
     }
 
@@ -245,11 +247,13 @@ impl RelationalSchemaRegistry {
     ) -> Vec<SchemaAuthorityKindNamingBindingSnapshot> {
         self.kind_name_schemes
             .iter()
-            .map(|(&(subject_kind, kind_id), scheme_id)| SchemaAuthorityKindNamingBindingSnapshot {
-                subject_kind,
-                kind_id,
-                scheme_id: scheme_id.clone(),
-            })
+            .map(
+                |(&(subject_kind, kind_id), scheme_id)| SchemaAuthorityKindNamingBindingSnapshot {
+                    subject_kind,
+                    kind_id,
+                    scheme_id: scheme_id.clone(),
+                },
+            )
             .collect()
     }
 
@@ -261,7 +265,10 @@ impl RelationalSchemaRegistry {
         if schemes.is_empty() && bindings.is_empty() {
             return Ok(self);
         }
-        if schemes.windows(2).any(|pair| pair[0].scheme_id >= pair[1].scheme_id) {
+        if schemes
+            .windows(2)
+            .any(|pair| pair[0].scheme_id >= pair[1].scheme_id)
+        {
             return Err("branch-root persistent name schemes are not canonical".to_owned());
         }
         if bindings.windows(2).any(|pair| {
@@ -284,7 +291,10 @@ impl RelationalSchemaRegistry {
         let mut kind_map = BTreeMap::new();
         for binding in bindings {
             if kind_map
-                .insert((binding.subject_kind, binding.kind_id), binding.scheme_id.clone())
+                .insert(
+                    (binding.subject_kind, binding.kind_id),
+                    binding.scheme_id.clone(),
+                )
                 .is_some()
             {
                 return Err("duplicate branch-root persistent name kind binding".to_owned());

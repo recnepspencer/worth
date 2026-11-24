@@ -43,10 +43,11 @@ use crate::diagnostics::data::{
     DeterminismExpectation, DiagnosticCode, DiagnosticsArtifactKind, DiagnosticsScope,
     RelationalDiagnosticArtifact, RelationalDiagnosticsEntry,
 };
+use crate::query::data::query_outcome::QueryExecutionOutcome;
+use crate::query::data::snapshot_pinned_plan::SnapshotPinnedQueryPlan;
 use crate::query::data::{
-    PlannedQueryPacket, QueryExecutionOutcome, QueryParallelLegality, QueryParallelProfitability,
-    QueryPlanContextId, QueryPlanEvidenceBasis, QueryScope, QuerySerialReason,
-    SnapshotPinnedQueryPlan,
+    PlannedQueryPacket, QueryParallelLegality, QueryParallelProfitability, QueryPlanContextId,
+    QueryPlanEvidenceBasis, QueryScope, QuerySerialReason,
 };
 use crate::runtime::{RelationalRuntime, VisibilityResidency};
 use crate::snapshots::data::{SnapshotHandle, SnapshotInspectionSummary, SnapshotReadPolicy};

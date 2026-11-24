@@ -4,8 +4,8 @@ use super::RelationIntegrityDeclarations;
 impl RelationIntegrityDeclarations {
     pub(crate) fn retained_allocation_bytes(
         &self,
-        control: crate::schema::SchemaCompilationControl<'_, '_>,
-    ) -> Result<Option<usize>, crate::execution::RelationalExecutionDenialCause> {
+        control: crate::schema::compilation_control::SchemaCompilationControl<'_, '_>,
+    ) -> Result<Option<usize>, crate::execution::denial_cause::RelationalExecutionDenialCause> {
         let mut stopped = None;
         let bytes = self.measure_retained_bytes(&mut || match control.checkpoint() {
             Ok(()) => Some(()),

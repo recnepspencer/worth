@@ -65,14 +65,14 @@ pub struct DerivedRelationDefinitionParts {
     /// Absent for the existing statically proved unbounded contract. The
     /// optional tail changes no legacy physical recipe's serialized meaning.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub laws: Option<super::DerivedRelationGraphLaws>,
+    pub laws: Option<crate::derived_relation::laws::meaning::DerivedRelationGraphLaws>,
 }
 
 impl DerivedRelationDefinitionParts {
     pub(crate) fn clone_allocation_bytes(
         &self,
-        control: crate::schema::SchemaCompilationControl<'_, '_>,
-    ) -> Result<Option<usize>, crate::execution::RelationalExecutionDenialCause> {
+        control: crate::schema::compilation_control::SchemaCompilationControl<'_, '_>,
+    ) -> Result<Option<usize>, crate::execution::denial_cause::RelationalExecutionDenialCause> {
         let mut stopped = None;
         let bytes = self.measure_clone_bytes(&mut || match control.checkpoint() {
             Ok(()) => Some(()),
@@ -126,10 +126,10 @@ impl DerivedRelationDefinitionParts {
     }
 
     pub(crate) fn owned_capacity_bytes(&self) -> usize {
-        self.laws
-            .as_ref()
-            .map_or(0, super::DerivedRelationGraphLaws::owned_bytes)
-            + self.from.owned_bytes()
+        self.laws.as_ref().map_or(
+            0,
+            crate::derived_relation::laws::meaning::DerivedRelationGraphLaws::owned_bytes,
+        ) + self.from.owned_bytes()
             + self.to.owned_bytes()
             + self.identity.schema.0.capacity()
             + self.identity.name.capacity()
@@ -167,7 +167,8 @@ impl Eq for DerivedRelationHandle {}
 pub(crate) struct RegisteredDerivedRelation {
     /// Memoization follows this exact registered path owner across clones and
     /// registry composition. It contributes no descriptive schema meaning.
-    pub(crate) managed_source_binding: crate::validation::candidate_source::SourceBindingCache,
+    pub(crate) managed_source_binding:
+        crate::validation::candidate_source::program::bindings::SourceBindingCache,
     pub(crate) parts: DerivedRelationDefinitionParts,
     pub(crate) leaves: Vec<(KindId, KindId, KindId)>,
     pub(crate) domains: Vec<ProjectedMemberDomainIdentity>,

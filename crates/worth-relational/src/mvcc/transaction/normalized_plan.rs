@@ -135,8 +135,4 @@ pub(crate) fn request_denial(cause: worth_execution::WorkCeilingDenial) -> Trans
     TransactionCommitError::execution(cause.into())
 }
 
-pub(crate) fn copy_overflow() -> TransactionCommitError {
-    TransactionCommitError::execution(
-        crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow.into(),
-    )
-}
+pub(crate) use crate::transactions::data::copy_denial::copy_overflow;

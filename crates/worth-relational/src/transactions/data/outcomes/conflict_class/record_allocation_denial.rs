@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-use crate::history::data::RecordAllocationClass;
+use crate::history::data::record_allocation_class::RecordAllocationClass;
 use crate::identity::data::PartitionId;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RecordAllocationDenial {

@@ -11,7 +11,7 @@ use std::sync::Arc;
 
 use crate::merge::data::{
     LoweredMergePlan, LoweredMergePlanRecord, MergeExecutionReadiness, MergePlanningError,
-    NormalizedRelationalMergeRequest, PolicyResolvedMergePlan,
+    PolicyResolvedMergePlan,
 };
 use crate::merge::MergeAccess;
 use crate::transactions::data::RecordRef;
@@ -23,18 +23,15 @@ use record_intents::{
     denial_bundle_for_record, execution_bundle_for_record, rejected_reason_for_record,
 };
 use record_readiness::{aggregate_record_readiness, summarize_lowered_records};
-pub(crate) use resolution::{
-    blocked_reason_for_deletion_class, blocked_reason_for_topology_resolution_class,
-};
 use resolution::{
     blocked_reason_for_record, executable_class_for_record, resolution_class_for_record,
 };
 
 impl<'runtime> MergeAccess<'runtime> {
-    pub(crate) fn lower_planning_scope(
+    pub(in crate::merge) fn lower_planning_scope(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        request: NormalizedRelationalMergeRequest,
+        request: &crate::merge::request_normalization::BoundMergeInputs,
     ) -> Result<LoweredMergePlan, MergePlanningError> {
         let policy_plan = self.plan_policy_scope(execution, request)?;
         self.lower_policy_plan(policy_plan)

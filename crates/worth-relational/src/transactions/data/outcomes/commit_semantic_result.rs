@@ -1,21 +1,24 @@
 //! Original commit meaning shared by live assembly and canonical recovery.
 use serde::{Deserialize, Serialize};
 
-use crate::history::data::RelationalCommitReceipt;
+use crate::history::data::commit_receipt::RelationalCommitReceipt;
 use crate::identity::data::PartitionId;
 use crate::schema::data::DescriptorSemanticsVersion;
-use crate::transactions::data::{
-    CommitAspectSummary, CommitChangeSummary, CommitHistorySummary, CommitSchemaSummary,
-    CommitTopology, CommitValidationSummary, RecordRef,
+use crate::transactions::data::commit_log::{
+    CommitAspectSummary, CommitChangeSummary, CommitHistorySummary,
 };
-use crate::validation::data::InvariantGroupSet;
+use crate::transactions::data::mutation_planning::CommitTopology;
+use crate::transactions::data::outcomes::commit_summaries::CommitSchemaSummary;
+use crate::transactions::data::outcomes::commit_validation::CommitValidationSummary;
+use crate::transactions::data::primitives::RecordRef;
+use crate::validation::data::groups::InvariantGroupSet;
 
-mod creation_correspondence;
+pub(crate) mod creation_correspondence;
 pub(crate) use creation_correspondence::{
     endpoint as canonical_created_endpoint, entity_key as canonical_created_entity_key,
 };
-mod readmission;
-mod validation;
+pub(crate) mod readmission;
+pub(crate) mod validation;
 pub use creation_correspondence::{
     RelationalCreatedEndpoint, RelationalCreatedEntityCorrespondence, RelationalCreatedEntityKey,
     RelationalCreatedRelationCorrespondence, RelationalCreatedRelationKey,
@@ -101,10 +104,10 @@ pub enum RelationalCommitSemanticResultRefusal {
         assigned: crate::identity::data::RelationId,
     },
     DuplicateAssignedCreation {
-        record: crate::transactions::data::ExistingRecordTarget,
+        record: crate::transactions::data::primitives::ExistingRecordTarget,
     },
     CreatedPatchMissing {
-        record: crate::transactions::data::ExistingRecordTarget,
+        record: crate::transactions::data::primitives::ExistingRecordTarget,
     },
     OriginalEntityKeyMissing {
         intent_ordinal: usize,

@@ -1,5 +1,6 @@
 //! Resize the original stage reservation without creating another account.
-use super::{denial::lease_denial, RelationalExecutionDenialCause as Cause};
+use super::denial::lease_denial;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
 use worth_execution::{ExecutionResultMemory, LeaseDenial};
 
 /// Only the effective original stage can select this optional borrowed loan.

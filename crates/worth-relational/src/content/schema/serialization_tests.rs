@@ -3,19 +3,22 @@ use super::*;
 #[test]
 fn content_schema_serialization_preserves_format_and_field_meaning() {
     let mut registry = crate::schema::data::RelationalSchemaRegistry::new();
-    registry.content_formats = crate::content::RelationalContentFormatRegistry::from_recorded(
-        RelationalContentSchemaSnapshot::new(
-            vec![RelationalContentFormatDeclaration {
-                identity: [7; 32],
-                descriptor: ContentFormat::new("retained-format", 1).unwrap(),
-                maximum_frame_bytes: 1024,
-            }],
-            Vec::new(),
-        ),
-    )
-    .unwrap();
+    registry.content_formats =
+        crate::content::registry::RelationalContentFormatRegistry::from_recorded(
+            RelationalContentSchemaSnapshot::new(
+                vec![RelationalContentFormatDeclaration {
+                    identity: [7; 32],
+                    descriptor: ContentFormat::new("retained-format", 1).unwrap(),
+                    maximum_frame_bytes: 1024,
+                }],
+                Vec::new(),
+            ),
+        )
+        .unwrap();
     let snapshot = registry
-        .snapshot_for_compilation(crate::schema::SchemaCompilationControl::Configuration)
+        .snapshot_for_compilation(
+            crate::schema::compilation_control::SchemaCompilationControl::Configuration,
+        )
         .unwrap();
     let content = snapshot.content_formats.clone();
     let wire = rmp_serde::to_vec(&content).unwrap();

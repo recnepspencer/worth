@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use crate::capabilities::{AspectPlanSource, SchemaSource};
-use crate::commit_strategies::data::{
-    CanonicalStrategyCommitRequest, CommitStrategyExecutor, StrategyObservationContext,
-};
+use crate::commit_strategies::data::execution::executor_registration::CommitStrategyExecutor;
+use crate::commit_strategies::data::execution::observation_context::StrategyObservationContext;
+use crate::commit_strategies::data::CanonicalStrategyCommitRequest;
 use crate::runtime::RelationalRuntime;
 use crate::snapshots::data::SnapshotHandle;
 
@@ -51,7 +51,6 @@ pub(crate) fn bind_execution<'runtime>(
         request,
         executor: Arc::clone(&executor_binding.executor),
         observation: StrategyObservationContext::new(
-            runtime,
             snapshot,
             descriptor.read_contract(),
             runtime.schema_registry(),

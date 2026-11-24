@@ -1,7 +1,7 @@
 use sha2::{Digest, Sha256};
 
-use crate::query::data::QueryOrderingContract;
-use crate::storage::data::{EntityReadRecord, RelationReadRecord};
+use crate::query::data::planned_packets::QueryOrderingContract;
+use crate::storage::data::read_records::{EntityReadRecord, RelationReadRecord};
 
 use super::primitive_terms::{encode_string, encode_usize};
 use super::read_record_terms::{encode_entity_read_record, encode_relation_read_record};

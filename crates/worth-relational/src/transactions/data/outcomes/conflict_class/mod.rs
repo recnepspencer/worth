@@ -1,7 +1,8 @@
 use crate::diagnostics::data::DiagnosticCode;
 use crate::schema::data::{DescriptorSemanticsVersion, SchemaVersionId};
-use crate::transactions::data::{AspectDeltaFailureFields, ExistingRecordTarget, SavepointId};
-use crate::validation::data::InvariantViolationFields;
+use crate::transactions::data::outcomes::aspect_delta_failure_fields::AspectDeltaFailureFields;
+use crate::transactions::data::primitives::{ExistingRecordTarget, SavepointId};
+use crate::validation::data::results::InvariantViolationFields;
 use serde::{Deserialize, Serialize};
 
 mod aspect_field_target_rejection;
@@ -110,7 +111,7 @@ impl BulkImportStage {
 pub enum ConflictClass {
     #[serde(skip)]
     ContentAdmission {
-        denial: crate::content::RelationalContentDenial,
+        denial: crate::content::denial::RelationalContentDenial,
     },
     SymbolIdentityExhausted,
     /// In-process physical refusal; never a serialized graph verdict.

@@ -10,7 +10,7 @@ mod custody;
 pub(crate) use custody::{AdmissionCustody, CheckpointAdmissionBinding, CheckpointAdmissionOwner};
 mod authentication;
 pub(crate) mod binary_encoding;
-mod refusal;
+pub(crate) mod refusal;
 mod root_positions;
 pub(crate) use refusal::native_stop;
 pub(crate) use root_positions::projected_stop;

@@ -11,7 +11,7 @@ mod request;
 mod runtime_view;
 mod stage_execution;
 pub(crate) use runtime_view::InvariantRuntimeView;
-mod result;
+pub(crate) mod result;
 pub(crate) mod state_view;
 #[cfg(test)]
 mod tests;

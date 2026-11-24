@@ -45,9 +45,18 @@ impl AppliedMutationDraft {
         proposal: &crate::mvcc::RelationalMutationProposalIdentity,
         authored: Option<&crate::transactions::data::MergedCommitPlan>,
     ) -> Result<(), TransactionCommitError> {
+        let basis = self.source_interpretation.physical_basis();
+        let commit_error = |cause: Denial| {
+            cause.into_commit_error(
+                basis.identity().branch_id().clone(),
+                basis.observation().commit_id().map(|id| id.0),
+                basis.observation().version_id(),
+            )
+        };
         execution.check_live().map_err(|cause| {
-            Denial::from(DerivedRelationReadDenial::Request(cause.into()))
-                .into_commit_error(self.source_interpretation.physical_basis())
+            commit_error(Denial::from(DerivedRelationReadDenial::Request(
+                cause.into(),
+            )))
         })?;
         let coverage = self
             .source_interpretation
@@ -103,7 +112,7 @@ impl AppliedMutationDraft {
                 .take();
             drop(original);
         }
-        result.map_err(|cause| cause.into_commit_error(self.source_interpretation.physical_basis()))
+        result.map_err(commit_error)
     }
 }
 

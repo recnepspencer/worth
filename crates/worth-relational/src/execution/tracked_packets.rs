@@ -1,8 +1,9 @@
 //! Variable-shape packet output stays with its owner and live allocation tickets.
-use super::{
-    PacketAdmissionDenial, PacketBudgetDenial, PacketExecutionStop, PacketKernelContext,
-    PacketMemory, ReadOnlyPacket, RequestWorkBudget,
+use crate::execution::packet_memory::{PacketKernelContext, PacketMemory};
+use crate::execution::read_only_packets::{
+    PacketAdmissionDenial, PacketBudgetDenial, PacketExecutionStop, ReadOnlyPacket,
 };
+use crate::execution::request_work::RequestWorkBudget;
 use std::{collections::BTreeMap, mem::size_of, sync::Mutex};
 use worth_execution::{
     ChargedBytes, ExecutionMap, ExecutionMemoryReservation, ExecutionResourceLease,
@@ -79,7 +80,7 @@ where
         .collect();
     let batch =
         ExecutionMap::<_, u64>::from_keyless_partitions(partitions).map_err(|_| overflow())?;
-    let outcome = super::run_with_remaining_request_work(
+    let outcome = crate::execution::request_work::run_with_remaining_request_work(
         lease,
         budget,
         |child| {
