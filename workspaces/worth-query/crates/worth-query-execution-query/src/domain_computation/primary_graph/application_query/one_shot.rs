@@ -39,6 +39,7 @@ use super::authorized_read::refresh_governed_authorization;
 use super::authorized_read::SelectedAuthorizationCurrentnessStop;
 use super::authorized_read::SelectedAuthorizedReadStop;
 use super::authorized_read::WorthQueryAuthorizedApplicationReadDenial;
+use super::read_execution::persistent_names::observe_persistent_names;
 use super::read_execution::read_bounded_root_rows;
 use super::read_execution::OneShotReadWorkObservation;
 use super::read_execution::WorthQueryApplicationReadExecutionDenialKind;
@@ -167,7 +168,11 @@ where
 
         let (raw, authorization_work, read_proof) =
             execute_authorized_read(execution, self, &plan, |runtime, graph, plan| {
-                read_bounded_root_rows(runtime, execution, graph, plan, spent)
+                let mut raw = read_bounded_root_rows(runtime, execution, graph, plan, spent)?;
+                if QueryResult::PROJECTS_PERSISTENT_NAMES {
+                    observe_persistent_names(runtime, execution, plan, &mut raw);
+                }
+                Ok(raw)
             })
             .map_err(|read| map_authorized_read_denial(read, plan.query.name()))?;
         finalize_one_shot(execution, self, plan, raw, authorization_work, read_proof)

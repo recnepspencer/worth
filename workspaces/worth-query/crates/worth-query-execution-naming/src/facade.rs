@@ -64,7 +64,7 @@
 //! }
 //! ```
 
-pub use crate::admission::{same_commit_name_of, AdmittedCommitNames};
+pub use crate::admission::{same_commit_name_of, AdmittedCommitNames, ObservedEntityNames};
 pub use crate::birth_plan::{
     ExecutionNameBirthPlan, ExecutionNameBirthPlanBuilder, ExecutionNamedMergeKeeper,
     ExecutionPendingEntityBirth, ExecutionPendingRelationBirth, ExecutionSplitChildSpec,
@@ -87,5 +87,5 @@ pub use worth_relational::facade::lineage::{
 };
 pub use crate::tracked_resolution::{
     ExecutionNameReadDenial, ExecutionNameReader, ExecutionNameResolveDenial, NameReadCurrentness,
-    NameReadDependencies, NameReadStaleness,
+    NameReadDependencies, NameReadStaleness, NameResolutionCandidates,
 };

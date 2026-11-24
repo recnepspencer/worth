@@ -123,6 +123,21 @@ numeric index order; `WorthQueryOutputBirth::of_role` for a birth under a
 typed role (`IndexedRoleDiscriminator` selects an indexed role's split piece
 with `NameSelection::keep_side`); and `NamedTarget<K>` for a held name with
 its selection.
+Hold names as ordinary values
+([names as values, in rows and within an owner](build-an-application.md#names-as-values-in-rows-and-within-an-owner)):
+declare a kind once with `decl::application_naming::WorthQueryNamedKind`
+(its subject and its `OwnerScope`: `Unowned` or `OwnedThrough` a chain of
+`OwnerVia` / `OwnerViaReverse` relation hops); store `WorthQueryName<K>` and
+`NamedTarget<K>` as `#[derive(WorthQueryRecord)]` columns and
+`#[derive(WorthQueryAction)]` input fields (stock codecs on every
+`worth_query_native_scalar_bindings!` set; versioned, kind-tagged stored
+text that refuses another kind typed); project a row's own name with
+`#[worth_query(name)]` on `#[derive(WorthQueryProjection)]` in the same
+read; and resolve within one owner with the decision reader's
+`resolve_in(&owner, &held, &selection)`, which refuses `NoCandidateInOwner`
+instead of falling back, while unscoped `resolve` reports each `Ambiguous`
+candidate with its owners. Never keep a side table of names or a codec for
+them.
 `HistoryDocument` `undo_step` / `redo_to` / `checkout` keep held names on the
 checked-out node with no naming ceremony: Native appends `Retire` / `Restore`
 for every named record the selection retires or restores

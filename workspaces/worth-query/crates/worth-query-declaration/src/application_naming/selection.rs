@@ -138,6 +138,13 @@ pub struct NameCarrierSet {
 }
 
 impl NameCarrierSet {
+    /// A carrier set read back from stored text: only a nonempty, strictly
+    /// ascending list is the canonical form the constructor writes.
+    pub(super) fn from_canonical(carriers: Vec<ErasedWorthQueryName>) -> Option<Self> {
+        let canonical = !carriers.is_empty() && carriers.windows(2).all(|pair| pair[0] < pair[1]);
+        canonical.then_some(Self { carriers })
+    }
+
     /// Carriers in canonical (ascending digest) order without duplicates.
     pub fn as_slice(&self) -> &[ErasedWorthQueryName] {
         &self.carriers
@@ -152,6 +159,11 @@ pub struct NameSideDiscriminator {
 }
 
 impl NameSideDiscriminator {
+    /// Side bytes read back from stored text; an empty side selects nothing.
+    pub(super) fn from_canonical(canonical: Vec<u8>) -> Option<Self> {
+        (!canonical.is_empty()).then_some(Self { canonical })
+    }
+
     /// The domain-tagged canonical discriminator bytes.
     pub fn as_bytes(&self) -> &[u8] {
         &self.canonical

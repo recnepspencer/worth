@@ -67,6 +67,9 @@ pub enum BankApplicationProjectionDenialKind {
     RelationContractMismatch,
     RelationCardinalityMismatch,
     RelationOmitted,
+    PersistentNamesUnavailable,
+    PersistentNameMissing,
+    PersistentNameKindMismatch,
     DomainProjectionRejected,
 }
 
@@ -309,6 +312,9 @@ impl BankApplicationProjectionDenialKind {
             QueryProjection::RelationContractMismatch => Bank::RelationContractMismatch,
             QueryProjection::RelationCardinalityMismatch => Bank::RelationCardinalityMismatch,
             QueryProjection::RelationOmitted => Bank::RelationOmitted,
+            QueryProjection::PersistentNamesUnavailable => Bank::PersistentNamesUnavailable,
+            QueryProjection::PersistentNameMissing => Bank::PersistentNameMissing,
+            QueryProjection::PersistentNameKindMismatch => Bank::PersistentNameKindMismatch,
             QueryProjection::DomainProjectionRejected => Bank::DomainProjectionRejected,
         }
     }

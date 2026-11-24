@@ -97,8 +97,12 @@ pub enum Step {
 /// `deletes` must be among them; `unlinks` remove the seams read `(from, to)`
 /// members hold; `seams` link `(key, from, to)` members; `seam_reads` name
 /// the seam between read `(label, from, to)` members in the decision.
+/// `owners` list a created `(member, model)` under that model instead of
+/// model `a`; `moves` re-own a read `(member, from model, to model)`.
 #[derive(Clone, Debug, Default)]
 pub struct Plan {
+    pub owners: Vec<(String, String)>,
+    pub moves: Vec<(String, String, String)>,
     pub seam_reads: Vec<(String, String, String)>,
     pub reads: Vec<String>,
     pub creates: Vec<String>,
@@ -199,8 +203,8 @@ pub struct Intent {
 worth_query_structured_value_binding!(pub Input for Intent { identity: "persistent-naming.sculpt.v1" });
 worth_query_operation!(pub Sculpt for Schema, input Input; access {
     read_entities: [Model, Member]; read_fields: [ModelKey::at("ModelKey"), MemberKey::at("MemberKey")];
-    read_relations: [Seam]; writes: [MemberKey::at("MemberKey"), MemberValue::at("MemberValue")];
-    creates: [Member]; deletes: [Member]; links: [ModelMember, Seam]; unlinks: [Seam];
+    read_relations: [Seam, ModelMember]; writes: [MemberKey::at("MemberKey"), MemberValue::at("MemberValue")];
+    creates: [Member]; deletes: [Member]; links: [ModelMember, Seam]; unlinks: [Seam, ModelMember];
 });
 fn scope(_: &Intent) -> String {
     "a".into()
@@ -224,6 +228,16 @@ impl OperationHandler<Schema, Binding> for Handler {
         let plan = plan.unwrap_or_default();
         let result = (|| {
             let model = reader.resolve_entity(ModelKey::at("ModelKey"), "a".to_owned())?;
+            for (_, owner) in &plan.owners {
+                reader.resolve_entity(ModelKey::at("ModelKey"), owner.clone())?;
+            }
+            for (_, from, to) in &plan.moves {
+                let from = reader.resolve_entity(ModelKey::at("ModelKey"), from.clone())?;
+                reader
+                    .relations_from(ModelMember::reference(), &from)
+                    .map_err(HandlerExecutionDenial::new)?;
+                reader.resolve_entity(ModelKey::at("ModelKey"), to.clone())?;
+            }
             let mut names = BTreeMap::new();
             let mut members = BTreeMap::new();
             for key in plan.reads {

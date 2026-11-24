@@ -8,8 +8,8 @@ use super::*;
 use probe::seams::SeamObservation;
 use worth_query_decl::facade::application_naming::{ApplicationNameDiscriminator, NameSelection};
 use worth_query_host::facade::application_naming::{
-    LineageNameDenial, NameRef, WorthQueryName, WorthQueryOutputBirth, WorthQueryOutputNameDenial,
-    WorthQuerySameCommitName,
+    LineageNameDenial, NameRef, NamedTarget, WorthQueryName, WorthQueryOutputBirth,
+    WorthQueryOutputNameDenial, WorthQuerySameCommitName,
 };
 
 pub mod sculpt;
@@ -237,6 +237,27 @@ impl World {
                 worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             );
         (probe::seams::take(token), format!("{ended:?}"))
+    }
+
+    /// Has model `a` hold `target` in its record from now on.
+    pub fn hold(&self, token: &str, target: NamedTarget<Member>) {
+        let outcome = self
+            .request()
+            .advanced()
+            .mutate(stored::Intent {
+                target,
+                anchor: None,
+            })
+            .without_source()
+            .idempotency(&format!("hold:{token}"))
+            .execute_in_program(
+                &self.host,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            );
+        assert!(
+            matches!(outcome, Ok(Outcome::Committed { .. })),
+            "{token}: {outcome:?}"
+        );
     }
 
     pub fn live(&self, key: &str) -> bool {

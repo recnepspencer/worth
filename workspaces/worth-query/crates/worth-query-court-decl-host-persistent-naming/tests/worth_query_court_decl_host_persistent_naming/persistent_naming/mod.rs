@@ -17,13 +17,18 @@ mod schema;
 use schema::*;
 mod delete;
 mod edit;
+mod ergonomics;
 mod history;
 mod interleaving;
+mod named_read;
 mod navigation;
 mod outputs;
 mod probe;
 mod query;
 mod refusals;
+mod scoped;
+mod stored;
+mod unowned;
 mod world;
 
 pub struct History;
@@ -62,6 +67,8 @@ impl ApplicationProgramDefinition<Schema> for Program {
             .action::<refusals::Binding, Completion>()
             .finish_action()
             .action::<outputs::sculpt::Binding, Completion>()
+            .finish_action()
+            .action::<stored::Binding, Completion>()
             .finish_action()
             .finish()]
     }

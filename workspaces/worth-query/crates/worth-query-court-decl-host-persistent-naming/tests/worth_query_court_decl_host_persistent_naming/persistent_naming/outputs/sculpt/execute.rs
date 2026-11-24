@@ -30,17 +30,39 @@ pub(super) fn execute(
         )?;
         writer.initialize_field(&created, MemberKey::at("MemberKey"), key.clone())?;
         writer.initialize_field(&created, MemberValue::at("MemberValue"), 7)?;
-        writer.link(
-            ModelMember::reference(),
-            format!("owns:{key}"),
-            &context,
-            &created,
-        )?;
+        match plan.owners.iter().find(|(member, _)| member == key) {
+            Some((_, owner)) => {
+                let owner = writer.resolve_entity(ModelKey::at("ModelKey"), owner.clone())?;
+                writer.link(
+                    ModelMember::reference(),
+                    format!("owns:{key}"),
+                    &owner,
+                    &created,
+                )?
+            }
+            None => writer.link(
+                ModelMember::reference(),
+                format!("owns:{key}"),
+                &context,
+                &created,
+            )?,
+        };
         members.insert(key.clone(), created);
     }
     for key in &plan.reads {
         let existing = writer.resolve_entity(MemberKey::at("MemberKey"), key.clone())?;
         members.entry(key.clone()).or_insert(existing);
+    }
+    for (key, from, to) in &plan.moves {
+        let from = writer.resolve_entity(ModelKey::at("ModelKey"), from.clone())?;
+        let to = writer.resolve_entity(ModelKey::at("ModelKey"), to.clone())?;
+        writer.unlink(ModelMember::reference(), &from, &members[key])?;
+        writer.link(
+            ModelMember::reference(),
+            format!("moved:{key}"),
+            &to,
+            &members[key],
+        )?;
     }
     for (from, to) in &plan.unlinks {
         writer.unlink(Seam::reference(), &members[from], &members[to])?;

@@ -523,9 +523,10 @@ replay:
   name has moved on refuses `RecordNoLongerNamed`.
 - `resolve_entity::<Schema, Entity>(&held, &selection, &mut deps)` /
   `resolve_relation` return `ResolvedName::{Exact, Plural, Retired { at_commit }}`
-  or `NameResolutionDenial::{Ambiguous { candidates }, NoMatchingCandidate,
-  UnknownName, BasisPruned}`. `NameSelection::Exact` on two or more live
-  successors refuses with every candidate; it never picks a least member.
+  or `NameResolutionDenial::{Ambiguous { candidates }, NoCandidateInOwner,
+  NoMatchingCandidate, UnknownName, BasisPruned}`. `NameSelection::Exact` on
+  two or more live successors refuses with every candidate (a
+  `NameCandidate`, read with `name()`); it never picks a least member.
   Cost is O(lineage path), flat in unrelated records and commits.
 - Every read records what it rested on into `NameReadDependencies`;
   `currentness_after_commit(&commit)` reports `Stale` exactly when that
@@ -533,7 +534,8 @@ replay:
   rested on, or birthed a name it found unknown, and `Clean` otherwise.
 - Inside an operation's decision reader, `reader.name_of(&identity)` and
   `reader.resolve(&held, &selection)` require the entity kind to be a
-  declared decision read (`Entity: OperationReads<Operation>`). Every live
+  declared decision read (`Entity: OperationReads<Operation>`); `resolve`
+  also requires the kind's `WorthQueryNamedKind` declaration. Every live
   record the answer rested on is admitted into the read scope, returned as a
   local identity, and keyed as that entity's decision fact, so a split,
   merge, replacement or retirement ending it invalidates the decision. Any
@@ -582,6 +584,86 @@ continuity. Courts:
 [cold-directory restore](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_tracked_cold_directory.rs),
 [decision reader](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_decision_reader.rs), and
 [Bridge continuity](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_bridge_continuity.rs).
+
+#### Names as values, in rows and within an owner
+
+A kind whose names an application stores or resolves declares itself once,
+on its marker, with `decl::application_naming::WorthQueryNamedKind`:
+
+```rust
+impl WorthQueryNamedKind for Face {
+    type Subject = EntityNameSubject;               // or RelationNameSubject
+    type OwnerScope = OwnedThrough<(               // or Unowned
+        OwnerVia<IntroducedBy>,                     // face -> introducing feature
+        OwnerViaReverse<Features, Body>,            // feature <- the body listing it
+    )>;
+}
+```
+
+`Subject` takes the subject name from the marker's own declared `NAME`.
+`OwnerScope` is the chain of declared relations from a named record to the
+entity that owns it: `OwnerVia<R>` follows `R` from its declaring entity to
+`R::To`, `OwnerViaReverse<R, Source>` follows it back to `Source`, and a
+tuple chains up to four hops. A hop that does not start where the previous
+one arrived does not compile. Nothing is ever inferred from a name's text.
+
+- **Stored names.** `WorthQueryName<K>` and `NamedTarget<K>` are ordinary
+  column and input types. Every binding set declared with
+  `worth_query_native_scalar_bindings!` (and `fragment::NativeScalars`)
+  stores them, so `#[derive(WorthQueryRecord)]` takes them as fields with no
+  attribute, as `Option<..>` too; a hand-written set adds
+  `impl<K: WorthQueryNamedKind> Scalar<WorthQueryName<K>>` with
+  `WorthQueryNameApplicationValueBinding<K>` (and
+  `NamedTargetApplicationValueBinding<K>`). `#[derive(WorthQueryAction)]`
+  with `serde::Serialize` carries them as input fields directly. A struct
+  that derives `WorthValue` names the admitted delegate on such a field,
+  because that derive refuses generic owner types:
+  `#[worth_value(delegate = NamedTargetDelegate<Edge>)]` (or
+  `WorthQueryNameDelegate<Edge>`, inside `OptionalDelegate<..>` for an
+  `Option`). The stored form is one versioned, kind-tagged text. Text stored
+  as another kind, subject class or version, and any malformed value,
+  refuses typed (`StoredNameDenial`) and is never reinterpreted. A decoded
+  name is a held reference, not authority: `resolve`, carrier selections and
+  discriminators each admit it only against a recorded birth of that kind,
+  so a value that was never born resolves `UnknownName`.
+- **Projected names.** On `#[derive(WorthQueryProjection)]`, a field marked
+  `#[worth_query(name)]` of type `WorthQueryName<Root>` projects the name
+  the row's root entity carries; `Option<WorthQueryName<Root>>` projects
+  `None` for a record that carries no name. The read observes its rows'
+  names in the same kernel pass, only for a projection that declares a name
+  slot (`PROJECTS_PERSISTENT_NAMES`), and a nested row projects its own. A
+  required name on an unnamed record refuses `PersistentNameMissing`, a name
+  of another kind `PersistentNameKindMismatch`, and a read lane that does
+  not observe names `PersistentNamesUnavailable`: one-shot reads and
+  continuation pages observe them; live, managed-index and applied-candidate
+  reads do not yet. A projected name adds no dependency: a record's name
+  changes only when its lineage ends, which ends the record the row's
+  footprint already tracks. A hand-written projection declares
+  `const PROJECTS_PERSISTENT_NAMES: bool = true` on its
+  `WorthQueryApplicationProjection` impl and reads the same value with
+  `row.name::<Entity>()` / `row.optional_name::<Entity>()`.
+- **Owner-scoped resolution.** `reader.resolve_in(&owner, &held, &selection)`
+  on the decision reader resolves `held` among the live records `owner`
+  holds through the kind's declared owner chain. One resolves `Exact`,
+  several resolve `Plural` under `AllDescendants` and refuse `Ambiguous`
+  otherwise; an owner holding none refuses
+  `NameResolutionDenial::NoCandidateInOwner` with every candidate and the
+  owners that do hold it, and never falls back to another owner. Unscoped
+  `reader.resolve` now reports each `Ambiguous` candidate as a
+  `NameCandidate` carrying `name()` and `owners()` (local identities of the
+  owning entities; empty for an `Unowned` kind), so a caller can pick an
+  owner and call `resolve_in`. The operation declares a read of each
+  relation on the chain; each hop is a tracked adjacency fact of the
+  candidate, so re-owning a candidate invalidates the decision exactly as
+  splitting or retiring it does, and re-owning another record does not.
+  `ExecutionNameReader::resolve_entity_in` takes the owner read as a
+  closure for callers outside a decision reader, and
+  `entity_candidates` returns the matched records for a caller whose owner
+  read can fail.
+
+Courts:
+[stored and projected names](../workspaces/worth-query/crates/worth-query-court-decl-host-persistent-naming/tests/worth_query_court_decl_host_persistent_naming/persistent_naming/ergonomics.rs),
+[owner-scoped resolution](../workspaces/worth-query/crates/worth-query-court-decl-host-persistent-naming/tests/worth_query_court_decl_host_persistent_naming/persistent_naming/scoped.rs).
 
 #### Names across undo, redo, checkout and rebuild
 
