@@ -1,6 +1,4 @@
-use crate::capabilities::{
-    RuntimeConfigSource, RuntimeIdentitySource, SchemaSource, SchemaVersionSource,
-};
+use crate::config::data::RelationalRuntimeConfig;
 use crate::durability::data::{
     DurabilityError, RecoveryAuthorityContinuityMismatch, RecoveryFailureClass, RecoveryPlan,
 };
@@ -8,19 +6,11 @@ use crate::history::data::CanonicalCommitEnvelope;
 use crate::schema::{validate_schema_continuity_bundle, SchemaContinuityBundleIssue};
 
 pub(super) fn validate_schema_recovery_authority_continuity(
-    runtime: &(impl SchemaSource + RuntimeIdentitySource + SchemaVersionSource + RuntimeConfigSource),
+    config: &RelationalRuntimeConfig,
     plan: &RecoveryPlan,
 ) -> Result<(), DurabilityError> {
-    let descriptor_policy = runtime
-        .runtime_config()
-        .schema
-        .descriptor_semantics_policy
-        .clone();
-    let canonical_basis_policy = runtime
-        .runtime_config()
-        .schema
-        .descriptor_canonical_basis_policy
-        .clone();
+    let descriptor_policy = config.schema.descriptor_semantics_policy.clone();
+    let canonical_basis_policy = config.schema.descriptor_canonical_basis_policy.clone();
     let runtime_descriptor_version = descriptor_policy.current_write_version();
     let runtime_canonical_basis_version = canonical_basis_policy.current_write_version();
     if !descriptor_policy.supports(plan.descriptor_semantics_version) {

@@ -1,6 +1,9 @@
 //! Original source coordinates resolve only already-folded exact observations.
 use super::*;
-use crate::branch::{RecordedRelationalComponentTarget as Target, RelationalBranchBasisPosture};
+use crate::branch::{
+    basis_descriptor::RelationalBranchBasisPosture,
+    recorded_basis::RecordedRelationalComponentTarget as Target,
+};
 impl<'a> WorldSources<'a> {
     pub(super) fn source(
         &self,

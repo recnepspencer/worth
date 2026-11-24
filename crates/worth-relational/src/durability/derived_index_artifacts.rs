@@ -30,8 +30,8 @@ pub(crate) fn checkpoint_index_projections(
 
 pub(crate) fn restore_checkpoint_derived_index_artifacts(
     lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
-    indexes: &mut crate::runtime::IndexingState,
-    history: &crate::runtime::HistorySubsystem,
+    indexes: &mut crate::runtime::state::subsystems::indexing::IndexingState,
+    history: &crate::runtime::state::subsystems::history::HistorySubsystem,
     legacy: &DerivedIndexArtifacts,
     checkpoint: Option<&DerivedIndexCheckpointArtifacts>,
     generation_frontier: u64,

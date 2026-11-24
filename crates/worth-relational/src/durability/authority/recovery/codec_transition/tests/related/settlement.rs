@@ -3,7 +3,7 @@ use super::{
     super::fixture::{activation, activation_proof, basis, capture, protected_payload},
     fixture::*,
 };
-use crate::durability::authority::RecoveredCheckpointTransitionError;
+use crate::durability::authority::checkpoint_transition::RecoveredCheckpointTransitionError;
 use crate::mvcc::RelationalOperationControl;
 
 #[test]

@@ -1,9 +1,9 @@
 mod authority_continuity;
+mod branch_transition_artifact_export;
+mod canonical_commit_artifact_export;
 mod canonical_source;
 mod continuity_issue_mapping;
-mod envelope_version_selection;
 mod medium_recovery_plan;
-mod medium_transition_tail;
 mod native_checkpoint_recovery_plan;
 mod recovery_plan_entrypoint;
 mod retained_recovery_plan;
@@ -11,8 +11,8 @@ mod transition_history;
 
 pub use recovery_plan_entrypoint::DurabilityAccess;
 
+use crate::durability::envelope_version_selection::descriptor_semantics_version_for_envelopes;
 pub(crate) use authority_continuity::authority_continuity_for_envelopes;
-pub(super) use envelope_version_selection::descriptor_semantics_version_for_envelopes;
 pub(crate) use native_checkpoint_recovery_plan::native_checkpoint_recovery_plan;
 
 /// Re-evaluate configuration-dependent evidence after the same Home receiver

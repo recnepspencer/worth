@@ -152,7 +152,7 @@ impl RelationalInitialSchemaInstallation<'_> {
         custom_invariants: Vec<CustomInvariantRegistration>,
         managed_sources: Vec<crate::validation::candidate_source::ManagedIndexSourceProgram>,
         publication: Option<(
-            crate::durability::source_initial_inputs::RelationalFreshInitialization,
+            crate::durability::source_initial_inputs::fresh_initialization::RelationalFreshInitialization,
             &worth_execution::ExecutionRequest<'_, '_>,
         )>,
     ) -> Result<RelationalInitialSchemaInstallationReceipt, RelationalInitialSchemaInstallationDenial>

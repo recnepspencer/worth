@@ -12,7 +12,7 @@
 //! The medium's owner (Worth Store's Relational home) also owns recovery
 //! sequencing: it hands the recovered checkpoint, journal tail and transition
 //! tail back to Relational through
-//! [`DurabilityAccess::recovery_plan_from_source`](crate::durability::access::DurabilityAccess::recovery_plan_from_source).
+//! [`DurabilityAccess::recovery_plan_from_source`](crate::runtime::durability_access::DurabilityAccess::recovery_plan_from_source).
 
 mod native_journal_source;
 pub(crate) mod source_retirement;

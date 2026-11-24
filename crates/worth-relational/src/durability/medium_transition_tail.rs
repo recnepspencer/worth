@@ -7,7 +7,7 @@
 //! transition outside that order could not have been performed by the
 //! history recovery replays, so it refuses rather than being reordered.
 
-use crate::branch::{PositionedBranchTransition, RelationalBranchTransitionSequence};
+use crate::branch::transition::{PositionedBranchTransition, RelationalBranchTransitionSequence};
 use crate::durability::branch_transition_artifact::{
     RelationalBranchTransitionArtifact, RelationalBranchTransitionArtifactRefusal,
 };
@@ -15,19 +15,19 @@ use crate::durability::data::{DurabilityError, RecoveryFailureClass, RelationalR
 use crate::publication::patch::data::PatchStreamPosition;
 
 /// The bounds a recovered transition tail must lie within.
-pub(super) struct TransitionTailBounds {
+pub(crate) struct TransitionTailBounds {
     /// The last transition sequence the checkpoint covers.
-    pub(super) covered_transitions: RelationalBranchTransitionSequence,
+    pub(crate) covered_transitions: RelationalBranchTransitionSequence,
     /// The last commit position the checkpoint covers.
-    pub(super) covered_position: PatchStreamPosition,
+    pub(crate) covered_position: PatchStreamPosition,
     /// The last commit position the recovered tail holds.
-    pub(super) commit_head: PatchStreamPosition,
+    pub(crate) commit_head: PatchStreamPosition,
 }
 
 /// Readmit `artifacts`, oldest first, within `bounds`.
 ///
 /// Cost: one readmission per artifact, O(payload bytes) each.
-pub(super) fn readmit_transition_tail(
+pub(crate) fn readmit_transition_tail(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     bounds: &TransitionTailBounds,
     artifacts: &[RelationalBranchTransitionArtifact],
@@ -78,7 +78,7 @@ fn out_of_order(detail: String) -> RelationalRecoveryStop {
     .into()
 }
 
-pub(super) fn artifact_refusal_stop(
+pub(crate) fn artifact_refusal_stop(
     sequence: RelationalBranchTransitionSequence,
     refusal: RelationalBranchTransitionArtifactRefusal,
 ) -> RelationalRecoveryStop {

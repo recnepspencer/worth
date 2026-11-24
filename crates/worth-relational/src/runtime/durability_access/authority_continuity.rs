@@ -1,10 +1,10 @@
 use crate::capabilities::RuntimeConfigSource;
-use crate::durability::access::continuity_issue_mapping::apply_continuity_issue;
 use crate::durability::data::{
     RecoveryAuthorityContinuityCheck, RecoveryAuthorityContinuityMismatch, RecoveryAuthorityParity,
     RecoveryVerificationOutcome,
 };
 use crate::replay::data::ReplayVerificationLayer;
+use crate::runtime::durability_access::continuity_issue_mapping::apply_continuity_issue;
 use crate::runtime::RelationalRuntime;
 use crate::schema::{
     validate_schema_continuity_bundle, SchemaContinuityBundleIssue, ValidatedSchemaContinuityBundle,

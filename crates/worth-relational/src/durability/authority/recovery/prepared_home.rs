@@ -1,7 +1,7 @@
 //! Opaque source preparation keeps one admitted schema graph for one replay.
 use super::super::runtime_rebuild::OriginalSchemaGraph;
 use crate::durability::data::{RecoveryPlan, RelationalRecoveryStop};
-use crate::runtime::{RelationalInitialSchemaInstallationDenial, RelationalRuntime};
+use crate::runtime::RelationalInitialSchemaInstallationDenial;
 use crate::schema::data::RelationalSchemaRegistry;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, WorkCeilingDenial};
 use worth_foundational::facade::{
@@ -42,8 +42,8 @@ struct HomeRecoveryPreparation {
 }
 
 impl PreparedRelationalHomeRecovery {
-    pub(in crate::durability) fn prepare(
-        runtime: &RelationalRuntime,
+    pub(crate) fn prepare(
+        receiver: u64,
         plan: RecoveryPlan,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Self, Denial> {
@@ -56,7 +56,7 @@ impl PreparedRelationalHomeRecovery {
             .ok_or(Denial::MissingOriginalSource)?;
         Ok(Self {
             state: Box::new(HomeRecoveryPreparation {
-                receiver: runtime.runtime_instance_id(),
+                receiver,
                 plan,
                 graph,
                 _memory: memory,
@@ -144,5 +144,7 @@ pub enum RefusedPreparedRelationalHomeRecovery {
         cause: RelationalHomeRecoveryPreparationDenial,
     },
     Recovery(RelationalRecoveryStop),
-    Transition(super::RelationalHomeProgramTransitionSourceRefusal),
+    Transition(
+        super::home_program_transition::refusal::RelationalHomeProgramTransitionSourceRefusal,
+    ),
 }

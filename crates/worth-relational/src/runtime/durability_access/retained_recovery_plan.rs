@@ -1,8 +1,8 @@
 use crate::capabilities::{DurabilityRead, RuntimeConfigSource};
-use crate::durability::access::{
+use crate::durability::data::{RecoveryPlan, RecoveryVerificationMode};
+use crate::runtime::durability_access::{
     authority_continuity_for_envelopes, descriptor_semantics_version_for_envelopes,
 };
-use crate::durability::data::{RecoveryPlan, RecoveryVerificationMode};
 use crate::runtime::RelationalRuntime;
 
 pub(super) fn retained_recovery_plan(
@@ -102,15 +102,9 @@ fn tail_log_after_in_memory_checkpoint(
         .log_residencies_after(after)
         .into_iter()
         .map(|cell| {
-            let positioned = cell.demand_positioned(execution, 1 << 30)?;
-            let mut readmitted =
-                crate::durability::migration::ReadmittedCanonicalCommit::exact(positioned);
-            if let Some((entry, source)) = cell.journal_placement() {
-                readmitted = readmitted
-                    .with_verified_journal_payload(entry.payload_digest)
-                    .bind_journal_source(source)?;
-            }
-            Ok(readmitted)
+            crate::durability::migration::ReadmittedCanonicalCommit::readmit_retained(
+                &cell, execution,
+            )
         })
         .collect()
 }

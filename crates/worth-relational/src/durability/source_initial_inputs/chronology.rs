@@ -1,7 +1,8 @@
 //! Validate normalized original roles against the unchanged selected directory.
 use super::{image::*, normalized::*, RelationalInitialInputsRefusal as Refusal};
 use crate::branch::{
-    RelationalBranchLifecyclePosture as Lifecycle, RelationalBranchTransition as Transition,
+    lifecycle::RelationalBranchLifecyclePosture as Lifecycle,
+    transition::RelationalBranchTransition as Transition,
 };
 use crate::durability::data::RelationalCheckpointManifest;
 use crate::history::data::BranchId;
@@ -23,7 +24,7 @@ pub(super) fn validate(
     normalized: &NormalizedOriginalInputs,
     manifest: &RelationalCheckpointManifest,
     schemas: &[crate::durability::data::DurableBranchRootSchemaImage],
-    world: Option<&crate::durability::RelationalWorldSourceCatalog>,
+    world: Option<&crate::durability::home_world_catalog::RelationalWorldSourceCatalog>,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<(), Refusal> {
     let Some(InitialInputEntry::Birth(birth)) = initial.entries.first() else {
@@ -177,7 +178,7 @@ impl<'a> Fold<'a> {
     }
     fn require_component(
         &self,
-        descriptor: &crate::branch::RelationalBranchBasisDescriptor,
+        descriptor: &crate::branch::basis_descriptor::RelationalBranchBasisDescriptor,
         schema: [u8; 32],
     ) -> Result<(), Refusal> {
         let state = self

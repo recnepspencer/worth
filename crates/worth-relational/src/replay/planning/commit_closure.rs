@@ -1,25 +1,23 @@
 use std::collections::BTreeSet;
 
-use crate::capabilities::CommitEnvelopeSource;
 use crate::history::data::CanonicalCommitEnvelope;
 use crate::history::data::CommitId;
 use crate::replay::data::ReplayFailureClass;
-use crate::runtime::RelationalRuntime;
+use crate::runtime::state::subsystems::history::HistorySubsystem;
 
 pub(in crate::replay) fn load_replay_envelope(
-    source: &impl CommitEnvelopeSource,
+    source: &HistorySubsystem,
     commit_id: CommitId,
 ) -> Option<std::sync::Arc<CanonicalCommitEnvelope>> {
     #[cfg(test)]
     replay_contacts::observe();
-    source.resident_commit_envelope(commit_id)
+    source.canonical_envelope(commit_id)
 }
 
 pub(in crate::replay) fn replay_commit_closure_by_commit_id_order(
-    runtime: &RelationalRuntime,
-    history: &impl CommitEnvelopeSource,
+    history: &HistorySubsystem,
     commit_id: CommitId,
-) -> Result<Vec<CommitId>, ReplayFailureClass> {
+) -> ReplayCommitClosure {
     let mut ordered = Vec::new();
     let mut visiting = BTreeSet::new();
     let mut nodes_visited = 0usize;
@@ -32,14 +30,21 @@ pub(in crate::replay) fn replay_commit_closure_by_commit_id_order(
         &mut nodes_visited,
         &mut parent_checks,
     );
-    runtime
-        .performance_access()
-        .count_merge_history_replay_planning(nodes_visited, parent_checks);
-    result.map(|_| ordered)
+    ReplayCommitClosure {
+        commits: result.map(|_| ordered),
+        nodes_visited,
+        parent_checks,
+    }
+}
+
+pub(in crate::replay) struct ReplayCommitClosure {
+    pub(in crate::replay) commits: Result<Vec<CommitId>, ReplayFailureClass>,
+    pub(in crate::replay) nodes_visited: usize,
+    pub(in crate::replay) parent_checks: usize,
 }
 
 fn visit_replay_commit_closure(
-    history: &impl CommitEnvelopeSource,
+    history: &HistorySubsystem,
     commit_id: CommitId,
     visiting: &mut BTreeSet<CommitId>,
     ordered: &mut Vec<CommitId>,
@@ -49,7 +54,7 @@ fn visit_replay_commit_closure(
     if ordered.contains(&commit_id) {
         return Ok(());
     }
-    let Some(envelope) = history.resident_commit_envelope(commit_id) else {
+    let Some(envelope) = history.canonical_envelope(commit_id) else {
         return Err(ReplayFailureClass::MissingAuthoritativeParentClosure);
     };
     if !visiting.insert(commit_id) {

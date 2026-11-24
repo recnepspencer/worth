@@ -14,7 +14,7 @@ mod expanded_regions;
 use expanded_regions::{capture_partitions, restore_images};
 
 pub(crate) struct CapturedManifest<M = RelationalCheckpointManifestDraft> {
-    pub(crate) component_holds: Vec<crate::branch::AdmittedRelationalBranchBasis>,
+    pub(crate) component_holds: Vec<crate::branch::basis::AdmittedRelationalBranchBasis>,
     pub(crate) manifest: M,
     pub(crate) members: BTreeMap<RelationalDurableMemberLocator, RelationalCheckpointMember>,
     pub(crate) canonical_publication:
@@ -23,7 +23,7 @@ pub(crate) struct CapturedManifest<M = RelationalCheckpointManifestDraft> {
         Option<worth_execution::ExecutionArray<RelationalCheckpointMember>>,
     pub(crate) envelope_cells: worth_execution::ExecutionOrderedMap<
         crate::publication::patch::data::PatchStreamPosition,
-        Arc<crate::history::RelationalCommitEnvelopeResidency>,
+        Arc<crate::history::commit::RelationalCommitEnvelopeResidency>,
     >,
     pub(crate) publications: Vec<crate::storage::residency::RelationalCheckpointRegionPublication>,
     pub(crate) cold_source: Option<Arc<dyn crate::durability::medium::RelationalDurableColdSource>>,
@@ -43,7 +43,7 @@ impl CapturedManifest {
         checkpoint: &DurableCheckpoint,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
         prior: Option<&RelationalCheckpointManifest>,
-        journal_index: Vec<crate::history::RelationalCommitIndexEntry>,
+        journal_index: Vec<crate::history::commit::RelationalCommitIndexEntry>,
         control: &mut super::CheckpointEncodingControl<'_, '_, '_, '_, '_>,
         original_digest: impl Fn(
             crate::publication::patch::data::PatchStreamPosition,
@@ -85,7 +85,7 @@ impl CapturedManifest {
                 let payload_digest = original_digest(positioned.position())?;
                 commits.insert(
                     positioned.position(),
-                    crate::history::RelationalCommitIndexEntry {
+                    crate::history::commit::RelationalCommitIndexEntry {
                         association_discovery: envelope.association_discovery(),
                         commit: envelope.commit.clone(),
                         position: positioned.position(),
@@ -144,7 +144,7 @@ impl CapturedManifest {
                     crate::publication::patch::data::PatchStreamPosition(0),
                     |entry| entry.position,
                 ),
-                branch_data: crate::branch::CheckpointBranchMetadata::from_ordinary_parts(
+                branch_data: crate::branch::registry::CheckpointBranchMetadata::from_ordinary_parts(
                     checkpoint.runtime_name.clone(),
                     checkpoint.branch_cells.clone(),
                     checkpoint.branch_lifecycle.clone(),
@@ -252,16 +252,17 @@ impl CapturedManifest {
                     *execution,
                 ))
                 .map_err(RelationalNativeCheckpointCaptureDenial::Request)?;
-            let schema = crate::branch::RelationalBranchRootSchemaAuthority::readmit_exact(
-                schemas.len() as u64 + 1,
-                registry,
-                contracts,
-                &expected,
-                image.descriptor_semantics_version(),
-                crate::schema::SchemaCompilationControl::Request(*execution),
-            )
-            .map_err(RelationalNativeCheckpointCaptureDenial::Request)?
-            .ok_or_else(|| corrupt("schema carrier readmission failed"))?;
+            let schema =
+                crate::branch::root::schema::RelationalBranchRootSchemaAuthority::readmit_exact(
+                    schemas.len() as u64 + 1,
+                    registry,
+                    contracts,
+                    &expected,
+                    image.descriptor_semantics_version(),
+                    crate::schema::SchemaCompilationControl::Request(*execution),
+                )
+                .map_err(RelationalNativeCheckpointCaptureDenial::Request)?
+                .ok_or_else(|| corrupt("schema carrier readmission failed"))?;
             schemas.insert(image.carrier_digest(), schema);
         }
         for root in &checkpoint.branch_roots {

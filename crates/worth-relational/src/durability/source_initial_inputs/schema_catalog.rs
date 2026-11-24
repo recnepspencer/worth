@@ -1,5 +1,5 @@
 //! One request-funded immutable schema graph follows exact source readmission.
-use crate::branch::RelationalBranchRootSchemaAuthority;
+use crate::branch::root::schema::RelationalBranchRootSchemaAuthority;
 use crate::durability::checkpoints::region_directory::corrupt;
 use crate::durability::data::RelationalRecoveryStop;
 use crate::history::data::canonical_commit_envelope::schema_carrier::RecordedBranchSchemaImage;

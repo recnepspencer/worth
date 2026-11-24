@@ -1,10 +1,10 @@
 //! Closed corruption of current facts; the ordinary reader must reject the result.
-use super::record;
+use crate::publication::ownership::record;
 mod coherent;
 use crate::{durability::data::PartitionCheckpointImage, history::data::CommitId};
 use worth_foundational::facade::*;
 
-pub(crate) fn alter(
+pub(super) fn alter(
     partition: &mut PartitionCheckpointImage,
     publication: CommitId,
     change: u8,

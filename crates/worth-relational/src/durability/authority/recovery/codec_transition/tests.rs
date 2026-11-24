@@ -9,9 +9,8 @@ mod publication_custody;
 mod related;
 mod source_head_admission;
 mod stale_codec_revision;
-use crate::durability::authority::{
-    RecoveredCheckpointTransitionError, RecoveredRelationalRuntimeAuthority,
-};
+use crate::durability::authority::checkpoint_transition::RecoveredCheckpointTransitionError;
+use crate::durability::authority::recovered_runtime::RecoveredRelationalRuntimeAuthority;
 use crate::indexes::data::DerivedIndexEntries;
 use crate::mvcc::RelationalOperationControl;
 use crate::runtime::RelationalRuntime;

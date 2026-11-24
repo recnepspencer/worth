@@ -1,7 +1,10 @@
 //! Capture actual original producer DATA before the initialization durable step.
 use super::{decoding::layout, frame::*, image::*, recorded::*};
 use crate::durability::data::branch_root_schema_images::DurableBranchRootSchemaImage;
-use crate::runtime::{OriginalBranchSchemaInputs, OriginalEmptySchemaObservation};
+use crate::{
+    branch::transition::original_inputs::OriginalEmptySchemaObservation,
+    runtime::OriginalBranchSchemaInputs,
+};
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 
@@ -11,7 +14,7 @@ pub(crate) fn capture(
     installation: Option<(
         &OriginalEmptySchemaObservation,
         &OriginalEmptySchemaObservation,
-        crate::branch::RelationalBranchTransitionSequence,
+        crate::branch::transition::sequence::RelationalBranchTransitionSequence,
     )>,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<Arc<InitialInputsImage>, RelationalInitialInputsRefusal> {
@@ -20,7 +23,7 @@ pub(crate) fn capture(
         original,
         installation,
         request,
-        crate::branch::RelationalBranchRootSchemaAuthority::recorded_image,
+        crate::branch::root::schema::RelationalBranchRootSchemaAuthority::recorded_image,
     )
 }
 
@@ -30,7 +33,7 @@ pub(crate) fn capture_complete(
     installation: Option<(
         &OriginalEmptySchemaObservation,
         &OriginalEmptySchemaObservation,
-        crate::branch::RelationalBranchTransitionSequence,
+        crate::branch::transition::sequence::RelationalBranchTransitionSequence,
     )>,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<Arc<InitialInputsImage>, RelationalInitialInputsRefusal> {
@@ -39,7 +42,7 @@ pub(crate) fn capture_complete(
         original,
         installation,
         request,
-        crate::branch::RelationalBranchRootSchemaAuthority::descriptive_image_for_request,
+        crate::branch::root::schema::RelationalBranchRootSchemaAuthority::descriptive_image_for_request,
     )
 }
 
@@ -49,11 +52,11 @@ pub(crate) fn capture_with(
     installation: Option<(
         &OriginalEmptySchemaObservation,
         &OriginalEmptySchemaObservation,
-        crate::branch::RelationalBranchTransitionSequence,
+        crate::branch::transition::sequence::RelationalBranchTransitionSequence,
     )>,
     request: &ExecutionRequest<'_, '_>,
     image: fn(
-        &crate::branch::RelationalBranchRootSchemaAuthority,
+        &crate::branch::root::schema::RelationalBranchRootSchemaAuthority,
         &ExecutionRequest<'_, '_>,
     ) -> Result<
         crate::history::data::canonical_commit_envelope::schema_carrier::RecordedBranchSchemaImage,
@@ -141,7 +144,7 @@ pub(crate) fn capture_with(
 fn observation(
     original: &OriginalEmptySchemaObservation,
     image: fn(
-        &crate::branch::RelationalBranchRootSchemaAuthority,
+        &crate::branch::root::schema::RelationalBranchRootSchemaAuthority,
         &ExecutionRequest<'_, '_>,
     ) -> Result<
         crate::history::data::canonical_commit_envelope::schema_carrier::RecordedBranchSchemaImage,

@@ -4,11 +4,11 @@ use crate::durability::data::*;
 use crate::durability::medium::RelationalDurableMemberLocator;
 use worth_execution::{ExecutionOrderedMap, ExecutionRequest};
 pub(super) struct CheckpointDraftMetadata<'a> {
-    pub(super) branches: &'a crate::branch::CheckpointBranchMetadata,
+    pub(super) branches: &'a crate::branch::registry::CheckpointBranchMetadata,
     pub(super) identity: &'a DurableRecordIdentityState,
-    pub(super) indexes: &'a crate::runtime::OriginalCheckpointIndexes,
+    pub(super) indexes: &'a crate::runtime::state::subsystems::indexing::OriginalCheckpointIndexes,
     pub(super) symbol_frontier: u32,
-    pub(super) through: crate::branch::RelationalBranchTransitionSequence,
+    pub(super) through: crate::branch::transition::sequence::RelationalBranchTransitionSequence,
 }
 pub(super) fn assemble(
     source: &CheckpointDraftMetadata<'_>,

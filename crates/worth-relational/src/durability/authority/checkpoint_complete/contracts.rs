@@ -1,6 +1,6 @@
 //! The existing mirror contract projection is copied under its actual final owner.
 use super::Denial;
-use crate::branch::RelationalBranchRootSchemaAuthority;
+use crate::branch::root::schema::RelationalBranchRootSchemaAuthority;
 use crate::durability::data::RelationalCheckpointManifestDraft;
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::{AspectShape, PortableAspectContract};

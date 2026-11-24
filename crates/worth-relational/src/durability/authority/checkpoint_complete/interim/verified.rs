@@ -8,7 +8,7 @@ use crate::durability::{
     checkpoint_admission::EncodedAdmissionRow,
     source_initial_inputs::schema_catalog::ReadmittedSourceSchemaCatalog,
 };
-use crate::history::{RelationalCommitArtifact, RetainedCanonicalIndex};
+use crate::history::commit::{RelationalCommitArtifact, RetainedCanonicalIndex};
 use std::sync::{Arc, Weak};
 use worth_execution::{
     ExecutionArray, ExecutionImmutableBytes, ExecutionOrderedMap, ExecutionRequest,
@@ -19,15 +19,16 @@ pub(super) struct FrozenMemoryOriginals {
     pub(super) current: FrozenCurrentCheckpointMetadata,
     pub(super) artifacts: ExecutionArray<Arc<RelationalCommitArtifact>>,
     pub(super) symbols: crate::symbols::data::StringInterner,
-    pub(super) mirror: crate::runtime::PartitionEdition,
+    pub(super) mirror:
+        crate::runtime::state::subsystems::storage::partition_edition::PartitionEdition,
     pub(super) schemas: Option<Arc<ReadmittedSourceSchemaCatalog>>,
-    pub(super) transitions: crate::branch::RelationalBranchTransitionSequence,
+    pub(super) transitions: crate::branch::transition::sequence::RelationalBranchTransitionSequence,
     pub(super) owner: Weak<crate::runtime::RelationalRuntimeState>,
     pub(super) coordinate: worth_foundational::CanonicalDigestId,
 }
 pub(super) struct VerifiedMemoryProjection {
     pub(super) originals: ExecutionArray<crate::history::data::PositionedCanonicalCommit>,
-    pub(super) current: crate::branch::CheckpointBranchMetadata,
+    pub(super) current: crate::branch::registry::CheckpointBranchMetadata,
     pub(super) rows: ExecutionArray<EncodedAdmissionRow>,
     pub(super) roots: ExecutionImmutableBytes,
     pub(super) artifacts: ExecutionArray<Arc<RelationalCommitArtifact>>,

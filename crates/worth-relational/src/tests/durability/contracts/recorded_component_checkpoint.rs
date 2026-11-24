@@ -94,7 +94,7 @@ fn recover(
     medium: &Arc<OwnedTestDurableMedium>,
 ) -> (
     RelationalRuntime,
-    crate::durability::authority::RecoveredRelationalRuntimeAuthority,
+    crate::durability::authority::recovered_runtime::RecoveredRelationalRuntimeAuthority,
 ) {
     let mut runtime = durable_runtime_for_medium(medium);
     let plan = medium

@@ -1,6 +1,7 @@
 //! Read owner-resident original meaning without claiming durable source custody.
 use super::observed_memory_commit::ObservedRelationalMemoryCommit;
-use super::{DurabilityAuthority, RelationalAssociatedEffectRefusal as Refusal};
+use super::RelationalAssociatedEffectRefusal as Refusal;
+use crate::durability::authority::runtime_access::DurabilityAuthority;
 use crate::history::data::RelationalCommitReceipt;
 
 impl DurabilityAuthority<'_> {

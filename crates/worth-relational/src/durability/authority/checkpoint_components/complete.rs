@@ -1,7 +1,7 @@
 //! Controlled exact component DATA/custody; never mints operational basis.
 mod data;
 use super::*;
-use crate::branch::{CheckpointBranchMetadata, CheckpointComponentDescriptorView};
+use crate::branch::{basis::CheckpointComponentDescriptorView, registry::CheckpointBranchMetadata};
 use crate::durability::data::RelationalNativeCheckpointCaptureDenial as Stop;
 use crate::history::retention::{
     RelationalBranchRetentionBinding, RelationalObservationRetentionObligation,
@@ -93,7 +93,7 @@ pub(in crate::durability) fn capture_complete(
         let (root, binding) = source
             .snapshot(cell, life.posture)
             .map_err(|cause| match cause {
-                crate::branch::CheckpointBranchMetadataCaptureDenial::Request(cause) => {
+                crate::branch::registry::CheckpointBranchMetadataCaptureDenial::Request(cause) => {
                     Stop::Request(cause)
                 }
                 _ => corrupt("current component observation changed").into(),

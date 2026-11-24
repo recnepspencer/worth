@@ -1,5 +1,6 @@
 //! Genuine native installation, performed publication and raw protected oracle.
 use crate::branch::AdmittedRelationalBranchBasis;
+use crate::durability::authority::recovered_runtime::RecoveredRelationalRuntimeAuthority;
 use crate::durability::data::RelationalNativeCheckpoint;
 use crate::identity::data::{EntityId, KindId, PartitionId};
 use crate::indexes::data::{
@@ -138,7 +139,7 @@ pub(super) fn activation(id: EntityId) -> RecoveredCheckpointProgramActivationUp
 pub(super) fn activation_proof(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
-    recovered: &crate::durability::authority::RecoveredRelationalRuntimeAuthority,
+    recovered: &RecoveredRelationalRuntimeAuthority,
     basis: &AdmittedRelationalBranchBasis,
     owner: &worth_proof::InstalledApplicationPublicationOwner,
     id: EntityId,

@@ -1,19 +1,13 @@
-use std::collections::BTreeSet;
-
-use crate::capabilities::HistorySource;
 use crate::history::data::CanonicalCommitEnvelope;
-use crate::history::data::{BranchId, CommitId};
 use crate::replay::data::ReplayObservableSurface;
-use crate::runtime::RelationalRuntime;
 
 use super::super::derived_index_surface::{
     derived_index_surface_is_promised, DERIVED_INDEX_SURFACE,
 };
 
 pub(in crate::replay) fn promised_replay_surfaces(
-    runtime: &RelationalRuntime,
+    snapshot_is_authoritative: bool,
     original: &CanonicalCommitEnvelope,
-    original_closure: &[CommitId],
     recovered: Option<&CanonicalCommitEnvelope>,
 ) -> Vec<ReplayObservableSurface> {
     let mut surfaces = vec![
@@ -22,7 +16,7 @@ pub(in crate::replay) fn promised_replay_surfaces(
         ReplayObservableSurface::History,
         ReplayObservableSurface::BranchHead,
     ];
-    if snapshot_surface_is_authoritative(runtime, original, original_closure) {
+    if snapshot_is_authoritative {
         surfaces.push(ReplayObservableSurface::Snapshot);
     }
     if original.has_lineage_authority()
@@ -39,18 +33,4 @@ pub(in crate::replay) fn promised_replay_surfaces(
         surfaces.push(DERIVED_INDEX_SURFACE);
     }
     surfaces
-}
-
-fn snapshot_surface_is_authoritative(
-    history: &impl HistorySource,
-    envelope: &CanonicalCommitEnvelope,
-    closure: &[CommitId],
-) -> bool {
-    if envelope.branch_context != BranchId("main".to_string()) {
-        return false;
-    }
-    !history.has_committed_version_at_or_before_outside_closure(
-        envelope.commit.version_id,
-        &closure.iter().copied().collect::<BTreeSet<_>>(),
-    )
 }

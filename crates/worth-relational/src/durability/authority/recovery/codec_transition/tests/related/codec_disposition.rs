@@ -75,7 +75,7 @@ fn cold_retirement_requires_every_sibling_group_before_route_eligibility() {
             repeated.publication = foreign;
         }
         entry
-            .envelope_mut_for_test(execution)
+            .positioned_envelope_mut_for_test(execution)
             .required_output_codec_retirements
             .push(std::sync::Arc::new(repeated));
         assert!(
@@ -116,7 +116,7 @@ fn cold_retirement_requires_every_sibling_group_before_route_eligibility() {
         );
         if matches!(defect, Some(ClaimDefect::SiblingKind)) {
             let sibling = entry
-                .envelope_mut_for_test(execution)
+                .positioned_envelope_mut_for_test(execution)
                 .required_output_codec_retirements
                 .iter_mut()
                 .find(|event| event.meaning.family == "native.closed.producer")
@@ -127,7 +127,7 @@ fn cold_retirement_requires_every_sibling_group_before_route_eligibility() {
         if matches!(defect, Some(ClaimDefect::RevalidationWrite)) {
             // An actual read demand cannot authorize an equal-payload patch.
             entry
-                .envelope_mut_for_test(execution)
+                .positioned_envelope_mut_for_test(execution)
                 .patch
                 .authoritative_record_patches
                 .push(hidden_write.clone());
@@ -136,7 +136,10 @@ fn cold_retirement_requires_every_sibling_group_before_route_eligibility() {
             required.extend(entry.revision_symbol_references.iter().copied());
             // Keep the hostile claim structurally current: its actual source
             // values retain their original native symbol meanings.
-            entry.envelope_mut_for_test(execution).symbol_texts.entries = required
+            entry
+                .positioned_envelope_mut_for_test(execution)
+                .symbol_texts
+                .entries = required
                 .iter()
                 .map(|symbol| {
                     decoded
@@ -262,7 +265,7 @@ pub(super) fn cold_retired_route(
             .unwrap();
         let event = std::sync::Arc::make_mut(
             &mut entry
-                .envelope_mut_for_test(execution)
+                .positioned_envelope_mut_for_test(execution)
                 .required_output_codec_retirements[0],
         );
         if incomplete {
@@ -342,5 +345,5 @@ fn edit_publication(
         .iter_mut()
         .find(|entry| entry.commit.commit_id == commit)
         .unwrap();
-    edit(entry.envelope_mut_for_test(execution));
+    edit(entry.positioned_envelope_mut_for_test(execution));
 }

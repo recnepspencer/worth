@@ -1,11 +1,11 @@
 #[cfg(test)]
 use crate::capabilities::DurabilityRead;
-use crate::durability::access::retained_recovery_plan::retained_recovery_plan;
 use crate::durability::data::{RecoveryPlan, RecoveryVerificationMode};
+use crate::runtime::durability_access::retained_recovery_plan::retained_recovery_plan;
 use crate::runtime::RelationalRuntime;
 
 pub struct DurabilityAccess<'runtime> {
-    pub(in crate::durability) runtime: &'runtime RelationalRuntime,
+    pub(super) runtime: &'runtime RelationalRuntime,
 }
 
 impl<'runtime> DurabilityAccess<'runtime> {
@@ -26,7 +26,7 @@ impl<'runtime> DurabilityAccess<'runtime> {
         let plan = self
             .recovery_plan_from_source(execution, source, verification_mode)
             .map_err(Denial::Recovery)?;
-        PreparedRelationalHomeRecovery::prepare(self.runtime, plan, execution)
+        PreparedRelationalHomeRecovery::prepare(self.runtime.runtime_instance_id(), plan, execution)
     }
 
     pub(crate) fn new(runtime: &'runtime RelationalRuntime) -> Self {

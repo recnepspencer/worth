@@ -4,11 +4,9 @@
 //! one with identical contracts under a different version label, is refused
 //! before service: only a durable schema transition changes what it serves.
 
-use crate::capabilities::SchemaVersionSource;
 use crate::durability::data::{
     DurabilityError, RecoveryAuthorityContinuityMismatch, RecoveryFailureClass,
 };
-use crate::runtime::RelationalRuntime;
 use crate::schema::data::SchemaAuthoritySnapshot;
 
 /// Refuse `rebuilt` unless its declared registry is exactly the schema
@@ -16,21 +14,10 @@ use crate::schema::data::SchemaAuthoritySnapshot;
 ///
 /// Cost: one authority snapshot of the declared registry, O(kinds).
 pub(super) fn require_declared_schema_of_recovered_main(
-    rebuilt: &RelationalRuntime,
+    recorded: &crate::branch::root::schema::RelationalBranchRootSchemaAuthority,
+    declared_registry: &crate::schema::data::RelationalSchemaRegistry,
 ) -> Result<(), DurabilityError> {
-    let main = rebuilt.main_branch_identity();
-    let root = rebuilt
-        .history
-        .branch_cell(main.branch_id())
-        .and_then(|cell| cell.root())
-        .ok_or_else(|| {
-            DurabilityError::new(
-                RecoveryFailureClass::ReplayFailure,
-                "the recovered main branch has no head root to name its schema",
-            )
-        })?;
-    let recorded = root.schema_authority();
-    let declared = rebuilt.config.schema.registry.authority_snapshot();
+    let declared = declared_registry.authority_snapshot();
     if recorded.matches(&declared) {
         return Ok(());
     }
@@ -47,7 +34,7 @@ pub(super) fn require_declared_schema_of_recovered_main(
     .with_authority_continuity_mismatch(
         RecoveryAuthorityContinuityMismatch::SchemaRegistryShape {
             expected_primary_schema_version: recorded_registry.primary_schema_version_id(),
-            found_primary_schema_version: rebuilt.primary_schema_version_id(),
+            found_primary_schema_version: declared_registry.primary_schema_version_id(),
             expected_entity_kind_count: recorded_snapshot.entity_kinds.len(),
             found_entity_kind_count: declared.entity_kinds.len(),
             expected_relation_kind_count: recorded_snapshot.relation_kinds.len(),

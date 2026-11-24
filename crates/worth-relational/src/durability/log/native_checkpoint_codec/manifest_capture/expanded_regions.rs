@@ -5,7 +5,7 @@ pub(super) fn restore_images(
     lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     images: &[PartitionCheckpointImage],
-    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
+    schema: &crate::branch::root::schema::RelationalBranchRootSchemaAuthority,
     kinds: &crate::storage::residency::CheckpointRegionKindImages,
 ) -> Result<BTreeMap<crate::identity::data::PartitionId, PartitionState>, RelationalRecoveryStop> {
     let contracts =
@@ -33,7 +33,7 @@ pub(super) fn capture_partitions(
     lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     partitions: &BTreeMap<crate::identity::data::PartitionId, PartitionState>,
-    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
+    schema: &crate::branch::root::schema::RelationalBranchRootSchemaAuthority,
     schema_digest: [u8; 32],
     symbols: &crate::symbols::data::StringInterner,
     members: &mut BTreeMap<RelationalDurableMemberLocator, RelationalCheckpointMember>,

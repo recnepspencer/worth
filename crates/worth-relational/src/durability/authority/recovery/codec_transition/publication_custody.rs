@@ -5,25 +5,26 @@ use std::sync::Arc;
 /// this allocation carries one exact transition occurrence, never caller text.
 #[derive(Debug)]
 pub(crate) struct RecoveredCodecPublicationCustody {
-    pub(super) source: crate::branch::AdmittedRelationalBranchBasis,
+    pub(super) source: crate::branch::basis::AdmittedRelationalBranchBasis,
     pub(super) retirements: Vec<super::retirement_preparation::PreparedCodecRetirement>,
     pub(super) retirement_funding: Arc<worth_execution::ExecutionMemoryReservation>,
-    pub(super) activation: Arc<crate::runtime::RecoveredCheckpointProgramActivationUpdate>,
+    pub(super) activation:
+        Arc<crate::schema::data::program_activation::RecoveredCheckpointProgramActivationUpdate>,
     _memory: worth_execution::ExecutionMemoryReservation,
 }
 impl RecoveredCodecPublicationCustody {
     pub(crate) fn admits_source(
         &self,
-        source: &crate::branch::AdmittedRelationalBranchBasis,
+        source: &crate::branch::basis::AdmittedRelationalBranchBasis,
     ) -> bool {
         self.source.admission_identity() == source.admission_identity()
     }
     pub(super) fn new(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        source: &crate::branch::AdmittedRelationalBranchBasis,
+        source: &crate::branch::basis::AdmittedRelationalBranchBasis,
         target: &crate::schema::data::RelationalSchemaRegistry,
         retirement: &crate::history::data::OwnedCodecRetirementClosure,
-        activation: &crate::runtime::RecoveredCheckpointProgramActivationUpdate,
+        activation: &crate::schema::data::program_activation::RecoveredCheckpointProgramActivationUpdate,
         memory: worth_execution::ExecutionMemoryReservation,
     ) -> Result<Arc<Self>, crate::runtime::RelationalSchemaTransitionAdmissionDenial> {
         let (retirements, retirement_funding) = super::retirement_preparation::capture(

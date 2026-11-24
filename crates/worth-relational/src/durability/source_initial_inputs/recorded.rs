@@ -1,7 +1,9 @@
 //! Original producer attribution is DATA, distinct from operational schema authority.
 use serde::{Deserialize, Serialize};
 
-use crate::branch::{RelationalBranchLifecyclePosture, RelationalBranchVersion};
+use crate::branch::{
+    lifecycle::RelationalBranchLifecyclePosture, version::RelationalBranchVersion,
+};
 use worth_foundational::FoundationalBranchReferenceGeneration;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

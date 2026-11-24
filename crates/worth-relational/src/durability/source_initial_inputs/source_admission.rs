@@ -9,7 +9,8 @@ use worth_execution::{ExecutionImmutableBytes, ExecutionRequest};
 
 #[derive(Debug)]
 pub(crate) struct SourceOriginalInputs {
-    pub(crate) world_selection: Option<Arc<crate::durability::RelationalWorldSourceCatalog>>,
+    pub(crate) world_selection:
+        Option<Arc<crate::durability::home_world_catalog::RelationalWorldSourceCatalog>>,
     pub(crate) selected: Option<RelationalCompleteSourceArtifact>,
     pub(crate) current: Arc<InitialInputsImage>,
     pub(crate) covered: Option<Arc<InitialInputsImage>>,
@@ -21,7 +22,9 @@ pub(crate) fn readmit(
     current: ExecutionImmutableBytes,
     selected: Option<&RelationalCompleteSourceArtifact>,
     checkpoint: Option<&DurableCheckpoint>,
-    world_selection: Option<Arc<crate::durability::RelationalWorldSourceCatalog>>,
+    world_selection: Option<
+        Arc<crate::durability::home_world_catalog::RelationalWorldSourceCatalog>,
+    >,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<SourceOriginalInputs, Refusal> {
     let bytes = std::alloc::Layout::new::<[usize; 2]>()

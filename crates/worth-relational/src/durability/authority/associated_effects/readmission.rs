@@ -1,5 +1,6 @@
 //! Read the exact discovered source outside owner locks and match actual state.
 use super::*;
+use crate::durability::authority::runtime_access::DurabilityAuthority;
 
 impl DurabilityAuthority<'_> {
     pub fn readmit_associated_effect(

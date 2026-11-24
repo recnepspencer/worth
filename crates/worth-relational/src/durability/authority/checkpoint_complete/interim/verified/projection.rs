@@ -11,7 +11,7 @@ use worth_proof::NativeCheckpointOriginalsVerified;
 impl FrozenMemoryOriginals {
     pub(in crate::durability::authority::checkpoint_complete::interim) fn project(
         artifacts: ExecutionArray<Arc<RelationalCommitArtifact>>,
-        current: crate::branch::CheckpointBranchMetadata,
+        current: crate::branch::registry::CheckpointBranchMetadata,
         owner: &Weak<crate::runtime::RelationalRuntimeState>,
         manifest: &RelationalCheckpointManifest,
         originals: ReadmittedMemoryOriginals,

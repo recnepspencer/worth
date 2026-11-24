@@ -300,4 +300,4 @@ impl crate::transactions::data::outcomes::commit_result::CommitResult {
     }
 }
 
-mod court_doors_for_test;
+mod publication_custody_doors_for_test;

@@ -1,7 +1,8 @@
 //! Exact current cells and external obligations, retained by the actual capture.
 mod complete;
 use crate::branch::{
-    RelationalBranchBasisDescriptor, RelationalBranchRoot, RelationalBranchRootCheckpoint,
+    basis_descriptor::RelationalBranchBasisDescriptor, root::RelationalBranchRoot,
+    root_checkpoint::RelationalBranchRootCheckpoint,
 };
 use crate::durability::data::{
     DurabilityError, DurableBranchRootSchemaImage, RecoveryFailureClass,
@@ -21,7 +22,7 @@ pub(super) struct CapturedComponents {
     pub(super) empty: Vec<RelationalCheckpointEmptyComponent>,
     pub(super) empty_schemas: Vec<DurableBranchRootSchemaImage>,
     // The same actual observations outlive the original external lease release.
-    pub(super) held: Vec<crate::branch::AdmittedRelationalBranchBasis>,
+    pub(super) held: Vec<crate::branch::basis::AdmittedRelationalBranchBasis>,
 }
 
 pub(super) fn capture(runtime: &RelationalRuntime) -> Result<CapturedComponents, DurabilityError> {
@@ -35,7 +36,7 @@ pub(super) fn capture(runtime: &RelationalRuntime) -> Result<CapturedComponents,
         let root = cell
             .root()
             .ok_or_else(|| corrupt("current branch has no root"))?;
-        let descriptor = crate::branch::descriptor_for_cell(&cell, &root)
+        let descriptor = crate::branch::basis_admission::descriptor_for_cell(&cell, &root)
             .map_err(|cause| corrupt(format!("component observation: {cause:?}")))?;
         // Capture also runs through the actual pre-service/closing owner. It
         // retains this already-selected cell, without reopening user admission.
@@ -43,14 +44,15 @@ pub(super) fn capture(runtime: &RelationalRuntime) -> Result<CapturedComponents,
             .head_retention()
             .binding()
             .map_err(|cause| corrupt(format!("component retention binding: {cause:?}")))?;
-        let basis = crate::branch::issue_admitted_relational_branch_basis_with_retention(
-            descriptor.clone(),
-            cell.identity().clone(),
-            root.clone(),
-            cell.publication_cell(),
-            &binding,
-        )
-        .map_err(|cause| corrupt(format!("component capture custody: {cause:?}")))?;
+        let basis =
+            crate::branch::basis_admission::issue_admitted_relational_branch_basis_with_retention(
+                descriptor.clone(),
+                cell.identity().clone(),
+                root.clone(),
+                cell.publication_cell(),
+                &binding,
+            )
+            .map_err(|cause| corrupt(format!("component capture custody: {cause:?}")))?;
         let basis = cell
             .register_basis(basis)
             .map_err(|cause| corrupt(format!("component capture registration: {cause:?}")))?;

@@ -1,6 +1,9 @@
 //! Project original reference meaning, never a runtime-qualified representation.
 use super::Denial;
-use crate::branch::{RelationalBranchBasisDescriptor, RelationalBranchCellCheckpoint};
+use crate::branch::{
+    basis_descriptor::RelationalBranchBasisDescriptor,
+    reference_checkpoint_data::RelationalBranchCellCheckpoint,
+};
 use crate::durability::checkpoint_admission::recorded_reference::{
     observation, recorded_reference,
 };
@@ -39,7 +42,7 @@ pub(super) struct Component<'a> {
     reference: Reference<'a>,
     schema_commitment: CanonicalDigestId,
     visibility_commitment: CanonicalDigestId,
-    posture: crate::branch::RelationalBranchBasisPosture,
+    posture: crate::branch::basis_descriptor::RelationalBranchBasisPosture,
 }
 pub(super) fn component(descriptor: &RelationalBranchBasisDescriptor) -> Component<'_> {
     Component {

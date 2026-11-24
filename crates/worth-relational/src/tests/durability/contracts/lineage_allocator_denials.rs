@@ -19,12 +19,12 @@ fn tail_created_lineage_allocator_exhaustion_denies_before_replay() {
         )
         .unwrap();
     plan.tail_log[0]
-        .envelope_mut_for_test(execution)
+        .readmitted_envelope_mut_for_test(execution)
         .published_lineage_mut_for_test()
         .lineage_events_mut()[0]
         .targets[0] = crate::identity::data::LineageId(u64::MAX - 1);
     plan.tail_log[0]
-        .envelope_mut_for_test(execution)
+        .readmitted_envelope_mut_for_test(execution)
         .rebuild_lineage_basis_for_test();
 
     let recovered_medium = OwnedTestDurableMedium::new();

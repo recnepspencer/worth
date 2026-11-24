@@ -1,5 +1,5 @@
 //! Closed relation ownership does not authorize custom invariant or join changes.
-use crate::branch::AdmittedRelationalBranchBasis;
+use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::history::data::OwnedCodecRetirementClosure;
 use crate::indexes::data::DerivedIndexKind;
 use crate::runtime::{

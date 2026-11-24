@@ -170,8 +170,8 @@ fn reopen_cold_index_members(
 #[test]
 fn cold_checkpoint_mutable_index_snapshot_demand_and_install_preserves_carried_selection_and_postings(
 ) {
-    use crate::durability::RelationalRegionProbeStatus as Probe;
     use crate::indexes::data::BoundedIndexParityMode;
+    use crate::runtime::cold_residency_census::RelationalRegionProbeStatus as Probe;
     let host = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     let (producer, entity, changed, _stable, current, carried) =

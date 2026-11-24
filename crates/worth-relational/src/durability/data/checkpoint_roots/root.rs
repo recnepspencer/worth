@@ -1,5 +1,5 @@
 use super::super::RelationalCheckpointRegion;
-use crate::branch::RelationalBranchBasisDescriptor;
+use crate::branch::basis_descriptor::RelationalBranchBasisDescriptor;
 use crate::execution::RelationalExecutionDenialCause as Cause;
 use crate::history::data::CommitId;
 use serde::{Deserialize, Serialize};

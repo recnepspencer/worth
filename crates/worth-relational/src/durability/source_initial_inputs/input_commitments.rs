@@ -5,7 +5,7 @@ use crate::durability::canonical_commit_artifact::input_commitment::{
     position_leaf, CanonicalInputDigestPrefix,
 };
 use crate::durability::data::DurableBranchRootSchemaImage;
-use crate::history::RelationalCommitIndexEntry;
+use crate::history::commit::RelationalCommitIndexEntry;
 use worth_execution::{ExecutionOrderedMap, ExecutionRequest};
 
 pub(super) struct OriginalInputCommitments {

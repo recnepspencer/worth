@@ -1,16 +1,18 @@
 //! Native owns the concrete original effect and every admitted root/pin.
 use super::{ReadmittedRelationalAssociatedEffect, RefusedRelationalRecordedComponent};
-use crate::branch::{AdmittedRelationalBranchBasis, RelationalBranchBasisDenial};
+use crate::branch::{
+    basis::AdmittedRelationalBranchBasis, basis_denial::RelationalBranchBasisDenial,
+};
 use crate::history::retention::RelationalBranchRetentionLease;
 
 mod admission;
 mod retirement;
 mod retirement_gate_doors_for_test;
-#[doc(hidden)]
-pub use retirement_gate_doors_for_test::RelationalRetentionGateTrialForTest;
 pub use retirement::{
     RelationalRecoveredPublicationRetirement, RetiredRelationalRecoveredPublication,
 };
+#[doc(hidden)]
+pub use retirement_gate_doors_for_test::RelationalRetentionGateTrialForTest;
 mod successor;
 pub use successor::RelationalRecordedSuccessorRefusal;
 mod subject;
@@ -60,7 +62,8 @@ impl RelationalRecoveredPublicationCustody {
     /// from receipt fields. The caller owns backing for the copied branch name.
     pub fn readmitted_commit_identity(
         &self,
-    ) -> Result<crate::history::RelationalCommitIdentity, RelationalRecordedSuccessorRefusal> {
+    ) -> Result<crate::history::commit::RelationalCommitIdentity, RelationalRecordedSuccessorRefusal>
+    {
         self.successor
             .commit_identity()
             .ok_or(RelationalRecordedSuccessorRefusal::SubjectMismatch)

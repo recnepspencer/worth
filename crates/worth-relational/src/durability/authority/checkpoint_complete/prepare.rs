@@ -98,7 +98,7 @@ pub(super) fn prepare(
             indexes: &frozen.indexes,
             symbol_frontier: frozen.symbol_frontier,
             through: frozen.original.branches.transitions().last().map_or(
-                crate::branch::RelationalBranchTransitionSequence(0),
+                crate::branch::transition::sequence::RelationalBranchTransitionSequence(0),
                 |entry| entry.positioned.sequence(),
             ),
         },

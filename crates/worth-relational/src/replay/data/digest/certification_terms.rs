@@ -1,5 +1,6 @@
 use crate::diagnostics::data::RelationalDiagnosticArtifact;
-use crate::publication::cdc::data::{SubscriberContinuationSummary, SubscriberRecoveryDecision};
+use crate::publication::cdc::data::subscriber_contract::SubscriberContinuationSummary;
+use crate::publication::cdc::data::subscriber_decision::SubscriberRecoveryDecision;
 use crate::publication::patch::data::PublishedAuthoritativePatchEnvelope;
 use crate::schema::data::{
     DescriptorSemanticsVersion, SchemaBoundaryFingerprint, SchemaContinuationDescriptor,

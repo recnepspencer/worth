@@ -1,4 +1,4 @@
-use crate::branch::RelationalBranchRootCheckpoint;
+use crate::branch::root_checkpoint::RelationalBranchRootCheckpoint;
 use crate::capabilities::RuntimeIdentitySource;
 use crate::durability::data::DurabilityError;
 use crate::history::data::{PositionedCanonicalCommit, RelationalCommitReceipt};
@@ -7,33 +7,37 @@ use crate::runtime::RelationalRuntime;
 pub(super) struct CapturedCheckpointBasis {
     pub(super) recorded_components: std::collections::BTreeMap<
         crate::history::data::CommitId,
-        Vec<crate::branch::RelationalBranchBasisDescriptor>,
+        Vec<crate::branch::basis_descriptor::RelationalBranchBasisDescriptor>,
     >,
     pub(super) retained_empty_components:
         Vec<crate::durability::data::RelationalCheckpointEmptyComponent>,
     pub(super) empty_component_schemas: Vec<crate::durability::data::DurableBranchRootSchemaImage>,
-    pub(super) component_holds: Vec<crate::branch::AdmittedRelationalBranchBasis>,
+    pub(super) component_holds: Vec<crate::branch::basis::AdmittedRelationalBranchBasis>,
     pub(super) latest_commit: Option<RelationalCommitReceipt>,
     pub(super) selected_directory:
         Option<std::sync::Arc<crate::durability::data::RelationalCheckpointDirectory>>,
-    pub(super) branch_cells: Vec<crate::branch::RelationalBranchCellCheckpoint>,
+    pub(super) branch_cells:
+        Vec<crate::branch::reference_checkpoint_data::RelationalBranchCellCheckpoint>,
     pub(super) branch_lifecycle: Vec<crate::durability::data::DurableBranchLifecycleImage>,
     pub(super) retired_branch_names: Vec<crate::history::data::BranchId>,
-    pub(super) covered_transitions: crate::branch::RelationalBranchTransitionSequence,
+    pub(super) covered_transitions:
+        crate::branch::transition::sequence::RelationalBranchTransitionSequence,
     pub(super) branch_roots: Vec<RelationalBranchRootCheckpoint>,
     pub(super) record_identity: CapturedRecordIdentity,
     pub(super) envelopes: Vec<PositionedCanonicalCommit>,
     pub(super) envelope_cells:
-        Vec<std::sync::Arc<crate::history::RelationalCommitEnvelopeResidency>>,
-    pub(super) journal_index: Vec<crate::history::RelationalCommitIndexEntry>,
+        Vec<std::sync::Arc<crate::history::commit::RelationalCommitEnvelopeResidency>>,
+    pub(super) journal_index: Vec<crate::history::commit::RelationalCommitIndexEntry>,
     pub(super) lineage_basis: crate::lineage::data::LineageCheckpointDigestBasis,
     pub(super) commit_descriptors: std::collections::BTreeMap<
         crate::history::data::CommitId,
-        crate::branch::RelationalBranchRootDescriptor,
+        crate::branch::target::RelationalBranchRootDescriptor,
     >,
-    pub(super) partitions: crate::runtime::PartitionEdition,
+    pub(super) partitions:
+        crate::runtime::state::subsystems::storage::partition_edition::PartitionEdition,
     pub(super) aspect_contracts: crate::schema::data::AspectContractPlanCatalog,
-    pub(super) mirror_schema_authority: Option<crate::branch::RelationalBranchRootSchemaAuthority>,
+    pub(super) mirror_schema_authority:
+        Option<crate::branch::root::schema::RelationalBranchRootSchemaAuthority>,
     pub(super) lineage_nodes: Vec<crate::lineage::data::LineageNode>,
     pub(super) relation_lineages: Vec<(
         crate::identity::data::RelationId,
@@ -41,7 +45,8 @@ pub(super) struct CapturedCheckpointBasis {
     )>,
     pub(super) lineage_events: Vec<crate::durability::data::RelationalCheckpointLineageEventRow>,
     pub(super) lineage_event_pages_resident: bool,
-    pub(super) lineage_event_leases: Vec<crate::runtime::ResidentLineageEventPage>,
+    pub(super) lineage_event_leases:
+        Vec<crate::runtime::state::subsystems::lineage::ResidentLineageEventPage>,
     pub(super) guarded_member_sources: std::collections::BTreeMap<
         crate::durability::medium::RelationalDurableMemberLocator,
         (
@@ -49,7 +54,7 @@ pub(super) struct CapturedCheckpointBasis {
             std::sync::Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
         ),
     >,
-    pub(super) index_state: crate::runtime::IndexingState,
+    pub(super) index_state: crate::runtime::state::subsystems::indexing::IndexingState,
     pub(super) index_original: Option<
         std::sync::Arc<super::super::derived_index_artifacts::cold_checkpoint::DeferredIndexImage>,
     >,

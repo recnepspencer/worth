@@ -1,5 +1,5 @@
 //! Capture must preserve every selected leaf fact and name a disagreeing region.
-use crate::branch::RelationalRootRegionCheckpoint;
+use crate::branch::root_checkpoint::RelationalRootRegionCheckpoint;
 use crate::durability::data::{DurabilityError, RecoveryFailureClass, RelationalCheckpointRegion};
 use crate::errors::data::{ErrorOperation, SuggestedFix};
 use crate::storage::data::{

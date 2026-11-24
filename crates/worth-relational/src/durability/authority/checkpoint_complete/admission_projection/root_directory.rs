@@ -68,7 +68,7 @@ struct Header<'a> {
     schema: CanonicalDigestId,
     regions: &'a [RelationalCheckpointRegion],
 }
-struct Components<'a>(&'a [crate::branch::RelationalBranchBasisDescriptor]);
+struct Components<'a>(&'a [crate::branch::basis_descriptor::RelationalBranchBasisDescriptor]);
 impl Serialize for Components<'_> {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         let mut sequence = serializer.serialize_seq(Some(self.0.len()))?;

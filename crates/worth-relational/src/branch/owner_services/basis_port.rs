@@ -18,7 +18,7 @@ impl RelationalBranchBasisPort {
     pub fn capture_interim_bootstrap_component(
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
-        continuation: &crate::durability::authority::NativeInterimBootstrapContinuation,
+        continuation: &crate::durability::authority::checkpoint_complete::interim::bootstrap::NativeInterimBootstrapContinuation,
         capture: &crate::durability::authority::CapturedNativeInterimAdmission,
     ) -> Result<
         crate::durability::authority::CapturedNativeInterimComponent,
@@ -30,8 +30,8 @@ impl RelationalBranchBasisPort {
     pub fn install_interim_bootstrap_receiver(
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
-        continuation: &crate::durability::authority::NativeInterimBootstrapContinuation,
-        receiver: &crate::durability::authority::AdmittedNativeInterimReceiver,
+        continuation: &crate::durability::authority::checkpoint_complete::interim::bootstrap::NativeInterimBootstrapContinuation,
+        receiver: &crate::durability::authority::checkpoint_complete::interim::receiver::AdmittedNativeInterimReceiver,
         basis: &AdmittedRelationalBranchBasis,
     ) -> Result<(), crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal>
     {
@@ -70,7 +70,7 @@ impl RelationalBranchBasisPort {
     pub fn readmit_interim_memory_component(
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
-        receiver: &crate::durability::authority::AdmittedNativeInterimReceiver,
+        receiver: &crate::durability::authority::checkpoint_complete::interim::receiver::AdmittedNativeInterimReceiver,
         component: &crate::durability::authority::CapturedNativeInterimComponent,
     ) -> Result<
         crate::branch::ObservedRelationalMemoryComponent,

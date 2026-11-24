@@ -5,7 +5,7 @@ use crate::durability::data::{
     NativeCheckpointDirectoryEdge, NativeDirectoryRetirementHandoff, RelationalCheckpointDirectory,
 };
 use crate::durability::medium::RelationalCheckpointAcknowledgementDenial as Ack;
-use crate::history::RelationalCommitIndexEntry;
+use crate::history::commit::RelationalCommitIndexEntry;
 use std::sync::{Arc, Weak};
 use worth_execution::{ExecutionOrderedMap, ExecutionRequest};
 
@@ -84,7 +84,7 @@ impl CheckpointAdmissionOwner {
             .ok_or(Refusal::OwnerUnavailable)?;
         let count = owner.count()?;
         let levels = u64::from(usize::BITS - count.leading_zeros()) + 1;
-        let bytes = crate::history::RetainedCanonicalIndex::allocation_bytes(&entry.commit)
+        let bytes = crate::history::commit::RetainedCanonicalIndex::allocation_bytes(&entry.commit)
             .ok_or(Refusal::CapacityOverflow)?;
         let units = levels
             .checked_mul(22)

@@ -1,6 +1,6 @@
 //! Canonical images of the exact retained original schema DATA union.
 use super::source::{FrozenOriginalInputs, OriginalCanonicalCommit};
-use crate::branch::RelationalBranchRootSchemaAuthority;
+use crate::branch::root::schema::RelationalBranchRootSchemaAuthority;
 use crate::durability::data::{
     CheckpointSchemaImages, DurableBranchRootSchemaImage,
     RelationalNativeCheckpointCaptureDenial as Denial,
@@ -22,8 +22,8 @@ impl<'a> CompleteSchemas<'a> {
         frames: &'a [OriginalCanonicalCommit],
         components: impl Iterator<
             Item = (
-                &'a crate::branch::RelationalBranchBasisDescriptor,
-                &'a Arc<crate::branch::RelationalBranchRoot>,
+                &'a crate::branch::basis_descriptor::RelationalBranchBasisDescriptor,
+                &'a Arc<crate::branch::root::RelationalBranchRoot>,
             ),
         >,
         request: &ExecutionRequest<'_, '_>,

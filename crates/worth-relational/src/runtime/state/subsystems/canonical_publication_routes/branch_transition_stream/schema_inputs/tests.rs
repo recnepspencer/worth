@@ -2,7 +2,9 @@
 
 use super::*;
 use crate::branch::lifecycle::RelationalBranchLifecyclePosture;
+use crate::branch::transition::original_inputs::RetainedBranchTransition;
 use crate::branch::transition::{PositionedBranchTransition, RelationalBranchTransitionSequence};
+use crate::durability::source_initial_inputs::producer_roster::roster_bytes;
 use crate::schema::data::RelationalSchemaRegistry;
 use crate::tests::support::runtime_with_test_schema;
 use worth_execution::{CancellationSource, SerialMemoryBudget, SerialRequest};

@@ -1,5 +1,6 @@
 //! One real installed publication creates all three outputs and both relations.
 use super::super::fixture::{self, *};
+use crate::durability::authority::recovered_runtime::RecoveredRelationalRuntimeAuthority;
 use crate::identity::data::{EntityId, KindId, PartitionId, RelationId};
 use crate::indexes::data::*;
 use crate::mvcc::{RelationalPublicationOutcome, RelationalTransactionIntent};
@@ -278,7 +279,7 @@ pub(super) fn recover(
     world: &RelatedWorld,
 ) -> (
     RelationalRuntime,
-    crate::durability::authority::RecoveredRelationalRuntimeAuthority,
+    RecoveredRelationalRuntimeAuthority,
     RelationalInitialSchemaInstallationReceipt,
 ) {
     let (mut target, receipt) = installed(2);
@@ -295,7 +296,7 @@ pub(super) fn recover(
 pub(super) fn candidate(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     target: &mut RelationalRuntime,
-    recovered: &mut crate::durability::authority::RecoveredRelationalRuntimeAuthority,
+    recovered: &mut RecoveredRelationalRuntimeAuthority,
     activation_id: EntityId,
     control: crate::mvcc::RelationalOperationControl,
     extra: Option<WorkerIntentBatch>,

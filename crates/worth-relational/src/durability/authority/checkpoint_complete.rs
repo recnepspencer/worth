@@ -9,7 +9,7 @@ mod covered_prefix;
 mod current_metadata;
 mod destination_members;
 mod draft;
-pub(in crate::durability::authority) mod interim;
+pub(crate) mod interim;
 mod metadata;
 mod original_image;
 mod prepare;
@@ -23,8 +23,7 @@ use crate::durability::data::{
     RelationalNativeCheckpoint, RelationalNativeCheckpointCaptureDenial as Denial,
 };
 pub use interim::{
-    AdmittedNativeInterimReceiver, CapturedNativeInterimAdmission, CapturedNativeInterimComponent,
-    CapturedNativeInterimOrigin, NativeInterimBootstrapContinuation,
+    CapturedNativeInterimAdmission, CapturedNativeInterimComponent, CapturedNativeInterimOrigin,
 };
 
 /// The all-root producer's strong result, retaining its original read and ACK custody.
@@ -54,10 +53,12 @@ impl CompleteRelationalNativeCheckpoint {
     }
 }
 
-fn root_stop(cause: crate::branch::RelationalBranchRootCaptureDenial) -> Denial {
+fn root_stop(
+    cause: crate::branch::root_capture_denial::RelationalBranchRootCaptureDenial,
+) -> Denial {
     match cause {
-        crate::branch::RelationalBranchRootCaptureDenial::Request(cause) => Denial::Request(cause),
-        crate::branch::RelationalBranchRootCaptureDenial::StorageUnavailable(cause) => cause.into(),
+        crate::branch::root_capture_denial::RelationalBranchRootCaptureDenial::Request(cause) => Denial::Request(cause),
+        crate::branch::root_capture_denial::RelationalBranchRootCaptureDenial::StorageUnavailable(cause) => cause.into(),
         cause => Denial::Durability(crate::durability::data::DurabilityError::new(
             crate::durability::data::RecoveryFailureClass::CorruptCanonicalArtifact,
             format!("original all-root reconstruction disagrees: {cause:?}"),
@@ -65,14 +66,6 @@ fn root_stop(cause: crate::branch::RelationalBranchRootCaptureDenial) -> Denial 
     }
 }
 
-impl super::DurabilityAuthority<'_> {
-    pub(crate) fn complete_native_checkpoint_with_policy(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        placement: crate::durability::data::RelationalCheckpointArtifactPolicy<'_>,
-    ) -> Result<CompleteRelationalNativeCheckpoint, Denial> {
-        prepare::prepare(self.runtime, execution, placement)
-    }
-}
+mod runtime_capture;
 #[cfg(test)]
 mod tests;

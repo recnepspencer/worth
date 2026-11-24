@@ -1,11 +1,10 @@
 //! Genuine receiver installation precedes the single prepared source replay.
 use super::*;
-use crate::durability::authority::{
-    DurabilityRecoveryAuthority, RecoveredRelationalRuntimeAuthority,
-};
-use crate::runtime::{
-    RecoveryOutcome, RelationalHomeProgramCatalogReadmissionSource,
-    RelationalInitialSchemaInstallationReceipt,
+use crate::durability::authority::recovered_runtime::DurabilityRecoveryAuthority;
+use crate::durability::authority::recovered_runtime::RecoveredRelationalRuntimeAuthority;
+use crate::{
+    durability::data::RecoveryOutcome, runtime::RelationalHomeProgramCatalogReadmissionSource,
+    runtime::RelationalInitialSchemaInstallationReceipt,
 };
 use worth_proof::AdmittedHomeProgramTransitionCatalog;
 
@@ -46,7 +45,7 @@ impl DurabilityRecoveryAuthority<'_> {
                 .graph
                 .bind_directories(&mut prepared.state.plan, request)
                 .map_err(Denial::Recovery)?;
-            crate::durability::access::rebind_home_receiver_plan(
+            crate::runtime::durability_access::rebind_home_receiver_plan(
                 self.runtime,
                 &mut prepared.state.plan,
             );
@@ -63,9 +62,10 @@ impl DurabilityRecoveryAuthority<'_> {
         } = *prepared.state;
         // Ordinary recovery admission remains authoritative. This is schema
         // DATA reuse, never an "already verified" bypass.
-        let admitted = super::super::admit_recovery_or_emit(self.runtime, plan)
-            .map_err(|cause| Refusal::Recovery(cause.into()))?
-            .with_prepared_home_schemas(graph);
+        let admitted =
+            super::super::runtime_installation::admit_recovery_or_emit(self.runtime, plan)
+                .map_err(|cause| Refusal::Recovery(cause.into()))?
+                .with_prepared_home_schemas(graph);
         match transition {
             None => self
                 .recover_admitted_with_authority(request, admitted)

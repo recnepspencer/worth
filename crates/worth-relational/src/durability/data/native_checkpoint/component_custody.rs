@@ -1,5 +1,5 @@
 //! Shared actual capture custody survives clones and interrupted acknowledgement.
-use crate::branch::AdmittedRelationalBranchBasis;
+use crate::branch::basis::AdmittedRelationalBranchBasis;
 use std::sync::{Arc, Mutex};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 

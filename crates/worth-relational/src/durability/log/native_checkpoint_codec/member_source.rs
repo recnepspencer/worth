@@ -34,7 +34,8 @@ impl RelationalDurableColdSource for InlineCheckpointSource {
             crate::durability::medium::RelationalDurableReadBounds {
                 selected_checkpoint: true,
                 canonical: PatchStreamPosition(0),
-                transitions: crate::branch::RelationalBranchTransitionSequence(0),
+                transitions:
+                    crate::branch::transition::sequence::RelationalBranchTransitionSequence(0),
             },
             Box::new(()),
         ))

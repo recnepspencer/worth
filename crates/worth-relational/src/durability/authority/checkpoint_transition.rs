@@ -6,10 +6,10 @@ pub use outcome::{
     RecoveredCheckpointTransitionError, RefusedRecoveredCheckpointTransition,
 };
 
-use crate::branch::RelationalBranchBasisDescriptor;
+use crate::branch::basis_descriptor::RelationalBranchBasisDescriptor;
+use crate::durability::authority::recovered_runtime::DurabilityRecoveryAuthority;
+use crate::durability::authority::recovered_runtime::RecoveredRelationalRuntimeAuthority;
 use crate::mvcc::{PreparedRelationalCommitCandidate, RelationalPublicationOutcome};
-
-use super::{DurabilityRecoveryAuthority, RecoveredRelationalRuntimeAuthority};
 
 impl DurabilityRecoveryAuthority<'_> {
     /// Publishes a candidate prepared against an exact recovered image and

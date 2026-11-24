@@ -54,7 +54,7 @@ impl FrozenMemoryOriginals {
                         .schemas
                         .as_ref()
                         .ok_or(Denial::OriginalAuthorityUnavailable)?;
-                    crate::history::OriginalCanonicalInputs {
+                    crate::history::commit::OriginalCanonicalInputs {
                         prestate_schema: schemas
                             .rows
                             .get(&recorded.prestate_schema)

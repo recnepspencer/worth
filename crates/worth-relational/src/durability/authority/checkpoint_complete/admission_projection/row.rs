@@ -9,7 +9,7 @@ pub(in crate::durability::authority::checkpoint_complete) fn encode_original(
     envelope: &crate::history::data::CanonicalCommitEnvelope,
     position: crate::publication::patch::data::PatchStreamPosition,
     payload_digest: CanonicalDigestId,
-    descriptor: &crate::branch::RelationalBranchRootDescriptor,
+    descriptor: &crate::branch::target::RelationalBranchRootDescriptor,
     carrier: CanonicalDigestId,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<EncodedAdmissionRow, Denial> {
@@ -31,9 +31,10 @@ pub(in crate::durability::authority::checkpoint_complete) fn encode_original(
         .checked_advance()
         .ok_or(Denial::OriginalAuthorityUnavailable)?;
     let created = created_patches(&envelope.patch.authoritative_record_patches, request)?;
-    let correctness = match crate::branch::RelationalRootCorrectnessIndex::AuthoritativeFallback {
-        crate::branch::RelationalRootCorrectnessIndex::AuthoritativeFallback => 0,
-    };
+    let correctness =
+        match crate::branch::root::RelationalRootCorrectnessIndex::AuthoritativeFallback {
+            crate::branch::root::RelationalRootCorrectnessIndex::AuthoritativeFallback => 0,
+        };
     let groups = [
         encode(envelope.semantic_result(), request)?,
         encode(
@@ -42,7 +43,7 @@ pub(in crate::durability::authority::checkpoint_complete) fn encode_original(
                 branch: &envelope.branch_context,
                 generation,
                 truth,
-                posture: crate::branch::RelationalBranchBasisPosture::Live,
+                posture: crate::branch::basis_descriptor::RelationalBranchBasisPosture::Live,
             },
             request,
         )?,
@@ -90,15 +91,15 @@ struct Axes<'a> {
     predecessor: reference::Predecessor<'a>,
     branch: &'a crate::history::data::BranchId,
     generation: worth_foundational::FoundationalBranchReferenceGeneration,
-    truth: crate::branch::RelationalBranchVersion,
-    posture: crate::branch::RelationalBranchBasisPosture,
+    truth: crate::branch::version::RelationalBranchVersion,
+    posture: crate::branch::basis_descriptor::RelationalBranchBasisPosture,
 }
 #[derive(Serialize)]
 struct Coordinates<'a> {
     receipt: &'a crate::history::data::RelationalCommitReceipt,
     position: crate::publication::patch::data::PatchStreamPosition,
     digest: CanonicalDigestId,
-    roots: &'a crate::branch::RelationalBranchRootDescriptor,
+    roots: &'a crate::branch::target::RelationalBranchRootDescriptor,
 }
 #[derive(Serialize)]
 struct Schema {

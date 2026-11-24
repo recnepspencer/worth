@@ -10,7 +10,7 @@ crates/worth-relational/src/durability/log/native_checkpoint_codec/expanded_chec
 crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore.rs
 # Closed corruption recorders rebuild an untrusted image, never admitted state.
 crates/worth-relational/src/durability/data/native_checkpoint/roster_corruption.rs
-crates/worth-relational/src/runtime/state/runtime_state/court_doors_for_test.rs
+crates/worth-relational/src/runtime/state/runtime_state/runtime_court_doors_for_test.rs
 # Initial publication mints only in the no-prior-root or no-prior-region branch.
 crates/worth-relational/src/branch/root_capture.rs
 crates/worth-relational/src/branch/root_capture_preparation.rs

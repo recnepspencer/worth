@@ -1,36 +1,35 @@
-//! The recovery plan for a home whose history lives in a durable medium.
-//!
-//! The medium's owner selects the checkpoint, the journal tail and the branch
-//! transition tail; this file readmits all three before any becomes
-//! authority. Every disagreement refuses: a damaged artifact, a gap, or a
-//! checkpoint filed under the wrong coverage never shortens the recovered
-//! history.
+//! Admit the selected medium's checkpoint and contiguous journal tails.
 
-use crate::capabilities::RuntimeConfigSource;
-use crate::durability::access::{
-    authority_continuity_for_envelopes, descriptor_semantics_version_for_envelopes,
-};
 use crate::durability::canonical_commit_artifact::{
     RelationalCanonicalCommitArtifact, RelationalCanonicalCommitArtifactRefusal,
 };
 use crate::durability::data::{
-    DurabilityError, DurableCheckpoint, RecoveryFailureClass, RecoveryPlan,
-    RecoveryVerificationMode, RelationalRecoveryStop,
+    DurabilityError, DurableCheckpoint, RecoveryBranchTransitions, RecoveryFailureClass,
+    RelationalRecoveryStop,
 };
+use crate::durability::medium::RelationalDurableColdSource;
+use crate::durability::migration::ReadmittedCanonicalCommit;
 use crate::durability::published_medium::{
     RelationalDurableCheckpointSource, RelationalDurableRecoverySource,
 };
-
-use crate::durability::migration::ReadmittedCanonicalCommit;
 use crate::publication::patch::data::PatchStreamPosition;
-use crate::runtime::RelationalRuntime;
+use std::sync::Arc;
 
-pub(super) fn medium_recovery_plan(
+pub(crate) struct ReadmittedMediumRecovery {
+    pub(crate) checkpoint: Option<DurableCheckpoint>,
+    pub(crate) tail: Vec<ReadmittedCanonicalCommit>,
+    pub(crate) branch_transitions: RecoveryBranchTransitions,
+    pub(crate) original_source: Option<
+        Arc<crate::durability::source_initial_inputs::source_admission::SourceOriginalInputs>,
+    >,
+    pub(crate) cold_source: Arc<dyn RelationalDurableColdSource>,
+    pub(crate) source_memory: Option<worth_execution::ExecutionMemoryReservation>,
+}
+
+pub(crate) fn readmit_medium_recovery(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
     source: RelationalDurableRecoverySource,
-    verification_mode: RecoveryVerificationMode,
-) -> Result<RecoveryPlan, RelationalRecoveryStop> {
+) -> Result<ReadmittedMediumRecovery, RelationalRecoveryStop> {
     let parts = source.into_parts();
     if parts
         .checkpoint
@@ -75,7 +74,7 @@ pub(super) fn medium_recovery_plan(
         .collect::<Result<Vec<_>, _>>()?;
     let bounds = super::medium_transition_tail::TransitionTailBounds {
         covered_transitions: checkpoint.as_ref().map_or(
-            crate::branch::RelationalBranchTransitionSequence(0),
+            crate::branch::transition::RelationalBranchTransitionSequence(0),
             |checkpoint| checkpoint.coverage.up_to_branch_transition,
         ),
         covered_position: covered,
@@ -86,38 +85,14 @@ pub(super) fn medium_recovery_plan(
         &bounds,
         &parts.transitions,
     )?;
-    let checkpoint_envelopes = checkpoint
-        .as_ref()
-        .map(|checkpoint| checkpoint.envelopes.as_slice())
-        .unwrap_or(&[]);
-    let descriptor_semantics_version =
-        descriptor_semantics_version_for_envelopes(checkpoint_envelopes, &tail);
-    let mut continuity = authority_continuity_for_envelopes(runtime, checkpoint_envelopes, &tail);
-    if let Some(checkpoint) = &checkpoint {
-        super::native_checkpoint_recovery_plan::bind_source_runtime_identity(
-            runtime,
-            checkpoint,
-            &mut continuity,
-        );
-    }
-    let restore_authoritative_envelope_commit_ids = tail
-        .iter()
-        .map(|entry| entry.envelope().commit.commit_id)
-        .collect();
-    let mut plan = RecoveryPlan::new(
-        runtime.runtime_config().clone(),
+    Ok(ReadmittedMediumRecovery {
         checkpoint,
         tail,
-        crate::durability::data::RecoveryBranchTransitions::Contiguous(transitions),
-        continuity,
-        verification_mode,
-        descriptor_semantics_version,
-        restore_authoritative_envelope_commit_ids,
-        Some(parts.cold_source),
-    )
-    .with_commit_strategy_executors(runtime.commit_strategy_executor_registry().clone());
-    plan.original_source = original_source;
-    Ok(plan)
+        branch_transitions: RecoveryBranchTransitions::Contiguous(transitions),
+        original_source,
+        cold_source: parts.cold_source,
+        source_memory: parts._source_memory,
+    })
 }
 
 /// Decode the checkpoint and require its own coverage to be the position and

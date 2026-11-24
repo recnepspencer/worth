@@ -115,10 +115,7 @@ pub(crate) enum CanonicalPublicationRecordError {
     Durable(crate::durability::medium::RelationalDurableStepStop),
 }
 
-pub(crate) enum CanonicalCheckpointAdmissionError {
-    PublicationInFlight,
-    PerformedPublicationRequiresSettlement(CommitId),
-}
+pub(crate) use crate::durability::checkpoint_selection_denial::CanonicalCheckpointAdmissionError;
 
 pub(crate) struct PreparedCanonicalPublicationRoute {
     routes: Arc<RelationalCanonicalPublicationRoutes>,

@@ -15,7 +15,6 @@ pub use source_close::{
     PreparedRelationalSourceClose, RelationalSourceClose, RelationalSourceCloseDenial,
     RelationalSourceCloseProgress, RetiredSourceRelationalAllocation,
 };
-mod court_doors_for_test;
 pub(crate) mod indexing;
 mod merge_authority;
 mod owner_lifecycle;
@@ -26,6 +25,7 @@ pub(crate) mod preparation_runtime;
 mod prepared_close;
 pub(crate) mod publication_lifecycle;
 mod record_allocation_frontier;
+mod runtime_court_doors_for_test;
 pub use crate::publication::close_custody::{
     RelationalPublicationCompanionCustody, RelationalPublicationCustodyHolders,
     RelationalPublicationRegistryCustody,

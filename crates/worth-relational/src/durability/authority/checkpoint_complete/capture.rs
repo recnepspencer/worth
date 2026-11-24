@@ -2,9 +2,9 @@
 use super::super::checkpoint_components::CapturedCompleteComponents;
 use super::current_metadata::FrozenCurrentCheckpointMetadata;
 use super::{source::FrozenOriginalInputs, Denial};
-use crate::branch::CheckpointBranchMetadata;
+use crate::branch::registry::CheckpointBranchMetadata;
 use crate::durability::data::DurableRecordIdentityState;
-use crate::runtime::{OriginalCheckpointIndexes, RelationalRuntime};
+use crate::runtime::{state::subsystems::indexing::OriginalCheckpointIndexes, RelationalRuntime};
 use worth_execution::ExecutionRequest;
 
 pub(super) struct FrozenCompleteMetadata {

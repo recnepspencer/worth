@@ -6,13 +6,16 @@ mod grouping;
 pub(super) enum CheckpointMirror<'a> {
     CurrentMainRoot,
     Substrate {
-        edition: &'a crate::runtime::PartitionEdition,
-        schema: &'a crate::branch::RelationalBranchRootSchemaAuthority,
+        edition:
+            &'a crate::runtime::state::subsystems::storage::partition_edition::PartitionEdition,
+        schema: &'a crate::branch::root::schema::RelationalBranchRootSchemaAuthority,
         carrier: CanonicalDigestId,
     },
 }
 use super::{branches::BranchImages, roots::CapturedRoots, schemas::CompleteSchemas};
-use crate::branch::{RelationalBranchBasisDescriptor, RelationalBranchRoot};
+use crate::branch::{
+    basis_descriptor::RelationalBranchBasisDescriptor, root::RelationalBranchRoot,
+};
 use crate::durability::{data::*, medium::RelationalDurableMemberLocator};
 use crate::history::data::BranchId;
 use crate::storage::residency::{RelationalCheckpointRegionPublication, RelationalRegionResidency};

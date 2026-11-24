@@ -1,8 +1,8 @@
 //! Capture-issued component DATA cannot be minted from a decoded description.
 use super::*;
-use crate::branch::{
-    ObservedRelationalMemoryComponent, RecordedRelationalComponentReference,
-    RecordedRelationalComponentTarget, RelationalRecordedComponentRefusal,
+use crate::branch::recorded_basis::{
+    refusal::RelationalRecordedComponentRefusal, ObservedRelationalMemoryComponent,
+    RecordedRelationalComponentReference, RecordedRelationalComponentTarget,
 };
 
 #[derive(Clone, Debug)]
@@ -33,7 +33,7 @@ impl CapturedNativeInterimAdmission {
             .map_err(|cause| RelationalRecordedComponentRefusal::Source(cause.into()))?;
         if !current.is_current_component(captured.description().descriptor()) {
             return Err(RelationalRecordedComponentRefusal::Basis(
-                crate::branch::RelationalBranchBasisDenial::WrongImmutableTarget,
+                crate::branch::basis_denial::RelationalBranchBasisDenial::WrongImmutableTarget,
             ));
         }
         Ok(captured)
@@ -46,7 +46,7 @@ impl CapturedNativeInterimAdmission {
     ) -> Result<CapturedNativeInterimComponent, RelationalRecordedComponentRefusal> {
         if !Weak::ptr_eq(&self.owner, &runtime.state_binding()) {
             return Err(RelationalRecordedComponentRefusal::Basis(
-                crate::branch::RelationalBranchBasisDenial::OwnerUnavailable,
+                crate::branch::basis_denial::RelationalBranchBasisDenial::OwnerUnavailable,
             ));
         }
         let captured = match component.capture_commit_id() {
@@ -67,12 +67,16 @@ impl CapturedNativeInterimAdmission {
                     self.source.canonical.get(&commit_id).ok_or(
                         RelationalRecordedComponentRefusal::CanonicalMismatch { commit_id },
                     )?;
-                super::receiver::receipt_lookup_work(&index.commit, &self.source, request)
-                    .map_err(|cause| {
-                        RelationalRecordedComponentRefusal::Source(
-                            crate::durability::data::RelationalRecoveryStop::AdmissionImage(cause),
-                        )
-                    })?;
+                super::origin_readmission::receipt_lookup_work(
+                    &index.commit,
+                    &self.source,
+                    request,
+                )
+                .map_err(|cause| {
+                    RelationalRecordedComponentRefusal::Source(
+                        crate::durability::data::RelationalRecoveryStop::AdmissionImage(cause),
+                    )
+                })?;
                 let ordinal = index
                     .position
                     .0
@@ -88,14 +92,13 @@ impl CapturedNativeInterimAdmission {
         };
         let description = runtime.export_captured_memory_component(request, component, captured)?;
         if let RecordedRelationalComponentTarget::Canonical(target) = description.target() {
-            super::receiver::receipt_lookup_work(target.receipt(), &self.source, request).map_err(
-                |cause| match cause {
+            super::origin_readmission::receipt_lookup_work(target.receipt(), &self.source, request)
+                .map_err(|cause| match cause {
                     Refusal::Request(cause) => RelationalRecordedComponentRefusal::Request(cause),
                     cause => RelationalRecordedComponentRefusal::Source(
                         crate::durability::data::RelationalRecoveryStop::AdmissionImage(cause),
                     ),
-                },
-            )?;
+                })?;
             let index = self
                 .source
                 .canonical

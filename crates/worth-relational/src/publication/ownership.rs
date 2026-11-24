@@ -9,7 +9,6 @@ pub(crate) mod cold_pairing_court;
 pub(crate) mod locality_court;
 pub use locality_court::CurrentOwnershipLocalityForTest;
 mod completion;
-pub(crate) mod corruption;
 pub(crate) mod evidence;
 pub(crate) mod merge_custody;
 pub(crate) mod metadata_guard_court;

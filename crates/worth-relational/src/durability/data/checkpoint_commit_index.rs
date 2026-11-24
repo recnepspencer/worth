@@ -1,8 +1,8 @@
 //! Intrinsic storage for the fixed canonical wire index, separate from cell custody.
 use crate::execution::RelationalExecutionDenialCause as Cause;
 use crate::history::{
-    data::{RelationalAssociationDiscovery, RelationalCommitReceipt},
-    RelationalCommitIndexEntry,
+    commit::RelationalCommitIndexEntry, data::RelationalAssociationDiscovery,
+    data::RelationalCommitReceipt,
 };
 use serde::{Deserialize, Serialize};
 use std::{alloc::Layout, sync::Arc};
@@ -18,7 +18,7 @@ pub(crate) struct CheckpointCommitIndex(Option<Arc<Backing>>);
 
 pub(crate) struct CanonicalIndexSource<'a> {
     pub(crate) receipt: &'a RelationalCommitReceipt,
-    pub(crate) root: &'a crate::branch::RelationalBranchRootDescriptor,
+    pub(crate) root: &'a crate::branch::target::RelationalBranchRootDescriptor,
     pub(crate) position: crate::publication::patch::data::PatchStreamPosition,
     pub(crate) digest: [u8; 32],
     pub(crate) schema_version: crate::schema::data::SchemaVersionId,

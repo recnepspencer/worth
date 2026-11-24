@@ -1,11 +1,12 @@
 //! Freeze original producer DATA under the actual configuration/publication epoch.
 use crate::durability::data::RelationalNativeCheckpointCaptureDenial as Denial;
+use crate::durability::source_initial_inputs::producer_roster::{
+    OriginalBranchSchemaInputs, OriginalBranchSchemaInputsDenial,
+};
 use crate::history::commit::{CapturedOriginalCanonicalInputs, RelationalCommitArtifact};
 use crate::history::data::CanonicalCommitEnvelope;
 use crate::publication::patch::data::PatchStreamPosition;
-use crate::runtime::{
-    OriginalBranchSchemaInputs, OriginalBranchSchemaInputsDenial, RelationalRuntime,
-};
+use crate::runtime::RelationalRuntime;
 use std::sync::Arc;
 use worth_execution::{
     ExecutionArray, ExecutionOrderedMap, ExecutionRequest, ExecutionRequestArrayBuilder,

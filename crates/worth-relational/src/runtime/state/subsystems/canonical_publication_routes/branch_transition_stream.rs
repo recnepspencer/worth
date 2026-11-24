@@ -31,7 +31,9 @@ mod retained_log;
 mod schema_inputs;
 #[path = "branch_transition_stream/source_recovery.rs"]
 mod source_recovery;
-pub(crate) use schema_inputs::{OriginalBranchSchemaInputs, OriginalBranchSchemaInputsDenial};
+pub(crate) use crate::durability::source_initial_inputs::producer_roster::{
+    OriginalBranchSchemaInputs, OriginalBranchSchemaInputsDenial,
+};
 
 #[derive(Debug, Default)]
 pub(super) struct BranchTransitionStream {

@@ -3,41 +3,14 @@
 use std::sync::Arc;
 
 use crate::branch::transition::original_inputs::{
-    OriginalEmptySchemaInstallation, OriginalEmptySchemaObservation, RetainedBranchTransition,
+    OriginalEmptySchemaInstallation, OriginalEmptySchemaObservation,
 };
-use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, WorkCeilingDenial};
+use worth_execution::ExecutionRequest;
 
 use super::super::RelationalCanonicalPublicationRoutes;
-
-/// An independently admitted capture roster. Cloning existing schema/record
-/// Arcs does not copy their backing or retroactively fund ordinary producers.
-#[derive(Debug)]
-pub(crate) struct OriginalBranchSchemaInputs {
-    pub(crate) birth: Option<OriginalEmptySchemaObservation>,
-    pub(crate) installation: Option<OriginalEmptySchemaInstallation>,
-    pub(crate) accepted_initial_inputs:
-        Option<Arc<crate::durability::source_initial_inputs::image::InitialInputsImage>>,
-    transitions: Vec<RetainedBranchTransition>,
-    _memory: Option<ExecutionMemoryReservation>,
-}
-
-impl OriginalBranchSchemaInputs {
-    pub(crate) fn transitions(&self) -> &[RetainedBranchTransition] {
-        &self.transitions
-    }
-}
-
-#[derive(Debug)]
-pub(crate) enum OriginalBranchSchemaInputsDenial {
-    SizeOverflow,
-    Request(WorkCeilingDenial),
-    OriginalPrefixMismatch,
-}
-
-pub(super) fn roster_bytes(capacity: usize) -> Option<u64> {
-    let layout = std::alloc::Layout::array::<RetainedBranchTransition>(capacity).ok()?;
-    u64::try_from(layout.size()).ok()
-}
+use crate::durability::source_initial_inputs::producer_roster::{
+    capture_producer_roster, OriginalBranchSchemaInputs, OriginalBranchSchemaInputsDenial,
+};
 
 impl RelationalCanonicalPublicationRoutes {
     /// A freshly constructed recovery receiver does not own its source's C0.
@@ -101,24 +74,13 @@ impl RelationalCanonicalPublicationRoutes {
         let count = state
             .log
             .partition_point(|entry| entry.positioned.sequence() <= state.head);
-        let bytes = roster_bytes(count).ok_or(OriginalBranchSchemaInputsDenial::SizeOverflow)?;
-        let memory = request
-            .reserve_retained_memory(bytes)
-            .map_err(OriginalBranchSchemaInputsDenial::Request)?;
-        let mut transitions = Vec::with_capacity(count);
-        for entry in &state.log[..count] {
-            request
-                .consult()
-                .map_err(OriginalBranchSchemaInputsDenial::Request)?;
-            transitions.push(entry.clone());
-        }
-        Ok(OriginalBranchSchemaInputs {
-            birth: state.birth.clone(),
-            installation: state.installation.clone(),
-            accepted_initial_inputs: state.initial_inputs.clone(),
-            transitions,
-            _memory: memory,
-        })
+        capture_producer_roster(
+            state.birth.as_ref(),
+            state.installation.as_ref(),
+            state.initial_inputs.as_ref(),
+            &state.log[..count],
+            request,
+        )
     }
 
     /// Immutable source lineage follows the same original-input capture epoch.

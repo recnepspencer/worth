@@ -4,7 +4,7 @@ use super::{
     Denial,
 };
 use crate::{
-    branch::CheckpointBranchMetadata, durability::data::DurableRecordIdentityState,
+    branch::registry::CheckpointBranchMetadata, durability::data::DurableRecordIdentityState,
     runtime::RelationalRuntime,
 };
 use worth_execution::ExecutionRequest;
@@ -30,15 +30,15 @@ impl FrozenCurrentCheckpointMetadata {
             .history
             .capture_checkpoint_branch_metadata(request, runtime_name)
             .map_err(|cause| match cause {
-                crate::branch::CheckpointBranchMetadataCaptureDenial::Request(cause) => {
+                crate::branch::registry::CheckpointBranchMetadataCaptureDenial::Request(cause) => {
                     Denial::Request(cause)
                 }
-                crate::branch::CheckpointBranchMetadataCaptureDenial::SizeOverflow => {
+                crate::branch::registry::CheckpointBranchMetadataCaptureDenial::SizeOverflow => {
                     Denial::Request(
                         crate::execution::RelationalExecutionDenialCause::MemoryOverflow,
                     )
                 }
-                crate::branch::CheckpointBranchMetadataCaptureDenial::SourceChanged => {
+                crate::branch::registry::CheckpointBranchMetadataCaptureDenial::SourceChanged => {
                     Denial::OriginalAuthorityUnavailable
                 }
             })?;

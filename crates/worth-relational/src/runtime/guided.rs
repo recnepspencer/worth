@@ -1,9 +1,9 @@
-use crate::durability::access::DurabilityAccess;
 use crate::history::HistoryAccess;
 use crate::inspection::InspectionAccess;
 use crate::merge::MergeAccess;
 use crate::publication::PublicationSurface;
 use crate::replay::ReplayAccess;
+use crate::runtime::durability_access::DurabilityAccess;
 use crate::runtime::RelationalRuntime;
 use crate::simulation::{SimulationAccess, SimulationAuthority};
 use crate::validation::InvariantAccess;

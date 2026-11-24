@@ -1,12 +1,12 @@
 use crate::capabilities::{RuntimeConfigSource, RuntimeIdentitySource};
-use crate::durability::access::{
-    authority_continuity_for_envelopes, descriptor_semantics_version_for_envelopes,
-};
 use crate::durability::data::{
     DurableCheckpoint, RecoveryAuthorityContinuityMismatch, RecoveryAuthorityParity, RecoveryPlan,
     RecoveryVerificationMode, RecoveryVerificationOutcome,
 };
 use crate::replay::data::ReplayVerificationLayer;
+use crate::runtime::durability_access::{
+    authority_continuity_for_envelopes, descriptor_semantics_version_for_envelopes,
+};
 use crate::runtime::RelationalRuntime;
 
 pub(crate) fn native_checkpoint_recovery_plan(
