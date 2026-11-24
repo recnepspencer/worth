@@ -57,7 +57,7 @@ fn omit<T: serde::Serialize, C: serde::Serialize>(
 }
 #[test]
 fn recorded_component_checkpoint_header_tamper_refuses_without_defaults_or_foreign_binding() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     let runtime = runtime_with_test_schema();
     create_entity(execution, &runtime, "actual-header-source");

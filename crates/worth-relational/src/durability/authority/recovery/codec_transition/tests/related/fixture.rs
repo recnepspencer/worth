@@ -298,7 +298,7 @@ pub(super) fn candidate(
     target: &mut RelationalRuntime,
     recovered: &mut RecoveredRelationalRuntimeAuthority,
     activation_id: EntityId,
-    control: crate::mvcc::RelationalOperationControl,
+    control: crate::runtime::operation_control::RelationalOperationControl,
     extra: Option<WorkerIntentBatch>,
 ) -> Result<
     crate::mvcc::PreparedRelationalCommitCandidate,

@@ -351,7 +351,7 @@ pub(super) struct AuthoredCheckpointWorld<'host, 'scope> {
 pub(super) fn with_authored_checkpoint_world<R>(
     observe: impl for<'host, 'scope> FnOnce(AuthoredCheckpointWorld<'host, 'scope>) -> R,
 ) -> R {
-    let original = crate::test_execution_policy::serial_request();
+    let original = crate::execution::test_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&original);
     let world = world(&execution, true);
     let checkpoint = capture(&execution, &world.runtime);

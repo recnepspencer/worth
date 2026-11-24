@@ -1,7 +1,9 @@
 //! The installed event recipe alone selects the predecessor and its step changes.
 use super::*;
 use crate::derived_relation::{
-    evaluation::SourceRead, DerivedRelationAdjacency, DerivedRelationReads, StructuralSource,
+    evaluation::SourceRead,
+    read::{DerivedRelationAdjacency, DerivedRelationReads},
+    StructuralSource,
 };
 use crate::identity::data::KindId;
 use crate::validation::data::structural_read::StructuralRelationRecord;

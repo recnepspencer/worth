@@ -1,6 +1,6 @@
 //! Current-loan direct occurrences retain exact nested parent issuance.
 use super::*;
-use crate::derived_relation::{DerivedRelationData, DerivedRelationReadShape};
+use crate::derived_relation::{read::DerivedRelationData, DerivedRelationReadShape};
 use crate::validation::data::structural_read::StructuralRelationRecord;
 
 /// Flat actual ancestor records avoid recursive destruction. Backing drops

@@ -44,7 +44,7 @@ impl CapturedNativeInterimAdmission {
         component: &ObservedRelationalMemoryComponent,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<CapturedNativeInterimComponent, RelationalRecordedComponentRefusal> {
-        if !Weak::ptr_eq(&self.owner, &runtime.state_binding()) {
+        if !self.owner.same_origin(&runtime.services.origin_identity()) {
             return Err(RelationalRecordedComponentRefusal::Basis(
                 crate::branch::basis_denial::RelationalBranchBasisDenial::OwnerUnavailable,
             ));

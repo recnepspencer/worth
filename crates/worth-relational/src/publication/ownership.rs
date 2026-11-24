@@ -14,6 +14,7 @@ pub(crate) mod merge_custody;
 pub(crate) mod metadata_guard_court;
 pub(crate) mod read;
 pub(crate) mod record;
+pub(crate) mod record_payload;
 pub(crate) mod selection_pairing;
 pub(crate) use completion::complete;
 pub(crate) use evidence::PublicationEvidence;

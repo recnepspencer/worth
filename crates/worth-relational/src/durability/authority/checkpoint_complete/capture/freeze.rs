@@ -32,15 +32,19 @@ pub(in super::super) fn capture(
                 branches,
                 components,
                 identity,
-                indexes,
-                symbol_frontier,
                 main_cell,
             } = FrozenCurrentCheckpointMetadata::capture(
-                runtime,
+                &runtime.history,
+                &runtime.record_identity,
                 request,
                 &configuration.config.execution.runtime_name,
                 &configuration.config.history.main_branch,
             )?;
+            let indexes = runtime.indexes.checkpoint_inputs_for_request(request)?;
+            let symbol_frontier = runtime
+                .services
+                .symbols
+                .with_read(|symbols| symbols.identity_frontier());
             Ok::<_, Denial>(FrozenCompleteMetadata {
                 original,
                 branches,

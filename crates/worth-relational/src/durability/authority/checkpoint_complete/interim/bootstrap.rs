@@ -8,6 +8,7 @@ use crate::branch::{
 use crate::durability::authority::recovered_runtime::DurabilityRecoveryAuthority;
 use crate::durability::authority::recovered_runtime::RecoveredRelationalRuntimeAuthority;
 use std::sync::Mutex;
+use std::sync::Weak;
 
 #[derive(Debug)]
 enum State {

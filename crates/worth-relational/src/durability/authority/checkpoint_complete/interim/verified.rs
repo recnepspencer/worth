@@ -1,7 +1,7 @@
 //! Funded Memory freeze, original-frame verification and image projection.
 mod frames;
 pub(super) use frames::ReadmittedMemoryOriginals;
-mod freeze;
+pub(in crate::durability::authority::checkpoint_complete::interim) mod freeze;
 mod projection;
 use super::super::{current_metadata::FrozenCurrentCheckpointMetadata, Denial};
 use crate::durability::{
@@ -9,7 +9,7 @@ use crate::durability::{
     source_initial_inputs::schema_catalog::ReadmittedSourceSchemaCatalog,
 };
 use crate::history::commit::{RelationalCommitArtifact, RetainedCanonicalIndex};
-use std::sync::{Arc, Weak};
+use std::sync::Arc;
 use worth_execution::{
     ExecutionArray, ExecutionImmutableBytes, ExecutionOrderedMap, ExecutionRequest,
 };
@@ -17,13 +17,16 @@ use worth_proof::AuthorityMarker;
 
 pub(super) struct FrozenMemoryOriginals {
     pub(super) current: FrozenCurrentCheckpointMetadata,
+    pub(super) indexes: crate::durability::derived_index_artifacts::FrozenIndexCheckpoint,
+    pub(super) symbol_frontier: u32,
     pub(super) artifacts: ExecutionArray<Arc<RelationalCommitArtifact>>,
     pub(super) symbols: crate::symbols::data::StringInterner,
     pub(super) mirror:
         crate::runtime::state::subsystems::storage::partition_edition::PartitionEdition,
     pub(super) schemas: Option<Arc<ReadmittedSourceSchemaCatalog>>,
     pub(super) transitions: crate::branch::transition::sequence::RelationalBranchTransitionSequence,
-    pub(super) owner: Weak<crate::runtime::RelationalRuntimeState>,
+    pub(super) owner:
+        crate::runtime::state::subsystems::services::sequence::origin::RelationalRuntimeOrigin,
     pub(super) coordinate: worth_foundational::CanonicalDigestId,
 }
 pub(super) struct VerifiedMemoryProjection {
@@ -32,7 +35,8 @@ pub(super) struct VerifiedMemoryProjection {
     pub(super) rows: ExecutionArray<EncodedAdmissionRow>,
     pub(super) roots: ExecutionImmutableBytes,
     pub(super) artifacts: ExecutionArray<Arc<RelationalCommitArtifact>>,
-    pub(super) owner: Weak<crate::runtime::RelationalRuntimeState>,
+    pub(super) owner:
+        crate::runtime::state::subsystems::services::sequence::origin::RelationalRuntimeOrigin,
     pub(super) canonical:
         ExecutionOrderedMap<crate::history::data::CommitId, RetainedCanonicalIndex>,
 }

@@ -1,7 +1,7 @@
 //! Field reads carry the actual current-loan membership ticket.
 use super::super::projection::PreparedManagedIndexRelationRead;
 use super::*;
-use crate::derived_relation::{DerivedRelationData, DerivedRelationReadShape as Shape};
+use crate::derived_relation::{read::DerivedRelationData, DerivedRelationReadShape as Shape};
 use crate::graph_member::NativeMemberKey;
 
 pub(super) struct OrderedStepSupport {

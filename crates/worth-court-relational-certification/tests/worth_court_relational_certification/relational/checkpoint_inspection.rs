@@ -1,18 +1,33 @@
 //! Independent authenticated-frame rewrites exercise the codec's closed schema.
-use super::*;
-use crate::durability::log::native_checkpoint_codec::{
-    checkpoint_wire::CheckpointWire, CHECKPOINT_MAGIC,
+use crate::messagepack_value_spans::{fields, sequence};
+use std::collections::BTreeMap;
+use worth_execution::ExecutionRequest;
+use worth_relational::facade::{
+    durability::{
+        CheckpointRecordIdentity, RecordAllocationClass, RecoveryFailureClass,
+        RelationalDurableMemberLocator, RelationalNativeCheckpoint, RelationalRecoveryStop,
+    },
+    history::BranchId,
+    mvcc::RelationalTransactionIntent,
 };
-use crate::tests::support::*;
+use worth_testkit_relational::{
+    aspect_storage::publications::{changed_entities, release_test_commit_snapshot},
+    durable_publication::{batch_create, memory_runtime},
+    maintenance::relation_laws::{request, World},
+    ordinary_records::create_entity,
+};
+
+const CHECKPOINT_MAGIC: &[u8] = b"WORTH-REL-CHK23\n";
+
 fn original(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> (RelationalNativeCheckpoint, [CheckpointRecordIdentity; 2]) {
-    let runtime = runtime_with_test_schema();
-    let entity = create_entity(execution, &runtime, "inspected-record");
-    let target = create_entity(execution, &runtime, "inspected-target");
-    let relation = create_relation(execution, &runtime, entity, target, "inspected-link");
+    let world = World::new(execution, 1);
+    let entity = world.nodes[0];
+    let relation = world.edges[0].0;
     (
-        runtime
+        world
+            .runtime
             .durability_authority()
             .native_checkpoint(
                 execution,
@@ -46,7 +61,6 @@ fn map_bytes(fields: BTreeMap<String, Vec<u8>>) -> Vec<u8> {
 }
 fn map(bytes: &[u8], edit: impl FnOnce(&mut BTreeMap<String, Vec<u8>>)) -> Vec<u8> {
     let mut value = fields(bytes)
-        .unwrap()
         .into_iter()
         .map(|(k, v)| (k, v.to_vec()))
         .collect();
@@ -55,18 +69,12 @@ fn map(bytes: &[u8], edit: impl FnOnce(&mut BTreeMap<String, Vec<u8>>)) -> Vec<u
 }
 /// Edit just one row while preserving every unrelated value's raw encoding.
 fn first_row(bytes: &[u8], edit: impl FnOnce(&mut BTreeMap<String, Vec<u8>>)) -> Vec<u8> {
-    let start = match bytes[0] {
-        0x91..=0x9f => 1,
-        0xdc => 3,
-        0xdd => 5,
-        marker => panic!("expected a nonempty array, got {marker}"),
-    };
-    let mut cursor = Cursor::new(&bytes[start..]);
-    let _: serde::de::IgnoredAny = rmp_serde::from_read(&mut cursor).unwrap();
-    let end = start + usize::try_from(cursor.position()).unwrap();
+    let row = sequence(bytes)[0];
+    let start = row.as_ptr() as usize - bytes.as_ptr() as usize;
+    let end = start + row.len();
     [
         bytes[..start].to_vec(),
-        map(&bytes[start..end], edit),
+        map(row, edit),
         bytes[end..].to_vec(),
     ]
     .concat()
@@ -76,7 +84,7 @@ fn rewritten(
     allocator: bool,
     edit: impl FnOnce(&mut BTreeMap<String, Vec<u8>>),
 ) -> Vec<u8> {
-    let envelope = fields(&bytes[CHECKPOINT_MAGIC.len()..]).unwrap();
+    let envelope = fields(&bytes[CHECKPOINT_MAGIC.len()..]);
     let checkpoint = map(envelope["manifest"], |stored| {
         if allocator {
             let value = map(&stored["record_identity"], edit);
@@ -128,8 +136,8 @@ fn wider(old: &[u8]) -> Option<Vec<u8>> {
 }
 #[test]
 fn inspection_compares_every_native_model_value_as_original_bytes() {
-    let host = crate::test_execution_policy::serial_request();
-    let execution = worth_execution::ExecutionRequest::serial(&host);
+    let host = request();
+    let execution = ExecutionRequest::serial(&host);
     let (before, identities) = original(&execution);
     let decoded = before.inspect(&execution).unwrap();
     for identity in identities {
@@ -138,8 +146,8 @@ fn inspection_compares_every_native_model_value_as_original_bytes() {
             "the census uses the actual committed identity: {identity:?}"
         );
     }
-    let envelope = fields(&before.bytes()[CHECKPOINT_MAGIC.len()..]).unwrap();
-    for (key, old) in fields(envelope["manifest"]).unwrap() {
+    let envelope = fields(&before.bytes()[CHECKPOINT_MAGIC.len()..]);
+    for (key, old) in fields(envelope["manifest"]) {
         if matches!(key.as_str(), "record_identity" | "symbol_identity_frontier") {
             continue;
         }
@@ -158,8 +166,8 @@ fn inspection_compares_every_native_model_value_as_original_bytes() {
             ),
         }
     }
-    let checkpoint = fields(envelope["manifest"]).unwrap();
-    for (key, old) in fields(checkpoint["record_identity"]).unwrap() {
+    let checkpoint = fields(envelope["manifest"]);
+    for (key, old) in fields(checkpoint["record_identity"]) {
         if matches!(key.as_str(), "append_frontiers" | "generation_high_water") {
             continue;
         }
@@ -177,8 +185,8 @@ fn inspection_compares_every_native_model_value_as_original_bytes() {
 }
 #[test]
 fn inspection_refuses_unknown_root_allocator_and_row_fields() {
-    let host = crate::test_execution_policy::serial_request();
-    let execution = worth_execution::ExecutionRequest::serial(&host);
+    let host = request();
+    let execution = ExecutionRequest::serial(&host);
     let (before, _) = original(&execution);
     for allocator in [false, true] {
         let after = rewritten(before.bytes(), allocator, |fields| {
@@ -202,10 +210,10 @@ fn inspection_refuses_unknown_root_allocator_and_row_fields() {
 
 #[test]
 fn restore_refuses_unknown_fields_before_publishing_any_model_state() {
-    let host = crate::test_execution_policy::serial_request();
-    let execution = worth_execution::ExecutionRequest::serial(&host);
+    let host = request();
+    let execution = ExecutionRequest::serial(&host);
     let (original, _) = original(&execution);
-    let mut control = runtime_with_test_schema();
+    let mut control = World::empty_runtime(0);
     control
         .durability_recovery()
         .restore_native_checkpoint(&execution, &original)
@@ -234,7 +242,7 @@ fn restore_refuses_unknown_fields_before_publishing_any_model_state() {
             }
         });
         let checkpoint = RelationalNativeCheckpoint::from_untrusted_bytes(bytes);
-        let mut target = runtime_with_test_schema();
+        let mut target = World::empty_runtime(0);
         let before = target
             .durability_authority()
             .native_checkpoint(&execution, execution.allocation_policy())
@@ -269,13 +277,30 @@ fn restore_refuses_unknown_fields_before_publishing_any_model_state() {
 
 #[test]
 fn the_live_census_includes_divergent_retained_branch_roots() {
-    let host = crate::test_execution_policy::serial_request();
-    let execution = worth_execution::ExecutionRequest::serial(&host);
-    let runtime = runtime_with_test_schema();
+    let host = request();
+    let execution = ExecutionRequest::serial(&host);
+    let runtime = memory_runtime();
     let mut expected = vec![create_entity(&execution, &runtime, "shared-root")];
     for branch in ["left-inspection", "right-inspection"] {
-        let branch_id = create_branch_from_main(&runtime, branch);
-        let commit = create_entity_outcome_on_branch(&execution, &runtime, branch, branch_id);
+        let branch_id = BranchId(branch.into());
+        let (_, source) = runtime
+            .observe_fork_source(runtime.main_branch_identity().branch_id())
+            .unwrap();
+        runtime
+            .fork_branch(&execution, branch_id.clone(), source)
+            .unwrap();
+        let branch = runtime.branch_identity(&branch_id).unwrap();
+        let (_, basis) = runtime.observe_branch(&branch).unwrap();
+        let mut transaction = runtime
+            .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
+            .unwrap();
+        transaction
+            .push_batch(
+                batch_create(branch_id.0.as_str()),
+                execution.allocation_policy(),
+            )
+            .unwrap();
+        let commit = transaction.commit(&execution, &runtime).unwrap();
         expected.extend(changed_entities(&commit));
         release_test_commit_snapshot(&runtime, &commit);
     }
@@ -302,8 +327,8 @@ fn the_live_census_includes_divergent_retained_branch_roots() {
 
 #[test]
 fn burned_symbol_frontier_does_not_hide_published_symbol_damage() {
-    let host = crate::test_execution_policy::serial_request();
-    let execution = worth_execution::ExecutionRequest::serial(&host);
+    let host = request();
+    let execution = ExecutionRequest::serial(&host);
     let (before, _) = original(&execution);
     let inspected = before.inspect(&execution).unwrap();
     let next = inspected.symbol_identity_frontier.checked_add(7).unwrap();
@@ -324,28 +349,21 @@ fn burned_symbol_frontier_does_not_hide_published_symbol_damage() {
         );
     });
     assert!(RelationalNativeCheckpoint::inspect_bytes(&execution, &invalid).is_err());
-    let mut wire: CheckpointWire<'_> =
-        rmp_serde::from_slice(&before.bytes()[CHECKPOINT_MAGIC.len()..]).unwrap();
-    let symbol = wire
-        .manifest
-        .symbols
-        .first()
-        .expect("fixture publishes symbol meanings")
-        .member;
-    let member = wire
-        .members
-        .iter_mut()
-        .find(|(id, _)| *id == symbol)
-        .unwrap();
-    let mut damaged = member.1 .0.to_vec();
-    *damaged.last_mut().unwrap() ^= 1;
-    member.1 =
-        crate::durability::log::native_checkpoint_codec::checkpoint_wire::ByteString(&damaged);
-    let tampered = [
-        CHECKPOINT_MAGIC,
-        rmp_serde::to_vec_named(&wire).unwrap().as_slice(),
-    ]
-    .concat();
+    let envelope = fields(&before.bytes()[CHECKPOINT_MAGIC.len()..]);
+    let symbols = sequence(fields(envelope["manifest"])["symbols"]);
+    let symbol: RelationalDurableMemberLocator =
+        rmp_serde::from_slice(fields(symbols[0])["member"]).unwrap();
+    let member = sequence(envelope["members"])
+        .into_iter()
+        .map(sequence)
+        .find(|member| {
+            rmp_serde::from_slice::<RelationalDurableMemberLocator>(member[0]).unwrap() == symbol
+        })
+        .expect("the checkpoint contains the fixture's symbol payload");
+    let encoded = member[1];
+    let offset = encoded.as_ptr() as usize - before.bytes().as_ptr() as usize;
+    let mut tampered = before.bytes().to_vec();
+    tampered[offset + encoded.len() - 1] ^= 1;
     assert!(
         RelationalNativeCheckpoint::inspect_bytes(&execution, &tampered).is_err(),
         "symbol payloads still undergo owner readmission and digest validation"

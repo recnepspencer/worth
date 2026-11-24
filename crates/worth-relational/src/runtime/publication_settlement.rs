@@ -82,9 +82,9 @@ impl RelationalRuntime {
     ///
     /// Settlement is the obligation a performed publication transfers to its
     /// caller. The service owns
-    /// [`crate::publication::RelationalSettlementPort::settle_performed_publication`] for the
+    /// [`crate::runtime::RelationalSettlementPort::settle_performed_publication`] for the
     /// ordinary path and
-    /// [`crate::publication::RelationalSettlementPort::repair_pending_publication_settlement`] for a
+    /// [`crate::runtime::RelationalSettlementPort::repair_pending_publication_settlement`] for a
     /// performed witness that was lost. Dropping performed evidence without settling it is
     /// not success.
     ///
@@ -93,8 +93,8 @@ impl RelationalRuntime {
     /// this service is obtained from a shared borrow and is
     /// `Clone + Send + Sync`. The runnable owner workflow is
     /// `examples/branch_local_mvcc.rs`.
-    pub fn settlement_port(&self) -> crate::publication::RelationalSettlementPort {
-        crate::publication::RelationalSettlementPort::new(
+    pub fn settlement_port(&self) -> crate::runtime::RelationalSettlementPort {
+        crate::runtime::RelationalSettlementPort::new(
             self.runtime_instance_id(),
             self.owner_binding(),
             self.publication_binding(),

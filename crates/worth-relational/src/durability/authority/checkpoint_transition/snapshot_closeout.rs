@@ -20,7 +20,7 @@ mod tests {
     use crate::tests::support::*;
     #[test]
     fn an_already_closed_performed_snapshot_preserves_its_commit_and_typed_denial() {
-        let host = crate::test_execution_policy::serial_request();
+        let host = crate::execution::test_policy::serial_request();
         let execution = worth_execution::ExecutionRequest::serial(&host);
         let runtime = runtime_with_test_schema();
         let committed = create_entity_outcome(&execution, &runtime, "closeout-refusal");

@@ -18,7 +18,6 @@ pub use access::{
 pub(crate) use authority::production_post_commit_consumer;
 pub use authority::PublicationAuthority;
 pub(crate) use authority::PublicationPreparationAuthority;
-pub use authority::RelationalSettlementPort;
 pub use authority::{
     PostCommitConsumer, PostCommitConsumptionContext, PostCommitConsumptionFailure,
 };

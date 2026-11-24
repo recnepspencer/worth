@@ -3,6 +3,7 @@ mod construction;
 mod filtering;
 mod preparation_control;
 mod relation_integrity_scopes;
+pub(crate) mod relation_law_sources;
 mod scope_admission;
 mod scope_types;
 #[cfg(test)]

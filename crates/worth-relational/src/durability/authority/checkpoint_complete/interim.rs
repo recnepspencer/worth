@@ -14,10 +14,7 @@ use crate::durability::checkpoint_admission::{
 use crate::history::commit::{RelationalCommitArtifact, RetainedCanonicalIndex};
 pub use component::CapturedNativeInterimComponent;
 pub use origin::CapturedNativeInterimOrigin;
-use std::{
-    ops::Range,
-    sync::{Arc, Weak},
-};
+use std::{ops::Range, sync::Arc};
 use worth_execution::{
     ExecutionArray, ExecutionImmutableBytes, ExecutionMemoryReservation, ExecutionOrderedMap,
     ExecutionRequest,
@@ -43,7 +40,7 @@ pub struct CapturedNativeInterimAdmission {
     roots: ExecutionImmutableBytes,
     _artifacts: ExecutionArray<Arc<RelationalCommitArtifact>>,
     current: crate::branch::registry::CheckpointBranchMetadata,
-    owner: Weak<crate::runtime::RelationalRuntimeState>,
+    owner: crate::runtime::state::subsystems::services::sequence::origin::RelationalRuntimeOrigin,
     native_digest: CanonicalDigestId,
     covered: u64,
     transitions: u64,

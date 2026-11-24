@@ -5,7 +5,7 @@ use super::super::{
 };
 use super::*;
 use crate::derived_relation::definition::DerivedRelationHandle;
-use crate::derived_relation::DerivedRelationData;
+use crate::derived_relation::read::DerivedRelationData;
 use crate::derived_relation::DerivedRelationReadShape;
 use crate::derived_relation::PinnedDerivedRelationRead;
 use crate::derived_relation::PreparedDerivedRelationRead;

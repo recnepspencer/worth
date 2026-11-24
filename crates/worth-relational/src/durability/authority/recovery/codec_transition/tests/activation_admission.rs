@@ -3,7 +3,7 @@ use super::{fixture::*, recovered};
 
 #[test]
 fn activation_proof_rejects_foreign_owner_and_changed_exact_description_before_effects() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let world = world(execution, true);
     for foreign_owner in [false, true] {
@@ -36,7 +36,7 @@ fn activation_proof_rejects_foreign_owner_and_changed_exact_description_before_e
                 execution,
                 &mut recovered,
                 &selected,
-                crate::mvcc::RelationalOperationControl::uninterrupted(),
+                crate::runtime::operation_control::RelationalOperationControl::uninterrupted(),
                 &installed,
                 proof,
                 update,

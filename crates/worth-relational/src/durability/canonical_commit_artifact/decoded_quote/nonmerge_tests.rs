@@ -321,7 +321,7 @@ fn current_source_codec_roundtrips_funded_ordered_sources() {
 }
 #[test]
 fn current_source_quote_refuses_malformed_missing_or_unknown_meaning() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     for (label, bytes) in corrective_sources::malformed_inputs() {
         assert!(
             super::coupled_publication::quote(
@@ -335,7 +335,7 @@ fn current_source_quote_refuses_malformed_missing_or_unknown_meaning() {
 }
 #[test]
 fn corrective_owner_union_keeps_missing_extra_and_wrong_predecessor_refusals() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let execution = ExecutionRequest::serial(&host);
     let runtime = crate::tests::support::runtime_with_test_schema();
     let source = crate::tests::support::create_entity(&execution, &runtime, "descriptive-owner");

@@ -3,6 +3,7 @@ pub(crate) use authority::RecoveredRootInventory;
 pub(crate) use authority::{AdmittedRecoveredCodecPublication, RecoveredCodecPublicationCustody};
 pub mod authority;
 pub(crate) mod authority_continuity;
+pub(crate) mod initial_schema_installation_denial;
 pub use authority::checkpoint_transition::{
     RecoveredCheckpointTransition, RecoveredCheckpointTransitionDenial,
     RecoveredCheckpointTransitionError, RefusedRecoveredCheckpointTransition,

@@ -1,7 +1,5 @@
 //! One selected stage through the existing planners and packet runners.
-use super::{
-    engine::check_live, metrics::InvariantMetrics, InvariantExecutionRequest, InvariantRuntimeView,
-};
+use super::{engine::check_live, InvariantExecutionRequest, InvariantRuntimeView};
 use crate::validation::execution::{
     evaluate_invariant_packet, plan_invariant_execution, planned_proof_boundary_summary,
     InvariantStage, InvariantStageOutput,
@@ -19,7 +17,7 @@ pub(super) fn execute_stage<'state>(
     Option<InvariantStageOutput>,
     crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
 > {
-    let metrics = InvariantMetrics::new(runtime.performance_access());
+    let metrics = runtime.performance_access();
     let (planned, retained_bytes) = if let Some(lease) = lease {
         let preparation = crate::validation::execution::plan_checked_invariant_preparation(
             runtime, execution, request, lease, stage,

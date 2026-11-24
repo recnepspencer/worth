@@ -9,6 +9,7 @@ use crate::durability::authority::recovered_runtime::RecoveredRelationalRuntimeA
 use crate::durability::authority::runtime_access::DurabilityAuthority;
 use crate::durability::data::RelationalRecoveryStop;
 use crate::runtime::RelationalRuntime;
+use std::sync::Weak;
 
 #[derive(Clone, Debug)]
 pub struct AdmittedNativeInterimReceiver {

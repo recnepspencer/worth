@@ -1,7 +1,7 @@
 //! Hostile checkpoint claims cannot create relation birth ownership.
 use super::*;
 pub(super) fn refuse_missing_and_foreign() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let (runtime, receipt) = super::super::incoming_reference::installed_references(1);
     let (world, owned) = world_with_boundary(execution, runtime, receipt.clone());

@@ -26,7 +26,7 @@ pub use proof::{
 pub(crate) use structural::StructuralSource;
 pub(crate) use structural::{prepare_changes, read_changes};
 pub use structural::{DerivedRelationChangeData, PreparedDerivedRelationChanges};
-mod read;
+pub(crate) mod read;
 pub(crate) mod read_denial;
 pub use read::{
     DerivedRelationAdjacency, DerivedRelationData, DerivedRelationReadDenial, DerivedRelationReads,

@@ -8,7 +8,7 @@ use worth_foundational::facade::*;
 
 #[test]
 fn changed_authored_source_codec_cannot_acquire_derived_retirement_permission() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let world = world(execution, true);
     let mut target_schema = registry(2);
@@ -61,7 +61,7 @@ fn changed_authored_source_codec_cannot_acquire_derived_retirement_permission() 
             execution,
             &mut recovered,
             &selected,
-            crate::mvcc::RelationalOperationControl::uninterrupted(),
+            crate::runtime::operation_control::RelationalOperationControl::uninterrupted(),
             &installed,
             proof,
             activation(world.activation),
@@ -78,7 +78,7 @@ fn changed_authored_source_codec_cannot_acquire_derived_retirement_permission() 
 
 #[test]
 fn actual_incident_relation_refuses_retirement_without_cascading_protected_payload() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let (runtime, receipt) = installed_with(with_relation(registry(1)), Vec::new());
     let world = world_with_installation(execution, runtime, receipt, true);
@@ -138,7 +138,7 @@ fn actual_incident_relation_refuses_retirement_without_cascading_protected_paylo
             execution,
             &mut recovered,
             &selected,
-            crate::mvcc::RelationalOperationControl::uninterrupted(),
+            crate::runtime::operation_control::RelationalOperationControl::uninterrupted(),
             &installed,
             proof,
             activation(world.activation),
@@ -166,7 +166,7 @@ fn actual_incident_relation_refuses_retirement_without_cascading_protected_paylo
 
 #[test]
 fn affected_installed_custom_invariant_refuses_before_restoring_source_into_target() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let (runtime, receipt) = installed_with(
         registry(1),

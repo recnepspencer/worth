@@ -29,7 +29,7 @@ impl RelationIntegrityScopeAccumulator<'_, '_, '_, '_> {
                 && !self.predecessor.state().has_read_misses()
             {
                 let scope = &self.scopes[&kind];
-                crate::inspection::relation_law_sources::record(
+                super::super::relation_law_sources::record(
                     kind,
                     scope.complete_source_set,
                     &scope.connectivity_sources,

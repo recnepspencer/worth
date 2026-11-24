@@ -1,12 +1,12 @@
-use super::PerformanceAccess;
+use super::InvariantMetrics;
 
-impl PerformanceAccess<'_> {
-    pub(crate) fn count_invariant_entity_slot_scans(&self, slots: usize) {
+impl InvariantMetrics<'_> {
+    pub(crate) fn count_entity_slot_scans(&self, slots: usize) {
         self.counters
             .count(|counters| counters.invariant_entity_slot_scans += slots);
     }
 
-    pub(crate) fn count_invariant_relation_slot_scans(&self, slots: usize) {
+    pub(crate) fn count_relation_slot_scans(&self, slots: usize) {
         self.counters
             .count(|counters| counters.invariant_relation_slot_scans += slots);
     }
@@ -35,7 +35,7 @@ impl PerformanceAccess<'_> {
 
     pub(crate) fn count_custom_invariant_candidate_inputs(
         &self,
-        reads: crate::performance::data::CandidateInputCounts,
+        reads: crate::validation::engine::input_preparation::counts::CandidateInputCounts,
     ) {
         self.counters.count(|counters| {
             counters.custom_invariant_candidate_entity_reads += reads.entity_reads;
@@ -62,7 +62,7 @@ impl PerformanceAccess<'_> {
         });
     }
 
-    pub(crate) fn count_relation_integrity_contracts_evaluated(&self, count: usize) {
+    pub(crate) fn count_relation_contracts_evaluated(&self, count: usize) {
         self.counters
             .count(|counters| counters.relation_integrity_contracts_evaluated += count);
     }

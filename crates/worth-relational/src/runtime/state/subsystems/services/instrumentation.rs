@@ -11,15 +11,6 @@ pub(crate) struct RuntimeInstrumentation {
         Arc<crate::history::retention::RelationalExternalRetentionTerminalAccounting>,
 }
 
-pub(crate) fn snapshot_complexity(
-    counters: &Mutex<RuntimeComplexityCounters>,
-) -> RuntimeComplexityCounters {
-    counters
-        .lock()
-        .unwrap_or_else(|error| error.into_inner())
-        .clone()
-}
-
 impl RuntimeInstrumentation {
     pub(crate) fn count_descriptor_version_mismatch(&self) {
         self.count(RuntimeComplexityCounters::count_descriptor_version_mismatch);
@@ -56,7 +47,10 @@ impl RuntimeInstrumentation {
     }
 
     pub(crate) fn complexity_snapshot(&self) -> RuntimeComplexityCounters {
-        snapshot_complexity(&self.complexity_counters)
+        crate::performance::complexity_counter_sink::ComplexityCounterSink::new(
+            &self.complexity_counters,
+        )
+        .snapshot()
     }
 
     pub(crate) fn count(&self, update: impl FnOnce(&mut RuntimeComplexityCounters)) {

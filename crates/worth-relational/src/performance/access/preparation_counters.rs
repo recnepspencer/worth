@@ -34,9 +34,4 @@ impl PerformanceAccess<'_> {
         self.counters
             .count(crate::performance::data::RuntimeComplexityCounters::count_preparation_staged_parallel_strategy);
     }
-
-    pub(crate) fn count_preparation_reducer_conflicts(&self, conflicts: usize) {
-        self.counters
-            .count(|counters| counters.count_preparation_reducer_conflicts(conflicts));
-    }
 }

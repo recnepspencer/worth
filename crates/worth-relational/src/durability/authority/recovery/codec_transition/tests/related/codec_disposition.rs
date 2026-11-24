@@ -16,7 +16,7 @@ enum ClaimDefect {
 
 #[test]
 fn cold_retirement_requires_every_sibling_group_before_route_eligibility() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let (runtime, receipt) = installed(1);
     let (world, publisher) = world_with_publication(execution, runtime, receipt);
@@ -27,7 +27,7 @@ fn cold_retirement_requires_every_sibling_group_before_route_eligibility() {
         &mut target,
         &mut recovered,
         world.activation,
-        crate::mvcc::RelationalOperationControl::uninterrupted(),
+        crate::runtime::operation_control::RelationalOperationControl::uninterrupted(),
         Some(
             WorkerIntentBatch::new("judge protected source without rewriting it").push(
                 MutationIntent::Entity(EntityMutationIntent::Revalidate(RevalidateEntityIntent {

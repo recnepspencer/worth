@@ -1,7 +1,7 @@
 //! Opaque source preparation keeps one admitted schema graph for one replay.
 use super::super::runtime_rebuild::OriginalSchemaGraph;
 use crate::durability::data::{RecoveryPlan, RelationalRecoveryStop};
-use crate::runtime::RelationalInitialSchemaInstallationDenial;
+use crate::durability::initial_schema_installation_denial::RelationalInitialSchemaInstallationDenial;
 use crate::schema::data::RelationalSchemaRegistry;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, WorkCeilingDenial};
 use worth_foundational::facade::{

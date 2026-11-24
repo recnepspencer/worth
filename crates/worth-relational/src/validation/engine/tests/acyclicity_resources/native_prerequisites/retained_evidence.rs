@@ -1,8 +1,6 @@
 //! The actual native output stays reserved through the custom stage and projection.
 use super::*;
-use crate::validation::{
-    engine::InvariantRuntimeView, execution::InvariantStage, reduction::ReducedInvariantPrefix,
-};
+use crate::validation::{execution::InvariantStage, reduction::ReducedInvariantPrefix};
 
 #[test]
 fn native_backing_stays_on_the_original_lease_until_final_projection_is_dropped() {
@@ -19,8 +17,10 @@ fn native_backing_stays_on_the_original_lease_until_final_projection_is_dropped(
     let lease =
         super::super::fixture::request(8 * 1024 * 1024, 4_000_000, CancellationToken::new(), None);
     let execution = ExecutionRequest::leased(&lease);
-    let view =
-        InvariantRuntimeView::from_runtime(&fixture.runtime).with_candidate_input_plan(&request);
+    let view = fixture
+        .runtime
+        .invariant_validation_view()
+        .with_candidate_input_plan(&request);
     let stage = crate::validation::engine::stage_execution::execute_stage(
         &view,
         execution,

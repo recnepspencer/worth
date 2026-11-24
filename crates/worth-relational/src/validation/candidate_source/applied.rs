@@ -178,8 +178,7 @@ fn prepare(
     {
         return Err(Denial::ForeignSource);
     }
-    let runtime_view =
-        InvariantRuntimeView::from_preparation_for_state(runtime, selected.selected().state());
+    let runtime_view = runtime.invariant_validation_view(selected.selected().state());
     let correspondence =
         super::correspondence::prepare(draft, execution, runtime, &after, generation)?;
     let observation = InvariantObservation::applied_with_proposal(

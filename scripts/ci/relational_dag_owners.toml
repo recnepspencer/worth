@@ -74,6 +74,15 @@ floor = 32000
 depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "indexes", "durability", "publication"]
 
 [paths]
+"runtime/invariant_view.rs" = "runtime"
+"durability/authority/checkpoint_complete/interim/verified/freeze.rs" = "runtime"
+"derived_relation/read.rs" = "contracts"
+"performance/complexity_counter_sink.rs" = "contracts"
+"validation/engine/metrics/counters.rs" = "mutation"
+"runtime/settlement_port.rs" = "runtime"
+"durability/initial_schema_installation_denial.rs" = "durability"
+"validation/engine/request/relation_law_sources.rs" = "mutation"
+"validation/engine/input_preparation/counts.rs" = "mutation"
 "durability/authority/checkpoint_capture/runtime_selection.rs" = "runtime"
 # Explicit ownership restored by Stage 2.4C r2 and Stage 2.5A.
 "authority/mutation/canonical_deltas" = "mutation"
@@ -219,7 +228,7 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "indexes/authority/maintenance/retained_projection.rs" = "indexes"
 "lineage/access/event_demand.rs" = "lineage"
 "publication/ownership/authored_retirement" = "publication"
-"publication/ownership/read/payload.rs" = "publication"
+"publication/ownership/record_payload.rs" = "branch"
 "publication/ownership/route_selection.rs" = "publication"
 "publication/ownership/source_scope.rs" = "publication"
 "publication/patch/data/stream_commit_ref.rs" = "contracts"
@@ -859,7 +868,7 @@ root_custody = [
     "history/retention/snapshot_basis_retirement.rs",
     "visibility/snapshot_states/historical_basis_custody.rs",
 ]
-envelope = ["branch/envelope", "history/data/canonical_commit_envelope", "history/commit", "publication/patch", "publication/ownership/record.rs", "durability/checkpoint_admission/read_image.rs", "durability/authority/associated_effects/created_row_read.rs"]
+envelope = ["branch/envelope", "history/data/canonical_commit_envelope", "history/commit", "publication/patch", "publication/ownership/record.rs", "publication/ownership/record_payload.rs", "durability/checkpoint_admission/read_image.rs", "durability/authority/associated_effects/created_row_read.rs"]
 projection_view = ["branch/projection_view", "branch/managed_source_affinity.rs", "validation/candidate_source/image", "visibility", "snapshots", "query", "runtime/state/subsystems/visibility"]
 
 [[boundaries]]
@@ -877,6 +886,15 @@ ordinary_checkpoint = ["durability/ordinary_checkpoint", "durability/checkpoints
 reconstruction = ["durability/reconstruction", "durability/recovery", "replay", "durability/authority/recovery", "durability/authority/runtime_rebuild"]
 
 [reassignments]
+"runtime/invariant_view.rs" = "runtime"
+"durability/authority/checkpoint_complete/interim/verified/freeze.rs" = "runtime"
+"derived_relation/read.rs" = "contracts"
+"performance/complexity_counter_sink.rs" = "contracts"
+"validation/engine/metrics/counters.rs" = "mutation"
+"runtime/settlement_port.rs" = "runtime"
+"durability/initial_schema_installation_denial.rs" = "durability"
+"validation/engine/request/relation_law_sources.rs" = "mutation"
+"validation/engine/input_preparation/counts.rs" = "mutation"
 "durability/authority/checkpoint_capture/runtime_selection.rs" = "runtime"
 # Explicit ownership restored by Stage 2.4C r2 and Stage 2.5A.
 "authority/mutation/canonical_deltas" = "mutation"
@@ -974,7 +992,7 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "runtime/durability_access/canonical_commit_artifact_export.rs" = "runtime"
 "runtime/durability_authority.rs" = "runtime"
 "runtime/recovered_retirement_trials.rs" = "runtime"
-"publication/ownership/read/payload.rs" = "publication"
+"publication/ownership/record_payload.rs" = "branch"
 "visibility/snapshot_states/historical_basis_custody.rs" = "branch"
 "lineage/access/graph" = "runtime"
 "indexes/access" = "indexes"

@@ -22,6 +22,7 @@ mod validated_proposal_memory;
 mod predecessor_basis;
 
 mod bulk_work_account;
+mod checkpoint_inspection;
 mod checkpoint_versions;
 
 mod coupled_producers;

@@ -278,7 +278,7 @@ mod tests {
     #[test]
     fn streamed_branch_root_image_digest_matches_buffered_wire_for_divergent_roots() {
         let lane = crate::storage::substrate::maintenance::ReconstructionLane::oracle();
-        let host_request = crate::test_execution_policy::serial_request();
+        let host_request = crate::execution::test_policy::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
         let runtime = runtime_with_test_schema();

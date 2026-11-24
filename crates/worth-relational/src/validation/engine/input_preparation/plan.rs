@@ -4,9 +4,9 @@ use std::sync::{Arc, OnceLock};
 
 use dashmap::DashMap;
 
+use super::counts::CandidateInputCounts;
 use crate::identity::data::KindId;
 use crate::identity::data::{EntityId, PartitionId, RelationId, VersionId};
-use crate::performance::data::CandidateInputCounts;
 use crate::validation::engine::state_view::slot_resolution::AspectLocation;
 use crate::validation::engine::state_view::{VisibleEntityMetadata, VisibleRelationMetadata};
 use crate::validation::engine::{

@@ -46,7 +46,7 @@ impl ManagedIndexSourceRows<'_> {
     pub fn membership_support<'a>(
         &'a self,
         read: &'a super::super::projection::PreparedManagedIndexRelationRead,
-    ) -> Result<&'a crate::derived_relation::DerivedRelationData, ReadDenial> {
+    ) -> Result<&'a crate::derived_relation::read::DerivedRelationData, ReadDenial> {
         self.projection.read(
             read,
             &self.projection.program.0.path,

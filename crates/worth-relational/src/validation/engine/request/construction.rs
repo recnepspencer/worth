@@ -21,7 +21,7 @@ impl<'state> InvariantExecutionRequest<'state> {
     where
         'runtime: 'state,
     {
-        let view = crate::validation::engine::InvariantRuntimeView::from_runtime(runtime);
+        let view = runtime.invariant_validation_view();
         let backing = crate::execution::test_policy::serial_request();
         let execution = worth_execution::ExecutionRequest::serial(&backing);
         Self::from_profile_with_contract_at_current_version(
@@ -110,7 +110,7 @@ impl<'state> InvariantExecutionRequest<'state> {
         let relation_integrity_scopes = super::scope_admission::prepare(execution, |admit| {
             prepare_relation_integrity_scopes(
                 semantic_plan,
-                runtime.home_target.is_some(),
+                runtime.rejudges_home_target(),
                 super::relation_integrity_scopes::RelationScopeState {
                     current: super::super::state_view::InvariantStateView::new(
                         scope_state,

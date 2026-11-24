@@ -17,7 +17,7 @@ pub(super) use authoring::installed_references;
 
 #[test]
 fn owned_boundary_and_independent_references_survive_cold_preserve_but_block_retirement() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     let (runtime, receipt) = installed_references(1);
     let (world, boundary) = world_with_boundary(execution, runtime, receipt);
@@ -306,7 +306,7 @@ fn assert_retirement_refused(
         &mut target,
         &mut recovered,
         activation,
-        crate::mvcc::RelationalOperationControl::uninterrupted(),
+        crate::runtime::operation_control::RelationalOperationControl::uninterrupted(),
         None,
     )
     .unwrap_err();

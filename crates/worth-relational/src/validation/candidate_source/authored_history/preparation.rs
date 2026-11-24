@@ -14,7 +14,7 @@ use crate::validation::candidate_source::program::ManagedIndexSourceProgram;
 use crate::validation::custom_rule::structural_views::StructuralRelationView;
 use crate::validation::custom_rule::{CustomInvariantWorkMeter, CustomPreparationBudget};
 use crate::validation::engine::state_view::InvariantStateView;
-use crate::validation::engine::{InvariantObservation, InvariantRuntimeView};
+use crate::validation::engine::InvariantObservation;
 use std::sync::Arc;
 use worth_execution::{ExecutionOrderedMap, ExecutionRequest};
 
@@ -50,8 +50,7 @@ pub(in crate::validation::candidate_source) fn prepare<'a>(
     let before = InvariantStateView::new(&selected, selected.version_id());
     let overlay = OverlayStateView::new(&selected, draft.state());
     let after = InvariantStateView::new(&overlay, proposal.proposed_version_id());
-    let runtime_view =
-        InvariantRuntimeView::from_preparation_for_state(runtime, selected.selected().state());
+    let runtime_view = runtime.invariant_validation_view(selected.selected().state());
     let observation = InvariantObservation::applied_with_proposal(
         OverlayStateView::new(&selected, draft.state()),
         selected.version_id(),

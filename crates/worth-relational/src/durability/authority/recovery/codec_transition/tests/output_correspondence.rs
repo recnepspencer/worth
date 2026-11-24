@@ -57,7 +57,7 @@ fn staged(
 }
 #[test]
 fn companion_native_association_requires_exact_identity_kind_and_original_payload() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let (world, companion) = independent(execution);
     let (mut target, recovered, selected, _transaction) = staged(execution, &world);
@@ -173,7 +173,7 @@ fn companion_native_association_requires_exact_identity_kind_and_original_payloa
 }
 #[test]
 fn companion_original_funding_and_cancellation_refuse_without_effects_then_fresh_retry() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let (world, companion) = independent(execution);
     let (mut target, recovered, selected, _transaction) = staged(execution, &world);

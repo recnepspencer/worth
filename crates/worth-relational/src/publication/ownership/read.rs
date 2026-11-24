@@ -1,6 +1,6 @@
 //! Read and authenticate the current private roster without historical members.
 use super::read_request::{checkpoint, corrupt, damaged, request};
-use super::record;
+use super::{record, record_payload as payload};
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::branch::structural_state::StructuralStateView;
 use crate::history::data::coordinates::CommitId;
@@ -17,7 +17,6 @@ mod linked;
 mod selector;
 pub(crate) use linked::selectors as linked_selectors;
 pub(in crate::publication::ownership) mod anchors;
-pub(crate) mod payload;
 mod reach;
 pub(crate) mod roster;
 pub(crate) use roster::CurrentPublicationRoster;

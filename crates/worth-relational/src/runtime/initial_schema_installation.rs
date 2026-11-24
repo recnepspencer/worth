@@ -28,10 +28,10 @@ pub struct RelationalInitialSchemaInstallation<'runtime> {
 }
 
 pub(in crate::runtime) mod denial;
-use denial::schema_denial;
-pub use denial::{
+pub use crate::durability::initial_schema_installation_denial::{
     RelationalInitialSchemaInstallationDenial, RelationalInitialSchemaInstallationDenialKind,
 };
+use denial::schema_denial;
 impl RelationalRuntime {
     pub(crate) fn initial_schema_authority_snapshot(
         &self,
@@ -268,7 +268,7 @@ impl RelationalInitialSchemaInstallation<'_> {
                 match publication {
                     None => Ok(InitialSchemaCutover::Receiver),
                     Some((_initialization, request)) => {
-                        let original = self.runtime.history.capture_original_branch_schema_inputs(request).map_err(RelationalInitialSchemaInstallationDenial::original_capture)?;
+                        let original = self.runtime.history.capture_original_branch_schema_inputs(request).map_err(denial::original_capture_denial)?;
                         let image = crate::durability::source_initial_inputs::capture::capture(
                             &installed.config.history.main_branch, &original, Some((before, after, routes.branch_transition_head())), request,
                         ).map_err(RelationalInitialSchemaInstallationDenial::from_initial_inputs)?;

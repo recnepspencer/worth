@@ -46,22 +46,23 @@ pub use crate::mvcc::{
     ValidatedRelationalProposal,
 };
 pub use crate::mvcc::{
-    ManagedIndexParentReadFootprint, RelationalAuthoredCoupledCandidate, RelationalAuthoredCoupledOwners,
-    RelationalAuthoredCoupledProducerAssembly, RelationalAuthoredCoupledTransaction,
-    RelationalAuthoredRestoration, RelationalAuthoredRetirement, RelationalCoupledAppendTouches,
-    RelationalCoupledAssemblyFailure, RelationalCoupledAuthoredPublication,
-    RelationalCoupledAuthoredSourceEffects, RelationalCoupledChainOverlay,
-    RelationalCoupledContribution, RelationalCoupledProducerContinuation,
-    RelationalCoupledProducerPosture, RelationalDeclaredCoupledOwner,
-    RelationalHistoricalOutputSelection, RelationalPerformedOutputPublications,
-    RelationalPredecessorBasisDenial, RelationalPredecessorBasisOrigin, RelationalPredecessorInput,
+    ManagedIndexParentReadFootprint, RelationalAuthoredCoupledCandidate,
+    RelationalAuthoredCoupledOwners, RelationalAuthoredCoupledProducerAssembly,
+    RelationalAuthoredCoupledTransaction, RelationalAuthoredRestoration,
+    RelationalAuthoredRetirement, RelationalCoupledAppendTouches, RelationalCoupledAssemblyFailure,
+    RelationalCoupledAuthoredPublication, RelationalCoupledAuthoredSourceEffects,
+    RelationalCoupledChainOverlay, RelationalCoupledContribution,
+    RelationalCoupledProducerContinuation, RelationalCoupledProducerPosture,
+    RelationalDeclaredCoupledOwner, RelationalHistoricalOutputSelection,
+    RelationalPerformedOutputPublications, RelationalPredecessorBasisDenial,
+    RelationalPredecessorBasisOrigin, RelationalPredecessorInput,
     RelationalPreparedOutputPublications, RelationalRequiredOutputInput,
     RelationalRequiredOutputPublication, RelationalRequiredOutputRouteAbsence,
     RelationalRestoredProducerPrior, RequiredOutputProducingImplementation,
     RequiredOutputPublication, RequiredOutputPublicationMeaning, RequiredOutputRolePosture,
     RequiredOutputRoleTarget,
 };
-pub use crate::publication::RelationalSettlementPort;
+pub use crate::runtime::RelationalSettlementPort;
 pub use crate::transactions::data::{
     CommitConflict, CommitResult, ConflictClass, TransactionCommitError, WorkerIntentBatch,
 };

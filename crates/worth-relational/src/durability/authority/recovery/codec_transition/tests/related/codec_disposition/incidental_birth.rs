@@ -10,7 +10,7 @@ use crate::transactions::data::*;
 use worth_execution::ExecutionRequest;
 
 pub(super) fn refuse_late_claim() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     let (runtime, receipt) = super::super::incoming_reference::installed_references(1);
     let left = super::super::super::fixture::create(

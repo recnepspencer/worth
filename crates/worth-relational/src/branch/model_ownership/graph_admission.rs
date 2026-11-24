@@ -28,15 +28,11 @@ impl RelationalModelOwnership {
 impl RelationalOwnedModelGraphSelection {
     pub(crate) fn ownership_matches_installation(
         &self,
-        runtime: &crate::runtime::RelationalPreparationRuntime,
+        installed: Option<&RelationalModelOwnership>,
         context: &mut MapKernelContext<'_, '_>,
     ) -> Result<bool, worth_execution::MapKernelStop> {
         crate::execution::request_stage::checkpoint(context, 1)?;
-        let Some((_, installed)) = runtime
-            .schema_contract_runtime
-            .custom_invariant_registries
-            .model_ownership()
-        else {
+        let Some(installed) = installed else {
             return Ok(false);
         };
         let size = |meaning: &RelationalModelOwnership| {

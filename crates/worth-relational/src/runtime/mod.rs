@@ -40,6 +40,7 @@ pub(crate) use home_program_transition::{
 };
 pub(crate) mod commit_strategy_validation;
 pub(crate) mod interruption_counters;
+mod invariant_view;
 mod lineage_commit;
 mod managed_source_history;
 pub(crate) mod operation_control;
@@ -50,6 +51,8 @@ mod publication_authority;
 mod publication_body;
 mod publication_capture;
 mod publication_settlement;
+mod settlement_port;
+pub use settlement_port::RelationalSettlementPort;
 mod published_lineage;
 mod recovered_retirement_trials;
 mod schema_transition_admission;

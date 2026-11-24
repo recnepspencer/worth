@@ -290,7 +290,7 @@ fn test_scope_planner<'a>(
     version: crate::identity::data::VersionId,
     prepared: &PreparedCustomInvariantScope,
 ) -> CustomInvariantScopePlanner<'a> {
-    let view = crate::validation::engine::InvariantRuntimeView::from_runtime(runtime);
+    let view = runtime.invariant_validation_view();
     CustomInvariantScopePlanner::new_at_current_version(
         &view,
         execution,

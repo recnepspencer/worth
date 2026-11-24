@@ -103,7 +103,7 @@ fn unrelated_shared_endpoint_does_not_expand_its_existing_adjacency() {
     };
     let observation = InvariantObservation::committed(runtime.storage_access().current_edition());
     let prepared = prepared_scope_with_access(&runtime, &observation, Some(&merged_plan), &access);
-    let view = crate::validation::engine::InvariantRuntimeView::from_runtime(&runtime);
+    let view = runtime.invariant_validation_view();
     let planner = CustomInvariantScopePlanner::new_at_current_version(
         &view,
         *execution,
@@ -132,7 +132,7 @@ fn custom_scope_planner_preserves_owner_selected_current_version() {
     let observation = InvariantObservation::committed(runtime.storage_access().current_edition());
     let prepared_scope = prepared_scope(&runtime, &observation, None);
     let selected_version = crate::identity::data::VersionId(77);
-    let view = crate::validation::engine::InvariantRuntimeView::from_runtime(&runtime);
+    let view = runtime.invariant_validation_view();
     let planner = CustomInvariantScopePlanner::new_at_current_version(
         &view,
         *execution,
@@ -258,7 +258,7 @@ fn traversal_budget_is_session_wide() {
         .expect("valid native runtime configuration");
     let observation = InvariantObservation::committed(runtime.storage_access().current_edition());
     let prepared_scope = prepared_scope(&runtime, &observation, None);
-    let view = crate::validation::engine::InvariantRuntimeView::from_runtime(&runtime);
+    let view = runtime.invariant_validation_view();
     let context = CustomInvariantExecutionContext::new(
         &view,
         *execution,

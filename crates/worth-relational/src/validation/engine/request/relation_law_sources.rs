@@ -1,6 +1,6 @@
 //! Bounded, read-only evidence of the source witness consumed by native laws.
 use crate::identity::data::KindId;
-use crate::transactions::data::EntityReference;
+use crate::transactions::data::primitives::EntityReference;
 use std::cell::RefCell;
 use std::collections::{BTreeMap, BTreeSet};
 

@@ -1,6 +1,6 @@
 //! Quote private payload backing before deserializing the closed Native grammar.
-use super::super::read_request::{checkpoint, corrupt, damaged, request};
-use super::super::record::Route;
+use super::read_request::{checkpoint, corrupt, damaged, request};
+use super::record::Route;
 use crate::history::data::{CanonicalRequiredOutputOrigin, CommitId};
 use crate::identity::data::EntityId;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;

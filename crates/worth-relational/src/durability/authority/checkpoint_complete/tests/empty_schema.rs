@@ -5,7 +5,7 @@ use crate::tests::support::*;
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
 #[test]
 fn complete_empty_archive_and_initial_installation_preserve_unused_original_schema() {
-    let setup = crate::test_execution_policy::serial_request();
+    let setup = crate::execution::test_policy::serial_request();
     let setup_execution = ExecutionRequest::serial(&setup);
     let mut runtime = runtime_with_test_schema();
     let identity = runtime.main_branch_identity();

@@ -1,5 +1,5 @@
-use crate::mvcc::RelationalOperationControl;
 use crate::runtime::operation_control::interruption_event::RelationalInterruptionBoundary;
+use crate::runtime::operation_control::RelationalOperationControl;
 use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
 use crate::transactions::data::outcomes::conflict_class::ConflictClass;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;

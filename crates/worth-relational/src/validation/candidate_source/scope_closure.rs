@@ -5,9 +5,9 @@ use super::program::ManagedIndexSourceProgram;
 use crate::authority::mutation::AdjacencyDelta;
 use crate::derived_relation::definition::DerivedRelationDenial as Definition;
 use crate::derived_relation::evaluation::{evaluate_position, SourceRead};
+use crate::derived_relation::read::DerivedRelationData;
+use crate::derived_relation::read::DerivedRelationReads;
 use crate::derived_relation::read_denial::DerivedRelationReadDenial as Denial;
-use crate::derived_relation::DerivedRelationData;
-use crate::derived_relation::DerivedRelationReads;
 use crate::derived_relation::StructuralSource;
 use crate::graph_member::NativeMemberKey;
 use crate::identity::data::EntityId;
@@ -211,7 +211,7 @@ impl SourceRead for LifecycleSource<'_, '_> {
     }
     fn adjacency(
         &mut self,
-        probe: crate::derived_relation::DerivedRelationAdjacency,
+        probe: crate::derived_relation::read::DerivedRelationAdjacency,
     ) -> Result<Vec<crate::validation::data::structural_read::StructuralRelationRecord>, Denial>
     {
         self.0.adjacency(probe)

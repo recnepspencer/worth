@@ -7,7 +7,6 @@ mod post_commit_consumer;
 mod post_commit_consumption;
 mod post_commit_diagnostics;
 mod settled_receipt;
-mod settlement_port;
 
 use crate::diagnostics::data::RelationalDiagnosticsProfile;
 use crate::runtime::state::subsystems::publication::PublicationSubsystem;
@@ -58,7 +57,6 @@ impl<'runtime> PublicationAuthority<'runtime> {
 
 pub(crate) use pending_settlement::SettlementPublication;
 pub(crate) use performed_settlement::RelationalSettlementBinding;
-pub use settlement_port::RelationalSettlementPort;
 
 pub(crate) use post_commit_consumer::production_post_commit_consumer;
 pub use post_commit_consumer::{

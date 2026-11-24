@@ -3,14 +3,14 @@ pub(crate) mod context;
 mod engine;
 pub(crate) mod evaluator;
 pub(crate) mod input_preparation;
-mod metrics;
+pub(crate) mod metrics;
 mod observation;
 mod policy;
 mod profile;
-mod request;
+pub(crate) mod request;
 mod runtime_view;
 mod stage_execution;
-pub(crate) use runtime_view::InvariantRuntimeView;
+pub(crate) use runtime_view::{InvariantRuntimeInputs, InvariantRuntimeView};
 pub(crate) mod result;
 pub(crate) mod state_view;
 #[cfg(test)]

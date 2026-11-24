@@ -122,7 +122,7 @@ impl StructuralTraversalResult {
 
 pub struct BoundedStructuralTraversal<'runtime> {
     relations: StructuralRelationView<'runtime>,
-    performance: crate::performance::PerformanceAccess<'runtime>,
+    performance: crate::validation::engine::metrics::InvariantMetrics<'runtime>,
     budget: Mutex<TraversalBudgetSession>,
     work: super::CustomInvariantWorkMeter,
 }
@@ -132,7 +132,7 @@ pub struct BoundedStructuralTraversal<'runtime> {
 // numeric bounds; retaining that prefix is the conservative accounting result.
 impl<'runtime> BoundedStructuralTraversal<'runtime> {
     pub(crate) fn new(
-        performance: crate::performance::PerformanceAccess<'runtime>,
+        performance: crate::validation::engine::metrics::InvariantMetrics<'runtime>,
         relations: StructuralRelationView<'runtime>,
         touched: &TouchedStructuralSet,
         work: super::CustomInvariantWorkMeter,

@@ -1,7 +1,7 @@
 //! A new isolated event changes only its own membership, never the old prefix.
 use super::*;
 use crate::authority::mutation::AdjacencyDeltaKind;
-use crate::derived_relation::DerivedRelationAdjacency;
+use crate::derived_relation::read::DerivedRelationAdjacency;
 
 pub(super) fn discover(
     program: &ManagedIndexSourceProgram,

@@ -1,18 +1,18 @@
 //! Borrowed complexity telemetry: global or provisional, with no new allocation.
 // Diagnostic counters keep their valid numeric prefix on unwind; they grant no authority.
-use crate::performance::data::RuntimeComplexityCounters;
+use crate::performance::data::runtime_complexity_counters::RuntimeComplexityCounters;
 use std::sync::Mutex;
 
-pub(super) struct ComplexityCounterSink<'owner> {
+pub(crate) struct ComplexityCounterSink<'owner> {
     counters: &'owner Mutex<RuntimeComplexityCounters>,
 }
 
 impl<'owner> ComplexityCounterSink<'owner> {
-    pub(super) fn new(counters: &'owner Mutex<RuntimeComplexityCounters>) -> Self {
+    pub(crate) fn new(counters: &'owner Mutex<RuntimeComplexityCounters>) -> Self {
         Self { counters }
     }
 
-    pub(super) fn count(&self, update: impl FnOnce(&mut RuntimeComplexityCounters)) {
+    pub(crate) fn count(&self, update: impl FnOnce(&mut RuntimeComplexityCounters)) {
         update(
             &mut self
                 .counters
@@ -21,17 +21,23 @@ impl<'owner> ComplexityCounterSink<'owner> {
         );
     }
 
-    pub(super) fn snapshot(&self) -> RuntimeComplexityCounters {
-        crate::runtime::state::subsystems::services::instrumentation::snapshot_complexity(
-            self.counters,
-        )
+    pub(crate) fn accumulate(&self, counts: RuntimeComplexityCounters) {
+        self.count(|target| {
+            super::operation_complexity_accounting::accumulate_complexity_counts(target, counts)
+        });
+    }
+
+    pub(crate) fn snapshot(&self) -> RuntimeComplexityCounters {
+        self.counters
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .clone()
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::performance::PerformanceAccess;
 
     #[test]
     fn abandoned_counts_do_not_escape_and_settlement_preserves_existing_gauges() {
@@ -52,7 +58,7 @@ mod tests {
             preparation_packet_count: 2,
             ..Default::default()
         };
-        PerformanceAccess::from_counters(&parent).accumulate_round_counts(accepted);
+        ComplexityCounterSink::new(&parent).accumulate(accepted);
         let actual = parent.lock().unwrap();
         assert_eq!(actual.preparation_packet_count, 9);
         assert_eq!(actual.commit_topology_flags, 11);

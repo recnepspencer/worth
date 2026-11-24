@@ -80,10 +80,7 @@ pub(crate) fn complete_proposed_state(
     let aggregate = aggregate.map(|source| source.invocation(plan.commands()));
     let observation = observation.with_aggregate(aggregate);
     let observation_kind = observation.kind();
-    let plan_contract = view
-        .home_target
-        .is_none()
-        .then(|| plan.invariant_contract());
+    let plan_contract = (!view.rejudges_home_target()).then(|| plan.invariant_contract());
     let consumed_groups = profile.consumed_groups();
     if plan_contract.is_some_and(|contract| !contract.intersects_consumed_groups(consumed_groups)) {
         return Ok(InvariantExecutionResult::skipped(metadata(

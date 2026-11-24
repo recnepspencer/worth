@@ -8,7 +8,7 @@ use crate::validation::data::*;
 
 #[test]
 fn relation_only_custom_invariant_refuses_closed_retirement_before_effects() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let install = |version| {
         installed_with(
@@ -33,7 +33,7 @@ fn relation_only_custom_invariant_refuses_closed_retirement_before_effects() {
         &mut target,
         &mut recovered,
         world.activation,
-        crate::mvcc::RelationalOperationControl::uninterrupted(),
+        crate::runtime::operation_control::RelationalOperationControl::uninterrupted(),
         None,
     )
     .unwrap_err();

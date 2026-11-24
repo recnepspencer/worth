@@ -7,12 +7,12 @@ mod refusals;
 mod settlement;
 use super::fixture::{basis, capture, protected_payload};
 use crate::indexes::data::DerivedIndexEntries;
-use crate::mvcc::RelationalOperationControl;
+use crate::runtime::operation_control::RelationalOperationControl;
 use fixture::*;
 
 #[test]
 fn closed_three_outputs_two_relations_retire_atomically_and_regenerate_ordered_v2() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let world = world(execution);
     assert_order(&world.runtime, &world.outputs, &world.relations);

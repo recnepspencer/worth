@@ -67,7 +67,7 @@ pub(crate) fn validate(
                 let bad = |source| corrupt(publication, source, id);
                 if kind == storage.catalog_kind {
                     let value: record::Catalog =
-                        crate::publication::ownership::read::payload::decode(
+                        crate::publication::ownership::record_payload::decode(
                             bytes,
                             publication,
                             &RecordRef::Entity(id),
@@ -80,7 +80,7 @@ pub(crate) fn validate(
                     catalogs.push((id, value));
                 } else if kind == storage.position_kind {
                     let value: RoutePresence =
-                        crate::publication::ownership::read::payload::decode(
+                        crate::publication::ownership::record_payload::decode(
                             bytes,
                             publication,
                             &RecordRef::Entity(id),
@@ -101,7 +101,7 @@ pub(crate) fn validate(
                     }
                 } else {
                     let value: record::Publication =
-                        crate::publication::ownership::read::payload::decode(
+                        crate::publication::ownership::record_payload::decode(
                             bytes,
                             publication,
                             &RecordRef::Entity(id),
