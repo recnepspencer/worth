@@ -555,6 +555,7 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "mvcc/publication/application_publication/coupled_assembly/inputs/settlement.rs" = "runtime"
 "mvcc/publication/application_publication/coupled_assembly/candidate_completion.rs" = "runtime"
 "mvcc/publication/application_publication/coupled_assembly/input_issuance.rs" = "runtime"
+# A coupled part's naming plan follows its commands through assembly (Phase 5E 3B-2).
 
 "runtime/state/subsystems/canonical_publication_routes/branch_transition_stream/schema_inputs/tests.rs" = "runtime"
 

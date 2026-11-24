@@ -11,18 +11,20 @@ use contracts::transactions::data::primitives::WorkerIntentBatch;
 use std::fmt::Write;
 use worth_execution::ExecutionRequest;
 use worth_relational_contracts::internal_port as contracts;
+use contracts::lineage::data::{CommitNamingPlan, PendingBirthTarget};
 
 /// The scoped coordinates one part chose, by original text. A successor round
 /// of the same route reuses exactly these, so its keys name the chain's records.
-pub(super) type LocalKeys = std::collections::BTreeMap<String, String>;
+pub type LocalKeys = std::collections::BTreeMap<String, String>;
 
-pub(super) fn scope(
+pub fn scope(
     execution: &ExecutionRequest<'_, '_>,
     part: usize,
     prior: &CommitCreatedEntityBindings,
     symbols: &StringInterner,
     batches: &mut [WorkerIntentBatch],
     roles: &mut [RequiredOutputRoleTarget],
+    naming: Option<&mut CommitNamingPlan>,
 ) -> Result<LocalKeys, TransactionCommitError> {
     let mut chosen = LocalKeys::new();
     execution
@@ -71,6 +73,9 @@ pub(super) fn scope(
                     rewrite(&mut created.client_key)?;
                 }
             }
+            if let Some(plan) = naming {
+                super::part_naming::visit_client_keys_mut(plan, &mut rewrite)?;
+            }
             Ok::<_, TransactionCommitError>(())
         })
         .map_err(custody::execution_stop)?
@@ -87,6 +92,7 @@ pub fn rescope(
     symbols: &StringInterner,
     batches: &mut [WorkerIntentBatch],
     roles: &mut [RequiredOutputRoleTarget],
+    naming: Option<&mut CommitNamingPlan>,
 ) -> Result<Result<(), ()>, TransactionCommitError> {
     execution
         .run_native_with_checkpoint(|context| {
@@ -114,6 +120,9 @@ pub fn rescope(
                     rewrite(&mut created.client_key)?;
                 }
             }
+            if let Some(plan) = naming {
+                super::part_naming::visit_client_keys_mut(plan, &mut rewrite)?;
+            }
             Ok(if unknown { Err(()) } else { Ok(()) })
         })
         .map_err(custody::execution_stop)?
@@ -130,6 +139,7 @@ pub fn repartition(
     symbols: &StringInterner,
     batches: &mut [WorkerIntentBatch],
     roles: &mut [RequiredOutputRoleTarget],
+    naming: Option<&mut CommitNamingPlan>,
 ) -> Result<(), TransactionCommitError> {
     use contracts::transactions::data::intents::mutation_intent::CreateIntent;
     use contracts::transactions::data::intents::mutation_intent::MutationIntent;
@@ -193,6 +203,25 @@ pub fn repartition(
             for role in roles {
                 checkpoint(context, 1).map_err(custody::execution_stop)?;
                 repartition(&mut role.target)?;
+            }
+            if let Some(plan) = naming {
+                super::part_naming::visit_targets_mut(plan, |target| {
+                    checkpoint(context, 1).map_err(custody::execution_stop)?;
+                    let (relation, key, partition) = match target {
+                        PendingBirthTarget::CreatedEntity(created) => {
+                            (false, &created.client_key, &mut created.partition_id)
+                        }
+                        PendingBirthTarget::CreatedRelation(created) => {
+                            repartition(&mut created.source)?;
+                            repartition(&mut created.target)?;
+                            (true, &created.client_key, &mut created.partition_id)
+                        }
+                    };
+                    if let Some(head) = head_partition(relation, key) {
+                        *partition = head;
+                    }
+                    Ok::<_, TransactionCommitError>(())
+                })?;
             }
             Ok::<_, TransactionCommitError>(())
         })

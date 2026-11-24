@@ -21,7 +21,7 @@ use crate::visibility::materialization::read_records::reader::pinned_read::Relat
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 use worth_relational_mutation::internal_port::mvcc::transaction::intent::RelationalTransactionIntentOwnerPort as _;
-pub(crate) use worth_relational_publication::internal_port::mvcc::publication::application_publication::coupled_assembly::{assembly_failure, authored_writes, chain, completion, contribution, corruption_commands, disjoint_field_patches, fresh_references, inputs, local_keys, net_plan, parent_read_footprint, participant_admission, producer_posture, refusals, retained_assembly, roster_completion, route_selection, source_effects, suffix_scope, touch_projection, writer_custody};
+pub(crate) use worth_relational_publication::internal_port::mvcc::publication::application_publication::coupled_assembly::{assembly_failure, authored_writes, chain, completion, contribution, corruption_commands, disjoint_field_patches, fresh_references, inputs, local_keys, net_plan, parent_read_footprint, part_naming, participant_admission, producer_posture, refusals, retained_assembly, roster_completion, route_selection, source_effects, suffix_scope, touch_projection, writer_custody};
 mod input_issuance;
 pub use inputs::RelationalRequiredOutputInput;
 mod aggregate_read;

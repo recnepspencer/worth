@@ -3,6 +3,11 @@ pub type Host = WorthQueryProgramApplicationRuntime<Schema, Program>;
 pub type Document<'a> = WorthQueryApplicationHistoryDocument<'a, Schema, History>;
 impl WorthQueryApplicationContribution<Schema> for Contribution {
     type Configuration = ();
+    fn contracts(
+        contracts: &mut WorthQueryApplicationContributionContracts<Schema>,
+    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        coupled::producer::contracts(contracts)
+    }
     fn configure(
         _: (),
         setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
@@ -13,6 +18,7 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         setup.handler::<refusals::Binding, _>(refusals::Handler)?;
         setup.handler::<outputs::sculpt::Binding, _>(outputs::sculpt::Handler)?;
         setup.handler::<stored::Binding, _>(stored::Handler)?;
+        coupled::producer::install(setup)?;
         setup.handler::<edit::member::Binding, _>(edit::member::Handler)
     }
 }

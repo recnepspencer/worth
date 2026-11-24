@@ -41,6 +41,10 @@ StepAction(step) ==
             CommitRetire(step.name)
       [] step.action = "CommitRestore" ->
             CommitRestore(step.name, step.owner, step.part)
+      [] step.action = "CommitCoupledCreate" ->
+            CommitCoupledCreate(step.n1, step.o1, step.p1, step.n2, step.o2, step.p2)
+      [] step.action = "RefuseCoupledDuplicateBirth" ->
+            RefuseCoupledDuplicateBirth(step.name)
       [] step.action = "DestroyAndRebuildIndex" ->
             DestroyAndRebuildIndex
       [] step.action = "Observe" ->

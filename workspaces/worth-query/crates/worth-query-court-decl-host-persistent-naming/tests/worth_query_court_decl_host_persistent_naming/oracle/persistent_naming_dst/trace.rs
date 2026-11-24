@@ -84,6 +84,18 @@ fn action(op: &Op) -> String {
             placed(*at)
         ),
         Op::Rebuild => "\"action\":\"DestroyAndRebuildIndex\"".to_owned(),
+        Op::Coupled { names, at } => format!(
+            "\"action\":\"CommitCoupledCreate\",\"n1\":{},\"o1\":{},\"p1\":{},\"n2\":{},\"o2\":{},\"p2\":{}",
+            name(names[0]),
+            text(owner_name(at[0].owner())),
+            text(at[0].part()),
+            name(names[1]),
+            text(owner_name(at[1].owner())),
+            text(at[1].part())
+        ),
+        Op::CoupledDuplicate { name: n, .. } => {
+            format!("\"action\":\"RefuseCoupledDuplicateBirth\",\"name\":{}", name(*n))
+        }
     }
 }
 

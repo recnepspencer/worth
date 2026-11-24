@@ -119,8 +119,8 @@ pub(crate) fn prepare_coupled_candidate(
         return Ok(false);
     }
     let RelationalAuthoredCoupledCandidate {
-        parts,
-        stages,
+        mut parts,
+        mut stages,
         authored_prefix,
         ..
     } = candidate;
@@ -171,6 +171,16 @@ pub(crate) fn prepare_coupled_candidate(
         .footprint
         .derive_validation_dependencies(commands.plan(), execution.allocation_policy())
         .map_err(|failure| TransactionCommitError::conflict(failure.into_conflict()))?;
+    // The envelope's one naming plan, after every fallible completion step:
+    // the authored plan this round started from, then each member's.
+    let stage_plans = stages.iter_mut().map(|stage| stage.naming.take());
+    let part_plans = parts.iter_mut().map(|part| part.naming.take());
+    let root = transaction.naming_plan.clone();
+    if let Some(plan) =
+        super::part_naming::compose(execution, root.as_deref(), stage_plans.chain(part_plans))?
+    {
+        transaction.attach_naming_plan(plan);
+    }
     mutation.aggregate = crate::aggregate_identity::AggregateProposal::capture(
         &prepared.schema_authority,
         selected.selected(),

@@ -83,6 +83,18 @@ pub enum Op {
         at: Placement,
     },
     Rebuild,
+    /// One edit envelope whose two authored stages each create a record and
+    /// birth one fresh name: their plans compose into the one commit's plan.
+    Coupled {
+        names: [usize; 2],
+        at: [Placement; 2],
+    },
+    /// Both stages of one envelope mint fresh name `name`: the composed plan
+    /// must refuse `DuplicateBirth` with zero effects from either stage.
+    CoupledDuplicate {
+        name: usize,
+        at: Placement,
+    },
 }
 
 /// SplitMix64: a tiny, portable, seed-stable generator.
@@ -132,6 +144,8 @@ enum Kind {
     Retire,
     Restore,
     Rebuild,
+    Coupled,
+    CoupledDuplicate,
 }
 
 /// Picks the next enabled action. `authored` are the names whose exact
@@ -173,6 +187,8 @@ pub fn next_op(
     enable(Kind::Retire, 2, !live.is_empty());
     enable(Kind::Restore, 2, !restorable.is_empty());
     enable(Kind::Rebuild, 1, model.events() > 0 && !rebuilt);
+    enable(Kind::Coupled, 2, room >= 2);
+    enable(Kind::CoupledDuplicate, 1, room >= 1);
     let two = |rng: &mut Rng| {
         let first = rng.pick(&live);
         let rest: Vec<usize> = live.iter().copied().filter(|n| *n != first).collect();
@@ -237,5 +253,13 @@ pub fn next_op(
             at: rng.placement(),
         },
         Kind::Rebuild => Op::Rebuild,
+        Kind::Coupled => Op::Coupled {
+            names: [minted, minted + 1],
+            at: [rng.placement(), rng.placement()],
+        },
+        Kind::CoupledDuplicate => Op::CoupledDuplicate {
+            name: minted,
+            at: rng.placement(),
+        },
     }
 }

@@ -50,6 +50,7 @@ pub fn inspect_coupled_application<'run, S, B>(
         worth_relational::facade::mvcc::RelationalCoupledProducerPosture,
         worth_relational::facade::transactions::WorkerIntentBatch,
         worth_relational::facade::content::RelationalContentAttachments,
+        Option<worth_relational::facade::lineage::CommitNamingPlan>,
     ),
     WorthQueryApplicationCommitOutcome,
 >
@@ -124,6 +125,7 @@ where
         commands.publication,
         commands.batch,
         commands.content,
+        commands.naming,
     ))
 }
 

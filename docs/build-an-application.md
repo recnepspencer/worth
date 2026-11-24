@@ -523,15 +523,35 @@ An unnamed program carries no naming plan at all.
   same way; undo, redo and checkout then keep held names on each navigated
   node ([names across undo, redo and checkout](#names-across-undo-redo-checkout-and-rebuild)).
 
-Limits: coupled synchronous producers and authored-edit stages cannot yet
-declare output names; a part that does refuses (`ProviderUnsupported`) rather
-than commit its names unnamed. An installed operation splits, merges and
+- **Coupled producers and edit-envelope stages.** Every member of one
+  envelope names its outputs exactly as a direct operation does: each later
+  authored stage of `request.edit_envelope()` (or a `HistoryDocument`
+  envelope) and each coupled producer the edit runs (`coupled_outputs`)
+  declares through its own candidate writer or `writer.naming_scope(..)`,
+  and its declarations lower against the envelope's commit basis. Relational's
+  coupled assembly gives each member's plan the same create coordinates its
+  commands take (scoped local keys, prefix-created endpoints, a successor
+  round's chain keys and partitions; a successor round's plan replaces the
+  round it supersedes) and composes the authored prefix's plan and every
+  member's into the envelope's one plan, which commit finalization judges
+  whole. Names are byte-identical to the direct route; a name two members
+  both mint refuses `DuplicateBirth`, a schemed record any member leaves
+  unnamed refuses `MissingBirth`, and a later stage deleting a record an
+  earlier stage created refuses as a stage conflict (`ConflictingIntent`),
+  each with zero effects from every member.
+  A coupled member's decision reads the envelope's unpublished candidate,
+  where names are not read (`WorthQueryDecisionNameDenial::CandidateBasis`):
+  it splits, merges and retires names it holds as values (an intent field
+  or a stored `NamedTarget<K>`), not names it reads there.
+
+Limits: an installed operation splits, merges and
 retires a relation by the name its decision reader read
 ([holding and resolving names](#holding-and-resolving-names)); unlinking a
 named relation with no declared posture still retires its name. Courts:
 [installed operation output names](../workspaces/worth-query/crates/worth-query-court-decl-host-persistent-naming/tests/worth_query_court_decl_host_persistent_naming/persistent_naming/outputs/mod.rs),
 [naming scopes and least-member merges](../workspaces/worth-query/crates/worth-query-court-decl-host-persistent-naming/tests/worth_query_court_decl_host_persistent_naming/persistent_naming/scope.rs),
 [completeness](../workspaces/worth-query/crates/worth-query-court-decl-host-persistent-naming/tests/worth_query_court_decl_host_persistent_naming/persistent_naming/completeness.rs),
+[coupled stages and producers](../workspaces/worth-query/crates/worth-query-court-decl-host-persistent-naming/tests/worth_query_court_decl_host_persistent_naming/persistent_naming/coupled/mod.rs),
 [relation output postures](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_operation_outputs.rs)
 and [same-commit references](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_same_commit_names.rs).
 

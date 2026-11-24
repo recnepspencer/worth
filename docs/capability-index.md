@@ -115,6 +115,12 @@ typed roles through `birth(role)`, creates and names in one call
 least parent name whatever order the parents are listed in. Every scheme is
 complete (`require_all_births_named` is fixed, not opt-in): a commit leaving
 any created record of a schemed kind unnamed refuses `MissingBirth`.
+Coupled members name their outputs the same way: every later authored stage
+of an edit envelope and every coupled producer an edit runs declares through
+its own writer, and Relational's coupled assembly rescopes each member's plan
+with its commands and composes them into the envelope's one plan, refusing
+the whole envelope typed (`DuplicateBirth`, `MissingBirth`) with zero effects
+([coupled stages and producers](build-an-application.md#operation-output-names)).
 A later-role output may tell itself apart by an output the same candidate
 named earlier in the same occurrence: `same_commit_entity_name` /
 `same_commit_relation_name` return a `WorthQuerySameCommitName<K>` that is
@@ -137,8 +143,10 @@ The persistent-naming protocol is specified in
 and checked with `python3 tools/tla/run_tlc.py check`. The seeded simulation in
 `worth-query-court-decl-host-persistent-naming` (`oracle::persistent_naming_dst`;
 `WORTH_DST_SEEDS`, `WORTH_DST_TRACE_DIR`) drives real commits against a reference
-oracle of that model, including unnamed-birth refusals (`RefuseUnnamedBirth`)
-and least-keeper merges, and emits traces for `run_tlc.py trace`.
+oracle of that model, including unnamed-birth refusals (`RefuseUnnamedBirth`),
+least-keeper merges and two-stage edit envelopes composed into one commit
+(`CommitCoupledCreate`, `RefuseCoupledDuplicateBirth`), and emits traces for
+`run_tlc.py trace`.
 Hold names as ordinary values
 ([names as values, in rows and within an owner](build-an-application.md#names-as-values-in-rows-and-within-an-owner)):
 declare a kind once with `decl::application_naming::WorthQueryNamedKind`
@@ -1189,6 +1197,14 @@ exercises this fresh-process handoff, including exact original-owner readmission
 and subsequent dependency-driven advancement.
 
 ## Known gaps
+
+A coupled member (a later edit-envelope stage or a coupled producer) decides
+against the envelope's unpublished candidate, where its decision reader
+refuses name reads (`WorthQueryDecisionNameDenial::CandidateBasis`). It can
+name, split, merge and retire outputs only by names it holds as values (an
+intent field or a stored `NamedTarget<K>`); reading a basis record's name, or
+resolving a held name, inside a coupled member waits on candidate-basis name
+reads.
 
 Group persistent names have no commit path yet. Installation validates and
 lowers `application_group_name_scheme`s, but no operation can form, split, merge
