@@ -95,15 +95,15 @@ impl WorthQueryApplicationQueryGovernance {
         // The existing compiler verifies coverage of every predicate, guard and
         // ordering input. Their actual admitted rules must additionally allow
         // diagnostic explanation: output-field permission cannot cover them.
-        for (field, rules) in &computation.internal_field_rules {
-            for rule in rules {
+        for (field, group) in &computation.internal_field_rules {
+            for rule in group.rules() {
                 if !diagnostic_rule(context, rule, (&field.0, &field.1, &field.2))? {
                     return Err(MapKernelFailure::Domain(Denial::InternalInfluenceDenied));
                 }
             }
         }
-        for rules in computation.internal_relation_rules.values() {
-            for rule in rules {
+        for (_, group) in &computation.internal_relation_rules {
+            for rule in group.rules() {
                 if !rule
                     .influence()
                     .permits(ApplicationQueryObservableInfluence::Explanation)

@@ -6,8 +6,10 @@ use worth_query_installation::facade::WorthQueryCanonicalWorkEvidence;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryIdentity;
 use worth_relational::facade::{history::BranchId, identity::EntityId};
 
-use super::contract::{AdmittedDisclosureRule, WorthQueryAdmittedApplicationDisclosureContract};
-use super::influence_validation::{GovernedInternalFieldRules, GovernedInternalRelationRules};
+use super::contract::{
+    AdmittedDisclosureRule, SortedGovernedInternalFieldRules, SortedGovernedInternalRelationRules,
+    WorthQueryAdmittedApplicationDisclosureContract,
+};
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
 use crate::domain_computation::provider_session::{
     WorthQueryGraphWorkManagedRunIdentity, WorthQueryGraphWorkSessionIdentity,
@@ -72,8 +74,8 @@ impl WorthQueryPendingApplicationQueryGovernance {
 
 pub struct WorthQueryApplicationInternalComputationAuthority {
     binding: WorthQueryApplicationGovernanceBinding,
-    internal_field_rules: GovernedInternalFieldRules,
-    internal_relation_rules: GovernedInternalRelationRules,
+    internal_field_rules: SortedGovernedInternalFieldRules,
+    internal_relation_rules: SortedGovernedInternalRelationRules,
     disclosure_value: AspectValue,
 }
 
@@ -94,6 +96,7 @@ pub enum WorthQueryApplicationQueryGovernance {
         disclosure: WorthQueryApplicationDisclosureDecision,
         authorization: WorthQueryRetainedCapabilityAuthorization,
         authorization_canonical_work: WorthQueryCanonicalWorkEvidence,
+        disclosure_memory: Option<worth_execution::ExecutionMemoryReservation>,
     },
 }
 

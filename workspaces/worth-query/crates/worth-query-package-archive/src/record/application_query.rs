@@ -1,11 +1,9 @@
 use worth_foundational::facade::ScalarAspectType;
 use worth_query_declaration::facade::application_query::{
-    ApplicationQueryContinuationTarget, ApplicationQueryLiveCauseContract,
-    ApplicationQueryLiveTargetMode, ApplicationQueryOrderingDirection,
+    ApplicationQueryContinuationTarget, ApplicationQueryOrderingDirection,
     ApplicationQueryOrderingTerm, ApplicationQueryParameterDefinition, ApplicationQueryPredicate,
     ApplicationQueryPredicateExpected, ErasedApplicationQueryDefinition,
     WorthQueryPortableApplicationQueryContinuationParts,
-    WorthQueryPortableApplicationQueryLiveCauseParts,
     WorthQueryPortableApplicationQueryOrderingParts, WorthQueryPortableApplicationQueryParts,
 };
 
@@ -27,6 +25,7 @@ mod components;
 pub(in crate::record) mod controls;
 pub(in crate::record) mod disclosure;
 mod field_presence;
+mod live_cause;
 mod live_whole_result;
 mod managed_index;
 mod orbit;
@@ -71,13 +70,13 @@ pub(super) fn write(
     write_sequence(output, parts.predicates(), write_predicate)?;
     write_sequence(output, parts.ordering(), write_ordering)?;
     write_optional(output, parts.continuation(), write_continuation)?;
-    write_optional(output, parts.live_cause(), write_live_cause)?;
+    write_optional(output, parts.live_cause(), live_cause::write)?;
     disclosure::write(output, parts.disclosure())?;
     controls::write_authorization(output, parts.authorization())?;
     controls::write_basis_support(output, parts.basis_support())?;
     controls::write_lanes(output, parts.lanes())?;
     where_filter::write(output, parts.where_filter())?;
-    related_predicate::write(output, parts.related_predicates())?;
+    related_predicate::write(output, parts)?;
     live_whole_result::write(output, parts)
 }
 
@@ -115,7 +114,7 @@ fn decode_with_shape_depth(
     let predicates = decode_sequence(input, budget, 18, |input, _| decode_predicate(input))?;
     let ordering = decode_sequence(input, budget, 28, |input, _| decode_ordering(input))?;
     let continuation = decode_optional(input, decode_continuation)?;
-    let live_cause = decode_optional(input, decode_live_cause)?;
+    let live_cause = decode_optional(input, live_cause::decode)?;
     let disclosure = disclosure::decode(input, budget)?;
     let authorization = controls::decode_authorization(input)?;
     let basis_support = controls::decode_basis_support(input)?;
@@ -126,44 +125,47 @@ fn decode_with_shape_depth(
             .validate_against_parameters(&parameters)
             .map_err(|_| Denial::new(Kind::InvalidRecordShape))?;
     }
-    let related_predicates = related_predicate::decode(input, budget, &root_entity, &parameters)?;
+    let related_predicates = related_predicate::decode(input, budget)?;
+    let incompatible = orbit.is_some()
+        || component_selection.is_some()
+        || managed_index.is_some()
+        || continuation.is_some();
     let live_whole_result = live_whole_result::decode(
         input,
         lanes.live_enabled(),
         live_cause.is_some(),
-        orbit.is_some()
-            || component_selection.is_some()
-            || managed_index.is_some()
-            || continuation.is_some(),
+        incompatible,
     )?;
+    let parts = WorthQueryPortableApplicationQueryParts {
+        name,
+        query_type,
+        parameter_type,
+        result_type,
+        scope_type,
+        root_entity,
+        scope_entity,
+        parameters,
+        result_shape,
+        root_paths,
+        orbit,
+        component_selection,
+        managed_index,
+        cardinality,
+        predicates,
+        where_filter,
+        related_predicates,
+        ordering,
+        continuation,
+        live_cause,
+        live_whole_result,
+        disclosure,
+        authorization,
+        basis_support,
+        lanes,
+    };
+    related_predicate::validate(&parts)?;
     Ok(ErasedApplicationQueryDefinition::from_untrusted_parts(
-        WorthQueryPortableApplicationQueryParts {
-            name,
-            query_type,
-            parameter_type,
-            result_type,
-            scope_type,
-            root_entity,
-            scope_entity,
-            parameters,
-            result_shape,
-            root_paths,
-            orbit,
-            component_selection,
-            managed_index,
-            cardinality,
-            predicates,
-            where_filter,
-            related_predicates,
-            ordering,
-            continuation,
-            live_cause,
-            live_whole_result,
-            disclosure,
-            authorization,
-            basis_support,
-            lanes,
-        },
+        parts,
     ))
 }
 
@@ -270,13 +272,17 @@ fn write_ordering(
     output: &mut dyn BinaryEncodingSink,
     value: &ApplicationQueryOrderingTerm,
 ) -> Result<(), Denial> {
-    output.text(value.query_type())?;
-    output.text(value.slot_type())?;
     let (entity, aspect, field) = value.field();
-    output.text(entity)?;
-    output.text(aspect)?;
-    output.text(field)?;
-    output.text(value.output_name())?;
+    for text in [
+        value.query_type(),
+        value.slot_type(),
+        entity,
+        aspect,
+        field,
+        value.output_name(),
+    ] {
+        output.text(text)?;
+    }
     foundational_aspect::write_scalar_type(output, value.scalar_family())?;
     output.text(value.value_type())?;
     output.u16(match value.direction() {
@@ -335,62 +341,6 @@ fn decode_continuation(
             parent_entity: input.text()?.to_owned(),
             child_entity: input.text()?.to_owned(),
             direction: result_shape::decode_traversal_direction(input)?,
-        },
-    ))
-}
-
-fn write_live_cause(
-    output: &mut dyn BinaryEncodingSink,
-    value: &ApplicationQueryLiveCauseContract,
-) -> Result<(), Denial> {
-    for text in [
-        value.binding_type(),
-        value.effect(),
-        value.payload_type(),
-        value.scope_slot_type(),
-    ] {
-        output.text(text)?;
-    }
-    let (entity, aspect, field) = value.scope_field();
-    output.text(entity)?;
-    output.text(aspect)?;
-    output.text(field)?;
-    output.text(value.scope_value_type())?;
-    output.text(value.target_slot_type())?;
-    let (entity, aspect, field) = value.target_field();
-    output.text(entity)?;
-    output.text(aspect)?;
-    output.text(field)?;
-    output.text(value.target_value_type())?;
-    output.u8(match value.target_mode() {
-        ApplicationQueryLiveTargetMode::Root => 0,
-        ApplicationQueryLiveTargetMode::Collection => 1,
-    })?;
-    Ok(())
-}
-fn decode_live_cause(
-    input: &mut BinaryInput<'_>,
-) -> Result<ApplicationQueryLiveCauseContract, Denial> {
-    Ok(ApplicationQueryLiveCauseContract::from_untrusted_parts(
-        WorthQueryPortableApplicationQueryLiveCauseParts {
-            binding_type: decode_type_identity(input)?,
-            effect: input.text()?.to_owned(),
-            payload_type: decode_type_identity(input)?,
-            scope_slot_type: decode_type_identity(input)?,
-            scope_entity: input.text()?.to_owned(),
-            scope_aspect: input.text()?.to_owned(),
-            scope_field: input.text()?.to_owned(),
-            scope_value_type: decode_type_identity(input)?,
-            target_slot_type: decode_type_identity(input)?,
-            target_entity: input.text()?.to_owned(),
-            target_aspect: input.text()?.to_owned(),
-            target_field: input.text()?.to_owned(),
-            target_value_type: decode_type_identity(input)?,
-            target_mode: match input.u8()? {
-                0 => ApplicationQueryLiveTargetMode::Root,
-                1 => ApplicationQueryLiveTargetMode::Collection,
-                _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
-            },
         },
     ))
 }

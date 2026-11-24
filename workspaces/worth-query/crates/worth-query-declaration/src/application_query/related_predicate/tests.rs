@@ -255,11 +255,59 @@ fn invalid_related_predicates_refuse_with_exact_typed_denials() {
         vec![open_status_target()],
         None,
     );
-    dup.related_predicates = vec![one.clone(), one];
+    dup.related_predicates = vec![one.clone(), one.clone()];
     assert_eq!(
         validate_portable_application_query_freshly(&dup),
         Err(ApplicationQueryDefinitionDenial::InvalidCanonicalOrdering)
     );
+
+    // Contradictory Absent + Exists over identical matcher refuses with RelatedPredicateContradictory.
+    let mut contra_pol = base_parts();
+    let exists_same = blocked_by(
+        RelationDirection::Forward,
+        ApplicationQueryRelatedPolarity::Exists,
+        vec![open_status_target()],
+        None,
+    );
+    contra_pol.related_predicates = vec![one.clone(), exists_same];
+    assert_eq!(
+        validate_portable_application_query_freshly(&contra_pol),
+        Err(ApplicationQueryDefinitionDenial::RelatedPredicateContradictory)
+    );
+
+    // Contradictory unequal literals on the same target field refuses with RelatedPredicateContradictory.
+    let done_status_target = ApplicationQueryRelatedTargetPredicate::from_untrusted_value(
+        "Task".into(),
+        "TaskFacts".into(),
+        "Status".into(),
+        AspectValue::String(InternedString::Raw("done".into())),
+        ScalarAspectType::String,
+        ApplicationFieldPresence::Required,
+    );
+    let mut contra_lit = base_parts();
+    contra_lit.related_predicates = vec![blocked_by(
+        RelationDirection::Forward,
+        ApplicationQueryRelatedPolarity::Exists,
+        vec![done_status_target.clone(), open_status_target()],
+        None,
+    )];
+    assert_eq!(
+        validate_portable_application_query_freshly(&contra_lit),
+        Err(ApplicationQueryDefinitionDenial::RelatedPredicateContradictory)
+    );
+
+    // Distinct filters on the same relation with opposite polarities remain valid!
+    let mut distinct_valid = base_parts();
+    distinct_valid.related_predicates = vec![
+        one,
+        blocked_by(
+            RelationDirection::Forward,
+            ApplicationQueryRelatedPolarity::Exists,
+            vec![done_status_target],
+            None,
+        ),
+    ];
+    assert!(validate_portable_application_query_freshly(&distinct_valid).is_ok());
 
     // Target where_filter field outside target entity refuses.
     let draft = expressions().parse("k == k").unwrap().encode();

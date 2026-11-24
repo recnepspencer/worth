@@ -68,6 +68,8 @@ pub fn compile_with_admission<Schema, Query, Parameters, QueryResult, Scope, E>(
     for text in [contract.classification(), capability_name, capability_type] {
         pay(admit, CompilationWork::Copy(text.len()))?;
     }
+    let internal_field_rules = finalize_internal_groups(internal_field_rules, admit)?;
+    let internal_relation_rules = finalize_internal_groups(internal_relation_rules, admit)?;
     Ok(WorthQueryAdmittedApplicationDisclosureContract::Governed {
         classification: contract.classification().to_string(),
         capability_name: capability_name.to_string(),
@@ -77,6 +79,31 @@ pub fn compile_with_admission<Schema, Query, Parameters, QueryResult, Scope, E>(
         internal_field_rules,
         internal_relation_rules,
     })
+}
+
+fn finalize_internal_groups<K, E>(
+    groups: BTreeMap<K, Vec<AdmittedDisclosureRule>>,
+    admit: &mut impl FnMut(CompilationWork<'_>) -> Result<(), E>,
+) -> Result<Vec<(K, GovernedInternalRuleGroup)>, CompilationStop<E>> {
+    let table_bytes = groups
+        .len()
+        .saturating_mul(std::mem::size_of::<(K, GovernedInternalRuleGroup)>());
+    pay(admit, CompilationWork::Copy(table_bytes))?;
+    let mut out = Vec::with_capacity(groups.len());
+    for (key, rules) in groups {
+        pay(admit, CompilationWork::Visit)?;
+        let mut mask = if rules.is_empty() { 0_u16 } else { !0_u16 };
+        for rule in &rules {
+            pay(admit, CompilationWork::Visit)?;
+            let mut rule_mask = 0_u16;
+            for surface in rule.influence().permitted() {
+                rule_mask |= influence_bit(surface);
+            }
+            mask &= rule_mask;
+        }
+        out.push((key, GovernedInternalRuleGroup::new(rules, mask)));
+    }
+    Ok(out)
 }
 
 #[allow(clippy::too_many_arguments)]

@@ -69,8 +69,19 @@ pub fn narrow_selected_roots<ReadIdentity>(
     if !read.plan.contract.related_predicates().is_empty() {
         candidates = related::narrow(read, candidates, &mut evidence, &mut work)?;
     }
-    selection.result_set_source =
-        evidence::merge(read.execution, selection.result_set_source.take(), evidence)?;
+    let merge_subject = if read.plan.contract.related_predicates().is_empty()
+        && read.plan.contract.where_filter().is_some()
+    {
+        WHERE_FILTER_SUBJECT
+    } else {
+        "narrowed selection evidence"
+    };
+    selection.result_set_source = evidence::merge(
+        read.execution,
+        selection.result_set_source.take(),
+        evidence,
+        merge_subject,
+    )?;
     retain_root_sources(&mut selection, &candidates);
     selection.candidates = candidates;
     selection.examined_candidates = selection

@@ -1,12 +1,13 @@
 //! RNG, coverage counters, and per-step oracle comparison for the seeded
 //! differential query DST.
 use super::super::queries::*;
-use super::super::world::Host;
+use super::super::world::{ready_with_source, Host};
 use super::reference::GraphSnapshot;
 use super::trace::Trace;
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationReadObservation, WorthQueryApplicationRequestExt,
 };
+use worth_query_host::facade::primary_graph::WorthQueryObservedSource;
 use worth_query_testkit_document_retention::facade::document_retention_model::operator_identity::{
     authenticate_operator, request_scope,
 };
@@ -31,6 +32,8 @@ impl Rng {
 #[derive(Default, Debug)]
 pub(super) struct Coverage {
     pub toggles: usize,
+    pub out_of_scope_toggles: usize,
+    pub currentness_checks: usize,
     pub edge_adds: usize,
     pub edge_removes: usize,
     pub note_edits: usize,
@@ -42,6 +45,8 @@ pub(super) struct Coverage {
 impl Coverage {
     pub fn add(&mut self, other: Self) {
         self.toggles += other.toggles;
+        self.out_of_scope_toggles += other.out_of_scope_toggles;
+        self.currentness_checks += other.currentness_checks;
         self.edge_adds += other.edge_adds;
         self.edge_removes += other.edge_removes;
         self.note_edits += other.note_edits;
@@ -94,7 +99,7 @@ pub(super) fn verify_step(
     trace: &mut Trace,
     cov: &mut Coverage,
     tracing: bool,
-) -> Result<(), String> {
+) -> Result<(Vec<u64>, WorthQueryObservedSource<ReadyTasksQuery>), String> {
     let check = |label: &str, got: Vec<u64>, exp: Vec<u64>| -> Result<(), String> {
         if got != exp {
             Err(format!(
@@ -105,13 +110,9 @@ pub(super) fn verify_step(
         }
     };
     let projects: &[u64] = if tracing { &[1] } else { &[1, 2] };
-    for &project in projects {
-        let ready = run_keys!(host, ReadyIntent(ProjectScope { project }));
-        check("ready_tasks", ready.clone(), oracle.ready_tasks(project))?;
-        if project == 1 {
-            trace.observe("Absent", "Forward", true, &ready);
-        }
+    let mut ready_p1: Option<(Vec<u64>, WorthQueryObservedSource<ReadyTasksQuery>)> = None;
 
+    for &project in projects {
         let blocked = run_keys!(host, BlockedIntent(ProjectScope { project }));
         check(
             "blocked_tasks",
@@ -159,6 +160,15 @@ pub(super) fn verify_step(
             filtered,
             oracle.ready_filtered(project, max_due, text, min_rank),
         )?;
+
+        // Observe `ready_tasks` LAST for project 1 so `obs` in `RelatedAbsenceTrace.tla`
+        // matches the retained `ReadyTasksQuery` source checked after the next mutation!
+        let (ready, source) = ready_with_source(host, project);
+        check("ready_tasks", ready.clone(), oracle.ready_tasks(project))?;
+        if project == 1 {
+            trace.observe("Absent", "Forward", true, &ready);
+            ready_p1 = Some((ready, source));
+        }
     }
 
     let sample_task = (rng.pick(6) as u64) + 1;
@@ -186,5 +196,5 @@ pub(super) fn verify_step(
     check("pinned_ready", pinned_ready.clone(), snap.ready_tasks(1))?;
     trace.pinned_read(pin_idx + 1, "Absent", "Forward", true, &pinned_ready);
     cov.pinned_checks += 1;
-    Ok(())
+    Ok(ready_p1.expect("project 1 ready observation captured"))
 }

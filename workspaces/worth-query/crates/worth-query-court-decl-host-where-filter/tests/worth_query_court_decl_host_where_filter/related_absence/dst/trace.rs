@@ -41,11 +41,32 @@ impl Trace {
     }
 
     pub fn observe(&mut self, pol: &str, dir: &str, with_pred: bool, rows: &[u64]) {
+        self.observe_with_governance(pol, dir, with_pred, true, true, false, rows);
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn observe_with_governance(
+        &mut self,
+        pol: &str,
+        dir: &str,
+        with_pred: bool,
+        allow_rel: bool,
+        allow_field: bool,
+        denied: bool,
+        rows: &[u64],
+    ) {
         self.lines.push(format!(
             "{{\"action\":\"ObserveQuery\",\"pol\":\"{pol}\",\"dir\":\"{dir}\",\
-              \"withPred\":{with_pred},\"allowRel\":true,\"allowField\":true,\
-              \"denied\":false,\"rows\":{}}}",
+              \"withPred\":{with_pred},\"allowRel\":{allow_rel},\"allowField\":{allow_field},\
+              \"denied\":{denied},\"rows\":{}}}",
             task_set(rows)
+        ));
+    }
+
+    /// Records the REAL Host currentness check outcome (`observe_ready_source().is_ok()`).
+    pub fn check_currentness(&mut self, still_current: bool) {
+        self.lines.push(format!(
+            "{{\"action\":\"CheckCurrentness\",\"stillCurrent\":{still_current}}}"
         ));
     }
 

@@ -10,8 +10,8 @@ enum PreparedDecision {
     Public,
     Governed {
         pending: WorthQueryPendingApplicationQueryGovernance,
-        internal_field_rules: GovernedInternalFieldRules,
-        internal_relation_rules: GovernedInternalRelationRules,
+        internal_field_rules: SortedGovernedInternalFieldRules,
+        internal_relation_rules: SortedGovernedInternalRelationRules,
         disclosure: WorthQueryApplicationDisclosureDecision,
     },
 }
@@ -106,6 +106,7 @@ impl WorthQueryPreparedApplicationGovernance {
                 },
                 disclosure,
                 authorization: pending.authorization,
+                disclosure_memory: None,
             },
         }
     }

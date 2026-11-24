@@ -161,22 +161,35 @@ pub fn run_mutate(host: &Host, input: MutateBoard, idem: u64) {
     ));
 }
 
+/// Checks exact source currentness against the Host: returns `Ok(true)` ONLY
+/// on `Committed`, `Ok(false)` ONLY on typed `SourceChanged`, and `Err` on any
+/// other outcome or denial so unrelated errors can never masquerade as stale.
 pub fn observe_ready_source(
     host: &Host,
     project: u64,
     source: &WorthQueryObservedSource<ReadyTasksQuery>,
     key: &str,
-) -> Result<(), WorthQueryApplicationRequestMutationDenial> {
+) -> Result<bool, String> {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
-    host.runtime()
+    match host
+        .runtime()
         .request(&principal, &scope)
         .advanced()
         .mutate(ObserveReady { project })
         .expect_source(source.clone())
         .idempotency(&key.to_owned())
         .execute_in_program(host, ExecutionAllocationPolicy::SystemAllocation)
-        .map(|_| ())
+    {
+        Ok(WorthQueryApplicationMutationOutcome::Committed { .. }) => Ok(true),
+        Ok(other) => Err(format!(
+            "expected Committed currentness check, got {other:?}"
+        )),
+        Err(WorthQueryApplicationRequestMutationDenial::Handler(
+            MutationHandlerExecutionDenial::Attempt(cause),
+        )) if cause.kind() == WorthQueryApplicationAttemptDenialKind::SourceChanged => Ok(false),
+        Err(other) => Err(format!("expected SourceChanged denial, got {other:?}")),
+    }
 }
 
 pub fn ready_with_source(
@@ -208,7 +221,7 @@ pub fn funded_ready(
     memory_bytes: u64,
     work: u64,
     project: u64,
-) -> Result<(Vec<u64>, usize), WorthQueryApplicationRequestQueryDenial> {
+) -> Result<(Vec<u64>, usize), Box<WorthQueryApplicationRequestQueryDenial>> {
     let caller = ExecutionResourceLease::serial(LeaseRequest {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
@@ -236,6 +249,50 @@ pub fn funded_ready(
                             result.receipt().inspect().read_work().total_work_units(),
                         )
                     })
+                    .map_err(Box::new)
+            },
+        )
+        .expect("funded advancement opens")
+}
+
+/// Runs unfiltered `UnlinkedTasksQuery` (`where_no_related(BlockedBy)` with zero
+/// target field reads) so all fanout work and memory isolates `BlockedBy`
+/// discovery, native collector, sort, and endpoint conversion.
+pub fn funded_unlinked(
+    host: &Host,
+    scope: &WorthQueryRequestScope,
+    memory_bytes: u64,
+    work: u64,
+    project: u64,
+) -> Result<(Vec<u64>, usize), Box<WorthQueryApplicationRequestQueryDenial>> {
+    let caller = ExecutionResourceLease::serial(LeaseRequest {
+        policy: ExecutionRequestPolicy::new(
+            ExecutionPosture::Serial,
+            DeterminismContract::CanonicalBitwise,
+            ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(memory_bytes), Some(work)),
+        ),
+        cancellation: scope.cancellation().execution_token(),
+        deadline: scope.deadline(),
+    })
+    .expect("finite lease admitted");
+    let principal = authenticate_operator(host.installed_schema(), scope);
+    host.runtime()
+        .with_funded_application_advancement(
+            scope,
+            ExecutionAllocationPolicy::Execution(&caller),
+            |phase| {
+                host.runtime()
+                    .request(&principal, scope)
+                    .query(UnlinkedIntent(ProjectScope { project }))
+                    .execute_in_advancement(&phase)
+                    .map(|result| {
+                        let keys = result.rows().iter().map(|r| r.key).collect();
+                        (
+                            keys,
+                            result.receipt().inspect().read_work().total_work_units(),
+                        )
+                    })
+                    .map_err(Box::new)
             },
         )
         .expect("funded advancement opens")

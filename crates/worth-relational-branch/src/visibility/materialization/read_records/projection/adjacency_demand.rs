@@ -38,14 +38,21 @@ impl VisibilityProjectionView {
                     entities.clone(),
                     demand,
                     || round.has_read_misses(),
-                    |anchor| {
-                        round
-                            .get_current_partition(anchor.partition_id)
-                            .and_then(|head| {
-                                head.adjacency(demand.direction).get(anchor.slot_index())
-                            })
-                            .map(|set| set.kind_ids(demand.kind))
-                            .unwrap_or_default()
+                    |context, anchor| {
+                        let Some(head) = round.get_current_partition(anchor.partition_id) else {
+                            return Ok(AdjacencyIds::default());
+                        };
+                        let table = head.adjacency(demand.direction);
+                        context
+                            .checkpoint(table.navigation_work_bound() as u64)
+                            .map_err(crate::execution::denial::kernel_stop)?;
+                        let Some(set) = table.get(anchor.slot_index()) else {
+                            return Ok(AdjacencyIds::default());
+                        };
+                        context
+                            .checkpoint(set.navigation_work_bound() as u64)
+                            .map_err(crate::execution::denial::kernel_stop)?;
+                        Ok(set.kind_ids(demand.kind))
                     },
                     |id, anchor| {
                         round
@@ -63,27 +70,30 @@ impl VisibilityProjectionView {
             })
             .map_err(Cause::from)?
         } else {
+            let basis = AdjacencyKindBasis::of_current_version(
+                self.basis.root_version() == Some(self.version_id()),
+            );
             probe_full(execution, &root_source, |round| {
                 self.discover_adjacency(
                     execution,
                     entities.clone(),
                     demand,
                     || round.has_read_misses(),
-                    |anchor| {
-                        round
-                            .get_partition(anchor.partition_id)
-                            .and_then(|partition| {
-                                demand.direction.table(partition).get(anchor.slot_index())
-                            })
-                            .map(|set| {
-                                set.kind_ids(
-                                    AdjacencyKindBasis::of_current_version(
-                                        self.basis.root_version() == Some(self.version_id()),
-                                    ),
-                                    demand.kind,
-                                )
-                            })
-                            .unwrap_or_default()
+                    |context, anchor| {
+                        let Some(partition) = round.get_partition(anchor.partition_id) else {
+                            return Ok(AdjacencyIds::default());
+                        };
+                        let table = demand.direction.table(partition);
+                        context
+                            .checkpoint(table.navigation_work_bound() as u64)
+                            .map_err(crate::execution::denial::kernel_stop)?;
+                        let Some(set) = table.get(anchor.slot_index()) else {
+                            return Ok(AdjacencyIds::default());
+                        };
+                        context
+                            .checkpoint(set.selected_kind_navigation_work_bound(basis) as u64)
+                            .map_err(crate::execution::denial::kernel_stop)?;
+                        Ok(set.kind_ids(basis, demand.kind))
                     },
                     |id, anchor| {
                         round
@@ -110,12 +120,15 @@ impl VisibilityProjectionView {
         entities: impl Clone + IntoIterator<Item = EntityId>,
         demand: AdjacencyDemand,
         has_misses: impl Fn() -> bool,
-        mut ids: impl FnMut(EntityId) -> AdjacencyIds<'source>,
+        mut ids: impl FnMut(
+            &mut worth_execution::MapKernelContext<'_, '_>,
+            EntityId,
+        ) -> Result<AdjacencyIds<'source>, Cause>,
         mut accepted: impl FnMut(RelationId, EntityId) -> bool,
     ) -> Result<(), Cause> {
         super::super::read_work::metered_with_memory(
             execution,
-            |_, memory| {
+            |context, memory| {
                 let mut consumed = 0_usize;
                 for anchor in entities.clone() {
                     crate::execution::request_custody::check_request(execution)?;
@@ -123,19 +136,47 @@ impl VisibilityProjectionView {
                         if demand.exhausted(consumed) {
                             return Ok(());
                         }
+                        context
+                            .checkpoint(super::super::read_prices::EXAMINE_SLOT)
+                            .map_err(crate::execution::denial::kernel_stop)?;
                         consumed = consumed.saturating_add(1);
                     }
-                    let mut iterator_bytes = 0;
-                    let iterator = ids(anchor).try_iter(|_, bytes| {
-                        super::super::read_work::record_memory::claim(memory, bytes)?;
-                        iterator_bytes = bytes;
+                    let mut iterator_bytes = 0_u64;
+                    let mut iterator = ids(context, anchor)?.try_iter(|navigation, bytes| {
+                        if navigation > 0 {
+                            context
+                                .checkpoint(navigation)
+                                .map_err(crate::execution::denial::kernel_stop)?;
+                        }
+                        if bytes > 0 {
+                            super::super::read_work::record_memory::claim(memory, bytes)?;
+                            iterator_bytes = iterator_bytes
+                                .checked_add(bytes)
+                                .ok_or(Cause::ChargedBytesOverflow)?;
+                        }
                         Ok::<_, Cause>(())
                     })?;
-                    for id in iterator.copied() {
+                    while let Some(&id) = iterator.try_next(|navigation, bytes| {
+                        if navigation > 0 {
+                            context
+                                .checkpoint(navigation)
+                                .map_err(crate::execution::denial::kernel_stop)?;
+                        }
+                        if bytes > 0 {
+                            super::super::read_work::record_memory::claim(memory, bytes)?;
+                            iterator_bytes = iterator_bytes
+                                .checked_add(bytes)
+                                .ok_or(Cause::ChargedBytesOverflow)?;
+                        }
+                        Ok::<_, Cause>(())
+                    })? {
                         crate::execution::request_custody::check_request(execution)?;
                         if demand.exhausted(consumed) {
                             break;
                         }
+                        context
+                            .checkpoint(super::super::read_prices::EXAMINE_SLOT)
+                            .map_err(crate::execution::denial::kernel_stop)?;
                         consumed = consumed.saturating_add(1);
                         let keep = accepted(id, anchor);
                         if has_misses() {
@@ -160,7 +201,7 @@ impl VisibilityProjectionView {
     }
 }
 impl AdjacencyDemand {
-    fn current_matches(
+    pub(super) fn current_matches(
         self,
         schema: &crate::schema::data::RelationalSchemaRegistry,
         head: crate::storage::residency::RelationalRegionHeadView<'_>,
@@ -179,7 +220,7 @@ impl AdjacencyDemand {
                 .as_ref()
                 .is_some_and(|ends| self.endpoint(ends, anchor))
     }
-    fn historical_matches(
+    pub(super) fn historical_matches(
         self,
         schema: &crate::schema::data::RelationalSchemaRegistry,
         partition: &crate::storage::overlay::PartitionState,

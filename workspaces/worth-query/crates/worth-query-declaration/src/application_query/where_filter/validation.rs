@@ -5,10 +5,61 @@ use crate::application_query::{
     WorthQueryPortableApplicationQueryParts,
 };
 
-/// Verifies every parameter operand against the query's declared parameter list:
-/// existence, exact scalar family, unitless discipline, and exact optionality.
+/// O(log P) parameter roster lookup using sorted binary search. Reuses an already-sorted
+/// canonical parameter slice directly with zero allocation, or sorts borrowed
+/// references once in O(P log P) when unsorted.
+pub(in crate::application_query) enum ParameterLookup<'a> {
+    Sorted(&'a [ApplicationQueryParameterDefinition]),
+    Indexed(Vec<&'a ApplicationQueryParameterDefinition>),
+}
+
+impl<'a> ParameterLookup<'a> {
+    pub(in crate::application_query) fn new(
+        parameters: &'a [ApplicationQueryParameterDefinition],
+    ) -> Self {
+        if parameters
+            .windows(2)
+            .all(|pair| pair[0].name() <= pair[1].name())
+        {
+            Self::Sorted(parameters)
+        } else {
+            let mut indexed: Vec<&'a ApplicationQueryParameterDefinition> =
+                parameters.iter().collect();
+            indexed.sort_unstable_by_key(|param| param.name());
+            Self::Indexed(indexed)
+        }
+    }
+
+    pub(in crate::application_query) fn get(
+        &self,
+        name: &str,
+    ) -> Option<&'a ApplicationQueryParameterDefinition> {
+        match self {
+            Self::Sorted(params) => params
+                .binary_search_by_key(&name, |param| param.name())
+                .ok()
+                .map(|idx| &params[idx]),
+            Self::Indexed(params) => params
+                .binary_search_by_key(&name, |param| param.name())
+                .ok()
+                .map(|idx| params[idx]),
+        }
+    }
+}
+
+/// Verifies every parameter operand against the query's declared parameter list
+/// in O(T log P) time: existence, exact scalar family, unitless discipline, and
+/// exact optionality.
 pub(in crate::application_query) fn validate_parameter_operands(
     parameters: &[ApplicationQueryParameterDefinition],
+    filter: &ApplicationQueryWhereFilterProgram,
+) -> Result<(), Denial> {
+    let lookup = ParameterLookup::new(parameters);
+    validate_parameter_operands_with_lookup(&lookup, filter)
+}
+
+pub(in crate::application_query) fn validate_parameter_operands_with_lookup(
+    lookup: &ParameterLookup<'_>,
     filter: &ApplicationQueryWhereFilterProgram,
 ) -> Result<(), Denial> {
     for operand in filter.operands() {
@@ -21,10 +72,7 @@ pub(in crate::application_query) fn validate_parameter_operands(
                 parameter,
                 scalar_family,
             } => {
-                let Some(declared) = parameters
-                    .iter()
-                    .find(|declared| declared.name() == parameter)
-                else {
+                let Some(declared) = lookup.get(parameter) else {
                     return Err(Denial::WhereFilterUnknownParameter);
                 };
                 if declared.scalar_family() != *scalar_family

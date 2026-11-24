@@ -121,7 +121,7 @@ pub use parameters::{
 };
 pub use reference::ApplicationQueryReference;
 pub use related_predicate::{
-    ApplicationQueryRelatedPolarity, ApplicationQueryRelatedPredicate,
+    validate_related_predicates, ApplicationQueryRelatedPolarity, ApplicationQueryRelatedPredicate,
     ApplicationQueryRelatedPredicateMeaning, ApplicationQueryRelatedTargetPredicate,
     WorthQueryPortableApplicationQueryRelatedPredicateParts,
 };

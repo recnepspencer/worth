@@ -1,15 +1,14 @@
 //! Single-harness Seeded Differential Query DST + Reference Graph Oracle
 //! covering optional parameters, literal constants, multi-predicate exact-root
 //! queries, related-record absence/existence (forward & reverse, with & without
-//! target predicates/filters), and pinned/retained historical reads.
+//! target predicates/filters), out-of-scope blocker invalidation, real native
+//! footprint currentness checks, and pinned/retained historical reads.
 //!
 //! `WORTH_DST_SEEDS` (default 64) controls seed count, `WORTH_DST_SEED` runs
 //! one seed, and `WORTH_DST_TRACE_DIR` emits TLA+ NDJSON traces for
 //! `tools/tla/run_tlc.py trace`.
 use super::mutations::MutateBoard;
-use super::world::{install, run_mutate, Host, TaskSeed};
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Mutex;
+use super::world::{install, observe_ready_source, ready_with_source, run_mutate, Host, TaskSeed};
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationReadObservation, WorthQueryApplicationRequestExt,
 };
@@ -32,9 +31,20 @@ fn build_initial_graph(rng: &mut Rng, tracing: bool) -> (GraphSnapshot, Vec<Task
     let mut oracle = GraphSnapshot::default();
     let mut seeds = Vec::with_capacity(6);
     for key in 1..=6_u64 {
-        // Put all 6 tasks in project 1 when tracing (matches TLA+ single-project task set),
-        // and split across projects 1 & 2 otherwise to exercise project isolation too.
-        let project = if tracing || key <= 4 { 1 } else { 2 };
+        // When tracing, tasks 1..=5 are in project 1 (`ScopeTasks`) and task 6 is in
+        // project 2 (an out-of-scope blocker!) matching `RelatedAbsenceTrace.tla`.
+        // Otherwise tasks 1..=4 are in project 1 and 5..=6 are in project 2.
+        let project = if tracing {
+            if key <= 5 {
+                1
+            } else {
+                2
+            }
+        } else if key <= 4 {
+            1
+        } else {
+            2
+        };
         let status = if tracing || rng.pick(3) != 0 {
             "open"
         } else {
@@ -77,6 +87,7 @@ fn retain_basis(host: &Host) -> WorthQueryApplicationReadObservation {
         .expect("retain basis succeeds")
 }
 
+#[allow(clippy::too_many_arguments)]
 fn apply_random_step(
     host: &Host,
     oracle: &mut GraphSnapshot,
@@ -110,6 +121,9 @@ fn apply_random_step(
         oracle.set_status(task, next);
         trace.toggle_status(task);
         cov.toggles += 1;
+        if proj == 2 {
+            cov.out_of_scope_toggles += 1;
+        }
         true
     } else if choice < 6 {
         let from = (rng.pick(6) as u64) + 1;
@@ -195,6 +209,14 @@ fn run_seed(seed: u64, trace_dir: Option<&std::path::Path>) -> Result<Coverage, 
     let mut history = vec![(retain_basis(&host), oracle.clone())];
     let mut idem = 1_u64;
 
+    // Seed initial Ready observation & source before first mutation.
+    let (init_ready, init_source) = ready_with_source(&host, 1);
+    if init_ready != oracle.ready_tasks(1) {
+        return Err(format!("seed {seed} init ready mismatch"));
+    }
+    trace.observe("Absent", "Forward", true, &init_ready);
+    let mut last_ready = (init_ready, init_source);
+
     for step in 0..STEPS_PER_SEED {
         if apply_random_step(
             &host,
@@ -206,12 +228,27 @@ fn run_seed(seed: u64, trace_dir: Option<&std::path::Path>) -> Result<Coverage, 
             &mut idem,
         ) {
             history.push((retain_basis(&host), oracle.clone()));
+            let (ref prev_rows, ref prev_source) = last_ready;
+            let still_current =
+                observe_ready_source(&host, 1, prev_source, &format!("dst-cur-{seed}-{step}"))?;
+            trace.check_currentness(still_current);
+            cov.currentness_checks += 1;
+            if still_current && oracle.ready_tasks(1) != *prev_rows {
+                return Err(format!(
+                    "seed {seed} step {step}: STALE READ! source stayed current but ready changed from {prev_rows:?} to {:?}",
+                    oracle.ready_tasks(1)
+                ));
+            }
         }
-        verify_step(
+        last_ready = verify_step(
             seed, step, &host, &oracle, &history, &mut rng, &mut trace, &mut cov, tracing,
         )?;
     }
     if let Some(dir) = trace_dir {
+        // Emit real governed denial observations into the trace (no hardcoded booleans!).
+        let (rel_denied, field_denied) = super::governance::governed_trace_denial_probes();
+        trace.observe_with_governance("Absent", "Forward", true, false, true, rel_denied, &[]);
+        trace.observe_with_governance("Absent", "Forward", true, true, false, field_denied, &[]);
         trace
             .write(dir, seed)
             .map_err(|err| format!("trace write failed: {err}"))?;
@@ -231,39 +268,34 @@ fn seeds() -> Vec<u64> {
 fn seeded_differential_query_dst_agrees_with_reference_graph_oracle() {
     let seeds = seeds();
     let trace_dir = std::env::var_os("WORTH_DST_TRACE_DIR").map(std::path::PathBuf::from);
-    let workers = std::thread::available_parallelism()
-        .map_or(4, usize::from)
-        .min(8)
-        .min(seeds.len());
-    let next = AtomicUsize::new(0);
-    let failures = Mutex::new(Vec::new());
-    let total = Mutex::new(Coverage::default());
-    std::thread::scope(|scope| {
-        for _ in 0..workers {
-            scope.spawn(|| {
-                while let Some(&seed) = seeds.get(next.fetch_add(1, Ordering::Relaxed)) {
-                    match run_seed(seed, trace_dir.as_deref()) {
-                        Ok(cov) => total.lock().unwrap().add(cov),
-                        Err(err) => failures.lock().unwrap().push(err),
-                    }
-                }
-            });
+    let mut failures = Vec::new();
+    let mut total = Coverage::default();
+    for &seed in &seeds {
+        match run_seed(seed, trace_dir.as_deref()) {
+            Ok(cov) => total.add(cov),
+            Err(err) => failures.push(err),
         }
-    });
-    let failures = failures.into_inner().unwrap();
+    }
     assert!(
         failures.is_empty(),
         "{} seeds failed:\n{}",
         failures.len(),
         failures.join("\n")
     );
-    let total = total.into_inner().unwrap();
     eprintln!(
         "related-absence differential DST: {} seeds x {STEPS_PER_SEED} steps, {total:?}",
         seeds.len()
     );
     if seeds.len() >= 64 {
         assert!(total.toggles > 0, "must exercise status toggles");
+        assert!(
+            total.out_of_scope_toggles > 0,
+            "must exercise out-of-scope blocker toggles"
+        );
+        assert!(
+            total.currentness_checks > 0,
+            "must exercise live currentness checks"
+        );
         assert!(
             total.edge_adds > 0,
             "must exercise BlockedBy edge additions"

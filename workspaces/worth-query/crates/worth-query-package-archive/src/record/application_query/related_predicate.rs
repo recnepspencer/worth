@@ -12,9 +12,10 @@ use crate::record::{
     sequence::{decode_sequence, require_canonical_sequence, write_sequence},
 };
 use worth_query_declaration::facade::application_query::{
-    ApplicationQueryParameterDefinition, ApplicationQueryPredicateExpected,
+    validate_related_predicates, ApplicationQueryPredicateExpected,
     ApplicationQueryRelatedPolarity, ApplicationQueryRelatedPredicateMeaning,
     ApplicationQueryRelatedTargetPredicate, RelationDirection,
+    WorthQueryPortableApplicationQueryParts,
     WorthQueryPortableApplicationQueryRelatedPredicateParts,
 };
 use worth_query_declaration::facade::application_schema::ApplicationFieldPresence;
@@ -24,13 +25,19 @@ use super::where_filter;
 const MARKER: &[u8; 4] = b"WQRP";
 const VERSION: u16 = 1;
 
+pub(super) fn validate(parts: &WorthQueryPortableApplicationQueryParts) -> Result<(), Denial> {
+    validate_related_predicates(parts).map_err(|_| Denial::new(Kind::InvalidRecordShape))
+}
+
 pub(super) fn write(
     output: &mut dyn BinaryEncodingSink,
-    predicates: &[ApplicationQueryRelatedPredicateMeaning],
+    parts: &WorthQueryPortableApplicationQueryParts,
 ) -> Result<(), Denial> {
+    let predicates = parts.related_predicates();
     if predicates.is_empty() {
         return Ok(());
     }
+    validate(parts)?;
     require_canonical_sequence(predicates)?;
     output.raw_bytes(MARKER)?;
     output.u16(VERSION)?;
@@ -40,8 +47,6 @@ pub(super) fn write(
 pub(super) fn decode(
     input: &mut BinaryInput<'_>,
     budget: &mut RecordDecodeAttempt,
-    root_entity: &str,
-    parameters: &[ApplicationQueryParameterDefinition],
 ) -> Result<Vec<ApplicationQueryRelatedPredicateMeaning>, Denial> {
     if !input.remaining_starts_with(MARKER) {
         return Ok(Vec::new());
@@ -55,11 +60,6 @@ pub(super) fn decode(
         return Err(Denial::new(Kind::InvalidRecordShape));
     }
     require_canonical_sequence(&predicates)?;
-    for predicate in &predicates {
-        predicate
-            .validate_locally(root_entity, parameters)
-            .map_err(|_| Denial::new(Kind::InvalidRecordShape))?;
-    }
     Ok(predicates)
 }
 

@@ -1,6 +1,6 @@
-//! Governance and declaration-boundary courts for related-record absence
-//! predicates: unauthorized relation or target-field reads fail closed before
-//! touching rows or edges, even on empty projects.
+//! Governance courts for related-record absence predicates: unauthorized
+//! relation OR unauthorized target-only field (`Gate`, never referenced on the
+//! root!) fails closed before touching rows or edges, even on empty projects.
 mod schema;
 use schema::*;
 use worth_query_decl::facade::{application_program::*, application_schema::*, authentication::*};
@@ -63,12 +63,16 @@ fn install_governed() -> WorthQueryProgramApplicationRuntime<GovSchema, GovProgr
                 256,
                 worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system(),
             ),
-            WorthQueryApplicationQueryResourceProfile::new(std::num::NonZeroUsize::new(64).unwrap()),
+            WorthQueryApplicationQueryResourceProfile::new(
+                std::num::NonZeroUsize::new(64).unwrap(),
+            ),
             SignalConditionalEvaluationBudget::development(),
         ),
         |_, graph, installed| {
             graph.bind_principal(
-                &installed.principal_binding(GovPrincipalBinding::reference()).unwrap(),
+                &installed
+                    .principal_binding(GovPrincipalBinding::reference())
+                    .unwrap(),
                 WorthQueryApplicationPrincipalKey::new("principal-1").unwrap(),
                 1_u64,
                 operator_identity(),
@@ -112,12 +116,17 @@ fn install_governed() -> WorthQueryProgramApplicationRuntime<GovSchema, GovProgr
                     key(&pstr),
                 ))?;
             }
-            for (tid, status) in [(1_u64, "open"), (2, "open"), (3, "open")] {
+            for (tid, status, gate) in [
+                (1_u64, "open", "clear"),
+                (2, "open", "clear"),
+                (3, "open", "blocking"),
+            ] {
                 let tstr = format!("task-{tid}");
                 graph.bind_entity(
                     WorthQueryApplicationEntitySeed::new(Task::reference(), key(&tstr))
                         .field(TaskKey::at("TaskKey"), tid)
-                        .field(Status::at("Status"), status.to_owned()),
+                        .field(Status::at("Status"), status.to_owned())
+                        .field(Gate::at("Gate"), gate.to_owned()),
                 )?;
                 graph.bind_relation(WorthQueryApplicationRelationSeed::new(
                     Contains::reference(),
@@ -126,7 +135,7 @@ fn install_governed() -> WorthQueryProgramApplicationRuntime<GovSchema, GovProgr
                     key(&tstr),
                 ))?;
             }
-            // Task 2 is blocked by open Task 3 -> only Tasks 1 and 3 are Ready!
+            // Task 2 is blocked by Task 3 whose target-only `Gate == "blocking"`.
             graph.bind_relation(WorthQueryApplicationRelationSeed::new(
                 BlockedBy::reference(),
                 "blocked-2-3".to_owned(),
@@ -139,8 +148,55 @@ fn install_governed() -> WorthQueryProgramApplicationRuntime<GovSchema, GovProgr
     .expect("governed board installs")
 }
 
+fn is_internal_computation_denied<T>(
+    result: Result<T, WorthQueryApplicationRequestQueryDenial>,
+) -> bool {
+    match result {
+        Err(WorthQueryApplicationRequestQueryDenial::Admission(ref cause))
+            if cause.kind()
+                == WorthQueryApplicationQueryAdmissionDenialKind::InternalComputationDenied =>
+        {
+            true
+        }
+        Err(other) => panic!("expected Admission(InternalComputationDenied), got: {other:?}"),
+        Ok(_) => panic!("expected Admission(InternalComputationDenied), got Ok"),
+    }
+}
+
+/// Runs real governed denial probes against the Host runtime for TLA+ traces,
+/// asserting exact typed `InternalComputationDenied` refusals.
+pub(super) fn governed_trace_denial_probes() -> (bool, bool) {
+    let host = install_governed();
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let access = ReadBoardAccess {
+        project: "p1".to_owned(),
+    };
+    let rel_denied = is_internal_computation_denied(
+        host.runtime()
+            .request(&principal, &scope)
+            .query(GovDeniedRelIntent {
+                project: "p1".into(),
+            })
+            .execute_governed(
+                ReadBoard::reference(),
+                InspectBoard::reference(),
+                access.clone(),
+            ),
+    );
+    let field_denied = is_internal_computation_denied(
+        host.runtime()
+            .request(&principal, &scope)
+            .query(GovDeniedFieldIntent {
+                project: "p1".into(),
+            })
+            .execute_governed(ReadBoard::reference(), InspectBoard::reference(), access),
+    );
+    (rel_denied, field_denied)
+}
+
 #[test]
-fn governed_related_absence_enforces_relation_and_target_field_disclosure() {
+fn governed_related_absence_enforces_relation_and_target_only_field_disclosure() {
     let host = install_governed();
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
@@ -148,7 +204,7 @@ fn governed_related_absence_enforces_relation_and_target_field_disclosure() {
         project: project.to_owned(),
     };
 
-    // 1. Authorized principal with BOTH relation (tag 1) and Status (tag 1) disclosure succeeds.
+    // 1. Authorized principal with relation (tag 1) + target-only `Gate` (tag 1) succeeds.
     let ok = host
         .runtime()
         .request(&principal, &scope)
@@ -164,7 +220,7 @@ fn governed_related_absence_enforces_relation_and_target_field_disclosure() {
     assert_eq!(ok.rows().iter().map(|r| r.key).collect::<Vec<_>>(), [1, 3]);
 
     // 2. Omitting `use_relation_by` refuses at disclosure contract compilation.
-    let missing_rule = host
+    let missing_rel = host
         .runtime()
         .request(&principal, &scope)
         .query(GovMissingRelIntent {
@@ -179,20 +235,21 @@ fn governed_related_absence_enforces_relation_and_target_field_disclosure() {
         .expect("missing internal relation disclosure rule must refuse");
     assert!(
         matches!(
-            missing_rule,
+            missing_rel,
             WorthQueryApplicationRequestQueryDenial::Admission(ref cause)
                 if cause.kind() == WorthQueryApplicationQueryAdmissionDenialKind::DisclosureContractInvalid
         ),
-        "unexpected denial: {missing_rule:?}"
+        "unexpected denial: {missing_rel:?}"
     );
 
-    // 3. Unauthorized relation disclosure (requires tag 2, principal has tag 1) refuses fail-closed
-    //    on BOTH populated project AND empty project (before touching rows or edges!).
+    // 3. Omitting `use_field_by(Gate)` (a field NEVER used on the root!) refuses
+    //    at disclosure contract compilation with subject "Gate" on BOTH populated
+    //    AND empty projects.
     for proj in ["p1", "empty"] {
-        let denied_rel = host
+        let missing_tfld = host
             .runtime()
             .request(&principal, &scope)
-            .query(GovDeniedRelIntent {
+            .query(GovMissingTargetFieldIntent {
                 project: proj.into(),
             })
             .execute_governed(
@@ -201,37 +258,50 @@ fn governed_related_absence_enforces_relation_and_target_field_disclosure() {
                 access(proj),
             )
             .err()
-            .expect("unauthorized relation disclosure must refuse");
+            .expect("missing target-only field disclosure rule must refuse");
         assert!(
             matches!(
-                denied_rel,
-                WorthQueryApplicationRequestQueryDenial::Execution(_)
-                    | WorthQueryApplicationRequestQueryDenial::Admission(_)
+                missing_tfld,
+                WorthQueryApplicationRequestQueryDenial::Admission(ref cause)
+                    if cause.kind() == WorthQueryApplicationQueryAdmissionDenialKind::DisclosureContractInvalid
+                        && cause.subject() == "Gate"
             ),
-            "unexpected denial on {proj}: {denied_rel:?}"
+            "unexpected denial on {proj}: {missing_tfld:?}"
         );
     }
 
-    // 4. Unauthorized target field disclosure (relation tag 1 allowed, Status requires tag 2) refuses!
-    let denied_fld = host
-        .runtime()
-        .request(&principal, &scope)
-        .query(GovDeniedFieldIntent {
-            project: "p1".into(),
-        })
-        .execute_governed(
-            ReadBoard::reference(),
-            InspectBoard::reference(),
-            access("p1"),
-        )
-        .err()
-        .expect("unauthorized target-field disclosure must refuse");
-    assert!(
-        matches!(
-            denied_fld,
-            WorthQueryApplicationRequestQueryDenial::Execution(_)
-                | WorthQueryApplicationRequestQueryDenial::Admission(_)
-        ),
-        "unexpected denial: {denied_fld:?}"
-    );
+    // 4. Unauthorized relation disclosure (tag 2) refuses fail-closed with exact
+    //    `InternalComputationDenied` on BOTH populated AND empty projects!
+    for proj in ["p1", "empty"] {
+        assert!(is_internal_computation_denied(
+            host.runtime()
+                .request(&principal, &scope)
+                .query(GovDeniedRelIntent {
+                    project: proj.into(),
+                })
+                .execute_governed(
+                    ReadBoard::reference(),
+                    InspectBoard::reference(),
+                    access(proj),
+                ),
+        ));
+    }
+
+    // 5. Unauthorized target-only field `Gate` (root fields & BlockedBy are ALL
+    //    tag 1; ONLY target-only `Gate` requires tag 2!) refuses fail-closed with
+    //    exact `InternalComputationDenied` on BOTH populated AND empty projects!
+    for proj in ["p1", "empty"] {
+        assert!(is_internal_computation_denied(
+            host.runtime()
+                .request(&principal, &scope)
+                .query(GovDeniedFieldIntent {
+                    project: proj.into(),
+                })
+                .execute_governed(
+                    ReadBoard::reference(),
+                    InspectBoard::reference(),
+                    access(proj),
+                ),
+        ));
+    }
 }

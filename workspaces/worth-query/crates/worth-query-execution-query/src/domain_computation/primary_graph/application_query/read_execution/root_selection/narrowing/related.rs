@@ -50,10 +50,17 @@ pub fn narrow<ReadIdentity>(
     work: &mut RootSelectionWork<'_>,
 ) -> Result<Vec<EntityId>, WorthQueryApplicationReadExecutionDenial> {
     let predicates = read.plan.contract.related_predicates();
-    // Governance and layout admission run before touching any rows or edges,
-    // even if `candidates` is empty, so unauthorized principals fail closed.
+    // Charge governance admission work and verify governance BEFORE touching
+    // any rows or edges, even if `candidates` is empty, so unauthorized
+    // principals fail closed with bounded metered work.
+    let checks = governance_check_count(predicates)
+        .ok_or_else(|| relational_read_denial(Cause::WorkCounterOverflow, "related_predicate"))?;
+    let gov_work = checks
+        .checked_mul(log2_ceil(read.plan.governance.internal_rule_count().max(1)))
+        .ok_or_else(|| relational_read_denial(Cause::WorkCounterOverflow, "related_predicate"))?;
+    charge_work(read.execution, work, gov_work)?;
     for predicate in predicates {
-        let _ = admit_related_predicate(read, predicate)?;
+        admit_related_governance(read, predicate)?;
     }
     if candidates.is_empty() {
         return Ok(candidates);
@@ -63,16 +70,31 @@ pub fn narrow<ReadIdentity>(
         if candidates.is_empty() {
             break;
         }
-        let admitted = admit_related_predicate(read, predicate)?;
+        let admitted = resolve_related_layout(read, predicate)?;
         candidates = narrow_one(read, admitted, candidates, &mut state)?;
     }
     Ok(candidates)
 }
 
-fn admit_related_predicate<'a, ReadIdentity>(
+fn governance_check_count(predicates: &[WorthQueryInstalledRelatedPredicate]) -> Option<u64> {
+    let mut total = 0_u64;
+    for predicate in predicates {
+        let fields = predicate.target_predicates().len().checked_add(
+            predicate
+                .target_where_filter()
+                .map_or(0, |filter| filter.fields().len()),
+        )?;
+        total = total
+            .checked_add(1)?
+            .checked_add(u64::try_from(fields).ok()?)?;
+    }
+    Some(total)
+}
+
+fn admit_related_governance<ReadIdentity>(
     read: &NarrowingRead<'_, '_, '_, '_, ReadIdentity>,
-    predicate: &'a WorthQueryInstalledRelatedPredicate,
-) -> Result<AdmittedPredicate<'a>, WorthQueryApplicationReadExecutionDenial> {
+    predicate: &WorthQueryInstalledRelatedPredicate,
+) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
     if !read.plan.governance.admit_internal_relation(
         (predicate.relation(), predicate.from(), predicate.to()),
         predicate.direction(),
@@ -83,6 +105,13 @@ fn admit_related_predicate<'a, ReadIdentity>(
             predicate.relation(),
         ));
     }
+    admit_target_fields(read, predicate)
+}
+
+fn resolve_related_layout<'a, ReadIdentity>(
+    read: &NarrowingRead<'_, '_, '_, '_, ReadIdentity>,
+    predicate: &'a WorthQueryInstalledRelatedPredicate,
+) -> Result<AdmittedPredicate<'a>, WorthQueryApplicationReadExecutionDenial> {
     let layout = read
         .graph
         .relation(predicate.relation())
@@ -105,7 +134,6 @@ fn admit_related_predicate<'a, ReadIdentity>(
                 predicate.target_entity(),
             )
         })?;
-    admit_target_fields(read, predicate)?;
     Ok(AdmittedPredicate {
         predicate,
         relation_kind: layout.kind,
@@ -117,38 +145,28 @@ fn admit_target_fields<ReadIdentity>(
     read: &NarrowingRead<'_, '_, '_, '_, ReadIdentity>,
     predicate: &WorthQueryInstalledRelatedPredicate,
 ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
-    for target in predicate.target_predicates() {
+    let check = |field: (&str, &str, &str),
+                 key|
+     -> Result<(), WorthQueryApplicationReadExecutionDenial> {
         read.plan
             .governance
-            .admit_internal_projection(
-                target.field(),
-                target.field_key(),
-                ApplicationQueryObservableInfluence::RowPresence,
-            )
+            .admit_internal_projection(field, key, ApplicationQueryObservableInfluence::RowPresence)
+            .map(|_| ())
             .ok_or_else(|| {
                 read_execution_denial(
                     WorthQueryApplicationReadExecutionDenialKind::ProjectionUnavailable,
-                    target.field().2,
+                    field.2,
                 )
-            })?;
+            })
+    };
+    for target in predicate.target_predicates() {
+        check(target.field(), target.field_key())?;
     }
     for field in predicate
         .target_where_filter()
         .map_or(&[][..], |filter| filter.fields())
     {
-        read.plan
-            .governance
-            .admit_internal_projection(
-                field.field(),
-                field.field_key(),
-                ApplicationQueryObservableInfluence::RowPresence,
-            )
-            .ok_or_else(|| {
-                read_execution_denial(
-                    WorthQueryApplicationReadExecutionDenialKind::ProjectionUnavailable,
-                    field.field().2,
-                )
-            })?;
+        check(field.field(), field.field_key())?;
     }
     Ok(())
 }
@@ -242,7 +260,10 @@ fn load_sorted_edges<ReadIdentity>(
         adjacency.endpoint_records_reserved(),
         subject,
     )?;
-    let records = adjacency.into_records();
+    // Carry the native collector's live memory reservation uninterrupted across
+    // work accounting and endpoint-pair conversion so `records` is never held
+    // unreserved and peak coexisting buffers remain bounded by the caller's cap.
+    let (records, records_reservation) = adjacency.into_records_with_reservation();
     let edge_count = records.len();
     let edge_work = (edge_count as u64)
         .checked_mul(log2_ceil(edge_count).saturating_add(1))
@@ -259,6 +280,7 @@ fn load_sorted_edges<ReadIdentity>(
         };
         edges.push(pair);
     }
+    drop(records_reservation);
     edges.sort_unstable();
     edges.dedup();
     Ok((edges, adj_dir))
