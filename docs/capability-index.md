@@ -144,9 +144,19 @@ and checked with `python3 tools/tla/run_tlc.py check`. The seeded simulation in
 `worth-query-court-decl-host-persistent-naming` (`oracle::persistent_naming_dst`;
 `WORTH_DST_SEEDS`, `WORTH_DST_TRACE_DIR`) drives real commits against a reference
 oracle of that model, including unnamed-birth refusals (`RefuseUnnamedBirth`),
-least-keeper merges and two-stage edit envelopes composed into one commit
-(`CommitCoupledCreate`, `RefuseCoupledDuplicateBirth`), and emits traces for
-`run_tlc.py trace`.
+least-keeper merges, two-stage edit envelopes composed into one commit
+(`CommitCoupledCreate`, `RefuseCoupledDuplicateBirth`) and candidate-basis
+name reads (`PersistentNamingCandidate.tla`, `CandidateEnvelope`), and emits
+traces for `run_tlc.py trace`.
+A coupled member (a later edit-envelope stage or a coupled producer) reads
+names in `decide` exactly as a direct operation does (`name_of`, `resolve`,
+`resolve_in`, `relation_name_of`, `resolve_relation`), answered from the
+envelope's commit basis and admitted only while the unpublished candidate
+leaves every record the answer rests on live at the same identity: a record
+an earlier member created refuses `UnpublishedCandidateRecord`, one it ended
+refuses `EndedInCandidate`, and an answer resting on an ended or unborn name
+refuses `CandidateNameHistory`, each vetoing the envelope with zero effects
+([candidate-basis reads](build-an-application.md#holding-and-resolving-names)).
 Hold names as ordinary values
 ([names as values, in rows and within an owner](build-an-application.md#names-as-values-in-rows-and-within-an-owner)):
 declare a kind once with `decl::application_naming::WorthQueryNamedKind`
@@ -1197,14 +1207,6 @@ exercises this fresh-process handoff, including exact original-owner readmission
 and subsequent dependency-driven advancement.
 
 ## Known gaps
-
-A coupled member (a later edit-envelope stage or a coupled producer) decides
-against the envelope's unpublished candidate, where its decision reader
-refuses name reads (`WorthQueryDecisionNameDenial::CandidateBasis`). It can
-name, split, merge and retire outputs only by names it holds as values (an
-intent field or a stored `NamedTarget<K>`); reading a basis record's name, or
-resolving a held name, inside a coupled member waits on candidate-basis name
-reads.
 
 Group persistent names have no commit path yet. Installation validates and
 lowers `application_group_name_scheme`s, but no operation can form, split, merge

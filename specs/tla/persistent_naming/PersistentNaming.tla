@@ -139,11 +139,12 @@ Frontier(evSeq, state, n, depth) ==
          IN IF i = 0 THEN {}
             ELSE UNION {Frontier(evSeq, state, s, depth - 1) : s \in Successors(evSeq[i])}
 
-\* One resolution answer: unscoped (`scope = "all"`) or within one owner.
-Answer(born, state, n, scope, sel) ==
+\* One resolution answer over log `evSeq`: unscoped (`scope = "all"`) or
+\* within one owner.
+AnswerIn(evSeq, born, state, n, scope, sel) ==
     IF ~born THEN [status |-> "UnknownName", targets |-> {}]
     ELSE
-        LET matched == Frontier(events, state, n, Len(events))
+        LET matched == Frontier(evSeq, state, n, Len(evSeq))
             inScope == IF scope = "all" THEN matched
                        ELSE {c \in matched : state[c].owner = scope}
         IN
@@ -152,6 +153,8 @@ Answer(born, state, n, scope, sel) ==
         ELSE IF Cardinality(inScope) = 1 THEN [status |-> "Exact", targets |-> inScope]
         ELSE IF sel = "Exact" THEN [status |-> "Ambiguous", targets |-> inScope]
         ELSE [status |-> "Plural", targets |-> inScope]
+
+Answer(born, state, n, scope, sel) == AnswerIn(events, born, state, n, scope, sel)
 
 \* Ground truth from the canonical log alone.
 ResolveFromEvents(n, scope, sel) ==

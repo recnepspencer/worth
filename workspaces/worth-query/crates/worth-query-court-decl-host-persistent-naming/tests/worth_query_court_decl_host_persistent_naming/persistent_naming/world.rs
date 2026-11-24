@@ -27,16 +27,27 @@ pub fn install() -> Host {
 }
 /// Installs the world; `named` false seeds members without their names.
 pub fn try_install(named: bool) -> Result<Host, String> {
+    try_install_program::<Program>(named, "91820000-0000-0000-0000-00000000a71e")
+}
+/// Installs the seeded world on program `P` under build identity `build`.
+pub fn try_install_program<P>(
+    named: bool,
+    build: &str,
+) -> Result<WorthQueryProgramApplicationRuntime<Schema, P>, String>
+where
+    P: ApplicationProgramDefinition<Schema, Contributions = (Contribution,)>,
+    P::Outputs: WorthQueryApplicationProgramRoots<Schema>,
+{
     let limits = host_limits(
         worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     in_memory_program(
-        ApplicationProgramAuthoring::<Schema, Program>::begin()
+        ApplicationProgramAuthoring::<Schema, P>::begin()
             .validated_program()
             .unwrap(),
         Schema::declaration().unwrap(),
         ((),),
-        ApplicationBuildIdentity::parse("91820000-0000-0000-0000-00000000a71e").unwrap(),
+        ApplicationBuildIdentity::parse(build).unwrap(),
         limits,
         |_, graph, installed| {
             graph.bind_principal(

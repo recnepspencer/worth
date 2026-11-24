@@ -2,8 +2,8 @@
 //! every name is byte-identical to the one the same plans mint as separate
 //! direct operations. The two schemes, parallel seams, a split across two
 //! owners (#133) and a least-keeper merge in place (#314) all ride one
-//! composed plan. A later stage reads at the envelope's applied candidate,
-//! where names are not read (`CandidateBasis`), so it acts on names it holds.
+//! composed plan. Here a later stage acts on names it holds; reading names
+//! on the envelope's candidate is `candidate`'s subject.
 use super::sculpt::Held;
 use super::*;
 
