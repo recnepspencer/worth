@@ -60,7 +60,16 @@ pub fn run_epoch(
     let mut subs = LiveSubs::new();
     for kind in [Kind::Today, Kind::Ready] {
         observe_subscribe(
-            seed, 0, host, &auth, &mut subs, oracle, version_map, trace, cov, kind,
+            seed,
+            0,
+            host,
+            &auth,
+            &mut subs,
+            oracle,
+            version_map,
+            trace,
+            cov,
+            kind,
         )?;
     }
     for step in 1..=steps {
@@ -130,18 +139,45 @@ pub fn run_epoch(
                 trace.close_sub(kind, close_outcome);
             } else {
                 observe_subscribe(
-                    seed, step, host, &auth, &mut subs, oracle, version_map, trace, cov, kind,
+                    seed,
+                    step,
+                    host,
+                    &auth,
+                    &mut subs,
+                    oracle,
+                    version_map,
+                    trace,
+                    cov,
+                    kind,
                 )?;
             }
         }
         for kind in [Kind::Today, Kind::Ready] {
             if subs.is_active(kind) {
                 observe_poll(
-                    seed, step, host, &auth, &mut subs, oracle, version_map, trace, cov, kind,
+                    seed,
+                    step,
+                    host,
+                    &auth,
+                    &mut subs,
+                    oracle,
+                    version_map,
+                    trace,
+                    cov,
+                    kind,
                 )?;
             } else if rng.pick(2) == 0 {
                 observe_subscribe(
-                    seed, step, host, &auth, &mut subs, oracle, version_map, trace, cov, kind,
+                    seed,
+                    step,
+                    host,
+                    &auth,
+                    &mut subs,
+                    oracle,
+                    version_map,
+                    trace,
+                    cov,
+                    kind,
                 )?;
             }
         }

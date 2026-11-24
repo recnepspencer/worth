@@ -298,17 +298,13 @@ impl WorthQueryLiveDeliverySource {
             .batches
             .front()
             .map_or(partition.next_sequence, |batch| batch.batch().sequence);
-        if cursor < first {
-            return Ok(WorthQueryLiveBoundedPoll::Overflow {
-                missed: first - cursor,
-            });
-        }
+        let ring_missed = first.saturating_sub(cursor);
         let unread = partition.next_sequence.saturating_sub(cursor);
         let max_lag_u64 = u64::try_from(max_lag).unwrap_or(u64::MAX);
-        if unread > max_lag_u64 {
-            return Ok(WorthQueryLiveBoundedPoll::Overflow {
-                missed: unread - max_lag_u64,
-            });
+        let lag_missed = unread.saturating_sub(max_lag_u64);
+        let missed = ring_missed.max(lag_missed);
+        if missed > 0 {
+            return Ok(WorthQueryLiveBoundedPoll::Overflow { missed });
         }
         let offset = usize::try_from(cursor - first).ok();
         if let Some(batch) = offset.and_then(|offset| partition.batches.get(offset)) {

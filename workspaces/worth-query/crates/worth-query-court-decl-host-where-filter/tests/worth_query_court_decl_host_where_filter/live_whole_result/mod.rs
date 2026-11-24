@@ -6,6 +6,7 @@ mod budget_refresh;
 mod dst;
 mod governance_and_durability;
 mod interleaving_and_custody;
+mod mid_poll_revocation;
 mod mutations;
 mod queries;
 mod schema;

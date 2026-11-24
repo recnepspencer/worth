@@ -13,6 +13,16 @@ pub use outcome::{
     WorthQueryApplicationWholeResultLiveUpdate,
 };
 
+#[doc(hidden)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WholeResultLiveStageForTest {
+    AfterInitialAuthorityBeforePoll,
+    AfterPollBeforePendingConfirm,
+    AfterPollBeforeOverflowConfirm,
+    BeforeFootprintCapture,
+    AfterFootprintCaptureBeforeDeliveryConfirm,
+}
+
 use std::marker::PhantomData;
 use std::rc::Rc;
 

@@ -64,7 +64,7 @@ pub use worth_relational::facade::{
 pub use crate::domain_computation::primary_graph::{
     CheckpointAllocatorInspection, CheckpointRecordFrontier, CheckpointRecordIdentity,
     CheckpointReservationAdvanceDenial, ExecutionRequest, VerificationCapacityStop,
-    WorthQueryAdmittedApplicationCapabilityAccess,
+    WholeResultLiveStageForTest, WorthQueryAdmittedApplicationCapabilityAccess,
     WorthQueryAdmittedApplicationConditionalDefinition,
     WorthQueryAdmittedApplicationHistoryCapture, WorthQueryAdmittedApplicationOperation,
     WorthQueryAdmittedApplicationQueryControls, WorthQueryAdmittedApplicationQueryPlan,

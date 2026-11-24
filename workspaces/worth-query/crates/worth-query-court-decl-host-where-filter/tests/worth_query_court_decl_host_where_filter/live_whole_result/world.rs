@@ -288,3 +288,26 @@ pub fn run_mutate_as(
         other => panic!("expected Committed mutation outcome, got {other:?}"),
     }
 }
+
+pub fn run_mutate_in_advancement(
+    phase: &WorthQueryAdvancementPhase<'_>,
+    host: &Host,
+    input: MutateLiveBoard,
+    idem: u64,
+) -> WorthQueryApplicationCommitReceipt {
+    let scope = request_scope();
+    let admin = authenticate_reviewer(host.installed_schema(), &scope);
+    let outcome = host
+        .runtime()
+        .request(&admin, &scope)
+        .advanced()
+        .mutate(input)
+        .without_source()
+        .idempotency(&idem)
+        .execute_in_program_in_advancement(phase, host)
+        .expect("in-advancement board mutation executes");
+    match outcome {
+        WorthQueryApplicationMutationOutcome::<_, Mutated>::Committed { receipt, .. } => receipt,
+        other => panic!("expected Committed in-advancement mutation outcome, got {other:?}"),
+    }
+}

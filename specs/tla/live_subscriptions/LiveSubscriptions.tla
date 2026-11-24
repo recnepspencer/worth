@@ -287,7 +287,7 @@ Subscribe(kind) ==
                   lastRows         |-> <<>>,
                   lastOutcome      |-> "AuthDenied",
                   lastReason       |-> "GrantRevoked",
-                  lastAuthGrant    |-> FALSE,
+                  lastAuthGrant    |-> grant,
                   lastCloseOutcome |-> "None",
                   fp               |-> EmptyFp
               ]]
@@ -303,7 +303,7 @@ Subscribe(kind) ==
                      lastRows         |-> Eval(kind, snap),
                      lastOutcome      |-> "Initial",
                      lastReason       |-> "Ok",
-                     lastAuthGrant    |-> TRUE,
+                     lastAuthGrant    |-> grant,
                      lastCloseOutcome |-> "None",
                      fp               |-> CaptureFootprint(kind, snap)
                  ]]
@@ -318,7 +318,7 @@ Poll(kind) ==
                   @ EXCEPT !.active           = FALSE,
                            !.lastOutcome      = "AuthDenied",
                            !.lastReason       = "GrantRevoked",
-                           !.lastAuthGrant    = FALSE,
+                           !.lastAuthGrant    = grant,
                            !.lastCloseOutcome = "None",
                            !.fp               = EmptyFp
               ]]
@@ -332,7 +332,7 @@ Poll(kind) ==
                          @ EXCEPT !.cursor           = Len(history) + 1,
                                   !.lastOutcome      = "Pending",
                                   !.lastReason       = "Ok",
-                                  !.lastAuthGrant    = TRUE,
+                                  !.lastAuthGrant    = grant,
                                   !.lastCloseOutcome = "None"
                      ]]
                   /\ UNCHANGED <<status, due, edges, statusRev, dueRev, fwdAdjRev, grant, homeEpoch, history>>
@@ -344,7 +344,7 @@ Poll(kind) ==
                                      !.lastRows         = Eval(kind, snap),
                                      !.lastOutcome      = "Delivered",
                                      !.lastReason       = "Ok",
-                                     !.lastAuthGrant    = TRUE,
+                                     !.lastAuthGrant    = grant,
                                      !.lastCloseOutcome = "None",
                                      !.fp               = CaptureFootprint(kind, snap)
                         ]]
@@ -424,6 +424,19 @@ UnrelatedProjectIsolation ==
                /\ subs[k].lastSnapIdx >= 1
                /\ row[2] = history[subs[k].lastSnapIdx].status[row[1]]
                /\ row[3] = history[subs[k].lastSnapIdx].due[row[1]]
+
+LinkedFromP1(snap) == {b \in TaskSet : \E t \in P1Tasks : <<t, b>> \in snap.edges}
+
+UnrelatedP2Commit(prev, curr) ==
+    /\ curr.edges = prev.edges
+    /\ \A t \in P1Tasks : curr.status[t] = prev.status[t] /\ curr.due[t] = prev.due[t]
+    /\ \A b \in LinkedFromP1(prev) : curr.status[b] = prev.status[b]
+
+\* An edit touching only unlinked Project-2 tasks can NEVER trigger a delivery.
+UnrelatedP2EditNeverTriggersDelivery ==
+    \A k \in Kinds :
+        (subs[k].lastOutcome = "Delivered" /\ subs[k].lastSnapIdx >= 2) =>
+            ~UnrelatedP2Commit(history[subs[k].lastSnapIdx - 1], history[subs[k].lastSnapIdx])
 
 \* ---- Liveness Property ----
 

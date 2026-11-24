@@ -161,7 +161,7 @@ fn buffer_capacity_overflow_enforces_limit_and_detaches_source_custody_immediate
         .request(&principal, &scope)
         .query(TodayIntent {
             project: "p1".into(),
-        cutoff_days: TODAY_CUTOFF_DAYS,
+            cutoff_days: TODAY_CUTOFF_DAYS,
         })
         .subscribe_whole_result(WorthQueryApplicationLiveLimits::bounded(1, 64))
         .expect("bounded-1 whole-result sub opens");
@@ -201,6 +201,54 @@ fn buffer_capacity_overflow_enforces_limit_and_detaches_source_custody_immediate
             .unwrap(),
         WorthQueryApplicationWholeResultLiveOutcome::Closed
     ));
+    drop(sub);
+}
+
+/// Simultaneous ring eviction (64-batch ring) + tighter per-lease `buffer_capacity = 1`:
+/// after 65 unread commits, missed count MUST reflect the stricter boundary (`64`),
+/// never the weaker ring eviction count (`1`).
+#[test]
+fn simultaneous_ring_and_lease_buffer_overflow_reports_stricter_missed_count() {
+    let host = install(&[seed(1, "p1", "open", Some(FUTURE_DUE_DAYS))], &[]);
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let mut sub = host
+        .runtime()
+        .request(&principal, &scope)
+        .query(TodayIntent {
+            project: "p1".into(),
+            cutoff_days: TODAY_CUTOFF_DAYS,
+        })
+        .subscribe_whole_result(WorthQueryApplicationLiveLimits::bounded(1, 64))
+        .expect("bounded-1 sub opens");
+
+    for seq in 1..=65_u64 {
+        let next_due = if seq.is_multiple_of(2) {
+            FUTURE_DUE_DAYS
+        } else {
+            TODAY_CUTOFF_DAYS
+        };
+        run_mutate(&host, mutate_op("p1", 1, 1, 0, next_due, ""), seq);
+    }
+    match sub
+        .next(&host.runtime().request(&principal, &scope))
+        .unwrap()
+    {
+        WorthQueryApplicationWholeResultLiveOutcome::Overflow(overflow) => {
+            assert_eq!(
+                overflow.missed_commit_batches(),
+                64,
+                "65 unread commits with buffer_capacity=1 and 64-batch ring must report stricter missed=64"
+            );
+        }
+        other => panic!("expected Overflow(64), got {other:?}"),
+    }
+    assert_eq!(
+        host.runtime()
+            .close_live_delivery()
+            .remaining_live_consumers(),
+        0
+    );
     drop(sub);
 }
 

@@ -18,7 +18,7 @@ use worth_query_host::facade::application_entry::{
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationLiveCloseOutcome, WorthQueryApplicationLiveOpenDenialKind,
     WorthQueryApplicationQueryAdmissionDenialKind, WorthQueryApplicationWholeResultLiveOutcome,
-    WorthQueryOperationAuthorizationDenialKind,
+    WorthQueryOperationAuthorizationDenialKind, WorthQueryOperationAuthorizationRefusalKind,
 };
 use worth_query_testkit_document_retention::facade::document_retention_model::operator_identity::{
     authenticate_operator, request_scope,
@@ -114,9 +114,13 @@ fn revoked_grant_and_disabled_principal_fail_closed_with_zero_leaked_rows() {
         matches!(
             open_err,
             WorthQueryApplicationLiveOpenRequestDenial::CapabilityAdmission(ref auth)
-                if matches!(auth.kind(), WorthQueryOperationAuthorizationDenialKind::Refused(_))
+                if auth.kind()
+                    == WorthQueryOperationAuthorizationDenialKind::Refused(
+                        WorthQueryOperationAuthorizationRefusalKind::CapabilityAuthorizationMissing
+                    )
+                    && auth.subject() == "ReadBoard"
         ),
-        "expected exact CapabilityAdmission(Refused), got {open_err:?}"
+        "expected exact CapabilityAdmission(Refused(CapabilityAuthorizationMissing)) for ReadBoard, got {open_err:?}"
     );
 
     // Restore grant, open a public subscription, queue a mutation, then DISABLE the principal!

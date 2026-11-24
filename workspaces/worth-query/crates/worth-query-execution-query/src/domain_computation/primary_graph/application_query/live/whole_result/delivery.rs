@@ -14,7 +14,8 @@ use worth_runtime_world::facade::CompositeCommitIdentity;
 use super::super::outcome::WorthQueryApplicationLiveOverflow;
 use super::footprint::WholeResultFootprintStatus;
 use super::{
-    WorthQueryApplicationWholeResultLiveLease, WorthQueryApplicationWholeResultLiveOutcome,
+    WholeResultLiveStageForTest, WorthQueryApplicationWholeResultLiveLease,
+    WorthQueryApplicationWholeResultLiveOutcome,
 };
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::primary_graph::application_query::{
@@ -51,6 +52,27 @@ where
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
         request: &WorthQueryRequestScope,
     ) -> WorthQueryApplicationWholeResultLiveOutcome<Query, QueryResult> {
+        self.next_with_optional_hook(phase, principal, request, None)
+    }
+
+    #[doc(hidden)]
+    pub fn next_with_stage_hook_for_test(
+        &mut self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
+        request: &WorthQueryRequestScope,
+        hook: &mut dyn FnMut(WholeResultLiveStageForTest),
+    ) -> WorthQueryApplicationWholeResultLiveOutcome<Query, QueryResult> {
+        self.next_with_optional_hook(phase, principal, request, Some(hook))
+    }
+
+    fn next_with_optional_hook(
+        &mut self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
+        request: &WorthQueryRequestScope,
+        mut hook: Option<&mut dyn FnMut(WholeResultLiveStageForTest)>,
+    ) -> WorthQueryApplicationWholeResultLiveOutcome<Query, QueryResult> {
         let phase_request = match phase.execution_request_for(&self.runtime.runtime.product_runtime)
         {
             Ok(request) => request,
@@ -74,7 +96,10 @@ where
             Ok(watermark) => watermark,
             Err(outcome) => return outcome,
         };
-        self.poll_until_invalidated(execution, principal, request, watermark)
+        if let Some(cb) = hook.as_deref_mut() {
+            cb(WholeResultLiveStageForTest::AfterInitialAuthorityBeforePoll);
+        }
+        self.poll_until_invalidated(execution, principal, request, watermark, hook)
     }
 
     pub(super) fn admit_head_and_authority(
@@ -217,6 +242,7 @@ where
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
         request: &WorthQueryRequestScope,
         mut watermark: CompositeCommitIdentity,
+        mut hook: Option<&mut dyn FnMut(WholeResultLiveStageForTest)>,
     ) -> WorthQueryApplicationWholeResultLiveOutcome<Query, QueryResult> {
         let mut recheck_attempts = 0_usize;
         loop {
@@ -259,6 +285,9 @@ where
                     continue;
                 }
                 WorthQueryLiveBoundedPoll::Pending => {
+                    if let Some(cb) = hook.as_deref_mut() {
+                        cb(WholeResultLiveStageForTest::AfterPollBeforePendingConfirm);
+                    }
                     match self.confirm_authority_at_head(execution, principal, &mut watermark) {
                         Ok(false) => {
                             return WorthQueryApplicationWholeResultLiveOutcome::Pending;
@@ -276,6 +305,9 @@ where
                     }
                 }
                 WorthQueryLiveBoundedPoll::Overflow { missed } => {
+                    if let Some(cb) = hook.as_deref_mut() {
+                        cb(WholeResultLiveStageForTest::AfterPollBeforeOverflowConfirm);
+                    }
                     if let Err(outcome) =
                         self.confirm_authority_at_head(execution, principal, &mut watermark)
                     {
@@ -319,6 +351,7 @@ where
                 batch.product().retained_clone(),
                 next_cursor,
                 watermark,
+                hook,
             );
         }
     }

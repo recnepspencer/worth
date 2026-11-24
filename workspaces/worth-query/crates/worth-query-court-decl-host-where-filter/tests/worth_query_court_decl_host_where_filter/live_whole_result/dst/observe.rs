@@ -18,8 +18,8 @@ use worth_query_host::facade::application_entry::{
 };
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationLiveCloseOutcome, WorthQueryApplicationLiveOpenDenialKind,
-    WorthQueryApplicationQueryAccessReceipt, WorthQueryApplicationQueryAdmissionDenialKind,
-    WorthQueryApplicationWholeResultLiveOutcome, WorthQueryOperationAuthorizationDenialKind,
+    WorthQueryApplicationQueryAccessReceipt, WorthQueryApplicationWholeResultLiveOutcome,
+    WorthQueryOperationAuthorizationDenialKind, WorthQueryOperationAuthorizationRefusalKind,
 };
 
 pub(super) struct LiveSubs<'a> {
@@ -96,20 +96,20 @@ fn project_rows(rows: &[TaskRow]) -> Result<Vec<ProjectedRow>, String> {
     Ok(out)
 }
 
-fn is_exact_auth_open_denial(denial: &WorthQueryApplicationLiveOpenRequestDenial) -> bool {
+fn is_exact_grant_revoked_open_denial(denial: &WorthQueryApplicationLiveOpenRequestDenial) -> bool {
+    use WorthQueryOperationAuthorizationDenialKind::Refused;
+    use WorthQueryOperationAuthorizationRefusalKind::CapabilityAuthorizationMissing;
     match denial {
         WorthQueryApplicationLiveOpenRequestDenial::CapabilityAdmission(auth) => {
-            matches!(
-                auth.kind(),
-                WorthQueryOperationAuthorizationDenialKind::Refused(_)
-            )
+            auth.kind() == Refused(CapabilityAuthorizationMissing) && auth.subject() == "ReadBoard"
         }
-        WorthQueryApplicationLiveOpenRequestDenial::Open(open) => matches!(
-            open.kind(),
-            WorthQueryApplicationLiveOpenDenialKind::Admission(
-                WorthQueryApplicationQueryAdmissionDenialKind::Authorization(_)
-            )
-        ),
+        WorthQueryApplicationLiveOpenRequestDenial::Open(open) => {
+            open.kind()
+                == WorthQueryApplicationLiveOpenDenialKind::AuthorizationDenied(Refused(
+                    CapabilityAuthorizationMissing,
+                ))
+                && open.subject() == "ReadBoard"
+        }
         _ => false,
     }
 }
@@ -128,7 +128,7 @@ fn handle_sub_open<T>(
             let (commit_idx, rows) = store(sub)?;
             Ok(("Initial", "Ok", commit_idx, rows))
         }
-        Err(denial) if is_exact_auth_open_denial(&denial) => {
+        Err(denial) if is_exact_grant_revoked_open_denial(&denial) => {
             cov.auth_denials += 1;
             Ok(("AuthDenied", "GrantRevoked", 0, Vec::new()))
         }
@@ -309,7 +309,10 @@ fn classify_poll<Q>(
         WorthQueryApplicationWholeResultLiveOutcome::Delivered(u) => {
             cov.deliveries += 1;
             let basis_ver = format!("{:?}", u.snapshot().receipt().basis_version());
-            let pub_ver = format!("{:?}", u.product_publication().relational_commit().version_id);
+            let pub_ver = format!(
+                "{:?}",
+                u.product_publication().relational_commit().version_id
+            );
             if basis_ver != pub_ver {
                 return Err(format!(
                     "seed {seed} step {step} Poll({kind:?}): pub ver {pub_ver} != receipt ver {basis_ver}"
@@ -326,12 +329,14 @@ fn classify_poll<Q>(
             Ok((("Pending", "Ok", 0, Vec::new()), false))
         }
         WorthQueryApplicationWholeResultLiveOutcome::AuthorizationDenied(auth) => {
-            if !matches!(
-                auth.kind(),
-                WorthQueryOperationAuthorizationDenialKind::Refused(_)
-            ) {
+            if auth.kind()
+                != WorthQueryOperationAuthorizationDenialKind::Refused(
+                    WorthQueryOperationAuthorizationRefusalKind::StaleAuthorization,
+                )
+                || auth.subject() != "ReadBoard"
+            {
                 return Err(format!(
-                    "seed {seed} step {step} Poll({kind:?}): expected Refused, got {auth:?}"
+                    "seed {seed} step {step} Poll({kind:?}): expected Refused(StaleAuthorization) for ReadBoard, got {auth:?}"
                 ));
             }
             cov.auth_denials += 1;

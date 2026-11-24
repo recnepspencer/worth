@@ -4,10 +4,10 @@ use worth_query_declaration::facade::application_query::{
 use worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding;
 use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase as AdvancementPhase;
 use worth_query_execution::facade::primary_graph::{
-    WorthQueryApplicationLiveCloseOutcome, WorthQueryApplicationProjection,
-    WorthQueryApplicationWholeResultLiveLease, WorthQueryApplicationWholeResultLiveOutcome,
-    WorthQueryApplicationWholeResultLiveSnapshot, WorthQueryPrimaryGraphApplicationRuntime,
-    WorthQueryPrincipalResolutionDenialKind,
+    WholeResultLiveStageForTest, WorthQueryApplicationLiveCloseOutcome,
+    WorthQueryApplicationProjection, WorthQueryApplicationWholeResultLiveLease,
+    WorthQueryApplicationWholeResultLiveOutcome, WorthQueryApplicationWholeResultLiveSnapshot,
+    WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrincipalResolutionDenialKind,
     WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal,
 };
 use worth_query_installation::facade::ApplicationSchema;
@@ -141,6 +141,37 @@ where
         >,
         WorthQueryApplicationLiveNextDenial,
     > {
+        self.next_in_advancement_inner(phase, fresh_request, None)
+    }
+
+    #[doc(hidden)]
+    pub fn next_in_advancement_with_stage_hook_for_test(
+        &mut self,
+        phase: &AdvancementPhase<'_>,
+        fresh_request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
+        hook: &mut dyn FnMut(WholeResultLiveStageForTest),
+    ) -> Result<
+        WorthQueryApplicationWholeResultLiveOutcome<
+            Query<Schema, Intent>,
+            QueryResult<Schema, Intent>,
+        >,
+        WorthQueryApplicationLiveNextDenial,
+    > {
+        self.next_in_advancement_inner(phase, fresh_request, Some(hook))
+    }
+
+    fn next_in_advancement_inner(
+        &mut self,
+        phase: &AdvancementPhase<'_>,
+        fresh_request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
+        hook: Option<&mut dyn FnMut(WholeResultLiveStageForTest)>,
+    ) -> Result<
+        WorthQueryApplicationWholeResultLiveOutcome<
+            Query<Schema, Intent>,
+            QueryResult<Schema, Intent>,
+        >,
+        WorthQueryApplicationLiveNextDenial,
+    > {
         if !std::ptr::eq(self.application, fresh_request.application) {
             return Err(WorthQueryApplicationLiveNextDenial::ForeignApplication);
         }
@@ -200,7 +231,13 @@ where
                 }
             },
         };
-        Ok(self.lease.next(phase, &principal, fresh_request.scope))
+        Ok(match hook {
+            Some(cb) => {
+                self.lease
+                    .next_with_stage_hook_for_test(phase, &principal, fresh_request.scope, cb)
+            }
+            None => self.lease.next(phase, &principal, fresh_request.scope),
+        })
     }
 
     pub fn close(self) -> WorthQueryApplicationLiveCloseOutcome {
