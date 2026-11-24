@@ -19,12 +19,12 @@ impl RelationalPinnedRead {
                     .map_err(|cause| QueryReadExecutionStop::ReadRequest(cause.into()))?;
             } else {
                 basis
-                    .demand_regions_full(execution, basis.root().partition_ids_iter())
+                    .demand_regions_full(execution, basis.projection_root().partition_ids_iter())
                     .map_err(|cause| QueryReadExecutionStop::ReadRequest(cause.into()))?;
             }
         }
         let candidate_regions = kind.map_or_else(
-            || basis.root().region_count(),
+            || basis.projection_root().region_count(),
             |(entity, kind)| kind_regions(basis, entity, kind).count(),
         );
         let declared_bytes = super::super::query_preparation_extent::declared_bytes(

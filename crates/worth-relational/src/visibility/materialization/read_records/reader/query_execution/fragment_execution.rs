@@ -44,7 +44,7 @@ pub(in crate::visibility::materialization::read_records::reader) fn execute_expl
         }
     }
     let state_access: &(dyn PartitionAccess + Sync) = basis;
-    let registry = basis.root().schema_authority().registry();
+    let registry = basis.projection_root().schema_authority().registry();
     let version_id = basis.version_id();
     execute_leased_query_packets(
         packets,

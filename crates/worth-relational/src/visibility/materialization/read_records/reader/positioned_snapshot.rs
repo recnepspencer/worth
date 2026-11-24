@@ -107,7 +107,7 @@ impl VisibilityReadContext<'_> {
         let basis =
             crate::visibility::snapshot_states::resolve_snapshot_basis(self.runtime, handle)
                 .ok_or(SnapshotPositionDenial::SnapshotUnavailable)?;
-        let commit_id = basis.root().commit_id();
+        let commit_id = basis.commit_id();
         let position = match commit_id {
             Some(commit_id) => Some(
                 self.runtime
@@ -122,7 +122,7 @@ impl VisibilityReadContext<'_> {
         Ok(PositionedRelationalSnapshot {
             runtime_instance_id: self.runtime.runtime_instance_id(),
             branch_id: basis.branch_id().clone(),
-            root_id: basis.root().id(),
+            root_id: basis.root_id(),
             version_id: basis.version_id(),
             commit_id,
             position,

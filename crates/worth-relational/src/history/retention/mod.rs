@@ -16,10 +16,11 @@ mod owner;
 pub(crate) mod publication_basis;
 mod publication_basis_tree;
 mod publication_reclamation;
-pub(crate) mod snapshot_projection_root;
+mod snapshot_projection_root;
 pub(crate) use publication_basis::{
     PublicationBasisAccess, PublicationBasisImage, PublicationBasisRoute,
 };
+pub(crate) use snapshot_projection_root::SnapshotProjectionRoot;
 mod live_reclamation;
 mod reclamation;
 mod root_locators;
@@ -66,5 +67,7 @@ mod component_cut_tests;
 #[cfg(test)]
 pub(crate) use component_cut_tests::assert_controlled_component_capture_winner;
 
-pub(crate) mod selected_snapshot;
-pub(crate) mod snapshot_basis_retirement;
+mod selected_snapshot;
+mod snapshot_basis_retirement;
+pub(crate) use selected_snapshot::{SnapshotHeadSelection, VisibilitySnapshotBasis};
+pub(crate) use snapshot_basis_retirement::VisibilitySnapshotBasisRetirement;
