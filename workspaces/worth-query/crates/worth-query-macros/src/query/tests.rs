@@ -156,9 +156,41 @@ fn query_derives_defaults_omits_no_parameters_and_is_copy_clone_clean() {
         "{expanded}"
     );
     assert!(
+        expanded.contains("fn worth_query_try_parameters"),
+        "{expanded}"
+    );
+    assert!(
+        expanded.contains("try_parameters => Search :: worth_query_try_parameters"),
+        "{expanded}"
+    );
+    assert!(!expanded.contains(". expect ("), "{expanded}");
+    assert!(expanded.contains("fn definition ()"), "{expanded}");
+    assert!(
         expanded.contains(". parameter (Self :: q ())"),
         "{expanded}"
     );
+}
+
+#[test]
+fn explicit_shape_query_omits_default_definition_and_requires_root() {
+    let err = refusal(&format!(
+        "#[worth_query(explicit_shape)] {HEADER} \
+         struct Read {{ #[worth_query(scope = ProjectKey)] project: u64 }}"
+    ));
+    assert!(
+        err.contains("`explicit_shape` does not apply to a query without `root = Entity`"),
+        "{err}"
+    );
+    let input = syn::parse_str(
+        "#[worth_query(schema = Schema, context = BoardContext, namespace = READ, \
+         query = DomainQuery, binding = DomainBinding, result = DomainCarrierBinding, \
+         root = Task, explicit_shape, limits = 8)] \
+         pub struct ReadDomain { #[worth_query(scope = ProjectKey)] pub project: u64 }",
+    )
+    .unwrap();
+    let expanded = expand(&input).unwrap().to_string();
+    assert!(!expanded.contains("fn definition ()"), "{expanded}");
+    assert!(expanded.contains("fn definition_with ("), "{expanded}");
 }
 
 #[test]

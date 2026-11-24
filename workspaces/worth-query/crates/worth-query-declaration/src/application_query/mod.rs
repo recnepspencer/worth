@@ -62,7 +62,8 @@ pub use basis_support::ApplicationQueryBasisSupport;
 pub use binding::{
     ApplicationLiveQueryIntent, ApplicationQueryBinding, ApplicationQueryBindingDescriptor,
     ApplicationQueryBindingLimits, ApplicationQueryBindingReference,
-    ApplicationQueryBindingReferenceParts, ApplicationQueryFieldScope, ApplicationQueryIntent,
+    ApplicationQueryBindingReferenceParts, ApplicationQueryFieldScope,
+    ApplicationQueryInputPreparationDenial, ApplicationQueryIntent,
     ApplicationQueryPrincipalBindingContract, ApplicationQueryPrincipalScope,
     ApplicationQueryScopeBinding, ApplicationQueryScopeContract, ApplicationQueryScopeResolution,
     ApplicationQueryScopeResolutionMode,

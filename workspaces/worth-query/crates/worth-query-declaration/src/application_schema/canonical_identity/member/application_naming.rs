@@ -21,7 +21,10 @@ pub(super) fn append_group(
         definition.continuity_rule().canonical_name(),
     );
     basis.optional_text(format!("{prefix}.anchor-role"), definition.anchor_role());
-    basis.optional_text(format!("{prefix}.boundary-role"), definition.boundary_role());
+    basis.optional_text(
+        format!("{prefix}.boundary-role"),
+        definition.boundary_role(),
+    );
     append_scheme_fields(basis, prefix, definition.name_scheme());
 }
 

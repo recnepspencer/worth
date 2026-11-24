@@ -35,53 +35,53 @@ macro_rules! __worth_query_complete_feature {
     };
     (@members $head:tt [$($actions:tt)*] [$($handlers:tt)*] $bodies:tt $roles:tt $queries:tt
         [$($aliases:tt)*] [$($spec:tt)*];
-        action $field:ident($Binding:ty, $Delivery:ty, $Handler:ty) $(as $Alias:ident)? {
+        action $field:ident($Binding:ty, $Delivery:ty, $Handler:ty) $(as $Alias:ident $(<$($AliasGen:ident),* $(,)?>)?)? {
             operation: $operation:expr; $($clauses:tt)*
         }; $($rest:tt)*
     ) => {
         $crate::__worth_query_complete_feature!(@members $head
             [$($actions)* ($Binding, $Delivery, [declare $operation])]
             [$($handlers)* ($field, $Binding, $Handler)] $bodies $roles $queries
-            [$($aliases)* $(($Alias, $Binding, $Delivery))?]
+            [$($aliases)* $(($Alias, [$($($AliasGen),*)?], $Binding, $Delivery))?]
             [$($spec)* action($Binding, $Delivery) { $($clauses)* };]; $($rest)*
         );
     };
     (@members $head:tt [$($actions:tt)*] [$($handlers:tt)*] $bodies:tt $roles:tt $queries:tt
         [$($aliases:tt)*] [$($spec:tt)*];
-        action_ref $field:ident($Binding:ty, $Delivery:ty, $Handler:ty) $(as $Alias:ident)? {
+        action_ref $field:ident($Binding:ty, $Delivery:ty, $Handler:ty) $(as $Alias:ident $(<$($AliasGen:ident),* $(,)?>)?)? {
             $($clauses:tt)*
         }; $($rest:tt)*
     ) => {
         $crate::__worth_query_complete_feature!(@members $head
             [$($actions)* ($Binding, $Delivery, [owned])]
             [$($handlers)* ($field, $Binding, $Handler)] $bodies $roles $queries
-            [$($aliases)* $(($Alias, $Binding, $Delivery))?]
+            [$($aliases)* $(($Alias, [$($($AliasGen),*)?], $Binding, $Delivery))?]
             [$($spec)* action($Binding, $Delivery) { $($clauses)* };]; $($rest)*
         );
     };
     (@members $head:tt [$($actions:tt)*] $handlers:tt [$($bodies:tt)*] $roles:tt $queries:tt
         [$($aliases:tt)*] [$($spec:tt)*];
-        body_action($Binding:ty, $Delivery:ty) $(as $Alias:ident)? {
+        body_action($Binding:ty, $Delivery:ty) $(as $Alias:ident $(<$($AliasGen:ident),* $(,)?>)?)? {
             operation: $operation:expr; $($clauses:tt)*
         }; $($rest:tt)*
     ) => {
         $crate::__worth_query_complete_feature!(@members $head
             [$($actions)* ($Binding, $Delivery, [declare $operation])]
             $handlers [$($bodies)* ($Binding)] $roles $queries
-            [$($aliases)* $(($Alias, $Binding, $Delivery))?]
+            [$($aliases)* $(($Alias, [$($($AliasGen),*)?], $Binding, $Delivery))?]
             [$($spec)* action($Binding, $Delivery) { $($clauses)* };]; $($rest)*
         );
     };
     (@members $head:tt [$($actions:tt)*] $handlers:tt [$($bodies:tt)*] $roles:tt $queries:tt
         [$($aliases:tt)*] [$($spec:tt)*];
-        body_action_ref($Binding:ty, $Delivery:ty) $(as $Alias:ident)? {
+        body_action_ref($Binding:ty, $Delivery:ty) $(as $Alias:ident $(<$($AliasGen:ident),* $(,)?>)?)? {
             $($clauses:tt)*
         }; $($rest:tt)*
     ) => {
         $crate::__worth_query_complete_feature!(@members $head
             [$($actions)* ($Binding, $Delivery, [owned])]
             $handlers [$($bodies)* ($Binding)] $roles $queries
-            [$($aliases)* $(($Alias, $Binding, $Delivery))?]
+            [$($aliases)* $(($Alias, [$($($AliasGen),*)?], $Binding, $Delivery))?]
             [$($spec)* action($Binding, $Delivery) { $($clauses)* };]; $($rest)*
         );
     };
@@ -128,13 +128,13 @@ macro_rules! __worth_query_complete_feature {
         [$(($BodyBinding:ty))*]
         [$(($role:ident, $Roles:ty, $IH:ty, $PH:ty, $initial:expr, $preserve:expr))*]
         [$(($QueryBinding:ty, $query_definition:expr))*]
-        [$(($Alias:ident, $AliasBinding:ty, $AliasDelivery:ty))*]
+        [$(($Alias:ident, $alias_generics:tt, $AliasBinding:ty, $AliasDelivery:ty))*]
         [$($spec:tt)*];
     ) => {
         $vis struct $Definition<$($names)*>(::std::marker::PhantomData<fn() -> ($($names)*)>);
         $crate::__worth_query_complete_feature!(
-            @aliases [$vis, [$($names)*], $Schema, $Feature]
-            $(($Alias, $AliasBinding, $AliasDelivery))*
+            @aliases [$vis, $Schema, $Feature]
+            $(($Alias, $alias_generics, $AliasBinding, $AliasDelivery))*
         );
         $vis struct $Runtime<$($declared)*> where $($where)* {
             $(pub $field: Option<$Handler>,)*
@@ -215,14 +215,14 @@ macro_rules! __worth_query_complete_feature {
         }
     };
     (@aliases $head:tt) => {};
-    (@aliases [$vis:vis, $names:tt, $Schema:ty, $Feature:ty]
-        ($Alias:ident, $Binding:ty, $Delivery:ty) $($rest:tt)*
+    (@aliases [$vis:vis, $Schema:ty, $Feature:ty]
+        ($Alias:ident, $alias_generics:tt, $Binding:ty, $Delivery:ty) $($rest:tt)*
     ) => {
         $crate::__worth_query_complete_feature!(
-            @alias [$vis $Alias $names $Schema, $Feature, $Binding, $Delivery]
+            @alias [$vis $Alias $alias_generics $Schema, $Feature, $Binding, $Delivery]
         );
         $crate::__worth_query_complete_feature!(
-            @aliases [$vis, $names, $Schema, $Feature] $($rest)*
+            @aliases [$vis, $Schema, $Feature] $($rest)*
         );
     };
     (@alias [$vis:vis $Alias:ident [] $Schema:ty, $Feature:ty, $Binding:ty, $Delivery:ty]) => {
@@ -236,9 +236,9 @@ macro_rules! __worth_query_complete_feature {
                 $Delivery,
             >;
     };
-    (@alias [$vis:vis $Alias:ident [$($names:tt)+] $Schema:ty, $Feature:ty, $Binding:ty, $Delivery:ty]) => {
+    (@alias [$vis:vis $Alias:ident [$($AliasGen:ident),+] $Schema:ty, $Feature:ty, $Binding:ty, $Delivery:ty]) => {
         #[allow(dead_code)]
-        $vis type $Alias<$($names)+> =
+        $vis type $Alias<$($AliasGen),+> =
             $crate::facade::declaration::application_program::ApplicationActionReference<
                 $Schema,
                 $crate::facade::declaration::application_program::ApplicationRootComposition,

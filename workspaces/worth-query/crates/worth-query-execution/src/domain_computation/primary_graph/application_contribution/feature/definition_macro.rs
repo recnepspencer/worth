@@ -18,8 +18,10 @@ mod members;
 /// no handler value.
 /// Use `body_action_ref` if an earlier member of the same contribution owns
 /// the body and its mutation binding, for example a typed correction member.
-/// Any action member may append `as ActionAlias` to declare its typed
-/// `ApplicationActionReference` alias at the same visibility.
+/// Any action member may append `as ActionAlias` (or `as ActionAlias<S, T>`
+/// listing only the type parameters referenced by that action on a generic
+/// feature) to declare its typed `ApplicationActionReference` alias at the
+/// same visibility.
 /// A `query(Binding) { definition: expr; };` member registers both the query
 /// definition and its binding in one entry. The generated definition also
 /// implements `Registration<Schema>`, so it can be placed directly in a

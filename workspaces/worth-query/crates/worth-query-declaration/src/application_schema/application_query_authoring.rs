@@ -70,6 +70,11 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
     }
 
     /// Declare query meaning and its matching request binding in one registration.
+    ///
+    /// If an identical binding descriptor was already registered (for example as
+    /// a correction's disclosure query binding), that registration is reused;
+    /// conflicting binding meanings and duplicate query definitions are still
+    /// refused at build time.
     pub fn bound_application_query<Binding>(
         self,
         definition: ApplicationQueryDefinitionBuilder<
@@ -84,8 +89,17 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
         Schema: super::ApplicationSchema,
         Binding: ApplicationQueryBinding<Schema>,
     {
-        self.application_query(definition)
-            .application_query_binding::<Binding>()
+        let builder = self.application_query(definition);
+        let descriptor = Binding::descriptor();
+        if builder
+            .member_provenance
+            .query_bindings()
+            .contains(&descriptor)
+        {
+            builder
+        } else {
+            builder.application_query_binding::<Binding>()
+        }
     }
 
     /// Declares immutable application-query meaning as part of this package.

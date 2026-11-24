@@ -91,7 +91,78 @@ fn zero_string_selectors_are_emitted_on_row_and_aspect_while_keeping_aliases() {
         "{expanded}"
     );
     assert!(
-        expanded.contains("pub const DUE_WINDOW : DueWindow = < DueWindow > :: at (\"DueWindow\") ;"),
+        expanded
+            .contains("pub const DUE_WINDOW : DueWindow = < DueWindow > :: at (\"DueWindow\") ;"),
+        "{expanded}"
+    );
+}
+
+#[test]
+fn uppercase_and_normalizing_record_fields_avoid_duplicate_selectors() {
+    let upper = syn::parse_str(
+        "#[worth_query(bindings = C, aspect = Metrics, fragment = Board, entity = Task)] \
+         pub struct MetricRow { pub X: u64 }",
+    )
+    .unwrap();
+    let expanded = expand(&upper).unwrap().to_string();
+    assert!(
+        expanded.contains(
+            "impl MetricRow { # [allow (dead_code , non_upper_case_globals)] pub const X : X ="
+        ),
+        "{expanded}"
+    );
+    assert!(
+        expanded.contains("pub const fn select_X () -> X"),
+        "{expanded}"
+    );
+    let aspect_impl = expanded
+        .split_once("impl Metrics")
+        .map(|(_, rest)| rest)
+        .expect("aspect impl exists");
+    assert!(
+        aspect_impl.contains("pub const fn X () -> X"),
+        "{aspect_impl}"
+    );
+    assert!(!aspect_impl.contains("pub const X :"), "{aspect_impl}");
+
+    let colliding = refusal(
+        "#[worth_query(bindings = C, aspect = Metrics, fragment = Board, entity = Task)] \
+         pub struct CollideRow { \
+             #[worth_query(column = \"FooBar\")] pub foo_bar: u64, \
+             #[worth_query(column = \"FooBarAlt\")] pub fooBar: u64 \
+         }",
+    );
+    assert!(
+        colliding.contains("duplicate selector constant `FOO_BAR`"),
+        "{colliding}"
+    );
+
+    let explicit_collision = refusal(
+        "#[worth_query(bindings = C, aspect = Metrics, fragment = Board, entity = Task)] \
+         pub struct ExplicitCollideRow { \
+             #[worth_query(selector_const = X)] pub X: u64 \
+         }",
+    );
+    assert!(
+        explicit_collision.contains("collides with aspect selector method `X()`"),
+        "{explicit_collision}"
+    );
+
+    let disambiguated = syn::parse_str(
+        "#[worth_query(bindings = C, aspect = Metrics, fragment = Board, entity = Task)] \
+         pub struct CleanRow { \
+             #[worth_query(column = \"FooBar\")] pub foo_bar: u64, \
+             #[worth_query(column = \"FooBarAlt\", selector_const = FOO_BAR_ALT)] pub fooBar: u64 \
+         }",
+    )
+    .unwrap();
+    let expanded = expand(&disambiguated).unwrap().to_string();
+    assert!(
+        expanded.contains("pub const FOO_BAR : FooBar ="),
+        "{expanded}"
+    );
+    assert!(
+        expanded.contains("pub const FOO_BAR_ALT : FooBarAlt ="),
         "{expanded}"
     );
 }

@@ -33,10 +33,9 @@ pub use worth_foundational::facade::AggregateLineageKind;
 pub use worth_relational::facade::history::{CommitId, RelationalAuthoredWriteDenial};
 
 pub use crate::domain_computation::{
-    WorthQueryInvariantExecutionDenialKind,
-    WorthQueryInvariantExecutionFailure, WorthQueryInvariantExecutionFailurePosture,
-    WorthQueryPreparedProviderSession, WorthQueryProductUnpublishedRecoveryFailure,
-    WorthQueryProductUnpublishedRecoveryReleaseDenial,
+    WorthQueryInvariantExecutionDenialKind, WorthQueryInvariantExecutionFailure,
+    WorthQueryInvariantExecutionFailurePosture, WorthQueryPreparedProviderSession,
+    WorthQueryProductUnpublishedRecoveryFailure, WorthQueryProductUnpublishedRecoveryReleaseDenial,
     WorthQueryProductUnpublishedRecoveryReleaseFailure, WorthQueryProviderSessionFailure,
     WorthQueryRecoveredProductReleaseDenial, WorthQueryRelationLawDenial,
 };
@@ -172,8 +171,8 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryConditionalClockObservationReceipt, WorthQueryConditionalDefinitionPublicationDenial,
     WorthQueryConditionalDefinitionPublicationOutcome, WorthQueryConditionalExecutionCause,
     WorthQueryConditionalExecutionProvenance, WorthQueryConditionalExecutionTerminal,
-    WorthQueryConditionalOriginalResolution, WorthQueryConditionalReentryFailure, WorthQueryConditionalRuntimeInspection,
-    WorthQueryConditionalRuntimeInstallationDenial,
+    WorthQueryConditionalOriginalResolution, WorthQueryConditionalReentryFailure,
+    WorthQueryConditionalRuntimeInspection, WorthQueryConditionalRuntimeInstallationDenial,
     WorthQueryConditionalRuntimeInstallationDenialKind, WorthQueryConditionalRuntimeLifecycleProbe,
     WorthQueryConditionalRuntimeReinstallationReceipt, WorthQueryConditionalSignalDecision,
     WorthQueryCorrectionAlternativeRef, WorthQueryCorrectionAlternativeResolution,

@@ -11,8 +11,7 @@ use std::{
     path::{Path, PathBuf},
 };
 use worth_query_decl::facade::{
-    application_program::ApplicationProgramAuthoring,
-    application_schema::ApplicationSchema,
+    application_program::ApplicationProgramAuthoring, application_schema::ApplicationSchema,
 };
 use worth_query_host::facade::{
     admission::authenticated_principal::WorthQueryAdmissionClock,
@@ -279,5 +278,10 @@ fn close(home: Home) {
 }
 
 fn task_done(request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>) -> bool {
-    request.query(ReadDetails { task: 3 }).execute().unwrap().rows()[0].done
+    request
+        .query(ReadDetails { task: 3 })
+        .execute()
+        .unwrap()
+        .rows()[0]
+        .done
 }

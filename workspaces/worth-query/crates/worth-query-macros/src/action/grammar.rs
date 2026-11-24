@@ -1,9 +1,10 @@
 //! Action keys, capability lists and the one scope every action declares.
+use super::serde_names::{container_rename_rule, field_wire_name};
 use super::DERIVE;
 use crate::facade_paths::{declaration, fragment, host};
 use crate::grammar::{
-    flag, member_name, option_inner, selection_column, token_group, type_list, unknown_key, value,
-    visit_keys, Once,
+    flag, option_inner, selection_column, token_group, type_list, unknown_key, value, visit_keys,
+    Once,
 };
 use proc_macro2::TokenStream;
 use syn::meta::ParseNestedMeta;
@@ -130,10 +131,7 @@ struct Keys {
 }
 
 impl ActionDeclaration {
-    pub(super) fn parse(
-        input: &DeriveInput,
-        fields: Option<&FieldsNamed>,
-    ) -> syn::Result<Self> {
+    pub(super) fn parse(input: &DeriveInput, fields: Option<&FieldsNamed>) -> syn::Result<Self> {
         let mut keys = Keys::new();
         visit_keys(&input.attrs, |key, meta| keys.read(key, meta))?;
         let missing = input.ident.span();
@@ -164,28 +162,26 @@ impl ActionDeclaration {
                 keys.decision.required(missing, DERIVE)?,
             )
         };
-        let input_fields = fields
-            .map(|named| {
-                named
-                    .named
-                    .iter()
-                    .map(|field| {
-                        let member = field.ident.clone().expect("named fields carry identifiers");
-                        let wire_name = LitStr::new(&member_name(&member), member.span());
-                        let (optional, value_ty) = match option_inner(&field.ty) {
-                            Some(inner) => (true, inner.clone()),
-                            None => (false, field.ty.clone()),
-                        };
-                        InputField {
-                            member,
-                            wire_name,
-                            value_ty,
-                            optional,
-                        }
-                    })
-                    .collect()
-            })
-            .unwrap_or_default();
+        let rename_rule = container_rename_rule(&input.attrs)?;
+        let mut input_fields = Vec::new();
+        if let Some(named) = fields {
+            for field in &named.named {
+                let Some(wire_name) = field_wire_name(field, rename_rule)? else {
+                    continue;
+                };
+                let member = field.ident.clone().expect("named fields carry identifiers");
+                let (optional, value_ty) = match option_inner(&field.ty) {
+                    Some(inner) => (true, inner.clone()),
+                    None => (false, field.ty.clone()),
+                };
+                input_fields.push(InputField {
+                    member,
+                    wire_name,
+                    value_ty,
+                    optional,
+                });
+            }
+        }
         Ok(Self {
             scope,
             schema,

@@ -43,8 +43,8 @@ pub struct RetitleFirst {
     pub title: String,
 }
 
-pub fn retitle_first_definition() -> ApplicationOperationDefinition<Schema, RetitleFirstTask, RetitleFirst>
-{
+pub fn retitle_first_definition(
+) -> ApplicationOperationDefinition<Schema, RetitleFirstTask, RetitleFirst> {
     RetitleFirstTask::reference()
         .typed_body()
         .assign_input(TaskFacts::title(), RetitleFirst::title_input())

@@ -21,9 +21,10 @@ worth_query_application_program! {
         feature: BoardFeature => BoardDefinition / BoardRuntime {
             identity: "macros.board.feature.v1",
             schema: |schema| {
-                schema
-                    .application_query(completion_correction::task_details())
-                    .declared_operation(completion_correction::restore_done())
+                schema.declared_operation(completion_correction::restore_done())
+            };
+            query(completion_correction::DetailsBinding) {
+                definition: completion_correction::task_details();
             };
             query(reads::SearchBinding) { definition: reads::search(); };
             query(reads::DueBinding) { definition: reads::due(); };

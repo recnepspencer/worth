@@ -61,6 +61,9 @@ pub enum WorthQueryApplicationLiveOpenRequestDenial {
         worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
     ),
     RetainedBasis,
+    InputPreparation(
+        worth_query_declaration::facade::application_query::ApplicationQueryInputPreparationDenial,
+    ),
     BindingInstallation(
         worth_query_installation::facade::WorthQueryApplicationQueryInstallationDenial,
     ),

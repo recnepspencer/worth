@@ -2,7 +2,7 @@
 use super::fields::parse_fields;
 use super::DERIVE;
 use crate::case::snake_case;
-use crate::grammar::{selection_column, unknown_key, value, visit_keys, Once};
+use crate::grammar::{flag, selection_column, unknown_key, value, visit_keys, Once};
 use proc_macro2::Span;
 use quote::format_ident;
 use syn::meta::ParseNestedMeta;
@@ -33,6 +33,7 @@ const STRUCT_KEYS: &[&str] = &[
     "basis_support",
     "lanes",
     "ability",
+    "explicit_shape",
 ];
 
 pub(super) struct QueryDeclaration {
@@ -103,6 +104,7 @@ pub(super) struct DefinitionDefaults {
     pub(super) basis_support: Option<Expr>,
     pub(super) lanes: Option<Expr>,
     pub(super) ability: Option<Expr>,
+    pub(super) explicit_shape: bool,
 }
 
 struct StructKeys {
@@ -130,6 +132,7 @@ struct StructKeys {
     basis_support: Once<Expr>,
     lanes: Once<Expr>,
     ability: Once<Expr>,
+    explicit_shape: Once<bool>,
 }
 
 impl QueryDeclaration {
@@ -197,6 +200,7 @@ impl StructKeys {
             basis_support: Once::new("basis_support"),
             lanes: Once::new("lanes"),
             ability: Once::new("ability"),
+            explicit_shape: Once::new("explicit_shape"),
         }
     }
 
@@ -226,6 +230,7 @@ impl StructKeys {
             "basis_support" => self.basis_support.set(meta, value(meta)?),
             "lanes" => self.lanes.set(meta, value(meta)?),
             "ability" => self.ability.set(meta, value(meta)?),
+            "explicit_shape" => self.explicit_shape.set(meta, flag(meta)?),
             _ => Err(unknown_key(meta, DERIVE, STRUCT_KEYS)),
         }
     }
@@ -269,6 +274,8 @@ impl StructKeys {
         let basis_support = std::mem::replace(&mut self.basis_support, Once::new("basis_support"));
         let lanes = std::mem::replace(&mut self.lanes, Once::new("lanes"));
         let ability = std::mem::replace(&mut self.ability, Once::new("ability"));
+        let explicit_shape =
+            std::mem::replace(&mut self.explicit_shape, Once::new("explicit_shape"));
         let has_root = root.is_set();
         let label = "a query without `root = Entity`";
         cardinality.refuse_unless(has_root, label)?;
@@ -276,6 +283,7 @@ impl StructKeys {
         basis_support.refuse_unless(has_root, label)?;
         lanes.refuse_unless(has_root, label)?;
         ability.refuse_unless(has_root, label)?;
+        explicit_shape.refuse_unless(has_root, label)?;
         Ok(root.optional().map(|root| DefinitionDefaults {
             root,
             cardinality: cardinality.optional(),
@@ -283,6 +291,7 @@ impl StructKeys {
             basis_support: basis_support.optional(),
             lanes: lanes.optional(),
             ability: ability.optional(),
+            explicit_shape: explicit_shape.is_set(),
         }))
     }
 }

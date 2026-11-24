@@ -15,15 +15,15 @@ const DETAILS: ApplicationIdentityNamespace =
 const RESTORE: ApplicationIdentityNamespace =
     worth_query_identity_namespace!("macros.tasks.restore-done.v1");
 
-#[derive(Clone, WorthValue, serde::Deserialize, WorthQueryAction)]
+#[derive(Clone, Debug, PartialEq, Eq, WorthValue, serde::Deserialize, WorthQueryAction)]
 #[worth_query(schema = Schema, context = BoardContext, namespace = RESTORE,
     input = RestoreDoneInput, operation = RestoreDone, binding = RestoreDoneBinding,
     delivery = RestoredDone, body, program, reads(Task))]
 pub struct RestoreCompletion {
     #[worth_query(scope = TaskKey)]
-    task: u64,
-    expected: bool,
-    done: bool,
+    pub task: u64,
+    pub expected: bool,
+    pub done: bool,
 }
 
 pub fn restore_done() -> ApplicationOperationDefinition<Schema, RestoreDone, RestoreCompletion> {

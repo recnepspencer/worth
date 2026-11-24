@@ -59,7 +59,10 @@ where
                 <Intent::Binding as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
             >,
     {
-        let parameters = self.intent.parameters();
+        let parameters = self
+            .intent
+            .prepare_parameters()
+            .map_err(WorthQueryApplicationRequestQueryDenial::InputPreparation)?;
         let scope_binding = self.intent.into_scope();
         let binding = self
             .application

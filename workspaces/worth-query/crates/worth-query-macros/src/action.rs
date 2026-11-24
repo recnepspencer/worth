@@ -33,6 +33,7 @@ use syn::DeriveInput;
 
 mod emit;
 mod grammar;
+mod serde_names;
 #[cfg(test)]
 mod tests;
 

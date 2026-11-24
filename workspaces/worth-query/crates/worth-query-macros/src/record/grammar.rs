@@ -1,13 +1,21 @@
 //! Record keys, columns and the checks their generated names require.
 use super::{DERIVE, MAXIMUM_FIELDS};
-use crate::case::pascal_case;
+use crate::case::{pascal_case, screaming_snake_case};
 use crate::grammar::{flag, member_name, option_inner, unknown_key, value, visit_keys, Once};
+use quote::format_ident;
 use std::collections::BTreeSet;
+use syn::ext::IdentExt;
 use syn::spanned::Spanned;
 use syn::{DeriveInput, Field, FieldsNamed, Ident, LitStr, Type};
 
 const STRUCT_KEYS: &[&str] = &["bindings", "aspect", "name", "fragment", "entity"];
-const FIELD_KEYS: &[&str] = &["column", "equality", "read_only", "unique"];
+const FIELD_KEYS: &[&str] = &[
+    "column",
+    "equality",
+    "read_only",
+    "unique",
+    "selector_const",
+];
 
 pub(super) struct RecordDeclaration {
     pub(super) bindings: Type,
@@ -26,8 +34,19 @@ pub(super) struct Column {
     pub(super) equality: bool,
     pub(super) read_only: bool,
     pub(super) unique: bool,
-    /// The selection alias, named after the column, when selections are declared.
-    pub(super) alias: Option<Ident>,
+    /// Explicit `selector_const = IDENT` override, if stated.
+    explicit_const: Option<Ident>,
+    /// Derived selection names when `fragment` and `entity` are declared.
+    pub(super) selection: Option<ColumnSelection>,
+}
+
+pub(super) struct ColumnSelection {
+    pub(super) alias: Ident,
+    pub(super) select_fn: Ident,
+    pub(super) const_name: Ident,
+    /// False when the default derived constant name collides with an aspect
+    /// field method name (for example an uppercase field `pub X: u64`).
+    pub(super) emit_aspect_const: bool,
 }
 
 impl Column {
@@ -42,6 +61,25 @@ impl Column {
                 ),
             )
         })
+    }
+
+    fn const_name(&self) -> syn::Result<Ident> {
+        if let Some(explicit) = &self.explicit_const {
+            return Ok(explicit.clone());
+        }
+        let raw = screaming_snake_case(&member_name(&self.member));
+        syn::parse_str::<Ident>(&raw)
+            .map(|ident| Ident::new(&ident.to_string(), self.member.span()))
+            .map_err(|_| {
+                syn::Error::new(
+                    self.member.span(),
+                    format!(
+                        "field `{}` cannot name its selector constant `{raw}`; \
+                         rename it with `selector_const = ..`",
+                        member_name(&self.member)
+                    ),
+                )
+            })
     }
 }
 
@@ -77,8 +115,15 @@ impl RecordDeclaration {
             .unwrap_or_else(|| LitStr::new(&aspect.to_string(), aspect.span()));
         let mut columns = columns(input, fields)?;
         if selections.is_some() {
-            for column in &mut columns {
-                column.alias = Some(column.alias_name()?);
+            assign_selections(&mut columns)?;
+        } else {
+            for column in &columns {
+                if let Some(explicit) = &column.explicit_const {
+                    return Err(syn::Error::new(
+                        explicit.span(),
+                        "`selector_const` requires struct-level `fragment` and `entity`",
+                    ));
+                }
             }
         }
         Ok(Self {
@@ -89,6 +134,56 @@ impl RecordDeclaration {
             selections,
         })
     }
+}
+
+fn assign_selections(columns: &mut [Column]) -> syn::Result<()> {
+    let member_names: BTreeSet<String> = columns.iter().map(|c| member_name(&c.member)).collect();
+    let select_fns: BTreeSet<String> = columns
+        .iter()
+        .map(|c| format!("select_{}", c.member.unraw()))
+        .collect();
+    let mut const_names = BTreeSet::new();
+    for column in columns {
+        let alias = column.alias_name()?;
+        let select_fn = format_ident!("select_{}", column.member.unraw());
+        let const_name = column.const_name()?;
+        let const_str = member_name(&const_name);
+        if !const_names.insert(const_str.clone()) {
+            return Err(syn::Error::new(
+                const_name.span(),
+                format!(
+                    "duplicate selector constant `{const_str}`; \
+                     disambiguate with `selector_const = ..`"
+                ),
+            ));
+        }
+        if select_fns.contains(&const_str) {
+            return Err(syn::Error::new(
+                const_name.span(),
+                format!(
+                    "selector constant `{const_str}` collides with a generated `select_*` \
+                     method; rename it with `selector_const = ..`"
+                ),
+            ));
+        }
+        let collides_aspect_fn = member_names.contains(&const_str);
+        if collides_aspect_fn && column.explicit_const.is_some() {
+            return Err(syn::Error::new(
+                const_name.span(),
+                format!(
+                    "`selector_const = {const_str}` collides with aspect selector method \
+                     `{const_str}()`"
+                ),
+            ));
+        }
+        column.selection = Some(ColumnSelection {
+            alias,
+            select_fn,
+            const_name,
+            emit_aspect_const: !collides_aspect_fn,
+        });
+    }
+    Ok(())
 }
 
 fn columns(input: &DeriveInput, fields: &FieldsNamed) -> syn::Result<Vec<Column>> {
@@ -126,10 +221,12 @@ fn columns(input: &DeriveInput, fields: &FieldsNamed) -> syn::Result<Vec<Column>
 fn column(field: &Field) -> syn::Result<Column> {
     let member = field.ident.clone().expect("named fields carry identifiers");
     let mut column = Once::<LitStr>::new("column");
+    let mut selector_const = Once::<Ident>::new("selector_const");
     let (mut equality, mut read_only, mut unique) = (false, false, false);
     visit_keys(&field.attrs, |key, meta| {
         match key {
             "column" => column.set(meta, value(meta)?)?,
+            "selector_const" => selector_const.set(meta, value(meta)?)?,
             "equality" => equality = flag(meta)?,
             "read_only" => read_only = flag(meta)?,
             "unique" => unique = flag(meta)?,
@@ -147,6 +244,7 @@ fn column(field: &Field) -> syn::Result<Column> {
         equality,
         read_only,
         unique,
-        alias: None,
+        explicit_const: selector_const.optional(),
+        selection: None,
     })
 }

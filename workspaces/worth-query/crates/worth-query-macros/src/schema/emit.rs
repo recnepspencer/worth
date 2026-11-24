@@ -126,7 +126,11 @@ pub(crate) fn relation(
         .cardinality
         .as_ref()
         .map(|value| quote!(const CARDINALITY: #schema::ApplicationRelationCardinality = #value;));
-    let acyclic = laws.acyclic.then(|| quote!(const ACYCLIC: bool = true;));
+    let acyclic = laws.acyclic.then(|| {
+        quote!(
+            const ACYCLIC: bool = true;
+        )
+    });
     let self_edges = laws
         .self_edges
         .as_ref()
@@ -141,11 +145,21 @@ pub(crate) fn relation(
     let cross_context = laws.cross_context.as_ref().map(|value| {
         quote!(const CROSS_CONTEXT: #schema::ApplicationRelationCrossContextPolicy = #value;)
     });
-    let symmetric = laws.symmetric.then(|| quote!(const SYMMETRIC: bool = true;));
-    let orbit = laws.orbit.then(|| quote!(const ORBIT: bool = true;));
-    let same_partition = laws
-        .same_partition_endpoints
-        .then(|| quote!(const SAME_PARTITION_ENDPOINTS: bool = true;));
+    let symmetric = laws.symmetric.then(|| {
+        quote!(
+            const SYMMETRIC: bool = true;
+        )
+    });
+    let orbit = laws.orbit.then(|| {
+        quote!(
+            const ORBIT: bool = true;
+        )
+    });
+    let same_partition = laws.same_partition_endpoints.then(|| {
+        quote!(
+            const SAME_PARTITION_ENDPOINTS: bool = true;
+        )
+    });
     let reaches_at_least = laws.reaches_at_least.as_ref().map(|value| {
         quote!(const REACHES_AT_LEAST: ::core::option::Option<#schema::ApplicationRelationMinimumReachability> = ::core::option::Option::Some(#value);)
     });

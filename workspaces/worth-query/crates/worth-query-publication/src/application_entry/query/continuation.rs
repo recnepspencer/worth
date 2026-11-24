@@ -59,7 +59,10 @@ where
                 if self.retained.is_some() || self.limits.is_some() {
                     return Err(WorthQueryApplicationRequestQueryDenial::RequestMode);
                 }
-                let parameters = self.intent.parameters();
+                let parameters = self
+                    .intent
+                    .prepare_parameters()
+                    .map_err(WorthQueryApplicationRequestQueryDenial::InputPreparation)?;
                 let scope_binding = self.intent.into_scope();
                 let binding = self
                     .application
@@ -122,7 +125,10 @@ where
                 if self.retained.is_some() || self.limits.is_some() {
                     return Err(WorthQueryApplicationRequestQueryDenial::RequestMode);
                 }
-                let parameters = self.intent.parameters();
+                let parameters = self
+                    .intent
+                    .prepare_parameters()
+                    .map_err(WorthQueryApplicationRequestQueryDenial::InputPreparation)?;
                 let scope_binding = self.intent.into_scope();
                 let binding = self
                     .application

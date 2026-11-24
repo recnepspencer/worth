@@ -124,16 +124,12 @@ fn parameter_items(input: &DeriveInput, decl_spec: &QueryDeclaration) -> Option<
         }
     });
     let binds = decl_spec.params.iter().map(|param| {
-        let (member, selector, wire, ty) = (
-            &param.member,
-            &param.selector,
-            &param.wire_name,
-            &param.value_ty,
-        );
-        let expect_msg = format!("declared query parameter `{}` encodes", wire.value());
+        let (member, selector, ty) = (&param.member, &param.selector, &param.value_ty);
         quote_spanned! {ty.span()=>
-            .bind(#query::#selector(), ::core::clone::Clone::clone(&input.#member))
-            .expect(#expect_msg)
+            __worth_params = __worth_params.bind(
+                #query::#selector(),
+                ::core::clone::Clone::clone(&input.#member),
+            )?;
         }
     });
     let doc = format!("Named query parameter markers of `{request}`.");
@@ -148,11 +144,16 @@ fn parameter_items(input: &DeriveInput, decl_spec: &QueryDeclaration) -> Option<
         #[allow(clippy::clone_on_copy)]
         impl #request {
             #[doc(hidden)]
-            fn worth_query_parameters(
+            fn worth_query_try_parameters(
                 input: &Self,
-            ) -> #decl::application_query::ApplicationQueryParameterSet<#query> {
-                #decl::application_query::ApplicationQueryParameterSet::new()
-                    #(#binds)*
+            ) -> ::core::result::Result<
+                #decl::application_query::ApplicationQueryParameterSet<#query>,
+                #decl::application_schema::ApplicationValueEncodeDenial,
+            > {
+                let mut __worth_params =
+                    #decl::application_query::ApplicationQueryParameterSet::new();
+                #(#binds)*
+                ::core::result::Result::Ok(__worth_params)
             }
         }
     })
@@ -195,7 +196,7 @@ fn query_binding(input: &DeriveInput, decl_spec: &QueryDeclaration) -> TokenStre
     let parameters_clause = if let Some(custom_fn) = &decl_spec.parameters_fn {
         quote!(parameters => #custom_fn,)
     } else if !decl_spec.params.is_empty() {
-        quote!(parameters => #request::worth_query_parameters,)
+        quote!(try_parameters => #request::worth_query_try_parameters,)
     } else {
         TokenStream::new()
     };
@@ -252,8 +253,8 @@ fn definition_builder(input: &DeriveInput, decl_spec: &QueryDeclaration) -> Opti
         let selector = &param.selector;
         quote!(.parameter(Self::#selector()))
     });
-    Some(quote! {
-        impl #query {
+    let default_definition = (!def.explicit_shape).then(|| {
+        quote! {
             /// Builds the query definition using the projection row's derived
             /// `result_shape()` and the query's declared defaults and parameters.
             #[allow(dead_code)]
@@ -266,6 +267,11 @@ fn definition_builder(input: &DeriveInput, decl_spec: &QueryDeclaration) -> Opti
             > {
                 Self::definition_with(<#result_val>::result_shape::<Self>())
             }
+        }
+    });
+    Some(quote! {
+        impl #query {
+            #default_definition
 
             /// Builds the query definition with an explicit result shape and
             /// the query's declared defaults and parameters.

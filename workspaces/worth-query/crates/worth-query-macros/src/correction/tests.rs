@@ -87,10 +87,10 @@ fn recorded_inverse_correction_expands_source_body_preimage_and_dispatch() {
         "fn source_body ()",
         "Some (complete_body ())",
         "DeclaredPreImageLocus :: from_field (TaskFacts :: done ())",
-        "RecordedInverse (preimage)",
+        "RecordedInverse (__worth_correction_preimage ,)",
         "UnsupportedSourceMeaning",
-        "derive_restore (original , preimage)",
-        "dispatch . conventional ()",
+        "derive_restore (__worth_correction_original , __worth_correction_preimage)",
+        "__worth_correction_dispatch . conventional ()",
     ] {
         assert!(expanded.contains(needle), "{needle}: {expanded}");
     }
@@ -98,14 +98,26 @@ fn recorded_inverse_correction_expands_source_body_preimage_and_dispatch() {
     let with_cap = syn::parse_str(
         "#[worth_query(schema = Schema, identity = \"app.fix.v1\", source = CompleteBinding, \
          inverse = RestoreCompletion, disclosure = DetailsBinding, demand = build_demand, \
-         derive = derive_restore, capability = AdminCap)] \
+         derive = preimage, disclosure_parameters = original, inverse_key = key, capability = AdminCap)] \
          pub struct AdminCorrection;",
     )
     .unwrap();
     let expanded = expand(&with_cap).unwrap().to_string();
     assert!(expanded.contains("\"app.fix.v1\""), "{expanded}");
     assert!(
-        expanded.contains("dispatch . capability :: < AdminCap > ()"),
+        expanded.contains("original (__worth_correction_original)"),
+        "{expanded}"
+    );
+    assert!(
+        expanded.contains("preimage (__worth_correction_original , __worth_correction_preimage)"),
+        "{expanded}"
+    );
+    assert!(
+        expanded.contains("key (__worth_correction_key)"),
+        "{expanded}"
+    );
+    assert!(
+        expanded.contains("__worth_correction_dispatch . capability :: < AdminCap > ()"),
         "{expanded}"
     );
     assert!(!expanded.contains("fn source_body"), "{expanded}");

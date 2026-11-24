@@ -134,7 +134,12 @@ fn derived_relation_matches_manual_relation_integrity_and_reference() {
         use worth_query_decl::facade::{WorthQueryRecord, WorthQueryRelation, WorthQuerySchema};
 
         #[derive(Clone, Copy, WorthQuerySchema)]
-        #[worth_query(schema, owner = "macros.parity.rel", name = "rel_parity", members(Graph))]
+        #[worth_query(
+            schema,
+            owner = "macros.parity.rel",
+            name = "rel_parity",
+            members(Graph)
+        )]
         pub struct Root;
         #[derive(Clone, Copy, WorthQuerySchema)]
         #[worth_query(fragment, name = "graph", bindings = NativeScalars, members(Parent, Child))]
@@ -177,7 +182,12 @@ fn derived_relation_matches_manual_relation_integrity_and_reference() {
         use worth_query_decl::facade::{WorthQueryRecord, WorthQuerySchema};
 
         #[derive(Clone, Copy, WorthQuerySchema)]
-        #[worth_query(schema, owner = "macros.parity.rel", name = "rel_parity", members(Graph))]
+        #[worth_query(
+            schema,
+            owner = "macros.parity.rel",
+            name = "rel_parity",
+            members(Graph)
+        )]
         pub struct Root;
         #[derive(Clone, Copy, WorthQuerySchema)]
         #[worth_query(fragment, name = "graph", bindings = NativeScalars, members(Parent, Child))]

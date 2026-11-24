@@ -76,9 +76,7 @@ fn a_derived_schema_root_dispatches_declared_correction_members() {
         "#[worth_query(schema, owner = \"macros\", members(Contribution))] struct BoardSchema;",
     )
     .expect("the schema root parses");
-    let expansion = expand(&input)
-        .expect("the schema root expands")
-        .to_string();
+    let expansion = expand(&input).expect("the schema root expands").to_string();
     assert!(
         expansion.contains("fn visit_correction")
             && expansion.contains("visit_correction (Self , source_binding , visitor)"),

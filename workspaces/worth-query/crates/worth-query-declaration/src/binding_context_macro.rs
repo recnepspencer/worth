@@ -127,7 +127,49 @@ macro_rules! __worth_query_contextual_query_binding {
         );
         $crate::__worth_query_binding_context!(
             @query_intent $Binding, $Input, $Schema, $Query,
-            $crate::__worth_query_binding_context!(@query_parameters [$($parameters)?]);
+            [@infallible $($parameters)?];
+            $($scope)*
+        );
+    };
+    (
+        $vis:vis $Binding:ident for $Input:ty, schema $Schema:ty, context $Context:ty,
+        identity $identity:expr,
+        input $InputBinding:path,
+        query $Query:path,
+        try_parameters $($ParameterBinding:path)? => $parameters:expr,
+        $(result $ResultBinding:path,)?
+        $(principal $PrincipalBinding:ty, mapping $Mapping:ty, principal_entity $Principal:ty,
+            principal_identity $PrincipalIdentity:ty, identity_binding $PrincipalIdentityBinding:ty,)?
+        scope $Selected:ty,
+        $($scope:tt)*
+    ) => {
+        $crate::worth_query_query_binding!(@binding
+            $vis $Binding for $Input, schema $Schema,
+            identity $identity, input $InputBinding, query $Query,
+            parameters $crate::__worth_query_binding_context!(@query_type [$($ParameterBinding)?]
+                $Schema, $Query, ParameterBinding),
+            result $crate::__worth_query_binding_context!(@query_type [$($ResultBinding)?]
+                $Schema, $Query, ResultBinding),
+            principal $crate::__worth_query_binding_context!(@type [$($PrincipalBinding)?]
+                $Context, $Schema, PrincipalBinding),
+            mapping $crate::__worth_query_binding_context!(@type [$($Mapping)?]
+                $Context, $Schema, Mapping),
+            principal_entity $crate::__worth_query_binding_context!(@type [$($Principal)?]
+                $Context, $Schema, Principal),
+            principal_identity $crate::__worth_query_binding_context!(@type [$($PrincipalIdentity)?]
+                $Context, $Schema, PrincipalIdentity),
+            identity_binding $crate::__worth_query_binding_context!(
+                @type [$($PrincipalIdentityBinding)?] $Context, $Schema, PrincipalIdentityBinding),
+            scope_binding $crate::__worth_query_binding_context!(@query_scope [$Selected] $($scope)*),
+            scope_field_type $Selected,
+            scope_field $crate::__worth_query_binding_context!(@scope_field $($scope)*),
+            limits results $crate::__worth_query_binding_context!(@query_limit $($scope)*),
+            principal_reference $crate::__worth_query_binding_context!(
+                @principal_reference [$($PrincipalBinding)?] $Context, $Schema)
+        );
+        $crate::__worth_query_binding_context!(
+            @query_intent $Binding, $Input, $Schema, $Query,
+            [@fallible $parameters];
             $($scope)*
         );
     };
@@ -218,30 +260,48 @@ macro_rules! __worth_query_binding_context {
             ($intent_input)(self)
         }
     };
-    (@query_intent $Binding:ident, $Input:ty, $Schema:ty, $Query:path, $parameters:expr;
+    (@query_intent $Binding:ident, $Input:ty, $Schema:ty, $Query:path, $params:tt;
         field $field:expr, value $value:path, limits results $results:expr
     ) => {
         impl $crate::facade::application_query::ApplicationQueryIntent<$Schema> for $Input {
             type Binding = $Binding;
-            fn parameters(&self) -> $crate::facade::application_query::ApplicationQueryParameterSet<$Query> {
-                ($parameters)(self)
-            }
+            $crate::__worth_query_binding_context!(@query_param_methods $Binding, $Schema, $Query, $params);
             fn into_scope(self) -> <$Binding as $crate::facade::application_query::ApplicationQueryBinding<$Schema>>::ScopeBinding {
                 $crate::facade::application_query::ApplicationQueryFieldScope::new($field, $value(self))
             }
         }
     };
-    (@query_intent $Binding:ident, $Input:ty, $Schema:ty, $Query:path, $parameters:expr;
+    (@query_intent $Binding:ident, $Input:ty, $Schema:ty, $Query:path, $params:tt;
         principal_field $field:expr, limits results $results:expr
     ) => {
         impl $crate::facade::application_query::ApplicationQueryIntent<$Schema> for $Input {
             type Binding = $Binding;
-            fn parameters(&self) -> $crate::facade::application_query::ApplicationQueryParameterSet<$Query> {
-                ($parameters)(self)
-            }
+            $crate::__worth_query_binding_context!(@query_param_methods $Binding, $Schema, $Query, $params);
             fn into_scope(self) -> <$Binding as $crate::facade::application_query::ApplicationQueryBinding<$Schema>>::ScopeBinding {
                 $crate::facade::application_query::ApplicationQueryPrincipalScope::new($field)
             }
+        }
+    };
+    (@query_param_methods $Binding:ident, $Schema:ty, $Query:path, [@infallible $($parameters:expr)?]) => {
+        fn parameters(&self) -> $crate::facade::application_query::ApplicationQueryParameterSet<$Query> {
+            ($crate::__worth_query_binding_context!(@query_parameters [$($parameters)?]))(self)
+        }
+    };
+    (@query_param_methods $Binding:ident, $Schema:ty, $Query:path, [@fallible $parameters:expr]) => {
+        fn parameters(&self) -> $crate::facade::application_query::ApplicationQueryParameterSet<$Query> {
+            ($parameters)(self).expect("query parameters failed to encode; use `prepare_parameters`")
+        }
+        fn prepare_parameters(
+            &self,
+        ) -> ::core::result::Result<
+            $crate::facade::application_query::ApplicationQueryParameterSet<$Query>,
+            $crate::facade::application_query::ApplicationQueryInputPreparationDenial,
+        > {
+            <<$Binding as $crate::facade::application_query::ApplicationQueryBinding<$Schema>>::InputBinding
+                as $crate::facade::application_schema::ApplicationStructuredValueBinding>::validate(self)?;
+            ($parameters)(self).map_err(
+                $crate::facade::application_query::ApplicationQueryInputPreparationDenial::ParameterEncoding,
+            )
         }
     };
 }

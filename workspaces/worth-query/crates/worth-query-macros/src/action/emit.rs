@@ -148,7 +148,8 @@ fn input_fields(input: &DeriveInput, action: &ActionDeclaration) -> Option<Token
     }
     let (decl, intent, vis) = (declaration(), &input.ident, &input.vis);
     let accessors = action.input_fields.iter().map(|field| {
-        let accessor = format_ident!("{}_input", field.member.unraw());
+        let member = &field.member;
+        let accessor = format_ident!("{}_input", member.unraw());
         let wire = &field.wire_name;
         let value_ty = &field.value_ty;
         let carrier = if field.optional {
@@ -159,7 +160,7 @@ fn input_fields(input: &DeriveInput, action: &ActionDeclaration) -> Option<Token
         quote_spanned! {value_ty.span()=>
             #[allow(dead_code)]
             #vis const fn #accessor() -> #carrier<Self, #value_ty> {
-                #carrier::new(#wire)
+                #carrier::__from_macro_field(#wire, |__worth_input: &Self| &__worth_input.#member)
             }
         }
     });

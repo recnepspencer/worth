@@ -178,6 +178,7 @@ pub use authorization_policy::{
     WorthQueryPortableApplicationAuthorizationPredicateParts,
     WorthQueryPortableApplicationAuthorizationTraversalParts,
 };
+pub use binding_context::ApplicationBindingContext;
 pub use binding_identity::ApplicationSchemaBindingIdentity;
 pub use capabilities::{
     ApplicationFieldUnit, ApplicationUnitMarker, CreatableBy, DeclaredApplicationUnit,
@@ -277,7 +278,6 @@ pub use principal_binding_authoring::{
     ApplicationPrincipalMappingIdentityRequirement, ApplicationPrincipalMappingStatusRequirement,
     ApplicationPrincipalTargetRequirement,
 };
-pub use binding_context::ApplicationBindingContext;
 pub use principal_binding_reference::ApplicationPrincipalBindingRef;
 pub use read_authoring::{
     TypedEqualityPredicate, TypedProjection, TypedReadDeclaration, TypedReadDeclarationBuilder,

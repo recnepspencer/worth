@@ -149,9 +149,8 @@ fn a_scope_value_function_and_body_defaults_and_typed_inputs_expand_cleanly() {
     ))
     .unwrap();
     let expanded = expand(&fixed_scope).unwrap().to_string();
-    assert!(expanded.contains(
-        "scope TaskKey , field < TaskKey > :: at (\"TaskKey\") , value rules :: inbox"
-    ));
+    assert!(expanded
+        .contains("scope TaskKey , field < TaskKey > :: at (\"TaskKey\") , value rules :: inbox"));
     assert!(!expanded.contains("worth_query_scope"));
 
     let body_default = syn::parse_str(
@@ -161,7 +160,10 @@ fn a_scope_value_function_and_body_defaults_and_typed_inputs_expand_cleanly() {
     )
     .unwrap();
     let expanded = expand(&body_default).unwrap().to_string();
-    assert!(expanded.contains("UnitApplicationValueBinding"), "{expanded}");
+    assert!(
+        expanded.contains("UnitApplicationValueBinding"),
+        "{expanded}"
+    );
     assert!(
         expanded.contains("WorthQueryOperationBodyDecision"),
         "{expanded}"
@@ -179,7 +181,42 @@ fn a_scope_value_function_and_body_defaults_and_typed_inputs_expand_cleanly() {
         "{expanded}"
     );
     assert!(
+        expanded.contains("__from_macro_field (\"title\""),
+        "{expanded}"
+    );
+    assert!(
         expanded.contains("# [allow (clippy :: clone_on_copy)]"),
         "{expanded}"
     );
+
+    let renamed = syn::parse_str(
+        "#[serde(rename_all = \"camelCase\")] \
+         #[worth_query(schema = Schema, context = Ctx, namespace = NS, \
+          input = In, operation = Op, binding = Bind, body, reads(Task))] \
+         struct RenameWire { \
+             #[worth_query(scope = TaskKey)] task: u64, \
+             #[serde(rename = \"stored_title\")] new_title: String, \
+             due_window: Option<u32>, \
+             #[serde(skip)] transient: u8 \
+         }",
+    )
+    .unwrap();
+    let expanded = expand(&renamed).unwrap().to_string();
+    assert!(
+        expanded.contains("__from_macro_field (\"stored_title\""),
+        "{expanded}"
+    );
+    assert!(
+        expanded.contains("__from_macro_field (\"dueWindow\""),
+        "{expanded}"
+    );
+    assert!(!expanded.contains("transient_input"), "{expanded}");
+
+    let unsupported = refusal(
+        "#[serde(transparent)] \
+         #[worth_query(schema = Schema, context = Ctx, namespace = NS, \
+          input = In, operation = Op, binding = Bind, body, reads(Task))] \
+         struct Bad { #[worth_query(scope = TaskKey)] task: u64 }",
+    );
+    assert!(unsupported.contains("transparent"), "{unsupported}");
 }
