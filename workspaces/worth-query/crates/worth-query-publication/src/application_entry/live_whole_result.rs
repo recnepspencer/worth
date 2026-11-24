@@ -141,7 +141,9 @@ where
         >,
         WorthQueryApplicationLiveNextDenial,
     > {
-        self.next_in_advancement_inner(phase, fresh_request, None)
+        self.next_in_advancement_inner(phase, fresh_request, |lease, phase, principal, scope| {
+            lease.next(phase, principal, scope)
+        })
     }
 
     #[doc(hidden)]
@@ -157,14 +159,28 @@ where
         >,
         WorthQueryApplicationLiveNextDenial,
     > {
-        self.next_in_advancement_inner(phase, fresh_request, Some(hook))
+        self.next_in_advancement_inner(phase, fresh_request, |lease, phase, principal, scope| {
+            lease.next_with_stage_hook_for_test(phase, principal, scope, hook)
+        })
     }
 
     fn next_in_advancement_inner(
         &mut self,
         phase: &AdvancementPhase<'_>,
         fresh_request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
-        hook: Option<&mut dyn FnMut(WholeResultLiveStageForTest)>,
+        poll: impl FnOnce(
+            &mut WholeResultLiveLease<'application, Schema, Intent>,
+            &AdvancementPhase<'_>,
+            &worth_query_execution::facade::primary_graph::WorthQueryAuthenticatedPrincipal<
+                Schema,
+                Principal<Schema, Intent>,
+                PrincipalIdentity<Schema, Intent>,
+            >,
+            &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        ) -> WorthQueryApplicationWholeResultLiveOutcome<
+            Query<Schema, Intent>,
+            QueryResult<Schema, Intent>,
+        >,
     ) -> Result<
         WorthQueryApplicationWholeResultLiveOutcome<
             Query<Schema, Intent>,
@@ -231,13 +247,12 @@ where
                 }
             },
         };
-        Ok(match hook {
-            Some(cb) => {
-                self.lease
-                    .next_with_stage_hook_for_test(phase, &principal, fresh_request.scope, cb)
-            }
-            None => self.lease.next(phase, &principal, fresh_request.scope),
-        })
+        Ok(poll(
+            &mut self.lease,
+            phase,
+            &principal,
+            fresh_request.scope,
+        ))
     }
 
     pub fn close(self) -> WorthQueryApplicationLiveCloseOutcome {

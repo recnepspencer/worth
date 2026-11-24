@@ -9,9 +9,9 @@ use worth_runtime_world::facade::CompositeCommitIdentity;
 
 use super::footprint::WholeResultInvalidationFootprint;
 use super::{
-    WholeResultLiveStageForTest, WorthQueryApplicationWholeResultLiveLease,
-    WorthQueryApplicationWholeResultLiveOutcome, WorthQueryApplicationWholeResultLiveSnapshot,
-    WorthQueryApplicationWholeResultLiveUpdate,
+    WholeResultLiveStageForTest, WholeResultStageObserver,
+    WorthQueryApplicationWholeResultLiveLease, WorthQueryApplicationWholeResultLiveOutcome,
+    WorthQueryApplicationWholeResultLiveSnapshot, WorthQueryApplicationWholeResultLiveUpdate,
 };
 use crate::domain_computation::primary_graph::application_query::{
     authorized_read::{execute_authorized_read, refresh_governed_authorization},
@@ -40,7 +40,7 @@ where
     QueryResult: WorthQueryApplicationProjection<Schema, Query>,
 {
     #[allow(clippy::too_many_arguments)]
-    pub(super) fn refresh_and_deliver(
+    pub(super) fn refresh_and_deliver<O: WholeResultStageObserver>(
         &mut self,
         execution: &ExecutionRequest<'_, '_>,
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
@@ -48,7 +48,7 @@ where
         product: crate::basis::WorthQueryProductObservationLease,
         next_cursor: u64,
         mut watermark: CompositeCommitIdentity,
-        mut hook: Option<&mut dyn FnMut(WholeResultLiveStageForTest)>,
+        mut observer: O,
     ) -> WorthQueryApplicationWholeResultLiveOutcome<Query, QueryResult> {
         let application_basis = match self
             .runtime
@@ -119,9 +119,7 @@ where
             .primary_provider
             .graph_ref()
             .layout_ref();
-        if let Some(cb) = hook.as_deref_mut() {
-            cb(WholeResultLiveStageForTest::BeforeFootprintCapture);
-        }
+        observer.on_stage(WholeResultLiveStageForTest::BeforeFootprintCapture);
         let next_footprint = match WholeResultInvalidationFootprint::capture(
             execution,
             layout,
@@ -137,9 +135,7 @@ where
         // publishing this snapshot: a revocation committed during refresh fails
         // closed with zero leaked rows and immediately retires source custody.
         self.governance = completed.governance;
-        if let Some(cb) = hook {
-            cb(WholeResultLiveStageForTest::AfterFootprintCaptureBeforeDeliveryConfirm);
-        }
+        observer.on_stage(WholeResultLiveStageForTest::AfterFootprintCaptureBeforeDeliveryConfirm);
         if let Err(outcome) = self.confirm_authority_at_head(execution, principal, &mut watermark) {
             return outcome;
         }

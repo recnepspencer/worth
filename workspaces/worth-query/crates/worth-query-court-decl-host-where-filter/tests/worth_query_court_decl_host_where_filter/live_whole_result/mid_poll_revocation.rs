@@ -55,6 +55,7 @@ fn run_mid_poll_revocation_at_stage(
     target_stage: WholeResultLiveStageForTest,
     buffer_capacity: usize,
     pre_commits: usize,
+    expect_head_advanced: bool,
     label: &str,
 ) {
     let host = install(
@@ -93,10 +94,23 @@ fn run_mid_poll_revocation_at_stage(
     }
 
     let mut revoked_mid_poll = false;
+    let mut saw_head_advanced = false;
+    let mut saw_pending_confirm = false;
+    let mut saw_overflow_confirm = false;
     let outcome = host
         .runtime()
         .with_application_advancement(&scope, |phase| {
             let mut hook = |stage| {
+                match stage {
+                    WholeResultLiveStageForTest::HeadAdvanced => saw_head_advanced = true,
+                    WholeResultLiveStageForTest::AfterPollBeforePendingConfirm => {
+                        saw_pending_confirm = true;
+                    }
+                    WholeResultLiveStageForTest::AfterPollBeforeOverflowConfirm => {
+                        saw_overflow_confirm = true;
+                    }
+                    _ => {}
+                }
                 if stage == target_stage && !revoked_mid_poll {
                     revoked_mid_poll = true;
                     run_mutate_in_advancement(
@@ -120,6 +134,17 @@ fn run_mid_poll_revocation_at_stage(
         revoked_mid_poll,
         "{label}: deterministic mid-poll hook at {target_stage:?} MUST fire"
     );
+    assert_eq!(
+        saw_head_advanced, expect_head_advanced,
+        "{label}: HeadAdvanced stage observation mismatch (saw={saw_head_advanced}, expected={expect_head_advanced})"
+    );
+    if expect_head_advanced {
+        assert!(
+            !saw_pending_confirm && !saw_overflow_confirm,
+            "{label}: HeadAdvanced must intercept before Pending/Overflow confirmation \
+             (pending={saw_pending_confirm}, overflow={saw_overflow_confirm})"
+        );
+    }
     let remaining = host
         .runtime()
         .close_live_delivery()
@@ -134,12 +159,14 @@ fn mid_poll_revocation_after_initial_authority_hits_head_advanced_on_pending_and
         WholeResultLiveStageForTest::AfterInitialAuthorityBeforePoll,
         64,
         0,
+        true,
         "head-advanced-pending",
     );
     run_mid_poll_revocation_at_stage(
         WholeResultLiveStageForTest::AfterInitialAuthorityBeforePoll,
         1,
         2,
+        true,
         "head-advanced-overflow",
     );
 }
@@ -150,12 +177,14 @@ fn mid_poll_revocation_before_post_poll_pending_and_overflow_confirmation_fails_
         WholeResultLiveStageForTest::AfterPollBeforePendingConfirm,
         64,
         0,
+        false,
         "post-poll-pending-confirm",
     );
     run_mid_poll_revocation_at_stage(
         WholeResultLiveStageForTest::AfterPollBeforeOverflowConfirm,
         1,
         2,
+        false,
         "post-poll-overflow-confirm",
     );
 }
@@ -167,6 +196,7 @@ fn mid_poll_revocation_after_refresh_and_footprint_capture_before_delivery_fails
         WholeResultLiveStageForTest::AfterFootprintCaptureBeforeDeliveryConfirm,
         64,
         1,
+        false,
         "post-refresh-delivery-confirm",
     );
 }

@@ -17,10 +17,31 @@ pub use outcome::{
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WholeResultLiveStageForTest {
     AfterInitialAuthorityBeforePoll,
+    HeadAdvanced,
     AfterPollBeforePendingConfirm,
     AfterPollBeforeOverflowConfirm,
     BeforeFootprintCapture,
     AfterFootprintCaptureBeforeDeliveryConfirm,
+}
+
+pub(super) trait WholeResultStageObserver {
+    fn on_stage(&mut self, stage: WholeResultLiveStageForTest);
+}
+
+pub(super) struct NoopStageObserver;
+
+impl WholeResultStageObserver for NoopStageObserver {
+    #[inline(always)]
+    fn on_stage(&mut self, _stage: WholeResultLiveStageForTest) {}
+}
+
+pub(super) struct CallbackStageObserver<'a>(&'a mut dyn FnMut(WholeResultLiveStageForTest));
+
+impl WholeResultStageObserver for CallbackStageObserver<'_> {
+    #[inline(always)]
+    fn on_stage(&mut self, stage: WholeResultLiveStageForTest) {
+        (self.0)(stage);
+    }
 }
 
 use std::marker::PhantomData;

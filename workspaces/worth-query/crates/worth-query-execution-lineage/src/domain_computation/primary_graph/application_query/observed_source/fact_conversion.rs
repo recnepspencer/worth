@@ -18,6 +18,7 @@ pub struct SourceFactConversionQuote {
     pub fact_count: usize,
     pub field_count: usize,
     pub adjacency_count: usize,
+    pub adjacency_endpoint_count: usize,
     /// Surviving heap bytes owned by materialized `Fact` payloads (such as
     /// `CanonicalFieldPath` vectors and cloned `AspectKey`/`FieldKey` strings)
     /// that outlive temporary conversion scratch.
@@ -27,7 +28,7 @@ pub struct SourceFactConversionQuote {
     /// both materialized `Vec<Fact>` buffers, `merge_facts` BTreeMap, and cloned
     /// `SourceFactLocator` path/string payloads).
     pub peak_scratch_bytes: u64,
-    /// Bounded O(N log N) validation, preparation, and merge work units.
+    /// Bounded O(N log N) validation, preparation, endpoint-copy, and merge work units.
     pub conversion_work: u64,
 }
 
@@ -146,9 +147,14 @@ impl<Query> WorthQueryObservedSource<Query> {
         let fact_count = fp.fact_count()?;
         let field_count = fp.field_count()?;
         let mut adjacency_count = 0_usize;
+        let mut adjacency_endpoint_count = 0_usize;
         let mut retained_payload_bytes = 0_u64;
         for part in fp.fact_sources() {
             adjacency_count = adjacency_count.checked_add(part.adjacencies.len())?;
+            for adjacency in part.adjacencies {
+                adjacency_endpoint_count =
+                    adjacency_endpoint_count.checked_add(adjacency.endpoints.len())?;
+            }
             for aspect in part.aspects {
                 let per_field = (std::mem::size_of::<FieldKey>() as u64)
                     .checked_add(u64::try_from(aspect.aspect.as_str().len()).ok()?)?
@@ -180,6 +186,8 @@ impl<Query> WorthQueryObservedSource<Query> {
         let peak_scratch_bytes = validation_peak.max(merge_peak);
         let conversion_work = n_log2_n(field_count)?
             .checked_add(n_log2_n(adjacency_count)?)?
+            .checked_add(n_log2_n(adjacency_endpoint_count)?)?
+            .checked_add(u64::try_from(adjacency_endpoint_count).ok()?)?
             .checked_add(n_log2_n(fact_count)?)?
             .checked_add(u64::try_from(field_count).ok()?)?
             .checked_add(u64::try_from(fact_count).ok()?)?
@@ -188,6 +196,7 @@ impl<Query> WorthQueryObservedSource<Query> {
             fact_count,
             field_count,
             adjacency_count,
+            adjacency_endpoint_count,
             retained_payload_bytes,
             peak_scratch_bytes,
             conversion_work,

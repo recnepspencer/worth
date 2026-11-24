@@ -14,7 +14,8 @@ use worth_runtime_world::facade::CompositeCommitIdentity;
 use super::super::outcome::WorthQueryApplicationLiveOverflow;
 use super::footprint::WholeResultFootprintStatus;
 use super::{
-    WholeResultLiveStageForTest, WorthQueryApplicationWholeResultLiveLease,
+    CallbackStageObserver, NoopStageObserver, WholeResultLiveStageForTest,
+    WholeResultStageObserver, WorthQueryApplicationWholeResultLiveLease,
     WorthQueryApplicationWholeResultLiveOutcome,
 };
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
@@ -52,7 +53,7 @@ where
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
         request: &WorthQueryRequestScope,
     ) -> WorthQueryApplicationWholeResultLiveOutcome<Query, QueryResult> {
-        self.next_with_optional_hook(phase, principal, request, None)
+        self.next_with_observer(phase, principal, request, NoopStageObserver)
     }
 
     #[doc(hidden)]
@@ -63,15 +64,15 @@ where
         request: &WorthQueryRequestScope,
         hook: &mut dyn FnMut(WholeResultLiveStageForTest),
     ) -> WorthQueryApplicationWholeResultLiveOutcome<Query, QueryResult> {
-        self.next_with_optional_hook(phase, principal, request, Some(hook))
+        self.next_with_observer(phase, principal, request, CallbackStageObserver(hook))
     }
 
-    fn next_with_optional_hook(
+    fn next_with_observer<O: WholeResultStageObserver>(
         &mut self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
         request: &WorthQueryRequestScope,
-        mut hook: Option<&mut dyn FnMut(WholeResultLiveStageForTest)>,
+        mut observer: O,
     ) -> WorthQueryApplicationWholeResultLiveOutcome<Query, QueryResult> {
         let phase_request = match phase.execution_request_for(&self.runtime.runtime.product_runtime)
         {
@@ -96,10 +97,8 @@ where
             Ok(watermark) => watermark,
             Err(outcome) => return outcome,
         };
-        if let Some(cb) = hook.as_deref_mut() {
-            cb(WholeResultLiveStageForTest::AfterInitialAuthorityBeforePoll);
-        }
-        self.poll_until_invalidated(execution, principal, request, watermark, hook)
+        observer.on_stage(WholeResultLiveStageForTest::AfterInitialAuthorityBeforePoll);
+        self.poll_until_invalidated(execution, principal, request, watermark, observer)
     }
 
     pub(super) fn admit_head_and_authority(
@@ -236,13 +235,13 @@ where
         Ok(())
     }
 
-    fn poll_until_invalidated(
+    fn poll_until_invalidated<O: WholeResultStageObserver>(
         &mut self,
         execution: &ExecutionRequest<'_, '_>,
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
         request: &WorthQueryRequestScope,
         mut watermark: CompositeCommitIdentity,
-        mut hook: Option<&mut dyn FnMut(WholeResultLiveStageForTest)>,
+        mut observer: O,
     ) -> WorthQueryApplicationWholeResultLiveOutcome<Query, QueryResult> {
         let mut recheck_attempts = 0_usize;
         loop {
@@ -272,6 +271,7 @@ where
             let batch_cell = match poll {
                 WorthQueryLiveBoundedPoll::Batch(batch) => batch,
                 WorthQueryLiveBoundedPoll::HeadAdvanced => {
+                    observer.on_stage(WholeResultLiveStageForTest::HeadAdvanced);
                     recheck_attempts += 1;
                     if recheck_attempts > MAX_HEAD_RECHECK_ATTEMPTS {
                         return self.terminate_outcome(
@@ -285,9 +285,7 @@ where
                     continue;
                 }
                 WorthQueryLiveBoundedPoll::Pending => {
-                    if let Some(cb) = hook.as_deref_mut() {
-                        cb(WholeResultLiveStageForTest::AfterPollBeforePendingConfirm);
-                    }
+                    observer.on_stage(WholeResultLiveStageForTest::AfterPollBeforePendingConfirm);
                     match self.confirm_authority_at_head(execution, principal, &mut watermark) {
                         Ok(false) => {
                             return WorthQueryApplicationWholeResultLiveOutcome::Pending;
@@ -305,9 +303,7 @@ where
                     }
                 }
                 WorthQueryLiveBoundedPoll::Overflow { missed } => {
-                    if let Some(cb) = hook.as_deref_mut() {
-                        cb(WholeResultLiveStageForTest::AfterPollBeforeOverflowConfirm);
-                    }
+                    observer.on_stage(WholeResultLiveStageForTest::AfterPollBeforeOverflowConfirm);
                     if let Err(outcome) =
                         self.confirm_authority_at_head(execution, principal, &mut watermark)
                     {
@@ -351,7 +347,7 @@ where
                 batch.product().retained_clone(),
                 next_cursor,
                 watermark,
-                hook,
+                observer,
             );
         }
     }

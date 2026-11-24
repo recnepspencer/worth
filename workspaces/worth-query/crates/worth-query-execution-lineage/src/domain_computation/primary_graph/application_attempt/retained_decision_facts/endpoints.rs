@@ -71,7 +71,8 @@ impl AdmittedAdjacencyEndpoints {
         input: &[EntityId],
         policy: super::StorageControl<'_, '_>,
     ) -> Result<Self, StoreDenial> {
-        policy.check_live()?;
+        let copy_work = u64::try_from(input.len()).map_err(|_| StoreDenial::Representability)?;
+        policy.charge_work(copy_work)?;
         let mut output = ExecutionArrayBuilder::allocate(input.len(), policy.policy())?;
         let mut previous = None;
         let mut sorted_unique = true;
@@ -93,7 +94,8 @@ impl AdmittedAdjacencyEndpoints {
         input: impl IntoIterator<Item = EntityId>,
         control: super::StorageControl<'_, '_>,
     ) -> Result<Self, StoreDenial> {
-        control.check_live()?;
+        let copy_work = u64::try_from(count).map_err(|_| StoreDenial::Representability)?;
+        control.charge_work(copy_work)?;
         let mut output = ExecutionArrayBuilder::allocate(count, control.policy())?;
         let mut previous = None;
         let mut sorted_unique = true;
@@ -116,7 +118,15 @@ impl AdmittedAdjacencyEndpoints {
     ) -> Result<Self, StoreDenial> {
         // Do not first clone the input Vec. Temporary sort and final exact unique
         // backing coexist with each other and with the borrowed input owner.
-        policy.check_live()?;
+        let copy_work = u64::try_from(input.len())
+            .ok()
+            .and_then(|count| count.checked_mul(2))
+            .ok_or(StoreDenial::Representability)?;
+        let sort_work = endpoint_n_log2_n(input.len()).ok_or(StoreDenial::Representability)?;
+        let total_work = sort_work
+            .checked_add(copy_work)
+            .ok_or(StoreDenial::Representability)?;
+        policy.charge_work(total_work)?;
         let mut sorted = ExecutionArrayBuilder::allocate(input.len(), policy.policy())?;
         for id in input {
             policy.check_live()?;
@@ -161,6 +171,16 @@ impl AdmittedAdjacencyEndpoints {
             .transpose()?;
         let left = left_sorted.as_ref().unwrap_or(self);
         let right = right_sorted.as_ref().unwrap_or(other);
+        let merge_work = u64::try_from(left.len())
+            .ok()
+            .and_then(|l| {
+                u64::try_from(right.len())
+                    .ok()
+                    .and_then(|r| l.checked_add(r))
+            })
+            .and_then(|sum| sum.checked_mul(2))
+            .ok_or(StoreDenial::Representability)?;
+        policy.charge_work(merge_work)?;
         let mut count = 0usize;
         union_visit(left, right, policy, |_| {
             count = count.checked_add(1).ok_or(StoreDenial::Representability)?;
@@ -251,6 +271,14 @@ fn sift(
         root = child;
     }
 }
+fn endpoint_n_log2_n(count: usize) -> Option<u64> {
+    if count <= 1 {
+        return u64::try_from(count).ok();
+    }
+    let log2 = u64::from(usize::BITS - count.leading_zeros()).max(1);
+    u64::try_from(count).ok()?.checked_mul(log2)
+}
+
 fn swap(values: &[Cell<EntityId>], left: usize, right: usize) {
     let id = values[left].get();
     values[left].set(values[right].get());
