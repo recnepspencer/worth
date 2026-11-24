@@ -1,8 +1,8 @@
 //! One route compiler for installation and request-funded private preparation.
-use super::super::DerivedIndexMaintenanceDenialKind as Denial;
 use super::allocation::{self as allocate, Payment};
 use super::*;
-use crate::storage::substrate::maintenance::MaintenanceRoute as Route;
+use crate::indexes::data::maintenance::DerivedIndexMaintenanceDenialKind as Denial;
+use crate::storage::substrate::maintenance::routes::MaintenanceRoute as Route;
 pub(super) fn compile<'a>(
     definitions: impl Iterator<Item = &'a DerivedIndexDefinition>,
     plans: &AspectContractPlanCatalog,
@@ -23,7 +23,7 @@ pub(super) fn compile<'a>(
             DerivedIndexKind::EntityField { field_locator } => {
                 for plan in plans.entity_plans.values() {
                     allocate::scope(plan, field_locator, pay)?;
-                    if crate::indexes::projected_field_values::entity_index_projection_scope(
+                    if crate::indexes::projected_field_values::field_projection_scope::entity_index_projection_scope(
                         plan,
                         field_locator,
                     )
@@ -52,7 +52,7 @@ pub(super) fn compile<'a>(
             DerivedIndexKind::RelationField { field_locator } => {
                 for plan in plans.relation_plans.values() {
                     allocate::scope(plan, field_locator, pay)?;
-                    if crate::indexes::projected_field_values::relation_index_projection_scope(
+                    if crate::indexes::projected_field_values::field_projection_scope::relation_index_projection_scope(
                         plan,
                         field_locator,
                     )

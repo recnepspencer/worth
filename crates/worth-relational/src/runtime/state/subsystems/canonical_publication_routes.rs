@@ -18,11 +18,11 @@ mod authored_writes;
 mod branch_transition_stream;
 #[path = "canonical_publication_routes/checkpoint_admission.rs"]
 mod checkpoint_admission;
+#[path = "canonical_publication_routes/fork_frontiers.rs"]
+mod fork_frontiers;
 #[cfg(test)]
 #[path = "canonical_publication_routes/lifecycle_order_control.rs"]
 mod lifecycle_order_control;
-#[path = "canonical_publication_routes/fork_frontiers.rs"]
-mod fork_frontiers;
 #[path = "canonical_publication_routes/patch_position_reservation.rs"]
 mod patch_position_reservation;
 #[path = "canonical_publication_routes/pending_settlement.rs"]

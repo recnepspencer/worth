@@ -2,16 +2,19 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue, FieldKey};
 
+use crate::commit_strategies::data::execution::executor_registration::{
+    CommitStrategyExecutionRegistration, CommitStrategyExecutor,
+};
+use crate::commit_strategies::data::execution::observation_context::StrategyObservationContext;
 use crate::commit_strategies::data::{
     decode_entity_id, encode_entity_id, encode_u64, CanonicalStrategyCommitRequest,
-    CanonicalStrategyOutputArtifact, CommitStrategyDescriptor, CommitStrategyExecutionRegistration,
-    CommitStrategyExecutor, CommitStrategyFamilyName, CommitStrategyId, CommitStrategyRegistration,
-    CommitStrategyRegistrationError, CommitStrategySemanticName, CommitStrategyVersion,
-    NativeCodecError, NativeCodecReader, NativeStrategyCommitRequest, PersistentArtifactName,
-    StrategyCallerProvenance, StrategyEntityAspectReadRecord, StrategyExecutionResult,
-    StrategyExecutorFailure, StrategyExecutorFailureClass, StrategyInputSchemaName,
-    StrategyInputSchemaVersion, StrategyIntentName, StrategyMutationProgram,
-    StrategyObservationContext, StrategyOutputSchemaName, StrategyPacketContract,
+    CanonicalStrategyOutputArtifact, CommitStrategyDescriptor, CommitStrategyFamilyName,
+    CommitStrategyId, CommitStrategyRegistration, CommitStrategyRegistrationError,
+    CommitStrategySemanticName, CommitStrategyVersion, NativeCodecError, NativeCodecReader,
+    NativeStrategyCommitRequest, PersistentArtifactName, StrategyCallerProvenance,
+    StrategyEntityAspectReadRecord, StrategyExecutionResult, StrategyExecutorFailure,
+    StrategyExecutorFailureClass, StrategyInputSchemaName, StrategyInputSchemaVersion,
+    StrategyIntentName, StrategyMutationProgram, StrategyOutputSchemaName, StrategyPacketContract,
     StrategyReadContract, StrategyReadCostClass, StrategyReadLocalityClass, StrategyReadScopeClass,
     StrategyTraversalBasis,
 };

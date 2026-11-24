@@ -11,8 +11,6 @@ use crate::transactions::data::{
     CommitChangeSummary, CommitHistorySummary, CommitLog, CommitPatchBudgetSummary,
     CommitPublicationSummary, CommitSummary, PatchVsTruthDeltaReport, RecordRef, TransactionId,
 };
-use crate::validation::data::InvariantGroupSet;
-use serde::{Deserialize, Serialize};
 use std::ops::Deref;
 use std::sync::Arc;
 
@@ -73,21 +71,7 @@ pub struct CommitPublication {
     pub strategy_artifacts: Option<crate::commit_strategies::data::StrategyCommitArtifactBundle>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct CommitStructuralSummary {
-    pub invariant_groups: InvariantGroupSet,
-    pub commit_topology: crate::transactions::data::CommitTopology,
-    pub touched_partitions: Vec<crate::identity::data::PartitionId>,
-    pub bulk_entity_slots_reserved: usize,
-    pub bulk_relation_slots_reserved: usize,
-    pub descriptor_semantics_version: DescriptorSemanticsVersion,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct CommitSchemaSummary {
-    pub transition: Option<SchemaTransitionSummary>,
-    pub descriptor_semantics_version: DescriptorSemanticsVersion,
-}
+pub use super::commit_summaries::{CommitSchemaSummary, CommitStructuralSummary};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CommitExecution {

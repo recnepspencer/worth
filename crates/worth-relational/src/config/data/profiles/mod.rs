@@ -39,13 +39,17 @@ impl Default for RelationalRuntimeConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::commit_strategies::data::descriptor::descriptor_record::CommitStrategyDescriptor;
+    use crate::commit_strategies::data::descriptor::read_contract::{
+        CommitStrategyVersion, StrategyPacketContract, StrategyReadContract, StrategyReadCostClass,
+        StrategyReadLocalityClass, StrategyReadScopeClass, StrategyTraversalBasis,
+    };
+    use crate::commit_strategies::data::descriptor::semantic_names::StrategyInputSchemaVersion;
+    use crate::commit_strategies::data::registration::CommitStrategyRegistration;
+    use crate::commit_strategies::data::strategy_id::CommitStrategyId;
     use crate::commit_strategies::data::{
-        CommitStrategyDescriptor, CommitStrategyFamilyName, CommitStrategyId,
-        CommitStrategyRegistration, CommitStrategySemanticName, CommitStrategyVersion,
-        PersistentArtifactName, StrategyInputSchemaName, StrategyInputSchemaVersion,
-        StrategyIntentName, StrategyOutputSchemaName, StrategyPacketContract, StrategyReadContract,
-        StrategyReadCostClass, StrategyReadLocalityClass, StrategyReadScopeClass,
-        StrategyTraversalBasis,
+        CommitStrategyFamilyName, CommitStrategySemanticName, PersistentArtifactName,
+        StrategyInputSchemaName, StrategyIntentName, StrategyOutputSchemaName,
     };
     use crate::diagnostics::data::RelationalDiagnosticsProfile;
 

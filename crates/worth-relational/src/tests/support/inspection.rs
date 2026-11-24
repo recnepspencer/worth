@@ -1,5 +1,36 @@
 use super::*;
 
+use crate::facade::diagnostics::RelationalDiagnosticsProfile;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum PerfDiagnosticsPolicy {
+    GeometryOperationalHotPath,
+    GeometryRichCertification,
+    ChipOperationalHotPath,
+    ChipRichCertification,
+}
+
+pub(crate) fn apply_perf_diagnostics_policy(
+    runtime: &mut RelationalRuntime,
+    policy: PerfDiagnosticsPolicy,
+) {
+    let profile = match policy {
+        PerfDiagnosticsPolicy::GeometryOperationalHotPath => {
+            RelationalDiagnosticsProfile::geometry_operational_hot_path()
+        }
+        PerfDiagnosticsPolicy::GeometryRichCertification => {
+            RelationalDiagnosticsProfile::geometry_rich_certification()
+        }
+        PerfDiagnosticsPolicy::ChipOperationalHotPath => {
+            RelationalDiagnosticsProfile::chip_operational_hot_path()
+        }
+        PerfDiagnosticsPolicy::ChipRichCertification => {
+            RelationalDiagnosticsProfile::chip_rich_certification()
+        }
+    };
+    runtime.configure_diagnostics_for_test(|configured| *configured = profile);
+}
+
 pub(crate) fn default_graph_budget() -> crate::facade::inspection::GraphInspectionBudget {
     crate::facade::inspection::GraphInspectionBudget {
         max_entities: 1_024,

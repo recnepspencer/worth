@@ -111,6 +111,18 @@ named earlier in the same occurrence: `same_commit_entity_name` /
 `same_commit_relation_name` return a `WorthQuerySameCommitName<K>` that is
 only a discriminator value, and the name it stands for is the one the
 two-commit route gives.
+Declare roles, discriminators and occurrences as Rust types
+([naming declared as Rust types](build-an-application.md#naming-declared-as-rust-types)):
+`#[derive(WorthQueryNameRole)]` with `#[depends_on(..)]` and numeric
+`Instance(u32)` roles, registered by
+`ApplicationNameSchemeBuilder::from_roles` / `for_relation_from_roles`;
+`#[derive(ApplicationNameDiscriminator)]` over closed values, nested
+discriminators and `NameRef<K>` (one declaration for a committed or a
+same-commit reference); `OccurrencePath` for composed occurrences with
+numeric index order; `WorthQueryOutputBirth::of_role` for a birth under a
+typed role (`IndexedRoleDiscriminator` selects an indexed role's split piece
+with `NameSelection::keep_side`); and `NamedTarget<K>` for a held name with
+its selection.
 `HistoryDocument` `undo_step` / `redo_to` / `checkout` keep held names on the
 checked-out node with no naming ceremony: Native appends `Retire` / `Restore`
 for every named record the selection retires or restores

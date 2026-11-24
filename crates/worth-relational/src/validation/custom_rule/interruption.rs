@@ -5,7 +5,7 @@ pub enum CustomInvariantInterruption {
     DeadlineElapsed,
 }
 
-pub(super) fn check_live(
+pub(crate) fn check_live(
     execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<(), CustomInvariantInterruption> {
     execution.check_live().map_err(|stop| match stop {

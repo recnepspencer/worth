@@ -2,20 +2,29 @@ use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 
-use crate::history::data::{BranchId, CommitId};
-use crate::merge::data::{
-    AspectComparisonState, IdentityBasisDeclaration, IdentityBasisKind, IdentityBasisScope,
-    IdentityMatchClass, IdentityResolutionReason, LoweredMergeAction, LoweredMergeBlockedReason,
+use crate::history::data::coordinates::{BranchId, CommitId};
+use crate::history::data::merge_branch_basis::MergeBaseSelectionRule;
+use crate::merge::data::causal::MergeRecordCausalDisposition;
+use crate::merge::data::conflicts::{
+    MergeConflictClass, MergeVisibilityEvidence, RelationConflictEvidence, StrategyConflictClass,
+};
+use crate::merge::data::decisions::MergePlanningDecisionLogDigestBasis;
+use crate::merge::data::identity::{
+    IdentityBasisDeclaration, IdentityBasisKind, IdentityBasisScope, IdentityMatchClass,
+    IdentityResolutionReason,
+};
+use crate::merge::data::policy::{
+    AspectComparisonState, LoweredMergeAction, LoweredMergeBlockedReason,
     LoweredMergeRejectedReason, LoweredRecordDecisionKind, LoweredRecordDenialKind,
-    LoweredRecordExecutionIntentKind, MergeBaseSelectionRule, MergeConflictClass,
-    MergeExecutableClass, MergeExecutionReadiness, MergeIntent,
-    MergePlanningDecisionLogDigestBasis, MergePolicyProofBoundary, MergeRecordCausalDisposition,
-    MergeResolutionClass, MergeVisibilityEvidence, RelationConflictEvidence,
+    LoweredRecordExecutionIntentKind, MergeExecutableClass, MergeExecutionReadiness,
+    MergePolicyProofBoundary, MergeResolutionClass, ResolvedAspectMergePolicy,
+};
+use crate::merge::data::requests::normalized::{
     RelationalMergeCorrespondencePosture, RelationalMergeRequestFamily,
     RelationalMergeSchemaReconciliationPosture, RelationalMergeTopologyIntent,
-    ResolvedAspectMergePolicy, StrategyConflictClass,
 };
-use crate::transactions::data::RecordRef;
+use crate::merge::data::requests::raw::MergeIntent;
+use crate::transactions::data::primitives::RecordRef;
 
 use super::{
     MergeExecutionAuthorityContract, MergeLoweredAspectDigestRow, MergePolicyAspectDigestRow,
@@ -37,8 +46,10 @@ pub struct MergeRequestDigestBasis {
 pub struct MergeBaseDigestBasis {
     pub rule: MergeBaseSelectionRule,
     pub commit_id: CommitId,
-    pub supporting_left_ancestors: crate::history::data::MergeBasisAncestors,
-    pub supporting_right_ancestors: crate::history::data::MergeBasisAncestors,
+    pub supporting_left_ancestors:
+        crate::history::data::merge_branch_basis::ancestors::MergeBasisAncestors,
+    pub supporting_right_ancestors:
+        crate::history::data::merge_branch_basis::ancestors::MergeBasisAncestors,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -65,9 +76,9 @@ pub struct MergeConflictDigestBasis {
     pub validated_schema_correspondence: Arc<[bool]>,
     pub strategy_conflict_classes: Arc<[Option<StrategyConflictClass>]>,
     pub source_strategy_descriptors:
-        Arc<[Arc<[crate::commit_strategies::data::StrategyMergeDescriptor]>]>,
+        Arc<[Arc<[crate::commit_strategies::data::artifacts::merge_descriptor::StrategyMergeDescriptor]>]>,
     pub target_strategy_descriptors:
-        Arc<[Arc<[crate::commit_strategies::data::StrategyMergeDescriptor]>]>,
+        Arc<[Arc<[crate::commit_strategies::data::artifacts::merge_descriptor::StrategyMergeDescriptor]>]>,
     pub relation_evidence: Arc<[Option<RelationConflictEvidence>]>,
     pub source_visibility_evidence: Arc<[MergeVisibilityEvidence]>,
     pub target_visibility_evidence: Arc<[MergeVisibilityEvidence]>,

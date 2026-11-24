@@ -1,6 +1,7 @@
 //! Strategy row admissions follow the same actual immutable policy owners.
 use super::{attach_policy_name, MergeLeafMemory};
-use crate::merge::data::{RelationalMergeAspectPolicyWitnessRow, RelationalMergeStrategyWitness};
+use crate::merge::data::artifacts::strategy_witness::RelationalMergeStrategyWitness;
+use crate::merge::data::artifacts::strategy_witness_policy_rows::RelationalMergeAspectPolicyWitnessRow;
 
 pub(crate) struct MergePolicyRowMemory {
     pub(crate) resolutions: MergeLeafMemory,

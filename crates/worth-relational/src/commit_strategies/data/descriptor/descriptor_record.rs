@@ -188,7 +188,7 @@ impl<'de> Deserialize<'de> for CommitStrategyDescriptorDigest {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::commit_strategies::data::{
+    use crate::commit_strategies::data::descriptor::read_contract::{
         StrategyPacketContract, StrategyReadCostClass, StrategyReadLocalityClass,
         StrategyReadScopeClass, StrategyTraversalBasis,
     };

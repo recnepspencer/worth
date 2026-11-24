@@ -3,25 +3,6 @@ use super::*;
 use crate::schema::{data::RelationalSchemaRegistry, SchemaCompilationControl};
 use crate::validation::candidate_source::ManagedIndexSourceProgram;
 
-#[derive(Debug)]
-pub(crate) enum CustomInvariantCompilationDenial {
-    Source(crate::derived_relation::DerivedRelationDenial),
-    Duplicate(DuplicateCustomInvariantRegistration),
-    Execution(crate::execution::RelationalExecutionDenialCause),
-    CapacityOverflow,
-}
-impl CustomInvariantCompilationDenial {
-    /// The descriptive Source binding path has no execution request or storage
-    /// admission. Its shared validation can therefore refuse only its meaning.
-    pub(crate) fn configuration_source(self) -> crate::derived_relation::DerivedRelationDenial {
-        match self {
-            Self::Source(cause) => cause,
-            Self::Execution(_) | Self::Duplicate(_) | Self::CapacityOverflow => {
-                unreachable!("configuration Source validation neither reserves nor executes")
-            }
-        }
-    }
-}
 impl FrozenCustomInvariantRegistry {
     pub(crate) fn compile(
         registry: &RelationalSchemaRegistry,

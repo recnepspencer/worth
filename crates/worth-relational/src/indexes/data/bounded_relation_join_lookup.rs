@@ -132,7 +132,7 @@ impl BoundedRelationJoinLookupWork {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BoundedRelationJoinLookupDenialKind {
-    Execution(crate::execution::RelationalExecutionDenialCause),
+    Execution(crate::execution::denial_cause::RelationalExecutionDenialCause),
     InvalidCandidateLimit,
     SnapshotUnavailable,
     IndexNotInstalled,

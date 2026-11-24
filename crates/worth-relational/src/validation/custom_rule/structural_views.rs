@@ -8,20 +8,7 @@ mod record_presence;
 pub(crate) use derived_admission::DerivedAdmissionCache;
 pub(crate) use record_presence::StructuralPresenceDenial;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-pub struct StructuralRelationRecord {
-    pub relation_id: RelationId,
-    pub kind_id: KindId,
-    pub source: EntityId,
-    pub target: EntityId,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum StructuralReadError {
-    WorkBudgetExceeded,
-    OutsideDeclaredAccess,
-    RecordUnavailable,
-}
+pub use crate::validation::data::structural_read::{StructuralReadError, StructuralRelationRecord};
 
 #[derive(Clone)]
 pub struct StructuralAspectStateView<'runtime> {

@@ -21,3 +21,5 @@ pub(crate) use index_entry::RelationalCommitIndexEntry;
 
 mod retained_index;
 pub(crate) use retained_index::RetainedCanonicalIndex;
+
+pub(crate) mod artifact_denial;

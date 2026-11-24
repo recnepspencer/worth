@@ -15,13 +15,13 @@ pub enum RelationalPublicationFailureKind {
     SnapshotCountOverflow,
     CandidateIdentityExhausted,
     PreparedRootMismatch,
-    PreparedBasisDescriptor(crate::branch::RelationalBranchBasisDenial),
-    NextBasisAdmission(crate::branch::RelationalBranchBasisDenial),
+    PreparedBasisDescriptor(crate::branch::basis_denial::RelationalBranchBasisDenial),
+    NextBasisAdmission(crate::branch::basis_denial::RelationalBranchBasisDenial),
     /// The selected branch root was already gone when the critical section
     /// looked for it, so publication stopped before any comparison or any
     /// reference movement.
     SelectedRootUnavailable,
-    BranchObservation(crate::branch::RelationalBranchBasisDenial),
+    BranchObservation(crate::branch::basis_denial::RelationalBranchBasisDenial),
     PatchPositionCapacityExhausted,
     RetentionIdentityExhausted,
     RetentionOwner,

@@ -1,8 +1,14 @@
-use crate::validation::data::{
-    InvariantCheckResult, InvariantFailureEffect, InvariantVerdict, InvariantViolationFields,
-};
+use crate::validation::data::execution::{InvariantFailureEffect, InvariantVerdict};
+use crate::validation::data::results::InvariantViolationFields;
 
 use super::failures::InvariantFailure;
+
+/// The descriptive fields consumed by summary and retention accounting.
+pub struct InvariantCheckObservation<'a> {
+    pub(crate) execution_point: crate::validation::data::execution::InvariantExecutionPoint,
+    pub(crate) failure_effect: InvariantFailureEffect,
+    pub(crate) verdict: &'a InvariantVerdict,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InvariantExecutionSummary {
@@ -28,7 +34,10 @@ impl InvariantExecutionSummary {
         }
     }
 
-    pub(crate) fn from_results(results: &[InvariantCheckResult]) -> Self {
+    pub(crate) fn from_results<'a, T>(results: &'a [T]) -> Self
+    where
+        &'a T: Into<InvariantCheckObservation<'a>>,
+    {
         let mut summary = Self::empty();
         for result in results {
             summary.observe(result);
@@ -37,17 +46,18 @@ impl InvariantExecutionSummary {
     }
 
     /// The same classification for whole-result and incremental reduction.
-    pub(crate) fn observe(&mut self, result: &InvariantCheckResult) {
+    pub(crate) fn observe<'a>(&mut self, result: impl Into<InvariantCheckObservation<'a>>) {
+        let result = result.into();
         self.observe_meaning(
             result.execution_point,
             result.failure_effect,
-            &result.verdict,
+            result.verdict,
         );
     }
 
     pub(crate) fn observe_meaning(
         &mut self,
-        execution_point: crate::validation::data::InvariantExecutionPoint,
+        execution_point: crate::validation::data::execution::InvariantExecutionPoint,
         failure_effect: InvariantFailureEffect,
         verdict: &InvariantVerdict,
     ) {
@@ -61,7 +71,7 @@ impl InvariantExecutionSummary {
                     &violation.fields
                 {
                     self.custom_failure_count += 1;
-                    if *failure == crate::validation::data::ResultCustomInvariantFailureKind::Panic
+                    if *failure == crate::validation::data::results::custom_invariant_failure::CustomInvariantFailureKind::Panic
                     {
                         self.custom_panic_count += 1;
                     }
@@ -94,13 +104,17 @@ impl InvariantExecutionSummary {
     }
 
     /// Backing the next observation would retain; admission precedes its clone.
-    pub(crate) fn pending_failure_allocation_bytes(&self, result: &InvariantCheckResult) -> u64 {
+    pub(crate) fn pending_failure_allocation_bytes<'a>(
+        &self,
+        result: impl Into<InvariantCheckObservation<'a>>,
+    ) -> u64 {
+        let result = result.into();
         let retains = match result.failure_effect {
             InvariantFailureEffect::BlockCommit => self.blocking_failure.is_none(),
             InvariantFailureEffect::BlockPublication => self.publication_failure.is_none(),
             InvariantFailureEffect::AuditOnly => false,
         };
-        match &result.verdict {
+        match result.verdict {
             InvariantVerdict::Violation(violation) if retains => (violation.detail.capacity()
                 as u64)
                 .saturating_add(violation.fields.owned_allocation_capacity_bytes()),
@@ -132,21 +146,27 @@ impl InvariantExecutionSummary {
         self.blocking_failure.as_ref()
     }
 
-    pub fn blocking_failures(&self, results: &[InvariantCheckResult]) -> Vec<InvariantFailure> {
+    pub fn blocking_failures<'a, T>(&self, results: &'a [T]) -> Vec<InvariantFailure>
+    where
+        &'a T: Into<InvariantCheckObservation<'a>>,
+    {
         results
             .iter()
-            .filter_map(|result| match &result.verdict {
-                InvariantVerdict::Violation(violation)
-                    if result.failure_effect == InvariantFailureEffect::BlockCommit =>
-                {
-                    Some(InvariantFailure::new(
-                        result.execution_point,
-                        result.failure_effect,
-                        violation.clone(),
-                    ))
-                }
-                _ => None,
-            })
+            .map(Into::into)
+            .filter_map(
+                |result: InvariantCheckObservation<'_>| match result.verdict {
+                    InvariantVerdict::Violation(violation)
+                        if result.failure_effect == InvariantFailureEffect::BlockCommit =>
+                    {
+                        Some(InvariantFailure::new(
+                            result.execution_point,
+                            result.failure_effect,
+                            violation.clone(),
+                        ))
+                    }
+                    _ => None,
+                },
+            )
             .collect()
     }
 
@@ -154,21 +174,27 @@ impl InvariantExecutionSummary {
         self.publication_failure.as_ref()
     }
 
-    pub fn publication_failures(&self, results: &[InvariantCheckResult]) -> Vec<InvariantFailure> {
+    pub fn publication_failures<'a, T>(&self, results: &'a [T]) -> Vec<InvariantFailure>
+    where
+        &'a T: Into<InvariantCheckObservation<'a>>,
+    {
         results
             .iter()
-            .filter_map(|result| match &result.verdict {
-                InvariantVerdict::Violation(violation)
-                    if result.failure_effect == InvariantFailureEffect::BlockPublication =>
-                {
-                    Some(InvariantFailure::new(
-                        result.execution_point,
-                        result.failure_effect,
-                        violation.clone(),
-                    ))
-                }
-                _ => None,
-            })
+            .map(Into::into)
+            .filter_map(
+                |result: InvariantCheckObservation<'_>| match result.verdict {
+                    InvariantVerdict::Violation(violation)
+                        if result.failure_effect == InvariantFailureEffect::BlockPublication =>
+                    {
+                        Some(InvariantFailure::new(
+                            result.execution_point,
+                            result.failure_effect,
+                            violation.clone(),
+                        ))
+                    }
+                    _ => None,
+                },
+            )
             .collect()
     }
 

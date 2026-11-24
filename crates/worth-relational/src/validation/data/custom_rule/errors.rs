@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
-use crate::validation::data::CustomInvariantSemanticIdentity;
+use crate::validation::data::rule_id::CustomInvariantSemanticIdentity;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CustomInvariantPreparationError {
     Runtime(Arc<str>),
-    Cause(Box<super::CustomInvariantFailureCause>),
+    Cause(Box<crate::validation::data::custom_rule::failure_cause::CustomInvariantFailureCause>),
 }
 impl CustomInvariantPreparationError {
     pub fn new(detail: impl Into<Arc<str>>) -> Self {
@@ -17,7 +17,14 @@ impl CustomInvariantPreparationError {
             Self::Cause(_) => "typed invariant failure",
         }
     }
-    fn into_parts(self) -> (Arc<str>, Option<Box<super::CustomInvariantFailureCause>>) {
+    fn into_parts(
+        self,
+    ) -> (
+        Arc<str>,
+        Option<
+            Box<crate::validation::data::custom_rule::failure_cause::CustomInvariantFailureCause>,
+        >,
+    ) {
         match self {
             Self::Cause(cause) => (Arc::from("typed invariant failure"), Some(cause)),
             Self::Runtime(detail) => (detail, None),
@@ -28,7 +35,7 @@ impl CustomInvariantPreparationError {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CustomInvariantExecutionError {
     Runtime(Arc<str>),
-    Cause(Box<super::CustomInvariantFailureCause>),
+    Cause(Box<crate::validation::data::custom_rule::failure_cause::CustomInvariantFailureCause>),
 }
 impl CustomInvariantExecutionError {
     pub fn new(detail: impl Into<Arc<str>>) -> Self {
@@ -40,7 +47,14 @@ impl CustomInvariantExecutionError {
             Self::Cause(_) => "typed invariant failure",
         }
     }
-    fn into_parts(self) -> (Arc<str>, Option<Box<super::CustomInvariantFailureCause>>) {
+    fn into_parts(
+        self,
+    ) -> (
+        Arc<str>,
+        Option<
+            Box<crate::validation::data::custom_rule::failure_cause::CustomInvariantFailureCause>,
+        >,
+    ) {
         match self {
             Self::Cause(cause) => (Arc::from("typed invariant failure"), Some(cause)),
             Self::Runtime(detail) => (detail, None),
@@ -80,7 +94,7 @@ impl From<CustomInvariantTraversalError> for CustomInvariantExecutionError {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CustomInvariantVerdict {
     Pass,
-    Violation(super::CustomInvariantRefusal),
+    Violation(crate::validation::data::custom_rule::refusal::CustomInvariantRefusal),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -111,7 +125,9 @@ pub(crate) struct CustomInvariantFailure {
     pub(crate) phase: CustomInvariantRuntimePhase,
     pub(crate) kind: CustomInvariantFailureKind,
     pub(crate) detail: Arc<str>,
-    pub(crate) cause: Option<Box<super::CustomInvariantFailureCause>>,
+    pub(crate) cause: Option<
+        Box<crate::validation::data::custom_rule::failure_cause::CustomInvariantFailureCause>,
+    >,
 }
 
 impl CustomInvariantFailure {

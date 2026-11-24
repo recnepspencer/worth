@@ -16,7 +16,7 @@ fn projection_contract_violation_is_typed_not_panic_bucket() {
             &self,
             _execution: &worth_execution::ExecutionRequest<'_, '_>,
             _request: &CanonicalStrategyCommitRequest,
-            observation: &crate::commit_strategies::data::StrategyObservationContext<'_>,
+            observation: &crate::commit_strategies::data::execution::observation_context::StrategyObservationContext<'_>,
         ) -> Result<StrategyExecutionResult, crate::commit_strategies::data::StrategyExecutorFailure>
         {
             let _ = observation.visibility().entity::<MissingAspectProjection>(

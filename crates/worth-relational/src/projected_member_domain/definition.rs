@@ -33,8 +33,8 @@ pub struct ProjectedMemberDomainParts {
 impl ProjectedMemberDomainParts {
     pub(crate) fn clone_allocation_bytes(
         &self,
-        control: crate::schema::SchemaCompilationControl<'_, '_>,
-    ) -> Result<usize, crate::execution::RelationalExecutionDenialCause> {
+        control: crate::schema::compilation_control::SchemaCompilationControl<'_, '_>,
+    ) -> Result<usize, crate::execution::denial_cause::RelationalExecutionDenialCause> {
         let mut bytes = control.checked_bytes(self.identity.name_bytes().and_then(|names| {
             self.cases
                 .len()

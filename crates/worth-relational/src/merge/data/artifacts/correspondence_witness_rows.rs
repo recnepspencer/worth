@@ -2,11 +2,11 @@ use serde::de::Error as _;
 use serde::{Deserialize, Deserializer, Serialize};
 use sha2::{Digest, Sha256};
 
-use crate::merge::data::{
+use crate::merge::data::identity::{
     IdentityBasisKind, IdentityBasisScope, IdentityMatchCandidate, IdentityMatchClass,
     IdentityResolutionReason, MergeRecordIdentity,
 };
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RelationalMergeCorrespondenceWitnessPosture {

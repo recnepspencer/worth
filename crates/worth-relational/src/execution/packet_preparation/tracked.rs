@@ -5,10 +5,13 @@ use worth_execution::{ExecutionRequest, ExecutionWorkCeiling, ScopeStop};
 pub(crate) fn prepare_tracked_artifact<T>(
     execution: &ExecutionRequest<'_, '_>,
     lease: &ExecutionResourceLease<'_>,
-    work_budget: Option<&super::super::RequestWorkBudget>,
+    work_budget: Option<&crate::execution::request_work::RequestWorkBudget>,
     build: impl FnOnce(
         &mut PacketPreparationBudget<'_, '_, '_, '_>,
-    ) -> Result<(T, u64), MapKernelFailure<super::super::PacketBudgetDenial>>,
+    ) -> Result<
+        (T, u64),
+        MapKernelFailure<crate::execution::read_only_packets::PacketBudgetDenial>,
+    >,
 ) -> Result<T, PacketExecutionStop> {
     let mut build = Some(build);
     let mut output = lease
@@ -19,7 +22,7 @@ pub(crate) fn prepare_tracked_artifact<T>(
                 worth_execution::LeaseDenial::MemoryExhausted(denial),
             ),
         })?;
-    let outcome = super::super::run_with_remaining_request_work(
+    let outcome = crate::execution::request_work::run_with_remaining_request_work(
         lease,
         work_budget,
         |child| {

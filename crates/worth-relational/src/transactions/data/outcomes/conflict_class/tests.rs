@@ -1,6 +1,6 @@
 use crate::identity::data::{EntityId, KindId, PartitionId, RelationId};
 use crate::schema::data::{DescriptorSemanticsVersion, SchemaId, SchemaVersionId};
-use crate::transactions::data::{
+use crate::transactions::data::outcomes::conflict_class::{
     BulkImportRowDomain, BulkImportStage, ConflictClass, EntityUpdateMissingState,
     RelationEndpointUpdateMissingState,
 };

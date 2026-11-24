@@ -2,6 +2,8 @@
 pub(crate) mod private_sources;
 mod source_binding;
 
+pub(crate) mod projected_grammar;
+pub(crate) mod record_grammar;
 mod storage;
 
 use crate::config::data::{CascadeDeletePolicy, CrossContextPolicy};
@@ -88,7 +90,8 @@ pub(crate) fn validate_binding(
     let mut expected_aggregate = aggregate.clone();
     expected_aggregate.aspect_contract_declarations =
         storage::aggregate_declarations(contract.storage);
-    let expected_aggregate = crate::schema::canonicalize_entity_registration(expected_aggregate)?;
+    let expected_aggregate =
+        crate::schema::aspect_plans::canonicalize_entity_registration(expected_aggregate)?;
     let mut expected_lineage = lineage.clone();
     expected_lineage.aspect_contract_declarations = storage::lineage_declarations(contract.storage);
     expected_lineage.relation_integrity = endpoints(
@@ -98,7 +101,8 @@ pub(crate) fn validate_binding(
     );
     expected_lineage.cross_context_policy = CrossContextPolicy::AllowExplicit;
     expected_lineage.cascade_delete_policy = CascadeDeletePolicy::RetainDanglingForAudit;
-    let expected_lineage = crate::schema::canonicalize_relation_registration(expected_lineage)?;
+    let expected_lineage =
+        crate::schema::aspect_plans::canonicalize_relation_registration(expected_lineage)?;
     let mut expected_membership = membership.clone();
     expected_membership.aspect_contract_declarations =
         storage::membership_declarations(registry, contract);
@@ -106,7 +110,7 @@ pub(crate) fn validate_binding(
     expected_membership.cross_context_policy = CrossContextPolicy::AllowExplicit;
     expected_membership.cascade_delete_policy = CascadeDeletePolicy::RetainDanglingForAudit;
     let expected_membership =
-        crate::schema::canonicalize_relation_registration(expected_membership)?;
+        crate::schema::aspect_plans::canonicalize_relation_registration(expected_membership)?;
     let private = private_sources::with_candidate(registry, contract);
     if relation.kind_id != contract.membership_kind
         || !source_binding::valid(registry, contract, &private)

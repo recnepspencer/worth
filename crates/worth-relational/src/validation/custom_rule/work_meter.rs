@@ -2,28 +2,18 @@ use std::num::NonZeroU64;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 use worth_execution::ExecutionLeaseStatus;
-mod control;
 mod memory;
 mod native_allowance;
+pub(crate) mod native_rule_debit;
 mod source_stage;
-use control::PreparationControl;
 use memory::PreparationMemory;
+pub(crate) use native_rule_debit::CustomPreparationStop;
+use native_rule_debit::{BorrowedPreparationStops, NativeRuleDebit, PreparationControl};
 
 // Fixed-size ID, BTree node, and wrapper retention for materializing
 // structural visits. Borrowed reads and authored checkpoints charge work only;
 // variable-size keys and aspect values are claimed separately.
 const STRUCTURAL_UNIT_BYTES: u64 = 128;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum CustomPreparationStop {
-    Cancelled,
-    DeadlineElapsed,
-    WorkExhausted,
-    MemoryExhausted,
-    MemoryAdmission(worth_execution::MemoryLimitDenial),
-    UncheckedCustomKernel,
-    Request(worth_execution::MapKernelStop),
-}
 
 struct LeasedCustomMeter {
     status: PreparationControl,
@@ -194,46 +184,30 @@ impl CustomInvariantWorkMeter {
     }
 
     fn stop(&self, reason: CustomPreparationStop) {
-        if let Some(leased) = &self.leased {
-            let mut stop = leased
-                .stop
-                .lock()
-                .unwrap_or_else(|error| error.into_inner());
-            stop.get_or_insert(reason);
-        }
-        self.mark_exceeded();
+        self.native_debit().stop(reason);
     }
 
     pub(crate) fn leased_stop(&self) -> Option<CustomPreparationStop> {
-        self.leased.as_ref().and_then(|leased| {
-            *leased
-                .stop
-                .lock()
-                .unwrap_or_else(|error| error.into_inner())
-        })
+        self.native_debit().leased_stop()
     }
 
     fn safe_point(&self) -> bool {
-        let Some(leased) = &self.leased else {
-            return true;
-        };
-        if let PreparationControl::Stage(loan) = &leased.status {
-            if let Err(cause) = loan.poll() {
-                self.loan_failed(cause);
-                return false;
-            }
-            return self.leased_stop().is_none();
-        }
-        if leased.status.is_cancelled() {
-            self.stop(CustomPreparationStop::Cancelled);
-            return false;
-        }
-        if leased.status.deadline_elapsed() {
-            self.stop(CustomPreparationStop::DeadlineElapsed);
-            return false;
-        }
-        self.leased_stop().is_none()
+        self.native_debit().safe_point()
     }
+
+    pub(crate) fn native_debit(&self) -> NativeRuleDebit<'_> {
+        NativeRuleDebit::borrow(
+            self.maximum,
+            &self.consumed,
+            &self.exhausted,
+            self.leased.as_ref().map(|meter| BorrowedPreparationStops {
+                control: &meter.status,
+                first_stop: &meter.stop,
+                request_stop: &meter.request_stop,
+            }),
+        )
+    }
+
     pub(crate) fn try_charge(&self, units: usize) -> bool {
         if self.exceeded() || !self.safe_point() {
             return false;

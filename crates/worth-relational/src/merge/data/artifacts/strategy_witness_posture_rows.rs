@@ -3,14 +3,14 @@ use serde::de::Error as _;
 use serde::{Deserialize, Deserializer, Serialize};
 use sha2::{Digest, Sha256};
 
-use crate::merge::data::{
+use crate::merge::data::blocked_posture::{
+    blocked_reason_for_deletion_class, blocked_reason_for_topology_resolution_class,
+};
+use crate::merge::data::policy::{
     DeletionExecutionClass, LoweredMergeBlockedReason, MergeExecutionReadiness,
     MergeResolutionClass, TopologyExecutionClass,
 };
-use crate::merge::{
-    blocked_reason_for_deletion_class, blocked_reason_for_topology_resolution_class,
-};
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct RelationalMergeTopologyStrategyWitnessRow {
@@ -267,19 +267,19 @@ fn deletion_truth_matches(
             blocked_reason
                 == Some(blocked_reason_for_deletion_class(match deletion_class {
                     DeletionExecutionClass::SourceDeletedTargetLive => {
-                        crate::merge::data::DeletionMergeClass::SourceDeletedTargetLive
+                        crate::merge::data::conflicts::DeletionMergeClass::SourceDeletedTargetLive
                     }
                     DeletionExecutionClass::SourceLiveTargetDeleted => {
-                        crate::merge::data::DeletionMergeClass::SourceLiveTargetDeleted
+                        crate::merge::data::conflicts::DeletionMergeClass::SourceLiveTargetDeleted
                     }
                     DeletionExecutionClass::DeletedOnBothSides => {
-                        crate::merge::data::DeletionMergeClass::DeletedOnBothSides
+                        crate::merge::data::conflicts::DeletionMergeClass::DeletedOnBothSides
                     }
                     DeletionExecutionClass::DeletedVsModified => {
-                        crate::merge::data::DeletionMergeClass::DeletedVsModified
+                        crate::merge::data::conflicts::DeletionMergeClass::DeletedVsModified
                     }
                     DeletionExecutionClass::DeletedVsRewired => {
-                        crate::merge::data::DeletionMergeClass::DeletedVsRewired
+                        crate::merge::data::conflicts::DeletionMergeClass::DeletedVsRewired
                     }
                 }))
         }

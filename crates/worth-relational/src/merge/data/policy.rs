@@ -2,12 +2,12 @@ use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 use worth_foundational::facade::AspectKey;
 
-use super::MergeResolvedAspectValueStrategy;
+use crate::merge::data::resolved_value_strategy::MergeResolvedAspectValueStrategy;
 
-mod custom_name;
+pub(crate) mod custom_name;
 pub use custom_name::MergePolicyName;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -341,7 +341,7 @@ pub struct MergePolicyProofBoundary {
 pub struct MergePolicyResolutionRecord {
     pub record: RecordRef,
     pub target_record: Option<RecordRef>,
-    pub classification: crate::merge::data::MergeConflictClass,
+    pub classification: crate::merge::data::conflicts::MergeConflictClass,
     pub aspect_resolutions: Arc<[AspectPolicyResolutionRecord]>,
     pub applied_policies: Arc<[ResolvedAspectMergePolicy]>,
     pub proof_boundary: MergePolicyProofBoundary,
@@ -371,10 +371,10 @@ pub struct MergePolicyResolutionSummary {
 pub struct LoweredMergePlanRecord {
     pub record: RecordRef,
     pub target_record: Option<RecordRef>,
-    pub classification: crate::merge::data::MergeConflictClass,
+    pub classification: crate::merge::data::conflicts::MergeConflictClass,
     pub resolution_class: MergeResolutionClass,
     pub executable_class: Option<MergeExecutableClass>,
-    pub causal_disposition: crate::merge::data::MergeRecordCausalDisposition,
+    pub causal_disposition: crate::merge::data::causal::MergeRecordCausalDisposition,
     pub applied_policies: Arc<[ResolvedAspectMergePolicy]>,
     pub policy_proof_boundary: MergePolicyProofBoundary,
     pub readiness: MergeExecutionReadiness,

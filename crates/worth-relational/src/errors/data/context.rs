@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::identity::data::VersionId;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RelationalSubsystem {

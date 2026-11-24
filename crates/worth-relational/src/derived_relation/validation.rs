@@ -1,8 +1,12 @@
 //! One finite grammar validator for registration and recovered snapshots.
 use std::collections::{BTreeMap, BTreeSet};
 
-use super::{DerivedRelationDefinitionParts as Parts, DerivedRelationDenial as Denial};
-use super::{DerivedRelationIdentity as Identity, DerivedRelationNode as Node};
+use crate::derived_relation::definition::{
+    DerivedRelationDefinitionParts as Parts, DerivedRelationDenial as Denial,
+};
+use crate::derived_relation::definition::{
+    DerivedRelationIdentity as Identity, DerivedRelationNode as Node,
+};
 use crate::graph_member::NativeMemberDomain as Domain;
 use crate::identity::data::KindId;
 use crate::schema::data::RelationalSchemaRegistry;

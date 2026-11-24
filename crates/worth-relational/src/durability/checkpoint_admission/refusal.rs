@@ -18,11 +18,11 @@ pub enum RelationalCheckpointAdmissionRefusal {
     MissingCaptureOrigin,
     OwnerUnavailable,
     CapacityOverflow,
-    Request(crate::execution::RelationalExecutionDenialCause),
+    Request(crate::execution::denial_cause::RelationalExecutionDenialCause),
     Allocation(worth_execution::ExecutionAllocationDenial),
     Buffer(worth_execution::ExecutionRequestArrayDenial),
-    Native(crate::durability::data::DurabilityError),
-    Content(crate::content::RelationalContentDenial),
+    Native(crate::durability::data::recovery_errors::DurabilityError),
+    Content(crate::content::denial::RelationalContentDenial),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -75,9 +75,9 @@ pub(super) const CANONICAL_MEANINGS: [CheckpointAdmissionMeaning; 8] = [
 ];
 
 pub(crate) fn native_stop(
-    cause: crate::durability::data::RelationalRecoveryStop,
+    cause: crate::durability::data::recovery_stop::RelationalRecoveryStop,
 ) -> RelationalCheckpointAdmissionRefusal {
-    use crate::durability::data::RelationalRecoveryStop as Stop;
+    use crate::durability::data::recovery_stop::RelationalRecoveryStop as Stop;
     match cause {
         Stop::AdmissionImage(cause) => cause,
         Stop::Content(cause) => RelationalCheckpointAdmissionRefusal::Content(cause),

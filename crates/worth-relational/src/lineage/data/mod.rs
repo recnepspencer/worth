@@ -1,4 +1,7 @@
 mod artifacts;
+pub(crate) mod birth_digest;
+pub(crate) mod birth_wire;
+pub(crate) mod discriminator_scan;
 mod event_serde;
 mod events;
 mod graph;
@@ -38,15 +41,14 @@ pub use naming::{
     PersistentNameSubjectKind,
 };
 pub use naming_denial::{DiscriminatorBasisDenialReason, LineageNameDenial, LineagePostureKind};
-pub(crate) use pending_birth_identity::canonical_birth_digest;
 pub(crate) use postures::LineageBasisView;
+#[cfg(test)]
+pub use postures::LineageCommitPostureInput;
 pub use postures::{
     CommitNamingPlan, LineageMergeKeeper, LineagePostureClaim, LineageRecordTarget,
     LineageSplitChild, PendingBirthTarget, PendingCommitBirth, PendingMergeClaim,
     PendingMergeKeeper, PendingMergeTarget, PendingSplitChild, PendingSplitClaim,
 };
-#[cfg(test)]
-pub use postures::LineageCommitPostureInput;
 pub use resolution::{
     HistoricalLineageResolution, HistoricalLineageResolutionDigestBasis,
     HistoricalLineageResolutionMetrics, HistoricalResolutionBoundednessBasis,

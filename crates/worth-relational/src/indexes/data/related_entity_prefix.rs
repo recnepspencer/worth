@@ -78,5 +78,5 @@ pub enum BoundedRelatedEntityPrefixDenial {
     Work(worth_execution::WorkCeilingDenial),
     Allocation(worth_execution::ExecutionAllocationDenial),
     Memory(worth_execution::MemoryLimitDenial),
-    Read(crate::execution::RelationalExecutionDenialCause),
+    Read(crate::execution::denial_cause::RelationalExecutionDenialCause),
 }

@@ -23,12 +23,12 @@ pub struct SchemaAuthoritySnapshotParts {
     /// Complete executable recipes. Older decoding defaults remain separate
     /// from the required content-format authority below.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub derived_relations: Vec<crate::derived_relation::DerivedRelationDefinitionParts>,
+    pub derived_relations: Vec<crate::derived_relation::definition::DerivedRelationDefinitionParts>,
     /// The finite member-domain authority retains its older decoding default.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub projected_member_domains: Vec<crate::projected_member_domain::ProjectedMemberDomainParts>,
     /// Required even when no content format is installed.
-    pub content_formats: crate::content::RelationalContentSchemaSnapshot,
+    pub content_formats: crate::content::schema::RelationalContentSchemaSnapshot,
     /// Installed persistent-name scheme contracts (omitted when empty so
     /// schemaless roots preserve bit-exact digests and positional wire bytes).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -67,7 +67,7 @@ impl SchemaAuthoritySnapshotParts {
             .saturating_mul(std::mem::size_of::<SchemaAuthorityRelationSnapshot>() as u64);
         let derived_storage = (self.derived_relations.capacity() as u64)
             .saturating_mul(std::mem::size_of::<
-                crate::derived_relation::DerivedRelationDefinitionParts,
+                crate::derived_relation::definition::DerivedRelationDefinitionParts,
             >() as u64)
             .saturating_add(
                 self.derived_relations
@@ -127,21 +127,21 @@ pub fn schema_authority_snapshot_digest_bytes(snapshot: &SchemaAuthoritySnapshot
 }
 pub(crate) fn schema_authority_snapshot_digest_for_compilation(
     snapshot: &SchemaAuthoritySnapshot,
-    control: crate::schema::SchemaCompilationControl<'_, '_>,
-) -> Result<[u8; 32], crate::execution::RelationalExecutionDenialCause> {
+    control: crate::schema::compilation_control::SchemaCompilationControl<'_, '_>,
+) -> Result<[u8; 32], crate::execution::denial_cause::RelationalExecutionDenialCause> {
     snapshot.digest_for_compilation(control)
 }
 fn digest_parts(snapshot: &SchemaAuthoritySnapshotParts) -> [u8; 32] {
     digest_parts_for_compilation(
         snapshot,
-        crate::schema::SchemaCompilationControl::Configuration,
+        crate::schema::compilation_control::SchemaCompilationControl::Configuration,
     )
     .expect("configuration schema hashing cannot refuse")
 }
 fn digest_parts_for_compilation(
     snapshot: &SchemaAuthoritySnapshotParts,
-    control: crate::schema::SchemaCompilationControl<'_, '_>,
-) -> Result<[u8; 32], crate::execution::RelationalExecutionDenialCause> {
+    control: crate::schema::compilation_control::SchemaCompilationControl<'_, '_>,
+) -> Result<[u8; 32], crate::execution::denial_cause::RelationalExecutionDenialCause> {
     let mut hasher = Sha256::new();
     hasher.update(b"WORTH_SCHEMA_AUTHORITY_SNAPSHOT_V2");
     if let Some(schema_id) = &snapshot.primary_schema_id {

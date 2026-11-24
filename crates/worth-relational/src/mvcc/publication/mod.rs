@@ -14,16 +14,16 @@ pub(crate) fn custody_stop(
     crate::transactions::data::TransactionCommitError::execution(cause.into().into())
 }
 pub use application_publication::{
-    AuthoredOwnedMemberKind, RecordedRequiredOutputRole, ManagedIndexParentReadFootprint, RelationalAuthoredCoupledCandidate,
-    RelationalAuthoredCoupledOwners, RelationalAuthoredCoupledProducerAssembly,
-    RelationalAuthoredCoupledTransaction, RelationalAuthoredRestoration,
-    RelationalAuthoredRetirement, RelationalCoupledAppendTouches, RelationalCoupledAssemblyFailure,
-    RelationalCoupledAuthoredPublication, RelationalCoupledAuthoredSourceEffects,
-    RelationalCoupledChainOverlay, RelationalCoupledContribution,
-    RelationalCoupledProducerContinuation, RelationalCoupledProducerPosture,
-    RelationalDeclaredCoupledOwner, RelationalHistoricalOutputSelection,
-    RelationalPerformedOutputPublications, RelationalPredecessorBasisDenial,
-    RelationalPredecessorBasisOrigin, RelationalPredecessorInput,
+    AuthoredOwnedMemberKind, ManagedIndexParentReadFootprint, RecordedRequiredOutputRole,
+    RelationalAuthoredCoupledCandidate, RelationalAuthoredCoupledOwners,
+    RelationalAuthoredCoupledProducerAssembly, RelationalAuthoredCoupledTransaction,
+    RelationalAuthoredRestoration, RelationalAuthoredRetirement, RelationalCoupledAppendTouches,
+    RelationalCoupledAssemblyFailure, RelationalCoupledAuthoredPublication,
+    RelationalCoupledAuthoredSourceEffects, RelationalCoupledChainOverlay,
+    RelationalCoupledContribution, RelationalCoupledProducerContinuation,
+    RelationalCoupledProducerPosture, RelationalDeclaredCoupledOwner,
+    RelationalHistoricalOutputSelection, RelationalPerformedOutputPublications,
+    RelationalPredecessorBasisDenial, RelationalPredecessorBasisOrigin, RelationalPredecessorInput,
     RelationalPreparedOutputPublications, RelationalPublicationAdoptionRequest,
     RelationalPublicationAppendix, RelationalPublicationBodySelection,
     RelationalRequiredOutputInput, RelationalRequiredOutputPublication,
@@ -35,10 +35,11 @@ pub(crate) use preparation_denial::PublicationPreparationDenial;
 mod candidate;
 mod candidate_consumption;
 mod candidate_preparation;
-mod companion;
+pub(crate) mod companion;
 mod current_read;
+pub(crate) mod read_dependency_denial;
 pub use current_read::RelationalPublicationReadDependencyDenial;
-mod outcome;
+pub(crate) mod outcome;
 mod port;
 mod validation;
 

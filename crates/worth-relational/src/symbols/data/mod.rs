@@ -16,9 +16,10 @@ pub use string_interner::StringInterner;
 pub use symbol::Symbol;
 pub use symbol_table_snapshot::SymbolTableSnapshot;
 
-mod field_text;
+pub(crate) mod field_text;
+pub(crate) mod selected_field_text;
 mod stored_text;
-pub use field_text::{RelationalFieldText, RelationalFieldTextAdmissionDenial};
+pub use field_text::RelationalFieldTextAdmissionDenial;
 pub use stored_text::StoredSymbolText;
 pub(crate) use stored_text::SymbolTextLookupKey;
 

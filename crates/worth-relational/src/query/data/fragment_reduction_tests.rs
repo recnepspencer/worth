@@ -1,13 +1,19 @@
 use super::canonical_digest::query_result_reduction_digest_checked;
 use crate::identity::data::{KindId, PartitionId, VersionId};
 use crate::schema::data::{KindResolution, SchemaId, SchemaVersionId};
-use crate::storage::data::{EntityReadRecord, RecordLifecycleState, RelationReadRecord};
+use crate::storage::data::read_records::{
+    EntityReadRecord, RecordLifecycleState, RelationReadRecord,
+};
 
-use super::{
-    query_authoritative_entity_record_digest, reduce_query_fragments,
-    reduce_query_fragments_checked, DeterministicQueryFragmentKey, DeterministicQueryPlanKey,
-    QueryExecutionShape, QueryFragmentCounters, QueryOrderingContract, QueryWorkerFragment,
-    TraversalEntityVisitKey, TraversalReductionBasis, TraversalRelationVisitKey,
+use crate::query::data::canonical_digest::query_authoritative_entity_record_digest;
+use crate::query::data::checked_fragment_reduction::reduce_query_fragments_checked;
+use crate::query::data::fragment_reduction::{
+    reduce_query_fragments, QueryFragmentCounters, QueryWorkerFragment, TraversalEntityVisitKey,
+    TraversalReductionBasis, TraversalRelationVisitKey,
+};
+use crate::query::data::planned_packets::{
+    DeterministicQueryFragmentKey, DeterministicQueryPlanKey, QueryExecutionShape,
+    QueryOrderingContract,
 };
 
 fn test_authoritative_entity_record(

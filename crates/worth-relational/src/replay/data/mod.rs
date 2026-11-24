@@ -1,7 +1,7 @@
 mod digest;
 mod lineage_authority;
 mod parity;
-mod replay_errors;
+pub(crate) mod replay_errors;
 mod verification;
 
 pub(crate) use crate::history::data::CommittedRecordChange;

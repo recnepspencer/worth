@@ -1,9 +1,9 @@
-use crate::commit_strategies::data::CommitStrategyRegistration;
+use crate::commit_strategies::data::registration::CommitStrategyRegistration;
 use crate::diagnostics::data::RelationalDiagnosticsProfile;
-use crate::history::data::{BranchId, HistoryRetentionClass, VersionGraphPolicy};
+use crate::history::data::coordinates::{BranchId, HistoryRetentionClass, VersionGraphPolicy};
 use crate::schema::data::RelationalSchemaRegistry;
 use crate::symbols::data::{ClientKeySymbolPolicy, SymbolTableSnapshot};
-use crate::validation::data::InvariantCatalog;
+use crate::validation::data::catalog::InvariantCatalog;
 
 use super::policies::{
     AdjacencyPolicy, CascadeDeletePolicy, CompiledLanePolicy, CrossContextPolicy, DurabilityPolicy,

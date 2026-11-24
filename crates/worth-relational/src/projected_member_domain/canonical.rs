@@ -6,15 +6,15 @@ pub(crate) fn update_digest(hasher: &mut Sha256, domains: &[ProjectedMemberDomai
     update_digest_for_compilation(
         hasher,
         domains,
-        crate::schema::SchemaCompilationControl::Configuration,
+        crate::schema::compilation_control::SchemaCompilationControl::Configuration,
     )
     .expect("configuration domain digest has no request refusal")
 }
 pub(crate) fn update_digest_for_compilation(
     hasher: &mut Sha256,
     domains: &[ProjectedMemberDomainParts],
-    control: crate::schema::SchemaCompilationControl<'_, '_>,
-) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+    control: crate::schema::compilation_control::SchemaCompilationControl<'_, '_>,
+) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause> {
     if domains.is_empty() {
         return Ok(());
     }

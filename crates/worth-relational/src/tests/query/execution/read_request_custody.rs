@@ -1,7 +1,7 @@
 //! The production plan entry spends the caller's borrowed request.
 use super::*;
 use crate::execution::RelationalExecutionDenialCause;
-use crate::query::data::SnapshotPinnedQueryPlan;
+use crate::query::data::snapshot_pinned_plan::SnapshotPinnedQueryPlan;
 use crate::transactions::data::CommitExecutionDenialKind;
 use std::num::NonZeroUsize;
 use worth_execution::{CancellationToken, ExecutionRequest, LeaseRequest};

@@ -14,19 +14,19 @@ impl SymbolTableSnapshot {
     pub fn readmit_current(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         bytes: &[u8],
-    ) -> Result<Self, crate::durability::data::RelationalRecoveryStop> {
+    ) -> Result<Self, crate::durability::data::recovery_stop::RelationalRecoveryStop> {
         execution.check_live().map_err(|stop| {
-            crate::durability::data::RelationalRecoveryStop::Request(stop.into())
+            crate::durability::data::recovery_stop::RelationalRecoveryStop::Request(stop.into())
         })?;
         let wire: super::SymbolSnapshotWire<'_> =
             rmp_serde::from_slice(bytes).map_err(|error| {
-                crate::durability::data::DurabilityError::new(
-                    crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
+                crate::durability::data::recovery_errors::DurabilityError::new(
+                    crate::durability::data::recovery_errors::RecoveryFailureClass::CorruptCheckpoint,
                     format!("native symbol configuration: {error}"),
                 )
             })?;
         wire.readmit(execution)
-            .map_err(super::field_text_recovery_stop)
+            .map_err(super::field_text::field_text_recovery_stop)
     }
 
     pub fn merge_new_entries(&mut self, mut new_entries: Vec<(Symbol, StoredSymbolText)>) {

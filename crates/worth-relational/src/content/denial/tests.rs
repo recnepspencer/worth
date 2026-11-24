@@ -1,10 +1,10 @@
 use super::{RelationalContentDenial as Denial, RelationalContentRejection as Rejection};
-use crate::durability::data::RelationalRecoveryStop;
-use crate::execution::RelationalExecutionDenialCause;
+use crate::durability::data::recovery_stop::RelationalRecoveryStop;
+use crate::execution::denial_cause::RelationalExecutionDenialCause;
 
 #[test]
 fn semantic_content_causes_keep_literal_payloads_and_execution_keeps_its_original_cause() {
-    let backing = crate::storage::data::RelationalStorageUnavailableCause::LimitExceeded {
+    let backing = crate::storage::data::storage_unavailable::RelationalStorageUnavailableCause::LimitExceeded {
         length: 91,
         limit: 13,
     };

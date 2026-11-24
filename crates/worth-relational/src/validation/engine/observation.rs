@@ -1,6 +1,5 @@
 use crate::runtime::PartitionEdition;
 use crate::storage::overlay::{CurrentPartitionAccess, OverlayStateView, WorkingState};
-use serde::{Deserialize, Serialize};
 
 mod affinity;
 mod custom_semantics;
@@ -8,20 +7,7 @@ mod identity;
 pub(crate) use affinity::InvariantSourceAffinity;
 pub(crate) use identity::InvariantObservationIdentity;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-pub enum InvariantObservationKind {
-    Committed,
-    Speculative,
-}
-
-impl InvariantObservationKind {
-    pub const fn diagnostic_label(self) -> &'static str {
-        match self {
-            Self::Committed => "committed",
-            Self::Speculative => "speculative",
-        }
-    }
-}
+pub use crate::validation::data::observation_kind::InvariantObservationKind;
 
 #[derive(Clone)]
 pub(crate) struct CommittedInvariantView<'runtime> {

@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::identity::data::{LineageId, PartitionId};
-use crate::indexes::data::DerivedIndexId;
+use crate::indexes::data::definition::DerivedIndexId;
 use crate::publication::patch::data::PatchStreamPosition;
 use crate::symbols::data::Symbol;
 
@@ -39,7 +39,7 @@ pub enum RelationalStorageUnavailableCause {
     /// This is retryable maintenance state loss, never proven region damage.
     MissingSymbolMaintenancePredecessor,
     CorruptCurrentOwnership {
-        publication: crate::history::data::CommitId,
+        publication: crate::history::data::coordinates::CommitId,
         source: crate::identity::data::EntityId,
         record: crate::identity::data::EntityId,
     },

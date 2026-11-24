@@ -66,6 +66,16 @@ pub enum Step {
         side: u64,
         seam: String,
     },
+    /// Names created member `key` as the `side` piece cut by `of`, a member
+    /// this run created and named, optionally along seam `along`, which this
+    /// run linked and named. Both are referenced by their same-commit names.
+    BirthSided {
+        key: String,
+        birth: WorthQueryOutputBirth,
+        side: outputs::CutSide,
+        of: String,
+        along: Option<String>,
+    },
     /// Names created seam `key`, told apart by created member `of`.
     SeamBirthOf {
         key: String,

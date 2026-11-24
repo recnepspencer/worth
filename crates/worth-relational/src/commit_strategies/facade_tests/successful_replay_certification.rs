@@ -1,4 +1,5 @@
 use super::native_strategy_fixtures::*;
+use crate::commit_strategies::data::execution::executor_registration::CommitStrategyExecutionRegistration;
 
 #[test]
 fn replay_commit_certifies_strategy_surface_for_strategy_bearing_commit() {

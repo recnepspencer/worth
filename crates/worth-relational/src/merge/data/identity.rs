@@ -3,11 +3,11 @@ use std::sync::Arc;
 use serde::{Deserialize, Serialize};
 
 use crate::identity::data::{KindId, LineageId, StructuralFingerprint};
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 use worth_foundational::facade::AspectKey;
 
-mod custom_name;
-mod declared_keys;
+pub(crate) mod custom_name;
+pub(crate) mod declared_keys;
 pub use custom_name::IdentityBasisName;
 pub use declared_keys::DeclaredIdentityKeys;
 

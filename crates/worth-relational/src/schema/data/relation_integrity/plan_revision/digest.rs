@@ -2,13 +2,13 @@
 use super::*;
 
 pub(super) struct RelationIntegrityRevisionDigest<'request, 'authority> {
-    control: crate::schema::SchemaCompilationControl<'request, 'authority>,
+    control: crate::schema::compilation_control::SchemaCompilationControl<'request, 'authority>,
     hash: u128,
 }
 
 impl<'request, 'authority> RelationIntegrityRevisionDigest<'request, 'authority> {
     pub(super) fn new(
-        control: crate::schema::SchemaCompilationControl<'request, 'authority>,
+        control: crate::schema::compilation_control::SchemaCompilationControl<'request, 'authority>,
     ) -> Self {
         Self {
             control,
@@ -24,7 +24,7 @@ impl<'request, 'authority> RelationIntegrityRevisionDigest<'request, 'authority>
     pub(super) fn mix_endpoint_kind_contracts(
         &mut self,
         contracts: &[EndpointKindContractDeclaration],
-    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause> {
         for declaration in contracts {
             self.control.checkpoint()?;
             self.mix_bytes(b"endpoint_kind")?;
@@ -44,7 +44,7 @@ impl<'request, 'authority> RelationIntegrityRevisionDigest<'request, 'authority>
     pub(super) fn mix_cardinality_contracts(
         &mut self,
         contracts: &[CardinalityContractDeclaration],
-    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause> {
         for declaration in contracts {
             self.control.checkpoint()?;
             self.mix_bytes(b"cardinality")?;
@@ -71,7 +71,7 @@ impl<'request, 'authority> RelationIntegrityRevisionDigest<'request, 'authority>
     pub(super) fn mix_uniqueness_contracts(
         &mut self,
         contracts: &[UniquenessContractDeclaration],
-    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause> {
         for declaration in contracts {
             self.control.checkpoint()?;
             self.mix_bytes(b"uniqueness")?;
@@ -87,7 +87,7 @@ impl<'request, 'authority> RelationIntegrityRevisionDigest<'request, 'authority>
     pub(super) fn mix_symmetry_contracts(
         &mut self,
         contracts: &[SymmetryContractDeclaration],
-    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause> {
         for declaration in contracts {
             self.control.checkpoint()?;
             self.mix_bytes(b"symmetry")?;
@@ -105,7 +105,7 @@ impl<'request, 'authority> RelationIntegrityRevisionDigest<'request, 'authority>
     pub(super) fn mix_endpoint_deletion_integrity_contracts(
         &mut self,
         contracts: &[EndpointDeletionIntegrityDeclaration],
-    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause> {
         for declaration in contracts {
             self.control.checkpoint()?;
             self.mix_bytes(b"endpoint_delete")?;
@@ -128,7 +128,7 @@ impl<'request, 'authority> RelationIntegrityRevisionDigest<'request, 'authority>
     pub(super) fn mix_acyclicity_contracts(
         &mut self,
         contracts: &[AcyclicityContractDeclaration],
-    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause> {
         for declaration in contracts {
             self.control.checkpoint()?;
             self.mix_bytes(b"acyclicity")?;
@@ -146,7 +146,7 @@ impl<'request, 'authority> RelationIntegrityRevisionDigest<'request, 'authority>
     pub(super) fn mix_partition_isolation_contracts(
         &mut self,
         contracts: &[PartitionIsolationContractDeclaration],
-    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause> {
         for declaration in contracts {
             self.control.checkpoint()?;
             self.mix_bytes(b"partition_isolation")?;
@@ -161,7 +161,7 @@ impl<'request, 'authority> RelationIntegrityRevisionDigest<'request, 'authority>
     pub(super) fn mix_connectivity_minimum_contracts(
         &mut self,
         contracts: &[ConnectivityMinimumContractDeclaration],
-    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause> {
         for declaration in contracts {
             self.control.checkpoint()?;
             self.mix_bytes(b"connectivity_minimum")?;
@@ -179,7 +179,7 @@ impl<'request, 'authority> RelationIntegrityRevisionDigest<'request, 'authority>
     pub(super) fn mix_optional_u64(
         &mut self,
         value: Option<u64>,
-    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause> {
         match value {
             None => self.mix_bytes(&[0])?,
             Some(value) => {
@@ -193,7 +193,7 @@ impl<'request, 'authority> RelationIntegrityRevisionDigest<'request, 'authority>
     pub(super) fn mix_kind_ids(
         &mut self,
         kinds: &[KindId],
-    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause> {
         self.mix_bytes(&(kinds.len() as u64).to_le_bytes())?;
         for kind in kinds {
             self.control.checkpoint()?;
@@ -205,7 +205,7 @@ impl<'request, 'authority> RelationIntegrityRevisionDigest<'request, 'authority>
     pub(super) fn mix_string(
         &mut self,
         value: &str,
-    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause> {
         self.mix_bytes(value.as_bytes())?;
         Ok(())
     }
@@ -213,7 +213,7 @@ impl<'request, 'authority> RelationIntegrityRevisionDigest<'request, 'authority>
     pub(super) fn mix_bytes(
         &mut self,
         bytes: &[u8],
-    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause> {
         self.mix_segment(bytes)?;
         self.finish_bytes();
         Ok(())
@@ -222,7 +222,7 @@ impl<'request, 'authority> RelationIntegrityRevisionDigest<'request, 'authority>
     pub(super) fn mix_segment(
         &mut self,
         bytes: &[u8],
-    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause> {
         for chunk in bytes.chunks(64 * 1024) {
             self.control.checkpoint()?;
             for byte in chunk {

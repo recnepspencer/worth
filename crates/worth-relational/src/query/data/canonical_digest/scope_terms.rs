@@ -1,15 +1,10 @@
 #[cfg(test)]
-use crate::indexes::data::DerivedIndexGenerationId;
+use crate::indexes::data::definition::DerivedIndexGenerationId;
 #[cfg(test)]
-use crate::query::data::{IndexParityMode, IndexQueryRejectionClass, QueryAccessPath};
-use crate::query::data::{
-    QueryAccessContract, QueryExecutionShape, QueryLocalityClass, QueryOrderingContract,
-    QueryPlanContextId, QueryPlanEvidenceBasis, QueryScope, ReductionDiscipline,
-};
-use crate::transactions::data::RecordRef;
-use crate::visibility::materialization::read_records::{
-    ProjectionAspectFilter, ProjectionAspectFilterMode,
-};
+use crate::query::data::index_access_parity::{IndexParityMode, IndexQueryRejectionClass, QueryAccessPath};
+use crate::query::data::planned_packets::{QueryAccessContract, QueryExecutionShape, QueryLocalityClass, QueryOrderingContract, QueryPlanContextId, QueryPlanEvidenceBasis, QueryScope, ReductionDiscipline};
+use crate::transactions::data::primitives::RecordRef;
+use crate::visibility::materialization::read_records::projection::contracts::projection_aspect_filter::{ProjectionAspectFilter, ProjectionAspectFilterMode};
 
 use super::primitive_terms::{
     encode_descriptor_semantics_version, encode_entity_id, encode_entity_ids, encode_kind_id,

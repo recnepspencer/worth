@@ -1,5 +1,5 @@
 use crate::diagnostics::data::DiagnosticCode;
-use crate::transactions::data::ExistingRecordTarget;
+use crate::transactions::data::primitives::ExistingRecordTarget;
 
 use super::entity_authoritative_aspect_state_presentation::entity_authoritative_aspect_state_denial_detail;
 use super::record_aspect_patch_denial::denial_detail as record_aspect_patch_denial_detail;

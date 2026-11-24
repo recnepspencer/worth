@@ -1,7 +1,6 @@
 use crate::performance::PerformanceAccess;
-use crate::query::data::{
-    QueryParallelLegality, QueryParallelProfitability, SnapshotPinnedQueryPlan,
-};
+use crate::query::data::snapshot_pinned_plan::SnapshotPinnedQueryPlan;
+use crate::query::data::{QueryParallelLegality, QueryParallelProfitability};
 
 use super::super::query_packetization::{
     packetized_fragment_scratch_reuse_count, packetized_query_item_count,

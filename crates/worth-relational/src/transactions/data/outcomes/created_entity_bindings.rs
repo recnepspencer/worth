@@ -7,7 +7,7 @@ use crate::identity::data::{KindId, PartitionId};
 #[cfg(test)]
 use crate::symbols::data::StringInterner;
 use crate::symbols::data::SymbolTextLookup;
-use crate::transactions::data::CreatedEntityRef;
+use crate::transactions::data::primitives::CreatedEntityRef;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 struct StableCreatedEntityRef {
@@ -33,7 +33,7 @@ impl CommitCreatedEntityBindings {
     pub(crate) fn append_owned(
         &mut self,
         generated: Self,
-    ) -> Result<(), crate::transactions::data::CommitConflict> {
+    ) -> Result<(), crate::transactions::data::outcomes::commit_conflict::CommitConflict> {
         if generated
             .by_exact_reference
             .keys()
@@ -43,8 +43,8 @@ impl CommitCreatedEntityBindings {
                 .keys()
                 .any(|key| self.by_stable_reference.contains_key(key))
         {
-            return Err(crate::transactions::data::CommitConflict::new(
-                crate::transactions::data::ConflictClass::KindSchemaMismatch {
+            return Err(crate::transactions::data::outcomes::commit_conflict::CommitConflict::new(
+                crate::transactions::data::outcomes::conflict_class::ConflictClass::KindSchemaMismatch {
                     detail:
                         "Native consequence create correspondence collides with an earlier apply"
                             .into(),

@@ -3,7 +3,7 @@ use super::*;
 use crate::aggregate_identity::selection::AggregateSelection;
 use crate::graph_member::{NativeMemberDomain, NativeMemberKey as Member};
 use crate::identity::data::KindId;
-use crate::projected_member_domain::ObservedProjectedMember;
+use crate::projected_member_domain::projection::ObservedProjectedMember;
 use crate::schema::data::{AggregateIdentityContractDeclaration, RelationalSchemaRegistry};
 
 impl<'view, 'runtime> AggregateReadPort<'view, 'runtime> {

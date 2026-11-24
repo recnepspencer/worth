@@ -1,7 +1,7 @@
 mod checked_entry_map;
 mod entity_field_index_values;
 mod exact_entity_field_match;
-mod field_projection_scope;
+pub(crate) mod field_projection_scope;
 mod index_projection_source;
 mod related_entity_ordering;
 mod relation_field_index_values;
@@ -30,3 +30,5 @@ pub(super) use relation_join::{
 
 mod scoped_parity;
 pub(super) use scoped_parity::{joined_rows_for_pair, ordered_children_for_parent};
+
+mod selected_projection_scopes;

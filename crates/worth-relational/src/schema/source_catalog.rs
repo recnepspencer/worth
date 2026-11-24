@@ -1,6 +1,6 @@
 //! Cold dependency admission shared by registry composition and durable recovery.
 use crate::derived_relation::definition::RegisteredDerivedRelation;
-use crate::derived_relation::{
+use crate::derived_relation::definition::{
     DerivedRelationDefinitionParts as Parts, DerivedRelationDenial, DerivedRelationIdentity,
     DerivedRelationNode,
 };

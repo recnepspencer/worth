@@ -51,8 +51,13 @@ impl AggregateIdentityContractDeclaration {
 
     pub(crate) fn try_write_canonical(
         &self,
-        emit: &mut dyn FnMut(&[u8]) -> Result<(), crate::execution::RelationalExecutionDenialCause>,
-    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+        emit: &mut dyn FnMut(
+            &[u8],
+        ) -> Result<
+            (),
+            crate::execution::denial_cause::RelationalExecutionDenialCause,
+        >,
+    ) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause> {
         emit(self.definition.bytes())?;
         self.source.try_write_canonical(emit)?;
         for kind in [

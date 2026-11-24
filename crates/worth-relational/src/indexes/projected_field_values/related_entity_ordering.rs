@@ -9,7 +9,7 @@ use crate::indexes::data::{
 use crate::visibility::materialization::read_records::entity_query_locus_value;
 
 use super::checked_entry_map::{checked_push, IndexKernelStop};
-use super::field_projection_scope::source_entity_index_projection_scope_for_kind;
+use super::selected_projection_scopes::source_entity_index_projection_scope_for_kind;
 use super::IndexProjectionSource;
 
 pub(in crate::indexes) struct RelatedEntityOrderingProjection<'definition> {

@@ -1,6 +1,7 @@
 //! One decode's original admissions transfer to the actual shared merge leaves.
-use super::{AspectMergePolicyKind, IdentityBasisKind};
-use crate::transactions::data::PublishedMergeExecutionAuthority;
+use crate::merge::data::identity::IdentityBasisKind;
+use crate::merge::data::policy::AspectMergePolicyKind;
+use crate::transactions::data::outcomes::plan_artifacts::PublishedMergeExecutionAuthority;
 use worth_execution::ExecutionMemoryReservation;
 
 mod policies;
@@ -103,7 +104,7 @@ pub(crate) struct MergeBasisMemory {
 impl MergeBasisMemory {
     fn attach(
         &mut self,
-        basis: &crate::history::data::RelationalMergeBranchBasis,
+        basis: &crate::history::data::merge_branch_basis::RelationalMergeBranchBasis,
     ) -> Result<(), &'static str> {
         let base = basis.merge_base();
         self.left

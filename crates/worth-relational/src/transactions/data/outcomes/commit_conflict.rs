@@ -2,7 +2,7 @@ use crate::diagnostics::data::DiagnosticCode;
 use crate::errors::data::{ErrorContext, ErrorOperation, RelationalSubsystem, SuggestedFix};
 use serde::{Deserialize, Serialize};
 
-use super::ConflictClass;
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CommitConflict {

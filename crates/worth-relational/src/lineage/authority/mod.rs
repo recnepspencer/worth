@@ -1,6 +1,6 @@
 mod commit_births;
 mod commit_finalization;
-mod discriminator_scan;
+use crate::lineage::data::discriminator_scan;
 mod event_emission;
 mod mint_order;
 mod name_minting;
@@ -25,7 +25,9 @@ mod pending_birth_identity;
 
 pub(crate) use commit_births::extract_committed_name_births;
 #[cfg(test)]
-pub(crate) use commit_finalization::{finalize_postures_in_working_state, test_finalize_with_schema};
+pub(crate) use commit_finalization::{
+    finalize_postures_in_working_state, test_finalize_with_schema,
+};
 pub(crate) use discriminator_scan::extract_embedded_name_refs;
 #[cfg(test)]
 pub(crate) use name_minting::PersistentNameMintingAuthority;

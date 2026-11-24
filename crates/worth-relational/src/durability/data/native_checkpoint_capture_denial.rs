@@ -1,6 +1,5 @@
+use super::{DurabilityError, RelationalRecoveryStop};
 use worth_execution::ExecutionAllocationDenial;
-
-use super::DurabilityError;
 
 /// Runtime capture refusal. Allocation custody is not a durable recovery record.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -138,6 +137,72 @@ impl From<super::RelationalRecoveryStop> for RelationalNativeCheckpointCaptureDe
             super::RelationalRecoveryStop::Allocation(cause) => Self::Allocation(cause),
             super::RelationalRecoveryStop::Durability(cause) => Self::Durability(cause),
             super::RelationalRecoveryStop::Content(cause) => Self::Content(cause),
+        }
+    }
+}
+
+impl From<RelationalNativeCheckpointCaptureDenial> for RelationalRecoveryStop {
+    fn from(denial: RelationalNativeCheckpointCaptureDenial) -> Self {
+        match denial {
+            RelationalNativeCheckpointCaptureDenial::AdmissionImage(cause) => cause.into(),
+            RelationalNativeCheckpointCaptureDenial::RetentionCapacityExhausted => {
+                crate::durability::data::recovery_errors::DurabilityError::new(
+                    crate::durability::data::recovery_errors::RecoveryFailureClass::ColdStorageUnavailable,
+                    "checkpoint retention capacity exhausted",
+                )
+                .into()
+            }
+            RelationalNativeCheckpointCaptureDenial::RetentionIdentityExhausted => {
+                crate::durability::data::recovery_errors::DurabilityError::new(
+                    crate::durability::data::recovery_errors::RecoveryFailureClass::ColdStorageUnavailable,
+                    "checkpoint retention identity exhausted",
+                )
+                .into()
+            }
+            RelationalNativeCheckpointCaptureDenial::OwnerUnavailable => {
+                crate::durability::data::recovery_errors::DurabilityError::new(
+                    crate::durability::data::recovery_errors::RecoveryFailureClass::ColdStorageUnavailable,
+                    "checkpoint owner unavailable",
+                )
+                .into()
+            }
+            RelationalNativeCheckpointCaptureDenial::OriginalAuthorityUnavailable => {
+                crate::durability::data::recovery_errors::DurabilityError::new(
+                    crate::durability::data::recovery_errors::RecoveryFailureClass::UnsupportedLegacySemantics,
+                    "original complete checkpoint authority unavailable",
+                )
+                .into()
+            }
+            RelationalNativeCheckpointCaptureDenial::ArtifactFrame(cause) => {
+                use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactFrameRefusal as Frame;
+                let class = match cause {
+                    Frame::UnsupportedVersion(_) => {
+                        crate::durability::data::recovery_errors::RecoveryFailureClass::UnsupportedLegacySemantics
+                    }
+                    Frame::SizeLimit { .. } => crate::durability::data::recovery_errors::RecoveryFailureClass::CheckpointSizeOverflow,
+                    Frame::InvalidVersion
+                    | Frame::InvalidPayloadShape
+                    | Frame::UnrecognizedMagic
+                    | Frame::TruncatedHeader { .. }
+                    | Frame::TruncatedPayload { .. }
+                    | Frame::TrailingBytes { .. }
+                    | Frame::DigestMismatch { .. } => {
+                        crate::durability::data::recovery_errors::RecoveryFailureClass::CorruptCheckpoint
+                    }
+                };
+                Self::Durability(DurabilityError::new(
+                    class,
+                    format!("checkpoint source artifact frame: {cause:?}"),
+                ))
+            }
+            RelationalNativeCheckpointCaptureDenial::Content(cause) => Self::from(cause),
+            RelationalNativeCheckpointCaptureDenial::Request(cause) => Self::Request(cause),
+            RelationalNativeCheckpointCaptureDenial::Durability(error) => error.into(),
+            RelationalNativeCheckpointCaptureDenial::Allocation(error) => {
+                crate::symbols::data::field_text_recovery_stop(
+                    crate::symbols::data::RelationalFieldTextAdmissionDenial::Allocation(error),
+                )
+            }
         }
     }
 }

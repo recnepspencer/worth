@@ -1,6 +1,8 @@
 use crate::identity::data::{LineageId, VersionId};
 use crate::schema::data::KindResolution;
-use crate::storage::data::{EntityReadRecord, RecordLifecycleState, RelationReadRecord};
+use crate::storage::data::read_records::{
+    EntityReadRecord, RecordLifecycleState, RelationReadRecord,
+};
 use worth_foundational::facade::{
     AuthoritativeRecordAspectState, ContractValidatedAspectValueView, StructAspectValue,
 };

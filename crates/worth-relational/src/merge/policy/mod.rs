@@ -5,23 +5,17 @@ mod resolution;
 mod tests;
 mod value_strategy;
 
-use crate::merge::data::{
-    CausallyAnnotatedMergePlan, MergePlanningError, NormalizedRelationalMergeRequest,
-    PolicyResolvedMergePlan,
-};
+use crate::merge::data::{CausallyAnnotatedMergePlan, MergePlanningError, PolicyResolvedMergePlan};
 use crate::merge::MergeAccess;
 use crate::runtime::RelationalRuntime;
 
-pub(crate) use decisions::{
-    aggregate_record_resolution, current_topology_rewire_admission_policy,
-    ownership_surface_for_policies,
-};
+pub(crate) use decisions::current_topology_rewire_admission_policy;
 
 impl<'runtime> MergeAccess<'runtime> {
-    pub(crate) fn plan_policy_scope(
+    pub(in crate::merge) fn plan_policy_scope(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        request: NormalizedRelationalMergeRequest,
+        request: &crate::merge::request_normalization::BoundMergeInputs,
     ) -> Result<PolicyResolvedMergePlan, MergePlanningError> {
         let causal_plan = self.plan_causal_scope(execution, request)?;
         self.resolve_policy_scope(execution, causal_plan)

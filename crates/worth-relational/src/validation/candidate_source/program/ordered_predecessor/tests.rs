@@ -5,7 +5,7 @@ use crate::schema::data::{
 };
 
 fn membership(to_one: bool) -> (RelationalSchemaRegistry, DerivedRelationHandle) {
-    let (registry, template) = crate::tests::support::managed_cache_schema();
+    let (registry, template) = super::super::schema_fixture::managed_cache_schema();
     let mut order = registry
         .relation_registration(crate::identity::data::KindId(3))
         .unwrap()
@@ -81,7 +81,7 @@ fn ordered_predecessor_admits_only_its_own_to_one_order_relation() {
 
 #[test]
 fn ordered_predecessor_refuses_non_event_membership_and_foreign_registered_owners() {
-    let (registry, ordinary) = crate::tests::support::managed_cache_schema();
+    let (registry, ordinary) = super::super::schema_fixture::managed_cache_schema();
     assert_eq!(
         registry.bind_ordered_predecessor_managed_index_source(&ordinary.0.path, vec![], vec![]),
         Err(Denial::OrderedPredecessorMembershipRequired)

@@ -1,10 +1,9 @@
 //! Append one lowered inventory into its preadmitted owner buffer.
-use crate::execution::RelationalExecutionDenialCause as Denial;
-use crate::schema::{
-    data::{LoweredRelationIntegrityPlan, MinimumCardinalityEnforcement},
-    SchemaCompilationControl,
-};
-use crate::validation::data::{InvariantRegistration, InvariantRule};
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Denial;
+use crate::schema::compilation_control::SchemaCompilationControl;
+use crate::schema::data::{LoweredRelationIntegrityPlan, MinimumCardinalityEnforcement};
+use crate::validation::data::catalog::InvariantRegistration;
+use crate::validation::data::rules::InvariantRule;
 pub(crate) fn append_relation_integrity_registrations(
     plan: &LoweredRelationIntegrityPlan,
     registrations: &mut Vec<InvariantRegistration>,

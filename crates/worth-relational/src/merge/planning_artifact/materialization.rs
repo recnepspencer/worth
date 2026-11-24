@@ -5,7 +5,7 @@ use crate::runtime::RelationalRuntime;
 use super::super::schema_reconciliation_witness::retained_schema_reconciliation_witness;
 use super::super::strategy_witness::retained_merge_strategy_witness;
 use super::digest_basis::merge_artifact_digest_basis;
-use super::execution_authority_contract::lowered_artifact_execution_authority_contract;
+use super::lowered_artifact_execution_authority_contract;
 use super::performance_counters::record_merge_planning_counters;
 use super::schema_snapshot::merge_schema_snapshot;
 use super::summaries::{merge_ancestry_summary, merge_request_summary};

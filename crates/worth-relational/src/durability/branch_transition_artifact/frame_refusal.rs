@@ -1,4 +1,4 @@
-use super::RelationalBranchTransitionArtifactDigest;
+use crate::durability::branch_transition_artifact::payload_digest::RelationalBranchTransitionArtifactDigest;
 
 /// Why bytes are not an intact branch transition artifact frame. Every
 /// variant refuses before the payload is decoded; none is retried or

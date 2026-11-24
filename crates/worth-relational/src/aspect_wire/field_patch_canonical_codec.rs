@@ -6,7 +6,9 @@ use super::{
     decode_aspect_field_locator, decode_aspect_value, encode_aspect_field_locator,
     encode_length_prefixed_aspect_value, encode_u32, AspectValueCanonicalCodecError,
 };
-use crate::transactions::data::{validate_planned_aspect_field_locator, AspectFieldPatch};
+use crate::transactions::data::aspect_field_patch::{
+    validate_planned_aspect_field_locator, AspectFieldPatch,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AspectFieldPatchCodecError {

@@ -200,7 +200,7 @@ impl StringInterner {
 
     pub fn restore_snapshot(
         &mut self,
-        _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+        _lane: &crate::storage::substrate::maintenance::reconstruction::ReconstructionLane<'_>,
         snapshot: SymbolTableSnapshot,
     ) {
         self.by_value = HashMap::new();
@@ -278,7 +278,7 @@ mod tests {
         let snapshot = interner.snapshot();
         let mut restored = StringInterner::default();
         restored.restore_snapshot(
-            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+            &crate::storage::substrate::maintenance::reconstruction::ReconstructionLane::oracle(),
             snapshot,
         );
 
@@ -330,7 +330,7 @@ mod tests {
 
     #[test]
     fn detached_clone_allocation_is_flat_in_prior_symbol_population() {
-        let output = crate::process_deadline::output(
+        let output = worth_harness::facade::process_deadline::output(
             std::process::Command::new(std::env::current_exe().unwrap())
                 .arg("isolated_detached_clone_allocation_probe")
                 .arg("--test-threads=1")

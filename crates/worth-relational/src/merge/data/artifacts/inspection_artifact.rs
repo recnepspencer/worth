@@ -1,13 +1,17 @@
 use serde::{Deserialize, Serialize};
 
-use crate::merge::data::{
+use crate::merge::data::conflicts::MergeConflictClass;
+use crate::merge::data::inspection_digest::{
     merge_inspection_artifact_digest, merge_inspection_lowered_plan_digest,
-    merge_inspection_row_digest, LoweredMergeBlockedReason, LoweredMergePlanSummary,
-    LoweredMergeRejectedReason, LoweredRecordDecision, LoweredRecordDecisionKind,
-    MergeConflictClass, MergeExecutionReadiness, MergeResolutionClass,
-    NormalizedRelationalMergeRequest,
+    merge_inspection_row_digest,
 };
-use crate::transactions::data::RecordRef;
+use crate::merge::data::policy::{
+    LoweredMergeBlockedReason, LoweredMergePlanSummary, LoweredMergeRejectedReason,
+    LoweredRecordDecision, LoweredRecordDecisionKind, MergeExecutionReadiness,
+    MergeResolutionClass,
+};
+use crate::merge::data::requests::normalized::NormalizedRelationalMergeRequest;
+use crate::transactions::data::primitives::RecordRef;
 
 use super::MergePlanningArtifactCore;
 
@@ -157,7 +161,7 @@ impl MergePlanningArtifactCore {
 }
 
 impl RelationalMergeInspectionRow {
-    fn from_lowered_record(record: &crate::merge::data::LoweredMergePlanRecord) -> Self {
+    fn from_lowered_record(record: &crate::merge::data::policy::LoweredMergePlanRecord) -> Self {
         let decision_kind = lowered_record_decision_kind(&record.record_decision);
         let admission = inspection_admission_for_decision(decision_kind);
         let row_digest = merge_inspection_row_digest(

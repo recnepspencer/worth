@@ -43,13 +43,13 @@ impl RelationalContentSchemaSnapshot {
     }
     pub(crate) fn retain_for_compilation(
         &self,
-        control: crate::schema::SchemaCompilationControl<'_, '_>,
-    ) -> Result<Self, crate::execution::RelationalExecutionDenialCause> {
-        use crate::execution::RelationalExecutionDenialCause as Cause;
+        control: crate::schema::compilation_control::SchemaCompilationControl<'_, '_>,
+    ) -> Result<Self, crate::execution::denial_cause::RelationalExecutionDenialCause> {
+        use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
         if self._memory.is_some()
             || matches!(
                 control,
-                crate::schema::SchemaCompilationControl::Configuration
+                crate::schema::compilation_control::SchemaCompilationControl::Configuration
             )
         {
             return Ok(self.clone());
@@ -75,9 +75,9 @@ impl RelationalContentSchemaSnapshot {
     }
     pub(crate) fn retained_bytes_for_compilation(
         &self,
-        control: crate::schema::SchemaCompilationControl<'_, '_>,
-    ) -> Result<u64, crate::execution::RelationalExecutionDenialCause> {
-        use crate::execution::RelationalExecutionDenialCause as Cause;
+        control: crate::schema::compilation_control::SchemaCompilationControl<'_, '_>,
+    ) -> Result<u64, crate::execution::denial_cause::RelationalExecutionDenialCause> {
+        use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
         fn roster<T>(capacity: usize) -> Result<usize, Cause> {
             let header = std::alloc::Layout::new::<[usize; 2]>()
                 .extend(std::alloc::Layout::new::<Vec<T>>())

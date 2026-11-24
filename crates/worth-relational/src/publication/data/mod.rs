@@ -1,10 +1,10 @@
-mod authored_retirement_refusal;
+pub(crate) mod authored_retirement_refusal;
 pub use authored_retirement_refusal::{
     AuthoredRetirementRefusal, CoupledFreshWriter, CoupledProvenancePostponement,
 };
 mod artifact_snapshot;
 mod observation_snapshot;
-mod publication_error;
+pub(crate) mod publication_error;
 mod publication_settlement_repair_error;
 
 pub use artifact_snapshot::{PublicationArtifactSnapshot, PublicationDiagnosticsSnapshot};

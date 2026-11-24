@@ -1,11 +1,13 @@
-mod aspect_field_patch;
+pub(crate) mod aspect_field_patch;
 mod aspect_reports;
-mod aspect_traces;
+pub(crate) mod aspect_traces;
 mod bulk_plan_digest;
-mod commit_log;
-mod intents;
-mod mutation_planning;
-mod outcomes;
+pub(crate) mod commit_log;
+pub(crate) mod intents;
+pub(crate) mod mutation_planning;
+pub(crate) mod outcomes;
+pub(crate) mod preparation_strategy;
+pub(crate) mod preparation_strategy_posture;
 pub use outcomes::{
     RecoveredRelationalSemanticResult, RelationalCommitPublicationMeaning,
     RelationalCommitSemanticResult, RelationalCommitSemanticResultRefusal,
@@ -16,9 +18,8 @@ pub use outcomes::{
     RelationalInvariantDecisionMeaning, RelationalInvariantExecutionMeaning,
     RelationalInvariantMetadataMeaning, RelationalInvariantProofScopeMeaning,
 };
-mod primitives;
+pub(crate) mod primitives;
 
-pub(crate) use aspect_field_patch::validate_planned_aspect_field_locator;
 pub use aspect_field_patch::{
     planned_aspect_field_locator, planned_single_field_locator, AspectFieldPatch,
 };
@@ -47,8 +48,6 @@ pub use intents::{
 pub use mutation_planning::CommitTopology;
 pub(crate) use outcomes::merge_commit_mutation_plan_token;
 pub(crate) use outcomes::CommitCreatedEntityBindings;
-#[cfg(test)]
-pub(crate) use outcomes::EntityUpdateMissingState;
 pub use outcomes::{
     AspectDeltaFailureFields, AspectDeltaPatchConstructionDenial, AspectDeltaPatchValueDenial,
     AspectDeltaRecordClass, AspectFieldTargetRejectionReason, AuthoritativeApplyPlan,
@@ -81,3 +80,5 @@ pub use primitives::{
 pub(crate) use outcomes::{
     ValidationLeafMemory, ValidationReadmissionMemory, ValidationTouchedMemory,
 };
+
+pub(crate) mod copy_denial;

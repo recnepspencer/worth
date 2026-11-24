@@ -1,10 +1,11 @@
+use crate::commit_strategies::data::lowering::LoweredStrategyCommitPlan;
 use crate::commit_strategies::data::{
-    CanonicalStrategyCommitRequest, LoweredStrategyCommitPlan, NativeStrategyCommitRequest,
-    StrategyCommitRequestError, StrategyExecutionDraft, StrategyLoweringError,
+    CanonicalStrategyCommitRequest, NativeStrategyCommitRequest, StrategyCommitRequestError,
+    StrategyExecutionDraft, StrategyLoweringError,
 };
 use crate::commit_strategies::{
-    bind_execution, canonicalize_request, execute_bound_strategy, lower_execution,
-    validate_lowered_plan as validate_lowered_strategy_plan,
+    bind_execution, canonicalize_request, execute_bound_strategy, lowering::lower_execution,
+    validation::validate_lowered_plan as validate_lowered_strategy_plan,
 };
 use crate::mvcc::RelationalTransactionValidationInput;
 use crate::runtime::RelationalRuntime;

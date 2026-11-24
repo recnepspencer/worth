@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::errors::data::{ErrorContext, ErrorOperation, RelationalSubsystem, SuggestedFix};
 
-use crate::publication::bundle::PublicationStage;
+use crate::publication::bundle::publication_status::PublicationStage;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PublicationError {
@@ -10,11 +10,13 @@ pub struct PublicationError {
     pub detail: String,
     pub context: ErrorContext,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    authored_retirement_refusal: Option<super::AuthoredRetirementRefusal>,
+    authored_retirement_refusal:
+        Option<crate::publication::data::authored_retirement_refusal::AuthoredRetirementRefusal>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    invariant_violation: Option<Box<crate::validation::data::InvariantViolation>>,
+    invariant_violation: Option<Box<crate::validation::data::results::InvariantViolation>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    index_maintenance_denial: Option<Box<crate::indexes::data::DerivedIndexMaintenanceDenial>>,
+    index_maintenance_denial:
+        Option<Box<crate::indexes::data::maintenance::DerivedIndexMaintenanceDenial>>,
     #[serde(skip)]
     lineage_name_denial: Option<Box<crate::lineage::data::LineageNameDenial>>,
 }
@@ -34,12 +36,12 @@ impl PublicationError {
     /// Original index preparation stop, including work performed before refusal.
     pub fn index_maintenance_denial(
         &self,
-    ) -> Option<&crate::indexes::data::DerivedIndexMaintenanceDenial> {
+    ) -> Option<&crate::indexes::data::maintenance::DerivedIndexMaintenanceDenial> {
         self.index_maintenance_denial.as_deref()
     }
 
     pub(crate) fn from_index_maintenance(
-        cause: crate::indexes::data::DerivedIndexMaintenanceDenial,
+        cause: crate::indexes::data::maintenance::DerivedIndexMaintenanceDenial,
     ) -> Self {
         let mut error = Self::new(
             PublicationStage::BundleAssembly,
@@ -49,13 +51,16 @@ impl PublicationError {
         error
     }
 
-    pub fn authored_retirement_refusal(&self) -> Option<super::AuthoredRetirementRefusal> {
+    pub fn authored_retirement_refusal(
+        &self,
+    ) -> Option<crate::publication::data::authored_retirement_refusal::AuthoredRetirementRefusal>
+    {
         self.authored_retirement_refusal
     }
 
     pub(crate) fn authored_retirement(
-        cause: super::AuthoredRetirementRefusal,
-        subject: crate::transactions::data::RecordRef,
+        cause: crate::publication::data::authored_retirement_refusal::AuthoredRetirementRefusal,
+        subject: crate::transactions::data::primitives::RecordRef,
     ) -> Self {
         let mut error = Self::new(
             PublicationStage::BundleAssembly,
@@ -68,34 +73,36 @@ impl PublicationError {
 
     pub(crate) fn ordinary_metadata_write(
         kind: crate::identity::data::KindId,
-        record: Option<crate::transactions::data::RecordRef>,
+        record: Option<crate::transactions::data::primitives::RecordRef>,
     ) -> Self {
         let mut error = Self::new(
             PublicationStage::BundleAssembly,
             format!("ordinary write to Native-private kind {kind:?}"),
         );
         error.authored_retirement_refusal =
-            Some(super::AuthoredRetirementRefusal::OrdinaryMetadataWrite);
+            Some(crate::publication::data::authored_retirement_refusal::AuthoredRetirementRefusal::OrdinaryMetadataWrite);
         error.context.affected_records = record.into_iter().collect();
         error
     }
     pub(crate) fn owned_publication(
-        cause: super::AuthoredRetirementRefusal,
+        cause: crate::publication::data::authored_retirement_refusal::AuthoredRetirementRefusal,
         member: crate::identity::data::EntityId,
         owner: crate::identity::data::EntityId,
     ) -> Self {
-        let mut error =
-            Self::authored_retirement(cause, crate::transactions::data::RecordRef::Entity(member));
+        let mut error = Self::authored_retirement(
+            cause,
+            crate::transactions::data::primitives::RecordRef::Entity(member),
+        );
         error.context = error.context.with_records(vec![
-            crate::transactions::data::RecordRef::Entity(member),
-            crate::transactions::data::RecordRef::Entity(owner),
+            crate::transactions::data::primitives::RecordRef::Entity(member),
+            crate::transactions::data::primitives::RecordRef::Entity(owner),
         ]);
         error
     }
 
     pub fn from_invariant_violation(
         stage: PublicationStage,
-        violation: crate::validation::data::InvariantViolation,
+        violation: crate::validation::data::results::InvariantViolation,
     ) -> Self {
         let mut error = Self::new(stage, violation.detail.clone());
         error.invariant_violation = Some(Box::new(violation));
@@ -103,11 +110,15 @@ impl PublicationError {
     }
 
     /// Original native invariant evidence, independent of the display detail.
-    pub fn invariant_violation(&self) -> Option<&crate::validation::data::InvariantViolation> {
+    pub fn invariant_violation(
+        &self,
+    ) -> Option<&crate::validation::data::results::InvariantViolation> {
         self.invariant_violation.as_deref()
     }
 
-    pub fn into_invariant_violation(self) -> Option<crate::validation::data::InvariantViolation> {
+    pub fn into_invariant_violation(
+        self,
+    ) -> Option<crate::validation::data::results::InvariantViolation> {
         self.invariant_violation.map(|violation| *violation)
     }
 

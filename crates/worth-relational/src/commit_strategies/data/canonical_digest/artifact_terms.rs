@@ -1,10 +1,12 @@
 use super::{commit_strategy_digest, StrategyDigestBytes};
-use crate::commit_strategies::data::{
-    CanonicalStrategyInputDigest, StrategyInputSchemaName, StrategyInputSchemaVersion,
-    StrategyLoweringSummary, StrategyPreviewValidationCostSummary,
-};
-use crate::transactions::data::{CommitValidationSummary, ExistingRecordTarget};
-use crate::validation::data::InvariantCatalog;
+use crate::commit_strategies::data::descriptor::semantic_names::StrategyInputSchemaVersion;
+use crate::commit_strategies::data::lowering_meaning::StrategyLoweringSummary;
+use crate::commit_strategies::data::request::CanonicalStrategyInputDigest;
+use crate::commit_strategies::data::validation::StrategyPreviewValidationCostSummary;
+use crate::commit_strategies::data::StrategyInputSchemaName;
+use crate::transactions::data::outcomes::commit_validation::CommitValidationSummary;
+use crate::transactions::data::primitives::ExistingRecordTarget;
+use crate::validation::data::catalog::InvariantCatalog;
 use worth_foundational::facade::AspectFieldLocator;
 
 pub(crate) fn lowering_summary_digest(summary: &StrategyLoweringSummary) -> [u8; 32] {
@@ -88,7 +90,7 @@ pub(crate) fn native_entity_replacement_scope_digest(
 }
 
 pub(crate) fn serial_intent_scope_digest(
-    strategy_id: crate::commit_strategies::data::CommitStrategyId,
+    strategy_id: crate::commit_strategies::data::strategy_id::CommitStrategyId,
     input_schema_name: &StrategyInputSchemaName,
     input_schema_version: StrategyInputSchemaVersion,
     input_digest: CanonicalStrategyInputDigest,

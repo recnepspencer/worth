@@ -2,7 +2,8 @@ mod foundational_contract_basis;
 mod schema_plan_terms;
 
 use crate::identity::data::KindId;
-use crate::merge::data::{AspectMergePolicyDeclaration, IdentityBasisDeclaration};
+use crate::merge::data::identity::IdentityBasisDeclaration;
+use crate::merge::data::policy::AspectMergePolicyDeclaration;
 use crate::schema::data::{
     AspectContractPlanRevision, DeclaredAspectContractBinding, SchemaRegistryError,
 };
@@ -79,7 +80,8 @@ mod tests {
             KindId(7),
             &[DeclaredAspectContractBinding {
                 binding: AspectBinding::EntityField {
-                    field: crate::tests::support::field_key("summary"),
+                    field: worth_foundational::facade::FieldKey::new("summary")
+                        .expect("valid test key"),
                 },
                 contract,
             }],

@@ -1,4 +1,4 @@
-mod custom_invariant_failure;
+pub(crate) mod custom_invariant_failure;
 mod storage_inconsistency;
 #[cfg(test)]
 mod tests;
@@ -11,7 +11,7 @@ use crate::identity::data::{EntityId, KindId, PartitionId, VersionId};
 use crate::schema::data::{
     ContractId, EndpointDeletionIntegrityMode, SymmetryMode, UniquenessScope,
 };
-use crate::transactions::data::EntityReference;
+use crate::transactions::data::primitives::EntityReference;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue, FieldKey};
 
 use super::execution::InvariantClass;
@@ -120,12 +120,14 @@ pub enum InvariantViolationFields {
         identity: CustomInvariantFailureIdentity,
         phase: CustomInvariantFailurePhase,
         failure: CustomInvariantFailureKind,
-        cause: Option<Box<super::CustomInvariantFailureCause>>,
+        cause: Option<
+            Box<crate::validation::data::custom_rule::failure_cause::CustomInvariantFailureCause>,
+        >,
         detail: String,
     },
     CustomInvariantViolation {
-        identity: crate::validation::data::CustomInvariantSemanticIdentity,
-        refusal: crate::validation::data::CustomInvariantRefusal,
+        identity: crate::validation::data::rule_id::CustomInvariantSemanticIdentity,
+        refusal: crate::validation::data::custom_rule::refusal::CustomInvariantRefusal,
     },
     PartitionIsolation {
         contract_id: ContractId,
@@ -150,8 +152,8 @@ pub enum InvariantViolationFields {
         minimum_reachable_targets: u32,
     },
     DerivedRelationGraph {
-        definition: crate::derived_relation::DerivedRelationIdentity,
-        violation: crate::derived_relation::DerivedRelationLawViolation,
+        definition: crate::derived_relation::definition::DerivedRelationIdentity,
+        violation: crate::derived_relation::laws::violation::DerivedRelationLawViolation,
     },
 }
 
@@ -191,7 +193,7 @@ impl InvariantViolationFields {
             } => (identity.semantic_identity().rule_id.as_str().len() as u64)
                 .saturating_add(detail.capacity() as u64)
                 .saturating_add(cause.as_ref().map_or(0, |cause| {
-                    (std::mem::size_of::<super::CustomInvariantFailureCause>() as u64)
+                    (std::mem::size_of::<crate::validation::data::custom_rule::failure_cause::CustomInvariantFailureCause>() as u64)
                         .saturating_add(cause.owned_allocation_capacity_bytes())
                 })),
             Fields::CustomInvariantViolation { identity, refusal } => {

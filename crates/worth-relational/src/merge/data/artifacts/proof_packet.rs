@@ -6,9 +6,9 @@ use sha2::{Digest, Sha256};
 use std::io::Write;
 use std::sync::Arc;
 
-use crate::history::data::RelationalMergeBranchBasis;
-use crate::merge::data::NormalizedRelationalMergeRequest;
-use crate::transactions::data::RecordRef;
+use crate::history::data::merge_branch_basis::RelationalMergeBranchBasis;
+use crate::merge::data::requests::normalized::NormalizedRelationalMergeRequest;
+use crate::transactions::data::primitives::RecordRef;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RelationalMergeProofPacketAdmissionPosture {
@@ -300,14 +300,15 @@ fn digest_is_lowercase_sha256_hex(value: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::history::data::{
-        BranchId, CommitId, MergeBaseSelectionRule, RelationalCommitReceipt, ResolvedMergeBase,
-    };
+    use crate::history::data::commit_receipt::RelationalCommitReceipt;
+    use crate::history::data::coordinates::{BranchId, CommitId};
+    use crate::history::data::merge_branch_basis::{MergeBaseSelectionRule, ResolvedMergeBase};
     use crate::identity::data::{EntityId, PartitionId, VersionId};
-    use crate::merge::data::{
-        MergeIntent, RelationalMergeCorrespondencePosture,
-        RelationalMergeSchemaReconciliationPosture, RelationalMergeTopologyIntent,
+    use crate::merge::data::requests::normalized::{
+        RelationalMergeCorrespondencePosture, RelationalMergeSchemaReconciliationPosture,
+        RelationalMergeTopologyIntent,
     };
+    use crate::merge::data::requests::raw::MergeIntent;
 
     #[test]
     fn streamed_proof_packet_preserves_prior_concatenated_bytes_and_surface_codec() {

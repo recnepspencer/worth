@@ -131,7 +131,7 @@ impl CanonicalCommitEnvelopeDraft {
             body: self.body,
             semantic_result,
         };
-        envelope.semantic_result().validate_envelope(&envelope)?;
+        crate::transactions::data::outcomes::commit_semantic_result::readmission::validate_envelope(envelope.semantic_result(), &envelope)?;
         Ok(envelope)
     }
 }

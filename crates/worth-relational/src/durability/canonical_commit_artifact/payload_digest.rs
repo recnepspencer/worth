@@ -19,7 +19,7 @@ impl RelationalCanonicalCommitArtifactDigest {
         position: u64,
         commit: u64,
         payload: &[u8],
-    ) -> Result<Self, super::RelationalCanonicalCommitArtifactFrameRefusal> {
+    ) -> Result<Self, crate::durability::canonical_commit_artifact::frame_refusal::RelationalCanonicalCommitArtifactFrameRefusal>{
         let leaves = payload_leaves(payload)?;
         Ok(Self::from_leaves(
             position,
@@ -58,10 +58,10 @@ impl RelationalCanonicalCommitArtifactDigest {
         envelope_leaf: [u8; 32],
         inputs_leaf: [u8; 32],
         context: &mut worth_execution::MapKernelContext<'_, '_>,
-    ) -> Result<Self, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Self, crate::execution::denial_cause::RelationalExecutionDenialCause> {
         let bytes = DIGEST_DOMAIN.len() + 2 * std::mem::size_of::<u64>() + 3 * Self::LEN;
         crate::execution::request_stage::checkpoint(context, bytes as u64)
-            .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+            .map_err(crate::execution::denial_cause::RelationalExecutionDenialCause::from)?;
         Ok(Self::from_leaves(
             position,
             commit,
@@ -110,18 +110,18 @@ impl std::fmt::Debug for RelationalCanonicalCommitArtifactDigest {
 }
 
 pub(super) enum RequestDigestDenial {
-    Frame(super::RelationalCanonicalCommitArtifactFrameRefusal),
-    Request(crate::execution::RelationalExecutionDenialCause),
+    Frame(crate::durability::canonical_commit_artifact::frame_refusal::RelationalCanonicalCommitArtifactFrameRefusal),
+    Request(crate::execution::denial_cause::RelationalExecutionDenialCause),
 }
 
 fn payload_leaves(
     payload: &[u8],
 ) -> Result<
     [super::borrowed_payload::BorrowedPayload<'_>; 3],
-    super::RelationalCanonicalCommitArtifactFrameRefusal,
-> {
+    crate::durability::canonical_commit_artifact::frame_refusal::RelationalCanonicalCommitArtifactFrameRefusal,
+>{
     use super::borrowed_payload::{malformed, BorrowedPayload};
-    use super::RelationalCanonicalCommitArtifactFrameRefusal as Refusal;
+    use crate::durability::canonical_commit_artifact::frame_refusal::RelationalCanonicalCommitArtifactFrameRefusal as Refusal;
     let mut leaves = [BorrowedPayload(&[]); 3];
     let mut seen = 0u8;
     BorrowedPayload(payload)

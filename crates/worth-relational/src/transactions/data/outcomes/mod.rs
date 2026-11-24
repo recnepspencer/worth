@@ -1,8 +1,9 @@
-mod aspect_delta_failure_fields;
-mod commit_conflict;
-mod commit_preparation;
+pub(crate) mod aspect_delta_failure_fields;
+pub(crate) mod commit_conflict;
+pub(crate) mod commit_preparation;
 mod commit_result;
-mod commit_semantic_result;
+pub(crate) mod commit_semantic_result;
+pub(crate) mod commit_summaries;
 pub use commit_semantic_result::{
     RecoveredRelationalSemanticResult, RelationalCommitPublicationMeaning,
     RelationalCommitSemanticResult, RelationalCommitSemanticResultRefusal,
@@ -13,13 +14,13 @@ pub use commit_semantic_result::{
     RelationalInvariantDecisionMeaning, RelationalInvariantExecutionMeaning,
     RelationalInvariantMetadataMeaning, RelationalInvariantProofScopeMeaning,
 };
-mod commit_validation;
-mod conflict_class;
-mod created_entity_bindings;
+pub(crate) mod commit_validation;
+pub(crate) mod conflict_class;
+pub(crate) mod created_entity_bindings;
 mod created_relation_bindings;
-mod plan_artifacts;
-mod rollback;
-mod transaction_commit_error;
+pub(crate) mod plan_artifacts;
+pub(crate) mod rollback;
+pub(crate) mod transaction_commit_error;
 
 pub use aspect_delta_failure_fields::{
     AspectDeltaFailureFields, AspectDeltaPatchConstructionDenial, AspectDeltaPatchValueDenial,
@@ -33,9 +34,8 @@ pub use commit_result::{
     CommitExecution, CommitOutcome, CommitPhaseTiming, CommitPublication, CommitResult,
     CommitSchemaSummary, CommitStructuralSummary,
 };
-pub use commit_validation::{CommitValidation, CommitValidationSummary};
-#[cfg(test)]
-pub(crate) use conflict_class::EntityUpdateMissingState;
+pub use commit_validation::CommitValidationSummary;
+mod live_commit_validation;
 pub use conflict_class::{
     AspectFieldTargetRejectionReason, BulkImportRowDomain, BulkImportStage,
     BulkMutationAdmissionDenial, ConflictClass, EntityAuthoritativeAspectStateDenial,
@@ -47,11 +47,11 @@ pub(crate) use created_entity_bindings::CommitCreatedEntityBindings;
 pub(crate) use created_relation_bindings::{
     CommitCreatedRelationBindings, CoupledOriginalRelationCreates,
 };
+pub use live_commit_validation::CommitValidation;
 pub(crate) use plan_artifacts::merge_commit_mutation_plan_token;
 pub use plan_artifacts::{
-    AuthoritativeApplyPlan, MergeCommitMutationPlan, MergeExecutionOutcome,
-    MergeExecutionStructuralSummary, MergeExecutionSummary, MergedCommitPlan,
-    PublishedMergeExecutionAuthority, UndoRecord,
+    AuthoritativeApplyPlan, MergeCommitMutationPlan, MergeExecutionStructuralSummary,
+    MergeExecutionSummary, MergedCommitPlan, PublishedMergeExecutionAuthority, UndoRecord,
 };
 pub use rollback::{RollbackEffect, RollbackOutcome, RollbackSummary};
 pub use transaction_commit_error::{
@@ -61,3 +61,6 @@ pub use transaction_commit_error::{
 pub(crate) use commit_semantic_result::{
     ValidationLeafMemory, ValidationReadmissionMemory, ValidationTouchedMemory,
 };
+
+mod merge_execution_outcome;
+pub use merge_execution_outcome::MergeExecutionOutcome;

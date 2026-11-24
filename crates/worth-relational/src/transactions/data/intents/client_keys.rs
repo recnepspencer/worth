@@ -3,7 +3,7 @@ use std::collections::BTreeSet;
 use crate::symbols::data::{ClientKey, ClientKeySymbolPolicy, StringInterner};
 
 use super::{CreateIntent, EntityMutationIntent, MutationIntent, RelationMutationIntent};
-use crate::transactions::data::EntityReference;
+use crate::transactions::data::primitives::EntityReference;
 
 impl MutationIntent {
     pub(crate) fn collect_raw_client_keys(

@@ -2,7 +2,8 @@
 mod composition;
 mod copy_geometry;
 mod readmission;
-use super::{RelationalContentCodec as Codec, RelationalContentDenial as Denial};
+use super::denial::RelationalContentDenial as Denial;
+use crate::content::codec::RelationalContentCodec as Codec;
 use std::{collections::BTreeMap, sync::Arc};
 use worth_foundational::facade::{CanonicalDigestId, ContentFormat};
 
@@ -31,7 +32,7 @@ impl RelationalContentFormat {
 
 #[derive(Clone, Debug, Default)]
 pub struct RelationalContentFormatRegistry {
-    snapshot: super::RelationalContentSchemaSnapshot,
+    snapshot: crate::content::schema::RelationalContentSchemaSnapshot,
     formats: BTreeMap<CanonicalDigestId, RelationalContentFormat>,
     names: BTreeMap<String, BTreeMap<u32, CanonicalDigestId>>,
     bindings: BTreeMap<CanonicalDigestId, CanonicalDigestId>,
@@ -64,10 +65,10 @@ impl RelationalContentFormatRegistry {
         if maximum == 0 {
             return Err(Denial::InvalidFormat);
         }
-        if maximum > super::MAXIMUM_CONTENT_FRAME_BYTES {
+        if maximum > crate::content::limits::MAXIMUM_CONTENT_FRAME_BYTES {
             return Err(Denial::SizeLimit {
                 observed: maximum,
-                maximum: super::MAXIMUM_CONTENT_FRAME_BYTES,
+                maximum: crate::content::limits::MAXIMUM_CONTENT_FRAME_BYTES,
             });
         }
         if self.formats.contains_key(&identity)
@@ -106,16 +107,16 @@ impl RelationalContentFormatRegistry {
     }
     pub(crate) fn snapshot_for_compilation(
         &self,
-        control: crate::schema::SchemaCompilationControl<'_, '_>,
+        control: crate::schema::compilation_control::SchemaCompilationControl<'_, '_>,
     ) -> Result<
-        super::RelationalContentSchemaSnapshot,
-        crate::execution::RelationalExecutionDenialCause,
+        crate::content::schema::RelationalContentSchemaSnapshot,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
     > {
         self.snapshot.retain_for_compilation(control)
     }
     pub(crate) fn bind_carried_snapshot(
         &mut self,
-        accepted: &super::RelationalContentSchemaSnapshot,
+        accepted: &crate::content::schema::RelationalContentSchemaSnapshot,
     ) {
         debug_assert_eq!(
             /* Proof: the private root compiler only receives a registry whose complete descriptor was accepted against this snapshot. */
@@ -124,27 +125,29 @@ impl RelationalContentFormatRegistry {
         );
         self.snapshot = accepted.clone();
     }
-    pub fn snapshot(&self) -> super::RelationalContentSchemaSnapshot {
+    pub fn snapshot(&self) -> crate::content::schema::RelationalContentSchemaSnapshot {
         self.snapshot.clone()
     }
     fn refresh_snapshot(&mut self) {
-        self.snapshot = super::RelationalContentSchemaSnapshot::new(
+        self.snapshot = crate::content::schema::RelationalContentSchemaSnapshot::new(
             self.formats
                 .iter()
-                .map(
-                    |(identity, format)| super::RelationalContentFormatDeclaration {
+                .map(|(identity, format)| {
+                    crate::content::schema::RelationalContentFormatDeclaration {
                         identity: *identity.bytes(),
                         descriptor: format.descriptor().clone(),
                         maximum_frame_bytes: format.maximum_frame_bytes() as u64,
-                    },
-                )
+                    }
+                })
                 .collect(),
             self.bindings
                 .iter()
-                .map(|(field, format)| super::RelationalContentFieldBinding {
-                    field_meaning: *field.bytes(),
-                    format: *format.bytes(),
-                })
+                .map(
+                    |(field, format)| crate::content::schema::RelationalContentFieldBinding {
+                        field_meaning: *field.bytes(),
+                        format: *format.bytes(),
+                    },
+                )
                 .collect(),
         );
     }

@@ -1,10 +1,10 @@
 //! Before-growth geometry for the actual routing collections being compiled.
-use super::super::DerivedIndexMaintenanceDenialKind as Denial;
+use crate::indexes::data::maintenance::DerivedIndexMaintenanceDenialKind as Denial;
 use std::collections::{BTreeMap, BTreeSet};
 use worth_foundational::facade::AspectFieldLocator;
 pub(super) type Payment<'a> = dyn FnMut(u64, u64) -> Result<(), Denial> + 'a;
 pub(super) fn tree<K, V>(entries: usize) -> Result<u64, Denial> {
-    crate::branch::retained_compilation_tree_bytes::<K, V>(entries)
+    crate::branch::root::schema::standard_tree_quote::retained_tree_bytes::<K, V>(entries)
         .map_err(|_| Denial::WorkBudgetExceeded)
 }
 fn new_entry<K, V>(entries: usize, width: usize, pay: &mut Payment<'_>) -> Result<(), Denial> {
@@ -70,7 +70,9 @@ pub(super) fn grow<T>(values: &mut Vec<T>, pay: &mut Payment<'_>) -> Result<(), 
     // The existing reservation still covers the old vector during reallocation.
     pay(values.len() as u64 + 1, bytes as u64)?;
     values.try_reserve_exact(next - values.len()).map_err(|_| {
-        Denial::Execution(crate::execution::RelationalExecutionDenialCause::AllocationFailed)
+        Denial::Execution(
+            crate::execution::denial_cause::RelationalExecutionDenialCause::AllocationFailed,
+        )
     })?;
     Ok(())
 }

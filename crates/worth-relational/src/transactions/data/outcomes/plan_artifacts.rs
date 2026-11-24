@@ -1,10 +1,13 @@
-use crate::history::data::{BranchId, CommitId, OrderedParentList, RelationalMergeBranchBasis};
-use crate::merge::data::{
-    NormalizedRelationalMergeRequest, RelationalMergeCorrespondenceWitness,
-    RelationalMergeProofPacket, RelationalMergeStrategyWitness,
-    RelationalSchemaReconciliationWitness,
-};
-use crate::transactions::data::{MutationIntent, RecordRef, TransactionId};
+use crate::history::data::commit_receipt::OrderedParentList;
+use crate::history::data::coordinates::{BranchId, CommitId};
+use crate::history::data::merge_branch_basis::RelationalMergeBranchBasis;
+use crate::merge::data::artifacts::correspondence_witness::RelationalMergeCorrespondenceWitness;
+use crate::merge::data::artifacts::proof_packet::RelationalMergeProofPacket;
+use crate::merge::data::artifacts::schema_reconciliation_witness::RelationalSchemaReconciliationWitness;
+use crate::merge::data::artifacts::strategy_witness::RelationalMergeStrategyWitness;
+use crate::merge::data::requests::normalized::NormalizedRelationalMergeRequest;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::primitives::{RecordRef, TransactionId};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
@@ -129,13 +132,6 @@ impl PublishedMergeExecutionAuthority {
         self.execution_summary
             .retains_consistent_proof_packet_authority()
     }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct MergeExecutionOutcome {
-    pub commit: crate::transactions::data::CommitResult,
-    pub execution_summary: MergeExecutionSummary,
-    pub structural_summary: MergeExecutionStructuralSummary,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]

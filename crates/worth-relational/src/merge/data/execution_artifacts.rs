@@ -2,11 +2,12 @@ use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 
-use crate::merge::data::{
-    merge_execution_diagnostics_digest, BoundExecutableMergeRecordPlan, ExecutableAspectPlan,
-    MaterializedAspectValue, MergeExecutableRecordProvenance,
+use crate::merge::data::execution::canonical_digest::merge_execution_diagnostics_digest;
+use crate::merge::data::execution::executable_plan::{
+    BoundExecutableMergeRecordPlan, ExecutableAspectPlan, MergeExecutableRecordProvenance,
 };
-use crate::transactions::data::RecordRef;
+use crate::merge::data::execution::materialized_aspect_values::MaterializedAspectValue;
+use crate::transactions::data::primitives::RecordRef;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ExecutedMergeRecordClass {
@@ -40,9 +41,12 @@ pub struct ExecutedMergeRecordDiagnosticRow {
     pub source_record: Option<RecordRef>,
     pub target_record: Option<RecordRef>,
     pub record: Option<RecordRef>,
-    pub equality_witness: Option<crate::merge::data::SharedTruthWitness>,
-    pub deletion_semantics: Option<crate::merge::data::DeletedOnBothSidesSemantics>,
-    pub lineage_continuity: Option<crate::merge::data::MergeLineageContinuityVerdict>,
+    pub equality_witness:
+        Option<crate::merge::data::execution::executable_plan::SharedTruthWitness>,
+    pub deletion_semantics:
+        Option<crate::merge::data::execution::executable_plan::DeletedOnBothSidesSemantics>,
+    pub lineage_continuity:
+        Option<crate::merge::data::execution::executable_plan::MergeLineageContinuityVerdict>,
     pub provenance: MergeExecutableRecordProvenance,
     pub aspect_rows: Arc<[ExecutedMergeAspectDiagnosticRow]>,
 }

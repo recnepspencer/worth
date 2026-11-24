@@ -1,8 +1,7 @@
 use crate::performance::PerformanceAccess;
-use crate::query::data::{
-    CanonicalQueryResult, QueryComplexitySummary, QueryExecutionOutcome, QueryWorkerFragment,
-    SnapshotPinnedQueryPlan,
-};
+use crate::query::data::query_outcome::QueryExecutionOutcome;
+use crate::query::data::snapshot_pinned_plan::SnapshotPinnedQueryPlan;
+use crate::query::data::{CanonicalQueryResult, QueryComplexitySummary, QueryWorkerFragment};
 use worth_execution::ExecutionResourceLease;
 use worth_foundational::ExecutionReport;
 

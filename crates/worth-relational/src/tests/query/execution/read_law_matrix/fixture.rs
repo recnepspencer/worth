@@ -3,7 +3,7 @@ use crate::facade::indexes::{
     DerivedIndexBuildRequest, DerivedIndexDefinition, DerivedIndexId, DerivedIndexKind,
 };
 use crate::identity::data::EntityId;
-use crate::query::data::SnapshotPinnedQueryPlan;
+use crate::query::data::snapshot_pinned_plan::SnapshotPinnedQueryPlan;
 use worth_foundational::facade::{AspectFieldLocator, CanonicalFieldPath, LocatorAuthority};
 
 pub(super) struct World {

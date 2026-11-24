@@ -2,10 +2,10 @@ use crate::diagnostics::data::{
     aspect_shape_diagnostic_value, RelationalDiagnosticFields, RelationalDiagnosticValue,
 };
 use crate::identity::data::KindId;
-use crate::merge::data::{
-    AspectMergePolicyDeclaration, AspectMergePolicyKind, IdentityBasisDeclaration,
-    IdentityBasisKind, IdentityBasisScope,
+use crate::merge::data::identity::{
+    IdentityBasisDeclaration, IdentityBasisKind, IdentityBasisScope,
 };
+use crate::merge::data::policy::{AspectMergePolicyDeclaration, AspectMergePolicyKind};
 
 use super::{
     AspectBinding, AspectContractPlanRevision, AspectDeclarationTrace, AspectDeclarationTraceRow,

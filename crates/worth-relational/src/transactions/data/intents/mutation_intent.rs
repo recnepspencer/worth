@@ -4,9 +4,10 @@ use crate::identity::data::{KindId, PartitionId, RelationId};
 use crate::symbols::data::ClientKey;
 use worth_foundational::facade::PortableRecordAspectPatch;
 
-use super::super::AspectFieldPatch;
+use crate::transactions::data::aspect_field_patch::AspectFieldPatch;
 
-use super::super::{EntityReference, EntitySpec, MaterializationMutationIntent, RelationSpec};
+use crate::transactions::data::intents::materialization_intent::MaterializationMutationIntent;
+use crate::transactions::data::primitives::{EntityReference, EntitySpec, RelationSpec};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BulkEntityCreateIntent {

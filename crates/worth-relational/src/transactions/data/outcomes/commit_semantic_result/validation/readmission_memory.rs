@@ -1,7 +1,8 @@
 //! One decode's grants attach to the actual independently shared validation leaves.
 use super::*;
 use crate::graph_member::{NativeMemberKey, ProjectedMemberStorage};
-use crate::validation::data::{CustomInvariantRuleId, InvariantViolationFields};
+use crate::validation::data::results::InvariantViolationFields;
+use crate::validation::data::rule_id::CustomInvariantRuleId;
 use worth_execution::ExecutionMemoryReservation;
 mod leaves;
 pub(crate) use leaves::{ValidationLeafMemory, ValidationTouchedMemory};

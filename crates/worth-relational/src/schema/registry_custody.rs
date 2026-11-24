@@ -6,14 +6,14 @@ use super::data::RelationalSchemaRegistry;
 /// branch observations always retain the selected root's registry directly.
 #[derive(Clone)]
 pub(crate) enum SchemaRegistryCustody {
-    Runtime(crate::runtime::RelationalRuntimeConfigurationSnapshot),
-    Selected(crate::branch::RetainedRelationalSchemaRegistry),
+    Runtime(std::sync::Arc<crate::config::data::RelationalRuntimeConfig>),
+    Selected(crate::branch::root::schema::compiled_retention::RetainedRelationalSchemaRegistry),
 }
 
 impl SchemaRegistryCustody {
     pub(crate) fn registry(&self) -> &RelationalSchemaRegistry {
         match self {
-            Self::Runtime(epoch) => &epoch.config.schema.registry,
+            Self::Runtime(config) => &config.schema.registry,
             Self::Selected(registry) => registry,
         }
     }

@@ -1,6 +1,6 @@
 //! Retained route allocations remain on the request that compiled their meaning.
-use super::super::DerivedIndexMaintenanceDenialKind as Denial;
 use super::allocation::Payment;
+use crate::indexes::data::maintenance::DerivedIndexMaintenanceDenialKind as Denial;
 use worth_execution::{
     ExecutionMemoryReservation, ExecutionRequest, MapKernelStop, WorkCeilingDenial,
 };

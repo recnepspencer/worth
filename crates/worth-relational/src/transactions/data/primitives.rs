@@ -2,12 +2,12 @@ use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 
-use crate::history::data::BranchId;
+use crate::history::data::coordinates::BranchId;
 use crate::identity::data::{EntityId, KindId, PartitionId, RelationId};
 use crate::symbols::data::ClientKey;
 
 use super::intents::MutationIntent;
-use super::AspectFieldPatch;
+use crate::transactions::data::aspect_field_patch::AspectFieldPatch;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct TransactionId(pub u64);

@@ -11,7 +11,7 @@ use super::strategy_witness_policy_rows::{
 use super::strategy_witness_posture_rows::{
     RelationalMergeDeletionStrategyWitnessRow, RelationalMergeTopologyStrategyWitnessRow,
 };
-use crate::merge::data::MergeExecutionAuthorityContract;
+use crate::merge::data::artifacts::execution_authority_contract::MergeExecutionAuthorityContract;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct RelationalMergeStrategyWitness {
@@ -222,13 +222,13 @@ fn digest_is_lowercase_sha256_hex(value: &str) -> bool {
 mod tests {
     use super::*;
     use crate::identity::data::{EntityId, PartitionId};
-    use crate::merge::data::{
+    use crate::merge::data::conflicts::MergeConflictClass;
+    use crate::merge::data::policy::{
         AspectMergePolicyKind, CustomMergePolicyIdentity, DeletionExecutionClass,
-        MergeConflictClass, MergeExecutionReadiness, MergePolicyDecisionBoundary,
-        MergePolicyOwnershipSurface, MergePolicyProofBoundary, ResolvedAspectMergePolicy,
-        TopologyExecutionClass,
+        MergeExecutionReadiness, MergePolicyDecisionBoundary, MergePolicyOwnershipSurface,
+        MergePolicyProofBoundary, ResolvedAspectMergePolicy, TopologyExecutionClass,
     };
-    use crate::transactions::data::RecordRef;
+    use crate::transactions::data::primitives::RecordRef;
     use worth_foundational::facade::AspectKey;
 
     #[test]
@@ -308,7 +308,7 @@ mod tests {
         let witness = RelationalMergeStrategyWitness::retained(
             "a".repeat(64),
             "b".repeat(64),
-            crate::merge::lowered_artifact_execution_authority_contract(),
+            crate::merge::data::execution_authority_contract::lowered_artifact_execution_authority_contract(),
             Arc::from([aspect]),
             Arc::from([topology]),
             Arc::from([deletion]),

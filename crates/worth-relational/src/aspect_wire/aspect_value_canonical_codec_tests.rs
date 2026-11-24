@@ -11,13 +11,13 @@ use super::{
     decode_aspect_value, encode_aspect_field_locator, encode_aspect_value,
     encode_length_prefixed_aspect_value, encode_u32,
 };
-use crate::commit_strategies::data::{
+use crate::commit_strategies::data::native_codec::{
     decode_aspect_field_patch as decode_native_aspect_field_patch,
     decode_aspect_value as decode_native_aspect_value,
     encode_aspect_field_patch as encode_native_aspect_field_patch,
     encode_aspect_value as encode_native_aspect_value, NativeCodecReader,
 };
-use crate::transactions::data::AspectFieldPatch;
+use crate::transactions::data::aspect_field_patch::AspectFieldPatch;
 
 #[test]
 fn native_strategy_codec_uses_canonical_aspect_value_bytes() {
@@ -85,7 +85,7 @@ fn aspect_field_patch_canonical_bytes_use_shared_aspect_value_bodies() {
     );
     // The original map decoder selected the last occurrence of an equal
     // locator. The concrete roster decoder must preserve that wire behavior.
-    let locator = crate::transactions::data::planned_single_field_locator(
+    let locator = crate::transactions::data::aspect_field_patch::planned_single_field_locator(
         AspectKey::new("strategy.spec").unwrap(),
         FieldKey::new("same").unwrap(),
     );
@@ -109,7 +109,7 @@ fn aspect_field_patch_canonical_bytes_use_shared_aspect_value_bodies() {
 
 #[test]
 fn aspect_field_patch_locator_bytes_are_canonical_planned_field_locator_bytes() {
-    let locator = crate::transactions::data::planned_single_field_locator(
+    let locator = crate::transactions::data::aspect_field_patch::planned_single_field_locator(
         AspectKey::new("strategy.spec").expect("valid aspect key"),
         FieldKey::new("replicas").expect("valid field key"),
     );
@@ -253,7 +253,7 @@ fn patch_from_samples(samples: &[AspectValue]) -> AspectFieldPatch {
             .map(|(index, value)| {
                 let field = FieldKey::new(format!("field_{index}")).expect("valid test field key");
                 (
-                    crate::transactions::data::planned_single_field_locator(
+                    crate::transactions::data::aspect_field_patch::planned_single_field_locator(
                         aspect_key.clone(),
                         field,
                     ),

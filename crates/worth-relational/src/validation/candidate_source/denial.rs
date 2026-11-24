@@ -1,12 +1,14 @@
 //! Original preparation failures survive the Native/Query handoff.
-use crate::derived_relation::DerivedRelationReadDenial;
-use crate::mvcc::{CompanionPreflightStop, PublicationCompanionRegistrationStop};
+use crate::derived_relation::read_denial::DerivedRelationReadDenial;
+use crate::mvcc::publication::companion::{
+    preflight_stop::CompanionPreflightStop, registration_stop::PublicationCompanionRegistrationStop,
+};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ManagedIndexSourcePreparationDenial {
-    Content(crate::content::RelationalContentDenial),
+    Content(crate::content::denial::RelationalContentDenial),
     Source(DerivedRelationReadDenial),
-    Provider(super::ManagedIndexSourceProviderFailure),
+    Provider(super::provider_failure::ManagedIndexSourceProviderFailure),
     Publication(CompanionPreflightStop),
     Registration(PublicationCompanionRegistrationStop),
     MissingParticipant,
@@ -28,11 +30,15 @@ impl From<DerivedRelationReadDenial> for ManagedIndexSourcePreparationDenial {
 impl ManagedIndexSourcePreparationDenial {
     pub(crate) fn into_commit_error(
         self,
-        basis: &crate::branch::AdmittedRelationalBranchBasis,
-    ) -> crate::transactions::data::TransactionCommitError {
-        use crate::transactions::data::{
-            CommitExecutionDenial, CommitExecutionDenialKind, CommitPreparationError,
-            TransactionCommitError,
+        branch: crate::history::data::coordinates::BranchId,
+        commit: Option<u64>,
+        version: crate::identity::data::VersionId,
+    ) -> crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError {
+        use crate::transactions::data::outcomes::{
+            commit_preparation::CommitPreparationError,
+            transaction_commit_error::{
+                CommitExecutionDenial, CommitExecutionDenialKind, TransactionCommitError,
+            },
         };
         if let Some(cause) = self.execution_cause() {
             return TransactionCommitError::execution(CommitExecutionDenial {
@@ -41,7 +47,7 @@ impl ManagedIndexSourcePreparationDenial {
             });
         }
         TransactionCommitError::preparation(CommitPreparationError::managed_index_source(
-            basis, self,
+            branch, commit, version, self,
         ))
     }
 
@@ -54,21 +60,24 @@ impl ManagedIndexSourcePreparationDenial {
     }
 
     /// Borrow the provider's original owned failure without changing its custody.
-    pub fn provider_failure(&self) -> Option<&super::ManagedIndexSourceProviderFailure> {
+    pub fn provider_failure(
+        &self,
+    ) -> Option<&super::provider_failure::ManagedIndexSourceProviderFailure> {
         match self {
             Self::Provider(cause) => Some(cause),
             _ => None,
         }
     }
 
-    pub(super) fn execution_cause(
+    pub(crate) fn execution_cause(
         &self,
-    ) -> Option<crate::execution::RelationalExecutionDenialCause> {
-        use crate::execution::RelationalExecutionDenialCause as Cause;
-        use crate::validation::data::{CustomInvariantInterruption, StructuralWalkDenialKind};
+    ) -> Option<crate::execution::denial_cause::RelationalExecutionDenialCause> {
+        use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
+        use crate::validation::custom_rule::interruption::CustomInvariantInterruption;
+        use crate::validation::data::structural_walk_denial::StructuralWalkDenialKind;
 
         match self {
-            Self::Content(crate::content::RelationalContentDenial::Execution(cause)) => {
+            Self::Content(crate::content::denial::RelationalContentDenial::Execution(cause)) => {
                 Some(*cause)
             }
             Self::Source(DerivedRelationReadDenial::Request(cause)) => Some(*cause),
@@ -88,8 +97,10 @@ impl ManagedIndexSourcePreparationDenial {
     }
 }
 
-impl From<crate::derived_relation::DerivedRelationDenial> for ManagedIndexSourcePreparationDenial {
-    fn from(cause: crate::derived_relation::DerivedRelationDenial) -> Self {
+impl From<crate::derived_relation::definition::DerivedRelationDenial>
+    for ManagedIndexSourcePreparationDenial
+{
+    fn from(cause: crate::derived_relation::definition::DerivedRelationDenial) -> Self {
         Self::Source(cause.into())
     }
 }

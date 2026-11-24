@@ -1,11 +1,13 @@
 use sha2::{Digest, Sha256};
 
 use crate::aspect_wire::{encode_string, encode_u32};
-use crate::history::data::BranchId;
+use crate::history::data::coordinates::BranchId;
 use crate::identity::data::{EntityId, KindId, PartitionId, RelationId};
 use crate::symbols::data::ClientKey;
 
-use super::{EntityReference, PlannedLineageTransition, TransactionId};
+use crate::transactions::data::primitives::{
+    EntityReference, PlannedLineageTransition, TransactionId,
+};
 
 pub(crate) fn bulk_naming_plan_digest(normalized_client_keys: &[ClientKey]) -> String {
     let mut bytes = Vec::new();

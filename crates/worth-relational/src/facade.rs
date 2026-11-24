@@ -26,13 +26,18 @@ pub mod config {
     };
 }
 pub mod commit_strategies {
+    pub use crate::commit_strategies::data::execution::executor_registration::{
+        CommitStrategyExecutionRegistration, CommitStrategyExecutor,
+    };
+    pub use crate::commit_strategies::data::execution::observation_context::StrategyObservationContext;
+    pub use crate::commit_strategies::data::execution::visibility_read_view::StrategyVisibilityReadView;
+    pub use crate::commit_strategies::data::lowering::LoweredStrategyCommitPlan;
     pub use crate::commit_strategies::data::{
         CanonicalStrategyCommitRequest, CanonicalStrategyInputArtifact,
         CanonicalStrategyInputDigest, CanonicalStrategyOutputArtifact,
         CanonicalStrategyOutputDigest, CommitStrategyDescriptor, CommitStrategyDescriptorDigest,
-        CommitStrategyExecutionRegistration, CommitStrategyExecutor, CommitStrategyFamilyName,
-        CommitStrategyId, CommitStrategyRegistration, CommitStrategyRegistrationError,
-        CommitStrategySemanticName, CommitStrategyVersion, LoweredStrategyCommitPlan,
+        CommitStrategyFamilyName, CommitStrategyId, CommitStrategyRegistration,
+        CommitStrategyRegistrationError, CommitStrategySemanticName, CommitStrategyVersion,
         NativeStrategyCommitRequest, PersistentArtifactName, StrategyCallerProvenance,
         StrategyCommitArtifactBundle, StrategyCommitRequestError, StrategyEntityAspectReadRecord,
         StrategyExecutionDraft, StrategyExecutionResult, StrategyExecutionSummary,
@@ -40,11 +45,10 @@ pub mod commit_strategies {
         StrategyInputSchemaVersion, StrategyIntentName, StrategyIntentScopeDigest,
         StrategyLoweringError, StrategyLoweringProvenance, StrategyLoweringSummary,
         StrategyMergeConflictClass, StrategyMergeDescriptor, StrategyMergeSemantics,
-        StrategyMutationProgram, StrategyMutationProgramDigest, StrategyObservationContext,
-        StrategyOutputSchemaName, StrategyPacketContract, StrategyProjectedAspectReadSet,
-        StrategyReadContract, StrategyReadCostClass, StrategyReadLocalityClass,
-        StrategyReadScopeClass, StrategyReplayDescriptor, StrategyRequestOrigin,
-        StrategyTraversalBasis, StrategyVisibilityReadView,
+        StrategyMutationProgram, StrategyMutationProgramDigest, StrategyOutputSchemaName,
+        StrategyPacketContract, StrategyProjectedAspectReadSet, StrategyReadContract,
+        StrategyReadCostClass, StrategyReadLocalityClass, StrategyReadScopeClass,
+        StrategyReplayDescriptor, StrategyRequestOrigin, StrategyTraversalBasis,
     };
     pub use crate::commit_strategies::facade::{
         CommitStrategiesAuthorityFacade, CommitStrategiesFacade,
@@ -324,14 +328,16 @@ pub mod publication {
 }
 
 pub mod query {
+    pub use crate::query::data::index_parity_outcome::IndexParityVerifiedQueryOutcome;
+    pub use crate::query::data::query_outcome::QueryExecutionOutcome;
+    pub use crate::query::data::snapshot_pinned_plan::SnapshotPinnedQueryPlan;
     pub use crate::query::data::{
         CanonicalQueryResult, DeterministicQueryFragmentKey, DeterministicQueryPlanKey,
-        IndexParityMode, IndexParityVerifiedQueryOutcome, IndexQueryRejectionClass, PartitionHint,
-        PlannedQueryPacket, QueryAccessContract, QueryAccessPath, QueryComplexitySummary,
-        QueryExecutionOutcome, QueryExecutionShape, QueryFragmentCounters, QueryLocalityClass,
-        QueryOrderingContract, QueryParallelLegality, QueryParallelProfitability,
-        QueryPlanContextId, QueryPlanEvidenceBasis, QueryScope, QuerySerialReason,
-        QueryWorkerFragment, ReductionDiscipline, SnapshotPinnedQueryPlan,
+        IndexParityMode, IndexQueryRejectionClass, PartitionHint, PlannedQueryPacket,
+        QueryAccessContract, QueryAccessPath, QueryComplexitySummary, QueryExecutionShape,
+        QueryFragmentCounters, QueryLocalityClass, QueryOrderingContract, QueryParallelLegality,
+        QueryParallelProfitability, QueryPlanContextId, QueryPlanEvidenceBasis, QueryScope,
+        QuerySerialReason, QueryWorkerFragment, ReductionDiscipline,
     };
 }
 
@@ -377,11 +383,11 @@ pub mod storage {
 
 pub mod symbols {
     pub use crate::runtime::RelationalSymbolTableForTest;
+    pub use crate::symbols::data::selected_field_text::RelationalFieldText;
     pub use crate::symbols::data::RelationalSymbolExhausted;
     pub use crate::symbols::data::{
-        ClientKey, ClientKeySymbolPolicy, InternedString, RelationalFieldText,
-        RelationalFieldTextAdmissionDenial, StoredSymbolText, StringInterner, Symbol,
-        SymbolTableSnapshot,
+        ClientKey, ClientKeySymbolPolicy, InternedString, RelationalFieldTextAdmissionDenial,
+        StoredSymbolText, StringInterner, Symbol, SymbolTableSnapshot,
     };
 }
 
