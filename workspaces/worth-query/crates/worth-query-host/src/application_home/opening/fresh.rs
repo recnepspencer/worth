@@ -25,14 +25,23 @@ where
         ApplicationProgramOutputsShape<Schema> + WorthQueryApplicationProgramRoots<Schema>,
 {
     use WorthQueryApplicationHomeOpenRefused as Refused;
-    let (mut query, home) = prepare_source(phase, home, query, &observation).map_err(|e| *e)?;
+    use WorthQueryApplicationHomeOpenRefusedPhase as Phase;
+    let (mut query, home) = prepare_source(phase, home, query, &observation)?;
     // Only the user initializer is caught by this borrowed Query operation;
     // the actual Home and Query bootstrap remain outside its unwind boundary.
     if let Err(cause) = query.initialize_home_query_state(phase, initial_state) {
-        return Err(Refused::InitialState { query, home, cause });
+        return Err(Refused::from_phase(Phase::InitialState {
+            query,
+            home,
+            cause,
+        }));
     }
     if let Err(cause) = query.publish_home_query_seed(phase) {
-        return Err(Refused::SeedPublication { query, home, cause });
+        return Err(Refused::from_phase(Phase::SeedPublication {
+            query,
+            home,
+            cause,
+        }));
     }
     finish_world(phase, query, home, checkpoint_limits, observation)
 }
@@ -45,7 +54,7 @@ fn prepare_source<Schema, Program>(
     observation: &ApplicationHomeOpeningObservation,
 ) -> Result<
     (PreparedHomeQueryRuntime<Schema, Program>, DirectoryHome),
-    Box<WorthQueryApplicationHomeOpenRefused<Schema, Program>>,
+    WorthQueryApplicationHomeOpenRefused<Schema, Program>,
 >
 where
     Schema: ApplicationSchemaComposition,
@@ -69,7 +78,7 @@ fn prepare_native_and_signal<Schema, Program>(
         Box<worth_runtime_bridge::facade::BridgeConditionalRuntimeBuilder>,
         QueryHomeAuthoredBindings,
     ),
-    Box<WorthQueryApplicationHomeOpenRefused<Schema, Program>>,
+    WorthQueryApplicationHomeOpenRefused<Schema, Program>,
 >
 where
     Schema: ApplicationSchemaComposition,
@@ -78,11 +87,12 @@ where
         ApplicationProgramOutputsShape<Schema> + WorthQueryApplicationProgramRoots<Schema>,
 {
     use WorthQueryApplicationHomeOpenRefused as Refused;
+    use WorthQueryApplicationHomeOpenRefusedPhase as Phase;
     let request = phase.execution_request();
     let (native, admission) = match home.fresh_query_finalization_parts() {
         Ok(parts) => parts,
         Err(cause) => {
-            return Err(Box::new(Refused::NativeFinalizationInput {
+            return Err(Refused::from_phase(Phase::NativeFinalizationInput {
                 query,
                 home,
                 cause: ApplicationHomeOpenRefusal::Relational(cause),
@@ -91,25 +101,36 @@ where
     };
     let query = match query.finish_fresh_home_native_readmission(phase, native, admission) {
         Ok(query) => query,
-        Err(query) => return Err(Box::new(Refused::NativeFinalization { query, home })),
+        Err(query) => return Err(Refused::from_phase(Phase::NativeFinalization { query, home })),
     };
     let bridge = match query.home_bridge_definition() {
         Ok(bridge) => bridge,
-        Err(cause) => return Err(Box::new(Refused::BridgeDefinition { query, home, cause })),
+        Err(cause) => {
+            return Err(Refused::from_phase(Phase::BridgeDefinition {
+                query,
+                home,
+                cause,
+            }))
+        }
     };
     let (budgets, clock, policy, execution, _conditionals) = query.home_world_resources();
     let definition =
         ApplicationHomeWorldDefinition::new(bridge, "primary", budgets, clock, policy, execution);
     let source = match prepare_query_home_source(home.share(), definition, &request) {
         Ok(source) => source,
-        Err(home) => return Err(Box::new(Refused::WorldSourcePreparation { query, home })),
+        Err(home) => {
+            return Err(Refused::from_phase(Phase::WorldSourcePreparation {
+                query,
+                home,
+            }))
+        }
     };
     let (registered, ordinary) = source.query_source_parts();
     let (query, builder, bindings) =
         match query.prepare_home_signal_program(phase, registered, ordinary) {
             Ok(parts) => parts,
             Err(query) => {
-                return Err(Box::new(Refused::SignalProgramPreparation {
+                return Err(Refused::from_phase(Phase::SignalProgramPreparation {
                     home: source,
                     query: Box::new(query),
                 }))
@@ -128,7 +149,7 @@ fn readmit_world_and_attach_signal<Schema, Program>(
     observation: &ApplicationHomeOpeningObservation,
 ) -> Result<
     (PreparedHomeQueryRuntime<Schema, Program>, DirectoryHome),
-    Box<WorthQueryApplicationHomeOpenRefused<Schema, Program>>,
+    WorthQueryApplicationHomeOpenRefused<Schema, Program>,
 >
 where
     Schema: ApplicationSchemaComposition,
@@ -137,11 +158,12 @@ where
         ApplicationProgramOutputsShape<Schema> + WorthQueryApplicationProgramRoots<Schema>,
 {
     use WorthQueryApplicationHomeOpenRefused as Refused;
+    use WorthQueryApplicationHomeOpenRefusedPhase as Phase;
     let request = phase.execution_request();
     let signal = match readmit_query_signal(source, builder, &mut bindings, &request) {
         Ok(signal) => signal,
         Err(home) => {
-            return Err(Box::new(Refused::WorldReadmission {
+            return Err(Refused::from_phase(Phase::WorldReadmission {
                 query,
                 home,
                 _bindings: bindings,
@@ -151,7 +173,7 @@ where
     let home = match readmit_query_world(signal, &request) {
         Ok(home) => home.consume(|home| home),
         Err(home) => {
-            return Err(Box::new(Refused::WorldReadmission {
+            return Err(Refused::from_phase(Phase::WorldReadmission {
                 query,
                 home,
                 _bindings: bindings,
@@ -160,7 +182,13 @@ where
     };
     let (_, _, conditional) = match home.query_composition_parts() {
         Ok(parts) => parts,
-        Err(cause) => return Err(Box::new(Refused::Composition { query, home, cause })),
+        Err(cause) => {
+            return Err(Refused::from_phase(Phase::Composition {
+                query,
+                home,
+                cause,
+            }))
+        }
     };
     observation.arrive_for_test(
         ApplicationHomeOpeningStage::QueryReadmission,
@@ -168,7 +196,7 @@ where
     );
     let query = match query.attach_home_authored_signal(conditional) {
         Ok(query) => query,
-        Err(query) => return Err(Box::new(Refused::SourceAttachment { query, home })),
+        Err(query) => return Err(Refused::from_phase(Phase::SourceAttachment { query, home })),
     };
     Ok((query, home))
 }
@@ -191,14 +219,27 @@ where
         ApplicationProgramOutputsShape<Schema> + WorthQueryApplicationProgramRoots<Schema>,
 {
     use WorthQueryApplicationHomeOpenRefused as Refused;
+    use WorthQueryApplicationHomeOpenRefusedPhase as Phase;
     let request = phase.execution_request();
     let maintenance = match super::super::maintenance::prepare(&home, checkpoint_limits, &request) {
         Ok(operation) => operation,
-        Err(cause) => return Err(Refused::CheckpointMaintenance { query, home, cause }),
+        Err(cause) => {
+            return Err(Refused::from_phase(Phase::CheckpointMaintenance {
+                query,
+                home,
+                cause,
+            }))
+        }
     };
     let root = match home.select_query_root(&request) {
         Ok(root) => root,
-        Err(cause) => return Err(Refused::WorldRoot { query, home, cause }),
+        Err(cause) => {
+            return Err(Refused::from_phase(Phase::WorldRoot {
+                query,
+                home,
+                cause,
+            }))
+        }
     };
     let ports = home.world();
     let query = match query.attach_home_world(
@@ -213,7 +254,7 @@ where
         home.branch_program_source_owner(),
     ) {
         Ok(query) => query.consume(|query| query),
-        Err(query) => return Err(Refused::QueryAttachment { query, home }),
+        Err(query) => return Err(Refused::from_phase(Phase::QueryAttachment { query, home })),
     };
     observation.arrive_for_test(
         ApplicationHomeOpeningStage::QueryReadmission,

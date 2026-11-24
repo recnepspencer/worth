@@ -60,15 +60,17 @@ pub(in crate::application_home) fn finish_service<
                 query,
                 home,
             })),
-            Err(home) => Err(WorthQueryApplicationHomeOpenRefused::OwnerAdmission {
-                query: super::super::UnadmittedHomeQueryService::retain(
-                    query,
-                    obligations,
-                    material,
-                    dispatch,
-                ),
-                home,
-            }),
+            Err(home) => Err(WorthQueryApplicationHomeOpenRefused::from_phase(
+                WorthQueryApplicationHomeOpenRefusedPhase::OwnerAdmission {
+                    query: super::super::UnadmittedHomeQueryService::retain(
+                        query,
+                        obligations,
+                        material,
+                        dispatch,
+                    ),
+                    home,
+                },
+            )),
         }
     })?;
     let home = settled.consume(

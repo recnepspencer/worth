@@ -73,6 +73,17 @@ impl WorthQueryApplicationContribution<NumericSchema> for DirectoryNumericContri
         (): (),
         setup: &mut WorthQueryApplicationContributionSetup<'_, NumericSchema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        configure_with_edit_handler(setup, DirectoryHandler(edit::Handler))
+    }
+}
+
+pub(in super::super) fn configure_with_edit_handler<H>(
+    setup: &mut WorthQueryApplicationContributionSetup<'_, NumericSchema>,
+    edit_handler: H,
+) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>
+where
+    H: OperationHandler<NumericSchema, edit::EditBinding>,
+{
         setup.handler::<model::write_admission::Binding, _>(model::write_admission::Handler)?;
         setup.handler::<model::causal_inspection::distinct_subjects::grant_status::Binding, _>(
             model::causal_inspection::distinct_subjects::grant_status::Handler,
@@ -125,7 +136,7 @@ impl WorthQueryApplicationContribution<NumericSchema> for DirectoryNumericContri
         setup.handler::<model::composite_definition_model::Binding, _>(
             model::composite_definition_handler::Handler,
         )?;
-        setup.handler::<edit::EditBinding, _>(DirectoryHandler(edit::Handler))?;
+        setup.handler::<edit::EditBinding, _>(edit_handler)?;
         setup.handler::<model::operand_edit::OperandBinding, _>(model::operand_edit::Handler)?;
         setup
             .handler::<model::observed_clone::Binding, _>(model::authored_identity_handlers::Handler)?;
@@ -159,5 +170,4 @@ impl WorthQueryApplicationContribution<NumericSchema> for DirectoryNumericContri
             model::compensation_movement::DebitHandler,
         )?;
         setup.handler::<model::principal_status::Binding, _>(model::principal_status::Handler)
-    }
 }

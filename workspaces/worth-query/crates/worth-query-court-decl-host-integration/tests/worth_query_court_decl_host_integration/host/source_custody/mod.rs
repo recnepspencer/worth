@@ -1,6 +1,7 @@
 //! Interactive source custody and bundled bounds over a real Directory Home
 //! opened under bounded serial limits and a local-process principal.
 mod commit_and_decline;
+mod erased_custody;
 mod interrupted_frames;
 
 use super::application_startup::{close_home, local_principal, open_home, read_balance, scope};

@@ -24,8 +24,8 @@ fn latest_native_owner_rows_refuse_their_actual_family_kind_and_record_before_se
         })
         .unwrap();
         let refused = reopen_refusal(path.path(), execution);
-        match &refused {
-            WorthQueryApplicationHomeOpenRefused::ExistingNativeFinalization { query, .. }
+        match refused.phase() {
+            worth_query_host::facade::WorthQueryApplicationHomeOpenRefusedPhase::ExistingNativeFinalization { query, .. }
                 if family == "outbox" || family == "inbound" =>
             {
                 assert_eq!(
@@ -36,7 +36,7 @@ fn latest_native_owner_rows_refuse_their_actual_family_kind_and_record_before_se
                     )
                 )
             }
-            WorthQueryApplicationHomeOpenRefused::CustodyReadmission { cause, .. }
+            worth_query_host::facade::WorthQueryApplicationHomeOpenRefusedPhase::CustodyReadmission { cause, .. }
                 if family == "aftermath" =>
             {
                 use worth_query_execution::facade::primary_graph::QueryHomeCorrectionLineageDenial;
@@ -50,7 +50,7 @@ fn latest_native_owner_rows_refuse_their_actual_family_kind_and_record_before_se
                     "{cause:?}"
                 );
             }
-            WorthQueryApplicationHomeOpenRefused::CustodyReadmission { cause, .. }
+            worth_query_host::facade::WorthQueryApplicationHomeOpenRefusedPhase::CustodyReadmission { cause, .. }
                 if family == "workflow" =>
             {
                 use worth_query_host::facade::HomeCustodyReadmissionDenial;

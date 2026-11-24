@@ -28,6 +28,7 @@ where
     Program::Contributions: WorthQueryApplicationContributionTuple<Schema>,
 {
     use WorthQueryApplicationHomeOpenRefused as Refused;
+    use WorthQueryApplicationHomeOpenRefusedPhase as Phase;
     let WorthQueryApplicationHomeLocation::Directory(location) = request_inputs.location else {
         unreachable!("directory preparation follows the closed location choice")
     };
@@ -40,10 +41,10 @@ where
         request_inputs.limits,
         request_inputs.authorization_time_source,
     )
-    .map_err(Refused::Preparation)?;
+    .map_err(|cause| Refused::from_phase(Phase::Preparation(cause)))?;
     let binding = match query.admitted_home_binding() {
         Ok(binding) => binding,
-        Err(cause) => return Err(Refused::Binding { query, cause }),
+        Err(cause) => return Err(Refused::from_phase(Phase::Binding { query, cause })),
     };
     let request = phase.execution_request();
     let mut physical = ApplicationHomeRequest::new(
@@ -62,7 +63,7 @@ where
     }
     let home = match recover_home(physical, &request).and_then(|home| admit_home(home, &request)) {
         Ok(home) => home,
-        Err(cause) => return Err(Refused::Physical { query, cause }),
+        Err(cause) => return Err(Refused::from_phase(Phase::Physical { query, cause })),
     };
     observation.arrive_for_test(
         ApplicationHomeOpeningStage::NativeReadmission,
@@ -102,10 +103,11 @@ where
     Program::Contributions: WorthQueryApplicationContributionTuple<Schema>,
 {
     use WorthQueryApplicationHomeOpenRefused as Refused;
+    use WorthQueryApplicationHomeOpenRefusedPhase as Phase;
     let request = phase.execution_request();
     let mut home = match attach_relational(home, &request) {
         Ok(home) => home,
-        Err(home) => return Err(Refused::RelationalAttachment { query, home }),
+        Err(home) => return Err(Refused::from_phase(Phase::RelationalAttachment { query, home })),
     };
     // Store chooses the identity bound for the open it admitted.
     let installed = match home.prepare_native_schema_for_home(&request) {
@@ -126,15 +128,15 @@ where
             identities.maximum_aspect(),
             installation,
         ),
-        Err(cause) => return Err(Refused::NativePreparation { query, home, cause }),
+        Err(cause) => return Err(Refused::from_phase(Phase::NativePreparation { query, home, cause })),
     };
     let query = match installed {
         Ok(query) => query,
-        Err(query) => return Err(Refused::NativeInstallation { query, home }),
+        Err(query) => return Err(Refused::from_phase(Phase::NativeInstallation { query, home })),
     };
     let home = match home.readmit(query.home_initial_schema_receipt(), &request) {
         Ok(home) => home.consume(|home| home),
-        Err(home) => return Err(Refused::NativeReadmission { query, home }),
+        Err(home) => return Err(Refused::from_phase(Phase::NativeReadmission { query, home })),
     };
     Ok((query, home))
 }

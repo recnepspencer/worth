@@ -12,7 +12,43 @@ mod query_custody;
 mod unclean;
 pub use query_custody::{UnadmittedHomeQueryCustodyRefused, UnadmittedHomeQueryService};
 
-pub enum WorthQueryApplicationHomeOpenRefused<Schema: ApplicationSchemaComposition, Program> {
+/// Owning open refusal keeps the exact opening phase on the heap, so error
+/// propagation does not reserve a full Native/World custody value on every frame.
+pub struct WorthQueryApplicationHomeOpenRefused<Schema: ApplicationSchemaComposition, Program> {
+    phase: Box<WorthQueryApplicationHomeOpenRefusedPhase<Schema, Program>>,
+}
+
+impl<Schema: ApplicationSchemaComposition, Program>
+    WorthQueryApplicationHomeOpenRefused<Schema, Program>
+{
+    #[inline(never)]
+    pub(in crate::application_home) fn from_phase(
+        phase: WorthQueryApplicationHomeOpenRefusedPhase<Schema, Program>,
+    ) -> Self {
+        Self {
+            phase: Box::new(phase),
+        }
+    }
+
+    pub fn phase(&self) -> &WorthQueryApplicationHomeOpenRefusedPhase<Schema, Program> {
+        &self.phase
+    }
+
+    pub fn into_phase(self) -> Box<WorthQueryApplicationHomeOpenRefusedPhase<Schema, Program>> {
+        self.phase
+    }
+}
+
+impl<Schema: ApplicationSchemaComposition, Program>
+    From<WorthQueryApplicationHomeOpenRefusedPhase<Schema, Program>>
+    for WorthQueryApplicationHomeOpenRefused<Schema, Program>
+{
+    fn from(phase: WorthQueryApplicationHomeOpenRefusedPhase<Schema, Program>) -> Self {
+        Self::from_phase(phase)
+    }
+}
+
+pub enum WorthQueryApplicationHomeOpenRefusedPhase<Schema: ApplicationSchemaComposition, Program> {
     TransitionProgrammeHandoff {
         query: PreparedExistingHomeSignalProgram<Schema, Program>,
         home: super::runtime::DirectoryHome,
@@ -187,8 +223,35 @@ impl<Schema: ApplicationSchemaComposition, Program> std::fmt::Debug
             .finish()
     }
 }
+
+impl<Schema: ApplicationSchemaComposition, Program> std::fmt::Display
+    for WorthQueryApplicationHomeOpenRefused<Schema, Program>
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.detail())
+    }
+}
+
+impl<Schema: ApplicationSchemaComposition, Program> std::fmt::Debug
+    for WorthQueryApplicationHomeOpenRefusedPhase<Schema, Program>
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("WorthQueryApplicationHomeOpenRefusedPhase")
+            .field(&self.detail())
+            .finish()
+    }
+}
+
 impl<Schema: ApplicationSchemaComposition, Program>
     WorthQueryApplicationHomeOpenRefused<Schema, Program>
+{
+    pub fn detail(&self) -> String {
+        self.phase.detail()
+    }
+}
+
+impl<Schema: ApplicationSchemaComposition, Program>
+    WorthQueryApplicationHomeOpenRefusedPhase<Schema, Program>
 {
     pub fn detail(&self) -> String {
         match self {

@@ -51,11 +51,16 @@ where
         Ok(WorthQueryOperationHomeRetirementProgress::Complete)
     }
 
+    /// Durable capabilities beyond ordinary relational mutation.
+    ///
+    /// Defaults to an empty slice (`Some(&[])`), which admits ordinary relational
+    /// handlers on a Directory Home while still requiring explicit declaration for
+    /// external emission, dispatch, or inbound completion contracts.
     fn declared_durable_capabilities() -> Option<&'static [WorthQueryOperationDurableCapability]>
     where
         Self: Sized,
     {
-        None
+        Some(&[])
     }
 
     fn decide(

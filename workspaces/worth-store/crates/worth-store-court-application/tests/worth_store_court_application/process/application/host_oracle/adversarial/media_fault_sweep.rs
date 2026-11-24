@@ -317,14 +317,14 @@ fn assert_frame_damage_refusal(
     label: &str,
     frame_match: impl FnOnce(&worth_store_application::ApplicationHomeOpenRefusal) -> bool,
 ) {
-    use worth_query_host::facade::WorthQueryApplicationHomeOpenRefused as Refused;
+    use worth_query_host::facade::WorthQueryApplicationHomeOpenRefusedPhase as RefusedPhase;
     use worth_store_application::{
         ApplicationHomeOpenRefusal as StoreRefusal, ApplicationHomePhysicalRefusalKind as Kind,
         ApplicationHomePhysicalStage as Stage,
     };
-    let ok = match refused {
-        Refused::Physical { cause, .. } if frame_match(cause) => true,
-        Refused::Physical {
+    let ok = match refused.phase() {
+        RefusedPhase::Physical { cause, .. } if frame_match(cause) => true,
+        RefusedPhase::Physical {
             cause: StoreRefusal::Physical(p),
             ..
         } => {

@@ -16,6 +16,7 @@ where
     Program::Contributions: WorthQueryApplicationContributionTuple<Schema>,
 {
     use WorthQueryApplicationHomeOpenRefused as Refused;
+    use WorthQueryApplicationHomeOpenRefusedPhase as Phase;
     let preparation::DirectoryOpening {
         query,
         home,
@@ -57,10 +58,12 @@ where
             }
             ApplicationHomeInitializationDenial::Execution(_)
             | ApplicationHomeInitializationDenial::OpportunityAlreadyConsumed => {
-                Err(Refused::QueryPublicationReadmissionRequired {
-                    query: query.take().expect("refused origin retained Query"),
-                    home,
-                })
+                Err(Refused::from_phase(
+                    Phase::QueryPublicationReadmissionRequired {
+                        query: query.take().expect("refused origin retained Query"),
+                        home,
+                    },
+                ))
             }
         },
     }

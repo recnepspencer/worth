@@ -1,5 +1,6 @@
 //! One non-cloneable Home wrapper owns the concrete lifecycle and Query service.
 use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
+use worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 pub(super) type DirectoryHome =
     worth_store_application::WorldReadmittedApplicationHome<(), (), (), (), ()>;
@@ -26,6 +27,10 @@ where
 impl<Schema, Program> WorthQueryApplicationHome<Schema, Program> {
     pub fn runtime(&self) -> &WorthQueryProgramApplicationRuntime<Schema, Program> {
         &self.query
+    }
+    /// The installed primary graph belonging to this Home.
+    pub fn primary_graph(&self) -> &WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+        self.query.runtime()
     }
     pub fn is_directory(&self) -> bool {
         self.directory.is_some()

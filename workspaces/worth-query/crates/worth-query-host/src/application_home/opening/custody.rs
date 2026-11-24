@@ -42,16 +42,18 @@ pub(super) fn readmit<Schema: ApplicationSchemaComposition, Program: 'static>(
         Ok(admitted) => admitted.consume(|query| query),
         Err(refused) => {
             let (query, cause) = refused.into_parts();
-            return Err(WorthQueryApplicationHomeOpenRefused::CustodyReadmission {
-                query: super::super::UnadmittedHomeQueryService::retain(
-                    query,
-                    obligations,
-                    material,
-                    dispatch,
-                ),
-                home,
-                cause: HomeCustodyReadmissionDenial::Query(cause),
-            });
+            return Err(WorthQueryApplicationHomeOpenRefused::from_phase(
+                WorthQueryApplicationHomeOpenRefusedPhase::CustodyReadmission {
+                    query: super::super::UnadmittedHomeQueryService::retain(
+                        query,
+                        obligations,
+                        material,
+                        dispatch,
+                    ),
+                    home,
+                    cause: HomeCustodyReadmissionDenial::Query(cause),
+                },
+            ));
         }
     };
     match admit_to_home(&query, &home, &request) {
@@ -59,16 +61,18 @@ pub(super) fn readmit<Schema: ApplicationSchemaComposition, Program: 'static>(
             query,
             home,
         })),
-        Err(cause) => Err(WorthQueryApplicationHomeOpenRefused::CustodyReadmission {
-            query: super::super::UnadmittedHomeQueryService::retain(
-                query,
-                obligations,
-                material,
-                dispatch,
-            ),
-            home,
-            cause,
-        }),
+        Err(cause) => Err(WorthQueryApplicationHomeOpenRefused::from_phase(
+            WorthQueryApplicationHomeOpenRefusedPhase::CustodyReadmission {
+                query: super::super::UnadmittedHomeQueryService::retain(
+                    query,
+                    obligations,
+                    material,
+                    dispatch,
+                ),
+                home,
+                cause,
+            },
+        )),
     }
 }
 

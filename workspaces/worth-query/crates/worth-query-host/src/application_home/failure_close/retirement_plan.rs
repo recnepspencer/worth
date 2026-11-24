@@ -16,7 +16,7 @@ pub(super) enum OpeningClosePlan<Schema: ApplicationSchemaComposition, Program> 
 
 #[inline(never)]
 pub(super) fn prepare<Schema: ApplicationSchemaComposition, Program: 'static>(
-    source: Box<WorthQueryApplicationHomeOpenRefused<Schema, Program>>,
+    source: Box<WorthQueryApplicationHomeOpenRefusedPhase<Schema, Program>>,
 ) -> OpeningClosePlan<Schema, Program> {
     let source = match prepare_pre_world(source) {
         Ok(plan) => return plan,
@@ -31,12 +31,12 @@ pub(super) fn prepare<Schema: ApplicationSchemaComposition, Program: 'static>(
 
 #[inline(never)]
 fn prepare_pre_world<Schema: ApplicationSchemaComposition, Program: 'static>(
-    source: Box<WorthQueryApplicationHomeOpenRefused<Schema, Program>>,
+    source: Box<WorthQueryApplicationHomeOpenRefusedPhase<Schema, Program>>,
 ) -> Result<
     OpeningClosePlan<Schema, Program>,
-    Box<WorthQueryApplicationHomeOpenRefused<Schema, Program>>,
+    Box<WorthQueryApplicationHomeOpenRefusedPhase<Schema, Program>>,
 > {
-    use WorthQueryApplicationHomeOpenRefused::*;
+    use WorthQueryApplicationHomeOpenRefusedPhase::*;
     Ok(match *source {
         Preparation(_) => OpeningClosePlan::NoHome,
         Binding { query, cause: _ } | Physical { query, cause: _ } => {
@@ -139,12 +139,12 @@ fn prepare_pre_world<Schema: ApplicationSchemaComposition, Program: 'static>(
 
 #[inline(never)]
 fn prepare_existing_and_transition_world<Schema: ApplicationSchemaComposition, Program: 'static>(
-    source: Box<WorthQueryApplicationHomeOpenRefused<Schema, Program>>,
+    source: Box<WorthQueryApplicationHomeOpenRefusedPhase<Schema, Program>>,
 ) -> Result<
     OpeningClosePlan<Schema, Program>,
-    Box<WorthQueryApplicationHomeOpenRefused<Schema, Program>>,
+    Box<WorthQueryApplicationHomeOpenRefusedPhase<Schema, Program>>,
 > {
-    use WorthQueryApplicationHomeOpenRefused::*;
+    use WorthQueryApplicationHomeOpenRefusedPhase::*;
     Ok(match *source {
         TransitionComposition { query, home, cause } => world(
             WorldQueryPreparation::TransitionComposition {
@@ -203,9 +203,9 @@ fn prepare_existing_and_transition_world<Schema: ApplicationSchemaComposition, P
 
 #[inline(never)]
 fn prepare_fresh_world<Schema: ApplicationSchemaComposition, Program: 'static>(
-    source: Box<WorthQueryApplicationHomeOpenRefused<Schema, Program>>,
+    source: Box<WorthQueryApplicationHomeOpenRefusedPhase<Schema, Program>>,
 ) -> OpeningClosePlan<Schema, Program> {
-    use WorthQueryApplicationHomeOpenRefused::*;
+    use WorthQueryApplicationHomeOpenRefusedPhase::*;
     match *source {
         Composition { query, home, cause } => world(
             WorldQueryPreparation::Composition {

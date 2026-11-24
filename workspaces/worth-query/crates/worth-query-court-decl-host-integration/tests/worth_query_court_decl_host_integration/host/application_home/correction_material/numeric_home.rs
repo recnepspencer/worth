@@ -1,6 +1,6 @@
 //! Shared Directory Home builders for NumericSchema correction kill courts.
 //! Uses a Directory-admissible contribution without the testkit's MemoryOnly wake rules.
-mod contribution;
+pub(super) mod contribution;
 use self::contribution::DirectoryNumericContribution;
 use super::*;
 use std::num::NonZeroUsize;
@@ -64,7 +64,7 @@ pub(super) fn limits() -> WorthQueryCorrectionHistoryLimits {
     WorthQueryCorrectionHistoryLimits::new(None, NonZeroUsize::new(8).unwrap())
 }
 
-fn app_limits() -> WorthQueryApplicationLimits {
+pub(super) fn app_limits() -> WorthQueryApplicationLimits {
     WorthQueryApplicationLimits::new(
         identity::world_resources(),
         WorthQueryApplicationQueryResourceProfile::default(),
@@ -72,7 +72,7 @@ fn app_limits() -> WorthQueryApplicationLimits {
     )
 }
 
-fn seed_numeric(
+pub(super) fn seed_numeric(
     graph: &mut WorthQueryPrimaryGraphBootstrap<NumericSchema>,
     installed: &WorthQueryInstalledApplicationSchema<NumericSchema>,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {

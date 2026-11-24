@@ -93,7 +93,9 @@ where
             self.authorization_time_source,
         )
         .map_err(|cause| {
-            Refused::successor(WorthQueryApplicationHomeOpenRefused::Preparation(cause))
+            Refused::successor(WorthQueryApplicationHomeOpenRefused::from_phase(
+                WorthQueryApplicationHomeOpenRefusedPhase::Preparation(cause),
+            ))
         })?;
         let before = prepare_home_program(
             predecessor.program,
@@ -108,7 +110,9 @@ where
             Ok(before) => before,
             Err(cause) => {
                 return Err(Refused::predecessor(
-                    WorthQueryApplicationHomeOpenRefused::Preparation(cause),
+                    WorthQueryApplicationHomeOpenRefused::from_phase(
+                        WorthQueryApplicationHomeOpenRefusedPhase::Preparation(cause),
+                    ),
                     after,
                 ))
             }
@@ -117,10 +121,12 @@ where
             Ok(binding) => binding,
             Err(cause) => {
                 return Err(Refused::successor(
-                    WorthQueryApplicationHomeOpenRefused::Binding {
-                        query: after,
-                        cause,
-                    },
+                    WorthQueryApplicationHomeOpenRefused::from_phase(
+                        WorthQueryApplicationHomeOpenRefusedPhase::Binding {
+                            query: after,
+                            cause,
+                        },
+                    ),
                 ))
             }
         };
@@ -128,10 +134,12 @@ where
             Ok(binding) => binding,
             Err(cause) => {
                 return Err(Refused::predecessor(
-                    WorthQueryApplicationHomeOpenRefused::Binding {
-                        query: before,
-                        cause,
-                    },
+                    WorthQueryApplicationHomeOpenRefused::from_phase(
+                        WorthQueryApplicationHomeOpenRefusedPhase::Binding {
+                            query: before,
+                            cause,
+                        },
+                    ),
                     after,
                 ))
             }
@@ -157,10 +165,12 @@ where
                 Ok(home) => home,
                 Err(cause) => {
                     return Err(Refused::successor(
-                        WorthQueryApplicationHomeOpenRefused::Physical {
-                            query: after,
-                            cause,
-                        },
+                        WorthQueryApplicationHomeOpenRefused::from_phase(
+                            WorthQueryApplicationHomeOpenRefusedPhase::Physical {
+                                query: after,
+                                cause,
+                            },
+                        ),
                     ))
                 }
             };

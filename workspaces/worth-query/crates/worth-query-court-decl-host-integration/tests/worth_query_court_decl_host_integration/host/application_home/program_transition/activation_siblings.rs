@@ -96,7 +96,7 @@ fn directory_open_refuses_an_unrostered_activation_on_a_non_main_branch() {
     use worth_query_execution::facade::application_home_integration::QueryHomeCustodyReadmissionDenial;
     use worth_query_host::facade::{
         HomeCustodyReadmissionDenial, QueryHomeProgramActivationDenial,
-        WorthQueryApplicationHomeOpenRefused,
+        WorthQueryApplicationHomeOpenRefusedPhase,
     };
     let path = fixture::location();
     let build = ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap();
@@ -157,14 +157,18 @@ fn directory_open_refuses_an_unrostered_activation_on_a_non_main_branch() {
     assert!(
         matches!(
             refused.phase(),
-            Refused::Successor(WorthQueryApplicationHomeOpenRefused::CustodyReadmission {
-                cause: HomeCustodyReadmissionDenial::Query(
-                    QueryHomeCustodyReadmissionDenial::Activation(
-                        QueryHomeProgramActivationDenial::UnrosteredCurrentActivation { .. }
-                    )
-                ),
-                ..
-            })
+            Refused::Successor(open_refused)
+                if matches!(
+                    open_refused.phase(),
+                    WorthQueryApplicationHomeOpenRefusedPhase::CustodyReadmission {
+                        cause: HomeCustodyReadmissionDenial::Query(
+                            QueryHomeCustodyReadmissionDenial::Activation(
+                                QueryHomeProgramActivationDenial::UnrosteredCurrentActivation { .. }
+                            )
+                        ),
+                        ..
+                    }
+                )
         ),
         "expected typed non-main unrostered refusal, got {refused:?}"
     );

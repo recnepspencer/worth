@@ -24,6 +24,14 @@ use worth_query_publication::facade::application_entry::{
 type Result<S, I> =
     <<I as ApplicationMutationIntent<S>>::Binding as ApplicationMutationBinding<S>>::Result;
 
+mod correction;
+mod erasure;
+pub use correction::{WorthQueryAnyCorrectionCustodyOutcome, WorthQueryCorrectionCustodyOutcome};
+pub use erasure::{
+    WorthQueryAnySourceCompletion, WorthQueryAnySourceCustody, WorthQueryAnySourceCustodyStep,
+    WorthQueryAnyTerminalSourceEvidence,
+};
+
 /// The native owner of one source-completion command, in its current phase.
 /// Every variant holds a genuine Publication owner; matching on it lends that
 /// owner, and moving it out hands its exact custody back to direct Host calls.
@@ -91,6 +99,39 @@ pub enum WorthQuerySourceCustodyPending {
 impl<S, I, P, A> WorthQuerySourceCustody<S, I, P, A>
 where
     S: ApplicationSchema + 'static,
+    I: ApplicationMutationIntent<S>,
+    P: ApplicationProgramDefinition<S>,
+{
+    /// Transfers one native source-only advance into Host custody, closing completed or terminal
+    /// owners immediately under `request` and retaining pending custody otherwise.
+    pub fn accept_advance(
+        advance: WorthQuerySourceOnlyAdvance<
+            WorthQuerySourceOnlyOperation<S, I, P, A, ApplicationSourceCompletion>,
+            WorthQueryCompletedSourceOperation<S, I, P, A, ApplicationSourceCompletion>,
+            WorthQueryTerminalSourceOperation<S, I, P, A, ApplicationSourceCompletion>,
+        >,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+    ) -> WorthQuerySourceCustodyStep<S, I, P, A> {
+        match advance {
+            WorthQuerySourceOnlyAdvance::Completed(completed) => {
+                close_completed(completed, request)
+            }
+            WorthQuerySourceOnlyAdvance::Terminal(terminal) => close_terminal(terminal, request),
+            WorthQuerySourceOnlyAdvance::Progress(operation) => pending(
+                WorthQuerySourceCustody::Retained(operation),
+                WorthQuerySourceCustodyPending::Progress,
+            ),
+            WorthQuerySourceOnlyAdvance::Refused { operation, denial } => pending(
+                WorthQuerySourceCustody::Retained(operation),
+                WorthQuerySourceCustodyPending::Refused(denial),
+            ),
+        }
+    }
+}
+
+impl<S, I, P, A> WorthQuerySourceCustody<S, I, P, A>
+where
+    S: ApplicationSchema + 'static,
     I: WorthQuerySourceMutation<S>,
     P: ApplicationProgramDefinition<S>,
     A: WorthQuerySourceCompletionAction<S, I::Binding>,
@@ -152,18 +193,7 @@ where
     P: ApplicationProgramDefinition<S>,
     A: WorthQuerySourceCompletionAction<S, I::Binding>,
 {
-    match operation.advance(request) {
-        WorthQuerySourceOnlyAdvance::Completed(completed) => close_completed(completed, request),
-        WorthQuerySourceOnlyAdvance::Terminal(terminal) => close_terminal(terminal, request),
-        WorthQuerySourceOnlyAdvance::Progress(operation) => pending(
-            WorthQuerySourceCustody::Retained(operation),
-            WorthQuerySourceCustodyPending::Progress,
-        ),
-        WorthQuerySourceOnlyAdvance::Refused { operation, denial } => pending(
-            WorthQuerySourceCustody::Retained(operation),
-            WorthQuerySourceCustodyPending::Refused(denial),
-        ),
-    }
+    WorthQuerySourceCustody::accept_advance(operation.advance(request), request)
 }
 
 fn close_completed<S, I, P, A>(

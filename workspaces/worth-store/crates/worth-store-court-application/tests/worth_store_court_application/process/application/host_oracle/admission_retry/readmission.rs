@@ -3,7 +3,8 @@ use super::*;
 use std::sync::{atomic::AtomicUsize, Arc, Mutex};
 use worth_query_host::facade::{
     application_contribution::with_bootstrap_advancement_from_request,
-    WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeOpenRefused as Refused,
+    WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeOpenRefused,
+    WorthQueryApplicationHomeOpenRefusedPhase as RefusedPhase,
 };
 use worth_query_testkit_host::facade::host::{application_home as fixture, checkpoint_capture};
 use worth_store_application::{
@@ -42,13 +43,9 @@ pub(super) fn retry(location: &Path, originals: &[ReleasedOriginalProjection], s
     .unwrap()
     .err()
     .expect("held D8 cannot become service");
-    let Refused::CustodyReadmission {
-        mut query,
-        home,
-        cause,
-    } = refusal
-    else {
-        panic!("only actual D8 refusal proves this prefix: {refusal:?}");
+    let (mut query, home, cause) = match *refusal.into_phase() {
+        RefusedPhase::CustodyReadmission { query, home, cause } => (query, home, cause),
+        other => panic!("only actual D8 refusal proves this prefix: {other:?}"),
     };
     drop(held.lock().unwrap().take());
     let mut bytes = scale;
@@ -107,8 +104,12 @@ pub(super) fn retry(location: &Path, originals: &[ReleasedOriginalProjection], s
         before,
         "duplicate admission retains no second binding"
     );
-    let closed = Refused::CustodyReadmission { query, home, cause }
-        .close(&cleanup)
+    let closed = WorthQueryApplicationHomeOpenRefused::from(RefusedPhase::CustodyReadmission {
+        query,
+        home,
+        cause,
+    })
+    .close(&cleanup)
         .unwrap_or_else(|refused| panic!("actual predecessor disposal: {refused:?}"));
     assert!(matches!(
         closed.directory_outcome(),
