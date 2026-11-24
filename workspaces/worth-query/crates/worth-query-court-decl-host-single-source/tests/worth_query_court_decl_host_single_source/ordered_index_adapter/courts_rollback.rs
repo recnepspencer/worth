@@ -3,8 +3,7 @@ use super::queries::{task_title, FindFocusOverlap, FindTitlePrefix, ReadTasks};
 use super::schema::{DaymarkSchema, FocusIntervalIndex, FocusWindow, TitlePrefixIndex};
 use super::title_prefix::TitlePrefixDomain;
 use super::{
-    create_task, keys, limits, rename_task, seed_workspace, try_rename_task,
-    try_rename_task_with_policy, Program,
+    create_task, keys, limits, rename_task, seed_workspace, try_rename_task_with_policy, Program,
 };
 use std::cmp::Ordering;
 use std::num::NonZeroUsize;
@@ -119,7 +118,7 @@ impl WorthQueryOrderedIndexDomain<DaymarkSchema, TitlePrefixIndex> for ObservedT
                 .observed_pass2_long_title
                 .store(true, AtomicOrdering::SeqCst);
         }
-        self.record_if_pass2_work_ceiling(TitlePrefixDomain.source_summary(slot, row, control))
+        TitlePrefixDomain.source_summary(slot, row, control)
     }
 
     fn combine_summaries(
@@ -129,9 +128,7 @@ impl WorthQueryOrderedIndexDomain<DaymarkSchema, TitlePrefixIndex> for ObservedT
         sources: &WorthQueryOrderedIndexSources<'_, '_, DaymarkSchema, TitlePrefixIndex>,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<Self::Summary, WorthQueryManagedIndexProviderStop<Self::Denial>> {
-        self.record_if_pass2_work_ceiling(
-            TitlePrefixDomain.combine_summaries(left, right, sources, control),
-        )
+        TitlePrefixDomain.combine_summaries(left, right, sources, control)
     }
 
     fn summary_may_match(
@@ -220,7 +217,7 @@ fn mid_edit_warm_avl_work_exhaustion_rolls_back_atomically_on_same_host() {
             pass2_stopped_on_work_ceiling: Arc::clone(&pass2_stopped_on_work_ceiling),
         }),),
         ApplicationBuildIdentity::parse("7b7b7b7b-7b7b-7b7b-7b7b-7b7b7b7b7b7b").unwrap(),
-        limits(None, Some(900_000)),
+        limits(None, None),
         |_, graph, installed| seed_workspace(graph, installed, &[]),
     )
     .unwrap();
@@ -268,12 +265,7 @@ fn mid_edit_warm_avl_work_exhaustion_rolls_back_atomically_on_same_host() {
     ] {
         let mut long_title = shared.clone();
         long_title.push(suffix);
-        if !matches!(
-            try_rename_task(&host, key, &long_title, idem),
-            Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
-        ) {
-            break;
-        }
+        rename_task(&host, key, &long_title, idem);
     }
 
     let (init_t, mut title_watch) = request
@@ -307,7 +299,7 @@ fn mid_edit_warm_avl_work_exhaustion_rolls_back_atomically_on_same_host() {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::MIN, None, Some(750_000)),
+            ExecutionBudget::new(NonZeroUsize::MIN, None, Some(785_000)),
         ),
         cancellation: CancellationToken::new(),
         deadline: None,
@@ -346,7 +338,10 @@ fn mid_edit_warm_avl_work_exhaustion_rolls_back_atomically_on_same_host() {
         observed_pass2.load(AtomicOrdering::SeqCst)
             && pass2_compares.load(AtomicOrdering::SeqCst) > 0
             && pass2_stopped_on_work_ceiling.load(AtomicOrdering::SeqCst),
-        "WorkCeiling stop must occur strictly inside Pass 2 after Pass 1 removed the old slot"
+        "WorkCeiling stop must occur strictly inside Pass 2 compare_rows (pass2={}, compares={}, stopped={})",
+        observed_pass2.load(AtomicOrdering::SeqCst),
+        pass2_compares.load(AtomicOrdering::SeqCst),
+        pass2_stopped_on_work_ceiling.load(AtomicOrdering::SeqCst),
     );
 
     // Same host retains exact pre-state rows, BOTH indexes, and unwoken watches.
