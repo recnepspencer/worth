@@ -18,7 +18,7 @@ EXTENDS TreeBasedUndo, TraceData
              op is a value, 0 to retire, -1 for no stage), src and ent (the
              correction's source step and entity; 0 and "none" for an edit),
              key, and for outcome "AlreadyRecorded" the returned step, for
-             outcome "Stopped" the point.
+             outcome "Stopped" the point when the harness can tell it.
     Redo, Checkout: node.   OutOfBand: retireSet.
     Post-state: postCurrent, postNextNode, postLive, postGen, postVal,
              postOutA, postOutB, postHeadDiverged, postClosed, and
@@ -60,7 +60,10 @@ EnvelopeStep(step) ==
             /\ RefuseCorrectionSource(step.src, step.ent)
       [] step.outcome = "HeadDiverged" -> RefuseHeadDiverged
       [] step.outcome = "Empty" -> RefuseEmpty
-      [] step.outcome = "Stopped" -> WriterStopped(step.point)
+      [] step.outcome = "Stopped" ->
+            IF "point" \in DOMAIN step
+            THEN WriterStopped(step.point)
+            ELSE \E p \in {"Stages", "Recording", "Release"} : WriterStopped(p)
       [] OTHER -> RefuseEnvironment(step.outcome)
 
 NavigationStep(step) ==
