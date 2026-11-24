@@ -282,7 +282,7 @@ fn native_binding_inheriting_decode_admitted_obeys_native_profile_and_missing_pr
             session.decode_managed_probe::<MissingProfileNativeBinding>(&AspectValue::UInt64(9))
         })
         .unwrap_err();
-    assert!(matches!(missing, Stop::BindingContractMismatch));
+    assert!(matches!(missing, Stop::CodecRejected));
     assert_eq!(MISSING_PROFILE_DECODE_CALLS.load(Ordering::SeqCst), 0);
 }
 
@@ -315,13 +315,16 @@ fn repeat_native_probe_decodes_exhaust_bounded_work_ceiling() {
 }
 
 #[test]
-fn canonical_probe_keeps_callback_admission_path() {
+fn canonical_probe_keeps_callback_admission_path_and_refuses_zero_budget() {
+    assert!(SessionCanonicalProbeBinding::NATIVE_INPUT_ADMISSION.is_none());
+    assert!(StringApplicationValueBinding::NATIVE_INPUT_ADMISSION.is_some());
+
     let raw = AspectValue::String(InternedString::from("1234567890".to_owned()));
-    let tight = bounded_probe_request(Some(64 * 1024), Some(1));
+    let zero_work = bounded_probe_request(Some(64 * 1024), Some(0));
     let state =
         ValueDecodeState::admitted(WorthQueryInstalledApplicationValueBindingCatalog::default());
     let refused = state
-        .run(&ExecutionRequest::serial(&tight), |session| {
+        .run(&ExecutionRequest::serial(&zero_work), |session| {
             session.decode_managed_probe::<SessionCanonicalProbeBinding>(&raw)
         })
         .unwrap_err();
@@ -329,6 +332,21 @@ fn canonical_probe_keeps_callback_admission_path() {
         refused,
         Stop::Checkpoint(MapKernelStop::WorkCeiling)
     ));
+    assert_eq!(zero_work.memory().unwrap().charged_memory_bytes(), 0);
+
+    let native_zero = bounded_probe_request(Some(64 * 1024), Some(0));
+    let native_state =
+        ValueDecodeState::admitted(WorthQueryInstalledApplicationValueBindingCatalog::default());
+    let native_refused = native_state
+        .run(&ExecutionRequest::serial(&native_zero), |session| {
+            session.decode_managed_probe::<StringApplicationValueBinding>(&raw)
+        })
+        .unwrap_err();
+    assert!(matches!(
+        native_refused,
+        Stop::Checkpoint(MapKernelStop::WorkCeiling)
+    ));
+    assert_eq!(native_zero.memory().unwrap().charged_memory_bytes(), 0);
 
     let enough = bounded_probe_request(Some(64 * 1024), Some(200));
     let state =

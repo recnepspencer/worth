@@ -11,13 +11,17 @@ struct PreparedLookup {
     branch: BranchId,
     slot: worth_relational::facade::mvcc::CompanionBranchCellSlot<ManagedIndexBranchImage>,
     _allocation: Arc<crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation>,
+    retired: Option<SourceBranchSlot>,
 }
 impl Drop for PreparedLookup {
     fn drop(&mut self) {
+        let displaced = self.retired.take();
         if self.slot.admitted().is_some() {
+            drop(displaced);
             return;
         }
         let Some(registry) = self.registry.upgrade() else {
+            drop(displaced);
             return;
         };
         let mut state = registry
@@ -36,6 +40,7 @@ impl Drop for PreparedLookup {
         drop(state);
         drop(empty);
         drop(retired);
+        drop(displaced);
     }
 }
 impl ManagedDerivedViewRegistry {
@@ -81,15 +86,15 @@ impl ManagedDerivedViewRegistry {
                 .map_err(|_| Stop::PreparationMemoryCounterOverflow)?,
             )
             .map_err(Stop::Execution)?;
-        let lookup = PreparedLookup {
+        let allocation = Arc::clone(&entry.allocation);
+        let retired = state.source_branches.insert(target.branch().clone(), entry);
+        drop(state);
+        Ok(Box::new(PreparedLookup {
             registry: Arc::downgrade(self),
             branch: target.branch().clone(),
             slot,
-            _allocation: Arc::clone(&entry.allocation),
-        };
-        let retired = state.source_branches.insert(target.branch().clone(), entry);
-        drop(state);
-        drop(retired);
-        Ok(Box::new(lookup))
+            _allocation: allocation,
+            retired,
+        }))
     }
 }

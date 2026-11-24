@@ -97,11 +97,7 @@ impl<'a> ValueDecodeSession<'a> {
             self.refuse(Stop::BindingContractMismatch);
             return None;
         }
-        let decoded = if Binding::canonical_contract().is_none() {
-            let Some(profile) = Binding::NATIVE_INPUT_ADMISSION else {
-                self.refuse(Stop::BindingContractMismatch);
-                return None;
-            };
+        let decoded = if let Some(profile) = Binding::NATIVE_INPUT_ADMISSION {
             let Some(resources) = u64::try_from(raw.owned_allocation_capacity_bytes())
                 .ok()
                 .and_then(|bytes| profile.requirements(bytes))

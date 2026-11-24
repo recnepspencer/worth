@@ -31,7 +31,7 @@ impl ApplicationManagedIndexProbeMeaning {
         let canonical = Binding::canonical_contract().map(|contract| contract.portable_reference());
         let supports_admitted_decode = Binding::SUPPORTS_ADMITTED_DECODE
             && Binding::Decode::erased_admitted_decode().is_some()
-            && (canonical.is_some() || Binding::NATIVE_INPUT_ADMISSION.is_some());
+            && (canonical.is_some() != Binding::NATIVE_INPUT_ADMISSION.is_some());
         Self::from_untrusted_parts(WorthQueryPortableManagedIndexProbeParts {
             binding: Binding::IDENTITY,
             scalar_family: Binding::SCALAR_FAMILY,

@@ -272,13 +272,13 @@ fn readmitted_cold_source_refill_succeeds_at_exact_observation_retention_ceiling
         .native_checkpoint(&exec, exec.allocation_policy())
         .unwrap();
 
-    let (mut recovered, _) = install(reg, program.clone());
+    let (mut recovered, _) = install(reg.clone(), program.clone());
     recovered
         .durability_recovery()
         .restore_native_checkpoint(&exec, &ckpt)
         .unwrap();
     recovered
-        .readmit_recovered_initial_schema_installation(receipt)
+        .readmit_recovered_initial_schema_installation(receipt.clone())
         .unwrap();
     let _rec_reg = recovered
         .publication_companion_port()
@@ -344,26 +344,51 @@ fn readmitted_cold_source_refill_succeeds_at_exact_observation_retention_ceiling
         .expect("refilled cold source is ready at the ceiling");
     assert!(refilled.same_source(&ready));
 
-    // Stale snapshot after a live write still refuses currentness at the ceiling.
-    recovered.set_retention_capacity_for_test(ceiling + 8, 8);
+    // A stale, still-unplaced cold root refuses ForeignSource through
+    // branch_live_root_matches at the exact observation ceiling.
+    let (mut stale, _) = install(reg, program.clone());
+    stale
+        .durability_recovery()
+        .restore_native_checkpoint(&exec, &ckpt)
+        .unwrap();
+    stale
+        .readmit_recovered_initial_schema_installation(receipt)
+        .unwrap();
+    let _stale_reg = stale
+        .publication_companion_port()
+        .begin_required_registration()
+        .unwrap()
+        .activate(std::sync::Arc::new(ColdRetentionCompanion::default()))
+        .unwrap();
+    let stale_main = stale.main_branch_identity();
+    let stale_snap = {
+        let (_, cur) = stale.observe_branch(&stale_main).unwrap();
+        stale
+            .snapshots()
+            .snapshot_for_observation(&cur.observation())
+            .unwrap()
+    };
     {
-        let (_, basis) = recovered.observe_branch(&main_id).unwrap();
-        let mut tx = recovered
+        let (_, basis) = stale.observe_branch(&stale_main).unwrap();
+        let mut tx = stale
             .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
             .unwrap();
         tx.push_batch(advance_batch(), exec.allocation_policy())
             .unwrap();
-        tx.commit(&exec, &recovered).unwrap();
+        tx.commit(&exec, &stale).unwrap();
     }
-    recovered.set_retention_capacity_for_test(ceiling, 8);
+    stale.set_retention_capacity_for_test(ceiling, 8);
     assert_eq!(
-        recovered.observe_branch(&main_id).unwrap_err(),
+        stale.observe_branch(&stale_main).unwrap_err(),
         BasisDenial::RetentionCapacityExhausted
     );
-    assert!(!recovered
-        .read_truth()
-        .managed_index_source_is_current(&exec, &restored_snap, &refilled)
-        .unwrap());
+    assert!(matches!(
+        stale
+            .read_truth()
+            .prepare_managed_index_rebuild(&exec, &stale_snap, &program, a),
+        Err(ManagedIndexSourcePreparationDenial::ForeignSource)
+    ));
+    stale.snapshots().release_snapshot(&stale_snap).unwrap();
     recovered
         .snapshots()
         .release_snapshot(&restored_snap)
