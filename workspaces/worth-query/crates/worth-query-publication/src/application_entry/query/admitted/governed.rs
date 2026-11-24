@@ -75,7 +75,10 @@ where
         Input: ApplicationCapabilityRequest<Schema, Capability, Scope = ScopeEntity<Schema, Intent>>
             + 'static,
     {
-        let parameters = self.intent.parameters();
+        let parameters = self
+            .intent
+            .prepare_parameters()
+            .map_err(WorthQueryApplicationRequestQueryDenial::InputPreparation)?;
         let scope_binding = self.intent.into_scope();
         let binding = self
             .application

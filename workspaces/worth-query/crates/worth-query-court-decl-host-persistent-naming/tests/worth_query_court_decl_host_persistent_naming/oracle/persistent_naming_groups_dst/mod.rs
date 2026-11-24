@@ -12,6 +12,14 @@
 //! with the reference model transcribed from
 //! `specs/tla/persistent_naming/PersistentNamingGroups.tla`.
 //!
+//! About one step in three instead runs as an edit envelope (#361): its
+//! first stage applies the action (or a field edit) to the unpublished
+//! candidate and its second stage reads a member's loop and resolves one
+//! loop there. Every read must equal Query's candidate rule transcribed from
+//! `PersistentNamingGroupsCandidate.tla` (`candidate`), the envelope must
+//! commit exactly when every read answered, and each answer must then equal
+//! the committed world.
+//!
 //! `WORTH_DST_SEEDS` (default 64) sets how many seeds run, `WORTH_DST_SEED`
 //! one seed, and `WORTH_DST_GROUP_TRACE_DIR` writes each seed's NDJSON trace
 //! for `run_tlc.py trace PersistentNamingGroupsTrace.tla`.
@@ -19,6 +27,7 @@ use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Mutex;
 
+mod candidate;
 mod driver;
 mod model;
 mod trace;
@@ -68,7 +77,20 @@ fn run_seed(
         let Some(op) = model.next_op(&mut rng) else {
             break;
         };
-        ops.push(op.clone());
+        if rng.below(3) == 0 {
+            let first = candidate_first(op, &model, &mut rng);
+            ops.push(format!("envelope {first:?}"));
+            let fail = |cause: String| format!("seed {seed} step {step}: {cause}\n  ops: {ops:?}");
+            let outcome = envelope(&mut driver, &mut model, &first, &mut rng).map_err(fail)?;
+            for kind in trace::candidate_kinds(&first, &outcome.1) {
+                *coverage.entry(kind).or_default() += 1;
+            }
+            let observed = driver.observe(&model).map_err(fail)?;
+            agree(&model, &observed).map_err(fail)?;
+            trace.candidate(&first, &outcome, &model, &observed);
+            continue;
+        }
+        ops.push(format!("{op:?}"));
         let fail = |cause: String| format!("seed {seed} step {step}: {cause}\n  ops: {ops:?}");
         *coverage.entry(trace::kind(&op)).or_default() += 1;
         let before_anchor = match &op {
@@ -88,6 +110,67 @@ fn run_seed(
             .map_err(|cause| format!("trace: {cause}"))?;
     }
     Ok(coverage)
+}
+
+/// The envelope's first stage: the chosen action, or a field edit of a
+/// live member in place of an overlap refusal (which never reaches a read).
+fn candidate_first(op: Op, model: &Model, rng: &mut Rng) -> candidate::First {
+    let live: Vec<usize> = (0..MEMBERS).filter(|m| model.live_member[*m]).collect();
+    match op {
+        Op::RefuseOverlap { m } => candidate::First::Edit(m),
+        op if live.is_empty() || rng.below(4) != 0 => candidate::First::Op(op),
+        _ => candidate::First::Edit(rng.pick(&live)),
+    }
+}
+
+/// Runs `first` and a later reading stage as one envelope, checks every
+/// read against the candidate rule, and on commit applies `first` and
+/// checks every answer against the committed model.
+fn envelope(
+    driver: &mut Driver,
+    model: &mut Model,
+    first: &candidate::First,
+    rng: &mut Rng,
+) -> Result<(Vec<candidate::Read>, Vec<model::Answer>, bool), String> {
+    let mut reads = vec![candidate::Read::MemberOf(rng.below(MEMBERS))];
+    let labels: Vec<usize> = model.groups.keys().copied().collect();
+    if !labels.is_empty() {
+        let g = rng.pick(&labels);
+        reads.extend([
+            candidate::Read::Resolve(g, false),
+            candidate::Read::Resolve(g, true),
+        ]);
+    }
+    let expected: Vec<_> = reads
+        .iter()
+        .map(|read| candidate::expected(model, first, *read))
+        .collect();
+    let (committed, answers) = driver.envelope(first, &reads, model)?;
+    if answers != expected {
+        return Err(format!(
+            "{first:?} {reads:?} answered {answers:?}, the rule says {expected:?}"
+        ));
+    }
+    if committed == answers.iter().any(candidate::refused) {
+        return Err(format!(
+            "{first:?} {reads:?} {answers:?}: committed {committed}"
+        ));
+    }
+    if committed {
+        if let candidate::First::Op(op) = first {
+            model.apply(op);
+            driver.learn(op, model)?;
+        }
+        for (read, answer) in reads.iter().zip(&answers) {
+            let truth = candidate::truth(model, *read);
+            if truth != *answer {
+                return Err(format!(
+                    "{read:?} answered {answer:?}, the commit made {truth:?}"
+                ));
+            }
+        }
+    }
+    Ok((reads, answers, committed))
 }
 
 fn seeds() -> Vec<u64> {
@@ -139,7 +222,7 @@ fn seeded_group_walks_agree_with_the_reference_model() {
         seeds.len()
     );
     if seeds.len() >= 64 {
-        for kind in trace::KINDS {
+        for kind in trace::KINDS.iter().chain(&trace::CANDIDATE_KINDS) {
             assert!(
                 total.get(kind).copied().unwrap_or(0) > 0,
                 "the seeds never exercised {kind}"

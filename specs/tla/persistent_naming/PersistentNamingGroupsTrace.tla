@@ -1,5 +1,5 @@
 --------------------- MODULE PersistentNamingGroupsTrace ---------------------
-EXTENDS PersistentNamingGroups, TraceData
+EXTENDS PersistentNamingGroupsCandidate, TraceData
 
 (*
   Trace-validation refinement wrapper for PersistentNamingGroups.tla.
@@ -13,15 +13,34 @@ EXTENDS PersistentNamingGroups, TraceData
   their members) and retired loops the installed world answered, and every
   `Observe` record's resolutions (each ever-born loop, `Exact` and
   `AllDescendants`) equal the model's answers from the derived index.
+  A `CandidateEnvelope` record (#361) is accepted iff each later-stage read
+  on the candidate its first stage left is exactly Query's candidate rule
+  (`ImplRead`), and the envelope then committed that first stage when every
+  read answered, each answer equal to what the commit made true, and
+  committed nothing otherwise.
 *)
 
 VARIABLE pc
 
-traceVars == <<vars, pc>>
+traceVars == <<vars, lastRead, pc>>
 
 TraceInit ==
-    /\ Init
+    /\ CInit
     /\ pc = 1
+
+ReadAnswer(r) == [status |-> r.status, targets |-> r.targets]
+
+\* A candidate envelope as Query ran it: every read is the candidate rule's
+\* answer; it commits its first stage exactly when every read answered.
+CandidateTraceStep(step) ==
+    LET cand == CandMemberLive(step.kind, step.g, step.m)
+    IN /\ \A r \in step.reads :
+              ImplRead(step.kind, cand, r.rk, r.m, r.g, r.sel) = ReadAnswer(r)
+       /\ IF step.kind \in Claims \/ \E r \in step.reads : r.status \in Refusals
+             THEN UNCHANGED vars
+             ELSE /\ CommitFirst(step.kind, step.g, step.m, step.n, step.a)
+                  /\ \A r \in step.reads :
+                        ReadAnswer(r) = TruthAfter(r.rk, r.m, r.g, r.sel)
 
 StepAction(step) ==
     CASE step.action = "CommitBorn" -> CommitBorn(step.g, step.ms, step.a)
@@ -35,6 +54,7 @@ StepAction(step) ==
       [] step.action = "CommitDeleteMember" -> CommitDeleteMember(step.g, step.m)
       [] step.action = "CommitDeleteAnchor" -> CommitDeleteAnchor(step.g, step.n, step.a)
       [] step.action = "RefuseOverlap" -> RefuseOverlap(step.m)
+      [] step.action = "CandidateEnvelope" -> CandidateTraceStep(step)
       [] step.action = "Observe" ->
             /\ UNCHANGED vars
             /\ \A r \in step.resolved :
@@ -50,6 +70,7 @@ MatchesPost(step) ==
 TraceStep ==
     /\ pc <= Len(Trace)
     /\ StepAction(Trace[pc])
+    /\ UNCHANGED lastRead
     /\ MatchesPost(Trace[pc])
     /\ pc' = pc + 1
 

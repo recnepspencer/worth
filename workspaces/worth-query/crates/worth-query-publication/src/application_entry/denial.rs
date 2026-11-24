@@ -1,4 +1,5 @@
 use worth_query_declaration::facade::application_operation::ApplicationMutationIdentityDenial;
+use worth_query_declaration::facade::application_query::ApplicationQueryInputPreparationDenial;
 use worth_query_execution::facade::primary_graph::{
     MutationHandlerExecutionDenial, WorthQueryApplicationIdempotencyResolutionDenial,
     WorthQueryApplicationIdempotencyResolutionDenialKind, WorthQueryOperationAuthorizationDenial,
@@ -22,6 +23,7 @@ pub enum WorthQueryApplicationRequestQueryDenialKind {
     ExecutionRequest(
         worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
     ),
+    InputPreparation,
     BindingInstallation,
     Limit,
     ProductSelection,
@@ -44,6 +46,7 @@ pub enum WorthQueryApplicationRequestQueryDenial {
     ExecutionRequest(
         worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
     ),
+    InputPreparation(ApplicationQueryInputPreparationDenial),
     BindingInstallation(WorthQueryApplicationQueryInstallationDenial),
     Limit(WorthQueryApplicationQueryLimitDenial),
     ProductSelection(WorthQueryProductBranchAdmissionDenial),
@@ -67,6 +70,9 @@ impl WorthQueryApplicationRequestQueryDenial {
             Self::HistoryOutput(_) => WorthQueryApplicationRequestQueryDenialKind::HistoryOutput,
             Self::ExecutionRequest(cause) => {
                 WorthQueryApplicationRequestQueryDenialKind::ExecutionRequest(*cause)
+            }
+            Self::InputPreparation(_) => {
+                WorthQueryApplicationRequestQueryDenialKind::InputPreparation
             }
             Self::BindingInstallation(_) => {
                 WorthQueryApplicationRequestQueryDenialKind::BindingInstallation

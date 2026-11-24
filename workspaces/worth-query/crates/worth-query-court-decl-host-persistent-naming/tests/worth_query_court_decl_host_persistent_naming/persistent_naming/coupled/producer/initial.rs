@@ -44,6 +44,8 @@ pub struct Decision {
     source: WorthQueryInvariantMutationTarget<Schema, Model>,
     /// Committed names the decision read on the candidate (`reads`).
     cut: Option<super::reads::Cut>,
+    /// The loop the decision resolved on the candidate (`group_reads`).
+    grouped: Option<WorthQueryName<Loop>>,
 }
 producer_binding!("persistent-naming.pieces.initial", Initial, Primary);
 
@@ -65,9 +67,11 @@ impl OperationHandler<Schema, Binding> for Handler {
                 return Ok(Err(edit::Denial::ModelMismatch));
             }
             let cut = super::reads::decide(reader, input.value)?;
+            let grouped = super::group_reads::decide(reader, input.value);
             Ok(Ok(Decision {
                 source: reader.mutation_target(&source)?,
                 cut,
+                grouped,
             }))
         })();
         match result {
@@ -83,6 +87,7 @@ impl OperationHandler<Schema, Binding> for Handler {
         decision: Decision,
         writer: &mut CandidateWriter<'_, Schema, Binding>,
     ) -> HandlerResult<edit::Edited, edit::Denial> {
+        super::group_reads::built(input.value, decision.grouped);
         let result = (|| {
             let source = writer.projected_entity(&decision.source)?;
             let mut created = Vec::new();

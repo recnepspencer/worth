@@ -1,13 +1,12 @@
-//! An authored inverse of a recorded board completion.
+//! An authored inverse of a recorded board completion, derived via
+//! `#[derive(WorthQueryCorrection)]` and typed body authoring.
 use super::{actions::*, reads::*, schema::*};
 use worth_foundational::facade::WorthValue;
 use worth_query_decl::facade::{
     application_aftermath::*, application_identity::ApplicationIdentityNamespace,
-    application_operation::*, application_query::*, application_schema::*,
-    worth_query_application_query, worth_query_identity, worth_query_identity_namespace,
-    worth_query_query_binding, worth_query_structured_value_binding, WorthQueryAction,
+    application_query::*, application_schema::*, worth_query_identity_namespace, WorthQuery,
+    WorthQueryAction, WorthQueryCorrection,
 };
-use worth_query_host::facade::primary_graph::WorthQueryOperationBodyDecision;
 
 const CORRECTION: ApplicationIdentityNamespace =
     worth_query_identity_namespace!("macros.tasks.correct-completion.v1");
@@ -16,145 +15,71 @@ const DETAILS: ApplicationIdentityNamespace =
 const RESTORE: ApplicationIdentityNamespace =
     worth_query_identity_namespace!("macros.tasks.restore-done.v1");
 
-#[derive(Clone, WorthValue, serde::Deserialize, WorthQueryAction)]
+#[derive(Clone, Debug, PartialEq, Eq, WorthValue, serde::Deserialize, WorthQueryAction)]
 #[worth_query(schema = Schema, context = BoardContext, namespace = RESTORE,
     input = RestoreDoneInput, operation = RestoreDone, binding = RestoreDoneBinding,
-    delivery = RestoredDone, result = BodyResultBinding,
-    decision = WorthQueryOperationBodyDecision<Schema, Task>, body, program,
-    access(read_fields: [TaskKey::at("TaskKey")];), reads(Task))]
+    delivery = RestoredDone, body, program, reads(Task))]
 pub struct RestoreCompletion {
     #[worth_query(scope = TaskKey)]
-    task: u64,
-    expected: bool,
-    done: bool,
+    pub task: u64,
+    pub expected: bool,
+    pub done: bool,
 }
 
 pub fn restore_done() -> ApplicationOperationDefinition<Schema, RestoreDone, RestoreCompletion> {
-    let body = RestoreDone::reference()
-        .body()
-        .expect_input(Done::at("Done"), "expected")
-        .unwrap()
-        .assign_input(Done::at("Done"), "done")
-        .unwrap()
-        .finish()
-        .unwrap();
     RestoreDone::reference()
-        .definition()
-        .no_external_effect()
-        .no_aftermath()
-        .finish()
-        .with_body(body)
-        .unwrap()
+        .typed_body()
+        .expect_input(TaskFacts::done(), RestoreCompletion::expected_input())
+        .assign_input(TaskFacts::done(), RestoreCompletion::done_input())
+        .finish_pure_definition()
+        .expect("restore_done body admits")
 }
 
+#[derive(WorthQueryCorrection)]
+#[worth_query(
+    schema = Schema,
+    namespace = CORRECTION,
+    source = CompleteBinding,
+    inverse = RestoreCompletion,
+    disclosure = DetailsBinding,
+    source_body = complete_body,
+    preimage_fields(TaskFacts::done()),
+    preimage_bytes = BoolApplicationValueBinding::encode(&true).unwrap().semantic_byte_width(),
+    derive = derive_restore_completion,
+)]
 pub struct CorrectCompletion;
 
-impl ApplicationCorrectionBinding<Schema> for CorrectCompletion {
-    const IDENTITY: &'static str = worth_query_identity!(CORRECTION, binding);
-    type Source = CompleteBinding;
-    type InverseIntent = RestoreCompletion;
-    type Disclosure = DetailsBinding;
-
-    fn recover_source_input(
-        bytes: &[u8],
-        expected: CanonicalDigestId,
-        bounds: ValueDecodeBounds,
-    ) -> Result<ApplicationEncodedInput<CompleteInput>, ApplicationRetainedInputDenial> {
-        ApplicationEncodedInput::decode_retained(bytes, expected, bounds)
-    }
-
-    fn recover_inverse_input(
-        bytes: &[u8],
-        expected: CanonicalDigestId,
-        bounds: ValueDecodeBounds,
-    ) -> Result<ApplicationEncodedInput<RestoreDoneInput>, ApplicationRetainedInputDenial> {
-        ApplicationEncodedInput::decode_retained(bytes, expected, bounds)
-    }
-
-    fn disclosure_parameters(
-        _: &Complete,
-    ) -> Result<ApplicationQueryParameterSet<DetailsQuery>, ApplicationCorrectionDerivationDenial>
-    {
-        Ok(ApplicationQueryParameterSet::new())
-    }
-
-    fn source_definition(
-    ) -> ApplicationOperationDefinitionBuilder<Schema, CompleteTask, Complete, true, false> {
-        CompleteTask::reference().definition().no_external_effect()
-    }
-
-    fn source_body() -> Option<ApplicationOperationBody<Schema, CompleteTask, Complete>> {
-        Some(complete_body())
-    }
-
-    fn mechanism() -> DeclaredCorrectionMechanism<Schema> {
-        let bytes = BoolApplicationValueBinding::encode(&true)
-            .unwrap()
-            .semantic_byte_width();
-        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(DeclaredPreImageDemand::new(
-            [DeclaredPreImageLocus::from_field(Done::at("Done"))],
-            bytes,
-        ))
-    }
-
-    fn derive_correction(
-        original: &Complete,
-        material: ApplicationCorrectionSourceMaterial<'_, Schema>,
-    ) -> Result<RestoreCompletion, ApplicationCorrectionDerivationDenial> {
-        use ApplicationCorrectionDerivationDenial as Denial;
-        let ApplicationCorrectionSourceMaterial::RecordedInverse(preimage) = material else {
-            return Err(Denial::UnsupportedSourceMeaning);
-        };
-        let done = preimage
-            .field(&DeclaredPreImageLocus::from_field(Done::at("Done")))
-            .ok_or(Denial::MissingPreImage)?;
-        Ok(RestoreCompletion {
-            task: original.task,
-            expected: original.done,
-            done: BoolApplicationValueBinding::decode(done).map_err(|_| Denial::InvalidPreImage)?,
-        })
-    }
-
-    fn inverse_key(key: &str) -> Result<u64, ApplicationValueEncodeDenial> {
-        key.parse().map_err(|_| ApplicationValueEncodeDenial::CodecRejected {
-            binding_identity: worth_query_decl::facade::portable_identity::WorthQueryPortableTypeIdentity::declared(Self::IDENTITY),
-            reason: "expected an unsigned command key",
-        })
-    }
-
-    fn visit<V: ApplicationCorrectionVisitor<Schema>>(
-        dispatch: ApplicationCorrectionDispatch<Schema, Self, V>,
-    ) -> V::Output {
-        dispatch.conventional()
-    }
+fn derive_restore_completion(
+    original: &Complete,
+    preimage: &dyn ApplicationCorrectionPreImage<Schema>,
+) -> Result<RestoreCompletion, ApplicationCorrectionDerivationDenial> {
+    Ok(RestoreCompletion {
+        task: original.task,
+        expected: original.done,
+        done: decode_preimage_field(preimage, TaskFacts::done())?,
+    })
 }
 
-worth_query_application_query!(pub DetailsQuery for Schema,
-    identity worth_query_identity!(DETAILS, query), parameters ParametersBinding,
-    result RowBinding, scope Task => "Task", name "correction_task");
+#[derive(Clone, serde::Serialize, WorthQuery)]
+#[worth_query(
+    schema = Schema,
+    context = BoardContext,
+    namespace = DETAILS,
+    query = DetailsQuery,
+    input = ReadDetailsInput,
+    binding = DetailsBinding,
+    result = RowBinding,
+    root = Task,
+    cardinality = ExactlyOne,
+    limits = 1,
+    name = "correction_task",
+)]
+pub struct ReadDetails {
+    #[worth_query(scope = TaskKey)]
+    pub task: u64,
+}
 
 pub fn task_details() -> ApplicationQueryDefinitionBuilder<Schema, DetailsQuery, (), TaskRow, Task>
 {
-    ApplicationQueryDefinitionBuilder::declare(DetailsQuery::reference())
-        .root(Task::reference())
-        .scope(Task::reference())
-        .result_shape(TaskRow::result_shape::<DetailsQuery>())
-        .cardinality(ApplicationQueryCardinality::ExactlyOne)
-        .disclosure(ApplicationQueryDisclosureContract::public())
-        .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
-        .lanes(ApplicationQueryLaneEligibility::one_shot())
-        .public()
+    DetailsQuery::definition()
 }
-
-#[derive(Clone, serde::Serialize)]
-pub struct ReadDetails(pub u64);
-worth_query_structured_value_binding!(pub ReadDetailsInput for ReadDetails {
-    identity: worth_query_identity!(DETAILS, request)
-});
-fn task(input: ReadDetails) -> u64 {
-    input.0
-}
-worth_query_query_binding!(pub DetailsBinding for ReadDetails, schema Schema, context BoardContext,
-    identity worth_query_identity!(DETAILS, binding), input ReadDetailsInput, query DetailsQuery,
-    parameters ParametersBinding => |_| ApplicationQueryParameterSet::new(), result RowBinding,
-    scope TaskKey, field TaskKey::at("TaskKey"), value task, limits results 1);

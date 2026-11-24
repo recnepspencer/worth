@@ -66,6 +66,12 @@ mod succession;
 pub use succession::{
     ApplicationOperationBodySuccession, ApplicationOperationBodySuccessionOutputMatch,
 };
+mod typed_builder;
+mod typed_input;
+pub use typed_builder::{
+    TypedApplicationOperationBodyBuilder, TypedApplicationOperationBodyCreationBuilder,
+};
+pub use typed_input::{ApplicationInputField, ApplicationOptionalInputField};
 mod validation;
 
 pub use builder::ApplicationOperationBodyBuilder;

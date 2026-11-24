@@ -117,6 +117,15 @@ impl<S: ApplicationSchema + 'static> SourceQueryReaderPort for SourceQueryReader
         self.select_predecessor_input(execution, native, scope, partition)
     }
 
+    fn retain_applied_group_read(&self, scheme: &str) -> Option<bool> {
+        let (candidate, participants) = (self.applied_managed_sources?, self.applied_participants?);
+        let claimed = candidate.claims_group_scheme(scheme);
+        if !claimed {
+            participants.retain_group_read(scheme);
+        }
+        Some(claimed)
+    }
+
     fn observation_components_any(
         &self,
     ) -> (

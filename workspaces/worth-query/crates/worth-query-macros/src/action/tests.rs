@@ -19,6 +19,35 @@ fn an_action_without_exactly_one_scope_or_with_a_malformed_key_is_refused() {
             "missing action scope",
         ),
         (
+            format!("#[worth_query(scope_value = rules::workspace)] {HEADER} struct Rename {{ task: u64 }}"),
+            "requires `#[worth_query(scope = ..)]`",
+        ),
+        (
+            format!("#[worth_query(scope = TaskKey)] {HEADER} struct Rename {{ task: u64 }}"),
+            "requires `#[worth_query(scope_value = ..)]`",
+        ),
+        (
+            format!(
+                "#[worth_query(scope = TaskKey, scope_value = rules::workspace, principal_scope = Owner)] {HEADER} \
+                 struct Rename {{ task: u64 }}"
+            ),
+            "exactly one scope",
+        ),
+        (
+            format!(
+                "#[worth_query(scope = TaskKey, scope_value = rules::workspace)] {HEADER} \
+                 struct Rename {{ #[worth_query(scope = TaskKey)] task: u64 }}"
+            ),
+            "exactly one scope",
+        ),
+        (
+            format!(
+                "#[worth_query(scope_column = \"Key\")] {HEADER} \
+                 struct Rename {{ #[worth_query(scope = TaskKey)] task: u64 }}"
+            ),
+            "`scope_column` requires struct-level",
+        ),
+        (
             format!(
                 "{HEADER} struct Rename {{ #[worth_query(scope = TaskKey)] task: u64, \
                  #[worth_query(scope = Title)] title: String }}"
@@ -105,9 +134,169 @@ fn a_validator_is_forwarded_to_the_input_binding_of_body_and_handler_actions() {
             .map(|(body, _)| body)
             .expect("the input binding is declared");
         assert!(binding.contains(clause), "{binding}");
+        assert!(binding.contains(", validate : rules :: title"), "{binding}");
         assert!(
-            binding.trim_end().ends_with(", validate : rules :: title"),
+            binding.contains(", fields : [required (\"task\" , task : u64)]"),
             "{binding}"
         );
+    }
+}
+
+#[test]
+fn a_scope_value_function_and_body_defaults_and_typed_inputs_expand_cleanly() {
+    let fixed_scope = syn::parse_str(&format!(
+        "#[worth_query(scope = TaskKey, scope_value = rules::inbox)] {HEADER} \
+         struct NewProject;"
+    ))
+    .unwrap();
+    let expanded = expand(&fixed_scope).unwrap().to_string();
+    assert!(expanded
+        .contains("scope TaskKey , field < TaskKey > :: at (\"TaskKey\") , value rules :: inbox"));
+    assert!(!expanded.contains("worth_query_scope"));
+
+    let body_default = syn::parse_str(
+        "#[worth_query(schema = Schema, context = Ctx, namespace = NS, \
+         input = In, operation = Op, binding = Bind, body, reads(Task))] \
+         struct Reschedule { #[worth_query(scope = TaskKey)] task: u64, due: Option<CanonicalDate>, title: String }",
+    )
+    .unwrap();
+    let expanded = expand(&body_default).unwrap().to_string();
+    assert!(
+        expanded.contains("UnitApplicationValueBinding"),
+        "{expanded}"
+    );
+    assert!(
+        expanded.contains("WorthQueryOperationBodyDecision"),
+        "{expanded}"
+    );
+    assert!(
+        expanded.contains("read_fields : [< TaskKey > :: at (\"TaskKey\")]"),
+        "{expanded}"
+    );
+    assert!(
+        expanded.contains("fn due_input () -> :: worth_query_decl :: facade :: application_schema :: ApplicationOptionalInputField < Self , CanonicalDate >"),
+        "{expanded}"
+    );
+    assert!(
+        expanded.contains("fn title_input () -> :: worth_query_decl :: facade :: application_schema :: ApplicationInputField < Self , String >"),
+        "{expanded}"
+    );
+    assert!(
+        expanded.contains("required (\"title\" , title : String)"),
+        "{expanded}"
+    );
+    assert!(
+        expanded.contains("optional (\"due\" , due : CanonicalDate)"),
+        "{expanded}"
+    );
+    assert!(
+        expanded.contains("ApplicationInputField :: for_binding :: < In > (\"title\")"),
+        "{expanded}"
+    );
+    assert!(
+        expanded.contains("# [allow (clippy :: clone_on_copy)]"),
+        "{expanded}"
+    );
+
+    let renamed = syn::parse_str(
+        "#[serde(rename_all = \"camelCase\")] \
+         #[worth_query(schema = Schema, context = Ctx, namespace = NS, \
+          input = In, operation = Op, binding = Bind, body, reads(Task))] \
+         struct RenameWire { \
+             #[worth_query(scope = TaskKey)] task: u64, \
+             #[serde(alias = \"legacy\", rename = \"stored_title\")] new_title: String, \
+             #[serde(default = \"default_note\", rename = \"stored_note\")] note: String, \
+             #[serde(skip_serializing_if = \"Option::is_none\", rename = \"stored_opt\")] opt: Option<String>, \
+             due_window: Option<u32>, \
+             #[serde(skip)] transient: u8 \
+         }",
+    )
+    .unwrap();
+    let expanded = expand(&renamed).unwrap().to_string();
+    for needle in [
+        "(\"stored_title\"",
+        "(\"stored_note\"",
+        "(\"stored_opt\"",
+        "(\"dueWindow\"",
+    ] {
+        assert!(expanded.contains(needle), "{needle}: {expanded}");
+    }
+    assert!(!expanded.contains("transient_input"), "{expanded}");
+
+    // Serde `apply_to_field` treats both `lowercase` and `snake_case` as identity on struct
+    // fields (preserving `fooBar` distinct from `foobar` and `foo_bar`), and uppercases without
+    // splitting camelCase under `SCREAMING_SNAKE_CASE`.
+    let lower_rule = syn::parse_str(
+        "#[serde(rename_all = \"lowercase\")] \
+         #[worth_query(schema = Schema, context = Ctx, namespace = NS, \
+          input = In, operation = Op, binding = Bind, body, reads(Task))] \
+         struct LowerWire { \
+             #[worth_query(scope = TaskKey)] task: u64, \
+             fooBar: String, \
+             foobar: String, \
+         }",
+    )
+    .unwrap();
+    let expanded = expand(&lower_rule).unwrap().to_string();
+    assert!(expanded.contains("(\"fooBar\""), "{expanded}");
+    assert!(expanded.contains("(\"foobar\""), "{expanded}");
+
+    let snake_rule = syn::parse_str(
+        "#[serde(rename_all = \"snake_case\")] \
+         #[worth_query(schema = Schema, context = Ctx, namespace = NS, \
+          input = In, operation = Op, binding = Bind, body, reads(Task))] \
+         struct SnakeWire { \
+             #[worth_query(scope = TaskKey)] task: u64, \
+             fooBar: String, \
+             foo_bar: String, \
+         }",
+    )
+    .unwrap();
+    let expanded = expand(&snake_rule).unwrap().to_string();
+    assert!(expanded.contains("(\"fooBar\""), "{expanded}");
+    assert!(expanded.contains("(\"foo_bar\""), "{expanded}");
+
+    let screaming_rule = syn::parse_str(
+        "#[serde(rename_all = \"SCREAMING_SNAKE_CASE\")] \
+         #[worth_query(schema = Schema, context = Ctx, namespace = NS, \
+          input = In, operation = Op, binding = Bind, body, reads(Task))] \
+         struct ScreamingWire { \
+             #[worth_query(scope = TaskKey)] task: u64, \
+             fooBar: String, \
+             foo_bar: String, \
+         }",
+    )
+    .unwrap();
+    let expanded = expand(&screaming_rule).unwrap().to_string();
+    assert!(expanded.contains("(\"FOOBAR\""), "{expanded}");
+    assert!(expanded.contains("(\"FOO_BAR\""), "{expanded}");
+
+    let dup_wire = refusal(
+        "#[worth_query(schema = Schema, context = Ctx, namespace = NS, \
+          input = In, operation = Op, binding = Bind, body, reads(Task))] \
+         struct DupWire { \
+             #[worth_query(scope = TaskKey)] task: u64, \
+             #[serde(rename = \"same\")] a: String, \
+             #[serde(rename = \"same\")] b: String, \
+         }",
+    );
+    assert!(
+        dup_wire.contains("duplicate serialized input member name"),
+        "{dup_wire}"
+    );
+
+    for bad_attr in [
+        "#[serde(transparent)]",
+        "#[serde(into = \"Wire\")]",
+        "#[serde(from = \"Wire\")]",
+        "#[serde(try_from = \"Wire\")]",
+    ] {
+        let err = refusal(&format!(
+            "{bad_attr} \
+             #[worth_query(schema = Schema, context = Ctx, namespace = NS, \
+              input = In, operation = Op, binding = Bind, body, reads(Task))] \
+             struct Bad {{ #[worth_query(scope = TaskKey)] task: u64 }}"
+        ));
+        assert!(err.contains("container rewrites"), "{bad_attr}: {err}");
     }
 }

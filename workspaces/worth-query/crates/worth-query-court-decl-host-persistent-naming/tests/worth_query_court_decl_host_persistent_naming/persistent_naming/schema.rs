@@ -150,13 +150,13 @@ impl Registration<Schema> for Actor {
 fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    coupled::producer::declare(stored::declare(named_read::declare(
+    coupled::producer::declare(retarget::declare(stored::declare(named_read::declare(
         outputs::sculpt::declare(refusals::declare(probe::declare(delete::declare(
             query::member::declare(query::model::declare(edit::declare(navigation::declare(
                 schema,
             )))),
         )))),
-    )))
+    ))))
     .application_history(
         ApplicationHistoryDefinition::<Schema, History>::for_binding(
             ApplicationQueryDisclosureContract::public(),
@@ -170,6 +170,7 @@ fn declare(
         .operation::<probe::Binding>("Probe names")
         .operation::<outputs::sculpt::Binding>("Sculpt members")
         .operation::<stored::Binding>("Hold name")
+        .operation::<retarget::Binding>("Retarget name")
         .operation::<coupled::producer::shape::Binding>("Shape pieces")
         .owned_operation::<edit::member::Binding>("Edit member"),
     )

@@ -117,3 +117,17 @@ fn append<T>(into: &mut Vec<T>, from: Vec<T>) -> Result<(), TransactionCommitErr
     into.extend(from);
     Ok(())
 }
+
+/// Whether the plans the envelope composes so far (`compose`'s root and
+/// members) claim group scheme `scheme`: a partition or dissolve its commit
+/// finalizes against the basis's groups.
+pub fn claims_group_scheme<'p>(
+    root: Option<&'p CommitNamingPlan>,
+    members: impl IntoIterator<Item = Option<&'p CommitNamingPlan>>,
+    scheme: &str,
+) -> bool {
+    root.into_iter()
+        .chain(members.into_iter().flatten())
+        .flat_map(|plan| &plan.groups)
+        .any(|claim| claim.scheme.id().as_str() == scheme)
+}

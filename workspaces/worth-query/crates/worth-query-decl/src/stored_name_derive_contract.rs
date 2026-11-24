@@ -14,7 +14,7 @@
 //! # #[worth_query(schema, owner = "doc.board", name = "board", members(Board))]
 //! # pub struct Schema;
 //! # #[derive(Clone, Copy, WorthQuerySchema)]
-//! # #[worth_query(fragment, bindings = Codecs, members(Mapping, Principal, Task))]
+//! # #[worth_query(fragment, bindings = Codecs, members(Mapping, Principal, Task, Chamfer))]
 //! # pub struct Board;
 //! # worth_query_native_scalar_bindings!(pub Codecs);
 //! # impl Scalar<WorthQueryExternalPrincipalIdentity> for Codecs {

@@ -317,11 +317,20 @@ schema using `worth_query_decl::facade::application_naming`:
   is one canonical frame in its envelope, so checkpoint restore, cold open
   and journal replay rebuild every branch's groups byte for byte.
   Decisions read groups with tracked `group_name_of::<Group, Member>` and
-  `resolve_group::<Group, Member>` (committed basis; a candidate-basis group
-  read refuses `CandidateGroupState`), with `Exact` / `Plural` / `Retired` /
+  `resolve_group::<Group, Member>`, with `Exact` / `Plural` / `Retired` /
   `Ambiguous` parity: each read is a decision fact re-observed at seal, so a
   commit that splits, merges, dissolves or re-members the group stales the
-  decision and an unrelated commit does not. `#[worth_query(group_name)]` on
+  decision and an unrelated commit does not. A coupled producer or a later
+  edit-envelope stage reads groups on the envelope's unpublished candidate
+  the same way, answered from the commit basis only where that is the
+  candidate's answer; otherwise the read refuses typed and the envelope
+  commits nothing: an earlier member's partition or dissolve of the scheme
+  refuses `CandidateGroupState`, an ended member name or a held group that is
+  not itself live (retired, split, merged, unborn) refuses
+  `CandidateNameHistory`, and a member the candidate ended (the one read, or
+  any member of a group the answer rests on) refuses `EndedInCandidate`. A
+  member that claims the scheme after a candidate read of it refuses the
+  envelope, so read and regroup one scheme in separate commits. `#[worth_query(group_name)]` on
   a `WorthQueryProjection` field (`WorthQueryName<Group>` or `Option<..>`)
   projects the group a row's own name belongs to in the same read.
 - **Commit-time birth minting** lowers installed schemes via
@@ -1459,26 +1468,34 @@ namespaces, a `worth_query_native_scalar_bindings!` set and inline `reads`.
 
 #### Derive declarations
 
-Four derives, re-exported by `worth_query_decl::facade` and
+Seven derives, re-exported by `worth_query_decl::facade` and
 `worth_query_host::facade`, write the same declarations from one Rust item.
 Each expands only into the public traits and macros above, so derived and
 hand-written members mix in one schema, and a derived declaration with the
 same names and identities installs a byte-identical canonical schema.
-Expansions name `::worth_query_decl`, and `WorthQueryProjection` also names
-`::worth_query_host`: a crate deriving `WorthQuerySchema`, `WorthQueryRecord`
-or `WorthQueryAction` depends on `worth-query-decl`, and one deriving
-`WorthQueryProjection` depends on both.
+Expansions name `::worth_query_decl`, and `WorthQueryProjection` (plus
+`WorthQueryAction` when `body` uses its default `WorthQueryOperationBodyDecision`)
+also names `::worth_query_host`.
 
 - `WorthQuerySchema` on a unit struct declares its role: `schema` (a root:
   `Fragment`, `ApplicationSchema`, `ApplicationSchemaComposition`),
   `fragment`, `entity` or `relation`. `reference(Schema, Fragment)` adds the
   usual `reference()`; `name = ".."` keeps a persisted name. The schema role
-  dispatches typed correction members through the declared membership.
+  dispatches typed correction members through the declared membership. The
+  `relation` role also accepts native integrity keys (`cardinality`, `acyclic`,
+  `self_edges`, `unique`, `deletion`, `cross_context`, `symmetric`, `orbit`,
+  `same_partition_endpoints`, `reaches_at_least`).
+- `WorthQueryRelation` on a unit struct declares a standalone `Relation`, its
+  integrity constants, and optional `reference(Schema, Fragment)` (with
+  `from = Entity`) without repeating the `relation` role flag.
 - `WorthQueryRecord` on a row declares its `aspect = Marker` and its `Record`
   for `bindings = Codecs`. With `fragment = F, entity = E` it also declares one
-  `FieldSelection` alias per column, named after the column. Columns default
-  to the field name in PascalCase; `column = ".."`, `equality`, `read_only`
-  and `unique` are per field, and `Option<T>` is an optional column.
+  `FieldSelection` alias per column, named after the column, plus zero-string
+  const selectors on the row (`Row::select_<field>()`, `Row::<FIELD>`) and its
+  aspect (`Aspect::<field>()`, `Aspect::<FIELD>`) while keeping `Alias::at(..)`
+  working. Columns default to the field name in PascalCase; `column = ".."`,
+  `equality`, `read_only` and `unique` are per field, and `Option<T>` is an
+  optional column.
 - `WorthQueryProjection` on a result row declares a `<row>_slots` module of
   slot markers, their portable identities (`namespace = NS` gives
   `NS.slot.<name>`; `slot = ".."` keeps an existing one), a selector per
@@ -1495,15 +1512,43 @@ or `WorthQueryAction` depends on `worth-query-decl`, and one deriving
   `project_row::<Query>(row)`, so a row can feed a domain result type that
   converts from it. `selector = name` renames a slot's generated selector
   function when the row already has a method of the field's name.
-- `WorthQueryAction` on an input declares its input binding, operation (with
-  forwarded `access(..)` and inline capabilities such as `reads(Task)`),
+- `WorthQuery` on a request struct (or unit struct with `principal_scope` or
+  `scope = Alias, scope_value = fn`) declares the query marker
+  (`worth_query_application_query!` with `UnitApplicationValueBinding` by
+  default, omitting `parameters NoParameters` unless overridden via
+  `parameters = Binding`), request input binding, named parameter refs on the
+  query marker, scope extractor, contextual query binding, and—when
+  `root = Entity` is present—`Query::definition()` / `definition_with(shape)`
+  with defaults `Many`, `Public` disclosure, `CurrentAndPinned` basis,
+  `OneShot` lanes, and `Public` authorization (overridable via `cardinality`,
+  `disclosure`, `basis_support`, `lanes`, and `ability`).
+- `WorthQueryAction` on an input declares its input binding, compile-time-typed
+  `<field>_input()` accessors (`ApplicationInputField` /
+  `ApplicationOptionalInputField`) for `OperationRef::typed_body()`, operation
+  (with forwarded `access(..)` and inline capabilities such as `reads(Task)`),
   contextual mutation binding and optional source-completion `delivery`, with
-  identities from `namespace`. Exactly one field carries `scope = Alias`, or
-  the struct declares `principal_scope = Alias`. `validate = path::to::check`
+  identities from `namespace`. Exactly one scope is declared: a field marked
+  `scope = Alias`, struct-level `principal_scope = Alias`, or struct-level
+  `scope = Alias, scope_value = path::to::fn`. With `body`, `result` defaults
+  to `UnitApplicationValueBinding`, `decision` defaults to
+  `WorthQueryOperationBodyDecision<Schema, ScopeEntity>`, and `access` defaults
+  to reading the selected scope field (all overridable). `validate = path::to::check`
   forwards a `fn(&Input) -> Result<(), &'static str>` as the input binding's
   `validate:`: an invalid input is refused at capture
   (`WorthQueryOperationInputCaptureDenial::Encoding(Validation(..))`) with its
   key returned, before any effect.
+- `WorthQueryCorrection` on a unit marker declares a standard recorded-inverse
+  `ApplicationCorrectionBinding<Schema>` (`source`, `inverse`, `disclosure`,
+  optional `source_body`, `preimage_fields(..)` + `preimage_bytes` or `demand`,
+  and `derive = fn`, using `decode_preimage_field` for typed pre-image reads).
+- On the host side, `worth_query_application_contribution!` accepts
+  `query(Binding) { definition: expr; };` to register a query and its binding
+  together, optional `as ActionAlias` on action entries to declare typed
+  `ApplicationActionReference` aliases, and implements `Registration<Schema>`
+  on the generated definition. `worth_query_application_program!` collapses a
+  single-contribution `ApplicationFeature`, `ApplicationSchemaContribution`,
+  `WorthQueryApplicationContribution`, and `ApplicationProgramDefinition` into
+  one declaration.
 
 <!-- illustrative -->
 ```rust,ignore

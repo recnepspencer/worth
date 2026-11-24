@@ -7,9 +7,26 @@
 //! commit that splits, merges, retires or re-members a group the decision
 //! read stales it, while an unrelated commit leaves it current.
 //!
-//! Groups are read on a committed basis only: an applied candidate's own
-//! group partitions publish with its envelope, so a candidate-basis group
-//! read refuses `CandidateGroupState` and vetoes sealing.
+//! On an applied candidate (a coupled producer or a later edit-envelope
+//! stage) a group is read from the committed name index at the candidate's
+//! commit basis, under `candidate_naming`'s alignment proof. Commit
+//! finalization names a scheme's groups against the basis from the commit's
+//! partition claims and from every group losing a member the commit ends, so
+//! the basis answer is the candidate's only while that holds for the
+//! candidate. Otherwise the read refuses typed and vetoes sealing, never
+//! answering from stale state:
+//!
+//! - the envelope already claims a partition or dissolve of the scheme
+//!   (`CandidateGroupState`); the read is retained with the envelope's owner,
+//!   so a member that claims the scheme later refuses the envelope;
+//! - the answer rests on name history: an unknown or ended member name, or
+//!   a held group that is not itself live (retired, split, merged, unborn),
+//!   which the candidate may revive or regroup (`CandidateNameHistory`);
+//! - the candidate ended the member read or any member of a group the answer
+//!   rests on (`EndedInCandidate`); siblings are never filtered out, so an
+//!   ambiguous answer never collapses.
+//!
+//! Final coupled support compares those member records between images.
 
 use worth_query_declaration::facade::application_naming::{
     ApplicationGroupKind, NameSelection, ResolvedName, WorthQueryName,
@@ -19,6 +36,7 @@ use worth_query_execution_naming::facade::{ExecutionNameResolveDenial, NameReadD
 use worth_query_installation::facade::{
     ApplicationOperationDecisionReadTarget, ApplicationSchema, OperationReads,
 };
+use worth_relational::facade::lineage::LineageRecordTarget;
 
 use super::decision_reads::DecisionReadOutcome;
 use super::naming::{PersistentNameReadVeto, WorthQueryDecisionNameDenial as Denial};
@@ -55,7 +73,11 @@ impl<Schema: ApplicationSchema, Operation>
                 .veto_persistent_name(PersistentNameReadVeto::ReadFailed);
         });
         let subject = PersistentGroupSubject::Member(*member.as_bytes());
-        self.record_group_fact::<G>(Member::IDENTIFIER, subject);
+        let fact = group_read::<G>(Member::IDENTIFIER, subject);
+        if answer.is_ok() {
+            self.require_candidate_group_support(&fact)?;
+        }
+        self.record_group_fact(fact);
         answer.map_err(Denial::Read)
     }
 
@@ -79,42 +101,70 @@ impl<Schema: ApplicationSchema, Operation>
             self.decision_facts.veto_persistent_name(veto);
         }
         let subject = PersistentGroupSubject::Resolution(*held.as_bytes());
-        self.record_group_fact::<G>(Member::IDENTIFIER, subject);
+        let fact = group_read::<G>(Member::IDENTIFIER, subject);
+        if !matches!(resolved, Err(ExecutionNameResolveDenial::Read(_))) {
+            self.require_candidate_group_support(&fact)?;
+        }
+        self.record_group_fact(fact);
         Ok(resolved)
     }
 
     /// Admits a group read under the operation's declared read of the
-    /// member kind, on a committed basis only.
+    /// member kind.
     fn admit_group_read(&mut self, member_kind: &str) -> Result<(), Denial> {
         self.admit_decision_target(&ApplicationOperationDecisionReadTarget::Entity {
             entity: member_kind.to_owned(),
         })
-        .map_err(Denial::UndeclaredDecisionTarget)?;
-        self.require_committed_group_basis()
+        .map_err(Denial::UndeclaredDecisionTarget)
     }
 
-    fn require_committed_group_basis(&mut self) -> Result<(), Denial> {
-        if matches!(self.reader.native, NativeProjectionRead::Applied { .. }) {
-            self.decision_facts
-                .veto_persistent_name(PersistentNameReadVeto::ReadFailed);
-            return Err(Denial::CandidateGroupState);
-        }
-        Ok(())
-    }
-
-    fn record_group_fact<G: ApplicationGroupKind>(
+    /// On an applied candidate, admits a group read only where its basis
+    /// answer is the candidate's (module docs); a refusal vetoes sealing.
+    fn require_candidate_group_support(
         &mut self,
-        member_kind: &str,
-        subject: PersistentGroupSubject,
-    ) {
-        let read = PersistentGroupRead {
-            group_kind: G::NAME.to_owned(),
-            member_kind: member_kind.to_owned(),
-            subject,
-        };
+        read: &PersistentGroupRead,
+    ) -> Result<(), Denial> {
+        if !matches!(self.reader.native, NativeProjectionRead::Applied { .. }) {
+            return Ok(());
+        }
+        let snapshot = self.reader.snapshot;
+        let members = self
+            .aligned_runtime_read(|runtime| read.candidate_support(runtime, snapshot))
+            .and_then(|observed| observed.map_err(|_| Denial::CandidateBasis))
+            .and_then(|support| {
+                let claimed = self
+                    .source_query
+                    .and_then(|access| access.retain_applied_group_read(&support.scheme))
+                    .ok_or(Denial::CandidateBasis)?;
+                if claimed {
+                    return Err(Denial::CandidateGroupState);
+                }
+                support.members.ok_or(Denial::CandidateNameHistory)
+            })
+            .inspect_err(|_| {
+                self.decision_facts
+                    .veto_persistent_name(PersistentNameReadVeto::ReadFailed);
+            })?;
+        members.into_iter().try_for_each(|entity| {
+            self.require_candidate_unaltered(LineageRecordTarget::Entity(entity))
+        })
+    }
+
+    fn record_group_fact(&mut self, read: PersistentGroupRead) {
         self.decision_facts.record(
             WorthQueryApplicationFactKey::PersistentGroup(read),
             DecisionReadOutcome::Observed,
         );
+    }
+}
+
+fn group_read<G: ApplicationGroupKind>(
+    member_kind: &str,
+    subject: PersistentGroupSubject,
+) -> PersistentGroupRead {
+    PersistentGroupRead {
+        group_kind: G::NAME.to_owned(),
+        member_kind: member_kind.to_owned(),
+        subject,
     }
 }
