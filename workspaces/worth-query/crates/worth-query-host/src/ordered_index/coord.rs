@@ -313,4 +313,19 @@ mod tests {
         assert_eq!(a.combine(empty), a);
         assert_eq!(a.combine(b), b.combine(a));
     }
+
+    #[test]
+    fn stock_summaries_are_copy_eq_send_sync_static() {
+        fn assert_copy_summary<T: Copy + Eq + Send + Sync + 'static>() {}
+        assert_copy_summary::<crate::ordered_index::WorthQueryOrderedSlotBounds>();
+        assert_copy_summary::<WorthQueryAxisEnvelope<i64, 1>>();
+        assert_copy_summary::<WorthQueryAxisEnvelope<u64, 1>>();
+        assert_copy_summary::<WorthQueryAxisEnvelope<CanonicalDate, 1>>();
+        assert_copy_summary::<WorthQueryAxisEnvelope<CanonicalTimestamp, 1>>();
+        assert_copy_summary::<WorthQueryAxisEnvelope<CanonicalF64, 1>>();
+        assert_copy_summary::<WorthQueryAxisEnvelope<i64, 2>>();
+        assert_copy_summary::<WorthQueryAxisEnvelope<CanonicalF64, 2>>();
+        assert_copy_summary::<WorthQueryAxisEnvelope<i64, 3>>();
+        assert_copy_summary::<WorthQueryAxisEnvelope<CanonicalF64, 3>>();
+    }
 }

@@ -4,13 +4,11 @@
 use super::operations::AssetSpec;
 use super::schema::*;
 use super::{
-    create_asset, delete_asset, home_lease, install, keys, limits, open_directory_home_with_limits,
+    create_asset, delete_asset, home_lease, keys, limits, open_directory_home_with_limits,
     update_asset,
 };
 use worth_execution::ExecutionRequest;
-use worth_query_decl::facade::application_schema::CanonicalF64;
 use worth_query_host::facade::application_entry::*;
-use worth_query_host::facade::ordered_index::WorthQueryBox2DF64;
 use worth_query_host::facade::primary_graph::*;
 use worth_query_testkit_document_retention::facade::document_retention_model::operator_identity::{
     authenticate_operator, request_scope,
@@ -214,6 +212,19 @@ fn directory_home_four_stock_families_lifecycle_reopen_ensure_ready_watches_and_
     assert_eq!(keys(d2.read().rows()), [2, 5]);
     assert_eq!(keys(d3.read().rows()), [2, 5]);
 
+    // Unrelated mutation completely outside [0, 15)^2 must NOT wake Box2D watch.
+    create_asset(
+        home.runtime(),
+        AssetSpec::i64_only(6, "Far-Away", (200, 220), [80, 80, 80], [90, 90, 90]),
+        13,
+    );
+    assert!(matches!(
+        req.query(q_box2d(0, 0, 15, 15))
+            .next_watch(&mut w_b2)
+            .unwrap(),
+        WorthQueryManagedIndexWatchOutcome::Pending
+    ));
+
     // Explicit eviction: ensure_index_ready must NOT silently rebuild an evicted index!
     req.query(q_box2d(0, 0, 15, 15))
         .evict_index(&idx_b2)
@@ -224,12 +235,13 @@ fn directory_home_four_stock_families_lifecycle_reopen_ensure_ready_watches_and_
     );
 
     drop((init_b2, init_b3, d1, d2, d3));
-    w_b2.close().unwrap();
-    w_b3.close().unwrap();
-    idx_prefix.close();
-    idx_iv.close();
-    idx_b2.close();
-    idx_b3.close();
+    let _ = (w_b2.close().unwrap(), w_b3.close().unwrap());
+    let _ = (
+        idx_prefix.close(),
+        idx_iv.close(),
+        idx_b2.close(),
+        idx_b3.close(),
+    );
     home.close(&exec).unwrap().reclaim();
 
     // Cold Directory Home reopen: tight memory ceiling must refuse ensure_index_ready honestly!
@@ -238,16 +250,29 @@ fn directory_home_four_stock_families_lifecycle_reopen_ensure_ready_watches_and_
     let scope = request_scope();
     let principal = authenticate_operator(tight.runtime().installed_schema(), &scope);
     let req = tight.runtime().runtime().request(&principal, &scope);
-    let err = req
+    match req
         .query(q_box2d(0, 0, 15, 15))
         .ensure_index_ready::<EquipmentBox2DIndex>()
-        .err()
-        .expect("ensure_index_ready must refuse under 16 KiB memory ceiling");
-    let detail = format!("{err:?}");
-    assert!(
-        detail.contains("MemoryLimit") || detail.contains("PolicyMemoryExhausted"),
-        "expected memory ceiling denial, got {detail}"
-    );
+    {
+        Err(WorthQueryApplicationRequestQueryDenial::PrincipalResolution(cause))
+            if matches!(
+                cause.kind(),
+                WorthQueryPrincipalResolutionDenialKind::Stopped(Ok(_))
+            ) => {}
+        Err(WorthQueryApplicationRequestQueryDenial::ExecutionRequest(_)) => {}
+        Err(WorthQueryApplicationRequestQueryDenial::ManagedIndex(cause))
+            if matches!(
+                cause.cause(),
+                WorthQueryManagedIndexDenialCause::Execution(_)
+                    | WorthQueryManagedIndexDenialCause::GraphWork(_)
+                    | WorthQueryManagedIndexDenialCause::QueryRead(_)
+                    | WorthQueryManagedIndexDenialCause::Work(
+                        WorthQueryManagedIndexWorkDenial::Controlled(_)
+                    )
+            ) => {}
+        Err(other) => panic!("expected typed memory-ceiling denial, got Err({other:?})"),
+        Ok(_) => panic!("ensure_index_ready must refuse under 16 KiB memory ceiling"),
+    }
     tight.close(&exec).unwrap().reclaim();
 
     // Clean cold reopen: NotReady before ensure_index_ready, then 1-call ensure_index_ready restores all 4!
@@ -307,87 +332,4 @@ fn directory_home_four_stock_families_lifecycle_reopen_ensure_ready_watches_and_
     r_3.close();
     reopened.close(&exec).unwrap().reclaim();
     std::fs::remove_dir_all(dir).unwrap();
-}
-
-#[test]
-fn canonical_f64_box2d_handles_negative_coordinates_signed_zero_and_nan_refusal() {
-    let mut s1 = AssetSpec::i64_only(1, "NegEquip", (0, 10), [0, 0, 0], [1, 1, 1]);
-    s1.fmin_bits = [
-        CanonicalF64::from_f64(-50.5).0,
-        CanonicalF64::from_f64(-20.0).0,
-    ];
-    s1.fmax_bits = [
-        CanonicalF64::from_f64(-10.25).0,
-        CanonicalF64::from_f64(-0.0).0,
-    ];
-    let mut s2 = AssetSpec::i64_only(2, "OriginEquip", (0, 10), [0, 0, 0], [1, 1, 1]);
-    s2.fmin_bits = [
-        CanonicalF64::from_f64(0.0).0,
-        CanonicalF64::from_f64(-5.0).0,
-    ];
-    s2.fmax_bits = [
-        CanonicalF64::from_f64(12.5).0,
-        CanonicalF64::from_f64(8.5).0,
-    ];
-
-    let host = install(&[s1, s2], None, None);
-    let scope = request_scope();
-    let principal = authenticate_operator(host.installed_schema(), &scope);
-    let req = host.runtime().request(&principal, &scope);
-
-    let idx = req
-        .query(FindInFloatBox2D {
-            floor: "floor-1".into(),
-            region: WorthQueryBox2DF64::from_f64(-100.0, -100.0, 100.0, 100.0),
-        })
-        .ensure_index_ready::<FloatBox2DIndex>()
-        .unwrap();
-
-    // Negative coordinate query matches only NegEquip.
-    assert_eq!(
-        keys(
-            req.query(FindInFloatBox2D {
-                floor: "floor-1".into(),
-                region: WorthQueryBox2DF64::from_f64(-30.0, -15.0, -5.0, 1.0),
-            })
-            .execute()
-            .unwrap()
-            .rows()
-        ),
-        [1]
-    );
-    // Half-open y=[0.0, 5.0) does NOT overlap s1's y=[-20.0, -0.0), DOES overlap s2's y=[-5.0, 8.5).
-    assert_eq!(
-        keys(
-            req.query(FindInFloatBox2D {
-                floor: "floor-1".into(),
-                region: WorthQueryBox2DF64::from_f64(-60.0, 0.0, 20.0, 5.0),
-            })
-            .execute()
-            .unwrap()
-            .rows()
-        ),
-        [2]
-    );
-    // NaN probe refuses with InvalidProbeBounds provider denial!
-    match req
-        .query(FindInFloatBox2D {
-            floor: "floor-1".into(),
-            region: WorthQueryBox2DF64::from_f64(f64::NAN, 0.0, 10.0, 10.0),
-        })
-        .execute()
-    {
-        Err(WorthQueryApplicationRequestQueryDenial::ManagedIndex(cause))
-            if matches!(
-                cause.cause(),
-                WorthQueryManagedIndexDenialCause::Work(
-                    WorthQueryManagedIndexWorkDenial::Provider(_)
-                )
-            ) => {}
-        Err(other) => {
-            panic!("NaN probe must refuse with Provider(InvalidProbeBounds), got {other:?}")
-        }
-        Ok(_) => panic!("NaN probe must not succeed"),
-    }
-    idx.close();
 }

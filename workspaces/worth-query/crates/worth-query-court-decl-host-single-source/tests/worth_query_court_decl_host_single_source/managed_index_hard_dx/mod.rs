@@ -1,5 +1,6 @@
 //! Managed-Index Hard DX acceptance courts and 64-seed 4-family differential DST.
 mod courts;
+mod courts_f64;
 mod dst;
 mod dst_driver;
 mod dst_oracle;

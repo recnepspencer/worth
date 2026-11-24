@@ -22,6 +22,7 @@ pub(super) struct HygienicNames {
     pub(super) observed_local: Ident,
     pub(super) slice_local: Ident,
     pub(super) decoded_local: Ident,
+    pub(super) reason_param: Ident,
 }
 
 impl HygienicNames {
@@ -52,6 +53,7 @@ impl HygienicNames {
             observed_local: fresh_ident("__worth_binary_observed", mixed, &mut used),
             slice_local: fresh_ident("__worth_binary_slice", mixed, &mut used),
             decoded_local: fresh_ident("__worth_binary_decoded", mixed, &mut used),
+            reason_param: fresh_ident("__worth_binary_reason", mixed, &mut used),
         }
     }
 }

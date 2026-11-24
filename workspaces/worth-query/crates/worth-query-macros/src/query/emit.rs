@@ -130,12 +130,14 @@ fn parameter_items(input: &DeriveInput, decl_spec: &QueryDeclaration) -> Option<
             }
         }
     });
+    let params_local = Ident::new("__worth_params", Span::mixed_site());
+    let input_local = Ident::new("__worth_input", Span::mixed_site());
     let binds = decl_spec.params.iter().map(|param| {
         let (member, selector, ty) = (&param.member, &param.selector, &param.value_ty);
         quote_spanned! {ty.span()=>
-            __worth_params = __worth_params.bind(
+            #params_local = #params_local.bind(
                 #query::#selector(),
-                ::core::clone::Clone::clone(&input.#member),
+                ::core::clone::Clone::clone(&#input_local.#member),
             )?;
         }
     });
@@ -152,15 +154,15 @@ fn parameter_items(input: &DeriveInput, decl_spec: &QueryDeclaration) -> Option<
         impl #request {
             #[doc(hidden)]
             fn worth_query_try_parameters(
-                input: &Self,
+                #input_local: &Self,
             ) -> ::core::result::Result<
                 #decl::application_query::ApplicationQueryParameterSet<#query>,
                 #decl::application_schema::ApplicationValueEncodeDenial,
             > {
-                let mut __worth_params =
+                let mut #params_local =
                     #decl::application_query::ApplicationQueryParameterSet::new();
                 #(#binds)*
-                ::core::result::Result::Ok(__worth_params)
+                ::core::result::Result::Ok(#params_local)
             }
         }
     })
@@ -177,11 +179,12 @@ fn scope_extractor(input: &DeriveInput, decl_spec: &QueryDeclaration) -> Option<
         return None;
     };
     let (frag, request) = (fragment(), &input.ident);
-    let read = quote_spanned!(value_ty.span()=> input.#member);
+    let input_local = Ident::new("__worth_input", Span::mixed_site());
+    let read = quote_spanned!(value_ty.span()=> #input_local.#member);
     Some(quote! {
         impl #request {
             #[doc(hidden)]
-            fn worth_query_scope(input: Self) -> <#selection as #frag::RecordSelection>::Value {
+            fn worth_query_scope(#input_local: Self) -> <#selection as #frag::RecordSelection>::Value {
                 #read
             }
         }

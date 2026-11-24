@@ -103,17 +103,25 @@ impl WorthQueryBox3DProbe<CanonicalF64> for WorthQueryBox3DF64 {
 struct Box2DF64Codec;
 impl BinaryValueDelegate for Box2DF64Codec {
     type Value = WorthQueryBox2DF64;
-    const MAXIMUM_WIRE_BYTES: usize = 1 + 4 * u64::WIRE_BYTES;
+    const MAXIMUM_WIRE_BYTES: usize = 1 + 4 * CanonicalF64::WIRE_BYTES;
     fn encode(v: &Self::Value, w: &mut dyn BinaryValueWriter) -> Result<(), ValueCodecDenial> {
-        encode_coords(&[v.min_x_bits, v.min_y_bits, v.max_x_bits, v.max_y_bits], w)
+        encode_coords(
+            &[
+                CanonicalF64(v.min_x_bits),
+                CanonicalF64(v.min_y_bits),
+                CanonicalF64(v.max_x_bits),
+                CanonicalF64(v.max_y_bits),
+            ],
+            w,
+        )
     }
     fn admit(b: &[u8], a: &mut ValueDecodeAdmission<'_>) -> Result<Self::Value, ValueCodecDenial> {
-        let [min_x_bits, min_y_bits, max_x_bits, max_y_bits] = decode_coords(b, a, 0u64)?;
+        let [min_x, min_y, max_x, max_y] = decode_coords(b, a, CanonicalF64(0))?;
         Ok(WorthQueryBox2DF64 {
-            min_x_bits,
-            min_y_bits,
-            max_x_bits,
-            max_y_bits,
+            min_x_bits: min_x.0,
+            min_y_bits: min_y.0,
+            max_x_bits: max_x.0,
+            max_y_bits: max_y.0,
         })
     }
 }
@@ -140,30 +148,29 @@ worth_query_value_binding!(pub WorthQueryBox2DF64Binding for WorthQueryBox2DF64 
 struct Box3DF64Codec;
 impl BinaryValueDelegate for Box3DF64Codec {
     type Value = WorthQueryBox3DF64;
-    const MAXIMUM_WIRE_BYTES: usize = 1 + 6 * u64::WIRE_BYTES;
+    const MAXIMUM_WIRE_BYTES: usize = 1 + 6 * CanonicalF64::WIRE_BYTES;
     fn encode(v: &Self::Value, w: &mut dyn BinaryValueWriter) -> Result<(), ValueCodecDenial> {
         encode_coords(
             &[
-                v.min_x_bits,
-                v.min_y_bits,
-                v.min_z_bits,
-                v.max_x_bits,
-                v.max_y_bits,
-                v.max_z_bits,
+                CanonicalF64(v.min_x_bits),
+                CanonicalF64(v.min_y_bits),
+                CanonicalF64(v.min_z_bits),
+                CanonicalF64(v.max_x_bits),
+                CanonicalF64(v.max_y_bits),
+                CanonicalF64(v.max_z_bits),
             ],
             w,
         )
     }
     fn admit(b: &[u8], a: &mut ValueDecodeAdmission<'_>) -> Result<Self::Value, ValueCodecDenial> {
-        let [min_x_bits, min_y_bits, min_z_bits, max_x_bits, max_y_bits, max_z_bits] =
-            decode_coords(b, a, 0u64)?;
+        let [min_x, min_y, min_z, max_x, max_y, max_z] = decode_coords(b, a, CanonicalF64(0))?;
         Ok(WorthQueryBox3DF64 {
-            min_x_bits,
-            min_y_bits,
-            min_z_bits,
-            max_x_bits,
-            max_y_bits,
-            max_z_bits,
+            min_x_bits: min_x.0,
+            min_y_bits: min_y.0,
+            min_z_bits: min_z.0,
+            max_x_bits: max_x.0,
+            max_y_bits: max_y.0,
+            max_z_bits: max_z.0,
         })
     }
 }

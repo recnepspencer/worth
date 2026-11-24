@@ -152,3 +152,117 @@
 //!     A,
 //! }
 //! ```
+//!
+//! Structs whose wire size exceeds `InlineBytes::MAXIMUM_LENGTH` fail at compile time:
+//!
+//! ```compile_fail,E0080
+//! use worth_query_decl::facade::application_schema::InlineBytes;
+//! use worth_query_decl::facade::WorthBinaryValue;
+//! #[derive(Clone, Copy, WorthBinaryValue)]
+//! #[worth_query(identity = "doc.binary.oversized.v1", version = 1)]
+//! pub struct TooLarge {
+//!     pub payload: [u8; InlineBytes::MAXIMUM_LENGTH],
+//! }
+//! ```
+//!
+//! Caller identifiers matching internal macro names (`__WorthBinaryValue`,
+//! `__worth_binary_call_validate`, `__worth_binary_reason`) cannot shadow
+//! generated items:
+//!
+//! ```
+//! use worth_query_decl::facade::application_schema::{
+//!     ApplicationReadableScalarValueBinding, ApplicationScalarValueBinding,
+//! };
+//! use worth_query_decl::facade::WorthBinaryValue;
+//!
+//! fn __worth_binary_call_validate(v: &__WorthBinaryValue) -> Result<(), &'static str> {
+//!     (v.a < v.b).then_some(()).ok_or("a must be < b")
+//! }
+//! #[allow(dead_code)]
+//! const __worth_binary_reason: &str = "caller shadow";
+//!
+//! #[derive(Clone, Copy, Debug, Eq, PartialEq, WorthBinaryValue)]
+//! #[worth_query(
+//!     identity = "doc.binary.hygiene.v1",
+//!     version = 1,
+//!     validate = __worth_binary_call_validate
+//! )]
+//! pub struct __WorthBinaryValue {
+//!     pub a: i64,
+//!     pub b: i64,
+//! }
+//!
+//! let v = __WorthBinaryValue { a: 1, b: 2 };
+//! let raw = __WorthBinaryValueBinding::encode(&v).unwrap();
+//! assert_eq!(__WorthBinaryValueBinding::decode(&raw).unwrap(), v);
+//! assert!(__WorthBinaryValueBinding::encode(&__WorthBinaryValue { a: 2, b: 2 }).is_err());
+//! ```
+//!
+//! A `#[derive(WorthQuery)]` `#[worth_query(probe)]` field whose type mismatches
+//! the managed index's `ProbeBinding::Value` fails to compile:
+//!
+//! ```compile_fail,E0308
+//! use worth_query_decl::facade::application_identity::ApplicationIdentityNamespace;
+//! use worth_query_decl::facade::application_query::*;
+//! use worth_query_decl::facade::application_schema::{fragment::*, *};
+//! use worth_query_decl::facade::{
+//!     authentication::*, worth_query_identity_namespace, worth_query_native_scalar_bindings,
+//!     worth_query_structured_value_binding, WorthManagedIndex, WorthQuery, WorthQueryProjection,
+//!     WorthQueryRecord, WorthQuerySchema,
+//! };
+//!
+//! const S_NS: ApplicationIdentityNamespace = worth_query_identity_namespace!("doc.bad_probe.src.v1");
+//! const Q_NS: ApplicationIdentityNamespace = worth_query_identity_namespace!("doc.bad_probe.q.v1");
+//! const R_NS: ApplicationIdentityNamespace = worth_query_identity_namespace!("doc.bad_probe.row.v1");
+//!
+//! #[derive(Clone, Copy, WorthQuerySchema)]
+//! #[worth_query(schema, owner = "doc.bad_probe", name = "S", members(F))]
+//! pub struct S;
+//! #[derive(Clone, Copy, WorthQuerySchema)]
+//! #[worth_query(fragment, bindings = C, members(M, P, E))]
+//! pub struct F;
+//! worth_query_native_scalar_bindings!(pub C);
+//! impl Scalar<WorthQueryExternalPrincipalIdentity> for C {
+//!     type Binding = WorthQueryExternalPrincipalIdentityBinding;
+//!     const WRITABLE: bool = false;
+//! }
+//! impl Scalar<WorthQueryPrincipalMappingStatus> for C {
+//!     type Binding = WorthQueryPrincipalMappingStatusBinding;
+//! }
+//! #[derive(Clone, Copy, WorthQuerySchema)] #[worth_query(entity, aspects(MA), relations(MT))] pub struct M;
+//! #[derive(Clone, Copy, WorthQuerySchema)] #[worth_query(entity, aspects(PA))] pub struct P;
+//! #[derive(Clone, Copy, WorthQuerySchema)] #[worth_query(entity, aspects(EA), reference(S, F))] pub struct E;
+//! #[derive(WorthQuerySchema)] #[worth_query(relation, to = P, from = M, reference(S, F))] pub struct MT;
+//! #[derive(WorthQueryRecord)] #[worth_query(bindings = C, aspect = MA, fragment = F, entity = M)]
+//! pub struct MRow { #[worth_query(equality)] pub ext: WorthQueryExternalPrincipalIdentity, #[worth_query(equality)] pub st: WorthQueryPrincipalMappingStatus }
+//! #[derive(WorthQueryRecord)] #[worth_query(bindings = C, aspect = PA, fragment = F, entity = P)]
+//! pub struct PRow { #[worth_query(equality, read_only)] pub pid: u64 }
+//! #[derive(WorthQueryRecord)] #[worth_query(bindings = C, aspect = EA, fragment = F, entity = E)]
+//! pub struct ERow { #[worth_query(equality, read_only)] pub k: u64 }
+//! #[derive(Clone, Debug, Eq, PartialEq, WorthQueryProjection)]
+//! #[worth_query(schema = S, root = E, namespace = R_NS)]
+//! pub struct Row { #[worth_query(field = K)] pub k: u64 }
+//! worth_query_structured_value_binding!(pub RowB for Row { identity: "doc.bad_probe.rowb.v1" });
+//! worth_query_structured_value_binding!(pub DenB for () { identity: "doc.bad_probe.denb.v1" });
+//! pub struct PB;
+//! pub struct Ctx;
+//! impl ApplicationBindingContext<S> for Ctx {
+//!     type PrincipalBinding = PB; type Mapping = M; type Principal = P;
+//!     type PrincipalIdentity = u64; type PrincipalIdentityBinding = U64ApplicationValueBinding;
+//!     type IdempotencyKey = u64; type DenialBinding = DenB;
+//!     const IDEMPOTENCY_IDENTITY: &'static str = "doc.bad_probe.idem.v1";
+//!     fn principal_binding() -> ApplicationPrincipalBindingRef<S, PB, M, P, u64, U64ApplicationValueBinding> { unimplemented!() }
+//! }
+//! #[derive(Clone, Debug, WorthQuery)]
+//! #[worth_query(schema = S, context = Ctx, namespace = S_NS, result = RowB, root = E, scope = K, limits = 8)]
+//! pub struct Src { #[worth_query(scope)] pub k: u64 }
+//! #[derive(WorthManagedIndex)]
+//! #[worth_query(schema = S, entity = E, source = SrcBinding, probe = String)]
+//! pub struct StrIdx;
+//! #[derive(Clone, Debug, WorthQuery)]
+//! #[worth_query(schema = S, context = Ctx, namespace = Q_NS, scope = K, managed_index = StrIdx, limits = 8)]
+//! pub struct BadProbeQuery {
+//!     #[worth_query(scope)] pub k: u64,
+//!     #[worth_query(probe)] pub wrong_type: u64,
+//! }
+//! ```

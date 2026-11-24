@@ -30,6 +30,7 @@ pub(super) fn binary_value(input: &DeriveInput, spec: &BinaryValueDeclaration) -
         rest_local,
         observed_local,
         decoded_local,
+        reason_param,
         ..
     } = &names;
 
@@ -71,8 +72,8 @@ pub(super) fn binary_value(input: &DeriveInput, spec: &BinaryValueDeclaration) -
     });
     let binding_validate_body = if spec.validate.is_some() {
         quote! {
-            (#call_validate())(#value_param).map_err(|__worth_reason| {
-                #aschema::ApplicationValueValidationDenial::rejected(Self::IDENTITY, __worth_reason)
+            (#call_validate())(#value_param).map_err(|#reason_param| {
+                #aschema::ApplicationValueValidationDenial::rejected(Self::IDENTITY, #reason_param)
             })
         }
     } else {
@@ -109,6 +110,7 @@ pub(super) fn binary_value(input: &DeriveInput, spec: &BinaryValueDeclaration) -
             #(#outer_field_aliases)*
             #validate_helper
             const #wire_bytes_const: usize = #wire_bytes_expr;
+            let _ = #wire_bytes_const;
 
             const _: () = {
                 #inner_shadows
@@ -373,6 +375,7 @@ fn emit_inner_shadows(names: &HygienicNames) -> TokenStream {
         &names.observed_local,
         &names.slice_local,
         &names.decoded_local,
+        &names.reason_param,
     ];
     idents.extend(names.field_locals.iter());
     quote! {
