@@ -123,10 +123,25 @@ fn validate_predicates(
             predicate.scalar_family(),
             None,
             true,
-        ) || !definition.parameters().iter().any(|parameter| {
-            parameter.name() == predicate.parameter()
-                && parameter.scalar_family() == predicate.scalar_family()
-        }) {
+        ) {
+            return Err(ApplicationSchemaDeclarationDenial::InvalidApplicationQuery);
+        }
+        let expected_ok = match predicate.expected() {
+            crate::application_query::ApplicationQueryPredicateExpected::Parameter(name) => {
+                definition.parameters().iter().any(|parameter| {
+                    parameter.name() == name
+                        && parameter.scalar_family() == predicate.scalar_family()
+                        && !parameter.is_optional()
+                })
+            }
+            crate::application_query::ApplicationQueryPredicateExpected::Value(value) => {
+                crate::application_query::predicate_literal_is_valid(
+                    value,
+                    predicate.scalar_family(),
+                )
+            }
+        };
+        if !expected_ok {
             return Err(ApplicationSchemaDeclarationDenial::InvalidApplicationQuery);
         }
     }

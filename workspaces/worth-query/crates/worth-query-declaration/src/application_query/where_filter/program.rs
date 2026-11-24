@@ -54,9 +54,9 @@ impl ApplicationQueryWhereFilterProgram {
         let schema = operands
             .iter()
             .try_fold(ExpressionSchema::builder(), |schema, operand| {
-                Ok::<_, Denial>(
-                    schema.operand(operand.name(), operand.source().expression_type()?)?,
-                )
+                let ty = operand.source().expression_type()?;
+                operand.source().validate_value()?;
+                Ok::<_, Denial>(schema.operand(operand.name(), ty)?)
             })?
             .build();
         let catalog = ExpressionFunctionCatalog::builder(&schema, Self::PROFILE).build();

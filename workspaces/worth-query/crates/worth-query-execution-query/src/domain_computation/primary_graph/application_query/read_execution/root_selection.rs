@@ -205,18 +205,25 @@ fn select_scoped_root<ReadIdentity>(
             field,
         ));
     }
-    let expected = plan
-        .parameters
-        .bindings()
-        .iter()
-        .find(|(name, _)| name.as_ref() == predicate.parameter())
-        .map(|(_, value)| value)
-        .ok_or_else(|| {
-            read_execution_denial(
-                WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable,
-                predicate.parameter(),
-            )
-        })?;
+    let expected = match predicate.expected() {
+        worth_query_declaration::facade::application_query::ApplicationQueryPredicateExpected::Parameter(
+            parameter,
+        ) => plan
+            .parameters
+            .bindings()
+            .iter()
+            .find(|(name, _)| name.as_ref() == parameter)
+            .map(|(_, value)| value)
+            .ok_or_else(|| {
+                read_execution_denial(
+                    WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable,
+                    parameter,
+                )
+            })?,
+        worth_query_declaration::facade::application_query::ApplicationQueryPredicateExpected::Value(
+            value,
+        ) => value,
+    };
     let mut work = RootSelectionWork::new(interruption, spent);
     let mut set_source =
         RootPathSourceBuilder::for_material_source(execution, plan.material_source)?;

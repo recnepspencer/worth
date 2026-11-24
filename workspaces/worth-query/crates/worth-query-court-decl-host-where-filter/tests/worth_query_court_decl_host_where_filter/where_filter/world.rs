@@ -216,8 +216,65 @@ macro_rules! reader {
 }
 reader!(search, Search);
 reader!(due_by, DueBy);
+reader!(open_inbox, OpenInbox);
+reader!(literal_filter, LiteralFilter);
 reader!(fit, Fit);
 reader!(by_status, ByStatus);
+
+pub fn exact_project(
+    host: &Host,
+    project: u64,
+) -> Result<Vec<ProjectRow>, WorthQueryApplicationRequestQueryDenial> {
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    host.runtime()
+        .request(&principal, &scope)
+        .query(ExactProject { project })
+        .execute()
+        .map(|result| result.rows().to_vec())
+}
+
+pub fn funded_due(
+    host: &Host,
+    scope: &WorthQueryRequestScope,
+    work: u64,
+    intent: DueBy,
+) -> Result<(Vec<u64>, usize), WorthQueryApplicationRequestQueryDenial> {
+    let caller = ExecutionResourceLease::serial(LeaseRequest {
+        policy: ExecutionRequestPolicy::new(
+            ExecutionPosture::Serial,
+            DeterminismContract::CanonicalBitwise,
+            ExecutionBudget::new(
+                std::num::NonZeroUsize::MIN,
+                Some(64 * 1024 * 1024),
+                Some(work),
+            ),
+        ),
+        cancellation: scope.cancellation().execution_token(),
+        deadline: scope.deadline(),
+    })
+    .expect("the finite caller request is admitted");
+    let principal = authenticate_operator(host.installed_schema(), scope);
+    host.runtime()
+        .with_funded_application_advancement(
+            scope,
+            ExecutionAllocationPolicy::Execution(&caller),
+            |phase| {
+                host.runtime()
+                    .request(&principal, scope)
+                    .query(intent)
+                    .execute_in_advancement(&phase)
+                    .map(|result| {
+                        let keys = result.rows().iter().map(|row| row.key).collect();
+                        (
+                            keys,
+                            result.receipt().inspect().read_work().total_work_units(),
+                        )
+                    })
+            },
+        )
+        .expect("the installed host opens funded advancement")
+}
 
 pub fn keys(rows: Rows) -> Vec<u64> {
     rows.expect("the filtered read succeeds")

@@ -45,7 +45,36 @@ task_query!(SearchQuery, "where-filter.search.v1", "task_search");
 task_query!(DueQuery, "where-filter.due.v1", "task_due");
 task_query!(FitQuery, "where-filter.fit.v1", "part_fit");
 task_query!(StatusQuery, "where-filter.status.v1", "task_status");
+task_query!(OpenInboxQuery, "where-filter.open-inbox.v1", "open_inbox");
+task_query!(
+    LiteralFilterQuery,
+    "where-filter.literal-filter.v1",
+    "literal_filter"
+);
 task_query!(RefusedQuery, "where-filter.refused.v1", "refused_filter");
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ProjectRow {
+    pub key: u64,
+}
+worth_query_structured_value_binding!(pub ProjectRowBinding for ProjectRow {identity:"where-filter.project-row.v1"});
+pub struct ProjectKeySlot;
+worth_query_portable_type!(ProjectKeySlot => "where-filter.project-key-slot.v1");
+worth_query_application_query!(pub ExactProjectQuery for Schema, identity "where-filter.exact-project.v1",
+    parameters ParametersBinding, result ProjectRowBinding, scope Project => "Project", name "exact_project");
+impl WorthQueryApplicationProjection<Schema, ExactProjectQuery> for ProjectRow {
+    fn project(
+        row: &WorthQueryApplicationProjectionRow<'_, Schema, ExactProjectQuery>,
+    ) -> Result<Self, WorthQueryApplicationProjectionDenial> {
+        Ok(Self {
+            key: row.field(project_key_slot())?,
+        })
+    }
+}
+pub fn project_key_slot(
+) -> ApplicationQueryResultFieldRef<ExactProjectQuery, ProjectKeySlot, Schema, ProjectKey> {
+    ApplicationQueryResultFieldRef::new("key", ProjectKey::at("ProjectKey"))
+}
 
 type Declaration = ApplicationSchemaDeclarationBuilder<Schema>;
 thread_local! {
@@ -95,7 +124,7 @@ pub fn tasks<Q: ApplicationQueryMarkerIdentity<Schema, ResultBinding = RowBindin
         .cardinality(ApplicationQueryCardinality::Many)
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
-        .lanes(ApplicationQueryLaneEligibility::one_shot())
+        .lanes(ApplicationQueryLaneEligibility::one_shot().with_historical())
         .public()
         .root_path(
             ApplicationQueryRootPath::from(Project::reference()).forward(Contains::reference()),
@@ -123,16 +152,110 @@ pub fn search(
 }
 
 pub fn due() -> ApplicationQueryDefinitionBuilder<Schema, DueQuery, Parameters, TaskRow, Project> {
-    let max_due = parameter::<DueQuery, MaxDue, CanonicalDateApplicationValueBinding>("max_due");
+    let max_due = max_due();
+    let text = due_text();
     let filter = ApplicationQueryWhereFilterOperands::new()
         .field("due", Due::at("Due"))
+        .and_then(|operands| operands.field("title", Title::at("Title")))
+        .and_then(|operands| operands.field("notes", Notes::at("Notes")))
         .and_then(|operands| operands.parameter("max_due", max_due))
-        .and_then(|operands| operands.parse("is_some(due) && unwrap(due) <= max_due"))
-        .expect("the date range admits statically");
+        .and_then(|operands| operands.parameter("text", text))
+        .and_then(|operands| {
+            operands.parse(
+                "(!is_some(max_due) || (is_some(due) && unwrap(due) <= unwrap(max_due))) && \
+                 (!is_some(text) || contains_ignore_ascii_case(title, unwrap(text)) || \
+                 (is_some(notes) && contains_ignore_ascii_case(unwrap(notes), unwrap(text))))",
+            )
+        })
+        .expect("the optional date and text filters admit statically");
     tasks(DueQuery::reference())
         .parameter(max_due)
+        .parameter(text)
         .where_filter(filter)
         .order_by(key(), ApplicationQueryOrderingDirection::Ascending)
+}
+
+pub fn open_inbox(
+) -> ApplicationQueryDefinitionBuilder<Schema, OpenInboxQuery, Parameters, TaskRow, Project> {
+    let max_due = inbox_max_due();
+    let text = inbox_text();
+    let open =
+        ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new("open".to_owned())
+            .expect("open status encodes");
+    let filter = ApplicationQueryWhereFilterOperands::new()
+        .field("due", Due::at("Due"))
+        .and_then(|operands| operands.field("title", Title::at("Title")))
+        .and_then(|operands| operands.field("notes", Notes::at("Notes")))
+        .and_then(|operands| operands.parameter("max_due", max_due))
+        .and_then(|operands| operands.parameter("text", text))
+        .and_then(|operands| {
+            operands.parse(
+                "(!is_some(max_due) || (is_some(due) && unwrap(due) <= unwrap(max_due))) && \
+                 (!is_some(text) || contains_ignore_ascii_case(title, unwrap(text)) || \
+                 (is_some(notes) && contains_ignore_ascii_case(unwrap(notes), unwrap(text))))",
+            )
+        })
+        .expect("open inbox optional filters admit statically");
+    tasks(OpenInboxQuery::reference())
+        .parameter(max_due)
+        .parameter(text)
+        .where_equal_value(Status::at("Status"), open)
+        .where_filter(filter)
+        .order_by(key(), ApplicationQueryOrderingDirection::Ascending)
+}
+
+pub fn literal_filter(
+) -> ApplicationQueryDefinitionBuilder<Schema, LiteralFilterQuery, Parameters, TaskRow, Project> {
+    let open =
+        ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new("open".to_owned())
+            .expect("open encodes");
+    let done =
+        ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new("done".to_owned())
+            .expect("done encodes");
+    let cutoff =
+        ApplicationEncodedScalarValue::<CanonicalDateApplicationValueBinding>::try_new(date(150))
+            .expect("cutoff date encodes");
+    let filter = ApplicationQueryWhereFilterOperands::new()
+        .field("status", Status::at("Status"))
+        .and_then(|operands| operands.field("due", Due::at("Due")))
+        .and_then(|operands| operands.literal("open", open))
+        .and_then(|operands| operands.literal("done", done))
+        .and_then(|operands| operands.literal("cutoff", cutoff))
+        .and_then(|operands| {
+            operands.parse(
+                "status == open && status != done && (!is_some(due) || unwrap(due) <= cutoff)",
+            )
+        })
+        .expect("literal where filter admits statically");
+    tasks(LiteralFilterQuery::reference())
+        .where_filter(filter)
+        .order_by(key(), ApplicationQueryOrderingDirection::Ascending)
+}
+
+pub fn exact_project(
+) -> ApplicationQueryDefinitionBuilder<Schema, ExactProjectQuery, Parameters, ProjectRow, Project> {
+    let project_one =
+        ApplicationEncodedScalarValue::<U64ApplicationValueBinding>::try_new(1).expect("1 encodes");
+    ApplicationQueryDefinitionBuilder::declare(ExactProjectQuery::reference())
+        .root(Project::reference())
+        .scope(Project::reference())
+        .result_shape(
+            ApplicationQueryResultShapeBuilder::<
+                Schema,
+                ExactProjectQuery,
+                Project,
+                ProjectRow,
+                ProjectRowBinding,
+            >::new(Project::reference())
+            .field(project_key_slot())
+            .build(),
+        )
+        .cardinality(ApplicationQueryCardinality::OptionalOne)
+        .disclosure(ApplicationQueryDisclosureContract::public())
+        .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
+        .lanes(ApplicationQueryLaneEligibility::one_shot().with_historical())
+        .public()
+        .where_equal_value(ProjectKey::at("ProjectKey"), project_one)
 }
 
 pub fn fit() -> ApplicationQueryDefinitionBuilder<Schema, FitQuery, Parameters, TaskRow, Project> {
@@ -189,6 +312,12 @@ impl worth_query_decl::facade::application_schema::fragment::Registration<Schema
             .application_query(fit())
             .application_query_binding::<FitBinding>()
             .application_query(status())
-            .application_query_binding::<StatusBinding>())
+            .application_query_binding::<StatusBinding>()
+            .application_query(open_inbox())
+            .application_query_binding::<OpenInboxBinding>()
+            .application_query(literal_filter())
+            .application_query_binding::<LiteralFilterBinding>()
+            .application_query(exact_project())
+            .application_query_binding::<ExactProjectBinding>())
     }
 }

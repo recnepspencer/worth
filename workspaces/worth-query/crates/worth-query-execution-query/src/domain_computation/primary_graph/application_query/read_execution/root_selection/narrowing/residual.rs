@@ -10,6 +10,7 @@ use crate::domain_computation::primary_graph::application_query::read_execution:
     WorthQueryApplicationReadExecutionDenialKind,
 };
 use worth_foundational::expression_api::{ExpressionInputs, ExpressionValue};
+use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_query::ApplicationQueryObservableInfluence;
 use worth_query_installation::facade::WorthQueryInstalledWhereFilter;
 use worth_relational::facade::identity::EntityId;
@@ -26,6 +27,7 @@ pub fn narrow<ReadIdentity>(
 ) -> Result<Vec<EntityId>, WorthQueryApplicationReadExecutionDenial> {
     admit_filter_fields(read, filter)?;
     let parameters = bind_parameters(read, filter)?;
+    let literals = bind_literals(filter)?;
     let rows = row_operands::RowOperandReader::new(read, filter)?;
     let mut retained = Vec::new();
     retained.try_reserve_exact(candidates.len()).map_err(|_| {
@@ -35,7 +37,7 @@ pub fn narrow<ReadIdentity>(
         work.checkpoint(WHERE_FILTER_SUBJECT)?;
         let fields = rows.read(read, candidate, evidence, work)?;
         let mut inputs = ExpressionInputs::builder(filter.program().schema());
-        for (name, value) in parameters.iter().chain(&fields) {
+        for (name, value) in parameters.iter().chain(&literals).chain(&fields) {
             inputs = inputs
                 .bind(name, value.clone())
                 .map_err(|_| projection_unavailable())?;
@@ -87,9 +89,32 @@ fn bind_parameters<ReadIdentity>(
                 .find(|(name, _)| name.as_ref() == parameter.parameter())
                 .map(|(_, value)| value)
                 .ok_or_else(projection_unavailable)?;
-            let value =
-                ExpressionValue::from_aspect_value(value).map_err(|_| projection_unavailable())?;
+            let value = if parameter.is_optional() && matches!(value, AspectValue::Null) {
+                ExpressionValue::none()
+            } else {
+                let scalar = ExpressionValue::from_aspect_value(value)
+                    .map_err(|_| projection_unavailable())?;
+                if parameter.is_optional() {
+                    ExpressionValue::some(scalar)
+                } else {
+                    scalar
+                }
+            };
             Ok((parameter.operand().to_owned(), value))
+        })
+        .collect()
+}
+
+fn bind_literals(
+    filter: &WorthQueryInstalledWhereFilter,
+) -> Result<Vec<(String, ExpressionValue)>, WorthQueryApplicationReadExecutionDenial> {
+    filter
+        .literals()
+        .iter()
+        .map(|literal| {
+            let value = ExpressionValue::from_aspect_value(literal.value())
+                .map_err(|_| projection_unavailable())?;
+            Ok((literal.operand().to_owned(), value))
         })
         .collect()
 }

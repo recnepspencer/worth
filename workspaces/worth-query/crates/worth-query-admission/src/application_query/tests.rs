@@ -35,6 +35,8 @@ mod alternate_source_digest;
 mod installed_contract;
 #[path = "tests/live_lane.rs"]
 mod live_lane;
+#[path = "tests/optional_parameters.rs"]
+mod optional_parameters;
 #[path = "tests/parameter_canonical_basis.rs"]
 mod parameter_canonical_basis;
 #[path = "tests/planning_variations.rs"]
@@ -124,6 +126,7 @@ impl Registration<PlanningTestSchema> for Contracts {
                 )
                 .application_query(complete_closure::derived_definition(complete_closure::ForwardQuery::reference(), false))
                 .application_query(complete_closure::derived_definition(complete_closure::ReverseQuery::reference(), true))
+                .application_query(optional_parameters::definition())
                 .application_query(query_definition()))
     }
 }
@@ -321,6 +324,19 @@ fn installed_query() -> worth_query_installation::facade::WorthQueryInstalledApp
 > {
     installed_schema()
         .certification_query(query_reference())
+        .unwrap()
+}
+
+fn installed_optional_search_query()
+-> worth_query_installation::facade::WorthQueryInstalledApplicationQuery<
+    PlanningTestSchema,
+    optional_parameters::OptionalSearchQuery,
+    ActivityParameters,
+    ActivityResult,
+    Account,
+> {
+    installed_schema()
+        .certification_query(optional_parameters::OptionalSearchQuery::reference())
         .unwrap()
 }
 

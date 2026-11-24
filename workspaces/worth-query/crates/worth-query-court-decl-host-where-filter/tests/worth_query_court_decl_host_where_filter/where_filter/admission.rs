@@ -85,4 +85,82 @@ fn undeclared_parameters_and_foreign_fields_refuse_at_schema_declaration() {
         foreign,
         ApplicationQueryDefinitionDenial::WhereFilterFieldOutsideRoot
     );
+
+    // Optional operand bound to a required parameter ref refuses declaration.
+    let opt_mismatch = cause(declaration_with(|builder| {
+        let req_q = parameter::<RefusedQuery, SearchText, StringApplicationValueBinding>("q");
+        let opt_q = ApplicationQueryParameterRef::<
+            RefusedQuery,
+            SearchText,
+            StringApplicationValueBinding,
+            true,
+        >::optional("q");
+        let filter = ApplicationQueryWhereFilterOperands::new()
+            .field("title", Title::at("Title"))
+            .and_then(|operands| operands.parameter("q", opt_q))
+            .and_then(|operands| operands.parse("!is_some(q) || title == unwrap(q)"))
+            .unwrap();
+        builder.application_query(
+            tasks(RefusedQuery::reference())
+                .parameter(req_q)
+                .where_filter(filter),
+        )
+    }));
+    assert_eq!(
+        opt_mismatch,
+        ApplicationQueryDefinitionDenial::WhereFilterParameterMismatch
+    );
+
+    // Non-equality field in `.where_equal_value(...)` refuses at schema closure.
+    let non_eq_value = declaration_with(|builder| {
+        let title_val =
+            ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new("x".into())
+                .unwrap();
+        builder.application_query(
+            tasks(RefusedQuery::reference()).where_equal_value(Title::at("Title"), title_val),
+        )
+    });
+    assert_eq!(
+        non_eq_value.err(),
+        Some(ApplicationSchemaDeclarationDenial::InvalidApplicationQuery)
+    );
+}
+
+#[test]
+fn literal_type_mismatch_and_unit_bearing_literal_refuse_at_filter_admission() {
+    let rank_lit = ApplicationEncodedScalarValue::<I64ApplicationValueBinding>::try_new(5).unwrap();
+    let mismatch = ApplicationQueryWhereFilterOperands::<RefusedQuery>::new()
+        .field("title", Title::at("Title"))
+        .and_then(|operands| operands.literal("five", rank_lit))
+        .and_then(|operands| operands.parse("title == five"))
+        .err()
+        .expect("string == i64 literal must refuse");
+    assert_eq!(expression_family(mismatch), "TypeMismatch");
+
+    struct Meter(i64);
+    impl Meter {
+        fn encode(value: &Self) -> i64 {
+            value.0
+        }
+        fn decode(value: i64) -> Option<Self> {
+            Some(Self(value))
+        }
+    }
+    worth_query_decl::facade::worth_query_value_binding! {
+        MeterBinding for Meter {
+            identity: "where-filter.meter.v1",
+            scalar: Int64,
+            unit: "worth.units.metre.v1",
+            encode: Meter::encode,
+            decode: Meter::decode,
+        }
+    }
+    let meters = ApplicationEncodedScalarValue::<MeterBinding>::try_new(Meter(10)).unwrap();
+    let unit_denial = ApplicationQueryWhereFilterOperands::<RefusedQuery>::new()
+        .literal("meters", meters)
+        .err();
+    assert_eq!(
+        unit_denial,
+        Some(ApplicationQueryWhereFilterDenial::UnitBearingOperand)
+    );
 }

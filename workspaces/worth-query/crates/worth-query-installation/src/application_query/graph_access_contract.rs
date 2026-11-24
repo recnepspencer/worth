@@ -9,13 +9,15 @@ use worth_query_declaration::facade::application_query::{
 use worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity;
 
 mod compilation;
+mod predicate;
 mod relation_predicate;
 mod root_selection;
 mod where_filter;
+pub use predicate::WorthQueryInstalledGraphPredicate;
 pub use relation_predicate::WorthQueryInstalledGraphRelationPredicate;
 pub use where_filter::{
     WorthQueryInstalledWhereFilter, WorthQueryInstalledWhereFilterField,
-    WorthQueryInstalledWhereFilterParameter,
+    WorthQueryInstalledWhereFilterLiteral, WorthQueryInstalledWhereFilterParameter,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
@@ -198,37 +200,6 @@ impl WorthQueryInstalledGraphRelation {
 
     pub const fn depth(&self) -> usize {
         self.depth
-    }
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
-pub struct WorthQueryInstalledGraphPredicate {
-    entity: String,
-    aspect: AspectKey,
-    field: FieldKey,
-    parameter: String,
-    scalar_family: ScalarAspectType,
-}
-
-impl WorthQueryInstalledGraphPredicate {
-    pub fn field(&self) -> (&str, &str, &str) {
-        (&self.entity, self.aspect.as_str(), self.field.as_str())
-    }
-
-    pub fn aspect_key(&self) -> &AspectKey {
-        &self.aspect
-    }
-
-    pub fn field_key(&self) -> &FieldKey {
-        &self.field
-    }
-
-    pub fn parameter(&self) -> &str {
-        &self.parameter
-    }
-
-    pub const fn scalar_family(&self) -> ScalarAspectType {
-        self.scalar_family
     }
 }
 

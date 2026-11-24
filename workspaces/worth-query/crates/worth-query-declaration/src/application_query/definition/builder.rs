@@ -15,7 +15,9 @@ use crate::application_query::{
 use crate::portable_identity::WorthQueryPortableType;
 
 use super::authoring::{ApplicationQueryDefinitionParts, ApplicationQueryRootAuthoring};
-use super::{ApplicationQueryDefinition, ApplicationQueryPredicate};
+use super::{
+    ApplicationQueryDefinition, ApplicationQueryPredicate, ApplicationQueryPredicateExpected,
+};
 
 pub struct ApplicationQueryDefinitionBuilder<Schema, Query, Parameters, QueryResult, Scope> {
     definition: ApplicationQueryDefinition<Schema, Query, Parameters, QueryResult, Scope>,
@@ -66,9 +68,9 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
         }
     }
 
-    pub fn parameter<Parameter, Binding>(
+    pub fn parameter<Parameter, Binding, const OPTIONAL: bool>(
         mut self,
-        parameter: ApplicationQueryParameterRef<Query, Parameter, Binding>,
+        parameter: ApplicationQueryParameterRef<Query, Parameter, Binding, OPTIONAL>,
     ) -> Self
     where
         Binding: crate::application_schema::ApplicationScalarValueBinding,
@@ -121,7 +123,31 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
             entity: field.entity().to_owned(),
             aspect: field.aspect().to_owned(),
             field: field.field().to_owned(),
-            parameter: parameter.name().to_owned(),
+            expected: ApplicationQueryPredicateExpected::Parameter(parameter.name().to_owned()),
+            scalar_family: Binding::SCALAR_FAMILY,
+        });
+        self
+    }
+
+    /// Narrows the root entity by equality against one authored scalar constant,
+    /// without declaring a runtime query parameter.
+    pub fn where_equal_value<Field, Binding>(
+        mut self,
+        field: Field,
+        expected: crate::application_schema::ApplicationEncodedScalarValue<Binding>,
+    ) -> Self
+    where
+        Field: crate::application_schema::fragment::RecordSelection<Binding = Binding>,
+        Binding: crate::application_schema::ApplicationReadableScalarValueBinding,
+    {
+        self.definition
+            .field_expectations
+            .push(field.expected_recipe());
+        self.definition.predicates.push(ApplicationQueryPredicate {
+            entity: field.entity().to_owned(),
+            aspect: field.aspect().to_owned(),
+            field: field.field().to_owned(),
+            expected: ApplicationQueryPredicateExpected::Value(expected.into_foundational_value()),
             scalar_family: Binding::SCALAR_FAMILY,
         });
         self
