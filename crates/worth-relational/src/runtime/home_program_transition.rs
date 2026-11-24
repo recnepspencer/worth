@@ -10,11 +10,12 @@ use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, WorkCeilingD
 use worth_foundational::facade::HomeProgramTransitionCatalogDigest;
 use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 
-mod body_digest;
 mod body_validation;
 mod planning_request;
-pub use body_digest::{home_program_transition_body_digest, RelationalHomeProgramBodyDenial};
 pub use planning_request::RelationalHomeProgramPlanningSource;
+pub use worth_relational_durability::internal_port::durability::home_program_body_digest::{
+    home_program_transition_body_digest, RelationalHomeProgramBodyDenial,
+};
 mod catalog_digest;
 mod predecessor_catalog;
 mod retention;

@@ -6,6 +6,7 @@
 use crate::publication::patch::data::PatchStreamPosition;
 use crate::runtime::RelationalRuntime;
 use std::sync::{Arc, Weak};
+use worth_relational_durability::internal_port::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactOwnerPort as _;
 use worth_relational_storage::internal_port::storage::substrate::allocation_witness::RelationalAllocationWitnessOwnerPort as _;
 
 pub use crate::storage::substrate::allocation_witness::RelationalAllocationWitness;
@@ -121,7 +122,7 @@ impl RelationalRuntime {
     ) -> bool {
         self.durability
             .cold_source()
-            .is_some_and(|attached| std::ptr::addr_eq(Arc::as_ptr(&attached), Arc::as_ptr(source)))
+            .is_some_and(|attached| Arc::ptr_eq(&attached, source))
     }
 
     /// Weak identity of this runtime's attached durable cold source, if any.

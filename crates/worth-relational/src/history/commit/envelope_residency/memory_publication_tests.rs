@@ -36,7 +36,7 @@ fn memory_original_frame_survives_export_checkpoint_and_last_alias() {
     let bill = retained_byte_owner_bill(original.bytes());
     let positioned = cell.demand_positioned(&execution, 1 << 30).unwrap();
     // Independent existing encoder is a fixture reference, outside the export claim.
-    let reference = VerifiedCanonicalCommitFrame::reference_encode(
+    let reference = VerifiedCanonicalCommitFrame::reference_encode_for_test(
         &positioned,
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )

@@ -1,4 +1,5 @@
 use std::hint::black_box;
+use worth_relational_durability::internal_port::durability::data::checkpoint_images::DurableCheckpointFieldsFixturePort as _;
 
 use sha2::{Digest, Sha256};
 
@@ -57,7 +58,7 @@ fn synthetic_native_restore_and_image_digest_benchmark() {
                 source.durability_authority().checkpoint(execution).unwrap()
             })
             .unwrap();
-        let roots = &image.branch_roots[0].partition_images;
+        let roots = &image.branch_roots_for_test()[0].partition_images;
         let encoded_bytes = rmp_serde::to_vec(roots).unwrap().len();
         assert!(encoded_bytes > 0, "partition checkpoint image is nonempty");
 

@@ -1,4 +1,5 @@
 //! Bind cold ownership courts to the installed checkpoint, recovery and preparation services.
+use worth_relational_durability::internal_port::durability::data::native_checkpoint::roster_corruption::RelationalNativeCheckpointOwnerPort as _;
 use super::RelationalRuntime;
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::durability::data::{RecoveryVerificationMode, RelationalCheckpointArtifactPolicy};

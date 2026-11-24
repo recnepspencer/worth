@@ -1,5 +1,6 @@
 use crate::durability::data::recovery_verification::RecoveryVerificationMode;
 use crate::tests::support::*;
+use worth_relational_durability::internal_port::durability::data::checkpoint_images::DurableCheckpointFieldsFixturePort as _;
 
 #[test]
 fn checkpoint_restore_rejects_incomplete_field_revision_column() {
@@ -20,7 +21,11 @@ fn checkpoint_restore_rejects_incomplete_field_revision_column() {
                 RecoveryVerificationMode::NormalRecoveryVerification,
             )
             .unwrap();
-        let root = &mut recovery.checkpoint.as_mut().unwrap().branch_roots[0];
+        let root = &mut recovery
+            .checkpoint
+            .as_mut()
+            .unwrap()
+            .branch_roots_mut_for_test()[0];
         let image = &mut root.partition_images[0].entity_arena;
         assert!(!image.field_revisions.is_empty());
         image.field_revisions.pop();

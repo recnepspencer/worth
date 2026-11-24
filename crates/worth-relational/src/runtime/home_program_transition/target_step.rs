@@ -1,6 +1,7 @@
 //! Target-only whole-candidate execution payload under an admitted Home step.
 use super::*;
 use crate::schema::data::{ProposedSchemaTransition, SchemaReconciliationPolicy};
+use worth_relational_durability::internal_port::durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenialOwnerPort as _;
 
 #[derive(Debug)]
 pub(crate) struct AdmittedRelationalHomeProgramTarget {

@@ -9,8 +9,7 @@ pub mod history_branch_cells;
 pub(crate) mod history_branch_transition;
 #[path = "history_canonical_routes.rs"]
 pub(crate) mod history_canonical_routes;
-#[path = "history_catalog_recovery.rs"]
-pub mod history_catalog_recovery;
+pub use worth_relational_durability::internal_port::runtime::state::subsystems::history::history_catalog_recovery;
 #[path = "history_committed_receipts.rs"]
 pub(crate) mod history_committed_receipts;
 #[path = "history_preparation_binding.rs"]

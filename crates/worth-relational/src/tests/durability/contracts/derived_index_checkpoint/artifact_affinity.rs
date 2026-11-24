@@ -54,7 +54,7 @@ fn digest_valid_join_checkpoint_requires_complete_rows_and_leg_state() {
         for missing_rows in [true, false] {
             let mut malformed = lawful.clone();
             let checkpoint = malformed.checkpoint.as_mut().unwrap();
-            let artifact = checkpoint.derived_index_checkpoint.as_ref().unwrap();
+            let artifact = checkpoint.derived_index_checkpoint().unwrap();
             let mut generations = artifact.readmit(fixture_lane).unwrap();
             let generation = generations
                 .iter_mut()
@@ -70,7 +70,7 @@ fn digest_valid_join_checkpoint_requires_complete_rows_and_leg_state() {
                 *rows = (**rows).clone().into();
             }
             // Recompute the digest: the trust boundary must check meaning as well as bytes.
-            checkpoint.derived_index_checkpoint = Some(
+            *checkpoint.derived_index_checkpoint_mut_for_test() = Some(
             crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts::capture(
                 fixture_lane,
                 generations.into_iter().map(std::sync::Arc::new).collect(),
@@ -116,7 +116,7 @@ fn digest_valid_basis_binding_cannot_carry_an_obsolete_generation_across_an_edit
             )
             .unwrap();
         let checkpoint = plan.checkpoint.as_mut().unwrap();
-        let artifact = checkpoint.derived_index_checkpoint.as_ref().unwrap();
+        let artifact = checkpoint.derived_index_checkpoint().unwrap();
         let mut generations: Vec<_> = artifact
             .readmit(fixture_lane)
             .unwrap()
@@ -135,7 +135,7 @@ fn digest_valid_basis_binding_cannot_carry_an_obsolete_generation_across_an_edit
             .find(|(id, _)| *id == index.index_id)
             .unwrap()
             .1 = prior.generation_id;
-        checkpoint.derived_index_checkpoint = Some(
+        *checkpoint.derived_index_checkpoint_mut_for_test() = Some(
             crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts::capture(
                 fixture_lane,
                 generations,
@@ -172,12 +172,12 @@ fn legacy_index_affinity_is_checked_before_replacing_a_live_recovery_target() {
             .unwrap();
         let checkpoint = lawful.checkpoint.as_mut().unwrap();
         let generations = checkpoint
-            .derived_index_checkpoint
+            .derived_index_checkpoint_mut_for_test()
             .take()
             .unwrap()
             .readmit(fixture_lane)
             .unwrap();
-        checkpoint.derived_index_checkpoint_format = 0;
+        *checkpoint.derived_index_checkpoint_format_mut_for_test() = 0;
         checkpoint.derived_index_artifacts = DerivedIndexArtifacts::new(generations.clone());
         let mut corrupt = lawful.clone();
         let mut malformed = generations;

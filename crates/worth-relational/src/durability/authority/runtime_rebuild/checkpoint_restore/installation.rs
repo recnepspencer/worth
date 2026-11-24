@@ -5,6 +5,7 @@ use super::{
 };
 use crate::durability::data::{CheckpointRestoreWork, DurableCheckpoint, RelationalRecoveryStop};
 use crate::runtime::RelationalRuntime;
+use worth_relational_durability::internal_port::durability::data::checkpoint_images::DurableCheckpointOwnerPort as _;
 
 pub(in super::super) fn restore_checkpoint_state(
     lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
@@ -15,8 +16,8 @@ pub(in super::super) fn restore_checkpoint_state(
     original_schemas: Option<&super::super::original_schemas::OriginalSchemaGraph>,
 ) -> Result<(), RelationalRecoveryStop> {
     if let Some(directory) = checkpoint
-        .directory
-        .clone()
+        .selected_directory()
+        .cloned()
         .map(|edge| edge.into_original())
     {
         let schemas =
@@ -54,7 +55,7 @@ pub(in super::super) fn restore_checkpoint_state(
     restored
         .index_authority()
         .recover_installed_index_routing(execution)?;
-    if let Some(artifact) = &checkpoint.derived_index_checkpoint {
+    if let Some(artifact) = checkpoint.derived_index_checkpoint() {
         crate::indexes::verify_checkpoint_index_bases(
             execution,
             &restored.indexes.snapshot(),
@@ -65,8 +66,8 @@ pub(in super::super) fn restore_checkpoint_state(
     }
     let restored = super::super::unshared_state(restored)?;
     if let Some(directory) = checkpoint
-        .canonical_directory
-        .clone()
+        .original_canonical_directory()
+        .cloned()
         .map(|edge| edge.into_original())
     {
         restored
@@ -169,7 +170,7 @@ pub(in super::super) fn clear_recovery_partition_pins(restored: &mut RelationalR
     if restored
         .durability
         .latest_checkpoint()
-        .is_some_and(|checkpoint| checkpoint.directory.is_some())
+        .is_some_and(|checkpoint| checkpoint.selected_directory().is_some())
     {
         return;
     }
@@ -208,7 +209,7 @@ fn restore_canonical_routes(
     let history = current
         .replacing_recovered_branch(branch)
         .map_err(|denial| corrupt(format!("history snapshot denied: {denial:?}")))?;
-    for commit in &checkpoint.envelopes {
+    for commit in checkpoint.envelopes() {
         history
             .install_recovered_canonical_route(std::sync::Arc::new(commit.clone()))
             .map_err(|detail| corrupt(detail.to_owned()))?;

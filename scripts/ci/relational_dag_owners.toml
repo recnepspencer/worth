@@ -60,6 +60,7 @@ floor = 13000
 depends = ["contracts", "storage", "branch"]
 
 [owners.durability]
+physical = true
 crate = "worth-relational-durability"
 layer = 4
 cap = 84000
@@ -81,6 +82,27 @@ floor = 32000
 depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "indexes", "durability", "publication"]
 
 [paths]
+"durability/authority.rs" = "runtime"
+"durability/authority/associated_effects.rs" = "runtime"
+"durability/authority/checkpoint_capture.rs" = "runtime"
+"durability/authority/checkpoint_complete.rs" = "runtime"
+"durability/authority/checkpoint_complete/capture.rs" = "runtime"
+"durability/authority/checkpoint_complete/interim.rs" = "runtime"
+"durability/authority/checkpoint_complete/interim/verified.rs" = "runtime"
+"durability/authority/recorded_component_readmission.rs" = "runtime"
+"durability/authority/recovered_publication.rs" = "runtime"
+"durability/authority/recovered_publication/successor.rs" = "runtime"
+"durability/authority/recovery.rs" = "runtime"
+"durability/authority/recovery/catalog_readmission.rs" = "runtime"
+"durability/authority/recovery/catalog_readmission/planning_root.rs" = "runtime"
+"durability/authority/recovery/fork_effect.rs" = "runtime"
+"durability/authority/recovery/prepared_home.rs" = "runtime"
+"durability/authority/runtime_rebuild/checkpoint_restore.rs" = "runtime"
+"durability/authority/runtime_rebuild/index_catalog.rs" = "runtime"
+"durability/source_initial_inputs/mod.rs" = "runtime"
+"indexes/mod.rs" = "runtime"
+"storage/residency/mod.rs" = "runtime"
+"storage/residency/tests.rs" = "runtime"
 "authority/mod.rs" = "runtime"
 "authorization/mod.rs" = "runtime"
 "branch/model_ownership/mod.rs" = "runtime"
@@ -125,7 +147,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "history/data/canonical_commit_envelope/required_output_origin/historical_selection.rs" = "publication"
 "history/data/canonical_commit_envelope/required_output_origin/installation.rs" = "publication"
 "history/data/canonical_commit_envelope/required_output_origin.rs" = "publication"
-"history/data/canonical_commit_envelope/schema_carrier.rs" = "runtime"
 "history/data/canonical_commit_envelope.rs" = "runtime"
 "history/data/codec_retirement_closure/authored_restoration.rs" = "runtime"
 "history/data/codec_retirement_closure.rs" = "runtime"
@@ -136,9 +157,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "storage/data/mod.rs" = "runtime"
 "storage/data/symbol_residency.rs" = "runtime"
 "storage/mod.rs" = "runtime"
-"storage/residency/checkpoint_capture/complete.rs" = "durability"
-"storage/residency/checkpoint_capture.rs" = "durability"
-"storage/residency/mod.rs" = "durability"
 "visibility/materialization/mod.rs" = "runtime"
 "visibility/materialization/read_records/projection/field_revisions.rs" = "runtime"
 "visibility/materialization/read_records/projection/mod.rs" = "runtime"
@@ -166,40 +184,13 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "durability/authority/runtime_rebuild/envelope_replay/owner_bindings.rs" = "runtime"
 "durability/authority/runtime_rebuild/index_catalog/predecessor.rs" = "runtime"
 "durability/authority/runtime_rebuild/transition_replay.rs" = "runtime"
-"storage/residency/region_capture.rs" = "durability"
-"storage/residency/checkpoint_capture/complete/tests" = "durability"
 # Native-frame residency courts exercise the actual Durability writer and readmission.
 # Their inputs are exact arena histories and an independently emitted selected directory.
-"storage/residency/region_fixture" = "durability"
-"storage/residency/head_history_kind_tests.rs" = "durability"
-"storage/residency/head_metadata_tests.rs" = "durability"
-"storage/residency/head_probe_tests.rs" = "durability"
-"storage/residency/history_consolidation_tests.rs" = "durability"
-"storage/residency/history_fold_refusals.rs" = "durability"
-"storage/residency/history_prefix_tests.rs" = "durability"
-"storage/residency/kind_authority_tests.rs" = "durability"
-"storage/residency/layered_history_tests.rs" = "durability"
-"storage/residency/lease_transfer_tests.rs" = "durability"
-"storage/residency/member_custody_tests.rs" = "durability"
-"storage/residency/mixed_history_tests.rs" = "durability"
-"storage/residency/probe_tests.rs" = "durability"
-"storage/residency/projection_corruption_tests.rs" = "durability"
-"storage/residency/request_stop_tests.rs" = "durability"
-"storage/residency/resident_history_tests.rs" = "durability"
-"storage/residency/root_view_tests.rs" = "durability"
-"storage/residency/symbol_admission_tests.rs" = "durability"
-"storage/residency/tests.rs" = "durability"
-"storage/residency/region_load.rs" = "durability"
-"storage/residency/region_load/owned_partition.rs" = "durability"
-"storage/residency/region_load/admission.rs" = "durability"
-"storage/residency/region_load/head_validation.rs" = "durability"
 # Commit-stage visit observers are private to the whole-runtime request pipeline.
 "durability/authority/runtime_rebuild/envelope_replay/interruption_tests.rs" = "runtime"
 "durability/authority/runtime_rebuild/envelope_replay/interruption_tests/recovered_state_comparison.rs" = "runtime"
 "durability/authority/runtime_rebuild.rs" = "runtime"
 "durability/authority/runtime_rebuild/checkpoint_restore/installation.rs" = "runtime"
-"durability/canonical_commit_artifact/retained_frame_reads.rs" = "durability"
-"durability/canonical_commit_artifact/journal_source_read.rs" = "durability"
 "branch/historical_selection/chain.rs" = "runtime"
 "branch/historical_selection/runtime_reads.rs" = "runtime"
 "branch/root_snapshot_custody/exact_observation/runtime_reads.rs" = "runtime"
@@ -233,37 +224,13 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "authority/commit/pipeline/execution.rs" = "runtime"
 "authority/commit/pipeline/runtime_candidate_orchestration.rs" = "runtime"
 "authority/commit/pipeline/runtime_merge_draft.rs" = "runtime"
-"runtime/state/subsystems/history_catalog_recovery.rs" = "durability"
-"runtime/state/subsystems/history_catalog_recovery/inventory.rs" = "durability"
-"runtime/state/subsystems/history_catalog_recovery/source_binding.rs" = "durability"
-"runtime/state/subsystems/history_catalog_recovery/checkpoint_root.rs" = "durability"
 "validation/candidate_source/applied.rs" = "publication"
 
 "runtime/invariant_view.rs" = "runtime"
 "durability/authority/checkpoint_complete/interim/verified/freeze.rs" = "runtime"
 "runtime/settlement_port.rs" = "runtime"
-"durability/initial_schema_installation_denial.rs" = "durability"
 "durability/authority/checkpoint_capture/runtime_selection.rs" = "runtime"
 # Explicit ownership restored by Stage 2.4C r2 and Stage 2.5A.
-"durability/artifact_payload_emission.rs" = "durability"
-"durability/canonical_commit_artifact/body_read.rs" = "durability"
-"durability/canonical_commit_artifact/checkpoint_body.rs" = "durability"
-"durability/canonical_commit_artifact/decoded_quote" = "durability"
-"durability/canonical_commit_artifact/frame_encoding.rs" = "durability"
-"durability/canonical_commit_artifact/frame_reference_encoding.rs" = "durability"
-"durability/canonical_commit_artifact/payload_wire" = "durability"
-"durability/canonical_commit_artifact/verified_frame.rs" = "durability"
-"durability/checkpoint_selection_denial.rs" = "durability"
-"durability/cold_residency_census.rs" = "durability"
-"durability/data/branch_root_schema_images/capture_tests.rs" = "durability"
-"durability/data/native_checkpoint/roster_corruption/portable_rows.rs" = "durability"
-"durability/data/native_checkpoint/roster_corruption/portable_rows/coherent.rs" = "durability"
-"durability/data/native_checkpoint/roster_corruption/portable_rows/coherent/claim.rs" = "durability"
-"durability/envelope_version_selection.rs" = "durability"
-"durability/medium_recovery_readmission.rs" = "durability"
-"durability/medium_transition_tail.rs" = "durability"
-"durability/recovery_transition_history.rs" = "durability"
-"durability/source_initial_inputs/producer_roster.rs" = "durability"
 # Branch authenticates immutable row custody from the exact selected root.
 "replay/authority/commit_closure.rs" = "runtime"
 "replay/authority/diagnostics.rs" = "runtime"
@@ -274,9 +241,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "runtime/durability_authority.rs" = "runtime"
 "runtime/recovered_retirement_trials.rs" = "runtime"
 "durability/authority/checkpoint_complete/capture/freeze.rs" = "runtime"
-"durability/authority_continuity/issue_mapping.rs" = "durability"
-"durability/authority_continuity.rs" = "durability"
-"durability/transition_admission_denial.rs" = "durability"
 "durability/authority/runtime_access.rs" = "runtime"
 "durability/authority/checkpoint_runtime.rs" = "runtime"
 "durability/authority/checkpoint_complete/runtime_capture.rs" = "runtime"
@@ -321,7 +285,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "branch/root_authoritative_payload_tests.rs" = "runtime"
 "branch/root_tests/request.rs" = "runtime"
 "history/commit/envelope_residency/memory_publication_tests.rs" = "runtime"
-"history/commit/envelope_residency_tests.rs" = "durability"
 "history/data/canonical_commit_envelope/payload_encoding_tests.rs" = "runtime"
 "history/data/canonical_commit_envelope/payload_encoding_tests/transition_source.rs" = "runtime"
 "publication/ownership/authored_retirement" = "publication"
@@ -380,7 +343,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "branch/owner_services" = "runtime"
 "branch/record_advance" = "runtime"
 # Export authenticates the retained member against Durability's selected image.
-"branch/recorded_basis/export.rs" = "durability"
 "branch/recorded_basis/live_export.rs" = "runtime"
 "branch/recorded_basis/memory_component/live.rs" = "runtime"
 "branch/recorded_basis/memory_component/successor_runtime.rs" = "runtime"
@@ -397,10 +359,7 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "commit_strategies/lowering" = "runtime"
 "commit_strategies/lowering_boundary_tests" = "runtime"
 "content/transaction" = "runtime"
-"durability" = "durability"
 # Portable schema registration rows own meaning separate from their enclosing image.
-"durability/authority/recovery" = "durability"
-"durability/authority/runtime_rebuild" = "durability"
 
 
 # Canonical framing bounds and refusals are portable wire meaning.
@@ -408,7 +367,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 # Canonical wire image meaning is owned with the branch root; native frame
 # selection and authentication remain with Durability.
 "durability/mod.rs" = "runtime"
-"durability/recovery" = "durability"
 "execution/request_work/observation" = "runtime"
 "facade" = "runtime"
 "facade.rs" = "runtime"
@@ -457,7 +415,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "history/retention/live_reclamation.rs" = "runtime"
 "history/retention/publication_reclamation.rs" = "runtime"
 # The index root mounts the eager recovery entrance. Projection kernels stay in Indexes.
-"indexes/mod.rs" = "durability"
 "indexes/access/admitted_generation" = "runtime"
 "indexes/access/execution" = "courts"
 "indexes/access/mod.rs" = "runtime"
@@ -547,7 +504,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "publication/mod.rs" = "runtime"
 "publication/ownership" = "publication"
 # Native publication records and bounded decode retain canonical Branch meaning.
-"replay" = "durability"
 "replay/access" = "runtime"
 "replay/authority" = "runtime"
 "replay/mod.rs" = "runtime"
@@ -564,10 +520,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "runtime/state/subsystems/canonical_publication_routes/narrowed_cutover_control.rs" = "runtime"
 # Position retention only shares an already admitted envelope and does not publish.
 "runtime/state/subsystems/canonical_publication_routes/position_retention.rs" = "runtime"
-"runtime/state/subsystems/durability/checkpoint_selection" = "durability"
-"runtime/state/subsystems/durability/commit_log.rs" = "durability"
-"runtime/state/subsystems/durability/commit_log/read_coverage.rs" = "durability"
-"runtime/state/subsystems/durability/state.rs" = "durability"
 # Runtime publishes the accepted schema cutover using Branch-prepared cells and heads.
 "runtime/state/subsystems/history_branch_cells/initial_schema.rs" = "runtime"
 "runtime/state/subsystems/history_canonical_routes" = "publication"
@@ -579,7 +531,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 # Closing the source binds both Branch ledger and Publication route custody.
 "runtime/state/subsystems/history_source_retirement" = "publication"
 # Original index member admission and source retirement stay in Durability.
-"runtime/state/subsystems/indexing/cold_checkpoint" = "durability"
 "runtime/state/subsystems/publication" = "publication"
 "simulation" = "runtime"
 "storage/access" = "runtime"

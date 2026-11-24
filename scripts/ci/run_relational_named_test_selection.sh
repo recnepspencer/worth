@@ -49,7 +49,7 @@ parse_selection_request() {
       --package)
         [[ $# -ge 2 ]] || fail_usage "--package requires a Relational package"
         case "$2" in
-          worth-relational|worth-relational-contracts|worth-relational-storage|worth-relational-branch|worth-relational-indexes|worth-relational-lineage|worth-relational-merge|worth-relational-mutation) PACKAGE="$2" ;;
+          worth-relational|worth-relational-contracts|worth-relational-storage|worth-relational-branch|worth-relational-indexes|worth-relational-lineage|worth-relational-merge|worth-relational-mutation|worth-relational-durability) PACKAGE="$2" ;;
           *) fail_usage "unknown Relational package '$2'" ;;
         esac
         shift 2

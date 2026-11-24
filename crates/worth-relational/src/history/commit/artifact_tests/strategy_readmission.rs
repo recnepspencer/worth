@@ -1,4 +1,6 @@
 //! A real strategy-bearing artifact keeps each decoded shared leaf funded.
+use worth_relational_durability::internal_port::durability::migration::readmitted_canonical_commit::ReadmittedCanonicalCommitOwnerPort as _;
+use worth_relational_durability::internal_port::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactOwnerPort as _;
 use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact as Artifact;
 use crate::history::data::PositionedCanonicalCommit;
 use worth_execution::{
@@ -102,7 +104,10 @@ fn decode(
         ExecutionRequestArrayBuilder::<u8>::allocate(*request, source.as_bytes().len()).unwrap();
     bytes.extend_from_slice(source.as_bytes()).unwrap();
     let raw = Artifact::from_owned_bytes(bytes.seal().unwrap().into_immutable_bytes()).unwrap();
-    let positioned = raw.readmit_framed(request).unwrap().into_positioned();
+    let positioned = raw
+        .readmit_framed(request)
+        .unwrap()
+        .into_positioned_for_test();
     (raw, positioned)
 }
 fn refuse_zero_budget(source: &Artifact) {
@@ -216,7 +221,7 @@ fn source_artifact(large_input: bool) -> Artifact {
                 .is_some_and(|key| key.owned_allocation_capacity_bytes() >= large.len() as u64)),
         "the other large leaf is an actual owner-issued old index key"
     );
-    let artifact = Artifact::from_positioned(
+    let artifact = Artifact::from_positioned_for_test(
         &positioned,
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )

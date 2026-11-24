@@ -5,6 +5,7 @@ use crate::indexes::data::{
     DerivedIndexBuildRequest, DerivedIndexDefinition, DerivedIndexGenerationId, DerivedIndexId,
     DerivedIndexKind,
 };
+use worth_relational_durability::internal_port::durability::data::checkpoint_images::DurableCheckpointOwnerPort as _;
 
 #[test]
 fn repeated_global_same_basis_builds_reclaim_duplicates_but_keep_pinned_root() {
@@ -79,7 +80,7 @@ fn repeated_global_same_basis_builds_reclaim_duplicates_but_keep_pinned_root() {
             .checkpoint(execution)
             .unwrap();
         let saved = checkpoint
-            .derived_index_checkpoint
+            .derived_index_checkpoint()
             .unwrap()
             .readmit(fixture_lane)
             .unwrap();

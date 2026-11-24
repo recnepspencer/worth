@@ -1,3 +1,5 @@
+use worth_relational_durability::internal_port::durability::data::recovery_plan::RecoveryPlanFieldsFixturePort as _;
+use worth_relational_durability::internal_port::durability::migration::readmitted_canonical_commit::ReadmittedCanonicalCommitOwnerPort as _;
 use super::*;
 use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 use worth_relational_contracts::internal_port::branch::target::RelationalBranchTargetOwnerPort as _;
@@ -23,7 +25,7 @@ fn checkpoint_recovery_rejects_foreign_branch_target_substitution() {
         .unwrap();
     let checkpoint = plan.checkpoint.as_mut().unwrap();
     let foreign_target = checkpoint
-        .branch_cells
+        .branch_cells_for_test()
         .iter()
         .find(|cell| cell.branch_id == feature)
         .unwrap()
@@ -31,7 +33,7 @@ fn checkpoint_recovery_rejects_foreign_branch_target_substitution() {
         .target()
         .clone();
     let main = checkpoint
-        .branch_cells
+        .branch_cells_mut_for_test()
         .iter_mut()
         .find(|cell| cell.branch_id.0 == "main")
         .unwrap();
@@ -78,7 +80,7 @@ fn tail_recovery_rejects_foreign_branch_target_substitution() {
         .checkpoint
         .as_ref()
         .unwrap()
-        .branch_cells
+        .branch_cells_for_test()
         .iter()
         .find(|cell| cell.branch_id == feature)
         .unwrap()
@@ -86,7 +88,7 @@ fn tail_recovery_rejects_foreign_branch_target_substitution() {
         .target()
         .clone();
     let tail_cell = (*plan
-        .tail_log
+        .tail_log_mut_for_test()
         .iter_mut()
         .map(|commit| commit.readmitted_envelope_mut_for_test(execution))
         .find(|envelope| envelope.commit.commit_id == tail_commit.commit.commit_id)

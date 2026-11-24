@@ -157,13 +157,13 @@ fn digest_valid_unissued_scoped_branch_denies_without_replacing_target_state() {
 
         let (mut plan, _, _, _) = fork_checkpoint(execution);
         let checkpoint = plan.checkpoint.as_mut().unwrap();
-        let existing = checkpoint.derived_index_checkpoint.as_ref().unwrap();
+        let existing = checkpoint.derived_index_checkpoint().unwrap();
         let lane = fixture_lane;
         let mut generations = existing.readmit(lane).unwrap();
         assert_eq!(generations.len(), 1);
         let foreign = BranchId("unissued-checkpoint-index-scope".into());
         assert!(checkpoint
-            .branch_cells
+            .branch_cells_for_test()
             .iter()
             .all(|cell| cell.branch_id != foreign));
         generations[0].source_branch_id = foreign.clone();
@@ -180,7 +180,7 @@ fn digest_valid_unissued_scoped_branch_denies_without_replacing_target_state() {
         let decoded = artifact.readmit(lane).unwrap();
         assert_eq!(decoded[0].source_branch_id, foreign);
         assert_eq!(decoded[0].applicability.branch_id, foreign);
-        checkpoint.derived_index_checkpoint = Some(artifact);
+        *checkpoint.derived_index_checkpoint_mut_for_test() = Some(artifact);
 
         let target_medium = OwnedTestDurableMedium::new();
         let mut target = durable_runtime_for_medium(&target_medium);
@@ -230,7 +230,11 @@ fn checkpoint_index_artifact_missing_payload_denies_before_recovery() {
             RecoveryMode::NormalRecoveryVerification,
         )
         .unwrap();
-    plan.checkpoint.as_mut().unwrap().derived_index_checkpoint = None;
+    *plan
+        .checkpoint
+        .as_mut()
+        .unwrap()
+        .derived_index_checkpoint_mut_for_test() = None;
     let recovered_medium = OwnedTestDurableMedium::new();
     let mut recovered = durable_runtime_for_medium(&recovered_medium);
     let error = recovered
@@ -247,11 +251,11 @@ fn checkpoint_index_artifact_missing_payload_denies_before_recovery() {
             RecoveryMode::NormalRecoveryVerification,
         )
         .unwrap();
-    old_format
+    *old_format
         .checkpoint
         .as_mut()
         .unwrap()
-        .derived_index_checkpoint_format = 1;
+        .derived_index_checkpoint_format_mut_for_test() = 1;
     let recovered_medium = OwnedTestDurableMedium::new();
     let mut recovered = durable_runtime_for_medium(&recovered_medium);
     let error = recovered
@@ -283,11 +287,11 @@ fn checkpoint_recovery_denies_a_digest_valid_foreign_generation_affinity() {
             )
             .unwrap();
         let checkpoint = plan.checkpoint.as_mut().unwrap();
-        let existing = checkpoint.derived_index_checkpoint.as_ref().unwrap();
+        let existing = checkpoint.derived_index_checkpoint().unwrap();
         let lane = fixture_lane;
         let mut generation = existing.readmit(lane).unwrap().pop().unwrap();
         generation.applicability.branch_id = BranchId("foreign".into());
-        checkpoint.derived_index_checkpoint = Some(
+        *checkpoint.derived_index_checkpoint_mut_for_test() = Some(
             crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts::capture(
                 lane,
                 vec![std::sync::Arc::new(generation)],

@@ -7,7 +7,6 @@ pub(crate) use worth_relational_contracts::internal_port::validation::data::grou
 pub(crate) use worth_relational_contracts::internal_port::validation::data::results;
 pub(crate) use worth_relational_contracts::internal_port::validation::data::rule_id;
 pub(crate) use worth_relational_contracts::internal_port::validation::data::rules;
-pub(crate) use worth_relational_contracts::internal_port::validation::data::structural_read;
 
 pub use catalog::{InvariantCatalog, InvariantRegistration};
 pub use contracts::InvariantPlanContract;
@@ -49,7 +48,6 @@ pub use custom_rule::{
 };
 
 pub use crate::validation::engine::result::InvariantCheckResult;
-pub(crate) use worth_relational_contracts::internal_port::validation::data::execution_posture;
 
 #[cfg(test)]
 pub(crate) use custom_rule::{

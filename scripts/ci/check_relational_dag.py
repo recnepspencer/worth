@@ -303,7 +303,7 @@ def totals(directions):
 def ordinary_storage_totals(projection, directions):
     """Count the Storage cut while retaining the residency ledger separately."""
     residency = tuple(f'crates/{crate}/src/storage/residency/' for crate in
-                      ('worth-relational', 'worth-relational-storage'))
+                      ('worth-relational', 'worth-relational-storage', 'worth-relational-durability'))
     counts = {}
     for direction, references in directions.items():
         caller, callee = direction.split(' -> ')

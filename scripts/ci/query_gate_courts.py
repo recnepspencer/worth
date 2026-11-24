@@ -18,6 +18,7 @@ def packages(*names):
 RELATIONAL = (
     "worth-relational",
     "worth-relational-contracts",
+    "worth-relational-durability",
     "worth-relational-storage",
     "worth-relational-branch",
     "worth-relational-indexes",

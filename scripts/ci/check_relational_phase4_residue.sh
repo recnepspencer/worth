@@ -13,6 +13,7 @@ RELATIONAL_SOURCES=(
   "$ROOT_DIR/crates/worth-relational-lineage/src"
   "$ROOT_DIR/crates/worth-relational-merge/src"
   "$MUTATION_ROOT"
+  "$ROOT_DIR/crates/worth-relational-durability/src"
 )
 RAW_REQUESTS="$CONTRACTS_ROOT/merge/data/requests/raw.rs"
 

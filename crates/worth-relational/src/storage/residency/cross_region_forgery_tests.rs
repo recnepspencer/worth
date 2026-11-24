@@ -11,6 +11,11 @@ use crate::tests::support::{
     create_entity_in_partition, create_relation_in_partition, durable_runtime_for_medium,
     OwnedTestDurableMedium,
 };
+use worth_relational_durability::internal_port::durability::data::checkpoint_roots::{
+    root::RelationalCheckpointRoot, roster::CheckpointRoots,
+};
+use worth_relational_durability::internal_port::durability::published_medium::recovery_source::RelationalDurableRecoverySourceOwnerPort as _;
+use worth_relational_storage::internal_port::storage::data::checkpoint_region::RelationalCheckpointRegion;
 
 #[derive(serde::Serialize, serde::Deserialize)]
 struct ExternalWire {
@@ -298,7 +303,9 @@ fn rehashed_cross_region_kind_forgery_is_refused_by_the_canonical_root() {
         bytes.extend(rmp_serde::to_vec_named(&wire).unwrap());
         let source = Arc::new(ForgedSource {
             members,
-            original: medium.recovery_source().into_parts().cold_source,
+            original: medium
+                .recovery_source()
+                .into_original_cold_source_for_test(),
         });
         let recovery = RelationalDurableRecoverySource::new(
             Some(RelationalDurableCheckpointSource::new(

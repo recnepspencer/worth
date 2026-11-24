@@ -20,6 +20,7 @@ use crate::tests::support::{
 use crate::transactions::data::PublishedMergeExecutionAuthority;
 use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeFixturePort as _;
 use worth_relational_branch::internal_port::history::data::positioned_canonical_commit::PositionedCanonicalCommitFixturePort as _;
+use worth_relational_durability::internal_port::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactOwnerPort as _;
 
 pub(super) fn runtime_with_collaboration_merge_history() -> RelationalRuntime {
     let name_key = aspect_key("name");
@@ -158,7 +159,7 @@ pub(super) fn recover_with_rewritten_commit_err(
                         .expect("original merge artifact readmits before rewrite");
                 let mut envelope = copy_original_for_test(readmitted.envelope(), execution);
                 edit.take().expect("one matching commit")(envelope.body_mut_for_test());
-                RelationalCanonicalCommitArtifact::from_positioned(
+                RelationalCanonicalCommitArtifact::from_positioned_for_test(
                     &PositionedCanonicalCommit::positioned_commit_for_test(
                         artifact.position(),
                         Arc::new(envelope),

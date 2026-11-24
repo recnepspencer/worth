@@ -13,6 +13,7 @@ use sha2::{Digest, Sha256};
 use std::sync::atomic::Ordering;
 use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeFixturePort as _;
 use worth_relational_branch::internal_port::history::data::positioned_canonical_commit::PositionedCanonicalCommitFixturePort as _;
+use worth_relational_durability::internal_port::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactOwnerPort as _;
 
 impl OwnedTestDurableMedium {
     pub(crate) fn flip_checkpoint_byte(&self, offset: usize) {
@@ -312,7 +313,7 @@ impl OwnedTestDurableMedium {
             .expect("the medium's own artifact readmits before it is rewritten");
         let mut envelope = copy_original_for_test(readmitted.envelope(), execution);
         edit(envelope.body_mut_for_test());
-        let rewritten = CommitArt::from_positioned(
+        let rewritten = CommitArt::from_positioned_for_test(
             &crate::history::data::PositionedCanonicalCommit::positioned_commit_for_test(
                 position,
                 Arc::new(envelope),

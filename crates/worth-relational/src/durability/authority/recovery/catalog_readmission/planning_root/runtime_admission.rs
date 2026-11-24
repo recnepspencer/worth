@@ -1,3 +1,4 @@
+use worth_relational_durability::internal_port::durability::authority::recovery::catalog_readmission::planning_root::RelationalHomeProgramPlanningRootOwnerPort as _;
 use super::super::refusal::RelationalHomeProgramCatalogReadmissionDenial as Denial;
 use super::RelationalHomeProgramPlanningRoot;
 use crate::durability::authority::recovered_runtime::RecoveredRelationalRuntimeAuthority;
@@ -21,10 +22,10 @@ impl RecoveredRelationalRuntimeAuthority {
             .admit_recorded_component(request, runtime, &planning.source)
             .map_err(Denial::Component)?
             .into_basis();
-        Ok(RelationalHomeProgramPlanningRoot {
-            runtime: self.runtime_instance_id,
-            source: planning.source.clone(),
+        Ok(RelationalHomeProgramPlanningRoot::from_readmitted_root(
+            self.runtime_instance_id,
+            planning.source.clone(),
             basis,
-        })
+        ))
     }
 }

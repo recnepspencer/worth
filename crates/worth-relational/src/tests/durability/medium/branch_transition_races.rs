@@ -172,7 +172,7 @@ fn memory_commit_waits_behind_a_transition_without_consuming_its_candidate() {
     create_entity(execution, &runtime, "source");
     create_branch_from_main(&runtime, "other");
     let step = LiveBranchTransitionStep::new(None, execution);
-    let pause = step.pause_publication_for_test();
+    let (step, pause) = step.pause_publication_for_test();
     let contacts = runtime.patch_position_reservation_counters().contacts;
     std::thread::scope(|scope| {
         let fork = scope.spawn(|| {

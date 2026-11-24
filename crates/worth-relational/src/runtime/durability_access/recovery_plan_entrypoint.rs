@@ -3,6 +3,7 @@ use crate::capabilities::DurabilityRead;
 use crate::durability::data::{RecoveryPlan, RecoveryVerificationMode};
 use crate::runtime::durability_access::retained_recovery_plan::retained_recovery_plan;
 use crate::runtime::RelationalRuntime;
+use worth_relational_durability::internal_port::durability::authority::recovery::prepared_home::PreparedRelationalHomeRecoveryOwnerPort as _;
 
 pub struct DurabilityAccess<'runtime> {
     pub(super) runtime: &'runtime RelationalRuntime,

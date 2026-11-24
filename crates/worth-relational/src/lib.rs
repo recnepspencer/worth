@@ -31,11 +31,14 @@
 #![cfg_attr(doctest, doc = include_str!("../../worth-relational-branch/docs/facade_examples/caller_association.md"))]
 #![cfg_attr(doctest, doc = include_str!("../../worth-relational-mutation/docs/facade_examples/authorization_durable_dependencies.md"))]
 #![cfg_attr(doctest, doc = include_str!("../../worth-relational-mutation/docs/facade_examples/custom_invariant_managed_source.md"))]
+#![cfg_attr(doctest, doc = include_str!("../../worth-relational-durability/docs/facade_examples/associated_effects.md"))]
+#![cfg_attr(doctest, doc = include_str!("../../worth-relational-durability/docs/facade_examples/recovered_publication.md"))]
 
 pub(crate) use worth_relational_branch::internal_port::{query, schema, snapshots, symbols};
+#[cfg(test)]
+pub(crate) use worth_relational_contracts::internal_port::canonical_basis_ready_sequence;
 pub(crate) use worth_relational_contracts::internal_port::{
-    aspect_wire, canonical_basis_ready_sequence, config, diagnostics, errors, graph_member,
-    identity,
+    aspect_wire, config, diagnostics, errors, graph_member, identity,
 };
 pub(crate) use worth_relational_mutation::internal_port::{aggregate_identity, derived_relation};
 mod authority;

@@ -1,3 +1,6 @@
+use worth_relational_durability::internal_port::durability::data::checkpoint_images::DurableCheckpointOwnerPort as _;
+use worth_relational_durability::internal_port::durability::data::recovery_plan::RecoveryPlanOwnerPort as _;
+use worth_relational_durability::internal_port::durability::migration::readmitted_canonical_commit::ReadmittedCanonicalCommitOwnerPort as _;
 use crate::capabilities::{DurabilityRead, RuntimeConfigSource};
 use crate::durability::data::{RecoveryPlan, RecoveryVerificationMode};
 use crate::runtime::durability_access::{
@@ -27,7 +30,7 @@ pub(super) fn retained_recovery_plan(
     let descriptor_semantics_version = descriptor_semantics_version_for_envelopes(
         checkpoint
             .as_ref()
-            .map(|checkpoint| checkpoint.envelopes.as_slice())
+            .map(|checkpoint| checkpoint.envelopes())
             .unwrap_or(&[]),
         &tail_log,
     );
@@ -35,7 +38,7 @@ pub(super) fn retained_recovery_plan(
         runtime,
         checkpoint
             .as_ref()
-            .map(|checkpoint| checkpoint.envelopes.as_slice())
+            .map(|checkpoint| checkpoint.envelopes())
             .unwrap_or(&[]),
         &tail_log,
     );
@@ -57,7 +60,7 @@ pub(super) fn retained_recovery_plan(
     )
     .with_commit_strategy_executors(runtime.commit_strategy_executor_registry().clone());
     if covered.0 > 0 && runtime.durability.transition_history().is_none() {
-        plan.retained_transition_prefix = Some(std::sync::Arc::new(
+        plan.retain_transition_prefix(Some(std::sync::Arc::new(
             runtime
                 .history
                 .capture_original_branch_schema_inputs(execution)
@@ -77,7 +80,7 @@ pub(super) fn retained_recovery_plan(
                         .into()
                     }
                 })?,
-        ));
+        )));
     }
     Ok(plan)
 }
@@ -92,7 +95,7 @@ fn tail_log_after_in_memory_checkpoint(
 > {
     let after = checkpoint.and_then(|checkpoint| {
         checkpoint
-            .envelopes
+            .envelopes()
             .iter()
             .map(crate::history::data::PositionedCanonicalCommit::position)
             .max()

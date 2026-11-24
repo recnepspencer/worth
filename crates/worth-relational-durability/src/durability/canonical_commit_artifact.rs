@@ -1,0 +1,195 @@
+//! Relational's sealed, self-describing byte form of one positioned
+//! canonical commit. Another storage medium persists these bytes opaquely;
+//! Relational alone owns the frame, its version, the payload digest and the
+//! readmission door back to canonical authority.
+//!
+//! Frame (all integers little-endian, header is fixed width):
+//!
+//! | bytes  | field                                   |
+//! |--------|-----------------------------------------|
+//! | 0..8   | magic `WRTHRCCA`                        |
+//! | 8..10  | artifact format version (`u16`)         |
+//! | 10..18 | `PatchStreamPosition` (`u64`)           |
+//! | 18..26 | `CommitId` (`u64`)                      |
+//! | 26..58 | v8 composite payload commitment         |
+//! | 58..66 | payload length (`u64`)                  |
+//! | 66..   | payload: MessagePack named map          |
+//!
+//! Version 8 carries `{position, canonical, original_inputs}`. The canonical
+//! projection and exact schema/policy input DATA have separate SHA-256 leaves;
+//! the composite commitment also binds the header position and commit. See
+//! `payload_digest` for its exact domain-separated grammar.
+
+use worth_relational_contracts::internal_port as contracts;
+pub mod body_read;
+pub use contracts::durability::canonical_commit_artifact::{borrowed_payload, readmission_refusal};
+
+#[doc(hidden)]
+pub trait RelationalCanonicalCommitArtifactOwnerPort: Sized {
+    fn from_owned_bytes(
+        bytes: ExecutionImmutableBytes,
+    ) -> Result<Self, RelationalCanonicalCommitArtifactFrameRefusal>;
+    fn readmit_framed(&self, execution: &worth_execution::ExecutionRequest<'_, '_>) -> Result<crate::durability::migration::ReadmittedCanonicalCommit, worth_relational_contracts::internal_port::durability::canonical_commit_artifact::readmission_refusal::RelationalCanonicalCommitArtifactRefusal>;
+    fn from_positioned_for_test(commit: &worth_relational_branch::internal_port::history::data::positioned_canonical_commit::PositionedCanonicalCommit, policy: worth_execution::ExecutionAllocationPolicy<'_, '_>) -> Result<Self, worth_relational_contracts::internal_port::durability::canonical_commit_artifact::encode_denial::RelationalCanonicalCommitArtifactEncodeDenial>;
+
+    fn from_verified(frame: VerifiedCanonicalCommitFrame) -> Self;
+}
+
+impl RelationalCanonicalCommitArtifactOwnerPort for RelationalCanonicalCommitArtifact {
+    fn from_owned_bytes(
+        bytes: ExecutionImmutableBytes,
+    ) -> Result<Self, RelationalCanonicalCommitArtifactFrameRefusal> {
+        Self::from_owned_bytes(bytes)
+    }
+
+    fn readmit_framed(&self, execution: &worth_execution::ExecutionRequest<'_, '_>) -> Result<crate::durability::migration::ReadmittedCanonicalCommit, worth_relational_contracts::internal_port::durability::canonical_commit_artifact::readmission_refusal::RelationalCanonicalCommitArtifactRefusal>{
+        self.readmit_framed(execution)
+    }
+
+    fn from_positioned_for_test(commit: &worth_relational_branch::internal_port::history::data::positioned_canonical_commit::PositionedCanonicalCommit, policy: worth_execution::ExecutionAllocationPolicy<'_, '_>) -> Result<Self, worth_relational_contracts::internal_port::durability::canonical_commit_artifact::encode_denial::RelationalCanonicalCommitArtifactEncodeDenial>{
+        VerifiedCanonicalCommitFrame::reference_encode_for_test(commit, policy)
+            .map(Self::from_verified)
+    }
+
+    fn from_verified(frame: VerifiedCanonicalCommitFrame) -> Self {
+        Self::from_verified(frame)
+    }
+}
+
+pub mod checkpoint_body;
+pub mod decoded_quote;
+pub(crate) use decoded_quote::schema_image::{
+    prepare as prepare_schema_image_decode, SchemaImageDecodeAdmission,
+};
+
+pub(crate) use contracts::durability::canonical_commit_artifact::frame;
+pub mod encoding;
+pub mod input_commitment;
+pub mod memory_publication;
+pub use memory_publication::MemoryFramePreparationDenial;
+pub mod prepared_payload;
+pub use prepared_payload::PreparedOriginalCanonicalPayload;
+pub mod frame_encoding;
+mod frame_reference_encoding;
+pub mod payload_wire;
+pub mod readmission;
+pub mod request_agreement;
+pub mod request_encoding;
+#[cfg(test)]
+pub mod shared_readmission_tests;
+pub mod verified_frame;
+
+pub mod retained_export;
+pub mod retained_frame_reads;
+
+pub use contracts::durability::canonical_commit_artifact::encode_denial::RelationalCanonicalCommitArtifactEncodeDenial;
+pub use contracts::durability::canonical_commit_artifact::frame_refusal::RelationalCanonicalCommitArtifactFrameRefusal;
+pub use contracts::durability::canonical_commit_artifact::payload_digest::RelationalCanonicalCommitArtifactDigest;
+pub use contracts::durability::canonical_commit_artifact::readmission_refusal::RelationalCanonicalCommitArtifactRefusal;
+pub use retained_export::RelationalCanonicalCommitArtifacts;
+
+use std::sync::Arc;
+use worth_execution::ExecutionImmutableBytes;
+
+use contracts::history::data::coordinates::CommitId;
+use contracts::publication::patch::data::patch_position::PatchStreamPosition;
+use verified_frame::VerifiedCanonicalCommitFrame;
+
+/// One positioned canonical commit as frame-verified bytes.
+///
+/// Holding an artifact proves only that its frame, version, length and
+/// payload digest are intact. It confers no canonical authority: callers
+/// obtain a commit only through [`RelationalCanonicalCommitArtifact::readmit`].
+/// Clones share the immutable byte backing.
+pub struct RelationalCanonicalCommitArtifact {
+    frame: VerifiedCanonicalCommitFrame,
+}
+
+impl RelationalCanonicalCommitArtifact {
+    /// Bounded version eligibility only, never frame or payload admission.
+    pub fn preflight_frame_version(
+        prefix: &[u8],
+    ) -> Result<(), RelationalCanonicalCommitArtifactFrameRefusal> {
+        frame::validate_frame_version(prefix)
+    }
+    pub const PROTOCOL: worth_foundational::facade::BoundaryProtocolIdentity =
+        worth_foundational::facade::BoundaryProtocolIdentity::new(
+            "worth.relational.canonical-commit",
+        );
+    /// The artifact format version this build writes and readmits. Bytes
+    /// carrying any other version are refused, never reinterpreted.
+    pub const FORMAT_VERSION: u16 = frame::FORMAT_VERSION;
+
+    /// Accept bytes from an untrusted medium after checking the frame only:
+    /// magic, version, header width, payload length and payload digest. The
+    /// payload is not decoded and no authority is granted.
+    ///
+    /// Cost: one SHA-256 pass over the payload.
+    pub fn from_untrusted_bytes(
+        bytes: impl Into<Box<[u8]>>,
+    ) -> Result<Self, RelationalCanonicalCommitArtifactFrameRefusal> {
+        Self::from_owned_bytes(ExecutionImmutableBytes::from_external_bytes(Arc::new(
+            bytes.into(),
+        )))
+    }
+
+    /// Keep the original provider allocation and its intrinsic charge while
+    /// checking this same frame. No encoding or byte-copy path participates.
+    pub(crate) fn from_owned_bytes(
+        bytes: ExecutionImmutableBytes,
+    ) -> Result<Self, RelationalCanonicalCommitArtifactFrameRefusal> {
+        VerifiedCanonicalCommitFrame::from_owned_bytes(bytes).map(Self::from_verified)
+    }
+
+    pub(crate) fn from_verified(frame: VerifiedCanonicalCommitFrame) -> Self {
+        Self { frame }
+    }
+
+    pub fn position(&self) -> PatchStreamPosition {
+        self.frame.position()
+    }
+
+    pub fn commit_id(&self) -> CommitId {
+        self.frame.commit_id()
+    }
+
+    pub fn payload_digest(&self) -> RelationalCanonicalCommitArtifactDigest {
+        self.frame.payload_digest()
+    }
+
+    pub fn as_bytes(&self) -> &[u8] {
+        self.frame.as_bytes()
+    }
+
+    pub fn into_bytes(self) -> ExecutionImmutableBytes {
+        self.frame.into_bytes()
+    }
+}
+
+impl Clone for RelationalCanonicalCommitArtifact {
+    fn clone(&self) -> Self {
+        Self::from_verified(self.frame.clone())
+    }
+}
+
+impl std::fmt::Debug for RelationalCanonicalCommitArtifact {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("RelationalCanonicalCommitArtifact")
+            .field("position", &self.frame.position())
+            .field("commit_id", &self.frame.commit_id())
+            .field("payload_digest", &self.frame.payload_digest())
+            .field("byte_len", &self.as_bytes().len())
+            .finish()
+    }
+}
+
+impl PartialEq for RelationalCanonicalCommitArtifact {
+    fn eq(&self, other: &Self) -> bool {
+        self.as_bytes() == other.as_bytes()
+    }
+}
+
+impl Eq for RelationalCanonicalCommitArtifact {}
+
+pub mod journal_source_read;

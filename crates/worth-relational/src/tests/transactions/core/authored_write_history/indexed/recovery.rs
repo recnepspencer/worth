@@ -1,6 +1,7 @@
 //! Only the internal codec observes whether a decoded entry carries live verification.
 use super::*;
 use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeFixturePort as _;
+use worth_relational_durability::internal_port::durability::data::checkpoint_images::DurableCheckpointOwnerPort as _;
 
 #[test]
 fn authored_index_checkpoint_decoding_does_not_mint_live_verification() {
@@ -63,7 +64,7 @@ fn authored_index_checkpoint_decoding_does_not_mint_live_verification() {
     .unwrap()
     .checkpoint;
     let decoded_equal = decoded
-        .envelopes
+        .envelopes()
         .iter()
         .find(|entry| entry.envelope().commit.commit_id == equal.commit.commit_id)
         .expect("actual emitted checkpoint contains the authored equal-value occurrence");

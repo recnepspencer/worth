@@ -134,7 +134,7 @@ guidance = "C.10: scheduled maintenance media effects (retirement deletes, recla
 workspace_manifest = "Cargo.toml"
 sources = []
 source_prefixes = [""]
-exclude_sources = ["worth-relational", "worth-relational-indexes", "worth-relational-lineage", "worth-relational-merge", "worth-relational-mutation"]
+exclude_sources = ["worth-relational", "worth-relational-indexes", "worth-relational-lineage", "worth-relational-merge", "worth-relational-mutation", "worth-relational-durability"]
 forbidden_targets = ["worth-relational-branch"]
 guidance = "The Relational branch package is sealed to the Relational runtime"
 
@@ -142,15 +142,23 @@ guidance = "The Relational branch package is sealed to the Relational runtime"
 workspace_manifest = "Cargo.toml"
 sources = []
 source_prefixes = [""]
-exclude_sources = ["worth-relational"]
+exclude_sources = ["worth-relational", "worth-relational-durability"]
 forbidden_targets = ["worth-relational-indexes", "worth-relational-lineage", "worth-relational-merge", "worth-relational-mutation"]
-guidance = "Relational Layer 3 packages are sealed to the Relational runtime"
+guidance = "Relational Layer 3 packages are sealed to Relational Durability and Runtime"
 
 [[dependency_denials]]
 workspace_manifest = "Cargo.toml"
 sources = []
 source_prefixes = [""]
-exclude_sources = ["worth-relational", "worth-relational-storage", "worth-relational-branch", "worth-relational-indexes", "worth-relational-lineage", "worth-relational-merge", "worth-relational-mutation"]
+exclude_sources = ["worth-relational"]
+forbidden_targets = ["worth-relational-durability"]
+guidance = "Relational Durability is sealed to the Relational runtime"
+
+[[dependency_denials]]
+workspace_manifest = "Cargo.toml"
+sources = []
+source_prefixes = [""]
+exclude_sources = ["worth-relational", "worth-relational-storage", "worth-relational-branch", "worth-relational-indexes", "worth-relational-lineage", "worth-relational-merge", "worth-relational-mutation", "worth-relational-durability"]
 forbidden_targets = ["worth-relational-contracts", "worth-relational-storage"]
 guidance = "Relational's physical owners are reachable only through the sibling owner or the Relational facade"
 
@@ -158,7 +166,7 @@ guidance = "Relational's physical owners are reachable only through the sibling 
 workspace_manifest = "workspaces/worth-query/Cargo.toml"
 sources = []
 source_prefixes = [""]
-exclude_sources = ["worth-relational", "worth-relational-indexes", "worth-relational-lineage", "worth-relational-merge", "worth-relational-mutation"]
+exclude_sources = ["worth-relational", "worth-relational-indexes", "worth-relational-lineage", "worth-relational-merge", "worth-relational-mutation", "worth-relational-durability"]
 forbidden_targets = ["worth-relational-branch"]
 guidance = "The Relational branch package is sealed to the Relational runtime"
 
@@ -166,15 +174,23 @@ guidance = "The Relational branch package is sealed to the Relational runtime"
 workspace_manifest = "workspaces/worth-query/Cargo.toml"
 sources = []
 source_prefixes = [""]
-exclude_sources = ["worth-relational"]
+exclude_sources = ["worth-relational", "worth-relational-durability"]
 forbidden_targets = ["worth-relational-indexes", "worth-relational-lineage", "worth-relational-merge", "worth-relational-mutation"]
-guidance = "Relational Layer 3 packages are sealed to the Relational runtime"
+guidance = "Relational Layer 3 packages are sealed to Relational Durability and Runtime"
 
 [[dependency_denials]]
 workspace_manifest = "workspaces/worth-query/Cargo.toml"
 sources = []
 source_prefixes = [""]
-exclude_sources = ["worth-relational", "worth-relational-storage", "worth-relational-branch", "worth-relational-indexes", "worth-relational-lineage", "worth-relational-merge", "worth-relational-mutation"]
+exclude_sources = ["worth-relational"]
+forbidden_targets = ["worth-relational-durability"]
+guidance = "Relational Durability is sealed to the Relational runtime"
+
+[[dependency_denials]]
+workspace_manifest = "workspaces/worth-query/Cargo.toml"
+sources = []
+source_prefixes = [""]
+exclude_sources = ["worth-relational", "worth-relational-storage", "worth-relational-branch", "worth-relational-indexes", "worth-relational-lineage", "worth-relational-merge", "worth-relational-mutation", "worth-relational-durability"]
 forbidden_targets = ["worth-relational-contracts", "worth-relational-storage"]
 guidance = "Relational's physical owners are reachable only through the sibling owner or the Relational facade"
 
@@ -182,7 +198,7 @@ guidance = "Relational's physical owners are reachable only through the sibling 
 workspace_manifest = "workspaces/worth-store/Cargo.toml"
 sources = []
 source_prefixes = [""]
-exclude_sources = ["worth-relational", "worth-relational-indexes", "worth-relational-lineage", "worth-relational-merge", "worth-relational-mutation"]
+exclude_sources = ["worth-relational", "worth-relational-indexes", "worth-relational-lineage", "worth-relational-merge", "worth-relational-mutation", "worth-relational-durability"]
 forbidden_targets = ["worth-relational-branch"]
 guidance = "The Relational branch package is sealed to the Relational runtime"
 
@@ -190,15 +206,23 @@ guidance = "The Relational branch package is sealed to the Relational runtime"
 workspace_manifest = "workspaces/worth-store/Cargo.toml"
 sources = []
 source_prefixes = [""]
-exclude_sources = ["worth-relational"]
+exclude_sources = ["worth-relational", "worth-relational-durability"]
 forbidden_targets = ["worth-relational-indexes", "worth-relational-lineage", "worth-relational-merge", "worth-relational-mutation"]
-guidance = "Relational Layer 3 packages are sealed to the Relational runtime"
+guidance = "Relational Layer 3 packages are sealed to Relational Durability and Runtime"
 
 [[dependency_denials]]
 workspace_manifest = "workspaces/worth-store/Cargo.toml"
 sources = []
 source_prefixes = [""]
-exclude_sources = ["worth-relational", "worth-relational-storage", "worth-relational-branch", "worth-relational-indexes", "worth-relational-lineage", "worth-relational-merge", "worth-relational-mutation"]
+exclude_sources = ["worth-relational"]
+forbidden_targets = ["worth-relational-durability"]
+guidance = "Relational Durability is sealed to the Relational runtime"
+
+[[dependency_denials]]
+workspace_manifest = "workspaces/worth-store/Cargo.toml"
+sources = []
+source_prefixes = [""]
+exclude_sources = ["worth-relational", "worth-relational-storage", "worth-relational-branch", "worth-relational-indexes", "worth-relational-lineage", "worth-relational-merge", "worth-relational-mutation", "worth-relational-durability"]
 forbidden_targets = ["worth-relational-contracts", "worth-relational-storage"]
 guidance = "Relational's physical owners are reachable only through the sibling owner or the Relational facade"
 
@@ -206,7 +230,7 @@ guidance = "Relational's physical owners are reachable only through the sibling 
 workspace_manifest = "workspaces/worth-query-bank-world/Cargo.toml"
 sources = []
 source_prefixes = [""]
-exclude_sources = ["worth-relational", "worth-relational-indexes", "worth-relational-lineage", "worth-relational-merge", "worth-relational-mutation"]
+exclude_sources = ["worth-relational", "worth-relational-indexes", "worth-relational-lineage", "worth-relational-merge", "worth-relational-mutation", "worth-relational-durability"]
 forbidden_targets = ["worth-relational-branch"]
 guidance = "The Relational branch package is sealed to the Relational runtime"
 
@@ -214,15 +238,23 @@ guidance = "The Relational branch package is sealed to the Relational runtime"
 workspace_manifest = "workspaces/worth-query-bank-world/Cargo.toml"
 sources = []
 source_prefixes = [""]
-exclude_sources = ["worth-relational"]
+exclude_sources = ["worth-relational", "worth-relational-durability"]
 forbidden_targets = ["worth-relational-indexes", "worth-relational-lineage", "worth-relational-merge", "worth-relational-mutation"]
-guidance = "Relational Layer 3 packages are sealed to the Relational runtime"
+guidance = "Relational Layer 3 packages are sealed to Relational Durability and Runtime"
 
 [[dependency_denials]]
 workspace_manifest = "workspaces/worth-query-bank-world/Cargo.toml"
 sources = []
 source_prefixes = [""]
-exclude_sources = ["worth-relational", "worth-relational-storage", "worth-relational-branch", "worth-relational-indexes", "worth-relational-lineage", "worth-relational-merge", "worth-relational-mutation"]
+exclude_sources = ["worth-relational"]
+forbidden_targets = ["worth-relational-durability"]
+guidance = "Relational Durability is sealed to the Relational runtime"
+
+[[dependency_denials]]
+workspace_manifest = "workspaces/worth-query-bank-world/Cargo.toml"
+sources = []
+source_prefixes = [""]
+exclude_sources = ["worth-relational", "worth-relational-storage", "worth-relational-branch", "worth-relational-indexes", "worth-relational-lineage", "worth-relational-merge", "worth-relational-mutation", "worth-relational-durability"]
 forbidden_targets = ["worth-relational-contracts", "worth-relational-storage"]
 guidance = "Relational's physical owners are reachable only through the sibling owner or the Relational facade"
 
@@ -237,43 +269,50 @@ exclude_paths = [
   "crates/worth-relational-lineage/src",
   "crates/worth-relational-merge/src",
   "crates/worth-relational-mutation/src",
+  "crates/worth-relational-durability/src",
 ]
-forbidden_identifiers = ["worth_relational_contracts", "worth_relational_storage", "worth_relational_branch", "worth_relational_indexes", "worth_relational_lineage", "worth_relational_merge", "worth_relational_mutation"]
+forbidden_identifiers = ["worth_relational_contracts", "worth_relational_storage", "worth_relational_branch", "worth_relational_indexes", "worth_relational_lineage", "worth_relational_merge", "worth_relational_mutation", "worth_relational_durability"]
 guidance = "Direct Relational owner paths are sealed to Relational source"
 
 [[source_identifier_denials]]
 root = "crates"
-exclude_paths = ["crates/worth-relational/src", "crates/worth-relational-branch/src", "crates/worth-relational-indexes/src", "crates/worth-relational-lineage/src", "crates/worth-relational-merge/src", "crates/worth-relational-mutation/src"]
+exclude_paths = ["crates/worth-relational/src", "crates/worth-relational-durability/src"]
+forbidden_identifiers = ["worth_relational_durability"]
+guidance = "Only the Relational runtime and Durability owner may name the Durability port"
+
+[[source_identifier_denials]]
+root = "crates"
+exclude_paths = ["crates/worth-relational/src", "crates/worth-relational-branch/src", "crates/worth-relational-indexes/src", "crates/worth-relational-lineage/src", "crates/worth-relational-merge/src", "crates/worth-relational-mutation/src", "crates/worth-relational-durability/src"]
 forbidden_identifiers = ["worth_relational_branch"]
 guidance = "Only Branch and its Relational consumers may name the Branch port"
 
 [[source_identifier_denials]]
 root = "crates"
-exclude_paths = ["crates/worth-relational/src", "crates/worth-relational-indexes/src"]
+exclude_paths = ["crates/worth-relational/src", "crates/worth-relational-indexes/src", "crates/worth-relational-durability/src"]
 forbidden_identifiers = ["worth_relational_indexes"]
-guidance = "Only the Relational runtime and Indexes owner may name the Indexes port"
+guidance = "Only Relational Durability, Runtime, and the Indexes owner may name the Indexes port"
 
 [[source_identifier_denials]]
 root = "crates"
-exclude_paths = ["crates/worth-relational/src", "crates/worth-relational-lineage/src"]
+exclude_paths = ["crates/worth-relational/src", "crates/worth-relational-lineage/src", "crates/worth-relational-durability/src"]
 forbidden_identifiers = ["worth_relational_lineage"]
-guidance = "Only the Relational runtime and Lineage owner may name the Lineage port"
+guidance = "Only Relational Durability, Runtime, and the Lineage owner may name the Lineage port"
 
 [[source_identifier_denials]]
 root = "crates"
-exclude_paths = ["crates/worth-relational/src", "crates/worth-relational-merge/src"]
+exclude_paths = ["crates/worth-relational/src", "crates/worth-relational-merge/src", "crates/worth-relational-durability/src"]
 forbidden_identifiers = ["worth_relational_merge"]
-guidance = "Only the Relational runtime and Merge owner may name the Merge port"
+guidance = "Only Relational Durability, Runtime, and the Merge owner may name the Merge port"
 
 [[source_identifier_denials]]
 root = "crates"
-exclude_paths = ["crates/worth-relational/src", "crates/worth-relational-mutation/src"]
+exclude_paths = ["crates/worth-relational/src", "crates/worth-relational-mutation/src", "crates/worth-relational-durability/src"]
 forbidden_identifiers = ["worth_relational_mutation"]
-guidance = "Only the Relational runtime and Mutation owner may name the Mutation port"
+guidance = "Only Relational Durability, Runtime, and the Mutation owner may name the Mutation port"
 
 [[source_identifier_denials]]
 root = "workspaces"
-forbidden_identifiers = ["worth_relational_contracts", "worth_relational_storage", "worth_relational_branch", "worth_relational_indexes", "worth_relational_lineage", "worth_relational_merge", "worth_relational_mutation"]
+forbidden_identifiers = ["worth_relational_contracts", "worth_relational_storage", "worth_relational_branch", "worth_relational_indexes", "worth_relational_lineage", "worth_relational_merge", "worth_relational_mutation", "worth_relational_durability"]
 guidance = "Workspaces consume Relational through its public facade"
 
 # UI still references the Query monolith retired by b24dce87c3. Its source seal
@@ -285,13 +324,13 @@ guidance = "UI must not use a Relational implementation port"
 
 [[source_identifier_denials]]
 root = "crates/worth-relational/src/facade"
-forbidden_identifiers = ["internal_port", "worth_relational_contracts", "worth_relational_storage", "worth_relational_branch", "worth_relational_indexes", "worth_relational_lineage", "worth_relational_merge", "worth_relational_mutation"]
+forbidden_identifiers = ["internal_port", "worth_relational_contracts", "worth_relational_storage", "worth_relational_branch", "worth_relational_indexes", "worth_relational_lineage", "worth_relational_merge", "worth_relational_mutation", "worth_relational_durability"]
 forbidden_identifier_fragments = ["OwnerPort", "FieldsPort", "FixturePort"]
 guidance = "The Relational facade cannot expose a physical owner port"
 
 [[source_identifier_denials]]
 root = "crates/worth-relational/src/facade.rs"
-forbidden_identifiers = ["internal_port", "worth_relational_contracts", "worth_relational_storage", "worth_relational_branch", "worth_relational_indexes", "worth_relational_lineage", "worth_relational_merge", "worth_relational_mutation"]
+forbidden_identifiers = ["internal_port", "worth_relational_contracts", "worth_relational_storage", "worth_relational_branch", "worth_relational_indexes", "worth_relational_lineage", "worth_relational_merge", "worth_relational_mutation", "worth_relational_durability"]
 forbidden_identifier_fragments = ["OwnerPort", "FieldsPort", "FixturePort"]
 guidance = "The Relational facade cannot expose a physical owner port"
 
@@ -304,7 +343,7 @@ guidance = "Runtime Bridge owns neutral crossing contracts and must not import Q
 
 [[dependency_denials]]
 workspace_manifest = "Cargo.toml"
-sources = ["worth-relational", "worth-relational-contracts", "worth-relational-storage", "worth-relational-branch", "worth-relational-indexes", "worth-relational-lineage", "worth-relational-merge", "worth-relational-mutation", "worth-signal"]
+sources = ["worth-relational", "worth-relational-contracts", "worth-relational-storage", "worth-relational-branch", "worth-relational-indexes", "worth-relational-lineage", "worth-relational-merge", "worth-relational-mutation", "worth-relational-durability", "worth-signal"]
 forbidden_targets = ["worth-runtime-world"]
 forbidden_target_prefixes = []
 guidance = "Runtime World is the composition owner above the component runtimes; lower owners cannot acquire a reverse dependency"
@@ -318,7 +357,7 @@ guidance = "Runtime World is memory-resident composition authority and cannot de
 
 [[dependency_denials]]
 workspace_manifest = "Cargo.toml"
-sources = ["worth-relational", "worth-relational-contracts", "worth-relational-storage", "worth-relational-branch", "worth-relational-indexes", "worth-relational-lineage", "worth-relational-merge", "worth-relational-mutation"]
+sources = ["worth-relational", "worth-relational-contracts", "worth-relational-storage", "worth-relational-branch", "worth-relational-indexes", "worth-relational-lineage", "worth-relational-merge", "worth-relational-mutation", "worth-relational-durability"]
 forbidden_targets = ["worth-runtime-bridge"]
 forbidden_target_prefixes = []
 guidance = "The Bridge owns the Relational adapter and depends on Relational; Relational never names the Bridge"

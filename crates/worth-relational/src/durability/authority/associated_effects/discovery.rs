@@ -1,6 +1,7 @@
 //! Discover read-only original effect facts from the live owner's catalog.
 use super::*;
 use crate::durability::authority::runtime_access::DurabilityAuthority;
+use worth_relational_durability::internal_port::durability::authority::associated_effects::RelationalAssociatedEffectSubjectOwnerPort as _;
 
 impl DurabilityAuthority<'_> {
     /// Inspect only catalog metadata and already-resident memory facts. Cold
@@ -71,12 +72,12 @@ impl DurabilityAuthority<'_> {
             if !matches(entry.association_discovery.association()) {
                 continue;
             }
-            subjects.push(RelationalAssociatedEffectSubject {
-                runtime_instance_id: self.runtime.runtime_instance_id(),
+            subjects.push(RelationalAssociatedEffectSubject::capture_subject(
+                self.runtime.runtime_instance_id(),
                 entry,
-                source: Arc::downgrade(&source),
-                residency: Arc::downgrade(&residency),
-            });
+                Arc::downgrade(&source),
+                Arc::downgrade(&residency),
+            ));
         }
         subjects.sort_by_key(|subject| subject.position());
         Ok(subjects)
@@ -95,5 +96,5 @@ pub(in crate::durability::authority) fn current_settlement(
     let residency = subject.bound_residency()?;
     runtime
         .history
-        .associated_effect_settlement(&subject.entry, &residency)
+        .associated_effect_settlement(subject.retained_entry(), &residency)
 }

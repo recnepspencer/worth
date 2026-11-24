@@ -1,3 +1,6 @@
+use worth_relational_durability::internal_port::durability::data::recovery_plan::RecoveryPlanFieldsFixturePort as _;
+use worth_relational_durability::internal_port::durability::data::checkpoint_images::DurableCheckpointFieldsFixturePort as _;
+use worth_relational_durability::internal_port::durability::migration::readmitted_canonical_commit::ReadmittedCanonicalCommitOwnerPort as _;
 use super::*;
 use worth_foundational::FoundationalBranchTarget;
 use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
@@ -92,9 +95,9 @@ fn checkpoint_rejects_same_commit_truth_root_relabeling() {
     // readmission against the reconstructed truth root.
     let commit_id = crate::history::data::CommitId(target.selected_commit_id());
     let checkpoint = plan.checkpoint.as_mut().expect("checkpoint selected");
-    checkpoint.canonical_directory = None;
+    *checkpoint.canonical_directory_mut_for_test() = None;
     checkpoint
-        .commit_descriptors
+        .commit_descriptors_mut_for_test()
         .insert(commit_id, forged.clone());
     replace_descriptor(selected_main_checkpoint(&mut plan), forged);
 
@@ -127,9 +130,9 @@ fn checkpoint_rejects_same_commit_schema_root_relabeling() {
     // canonical commit admission before root readmission begins.
     let commit_id = crate::history::data::CommitId(target.selected_commit_id());
     let checkpoint = plan.checkpoint.as_mut().expect("checkpoint selected");
-    checkpoint.canonical_directory = None;
+    *checkpoint.canonical_directory_mut_for_test() = None;
     checkpoint
-        .commit_descriptors
+        .commit_descriptors_mut_for_test()
         .insert(commit_id, forged.clone());
     replace_descriptor(selected_main_checkpoint(&mut plan), forged);
 
@@ -158,7 +161,7 @@ fn tail_rejects_same_commit_root_descriptor_substitution() {
         )
         .unwrap();
     let checkpoint = plan
-        .tail_log
+        .tail_log_mut_for_test()
         .iter_mut()
         .map(|commit| commit.readmitted_envelope_mut_for_test(execution))
         .find(|envelope| envelope.commit.commit_id == tail_commit.commit.commit_id)
@@ -217,7 +220,7 @@ fn selected_root_image(
 ) -> &mut crate::durability::data::DurableBranchRootImage {
     plan.checkpoint
         .as_mut()
-        .and_then(|checkpoint| checkpoint.branch_roots.first_mut())
+        .and_then(|checkpoint| checkpoint.branch_roots_mut_for_test().first_mut())
         .expect("production recovery plan selects a branch-root image")
 }
 
@@ -240,7 +243,7 @@ fn install_fingerprint_image(plan: &mut RecoveryPlan, symbol: crate::symbols::da
         .entries
         .push((symbol, "durability.fingerprint.family".into()));
     let root = checkpoint
-        .branch_roots
+        .branch_roots_mut_for_test()
         .first_mut()
         .expect("production checkpoint carries a branch-root image");
     root.partition_images[0].entity_arena.extra[0].structural_fingerprint = Some(
@@ -256,7 +259,7 @@ fn selected_main_checkpoint(
         .as_mut()
         .and_then(|checkpoint| {
             checkpoint
-                .branch_cells
+                .branch_cells_mut_for_test()
                 .iter_mut()
                 .find(|cell| cell.branch_id.0 == "main")
         })

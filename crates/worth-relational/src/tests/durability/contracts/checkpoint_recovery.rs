@@ -1,6 +1,7 @@
 use super::*;
 use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 use worth_relational_contracts::internal_port::lineage::data::graph::LineageNodeFieldsPort as _;
+use worth_relational_durability::internal_port::durability::data::checkpoint_images::DurableCheckpointOwnerPort as _;
 
 #[test]
 fn memory_checkpoint_preserves_lineage_artifact_and_original_authority() {
@@ -159,7 +160,7 @@ fn durability_contract_checkpoint_tail_recovery_preserves_post_checkpoint_commit
         main.commit.commit_id
     );
     let retained = recovered.durability.latest_checkpoint().unwrap();
-    assert_eq!(retained.envelopes.len(), 1);
+    assert_eq!(retained.envelopes().len(), 1);
     assert_eq!(retained.partition_images.as_ptr(), checkpoint_images);
 }
 
@@ -364,11 +365,9 @@ fn selected_branch_views_preserve_cold_probe_and_demand() {
         0,
         "acquiring selected_branch_state performs zero cold I/O"
     );
+    let root = selected.state().root();
     assert!(matches!(
-        selected
-            .state()
-            .root()
-            .probe_full_region(entity.partition_id),
+        root.probe_full_region(entity.partition_id),
         crate::storage::residency::PartitionProbe::Cold
     ));
     let answer = crate::storage::residency::probe_full_sources(execution, [&selected], |[view]| {
@@ -378,18 +377,12 @@ fn selected_branch_views_preserve_cold_probe_and_demand() {
     assert!(answer);
     assert!(source.1.load(Ordering::Relaxed) > 0);
     assert!(matches!(
-        selected
-            .state()
-            .root()
-            .probe_full_region(entity.partition_id),
+        root.probe_full_region(entity.partition_id),
         crate::storage::residency::PartitionProbe::Resident(_)
     ));
     assert!(
         matches!(
-            selected
-                .state()
-                .root()
-                .probe_full_region(untouched.partition_id),
+            root.probe_full_region(untouched.partition_id),
             crate::storage::residency::PartitionProbe::Cold
         ),
         "selected-view probe must only demand the targeted partition"

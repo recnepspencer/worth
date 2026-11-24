@@ -4,6 +4,7 @@ use crate::schema::data::{
     SchemaVersionId,
 };
 use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_durability::internal_port::durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenialOwnerPort as _;
 
 use crate::durability::transition_admission_denial::{
     RelationalSchemaTransitionAdmissionDenial, RelationalSchemaTransitionAdmissionDenialKind,

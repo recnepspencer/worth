@@ -21,7 +21,6 @@ mod basis_readmission;
 pub(crate) use worth_relational_branch::internal_port::branch::basis_retention;
 mod basis_retention_runtime;
 pub(crate) use worth_relational_branch::internal_port::branch::canonical_runtime_frame;
-pub(crate) use worth_relational_branch::internal_port::branch::checkpoint_visibility;
 pub(crate) use worth_relational_branch::internal_port::branch::coordination;
 pub(crate) mod fork;
 pub(crate) use worth_relational_branch::internal_port::branch::fork_materialization;
@@ -74,7 +73,6 @@ pub(crate) use root::{
     RelationalOriginalRootCommitEvidence, RelationalRootCommitEvidence,
     RetainedRelationalAspectPlans, RetainedRelationalSchemaRegistry,
 };
-pub(crate) use worth_relational_branch::internal_port::branch::root_checkpoint;
 pub(crate) use worth_relational_branch::internal_port::branch::root_regions;
 pub(crate) use worth_relational_branch::internal_port::branch::root_selection;
 pub(crate) use worth_relational_branch::internal_port::branch::structural_state;

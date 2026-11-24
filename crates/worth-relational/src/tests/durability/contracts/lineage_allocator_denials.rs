@@ -1,3 +1,5 @@
+use worth_relational_durability::internal_port::durability::data::recovery_plan::RecoveryPlanFieldsFixturePort as _;
+use worth_relational_durability::internal_port::durability::migration::readmitted_canonical_commit::ReadmittedCanonicalCommitOwnerPort as _;
 use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFixturePort as _;
 use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::lineage_rebuild_test::CanonicalCommitEnvelopeBodyFixturePort as _;
 use super::*;
@@ -22,12 +24,12 @@ fn tail_created_lineage_allocator_exhaustion_denies_before_replay() {
             RecoveryMode::NormalRecoveryVerification,
         )
         .unwrap();
-    plan.tail_log[0]
+    plan.tail_log_mut_for_test()[0]
         .readmitted_envelope_mut_for_test(execution)
         .published_lineage_mut_for_test()
         .lineage_events_mut_for_test()[0]
         .owner_targets_mut()[0] = crate::identity::data::LineageId(u64::MAX - 1);
-    plan.tail_log[0]
+    plan.tail_log_mut_for_test()[0]
         .readmitted_envelope_mut_for_test(execution)
         .rebuild_lineage_basis_for_test();
 

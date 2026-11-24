@@ -1,3 +1,7 @@
+use worth_relational_durability::internal_port::durability::data::recovery_plan::{
+    RecoveryPlanFixturePort as _, RecoveryPlanOwnerPort as _,
+};
+use worth_relational_durability::internal_port::durability::migration::readmitted_canonical_commit::ReadmittedCanonicalCommitOwnerPort as _;
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
@@ -24,12 +28,12 @@ fn fixture() -> (RelationalRuntime, Vec<u8>) {
             RecoveryVerificationMode::NormalRecoveryVerification,
         )
         .unwrap();
-    assert_eq!(plan.tail_log.len(), 3);
+    assert_eq!(plan.tail_log().len(), 3);
     let persisted: Vec<_> = plan
-        .tail_log
+        .tail_log()
         .iter()
         .map(|entry| {
-            crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_positioned(
+            crate::durability::canonical_commit_artifact::verified_frame::VerifiedCanonicalCommitFrame::reference_encode_for_test(
                 entry.positioned(), worth_execution::ExecutionAllocationPolicy::SystemAllocation).unwrap().as_bytes().to_vec()
         })
         .collect();
@@ -48,10 +52,10 @@ fn plan_from_bytes(source: &RelationalRuntime, bytes: &[u8]) -> RecoveryPlan {
             RecoveryVerificationMode::NormalRecoveryVerification,
         )
         .unwrap();
-    plan.tail_log = persisted
+    plan.replace_tail_log_for_test(persisted
         .into_iter()
         .map(|record| crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::readmit(&record, execution).unwrap())
-        .collect();
+        .collect());
     plan
 }
 

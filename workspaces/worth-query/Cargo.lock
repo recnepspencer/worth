@@ -2497,6 +2497,7 @@ dependencies = [
  "worth-proof",
  "worth-relational-branch",
  "worth-relational-contracts",
+ "worth-relational-durability",
  "worth-relational-indexes",
  "worth-relational-lineage",
  "worth-relational-merge",
@@ -2536,6 +2537,27 @@ dependencies = [
  "worth-execution",
  "worth-foundational",
  "worth-proof",
+]
+
+[[package]]
+name = "worth-relational-durability"
+version = "0.1.0"
+dependencies = [
+ "im",
+ "rmp-serde",
+ "serde",
+ "serde_json",
+ "sha2",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-relational-branch",
+ "worth-relational-contracts",
+ "worth-relational-indexes",
+ "worth-relational-lineage",
+ "worth-relational-merge",
+ "worth-relational-mutation",
+ "worth-relational-storage",
 ]
 
 [[package]]

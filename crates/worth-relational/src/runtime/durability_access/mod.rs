@@ -1,3 +1,5 @@
+use worth_relational_durability::internal_port::durability::data::checkpoint_images::DurableCheckpointOwnerPort as _;
+use worth_relational_durability::internal_port::durability::data::recovery_plan::RecoveryPlanOwnerPort as _;
 mod authority_continuity;
 mod branch_transition_artifact_export;
 mod canonical_commit_artifact_export;
@@ -23,8 +25,8 @@ pub(crate) fn rebind_home_receiver_plan(
     let envelopes = plan
         .checkpoint
         .as_ref()
-        .map_or(&[][..], |checkpoint| checkpoint.envelopes.as_slice());
-    let mut continuity = authority_continuity_for_envelopes(runtime, envelopes, &plan.tail_log);
+        .map_or(&[][..], |checkpoint| checkpoint.envelopes());
+    let mut continuity = authority_continuity_for_envelopes(runtime, envelopes, plan.tail_log());
     if let Some(checkpoint) = &plan.checkpoint {
         native_checkpoint_recovery_plan::bind_source_runtime_identity(
             runtime,

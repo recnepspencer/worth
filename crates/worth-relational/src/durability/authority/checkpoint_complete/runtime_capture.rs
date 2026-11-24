@@ -1,5 +1,6 @@
 use super::{capture, prepare, CompleteRelationalNativeCheckpoint, Denial};
 use crate::durability::authority::runtime_access::DurabilityAuthority;
+use worth_relational_durability::internal_port::durability::data::checkpoint_member::RelationalCheckpointArtifactPolicyOwnerPort as _;
 
 impl DurabilityAuthority<'_> {
     pub(crate) fn complete_native_checkpoint_with_policy(

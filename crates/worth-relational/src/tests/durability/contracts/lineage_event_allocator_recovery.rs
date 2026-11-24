@@ -1,5 +1,6 @@
-use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
-use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFixturePort as _;
+use worth_relational_durability::internal_port::durability::data::recovery_plan::RecoveryPlanFieldsFixturePort as _;
+use worth_relational_durability::internal_port::durability::migration::readmitted_canonical_commit::ReadmittedCanonicalCommitOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::{CanonicalCommitEnvelopeBodyFieldsPort as _, CanonicalCommitEnvelopeBodyFixturePort as _};
 use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::lineage_rebuild_test::CanonicalCommitEnvelopeBodyFixturePort as _;
 use super::*;
 use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
@@ -26,7 +27,7 @@ fn tail_lineage_event_allocator_exhaustion_denies_before_replay() {
         )
         .unwrap();
     let invalid_envelope = plan
-        .tail_log
+        .tail_log_mut_for_test()
         .iter_mut()
         .map(|commit| commit.readmitted_envelope_mut_for_test(execution))
         .find(|envelope| envelope.commit.commit_id == replay_invalid.commit.commit_id)
@@ -38,7 +39,7 @@ fn tail_lineage_event_allocator_exhaustion_denies_before_replay() {
         checkpoint.truth_version.as_u64().saturating_add(1),
     );
     let event = plan
-        .tail_log
+        .tail_log_mut_for_test()
         .iter_mut()
         .map(|commit| commit.readmitted_envelope_mut_for_test(execution))
         .find(|envelope| envelope.commit.commit_id == allocator_exhausted.commit.commit_id)
@@ -49,7 +50,7 @@ fn tail_lineage_event_allocator_exhaustion_denies_before_replay() {
         .expect("later tail lineage event");
     *event.event_id_mut_for_test() = u64::MAX - 1;
     let exhausted_envelope = plan
-        .tail_log
+        .tail_log_mut_for_test()
         .iter_mut()
         .map(|commit| commit.readmitted_envelope_mut_for_test(execution))
         .find(|envelope| envelope.commit.commit_id == allocator_exhausted.commit.commit_id)

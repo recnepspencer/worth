@@ -10,10 +10,8 @@ use crate::history::data::{CommitId, PositionedCanonicalCommit};
 use crate::runtime::state::subsystems::{RuntimeOwnedState, RuntimeSubsystem};
 use crate::runtime::RelationalRuntimeConfig;
 
-pub(crate) mod checkpoint_selection;
-pub(crate) mod commit_log;
+pub(crate) use worth_relational_durability::internal_port::runtime::state::subsystems::durability::{checkpoint_selection, commit_log, state};
 mod source_retirement;
-mod state;
 pub(crate) use checkpoint_selection::RelationalCheckpointManifestSelection;
 
 use state::DurabilityState;
@@ -118,7 +116,7 @@ impl DurabilitySubsystem {
 
     #[cfg(test)]
     pub(crate) fn remove_log_commit(&self, commit_id: CommitId) -> bool {
-        self.state.write().remove_log_commit(commit_id)
+        self.state.write().remove_log_commit_for_test(commit_id)
     }
 
     pub(crate) fn durable_log_envelope(

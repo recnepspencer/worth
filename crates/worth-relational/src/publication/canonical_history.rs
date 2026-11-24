@@ -3,6 +3,7 @@ use crate::publication::patch::data::stream_commit_ref::PatchStreamCommitRef;
 use crate::publication::patch::data::PatchStreamPosition;
 use crate::runtime::state::subsystems::durability::commit_log::read_coverage::DurableCanonicalCoverage;
 use crate::runtime::state::subsystems::history::history_canonical_routes::RelationalPublicationHistory;
+use worth_relational_durability::internal_port::durability::data::checkpoint_images::DurableCheckpointOwnerPort as _;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct RetainedCanonicalEnvelopeGap {
@@ -51,7 +52,7 @@ pub(crate) fn durable_canonical_envelopes(
     let mut envelopes = durability
         .checkpoints()
         .last()
-        .map(|checkpoint| checkpoint.envelopes.clone())
+        .map(|checkpoint| checkpoint.envelopes().to_vec())
         .unwrap_or_default();
     envelopes.extend(
         durability

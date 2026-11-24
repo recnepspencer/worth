@@ -1,6 +1,7 @@
 use super::{checkpoint_complete, recovery, runtime_rebuild, RecoveredRelationalBranchBasis};
 use crate::branch::AdmittedRelationalBranchBasis;
 use crate::history::data::BranchId;
+use worth_relational_durability::internal_port::durability::authority::RecoveredRelationalBranchBasisOwnerPort as _;
 
 use crate::runtime::RelationalRuntime;
 
@@ -140,7 +141,7 @@ impl RecoveredRelationalRuntimeAuthority {
             phase.finish_capture(matches);
         }
         if matches {
-            Ok(RecoveredRelationalBranchBasis { basis })
+            Ok(RecoveredRelationalBranchBasis::from_readmission(basis))
         } else {
             Err(basis)
         }

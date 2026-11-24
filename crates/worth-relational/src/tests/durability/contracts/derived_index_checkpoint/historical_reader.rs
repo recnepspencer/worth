@@ -214,18 +214,17 @@ fn complete_checkpoint_saves_the_selection_carried_to_its_current_root() {
         .unwrap()
         .checkpoint;
         assert_eq!(
-            decoded.derived_index_checkpoint_format,
+            decoded.derived_index_checkpoint_format_for_test(),
             DerivedIndexCheckpointArtifacts::FORMAT_VERSION
         );
         assert!(decoded.derived_index_artifacts.is_empty());
         let saved = decoded
-            .derived_index_checkpoint
-            .as_ref()
+            .derived_index_checkpoint()
             .expect("Complete emits selection payload");
-        assert!(saved
-            .bases()
+        assert!(saved.bases().iter().all(|b| decoded
+            .branch_roots_for_test()
             .iter()
-            .all(|b| decoded.branch_roots.iter().any(|r| r.commit_id == b.commit)));
+            .any(|r| r.commit_id == b.commit)));
         let basis = saved
             .bases()
             .iter()

@@ -19,6 +19,7 @@ use crate::{
     runtime::operation_control::RelationalOperationControl,
 };
 use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_durability::internal_port::durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenialOwnerPort as _;
 
 impl DurabilityRecoveryAuthority<'_> {
     /// Bind a source publisher occurrence to the exact recovered image. Target

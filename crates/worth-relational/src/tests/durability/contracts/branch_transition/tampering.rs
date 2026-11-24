@@ -3,6 +3,7 @@ use crate::branch::PositionedBranchTransition;
 use crate::facade::durability::{DurabilityError, RecoveryFailureClass, RecoveryVerificationMode};
 use crate::facade::publication::PatchStreamPosition;
 use worth_relational_branch::internal_port::branch::transition::positioned::PositionedBranchTransitionOwnerPort as _;
+use worth_relational_durability::internal_port::durability::branch_transition_artifact::encoding::RelationalBranchTransitionArtifactOwnerPort as _;
 
 fn refusal(
     execution: &ExecutionRequest<'_, '_>,
@@ -63,9 +64,11 @@ fn a_sequence_gap_and_invalid_follows_positions_are_refused() {
                 PatchStreamPosition(follows),
                 transition.transition().clone(),
             );
-            let artifact =
-                Artifact::from_positioned(&changed, ExecutionAllocationPolicy::SystemAllocation)
-                    .unwrap();
+            let artifact = Artifact::from_positioned_for_test(
+                &changed,
+                ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .unwrap();
             medium.replace_transition(Sequence(2), artifact.as_bytes().into());
         }
         assert_eq!(

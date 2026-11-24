@@ -1,25 +1,14 @@
+use worth_relational_durability::internal_port::durability::data::checkpoint_images::DurableCheckpointOwnerPort as _;
+use worth_relational_durability::internal_port::durability::data::recovery_plan::RecoveryPlanOwnerPort as _;
 use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::original_inputs::CanonicalCommitEnvelopeOwnerPort as _;
-mod branch_readmission;
+pub(crate) use worth_relational_durability::internal_port::durability::authority::runtime_rebuild::{branch_readmission, history_parity, journal_residency, merge_plan, original_inputs, original_schemas, recorded_result_schema, recovered_counter_capacity, recovered_lineage_artifacts, recovered_schema_basis, replay_schedule, root_inventory, world_selection};
 mod checkpoint_restore;
 pub(super) mod envelope_replay;
-mod history_parity;
 pub(super) mod index_catalog;
-mod journal_residency;
-mod merge_plan;
-mod original_inputs;
-pub(super) mod original_schemas;
 mod source_schema_routes;
 use original_schemas::OriginalSchemaGraph;
-pub(super) mod recorded_result_schema;
-mod recovered_counter_capacity;
-mod recovered_lineage_artifacts;
-#[cfg(test)]
-mod recovered_lineage_restore_tests;
-mod recovered_schema_basis;
-mod replay_schedule;
-pub(super) mod root_inventory;
+
 mod transition_replay;
-mod world_selection;
 
 use crate::durability::data::DurabilityError;
 use crate::runtime::RelationalRuntime;
@@ -94,9 +83,9 @@ pub(super) fn rebuild_runtime_from_plan(
             .history
             .discard_unobserved_construction_schema_inputs_for_recovery();
         unshared_state(&mut restored)?.commit_strategies.executors =
-            plan.commit_strategy_executors.clone();
+            plan.commit_strategy_executors().clone();
 
-        if let Some(source) = &plan.cold_source {
+        if let Some(source) = plan.cold_source() {
             unshared_state(&mut restored)?
                 .durability
                 .attach_cold_source(source.clone());
@@ -114,7 +103,7 @@ pub(super) fn rebuild_runtime_from_plan(
             )?;
             checkpoint_work = Some(work);
         }
-        if let Some(original) = &plan.retained_transition_prefix {
+        if let Some(original) = plan.retained_transition_prefix() {
             restored
                 .history
                 .canonical_checkpoint_gate()
@@ -322,7 +311,7 @@ pub(super) fn rebuild_runtime_from_plan(
         let recovered_checkpoint = restored.durability.latest_checkpoint();
         let mut recovered_canonical_commits = recovered_checkpoint
             .iter()
-            .flat_map(|checkpoint| checkpoint.envelopes.iter())
+            .flat_map(|checkpoint| checkpoint.envelopes().iter())
             .cloned()
             .map(Arc::new)
             .collect::<Vec<_>>();
