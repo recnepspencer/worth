@@ -101,46 +101,67 @@ fn parameter_items(input: &DeriveInput, decl_spec: &QueryDeclaration) -> Option<
         );
         quote!(#[doc = #doc] pub struct #marker;)
     });
-    let accessors = decl_spec.params.iter().map(|param| {
-        let (selector, marker, wire, ty) = (
-            &param.selector,
-            &param.marker,
-            &param.wire_name,
-            &param.value_ty,
-        );
-        let scalar_binding = if let Some(explicit) = param.binding.as_ref() {
-            quote!(#explicit)
-        } else if param.is_probe
-            && let Some(mi) = decl_spec.managed_index.as_ref()
-        {
-            let (idx, schema) = (&mi.index, &decl_spec.schema);
-            quote!(<#idx as #decl::application_query::ApplicationManagedIndexBinding<#schema>>::ProbeBinding)
-        } else {
-            quote!(<#bindings as #frag::Scalar<#ty>>::Binding)
-        };
-        let doc = format!("Typed parameter reference for `{}`.", wire.value());
-        quote_spanned! {ty.span()=>
-            #[doc = #doc]
-            #[allow(dead_code)]
-            #vis const fn #selector(
-            ) -> #decl::application_query::ApplicationQueryParameterRef<
-                #query, #module::#marker, #scalar_binding,
-            > {
-                #decl::application_query::ApplicationQueryParameterRef::from_query_identifier(#wire)
+    let scalar_bindings: Vec<TokenStream> = decl_spec
+        .params
+        .iter()
+        .map(|param| {
+            let ty = &param.value_ty;
+            if let Some(explicit) = param.binding.as_ref() {
+                quote!(#explicit)
+            } else if param.is_probe
+                && let Some(mi) = decl_spec.managed_index.as_ref()
+            {
+                let (idx, schema) = (&mi.index, &decl_spec.schema);
+                quote!(<#idx as #decl::application_query::ApplicationManagedIndexBinding<#schema>>::ProbeBinding)
+            } else {
+                quote!(<#bindings as #frag::Scalar<#ty>>::Binding)
             }
-        }
-    });
+        })
+        .collect();
+    let accessors = decl_spec
+        .params
+        .iter()
+        .zip(scalar_bindings.iter())
+        .map(|(param, scalar_binding)| {
+            let (selector, marker, wire, ty) = (
+                &param.selector,
+                &param.marker,
+                &param.wire_name,
+                &param.value_ty,
+            );
+            let doc = format!("Typed parameter reference for `{}`.", wire.value());
+            quote_spanned! {ty.span()=>
+                #[doc = #doc]
+                #[allow(dead_code)]
+                #vis const fn #selector(
+                ) -> #decl::application_query::ApplicationQueryParameterRef<
+                    #query, #module::#marker, #scalar_binding,
+                > {
+                    #decl::application_query::ApplicationQueryParameterRef::from_query_identifier(#wire)
+                }
+            }
+        });
     let params_local = Ident::new("__worth_params", Span::mixed_site());
     let input_local = Ident::new("__worth_input", Span::mixed_site());
-    let binds = decl_spec.params.iter().map(|param| {
-        let (member, selector, ty) = (&param.member, &param.selector, &param.value_ty);
-        quote_spanned! {ty.span()=>
-            #params_local = #params_local.bind(
-                #query::#selector(),
-                ::core::clone::Clone::clone(&#input_local.#member),
-            )?;
-        }
-    });
+    let value_local = Ident::new("__worth_param_val", Span::mixed_site());
+    let binds = decl_spec
+        .params
+        .iter()
+        .zip(scalar_bindings.iter())
+        .map(|(param, scalar_binding)| {
+            let (member, selector, ty) = (&param.member, &param.selector, &param.value_ty);
+            let expected = quote!(<#scalar_binding as #decl::application_schema::ApplicationScalarValueBinding>::Value);
+            quote_spanned! {ty.span()=>
+                let _: fn(*mut #ty) -> *mut #ty =
+                    (|__worth_witness| __worth_witness) as fn(*mut #expected) -> *mut #expected;
+                let #value_local: #ty =
+                    <#ty as ::core::clone::Clone>::clone(&#input_local.#member);
+                #params_local = #params_local.bind(
+                    #query::#selector(),
+                    #value_local,
+                )?;
+            }
+        });
     let doc = format!("Named query parameter markers of `{request}`.");
     Some(quote! {
         #[doc = #doc]

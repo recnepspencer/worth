@@ -82,16 +82,6 @@ pub(super) fn binary_value(input: &DeriveInput, spec: &BinaryValueDeclaration) -
             ::core::result::Result::Ok(())
         }
     };
-    let wire_validate_encode = spec.validate.as_ref().map(|_| {
-        quote! {
-            (#call_validate())(self).map_err(|_| #aschema::ValueCodecDenial::Malformed)?;
-        }
-    });
-    let wire_validate_decode = spec.validate.as_ref().map(|_| {
-        quote! {
-            (#call_validate())(&#decoded_local).map_err(|_| #aschema::ValueCodecDenial::Malformed)?;
-        }
-    });
 
     let encode_fields = emit_encode_fields(spec, &names, &aschema);
     let decode_fields = emit_decode_fields(spec, &names, &aschema);
@@ -155,34 +145,6 @@ pub(super) fn binary_value(input: &DeriveInput, spec: &BinaryValueDeclaration) -
                         let _ = #rest_local;
                         #(#decode_fields)*
                         ::core::result::Result::Ok(#construct_value)
-                    }
-                }
-
-                impl #aschema::WorthBinaryWireField for #value_alias {
-                    const WIRE_BYTES: usize = #wire_bytes_const;
-
-                    fn encode_binary_field(
-                        &self,
-                        #writer_param: &mut dyn #aschema::BinaryValueWriter,
-                    ) -> ::core::result::Result<(), #aschema::ValueCodecDenial> {
-                        #wire_validate_encode
-                        <#delegate_struct as #aschema::BinaryValueDelegate>::encode(
-                            self,
-                            #writer_param,
-                        )
-                    }
-
-                    fn decode_binary_field(
-                        #bytes_param: &[u8],
-                        #admission_param: &mut #aschema::ValueDecodeAdmission<'_>,
-                    ) -> ::core::result::Result<Self, #aschema::ValueCodecDenial> {
-                        let #decoded_local =
-                            <#delegate_struct as #aschema::BinaryValueDelegate>::admit(
-                                #bytes_param,
-                                #admission_param,
-                            )?;
-                        #wire_validate_decode
-                        ::core::result::Result::Ok(#decoded_local)
                     }
                 }
 
@@ -357,10 +319,13 @@ fn emit_construct(spec: &BinaryValueDeclaration, names: &HygienicNames) -> Token
             quote!(#value_alias { #(#inits),* })
         }
         StructShape::Tuple(_) => {
-            let locals = &names.field_locals;
-            quote!(#value_alias ( #(#locals),* ))
+            let inits = names.field_locals.iter().enumerate().map(|(i, local)| {
+                let idx = Index::from(i);
+                quote!(#idx: #local)
+            });
+            quote!(#value_alias { #(#inits),* })
         }
-        StructShape::Unit => quote!(#value_alias),
+        StructShape::Unit => quote!(#value_alias {}),
     }
 }
 

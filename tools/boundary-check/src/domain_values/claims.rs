@@ -45,6 +45,7 @@ fn marked(tokens: TokenStream) -> bool {
             "DOMAIN_VALUE",
             "ApplicationCanonicalValueContract",
             "canonical_contract",
+            "WorthBinaryValue",
         ]
         .iter()
         .any(|name| id == name),
@@ -147,6 +148,29 @@ impl<'ast> Visit<'ast> for Discovery<'_> {
             );
         }
     }
+    fn visit_item_struct(&mut self, item: &'ast syn::ItemStruct) {
+        if let Some(origin) = worth_binary_derive_path(&item.attrs) {
+            if !item.generics.params.is_empty() {
+                self.refusal = Some(format!(
+                    "{}: derived domain binary value `{}` must be a concrete non-generic struct",
+                    self.source, item.ident
+                ));
+                return;
+            }
+            match derived_binary_binding_name(item) {
+                Ok(binding) => {
+                    let value = syn::parse_str::<Type>(&item.ident.to_string())
+                        .expect("struct ident is a valid type");
+                    self.push(binding, value, Some(origin));
+                }
+                Err(error) => {
+                    self.refusal = Some(format!("{}: {error}", self.source));
+                    return;
+                }
+            }
+        }
+        syn::visit::visit_item_struct(self, item);
+    }
     fn visit_item_impl(&mut self, item: &'ast ItemImpl) {
         let claim = canonical_binding(item) || item.items.iter().any(|member| match member {
             syn::ImplItem::Const(value) if value.ident == "DOMAIN_VALUE" =>
@@ -182,4 +206,59 @@ impl<'ast> Visit<'ast> for Discovery<'_> {
         }
         syn::visit::visit_item_impl(self, item);
     }
+}
+
+fn worth_binary_derive_path(attrs: &[syn::Attribute]) -> Option<syn::Path> {
+    for attr in attrs {
+        if !attr.path().is_ident("derive") {
+            continue;
+        }
+        let Ok(paths) = attr.parse_args_with(
+            syn::punctuated::Punctuated::<syn::Path, syn::Token![,]>::parse_terminated,
+        ) else {
+            continue;
+        };
+        for path in paths {
+            if path
+                .segments
+                .last()
+                .is_some_and(|seg| seg.ident == "WorthBinaryValue")
+            {
+                return Some(path);
+            }
+        }
+    }
+    None
+}
+
+fn derived_binary_binding_name(item: &syn::ItemStruct) -> Result<String, String> {
+    let mut explicit: Option<String> = None;
+    for attr in &item.attrs {
+        if !attr.path().is_ident("worth_binary") && !attr.path().is_ident("worth_query") {
+            continue;
+        }
+        attr.parse_nested_meta(|meta| {
+            if meta.path.is_ident("binding") {
+                let value = meta.value()?;
+                let ident: syn::Ident = value.parse()?;
+                if explicit.replace(ident.to_string()).is_some() {
+                    return Err(meta.error("duplicate `binding` attribute on WorthBinaryValue"));
+                }
+            } else if meta.input.peek(syn::Token![=]) {
+                let value = meta.value()?;
+                let _: syn::Expr = value.parse()?;
+            } else if meta.input.peek(syn::token::Paren) {
+                let _content;
+                syn::parenthesized!(_content in meta.input);
+            }
+            Ok(())
+        })
+        .map_err(|error| {
+            format!(
+                "invalid WorthBinaryValue attribute on `{}`: {error}",
+                item.ident
+            )
+        })?;
+    }
+    Ok(explicit.unwrap_or_else(|| format!("{}Binding", item.ident)))
 }

@@ -5,8 +5,8 @@ use worth_query_decl::facade::application_query::*;
 use worth_query_decl::facade::application_schema::{fragment::*, *};
 use worth_query_decl::facade::{
     authentication::*, worth_query_identity_namespace, worth_query_native_scalar_bindings,
-    worth_query_structured_value_binding, WorthBinaryValue, WorthManagedIndex, WorthQuery,
-    WorthQueryProjection, WorthQueryRecord, WorthQuerySchema,
+    worth_query_structured_value_binding, WorthManagedIndex, WorthQuery, WorthQueryProjection,
+    WorthQueryRecord, WorthQuerySchema,
 };
 
 const SOURCE_NS: ApplicationIdentityNamespace =
@@ -171,20 +171,7 @@ impl ApplicationBindingContext<ShopSchema> for ShopContext {
     }
 }
 
-fn check_box(b: &QueryBox2D) -> Result<(), &'static str> {
-    (b.min_x < b.max_x && b.min_y < b.max_y)
-        .then_some(())
-        .ok_or("box must have positive area")
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq, WorthBinaryValue)]
-#[worth_query(identity = "shopfloor.query_box.v1", version = 1, validate = check_box)]
-pub struct QueryBox2D {
-    pub min_x: i64,
-    pub min_y: i64,
-    pub max_x: i64,
-    pub max_y: i64,
-}
+use super::managed_index_hard_dx_probes::{QueryBox2D, QueryBox2DBinding};
 
 #[derive(Clone, Debug, WorthQuery)]
 #[worth_query(

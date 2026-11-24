@@ -1,10 +1,49 @@
 //! Built-in versioned binary probes for `CanonicalF64` 2D and 3D stock box indexes.
+//!
+//! Codec canonicality policy:
+//! - Finite IEEE-754 coordinates only: `NaN`, `+Infinity`, and `-Infinity` are
+//!   refused with [`ValueCodecDenial::NonCanonical`] on both encode and decode.
+//! - Signed zero (`-0.0`) is canonicalized to `+0.0` on construction and encode
+//!   so mathematically equal probes produce identical wire bytes (e.g., opening a
+//!   watch with `-0.0` and polling with `+0.0` never mismatches parameter bytes).
+//! - Non-canonical `-0.0` wire bits (`0x8000_0000_0000_0000`) are refused on
+//!   decode with [`ValueCodecDenial::NonCanonical`].
 use super::{decode_coords, encode_coords, WorthQueryBox2DProbe, WorthQueryBox3DProbe};
 use worth_query_declaration::facade::application_schema::{
     BinaryValueDelegate, BinaryValueWriter, CanonicalF64, ValueCodecDenial, ValueDecodeAdmission,
     WorthBinaryWireField, WorthQueryDefaultValueBinding,
 };
 use worth_query_declaration::worth_query_value_binding;
+
+const NEG_ZERO_BITS: u64 = (-0.0_f64).to_bits();
+const POS_ZERO_BITS: u64 = 0.0_f64.to_bits();
+
+#[inline]
+const fn canonicalize_zero_bits(bits: u64) -> u64 {
+    if bits == NEG_ZERO_BITS {
+        POS_ZERO_BITS
+    } else {
+        bits
+    }
+}
+
+#[inline]
+fn encode_finite_f64(bits: u64) -> Result<CanonicalF64, ValueCodecDenial> {
+    let canonical = canonicalize_zero_bits(bits);
+    let value = CanonicalF64(canonical);
+    if !value.as_f64().is_finite() {
+        return Err(ValueCodecDenial::NonCanonical);
+    }
+    Ok(value)
+}
+
+#[inline]
+fn validate_decoded_f64(value: CanonicalF64) -> Result<u64, ValueCodecDenial> {
+    if value.0 == NEG_ZERO_BITS || !value.as_f64().is_finite() {
+        return Err(ValueCodecDenial::NonCanonical);
+    }
+    Ok(value.0)
+}
 
 /// Stock 2D canonical-float bounding-box probe (`CanonicalF64` IEEE-754 bits).
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -18,10 +57,10 @@ pub struct WorthQueryBox2DF64 {
 impl WorthQueryBox2DF64 {
     pub const fn new(min: [CanonicalF64; 2], max: [CanonicalF64; 2]) -> Self {
         Self {
-            min_x_bits: min[0].0,
-            min_y_bits: min[1].0,
-            max_x_bits: max[0].0,
-            max_y_bits: max[1].0,
+            min_x_bits: canonicalize_zero_bits(min[0].0),
+            min_y_bits: canonicalize_zero_bits(min[1].0),
+            max_x_bits: canonicalize_zero_bits(max[0].0),
+            max_y_bits: canonicalize_zero_bits(max[1].0),
         }
     }
 
@@ -57,12 +96,12 @@ pub struct WorthQueryBox3DF64 {
 impl WorthQueryBox3DF64 {
     pub const fn new(min: [CanonicalF64; 3], max: [CanonicalF64; 3]) -> Self {
         Self {
-            min_x_bits: min[0].0,
-            min_y_bits: min[1].0,
-            min_z_bits: min[2].0,
-            max_x_bits: max[0].0,
-            max_y_bits: max[1].0,
-            max_z_bits: max[2].0,
+            min_x_bits: canonicalize_zero_bits(min[0].0),
+            min_y_bits: canonicalize_zero_bits(min[1].0),
+            min_z_bits: canonicalize_zero_bits(min[2].0),
+            max_x_bits: canonicalize_zero_bits(max[0].0),
+            max_y_bits: canonicalize_zero_bits(max[1].0),
+            max_z_bits: canonicalize_zero_bits(max[2].0),
         }
     }
 
@@ -107,10 +146,10 @@ impl BinaryValueDelegate for Box2DF64Codec {
     fn encode(v: &Self::Value, w: &mut dyn BinaryValueWriter) -> Result<(), ValueCodecDenial> {
         encode_coords(
             &[
-                CanonicalF64(v.min_x_bits),
-                CanonicalF64(v.min_y_bits),
-                CanonicalF64(v.max_x_bits),
-                CanonicalF64(v.max_y_bits),
+                encode_finite_f64(v.min_x_bits)?,
+                encode_finite_f64(v.min_y_bits)?,
+                encode_finite_f64(v.max_x_bits)?,
+                encode_finite_f64(v.max_y_bits)?,
             ],
             w,
         )
@@ -118,23 +157,11 @@ impl BinaryValueDelegate for Box2DF64Codec {
     fn admit(b: &[u8], a: &mut ValueDecodeAdmission<'_>) -> Result<Self::Value, ValueCodecDenial> {
         let [min_x, min_y, max_x, max_y] = decode_coords(b, a, CanonicalF64(0))?;
         Ok(WorthQueryBox2DF64 {
-            min_x_bits: min_x.0,
-            min_y_bits: min_y.0,
-            max_x_bits: max_x.0,
-            max_y_bits: max_y.0,
+            min_x_bits: validate_decoded_f64(min_x)?,
+            min_y_bits: validate_decoded_f64(min_y)?,
+            max_x_bits: validate_decoded_f64(max_x)?,
+            max_y_bits: validate_decoded_f64(max_y)?,
         })
-    }
-}
-impl WorthBinaryWireField for WorthQueryBox2DF64 {
-    const WIRE_BYTES: usize = Box2DF64Codec::MAXIMUM_WIRE_BYTES;
-    fn encode_binary_field(&self, w: &mut dyn BinaryValueWriter) -> Result<(), ValueCodecDenial> {
-        Box2DF64Codec::encode(self, w)
-    }
-    fn decode_binary_field(
-        b: &[u8],
-        a: &mut ValueDecodeAdmission<'_>,
-    ) -> Result<Self, ValueCodecDenial> {
-        Box2DF64Codec::admit(b, a)
     }
 }
 impl WorthQueryDefaultValueBinding for WorthQueryBox2DF64 {
@@ -152,12 +179,12 @@ impl BinaryValueDelegate for Box3DF64Codec {
     fn encode(v: &Self::Value, w: &mut dyn BinaryValueWriter) -> Result<(), ValueCodecDenial> {
         encode_coords(
             &[
-                CanonicalF64(v.min_x_bits),
-                CanonicalF64(v.min_y_bits),
-                CanonicalF64(v.min_z_bits),
-                CanonicalF64(v.max_x_bits),
-                CanonicalF64(v.max_y_bits),
-                CanonicalF64(v.max_z_bits),
+                encode_finite_f64(v.min_x_bits)?,
+                encode_finite_f64(v.min_y_bits)?,
+                encode_finite_f64(v.min_z_bits)?,
+                encode_finite_f64(v.max_x_bits)?,
+                encode_finite_f64(v.max_y_bits)?,
+                encode_finite_f64(v.max_z_bits)?,
             ],
             w,
         )
@@ -165,25 +192,13 @@ impl BinaryValueDelegate for Box3DF64Codec {
     fn admit(b: &[u8], a: &mut ValueDecodeAdmission<'_>) -> Result<Self::Value, ValueCodecDenial> {
         let [min_x, min_y, min_z, max_x, max_y, max_z] = decode_coords(b, a, CanonicalF64(0))?;
         Ok(WorthQueryBox3DF64 {
-            min_x_bits: min_x.0,
-            min_y_bits: min_y.0,
-            min_z_bits: min_z.0,
-            max_x_bits: max_x.0,
-            max_y_bits: max_y.0,
-            max_z_bits: max_z.0,
+            min_x_bits: validate_decoded_f64(min_x)?,
+            min_y_bits: validate_decoded_f64(min_y)?,
+            min_z_bits: validate_decoded_f64(min_z)?,
+            max_x_bits: validate_decoded_f64(max_x)?,
+            max_y_bits: validate_decoded_f64(max_y)?,
+            max_z_bits: validate_decoded_f64(max_z)?,
         })
-    }
-}
-impl WorthBinaryWireField for WorthQueryBox3DF64 {
-    const WIRE_BYTES: usize = Box3DF64Codec::MAXIMUM_WIRE_BYTES;
-    fn encode_binary_field(&self, w: &mut dyn BinaryValueWriter) -> Result<(), ValueCodecDenial> {
-        Box3DF64Codec::encode(self, w)
-    }
-    fn decode_binary_field(
-        b: &[u8],
-        a: &mut ValueDecodeAdmission<'_>,
-    ) -> Result<Self, ValueCodecDenial> {
-        Box3DF64Codec::admit(b, a)
     }
 }
 impl WorthQueryDefaultValueBinding for WorthQueryBox3DF64 {

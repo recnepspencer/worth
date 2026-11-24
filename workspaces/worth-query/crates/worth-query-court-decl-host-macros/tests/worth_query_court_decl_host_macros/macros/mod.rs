@@ -12,4 +12,5 @@ mod schema;
 
 mod journey;
 mod managed_index_hard_dx;
+mod managed_index_hard_dx_probes;
 mod parity;

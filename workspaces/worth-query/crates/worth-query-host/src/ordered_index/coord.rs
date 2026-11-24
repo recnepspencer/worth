@@ -76,8 +76,9 @@ impl std::error::Error for WorthQueryStockIndexDenial {}
 /// Sealed canonical coordinate types supported by stock interval and box indexes.
 ///
 /// For [`CanonicalF64`], comparison uses exact mathematical floating-point order
-/// (canonicalizing `-0.0` to `+0.0` for associative envelope `Eq`, and rejecting
-/// `NaN` endpoints) rather than raw IEEE-754 `u64` bit ordering.
+/// over finite values only (canonicalizing `-0.0` to `+0.0` for associative
+/// envelope `Eq`, and rejecting `NaN`, `+Infinity`, and `-Infinity` consistently
+/// across codec and adapter boundaries) rather than raw IEEE-754 `u64` bit order.
 pub trait WorthQueryOrderedCoord: Copy + Eq + Send + Sync + private::Sealed + 'static {
     fn is_valid_coord(self) -> bool;
     fn normalize_endpoint(self) -> Self;
@@ -130,7 +131,7 @@ impl private::Sealed for CanonicalF64 {}
 impl WorthQueryOrderedCoord for CanonicalF64 {
     #[inline]
     fn is_valid_coord(self) -> bool {
-        !self.as_f64().is_nan()
+        self.as_f64().is_finite()
     }
 
     #[inline]

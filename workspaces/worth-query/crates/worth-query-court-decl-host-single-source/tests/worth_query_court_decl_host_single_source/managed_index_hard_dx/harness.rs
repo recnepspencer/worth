@@ -28,8 +28,58 @@ use worth_query_host::facade::{
     WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeRequest,
 };
 use worth_query_testkit_document_retention::facade::document_retention_model::operator_identity::{
-    authenticate_operator, operator_identity, request_scope,
+    admit_authentication_adapter, audience, authenticate_operator, block_on, method,
+    operator_identity, request_scope, secondary_signer_identity,
+    WorthQueryAuthenticatedExternalPrincipal, WorthQueryAuthenticationAdapter,
+    WorthQueryAuthenticationAdapterAdmission, WorthQueryAuthenticationAdapterFailure,
+    WorthQueryAuthenticationAdapterFailureKind, WorthQueryAuthenticationFuture,
+    WorthQueryRequestScope, WorthQueryValidatedExternalPrincipal,
 };
+
+struct SecondaryOperatorAdapter;
+impl WorthQueryAuthenticationAdapter for SecondaryOperatorAdapter {
+    type Credential = ();
+    fn configuration_identity(&self) -> &str {
+        "worth-query-hard-dx-secondary-operator-v1"
+    }
+    fn validate<'a>(
+        &'a self,
+        _credential: Self::Credential,
+        _scope: &'a WorthQueryRequestScope,
+    ) -> WorthQueryAuthenticationFuture<'a> {
+        Box::pin(async move {
+            let now = std::time::SystemTime::now();
+            WorthQueryValidatedExternalPrincipal::new(
+                secondary_signer_identity(),
+                audience(),
+                method(),
+                now,
+                now + std::time::Duration::from_secs(3_600),
+                Vec::new(),
+            )
+            .map_err(|_| {
+                WorthQueryAuthenticationAdapterFailure::new(
+                    WorthQueryAuthenticationAdapterFailureKind::ProtocolViolation,
+                )
+            })
+        })
+    }
+}
+
+pub(super) fn authenticate_secondary_operator(
+    schema: &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<
+        ShopFloorSchema,
+    >,
+    scope: &WorthQueryRequestScope,
+) -> WorthQueryAuthenticatedExternalPrincipal<ShopFloorSchema> {
+    let adapter = admit_authentication_adapter(
+        schema,
+        WorthQueryAuthenticationAdapterAdmission::new(audience(), method(), scope.clock().clone()),
+        SecondaryOperatorAdapter,
+    )
+    .expect("secondary adapter must admit");
+    block_on(adapter.authenticate((), scope)).expect("secondary operator must authenticate")
+}
 
 pub(super) fn home_lease() -> ExecutionResourceLease<'static> {
     ExecutionResourceLease::serial(LeaseRequest {
@@ -93,7 +143,7 @@ pub(super) fn limits(
     )
 }
 
-fn seed_floor(
+pub(super) fn seed_floor(
     graph: &mut WorthQueryPrimaryGraphBootstrap<ShopFloorSchema>,
     installed: &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<
         ShopFloorSchema,
@@ -107,6 +157,15 @@ fn seed_floor(
         WorthQueryApplicationPrincipalKey::new("operator").unwrap(),
         1_u64,
         operator_identity(),
+        WorthQueryPrincipalMappingStatus::Enabled,
+    )?;
+    graph.bind_principal(
+        &installed
+            .principal_binding(PrincipalBinding::reference())
+            .unwrap(),
+        WorthQueryApplicationPrincipalKey::new("secondary-operator").unwrap(),
+        2_u64,
+        secondary_signer_identity(),
         WorthQueryPrincipalMappingStatus::Enabled,
     )?;
     graph.bind_entity(

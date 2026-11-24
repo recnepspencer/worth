@@ -1,8 +1,8 @@
 //! Compile-time and runtime contract doctests for `#[derive(WorthBinaryValue)]`,
 //! `#[derive(WorthManagedIndex)]`, and `#[derive(WorthQuery)]` managed-index wiring.
 //!
-//! `#[derive(WorthBinaryValue)]` round-trips fixed-width canonical fields,
-//! nested `WorthBinaryValue` structs, version bytes, admission metering, and
+//! `#[derive(WorthBinaryValue)]` round-trips named, tuple, and unit structs over
+//! sealed fixed-width canonical fields, version bytes, admission metering, and
 //! domain validators:
 //!
 //! ```
@@ -10,19 +10,27 @@
 //!     ApplicationReadableScalarValueBinding, ApplicationScalarValueBinding, ApplicationValue,
 //!     ApplicationValueDecodeDenial, ApplicationValueEncodeDenial, CanonicalDate, CanonicalF32,
 //!     CanonicalF64, CanonicalTime, CanonicalTimestamp, CanonicalTimestampTz, InlineBytes,
-//!     ValueCodecDenial, WorthBinaryWireField,
+//!     ValueCodecDenial,
 //! };
 //! use worth_query_decl::facade::WorthBinaryValue;
 //!
 //! #[derive(Clone, Copy, Debug, Eq, PartialEq, WorthBinaryValue)]
-//! #[worth_binary(namespace = "doc.binary.point2d", version = 1)]
-//! pub struct Point2D {
-//!     pub x: i64,
-//!     pub y: i64,
-//! }
+//! #[worth_binary(namespace = "doc.binary.tuple_pair", version = 1)]
+//! pub struct TuplePair(pub i64, pub u32);
+//!
+//! #[derive(Clone, Copy, Debug, Eq, PartialEq, WorthBinaryValue)]
+//! #[worth_binary(namespace = "doc.binary.unit_probe", version = 1)]
+//! pub struct UnitProbe;
+//!
+//! let pair = TuplePair(-7, 42);
+//! let raw_pair = TuplePairBinding::encode(&pair).unwrap();
+//! assert_eq!(TuplePairBinding::decode(&raw_pair).unwrap(), pair);
+//!
+//! let raw_unit = UnitProbeBinding::encode(&UnitProbe).unwrap();
+//! assert_eq!(UnitProbeBinding::decode(&raw_unit).unwrap(), UnitProbe);
 //!
 //! fn check_box(b: &QueryBox2D) -> Result<(), &'static str> {
-//!     (b.min.x < b.max.x && b.min.y < b.max.y)
+//!     (b.min_x < b.max_x && b.min_y < b.max_y)
 //!         .then_some(())
 //!         .ok_or("box must be non-empty")
 //! }
@@ -30,8 +38,10 @@
 //! #[derive(Clone, Copy, Debug, Eq, PartialEq, WorthBinaryValue)]
 //! #[worth_query(identity = "doc.binary.box2d.v1", version = 2, validate = check_box)]
 //! pub struct QueryBox2D {
-//!     pub min: Point2D,
-//!     pub max: Point2D,
+//!     pub min_x: i64,
+//!     pub min_y: i64,
+//!     pub max_x: i64,
+//!     pub max_y: i64,
 //!     pub stamp: CanonicalTimestamp,
 //!     pub date: CanonicalDate,
 //!     pub time: CanonicalTime,
@@ -43,8 +53,10 @@
 //! }
 //!
 //! let sample = QueryBox2D {
-//!     min: Point2D { x: -10, y: -20 },
-//!     max: Point2D { x: 30, y: 40 },
+//!     min_x: -10,
+//!     min_y: -20,
+//!     max_x: 30,
+//!     max_y: 40,
 //!     stamp: CanonicalTimestamp { micros_since_unix_epoch: 1234 },
 //!     date: CanonicalDate { days_from_unix_epoch: 56 },
 //!     time: CanonicalTime::new(789).unwrap(),
@@ -57,7 +69,7 @@
 //! let raw = QueryBox2DBinding::encode(&sample).unwrap();
 //! let ApplicationValue::InlineBytes(ref ib) = raw else { panic!("expected InlineBytes") };
 //! assert_eq!(ib.as_bytes()[0], 2u8);
-//! assert_eq!(ib.as_bytes().len(), QueryBox2D::WIRE_BYTES);
+//! assert_eq!(ib.as_bytes().len(), 1 + 4 * 8 + 8 + 4 + 8 + 12 + 4 + 8 + 16 + 1);
 //! assert_eq!(QueryBox2DBinding::decode(&raw).unwrap(), sample);
 //!
 //! // Version mismatch refuses with UnsupportedVersion.
@@ -100,11 +112,33 @@
 //! ));
 //!
 //! // Domain validator refuses invalid box on encode.
-//! let empty = QueryBox2D { max: Point2D { x: -10, y: 40 }, ..sample };
+//! let empty = QueryBox2D { max_x: -10, ..sample };
 //! assert!(matches!(
 //!     QueryBox2DBinding::encode(&empty),
 //!     Err(ApplicationValueEncodeDenial::Validation(ref v)) if v.reason() == "box must be non-empty"
 //! ));
+//! ```
+//!
+//! `WorthBinaryWireField` is sealed inside `worth-query-declaration` so local
+//! wrappers around unbounded or reference-bearing carriers cannot implement it:
+//!
+//! ```compile_fail,E0277
+//! use worth_query_decl::facade::application_schema::{
+//!     BinaryValueWriter, ValueCodecDenial, ValueDecodeAdmission, WorthBinaryWireField,
+//! };
+//! pub struct ForgedCarrier(pub String);
+//! impl WorthBinaryWireField for ForgedCarrier {
+//!     const WIRE_BYTES: usize = 1;
+//!     fn encode_binary_field(&self, _w: &mut dyn BinaryValueWriter) -> Result<(), ValueCodecDenial> {
+//!         Ok(())
+//!     }
+//!     fn decode_binary_field(
+//!         _b: &[u8],
+//!         _a: &mut ValueDecodeAdmission<'_>,
+//!     ) -> Result<Self, ValueCodecDenial> {
+//!         Ok(Self(String::new()))
+//!     }
+//! }
 //! ```
 //!
 //! Raw `f64` fields fail to compile:
@@ -166,8 +200,8 @@
 //! ```
 //!
 //! Caller identifiers matching internal macro names (`__WorthBinaryValue`,
-//! `__worth_binary_call_validate`, `__worth_binary_reason`) cannot shadow
-//! generated items:
+//! `__worth_binary_call_validate`, `r#__worth_binary_bytes`, `r#__worth_reason`,
+//! `r#__worth_binary_reason`) cannot shadow generated items or capture constants:
 //!
 //! ```
 //! use worth_query_decl::facade::application_schema::{
@@ -175,17 +209,19 @@
 //! };
 //! use worth_query_decl::facade::WorthBinaryValue;
 //!
-//! fn __worth_binary_call_validate(v: &__WorthBinaryValue) -> Result<(), &'static str> {
+//! fn r#__worth_binary_bytes(v: &__WorthBinaryValue) -> Result<(), &'static str> {
 //!     (v.a < v.b).then_some(()).ok_or("a must be < b")
 //! }
-//! #[allow(dead_code)]
-//! const __worth_binary_reason: &str = "caller shadow";
+//! #[allow(dead_code, non_upper_case_globals)]
+//! const r#__worth_reason: &str = "caller shadow 1";
+//! #[allow(dead_code, non_upper_case_globals)]
+//! const r#__worth_binary_reason: &str = "caller shadow 2";
 //!
 //! #[derive(Clone, Copy, Debug, Eq, PartialEq, WorthBinaryValue)]
-//! #[worth_query(
-//!     identity = "doc.binary.hygiene.v1",
+//! #[worth_binary(
+//!     namespace = "doc.binary.hygiene",
 //!     version = 1,
-//!     validate = __worth_binary_call_validate
+//!     validate = r#__worth_binary_bytes
 //! )]
 //! pub struct __WorthBinaryValue {
 //!     pub a: i64,
@@ -199,7 +235,8 @@
 //! ```
 //!
 //! A `#[derive(WorthQuery)]` `#[worth_query(probe)]` field whose type mismatches
-//! the managed index's `ProbeBinding::Value` fails to compile:
+//! the managed index's `ProbeBinding::Value` — INCLUDING a `Deref<Target = String>`
+//! wrapper such as `Box<String>` — fails to compile:
 //!
 //! ```compile_fail,E0308
 //! use worth_query_decl::facade::application_identity::ApplicationIdentityNamespace;
@@ -211,12 +248,12 @@
 //!     WorthQueryRecord, WorthQuerySchema,
 //! };
 //!
-//! const S_NS: ApplicationIdentityNamespace = worth_query_identity_namespace!("doc.bad_probe.src.v1");
-//! const Q_NS: ApplicationIdentityNamespace = worth_query_identity_namespace!("doc.bad_probe.q.v1");
-//! const R_NS: ApplicationIdentityNamespace = worth_query_identity_namespace!("doc.bad_probe.row.v1");
+//! const S_NS: ApplicationIdentityNamespace = worth_query_identity_namespace!("doc.deref_probe.src.v1");
+//! const Q_NS: ApplicationIdentityNamespace = worth_query_identity_namespace!("doc.deref_probe.q.v1");
+//! const R_NS: ApplicationIdentityNamespace = worth_query_identity_namespace!("doc.deref_probe.row.v1");
 //!
 //! #[derive(Clone, Copy, WorthQuerySchema)]
-//! #[worth_query(schema, owner = "doc.bad_probe", name = "S", members(F))]
+//! #[worth_query(schema, owner = "doc.deref_probe", name = "S", members(F))]
 //! pub struct S;
 //! #[derive(Clone, Copy, WorthQuerySchema)]
 //! #[worth_query(fragment, bindings = C, members(M, P, E))]
@@ -242,15 +279,15 @@
 //! #[derive(Clone, Debug, Eq, PartialEq, WorthQueryProjection)]
 //! #[worth_query(schema = S, root = E, namespace = R_NS)]
 //! pub struct Row { #[worth_query(field = K)] pub k: u64 }
-//! worth_query_structured_value_binding!(pub RowB for Row { identity: "doc.bad_probe.rowb.v1" });
-//! worth_query_structured_value_binding!(pub DenB for () { identity: "doc.bad_probe.denb.v1" });
+//! worth_query_structured_value_binding!(pub RowB for Row { identity: "doc.deref_probe.rowb.v1" });
+//! worth_query_structured_value_binding!(pub DenB for () { identity: "doc.deref_probe.denb.v1" });
 //! pub struct PB;
 //! pub struct Ctx;
 //! impl ApplicationBindingContext<S> for Ctx {
 //!     type PrincipalBinding = PB; type Mapping = M; type Principal = P;
 //!     type PrincipalIdentity = u64; type PrincipalIdentityBinding = U64ApplicationValueBinding;
 //!     type IdempotencyKey = u64; type DenialBinding = DenB;
-//!     const IDEMPOTENCY_IDENTITY: &'static str = "doc.bad_probe.idem.v1";
+//!     const IDEMPOTENCY_IDENTITY: &'static str = "doc.deref_probe.idem.v1";
 //!     fn principal_binding() -> ApplicationPrincipalBindingRef<S, PB, M, P, u64, U64ApplicationValueBinding> { unimplemented!() }
 //! }
 //! #[derive(Clone, Debug, WorthQuery)]
@@ -261,8 +298,8 @@
 //! pub struct StrIdx;
 //! #[derive(Clone, Debug, WorthQuery)]
 //! #[worth_query(schema = S, context = Ctx, namespace = Q_NS, scope = K, managed_index = StrIdx, limits = 8)]
-//! pub struct BadProbeQuery {
+//! pub struct DerefProbeQuery {
 //!     #[worth_query(scope)] pub k: u64,
-//!     #[worth_query(probe)] pub wrong_type: u64,
+//!     #[worth_query(probe)] pub boxed_string: Box<String>,
 //! }
 //! ```

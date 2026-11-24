@@ -50,15 +50,26 @@ fn roots(input: &Inputs) -> Result<BTreeMap<String, String>, Vec<String>> {
                 }
             }
             for target in &package.targets {
-                let binary = target.kind.iter().any(|kind| kind == "bin");
-                if (binary || target.kind.iter().any(|kind| kind == "lib"))
+                let non_lib = target
+                    .kind
+                    .iter()
+                    .any(|kind| kind == "bin" || kind == "test");
+                if (non_lib
+                    || target
+                        .kind
+                        .iter()
+                        .any(|kind| kind == "lib" || kind == "proc-macro"))
                     && (input.files.contains_key(&target.src_path)
-                        || ["worth_query_decl", "worth_query_declaration"]
-                            .contains(&target.name.as_str()))
+                        || [
+                            "worth_query_decl",
+                            "worth_query_declaration",
+                            "worth_query_macros",
+                        ]
+                        .contains(&target.name.as_str()))
                 {
-                    // A package's library and binary may have the same Cargo
-                    // name, but `crate` names a different module tree in each.
-                    let name = if binary {
+                    // A package's library, binary, and integration test targets may share
+                    // a Cargo name, but `crate` names a different module tree in each.
+                    let name = if non_lib {
                         format!("{}[{}]", target.name.replace('-', "_"), target.src_path)
                     } else {
                         target.name.clone()
@@ -94,6 +105,7 @@ fn check_sources(
                 "domain",
                 "ApplicationCanonicalValueContract",
                 "canonical_contract",
+                "WorthBinaryValue",
             ]
             .iter()
             .any(|marker| text.contains(marker))

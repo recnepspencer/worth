@@ -33,13 +33,17 @@ pub const fn worth_binary_checked_wire_bytes(base: usize, add: usize) -> usize {
     total
 }
 
-/// Canonical fixed-width little-endian wire encoding for one field of a
+mod sealed {
+    pub trait Sealed {}
+}
+
+/// Sealed canonical fixed-width little-endian wire encoding for one field of a
 /// `#[derive(WorthBinaryValue)]` struct.
 ///
-/// Raw `f32`/`f64`, unbounded strings/sequences, and arbitrary non-derived
-/// types deliberately do not implement this trait so non-canonical or unbounded
-/// binary fields fail at compile time.
-pub trait WorthBinaryWireField: Sized + 'static {
+/// Sealed inside `worth-query-declaration` to fixed-width, reference-free
+/// primitive and canonical scalar carriers so downstream wrappers around
+/// unbounded or reference-bearing types cannot forge wire widths.
+pub trait WorthBinaryWireField: sealed::Sealed + Sized + 'static {
     const WIRE_BYTES: usize;
 
     fn encode_binary_field(
@@ -61,6 +65,7 @@ pub trait WorthQueryDefaultValueBinding: Sized + 'static {
     type Binding: ApplicationReadableScalarValueBinding<Value = Self>;
 }
 
+impl sealed::Sealed for bool {}
 impl WorthBinaryWireField for bool {
     const WIRE_BYTES: usize = 1;
 
@@ -87,6 +92,7 @@ impl WorthBinaryWireField for bool {
 macro_rules! impl_le_int_wire_field {
     ($($ty:ty => $bytes:expr),+ $(,)?) => {
         $(
+            impl sealed::Sealed for $ty {}
             impl WorthBinaryWireField for $ty {
                 const WIRE_BYTES: usize = $bytes;
 
@@ -121,6 +127,7 @@ impl_le_int_wire_field!(
     i64 => 8,
 );
 
+impl<const N: usize> sealed::Sealed for [u8; N] {}
 impl<const N: usize> WorthBinaryWireField for [u8; N] {
     const WIRE_BYTES: usize = N;
 
@@ -139,6 +146,7 @@ impl<const N: usize> WorthBinaryWireField for [u8; N] {
     }
 }
 
+impl sealed::Sealed for CanonicalDigestId {}
 impl WorthBinaryWireField for CanonicalDigestId {
     const WIRE_BYTES: usize = 32;
 
@@ -158,6 +166,7 @@ impl WorthBinaryWireField for CanonicalDigestId {
     }
 }
 
+impl sealed::Sealed for CanonicalDate {}
 impl WorthBinaryWireField for CanonicalDate {
     const WIRE_BYTES: usize = 4;
 
@@ -179,6 +188,7 @@ impl WorthBinaryWireField for CanonicalDate {
     }
 }
 
+impl sealed::Sealed for CanonicalTime {}
 impl WorthBinaryWireField for CanonicalTime {
     const WIRE_BYTES: usize = 8;
 
@@ -207,6 +217,7 @@ impl WorthBinaryWireField for CanonicalTime {
     }
 }
 
+impl sealed::Sealed for CanonicalTimestamp {}
 impl WorthBinaryWireField for CanonicalTimestamp {
     const WIRE_BYTES: usize = 8;
 
@@ -228,6 +239,7 @@ impl WorthBinaryWireField for CanonicalTimestamp {
     }
 }
 
+impl sealed::Sealed for CanonicalTimestampTz {}
 impl WorthBinaryWireField for CanonicalTimestampTz {
     const WIRE_BYTES: usize = 12;
 
@@ -263,6 +275,7 @@ impl WorthBinaryWireField for CanonicalTimestampTz {
     }
 }
 
+impl sealed::Sealed for CanonicalF32 {}
 impl WorthBinaryWireField for CanonicalF32 {
     const WIRE_BYTES: usize = 4;
 
@@ -289,6 +302,7 @@ impl WorthBinaryWireField for CanonicalF32 {
     }
 }
 
+impl sealed::Sealed for CanonicalF64 {}
 impl WorthBinaryWireField for CanonicalF64 {
     const WIRE_BYTES: usize = 8;
 

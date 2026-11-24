@@ -8,6 +8,9 @@ use super::{
     update_asset,
 };
 use worth_execution::ExecutionRequest;
+use worth_query_host::facade::application_contribution::{
+    WorthQueryAdvancementDenial, WorthQueryManagedComputationResourceDenial,
+};
 use worth_query_host::facade::application_entry::*;
 use worth_query_host::facade::primary_graph::*;
 use worth_query_testkit_document_retention::facade::document_retention_model::operator_identity::{
@@ -51,18 +54,29 @@ fn q_box3d(min: [i64; 3], max: [i64; 3]) -> FindRoutesInBox3D {
     }
 }
 
-fn assert_not_ready<R>(res: Result<R, WorthQueryApplicationRequestQueryDenial>) {
+fn assert_exact_not_ready<R>(res: Result<R, WorthQueryApplicationRequestQueryDenial>) {
+    match res {
+        Err(WorthQueryApplicationRequestQueryDenial::ManagedIndex(cause))
+            if matches!(
+                cause.cause(),
+                WorthQueryManagedIndexDenialCause::Refused(WorthQueryManagedIndexRefusal::NotReady)
+            ) => {}
+        Err(other) => panic!("expected exact NotReady refusal, got Err({other:?})"),
+        Ok(_) => panic!("expected exact NotReady refusal, got Ok"),
+    }
+}
+
+fn assert_exact_root_unavailable<R>(res: Result<R, WorthQueryApplicationRequestQueryDenial>) {
     match res {
         Err(WorthQueryApplicationRequestQueryDenial::ManagedIndex(cause))
             if matches!(
                 cause.cause(),
                 WorthQueryManagedIndexDenialCause::Refused(
-                    WorthQueryManagedIndexRefusal::NotReady
-                        | WorthQueryManagedIndexRefusal::RootUnavailable
+                    WorthQueryManagedIndexRefusal::RootUnavailable
                 )
             ) => {}
-        Err(other) => panic!("expected NotReady refusal, got Err({other:?})"),
-        Ok(_) => panic!("expected NotReady refusal, got Ok"),
+        Err(other) => panic!("expected exact RootUnavailable refusal, got Err({other:?})"),
+        Ok(_) => panic!("expected exact RootUnavailable refusal, got Ok"),
     }
 }
 
@@ -229,7 +243,7 @@ fn directory_home_four_stock_families_lifecycle_reopen_ensure_ready_watches_and_
     req.query(q_box2d(0, 0, 15, 15))
         .evict_index(&idx_b2)
         .unwrap();
-    assert_not_ready(
+    assert_exact_not_ready(
         req.query(q_box2d(0, 0, 15, 15))
             .ensure_index_ready::<EquipmentBox2DIndex>(),
     );
@@ -244,7 +258,8 @@ fn directory_home_four_stock_families_lifecycle_reopen_ensure_ready_watches_and_
     );
     home.close(&exec).unwrap().reclaim();
 
-    // Cold Directory Home reopen: tight memory ceiling must refuse ensure_index_ready honestly!
+    // Cold Directory Home reopen: tight memory ceiling must refuse ensure_index_ready
+    // with exact MemoryLimit leaf cause!
     let tight =
         open_directory_home_with_limits(&dir, &exec, false, &[], limits(Some(16 * 1024), None));
     let scope = request_scope();
@@ -257,31 +272,42 @@ fn directory_home_four_stock_families_lifecycle_reopen_ensure_ready_watches_and_
         Err(WorthQueryApplicationRequestQueryDenial::PrincipalResolution(cause))
             if matches!(
                 cause.kind(),
-                WorthQueryPrincipalResolutionDenialKind::Stopped(Ok(_))
+                WorthQueryPrincipalResolutionDenialKind::Stopped(Ok(
+                    WorthQueryProviderSessionDenialKind::ExecutionResource {
+                        denial: WorthQueryManagedComputationResourceDenial::MemoryLimit { .. },
+                        ..
+                    }
+                ))
             ) => {}
-        Err(WorthQueryApplicationRequestQueryDenial::ExecutionRequest(_)) => {}
-        Err(WorthQueryApplicationRequestQueryDenial::ManagedIndex(cause))
-            if matches!(
-                cause.cause(),
-                WorthQueryManagedIndexDenialCause::Execution(_)
-                    | WorthQueryManagedIndexDenialCause::GraphWork(_)
-                    | WorthQueryManagedIndexDenialCause::QueryRead(_)
-                    | WorthQueryManagedIndexDenialCause::Work(
-                        WorthQueryManagedIndexWorkDenial::Controlled(_)
-                    )
-            ) => {}
-        Err(other) => panic!("expected typed memory-ceiling denial, got Err({other:?})"),
+        Err(WorthQueryApplicationRequestQueryDenial::ExecutionRequest(
+            WorthQueryAdvancementDenial::Resource(
+                WorthQueryManagedComputationResourceDenial::MemoryLimit { .. },
+            ),
+        )) => {}
+        Err(other) => panic!("expected exact MemoryLimit denial, got Err({other:?})"),
         Ok(_) => panic!("ensure_index_ready must refuse under 16 KiB memory ceiling"),
     }
     tight.close(&exec).unwrap().reclaim();
 
-    // Clean cold reopen: NotReady before ensure_index_ready, then 1-call ensure_index_ready restores all 4!
+    // Clean cold reopen: cold Native maintained index refuses execute with exact
+    // RootUnavailable both before and after opening a Created handle, then 1-call
+    // ensure_index_ready restores all 4!
     let reopened = open_directory_home_with_limits(&dir, &exec, false, &[], limits(None, None));
     let scope = request_scope();
     let principal = authenticate_operator(reopened.runtime().installed_schema(), &scope);
     let req = reopened.runtime().runtime().request(&principal, &scope);
-    assert_not_ready(req.query(q_box2d(0, 0, 15, 15)).execute());
-    assert_not_ready(req.query(q_box3d([0, 0, 0], [15, 15, 5])).execute());
+    assert_exact_root_unavailable(req.query(q_box2d(0, 0, 15, 15)).execute());
+    assert_exact_root_unavailable(req.query(q_box3d([0, 0, 0], [15, 15, 5])).execute());
+    let cold_b2 = req
+        .query(q_box2d(0, 0, 15, 15))
+        .open_index::<EquipmentBox2DIndex>()
+        .unwrap();
+    assert_eq!(
+        cold_b2.lifecycle(),
+        WorthQueryManagedIndexLifecycle::Created
+    );
+    assert_exact_root_unavailable(req.query(q_box2d(0, 0, 15, 15)).execute());
+    drop(cold_b2);
 
     let r_p = req
         .query(q_prefix(""))

@@ -56,13 +56,23 @@ fn check_with_helpers(
                         "serde::Deserialize",
                         "worth_foundational::facade::WorthValue",
                         "worth_query_decl::facade::application_schema::WorthValue",
+                        "worth_query_decl::facade::WorthBinaryValue",
+                        "worth_query_macros::WorthBinaryValue",
                     ];
-                    if !(known.contains(&name) || (builtins.contains(&name) && !items.iter().any(|item| matches!(item, Item::Use(value) if imported(&value.tree, name, false))))) {
+                    let imported_binary_derive =
+                        name == "WorthBinaryValue" && imports_worth_binary_value(items);
+                    if !(known.contains(&name)
+                        || imported_binary_derive
+                        || (builtins.contains(&name)
+                            && !items.iter().any(|item| {
+                                matches!(item, Item::Use(value) if imported(&value.tree, name, false))
+                            })))
+                    {
                         return Err(format!("unknown/shadowed derive may change namespace resolution: {name}"));
                     }
                 }
             }
-            "serde" | "worth_value" | "charged_bytes" => {
+            "serde" | "worth_value" | "charged_bytes" | "worth_binary" | "worth_query" => {
                 if !helpers.contains(&path)
                     || items.iter().any(
                         |item| matches!(item, Item::Use(value) if imported(&value.tree, &path, true)),
@@ -178,10 +188,50 @@ fn helper_names(attributes: &[Attribute]) -> Vec<String> {
                         names.push("serde".into());
                         names.push("worth_value".into());
                     }
+                    "WorthBinaryValue"
+                    | "worth_query_decl::facade::WorthBinaryValue"
+                    | "worth_query_macros::WorthBinaryValue" => {
+                        names.push("worth_binary".into());
+                        names.push("worth_query".into());
+                    }
                     _ => (),
                 }
             }
         }
     }
     names
+}
+
+fn imports_worth_binary_value(items: &[Item]) -> bool {
+    items.iter().any(|item| {
+        let Item::Use(use_item) = item else {
+            return false;
+        };
+        let mut prefix = Vec::new();
+        use_tree_imports_binary(&use_item.tree, &mut prefix)
+    })
+}
+
+fn use_tree_imports_binary(tree: &UseTree, prefix: &mut Vec<String>) -> bool {
+    match tree {
+        UseTree::Path(path) => {
+            prefix.push(path.ident.to_string());
+            let matched = use_tree_imports_binary(&path.tree, prefix);
+            prefix.pop();
+            matched
+        }
+        UseTree::Name(name) if name.ident == "WorthBinaryValue" => matches!(
+            prefix
+                .iter()
+                .map(String::as_str)
+                .collect::<Vec<_>>()
+                .as_slice(),
+            ["worth_query_decl", "facade"] | ["worth_query_macros"]
+        ),
+        UseTree::Group(group) => group
+            .items
+            .iter()
+            .any(|item| use_tree_imports_binary(item, prefix)),
+        _ => false,
+    }
 }

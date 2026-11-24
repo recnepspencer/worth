@@ -2,9 +2,7 @@
 use super::super::{
     execution,
     handle::WorthQueryManagedIndex,
-    retention::{
-        ManagedIndexState, WorthQueryManagedIndexLifecycle, WorthQueryManagedIndexLifecycleDenial,
-    },
+    retention::{EnsureReadyClaim, ManagedIndexState, WorthQueryManagedIndexLifecycleDenial},
 };
 use super::*;
 use worth_query_declaration::facade::application_query::ApplicationManagedIndexBinding;
@@ -18,6 +16,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         binding: &WorthQueryInstalledApplicationQueryBinding<S, B>,
         plan: &mut BoundPlan<'_, S, B>,
         allocation: &Arc<SourceFactsAllocation>,
+        attach_created_only: bool,
     ) -> Result<(WorthQueryManagedIndex<S, I>, context::ParentContext<'a, S>), ReceiverCause> {
         let context = context::prepare(execution, self, binding, plan, allocation)?;
         let adapter = self
@@ -58,9 +57,17 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                     ReceiverCause::Provider(ProviderExecutionDenial::NativeSource(cause))
                 })?;
             if let Some(observation) = observation {
-                state.attach_maintained(observation).map_err(|cause| {
-                    ReceiverCause::Provider(ProviderExecutionDenial::Lifecycle(cause))
-                })?;
+                if attach_created_only {
+                    state
+                        .attach_maintained_if_created(observation)
+                        .map_err(|cause| {
+                            ReceiverCause::Provider(ProviderExecutionDenial::Lifecycle(cause))
+                        })?;
+                } else {
+                    state.attach_maintained(observation).map_err(|cause| {
+                        ReceiverCause::Provider(ProviderExecutionDenial::Lifecycle(cause))
+                    })?;
+                }
             }
         }
         let handle = WorthQueryManagedIndex {
@@ -90,15 +97,16 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         let allocation = SourceFactsAllocation::open(&execution)
             .map_err(|cause| crate::domain_computation::primary_graph::application_query::managed_index::denial::managed_index_denial(ReceiverCause::Execution(cause), None))?;
         let result = self
-            .open_prepared::<B, I>(&execution, binding, &mut plan, &allocation)
+            .open_prepared::<B, I>(&execution, binding, &mut plan, &allocation, false)
             .map(|(handle, _)| handle);
         result.map_err(|cause| crate::domain_computation::primary_graph::application_query::managed_index::denial::managed_index_denial(cause, Some(allocation)))
     }
 
-    /// Opens the runtime-owned registration and rebuilds it ONLY when its status
-    /// is `Created` (such as after cold reopen). Already-`Ready` registrations
-    /// return without reading Source; `Evicted`, `Failed`, `Rebuilding`, and
-    /// `Disposed` registrations refuse honestly without hiding errors.
+    /// Opens the runtime-owned registration and atomically claims a rebuild
+    /// ONLY when its status is `Created` (such as after cold reopen).
+    /// Already-`Ready` registrations return without reading Source; `Evicted`,
+    /// `Failed`, `Rebuilding`, and `Disposed` registrations refuse honestly
+    /// without resurrecting via shared Native material or hiding errors.
     pub fn ensure_application_managed_index_ready<
         B: ApplicationQueryBinding<S>,
         I: ApplicationManagedIndexBinding<S>,
@@ -116,11 +124,16 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             .map_err(|cause| crate::domain_computation::primary_graph::application_query::managed_index::denial::managed_index_denial(ReceiverCause::Execution(cause), None))?;
         let result = (|| {
             let (index, context) =
-                self.open_prepared::<B, I>(&execution, binding, &mut plan, &allocation)?;
-            match index.lifecycle() {
-                WorthQueryManagedIndexLifecycle::Ready => Ok(index),
-                WorthQueryManagedIndexLifecycle::Created => {
-                    execution::rebuild(
+                self.open_prepared::<B, I>(&execution, binding, &mut plan, &allocation, true)?;
+            match index
+                .state
+                .claim_ready_or_begin_created_build(&execution, &context.selected)
+                .map_err(|cause| {
+                    ReceiverCause::Provider(ProviderExecutionDenial::Lifecycle(cause))
+                })? {
+                EnsureReadyClaim::AlreadyReady => Ok(index),
+                EnsureReadyClaim::BuildClaimed(epoch) => {
+                    execution::rebuild_claimed(
                         &execution,
                         self,
                         &index.state,
@@ -130,25 +143,10 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                         external,
                         plan.controls.request_scope(),
                         &allocation,
+                        epoch,
                     )
                     .map_err(ReceiverCause::Provider)?;
                     Ok(index)
-                }
-                WorthQueryManagedIndexLifecycle::Rebuilding => {
-                    Err(ReceiverCause::Provider(ProviderExecutionDenial::Lifecycle(
-                        WorthQueryManagedIndexLifecycleDenial::BuildInProgress,
-                    )))
-                }
-                WorthQueryManagedIndexLifecycle::Disposed => {
-                    Err(ReceiverCause::Provider(ProviderExecutionDenial::Lifecycle(
-                        WorthQueryManagedIndexLifecycleDenial::Disposed,
-                    )))
-                }
-                WorthQueryManagedIndexLifecycle::Evicted
-                | WorthQueryManagedIndexLifecycle::Failed => {
-                    Err(ReceiverCause::Provider(ProviderExecutionDenial::Lifecycle(
-                        WorthQueryManagedIndexLifecycleDenial::NotReady,
-                    )))
                 }
             }
         })();

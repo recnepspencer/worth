@@ -124,7 +124,16 @@ fn raw_identifier_and_tuple_struct_expand_cleanly() {
         "{expanded}"
     );
     assert!(
-        expanded.contains("self") && expanded.contains(". 0") && expanded.contains(". 1"),
+        expanded.contains("0 :") && expanded.contains("1 :") && expanded.contains(". 0"),
         "{expanded}"
+    );
+    let unit = syn::parse_str(
+        "#[worth_binary(namespace = \"shopfloor.unit\", version = 1)] pub struct UnitTag;",
+    )
+    .unwrap();
+    let unit_expanded = expand(&unit).unwrap().to_string();
+    assert!(
+        unit_expanded.contains("__WorthBinaryValue { }"),
+        "{unit_expanded}"
     );
 }

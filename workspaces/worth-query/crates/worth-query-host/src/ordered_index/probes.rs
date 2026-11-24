@@ -159,18 +159,6 @@ impl BinaryValueDelegate for Interval1DCodec {
         Ok(WorthQueryInterval1D { start, end })
     }
 }
-impl WorthBinaryWireField for WorthQueryInterval1D {
-    const WIRE_BYTES: usize = Interval1DCodec::MAXIMUM_WIRE_BYTES;
-    fn encode_binary_field(&self, w: &mut dyn BinaryValueWriter) -> Result<(), ValueCodecDenial> {
-        Interval1DCodec::encode(self, w)
-    }
-    fn decode_binary_field(
-        b: &[u8],
-        a: &mut ValueDecodeAdmission<'_>,
-    ) -> Result<Self, ValueCodecDenial> {
-        Interval1DCodec::admit(b, a)
-    }
-}
 impl WorthQueryDefaultValueBinding for WorthQueryInterval1D {
     type Binding = WorthQueryInterval1DBinding;
 }
@@ -194,18 +182,6 @@ impl BinaryValueDelegate for Box2DCodec {
             max_x,
             max_y,
         })
-    }
-}
-impl WorthBinaryWireField for WorthQueryBox2D {
-    const WIRE_BYTES: usize = Box2DCodec::MAXIMUM_WIRE_BYTES;
-    fn encode_binary_field(&self, w: &mut dyn BinaryValueWriter) -> Result<(), ValueCodecDenial> {
-        Box2DCodec::encode(self, w)
-    }
-    fn decode_binary_field(
-        b: &[u8],
-        a: &mut ValueDecodeAdmission<'_>,
-    ) -> Result<Self, ValueCodecDenial> {
-        Box2DCodec::admit(b, a)
     }
 }
 impl WorthQueryDefaultValueBinding for WorthQueryBox2D {
@@ -233,18 +209,6 @@ impl BinaryValueDelegate for Box3DCodec {
             max_y,
             max_z,
         })
-    }
-}
-impl WorthBinaryWireField for WorthQueryBox3D {
-    const WIRE_BYTES: usize = Box3DCodec::MAXIMUM_WIRE_BYTES;
-    fn encode_binary_field(&self, w: &mut dyn BinaryValueWriter) -> Result<(), ValueCodecDenial> {
-        Box3DCodec::encode(self, w)
-    }
-    fn decode_binary_field(
-        b: &[u8],
-        a: &mut ValueDecodeAdmission<'_>,
-    ) -> Result<Self, ValueCodecDenial> {
-        Box3DCodec::admit(b, a)
     }
 }
 impl WorthQueryDefaultValueBinding for WorthQueryBox3D {

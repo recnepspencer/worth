@@ -3,11 +3,14 @@
 //! and `worth_query_application_program!` `managed_indexes: [...]`).
 mod courts;
 mod courts_f64;
+mod courts_lifecycle;
 mod dst;
 mod dst_driver;
 mod dst_oracle;
+mod dst_watches;
 mod harness;
 mod operations;
+mod probes;
 mod schema;
 
 use harness::*;
@@ -82,6 +85,15 @@ worth_query_application_program! {
             query(FindInFloatBox2DBinding) {
                 definition: FindInFloatBox2DQuery::definition()
                     .order_by(AssetRow::key(), ApplicationQueryOrderingDirection::Ascending);
+            };
+            query(courts_lifecycle::FindFailOnceBinding) {
+                definition: courts_lifecycle::FindFailOnceQuery::definition()
+                    .order_by(AssetRow::key(), ApplicationQueryOrderingDirection::Ascending);
+            };
+            managed_index(courts_lifecycle::FailOnceIndex) {
+                provider: worth_query_host::facade::ordered_index::WorthQueryOrderedIndexAdapter::new(
+                    courts_lifecycle::FailOnceDomain,
+                );
             };
             action create(CreateAssetBinding, CreatedAsset, CreateAssetHandler) {
                 operation: CreateAssetOp::reference()

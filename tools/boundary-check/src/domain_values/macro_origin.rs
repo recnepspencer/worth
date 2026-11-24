@@ -84,8 +84,10 @@ impl Sources<'_> {
         let name = path.join("::");
         let known = [
             "worth_query_decl::facade::worth_query_value_binding",
+            "worth_query_decl::facade::WorthBinaryValue",
             "worth_query_declaration::worth_query_value_binding",
             "worth_query_declaration::__worth_query_binary_value_binding",
+            "worth_query_macros::WorthBinaryValue",
         ];
         if known.contains(&name.as_str())
             && path

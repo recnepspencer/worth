@@ -94,6 +94,7 @@ struct Coverage {
     queries: usize,
     watch_opens: usize,
     watch_deliveries: usize,
+    watch_pending_verified: usize,
     budget_refusals: usize,
 }
 
@@ -106,6 +107,7 @@ impl Coverage {
         self.queries += o.queries;
         self.watch_opens += o.watch_opens;
         self.watch_deliveries += o.watch_deliveries;
+        self.watch_pending_verified += o.watch_pending_verified;
         self.budget_refusals += o.budget_refusals;
     }
 }
@@ -151,19 +153,22 @@ fn run_seed(seed: u64, driver: &mut FourFamilyDriver) -> Result<Coverage, String
                     cov.inserts += 1;
                 } else if !existing.is_empty() && roll < 82 {
                     let key = existing[rng.range(existing.len())];
+                    let old = oracle.rows.get(&key).cloned();
                     let spec = rng.asset_spec(key);
-                    driver.update(spec.clone());
+                    driver.update(old.as_ref(), spec.clone());
                     oracle.rows.insert(key, spec);
                     cov.updates += 1;
                 } else if !existing.is_empty() {
                     let key = existing[rng.range(existing.len())];
-                    driver.delete(key);
-                    oracle.rows.remove(&key);
+                    let old = oracle.rows.remove(&key);
+                    driver.delete(key, old.as_ref());
                     cov.deletes += 1;
                 }
             }
-            if driver.has_watches() && driver.poll_watches(&oracle).map_err(fail)? {
-                cov.watch_deliveries += 1;
+            if driver.has_watches() {
+                let (deliv, pend) = driver.poll_watches(&oracle).map_err(fail)?;
+                cov.watch_deliveries += deliv;
+                cov.watch_pending_verified += pend;
             }
             let probe = FourFamilyProbe {
                 prefix: PREFIXES[rng.range(PREFIXES.len())],
@@ -220,6 +225,7 @@ fn seeded_four_family_stock_indexes_agree_with_brute_force_oracle() {
         assert!(total.queries > 0);
         assert!(total.watch_opens > 0);
         assert!(total.watch_deliveries > 0);
+        assert!(total.watch_pending_verified > 0);
         assert!(total.budget_refusals > 0);
     }
 }
