@@ -14,6 +14,7 @@ use worth_query_host::facade::application_naming::{
 };
 
 mod composition;
+mod endpoints;
 mod history;
 mod invalidation;
 pub(crate) mod producer;

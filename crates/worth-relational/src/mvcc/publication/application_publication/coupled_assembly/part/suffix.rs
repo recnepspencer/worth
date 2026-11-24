@@ -34,15 +34,14 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                 execution,
                 &self.mutation.outcome.created_entities,
                 &mut batch.intents,
-                None,
             )?;
         }
         if let Some(plan) = naming {
-            super::super::fresh_references::retain(
+            super::super::fresh_references::retain_naming(
                 execution,
                 &self.mutation.outcome.created_entities,
-                &mut [],
-                Some(plan),
+                self.mutation.candidate_symbols().interner(),
+                plan,
             )?;
         }
         // Reserve and normalize only this incoming suffix, before it enters the
