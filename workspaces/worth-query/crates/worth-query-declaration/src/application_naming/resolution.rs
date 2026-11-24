@@ -1,6 +1,6 @@
 use std::fmt;
 
-use super::WorthQueryName;
+use super::{NameCandidate, NoNameOwner, WorthQueryName};
 
 /// Successful resolution of a held persistent name at a reader's basis.
 ///
@@ -36,10 +36,16 @@ pub enum ResolvedName<H, C = u64> {
 /// Typed refusal to resolve a held `WorthQueryName<K>`.
 ///
 /// Resolution never silently rebinds: a plural answer that the selection
-/// cannot narrow refuses with every candidate in canonical name order.
+/// cannot narrow refuses with every candidate in canonical name order, each
+/// with the owners that hold it. `O` is the reader's owner handle;
+/// [`NoNameOwner`] when the reader reads no owners.
 ///
 /// - `Ambiguous { candidates }`: two or more live candidates (never fewer)
 ///   under [`super::NameSelection::Exact`] or a filter matching several.
+/// - `NoCandidateInOwner { candidates }`: an owner-scoped resolution found
+///   matching live candidates, none of them held by the requested owner. It
+///   never falls back to another owner; the candidates say where the name
+///   does live.
 /// - `NoMatchingCandidate { live_candidates }`: a carrier or side filter
 ///   matched none of the live descendants listed here.
 /// - `BasisPruned`: the reader's basis lies below the history retention floor.
@@ -49,37 +55,43 @@ pub enum ResolvedName<H, C = u64> {
 ///
 /// ```compile_fail,E0308
 /// use worth_query_declaration::facade::application_naming::{
-///     NameResolutionDenial, WorthQueryName,
+///     NameCandidate, NameResolutionDenial,
 /// };
 ///
 /// struct Face;
 /// struct Edge;
 ///
-/// fn misuse(edges: Vec<WorthQueryName<Edge>>) -> NameResolutionDenial<Face> {
+/// fn misuse(edges: Vec<NameCandidate<Edge>>) -> NameResolutionDenial<Face> {
 ///     NameResolutionDenial::Ambiguous { candidates: edges }
 /// }
 /// ```
 ///
 /// ```
 /// use worth_query_declaration::facade::application_naming::{
-///     NameResolutionDenial, WorthQueryName,
+///     NameCandidate, NameResolutionDenial, WorthQueryName,
 /// };
 ///
 /// struct Face;
 ///
-/// fn candidates(denial: &NameResolutionDenial<Face>) -> &[WorthQueryName<Face>] {
+/// fn candidates(denial: &NameResolutionDenial<Face>) -> Vec<WorthQueryName<Face>> {
 ///     match denial {
-///         NameResolutionDenial::Ambiguous { candidates } => candidates,
-///         NameResolutionDenial::NoMatchingCandidate { live_candidates } => live_candidates,
-///         NameResolutionDenial::BasisPruned | NameResolutionDenial::UnknownName => &[],
+///         NameResolutionDenial::Ambiguous { candidates }
+///         | NameResolutionDenial::NoCandidateInOwner { candidates } => {
+///             candidates.iter().map(NameCandidate::name).collect()
+///         }
+///         NameResolutionDenial::NoMatchingCandidate { live_candidates } => live_candidates.clone(),
+///         NameResolutionDenial::BasisPruned | NameResolutionDenial::UnknownName => Vec::new(),
 ///     }
 /// }
 ///
 /// assert!(candidates(&NameResolutionDenial::<Face>::UnknownName).is_empty());
 /// ```
-pub enum NameResolutionDenial<K> {
+pub enum NameResolutionDenial<K, O = NoNameOwner> {
     Ambiguous {
-        candidates: Vec<WorthQueryName<K>>,
+        candidates: Vec<NameCandidate<K, O>>,
+    },
+    NoCandidateInOwner {
+        candidates: Vec<NameCandidate<K, O>>,
     },
     NoMatchingCandidate {
         live_candidates: Vec<WorthQueryName<K>>,
@@ -88,10 +100,38 @@ pub enum NameResolutionDenial<K> {
     UnknownName,
 }
 
-impl<K> Clone for NameResolutionDenial<K> {
+impl<K, O> NameResolutionDenial<K, O> {
+    /// The same refusal with each candidate's owners mapped through `map`.
+    pub fn map_owners<P>(self, mut map: impl FnMut(O) -> P) -> NameResolutionDenial<K, P> {
+        let mut lift = |candidates: Vec<NameCandidate<K, O>>| -> Vec<NameCandidate<K, P>> {
+            candidates
+                .into_iter()
+                .map(|candidate| candidate.map_owners(&mut map))
+                .collect()
+        };
+        match self {
+            Self::Ambiguous { candidates } => NameResolutionDenial::Ambiguous {
+                candidates: lift(candidates),
+            },
+            Self::NoCandidateInOwner { candidates } => NameResolutionDenial::NoCandidateInOwner {
+                candidates: lift(candidates),
+            },
+            Self::NoMatchingCandidate { live_candidates } => {
+                NameResolutionDenial::NoMatchingCandidate { live_candidates }
+            }
+            Self::BasisPruned => NameResolutionDenial::BasisPruned,
+            Self::UnknownName => NameResolutionDenial::UnknownName,
+        }
+    }
+}
+
+impl<K, O: Clone> Clone for NameResolutionDenial<K, O> {
     fn clone(&self) -> Self {
         match self {
             Self::Ambiguous { candidates } => Self::Ambiguous {
+                candidates: candidates.clone(),
+            },
+            Self::NoCandidateInOwner { candidates } => Self::NoCandidateInOwner {
                 candidates: candidates.clone(),
             },
             Self::NoMatchingCandidate { live_candidates } => Self::NoMatchingCandidate {
@@ -103,10 +143,14 @@ impl<K> Clone for NameResolutionDenial<K> {
     }
 }
 
-impl<K> PartialEq for NameResolutionDenial<K> {
+impl<K, O: PartialEq> PartialEq for NameResolutionDenial<K, O> {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (Self::Ambiguous { candidates: a }, Self::Ambiguous { candidates: b }) => a == b,
+            (Self::Ambiguous { candidates: a }, Self::Ambiguous { candidates: b })
+            | (
+                Self::NoCandidateInOwner { candidates: a },
+                Self::NoCandidateInOwner { candidates: b },
+            ) => a == b,
             (
                 Self::NoMatchingCandidate { live_candidates: a },
                 Self::NoMatchingCandidate { live_candidates: b },
@@ -117,13 +161,17 @@ impl<K> PartialEq for NameResolutionDenial<K> {
     }
 }
 
-impl<K> Eq for NameResolutionDenial<K> {}
+impl<K, O: Eq> Eq for NameResolutionDenial<K, O> {}
 
-impl<K> fmt::Debug for NameResolutionDenial<K> {
+impl<K, O: fmt::Debug> fmt::Debug for NameResolutionDenial<K, O> {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Ambiguous { candidates } => formatter
                 .debug_struct("Ambiguous")
+                .field("candidates", candidates)
+                .finish(),
+            Self::NoCandidateInOwner { candidates } => formatter
+                .debug_struct("NoCandidateInOwner")
                 .field("candidates", candidates)
                 .finish(),
             Self::NoMatchingCandidate { live_candidates } => formatter
@@ -136,12 +184,17 @@ impl<K> fmt::Debug for NameResolutionDenial<K> {
     }
 }
 
-impl<K> fmt::Display for NameResolutionDenial<K> {
+impl<K, O> fmt::Display for NameResolutionDenial<K, O> {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Ambiguous { candidates } => write!(
                 formatter,
                 "held name is ambiguous among {} live candidates",
+                candidates.len()
+            ),
+            Self::NoCandidateInOwner { candidates } => write!(
+                formatter,
+                "the requested owner holds none of {} matching live candidates",
                 candidates.len()
             ),
             Self::NoMatchingCandidate { live_candidates } => write!(
@@ -155,4 +208,4 @@ impl<K> fmt::Display for NameResolutionDenial<K> {
     }
 }
 
-impl<K> std::error::Error for NameResolutionDenial<K> {}
+impl<K, O: fmt::Debug> std::error::Error for NameResolutionDenial<K, O> {}

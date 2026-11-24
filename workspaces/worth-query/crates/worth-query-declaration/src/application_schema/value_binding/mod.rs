@@ -28,6 +28,7 @@ mod denial;
 mod encoded_scalar;
 mod entity_ref;
 mod native_scalar;
+mod persistent_name;
 mod primitive;
 mod recipe;
 mod representation_identity;
@@ -44,6 +45,9 @@ pub use native_scalar::{
     CanonicalF64ApplicationValueBinding, CanonicalTimeApplicationValueBinding,
     CanonicalTimestampApplicationValueBinding, CanonicalTimestampTzApplicationValueBinding,
     InlineBytesApplicationValueBinding, UuidApplicationValueBinding,
+};
+pub use persistent_name::{
+    NamedTargetApplicationValueBinding, WorthQueryNameApplicationValueBinding,
 };
 pub use primitive::{
     BoolApplicationValueBinding, ContentRefApplicationValueBinding, I16ApplicationValueBinding,

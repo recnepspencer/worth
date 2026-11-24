@@ -13,7 +13,7 @@ use worth_execution::ExecutionAllocationPolicy as AllocationPolicy;
 
 use worth_execution::ExecutionRequest;
 use worth_query_declaration::facade::application_naming::{
-    NameResolutionDenial, NameSelection, ResolvedName, WorthQueryName,
+    NameCandidate, NameResolutionDenial, NameSelection, ResolvedName, WorthQueryName,
 };
 use worth_query_declaration::facade::application_schema::ApplicationEntityMarkerIdentity;
 use worth_query_execution::facade::application_naming::{
@@ -296,7 +296,7 @@ fn every_name_read_refusal_but_a_stable_unnamed_record_vetoes_sealing() {
     assert_eq!(
         veto(
             &resolution(NameResolutionDenial::Ambiguous {
-                candidates: vec![held]
+                candidates: vec![NameCandidate::new(held, Vec::new())]
             }),
             false
         ),

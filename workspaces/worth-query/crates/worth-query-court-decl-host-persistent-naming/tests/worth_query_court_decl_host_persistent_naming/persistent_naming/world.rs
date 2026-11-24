@@ -12,6 +12,7 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         setup.handler::<probe::Binding, _>(probe::Handler)?;
         setup.handler::<refusals::Binding, _>(refusals::Handler)?;
         setup.handler::<outputs::sculpt::Binding, _>(outputs::sculpt::Handler)?;
+        setup.handler::<stored::Binding, _>(stored::Handler)?;
         setup.handler::<edit::member::Binding, _>(edit::member::Handler)
     }
 }

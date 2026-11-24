@@ -176,17 +176,21 @@
 //! ```
 
 pub use worth_query_declaration::facade::application_naming::{
-    ApplicationNameDiscriminator, ErasedWorthQueryName, IndexedRoleDiscriminator, NameRef,
-    NameResolutionDenial, NameSelection, NameSelectionDenial, NamedTarget, OccurrencePath,
-    OccurrencePathDenial, OccurrenceSegment, ResolvedName, WorthQueryName, WorthQueryNameRole,
-    WorthQuerySameCommitName,
+    ApplicationNameDiscriminator, EntityNameSubject, ErasedWorthQueryName,
+    IndexedRoleDiscriminator, NameCandidate, NameOwnerHop, NameOwnerHopDirection, NameOwnerPath,
+    NameOwnerScope, NameOwnerStep, NameRef, NameResolutionDenial, NameSelection,
+    NameSelectionDenial, NameSubjectRole, NamedTarget, NamedTargetDelegate, NoNameOwner,
+    OccurrencePath, OccurrencePathDenial, OccurrenceSegment, OwnedThrough, OwnerVia,
+    OwnerViaReverse, RelationNameSubject, ResolvedName, StoredNameDenial, Unowned, WorthQueryName,
+    WorthQueryNameDelegate, WorthQueryNameRole, WorthQueryNamedKind, WorthQuerySameCommitName,
 };
 pub use worth_query_execution::facade::application_naming::{
     DiscriminatorBasisDenialReason, ExecutionNameReadDenial, ExecutionNameReader,
     ExecutionNameResolveDenial, ExecutionNamingDenial, LineageNameDenial, LineagePostureKind,
-    LineageRecordTarget, NameReadCurrentness, NameReadDependencies, NameReadStaleness,
-    PersistentNameHolder, PersistentNameReadVeto, WorthQueryDecisionNameDenial,
-    WorthQueryOutputBirth, WorthQueryOutputMergeKeeper, WorthQueryOutputNameDenial,
+    LineageRecordTarget, NameOwnerOf, NameReadCurrentness, NameReadDependencies, NameReadStaleness,
+    NameResolutionCandidates, ObservedEntityNames, PersistentNameHolder, PersistentNameReadVeto,
+    WorthQueryDecisionNameDenial, WorthQueryDecisionNameResolution, WorthQueryOutputBirth,
+    WorthQueryOutputMergeKeeper, WorthQueryOutputNameDenial,
 };
 /// The derives of the two naming traits, beside the traits they implement.
 pub use worth_query_macros::{ApplicationNameDiscriminator, WorthQueryNameRole};

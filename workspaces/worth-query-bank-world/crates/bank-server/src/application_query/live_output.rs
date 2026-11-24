@@ -21,6 +21,9 @@ pub enum BankApplicationLiveProjectionDenial {
     RelationContractMismatch,
     RelationCardinalityMismatch,
     RelationOmitted,
+    PersistentNamesUnavailable,
+    PersistentNameMissing,
+    PersistentNameKindMismatch,
     DomainProjectionRejected,
 }
 
@@ -62,6 +65,9 @@ impl BankApplicationLiveProjectionDenial {
             Self::RelationContractMismatch => "relation-contract-mismatch",
             Self::RelationCardinalityMismatch => "relation-cardinality-mismatch",
             Self::RelationOmitted => "relation-omitted",
+            Self::PersistentNamesUnavailable => "persistent-names-unavailable",
+            Self::PersistentNameMissing => "persistent-name-missing",
+            Self::PersistentNameKindMismatch => "persistent-name-kind-mismatch",
             Self::DomainProjectionRejected => "domain-projection-rejected",
         }
     }
@@ -78,6 +84,9 @@ impl BankApplicationLiveProjectionDenial {
             Query::RelationContractMismatch => Self::RelationContractMismatch,
             Query::RelationCardinalityMismatch => Self::RelationCardinalityMismatch,
             Query::RelationOmitted => Self::RelationOmitted,
+            Query::PersistentNamesUnavailable => Self::PersistentNamesUnavailable,
+            Query::PersistentNameMissing => Self::PersistentNameMissing,
+            Query::PersistentNameKindMismatch => Self::PersistentNameKindMismatch,
             Query::DomainProjectionRejected => Self::DomainProjectionRejected,
         }
     }

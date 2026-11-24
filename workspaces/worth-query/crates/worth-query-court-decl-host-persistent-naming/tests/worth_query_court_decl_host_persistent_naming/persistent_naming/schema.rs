@@ -121,9 +121,11 @@ impl Registration<Schema> for Actor {
 fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    outputs::sculpt::declare(refusals::declare(probe::declare(delete::declare(query::member::declare(
-        query::model::declare(edit::declare(navigation::declare(schema))),
-    )))))
+    stored::declare(named_read::declare(outputs::sculpt::declare(
+        refusals::declare(probe::declare(delete::declare(query::member::declare(
+            query::model::declare(edit::declare(navigation::declare(schema))),
+        )))),
+    )))
     .application_history(
         ApplicationHistoryDefinition::<Schema, History>::for_binding(
             ApplicationQueryDisclosureContract::public(),
@@ -136,6 +138,7 @@ fn declare(
         .operation::<delete::Binding>("Delete member")
         .operation::<probe::Binding>("Probe names")
         .operation::<outputs::sculpt::Binding>("Sculpt members")
+        .operation::<stored::Binding>("Hold name")
         .owned_operation::<edit::member::Binding>("Edit member"),
     )
 }
