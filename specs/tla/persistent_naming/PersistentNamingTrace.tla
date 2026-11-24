@@ -27,6 +27,8 @@ StepAction(step) ==
             CommitCreate(step.name, step.owner, step.part)
       [] step.action = "RefuseDuplicateBirth" ->
             RefuseDuplicateBirth(step.name)
+      [] step.action = "RefuseUnnamedBirth" ->
+            RefuseUnnamedBirth(step.owner, step.part)
       [] step.action = "CommitRegeneratePreserve" ->
             CommitRegeneratePreserve(step.name, step.owner, step.part)
       [] step.action = "CommitSplit" ->

@@ -16,6 +16,8 @@ use worth_query_host::facade::application_naming::{
 };
 
 mod execute;
+mod scoped;
+pub use scoped::ScopeStep;
 
 /// A held member name: one read by this run's decision, or one a court holds.
 #[derive(Clone, Debug)]
@@ -91,6 +93,11 @@ pub enum Step {
     Retire(Held),
     Split(Held, Vec<(String, WorthQueryOutputBirth)>),
     Merge(Vec<Held>, Keeper),
+    /// Declares `steps` through a naming scope over this occurrence.
+    Scoped(
+        worth_query_host::facade::application_naming::OccurrencePath,
+        Vec<ScopeStep>,
+    ),
 }
 
 /// What one run does. `reads` are resolved (and named) in the decision;
@@ -141,6 +148,8 @@ pub enum Refusal {
     CrossOccurrence,
     /// A same-commit name requested for an output the run has not named.
     UnnamedReference(String),
+    /// A least-keeper merge listed no parents.
+    EmptyMergeParents,
     Other(String),
 }
 
@@ -170,6 +179,7 @@ impl Refusal {
             WorthQueryOutputNameDenial::UnnamedOutputReference { subject_name, .. } => {
                 Self::UnnamedReference(subject_name.clone())
             }
+            WorthQueryOutputNameDenial::EmptyMergeParents { .. } => Self::EmptyMergeParents,
             other => Self::Other(other.to_string()),
         }
     }

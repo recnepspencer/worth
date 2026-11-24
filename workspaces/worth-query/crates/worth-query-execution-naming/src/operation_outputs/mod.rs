@@ -12,10 +12,12 @@
 //! [`worth_relational::facade::lineage::CommitNamingPlan`].
 
 mod denial;
+mod least_merge;
 mod lowering;
 mod same_commit;
 
 pub use denial::WorthQueryOutputNameDenial;
+pub use least_merge::WorthQueryLeastMergeKeeper;
 pub use lowering::{admit_output_birth, OutputBirthPosture};
 pub use same_commit::admit_same_commit_names;
 

@@ -3,13 +3,15 @@
 //! declares persistent-name postures, exactly as an application would.
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::persistent_naming::outputs::sculpt::{Held, Keeper, Plan, Step};
-use crate::persistent_naming::outputs::{
-    birth, naming_refusal, output_refusal, piece, read, MemberCut, Outcome, World,
-};
-use crate::persistent_naming::{world, Member};
 use super::ops::{Op, Placement};
-use worth_query_host::facade::application_naming::{LineageNameDenial, WorthQueryName};
+use crate::persistent_naming::outputs::sculpt::{Held, Keeper, Plan, ScopeStep, Step};
+use crate::persistent_naming::outputs::{
+    birth, naming_refusal, piece, read, MemberCut, Outcome, World,
+};
+use crate::persistent_naming::{world, Member, MemberRole, MEMBER_SCHEME};
+use worth_query_host::facade::application_naming::{
+    LineageNameDenial, LineageRecordTarget, OccurrencePath, WorthQueryName,
+};
 
 /// A record's native identity `(partition, slot, generation)`.
 pub type RecordIdentity = (u32, u64, u32);
@@ -104,6 +106,7 @@ impl Driver {
                 created.push((key, *name));
             }
             Op::Duplicate { name } => return self.duplicate(*name, step),
+            Op::Unnamed { at, pair } => return self.unnamed(*at, *pair, step),
             Op::Preserve { name, at } => {
                 let old = self.key_of(*name);
                 let key = self.fresh_key();
@@ -133,16 +136,34 @@ impl Driver {
                 plan.steps.push(Step::Split(read(&old), children));
                 created.extend([(keys[0].clone(), pieces[0]), (keys[1].clone(), pieces[1])]);
             }
-            Op::MergeKeep { keeper, other } => {
+            Op::MergeKeep {
+                keeper,
+                other,
+                listed,
+            } => {
                 // The keeper is held by name only: this commit never stages it.
                 let other_key = self.key_of(*other);
                 plan.reads.push(other_key.clone());
                 plan.deletes.push(other_key.clone());
-                plan.steps.push(Step::Merge(
-                    vec![self.held(*keeper), read(&other_key)],
-                    Keeper::InPlace(self.held(*keeper)),
-                ));
+                let held = |name: usize| {
+                    if name == *keeper {
+                        self.held(*keeper)
+                    } else {
+                        read(&other_key)
+                    }
+                };
+                plan.steps.push(match listed {
+                    None => Step::Merge(
+                        vec![held(*keeper), held(*other)],
+                        Keeper::InPlace(self.held(*keeper)),
+                    ),
+                    Some(listed) => Step::Scoped(
+                        OccurrencePath::root(&format!("dst-least-{step}")).unwrap(),
+                        vec![ScopeStep::MergeLeast(listed.map(held).to_vec(), None)],
+                    ),
+                });
             }
+            Op::MergeLeast { .. } => return Err("a least merge must be settled".to_owned()),
             Op::MergeMint {
                 parents,
                 minted,
@@ -194,7 +215,29 @@ impl Driver {
         Ok(())
     }
 
-    /// Re-minting a live name's exact birth refuses typed with zero effects.
+    /// Settles a least-keeper merge: the harness, not the world, decides
+    /// which parent name is least (`WorthQueryName`'s order), so the world's
+    /// `merge_least` must keep exactly that one.
+    pub fn settle(&self, op: Op) -> Op {
+        match op {
+            Op::MergeLeast { parents } => {
+                let [keeper, other] = if self.names[&parents[0]] < self.names[&parents[1]] {
+                    parents
+                } else {
+                    [parents[1], parents[0]]
+                };
+                Op::MergeKeep {
+                    keeper,
+                    other,
+                    listed: Some(parents),
+                }
+            }
+            op => op,
+        }
+    }
+
+    /// Re-minting a live name's exact birth refuses `DuplicateBirth` (and
+    /// nothing else) with zero effects.
     fn duplicate(&mut self, name: usize, step: usize) -> Result<Vec<(String, usize)>, String> {
         let key = self.fresh_key();
         let mut plan = Plan::default();
@@ -205,7 +248,7 @@ impl Driver {
         let typed = matches!(
             naming_refusal(&outcome),
             Some(LineageNameDenial::DuplicateBirth { .. })
-        ) || output_refusal(&outcome).is_some();
+        );
         if !typed {
             return Err(format!(
                 "a live re-mint must refuse DuplicateBirth: {outcome:?}"
@@ -213,6 +256,47 @@ impl Driver {
         }
         if self.world.live(&key) {
             return Err("a refused re-mint must leave zero effects".to_owned());
+        }
+        Ok(Vec::new())
+    }
+
+    /// A commit creating a record of the schemed kind it leaves unnamed
+    /// (beside a named sibling when `pair`) refuses `MissingBirth` for the
+    /// member scheme with zero effects, the named sibling included.
+    fn unnamed(
+        &mut self,
+        at: Placement,
+        pair: bool,
+        step: usize,
+    ) -> Result<Vec<(String, usize)>, String> {
+        let keys: Vec<String> = (0..1 + usize::from(pair))
+            .map(|_| self.fresh_key())
+            .collect();
+        let mut plan = Plan::default();
+        place(
+            &mut plan,
+            &keys.iter().map(|key| (key.clone(), at)).collect::<Vec<_>>(),
+        );
+        if pair {
+            plan.steps.push(Step::Scoped(
+                OccurrencePath::root(&format!("dst-unnamed-{step}")).unwrap(),
+                vec![ScopeStep::Name(keys[0].clone(), MemberRole::Authored)],
+            ));
+        }
+        let outcome = self.world.try_sculpt(&self.token(step, "unnamed"), plan)?;
+        match naming_refusal(&outcome) {
+            Some(LineageNameDenial::MissingBirth {
+                target: LineageRecordTarget::Entity(_),
+                scheme_id,
+            }) if scheme_id == MEMBER_SCHEME => {}
+            _ => {
+                return Err(format!(
+                    "an unnamed birth must refuse MissingBirth: {outcome:?}"
+                ))
+            }
+        }
+        if keys.iter().any(|key| self.world.live(key)) {
+            return Err("a refused unnamed birth must leave zero effects".to_owned());
         }
         Ok(Vec::new())
     }
@@ -296,6 +380,11 @@ fn placements(op: &Op) -> Vec<Placement> {
         | Op::Preserve { at, .. }
         | Op::MergeMint { at, .. } => vec![*at],
         Op::Split { at, .. } => at.to_vec(),
-        Op::Duplicate { .. } | Op::MergeKeep { .. } | Op::Retire { .. } | Op::Rebuild => Vec::new(),
+        Op::Duplicate { .. }
+        | Op::Unnamed { .. }
+        | Op::MergeKeep { .. }
+        | Op::MergeLeast { .. }
+        | Op::Retire { .. }
+        | Op::Rebuild => Vec::new(),
     }
 }

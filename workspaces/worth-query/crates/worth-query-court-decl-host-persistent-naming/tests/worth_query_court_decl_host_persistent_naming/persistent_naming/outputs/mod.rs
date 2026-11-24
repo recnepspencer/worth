@@ -24,7 +24,7 @@ mod relations;
 mod same_commit;
 mod seam_history;
 mod seam_invalidation;
-mod seam_names;
+pub(crate) mod seam_names;
 
 /// A member piece's side of a cut, optionally naming the cutting member.
 #[derive(Clone, Debug, Eq, PartialEq)]

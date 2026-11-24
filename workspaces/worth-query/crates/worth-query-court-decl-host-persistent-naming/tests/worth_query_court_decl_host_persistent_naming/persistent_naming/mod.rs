@@ -15,7 +15,8 @@ use worth_query_testkit_document_retention::facade::document_retention_model::{
 mod navigation_grant;
 mod schema;
 use schema::*;
-pub(crate) use schema::Member;
+pub(crate) use schema::{Member, MemberRole, MEMBER_SCHEME};
+mod completeness;
 mod delete;
 mod edit;
 mod ergonomics;
@@ -28,6 +29,7 @@ pub(crate) mod outputs;
 pub(crate) mod probe;
 mod query;
 mod refusals;
+mod scope;
 mod scoped;
 mod stored;
 mod unowned;

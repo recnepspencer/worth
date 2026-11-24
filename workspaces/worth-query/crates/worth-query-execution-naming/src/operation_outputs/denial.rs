@@ -54,6 +54,8 @@ pub enum WorthQueryOutputNameDenial {
         occurrence_key: String,
         referenced_occurrence_key: String,
     },
+    /// A `merge_least` listed no parents, so no least parent can keep.
+    EmptyMergeParents { subject: ApplicationNameSubjectKind },
     /// The commit basis's name index could not be read.
     NameIndexUnavailable { detail: String },
     /// Scheme, role, occurrence or discriminator validation refused the birth.
@@ -113,6 +115,11 @@ impl fmt::Display for WorthQueryOutputNameDenial {
             } => write!(
                 formatter,
                 "role `{role_path}` of occurrence `{occurrence_key}` references a same-commit name of occurrence `{referenced_occurrence_key}`"
+            ),
+            Self::EmptyMergeParents { subject } => write!(
+                formatter,
+                "a least-keeper {} merge lists no parents",
+                subject.canonical_name()
             ),
             Self::NameIndexUnavailable { detail } => {
                 write!(formatter, "persistent-name index unavailable: {detail}")

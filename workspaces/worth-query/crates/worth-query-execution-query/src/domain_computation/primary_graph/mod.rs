@@ -197,7 +197,7 @@ pub use application_contribution::WorthQueryBootstrapAdvancementPhase;
 pub use application_contribution::{ComputationPrior, SealedComputationRetention};
 pub use application_entry::mutation::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerFailure, HandlerInterruption,
-    HandlerResult, MutationHandlerExecutionDenial, OperationHandler,
+    HandlerResult, MutationHandlerExecutionDenial, NamingScope, OperationHandler,
     WorthQueryCompletedMutationCandidate, WorthQueryDecisionPlan,
     WorthQueryMutationHandlerExecutionReport, WorthQueryMutationHandlerProjectionWork,
     WorthQueryMutationHandlerWork, WorthQueryOperationDurableCapability,
