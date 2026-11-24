@@ -59,7 +59,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 // read only after the Source's separate fresh READ in execute.
                 let observation = graph
                     .with_runtime(&execution, |runtime| {
-                        runtime.read_truth().observe_managed_index_source(
+                        runtime.read_truth().observe_managed_index_source_if_ready(
                             &execution,
                             context.selected.application_basis().snapshot_handle(),
                             program,
@@ -69,9 +69,11 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                     .map_err(|cause| {
                         ReceiverCause::Provider(ProviderExecutionDenial::NativeSource(cause))
                     })?;
-                state.attach_maintained(observation).map_err(|cause| {
-                    ReceiverCause::Provider(ProviderExecutionDenial::Lifecycle(cause))
-                })?;
+                if let Some(observation) = observation {
+                    state.attach_maintained(observation).map_err(|cause| {
+                        ReceiverCause::Provider(ProviderExecutionDenial::Lifecycle(cause))
+                    })?;
+                }
             }
             Ok(WorthQueryManagedIndex {
                 state,

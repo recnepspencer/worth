@@ -3,6 +3,8 @@ pub mod affinity;
 pub mod correspondence;
 pub mod history;
 pub mod ordered_predecessor;
+pub mod source_images;
+pub use source_images::ManagedSourceRootImages;
 use crate::branch::projection_view::companion_slot::{CompanionBranchCellCore, CompanionRootImage};
 use crate::history::data::coordinates::CommitId;
 use crate::identity::data::{EntityId, VersionId};
@@ -35,7 +37,7 @@ pub struct ManagedSourceRootImage {
     core: Weak<CompanionBranchCellCore>,
     affinity: Arc<affinity::ManagedSourceCellAffinity>,
     image: Arc<CompanionRootImage>,
-    _fork_memory: Option<Arc<worth_execution::ExecutionMemoryReservation>>,
+    _placement_memory: Option<Arc<worth_execution::ExecutionMemoryReservation>>,
 }
 impl std::fmt::Debug for ManagedSourceRootImage {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -53,7 +55,7 @@ impl ManagedSourceRootImage {
             core: Arc::downgrade(core),
             affinity: Arc::clone(core.source_affinity()?),
             image: Arc::clone(image),
-            _fork_memory: core.fork_funding().cloned(),
+            _placement_memory: core.placement_funding().cloned(),
         })
     }
 
@@ -111,32 +113,41 @@ impl ManagedSourceRootImage {
         Ok(retired)
     }
 
-    pub fn observe(
+    pub fn observe_if_ready(
         &self,
         selected: PositionedRelationalSnapshot,
         program: &ManagedIndexSourceProgram,
         scope: EntityId,
         memory: Option<worth_execution::ExecutionMemoryReservation>,
         registration_generation: u64,
-    ) -> Result<ManagedIndexSourceObservation, Denial> {
+    ) -> Result<Option<ManagedIndexSourceObservation>, Denial> {
         self.admit_selected(&selected, registration_generation)?;
         let image = self.selected_source_image()?;
-        let record = image
-            .retained(program, scope)?
-            .ok_or(Denial::RootUnavailable)?;
+        let Some(record) = image.retained(program, scope)? else {
+            return Ok(None);
+        };
         if record.physical_availability() != ManagedIndexSourceAvailability::Available {
             return Err(Denial::RootUnavailable);
         }
-        let payload = record.payload().cloned().ok_or(Denial::RootUnavailable)?;
-        Ok(self.observation(Arc::clone(&record.association), payload, selected, memory))
+        let Some(payload) = record.payload().cloned() else {
+            return Ok(None);
+        };
+        Ok(Some(self.observation(
+            Arc::clone(&record.association),
+            payload,
+            selected,
+            memory,
+        )))
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn refill_selected(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         selected: PositionedRelationalSnapshot,
         generation: u64,
         expected: &Arc<ManagedIndexPublishedSourceRoot>,
+        expected_placed: bool,
         payload: &Arc<dyn Any + Send + Sync>,
         memory: Option<worth_execution::ExecutionMemoryReservation>,
     ) -> Result<
@@ -149,7 +160,7 @@ impl ManagedSourceRootImage {
         self.admit_selected(&selected, generation)?;
         let image = self.selected_source_image()?;
         let retirement = image
-            .refill_source(execution, expected, payload)
+            .refill_source(execution, expected, expected_placed, payload)
             .map_err(Denial::Publication)?;
         Ok((
             self.observation(

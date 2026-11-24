@@ -63,7 +63,7 @@ impl ManagedIndexSourceScope<'_> {
             .owner_inner()
             .root
             .managed_source_image
-            .get()
+            .for_branch(basis.identity().branch_id())
             .ok_or(Denial::RootUnavailable)?;
         image.admit_predecessor_material(
             basis.identity().runtime_instance_id(),

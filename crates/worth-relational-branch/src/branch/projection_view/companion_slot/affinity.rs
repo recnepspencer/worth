@@ -23,7 +23,7 @@ impl CompanionBranchCellCore {
             branch: self.branch_id.clone(),
             generation: self.registration_generation,
             _memory: memory,
-            _fork_memory: self._fork_memory.clone(),
+            _placement_memory: self._placement_memory.clone(),
         });
         // All competitors derive the same immutable metadata from this exact
         // cell. Only the installed Arc is shared as its retained identity.

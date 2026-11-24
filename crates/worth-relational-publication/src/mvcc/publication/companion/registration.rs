@@ -6,6 +6,8 @@ use super::RelationalPublicationCompanion;
 
 #[doc(hidden)]
 pub mod guard_fault;
+pub mod readmitted_source;
+pub use readmitted_source::install_readmitted_source_image;
 
 pub mod registry_guard;
 #[doc(hidden)]
@@ -97,6 +99,25 @@ impl CompanionRegistry {
             state,
             _client: client,
         })
+    }
+
+    pub fn with_head_exclusion<R>(
+        &self,
+        inspect: impl FnOnce(&CompanionRegistrationState) -> R,
+    ) -> Result<R, PublicationCompanionRegistrationStop> {
+        let exclusion = registry_guard::acquire(
+            self.state.try_write(),
+            PublicationCompanionRegistrationStop::HeadCellPublicationContended,
+        )?;
+        self.after_guard_acquisition(guard_fault::Door::Head);
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| inspect(&exclusion)));
+        // Release normally before resuming the caller's unwind: publication
+        // exclusion must not be poisoned by arbitrary derived installation.
+        drop(exclusion);
+        match result {
+            Ok(value) => Ok(value),
+            Err(payload) => std::panic::resume_unwind(payload),
+        }
     }
 }
 

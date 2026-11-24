@@ -106,7 +106,7 @@ pub(super) fn prepare(
             let root = Arc::new(RelationalBranchRoot {
                 publication_bases: Default::default(),
                 content: content.directory()?,
-                managed_source_image: std::sync::OnceLock::new(),
+                managed_source_image: Default::default(),
                 id: root_id,
                 regions: prepared_regions.regions,
                 entity_slot_count: prepared_regions.entity_slot_count,

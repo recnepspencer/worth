@@ -84,7 +84,7 @@ fn managed_source_correspondence_receiver_binds_exact_selected_image_and_unavail
     );
     assert!(
         matches!(
-            image.observe(selected.clone(), &program, scope, None, generation),
+            image.observe_if_ready(selected.clone(), &program, scope, None, generation),
             Err(Denial::RootUnavailable)
         ),
         "logical backing is never a committed physical read"
