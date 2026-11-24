@@ -257,10 +257,14 @@ pub fn close_directory_home(home: Home) {
         .expect("directory home closes cleanly");
 }
 
-pub fn run_mutate(host: &Host, input: MutateLiveBoard, idem: u64) {
+pub fn run_mutate(
+    host: &Host,
+    input: MutateLiveBoard,
+    idem: u64,
+) -> WorthQueryApplicationCommitReceipt {
     let scope = request_scope();
     let admin = authenticate_reviewer(host.installed_schema(), &scope);
-    run_mutate_as(host, &admin, &scope, input, idem);
+    run_mutate_as(host, &admin, &scope, input, idem)
 }
 
 pub fn run_mutate_as(
@@ -269,7 +273,7 @@ pub fn run_mutate_as(
     scope: &worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope,
     input: MutateLiveBoard,
     idem: u64,
-) {
+) -> WorthQueryApplicationCommitReceipt {
     let outcome = host
         .runtime()
         .request(admin, scope)
@@ -279,8 +283,8 @@ pub fn run_mutate_as(
         .idempotency(&idem)
         .execute_in_program(host, ExecutionAllocationPolicy::SystemAllocation)
         .expect("board mutation executes");
-    assert!(matches!(
-        outcome,
-        WorthQueryApplicationMutationOutcome::<_, Mutated>::Committed { .. }
-    ));
+    match outcome {
+        WorthQueryApplicationMutationOutcome::<_, Mutated>::Committed { receipt, .. } => receipt,
+        other => panic!("expected Committed mutation outcome, got {other:?}"),
+    }
 }

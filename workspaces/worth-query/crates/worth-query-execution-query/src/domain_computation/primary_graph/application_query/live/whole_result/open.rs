@@ -11,6 +11,7 @@ use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPo
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::{
     AdvancementPhaseInternalPort as _, ProductBranchLeaseInternalPort as _,
+    ProductRuntimeBranchLifecycleInternalPort as _,
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
 
@@ -21,7 +22,8 @@ use super::super::outcome::{
     WorthQueryApplicationLiveOpenDenial, WorthQueryApplicationLiveOpenDenialKind,
 };
 use super::denial::{
-    map_open_footprint_stop, map_open_live_admission_denial, map_open_one_shot_denial,
+    map_open_branch_admission_denial, map_open_footprint_stop, map_open_live_admission_denial,
+    map_open_one_shot_denial,
 };
 use super::footprint::WholeResultInvalidationFootprint;
 use super::{
@@ -250,14 +252,32 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             ));
         }
         let retained_product = request.product.retained_clone();
+        let opening_branch = retained_product.observation().branch_identity().clone();
+        let opening_incarnation = retained_product.observation().lifecycle_incarnation();
         // Open the commit-aligned live delivery subscription BEFORE executing
-        // the initial read so zero subsequent commits can slip past the cursor.
+        // the initial read, then immediately re-observe World head so a commit
+        // that published & retired an unowned partition before `open_funded`
+        // can never silently vanish behind a freshly stamped partition.
         let subscription = self
             .runtime
             .primary_provider
             .live_delivery_ref()
             .open_funded(&execution, retained_product.observation())
             .map_err(|denial| map_open_live_admission_denial(denial, request.query.name()))?;
+        let current_head = self
+            .runtime
+            .product_runtime
+            .admit_product_branch(&opening_branch)
+            .map_err(|cause| map_open_branch_admission_denial(cause, request.query.name()))?;
+        if current_head.observation().lifecycle_incarnation() != opening_incarnation
+            || current_head.observation().selected_commit()
+                != retained_product.observation().selected_commit()
+        {
+            return Err(open_denial(
+                WorthQueryApplicationLiveOpenDenialKind::ProviderVersionUnavailable,
+                request.query.name(),
+            ));
+        }
         let cursor = subscription.cursor();
 
         let access =
@@ -343,13 +363,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             scope: request.scope,
             parameters: request.parameters,
             controls: request.controls,
-            _opening_product: retained_product,
+            opening_branch,
+            opening_incarnation,
+            opening_product: Some(retained_product),
             governance: completed.governance,
             basis: Some(basis),
             read_completion: Some(read_completion),
-            subscription,
+            subscription: Some(subscription),
             cursor,
-            footprint,
+            footprint: Some(footprint),
             initial: Some(snapshot),
             _principal: PhantomData,
             _thread_affinity: PhantomData,

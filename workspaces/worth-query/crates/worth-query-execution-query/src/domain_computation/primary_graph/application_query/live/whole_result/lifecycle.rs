@@ -24,7 +24,7 @@ impl<Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope
         &mut self,
         request: &WorthQueryRequestScope,
     ) -> Option<WorthQueryApplicationWholeResultLiveOutcome<Query, QueryResult>> {
-        if self.termination_failed || self.basis.is_none() {
+        if self.termination_failed || self.basis.is_none() || self.subscription.is_none() {
             return Some(WorthQueryApplicationWholeResultLiveOutcome::Closed);
         }
         let interruption = request.interruption()?;
@@ -74,6 +74,12 @@ impl<Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope
         &mut self,
         disposition: BridgeExecutionBasisTerminalDisposition,
     ) -> bool {
+        // Retire active source custody, footprint memory, and opening leases
+        // immediately on every terminal outcome without waiting for Drop.
+        self.subscription = None;
+        self.footprint = None;
+        self.opening_product = None;
+        self.initial = None;
         let Some(basis) = self.basis.take() else {
             return true;
         };

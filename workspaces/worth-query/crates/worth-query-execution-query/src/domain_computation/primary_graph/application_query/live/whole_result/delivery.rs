@@ -1,36 +1,34 @@
-//! Strict per-delivery re-admission, metered commit-batch polling, footprint
-//! currentness verification, and whole-result refresh execution.
+//! Strict per-delivery re-admission, authority-watermark-bounded metered
+//! commit-batch polling, and footprint currentness verification.
 use worth_execution::ExecutionRequest;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
-use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::{
     AdvancementPhaseInternalPort as _, ProductBranchLeaseInternalPort as _,
     ProductObservationLeaseInternalPort as _, ProductRuntimeBranchLifecycleInternalPort as _,
 };
 use worth_runtime_bridge::facade::BridgeExecutionBasisTerminalDisposition;
+use worth_runtime_world::facade::CompositeCommitIdentity;
 
 use super::super::outcome::WorthQueryApplicationLiveOverflow;
-use super::footprint::{WholeResultFootprintStatus, WholeResultInvalidationFootprint};
+use super::footprint::WholeResultFootprintStatus;
 use super::{
     WorthQueryApplicationWholeResultLiveLease, WorthQueryApplicationWholeResultLiveOutcome,
-    WorthQueryApplicationWholeResultLiveSnapshot, WorthQueryApplicationWholeResultLiveUpdate,
 };
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::primary_graph::application_query::{
     authorized_read::{execute_authorized_read, refresh_governed_authorization},
-    one_shot::outcome::complete_one_shot,
-    read_execution::{persistent_names::observe_persistent_names, read_bounded_root_rows},
     WorthQueryApplicationProjection, WorthQueryApplicationQueryAccessContext,
     WorthQueryApplicationQueryControls,
 };
-use crate::domain_computation::primary_graph::live_delivery::WorthQueryLiveSourcePoll;
-use crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation;
+use crate::domain_computation::primary_graph::live_delivery::WorthQueryLiveBoundedPoll;
 use crate::domain_computation::primary_graph::{
-    WorthQueryAuthenticatedPrincipal, WorthQueryCommittedProductPublication,
-    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
+    WorthQueryAuthenticatedPrincipal, WorthQueryOperationAuthorizationDenial,
+    WorthQueryOperationAuthorizationDenialKind,
 };
+
+const MAX_HEAD_RECHECK_ATTEMPTS: usize = 8;
 
 impl<Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope>
     WorthQueryApplicationWholeResultLiveLease<
@@ -72,34 +70,73 @@ where
             return outcome;
         }
         self.controls.replace_request(request.clone());
-        let opening_observation = self._opening_product.observation();
-        let current_branch = match self
+        let watermark = match self.admit_head_and_authority(execution, principal) {
+            Ok(watermark) => watermark,
+            Err(outcome) => return outcome,
+        };
+        self.poll_until_invalidated(execution, principal, request, watermark)
+    }
+
+    pub(super) fn admit_head_and_authority(
+        &mut self,
+        execution: &ExecutionRequest<'_, '_>,
+        principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
+    ) -> Result<
+        CompositeCommitIdentity,
+        WorthQueryApplicationWholeResultLiveOutcome<Query, QueryResult>,
+    > {
+        let current_branch = self
             .runtime
             .runtime
             .product_runtime
-            .admit_product_branch(opening_observation.branch_identity())
-        {
-            Ok(branch) => branch,
-            Err(cause) => return self.handle_basis_admission_denial(cause),
-        };
-        if current_branch.observation().lifecycle_incarnation()
-            != opening_observation.lifecycle_incarnation()
-        {
-            return if self.terminate(BridgeExecutionBasisTerminalDisposition::Completed) {
-                WorthQueryApplicationWholeResultLiveOutcome::Closed
-            } else {
-                WorthQueryApplicationWholeResultLiveOutcome::Unavailable
-            };
+            .admit_product_branch(&self.opening_branch)
+            .map_err(|cause| self.handle_basis_admission_denial(cause))?;
+        if current_branch.observation().lifecycle_incarnation() != self.opening_incarnation {
+            return Err(
+                if self.terminate(BridgeExecutionBasisTerminalDisposition::Completed) {
+                    WorthQueryApplicationWholeResultLiveOutcome::Closed
+                } else {
+                    WorthQueryApplicationWholeResultLiveOutcome::Unavailable
+                },
+            );
         }
-        // Strict re-admission against CURRENT branch truth BEFORE polling or
-        // delivering any queued commit batch: revoked principals/grants fail
-        // closed immediately with zero leaked rows.
-        if let Err(outcome) =
-            self.admit_current_authority(execution, current_branch.read_lease(), principal)
-        {
-            return outcome;
+        let watermark = current_branch.observation().selected_commit().clone();
+        self.admit_current_authority(execution, current_branch.read_lease(), principal)?;
+        Ok(watermark)
+    }
+
+    /// Re-observes World head before returning `Pending`, `Overflow`, or
+    /// `Delivered`. If World moved past `watermark`, re-runs full authority
+    /// admission at the new head so concurrent revocations fail closed immediately.
+    pub(super) fn confirm_authority_at_head(
+        &mut self,
+        execution: &ExecutionRequest<'_, '_>,
+        principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
+        watermark: &mut CompositeCommitIdentity,
+    ) -> Result<bool, WorthQueryApplicationWholeResultLiveOutcome<Query, QueryResult>> {
+        let current_branch = self
+            .runtime
+            .runtime
+            .product_runtime
+            .admit_product_branch(&self.opening_branch)
+            .map_err(|cause| self.handle_basis_admission_denial(cause))?;
+        if current_branch.observation().lifecycle_incarnation() != self.opening_incarnation {
+            return Err(
+                if self.terminate(BridgeExecutionBasisTerminalDisposition::Completed) {
+                    WorthQueryApplicationWholeResultLiveOutcome::Closed
+                } else {
+                    WorthQueryApplicationWholeResultLiveOutcome::Unavailable
+                },
+            );
         }
-        self.poll_until_invalidated(execution, principal, request)
+        let current_commit = current_branch.observation().selected_commit();
+        if current_commit == watermark {
+            return Ok(false);
+        }
+        let next_watermark = current_commit.clone();
+        self.admit_current_authority(execution, current_branch.read_lease(), principal)?;
+        *watermark = next_watermark;
+        Ok(true)
     }
 
     fn admit_current_authority(
@@ -179,28 +216,78 @@ where
         execution: &ExecutionRequest<'_, '_>,
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
         request: &WorthQueryRequestScope,
+        mut watermark: CompositeCommitIdentity,
     ) -> WorthQueryApplicationWholeResultLiveOutcome<Query, QueryResult> {
-        let source = self.runtime.runtime.primary_provider.live_delivery_ref();
+        let mut recheck_attempts = 0_usize;
         loop {
             if let Some(outcome) = self.observe_interruption(request) {
                 return outcome;
             }
-            if let Err(cause) = SourceFactsAllocation::work(execution, 1) {
-                return self.handle_relational_cause(cause);
-            }
-            let batch_cell = match source.poll(&self.subscription, self.cursor) {
-                WorthQueryLiveSourcePoll::Batch(batch) => batch,
-                WorthQueryLiveSourcePoll::Pending => {
-                    return WorthQueryApplicationWholeResultLiveOutcome::Pending
+            let poll_result = {
+                let Some(subscription) = self.subscription.as_ref() else {
+                    return WorthQueryApplicationWholeResultLiveOutcome::Closed;
+                };
+                self.runtime
+                    .runtime
+                    .primary_provider
+                    .live_delivery_ref()
+                    .poll_funded_bounded(
+                        execution,
+                        subscription,
+                        self.cursor,
+                        self.controls.buffer_capacity(),
+                        &watermark,
+                    )
+            };
+            let poll = match poll_result {
+                Ok(poll) => poll,
+                Err(denial) => return self.handle_live_admission_denial(denial),
+            };
+            let batch_cell = match poll {
+                WorthQueryLiveBoundedPoll::Batch(batch) => batch,
+                WorthQueryLiveBoundedPoll::HeadAdvanced => {
+                    recheck_attempts += 1;
+                    if recheck_attempts > MAX_HEAD_RECHECK_ATTEMPTS {
+                        return self.terminate_outcome(
+                            WorthQueryApplicationWholeResultLiveOutcome::Unavailable,
+                        );
+                    }
+                    watermark = match self.admit_head_and_authority(execution, principal) {
+                        Ok(next) => next,
+                        Err(outcome) => return outcome,
+                    };
+                    continue;
                 }
-                WorthQueryLiveSourcePoll::Overflow { missed } => {
+                WorthQueryLiveBoundedPoll::Pending => {
+                    match self.confirm_authority_at_head(execution, principal, &mut watermark) {
+                        Ok(false) => {
+                            return WorthQueryApplicationWholeResultLiveOutcome::Pending;
+                        }
+                        Ok(true) => {
+                            recheck_attempts += 1;
+                            if recheck_attempts > MAX_HEAD_RECHECK_ATTEMPTS {
+                                return self.terminate_outcome(
+                                    WorthQueryApplicationWholeResultLiveOutcome::Unavailable,
+                                );
+                            }
+                            continue;
+                        }
+                        Err(outcome) => return outcome,
+                    }
+                }
+                WorthQueryLiveBoundedPoll::Overflow { missed } => {
+                    if let Err(outcome) =
+                        self.confirm_authority_at_head(execution, principal, &mut watermark)
+                    {
+                        return outcome;
+                    }
                     return self.terminate_outcome(
                         WorthQueryApplicationWholeResultLiveOutcome::Overflow(
                             WorthQueryApplicationLiveOverflow::new(missed),
                         ),
                     );
                 }
-                WorthQueryLiveSourcePoll::Closed => {
+                WorthQueryLiveBoundedPoll::Closed => {
                     return if self.terminate(BridgeExecutionBasisTerminalDisposition::Completed) {
                         WorthQueryApplicationWholeResultLiveOutcome::Closed
                     } else {
@@ -231,6 +318,7 @@ where
                 batch.publication().clone(),
                 batch.product().retained_clone(),
                 next_cursor,
+                watermark,
             );
         }
     }
@@ -248,19 +336,24 @@ where
             .runtime
             .retain_product_application_basis(execution, product.observation())
             .map_err(|cause| self.handle_basis_admission_denial(cause))?;
-        let status = self
-            .runtime
-            .runtime
-            .primary_provider
-            .graph_ref()
-            .with_runtime(execution, |relational| {
-                self.footprint.verify_at_snapshot(
-                    execution,
-                    relational,
-                    basis.snapshot_handle(),
-                    request,
-                )
-            });
+        let status = {
+            let Some(footprint) = self.footprint.as_ref() else {
+                let _ = basis.release();
+                return Err(WorthQueryApplicationWholeResultLiveOutcome::Closed);
+            };
+            self.runtime
+                .runtime
+                .primary_provider
+                .graph_ref()
+                .with_runtime(execution, |relational| {
+                    footprint.verify_at_snapshot(
+                        execution,
+                        relational,
+                        basis.snapshot_handle(),
+                        request,
+                    )
+                })
+        };
         let released = basis.release().released();
         if !released {
             return Err(
@@ -268,111 +361,5 @@ where
             );
         }
         status.map_err(|stop| self.handle_footprint_stop(stop))
-    }
-
-    fn refresh_and_deliver(
-        &mut self,
-        execution: &ExecutionRequest<'_, '_>,
-        principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
-        publication: WorthQueryCommittedProductPublication,
-        product: crate::basis::WorthQueryProductObservationLease,
-        next_cursor: u64,
-    ) -> WorthQueryApplicationWholeResultLiveOutcome<Query, QueryResult> {
-        let application_basis = match self
-            .runtime
-            .retain_product_application_basis(execution, product.observation())
-        {
-            Ok(basis) => basis,
-            Err(cause) => return self.handle_basis_admission_denial(cause),
-        };
-        let access = WorthQueryApplicationQueryAccessContext::new(principal, &self.scope);
-        let controls = WorthQueryApplicationQueryControls::product_live(
-            product,
-            application_basis,
-            self.controls.maximum_materialized_record_count(),
-            self.controls.request(),
-        );
-        let governance = std::mem::replace(
-            &mut self.governance,
-            crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance::Public,
-        );
-        let mut plan = match self.runtime.readmit_application_query_live(
-            execution,
-            &self.query,
-            &access,
-            governance,
-            self.parameters.clone(),
-            controls,
-        ) {
-            Ok(plan) => plan,
-            Err(denial) => return self.handle_admission_denial(denial),
-        };
-        if let Err(denial) = refresh_governed_authorization(execution, self.runtime, &mut plan) {
-            let _ = plan.basis.release();
-            return self.handle_read_denial(denial);
-        }
-        let (raw, authorization_work, read_proof) =
-            match execute_authorized_read(execution, self.runtime, &plan, |runtime, graph, plan| {
-                let mut raw = read_bounded_root_rows(runtime, execution, graph, plan, None)?;
-                if QueryResult::PROJECTS_PERSISTENT_NAMES {
-                    observe_persistent_names(runtime, execution, plan, &mut raw);
-                }
-                Ok(raw)
-            }) {
-                Ok(ok) => ok,
-                Err(denial) => {
-                    let released = plan.basis.release().released();
-                    if !released {
-                        return WorthQueryApplicationWholeResultLiveOutcome::Unavailable;
-                    }
-                    return self.handle_read_denial(denial);
-                }
-            };
-        let completed = match complete_one_shot(
-            execution,
-            self.runtime,
-            plan,
-            raw,
-            authorization_work,
-            read_proof,
-        ) {
-            Ok(completed) => completed,
-            Err(denial) => return self.handle_one_shot_denial(denial),
-        };
-        let layout = self
-            .runtime
-            .runtime
-            .primary_provider
-            .graph_ref()
-            .layout_ref();
-        let next_footprint = match WholeResultInvalidationFootprint::capture(
-            execution,
-            layout,
-            self.query.name(),
-            self.controls.request(),
-            completed.read.result_set_observation(),
-            completed.read.observed_sources(),
-        ) {
-            Ok(footprint) => footprint,
-            Err(stop) => return self.handle_footprint_stop(stop),
-        };
-        let request = self.controls.request().clone();
-        if let Some(outcome) = self.observe_interruption(&request) {
-            return outcome;
-        }
-        self.governance = completed.governance;
-        self.footprint = next_footprint;
-        self.cursor = next_cursor;
-        let (rows, observed_sources, result_set_observation, receipt) =
-            completed.read.into_whole_result_parts();
-        let snapshot = WorthQueryApplicationWholeResultLiveSnapshot::new(
-            rows,
-            observed_sources,
-            result_set_observation,
-            receipt,
-        );
-        WorthQueryApplicationWholeResultLiveOutcome::Delivered(
-            WorthQueryApplicationWholeResultLiveUpdate::new(publication, snapshot),
-        )
     }
 }

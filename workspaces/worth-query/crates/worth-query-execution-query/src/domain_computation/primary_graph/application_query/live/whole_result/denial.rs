@@ -35,6 +35,29 @@ pub(super) fn map_open_live_admission_denial(
     }
 }
 
+pub(super) fn map_open_branch_admission_denial(
+    cause: crate::basis::WorthQueryProductBranchAdmissionDenial,
+    subject: &str,
+) -> WorthQueryApplicationLiveOpenDenial {
+    let kind = match cause {
+        crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(Ok(kind)) => {
+            WorthQueryApplicationLiveOpenDenialKind::Admission(AdmissionKind::ExecutionRequest(
+                kind,
+            ))
+        }
+        crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(Err(
+            ControlStop::Cancelled,
+        )) => WorthQueryApplicationLiveOpenDenialKind::Admission(AdmissionKind::Cancelled),
+        crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(Err(
+            ControlStop::TimedOut,
+        )) => WorthQueryApplicationLiveOpenDenialKind::Admission(AdmissionKind::DeadlineExceeded),
+        crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(_) => {
+            WorthQueryApplicationLiveOpenDenialKind::ProviderVersionUnavailable
+        }
+    };
+    open_denial(kind, subject)
+}
+
 pub(super) fn map_open_one_shot_denial(
     denial: WorthQueryApplicationOneShotDenial,
     subject: &str,
@@ -135,6 +158,18 @@ impl<Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope
             Ok(kind) => self.execution_denied_outcome(kind),
             Err(ControlStop::Cancelled) => self.cancelled_outcome(),
             Err(ControlStop::TimedOut) => self.deadline_exceeded_outcome(),
+        }
+    }
+
+    pub(super) fn handle_live_admission_denial(
+        &mut self,
+        denial: WorthQueryLiveAdmissionDenial,
+    ) -> WorthQueryApplicationWholeResultLiveOutcome<Query, QueryResult> {
+        match denial {
+            WorthQueryLiveAdmissionDenial::Execution(cause) => self.handle_relational_cause(cause),
+            WorthQueryLiveAdmissionDenial::Unavailable(_) => {
+                self.terminate_outcome(WorthQueryApplicationWholeResultLiveOutcome::Unavailable)
+            }
         }
     }
 

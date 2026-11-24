@@ -293,6 +293,7 @@ pub(super) struct WorthQueryInstalledGraphReadMeaning {
     pub(super) ordering: Vec<WorthQueryInstalledGraphOrdering>,
     pub(super) maximum_traversal_depth: usize,
     pub(super) maximum_result_count: usize,
+    pub(super) live_whole_result: bool,
 }
 
 pub(super) struct WorthQueryInstalledGraphPlanningPreparation<'a> {
@@ -370,5 +371,9 @@ impl WorthQueryInstalledGraphReadContract {
 
     pub const fn maximum_result_count(&self) -> usize {
         self.meaning.maximum_result_count
+    }
+
+    pub const fn is_live_whole_result(&self) -> bool {
+        self.meaning.live_whole_result
     }
 }

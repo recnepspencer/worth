@@ -100,6 +100,7 @@ impl WorthQueryInstalledGraphReadContract {
             ordering,
             maximum_traversal_depth,
             maximum_result_count,
+            live_whole_result: definition.is_live_whole_result(),
         };
         let canonical = prepare_graph_basis(&meaning, budget)?;
         let planning = prepare_planning_basis(

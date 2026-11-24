@@ -60,33 +60,75 @@ impl WholeResultInvalidationFootprint {
         row_sources: &[WorthQueryObservedSource<Query>],
     ) -> Result<Self, FootprintStop> {
         check_interruption(request)?;
-        let allocation = SourceFactsAllocation::open(execution).map_err(map_cause)?;
-        let control = SourceFactExpansionControl::in_request(*execution, Some(request));
-
-        let mut total_hint = result_set
-            .source()
-            .source_meaning()
-            .footprint()
-            .fact_count()
-            .ok_or(FootprintStop::Execution(Cause::WorkCounterOverflow))?;
-        for row in row_sources {
-            let count = row
-                .source_meaning()
-                .footprint()
+        let mut total_hint = 0_usize;
+        let mut max_facts = 0_usize;
+        let mut max_fields = 0_usize;
+        let mut max_adjs = 0_usize;
+        let mut upfront_work = 1_u64;
+        for source in std::iter::once(result_set.source()).chain(row_sources.iter()) {
+            let fp = source.source_meaning().footprint();
+            let facts = fp
                 .fact_count()
                 .ok_or(FootprintStop::Execution(Cause::WorkCounterOverflow))?;
+            let fields = fp
+                .field_count()
+                .ok_or(FootprintStop::Execution(Cause::WorkCounterOverflow))?;
+            let mut adjs = 0_usize;
+            for part in fp.fact_sources() {
+                adjs = adjs
+                    .checked_add(part.adjacencies.len())
+                    .ok_or(FootprintStop::Execution(Cause::WorkCounterOverflow))?;
+            }
             total_hint = total_hint
-                .checked_add(count)
+                .checked_add(facts)
+                .ok_or(FootprintStop::Execution(Cause::WorkCounterOverflow))?;
+            max_facts = max_facts.max(facts);
+            max_fields = max_fields.max(fields);
+            max_adjs = max_adjs.max(adjs);
+            let source_work = n_log2_n(fields)
+                .and_then(|w| w.checked_add(n_log2_n(adjs)?))
+                .and_then(|w| w.checked_add(n_log2_n(facts)?))
+                .and_then(|w| w.checked_add(u64::try_from(fields).ok()?))
+                .and_then(|w| w.checked_add(u64::try_from(facts).ok()?))
+                .and_then(|w| w.checked_add(1))
+                .ok_or(FootprintStop::Execution(Cause::WorkCounterOverflow))?;
+            upfront_work = upfront_work
+                .checked_add(source_work)
                 .ok_or(FootprintStop::Execution(Cause::WorkCounterOverflow))?;
         }
-        let expand_work = u64::try_from(total_hint)
-            .ok()
-            .and_then(|n| n.checked_add(1))
-            .ok_or(FootprintStop::Execution(Cause::WorkCounterOverflow))?;
-        SourceFactsAllocation::work(execution, expand_work).map_err(map_cause)?;
+        SourceFactsAllocation::work(execution, upfront_work).map_err(map_cause)?;
+
+        let allocation = SourceFactsAllocation::open(execution).map_err(map_cause)?;
+        let scratch = SourceFactsAllocation::open(execution).map_err(map_cause)?;
+        // Fund peak concurrent scratch memory for `validated_facts`:
+        // validation BTreeMaps, prepared field Vec, two materialized Fact Vecs,
+        // merge_facts BTreeMap, and per-field CanonicalFieldPath vectors.
+        scratch
+            .claim_tree_copy::<(u64, usize, usize, u64)>(execution, max_fields)
+            .map_err(map_cause)?;
+        scratch
+            .claim_tree_copy::<(u64, u64, u8, u64)>(execution, max_adjs)
+            .map_err(map_cause)?;
+        scratch
+            .claim_slice::<usize>(execution, max_fields)
+            .map_err(map_cause)?;
+        let two_facts = max_facts
+            .checked_mul(2)
+            .ok_or(FootprintStop::Execution(Cause::ChargedBytesOverflow))?;
+        scratch
+            .claim_slice::<Fact>(execution, two_facts)
+            .map_err(map_cause)?;
+        scratch
+            .claim_tree_copy::<(Fact, usize)>(execution, max_facts)
+            .map_err(map_cause)?;
+        scratch
+            .claim_slice::<worth_foundational::facade::FieldKey>(execution, max_fields)
+            .map_err(map_cause)?;
+
         allocation
             .claim_slice::<Fact>(execution, total_hint)
             .map_err(map_cause)?;
+        let control = SourceFactExpansionControl::in_request(*execution, Some(request));
 
         let mut combined = Vec::new();
         combined
@@ -132,6 +174,7 @@ impl WholeResultInvalidationFootprint {
         for row in row_sources {
             append(row)?;
         }
+        drop(scratch);
 
         let facts = deduplicate_facts(execution, request, combined)?;
         Ok(Self {
@@ -260,6 +303,14 @@ fn cmp_source_fact(left: &Fact, right: &Fact) -> Ordering {
     }
 }
 
+fn n_log2_n(count: usize) -> Option<u64> {
+    if count <= 1 {
+        return u64::try_from(count).ok();
+    }
+    let log2 = u64::from(usize::BITS - count.leading_zeros()).max(1);
+    u64::try_from(count).ok()?.checked_mul(log2)
+}
+
 fn deduplicate_facts(
     execution: &ExecutionRequest<'_, '_>,
     request: &WorthQueryRequestScope,
@@ -270,11 +321,8 @@ fn deduplicate_facts(
         return Ok(facts);
     }
     check_interruption(request)?;
-    let log2 = u64::from(usize::BITS - count.leading_zeros()).max(1);
-    let dedup_work = u64::try_from(count)
-        .ok()
-        .and_then(|n| n.checked_mul(log2))
-        .ok_or(FootprintStop::Execution(Cause::WorkCounterOverflow))?;
+    let dedup_work =
+        n_log2_n(count).ok_or(FootprintStop::Execution(Cause::WorkCounterOverflow))?;
     SourceFactsAllocation::work(execution, dedup_work).map_err(map_cause)?;
 
     facts.sort_unstable_by(cmp_source_fact);

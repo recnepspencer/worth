@@ -1,7 +1,8 @@
 //! Compact NDJSON trace writer for `specs/tla/live_subscriptions/LiveSubscriptionsTrace.tla`.
-//! Every emitted `outcome` and `rows` field is derived strictly from real observed
-//! runtime outcomes. Activated when `WORTH_DST_TRACE_DIR` is set.
-use super::reference::Kind;
+//! Every emitted `outcome`, `reason`, `commitIdx`, ordered projected `rows`,
+//! and `closeOutcome` is derived strictly from real observed runtime outcomes.
+//! Activated when `WORTH_DST_TRACE_DIR` is set.
+use super::reference::{Kind, ProjectedRow};
 
 #[derive(Default)]
 pub struct Trace {
@@ -12,9 +13,12 @@ fn task_name(key: u64) -> String {
     format!("\"t{key}\"")
 }
 
-fn task_set(keys: &[u64]) -> String {
-    let items: Vec<String> = keys.iter().map(|k| task_name(*k)).collect();
-    format!("{{\"__set__\":[{}]}}", items.join(","))
+fn projected_rows(rows: &[ProjectedRow]) -> String {
+    let items: Vec<String> = rows
+        .iter()
+        .map(|&(k, status, due)| format!("[{},\"{status}\",{due}]", task_name(k)))
+        .collect();
+    format!("[{}]", items.join(","))
 }
 
 impl Trace {
@@ -60,25 +64,39 @@ impl Trace {
         self.lines.push("{\"action\":\"ReopenHome\"}".to_owned());
     }
 
-    pub fn subscribe(&mut self, kind: Kind, outcome: &str, rows: &[u64]) {
+    pub fn subscribe(
+        &mut self,
+        kind: Kind,
+        outcome: &str,
+        reason: &str,
+        commit_idx: usize,
+        rows: &[ProjectedRow],
+    ) {
         self.lines.push(format!(
-            "{{\"action\":\"Subscribe\",\"kind\":\"{}\",\"outcome\":\"{outcome}\",\"rows\":{}}}",
+            "{{\"action\":\"Subscribe\",\"kind\":\"{}\",\"outcome\":\"{outcome}\",\"reason\":\"{reason}\",\"commitIdx\":{commit_idx},\"rows\":{}}}",
             kind.as_str(),
-            task_set(rows)
+            projected_rows(rows)
         ));
     }
 
-    pub fn poll(&mut self, kind: Kind, outcome: &str, rows: &[u64]) {
+    pub fn poll(
+        &mut self,
+        kind: Kind,
+        outcome: &str,
+        reason: &str,
+        commit_idx: usize,
+        rows: &[ProjectedRow],
+    ) {
         self.lines.push(format!(
-            "{{\"action\":\"Poll\",\"kind\":\"{}\",\"outcome\":\"{outcome}\",\"rows\":{}}}",
+            "{{\"action\":\"Poll\",\"kind\":\"{}\",\"outcome\":\"{outcome}\",\"reason\":\"{reason}\",\"commitIdx\":{commit_idx},\"rows\":{}}}",
             kind.as_str(),
-            task_set(rows)
+            projected_rows(rows)
         ));
     }
 
-    pub fn close_sub(&mut self, kind: Kind) {
+    pub fn close_sub(&mut self, kind: Kind, close_outcome: &str) {
         self.lines.push(format!(
-            "{{\"action\":\"CloseSub\",\"kind\":\"{}\"}}",
+            "{{\"action\":\"CloseSub\",\"kind\":\"{}\",\"closeOutcome\":\"{close_outcome}\"}}",
             kind.as_str()
         ));
     }

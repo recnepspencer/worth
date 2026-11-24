@@ -12,6 +12,8 @@ pub struct TodayParams;
 pub struct TaskRow {
     pub key: u64,
     pub title: String,
+    pub status: String,
+    pub due: Option<CanonicalDate>,
 }
 worth_query_structured_value_binding!(pub EmptyParamsBinding for EmptyParams { identity: "live-whole-result.empty-params.v1" });
 worth_query_structured_value_binding!(pub TodayParamsBinding for TodayParams { identity: "live-whole-result.today-params.v1" });
@@ -19,15 +21,25 @@ worth_query_structured_value_binding!(pub RowBinding for TaskRow { identity: "li
 
 pub struct KeySlot;
 pub struct TitleSlot;
+pub struct StatusSlot;
+pub struct DueSlot;
 pub struct CutoffParam;
 worth_query_portable_type!(KeySlot => "live-whole-result.key-slot.v1");
 worth_query_portable_type!(TitleSlot => "live-whole-result.title-slot.v1");
+worth_query_portable_type!(StatusSlot => "live-whole-result.status-slot.v1");
+worth_query_portable_type!(DueSlot => "live-whole-result.due-slot.v1");
 
 pub fn key<Q>() -> ApplicationQueryResultFieldRef<Q, KeySlot, Schema, TaskKey> {
     ApplicationQueryResultFieldRef::new("key", TaskKey::at("TaskKey"))
 }
 pub fn title<Q>() -> ApplicationQueryResultFieldRef<Q, TitleSlot, Schema, Title> {
     ApplicationQueryResultFieldRef::new("title", Title::at("Title"))
+}
+pub fn status<Q>() -> ApplicationQueryResultFieldRef<Q, StatusSlot, Schema, Status> {
+    ApplicationQueryResultFieldRef::new("status", Status::at("Status"))
+}
+pub fn due<Q>() -> ApplicationQueryOptionalResultFieldRef<Q, DueSlot, Schema, Due> {
+    ApplicationQueryOptionalResultFieldRef::new("due", Due::at("Due"))
 }
 pub fn cutoff_param<Q>(
 ) -> ApplicationQueryParameterRef<Q, CutoffParam, CanonicalDateApplicationValueBinding> {
@@ -56,6 +68,8 @@ macro_rules! define_query {
                 Ok(Self {
                     key: row.field(key())?,
                     title: row.field(title())?,
+                    status: row.field(status())?,
+                    due: row.optional_field(due())?,
                 })
             }
         }
@@ -106,6 +120,8 @@ fn shape<Q: ApplicationQueryMarkerIdentity<Schema, ResultBinding = RowBinding>>(
     )
     .field(key())
     .field(title())
+    .field(status())
+    .optional_field(due())
     .build()
 }
 
@@ -119,7 +135,9 @@ fn governed_today_disclosure() -> ApplicationQueryDisclosureContract {
         .use_field_by(Due::at("Due"), tag(1), all.clone())
         .unwrap()
         .disclose_field_by(key::<GovTodayLiveQuery>(), tag(1), all.clone())
-        .disclose_field_by(title::<GovTodayLiveQuery>(), tag(1), all)
+        .disclose_field_by(title::<GovTodayLiveQuery>(), tag(1), all.clone())
+        .disclose_field_by(status::<GovTodayLiveQuery>(), tag(1), all.clone())
+        .disclose_optional_field_by(due::<GovTodayLiveQuery>(), tag(1), all)
 }
 
 fn governed_ready_disclosure() -> ApplicationQueryDisclosureContract {
@@ -129,6 +147,8 @@ fn governed_ready_disclosure() -> ApplicationQueryDisclosureContract {
         .unwrap()
         .use_field_by(Status::at("Status"), tag(1), all.clone())
         .unwrap()
+        .use_field_by(Due::at("Due"), tag(1), all.clone())
+        .unwrap()
         .use_relation_by(
             BlockedBy::reference(),
             RelationDirection::Forward,
@@ -136,7 +156,9 @@ fn governed_ready_disclosure() -> ApplicationQueryDisclosureContract {
             all.clone(),
         )
         .disclose_field_by(key::<GovReadyLiveQuery>(), tag(1), all.clone())
-        .disclose_field_by(title::<GovReadyLiveQuery>(), tag(1), all)
+        .disclose_field_by(title::<GovReadyLiveQuery>(), tag(1), all.clone())
+        .disclose_field_by(status::<GovReadyLiveQuery>(), tag(1), all.clone())
+        .disclose_optional_field_by(due::<GovReadyLiveQuery>(), tag(1), all)
 }
 
 fn today_definition(

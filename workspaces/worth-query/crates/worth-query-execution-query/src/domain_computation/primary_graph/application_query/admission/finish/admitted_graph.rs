@@ -34,7 +34,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             graph.layout_ref(),
             query.continuation(),
             query.live(),
-            query.is_live_whole_result(),
             &requirements,
         )
             .map_err(|_| denial(WorthQueryApplicationQueryAdmissionDenialKind::ReadmissionPreparationMemoryExhausted, query.name()))?;

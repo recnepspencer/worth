@@ -4,28 +4,29 @@ EXTENDS Integers, Sequences, FiniteSets, TLC
 (*
   Formal reference model for Daymark Plan Wave 2 — PR 2C (`P2.3` / `G9`):
   Whole-Result Live Subscriptions preserving exact negative (`where_filter`)
-  and related-record (`where_no_related`) invalidation evidence, strict
-  per-delivery authority re-admission, unrelated-project non-invalidation,
-  and Directory Home close/reopen + resubscribe.
+  and related-record (`where_no_related`) invalidation evidence, ordered
+  projected row values `<<task, status, due>>`, strict per-delivery authority
+  re-admission with exact refusal reason, unrelated-project isolation, and
+  Directory Home close/reopen + resubscribe.
 
   Safety invariants proved exhaustively by TLC:
-    1. TypeOK: all variables remain well-typed.
+    1. TypeOK: all variables and projected row sequences remain well-typed.
     2. DeliveredMatchesGraphSemantics: every delivered snapshot equals exact
-       relational graph semantics at its observed commit.
+       ordered projected relational graph semantics at its observed commit.
     3. NeverStaleWhenCaughtUp: whenever an active subscription has drained all
-       committed batches (`cursor > Len(history)`), its last delivered result
-       MUST equal exact current graph semantics (proving neither negative
-       filter changes nor related-record blocker/edge changes can ever be
-       missed by footprint verification!).
-    4. NeverDeliverUnauthorized: an unauthorized/revoked principal can never
-       open a subscription or receive a delivery.
-    5. UnrelatedEditDoesNotCorrupt: unlinked project-2 mutations leave
-       project-1 query results unchanged and do not falsely invalidate.
+       committed batches (`cursor > Len(history)`), its last delivered ordered
+       projected rows MUST equal exact current graph semantics (proving neither
+       negative filter changes nor related-record blocker/edge changes nor
+       projected field value edits can ever be missed by footprint verification).
+    4. NeverDeliverUnauthorized: every initial, delivered, or pending outcome
+       carries an active authorization proof (`lastAuthGrant = TRUE`).
+    5. UnrelatedProjectIsolation: every projected row tuple belongs to `p1` and
+       matches the exact status and due values of its observed commit.
 
   Liveness property proved exhaustively by TLC under weak fairness on `Poll`:
     - EventuallyDeliversCurrent: after any relevant mutation while subscribed
-      with valid authority, polling eventually delivers the exact new result
-      (unless authority is revoked or the subscription/home closes).
+      with valid authority, polling eventually delivers the exact new ordered
+      projected rows (unless authority is revoked or the subscription/home closes).
 *)
 
 CONSTANTS
@@ -59,10 +60,9 @@ VARIABLES
     grant,                  \* BOOLEAN: subscriber principal currently authorized
     homeEpoch,              \* Nat: Directory Home incarnation
     history,                \* Seq of committed snapshots
-    subs,                   \* [Kinds -> SubRecord]
-    unauthorizedDelivery    \* BOOLEAN: safety latch (must remain FALSE)
+    subs                    \* [Kinds -> SubRecord]
 
-vars == <<status, due, edges, statusRev, dueRev, fwdAdjRev, grant, homeEpoch, history, subs, unauthorizedDelivery>>
+vars == <<status, due, edges, statusRev, dueRev, fwdAdjRev, grant, homeEpoch, history, subs>>
 
 Neighbors(snap, root) == {b \in TaskSet : <<root, b>> \in snap.edges}
 
@@ -83,27 +83,36 @@ ExaminedNeighbors(snap, root) ==
         limit == IF hit = 0 THEN Len(seq) ELSE hit
     IN {seq[i] : i \in 1..limit}
 
-TodayEval(snap) ==
-    {t \in P1Tasks : snap.status[t] = "open" /\ snap.due[t] = 1}
+TodayKeys(snap) ==
+    SelectSeq(Tasks, LAMBDA t : t \in P1Tasks /\ snap.status[t] = "open" /\ snap.due[t] = 1)
 
-ReadyEval(snap) ==
-    {t \in P1Tasks :
+ReadyKeys(snap) ==
+    SelectSeq(Tasks, LAMBDA t :
+        /\ t \in P1Tasks
         /\ snap.status[t] = "open"
-        /\ ~\E b \in Neighbors(snap, t) : snap.status[b] = "open"}
+        /\ ~\E b \in Neighbors(snap, t) : snap.status[b] = "open")
+
+ProjectRows(snap, keys) ==
+    [i \in 1..Len(keys) |-> <<keys[i], snap.status[keys[i]], snap.due[keys[i]]>>]
 
 Eval(kind, snap) ==
-    IF kind = "Today" THEN TodayEval(snap) ELSE ReadyEval(snap)
+    ProjectRows(snap, IF kind = "Today" THEN TodayKeys(snap) ELSE ReadyKeys(snap))
 
 OpenP1(snap) == {t \in P1Tasks : snap.status[t] = "open"}
+
+ReadySet(snap) ==
+    LET seq == ReadyKeys(snap)
+    IN {seq[i] : i \in 1..Len(seq)}
 
 ExaminedReadyTargets(snap) ==
     UNION {ExaminedNeighbors(snap, t) : t \in OpenP1(snap)}
 
 \* Exact observed footprint captured by a whole-result read of `kind` at `snap`:
 \*   - Today: every p1 task's status (index/equality guard) + every open p1
-\*     task's due date (where_filter negative & positive evidence).
+\*     task's due date (where_filter negative & positive evidence + projection).
 \*   - Ready: every p1 task's status + every open p1 task's BlockedBy outgoing
-\*     adjacency revision + every examined blocker target's status revision.
+\*     adjacency revision + every examined blocker target's status revision +
+\*     every returned Ready row's projected due date revision.
 CaptureFootprint(kind, snap) ==
     IF kind = "Today" THEN
         [
@@ -118,11 +127,12 @@ CaptureFootprint(kind, snap) ==
         LET open == OpenP1(snap)
             targets == ExaminedReadyTargets(snap)
             sDom == P1Tasks \cup targets
+            dDom == ReadySet(snap)
         IN [
             statusDom |-> sDom,
             statusRev |-> [t \in sDom |-> snap.statusRev[t]],
-            dueDom    |-> {},
-            dueRev    |-> [t \in {} |-> 0],
+            dueDom    |-> dDom,
+            dueRev    |-> [t \in dDom |-> snap.dueRev[t]],
             adjDom    |-> open,
             adjRev    |-> [t \in open |-> snap.fwdAdjRev[t]]
         ]
@@ -158,13 +168,16 @@ EmptyFp == [
 ]
 
 ClosedSub == [
-    active      |-> FALSE,
-    openedEpoch |-> 0,
-    cursor      |-> 1,
-    lastSnapIdx |-> 0,
-    lastRows    |-> {},
-    lastOutcome |-> "Closed",
-    fp          |-> EmptyFp
+    active           |-> FALSE,
+    openedEpoch      |-> 0,
+    cursor           |-> 1,
+    lastSnapIdx      |-> 0,
+    lastRows         |-> <<>>,
+    lastOutcome      |-> "Closed",
+    lastReason       |-> "Ok",
+    lastAuthGrant    |-> FALSE,
+    lastCloseOutcome |-> "None",
+    fp               |-> EmptyFp
 ]
 
 InitSnap == [
@@ -187,7 +200,6 @@ Init ==
     /\ homeEpoch = 0
     /\ history = <<InitSnap>>
     /\ subs = [k \in Kinds |-> ClosedSub]
-    /\ unauthorizedDelivery = FALSE
 
 CommitSnap(nextStatus, nextDue, nextEdges, nextSRev, nextDRev, nextARev) ==
     history' = Append(history, [
@@ -209,7 +221,7 @@ ToggleStatus(t) ==
        IN /\ status' = nextStatus
           /\ statusRev' = nextSRev
           /\ CommitSnap(nextStatus, due, edges, nextSRev, dueRev, fwdAdjRev)
-          /\ UNCHANGED <<due, edges, dueRev, fwdAdjRev, grant, homeEpoch, subs, unauthorizedDelivery>>
+          /\ UNCHANGED <<due, edges, dueRev, fwdAdjRev, grant, homeEpoch, subs>>
 
 SetDue(t, bucket) ==
     /\ Len(history) <= MaxCommits
@@ -220,7 +232,7 @@ SetDue(t, bucket) ==
        IN /\ due' = nextDue
           /\ dueRev' = nextDRev
           /\ CommitSnap(status, nextDue, edges, statusRev, nextDRev, fwdAdjRev)
-          /\ UNCHANGED <<status, edges, statusRev, fwdAdjRev, grant, homeEpoch, subs, unauthorizedDelivery>>
+          /\ UNCHANGED <<status, edges, statusRev, fwdAdjRev, grant, homeEpoch, subs>>
 
 AddEdge(t, b) ==
     /\ Len(history) <= MaxCommits
@@ -230,7 +242,7 @@ AddEdge(t, b) ==
        IN /\ edges' = nextEdges
           /\ fwdAdjRev' = nextARev
           /\ CommitSnap(status, due, nextEdges, statusRev, dueRev, nextARev)
-          /\ UNCHANGED <<status, due, statusRev, dueRev, grant, homeEpoch, subs, unauthorizedDelivery>>
+          /\ UNCHANGED <<status, due, statusRev, dueRev, grant, homeEpoch, subs>>
 
 RemoveEdge(t, b) ==
     /\ Len(history) <= MaxCommits
@@ -240,19 +252,19 @@ RemoveEdge(t, b) ==
        IN /\ edges' = nextEdges
           /\ fwdAdjRev' = nextARev
           /\ CommitSnap(status, due, nextEdges, statusRev, dueRev, nextARev)
-          /\ UNCHANGED <<status, due, statusRev, dueRev, grant, homeEpoch, subs, unauthorizedDelivery>>
+          /\ UNCHANGED <<status, due, statusRev, dueRev, grant, homeEpoch, subs>>
 
 \* ---- Authority Grant / Revoke ----
 
 RevokeGrant ==
     /\ grant = TRUE
     /\ grant' = FALSE
-    /\ UNCHANGED <<status, due, edges, statusRev, dueRev, fwdAdjRev, homeEpoch, history, subs, unauthorizedDelivery>>
+    /\ UNCHANGED <<status, due, edges, statusRev, dueRev, fwdAdjRev, homeEpoch, history, subs>>
 
 RestoreGrant ==
     /\ grant = FALSE
     /\ grant' = TRUE
-    /\ UNCHANGED <<status, due, edges, statusRev, dueRev, fwdAdjRev, homeEpoch, history, subs, unauthorizedDelivery>>
+    /\ UNCHANGED <<status, due, edges, statusRev, dueRev, fwdAdjRev, homeEpoch, history, subs>>
 
 \* ---- Directory Home Close / Reopen ----
 
@@ -260,7 +272,7 @@ ReopenHome ==
     /\ homeEpoch < MaxReopens
     /\ homeEpoch' = homeEpoch + 1
     /\ subs' = [k \in Kinds |-> ClosedSub]
-    /\ UNCHANGED <<status, due, edges, statusRev, dueRev, fwdAdjRev, grant, history, unauthorizedDelivery>>
+    /\ UNCHANGED <<status, due, edges, statusRev, dueRev, fwdAdjRev, grant, history>>
 
 \* ---- Whole-Result Live Subscription Lifecycle ----
 
@@ -268,63 +280,80 @@ Subscribe(kind) ==
     /\ ~subs[kind].active
     /\ IF ~grant THEN
            /\ subs' = [subs EXCEPT ![kind] = [
-                  active      |-> FALSE,
-                  openedEpoch |-> homeEpoch,
-                  cursor      |-> Len(history) + 1,
-                  lastSnapIdx |-> 0,
-                  lastRows    |-> {},
-                  lastOutcome |-> "AuthDenied",
-                  fp          |-> EmptyFp
+                  active           |-> FALSE,
+                  openedEpoch      |-> homeEpoch,
+                  cursor           |-> Len(history) + 1,
+                  lastSnapIdx      |-> 0,
+                  lastRows         |-> <<>>,
+                  lastOutcome      |-> "AuthDenied",
+                  lastReason       |-> "GrantRevoked",
+                  lastAuthGrant    |-> FALSE,
+                  lastCloseOutcome |-> "None",
+                  fp               |-> EmptyFp
               ]]
-           /\ UNCHANGED <<status, due, edges, statusRev, dueRev, fwdAdjRev, grant, homeEpoch, history, unauthorizedDelivery>>
+           /\ UNCHANGED <<status, due, edges, statusRev, dueRev, fwdAdjRev, grant, homeEpoch, history>>
        ELSE
            LET snapIdx == Len(history)
                snap == history[snapIdx]
            IN /\ subs' = [subs EXCEPT ![kind] = [
-                     active      |-> TRUE,
-                     openedEpoch |-> homeEpoch,
-                     cursor      |-> snapIdx + 1,
-                     lastSnapIdx |-> snapIdx,
-                     lastRows    |-> Eval(kind, snap),
-                     lastOutcome |-> "Initial",
-                     fp          |-> CaptureFootprint(kind, snap)
+                     active           |-> TRUE,
+                     openedEpoch      |-> homeEpoch,
+                     cursor           |-> snapIdx + 1,
+                     lastSnapIdx      |-> snapIdx,
+                     lastRows         |-> Eval(kind, snap),
+                     lastOutcome      |-> "Initial",
+                     lastReason       |-> "Ok",
+                     lastAuthGrant    |-> TRUE,
+                     lastCloseOutcome |-> "None",
+                     fp               |-> CaptureFootprint(kind, snap)
                  ]]
-              /\ UNCHANGED <<status, due, edges, statusRev, dueRev, fwdAdjRev, grant, homeEpoch, history, unauthorizedDelivery>>
+              /\ UNCHANGED <<status, due, edges, statusRev, dueRev, fwdAdjRev, grant, homeEpoch, history>>
 
 Poll(kind) ==
     /\ subs[kind].active
     /\ subs[kind].openedEpoch = homeEpoch
     /\ IF ~grant THEN
-           \* Strict re-admission on every poll: fail closed immediately!
+           \* Strict re-admission on every poll: fail closed immediately and retire custody!
            /\ subs' = [subs EXCEPT ![kind] = [
-                  @ EXCEPT !.active = FALSE, !.lastOutcome = "AuthDenied"
+                  @ EXCEPT !.active           = FALSE,
+                           !.lastOutcome      = "AuthDenied",
+                           !.lastReason       = "GrantRevoked",
+                           !.lastAuthGrant    = FALSE,
+                           !.lastCloseOutcome = "None",
+                           !.fp               = EmptyFp
               ]]
-           /\ UNCHANGED <<status, due, edges, statusRev, dueRev, fwdAdjRev, grant, homeEpoch, history, unauthorizedDelivery>>
+           /\ UNCHANGED <<status, due, edges, statusRev, dueRev, fwdAdjRev, grant, homeEpoch, history>>
        ELSE
            LET sub == subs[kind]
                hit == FirstInvalidated(sub.fp, sub.cursor)
            IN IF hit = 0 THEN
                   \* All unseen commits kept the observed footprint current -> Pending (no wake!)
                   /\ subs' = [subs EXCEPT ![kind] = [
-                         @ EXCEPT !.cursor = Len(history) + 1,
-                                  !.lastOutcome = "Pending"
+                         @ EXCEPT !.cursor           = Len(history) + 1,
+                                  !.lastOutcome      = "Pending",
+                                  !.lastReason       = "Ok",
+                                  !.lastAuthGrant    = TRUE,
+                                  !.lastCloseOutcome = "None"
                      ]]
-                  /\ UNCHANGED <<status, due, edges, statusRev, dueRev, fwdAdjRev, grant, homeEpoch, history, unauthorizedDelivery>>
+                  /\ UNCHANGED <<status, due, edges, statusRev, dueRev, fwdAdjRev, grant, homeEpoch, history>>
               ELSE
                   LET snap == history[hit]
                   IN /\ subs' = [subs EXCEPT ![kind] = [
-                            @ EXCEPT !.cursor      = hit + 1,
-                                     !.lastSnapIdx = hit,
-                                     !.lastRows    = Eval(kind, snap),
-                                     !.lastOutcome = "Delivered",
-                                     !.fp          = CaptureFootprint(kind, snap)
+                            @ EXCEPT !.cursor           = hit + 1,
+                                     !.lastSnapIdx      = hit,
+                                     !.lastRows         = Eval(kind, snap),
+                                     !.lastOutcome      = "Delivered",
+                                     !.lastReason       = "Ok",
+                                     !.lastAuthGrant    = TRUE,
+                                     !.lastCloseOutcome = "None",
+                                     !.fp               = CaptureFootprint(kind, snap)
                         ]]
-                     /\ UNCHANGED <<status, due, edges, statusRev, dueRev, fwdAdjRev, grant, homeEpoch, history, unauthorizedDelivery>>
+                     /\ UNCHANGED <<status, due, edges, statusRev, dueRev, fwdAdjRev, grant, homeEpoch, history>>
 
 CloseSub(kind) ==
     /\ subs[kind].active
-    /\ subs' = [subs EXCEPT ![kind] = ClosedSub]
-    /\ UNCHANGED <<status, due, edges, statusRev, dueRev, fwdAdjRev, grant, homeEpoch, history, unauthorizedDelivery>>
+    /\ subs' = [subs EXCEPT ![kind] = [ClosedSub EXCEPT !.lastCloseOutcome = "Completed"]]
+    /\ UNCHANGED <<status, due, edges, statusRev, dueRev, fwdAdjRev, grant, homeEpoch, history>>
 
 Next ==
     \/ \E t \in TaskSet : ToggleStatus(t)
@@ -344,6 +373,12 @@ Spec == Init /\ [][Next]_vars /\ Fairness
 
 \* ---- Safety Invariants ----
 
+ValidProjectedRow(row) ==
+    /\ Len(row) = 3
+    /\ row[1] \in P1Tasks
+    /\ row[2] \in Statuses
+    /\ row[3] \in DueBuckets
+
 TypeOK ==
     /\ status \in [TaskSet -> Statuses]
     /\ due \in [TaskSet -> DueBuckets]
@@ -351,39 +386,50 @@ TypeOK ==
     /\ grant \in BOOLEAN
     /\ homeEpoch \in 0..MaxReopens
     /\ Len(history) >= 1
-    /\ unauthorizedDelivery = FALSE
     /\ \A k \in Kinds :
         /\ subs[k].active \in BOOLEAN
         /\ subs[k].lastSnapIdx \in 0..Len(history)
         /\ subs[k].cursor \in 1..(Len(history) + 1)
-        /\ subs[k].lastRows \subseteq P1Tasks
+        /\ subs[k].lastReason \in {"Ok", "GrantRevoked"}
+        /\ subs[k].lastAuthGrant \in BOOLEAN
+        /\ subs[k].lastCloseOutcome \in {"None", "Completed"}
+        /\ \A i \in 1..Len(subs[k].lastRows) : ValidProjectedRow(subs[k].lastRows[i])
 
 DeliveredMatchesGraphSemantics ==
     \A k \in Kinds :
         (subs[k].lastSnapIdx >= 1 /\ subs[k].lastOutcome \in {"Initial", "Delivered", "Pending"}) =>
             subs[k].lastRows = Eval(k, history[subs[k].lastSnapIdx])
 
-\* Exact negative & related-record invalidation soundness:
+\* Exact negative, related-record, & projected-value invalidation soundness:
 \* If an active subscription has drained up to HEAD (`cursor > Len(history)`),
-\* its last delivered result MUST match exact current graph semantics!
+\* its last delivered ordered projected rows MUST match exact current semantics!
 NeverStaleWhenCaughtUp ==
     \A k \in Kinds :
         (subs[k].active /\ subs[k].cursor > Len(history)) =>
             subs[k].lastRows = Eval(k, CurrentSnap)
 
-\* No delivery may occur without valid authority.
+\* No initial, delivered, or pending outcome may occur without valid authority.
 NeverDeliverUnauthorized ==
-    unauthorizedDelivery = FALSE
+    \A k \in Kinds :
+        subs[k].lastOutcome \in {"Initial", "Delivered", "Pending"} =>
+            subs[k].lastAuthGrant = TRUE
 
-\* Unrelated project-2 tasks (when not linked from p1) never enter p1 results.
+\* Value-level isolation: every projected row tuple belongs to p1 and matches
+\* the exact projected status & due values of its observed commit.
 UnrelatedProjectIsolation ==
     \A k \in Kinds :
-        subs[k].lastRows \subseteq P1Tasks
+        \A i \in 1..Len(subs[k].lastRows) :
+            LET row == subs[k].lastRows[i]
+            IN /\ row[1] \in P1Tasks
+               /\ subs[k].lastSnapIdx >= 1
+               /\ row[2] = history[subs[k].lastSnapIdx].status[row[1]]
+               /\ row[3] = history[subs[k].lastSnapIdx].due[row[1]]
 
 \* ---- Liveness Property ----
 
 \* After any relevant mutation while subscribed with valid authority,
-\* polling eventually delivers the exact current result (unless closed or revoked).
+\* polling eventually delivers the exact current ordered projected rows
+\* (unless closed or revoked).
 EventuallyDeliversCurrent ==
     \A k \in Kinds :
         []((subs[k].active /\ grant /\ subs[k].lastRows /= Eval(k, CurrentSnap))

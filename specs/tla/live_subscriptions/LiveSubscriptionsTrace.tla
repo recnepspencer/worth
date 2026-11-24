@@ -6,10 +6,12 @@ EXTENDS LiveSubscriptions, TraceData
 
   Every step emitted by the Rust 64-seed DST (`WORTH_DST_TRACE_DIR`) is
   matched strictly against the real model transition AND every observed
-  outcome (`outcome`, `rows`, `snapIdx`, `authorized`) MUST match the model's
-  exact next state. Mismatched or forbidden outcomes (e.g., stale delivery
-  after blocker completion, or delivery after grant revocation) deadlock the
-  trace and fail `TraceAccepted` — never stuttering past mismatches!
+  outcome (`outcome`, `reason`, `commitIdx`, ordered projected `rows` tuples
+  `<<task, status, due>>`, and `closeOutcome`) MUST match the model's exact
+  next state. Mismatched or forbidden outcomes (stale projected values with
+  identical row keys, misclassified auth refusals, delivery after grant
+  revocation, or commit-stamp mismatches) deadlock the trace and fail
+  `TraceAccepted` — never stuttering past mismatches!
 *)
 
 VARIABLE pc
@@ -41,13 +43,20 @@ StepAction(step) ==
       [] step.action = "Subscribe" ->
             /\ Subscribe(step.kind)
             /\ subs'[step.kind].lastOutcome = step.outcome
-            /\ (step.outcome = "Initial" => subs'[step.kind].lastRows = step.rows)
+            /\ subs'[step.kind].lastReason = step.reason
+            /\ (step.outcome = "Initial" =>
+                    /\ subs'[step.kind].lastSnapIdx = step.commitIdx
+                    /\ subs'[step.kind].lastRows = step.rows)
       [] step.action = "Poll" ->
             /\ Poll(step.kind)
             /\ subs'[step.kind].lastOutcome = step.outcome
-            /\ (step.outcome = "Delivered" => subs'[step.kind].lastRows = step.rows)
+            /\ subs'[step.kind].lastReason = step.reason
+            /\ (step.outcome = "Delivered" =>
+                    /\ subs'[step.kind].lastSnapIdx = step.commitIdx
+                    /\ subs'[step.kind].lastRows = step.rows)
       [] step.action = "CloseSub" ->
-            CloseSub(step.kind)
+            /\ CloseSub(step.kind)
+            /\ subs'[step.kind].lastCloseOutcome = step.closeOutcome
 
 TraceStep ==
     /\ pc <= Len(Trace)

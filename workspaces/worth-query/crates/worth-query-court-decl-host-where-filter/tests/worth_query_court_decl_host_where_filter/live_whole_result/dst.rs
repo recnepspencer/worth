@@ -7,6 +7,7 @@
 //! - `WORTH_DST_SEEDS` (default 64)
 //! - `WORTH_DST_SEED` (run one seed)
 //! - `WORTH_DST_TRACE_DIR` (emit NDJSON traces for `tools/tla/run_tlc.py trace`)
+mod observe;
 mod reference;
 mod step;
 mod trace;
@@ -135,6 +136,7 @@ fn run_seed(seed: u64, trace_dir: Option<&std::path::Path>) -> Result<Coverage, 
     };
 
     let mut oracle = BoardOracle::new();
+    let mut version_map = std::collections::BTreeMap::new();
     let mut trace = Trace::default();
     let mut cov = Coverage::default();
     let mut idem = 1_u64;
@@ -143,6 +145,7 @@ fn run_seed(seed: u64, trace_dir: Option<&std::path::Path>) -> Result<Coverage, 
         seed,
         backing.host(),
         &mut oracle,
+        &mut version_map,
         &mut rng,
         &mut trace,
         &mut cov,
@@ -163,6 +166,7 @@ fn run_seed(seed: u64, trace_dir: Option<&std::path::Path>) -> Result<Coverage, 
         seed,
         backing.host(),
         &mut oracle,
+        &mut version_map,
         &mut rng,
         &mut trace,
         &mut cov,

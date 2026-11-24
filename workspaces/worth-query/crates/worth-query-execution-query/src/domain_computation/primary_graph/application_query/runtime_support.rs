@@ -15,7 +15,6 @@ fn runtime_supports(
     contract: &WorthQueryInstalledGraphReadContract,
     continuation: Option<&WorthQueryInstalledApplicationContinuationContract>,
     live: Option<&WorthQueryInstalledApplicationLiveContract>,
-    live_whole_result: bool,
     requirement: &WorthQueryGraphReadAccessRequirementRow,
 ) -> bool {
     match requirement.kind() {
@@ -75,7 +74,7 @@ fn runtime_supports(
             }
         }
         WorthQueryGraphReadAccessRequirementKind::LiveMaintenanceSupport => {
-            if live_whole_result {
+            if contract.is_live_whole_result() {
                 return true;
             }
             let Some(contract) = live else {
@@ -107,20 +106,12 @@ pub fn primary_graph_support_inventory(
     layout: &WorthQueryPrimaryGraphLayout,
     continuation: Option<&WorthQueryInstalledApplicationContinuationContract>,
     live: Option<&WorthQueryInstalledApplicationLiveContract>,
-    live_whole_result: bool,
     requirements: &WorthQueryGraphReadAccessRequirementSet,
 ) -> Result<WorthQueryGraphIndexInventory, std::collections::TryReserveError> {
     let mut rows = Vec::new();
     rows.try_reserve_exact(requirements.rows().len())?;
     for requirement in requirements.rows() {
-        if runtime_supports(
-            layout,
-            contract,
-            continuation,
-            live,
-            live_whole_result,
-            requirement,
-        ) {
+        if runtime_supports(layout, contract, continuation, live, requirement) {
             rows.push(WorthQueryGraphIndexSupportRow::for_supported_requirement(
                 requirement,
             ));

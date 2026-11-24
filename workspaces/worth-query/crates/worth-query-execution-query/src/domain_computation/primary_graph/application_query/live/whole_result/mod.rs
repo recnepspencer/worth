@@ -6,6 +6,7 @@ mod footprint;
 mod lifecycle;
 mod open;
 pub mod outcome;
+mod refresh;
 
 pub use outcome::{
     WorthQueryApplicationWholeResultLiveOutcome, WorthQueryApplicationWholeResultLiveSnapshot,
@@ -52,14 +53,16 @@ pub struct WorthQueryApplicationWholeResultLiveLease<
     pub(super) scope: WorthQueryApplicationEntityIdentity<Schema, Scope>,
     pub(super) parameters: ApplicationQueryParameterSet<Query>,
     pub(super) controls: WorthQueryApplicationLiveControls,
-    pub(super) _opening_product: crate::basis::WorthQueryProductBranchLease,
+    pub(super) opening_branch: worth_runtime_world::facade::ProductBranchIdentity,
+    pub(super) opening_incarnation: worth_runtime_world::facade::ProductBranchIncarnation,
+    pub(super) opening_product: Option<crate::basis::WorthQueryProductBranchLease>,
     pub(super) governance: super::super::disclosure::WorthQueryApplicationQueryGovernance,
     pub(super) basis: Option<WorthQueryManagedLowerExecutionBasis>,
     pub(super) read_completion:
         Option<crate::domain_computation::provider_session::WorthQueryGraphReadCompletion>,
-    pub(super) subscription: WorthQueryLiveSubscription,
+    pub(super) subscription: Option<WorthQueryLiveSubscription>,
     pub(super) cursor: u64,
-    pub(super) footprint: WholeResultInvalidationFootprint,
+    pub(super) footprint: Option<WholeResultInvalidationFootprint>,
     pub(super) initial: Option<WorthQueryApplicationWholeResultLiveSnapshot<Query, QueryResult>>,
     pub(super) _principal: PhantomData<fn() -> (Principal, PrincipalIdentity)>,
     pub(super) _thread_affinity: PhantomData<Rc<()>>,

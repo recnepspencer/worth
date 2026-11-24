@@ -2,6 +2,8 @@
 //! `specs/tla/live_subscriptions/LiveSubscriptions.tla`.
 use std::collections::{BTreeMap, BTreeSet};
 
+pub type ProjectedRow = (u64, &'static str, u8);
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Kind {
     Today,
@@ -39,7 +41,7 @@ pub struct Footprint {
 pub struct SubOracle {
     pub active: bool,
     pub cursor: usize,
-    pub last_rows: Vec<u64>,
+    pub last_rows: Vec<ProjectedRow>,
     pub fp: Footprint,
 }
 
@@ -146,7 +148,7 @@ impl BoardOracle {
         true
     }
 
-    pub fn eval(&self, kind: Kind, snap: &Snapshot) -> Vec<u64> {
+    pub fn eval(&self, kind: Kind, snap: &Snapshot) -> Vec<ProjectedRow> {
         let mut out = Vec::new();
         for (&t, &proj) in &self.project {
             if proj != "p1" || snap.status[&t] != "open" {
@@ -155,7 +157,7 @@ impl BoardOracle {
             match kind {
                 Kind::Today => {
                     if snap.due[&t] == 1 {
-                        out.push(t);
+                        out.push((t, snap.status[&t], snap.due[&t]));
                     }
                 }
                 Kind::Ready => {
@@ -164,7 +166,7 @@ impl BoardOracle {
                         .range((t, 0)..=(t, u64::MAX))
                         .any(|&(_, b)| snap.status[&b] == "open");
                     if !blocked {
-                        out.push(t);
+                        out.push((t, snap.status[&t], snap.due[&t]));
                     }
                 }
             }
@@ -188,11 +190,16 @@ impl BoardOracle {
                 }
                 Kind::Ready => {
                     fp.adj_rev.insert(t, snap.adj_rev[&t]);
+                    let mut blocked = false;
                     for &(_, b) in snap.edges.range((t, 0)..=(t, u64::MAX)) {
                         fp.status_rev.insert(b, snap.status_rev[&b]);
                         if snap.status[&b] == "open" {
+                            blocked = true;
                             break;
                         }
+                    }
+                    if !blocked {
+                        fp.due_rev.insert(t, snap.due_rev[&t]);
                     }
                 }
             }
@@ -213,9 +220,12 @@ impl BoardOracle {
         }
     }
 
-    pub fn expected_subscribe(&mut self, kind: Kind) -> (&'static str, Vec<u64>) {
+    pub fn expected_subscribe(
+        &mut self,
+        kind: Kind,
+    ) -> (&'static str, &'static str, usize, Vec<ProjectedRow>) {
         if !self.grant {
-            return ("AuthDenied", Vec::new());
+            return ("AuthDenied", "GrantRevoked", 0, Vec::new());
         }
         let idx = self.history.len();
         let snap = self.current().clone();
@@ -226,14 +236,18 @@ impl BoardOracle {
         sub.cursor = idx + 1;
         sub.last_rows = rows.clone();
         sub.fp = fp;
-        ("Initial", rows)
+        ("Initial", "Ok", idx, rows)
     }
 
-    pub fn expected_poll(&mut self, kind: Kind) -> (&'static str, Vec<u64>) {
+    pub fn expected_poll(
+        &mut self,
+        kind: Kind,
+    ) -> (&'static str, &'static str, usize, Vec<ProjectedRow>) {
         if !self.grant {
             let sub = self.sub_mut(kind);
             sub.active = false;
-            return ("AuthDenied", Vec::new());
+            sub.fp = Footprint::default();
+            return ("AuthDenied", "GrantRevoked", 0, Vec::new());
         }
         let (cursor, fp) = {
             let sub = self.sub_mut(kind);
@@ -254,12 +268,12 @@ impl BoardOracle {
             sub.cursor = idx + 1;
             sub.last_rows = rows.clone();
             sub.fp = next_fp;
-            ("Delivered", rows)
+            ("Delivered", "Ok", idx, rows)
         } else {
             let next_cursor = self.history.len() + 1;
             let sub = self.sub_mut(kind);
             sub.cursor = next_cursor;
-            ("Pending", Vec::new())
+            ("Pending", "Ok", 0, Vec::new())
         }
     }
 

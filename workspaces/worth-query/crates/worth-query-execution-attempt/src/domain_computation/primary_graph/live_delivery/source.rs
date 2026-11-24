@@ -137,6 +137,14 @@ pub enum WorthQueryLiveSourcePoll {
     Closed,
 }
 
+pub enum WorthQueryLiveBoundedPoll {
+    Batch(Arc<WorthQueryLiveCommitBatchCell>),
+    Pending,
+    Overflow { missed: u64 },
+    Closed,
+    HeadAdvanced,
+}
+
 impl Default for WorthQueryLiveDeliverySource {
     fn default() -> Self {
         Self::with_limits(RETAINED_COMMIT_BATCH_CAPACITY)
@@ -253,6 +261,64 @@ impl WorthQueryLiveDeliverySource {
         } else {
             WorthQueryLiveSourcePoll::Pending
         }
+    }
+
+    /// Metered, authority-watermark-bounded poll for whole-result live leases.
+    /// Charges directory lookup work before inspecting partitions, refuses to
+    /// expose queue state newer than `authority_watermark` (`HeadAdvanced`),
+    /// and enforces both ring eviction and per-lease `max_lag` overflow.
+    pub fn poll_funded_bounded(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        subscription: &WorthQueryLiveSubscription,
+        cursor: u64,
+        max_lag: usize,
+        authority_watermark: &worth_runtime_world::facade::CompositeCommitIdentity,
+    ) -> Result<WorthQueryLiveBoundedPoll, WorthQueryLiveAdmissionDenial> {
+        let state = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        Self::lookup_work(execution, &state, &subscription.key)?;
+        let Some(partition) = state.partitions.get(&subscription.key) else {
+            return Ok(if state.closed {
+                WorthQueryLiveBoundedPoll::Closed
+            } else {
+                WorthQueryLiveBoundedPoll::Pending
+            });
+        };
+        if partition
+            .last_product_commit
+            .as_ref()
+            .is_some_and(|last| last > authority_watermark)
+        {
+            return Ok(WorthQueryLiveBoundedPoll::HeadAdvanced);
+        }
+        let first = partition
+            .batches
+            .front()
+            .map_or(partition.next_sequence, |batch| batch.batch().sequence);
+        if cursor < first {
+            return Ok(WorthQueryLiveBoundedPoll::Overflow {
+                missed: first - cursor,
+            });
+        }
+        let unread = partition.next_sequence.saturating_sub(cursor);
+        let max_lag_u64 = u64::try_from(max_lag).unwrap_or(u64::MAX);
+        if unread > max_lag_u64 {
+            return Ok(WorthQueryLiveBoundedPoll::Overflow {
+                missed: unread - max_lag_u64,
+            });
+        }
+        let offset = usize::try_from(cursor - first).ok();
+        if let Some(batch) = offset.and_then(|offset| partition.batches.get(offset)) {
+            return Ok(WorthQueryLiveBoundedPoll::Batch(Arc::clone(batch)));
+        }
+        Ok(if state.closed || partition.retired {
+            WorthQueryLiveBoundedPoll::Closed
+        } else {
+            WorthQueryLiveBoundedPoll::Pending
+        })
     }
 
     pub fn retire_product_occurrence(
