@@ -76,6 +76,12 @@ pub mod application_program {
     pub use crate::application_program::*;
 }
 
+/// Declarative Home program transition specifications and zero-boilerplate
+/// package-default build identity resolution.
+pub mod program_transition {
+    pub use crate::program_transition::*;
+}
+
 /// Principal identity values used by principal bindings: the external
 /// principal identity carried on a mapping entity and the mapping's status.
 pub mod authentication {

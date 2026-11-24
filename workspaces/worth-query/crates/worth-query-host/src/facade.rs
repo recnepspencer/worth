@@ -376,6 +376,9 @@ pub use crate::application_home::{
 /// Relational DATA for a Home transition author. These values grant no step,
 /// initialization, publication or Native owner access.
 pub mod home_program_transition;
+/// Declarative Directory Home program transitions (`worth_query_program_transition!`),
+/// single-call open-with-transition helpers, and package-default build identity resolution.
+pub mod program_transition;
 /// Existing owner refusal vocabulary for retained Home custody and Directory checkpoints.
 pub use crate::application_home::{ApplicationHomeCheckpointDenial, ApplicationHomeCloseDenial};
 /// Store's physical open refusal from `WorthQueryApplicationHomeOpenRefused::

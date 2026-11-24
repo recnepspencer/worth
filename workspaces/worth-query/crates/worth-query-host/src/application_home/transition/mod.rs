@@ -18,4 +18,4 @@ pub use refusal::{
     WorthQueryHomeProgramTransitionOpenRefused,
 };
 pub use request::{NoHomeProgramTransition, WorthQueryHomeProgramTransition};
-pub use required::WorthQueryApplicationHomeTransitionRequired;
+pub use required::{WorthQueryApplicationHomeTransitionRequired, WorthQueryHomePredecessorRefusal};
