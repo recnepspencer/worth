@@ -1,8 +1,8 @@
 use crate::runtime::state::subsystems::visibility::VisibilitySubsystem;
 use crate::snapshots::data::{SnapshotHandle, SnapshotInspectionSummary};
-use crate::visibility::cache_state::{materialize_exact_state_for_basis, VisibilityCacheInputs};
+use crate::visibility::cache_state::{materialize_exact_state, VisibilityCacheInputs};
 
-use super::{build_visibility_state, SnapshotState, VisibilitySnapshotBasis};
+use super::{SnapshotState, VisibilitySnapshotBasis};
 
 pub(crate) struct ResolvedVisibilitySnapshot {
     pub(crate) handle: SnapshotHandle,
@@ -105,9 +105,9 @@ pub(crate) fn resolve_snapshot_state<'a>(
             version_id: binding.version_id,
             read_policy: binding.read_policy,
         };
-        let state = materialize_exact_state_for_basis(
+        let state = materialize_selected_state(
             inputs.cache,
-            binding.basis,
+            &binding.basis,
             !inputs.cache.policy.protect_active_snapshots,
         )?;
         return Some(ResolvedVisibilitySnapshot {
@@ -134,11 +134,10 @@ fn resolve_published_snapshot_state(
         version_id: binding.version_id,
         read_policy: binding.read_policy,
     };
-    let state = materialize_exact_state_for_basis(inputs.cache, binding.basis.clone(), true)
-        .unwrap_or_else(|| {
-            build_visibility_state(
+    let state =
+        materialize_selected_state(inputs.cache, &binding.basis, true).unwrap_or_else(|| {
+            binding.basis.build_visibility_state(
                 inputs.directory.runtime_identity,
-                binding.basis,
                 handle.snapshot_id,
                 binding.read_policy,
             )
@@ -165,5 +164,20 @@ pub(crate) fn resolve_snapshot_inspection<'a>(
         relation_count: counts.relations,
         pinned_entity_count: 0,
         pinned_relation_count: 0,
+    })
+}
+
+fn materialize_selected_state(
+    inputs: VisibilityCacheInputs<'_>,
+    basis: &VisibilitySnapshotBasis,
+    allow_recent_admission: bool,
+) -> Option<SnapshotState> {
+    let key = basis.key();
+    materialize_exact_state(inputs, key, allow_recent_admission, || {
+        basis.clone().build_visibility_state(
+            inputs.runtime_identity,
+            crate::snapshots::data::SnapshotId(0),
+            crate::snapshots::data::SnapshotReadPolicy::ImmutablePinnedNoLazyMutation,
+        )
     })
 }

@@ -46,7 +46,14 @@ pub(super) fn prepare<'a>(
     }
     let (equal, _) = execution
         .run_native_with_checkpoint(|context| {
-            records::matches(draft, execution, runtime, source, after, context)
+            records::matches(
+                &draft.outcome.effect.publication.changed_records,
+                execution,
+                &runtime.services.symbols,
+                source,
+                after,
+                context,
+            )
         })
         .map_err(|cause| ReadDenial::Request(cause.into()))?;
     if !equal? {

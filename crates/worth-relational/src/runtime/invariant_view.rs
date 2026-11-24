@@ -60,3 +60,14 @@ impl RelationalPreparationRuntime {
         })
     }
 }
+
+impl<'a> From<&'a crate::mvcc::RelationalTransactionValidationInput>
+    for crate::validation::engine::request::InvariantPreparationSource<'a>
+{
+    fn from(input: &'a crate::mvcc::RelationalTransactionValidationInput) -> Self {
+        Self {
+            operation: input.control(),
+            retention: &input.basis().inner.retention_binding,
+        }
+    }
+}

@@ -8,12 +8,22 @@ impl RelationalRuntime {
         &self,
         lane: &ReconstructionLane<'_>,
     ) -> CheckpointProjectionContext {
-        CheckpointProjectionContext::from_read_handles(
-            lane,
-            self.runtime_instance_id(),
-            self.current_version_id(),
-            self.services.instrumentation.clone(),
-            self.services.symbols.clone(),
-        )
+        CheckpointProjectionContext::from_inputs(lane, self.into())
+    }
+}
+
+impl<'a> From<&'a RelationalRuntime>
+    for &'a crate::runtime::state::subsystems::durability::checkpoint_selection::RelationalCheckpointManifestSelection
+{
+    fn from(runtime: &'a RelationalRuntime) -> Self {
+        runtime.durability.checkpoint_selection()
+    }
+}
+
+impl<'a> From<&'a RelationalRuntime>
+    for &'a crate::runtime::state::subsystems::indexing::IndexingSubsystem
+{
+    fn from(runtime: &'a RelationalRuntime) -> Self {
+        &runtime.indexes
     }
 }

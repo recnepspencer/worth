@@ -18,7 +18,7 @@ mod predecessor_catalog;
 mod retention;
 pub(crate) use predecessor_catalog::RelationalHomeProgramPredecessorCatalog;
 mod catalog_receipt;
-pub use catalog_receipt::RelationalHomeProgramCatalogReceipt;
+pub use crate::schema::home_program_catalog_receipt::RelationalHomeProgramCatalogReceipt;
 mod catalog_source;
 pub use catalog_source::RelationalHomeProgramCatalogReadmissionSource;
 pub(in crate::runtime) mod configuration;
@@ -127,7 +127,7 @@ impl PreparedRelationalHomeProgramContracts {
 /// construction configuration or borrows a disposable author's request.
 #[derive(Debug)]
 pub(crate) struct RelationalRootExecutionContracts {
-    identity: Arc<catalog_receipt::RelationalHomeProgramCatalogIdentity>,
+    identity: RelationalHomeProgramCatalogReceipt,
     pub(crate) runtime: u64,
     pub(crate) schema: Arc<RelationalBranchRootSchemaAuthority>,
     pub(crate) contracts: Arc<SchemaContractRuntimeSubsystem>,

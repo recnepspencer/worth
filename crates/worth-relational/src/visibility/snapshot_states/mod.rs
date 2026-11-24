@@ -12,7 +12,7 @@ mod resolution;
 pub(crate) use cache_retirement::SnapshotStateRetirement;
 mod state;
 
-pub(crate) use exact_state_building::build_visibility_state;
+mod retained_state_building;
 pub(crate) use historical_basis::HistoricalVisibilityBasis;
 pub(crate) mod historical_denial;
 pub(crate) use crate::history::retention::{

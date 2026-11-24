@@ -7,20 +7,16 @@ use worth_execution::ExecutionMemoryReservation;
 /// This owns no runtime, configuration lock, mutation port or reconstruction grant.
 #[derive(Debug)]
 pub(crate) struct CheckpointProjectionContext {
-    runtime_identity: u64,
-    current_version: crate::identity::data::VersionId,
-    instrumentation:
+    pub(super) runtime_identity: u64,
+    pub(super) current_version: crate::identity::data::VersionId,
+    pub(super) instrumentation:
         crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation,
-    symbols: crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
+    pub(super) symbols:
+        crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
 }
-pub(crate) struct RequestOwnedCheckpointBasis {
-    pub(crate) basis: crate::visibility::snapshot_states::VisibilitySnapshotBasis,
-    pub(crate) memory: Option<ExecutionMemoryReservation>,
-}
-
 pub(crate) struct RequestOwnedCheckpointProjection {
-    view: VisibilityProjectionView,
-    _memory: Option<ExecutionMemoryReservation>,
+    pub(super) view: VisibilityProjectionView,
+    pub(super) _memory: Option<ExecutionMemoryReservation>,
 }
 impl RequestOwnedCheckpointProjection {
     pub(crate) fn view(&self) -> &VisibilityProjectionView {
@@ -28,43 +24,20 @@ impl RequestOwnedCheckpointProjection {
     }
 }
 impl CheckpointProjectionContext {
-    pub(crate) fn from_read_handles(
+    pub(crate) fn from_inputs(
         _lane: &ReconstructionLane<'_>,
-        runtime_identity: u64,
-        current_version: crate::identity::data::VersionId,
-        instrumentation: crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation,
-        symbols: crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
+        inputs: super::ProjectionInputs<'_>,
     ) -> Self {
         Self {
-            runtime_identity,
-            current_version,
-            instrumentation,
-            symbols,
+            runtime_identity: inputs.runtime_identity,
+            current_version: inputs.history.current_version_id(),
+            instrumentation: inputs.instrumentation.clone(),
+            symbols: inputs.symbols.clone(),
         }
     }
     pub(crate) fn symbols(
         &self,
     ) -> crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable {
         self.symbols.clone()
-    }
-    pub(crate) fn project(
-        &self,
-        _lane: &ReconstructionLane<'_>,
-        selection: RequestOwnedCheckpointBasis,
-    ) -> RequestOwnedCheckpointProjection {
-        RequestOwnedCheckpointProjection {
-            view: VisibilityProjectionView {
-                runtime_identity: self.runtime_identity,
-                current_version: self.current_version,
-                instrumentation: self.instrumentation.clone(),
-                symbols: self.symbols.clone(),
-                empty_history_schema: None,
-                resident: None,
-                basis: crate::visibility::snapshot_states::SnapshotStateBasis::Exact(
-                    selection.basis,
-                ),
-            },
-            _memory: selection.memory,
-        }
     }
 }

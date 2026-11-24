@@ -1,4 +1,6 @@
 //! Root-custody handoffs for checkpoint, index and applied authority consumers.
+mod exact_observation;
+
 use super::root::RelationalBranchRoot;
 use crate::history::data::BranchId;
 use crate::identity::data::VersionId;

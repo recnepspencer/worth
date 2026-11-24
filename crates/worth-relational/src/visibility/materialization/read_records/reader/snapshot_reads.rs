@@ -3,7 +3,6 @@ use crate::query::data::QueryPlanContextId;
 use crate::snapshots::data::{SnapshotHandle, SnapshotInspectionSummary, SnapshotReadPolicy};
 use crate::visibility::cache_state::materialize_historical_visibility;
 use crate::visibility::snapshot_read_view::RelationalReadView;
-use crate::visibility::snapshot_states::build_visibility_state;
 use crate::visibility::snapshot_states::{
     read_view_from_snapshot_state, resolve_snapshot_basis, resolve_snapshot_handle,
     resolve_snapshot_inspection, resolve_snapshot_state,
@@ -172,11 +171,8 @@ impl<'runtime> VisibilityReadContext<'runtime> {
             .selected_root()
             .demand_all_full(execution, &self.runtime.services.symbols)
             .map_err(crate::execution::denial_cause::RelationalExecutionDenialCause::from)?;
-        let state = build_visibility_state(
+        let state = observation.build_visibility_state(
             self.runtime.runtime_instance_id(),
-            crate::visibility::snapshot_states::VisibilitySnapshotBasis::from_observation(
-                observation,
-            ),
             crate::snapshots::data::SnapshotId(0),
             SnapshotReadPolicy::ImmutablePinnedNoLazyMutation,
         );

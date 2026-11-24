@@ -1,11 +1,14 @@
-use super::VisibilityProjectionView;
+//! Capture and retain an exact root at the observation owner's boundary.
+use crate::visibility::materialization::read_records::projection::{
+    ProjectionInputs, VisibilityProjectionView,
+};
 use crate::visibility::materialization::read_records::reader::context::VisibilityReadContext;
 
 impl VisibilityProjectionView {
     pub(crate) fn retain_exact_basis(
         &self,
     ) -> Option<crate::visibility::snapshot_states::VisibilitySnapshotBasis> {
-        match &self.basis {
+        match self.snapshot_basis() {
             crate::visibility::snapshot_states::SnapshotStateBasis::Exact(basis) => {
                 Some(basis.clone())
             }
@@ -28,7 +31,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
 
 impl VisibilityProjectionView {
     pub(crate) fn from_observation(
-        inputs: super::ProjectionInputs<'_>,
+        inputs: ProjectionInputs<'_>,
         observation: &crate::mvcc::observation::RelationalBranchObservation,
     ) -> Result<Self, crate::branch::basis_denial::RelationalBranchBasisDenial> {
         if observation.identity().runtime_instance_id() != inputs.runtime_identity {

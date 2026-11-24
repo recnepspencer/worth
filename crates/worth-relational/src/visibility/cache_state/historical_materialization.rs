@@ -1,5 +1,6 @@
 //! Full-history admission and cache publication under the caller's request.
 use super::*;
+use crate::snapshots::data::{SnapshotId, SnapshotReadPolicy};
 
 pub(crate) fn ensure_historical_state<'a>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

@@ -4,6 +4,7 @@ pub(crate) mod aspect_plans;
 pub(crate) mod continuity;
 pub(crate) mod current_publication_ownership;
 pub mod data;
+pub(crate) mod home_program_catalog_receipt;
 pub(crate) mod installed_source_scopes;
 mod registry_custody;
 pub(crate) mod source_catalog;

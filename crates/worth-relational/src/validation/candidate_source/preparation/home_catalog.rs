@@ -1,6 +1,6 @@
 //! Only the actual Native interpretation selects a Home Source inventory.
 use super::{ManagedIndexSourcePreparation, ManagedIndexSourceScope};
-use crate::runtime::RelationalHomeProgramCatalogReceipt;
+use crate::schema::home_program_catalog_receipt::RelationalHomeProgramCatalogReceipt;
 use worth_foundational::facade::HomeProgramTransitionStepAssociation;
 
 impl ManagedIndexSourcePreparation<'_> {

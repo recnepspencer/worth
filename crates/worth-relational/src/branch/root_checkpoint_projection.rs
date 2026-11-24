@@ -2,7 +2,7 @@
 use super::RelationalBranchRoot;
 use crate::durability::data::recovery_stop::RelationalRecoveryStop as Stop;
 use crate::history::data::BranchId;
-use crate::visibility::materialization::read_records::projection::RequestOwnedCheckpointBasis;
+use crate::visibility::materialization::read_records::projection::checkpoint_selection::RequestOwnedCheckpointBasis;
 use crate::visibility::snapshot_states::VisibilitySnapshotBasis;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;

@@ -231,7 +231,7 @@ pub(super) fn admit_commit_execution(
     enforce_validated_strategy_basis(
         &inputs,
         context.transaction_id,
-        &context.validation_input,
+        context.validation_input.basis(),
         context.validated_against_commit_id,
         context.validated_against_version_id,
         context.validated_against_branch_version,
@@ -286,7 +286,7 @@ pub(super) fn admit_commit_execution(
 fn enforce_validated_strategy_basis(
     inputs: &CommitExecutionAdmission<'_>,
     transaction_id: TransactionId,
-    validation_input: &crate::mvcc::RelationalTransactionValidationInput,
+    basis: &crate::branch::basis::AdmittedRelationalBranchBasis,
     validated_against_commit_id: Option<crate::history::data::CommitId>,
     validated_against_version_id: Option<crate::identity::data::VersionId>,
     validated_against_branch_version: Option<crate::branch::version::RelationalBranchVersion>,
@@ -294,42 +294,38 @@ fn enforce_validated_strategy_basis(
         &crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity,
     >,
 ) -> Result<(), TransactionCommitError> {
-    let branch = validation_input.target_branch().clone();
-    if validation_input.basis().identity().runtime_instance_id() != inputs.runtime_identity {
+    let branch = basis.identity().branch_id().clone();
+    if basis.identity().runtime_instance_id() != inputs.runtime_identity {
         return Err(TransactionCommitError::conflict(CommitConflict::new(
             ConflictClass::ForeignRuntime {
                 expected_runtime_instance_id: inputs.runtime_identity,
-                actual_runtime_instance_id: validation_input
-                    .basis()
-                    .identity()
-                    .runtime_instance_id(),
+                actual_runtime_instance_id: basis.identity().runtime_instance_id(),
             },
         )));
     }
     if let Some(identity) = proposal_identity
         && (identity.runtime_instance_id() != inputs.runtime_identity
             || identity.transaction_id() != transaction_id
-            || identity.branch_observation() != validation_input.basis().reference()
-            || identity.branch_version() != validation_input.basis().truth_version())
+            || identity.branch_observation() != basis.reference()
+            || identity.branch_version() != basis.truth_version())
     {
         return Err(stale_strategy_validation_basis(
             "proposal identity does not match the owner-issued transaction basis",
         ));
     }
-    if !validation_input.basis().is_current() {
+    if !basis.is_current() {
         return Err(stale_strategy_validation_basis(
             "transaction branch binding is no longer current",
         ));
     }
     if let Some(validated_branch_version) = validated_against_branch_version {
-        let binding = validation_input.basis();
         let Some(cell) = inputs.history.branch_cell(&branch) else {
             return Err(stale_strategy_validation_basis(
                 "validated transaction branch is no longer registered",
             ));
         };
-        if cell.identity() != binding.identity()
-            || cell.observation() != *binding.reference()
+        if cell.identity() != basis.identity()
+            || cell.observation() != *basis.reference()
             || cell.truth_version() != validated_branch_version
         {
             return Err(stale_strategy_validation_basis(
@@ -337,10 +333,8 @@ fn enforce_validated_strategy_basis(
             ));
         }
     }
-    let current_commit = validation_input.basis().commit_identity();
-    let current_version = inputs
-        .history
-        .admitted_branch_basis_version(validation_input.basis());
+    let current_commit = basis.commit_identity();
+    let current_version = inputs.history.admitted_branch_basis_version(basis);
     validate_version_basis(current_version, validated_against_version_id)?;
     if validated_against_commit_id.is_some()
         && current_commit.as_ref().map(|commit| commit.commit_id()) != validated_against_commit_id

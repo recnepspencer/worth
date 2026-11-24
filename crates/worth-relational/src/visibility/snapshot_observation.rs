@@ -58,7 +58,7 @@ impl SnapshotObservationInputs<'_> {
                 handle.read_policy,
             ),
         );
-        bump_active_snapshot_ref(self.cache, &basis, 1);
+        bump_active_snapshot_ref(self.cache, basis.key(), 1);
         Ok(handle)
     }
 
@@ -108,7 +108,7 @@ impl SnapshotObservationInputs<'_> {
             return Err(RelationalSnapshotReleaseDenial::BindingMismatch);
         }
         if let Some(binding) = self.visibility.remove_active_handle(handle.snapshot_id()) {
-            bump_active_snapshot_ref(self.cache, &binding.basis, -1);
+            bump_active_snapshot_ref(self.cache, binding.basis.key(), -1);
             return Ok(RelationalSnapshotReleaseReceipt::new(handle.snapshot_id()));
         }
         self.visibility

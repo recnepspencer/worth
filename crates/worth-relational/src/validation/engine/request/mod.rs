@@ -24,7 +24,7 @@ use crate::validation::data::rules::InvariantRule;
 use super::observation::InvariantObservation;
 use super::policy::RelationalInvariantRuntime;
 pub(crate) use admission::InvariantRegistrationAdmission;
-pub(crate) use preparation_control::InvariantPreparationControl;
+pub(crate) use preparation_control::{InvariantPreparationControl, InvariantPreparationSource};
 pub(crate) use scope_types::{
     PlannedRelationEdge, PreparedRelationEndpointKey, PreparedRelationIntegrityScope,
     PreparedRelationIntegrityScopes, PreparedRelationPairKey, PreparedVisibleRelationEdge,

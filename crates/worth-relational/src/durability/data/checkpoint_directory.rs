@@ -97,3 +97,22 @@ impl RelationalCheckpointDirectory {
         )
     }
 }
+
+impl TryFrom<&Arc<RelationalCheckpointDirectory>>
+    for crate::runtime::state::subsystems::lineage::PreparedLineageColdPages
+{
+    type Error = crate::storage::data::RelationalStorageUnavailable;
+
+    fn try_from(directory: &Arc<RelationalCheckpointDirectory>) -> Result<Self, Self::Error> {
+        Self::prepare(
+            &directory.manifest.lineage,
+            &directory.manifest.lineage_events,
+            &directory.source,
+            directory
+                .manifest
+                .commits
+                .iter()
+                .map(|entry| entry.commit.clone()),
+        )
+    }
+}

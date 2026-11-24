@@ -289,9 +289,8 @@ fn resident_pin_custody_and_cache_clear_preserve_owned_mirror_residency() {
             .root()
             .demand_all_full(execution, &runtime.services.symbols)
             .unwrap();
-        let source_state = crate::visibility::snapshot_states::build_visibility_state(
+        let source_state = basis.build_visibility_state(
             runtime.runtime_instance_id(),
-            basis,
             crate::snapshots::data::SnapshotId(0),
             crate::snapshots::data::SnapshotReadPolicy::ImmutablePinnedNoLazyMutation,
         );

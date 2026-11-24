@@ -17,14 +17,20 @@ use crate::indexes::data::DerivedIndexArtifacts;
 use crate::runtime::state::subsystems::indexing::checkpoint_image::admission::{
     require_generation_affinity, validate_checkpoint_generation,
 };
-use crate::runtime::RelationalRuntime;
+use crate::runtime::state::subsystems::indexing::IndexingSubsystem;
+use crate::visibility::materialization::read_records::projection::{
+    CheckpointProjectionContext, ProjectionInputs,
+};
 
-pub(crate) fn checkpoint_index_projections(
+pub(crate) fn checkpoint_index_projections<'a, Source>(
     lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
-    runtime: &RelationalRuntime,
-) -> crate::indexes::authority::CheckpointIndexProjections {
+    source: &'a Source,
+) -> crate::indexes::authority::CheckpointIndexProjections
+where
+    &'a Source: Into<ProjectionInputs<'a>>,
+{
     crate::indexes::authority::CheckpointIndexProjections::from_context(
-        runtime.checkpoint_projection_context(lane),
+        CheckpointProjectionContext::from_inputs(lane, source.into()),
     )
 }
 
@@ -100,9 +106,13 @@ pub(crate) fn admit_envelope_derived_index_artifacts(
 }
 
 impl AdmittedEnvelopeIndexArtifacts<'_> {
-    pub(crate) fn install(self, runtime: &RelationalRuntime) {
+    pub(crate) fn install<'a, Owner>(self, owner: &'a Owner)
+    where
+        &'a Owner: Into<&'a IndexingSubsystem>,
+    {
+        let indexes = owner.into();
         for generation in self.0.generations() {
-            runtime.indexes.restore_generation(generation.clone());
+            indexes.restore_generation(generation.clone());
         }
     }
 }

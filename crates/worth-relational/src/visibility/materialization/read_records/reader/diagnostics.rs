@@ -61,8 +61,8 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         let snapshot = resolve_snapshot_handle(directory, handle)?;
         let basis = resolve_snapshot_basis(directory, handle)?;
         let version_id = snapshot.version_id;
-        let residency = residency(inputs, &basis);
-        let cached = cached_state(inputs, &basis).is_some();
+        let residency = residency(inputs, basis.key());
+        let cached = cached_state(inputs, basis.key()).is_some();
         let recent_window = inputs.policy.recent_version_window;
         let published_handle = !directory.is_active(handle.snapshot_id);
         let protected = inputs.protects(&residency);

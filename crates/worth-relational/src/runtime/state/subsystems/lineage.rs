@@ -15,6 +15,7 @@ mod naming_basis;
 mod naming_basis_binding;
 mod node_page;
 mod page_admission;
+pub(crate) use page_admission::PreparedLineageColdPages;
 mod published_batch;
 mod source_close;
 mod source_retirement;

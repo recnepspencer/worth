@@ -38,7 +38,7 @@ impl<'runtime> VisibilityPinAuthority<'runtime> {
             else {
                 continue;
             };
-            protect_branch_head_state(self.runtime, &basis);
+            protect_branch_head_state(self.runtime, basis.key());
             self.runtime.services.instrumentation.count(|counters| {
                 counters.visibility_cache_branch_head_promotions += 1;
             });
