@@ -1,4 +1,7 @@
 //! One Native-selected head and publication exclusion through caller installation.
+use worth_relational_publication::internal_port::mvcc::publication::companion::cell::CompanionBranchCellOwnerPort as _;
+use worth_relational_branch::internal_port::visibility::materialization::read_records::reader::positioned_snapshot::{PositionedRelationalSnapshotParts, assemble_positioned_relational_snapshot};
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 use super::{
     CompanionRegistrationState, PendingCompanionRegistration, PublicationCompanionRegistration,
     PublicationCompanionRegistrationPort, PublicationCompanionRegistrationStop as Stop,
@@ -6,7 +9,6 @@ use super::{
 use crate::branch::identity::RelationalBranchIdentity;
 use crate::mvcc::publication::companion::CompanionBranchCell;
 use crate::runtime::RelationalRuntime;
-use crate::visibility::materialization::read_records::reader::positioned_snapshot::PositionedRelationalSnapshot;
 use std::sync::Arc;
 
 impl PublicationCompanionRegistration {
@@ -75,8 +77,7 @@ impl PublicationCompanionRegistrationPort {
             registry.state.try_write(),
             Stop::HeadCellPublicationContended,
         )?;
-        #[cfg(test)]
-        super::guard_fault::after_acquisition(super::guard_fault::Door::Head);
+        registry.after_guard_acquisition(super::guard_fault::Door::Head);
         match &*exclusion {
             CompanionRegistrationState::RequiredRebind { generation: active }
             | CompanionRegistrationState::RequiredActive {
@@ -89,7 +90,7 @@ impl PublicationCompanionRegistrationPort {
         let basis = runtime
             .admit_branch_basis(branch)
             .map_err(|_| Stop::HeadUnavailable)?;
-        let root = &basis.inner.root;
+        let root = &basis.owner_inner().root;
         let observation = basis.observation();
         let commit_id = observation.commit_id();
         let position = match commit_id {
@@ -101,14 +102,14 @@ impl PublicationCompanionRegistrationPort {
             ),
             None => None,
         };
-        let selected = PositionedRelationalSnapshot {
+        let selected = assemble_positioned_relational_snapshot(PositionedRelationalSnapshotParts {
             runtime_instance_id: self.runtime_instance_id,
             branch_id: branch.branch_id().clone(),
             root_id: root.id(),
             version_id: observation.version_id(),
             commit_id,
             position,
-        };
+        });
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             install(CompanionBranchCell::new(&selected, generation, initial))
         }));

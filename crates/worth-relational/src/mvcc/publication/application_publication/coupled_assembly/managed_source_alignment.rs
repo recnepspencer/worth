@@ -5,10 +5,8 @@ use crate::transactions::data::primitives::RecordRef;
 use crate::validation::candidate_source::{
     ManagedIndexSourcePreparationDenial as Denial, ManagedIndexSourceProgram,
 };
-mod assessment;
-mod reach;
-mod relevance;
-mod source_reach;
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::coupled_assembly::managed_source_alignment::{assessment::Assessment, reach::Reach};
+use crate::validation::candidate_source::applied_read::ManagedIndexAppliedSourceRead;
 pub use super::parent_read_footprint::ManagedIndexParentReadFootprint;
 
 impl RelationalAuthoredCoupledCandidate<'_> {
@@ -33,7 +31,8 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         scope: crate::identity::data::EntityId,
         footprint: &ManagedIndexParentReadFootprint,
     ) -> Result<bool, Denial> {
-        self.managed_source_unchanged(execution, program, pin, scope, footprint, None, None)
+        self.source_alignment()
+            .unchanged_at(execution, program, pin, scope, footprint)
     }
 
     /// As `managed_source_unchanged_at`, judging only `records`: the records
@@ -57,68 +56,33 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         footprint: &ManagedIndexParentReadFootprint,
         records: &[RecordRef],
     ) -> Result<bool, Denial> {
-        if self.managed_source_unchanged(
+        self.source_alignment().unchanged_by(
             execution,
             program,
             pin,
+            earlier,
             scope,
             footprint,
-            Some(records),
-            None,
-        )? {
-            return Ok(true);
-        }
-        if !pin
-            .candidate_identity()
-            .includes_assembly_prefix(earlier.candidate_identity())
-        {
-            return Err(Denial::ForeignSource);
-        }
-        match self.source_reach(execution, program, scope, earlier)? {
-            None => Ok(false),
-            reach => self.managed_source_unchanged(
-                execution,
-                program,
-                pin,
-                scope,
-                footprint,
-                Some(records),
-                reach,
-            ),
-        }
+            records,
+            || {
+                let loan = ManagedIndexAppliedSourceRead::issue(
+                    execution,
+                    self.identity,
+                    earlier.clone(),
+                    program,
+                    scope,
+                )?;
+                Reach::acquire(loan.rows(*execution)?)
+            },
+        )
     }
 
-    #[allow(clippy::too_many_arguments)]
-    fn managed_source_unchanged(
-        &self,
-        execution: &ExecutionRequest<'_, '_>,
-        program: &ManagedIndexSourceProgram,
-        pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
-        scope: crate::identity::data::EntityId,
-        footprint: &ManagedIndexParentReadFootprint,
-        only: Option<&[RecordRef]>,
-        reach: Option<reach::Reach>,
-    ) -> Result<bool, Denial> {
-        let current = self.read.borrow();
-        let Some(current) = current.as_ref() else {
-            return Err(Denial::ForeignSource);
-        };
-        if !current
-            .candidate_identity()
-            .includes_assembly_prefix(pin.candidate_identity())
-        {
-            return Err(Denial::ForeignSource);
+    fn source_alignment(&self) -> Assessment<'_> {
+        Assessment {
+            current: &self.read,
+            registry: self.prepared.schema_authority.registry(),
+            state: &self.mutation.state,
+            effect: &self.mutation.outcome.effect,
         }
-        assessment::source_is_unchanged(
-            execution,
-            program,
-            scope,
-            footprint,
-            self.prepared.schema_authority.registry(),
-            &self.mutation.state,
-            &self.mutation.outcome.effect,
-            only,
-            reach,
-        )
     }
 }

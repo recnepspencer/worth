@@ -5,6 +5,7 @@
 
 use std::collections::BTreeSet;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use worth_relational_lineage::internal_port::lineage::index::batch::PersistentNameCommittedBatchFixturePort as _;
 
 use crate::facade::history::CommitId;
 use crate::facade::lineage::{
@@ -41,7 +42,7 @@ impl<'a> Harness<'a> {
         let world = LineageWorld::new();
         let log = vec![world.log()[0].clone()];
         let serialized_history = vec![log[0]
-            .lineage_events
+            .lineage_events_for_test()
             .iter()
             .map(|e| serde_json::to_string(e).unwrap())
             .collect()];
@@ -211,7 +212,7 @@ impl<'a> Harness<'a> {
         self.log.push(batch.clone());
         self.serialized_history.push(
             batch
-                .lineage_events
+                .lineage_events_for_test()
                 .iter()
                 .map(|e| serde_json::to_string(e).unwrap())
                 .collect(),
@@ -219,7 +220,7 @@ impl<'a> Harness<'a> {
         assert_eq!(rebuild(&self.log), self.index, "incremental equals rebuild");
         for (idx, expected) in self.serialized_history.iter().enumerate() {
             let actual: Vec<String> = self.log[idx]
-                .lineage_events
+                .lineage_events_for_test()
                 .iter()
                 .map(|e| serde_json::to_string(e).unwrap())
                 .collect();

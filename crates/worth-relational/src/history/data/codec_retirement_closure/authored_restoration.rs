@@ -1,21 +1,3 @@
-//! Historical aspect grammar shared by inverse publication preparation.
-use super::CodecRetirementClosureStop as Stop;
-use crate::transactions::data::outcomes::transaction_commit_error::{
-    CommitExecutionDenial, CommitExecutionDenialKind, TransactionCommitError,
-};
-mod creation_patch;
-mod inverse;
-mod live;
-pub(super) use creation_patch::creation_patch;
-
-fn failure(stop: Stop) -> TransactionCommitError {
-    match stop {
-        Stop::Payload(detail) => {
-            crate::transactions::data::outcomes::transaction_commit_error::origin_denial(detail)
-        }
-        Stop::Request(cause) => TransactionCommitError::execution(CommitExecutionDenial {
-            kind: CommitExecutionDenialKind::Cause(cause),
-            partition_identity: None,
-        }),
-    }
-}
+pub(crate) use worth_relational_publication::internal_port::history::data::codec_retirement_closure::authored_restoration::inverse;
+pub(crate) mod live;
+pub use worth_relational_branch::internal_port::history::data::codec_retirement_closure::authored_restoration::*;

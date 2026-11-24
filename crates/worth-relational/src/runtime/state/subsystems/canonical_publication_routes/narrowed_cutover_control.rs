@@ -9,8 +9,7 @@ impl crate::runtime::RelationalRuntime {
         run: impl FnOnce() -> R,
     ) -> Result<R, worth_execution::WorkCeilingDenial> {
         let routes = self.history.canonical_checkpoint_gate();
-        let (_held, _) = routes.performed_stream.hold_reservation_within(execution)?;
-        Ok(run())
+        routes.hold_transition_reservation_for_test(execution, run)
     }
 
     /// Read the actual queued publisher tickets without issuing any authority.
@@ -18,7 +17,6 @@ impl crate::runtime::RelationalRuntime {
     pub fn waiting_patch_position_publishers_for_test(&self) -> usize {
         self.history
             .canonical_checkpoint_gate()
-            .performed_stream
             .waiting_publisher_count_for_test()
     }
 }

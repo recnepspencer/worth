@@ -1,15 +1,12 @@
 //! One owned route's later round folds into its chain in place, or refuses
 //! under #119 before anything applies. The chain stays one producer part, so
 //! every first-match consumer of `parts` reads its latest round.
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::coupled_assembly::producer_posture::RelationalCoupledProducerPostureOwnerPort as _;
 use super::*;
 use crate::publication::data::CoupledProvenancePostponement as Reason;
 use crate::transactions::data::primitives::WorkerIntentBatch;
 
-mod coverage;
-mod fold;
-mod proof;
-mod redelete;
-mod relations;
+pub(crate) use worth_relational_publication::internal_port::mvcc::publication::application_publication::coupled_assembly::succession::{fold, proof};
 pub(super) use fold::{appended_rounds, batches_after_withdrawal};
 
 impl RelationalAuthoredCoupledCandidate<'_> {

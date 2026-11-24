@@ -56,10 +56,7 @@ pub(super) fn admit(
             .admit_recorded_publication(request, runtime, effect, &previous, &successor)
             .map_err(Denial::Publication)?
             .consume(|publication| publication);
-        custody.current = publication.successor().clone();
-        *custody.prefix[step]
-            .lock()
-            .unwrap_or_else(|cause| cause.into_inner()) = Some(publication);
+        custody.advance_readmitted_prefix(step, publication);
         previous = successor;
     }
     Ok(())

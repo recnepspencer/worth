@@ -1,41 +1,19 @@
-pub(crate) use recovery::{AdmittedRecoveredCodecPublication, RecoveredCodecPublicationCustody};
-pub(crate) use runtime_rebuild::root_inventory::RecoveredRootInventory;
-pub(crate) mod associated_effects;
-mod authority_continuity;
 pub use associated_effects::{
     ObservedRelationalMemoryCommit, ReadmittedRelationalAssociatedEffect,
     ReadmittedRelationalCreatedEntity, RelationalAssociatedEffectRefusal,
     RelationalAssociatedEffectSettlement, RelationalAssociatedEffectSubject,
 };
-pub(crate) mod checkpoint_capture;
-pub(crate) mod checkpoint_complete;
 pub use checkpoint_complete::{
     CapturedNativeInterimAdmission, CapturedNativeInterimComponent, CapturedNativeInterimOrigin,
-    CapturedRelationalCheckpointAdmissionImage, CompleteRelationalNativeCheckpoint,
+    CapturedRelationalCheckpointAdmissionImage,
 };
-pub(in crate::durability) mod checkpoint_components;
-mod checkpoint_image;
 #[cfg(test)]
 pub(crate) use checkpoint_image::{
     recompute_branch_root_digests_for_test, recompute_branch_root_image_digest_for_test,
 };
-mod checkpoint_lineage_basis;
-mod checkpoint_member_carry;
-mod checkpoint_memory_demand;
-mod checkpoint_native_capture;
-mod checkpoint_region_consistency;
-mod checkpoint_runtime;
-pub(crate) mod checkpoint_transition;
-mod checkpointing;
-mod diagnostics;
-pub(crate) mod lineage_allocation;
-#[cfg(test)]
-mod lineage_allocation_fixtures;
-#[cfg(test)]
-mod lineage_allocation_tests;
-mod recorded_component_readmission;
-mod recovered_associated_effects;
-mod recovered_publication;
+pub use recorded_component_readmission::{
+    RefusedRelationalRecordedComponent, RelationalRecordedComponentAdmissionCause,
+};
 #[doc(hidden)]
 pub use recovered_publication::RelationalRetentionGateTrialForTest;
 pub use recovered_publication::{
@@ -43,38 +21,34 @@ pub use recovered_publication::{
     RelationalRecoveredPublicationAdmissionCause, RelationalRecoveredPublicationCustody,
     RelationalRecoveredPublicationRetirement, RetiredRelationalRecoveredPublication,
 };
-pub(crate) mod fresh_source;
-pub(crate) mod recovery;
-pub use recorded_component_readmission::{
-    RefusedRelationalRecordedComponent, RelationalRecordedComponentAdmissionCause,
-};
+pub(crate) use recovery::{AdmittedRecoveredCodecPublication, RecoveredCodecPublicationCustody};
 pub use recovery::{
     PreparedRelationalHomeRecovery, ReadmittedRelationalAssociatedFork,
     ReadmittedRelationalHomeProgramCatalogs, RefusedRelationalForkReadmission,
     RelationalForkReadmissionCause, RelationalHomeProgramPlanningRoot,
     RelationalHomeRecoveryPreparationDenial,
 };
-mod runtime_rebuild;
 pub(crate) use runtime_rebuild::envelope_replay::commit_stop::replay_commit_stop;
 pub(crate) use runtime_rebuild::index_catalog::RecoveredIndexCatalog;
 pub(crate) use runtime_rebuild::recorded_result_schema::RecordedReplayResultSchema;
+pub(crate) use runtime_rebuild::root_inventory::RecoveredRootInventory;
+pub use worth_relational_durability::internal_port::durability::authority::RecoveredRelationalBranchBasis;
+pub(crate) mod associated_effects;
+#[cfg(test)]
+pub(crate) use worth_relational_durability::internal_port::durability::authority::checkpoint_image;
+pub(crate) use worth_relational_durability::internal_port::durability::authority::{
+    checkpoint_components, checkpoint_lineage_basis, checkpointing, diagnostics,
+};
+pub(crate) mod checkpoint_capture;
+pub(crate) mod checkpoint_complete;
+mod checkpoint_runtime;
+pub(crate) mod checkpoint_transition;
 
-use crate::branch::basis::AdmittedRelationalBranchBasis;
-
+pub(crate) mod fresh_source;
+mod recorded_component_readmission;
+mod recovered_associated_effects;
+mod recovered_publication;
 pub(crate) mod recovered_runtime;
+pub(crate) mod recovery;
 pub(crate) mod runtime_access;
-
-/// An operational branch basis proven to belong to a successfully recovered
-/// Relational runtime. Only recovery authority can construct this wrapper.
-#[derive(Debug)]
-pub struct RecoveredRelationalBranchBasis {
-    basis: AdmittedRelationalBranchBasis,
-}
-
-impl RecoveredRelationalBranchBasis {
-    pub fn into_basis(self) -> AdmittedRelationalBranchBasis {
-        self.basis
-    }
-}
-
-pub(crate) use recovery::versioned_artifact::install_recovered_versioned_artifact;
+mod runtime_rebuild;

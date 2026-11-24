@@ -93,8 +93,9 @@ def macro_static(text):
 class Surface:
     """Every name resolved to its defining item, and the definitions public modules export."""
 
-    def __init__(self, tree, index, family_roots):
+    def __init__(self, tree, index, family_roots, *, resolver=resolve):
         self.index = index
+        self.resolve = resolver
         self.family_roots = family_roots
         self.scopes = {names: declarations(node.own_text()) for names, node in index.items()
                        if not self.in_family(names)}
@@ -110,7 +111,7 @@ class Surface:
         return any(names[:len(root)] == root for root in self.family_roots)
 
     def target(self, segments, module):
-        resolved = resolve(segments, module, self.index)
+        resolved = self.resolve(segments, module, self.index)
         if resolved is None or self.in_family(resolved[0]):
             return None
         return resolved
@@ -132,7 +133,7 @@ class Surface:
             if item in scope.declared:
                 result = (key, gated)
             elif item in scope.imports:
-                resolved = resolve(scope.imports[item], module, self.index)
+                resolved = self.resolve(scope.imports[item], module, self.index)
                 if resolved is None:
                     result = (('<external>', '::'.join(scope.imports[item])), gated)
                 elif not self.in_family(resolved[0]):

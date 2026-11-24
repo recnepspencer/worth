@@ -1,3 +1,6 @@
+use worth_relational_branch::internal_port::runtime::state::subsystems::visibility::VisibilitySubsystemFixturePort as _;
+use worth_relational_branch::internal_port::runtime::state::subsystems::visibility::snapshot_handle_binding::SnapshotHandleBindingFixturePort as _;
+use worth_relational_branch::internal_port::runtime::state::subsystems::visibility::snapshot_handles::SnapshotHandlesFixturePort as _;
 use crate::facade::history::BranchId;
 use crate::tests::support::*;
 
@@ -139,7 +142,9 @@ fn active_snapshot_registry_admission_and_release_work_is_population_independent
                 .handles
                 .insert_active(snapshot_id, template.clone());
         }
-        let before = runtime.visibility.snapshot_handle_registry_cost_counters();
+        let before = runtime
+            .visibility
+            .snapshot_handle_registry_cost_counters_for_test();
         let target = runtime
             .visibility
             .handles
@@ -149,13 +154,17 @@ fn active_snapshot_registry_admission_and_release_work_is_population_independent
             .visibility
             .handles
             .insert_active(target, template.clone());
-        let admitted = runtime.visibility.snapshot_handle_registry_cost_counters();
+        let admitted = runtime
+            .visibility
+            .snapshot_handle_registry_cost_counters_for_test();
         runtime
             .visibility
             .handles
             .remove_active(target)
             .expect("one exact active registry handle releases");
-        let released = runtime.visibility.snapshot_handle_registry_cost_counters();
+        let released = runtime
+            .visibility
+            .snapshot_handle_registry_cost_counters_for_test();
 
         assert_eq!(before.active_entries, population as u64);
         assert_eq!(admitted.active_entries, population as u64 + 1);
@@ -195,12 +204,14 @@ fn published_snapshot_registry_admission_and_release_work_is_population_independ
                 .expect("scale fixture snapshot identities remain bounded");
             runtime.visibility.handles.insert_published(
                 snapshot_id,
-                template.for_registry_scale_test(crate::facade::identity::VersionId(
+                template.for_registry_scale_test_for_test(crate::facade::identity::VersionId(
                     1_000_000 + index as u64,
                 )),
             );
         }
-        let before = runtime.visibility.snapshot_handle_registry_cost_counters();
+        let before = runtime
+            .visibility
+            .snapshot_handle_registry_cost_counters_for_test();
         let target = runtime
             .visibility
             .handles
@@ -208,17 +219,21 @@ fn published_snapshot_registry_admission_and_release_work_is_population_independ
             .expect("target snapshot identity remains bounded");
         runtime.visibility.handles.insert_published(
             target,
-            template.for_registry_scale_test(crate::facade::identity::VersionId(
+            template.for_registry_scale_test_for_test(crate::facade::identity::VersionId(
                 2_000_000 + population as u64,
             )),
         );
-        let admitted = runtime.visibility.snapshot_handle_registry_cost_counters();
+        let admitted = runtime
+            .visibility
+            .snapshot_handle_registry_cost_counters_for_test();
         runtime
             .visibility
             .handles
-            .remove_published(target)
+            .remove_published_for_test(target)
             .expect("one exact published registry handle releases");
-        let released = runtime.visibility.snapshot_handle_registry_cost_counters();
+        let released = runtime
+            .visibility
+            .snapshot_handle_registry_cost_counters_for_test();
 
         assert_eq!(before.published_entries, population as u64);
         assert_eq!(admitted.published_entries, population as u64 + 1);

@@ -1,7 +1,12 @@
 //! Real installed publication of generic Query-shaped string struct outputs.
+#[cfg(not(test))]
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::custody::RelationalRequiredOutputPublicationFieldsPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_contracts::internal_port::publication::patch::data::published_authoritative_patch::PublishedAuthoritativePatchOwnerPort as _;
 use super::*;
-use crate::mvcc::publication::application_publication::output_meaning::{
-    native_meaning_fixture, native_roles_fixture,
+use crate::mvcc::publication::application_publication::meaning_fixture::{
+    native_meaning_for_test, native_roles_for_test,
 };
 use worth_foundational::facade::{
     ContractValidatedAspectValueView, PortableAspectContractBasis, PortableAspectPatchOperation,
@@ -9,12 +14,11 @@ use worth_foundational::facade::{
 };
 #[path = "payload_forms/refusal.rs"]
 mod refusal;
-#[path = "payload_forms/schema.rs"]
-mod schema;
+pub(crate) use worth_relational_publication::internal_port::mvcc::publication::application_publication::payload_forms_schema as schema;
 
 fn build_runtime() -> crate::runtime::RelationalRuntime {
     crate::facade::runtime::RelationalRuntimeApi::builder()
-        .schema_registry(schema::registry())
+        .schema_registry(schema::registry_for_test())
         .build()
         .expect("valid native runtime configuration")
 }
@@ -31,18 +35,18 @@ fn succession(
             previous.authority(),
         )
         .unwrap();
-    let meaning = previous.origin.as_ref().meaning.clone();
+    let meaning = previous.origin().as_ref().meaning.clone();
     RequiredOutputPublication::Preserve {
         admission,
         predecessor: previous,
         meaning,
-        roles: native_roles_fixture(members, RequiredOutputRolePosture::Preserve),
+        roles: native_roles_for_test(members, RequiredOutputRolePosture::Preserve),
     }
 }
 
 #[test]
 fn query_shaped_struct_birth_optional_clear_and_fieldless_incidence_keep_warm_and_cold_custody() {
-    let request = crate::execution::test_policy::serial_request();
+    let request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     let mut runtime = build_runtime();
     let receipt = runtime
@@ -130,7 +134,7 @@ fn query_shaped_struct_birth_optional_clear_and_fieldless_incidence_keep_warm_an
         .collect::<Vec<_>>();
     let born_at = birth.commit.commit_id;
     let envelope = &birth.publication().envelope;
-    assert_eq!(envelope.record_allocations.len(), 8);
+    assert_eq!(envelope.record_allocations().len(), 8);
     assert_eq!(envelope.patch.authoritative_record_patches.len(), 8);
     for patch in &envelope.patch.authoritative_record_patches {
         assert_eq!(
@@ -158,7 +162,7 @@ fn query_shaped_struct_birth_optional_clear_and_fieldless_incidence_keep_warm_an
         );
     }
     let previous = birth.required_output_publication(&installed).unwrap();
-    assert_eq!(previous.origin.as_ref().relations.len(), 2);
+    assert_eq!(previous.origin().as_ref().relations.len(), 2);
     release_test_commit_snapshot(&runtime, &birth);
     let no_data = publish(
         &runtime,
@@ -171,7 +175,7 @@ fn query_shaped_struct_birth_optional_clear_and_fieldless_incidence_keep_warm_an
     assert!(no_data.changed_records.is_empty());
     assert_ne!(no_data.commit.commit_id, born_at);
     let previous = no_data.required_output_publication(&installed).unwrap();
-    let origin = previous.origin.as_ref();
+    let origin = previous.origin().as_ref();
     assert_eq!(origin.birth, born_at);
     assert_eq!(origin.members.len(), 6);
     assert_eq!(origin.relations.len(), 2);
@@ -186,7 +190,7 @@ fn query_shaped_struct_birth_optional_clear_and_fieldless_incidence_keep_warm_an
                 aspect_patch: PortableRecordAspectPatch::new([
                     PortableAspectPatchOperation::PatchFields {
                         basis: PortableAspectContractBasis::from_contract(
-                            &schema::facts().contract,
+                            &schema::facts_for_test().contract,
                         ),
                         selected_fields: vec![field_key("note")],
                         field_sets: vec![],
@@ -226,7 +230,7 @@ fn query_shaped_struct_birth_optional_clear_and_fieldless_incidence_keep_warm_an
     let (_, installed) = receipt.issue_application_publication_owner();
     let basis = test_owner_main_basis(&cold).unwrap();
     let partition = basis
-        .inner
+        .owner_inner()
         .root
         .partition_state(PartitionId::main())
         .expect("fixture root has admitted Full custody")
@@ -264,12 +268,12 @@ fn query_shaped_struct_birth_optional_clear_and_fieldless_incidence_keep_warm_an
             &basis,
             "generic-preserver",
             &[3; 32],
-            &native_meaning_fixture("generic-creator"),
-            &native_roles_fixture(&members, RequiredOutputRolePosture::Preserve),
+            &native_meaning_for_test("generic-creator"),
+            &native_roles_for_test(&members, RequiredOutputRolePosture::Preserve),
         )
         .unwrap();
-    assert_eq!(readmitted.origin.commit.commit_id, completed_at);
-    let origin = readmitted.origin.as_ref();
+    assert_eq!(readmitted.origin().commit.commit_id, completed_at);
+    let origin = readmitted.origin().as_ref();
     assert_eq!(origin.birth, born_at);
     assert_eq!(origin.members.len(), 6);
     assert_eq!(origin.outputs, {
@@ -301,8 +305,8 @@ fn query_shaped_struct_birth_optional_clear_and_fieldless_incidence_keep_warm_an
             &basis,
             "generic-creator",
             &[1; 32],
-            &native_meaning_fixture("generic-creator"),
-            &native_roles_fixture(
+            &native_meaning_for_test("generic-creator"),
+            &native_roles_for_test(
                 &[(ordinary_id, KindId(1))],
                 RequiredOutputRolePosture::Create
             )

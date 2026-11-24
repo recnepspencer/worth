@@ -1,3 +1,4 @@
+use worth_relational_publication::internal_port::publication::cdc::data::subscriber_recovery_plan::continuation_assessment::{SubscriberBoundaryAssessmentOwnerPort as _, SubscriberContinuationAssessmentOwnerPort as _};
 use std::collections::BTreeSet;
 
 use crate::history::data::PositionedCanonicalCommit;
@@ -133,6 +134,7 @@ pub(crate) fn assess_subscriber_continuity(
                     ),
                 ));
             }
+            _ => unreachable!("unhandled Relational contract variant"),
         }
 
         continuation_outcome = strongest_outcome(continuation_outcome, subscriber_specific_outcome);

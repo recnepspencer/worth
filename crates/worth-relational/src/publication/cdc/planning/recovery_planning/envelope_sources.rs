@@ -7,6 +7,7 @@ use crate::publication::cdc::planning::checkpoint_resolution::{
 };
 use crate::publication::retained_canonical_envelopes_after;
 use crate::runtime::RelationalRuntime;
+use worth_relational_publication::internal_port::publication::cdc::data::subscriber_failure::SubscriberStreamFailureOwnerPort as _;
 
 pub(super) enum AvailableEnvelopeSource {
     InMemory(Vec<PositionedCanonicalCommit>),

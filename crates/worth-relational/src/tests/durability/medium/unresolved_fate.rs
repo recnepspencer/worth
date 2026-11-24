@@ -63,7 +63,10 @@ fn an_unresolved_publication_installs_nothing_and_refuses_every_later_commit_ali
         .durability_unresolved_fate()
         .expect("the error names the unresolved publication")
         .clone();
-    let offered = medium.offered_commits().pop().expect("the medium was asked");
+    let offered = medium
+        .offered_commits()
+        .pop()
+        .expect("the medium was asked");
     let RelationalDurabilityUnresolvedSubject::CanonicalCommit {
         position,
         commit_id,

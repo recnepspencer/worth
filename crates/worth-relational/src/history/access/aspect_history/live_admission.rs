@@ -10,6 +10,9 @@ use crate::transactions::data::RecordRef;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::AspectKey;
+use worth_relational_branch::internal_port::history::access::aspect_history::retained_selection::RelationalRecordHistorySelectionOwnerPort as _;
+use worth_relational_branch::internal_port::history::access::aspect_history::selection::RelationalRecordHistorySubjectOwnerPort as _;
+use worth_relational_branch::internal_port::mvcc::observation::RelationalBranchObservationOwnerPort as _;
 
 impl RelationalRuntime {
     /// A subject may come from an earlier retained root. The selected commit

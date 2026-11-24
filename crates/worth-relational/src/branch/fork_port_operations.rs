@@ -1,4 +1,6 @@
 use crate::durability::published_medium::live_transition::LiveBranchTransitionStep;
+use worth_relational_branch::internal_port::branch::fork_source_basis::RelationalForkSourceDescriptorOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::caller_association::RelationalCallerAssociationOwnerPort as _;
 #[path = "fork_port_operations/source_observation.rs"]
 mod source_observation;
 use super::{RelationalForkDenial, RelationalForkOutcome};

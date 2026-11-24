@@ -3,6 +3,7 @@ use crate::identity::data::{EntityId, RelationId};
 use crate::mvcc::RelationalBranchObservation;
 use crate::runtime::RelationalRuntime;
 use crate::storage::data::{EntityReadRecord, RelationReadRecord};
+use worth_relational_branch::internal_port::mvcc::observation::RelationalBranchObservationOwnerPort as _;
 
 impl RelationalRuntime {
     /// Read one entity exactly as `observation`'s retained root holds it.

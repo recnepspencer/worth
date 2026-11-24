@@ -1,4 +1,5 @@
 //! Read owner-resident original meaning without claiming durable source custody.
+use worth_relational_branch::internal_port::durability::authority::associated_effects::observed_memory_commit::ObservedRelationalMemoryCommitOwnerPort as _;
 use super::observed_memory_commit::ObservedRelationalMemoryCommit;
 use super::RelationalAssociatedEffectRefusal as Refusal;
 use crate::durability::authority::runtime_access::DurabilityAuthority;

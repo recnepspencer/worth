@@ -8,6 +8,7 @@ use crate::{
     schema::data::program_activation::RecoveredCheckpointProgramActivationUpdate,
 };
 use sha2::{Digest, Sha256};
+use worth_relational_durability::internal_port::durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenialOwnerPort as _;
 
 impl DurabilityRecoveryAuthority<'_> {
     /// Compute a descriptive commitment only after admitting the exact recovered

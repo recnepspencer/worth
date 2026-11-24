@@ -1,13 +1,12 @@
 //! Restore historical source meaning while retaining a distinct native target.
+use worth_relational_durability::internal_port::durability::authority::checkpoint_complete::interim::origin::CapturedNativeInterimOriginOwnerPort as _;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 mod output_correspondence;
-pub(crate) mod publication_custody;
-mod retirement_preparation;
+pub(crate) use worth_relational_durability::internal_port::durability::authority::recovery::codec_transition::{publication_custody, schema_proposal, source_schema};
 pub(crate) use publication_custody::{
     AdmittedRecoveredCodecPublication, RecoveredCodecPublicationCustody,
 };
 mod activation_commitment;
-mod schema_proposal;
-mod source_schema;
 mod target_publication;
 mod transition_admission;
 
@@ -80,7 +79,7 @@ impl DurabilityRecoveryAuthority<'_> {
             origin,
             &checkpoint,
             self.runtime.main_branch_identity().branch_id(),
-            &target_registry.content_formats,
+            target_registry.owner_content_formats(),
         )?;
         self.restore_codec_source(
             execution,
@@ -107,7 +106,7 @@ impl DurabilityRecoveryAuthority<'_> {
         let source_registry = source_schema::readmit_current_source_schema(
             &checkpoint,
             self.runtime.main_branch_identity().branch_id(),
-            &target_registry.content_formats,
+            target_registry.owner_content_formats(),
         )?;
         self.restore_codec_source(
             execution,

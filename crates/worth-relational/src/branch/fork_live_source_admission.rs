@@ -11,6 +11,11 @@ use crate::branch::{
 use crate::history::data::BranchId;
 use std::sync::Arc;
 use worth_foundational::FoundationalBranchTarget;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_branch::internal_port::branch::fork_source_basis::AdmittedRelationalForkSourceBasisOwnerPort as _;
+use worth_relational_branch::internal_port::branch::fork_source_basis::RelationalForkSourceDescriptorOwnerPort as _;
+use worth_relational_branch::internal_port::branch::retained_fork_source::AdmittedRelationalRetainedForkSourceFieldsPort as _;
+use worth_relational_contracts::internal_port::branch::target::RelationalBranchTargetOwnerPort as _;
 
 impl RelationalForkPort {
     pub(super) fn validate_fork_input(
@@ -24,7 +29,7 @@ impl RelationalForkPort {
             }
             ForkSourceInput::Retained(source) => {
                 self.validate_retained_fork_profile()?;
-                let basis = source.basis;
+                let basis = source.into_basis();
                 self.validate_retained_basis(&basis)?;
                 let source_observation = basis.reference().clone();
                 let FoundationalBranchTarget::Basis(target) = source_observation.target() else {
@@ -40,7 +45,7 @@ impl RelationalForkPort {
                     source_head: target.rebind_runtime_instance_id(CANONICAL_RUNTIME_INSTANCE_ID),
                     source_observation,
                     source_truth_version: basis.truth_version(),
-                    source_root: Arc::clone(&basis.inner.root),
+                    source_root: Arc::clone(&basis.owner_inner().root),
                     retained: Some(basis),
                 })
             }

@@ -1,4 +1,5 @@
 //! An unpublished recovered successor carries one shared terminal capture phase.
+use worth_relational_durability::internal_port::durability::authority::checkpoint_complete::interim::component::CapturedNativeInterimAdmissionOwnerPort as _;
 use super::receiver::AdmittedNativeInterimReceiver;
 use super::*;
 use crate::branch::{

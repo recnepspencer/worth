@@ -10,7 +10,7 @@ use crate::transactions::data::outcomes::transaction_commit_error::TransactionCo
 
 #[test]
 fn restored_intermediate_source_commit_refuses_merge_parent_overlap() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let request = &worth_execution::ExecutionRequest::serial(&host);
     let source = runtime_with_test_schema();
     let a = create_entity(request, &source, "merge-a-base");

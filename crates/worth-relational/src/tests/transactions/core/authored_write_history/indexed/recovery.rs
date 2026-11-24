@@ -1,5 +1,7 @@
 //! Only the internal codec observes whether a decoded entry carries live verification.
 use super::*;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeFixturePort as _;
+use worth_relational_durability::internal_port::durability::data::checkpoint_images::DurableCheckpointOwnerPort as _;
 
 #[test]
 fn authored_index_checkpoint_decoding_does_not_mint_live_verification() {
@@ -30,16 +32,20 @@ fn authored_index_checkpoint_decoding_does_not_mint_live_verification() {
     let decoded: crate::history::data::CanonicalCommitEnvelope =
         rmp_serde::from_slice(&encoded).unwrap();
     assert_eq!(decoded, *envelope);
-    assert!(decoded.authored_index_writes.verified_entries().is_none());
+    assert!((*decoded.owner_authored_index_writes())
+        .verified_entries()
+        .is_none());
     // This owned decoded description has no live verification. Form the
     // optional-field-absent legacy wire without JSON's bounded Value numbers;
     // it is a codec fixture, not newly admitted historical evidence.
     let mut old_shape = decoded;
-    old_shape.body_mut_for_test().authored_index_writes = Default::default();
+    (*old_shape
+        .body_mut_for_test()
+        .owner_authored_index_writes_mut()) = Default::default();
     let legacy_bytes = rmp_serde::to_vec_named(&old_shape).unwrap();
     let legacy: crate::history::data::CanonicalCommitEnvelope =
         rmp_serde::from_slice(&legacy_bytes).unwrap();
-    assert!(legacy.authored_index_writes.is_unavailable());
+    assert!((*legacy.owner_authored_index_writes()).is_unavailable());
     runtime
         .durability_authority()
         .checkpoint(&execution)
@@ -58,13 +64,11 @@ fn authored_index_checkpoint_decoding_does_not_mint_live_verification() {
     .unwrap()
     .checkpoint;
     let decoded_equal = decoded
-        .envelopes
+        .envelopes()
         .iter()
         .find(|entry| entry.envelope().commit.commit_id == equal.commit.commit_id)
         .expect("actual emitted checkpoint contains the authored equal-value occurrence");
-    assert!(decoded_equal
-        .envelope()
-        .authored_index_writes
+    assert!((*decoded_equal.envelope().owner_authored_index_writes())
         .verified_entries()
         .is_none());
     let mut plan = runtime
@@ -80,13 +84,13 @@ fn authored_index_checkpoint_decoding_does_not_mint_live_verification() {
         .durability_recovery()
         .recover(&execution, plan)
         .unwrap();
-    assert!(recovered
+    assert!((*recovered
         .history
         .canonical_envelope(equal.commit.commit_id)
         .unwrap()
-        .authored_index_writes
-        .verified_entries()
-        .is_none());
+        .owner_authored_index_writes())
+    .verified_entries()
+    .is_none());
     for outcome in [&created, &equal] {
         release_test_commit_snapshot(&runtime, outcome);
     }

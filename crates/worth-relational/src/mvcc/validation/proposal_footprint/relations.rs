@@ -1,4 +1,9 @@
 //! Relation lifecycle material comes from the validated actor's real applied draft.
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::authored_restoration::RelationalAuthoredRestorationFieldsPort as _;
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::coupled_owners::RelationalAuthoredCoupledOwnersFieldsPort as _;
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::completion::RequiredOutputPublicationOwnerPort as _;
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::coupled_assembly::completion::RelationalCoupledAuthoredPublicationFieldsPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::coupled_authored::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use super::member_restoration::RecordedMemberRestoration;
 use super::relation_mutations::ValidatedRelationMutationFootprint;
 use crate::identity::data::KindId;
@@ -54,8 +59,8 @@ impl ValidatedRelationalProposal {
             {
                 Some(crate::mvcc::RequiredOutputPublication::CoupledAuthored { group }) => Some(
                     group
-                        .authored_records
-                        .get(..group.authored_prefix_records)
+                        .authored_records()
+                        .get(..group.authored_prefix_records())
                         .ok_or_else(|| {
                             crate::transactions::data::outcomes::transaction_commit_error::origin_denial("coupled authored root range unavailable")
                         })?,
@@ -76,9 +81,9 @@ impl ValidatedRelationalProposal {
                 .as_ref()
                 .and_then(|admission| match &admission.publication {
                     crate::mvcc::RequiredOutputPublication::CoupledAuthored { group } => group
-                        .binding
+                        .binding()
                         .owners
-                        .corrective_root
+                        .corrective_root()
                         .as_ref()
                         .map(|(_, targets)| targets.elements()),
                     _ => None,
@@ -90,7 +95,7 @@ impl ValidatedRelationalProposal {
             || {
                 restoration.map_or(0, |restoration| {
                     restoration
-                        .retirement
+                        .retirement()
                         .authored_source_retirement()
                         .expect("Native restoration")
                         .co_anchors
@@ -103,7 +108,7 @@ impl ValidatedRelationalProposal {
         // Both routes enter the same allocation resolution and root-membership
         // projection. The binder already refused conflict with a real plan.
         let anchor_targets =
-            corrective_root.or_else(|| restoration.map(|plan| plan.entities.as_slice()));
+            corrective_root.or_else(|| restoration.map(|plan| plan.entities().as_slice()));
         let outcome = &self.state.proposed_mutation.outcome;
         let authored_records =
             self.state
@@ -111,7 +116,7 @@ impl ValidatedRelationalProposal {
                 .as_ref()
                 .and_then(|admission| match &admission.publication {
                     crate::mvcc::RequiredOutputPublication::CoupledAuthored { group } => {
-                        Some(group.authored_records.as_slice())
+                        Some(group.authored_records().as_slice())
                     }
                     _ => None,
                 });

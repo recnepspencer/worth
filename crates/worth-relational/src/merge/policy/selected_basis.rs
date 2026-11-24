@@ -22,18 +22,18 @@ impl<'runtime> MergeAccess<'runtime> {
         let runtime = self.runtime;
         let history = runtime.history();
         let base_envelope = history
-            .demand_commit_envelope(execution, causal_plan.basis.merge_base.commit.commit_id)
+            .demand_commit_envelope(execution, causal_plan.basis.merge_base().commit().commit_id)
             .map_err(MergePlanningError::Execution)?
             .ok_or(MergePlanningError::MissingMergeBaseCommit {
-                commit_id: causal_plan.basis.merge_base.commit.commit_id,
+                commit_id: causal_plan.basis.merge_base().commit().commit_id,
             })?;
         let source_view = runtime
             .read_truth()
-            .read_version(execution, causal_plan.basis.source_head.version_id)
+            .read_version(execution, causal_plan.basis.source_head().version_id)
             .map_err(crate::merge::data::MergePlanningError::Execution)?;
         let target_view = runtime
             .read_truth()
-            .read_version(execution, causal_plan.basis.target_head.version_id)
+            .read_version(execution, causal_plan.basis.target_head().version_id)
             .map_err(crate::merge::data::MergePlanningError::Execution)?;
         let base_view = runtime
             .read_truth()

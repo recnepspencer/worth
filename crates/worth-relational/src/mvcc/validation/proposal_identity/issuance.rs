@@ -1,5 +1,8 @@
 //! Runtime issuance pairs a reserved proposal sequence with its source.
 use super::{RelationalMutationProposalIdentity, TransactionId};
+use worth_relational_mutation::internal_port::mvcc::validation::proposal_identity::{
+    bind_mutation_proposal_identity, MutationProposalIdentityParts,
+};
 
 impl crate::runtime::RelationalPreparationRuntime {
     pub(crate) fn issue_mutation_proposal_identity(
@@ -20,7 +23,7 @@ impl crate::runtime::RelationalPreparationRuntime {
             proposed_version_id,
             self.publication_binding().source_registration(),
         );
-        let identity = RelationalMutationProposalIdentity {
+        let identity = bind_mutation_proposal_identity(MutationProposalIdentityParts {
             omitted_publication_appendix: validation_input.appendix_adoption().is_some(),
             runtime_instance_id: self.services.runtime_instance_id(),
             ordinal,
@@ -30,7 +33,7 @@ impl crate::runtime::RelationalPreparationRuntime {
             proposed_version_id,
             commit_id,
             source_interpretation: source.identity(),
-        };
+        });
         Ok((identity, source))
     }
 }

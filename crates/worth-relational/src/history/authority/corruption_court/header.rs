@@ -1,4 +1,5 @@
 //! Closed corruption vocabulary for the sealed history court receiver.
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::header_corruption::CanonicalCommitEnvelopeFixturePort as _;
 #[derive(Clone, Copy, Debug)]
 pub enum OutputOriginHeaderCorruptionForTest {
     RevivedAnchor,

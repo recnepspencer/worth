@@ -4,6 +4,7 @@ use crate::authority::commit::phases::applied_mutation::aggregate_inputs::{
     AggregateDraftAdmission, AggregateDraftInputs,
 };
 use crate::mvcc::RelationalTransactionValidationInput;
+use worth_relational_mutation::internal_port::mvcc::transaction::intent::RelationalTransactionIntentOwnerPort as _;
 
 impl<'a> From<&'a RelationalPreparationRuntime> for AggregateDraftInputs<'a> {
     fn from(runtime: &'a RelationalPreparationRuntime) -> Self {

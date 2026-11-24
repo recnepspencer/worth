@@ -39,11 +39,11 @@ fn lineage_branch_divergence_is_queryable() {
         .unwrap();
 
     assert_eq!(
-        divergence.traversal_basis,
+        divergence.traversal_basis(),
         LineageDivergenceTraversalBasis::FullBranchGraphComparison
     );
-    assert!(!divergence.right_only_event_ids.is_empty());
-    assert!(!divergence.shared_lineage_ids.is_empty());
-    assert_eq!(divergence.metrics.right_event_count, 1);
-    assert!(divergence.metrics.shared_lineage_count >= 1);
+    assert!(!divergence.right_only_event_ids().is_empty());
+    assert!(!divergence.shared_lineage_ids().is_empty());
+    assert_eq!(divergence.metrics().right_event_count, 1);
+    assert!(divergence.metrics().shared_lineage_count >= 1);
 }

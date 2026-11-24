@@ -193,7 +193,10 @@ fn cumulative_fork_and_publication_byte_overflow_refuses_inspection_without_satu
         .record_root_publication(&pub_branch, &main_root, Some(10));
     let snapshot_after = runtime.history.sharing_costs_for_branch(&pub_branch);
     assert_eq!(snapshot_after.copied_truth_bytes, 123);
-    assert_eq!(snapshot_after.publication_new_authoritative_bytes, u64::MAX - 4);
+    assert_eq!(
+        snapshot_after.publication_new_authoritative_bytes,
+        u64::MAX - 4
+    );
     assert_eq!(snapshot_after.publication_new_root_authoritative_bytes, 456);
     assert_eq!(
         runtime.observe_branch_sharing(execution, &[pub_id]),
@@ -205,12 +208,19 @@ fn cumulative_fork_and_publication_byte_overflow_refuses_inspection_without_satu
     );
     // Checked envelope-residency overflow (`None`) preserves all recorded byte
     // totals unchanged and refuses both sharing and MVCC counter inspections.
-    let main_before = runtime.history.sharing_costs_for_branch(main_id.branch_id());
+    let main_before = runtime
+        .history
+        .sharing_costs_for_branch(main_id.branch_id());
     runtime
         .history
         .record_root_publication(main_id.branch_id(), &main_root, None);
-    let main_after = runtime.history.sharing_costs_for_branch(main_id.branch_id());
-    assert_eq!(main_after.copied_truth_bytes, main_before.copied_truth_bytes);
+    let main_after = runtime
+        .history
+        .sharing_costs_for_branch(main_id.branch_id());
+    assert_eq!(
+        main_after.copied_truth_bytes,
+        main_before.copied_truth_bytes
+    );
     assert_eq!(
         main_after.publication_new_authoritative_bytes,
         main_before.publication_new_authoritative_bytes

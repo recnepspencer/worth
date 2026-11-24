@@ -1,4 +1,10 @@
 //! Restore surviving writers from the authenticated original coupled event.
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::coupled_owners::RelationalAuthoredCoupledOwnersOwnerPort as _;
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::RelationalInstalledApplicationPublicationAuthorityFieldsPort as _;
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::authored_restoration::RelationalAuthoredRestorationFieldsPort as _;
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::custody::RelationalRequiredOutputPublicationFieldsPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::coupled_authored::CanonicalCommitEnvelopeBodyOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 use crate::history::data::{CanonicalCoupledAuthoredSources, CodecRetirementClosureStop as Stop};
 use crate::identity::data::EntityId;
 use crate::mvcc::RelationalAuthoredCoupledOwners;
@@ -11,6 +17,8 @@ use crate::transactions::data::outcomes::transaction_commit_error::TransactionCo
 use crate::transactions::data::primitives::RecordRef;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisOwnerPort as _;
+use worth_relational_contracts::internal_port::publication::data::publication_error::PublicationErrorOwnerPort as _;
 
 impl RelationalRuntime {
     /// Explicit envelope conversion retains the genuine restoration plan.
@@ -29,10 +37,10 @@ impl RelationalRuntime {
                 restoration,
             );
         }
-        let owners = if restoration
-            .retirement
-            .coupled_authored_publication
-            .is_some()
+        let owners = if (*restoration
+            .retirement()
+            .owner_coupled_authored_publication())
+        .is_some()
         {
             self.readmit_authored_restoration_coupled_owners(execution, installed, restoration)?
                 .ok_or_else(|| {
@@ -41,10 +49,10 @@ impl RelationalRuntime {
                     )
                 })?
         } else {
-            if installed.runtime_instance_id != self.runtime_instance_id()
-                || restoration.before.descriptor().runtime_instance_id()
+            if installed.runtime_instance_id() != self.runtime_instance_id()
+                || restoration.before().descriptor().runtime_instance_id()
                     != self.runtime_instance_id()
-                || !restoration.before.is_current()
+                || !restoration.before().is_current()
             {
                 return Err(
                     crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
@@ -53,7 +61,7 @@ impl RelationalRuntime {
                 );
             }
             let source = restoration
-                .retirement
+                .retirement()
                 .authored_source_retirement()
                 .ok_or_else(|| {
                     crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
@@ -61,21 +69,21 @@ impl RelationalRuntime {
                     )
                 })?;
             let anchor = source.anchor;
-            let before = restoration.before.clone();
-            let retirements = restoration.publications.clone();
-            RelationalAuthoredCoupledOwners {
+            let before = restoration.before().clone();
+            let retirements = restoration.publications().clone();
+            RelationalAuthoredCoupledOwners::bind_restoration(
                 before,
-                source: crate::mvcc::CoupledSource::Restoration {
+                crate::mvcc::CoupledSource::Restoration {
                     anchor,
                     plan: Arc::new(restoration),
                 },
                 retirements,
-                owners: Vec::new(),
-                current: Vec::new(),
-                deferred_edges: Default::default(),
-                stages: Vec::new(),
-                corrective_root: None,
-            }
+                Vec::new(),
+                Vec::new(),
+                Default::default(),
+                Vec::new(),
+                None,
+            )
         };
         self.readmit_later_authored_stage_owners(execution, installed, owners, later)
             .map(Some)
@@ -87,10 +95,13 @@ impl RelationalRuntime {
         installed: &RelationalInstalledApplicationPublicationAuthority,
         restoration: RelationalAuthoredRestoration,
     ) -> Result<Option<RelationalAuthoredCoupledOwners>, TransactionCommitError> {
-        let Some(group) = &restoration.retirement.coupled_authored_publication else {
+        let Some(group) = restoration
+            .retirement()
+            .owner_coupled_authored_publication()
+        else {
             return Ok(None);
         };
-        let Some(source) = restoration.retirement.authored_source_retirement() else {
+        let Some(source) = restoration.retirement().authored_source_retirement() else {
             let recorded = match &group.sources {
                 CanonicalCoupledAuthoredSources::Retirement { prefix, .. }
                 | CanonicalCoupledAuthoredSources::MemberEditRetirement { prefix, .. } => {
@@ -111,7 +122,7 @@ impl RelationalRuntime {
             return Err(refuse(
                 Cause::InvalidAuthoredAnchor,
                 restoration
-                    .entities
+                    .entities()
                     .first()
                     .map(|(id, _)| *id)
                     .unwrap_or(recorded),
@@ -121,8 +132,8 @@ impl RelationalRuntime {
             .run_native_with_checkpoint(|context| {
                 let current = crate::publication::ownership::source_scope::current(
                     execution,
-                    &restoration.before,
-                    Some(&installed.source_scope_ownership),
+                    restoration.before(),
+                    Some(installed.source_scope_ownership()),
                     &group
                         .participants
                         .iter()
@@ -139,7 +150,7 @@ impl RelationalRuntime {
                     owners.push(self.readmit_canonical_publication(
                         execution,
                         installed,
-                        &restoration.before,
+                        restoration.before(),
                         origin,
                     )?);
                 }
@@ -149,21 +160,21 @@ impl RelationalRuntime {
             .0?;
         let deferred_edges = owners
             .iter()
-            .flat_map(|owner| owner.origin.relations.iter().map(|edge| edge.id))
+            .flat_map(|owner| owner.origin().relations.iter().map(|edge| edge.id))
             .collect();
-        Ok(Some(RelationalAuthoredCoupledOwners {
-            before: restoration.before.clone(),
-            source: crate::mvcc::CoupledSource::Restoration {
+        Ok(Some(RelationalAuthoredCoupledOwners::bind_restoration(
+            restoration.before().clone(),
+            crate::mvcc::CoupledSource::Restoration {
                 anchor: source.anchor,
                 plan: Arc::new(restoration.clone()),
             },
-            retirements: restoration.publications.clone(),
+            restoration.publications().clone(),
             owners,
             current,
             deferred_edges,
-            stages: Vec::new(),
-            corrective_root: None,
-        }))
+            Vec::new(),
+            None,
+        )))
     }
 }
 

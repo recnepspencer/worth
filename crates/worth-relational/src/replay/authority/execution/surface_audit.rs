@@ -5,6 +5,7 @@ use crate::replay::data::{
     ReplayObservableSurface, ReplayVerificationLayer, ReplayVerificationPlan,
 };
 use crate::runtime::RelationalRuntime;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 
 use super::super::super::derived_index_surface::{
     surface_basis_for_derived_index_artifacts, DERIVED_INDEX_SURFACE,

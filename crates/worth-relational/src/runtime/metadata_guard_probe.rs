@@ -6,6 +6,7 @@ use crate::transactions::data::outcomes::transaction_commit_error::{
     origin_denial, TransactionCommitError,
 };
 use worth_execution::ExecutionRequest;
+use worth_relational_contracts::internal_port::mvcc::transaction::staging::RelationalTransactionStagingDenialOwnerPort as _;
 
 impl RelationalRuntime {
     #[doc(hidden)]

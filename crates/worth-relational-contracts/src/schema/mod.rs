@@ -1,0 +1,14 @@
+pub mod aggregate_identity;
+pub mod aspect_plan_source;
+pub mod aspect_plans;
+#[path = "../runtime/initial_schema_installation/recovered_codec_transition/physical_field_basis.rs"]
+pub mod codec_field_comparison;
+pub mod compilation_control;
+pub mod continuity;
+pub mod current_publication_ownership;
+pub mod data;
+pub mod home_program_catalog_receipt;
+pub mod installed_source_scopes;
+pub mod portable_patch;
+pub mod snapshot_compilation;
+pub mod source_catalog;

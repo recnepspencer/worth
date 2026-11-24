@@ -6,11 +6,12 @@ use crate::durability::data::{
 use crate::durability::medium::RelationalDurableReadProtection;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
+use worth_relational_durability::internal_port::durability::data::recovery_plan::RecoveryPlanOwnerPort as _;
 mod initial_inputs;
 mod receipt;
-mod stop;
 pub use receipt::FreshRelationalSourceAdmission;
 pub use stop::RelationalFreshSourceAdmissionStop;
+pub(crate) use worth_relational_durability::internal_port::durability::authority::fresh_source::stop;
 
 impl DurabilityRecoveryAuthority<'_> {
     /// Closed Store ingress: physical ProvenAbsent custody selects this door.
@@ -28,15 +29,14 @@ impl DurabilityRecoveryAuthority<'_> {
         // recovery cannot enter fresh-source admission.
         let (plan, _prepared_home_schemas) = admitted.into_parts();
         if plan.checkpoint.is_some()
-            || !plan.tail_log.is_empty()
-            || !plan.branch_transitions.transitions().is_empty()
+            || !plan.tail_log().is_empty()
+            || !plan.branch_transitions().transitions().is_empty()
             || !plan.restore_authoritative_envelope_commit_ids.is_empty()
         {
             return Err(refused("fresh source contains durable history").into());
         }
         let source = plan
-            .cold_source
-            .as_ref()
+            .cold_source()
             .ok_or_else(|| refused("fresh source is absent"))?;
         let actual = self
             .runtime

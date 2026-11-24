@@ -1,4 +1,5 @@
 use std::sync::{Arc, Barrier};
+use worth_relational_publication::internal_port::mvcc::publication::candidate::PreparedRelationalCommitCandidateFixturePort as _;
 
 use crate::facade::history::BranchId;
 use crate::facade::mvcc::{

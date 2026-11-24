@@ -45,7 +45,7 @@ impl RunSummary {
         relation_hits: usize,
     ) -> Self {
         Self {
-            snapshot_id: snapshot.snapshot_id.0,
+            snapshot_id: snapshot.snapshot_id().0,
             entity_hits,
             relation_hits,
         }

@@ -8,6 +8,7 @@ use crate::mvcc::BranchBoundRelationalTransaction;
 use crate::mvcc::RelationalTransactionValidationInput;
 use crate::runtime::RelationalPreparationRuntime;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use worth_relational_publication::internal_port::authority::commit::structural_summary::CommitStructuralSummaryFieldsPort as _;
 
 pub(super) struct PreparedProposalRound {
     pub(super) prepared: PreparedWorkingStateScope,
@@ -73,7 +74,7 @@ impl RelationalPreparationRuntime {
                                 .value()
                                 .prepared
                                 .structural_summary
-                                .touched_partitions
+                                .touched_partitions()
                                 .iter()
                                 .copied(),
                         )

@@ -1,0 +1,342 @@
+use std::collections::{BTreeMap, BTreeSet};
+
+use super::RelationScopeRequirement;
+use super::{PlannedRelationEdge, PreparedRelationIntegrityScope, PreparedRelationIntegrityScopes};
+use crate::authority::commit::semantic_plan::meaning::RelationalSemanticPlan;
+use crate::contracts::identity::data::primitives::KindId;
+use crate::contracts::identity::data::record_ids::{EntityId, RelationId};
+use crate::contracts::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
+use crate::contracts::transactions::data::primitives::EntityReference;
+use worth_relational_storage::internal_port::storage::overlay::current_access::CurrentPartitionAccess;
+
+pub mod candidate_sources;
+pub mod home_target;
+pub mod incidence_collection;
+pub mod owned_graph;
+pub mod planned_incidence;
+pub mod relation_changes;
+pub mod scope_completion;
+pub mod successor_scope;
+use super::preparation_control::InvariantPreparationControl;
+use crate::contracts::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+
+pub(super) struct RelationScopeState<'state> {
+    pub(super) current: crate::validation::engine::state_view::InvariantStateView<'state>,
+    pub(super) predecessor: crate::validation::engine::state_view::InvariantStateView<'state>,
+    pub(super) candidate_is_applied: bool,
+}
+
+pub(super) fn prepare_relation_integrity_scopes(
+    semantic_plan: Option<RelationalSemanticPlan<'_>>,
+    whole_home_target: bool,
+    state: RelationScopeState<'_>,
+    requirements: BTreeMap<KindId, RelationScopeRequirement>,
+    performance: &crate::validation::engine::metrics::InvariantMetrics<'_>,
+    control: &InvariantPreparationControl<'_, '_>,
+    admit: &dyn Fn(u64, u64) -> Result<(), TransactionCommitError>,
+) -> Result<Option<PreparedRelationIntegrityScopes>, TransactionCommitError> {
+    control.check()?;
+    if requirements.is_empty() {
+        return Ok(None);
+    }
+    let mut accumulator =
+        RelationIntegrityScopeAccumulator::new(state, requirements, performance, control, admit);
+    for scope in accumulator.scopes.values_mut() {
+        scope.complete_source_set = semantic_plan.is_none();
+    }
+    accumulator.collect_candidate_slots()?;
+    if let Some(plan) = semantic_plan {
+        if let Some(selection) = plan.selection() {
+            accumulator.collect_revalidated_entity(selection.entity())?;
+        }
+        if let Some(selection) = plan.graph_selection() {
+            accumulator.collect_owned_graph(selection)?;
+        }
+        accumulator.collect_plan(plan.commands())?;
+    }
+    if whole_home_target {
+        accumulator.collect_home_target_source()?;
+    }
+    accumulator.check_live()?;
+    accumulator.scan_touched_relations()?;
+    accumulator.scan_required_visible_successors()?;
+    accumulator.finish()
+}
+
+fn include_existing_entity_reference(
+    touched_entities: &mut BTreeSet<(KindId, EntityId)>,
+    kind: KindId,
+    entity_reference: &EntityReference,
+) {
+    if let EntityReference::Existing(entity_id) = entity_reference {
+        touched_entities.insert((kind, *entity_id));
+    }
+}
+
+struct RelationIntegrityScopeAccumulator<'access, 'runtime, 'scope, 'authority> {
+    partitions: &'access dyn CurrentPartitionAccess,
+    state_view: crate::validation::engine::state_view::InvariantStateView<'access>,
+    predecessor: crate::validation::engine::state_view::InvariantStateView<'access>,
+    performance: &'access crate::validation::engine::metrics::InvariantMetrics<'runtime>,
+    control: &'access InvariantPreparationControl<'scope, 'authority>,
+    admit: &'access dyn Fn(u64, u64) -> Result<(), TransactionCommitError>,
+    scopes: BTreeMap<KindId, PreparedRelationIntegrityScope>,
+    created_key_count: usize,
+    candidate_is_applied: bool,
+    minimum_candidate_kinds: BTreeMap<KindId, BTreeSet<KindId>>,
+    create_scan_directions: BTreeMap<KindId, (bool, bool, bool, bool)>,
+    touched_relation_sources: BTreeSet<(KindId, EntityId)>,
+    touched_relation_targets: BTreeSet<(KindId, EntityId)>,
+    deleted_entities: BTreeSet<EntityId>,
+    revalidated_entities: Option<BTreeSet<EntityId>>,
+    deleted_relations: BTreeSet<RelationId>,
+    scanned_relations: BTreeSet<RelationId>,
+}
+
+impl<'access, 'runtime, 'scope, 'authority>
+    RelationIntegrityScopeAccumulator<'access, 'runtime, 'scope, 'authority>
+{
+    fn new(
+        state: RelationScopeState<'access>,
+        requirements: BTreeMap<KindId, RelationScopeRequirement>,
+        performance: &'access crate::validation::engine::metrics::InvariantMetrics<'runtime>,
+        control: &'access InvariantPreparationControl<'scope, 'authority>,
+        admit: &'access dyn Fn(u64, u64) -> Result<(), TransactionCommitError>,
+    ) -> Self {
+        let minimum_candidate_kinds = requirements
+            .iter()
+            .map(|(kind, requirement)| (*kind, requirement.minimum_candidate_kinds.clone()))
+            .collect();
+        let create_scan_directions = requirements
+            .iter()
+            .map(|(kind, requirement)| {
+                (
+                    *kind,
+                    (
+                        requirement.scan_existing_source_on_create,
+                        requirement.scan_existing_target_on_create,
+                        requirement.scan_existing_pair_on_create,
+                        requirement.scan_full_on_create,
+                    ),
+                )
+            })
+            .collect();
+        let revalidated_entities = requirements
+            .values()
+            .any(|requirement| requirement.requires_affected_pairs)
+            .then(BTreeSet::new);
+        Self {
+            partitions: state.current.state(),
+            state_view: state.current,
+            predecessor: state.predecessor,
+            performance,
+            control,
+            admit,
+            created_key_count: 0,
+            candidate_is_applied: state.candidate_is_applied,
+            scopes: requirements
+                .into_iter()
+                .map(|(kind_id, requirement)| {
+                    (
+                        kind_id,
+                        PreparedRelationIntegrityScope {
+                            requires_affected_pairs: requirement.requires_affected_pairs,
+                            requires_global_evaluation: requirement.requires_global_evaluation,
+                            requires_visible_successors: requirement.requires_visible_successors,
+                            ..PreparedRelationIntegrityScope::default()
+                        },
+                    )
+                })
+                .collect(),
+            minimum_candidate_kinds,
+            create_scan_directions,
+            touched_relation_sources: BTreeSet::new(),
+            touched_relation_targets: BTreeSet::new(),
+            deleted_entities: BTreeSet::new(),
+            revalidated_entities,
+            deleted_relations: BTreeSet::new(),
+            scanned_relations: BTreeSet::new(),
+        }
+    }
+
+    fn collect_plan(&mut self, plan: &MergedCommitPlan) -> Result<(), TransactionCommitError> {
+        for intent in &plan.merged_intents {
+            self.check_live()?;
+            self.collect_intent(intent)?;
+        }
+        Ok(())
+    }
+
+    fn collect_intent(
+        &mut self,
+        intent: &crate::contracts::transactions::data::intents::mutation_intent::MutationIntent,
+    ) -> Result<(), TransactionCommitError> {
+        self.check_live()?;
+        use crate::contracts::transactions::data::intents::materialization_intent::MaterializationMutationIntent;
+        use crate::contracts::transactions::data::intents::mutation_intent::CreateIntent;
+        use crate::contracts::transactions::data::intents::mutation_intent::EntityMutationIntent;
+        use crate::contracts::transactions::data::intents::mutation_intent::MutationIntent;
+        match intent {
+            MutationIntent::Create(CreateIntent::Entity(spec)) => {
+                self.collect_created_entity(
+                    spec.partition_id,
+                    spec.kind_id,
+                    spec.client_key.clone(),
+                )?;
+            }
+            MutationIntent::Create(CreateIntent::EntityAspects(spec)) => {
+                self.collect_created_entity(
+                    spec.partition_id,
+                    spec.kind_id,
+                    spec.client_key.clone(),
+                )?;
+            }
+            MutationIntent::Create(CreateIntent::BulkEntities(spec)) => {
+                for key in &spec.client_keys {
+                    self.check_live()?;
+                    self.collect_created_entity(spec.partition_id, spec.kind_id, key.clone())?;
+                }
+            }
+            MutationIntent::Create(CreateIntent::Relation(spec)) => {
+                self.collect_planned_edge(spec.kind_id, &spec.source, &spec.target)?;
+            }
+            MutationIntent::Create(CreateIntent::RelationAspects(spec)) => {
+                self.collect_planned_edge(spec.kind_id, &spec.source, &spec.target)?;
+            }
+            MutationIntent::Create(CreateIntent::BulkRelations(spec)) => {
+                for (source, target) in &spec.endpoints {
+                    self.collect_planned_edge(spec.kind_id, source, target)?;
+                }
+            }
+            MutationIntent::Relation(
+                crate::contracts::transactions::data::intents::mutation_intent::RelationMutationIntent::Delete(spec),
+            ) => self.collect_relation_delete(spec.relation_id)?,
+            MutationIntent::Relation(
+                crate::contracts::transactions::data::intents::mutation_intent::RelationMutationIntent::UpdateEndpoints(spec),
+            ) => {
+                self.collect_relation_delete(spec.relation_id)?;
+                self.collect_planned_edge(spec.kind_id, &spec.source, &spec.target)?;
+            }
+            MutationIntent::Entity(EntityMutationIntent::Delete(spec)) => {
+                self.collect_entity_removal(spec.entity_id)?;
+            }
+            MutationIntent::Entity(EntityMutationIntent::Replace(spec)) => {
+                self.collect_entity_removal(spec.entity_id)?;
+                self.collect_created_entity(
+                    spec.replacement.partition_id,
+                    spec.replacement.kind_id,
+                    spec.replacement.client_key.clone(),
+                )?;
+            }
+            MutationIntent::Relation(
+                crate::contracts::transactions::data::intents::mutation_intent::RelationMutationIntent::Revalidate(spec),
+            ) => {
+                self.collect_revalidated_relation(spec.relation_id)?;
+            }
+            MutationIntent::Entity(EntityMutationIntent::Revalidate(spec)) => {
+                self.collect_revalidated_entity(spec.entity_id)?;
+            }
+            MutationIntent::Materialization(
+                MaterializationMutationIntent::RematerializeRelation(spec),
+            ) => self.collect_planned_edge(
+                spec.kind_id,
+                &EntityReference::Existing(spec.source),
+                &EntityReference::Existing(spec.target),
+            )?,
+            _ => {}
+        }
+        Ok(())
+    }
+
+    fn collect_created_entity(
+        &mut self,
+        partition_id: crate::contracts::identity::data::primitives::PartitionId,
+        kind_id: KindId,
+        client_key: crate::contracts::symbols::data::client_key::ClientKey,
+    ) -> Result<(), TransactionCommitError> {
+        self.check_live()?;
+        self.created_key_count += 1;
+        let created = crate::contracts::transactions::data::primitives::CreatedEntityRef {
+            partition_id,
+            kind_id,
+            client_key,
+        };
+        for (relation_kind, kinds) in &self.minimum_candidate_kinds {
+            self.check_live()?;
+            if kinds.contains(&kind_id)
+                || (kinds.is_empty() && self.scopes[relation_kind].requires_global_evaluation)
+            {
+                self.scopes
+                    .get_mut(relation_kind)
+                    .expect(/* Proof: RelationIntegrityScopeAccumulator::new installs a scope for every requirement and derives minimum_candidate_kinds from that same set. Collection does not remove scopes. */ "minimum scope prepared")
+                    .created_candidate_entities
+                    .insert(created.clone());
+            }
+        }
+        self.check_live()
+    }
+
+    fn collect_revalidated_entity(
+        &mut self,
+        entity_id: EntityId,
+    ) -> Result<(), TransactionCommitError> {
+        self.check_live()?;
+        let Some(metadata) = self.state_view.entity_metadata(entity_id) else {
+            return Ok(());
+        };
+        if let Some(entities) = &mut self.revalidated_entities {
+            entities.insert(entity_id);
+        }
+        for (relation_kind, kinds) in &self.minimum_candidate_kinds {
+            self.check_live()?;
+            if kinds.contains(&metadata.kind_id) {
+                self.scopes
+                    .get_mut(relation_kind)
+                    .expect(/* Proof: RelationIntegrityScopeAccumulator::new installs a scope for every requirement and derives minimum_candidate_kinds from that same set. Collection does not remove scopes. */ "minimum scope prepared")
+                    .minimum_touched_entities
+                    .insert(entity_id);
+            }
+        }
+        for scope in self
+            .scopes
+            .values_mut()
+            .filter(|scope| scope.requires_visible_successors)
+        {
+            scope
+                .connectivity_sources
+                .insert(EntityReference::Existing(entity_id));
+        }
+        self.touch_entity_incidence(entity_id);
+        self.check_live()
+    }
+
+    fn collect_entity_removal(
+        &mut self,
+        entity_id: EntityId,
+    ) -> Result<(), TransactionCommitError> {
+        self.check_live()?;
+        self.touch_entity_incidence(entity_id);
+        self.deleted_entities.insert(entity_id);
+        self.check_live()
+    }
+
+    fn touch_entity_incidence(&mut self, entity: EntityId) {
+        for &kind in self.scopes.keys() {
+            self.touched_relation_sources.insert((kind, entity));
+            self.touched_relation_targets.insert((kind, entity));
+        }
+    }
+
+    fn check_live(&self) -> Result<(), TransactionCommitError> {
+        self.control.check()?;
+        (self.admit)(1, 0)
+    }
+}
+
+fn relation_scope_details_for_id(
+    state_view: &crate::validation::engine::state_view::InvariantStateView<'_>,
+    relation_id: RelationId,
+) -> Option<(KindId, EntityId, EntityId)> {
+    let metadata = state_view.relation_metadata(relation_id)?;
+    Some((metadata.kind_id, metadata.source, metadata.target))
+}

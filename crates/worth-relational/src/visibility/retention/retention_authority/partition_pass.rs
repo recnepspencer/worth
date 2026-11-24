@@ -106,6 +106,9 @@ pub(super) fn run_partition_retention_pass<K: RecordKind>(
 
 #[cfg(test)]
 mod tests {
+    use worth_relational_storage::internal_port::runtime::state::subsystems::storage::edition_writer::PartitionEditionWriterFixturePort as _;
+use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::slot_lifecycle::metadata::RecordArenaFixturePort as _;
+
     use std::cell::Cell;
 
     use crate::history::data::RecordAllocationClass;
@@ -113,7 +116,7 @@ mod tests {
     use crate::runtime::{RelationalRuntime, RelationalRuntimeConfig};
     use crate::storage::overlay::PartitionState;
     use crate::storage::substrate::{
-        EntityArena, EntityExtra, EntityRecordKind, PinClass, RelationArena, SlotInit,
+        EntityArena, EntityExtra, EntityRecordKind, RelationArena, SlotInit,
     };
 
     use super::{
@@ -128,7 +131,7 @@ mod tests {
         let high_slot = 50_000;
         let mut entity_arena = EntityArena::with_capacity(0);
         entity_arena
-            .write_reserved_slot(
+            .write_reserved_slot_for_test(
                 SlotInit {
                     partition_id,
                     kind_id: KindId(11),
@@ -140,10 +143,10 @@ mod tests {
             )
             .unwrap();
         entity_arena
-            .adjust_named_pin(high_slot, PinClass::Branch, 1)
+            .adjust_named_pin(high_slot, worth_relational_storage::internal_port::storage::substrate::record_arena::arena::pinning::branch_pin_class_for_test(), 1)
             .unwrap();
         let adjacency_policy = runtime.config.storage.adjacency_policy.clone();
-        runtime.edit_partitions().insert(
+        runtime.edit_partitions().install_partition_for_test(
             partition_id,
             PartitionState {
                 partition_id,

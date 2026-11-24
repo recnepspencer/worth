@@ -25,7 +25,7 @@ pub(crate) fn admissible_access_path(
                 IndexQueryRejectionClass::MissingGeneration
             } else if runtime
                 .indexes
-                .any_generation_at_or_before(plan.snapshot.version_id)
+                .any_generation_at_or_before(plan.snapshot.version_id())
             {
                 IndexQueryRejectionClass::UnsupportedScope
             } else {
@@ -48,7 +48,7 @@ pub(crate) fn should_verify_sampled_parity(
 ) -> bool {
     let sample_key = plan.packet.plan_key.0
         ^ ((generation_id.0 as u128) << 64)
-        ^ (plan.snapshot.version_id.0 as u128);
+        ^ (plan.snapshot.version_id().0 as u128);
     sample_key % SAMPLED_PARITY_MODULUS == SAMPLED_PARITY_REMAINDER
 }
 

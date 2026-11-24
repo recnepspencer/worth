@@ -36,7 +36,7 @@ impl<'runtime> StorageAccess<'runtime> {
     pub(crate) fn entity_slot_count(&self) -> usize {
         self.current_edition()
             .cells()
-            .map(|(_, region)| region.cell().slot_counts().0)
+            .map(|(_, region)| region.cell().slot_counts_for_test().0)
             .sum()
     }
 
@@ -231,3 +231,6 @@ pub(crate) struct RecordSlotSurface {
 pub(crate) mod chunk_inspection;
 pub(crate) mod neighborhood;
 mod storage_stats;
+
+#[cfg(test)]
+use worth_relational_storage::internal_port::storage::residency::cell::observation::RelationalRegionResidencyFixturePort as _;

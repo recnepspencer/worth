@@ -1,3 +1,4 @@
+use worth_relational_publication::internal_port::mvcc::publication::candidate::PreparedRelationalCommitCandidateOwnerPort as _;
 #[path = "candidate_index_publication/incremental_accounting.rs"]
 mod incremental_accounting;
 use super::*;

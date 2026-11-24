@@ -3,6 +3,7 @@
 //! composition must carry them, never replace an installed meaning, and leave
 //! schemaless compositions without naming state.
 use std::collections::BTreeMap;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 use crate::facade::identity::KindId;
 use crate::facade::lineage::{
@@ -31,7 +32,7 @@ fn entity_scheme(kind_name: &str, roles: [&str; 1]) -> InstalledPersistentNameSc
 
 fn named_additions() -> RelationalSchemaRegistry {
     let base = test_schema_registry();
-    let kind_name = base.entity_kinds[&KindId(1)].kind_name.clone();
+    let kind_name = (*base.owner_entity_kinds())[&KindId(1)].kind_name.clone();
     base.install_persistent_name_schemes(
         entity_scheme(&kind_name, ["authored"]),
         BTreeMap::from([(
@@ -74,7 +75,9 @@ fn extension_never_replaces_an_installed_scheme_or_binding() {
     let composed = RelationalSchemaRegistry::new()
         .extend(named_additions())
         .unwrap();
-    let kind_name = composed.entity_kinds[&KindId(1)].kind_name.clone();
+    let kind_name = (*composed.owner_entity_kinds())[&KindId(1)]
+        .kind_name
+        .clone();
 
     let redefined = RelationalSchemaRegistry::new()
         .install_persistent_name_schemes(entity_scheme(&kind_name, ["other"]), BTreeMap::new())

@@ -1,3 +1,5 @@
+use worth_relational_contracts::internal_port::publication::patch::data::published_authoritative_patch::PublishedAuthoritativePatchOwnerPort as _;
+use worth_relational_contracts::internal_port::publication::patch::data::semantic_change::PublishedAuthoritativeAspectChangeOwnerPort as _;
 use serde::Serialize;
 use worth_foundational::facade::{
     AspectBinding, AspectContractRevision, AspectIdentity, AspectKey, AspectValue,

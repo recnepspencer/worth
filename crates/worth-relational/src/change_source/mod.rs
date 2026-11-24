@@ -4,23 +4,22 @@
 //! A consumer that projects Relational truth into its own model reads it
 //! through this module. Nothing here names a consumer concept.
 
-pub(crate) mod commit_selection;
-mod consistency;
-mod consistency_expectations;
+pub(crate) use worth_relational_branch::internal_port::change_source::commit_selection;
+pub(crate) use worth_relational_contracts::internal_port::change_source::consistency;
 #[cfg(test)]
 mod consistency_tests;
 mod exact_reads;
 mod lineage_at_observation;
-pub(crate) mod memory_close_observation;
+pub(crate) use worth_relational_contracts::internal_port::change_source::memory_close_observation;
 mod names_at_observation;
 mod observation_read;
 mod partition_projection;
-pub(crate) mod read_custody;
-mod receipt;
+pub(crate) use worth_relational_branch::internal_port::change_source::receipt;
+pub(crate) use worth_relational_contracts::internal_port::change_source::read_custody;
 mod receipt_minting;
-mod receipt_witness;
+pub(crate) use worth_relational_branch::internal_port::change_source::receipt_witness;
 mod retain_observation;
-pub(crate) mod retained_observation;
+pub(crate) use worth_relational_branch::internal_port::change_source::retained_observation;
 mod runtime_handle;
 mod select_commit;
 pub use read_custody::RelationalReadCustodyHolders;

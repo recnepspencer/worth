@@ -1,6 +1,10 @@
+use worth_relational_durability::internal_port::durability::data::recovery_plan::RecoveryPlanFieldsFixturePort as _;
+use worth_relational_durability::internal_port::durability::migration::readmitted_canonical_commit::ReadmittedCanonicalCommitOwnerPort as _;
 use super::*;
 use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 use worth_foundational::{FoundationalBranchReferenceObservation, FoundationalBranchTarget};
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
+use worth_relational_contracts::internal_port::branch::target::RelationalBranchTargetOwnerPort as _;
 
 #[test]
 fn durability_contract_recovery_rejects_tail_target_without_immutable_artifact() {
@@ -20,13 +24,12 @@ fn durability_contract_recovery_rejects_tail_target_without_immutable_artifact()
         )
         .unwrap();
     let tail = plan
-        .tail_log
+        .tail_log_mut_for_test()
         .iter_mut()
         .map(|commit| commit.readmitted_envelope_mut_for_test(execution))
         .find(|envelope| envelope.commit.commit_id == second.commit.commit_id)
         .expect("tail contains the post-checkpoint commit");
-    let checkpoint = tail
-        .branch_cell_checkpoint
+    let checkpoint = (*tail.owner_branch_cell_checkpoint_mut())
         .as_mut()
         .expect("tail envelope carries its exact pre-commit branch cell");
     let target = crate::branch::RelationalBranchTarget::new(

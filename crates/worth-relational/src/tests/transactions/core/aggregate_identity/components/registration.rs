@@ -1,11 +1,15 @@
 //! Installation rejects invalid source meaning; old orbit wire/identity bytes stay exact.
 use super::super::fixtures as orbit;
 use super::fixtures::*;
+use worth_relational_contracts::internal_port::schema::data::relation_integrity::aggregate::AggregateIdentityContractDeclarationOwnerPort as _;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 #[test]
 fn component_sources_normalize_and_refuse_empty_private_or_non_homogeneous_kinds() {
     let mut base = registry();
-    let installed = base.relation_kinds.remove(&KindId(7)).unwrap();
+    let installed = (*base.owner_relation_kinds_mut())
+        .remove(&KindId(7))
+        .unwrap();
     let contract = installed
         .relation_integrity
         .aggregate_identity
@@ -29,7 +33,9 @@ fn component_sources_normalize_and_refuse_empty_private_or_non_homogeneous_kinds
             .source = AggregateIdentitySource::Components { relations };
         assert!(base.clone().register_relation_kind(hostile).is_err());
     }
-    let mut source = base.relation_kinds.remove(&KindId(6)).unwrap();
+    let mut source = (*base.owner_relation_kinds_mut())
+        .remove(&KindId(6))
+        .unwrap();
     source.relation_integrity.endpoint_kind_contracts[0].allowed_target_kinds = vec![KindId(3)];
     let hostile = base.register_relation_kind(source).unwrap();
     assert!(hostile.register_relation_kind(installed).is_err());

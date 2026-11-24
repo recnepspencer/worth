@@ -3,6 +3,7 @@
 //! member names and records the committed transition.
 
 use std::collections::BTreeSet;
+use worth_relational_contracts::internal_port::lineage::data::naming::PersistentNameIdentityOwnerPort as _;
 
 use worth_foundational::facade::AggregateIdentity;
 

@@ -22,16 +22,16 @@ impl<'runtime> MergeAccess<'runtime> {
             .resolve_merge_branch_basis_from_bindings(source, target)
             .map_err(MergePlanningError::from)?;
         let merge_base_ancestors =
-            history.ancestor_closure_by_commit_id_order(basis.merge_base.commit.commit_id);
+            history.ancestor_closure_by_commit_id_order(basis.merge_base().commit().commit_id);
 
         let target_delta_commits = self.branch_local_unique_commit_closure_by_commit_id_order(
             request.target_branch().clone(),
-            basis.merge_base.supporting_left_ancestors.as_ref(),
+            basis.merge_base().supporting_left_ancestors(),
             merge_base_ancestors.as_slice(),
         );
         let source_delta_commits = self.branch_local_unique_commit_closure_by_commit_id_order(
             request.source_branch().clone(),
-            basis.merge_base.supporting_right_ancestors.as_ref(),
+            basis.merge_base().supporting_right_ancestors(),
             merge_base_ancestors.as_slice(),
         );
 

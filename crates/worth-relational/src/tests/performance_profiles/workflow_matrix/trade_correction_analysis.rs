@@ -53,12 +53,8 @@ pub(super) fn certify_trade_correction_analysis_round_trip(
             trade_correction_schema_registry(),
             &medium,
         );
-        let account = create_entity_in_partition(
-            execution,
-            &runtime,
-            "portfolio-account",
-            PartitionId(10),
-        );
+        let account =
+            create_entity_in_partition(execution, &runtime, "portfolio-account", PartitionId(10));
         create_branch_from_main(&runtime, "analysis");
 
         runtime.performance_access().reset_counters();
@@ -176,11 +172,11 @@ pub(super) fn certify_trade_correction_analysis_round_trip(
         let prepared = runtime
             .prepare_merge_execution(
                 execution,
-                MergeExecutionRequest {
-                    target_branch: BranchId("main".to_string()),
-                    source_branch: BranchId("analysis".to_string()),
-                    merge_intent: MergeIntent::ReconcileIntoTarget,
-                },
+                MergeExecutionRequest::new(
+                    BranchId("main".to_string()),
+                    BranchId("analysis".to_string()),
+                    MergeIntent::ReconcileIntoTarget,
+                ),
             )
             .expect("prepared analysis merge");
         let (merge_outcome, merge_execute_work) = measure_counted_work(execution, || {

@@ -1,4 +1,7 @@
 //! Read the exact discovered source outside owner locks and match actual state.
+use worth_relational_durability::internal_port::durability::authority::associated_effects::{ReadmittedRelationalAssociatedEffectOwnerPort as _, RelationalAssociatedEffectSubjectOwnerPort as _};
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_semantic_result::assemble_recovered_relational_semantic_result;
 use super::*;
 use crate::durability::authority::runtime_access::DurabilityAuthority;
 
@@ -11,7 +14,7 @@ impl DurabilityAuthority<'_> {
         use RelationalAssociatedEffectRefusal as Refusal;
         crate::execution::check_request(execution)
             .map_err(|cause| Refusal::Recovery(RelationalRecoveryStop::Request(cause)))?;
-        if subject.runtime_instance_id != self.runtime.runtime_instance_id() {
+        if !subject.belongs_to_runtime(self.runtime.runtime_instance_id()) {
             return Err(Refusal::ForeignRuntime);
         }
         let _operation = self
@@ -19,31 +22,28 @@ impl DurabilityAuthority<'_> {
             .owner_binding()
             .admit()
             .ok_or(Refusal::OwnerUnavailable)?;
-        let residency = subject
-            .residency
-            .upgrade()
-            .ok_or(Refusal::OwnerUnavailable)?;
-        let source = subject.source.upgrade().ok_or(Refusal::OwnerUnavailable)?;
+        let residency = subject.bound_residency().ok_or(Refusal::OwnerUnavailable)?;
+        let source = subject.bound_source().ok_or(Refusal::OwnerUnavailable)?;
         let (entry, actual_source) = residency
             .source_placement()
             .ok_or(Refusal::CatalogSubjectChanged)?;
-        if !entry.same_owner(&subject.entry) || !Arc::ptr_eq(&actual_source, &source) {
+        if !entry.same_owner(subject.retained_entry()) || !Arc::ptr_eq(&actual_source, &source) {
             return Err(Refusal::CatalogSubjectChanged);
         }
         let current = self
             .runtime
             .history
-            .commit_artifact(subject.entry.commit.commit_id);
+            .commit_artifact(subject.receipt().commit_id);
         match current {
             Some(current)
                 if Arc::ptr_eq(&current.envelope_residency(), &residency)
-                    && current.receipt() == subject.entry.commit
-                    && current.roots() == &subject.entry.root
-                    && current.schema_version() == subject.entry.schema_version => {}
+                    && current.receipt() == *subject.receipt()
+                    && current.roots() == subject.roots()
+                    && current.schema_version() == subject.retained_entry().schema_version => {}
             None if self
                 .runtime
                 .history
-                .performed_envelope_residency(subject.entry.commit.commit_id)
+                .performed_envelope_residency(subject.receipt().commit_id)
                 .is_some_and(|actual| Arc::ptr_eq(&actual, &residency)) => {}
             _ => return Err(Refusal::CatalogSubjectChanged),
         }
@@ -71,9 +71,7 @@ impl DurabilityAuthority<'_> {
                         .map_err(|cause| {
                             Refusal::Recovery(RelationalRecoveryStop::AdmissionImage(cause))
                         })?;
-                let semantic = RecoveredRelationalSemanticResult {
-                    semantic: data.semantic.clone(),
-                };
+                let semantic = assemble_recovered_relational_semantic_result(data.semantic.clone());
                 (
                     ReadmittedEffectOrigin::Checkpoint { commit, data },
                     semantic,
@@ -88,22 +86,22 @@ impl DurabilityAuthority<'_> {
                 if positioned.envelope().caller_association() != subject.association() {
                     return Err(Refusal::SubjectMismatch);
                 }
-                let semantic = RecoveredRelationalSemanticResult {
-                    semantic: positioned.envelope().semantic_result_arc(),
-                };
+                let semantic = assemble_recovered_relational_semantic_result(
+                    positioned.envelope().semantic_result_arc(),
+                );
                 (ReadmittedEffectOrigin::Original(positioned), semantic)
             }
         };
         let settlement = self
             .runtime
             .history
-            .associated_effect_settlement(&subject.entry, &residency)
+            .associated_effect_settlement(subject.retained_entry(), &residency)
             .ok_or(Refusal::MissingSettlementEvidence)?;
-        Ok(ReadmittedRelationalAssociatedEffect {
-            subject: subject.clone(),
+        Ok(ReadmittedRelationalAssociatedEffect::from_readmission(
+            subject.clone(),
             semantic,
             origin,
             settlement,
-        })
+        ))
     }
 }

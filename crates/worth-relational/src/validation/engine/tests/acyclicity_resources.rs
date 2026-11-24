@@ -1,10 +1,10 @@
 //! Real transaction validation under one finite caller request.
 mod fixture;
 mod native_prerequisites;
-mod packet_capacity;
+pub(crate) use worth_relational_mutation::internal_port::validation::engine::tests::acyclicity_resources::packet_capacity;
 
 use fixture::DagFixture;
-use packet_capacity::paid_dag_request;
+use packet_capacity::paid_dag_request_for_test;
 use worth_execution::{CancellationToken, ExecutionRequest};
 
 #[test]
@@ -18,7 +18,13 @@ fn repeated_dag_reachability_reuses_scratch_under_the_same_finite_policy() {
     // grows with the square of the node count: past 1 MiB at 128 nodes, so
     // past 16 MiB here. 8 MiB funds the linear law and refuses the quadratic.
     // Work is fixture funding here, not the claim.
-    let lease = paid_dag_request(8 * 1024 * 1024, 400_000_000, CancellationToken::new(), None);
+    let lease = paid_dag_request_for_test(
+        worth_harness::facade::execution_fixture::test_execution_authority(),
+        8 * 1024 * 1024,
+        400_000_000,
+        CancellationToken::new(),
+        None,
+    );
     let candidate = fixture
         .validate(&ExecutionRequest::leased(&lease), fixture.chain_batch(2))
         .expect("a DAG needs live scratch, not the sum of every freed successor buffer");

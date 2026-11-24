@@ -1,4 +1,5 @@
 use super::PerformanceAccess;
+use worth_relational_contracts::internal_port::performance::data::runtime_complexity_counters::RuntimeComplexityCountersOwnerPort as _;
 
 impl PerformanceAccess<'_> {
     pub(crate) fn count_query_serial_strategy(&self) {

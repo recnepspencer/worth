@@ -11,6 +11,7 @@ use crate::indexes::data::{
 };
 use crate::runtime::VisibilityProjectionView;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
+use worth_relational_branch::internal_port::indexes::data::bounded_entity_field_lookup::BoundedEntityFieldLookupDenialOwnerPort as _;
 pub struct BoundedEntityFieldSelectedLookup<'a> {
     view: &'a VisibilityProjectionView,
     index: DerivedIndexId,

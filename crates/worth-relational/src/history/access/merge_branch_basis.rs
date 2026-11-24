@@ -87,7 +87,7 @@ impl<'runtime> HistoryAccess<'runtime> {
         crate::history::data::RelationalFoundationalCurrentMergeBranchBasisArtifact,
         crate::history::data::RelationalMergeBranchBasisFoundationalLoweringDenial,
     > {
-        super::merge_branch_basis_foundational::lower_current_basis(
+        super::merge_branch_basis_foundational::lower_current_basis_for_test(
             self.resolve_merge_branch_basis(basis.source_branch(), basis.target_branch()),
             basis,
             version,

@@ -1,4 +1,5 @@
 //! Rejudge every unchanged source row without inventing a write or event.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use crate::branch::{SelectedRelationalBranchRead, SelectedRelationalBranchState};
 use crate::mvcc::BranchBoundRelationalTransaction;
 use crate::runtime::RelationalPreparationRuntime;
@@ -9,7 +10,7 @@ use worth_execution::{
     ExecutionArray, ExecutionOrderedMap, ExecutionRequest, ExecutionRequestArrayBuilder,
 };
 
-pub(crate) mod captured_records;
+pub(crate) use worth_relational_mutation::internal_port::runtime::home_program_transition::coverage::captured_records;
 pub(crate) use captured_records::RelationalHomeTargetCoverage;
 use captured_records::{array, ordered, overflow, staging};
 

@@ -1,7 +1,7 @@
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
-pub(crate) mod origin;
+pub(crate) use worth_relational_branch::internal_port::runtime::state::subsystems::services::sequence::origin;
 
 /// Ten decimal digits; changing text width requires another nine billion
 /// instances. The first ten-digit id is the canonical artifact frame, which no

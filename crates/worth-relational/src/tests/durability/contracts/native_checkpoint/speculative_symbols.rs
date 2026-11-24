@@ -4,6 +4,8 @@
 //! and the restore reads only those bytes, so the claim has no physical-medium
 //! content and runs on the owner's Memory runtime (C2 placement rule).
 use super::*;
+use worth_relational_durability::internal_port::durability::data::checkpoint_images::DurableCheckpointFieldsFixturePort as _;
+use worth_relational_durability::internal_port::durability::data::checkpoint_images::DurableCheckpointOwnerPort as _;
 
 #[test]
 fn unpublished_client_keys_leave_checkpoint_dictionary_equal_and_published_keys_restore() {
@@ -50,56 +52,66 @@ fn unpublished_client_keys_leave_checkpoint_dictionary_equal_and_published_keys_
     let mut after = decode(&after);
     // D7 retains abandoned identity frontiers. Decoding authenticates both
     // dictionary indices; their expanded meaning and commits stay unchanged.
-    assert!(after.symbol_identity_frontier > before.symbol_identity_frontier);
+    assert!(after.symbol_identity_frontier_for_test() > before.symbol_identity_frontier_for_test());
     assert_eq!(before.symbol_table, after.symbol_table);
-    assert_eq!(before.envelopes, after.envelopes);
+    assert_eq!(before.envelopes(), after.envelopes());
     assert_eq!(before.partition_images, after.partition_images);
     assert_eq!(before.aspect_contracts, after.aspect_contracts);
     assert_eq!(
-        before.branch_root_schema_images,
-        after.branch_root_schema_images
+        before.branch_root_schema_images_for_test(),
+        after.branch_root_schema_images_for_test()
     );
     assert_eq!(before.index_definitions, after.index_definitions);
     assert_eq!(before.lineage, after.lineage);
     // Only D7's burned symbol and record identities may differ. Full equality
     // also protects root images, coverage, schemas, and derived artifacts.
     for checkpoint in [&before, &after] {
-        let directory = checkpoint.canonical_directory.as_ref().unwrap();
+        let directory = checkpoint.original_canonical_directory().unwrap();
         assert_eq!(
             directory.manifest.record_identity,
-            checkpoint.record_identity
+            *checkpoint.record_identity_for_test()
         );
         assert_eq!(
             directory.manifest.symbol_identity_frontier,
-            checkpoint.symbol_identity_frontier
+            checkpoint.symbol_identity_frontier_for_test()
         );
     }
-    after.symbol_identity_frontier = before.symbol_identity_frontier;
+    *after.symbol_identity_frontier_mut_for_test() = before.symbol_identity_frontier_for_test();
     assert_eq!(
-        before.record_identity.schema_version,
-        after.record_identity.schema_version
+        before.record_identity_for_test().schema_version,
+        after.record_identity_for_test().schema_version
     );
     // Fixture adaptation: the image constructor now takes its optional retained
     // memory charge; a decoded comparison image carries none, and image
     // equality never compares that charge.
-    after.record_identity =
+    *after.record_identity_mut_for_test() =
         crate::durability::data::DurableRecordIdentityState::current_with_memory(
-            before.record_identity.generation_high_water.clone(),
-            before.record_identity.reusable_slots.clone(),
-            before.record_identity.append_frontiers.clone(),
-            after.record_identity.pending_reservations.clone(),
+            before
+                .record_identity_for_test()
+                .generation_high_water
+                .clone(),
+            before.record_identity_for_test().reusable_slots.clone(),
+            before.record_identity_for_test().append_frontiers.clone(),
+            after
+                .record_identity_for_test()
+                .pending_reservations
+                .clone(),
             None,
         );
-    let mut original_directory = after.canonical_directory.take().unwrap().into_original();
+    let mut original_directory = after
+        .canonical_directory_mut_for_test()
+        .take()
+        .unwrap()
+        .into_original();
     let changed_directory = std::sync::Arc::get_mut(&mut original_directory)
         .expect("decoded checkpoint owns its original directory uniquely");
     let mut changed_manifest = changed_directory.manifest.ordinary_owned_draft();
-    changed_manifest.record_identity = after.record_identity.clone();
-    changed_manifest.symbol_identity_frontier = after.symbol_identity_frontier;
+    changed_manifest.record_identity = after.record_identity_for_test().clone();
+    changed_manifest.symbol_identity_frontier = after.symbol_identity_frontier_for_test();
     changed_directory.manifest = changed_manifest.seal_ordinary();
-    after.canonical_directory = Some(crate::durability::data::NativeCheckpointDirectoryEdge::new(
-        original_directory,
-    ));
+    *after.canonical_directory_mut_for_test() = Some(
+        crate::durability::data::NativeCheckpointDirectoryEdge::new(original_directory),
+    );
     assert_eq!(before, after);
 
     let committed = create_entity_outcome(execution, &runtime, "published-after-abandonment");

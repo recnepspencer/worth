@@ -3,6 +3,7 @@ use crate::branch::{RelationalBranchReferenceObservation, RelationalBranchVersio
 use crate::history::data::CanonicalCommitEnvelope;
 use crate::history::data::{BranchId, CommitId, RelationalCommitReceipt};
 use crate::publication::patch::data::PatchStreamPosition;
+use worth_relational_branch::internal_port::history::commit::identity::RelationalCommitIdentityOwnerPort as _;
 
 use super::HistoryAccess;
 
@@ -165,8 +166,8 @@ impl<'runtime> HistoryAccess<'runtime> {
     }
 
     #[cfg(test)]
-    pub(crate) fn preview_next_version_id(&self) -> crate::identity::data::VersionId {
-        self.runtime.history.preview_next_version_id()
+    pub(crate) fn preview_next_version_id_for_test(&self) -> crate::identity::data::VersionId {
+        self.runtime.history.preview_next_version_id_for_test()
     }
 
     pub(crate) fn commit_count(&self) -> usize {

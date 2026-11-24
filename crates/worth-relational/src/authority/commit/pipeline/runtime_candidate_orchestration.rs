@@ -1,4 +1,5 @@
 //! Issue one runtime-bound candidate through preparation and registration.
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::authority_context::AuthoritativeCommitContext;
 use super::candidate_preparation::stages;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;

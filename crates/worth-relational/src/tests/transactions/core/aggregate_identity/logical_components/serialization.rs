@@ -3,6 +3,7 @@ use super::checkpoint::configured_runtime;
 use super::fixtures::*;
 use crate::durability::data::DurableBranchRootSchemaImage;
 use serde::{de::IgnoredAny, Serialize};
+use worth_relational_durability::internal_port::durability::data::checkpoint_images::DurableCheckpointFieldsFixturePort as _;
 
 /// An independent serializer for the required seven-field authority contract.
 #[derive(Serialize)]
@@ -102,7 +103,7 @@ fn required_content_authority_keeps_exact_shape_and_positional_empty_tails() {
             .durability_authority()
             .checkpoint(execution)
             .unwrap();
-        let image = &checkpoint.branch_root_schema_images[0];
+        let image = &checkpoint.branch_root_schema_images_for_test()[0];
         let compact = rmp_serde::to_vec(image).unwrap();
         let fields: Vec<IgnoredAny> = rmp_serde::from_slice(&compact).unwrap();
         assert_eq!(fields.len(), 10);

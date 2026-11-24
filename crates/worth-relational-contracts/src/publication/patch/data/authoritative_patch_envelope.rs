@@ -1,0 +1,175 @@
+use crate::internal_port::publication::patch::data::patch_detail::PatchDetailOwnerPort as _;
+use crate::internal_port::publication::patch::data::published_authoritative_patch::PublishedAuthoritativePatchOwnerPort as _;
+use crate::internal_port::publication::patch::data::semantic_change::PublishedAuthoritativeAspectChangeOwnerPort as _;
+use crate::publication::patch::data::{
+    PatchDetail, PatchOrdering, PatchPublicationMode, PatchStreamPosition,
+    PublishedAuthoritativePatch, RecordStructuralChange,
+};
+use crate::transactions::data::primitives::RecordRef;
+use serde::{Deserialize, Serialize};
+use worth_foundational::facade::AspectKey;
+
+/// The actual allocated relation's structural birth, independent of exposed aspects.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PublishedRelationBirth {
+    pub kind: crate::identity::data::KindId,
+    pub source: crate::identity::data::EntityId,
+    pub target: crate::identity::data::EntityId,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PublishedAuthoritativeRecordPatch {
+    pub target: RecordRef,
+    pub structural_change: RecordStructuralChange,
+    pub authoritative_patch: PublishedAuthoritativePatch,
+    #[serde(default)]
+    pub semantic_changes: Vec<super::PublishedAuthoritativeAspectChange>,
+    pub contains_opaque_aspect: bool,
+    pub detail: PatchDetail,
+    /// Emitted only by native relation creation; descriptive journal evidence,
+    /// consumed with the exact allocation and Created patch, never publication custody.
+    #[serde(default)]
+    pub relation_birth: Option<PublishedRelationBirth>,
+}
+
+/// One meaning of "this applied record patch left the application unchanged",
+/// shared by the final envelope judgment and a continued candidate round.
+pub fn preserves_application(
+    structural_change: RecordStructuralChange,
+    contains_opaque_aspect: bool,
+    semantic_changes: &[super::PublishedAuthoritativeAspectChange],
+    authoritative_patch: &PublishedAuthoritativePatch,
+    relation_birth: Option<&PublishedRelationBirth>,
+) -> bool {
+    structural_change == RecordStructuralChange::Updated
+        && !contains_opaque_aspect
+        && semantic_changes.is_empty()
+        && authoritative_patch.changed_aspect_keys().next().is_none()
+        && relation_birth.is_none()
+}
+
+impl PublishedAuthoritativeRecordPatch {
+    pub fn authoritative_changed_aspect_keys(&self) -> impl Iterator<Item = &AspectKey> {
+        self.authoritative_patch.changed_aspect_keys()
+    }
+
+    pub fn authoritative_changed_aspects(&self) -> Vec<AspectKey> {
+        self.authoritative_patch.changed_aspects()
+    }
+
+    pub fn canonicalized(&self) -> Self {
+        Self {
+            target: self.target.clone(),
+            structural_change: self.structural_change,
+            authoritative_patch: self.authoritative_patch.canonicalized(),
+            semantic_changes: {
+                let mut changes = self.semantic_changes.clone();
+                changes.sort_by_key(super::PublishedAuthoritativeAspectChange::canonical_key);
+                changes.dedup();
+                changes
+            },
+            contains_opaque_aspect: self.contains_opaque_aspect,
+            detail: self.detail.canonicalized(),
+            relation_birth: self.relation_birth,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CanonicalAuthoritativePatch {
+    pub ordering: PatchOrdering,
+    pub publication_mode: PatchPublicationMode,
+    pub authoritative_record_patches: Vec<PublishedAuthoritativeRecordPatch>,
+}
+
+impl CanonicalAuthoritativePatch {
+    pub fn canonicalized(&self) -> Self {
+        Self {
+            ordering: self.ordering,
+            publication_mode: self.publication_mode,
+            authoritative_record_patches: self
+                .authoritative_record_patches
+                .iter()
+                .map(PublishedAuthoritativeRecordPatch::canonicalized)
+                .collect(),
+        }
+    }
+}
+
+/// Subscriber-facing projection of one canonical patch at its performed
+/// runtime stream position.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PublishedAuthoritativePatchEnvelope {
+    pub ordering: PatchOrdering,
+    pub publication_mode: PatchPublicationMode,
+    pub position: PatchStreamPosition,
+    pub authoritative_record_patches: Vec<PublishedAuthoritativeRecordPatch>,
+}
+
+impl PublishedAuthoritativePatchEnvelope {
+    pub fn canonicalized(&self) -> Self {
+        let canonical = CanonicalAuthoritativePatch {
+            ordering: self.ordering,
+            publication_mode: self.publication_mode,
+            authoritative_record_patches: self.authoritative_record_patches.clone(),
+        }
+        .canonicalized();
+        Self::from_canonical(self.position, &canonical)
+    }
+}
+
+/// Operations used by the Relational owners.
+pub trait PublishedAuthoritativeRecordPatchOwnerPort: Sized {
+    fn preserves_application(&self) -> bool;
+    fn owned_allocation_capacity_bytes(&self) -> u64;
+    fn into_canonicalized(self) -> Self;
+}
+
+impl PublishedAuthoritativeRecordPatchOwnerPort for PublishedAuthoritativeRecordPatch {
+    fn preserves_application(&self) -> bool {
+        preserves_application(
+            self.structural_change,
+            self.contains_opaque_aspect,
+            &self.semantic_changes,
+            &self.authoritative_patch,
+            self.relation_birth.as_ref(),
+        )
+    }
+
+    fn owned_allocation_capacity_bytes(&self) -> u64 {
+        (self.semantic_changes.capacity() as u64)
+            .saturating_mul(std::mem::size_of::<super::PublishedAuthoritativeAspectChange>() as u64)
+            .saturating_add(
+                self.semantic_changes
+                    .iter()
+                    .map(super::PublishedAuthoritativeAspectChange::owned_allocation_capacity_bytes)
+                    .sum::<u64>(),
+            )
+            .saturating_add(self.authoritative_patch.owned_allocation_capacity_bytes())
+            .saturating_add(self.detail.owned_allocation_capacity_bytes())
+    }
+
+    fn into_canonicalized(mut self) -> Self {
+        self.authoritative_patch = self.authoritative_patch.into_canonicalized();
+        self.semantic_changes
+            .sort_by_key(super::PublishedAuthoritativeAspectChange::canonical_key);
+        self.semantic_changes.dedup();
+        self
+    }
+}
+
+/// Operations used by the Relational owners.
+pub trait PublishedAuthoritativePatchEnvelopeOwnerPort: Sized {
+    fn from_canonical(position: PatchStreamPosition, patch: &CanonicalAuthoritativePatch) -> Self;
+}
+
+impl PublishedAuthoritativePatchEnvelopeOwnerPort for PublishedAuthoritativePatchEnvelope {
+    fn from_canonical(position: PatchStreamPosition, patch: &CanonicalAuthoritativePatch) -> Self {
+        Self {
+            ordering: patch.ordering,
+            publication_mode: patch.publication_mode,
+            position,
+            authoritative_record_patches: patch.authoritative_record_patches.clone(),
+        }
+    }
+}

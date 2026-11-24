@@ -1,4 +1,5 @@
 //! Inspect the exact applied participants of a live validated proposal.
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::coupled_assembly::completion::RelationalCoupledAuthoredPublicationFieldsPort as _;
 use super::*;
 
 impl crate::mvcc::validation::validated_proposal::ValidatedRelationalProposal {
@@ -17,7 +18,7 @@ impl crate::mvcc::validation::validated_proposal::ValidatedRelationalProposal {
                     _ => None,
                 },
             )?;
-        contribution::authored_stage(group.stages.get(stage)?, source)
+        contribution::authored_stage(group.stages().get(stage)?, source)
     }
     /// Actual per-writer changes from the applied assembly, before publication.
     pub fn coupled_contribution_records(
@@ -33,7 +34,7 @@ impl crate::mvcc::validation::validated_proposal::ValidatedRelationalProposal {
                 else {
                     return None;
                 };
-                contribution::produced(&group.parts, producer, meaning)
+                contribution::produced(group.parts(), producer, meaning)
             })
     }
     pub fn coupled_participants(
@@ -46,7 +47,7 @@ impl crate::mvcc::validation::validated_proposal::ValidatedRelationalProposal {
                 RequiredOutputPublication::CoupledAuthored { group } => Some(group),
                 _ => None,
             })
-            .flat_map(|group| group.parts.iter())
+            .flat_map(|group| group.parts().iter())
             .map(contribution::route)
     }
 }

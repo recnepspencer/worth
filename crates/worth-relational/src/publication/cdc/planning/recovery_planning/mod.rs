@@ -1,3 +1,4 @@
+use worth_relational_publication::internal_port::publication::cdc::data::subscriber_failure::SubscriberStreamFailureOwnerPort as _;
 mod checkpoint_projection;
 mod envelope_sources;
 mod request_validation;

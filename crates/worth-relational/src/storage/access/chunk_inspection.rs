@@ -5,6 +5,7 @@ use crate::runtime::RelationalRuntime;
 use crate::storage::data::{ChunkDiagnostics, ChunkVisibilitySummary, ChunkedStorageSummary};
 use crate::storage::partition::chunks::{slot_chunk_index, summarize_arena_chunks};
 use crate::transactions::data::primitives::RecordRef;
+use worth_relational_branch::internal_port::snapshots::data::SnapshotHandleFieldsPort as _;
 
 pub(crate) fn chunked_storage_summary(
     runtime: &RelationalRuntime,
@@ -55,7 +56,10 @@ pub(crate) fn plan_read_explicit_query_packet(
     handle: &crate::snapshots::data::SnapshotHandle,
     packet: &PlannedQueryPacket,
 ) -> Option<ReadPacketPlan> {
-    if !runtime.visibility.is_known_snapshot(handle.snapshot_id) {
+    if !runtime
+        .visibility
+        .is_known_snapshot(*handle.owner_snapshot_id())
+    {
         return None;
     }
     let targets = packet.explicit_target_refs()?;

@@ -1,4 +1,7 @@
 //! Normalize an incoming coupled suffix before indexing it, never its retained prefix.
+use worth_relational_contracts::internal_port::transactions::data::intents::mutation_intent::MutationIntentOwnerPort as _;
+use worth_relational_contracts::internal_port::mvcc::transaction::staging::RelationalTransactionStagingDenialOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::BranchBoundRelationalTransaction;
 use crate::{
     authority::mutation::MutationApplyDenial,

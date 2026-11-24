@@ -3,6 +3,7 @@ use super::*;
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::runtime::RelationalRuntime;
 use worth_execution::ExecutionRequest;
+use worth_relational_mutation::internal_port::branch::model_ownership::graph_admission::RelationalModelOwnershipOwnerPort as _;
 use RelationalOwnedModelSelectionDenial as Denial;
 
 impl RelationalRuntime {
@@ -15,7 +16,7 @@ impl RelationalRuntime {
     ) -> Result<Option<EntityId>, RelationalModelOwnershipDenial> {
         let (owner, _memory) =
             basis::observe(self.runtime_instance_id(), execution, basis, |read| {
-                ownership.plan.owner(read, subject)
+                ownership.as_ref().owner(read, subject)
             })?;
         Ok(owner)
     }

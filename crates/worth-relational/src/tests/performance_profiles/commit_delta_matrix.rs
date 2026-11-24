@@ -10,8 +10,7 @@ fn perf_commit_delta_matrix() {
         let runtime = runtime_with_test_schema();
         commit_measurement(&runtime, |runtime| {
             measure_counted_work(execution, || {
-                let mut txn =
-                    crate::tests::support::test_owner_begin_transaction_for_main(runtime);
+                let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
                 for index in 0..64 {
                     txn.push_batch(
                         batch_create(&format!("perf-entity-{index}")),
@@ -24,9 +23,7 @@ fn perf_commit_delta_matrix() {
             })
         })
     });
-    assert!(narrow_samples
-        .iter()
-        .all(|sample| sample.charged_work > 0));
+    assert!(narrow_samples.iter().all(|sample| sample.charged_work > 0));
     assert_counted_budget(
         &narrow_samples,
         "single-partition commits should remain sparse and clone-free",
@@ -63,8 +60,7 @@ fn perf_commit_delta_matrix() {
 
         commit_measurement(&runtime, |runtime| {
             measure_counted_work(execution, || {
-                let mut txn =
-                    crate::tests::support::test_owner_begin_transaction_for_main(runtime);
+                let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
                 let mut batch = WorkerIntentBatch::new("cross-partition-relations");
                 for (index, (source, target)) in sources.iter().zip(targets.iter()).enumerate() {
                     batch = batch.push(MutationIntent::Create(CreateIntent::Relation(
@@ -110,8 +106,7 @@ fn perf_commit_delta_matrix() {
         let runtime = durable_runtime_for_medium(&medium);
         let mut sample = commit_measurement(&runtime, |runtime| {
             measure_counted_work(execution, || {
-                let mut txn =
-                    crate::tests::support::test_owner_begin_transaction_for_main(runtime);
+                let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
                 txn.push_batch(
                     batch_create("persisted-single"),
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,

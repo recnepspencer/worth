@@ -4,6 +4,7 @@ use crate::branch::RecordedRelationalComponentReference;
 use crate::durability::authority::associated_effects::discovery::current_settlement;
 use crate::durability::authority::recovered_runtime::RecoveredRelationalRuntimeAuthority;
 use crate::runtime::RelationalRuntime;
+use worth_relational_durability::internal_port::durability::authority::associated_effects::RelationalAssociatedEffectSubjectOwnerPort as _;
 
 impl RecoveredRelationalRuntimeAuthority {
     /// Descriptively verify that an already-readmitted Native effect advanced

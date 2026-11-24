@@ -1,8 +1,8 @@
 mod access;
 mod authority;
-pub mod data;
-mod derived_index_surface;
-mod diagnostics;
-mod planning;
+pub use worth_relational_durability::internal_port::replay::data;
+pub(crate) use worth_relational_durability::internal_port::replay::{
+    derived_index_surface, diagnostics, planning,
+};
 
 pub use access::ReplayAccess;

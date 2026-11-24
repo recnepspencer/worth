@@ -1,8 +1,11 @@
 //! Complete publication position survives total membership replacement.
+#[cfg(not(test))]
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::custody::RelationalRequiredOutputPublicationFieldsPort as _;
 use super::*;
-use crate::mvcc::publication::application_publication::output_meaning::{
-    native_meaning_fixture, native_roles_fixture,
+use crate::mvcc::publication::application_publication::meaning_fixture::{
+    native_meaning_for_test, native_roles_for_test,
 };
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 #[path = "retirement/authored.rs"]
 mod authored;
 
@@ -30,7 +33,7 @@ fn completion(
     roles: Vec<RequiredOutputRoleTarget>,
     dependency: u8,
 ) -> RequiredOutputPublication {
-    let meaning = previous.origin.as_ref().meaning.clone();
+    let meaning = previous.origin().as_ref().meaning.clone();
     let admission = owner
         .admit_required_output_succession(
             owner.admit_required_output("retirement-preserver", [dependency; 32]),
@@ -61,7 +64,7 @@ fn new_roles(targets: &[CreatedEntityRef; 2]) -> Vec<RequiredOutputRoleTarget> {
 
 #[test]
 fn all_retired_then_disjoint_create_rejects_stale_complete_predecessor_before_movement() {
-    let request = crate::execution::test_policy::serial_request();
+    let request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     let mut runtime = runtime_with_test_schema();
     let receipt = runtime
@@ -127,7 +130,7 @@ fn all_retired_then_disjoint_create_rejects_stale_complete_predecessor_before_mo
     let before = test_owner_main_basis(&runtime).unwrap();
     for id in ids {
         assert!(!before
-            .inner
+            .owner_inner()
             .root
             .partition_state(id.partition_id)
             .unwrap()
@@ -175,8 +178,8 @@ fn all_retired_then_disjoint_create_rejects_stale_complete_predecessor_before_mo
             &basis,
             "native-preserver",
             &[5; 32],
-            &native_meaning_fixture("retirement-creator"),
-            &native_roles_fixture(
+            &native_meaning_for_test("retirement-creator"),
+            &native_roles_for_test(
                 &replacement_ids.map(|id| (id, KindId(1))),
                 RequiredOutputRolePosture::Preserve,
             ),
@@ -209,7 +212,7 @@ fn cold_replacement(
         .unwrap();
     let (owner, installed) = receipt.issue_application_publication_owner();
     let basis = test_owner_main_basis(&runtime).unwrap();
-    let meaning = native_meaning_fixture("retirement-creator");
+    let meaning = native_meaning_for_test("retirement-creator");
     let denied = runtime
         .readmit_required_output_publication(
             execution,

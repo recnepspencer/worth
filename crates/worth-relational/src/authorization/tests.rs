@@ -1,4 +1,5 @@
 use worth_foundational::facade::{AspectValue, InternedString};
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 use crate::facade::config::CascadeDeletePolicy;
 use crate::facade::history::BranchId;
@@ -267,7 +268,9 @@ fn authorization_fixture(
     unrelated_schema.relation_kind_id = KindId(99);
     unrelated_schema.relation_kind_name = "unrelated-authorization-relation".to_string();
     let mut unrelated_schema = unrelated_schema.build_registry();
-    let unrelated_relation = unrelated_schema.relation_kinds.remove(&KindId(99)).unwrap();
+    let unrelated_relation = (*unrelated_schema.owner_relation_kinds_mut())
+        .remove(&KindId(99))
+        .unwrap();
     schema = schema.register_relation_kind(unrelated_relation).unwrap();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema)

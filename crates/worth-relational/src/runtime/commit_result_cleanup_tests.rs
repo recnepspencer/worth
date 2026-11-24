@@ -1,4 +1,8 @@
 //! Runtime cleanup checks authentic tenure and exact private snapshot registrations.
+use worth_relational_publication::internal_port::transactions::data::outcomes::commit_result::CommitResultOwnerPort as _;
+use worth_relational_publication::internal_port::transactions::data::outcomes::commit_result::snapshot_fixture::CommitResultFixturePort as _;
+use worth_relational_branch::internal_port::runtime::state::subsystems::visibility::snapshot_handles::SnapshotHandlesFixturePort as _;
+use worth_relational_branch::internal_port::runtime::state::subsystems::visibility::snapshot_handles::published_release::PublishedSnapshotReleaseObservationFixturePort as _;
 use crate::branch::result_snapshot_outcome::RelationalCommitResultSnapshotCleanupPending as Pending;
 use crate::branch::result_snapshot_outcome::{
     RelationalCommitResultSnapshotRelease as Outcome,
@@ -12,7 +16,7 @@ use worth_execution::ExecutionRequest;
 #[test]
 fn result_snapshot_cleanup_refuses_an_actual_admitted_runtime_copy() {
     use crate::branch::result_snapshot_outcome::RelationalCommitResultSnapshotCleanupDenial as Denial;
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = &ExecutionRequest::serial(&host);
     let runtime = runtime_with_test_schema();
     let result = std::sync::Arc::new(create_entity_outcome(
@@ -59,7 +63,7 @@ fn result_snapshot_cleanup_refuses_an_actual_admitted_runtime_copy() {
 
 #[test]
 fn native_custody_correction_result_release_cell_tracks_public_release_closeout_and_transfer() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = &ExecutionRequest::serial(&host);
     let runtime = runtime_with_test_schema();
     let service = runtime.owner_component_services().basis_port();
@@ -102,7 +106,7 @@ fn native_custody_correction_result_release_cell_tracks_public_release_closeout_
 
 #[test]
 fn native_custody_correction_result_cleanup_refuses_foreign_and_private_altered_pairing() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = &ExecutionRequest::serial(&host);
     let runtime = runtime_with_test_schema();
     let foreign = runtime_with_test_schema();
@@ -126,7 +130,7 @@ fn native_custody_correction_result_cleanup_refuses_foreign_and_private_altered_
     drop(basis);
     // This private negative fixture cannot be written through CommitResult's
     // public read-only outcome; both handles came from real owner admission.
-    let altered = result.copy_with_altered_snapshot(independent.clone());
+    let altered = result.copy_with_altered_snapshot_for_test(independent.clone());
     let service = runtime.owner_component_services().basis_port();
     assert!(matches!(
         service.release_commit_result_snapshot(&altered),
@@ -142,7 +146,7 @@ fn native_custody_correction_result_cleanup_refuses_foreign_and_private_altered_
 
 #[test]
 fn result_snapshot_cleanup_registry_contention_preserves_exact_cell_and_competing_task() {
-    let host = crate::execution::test_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     let mut runtime = runtime_with_test_schema();
     let result = Arc::new(create_entity_outcome(
@@ -160,7 +164,7 @@ fn result_snapshot_cleanup_registry_contention_preserves_exact_cell_and_competin
     assert_eq!(capacity.occupied_handles(), 1);
     let handles = &runtime.visibility.handles;
     let original_root = handles
-        .observe_published_root(result.snapshot.snapshot_id())
+        .observe_published_root_for_test(result.snapshot.snapshot_id())
         .unwrap();
     let (_, fork_source) = runtime
         .observe_fork_source(runtime.main_branch_identity().branch_id())
@@ -174,7 +178,7 @@ fn result_snapshot_cleanup_registry_contention_preserves_exact_cell_and_competin
         .unwrap()
         .target_identity()
         .clone();
-    let task = handles.while_published_registry_locked(1, || {
+    let task = handles.while_published_registry_locked_for_test(1, || {
         let Progress::Pending {
             task,
             cause: Pending::Busy,
@@ -196,7 +200,7 @@ fn result_snapshot_cleanup_registry_contention_preserves_exact_cell_and_competin
     assert_eq!(capacity.occupied_handles(), 0);
     let original = result.snapshot_release_observation();
     let competing = port.begin_commit_result_snapshot_cleanup(result.clone());
-    let competing = original.while_removed_binding_locked(|| {
+    let competing = original.while_removed_binding_locked_for_test(|| {
         let Progress::Pending {
             task: competing,
             cause: Pending::Busy,

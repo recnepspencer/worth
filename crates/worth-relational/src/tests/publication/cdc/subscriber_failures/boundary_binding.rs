@@ -3,6 +3,7 @@ use crate::schema::data::{
     SchemaBoundaryFingerprint, SchemaContinuationClassification, SchemaVersionId,
 };
 use crate::tests::support::*;
+use worth_relational_publication::internal_port::publication::cdc::data::subscriber_checkpoint::SubscriberCheckpointFixturePort as _;
 
 #[test]
 fn subscriber_stream_rejects_checkpoint_with_mismatched_authoritative_boundary_binding() {

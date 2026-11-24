@@ -1,0 +1,82 @@
+//! Read-only identities of the original publication holders refusing close.
+use crate::mvcc::publication::companion::registration_stop::PublicationCompanionRegistrationStop;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RelationalPublicationRegistryCustody {
+    Empty,
+    Registered { count: usize, first_identity: u64 },
+    ContactHeld,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RelationalPublicationCompanionCustody {
+    Released,
+    Client { generation: u64 },
+    Unavailable(PublicationCompanionRegistrationStop),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RelationalPublicationCustodyHolders {
+    pub candidates: RelationalPublicationRegistryCustody,
+    pub settlements: RelationalPublicationRegistryCustody,
+    pub companion: RelationalPublicationCompanionCustody,
+}
+
+/// Operations used by the Relational owners.
+pub trait RelationalPublicationRegistryCustodyOwnerPort: Sized {
+    fn observed(count: usize, first_identity: Option<u64>) -> Self;
+}
+
+impl RelationalPublicationRegistryCustodyOwnerPort for RelationalPublicationRegistryCustody {
+    fn observed(count: usize, first_identity: Option<u64>) -> Self {
+        if count == 0 {
+            Self::Empty
+        } else {
+            Self::Registered {
+                count,
+                first_identity: first_identity.expect("a locked nonempty registry has a key"),
+            }
+        }
+    }
+}
+
+/// Operations used by the Relational owners.
+pub trait RelationalPublicationCustodyHoldersOwnerPort: Sized {
+    fn retained(self) -> Option<Self>;
+    /// Preserve memory close's nonwaiting, first-established-holder semantics.
+    #[allow(
+        clippy::result_unit_err,
+        reason = "The runtime maps any unavailable holder to the same nonwaiting close refusal"
+    )]
+    fn memory_result(self) -> Result<Option<Self>, ()>;
+}
+
+impl RelationalPublicationCustodyHoldersOwnerPort for RelationalPublicationCustodyHolders {
+    fn retained(self) -> Option<Self> {
+        if self.candidates == RelationalPublicationRegistryCustody::Empty
+            && self.settlements == RelationalPublicationRegistryCustody::Empty
+            && self.companion == RelationalPublicationCompanionCustody::Released
+        {
+            None
+        } else {
+            Some(self)
+        }
+    }
+
+    fn memory_result(self) -> Result<Option<Self>, ()> {
+        use RelationalPublicationRegistryCustody::{ContactHeld, Empty, Registered};
+        match self.candidates {
+            ContactHeld => Err(()),
+            Registered { .. } => Ok(Some(self)),
+            Empty => match self.settlements {
+                ContactHeld => Err(()),
+                Registered { .. } => Ok(Some(self)),
+                Empty => match self.companion {
+                    RelationalPublicationCompanionCustody::Released => Ok(None),
+                    RelationalPublicationCompanionCustody::Client { .. } => Ok(Some(self)),
+                    RelationalPublicationCompanionCustody::Unavailable(_) => Err(()),
+                },
+            },
+        }
+    }
+}

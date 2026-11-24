@@ -1,0 +1,23 @@
+[package]
+name = "worth-relational-lineage"
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+description = "Relational lineage and causal history indexing."
+publish = false
+
+[dependencies]
+worth-relational-contracts.workspace = true
+worth-relational-storage.workspace = true
+worth-relational-branch.workspace = true
+worth-foundational = { path = "../worth-foundational" }
+worth-execution = { path = "../worth-execution" }
+serde = { version = "1", features = ["derive", "rc"] }
+rmp-serde = "1.3"
+
+[dev-dependencies]
+proptest = { version = "1", default-features = false, features = ["std", "bit-set"] }
+
+[lints]
+workspace = true

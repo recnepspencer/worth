@@ -1,16 +1,4 @@
-pub(crate) mod materialization;
-mod native_scan_stop;
-pub(crate) mod projection;
-pub(crate) mod read_footprint;
-pub(crate) mod read_prices;
-pub(crate) mod read_request;
-pub(crate) mod read_work;
-pub(crate) mod reader;
-mod visibility;
-
-pub(crate) use projection::{
-    authoritative_state_query_locus_comparison_key, authoritative_state_query_locus_value,
-};
+pub(crate) use worth_relational_branch::internal_port::visibility::materialization::read_records::{native_scan_stop, read_footprint, read_prices, read_request, read_work};
 #[cfg(test)]
 pub(crate) use projection::{
     entity_query_locus_comparison_key, entity_query_locus_value,
@@ -41,7 +29,8 @@ pub use reader::{
     RelationalPinnedReadAdmissionDenial, RelationalSnapshotPositionAdmissionStop,
     SnapshotPositionDenial,
 };
-
-pub(crate) mod read_stop;
-
 pub use reader::BoundedFrontierReadStop;
+#[cfg(test)]
+pub(crate) use worth_relational_branch::internal_port::visibility::materialization::read_records::materialization;
+pub(crate) mod projection;
+pub(crate) mod reader;

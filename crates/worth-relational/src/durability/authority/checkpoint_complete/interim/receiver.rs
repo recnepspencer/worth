@@ -1,4 +1,6 @@
 //! Admission joins the capture origin to this actual recovered Native owner.
+use worth_relational_durability::internal_port::durability::authority::checkpoint_complete::interim::origin::CapturedNativeInterimOriginOwnerPort as _;
+use worth_relational_durability::internal_port::durability::authority::checkpoint_complete::interim::component::CapturedNativeInterimComponentOwnerPort as _;
 use super::origin_readmission::{decode_origin, receipt_lookup_work};
 use super::*;
 use crate::branch::recorded_basis::{
@@ -10,6 +12,7 @@ use crate::durability::authority::runtime_access::DurabilityAuthority;
 use crate::durability::data::RelationalRecoveryStop;
 use crate::runtime::RelationalRuntime;
 use std::sync::Weak;
+use worth_relational_branch::internal_port::branch::recorded_basis::memory_component::ObservedRelationalMemoryComponentOwnerPort as _;
 
 #[derive(Clone, Debug)]
 pub struct AdmittedNativeInterimReceiver {
@@ -117,14 +120,19 @@ impl DurabilityAuthority<'_> {
             self.runtime
                 .durability
                 .checkpoint_selection()
-                .require_interim_image(&origin.0.image)?;
-            for index in origin.0.source.canonical.values() {
-                require_row(self.runtime, index, &origin.0.source, request)?;
+                .require_interim_image(&origin.original_capture().image)?;
+            for index in origin.original_capture().source.canonical.values() {
+                require_row(
+                    self.runtime,
+                    index,
+                    &origin.original_capture().source,
+                    request,
+                )?;
             }
             Ok(AdmittedNativeInterimReceiver {
-                source: origin.0.source.clone(),
+                source: origin.original_capture().source.clone(),
                 owner: self.runtime.state_binding(),
-                image: origin.0.image.clone(),
+                image: origin.original_capture().image.clone(),
             })
         })
     }
@@ -188,7 +196,7 @@ impl DurabilityRecoveryAuthority<'_> {
             let restored = self.restore_decoded_native_checkpoint_with_authority(
                 request,
                 checkpoint,
-                origin.0.native.len(),
+                origin.native_len(),
             )?;
             install_originals(self.runtime, origin, request)?;
             Ok(restored)
@@ -206,20 +214,20 @@ fn install_originals(
     runtime
         .durability
         .checkpoint_selection()
-        .require_interim_image(&origin.0.image)
+        .require_interim_image(&origin.original_capture().image)
         .map_err(RelationalRecoveryStop::AdmissionImage)?;
-    for original in origin.0.originals.iter() {
-        receipt_lookup_work(&original.commit, &origin.0.source, request)
+    for original in origin.original_capture().originals.iter() {
+        receipt_lookup_work(&original.commit, &origin.original_capture().source, request)
             .map_err(RelationalRecoveryStop::AdmissionImage)?;
         let index = origin
-            .0
+            .original_capture()
             .source
             .canonical
             .get(&original.commit.commit_id)
             .ok_or(RelationalRecoveryStop::AdmissionImage(
                 Refusal::InvalidProjectedMeaning,
             ))?;
-        let row = require_row(runtime, index, &origin.0.source, request)
+        let row = require_row(runtime, index, &origin.original_capture().source, request)
             .map_err(RelationalRecoveryStop::AdmissionImage)?;
         let artifact = runtime
             .history

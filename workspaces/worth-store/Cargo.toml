@@ -80,6 +80,15 @@ worth-proof.opt-level = 0
 worth-foundational.opt-level = 0
 worth-execution.opt-level = 0
 worth-relational.opt-level = 0
+worth-relational-contracts.opt-level = 0
+worth-relational-storage.opt-level = 0
+worth-relational-branch.opt-level = 0
+worth-relational-publication.opt-level = 0
+worth-relational-durability.opt-level = 0
+worth-relational-indexes.opt-level = 0
+worth-relational-lineage.opt-level = 0
+worth-relational-merge.opt-level = 0
+worth-relational-mutation.opt-level = 0
 worth-signal.opt-level = 0
 
 [profile.test.package]
@@ -88,6 +97,15 @@ worth-proof.opt-level = 0
 worth-foundational.opt-level = 0
 worth-execution.opt-level = 0
 worth-relational.opt-level = 0
+worth-relational-contracts.opt-level = 0
+worth-relational-storage.opt-level = 0
+worth-relational-branch.opt-level = 0
+worth-relational-publication.opt-level = 0
+worth-relational-durability.opt-level = 0
+worth-relational-indexes.opt-level = 0
+worth-relational-lineage.opt-level = 0
+worth-relational-merge.opt-level = 0
+worth-relational-mutation.opt-level = 0
 worth-signal.opt-level = 0
 
 [profile.ci-test]

@@ -8,6 +8,7 @@ pub(super) use crate::schema::data::*;
 pub(super) use crate::tests::support::*;
 pub(super) use worth_execution::ExecutionRequest;
 pub(super) use worth_foundational::facade::AggregateDefinitionIdentity;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 pub(super) fn descriptor(second: bool) -> AggregateIdentityContractDeclaration {
     let mut contract = fixtures::descriptor();
@@ -24,8 +25,10 @@ pub(super) fn descriptor(second: bool) -> AggregateIdentityContractDeclaration {
 }
 pub(super) fn registry() -> RelationalSchemaRegistry {
     let mut registry = fixtures::registry();
-    registry.relation_kinds.remove(&KindId(5));
-    let mut source = registry.relation_kinds.remove(&KindId(2)).unwrap();
+    (*registry.owner_relation_kinds_mut()).remove(&KindId(5));
+    let mut source = (*registry.owner_relation_kinds_mut())
+        .remove(&KindId(2))
+        .unwrap();
     source.relation_integrity.cardinality_contracts.clear();
     registry = registry.register_relation_kind(source).unwrap();
     registry = registry

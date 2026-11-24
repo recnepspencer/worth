@@ -9,6 +9,7 @@ use crate::runtime::{OriginalBranchSchemaInputsDenial, RelationalRuntime};
 use std::sync::{Arc, Weak};
 use worth_execution::ExecutionRequest;
 use worth_foundational::FoundationalBranchReferenceGeneration;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 
 #[derive(Debug)]
 pub struct FreshRelationalSourceAdmission {
@@ -158,7 +159,7 @@ impl FreshRelationalSourceAdmission {
     ) -> bool {
         self.invariant_generation == generation
             && &self.schema.authority_digest() == digest
-            && self.schema.registry().entity_kinds.len() == entities
-            && self.schema.registry().relation_kinds.len() == relations
+            && (*self.schema.registry().owner_entity_kinds()).len() == entities
+            && (*self.schema.registry().owner_relation_kinds()).len() == relations
     }
 }

@@ -1,0 +1,38 @@
+[package]
+name = "worth-relational-publication"
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+description = "Relational publication, change streams, and settlement."
+publish = false
+
+[dependencies]
+worth-relational-contracts.workspace = true
+worth-relational-storage.workspace = true
+worth-relational-branch.workspace = true
+worth-relational-durability.workspace = true
+worth-relational-indexes.workspace = true
+worth-relational-lineage.workspace = true
+worth-relational-merge.workspace = true
+worth-relational-mutation.workspace = true
+worth-foundational = { path = "../worth-foundational" }
+worth-proof = { path = "../worth-proof" }
+worth-execution = { path = "../worth-execution" }
+serde = { version = "1", features = ["derive", "rc"] }
+rmp-serde = "1.3"
+"serde_json" = { version = "1", features = ["raw_value"] }
+sha2 = "=0.10.9"
+smallvec = "1"
+arc-swap = "1"
+dashmap = "6"
+# aarch64's SHA2 instructions are runtime detected by sha2. x86 uses its
+# built-in SHA-NI backend without requiring an assembler on MSVC hosts.
+[target.'cfg(target_arch = "aarch64")'.dependencies]
+sha2 = { version = "=0.10.9", features = ["asm"] }
+
+[dev-dependencies]
+worth-harness.workspace = true
+
+[lints]
+workspace = true

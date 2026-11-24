@@ -4,12 +4,18 @@
 //! canonical commit artifact for the merge commit is encoded, readmitted,
 //! inspected with the original authority take/restore allocation-inventory
 //! callback, resealed, and replayed through the owner's recovery plan.
+use worth_relational_durability::internal_port::durability::migration::readmitted_canonical_commit::ReadmittedCanonicalCommitOwnerPort as _;
+use worth_relational_durability::internal_port::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactOwnerPort as _;
+use worth_relational_durability::internal_port::durability::data::recovery_plan::RecoveryPlanOwnerPort as _;
+use worth_relational_durability::internal_port::durability::data::recovery_plan::RecoveryPlanFieldsFixturePort as _;
 use super::*;
 #[cfg(test)]
 use crate::durability::canonical_commit_artifact::checkpoint_body::copy_original_for_test;
 use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact;
 use crate::durability::migration::ReadmittedCanonicalCommit;
 use crate::facade::merge::{MergeExecutionRequest, MergeIntent};
+use worth_relational_branch::internal_port::history::data::canonical_commit_allocation::CanonicalCommitEnvelopeBodyOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeFixturePort as _;
 
 #[test]
 fn durability_contract_replays_merge_from_typed_authority_when_diagnostics_are_absent() {
@@ -28,11 +34,11 @@ fn durability_contract_replays_merge_from_typed_authority_when_diagnostics_are_a
     let prepared = runtime
         .prepare_merge_execution(
             execution,
-            MergeExecutionRequest {
-                target_branch: BranchId("main".to_string()),
-                source_branch: BranchId("feature".to_string()),
-                merge_intent: MergeIntent::ReconcileIntoTarget,
-            },
+            MergeExecutionRequest::new(
+                BranchId("main".to_string()),
+                BranchId("feature".to_string()),
+                MergeIntent::ReconcileIntoTarget,
+            ),
         )
         .expect("prepared merge execution");
     let merge = runtime
@@ -47,19 +53,19 @@ fn durability_contract_replays_merge_from_typed_authority_when_diagnostics_are_a
         )
         .unwrap();
     let merge_index = plan
-        .tail_log
+        .tail_log()
         .iter()
         .position(|entry| entry.commit_id() == merge.commit.commit.commit_id)
         .expect("merge commit is in recovery tail");
-    let source_artifact = RelationalCanonicalCommitArtifact::from_positioned(
-        plan.tail_log[merge_index].positioned(),
+    let source_artifact = RelationalCanonicalCommitArtifact::from_positioned_for_test(
+        plan.tail_log()[merge_index].positioned(),
         execution.allocation_policy(),
     )
     .unwrap();
     let readmitted =
         RelationalCanonicalCommitArtifact::readmit(source_artifact.as_bytes(), execution).unwrap();
     let position = readmitted.position();
-    let mut merge_entry = copy_original_for_test(&readmitted.envelope(), execution);
+    let mut merge_entry = copy_original_for_test(readmitted.envelope(), execution);
     {
         let body = merge_entry.body_mut_for_test();
         assert!(body.merge_execution_authority.is_some());
@@ -75,7 +81,7 @@ fn durability_contract_replays_merge_from_typed_authority_when_diagnostics_are_a
     }
     let resealed_commit =
         ReadmittedCanonicalCommit::readmit_current(position, merge_entry).unwrap();
-    let resealed_artifact = RelationalCanonicalCommitArtifact::from_positioned(
+    let resealed_artifact = RelationalCanonicalCommitArtifact::from_positioned_for_test(
         resealed_commit.positioned(),
         execution.allocation_policy(),
     )
@@ -87,7 +93,7 @@ fn durability_contract_replays_merge_from_typed_authority_when_diagnostics_are_a
         source.envelope().diagnostics_summary.entries.is_empty(),
         "the actual recovery source supplies no diagnostics"
     );
-    plan.tail_log[merge_index] = source.clone();
+    plan.tail_log_mut_for_test()[merge_index] = source.clone();
 
     let mut recovered = runtime_with_test_schema();
     recovered
@@ -180,11 +186,11 @@ fn durability_contract_does_not_reconstruct_missing_merge_authority_from_diagnos
     let prepared = runtime
         .prepare_merge_execution(
             execution,
-            MergeExecutionRequest {
-                target_branch: BranchId("main".to_string()),
-                source_branch: BranchId("feature".to_string()),
-                merge_intent: MergeIntent::ReconcileIntoTarget,
-            },
+            MergeExecutionRequest::new(
+                BranchId("main".to_string()),
+                BranchId("feature".to_string()),
+                MergeIntent::ReconcileIntoTarget,
+            ),
         )
         .expect("prepared merge execution");
     let merge = runtime

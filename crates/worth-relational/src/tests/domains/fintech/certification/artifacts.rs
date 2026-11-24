@@ -1,5 +1,6 @@
 use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 use std::collections::BTreeMap;
+use worth_relational_durability::internal_port::durability::data::recovery_plan::RecoveryPlanOwnerPort as _;
 
 use worth_harness::facade::{
     ArtifactBundle, ArtifactClass, ArtifactSurface, WorkflowCaptureRequest,
@@ -131,7 +132,7 @@ fn diagnostics_summary(session: &CertifiedRelationalFintechSession) -> WorkflowA
             observation.diagnostics_artifact_count,
         ),
         usize_field("checkpoint_count", session.checkpoints.len()),
-        usize_field("tail_log_len", recovery.tail_log.len()),
+        usize_field("tail_log_len", recovery.tail_log().len()),
         optional_u64_field(
             "selected_checkpoint",
             recovery

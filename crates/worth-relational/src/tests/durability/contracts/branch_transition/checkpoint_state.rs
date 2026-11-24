@@ -1,6 +1,7 @@
 use super::*;
 use crate::facade::durability::{RecoveryFailureClass, RecoveryVerificationMode};
 use crate::facade::mvcc::RelationalTransactionIntent;
+use worth_relational_durability::internal_port::durability::data::checkpoint_images::DurableCheckpointFieldsFixturePort as _;
 
 #[test]
 fn a_deleting_checkpoint_cell_requires_its_retired_name() {
@@ -36,7 +37,7 @@ fn a_deleting_checkpoint_cell_requires_its_retired_name() {
     plan.checkpoint
         .as_mut()
         .unwrap()
-        .retired_branch_names
+        .retired_branch_names_mut_for_test()
         .clear();
     let error = expect_durability_failure(
         recovered

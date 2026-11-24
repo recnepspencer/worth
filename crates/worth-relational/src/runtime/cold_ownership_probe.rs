@@ -1,4 +1,5 @@
 //! Bind cold ownership courts to the installed checkpoint, recovery and preparation services.
+use worth_relational_durability::internal_port::durability::data::native_checkpoint::roster_corruption::RelationalNativeCheckpointOwnerPort as _;
 use super::RelationalRuntime;
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::durability::data::{RecoveryVerificationMode, RelationalCheckpointArtifactPolicy};
@@ -13,6 +14,7 @@ use crate::transactions::data::outcomes::transaction_commit_error::{
     origin_denial, TransactionCommitError,
 };
 use worth_execution::ExecutionRequest;
+use worth_relational_contracts::internal_port::mvcc::transaction::staging::RelationalTransactionStagingDenialOwnerPort as _;
 
 impl RelationalRuntime {
     #[doc(hidden)]
@@ -53,7 +55,10 @@ impl RelationalRuntime {
         owner: EntityId,
         seed_fields: impl Fn(u64) -> AspectFieldPatch,
         value_fields: impl Fn(u64) -> AspectFieldPatch,
-    ) -> Result<locality_court::CurrentOwnershipLocalityForTest, TransactionCommitError> {
+    ) -> Result<
+        crate::publication::ownership::CurrentOwnershipLocalityForTest,
+        TransactionCommitError,
+    > {
         let fail = |detail: String| locality_court::locality_error(detail);
         let kind = locality_court::owner_kind(basis, owner)?;
         let branch = BranchId("current-ownership-locality-court".into());

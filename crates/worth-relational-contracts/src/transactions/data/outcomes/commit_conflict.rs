@@ -1,0 +1,54 @@
+use crate::diagnostics::data::DiagnosticCode;
+use crate::errors::data::{ErrorContext, ErrorOperation, RelationalSubsystem, SuggestedFix};
+use serde::{Deserialize, Serialize};
+
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CommitConflict {
+    pub class: ConflictClass,
+    pub code: DiagnosticCode,
+    pub detail: String,
+    pub context: ErrorContext,
+}
+
+impl CommitConflict {
+    /// Original physical owner cause; quota/conflict variants carry none.
+    pub fn allocation_denial(&self) -> Option<&worth_execution::ExecutionAllocationDenial> {
+        match &self.class {
+            ConflictClass::ExecutionAllocationDenied { denial } => Some(denial),
+            _ => None,
+        }
+    }
+    pub fn code(&self) -> DiagnosticCode {
+        self.code
+    }
+
+    pub fn detail(&self) -> String {
+        self.detail.clone()
+    }
+
+    pub fn with_context(mut self, context: ErrorContext) -> Self {
+        self.context = context;
+        self
+    }
+}
+
+/// Operations used by the Relational owners.
+pub trait CommitConflictOwnerPort: Sized {
+    fn new(class: ConflictClass) -> Self;
+}
+
+impl CommitConflictOwnerPort for CommitConflict {
+    fn new(class: ConflictClass) -> Self {
+        let code = class.code();
+        let detail = class.detail();
+        Self {
+            class,
+            code,
+            detail,
+            context: ErrorContext::new(RelationalSubsystem::Transaction, ErrorOperation::Validate)
+                .with_fix(SuggestedFix::InspectDiagnostics),
+        }
+    }
+}

@@ -15,14 +15,28 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+RUNNER="${ROOT_DIR}/scripts/ci/run_relational_named_test_selection.sh"
 SELECTOR="tests::complexity::contracts::substrate_edition_budgets::allocation_slope"
 
 echo "[relational-allocation-probes] enforcing executed allocation-slope evidence"
 
-exec bash "${ROOT_DIR}/scripts/ci/run_relational_named_test_selection.sh" \
+bash "$RUNNER" \
   --lib \
   --selection "$SELECTOR" \
   --expect-name "${SELECTOR}::bounded_adjacency_allocation_is_flat_in_fanout_beyond_the_budget" \
   --expect-name "${SELECTOR}::bounded_adjacency_allocation_is_flat_in_partitions_the_anchor_is_not_in" \
   --expect-name "${SELECTOR}::isolated_bounded_adjacency_fanout_allocation_slope_probe" \
   --expect-name "${SELECTOR}::isolated_bounded_adjacency_partition_allocation_slope_probe"
+
+SYMBOLS="internal_port::symbols::data::string_interner::allocation_tests"
+bash "$RUNNER" --package worth-relational-contracts --lib \
+  --selection "$SYMBOLS" \
+  --expect-name "${SYMBOLS}::detached_clone_allocation_is_flat_in_prior_symbol_population" \
+  --expect-name "${SYMBOLS}::isolated_detached_clone_allocation_probe"
+
+SHARED="internal_port::storage::substrate::record_arena::values::tests::shared_state_bound"
+bash "$RUNNER" --package worth-relational-storage --lib \
+  --selection "$SHARED" \
+  --expect-name "${SHARED}::extras_sharing_one_aspect_map_contribute_shared_backing_once_matching_allocator_union" \
+  --expect-name "${SHARED}::shared_aspect_map_union_matches_independent_os_allocator_measurement" \
+  --expect-name "${SHARED}::isolated_shared_aspect_map_os_allocator_union_probe"

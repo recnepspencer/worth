@@ -65,11 +65,11 @@ fn disjoint_rewire_neighborhoods_do_not_escalate_to_topology_region_conflict() {
         .merge()
         .inspect_planning_scope(
             execution,
-            MergeExecutionRequest {
-                target_branch: BranchId("main".to_string()),
-                source_branch: BranchId("feature".to_string()),
-                merge_intent: MergeIntent::ReconcileIntoTarget,
-            }
+            MergeExecutionRequest::new(
+                BranchId("main".to_string()),
+                BranchId("feature".to_string()),
+                MergeIntent::ReconcileIntoTarget,
+            )
             .into(),
         )
         .expect("disjoint rewires planning artifact");

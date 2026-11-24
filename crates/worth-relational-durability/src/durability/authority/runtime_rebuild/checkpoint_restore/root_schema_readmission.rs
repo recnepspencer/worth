@@ -1,0 +1,299 @@
+use contracts::schema::data::{RelationalSchemaRegistry, RelationalSchemaRegistryFieldsPort as _};
+use std::collections::BTreeMap;
+use std::sync::Arc;
+use worth_relational_contracts::internal_port as contracts;
+
+use crate::durability::data::DurableBranchRootImage;
+use crate::durability::data::DurableBranchRootSchemaImage;
+use crate::durability::data::DurableCheckpoint;
+use contracts::durability::data::recovery_errors::DurabilityError;
+use contracts::durability::data::recovery_stop::RelationalRecoveryStop;
+use contracts::schema::data::aspect_contracts::lowered_plan::AspectContractPlanCatalog;
+
+type ReadmittedCarrier = (
+    DurableBranchRootSchemaImage,
+    contracts::schema::data::RelationalSchemaRegistry,
+    Vec<worth_foundational::facade::AspectContract>,
+);
+
+pub(super) struct RootSchemaReadmissionCatalog {
+    carriers: BTreeMap<[u8; 32], ReadmittedCarrier>,
+    admitted:
+        BTreeMap<[u8; 32], Arc<worth_relational_branch::internal_port::branch::root::schema::RelationalBranchRootSchemaAuthority>>,
+    next_authority_id: u64,
+}
+
+impl RootSchemaReadmissionCatalog {
+    pub(super) fn readmit(checkpoint: &DurableCheckpoint) -> Result<Self, DurabilityError> {
+        let mut carriers = BTreeMap::new();
+        for image in &checkpoint.branch_root_schema_images {
+            let (registry, retained_contracts) =
+                image.readmit_registry().map_err(corrupt_checkpoint)?;
+            if carriers
+                .insert(
+                    image.carrier_digest(),
+                    (image.clone(), registry, retained_contracts),
+                )
+                .is_some()
+            {
+                return Err(corrupt_checkpoint(
+                    "duplicate branch-root schema carrier digest".to_owned(),
+                ));
+            }
+        }
+        Ok(Self {
+            carriers,
+            admitted: BTreeMap::new(),
+            next_authority_id: 1,
+        })
+    }
+
+    pub(super) fn readmit_root(
+        &mut self,
+        lane: &contracts::storage::substrate::maintenance::reconstruction::ReconstructionLane<'_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        configured: &RelationalSchemaRegistry,
+        aspect_plans: &AspectContractPlanCatalog,
+        image: &DurableBranchRootImage,
+        envelope: &worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelope,
+    ) -> Result<
+        Arc<worth_relational_branch::internal_port::branch::root::schema::RelationalBranchRootSchemaAuthority>,
+        RelationalRecoveryStop,
+    >{
+        if image.format_version == 0 {
+            return self.readmit_legacy_root(execution, configured, aspect_plans, image, envelope);
+        }
+        validate_root_image_integrity(lane, image)?;
+        if let Some(authority) = self.admitted.get(&image.schema_carrier_digest) {
+            if !authority.matches(&envelope.schema_authority)
+                || authority.descriptor_semantics_version() != envelope.descriptor_semantics_version
+            {
+                return Err(corrupt_checkpoint(
+                    "shared schema carrier disagrees with a linked envelope".to_owned(),
+                )
+                .into());
+            }
+            return Ok(Arc::clone(authority));
+        }
+        self.readmit_new_carrier(execution, configured, image, envelope)
+    }
+
+    fn readmit_legacy_root(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        configured: &RelationalSchemaRegistry,
+        aspect_plans: &AspectContractPlanCatalog,
+        image: &DurableBranchRootImage,
+        envelope: &worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelope,
+    ) -> Result<
+        Arc<worth_relational_branch::internal_port::branch::root::schema::RelationalBranchRootSchemaAuthority>,
+        RelationalRecoveryStop,
+    >{
+        let expected = configured
+            .snapshot_for_compilation(
+                contracts::schema::compilation_control::SchemaCompilationControl::Request(
+                    *execution,
+                ),
+            )
+            .map_err(RelationalRecoveryStop::Request)?;
+        if expected != envelope.schema_authority {
+            return Err(schema_mismatch(format!(
+                "legacy branch-root image `{}` has no exact live schema authority",
+                image.commit_id.0
+            ))
+            .into());
+        }
+        let allocation_id = self.issue_authority_id()?;
+        worth_relational_branch::internal_port::branch::root::schema::RelationalBranchRootSchemaAuthority::readmit_exact(
+            allocation_id,
+            configured.clone(),
+            active_contracts(aspect_plans),
+            &expected,
+            envelope.descriptor_semantics_version,
+            contracts::schema::compilation_control::SchemaCompilationControl::Request(*execution),
+        )
+        .map_err(RelationalRecoveryStop::Request)?
+        .ok_or_else(|| {
+            schema_mismatch(format!(
+                "legacy branch-root image `{}` has no exact live schema authority",
+                image.commit_id.0
+            ))
+        })
+        .map_err(Into::into)
+    }
+
+    fn readmit_new_carrier(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        configured: &RelationalSchemaRegistry,
+        image: &DurableBranchRootImage,
+        envelope: &worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelope,
+    ) -> Result<
+        Arc<worth_relational_branch::internal_port::branch::root::schema::RelationalBranchRootSchemaAuthority>,
+        RelationalRecoveryStop,
+    >{
+        let (carrier, registry, retained_contracts) = self
+            .carriers
+            .get(&image.schema_carrier_digest)
+            .cloned()
+            .ok_or_else(|| {
+                corrupt_checkpoint(format!(
+                    "branch-root image `{}` references a missing schema carrier",
+                    image.commit_id.0
+                ))
+            })?;
+        let expected_root =
+            contracts::schema::data::authority_snapshot::schema_authority_snapshot_digest_bytes(
+                &envelope.schema_authority,
+            );
+        if carrier.schema_root() != expected_root
+            || carrier.descriptor_semantics_version() != envelope.descriptor_semantics_version
+        {
+            return Err(corrupt_checkpoint(format!(
+                "branch-root image `{}` schema carrier linkage mismatch",
+                image.commit_id.0
+            ))
+            .into());
+        }
+        // Carrier validation alone cannot substitute the configured source
+        // issuer. First bind the complete durable meaning to this envelope.
+        let expected = registry
+            .snapshot_for_compilation(
+                contracts::schema::compilation_control::SchemaCompilationControl::Request(
+                    *execution,
+                ),
+            )
+            .map_err(RelationalRecoveryStop::Request)?;
+        if expected != envelope.schema_authority {
+            return Err(schema_mismatch(format!(
+                "branch-root image `{}` executable schema differs from its envelope",
+                image.commit_id.0
+            ))
+            .into());
+        }
+        let registry = if (!envelope.schema_authority.derived_relations.is_empty()
+            || !envelope
+                .schema_authority
+                .projected_member_domains
+                .is_empty())
+            && configured
+                .snapshot_for_compilation(
+                    contracts::schema::compilation_control::SchemaCompilationControl::Request(
+                        *execution,
+                    ),
+                )
+                .map_err(RelationalRecoveryStop::Request)?
+                == envelope.schema_authority
+        {
+            // Installed typed rules/domains already retain these genuine entry
+            // handles. Exact admitted meaning preserves their original issuer;
+            // a changed configured recipe must keep the carrier's own registry.
+            configured.clone()
+        } else {
+            registry
+        };
+        let mut registry = registry;
+        (*registry.owner_content_formats_mut()) = (*registry.owner_content_formats())
+            .bind_recorded(configured.owner_content_formats())
+            .map_err(RelationalRecoveryStop::from)?;
+        let allocation_id = self.issue_authority_id()?;
+        let authority =
+            worth_relational_branch::internal_port::branch::root::schema::RelationalBranchRootSchemaAuthority::readmit_exact(
+                allocation_id,
+                registry,
+                retained_contracts,
+                &expected,
+                envelope.descriptor_semantics_version,
+                contracts::schema::compilation_control::SchemaCompilationControl::Request(*execution),
+            )
+            .map_err(RelationalRecoveryStop::Request)?
+            .ok_or_else(|| {
+                schema_mismatch(format!(
+                    "branch-root image `{}` executable schema differs from its envelope",
+                    image.commit_id.0
+                ))
+            })?;
+        self.admitted
+            .insert(image.schema_carrier_digest, Arc::clone(&authority));
+        Ok(authority)
+    }
+
+    fn issue_authority_id(&mut self) -> Result<u64, DurabilityError> {
+        let issued = self.next_authority_id;
+        self.next_authority_id = self
+            .next_authority_id
+            .checked_add(1)
+            .ok_or_else(|| corrupt_checkpoint("schema authority identity exhausted".to_owned()))?;
+        Ok(issued)
+    }
+}
+
+pub(super) fn validate_root_image_integrity(
+    lane: &contracts::storage::substrate::maintenance::reconstruction::ReconstructionLane<'_>,
+    image: &DurableBranchRootImage,
+) -> Result<(), DurabilityError> {
+    if image.format_version != DurableBranchRootImage::CURRENT_FORMAT_VERSION {
+        return Err(DurabilityError::new(
+            contracts::durability::data::recovery_errors::RecoveryFailureClass::UnsupportedBranchRootImageVersion {
+                found: image.format_version,
+                supported: DurableBranchRootImage::CURRENT_FORMAT_VERSION,
+            },
+            format!(
+                "unsupported branch-root image version `{}`",
+                image.format_version
+            ),
+        ));
+    }
+    let digest = crate::durability::data::branch_root_image_digest(
+        lane,
+        image.format_version,
+        image.commit_id,
+        image.partition_image_digest,
+        image.schema_carrier_digest,
+        &image.content_records,
+    );
+    if digest == image.root_image_digest {
+        Ok(())
+    } else {
+        Err(corrupt_checkpoint(format!(
+            "branch-root image `{}` aggregate integrity mismatch",
+            image.commit_id.0
+        )))
+    }
+}
+
+fn active_contracts(
+    plans: &contracts::schema::data::aspect_contracts::lowered_plan::AspectContractPlanCatalog,
+) -> Vec<worth_foundational::facade::AspectContract> {
+    let mut contracts = BTreeMap::new();
+    for binding in plans
+        .entity_plans
+        .values()
+        .chain(plans.relation_plans.values())
+        .flat_map(|plan| &plan.executable_bindings)
+    {
+        contracts.insert(
+            (
+                binding.contract.key().clone(),
+                binding.contract.identity(),
+                binding.contract.revision(),
+            ),
+            binding.contract.clone(),
+        );
+    }
+    contracts.into_values().collect()
+}
+
+fn corrupt_checkpoint(detail: String) -> DurabilityError {
+    DurabilityError::new(
+        contracts::durability::data::recovery_errors::RecoveryFailureClass::CorruptCheckpoint,
+        detail,
+    )
+}
+
+fn schema_mismatch(detail: String) -> DurabilityError {
+    DurabilityError::new(
+        contracts::durability::data::recovery_errors::RecoveryFailureClass::SchemaMismatch,
+        detail,
+    )
+}

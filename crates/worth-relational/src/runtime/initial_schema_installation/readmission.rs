@@ -39,8 +39,8 @@ impl RelationalInitialSchemaInstallationReceipt {
             || contracts.custom_invariant_generation != self.custom_invariant_generation
             || inventory != self.custom_invariant_inventory_digest
             || contracts.custom_invariant_registries.source_inventory() != self.source_groups
-            || registry.entity_kinds.len() != self.retained_entity_kind_count
-            || registry.relation_kinds.len() != self.retained_relation_kind_count
+            || (*registry.owner_entity_kinds()).len() != self.retained_entity_kind_count
+            || (*registry.owner_relation_kinds()).len() != self.retained_relation_kind_count
             || schema != self.retained_schema_authority_digest
         {
             return Err(RelationalInitialSchemaInstallationDenial::new(
@@ -73,8 +73,8 @@ impl RelationalInitialSchemaInstallationReceipt {
             || contracts.custom_invariant_generation != self.custom_invariant_generation
             || actual != self.custom_invariant_inventory_digest
             || contracts.custom_invariant_registries.source_inventory() != self.source_groups
-            || registry.entity_kinds.len() != self.retained_entity_kind_count
-            || registry.relation_kinds.len() != self.retained_relation_kind_count
+            || (*registry.owner_entity_kinds()).len() != self.retained_entity_kind_count
+            || (*registry.owner_relation_kinds()).len() != self.retained_relation_kind_count
             || schema != self.retained_schema_authority_digest
         {
             return Err(RelationalInitialSchemaInstallationDenial::new(

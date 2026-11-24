@@ -1,4 +1,5 @@
 use super::*;
+use worth_relational_contracts::internal_port::lineage::data::graph::LineageNodeFieldsPort as _;
 
 pub(super) fn certify_topology_identity_survival_recovery_round_trip(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -9,23 +10,23 @@ pub(super) fn certify_topology_identity_survival_recovery_round_trip(
             durable_runtime_profile_for_medium(RelationalRuntimeProfile::GeometryKernel, &medium);
         let created = create_entity_outcome(execution, &runtime, "topology-source");
         let entity = changed_entities(&created)[0];
-        let start_lineage = runtime
+        let start_lineage = *runtime
             .lineage_access()
             .for_record(execution, entity)
             .unwrap()
             .expect("initial lineage")
-            .lineage_id;
+            .owner_lineage_id();
 
         let (replacement, update_commit_work) = measure_counted_work(execution, || {
             update_entity(execution, &runtime, entity, "topology-source-updated")
         });
         let replaced_entity = changed_entities(&replacement)[0];
-        let replacement_lineage = runtime
+        let replacement_lineage = *runtime
             .lineage_access()
             .for_record(execution, replaced_entity)
             .unwrap()
             .expect("replacement lineage")
-            .lineage_id;
+            .owner_lineage_id();
 
         runtime.performance_access().reset_counters();
         let (resolution, lineage_resolution_work) = measure_counted_work(execution, || {

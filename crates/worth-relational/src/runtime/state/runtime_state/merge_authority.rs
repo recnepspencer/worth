@@ -3,6 +3,8 @@ use crate::merge::data::{
     MergeExecutionRequest, MergePlanningRequest, OwnerBoundMergeExecutionRequest,
     OwnerBoundMergePlanningRequest, RelationalMergeRequestBindingDenial,
 };
+use worth_relational_merge::internal_port::merge::data::requests::owner_bound::OwnerBoundMergeExecutionRequestOwnerPort as _;
+use worth_relational_merge::internal_port::merge::data::requests::owner_bound::OwnerBoundMergePlanningRequestOwnerPort as _;
 
 impl RelationalRuntime {
     /// Bind descriptive merge selectors to exact owner branch cells. The
