@@ -8,8 +8,16 @@
 //! authority strictly caller-owned.
 //!
 //! OS background wakes while the desktop application is closed remain outside
-//! WORTH: callers advance missed occurrences explicitly on reopen or foreground
-//! ticks through [`pump_temporal_catch_up_until`] or [`pump_temporal_catch_up`].
+//! WORTH: callers install paired clock bindings via
+//! [`install_desktop_temporal_clock_operation`] (returning
+//! [`WorthQueryInstalledDesktopTemporalClock`], the sole implementor of sealed
+//! [`WorthQueryDesktopTemporalHomeBinding`]) and advance missed occurrences
+//! explicitly on reopen or foreground ticks through
+//! `WorthQueryApplicationHome::catch_up_temporal` /
+//! `catch_up_temporal_observing` / `pump_temporal` / `pump_temporal_observing`
+//! (or low-level [`pump_temporal_catch_up_until`] /
+//! [`pump_temporal_catch_up_until_observing`] / [`pump_temporal_catch_up`] /
+//! [`pump_temporal_catch_up_observing`]).
 
 mod catch_up;
 mod clock;

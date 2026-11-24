@@ -9638,11 +9638,11 @@ envelopes, named-clock plumbing, and reconstruction bindings separately. Use
 3. **Install in one call** via `install_desktop_temporal_clock_operation(installation, WorthQueryDesktopTemporalBindingSpec { .. })`,
    which derives the paired `WorthQueryDesktopClockHandle` directly from the
    installed `WorthQueryDesktopClockSource` (preventing foreign clock handle
-   pairing; low-level `pump_temporal_catch_up_until` also rejects foreign
-   handles with `ForeignClockHandle`). Use
+   pairing; low-level `pump_temporal_catch_up_until` / `pump_temporal_catch_up_until_observing`
+   also reject foreign handles with `ForeignClockHandle`). Use
    `WorthQueryAlwaysReadyTemporalPredicate` when authoritative `active`
    lifecycle and due coordinate alone govern execution. Returning
-   `WorthQueryInstalledDesktopTemporalClock` (which implements
+   `WorthQueryInstalledDesktopTemporalClock` (the sole implementor of sealed
    `WorthQueryDesktopTemporalHomeBinding`) registers the temporal rule cleanly
    with `WorthQueryApplicationHome`. Authoritative intent lifecycle, bounded
    projection (`WorthQueryTemporalIntentBounds`), operation effects, and fresh
@@ -9656,17 +9656,21 @@ envelopes, named-clock plumbing, and reconstruction bindings separately. Use
    same commit as `apply`.
 5. **Pump missed occurrences on reopen in one Home call** via
    `home.catch_up_temporal::<MyTemporalBinding>(now, execution, WorthQueryTemporalCatchUpPolicy::bounded(64)?)?`
-   (or `home.catch_up_temporal_observing::<MyTemporalBinding>(now, execution, policy, |batch| ..)` /
-   `home.pump_temporal::<MyTemporalBinding>(execution, policy)`, bounded by
-   `1..=MAX_TEMPORAL_CATCH_UP_STEPS`). Every step runs under the caller's funded
-   `ExecutionRequest` control and accounting end-to-end, retains owed granular
-   invalidation batches on the returned `WorthQueryTemporalCatchUpReport`
+   (or `home.catch_up_temporal_observing::<MyTemporalBinding>(now, execution, policy, |batch| ..)`,
+   `home.pump_temporal::<MyTemporalBinding>(execution, policy)`, or
+   `home.pump_temporal_observing::<MyTemporalBinding>(execution, policy, |batch| ..)`,
+   bounded by `1..=MAX_TEMPORAL_CATCH_UP_STEPS`). Every step runs under the
+   caller's original leased or lease-free `ExecutionRequest::serial` budget,
+   deadline, and cancellation end-to-end, retains owed granular invalidation
+   batches on the returned `WorthQueryTemporalCatchUpReport`
    (`take_granular_invalidation_batches()`) or streams them directly to the
    callback, and exposes `fired()`, `skipped()`, `remaining()`, and typed
    `status()` (`CaughtUp`, `StepLimitReached`, `BudgetExhausted`, `Cancelled`,
    `AuthorizationRefused`, `OperationRefused`, `Backpressured`, `ClockStopped`,
-   `BlockedByRetainedDecision`, or `ObservationFailed`). Partial-batch stops
-   leave durable state consistent for resumption on the next pump without
+   `BlockedByRetainedDecision`, `ObservationFailed`, or post-progress
+   `StepRefused`, which preserves earlier progress and owed granular
+   invalidation batches instead of dropping them in a raw `Err`). Partial-batch
+   stops leave durable state consistent for resumption on the next pump without
    duplicating or skipping any occurrence. **OS background wakes while the
    desktop application is closed remain outside WORTH**; callers advance missed
    recurrences explicitly when the app reopens.
