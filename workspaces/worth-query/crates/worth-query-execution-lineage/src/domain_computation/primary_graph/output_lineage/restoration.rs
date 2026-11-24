@@ -267,6 +267,23 @@ impl WorthQueryApplicationOutputLineage {
         Some(RestoredRecord { identity, facts })
     }
 
+    /// The source facts of the restored row `identity` names, read without
+    /// restoring it again: a readmission that joins its adopted row marks it
+    /// clean over these, the facts its current-output read compares.
+    pub fn restored_facts(
+        &self,
+        identity: &super::RecordedSettlementIdentity,
+    ) -> Option<super::RetainedSourceFacts> {
+        let coordinate = identity.coordinate();
+        self.by_source
+            .get(identity.source())
+            .and_then(|occurrences| occurrences.get(&coordinate.occurrence))
+            .and_then(|history| history.get(&coordinate.generation))
+            .and_then(|records| records.get(identity.slot()))
+            .and_then(|cell| cell.get())
+            .and_then(super::RecordedOutput::observed_source_facts)
+    }
+
     /// Keep the witness a reader built for a restored row and compared in
     /// full. The row keeps its first proof, which is the one returned.
     pub fn retain_restored_witness(
