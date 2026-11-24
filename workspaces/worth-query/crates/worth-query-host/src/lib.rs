@@ -384,5 +384,6 @@ mod projection_name_derive_contract;
 mod projection_relation_derive_contract;
 mod runtime_and_handler_fences_contract;
 mod semantic_refusal_contract;
+mod shared_access;
 mod source_custody;
 mod source_custody_contract;

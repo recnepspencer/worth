@@ -1,0 +1,325 @@
+//! `WorthQuerySharedAccessProgram` binding and Directory Home fixture helpers.
+
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::Duration;
+
+use worth_query_decl::facade::{
+    application_capability::ApplicationCapabilityRef,
+    application_program::ApplicationProgramAuthoring,
+    application_schema::{ApplicationOperationRef, ApplicationSchema},
+    authentication::WorthQueryPrincipalMappingStatus,
+};
+use worth_query_host::facade::{
+    admission::authenticated_principal::*,
+    application_contribution::with_bootstrap_advancement_from_request,
+    application_entry::{WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestExt},
+    application_installation::{
+        ApplicationBuildIdentity, WorthQueryApplicationLimits, WorthQueryApplicationProgramRoster,
+    },
+    domain::WorthQueryInstalledApplicationSchema,
+    primary_graph::{
+        SignalConditionalEvaluationBudget, WorthQueryApplicationEntityKey,
+        WorthQueryApplicationEntitySeed, WorthQueryApplicationPrincipalKey,
+        WorthQueryApplicationRelationSeed, WorthQueryPrimaryGraphBootstrap,
+        WorthQueryPrimaryGraphInstallationDenial,
+    },
+    runtime::{
+        DeterminismContract, ExecutionAllocationPolicy, ExecutionBudget, ExecutionPosture,
+        ExecutionRequestPolicy, WorthQueryApplicationQueryResourceProfile,
+    },
+    shared_access::{
+        ProtocolRefusalReason, RemoteQueryContext, RemoteWatchContext, ScopeAccess, ScopeGrantId,
+        SharedAccessDenial, WorthQuerySharedAccessProgram,
+    },
+    WorthQueryApplicationHome, WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeRequest,
+};
+use worth_query_testkit_host::facade::host::application_runtime_surface as identity_fixture;
+
+use super::capabilities::{
+    ReadProjectCapability, ReadProjectOperation, SharedPrincipalBinding, WatchProjectCapability,
+    WatchProjectOperation,
+};
+use super::mutation_handlers::SharedProjectProgram;
+use super::mutations::{
+    alice_identity, bob_identity, owner_identity, principal_id_for, GrantProjectInput,
+    GrantProjectIntent, ProjectId, RevokeProjectInput, RevokeProjectIntent, WriteProjectInput,
+    WriteProjectIntent, ALICE_PRINCIPAL_ID, BOB_PRINCIPAL_ID, OWNER_PRINCIPAL_ID,
+};
+use super::query::{ProjectQueryParams, ProjectStateRead, ProjectStateRow};
+use super::schema::{
+    Project, ProjectKeyField, ProjectLiveSelf, ProjectVersionField, SharedProjectSchema,
+};
+
+static NEXT_IDEMPOTENCY_KEY: AtomicU64 = AtomicU64::new(1);
+
+impl WorthQuerySharedAccessProgram<SharedProjectSchema> for SharedProjectProgram {
+    type ScopeId = ProjectId;
+    type QueryPayload = ProjectQueryParams;
+    type Row = ProjectStateRow;
+    type QueryIntent = ProjectStateRead;
+    type ReadCapability = ReadProjectCapability;
+    type ReadOperation = ReadProjectOperation;
+    type ReadCapabilityInput = String;
+    type WatchCapability = WatchProjectCapability;
+    type WatchOperation = WatchProjectOperation;
+    type WatchCapabilityInput = String;
+
+    fn scope_key(scope: &ProjectId) -> String {
+        scope.0.clone()
+    }
+
+    fn parse_scope_key(key: &str) -> Result<ProjectId, SharedAccessDenial> {
+        if key.is_empty() {
+            return Err(SharedAccessDenial::ProtocolRefused(
+                ProtocolRefusalReason::MalformedPayload,
+            ));
+        }
+        Ok(ProjectId(key.to_owned()))
+    }
+
+    fn authenticate_owner(
+        schema: &WorthQueryInstalledApplicationSchema<SharedProjectSchema>,
+        request_scope: &WorthQueryRequestScope,
+    ) -> Result<WorthQueryAuthenticatedExternalPrincipal<SharedProjectSchema>, SharedAccessDenial>
+    {
+        authenticate_local_owner(schema, request_scope)
+    }
+
+    fn commit_grant_scope_access(
+        ctx: &RemoteQueryContext<'_, SharedProjectSchema, Self>,
+        grant: &RemoteWatchContext<'_, ProjectId>,
+    ) -> Result<(), SharedAccessDenial> {
+        let grantee_id = principal_id_for(grant.collaborator)?;
+        let mode = match grant.access {
+            ScopeAccess::ReadOnly => "read_only",
+            ScopeAccess::ReadAndWatch => "read_and_watch",
+        };
+        let key = NEXT_IDEMPOTENCY_KEY.fetch_add(1, Ordering::Relaxed);
+        let outcome = ctx
+            .runtime
+            .request(ctx.owner, ctx.request_scope)
+            .advanced()
+            .mutate(GrantProjectIntent(GrantProjectInput {
+                grant_id: grant.grant_id.as_str().to_owned(),
+                project_key: grant.scope.0.clone(),
+                grantee_principal_id: grantee_id,
+                mode: mode.to_owned(),
+            }))
+            .without_source()
+            .idempotency(&key)
+            .execute_in_program(ctx.runtime, ExecutionAllocationPolicy::SystemAllocation)
+            .map_err(|err| SharedAccessDenial::GrantMutationRefused(format!("{err:?}")))?;
+        match outcome {
+            WorthQueryApplicationMutationOutcome::Committed { .. } => Ok(()),
+            other => Err(SharedAccessDenial::GrantMutationRefused(format!(
+                "{other:?}"
+            ))),
+        }
+    }
+
+    fn commit_revoke_scope_access(
+        ctx: &RemoteQueryContext<'_, SharedProjectSchema, Self>,
+        grant_id: &ScopeGrantId,
+    ) -> Result<(), SharedAccessDenial> {
+        let key = NEXT_IDEMPOTENCY_KEY.fetch_add(1, Ordering::Relaxed);
+        let outcome = ctx
+            .runtime
+            .request(ctx.owner, ctx.request_scope)
+            .advanced()
+            .mutate(RevokeProjectIntent(RevokeProjectInput {
+                grant_id: grant_id.as_str().to_owned(),
+            }))
+            .without_source()
+            .idempotency(&key)
+            .execute_in_program(ctx.runtime, ExecutionAllocationPolicy::SystemAllocation)
+            .map_err(|err| SharedAccessDenial::GrantMutationRefused(format!("{err:?}")))?;
+        match outcome {
+            WorthQueryApplicationMutationOutcome::Committed { .. } => Ok(()),
+            other => Err(SharedAccessDenial::GrantMutationRefused(format!(
+                "{other:?}"
+            ))),
+        }
+    }
+
+    fn build_query_intent(
+        scope: &ProjectId,
+        _: &ProjectQueryParams,
+    ) -> Result<ProjectStateRead, SharedAccessDenial> {
+        Ok(ProjectStateRead(scope.0.clone()))
+    }
+
+    fn read_capability() -> ApplicationCapabilityRef<SharedProjectSchema, ReadProjectCapability> {
+        ReadProjectCapability::reference()
+    }
+    fn read_operation() -> ApplicationOperationRef<SharedProjectSchema, ReadProjectOperation, String>
+    {
+        ReadProjectOperation::reference()
+    }
+    fn build_read_capability_input(scope: &ProjectId) -> String {
+        scope.0.clone()
+    }
+
+    fn watch_capability() -> ApplicationCapabilityRef<SharedProjectSchema, WatchProjectCapability> {
+        WatchProjectCapability::reference()
+    }
+    fn watch_operation(
+    ) -> ApplicationOperationRef<SharedProjectSchema, WatchProjectOperation, String> {
+        WatchProjectOperation::reference()
+    }
+    fn build_watch_capability_input(scope: &ProjectId) -> String {
+        scope.0.clone()
+    }
+
+    fn project_row(value: ProjectStateRow) -> ProjectStateRow {
+        value
+    }
+}
+
+pub fn authenticate_local_owner(
+    schema: &WorthQueryInstalledApplicationSchema<SharedProjectSchema>,
+    request_scope: &WorthQueryRequestScope,
+) -> Result<WorthQueryAuthenticatedExternalPrincipal<SharedProjectSchema>, SharedAccessDenial> {
+    let audience = WorthQueryAuthenticationAudience::new("daymark.local").unwrap();
+    let method = WorthQueryAuthenticationMethod::new("local-process").unwrap();
+    let local = WorthQueryLocalProcessPrincipal::new(
+        "worth.court.shared_access.local_owner.v1",
+        owner_identity(),
+        audience.clone(),
+        method.clone(),
+        Duration::from_secs(3600),
+    )
+    .unwrap();
+    admit_authentication_adapter(
+        schema,
+        WorthQueryAuthenticationAdapterAdmission::new(
+            audience,
+            method,
+            WorthQueryAdmissionClock::system(),
+        ),
+        local,
+    )
+    .map_err(|_| SharedAccessDenial::HostUnavailable)?
+    .authenticate_local(request_scope)
+    .map_err(|_| SharedAccessDenial::HostUnavailable)
+}
+
+pub fn owner_write_project(
+    home: &WorthQueryApplicationHome<SharedProjectSchema, SharedProjectProgram>,
+    project_key: &str,
+    next_version: u64,
+) -> u64 {
+    let cancel = WorthQueryCancellationSource::new();
+    let scope = WorthQueryRequestScope::new(
+        Some(std::time::Instant::now() + Duration::from_secs(30)),
+        cancel.token(),
+        WorthQueryAdmissionClock::system(),
+    );
+    let owner =
+        authenticate_local_owner(home.runtime().runtime().installed_schema(), &scope).unwrap();
+    let key = NEXT_IDEMPOTENCY_KEY.fetch_add(1, Ordering::Relaxed);
+    let outcome = home
+        .runtime()
+        .request(&owner, &scope)
+        .advanced()
+        .mutate(WriteProjectIntent(WriteProjectInput {
+            project_key: project_key.to_owned(),
+            next_version,
+        }))
+        .without_source()
+        .idempotency(&key)
+        .execute_in_program(home.runtime(), ExecutionAllocationPolicy::SystemAllocation)
+        .expect("owner write commits cleanly");
+    match outcome {
+        WorthQueryApplicationMutationOutcome::Committed { result, .. } => result,
+        other => panic!("expected committed owner write, got {other:?}"),
+    }
+}
+
+pub fn open_shared_home(
+    location: WorthQueryApplicationHomeLocation,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
+    allow_initialize: bool,
+) -> Result<
+    WorthQueryApplicationHome<SharedProjectSchema, SharedProjectProgram>,
+    worth_query_host::facade::WorthQueryApplicationHomeOpenRefused<
+        SharedProjectSchema,
+        SharedProjectProgram,
+    >,
+> {
+    let declaration = SharedProjectSchema::declaration().unwrap();
+    let program = ApplicationProgramAuthoring::<SharedProjectSchema, SharedProjectProgram>::begin()
+        .with_schema(&declaration)
+        .validated_program()
+        .unwrap();
+    let build = ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap();
+    let limits = WorthQueryApplicationLimits::new(
+        identity_fixture::world_resources().with_execution_policy(ExecutionRequestPolicy::new(
+            ExecutionPosture::Serial,
+            DeterminismContract::CanonicalBitwise,
+            ExecutionBudget::new(std::num::NonZeroUsize::MIN, None, None),
+        )),
+        WorthQueryApplicationQueryResourceProfile::default(),
+        SignalConditionalEvaluationBudget::development(),
+    );
+    let request = WorthQueryApplicationHomeRequest::new(
+        location,
+        program,
+        WorthQueryApplicationProgramRoster::new(),
+        declaration,
+        ((),),
+        build,
+        limits,
+        move |_, graph, schema| {
+            assert!(
+                allow_initialize,
+                "reopened Directory Home must never re-run initializer"
+            );
+            seed_shared_home(graph, schema)
+        },
+    );
+    with_bootstrap_advancement_from_request(execution, |phase| request.open_in_advancement(&phase))
+        .expect("bootstrap advancement executes")
+}
+
+fn seed_shared_home(
+    graph: &mut WorthQueryPrimaryGraphBootstrap<SharedProjectSchema>,
+    schema: &WorthQueryInstalledApplicationSchema<SharedProjectSchema>,
+) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+    let binding = schema
+        .principal_binding(SharedPrincipalBinding::reference())
+        .unwrap();
+    for (key, id, ext) in [
+        ("owner-principal", OWNER_PRINCIPAL_ID, owner_identity()),
+        ("alice-principal", ALICE_PRINCIPAL_ID, alice_identity()),
+        ("bob-principal", BOB_PRINCIPAL_ID, bob_identity()),
+    ] {
+        graph
+            .bind_principal(
+                &binding,
+                WorthQueryApplicationPrincipalKey::new(key).unwrap(),
+                id,
+                ext,
+                WorthQueryPrincipalMappingStatus::Enabled,
+            )
+            .unwrap();
+    }
+    for (entity_key, project_key) in [("project-1", "Project1"), ("project-2", "Project2")] {
+        let mk_key = || WorthQueryApplicationEntityKey::new(entity_key).unwrap();
+        graph
+            .bind_entity(
+                WorthQueryApplicationEntitySeed::new(Project::reference(), mk_key())
+                    .field(ProjectKeyField::at("ProjectKey"), project_key.to_owned())
+                    .field(ProjectVersionField::at("ProjectVersion"), 0_u64),
+            )
+            .unwrap();
+        graph
+            .bind_relation(WorthQueryApplicationRelationSeed::new(
+                ProjectLiveSelf::reference(),
+                format!("live-self-{entity_key}"),
+                mk_key(),
+                mk_key(),
+            ))
+            .unwrap();
+    }
+    Ok(())
+}
