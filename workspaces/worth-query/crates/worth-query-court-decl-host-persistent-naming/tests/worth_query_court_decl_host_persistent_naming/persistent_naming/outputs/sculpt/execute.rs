@@ -23,30 +23,31 @@ pub(super) fn execute(
     let context = writer.projected_entity(model)?;
     let mut members = BTreeMap::new();
     for key in &plan.creates {
-        let created = writer.create_entity_in_context(
-            &context,
-            Member::reference(),
-            WorthQueryApplicationEntityKey::new(key).unwrap(),
-        )?;
+        let member_key = WorthQueryApplicationEntityKey::new(key).unwrap();
+        let created = if plan.issued {
+            writer.create_entity(Member::reference(), member_key)?
+        } else {
+            writer.create_entity_in_context(&context, Member::reference(), member_key)?
+        };
         writer.initialize_field(&created, MemberKey::at("MemberKey"), key.clone())?;
         writer.initialize_field(&created, MemberValue::at("MemberValue"), 7)?;
-        match plan.owners.iter().find(|(member, _)| member == key) {
-            Some((_, owner)) => {
-                let owner = writer.resolve_entity(ModelKey::at("ModelKey"), owner.clone())?;
-                writer.link(
-                    ModelMember::reference(),
-                    format!("owns:{key}"),
-                    &owner,
-                    &created,
-                )?
+        // An issued member stays unowned: owning links may not cross
+        // creation contexts.
+        let named_owner = plan.owners.iter().find(|(member, _)| member == key);
+        let named_owner = match named_owner {
+            Some((_, owner)) if !plan.issued => {
+                Some(writer.resolve_entity(ModelKey::at("ModelKey"), owner.clone())?)
             }
-            None => writer.link(
+            _ => None,
+        };
+        if !plan.issued {
+            writer.link(
                 ModelMember::reference(),
                 format!("owns:{key}"),
-                &context,
+                named_owner.as_ref().unwrap_or(&context),
                 &created,
-            )?,
-        };
+            )?;
+        }
         members.insert(key.clone(), created);
     }
     for key in &plan.reads {

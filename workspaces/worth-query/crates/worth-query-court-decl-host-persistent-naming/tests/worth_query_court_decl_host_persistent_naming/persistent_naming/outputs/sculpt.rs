@@ -98,9 +98,12 @@ pub enum Step {
 /// members hold; `seams` link `(key, from, to)` members; `seam_reads` name
 /// the seam between read `(label, from, to)` members in the decision.
 /// `owners` list a created `(member, model)` under that model instead of
-/// model `a`; `moves` re-own a read `(member, from model, to model)`.
+/// model `a`; `moves` re-own a read `(member, from model, to model)`;
+/// `issued` creates outside model `a`'s partition.
 #[derive(Clone, Debug, Default)]
 pub struct Plan {
+    /// Created without a context entity, in the partition the commit issues.
+    pub issued: bool,
     pub owners: Vec<(String, String)>,
     pub moves: Vec<(String, String, String)>,
     pub seam_reads: Vec<(String, String, String)>,

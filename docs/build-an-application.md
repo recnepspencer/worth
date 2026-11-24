@@ -296,6 +296,9 @@ schema using `worth_query_decl::facade::application_naming`:
   binding one closed `ApplicationGroupContinuityRule` (`Anchor`, `Boundary`, or
   `ProducerRole`) to declared member roles, attached with
   `ApplicationSchemaDeclarationBuilder::application_group_name_scheme::<Group>(scheme)`.
+  Installation validates and lowers group schemes, but no operation can yet
+  form or change a group, so Query has no tracked group reads (see the
+  [known gaps](capability-index.md#known-gaps)).
 - **Commit-time birth minting** lowers installed schemes via
   `LoweredExecutionNameSchemeCatalog` and binds them into Relational's schema
   authority (`RelationalSchemaRegistry::install_persistent_name_schemes`).
@@ -462,7 +465,9 @@ An unnamed program carries no naming plan at all.
   `merge_relation_names`) with `WorthQueryOutputMergeKeeper::KeepParentInPlace(name)`,
   `KeepParentOnto { keeper, target }` or `MintNew { target, birth }` (a
   split-capable scheme requires the new birth's discriminator). Every held
-  parent name then resolves to the survivor.
+  parent name then resolves to the survivor. `KeepParentInPlace` leaves the
+  keeper's record untouched, so the keeper may live in a partition the
+  candidate never writes; Relational checks it against the commit basis.
 - **Kind safety.** A split parent, merge parent or keeper of another kind
   than the output handle does not compile.
 - **Refusals, all with zero effects.** Naming an output whose kind has no

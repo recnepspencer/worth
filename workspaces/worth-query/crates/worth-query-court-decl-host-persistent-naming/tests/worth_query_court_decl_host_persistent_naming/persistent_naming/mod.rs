@@ -15,21 +15,23 @@ use worth_query_testkit_document_retention::facade::document_retention_model::{
 mod navigation_grant;
 mod schema;
 use schema::*;
+pub(crate) use schema::Member;
 mod delete;
 mod edit;
 mod ergonomics;
 mod history;
 mod interleaving;
+mod lineage;
 mod named_read;
 mod navigation;
-mod outputs;
-mod probe;
+pub(crate) mod outputs;
+pub(crate) mod probe;
 mod query;
 mod refusals;
 mod scoped;
 mod stored;
 mod unowned;
-mod world;
+pub(crate) mod world;
 
 pub struct History;
 worth_query_portable_type!(History => "worth.persistent-naming.history.v1");
