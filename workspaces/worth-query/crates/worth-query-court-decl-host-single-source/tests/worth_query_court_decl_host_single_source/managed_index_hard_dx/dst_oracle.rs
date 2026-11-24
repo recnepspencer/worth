@@ -1,16 +1,10 @@
-//! Brute-force 4-family oracle and tight-budget refusal probe for Hard DX DST.
+//! Brute-force 4-family oracle and watch outcome verifier for Hard DX DST.
 use super::operations::AssetSpec;
 use super::schema::*;
-use super::{create_asset, install};
 use std::collections::BTreeMap;
 use worth_query_decl::facade::application_schema::CanonicalF64;
-use worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial;
-use worth_query_host::facade::application_entry::*;
-use worth_query_host::facade::primary_graph::*;
-use worth_query_host::facade::runtime::MapKernelStop;
-use worth_query_testkit_document_retention::facade::document_retention_model::operator_identity::{
-    authenticate_operator, request_scope,
-};
+use worth_query_host::facade::application_entry::WorthQueryApplicationRequestQueryDenial;
+use worth_query_host::facade::primary_graph::WorthQueryManagedIndexWatchOutcome;
 
 pub const TITLES: &[&str] = &[
     "CNC-Alpha",
@@ -199,109 +193,4 @@ pub fn check_watch<Q>(
             outcome_label(&other)
         )),
     }
-}
-
-pub fn verify_budget_refusal(oracle: &FourFamilyOracle) -> Result<(), String> {
-    let seed: Vec<AssetSpec> = oracle.rows.values().take(1).cloned().collect();
-    let expected: Vec<AssetRow> = seed.iter().map(expected_row).collect();
-    let tight = install(&seed, None, Some(850_000));
-    let scope = request_scope();
-    let principal = authenticate_operator(tight.installed_schema(), &scope);
-    let req = tight.runtime().request(&principal, &scope);
-    let idx = req
-        .query(qp(""))
-        .ensure_index_ready::<TitlePrefixIndex>()
-        .map_err(|e| format!("tight ensure_index_ready failed: {e:?}"))?;
-
-    // Open a baseline watch before triggering the budget-refused watch open so we
-    // can prove zero leaked watch registrations and intact routing on the same host.
-    let (_init_w, mut existing_watch) = req
-        .query(qp("WatchHit-"))
-        .watch_index::<TitlePrefixIndex>()
-        .map_err(|e| format!("baseline watch open failed: {e:?}"))?;
-
-    let shared = "m".repeat(49_990);
-    let mut refused = false;
-    let mut ws = Vec::new();
-    for i in 0..64u8 {
-        let prefix = format!("{shared}{i:02}");
-        match req.query(qp(&prefix)).watch_index::<TitlePrefixIndex>() {
-            Ok((_, w)) => ws.push(w),
-            Err(WorthQueryApplicationRequestQueryDenial::ManagedIndex(cause))
-                if matches!(
-                    cause.cause(),
-                    WorthQueryManagedIndexDenialCause::Work(
-                        WorthQueryManagedIndexWorkDenial::Controlled(
-                            WorthQueryManagedIndexStop::ValueDecode(
-                                WorthQueryValueDecodeDenial::Checkpoint(MapKernelStop::WorkCeiling)
-                            )
-                        )
-                    )
-                ) || matches!(
-                    cause.cause(),
-                    WorthQueryManagedIndexDenialCause::QueryRead(read)
-                        if matches!(
-                            read.kind(),
-                            WorthQueryApplicationOneShotDenialKind::ExecutionRequest(
-                                WorthQueryProviderSessionDenialKind::ExecutionResource {
-                                    denial: WorthQueryManagedComputationResourceDenial::WorkExhausted,
-                                    ..
-                                }
-                            )
-                        )
-                ) =>
-            {
-                refused = true;
-                break;
-            }
-            Err(other) => {
-                return Err(format!(
-                    "expected exact WorkCeiling refusal, got Err({other:?})"
-                ));
-            }
-        }
-    }
-    for w in ws {
-        let _ = w.close();
-    }
-    if !refused {
-        return Err("tight work ceiling failed to refuse".to_owned());
-    }
-
-    // Same-host post-refusal parity: one-shot rows AND existing watch routing both stay intact.
-    let after = req
-        .query(qp(""))
-        .execute()
-        .map_err(|e| format!("post-refusal query: {e:?}"))?;
-    if after.rows() != expected.as_slice() {
-        return Err(format!(
-            "same-host post-refusal state {:?} != {expected:?}",
-            after.rows()
-        ));
-    }
-    // Unrelated mutation must NOT wake `existing_watch`.
-    create_asset(
-        &tight,
-        AssetSpec::i64_only(901, "Unrelated-After-Refusal", (0, 5), [0, 0, 0], [1, 1, 1]),
-        901,
-    );
-    check_watch(
-        "post-refusal-unrelated",
-        req.query(qp("WatchHit-")).next_watch(&mut existing_watch),
-        &[],
-        false,
-    )?;
-    // Matching mutation MUST wake `existing_watch` with exact projected rows.
-    let matching_spec =
-        AssetSpec::i64_only(902, "WatchHit-After-Refusal", (0, 5), [0, 0, 0], [1, 1, 1]);
-    create_asset(&tight, matching_spec.clone(), 902);
-    check_watch(
-        "post-refusal-matching",
-        req.query(qp("WatchHit-")).next_watch(&mut existing_watch),
-        &[expected_row(&matching_spec)],
-        true,
-    )?;
-    let _ = existing_watch.close();
-    idx.close();
-    Ok(())
 }

@@ -1,7 +1,8 @@
 //! 64-seed Differential DST across ALL 4 stock checked index families
 //! (`TextPrefix`, `Interval1D`, `Box2D`, `Box3D`) against a brute-force oracle.
+use super::dst_budget::verify_budget_refusal;
 use super::dst_driver::{FourFamilyDriver, FourFamilyProbe};
-use super::dst_oracle::{verify_budget_refusal, FourFamilyOracle, PREFIXES, TITLES};
+use super::dst_oracle::{FourFamilyOracle, PREFIXES, TITLES};
 use super::operations::AssetSpec;
 use super::schema::{FocusWindow, QueryBox2D, QueryBox3D};
 

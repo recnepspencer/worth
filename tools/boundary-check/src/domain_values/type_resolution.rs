@@ -62,7 +62,7 @@ impl Sources<'_> {
         if self.syntax.borrow().contains(context) {
             return Ok(module);
         }
-        super::attributes::module(&module.items)?;
+        super::attributes::module(self, context, &module.items)?;
         for item in &module.items {
             if let Item::Macro(item) = item
                 && !item.mac.path.is_ident("macro_rules")

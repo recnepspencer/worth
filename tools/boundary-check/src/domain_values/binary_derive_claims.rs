@@ -1,4 +1,7 @@
-//! AST discovery for `#[derive(WorthBinaryValue)]` aliases and `#[cfg_attr(...)]` guards.
+//! AST discovery for `#[derive(WorthBinaryValue)]` aliases and `#[cfg_attr(...)]` guards,
+//! resolving derive provenance across both inline and out-of-line module parent chains.
+use super::macro_origin::BinaryDeriveTarget;
+use super::modules::Sources;
 use quote::ToTokens;
 use std::collections::BTreeSet;
 use syn::{Item, Meta, UseTree};
@@ -54,10 +57,14 @@ fn collect_use_binary_aliases(
 pub(super) fn inspect_worth_binary_derive(
     attrs: &[syn::Attribute],
     aliases: &BTreeSet<String>,
+    sources: &Sources<'_>,
+    source: &str,
+    modules: &[String],
 ) -> Result<Option<syn::Path>, String> {
     let mut derives: Vec<(syn::Path, bool)> = Vec::new();
     let mut has_worth_binary = false;
     let mut cfg_worth_binary = false;
+    let mut has_worth_query_identity = false;
     for attr in attrs {
         collect_meta_derives(
             &attr.meta,
@@ -65,6 +72,7 @@ pub(super) fn inspect_worth_binary_derive(
             &mut derives,
             &mut has_worth_binary,
             &mut cfg_worth_binary,
+            &mut has_worth_query_identity,
         )?;
     }
     if cfg_worth_binary {
@@ -74,15 +82,51 @@ pub(super) fn inspect_worth_binary_derive(
         );
     }
     let mut matched: Option<syn::Path> = None;
+    let mut contexts_cache: Option<Result<Vec<Vec<String>>, String>> = None;
     for (path, from_cfg) in &derives {
         let direct = path
             .segments
             .last()
             .is_some_and(|seg| seg.ident == "WorthBinaryValue");
-        let aliased = path.leading_colon.is_none()
+        let local_alias = path.leading_colon.is_none()
             && path.segments.len() == 1
             && aliases.contains(&path.segments[0].ident.to_string());
-        if direct || aliased {
+        let mut is_binary_claim = direct || local_alias;
+        if !is_binary_claim && !is_non_binary_known_derive(path) {
+            let contexts = contexts_cache.get_or_insert_with(|| {
+                sources.find_sources(source).map(|ctxs| {
+                    ctxs.into_iter()
+                        .map(|mut ctx| {
+                            ctx.extend(modules.iter().cloned());
+                            ctx
+                        })
+                        .collect()
+                })
+            });
+            match contexts {
+                Ok(ctxs) => {
+                    for ctx in ctxs {
+                        match sources.resolve_binary_derive(ctx, path) {
+                            BinaryDeriveTarget::Approved | BinaryDeriveTarget::ForgedBinary => {
+                                is_binary_claim = true;
+                                break;
+                            }
+                            BinaryDeriveTarget::Unresolvable(err)
+                                if has_worth_binary || has_worth_query_identity =>
+                            {
+                                return Err(err);
+                            }
+                            BinaryDeriveTarget::Unresolvable(_) | BinaryDeriveTarget::Other => {}
+                        }
+                    }
+                }
+                Err(err) if has_worth_binary || has_worth_query_identity => {
+                    return Err(err.clone());
+                }
+                Err(_) => {}
+            }
+        }
+        if is_binary_claim {
             if *from_cfg {
                 return Err(
                     "conditional #[cfg_attr(..., derive(...))] domain binary value claim is unsupported"
@@ -123,6 +167,7 @@ fn collect_meta_derives(
     derives: &mut Vec<(syn::Path, bool)>,
     has_worth_binary: &mut bool,
     cfg_worth_binary: &mut bool,
+    has_worth_query_identity: &mut bool,
 ) -> Result<(), String> {
     let Meta::List(list) = meta else {
         return Ok(());
@@ -132,6 +177,10 @@ fn collect_meta_derives(
         if in_cfg_attr {
             *cfg_worth_binary = true;
         }
+        return Ok(());
+    }
+    if list.path.is_ident("worth_query") && list.tokens.to_string().contains("identity") {
+        *has_worth_query_identity = true;
         return Ok(());
     }
     if list.path.is_ident("derive") {
@@ -150,7 +199,14 @@ fn collect_meta_derives(
             .parse_args_with(syn::punctuated::Punctuated::<Meta, syn::Token![,]>::parse_terminated)
             .map_err(|error| format!("unparseable cfg_attr attribute: {error}"))?;
         for inner in args.iter().skip(1) {
-            collect_meta_derives(inner, true, derives, has_worth_binary, cfg_worth_binary)?;
+            collect_meta_derives(
+                inner,
+                true,
+                derives,
+                has_worth_binary,
+                cfg_worth_binary,
+                has_worth_query_identity,
+            )?;
         }
     }
     Ok(())
@@ -177,6 +233,14 @@ fn is_non_binary_known_derive(path: &syn::Path) -> bool {
             | "WorthValue"
             | "worth_foundational::facade::WorthValue"
             | "worth_query_decl::facade::application_schema::WorthValue"
+            | "WorthQuery"
+            | "WorthQuerySchema"
+            | "WorthQueryRecord"
+            | "WorthQueryProjection"
+            | "WorthManagedIndex"
+            | "WorthQueryAction"
+            | "WorthQueryCorrection"
+            | "WorthNameDiscriminator"
     )
 }
 

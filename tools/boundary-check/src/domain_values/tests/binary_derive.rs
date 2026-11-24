@@ -182,3 +182,129 @@ fn cfg_attr_derived_worth_binary_value_is_refused() {
         .join("\n");
     assert!(err.contains("cfg_attr"), "{err}");
 }
+
+#[test]
+fn inline_and_out_of_line_child_super_aliases_resolve_through_module_tree() {
+    // (a) Registered inline child module using `use super::Alias` is accepted when reference-free,
+    //     and still enforces reference closure when carrying `EntityRef`.
+    let inline_ok = r#"
+        use worth_query_decl::facade::WorthBinaryValue as Alias;
+        mod child {
+            use super::Alias;
+            #[derive(Clone, Copy, Alias)]
+            #[worth_binary(namespace = "app.child_ok", version = 1)]
+            pub struct ChildOk { pub a: i64 }
+        }
+    "#;
+    assert_eq!(
+        run(inline_ok, &registration("child::ChildOkBinding")),
+        Ok(())
+    );
+
+    let inline_bad = r#"
+        use worth_query_decl::facade::WorthBinaryValue as Alias;
+        mod child {
+            use super::Alias;
+            #[derive(Clone, Copy, Alias)]
+            #[worth_binary(namespace = "app.child_bad", version = 1)]
+            pub struct ChildBad { pub id: EntityRef }
+        }
+    "#;
+    let err = run(inline_bad, &registration("child::ChildBadBinding"))
+        .unwrap_err()
+        .join("\n");
+    assert!(err.contains("EntityRef"), "{err}");
+
+    // (b) Unregistered out-of-line child module file using `use super::Alias` + `worth_query(identity = ...)`
+    //     is caught and refused (both unconditional and under `cfg_attr`).
+    let out_of_line_unreg = Files::from([
+        (
+            "app/lib.rs".into(),
+            "use worth_query_decl::facade::WorthBinaryValue as Alias;\nmod child;\n".into(),
+        ),
+        (
+            "app/child.rs".into(),
+            r#"
+                use super::Alias;
+                #[derive(Clone, Copy, Alias)]
+                #[worth_query(identity = "app.child_sneaky.v1")]
+                pub struct ChildSneaky { pub id: EntityRef }
+            "#
+            .into(),
+        ),
+        ("bindings.toml".into(), "binding = []".into()),
+    ]);
+    let err = check_sources(&out_of_line_unreg, roots(), "bindings.toml")
+        .unwrap_err()
+        .join("\n");
+    assert!(err.contains("ChildSneakyBinding"), "{err}");
+    assert!(err.contains("needs exactly one"), "{err}");
+
+    let out_of_line_cfg = Files::from([
+        (
+            "app/lib.rs".into(),
+            "use worth_query_decl::facade::WorthBinaryValue as Alias;\nmod child;\n".into(),
+        ),
+        (
+            "app/child.rs".into(),
+            r#"
+                use super::Alias;
+                #[cfg_attr(all(), derive(Alias))]
+                #[worth_query(identity = "app.child_cfg.v1")]
+                pub struct ChildCfg { pub id: EntityRef }
+            "#
+            .into(),
+        ),
+        ("bindings.toml".into(), "binding = []".into()),
+    ]);
+    let err = check_sources(&out_of_line_cfg, roots(), "bindings.toml")
+        .unwrap_err()
+        .join("\n");
+    assert!(err.contains("cfg_attr"), "{err}");
+
+    // (c) Registered out-of-line child module file with `use super::Alias` is accepted when clean,
+    //     and unresolvable `use super::MissingAlias` fails closed.
+    let out_of_line_ok = Files::from([
+        (
+            "app/lib.rs".into(),
+            "use worth_query_decl::facade::WorthBinaryValue as Alias;\nmod child;\n".into(),
+        ),
+        (
+            "app/child.rs".into(),
+            r#"
+                use super::Alias;
+                #[derive(Clone, Copy, Alias)]
+                #[worth_query(identity = "app.child_ok.v1")]
+                pub struct ChildFileOk { pub a: i64 }
+            "#
+            .into(),
+        ),
+        (
+            "bindings.toml".into(),
+            "[[binding]]\nsource = 'app/child.rs'\nbinding = 'ChildFileOkBinding'\nposture='domain'\nreason='reference-free fixture value'\nforbidden_types = ['GraphKey', 'ObjectName']\n".into(),
+        ),
+    ]);
+    assert_eq!(
+        check_sources(&out_of_line_ok, roots(), "bindings.toml"),
+        Ok(())
+    );
+
+    let unresolvable_super = Files::from([
+        ("app/lib.rs".into(), "mod child;\n".into()),
+        (
+            "app/child.rs".into(),
+            r#"
+                use super::MissingAlias;
+                #[derive(MissingAlias)]
+                #[worth_query(identity = "app.child_missing.v1")]
+                pub struct ChildMissing { pub a: i64 }
+            "#
+            .into(),
+        ),
+        ("bindings.toml".into(), "binding = []".into()),
+    ]);
+    let err = check_sources(&unresolvable_super, roots(), "bindings.toml")
+        .unwrap_err()
+        .join("\n");
+    assert!(err.contains("unresolvable derive macro alias"), "{err}");
+}

@@ -3,6 +3,7 @@ use super::binary_derive_claims::{
     collect_binary_aliases, derived_binary_binding_name, inspect_worth_binary_derive,
 };
 use super::canonical_claims::canonical_binding;
+use super::modules::Sources;
 use proc_macro2::{TokenStream, TokenTree};
 use std::collections::BTreeSet;
 use syn::{
@@ -70,7 +71,11 @@ fn private_domain_arm(tokens: TokenStream) -> bool {
         .any(|token| matches!(token, TokenTree::Group(group) if private_domain_arm(group.stream())))
 }
 
-pub(super) fn discover(source: &str, text: &str) -> Result<Vec<Claim>, String> {
+pub(super) fn discover(
+    source: &str,
+    text: &str,
+    sources: &Sources<'_>,
+) -> Result<Vec<Claim>, String> {
     // Only these platform implementation templates may generate claims.
     if [
         "workspaces/worth-query/crates/worth-query-declaration/src/value_binding_macro.rs",
@@ -83,6 +88,7 @@ pub(super) fn discover(source: &str, text: &str) -> Result<Vec<Claim>, String> {
     let file = syn::parse_file(text).map_err(|error| format!("{source}: {error}"))?;
     let mut visitor = Discovery {
         source,
+        sources,
         modules: Vec::new(),
         alias_scopes: Vec::new(),
         claims: Vec::new(),
@@ -98,6 +104,7 @@ pub(super) fn discover(source: &str, text: &str) -> Result<Vec<Claim>, String> {
 
 struct Discovery<'a> {
     source: &'a str,
+    sources: &'a Sources<'a>,
     modules: Vec<String>,
     alias_scopes: Vec<BTreeSet<String>>,
     claims: Vec<Claim>,
@@ -174,7 +181,13 @@ impl<'ast> Visit<'ast> for Discovery<'_> {
     }
     fn visit_item_struct(&mut self, item: &'ast syn::ItemStruct) {
         let aliases = self.current_aliases();
-        match inspect_worth_binary_derive(&item.attrs, &aliases) {
+        match inspect_worth_binary_derive(
+            &item.attrs,
+            &aliases,
+            self.sources,
+            self.source,
+            &self.modules,
+        ) {
             Ok(Some(origin)) => {
                 if !item.generics.params.is_empty() {
                     self.refusal = Some(format!(
