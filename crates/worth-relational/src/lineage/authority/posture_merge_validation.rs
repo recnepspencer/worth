@@ -14,7 +14,9 @@ use super::posture_validation::{
     mismatch, require_live_holder_and_lineage, validate_birth_holder_and_subject,
     ValidatedMergeTarget, ValidatedPosture,
 };
-use super::staged_effects::{existed_at_basis, is_live_after_commit, is_retired_in_commit};
+use super::staged_effects::{
+    existed_at_basis, is_live_after_commit, is_partition_staged, is_retired_in_commit,
+};
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn validate_merge_claim(
@@ -76,7 +78,11 @@ pub(super) fn validate_merge_claim(
                 "Merge parents must list distinct targets and distinct persistent names",
             ));
         }
-        if !existed_at_basis(staged, parent_target, version_id) {
+        // A parent in a partition this commit never staged is unchanged since
+        // the basis; `require_live_holder_and_lineage` below proves it was the
+        // name's live holder there (`#314`).
+        let staged_parent = is_partition_staged(staged, parent_target);
+        if staged_parent && !existed_at_basis(staged, parent_target, version_id) {
             return Err(mismatch(
                 LineagePostureKind::Merge,
                 parent_target,
@@ -179,10 +185,10 @@ pub(super) fn validate_merge_claim(
                     "Merge keeper name is already kept by another merge in this commit",
                 ));
             }
-            if target == keeper_target
-                && is_live_after_commit(staged, keeper_target)
-                && !created_targets.contains(&target)
-            {
+            // An unstaged keeper stays live: this commit cannot retire it.
+            let keeper_stays_live = !is_partition_staged(staged, keeper_target)
+                || is_live_after_commit(staged, keeper_target);
+            if target == keeper_target && keeper_stays_live && !created_targets.contains(&target) {
                 ValidatedMergeTarget::InPlaceKeeper {
                     lineage_id: keeper_lineage,
                     kept_name: *keeper_id,

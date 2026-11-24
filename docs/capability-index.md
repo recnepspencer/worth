@@ -123,6 +123,12 @@ numeric index order; `WorthQueryOutputBirth::of_role` for a birth under a
 typed role (`IndexedRoleDiscriminator` selects an indexed role's split piece
 with `NameSelection::keep_side`); and `NamedTarget<K>` for a held name with
 its selection.
+The persistent-naming protocol is specified in
+[`specs/tla/persistent_naming/`](../specs/tla/persistent_naming/PersistentNaming.tla)
+and checked with `python3 tools/tla/run_tlc.py check`. The seeded simulation in
+`worth-query-court-decl-host-persistent-naming` (`oracle::persistent_naming_dst`;
+`WORTH_DST_SEEDS`, `WORTH_DST_TRACE_DIR`) drives real commits against a reference
+oracle of that model and emits traces for `run_tlc.py trace`.
 Hold names as ordinary values
 ([names as values, in rows and within an owner](build-an-application.md#names-as-values-in-rows-and-within-an-owner)):
 declare a kind once with `decl::application_naming::WorthQueryNamedKind`
@@ -1173,6 +1179,14 @@ exercises this fresh-process handoff, including exact original-owner readmission
 and subsequent dependency-driven advancement.
 
 ## Known gaps
+
+Group persistent names have no commit path yet. Installation validates and
+lowers `application_group_name_scheme`s, but no operation can form, split, merge
+or retire a group, and the runtime name index ingests only entity and relation
+lineage. Query therefore offers no tracked `group_name_of` / `resolve_group`
+and no `#[worth_query(group_name)]` projection
+([#334](https://github.com/recnepspencer/worth/issues/334)). Name entities and
+relations, and keep group meaning in the application until that lands.
 
 Forwarding a managed-index read/provider error from an invariant hook retains
 its typed `ManagedIndex` failure category and diagnostic detail, rather than the
