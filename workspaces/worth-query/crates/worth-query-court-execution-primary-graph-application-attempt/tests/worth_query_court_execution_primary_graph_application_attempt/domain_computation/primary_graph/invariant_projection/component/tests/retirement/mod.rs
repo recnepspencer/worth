@@ -55,7 +55,7 @@ fn member_retirement_preserves_component_name_and_invalidates_old_membership() {
             let kind = *(*reader.layout_for_test()).relation("B").unwrap().kind_for_test();
             let physical = reader.read_adjacency_for_test("B", root.entity_id(), kind,
                 worth_query_declaration::facade::application_schema::RelationDirection::Forward).unwrap();
-            assert!(physical.into_records().is_empty(), "the authored B1->2 edge is no longer live coupling");
+            assert!(physical.is_empty(), "the authored B1->2 edge is no longer live coupling");
             let current = reader.component_of(Shells::reference(), &root).unwrap();
             let keys = current.members().map(|member| reader.field(&member, NodeKey::at("NodeKey")).unwrap())
                 .collect::<BTreeSet<_>>();

@@ -15,6 +15,7 @@ pub(crate) fn complete(
 ) -> Result<PinnedStructuralWalk, PinnedStructuralWalkDenial> {
     let mut reads = PinnedStructuralWalkReads::default();
     let mut work = 0;
+    let mut endpoint = None;
     // Final handoff may discard a completed value. Observations therefore
     // remain here, outside the native callback's returned payload.
     let result = execution.run_native_with_checkpoint(|context| {
@@ -38,6 +39,7 @@ pub(crate) fn complete(
             context,
             &mut reads,
             &mut work,
+            &mut endpoint,
             memory,
         )
     });
@@ -46,17 +48,24 @@ pub(crate) fn complete(
             if let Some(control) = scope.control {
                 control().map_err(|cause| PinnedStructuralWalkDenial {
                     kind: PinnedStructuralWalkDenialKind::Read(cause),
+                    endpoint: None,
                     reads,
                     work,
                 })?;
             }
             Ok(walk)
         }
-        Ok((Err(kind), _physical)) => Err(PinnedStructuralWalkDenial { kind, reads, work }),
+        Ok((Err(kind), _physical)) => Err(PinnedStructuralWalkDenial {
+            kind,
+            endpoint,
+            reads,
+            work,
+        }),
         Err(stop) => Err(PinnedStructuralWalkDenial {
             kind: PinnedStructuralWalkDenialKind::Read(
                 crate::visibility::materialization::read_records::read_request::cause(stop),
             ),
+            endpoint: None,
             reads,
             work,
         }),

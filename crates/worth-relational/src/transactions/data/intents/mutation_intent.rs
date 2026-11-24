@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::identity::data::{KindId, PartitionId, RelationId};
+use crate::identity::data::{EntityId, KindId, PartitionId, RelationId};
 use crate::symbols::data::ClientKey;
 use worth_foundational::facade::PortableRecordAspectPatch;
 
@@ -150,6 +150,22 @@ impl MutationIntent {
             Self::Entity(intent) => intent.owned_allocation_capacity_bytes(),
             Self::Relation(intent) => intent.owned_allocation_capacity_bytes(),
             Self::Materialization(intent) => intent.owned_allocation_capacity_bytes(),
+        }
+    }
+
+    /// The entity a delete intent removes; `None` for any other intent.
+    pub(crate) fn deleted_entity(&self) -> Option<EntityId> {
+        match self {
+            Self::Entity(EntityMutationIntent::Delete(delete)) => Some(delete.entity_id),
+            _ => None,
+        }
+    }
+
+    /// The relation a delete intent removes; `None` for any other intent.
+    pub(crate) fn deleted_relation(&self) -> Option<RelationId> {
+        match self {
+            Self::Relation(RelationMutationIntent::Delete(delete)) => Some(delete.relation_id),
+            _ => None,
         }
     }
 }

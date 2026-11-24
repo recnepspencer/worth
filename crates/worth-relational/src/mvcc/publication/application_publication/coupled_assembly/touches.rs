@@ -6,7 +6,10 @@ use crate::publication::data::CoupledProvenancePostponement as Reason;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_execution::ExecutionRequest;
 
-pub use touch_projection::{RelationalCoupledAppendTouches, RelationalCoupledChainOverlay};
+pub use touch_projection::{
+    RelationalCoupledAppendTouches, RelationalCoupledChainOverlay,
+    RelationalCoupledOverlayEndpoints, RelationalCoupledOverlayRelation,
+};
 
 impl RelationalAuthoredCoupledCandidate<'_> {
     /// Certified touches of producer part `index`'s latest applied round.
@@ -50,7 +53,8 @@ impl RelationalAuthoredCoupledCandidate<'_> {
     }
 
     /// Verify non-intervention on chain `index`'s exclusive write set and return
-    /// its head pre-pin, exclusive entities, and cumulative prior write touches.
+    /// its head pre-pin, exclusive entities, overlay relations, and cumulative
+    /// prior write touches.
     /// Stops with `#119 IntervenedOutput` if any later member wrote a record in
     /// this chain's write set.
     pub fn chain_overlay(
@@ -69,6 +73,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             &self.mutation.state,
             &self.mutation.outcome.effect.publication.changed_records,
             part,
+            || self.pin_source(execution),
         )
     }
 

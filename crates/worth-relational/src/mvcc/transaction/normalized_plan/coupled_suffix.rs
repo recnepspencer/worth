@@ -19,10 +19,14 @@ impl OwnedNormalizedPlan {
     /// populated re-creates lower under `RecordCreation` semantics (`SetWhole`)
     /// into `ApplyAspectPatch` so newly populated optional struct aspects apply.
     /// The recorded plan and transaction batches keep the unlowered Create.
+    /// The round's relation creates and deletes, and its deletes of the
+    /// entities in `redeleted`, were proved to repeat what its chain already
+    /// applied (`prove_succession`): the applied plan omits them.
     pub(crate) fn lower_coupled_recreates(
         mut self,
         bindings: &CommitCreatedEntityBindings,
         plans: &crate::schema::data::AspectContractPlanCatalog,
+        redeleted: &std::collections::BTreeSet<crate::identity::data::EntityId>,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Self, TransactionCommitError> {
         let recreates = request
@@ -54,12 +58,14 @@ impl OwnedNormalizedPlan {
             })
             .map_err(request_denial)?
             .0?;
-        let relinks = self
-            .plan
-            .merged_intents
-            .iter()
-            .any(|intent| matches!(intent, MutationIntent::Create(CreateIntent::Relation(_))));
-        if recreates.is_empty() && !relinks {
+        let repeated = |intent: &MutationIntent| {
+            matches!(intent, MutationIntent::Create(CreateIntent::Relation(_)))
+                || intent.deleted_relation().is_some()
+                || intent
+                    .deleted_entity()
+                    .is_some_and(|id| redeleted.contains(&id))
+        };
+        if recreates.is_empty() && !self.plan.merged_intents.iter().any(repeated) {
             return Ok(self);
         }
         let mut kept = Vec::with_capacity(self.plan.merged_intents.len());
@@ -69,9 +75,7 @@ impl OwnedNormalizedPlan {
             .into_iter()
             .enumerate()
         {
-            // A successor's relation creates were proved re-creates of its
-            // chain's relations (`prove_succession`), which the head applied.
-            if matches!(intent, MutationIntent::Create(CreateIntent::Relation(_))) {
+            if repeated(&intent) {
                 continue;
             }
             let Some(&(_, entity_id)) = next.peek().filter(|&&(idx, _)| idx == index) else {

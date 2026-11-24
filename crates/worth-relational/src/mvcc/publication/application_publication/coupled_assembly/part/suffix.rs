@@ -12,7 +12,10 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         content: &crate::content::RelationalContentAttachments,
         mut batches: Vec<WorkerIntentBatch>,
     ) -> Result<AppliedSuffix, RelationalCoupledAssemblyFailure> {
-        let successor = matches!(writer, SuffixWriter::Successor { .. });
+        let redeleted = match &writer {
+            SuffixWriter::Successor { redeleted, .. } => Some(*redeleted),
+            _ => None,
+        };
         let (creator, source, custody, local_keys) = suffix_scope::scope(
             execution,
             writer,
@@ -56,7 +59,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         let (intents, recorded, originals) = suffix_scope::normalize(
             execution,
             intents,
-            successor,
+            redeleted,
             &self.mutation.outcome.created_entities,
             self.prepared.schema_authority.aspect_plans(),
         )?;

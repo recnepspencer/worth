@@ -36,6 +36,8 @@ pub(in crate::mvcc::publication::application_publication::coupled_assembly) enum
         index: usize,
         source: crate::identity::data::EntityId,
         predecessor: Option<&'a CanonicalRequiredOutputOrigin>,
+        /// The entities the round provably deletes again (`prove_succession`).
+        redeleted: &'a std::collections::BTreeSet<crate::identity::data::EntityId>,
     },
     /// The authored writer: one later stage editing an admitted stage source.
     Authored {
@@ -97,6 +99,7 @@ pub(super) fn scope<'a>(
             index,
             source,
             predecessor,
+            ..
         } => (
             CoupledFreshWriter::Producer(index),
             source,
@@ -118,7 +121,7 @@ pub(super) fn scope<'a>(
 pub(super) fn normalize(
     execution: &ExecutionRequest<'_, '_>,
     intents: OwnedNormalizedPlan,
-    successor: bool,
+    redeleted: Option<&std::collections::BTreeSet<EntityId>>,
     created: &CommitCreatedEntityBindings,
     aspect_plans: &AspectContractPlanCatalog,
 ) -> Result<
@@ -131,7 +134,7 @@ pub(super) fn normalize(
 > {
     let originals = CoupledOriginalRelationCreates::capture(
         execution,
-        if successor {
+        if redeleted.is_some() {
             &[]
         } else {
             &intents.plan().merged_intents
@@ -140,10 +143,10 @@ pub(super) fn normalize(
     let mut intents = intents.into_coupled_suffix(0, created, execution)?;
     // A successor records its commands as authored (re-creates stay
     // creates, so its touches match the one-round answer) but applies them
-    // lowered onto the chain's allocations.
-    let recorded = if successor {
+    // lowered onto the chain's allocations, without its proved re-deletes.
+    let recorded = if let Some(redeleted) = redeleted {
         let recorded = OwnedNormalizedPlan::copy_for_request(intents.plan(), execution)?;
-        intents = intents.lower_coupled_recreates(created, aspect_plans, execution)?;
+        intents = intents.lower_coupled_recreates(created, aspect_plans, redeleted, execution)?;
         Some(recorded)
     } else {
         None

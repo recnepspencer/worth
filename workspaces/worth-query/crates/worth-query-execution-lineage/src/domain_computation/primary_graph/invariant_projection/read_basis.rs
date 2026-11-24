@@ -87,7 +87,7 @@ impl<'r> NativeProjectionRead<'r> {
         }
     }
     /// A successor round's own-output view, when this read serves one.
-    pub fn own_outputs(&self) -> Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>{
+    pub fn own_outputs(&self) -> Option<&'r OwnOutputOverlay> {
         match self {
             Self::Applied { own_outputs, .. } => *own_outputs,
             Self::Committed(_) => None,

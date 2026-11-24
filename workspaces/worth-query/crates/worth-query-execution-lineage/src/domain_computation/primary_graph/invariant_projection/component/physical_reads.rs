@@ -19,7 +19,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
             for (name, kind) in layout.sources.iter() {
                 for direction in [RelationDirection::Forward, RelationDirection::Reverse] {
                     let read = self.read_adjacency(name, member, *kind, direction)?;
-                    for edge in read.into_records() {
+                    for edge in read {
                         AggregateObservation::checkpoint(context)
                             .map_err(|cause| self.walk_stop(cause, subject))?;
                         if !aggregate.native().contains(edge.source)

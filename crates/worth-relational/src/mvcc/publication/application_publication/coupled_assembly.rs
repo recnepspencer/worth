@@ -60,7 +60,10 @@ mod scoped_preparation;
 mod succession;
 mod touch_projection;
 mod touches;
-pub use touches::{RelationalCoupledAppendTouches, RelationalCoupledChainOverlay};
+pub use touches::{
+    RelationalCoupledAppendTouches, RelationalCoupledChainOverlay,
+    RelationalCoupledOverlayEndpoints, RelationalCoupledOverlayRelation,
+};
 mod writer_custody;
 pub(crate) use completion::CoupledAppliedCandidate;
 pub use completion::RelationalCoupledAuthoredPublication;

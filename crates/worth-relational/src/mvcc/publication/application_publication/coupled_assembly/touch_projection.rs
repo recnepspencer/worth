@@ -16,6 +16,9 @@ use crate::visibility::materialization::read_records::reader::pinned_read::{
 use std::collections::BTreeSet;
 use worth_execution::ExecutionRequest;
 
+mod overlay_relations;
+pub use overlay_relations::{RelationalCoupledOverlayEndpoints, RelationalCoupledOverlayRelation};
+
 /// Native-certified touches projected from one applied coupled member.
 #[derive(Clone, Debug)]
 pub struct RelationalCoupledAppendTouches {
@@ -34,12 +37,15 @@ impl RelationalCoupledAppendTouches {
 /// Native-certified exclusive-write-set overlay for reopening a coupled chain.
 /// `head_pre_pin` is the candidate image immediately before the chain's head
 /// appended; `exclusive_entities` are the entities the chain's earlier rounds
-/// created, published, or exclusively wrote; `prior_touches` are the union of
+/// created, published, or exclusively wrote; `relations` are the chain's
+/// relation records whose live adjacency differs between the head pre-pin and
+/// the current candidate (#277); `prior_touches` are the union of
 /// Native-certified touches across all earlier rounds of this chain.
 #[derive(Clone)]
 pub struct RelationalCoupledChainOverlay {
     head_pre_pin: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
     exclusive_entities: Vec<EntityId>,
+    relations: Vec<RelationalCoupledOverlayRelation>,
     prior_touches: Vec<ValidatedMutationTouch>,
 }
 impl RelationalCoupledChainOverlay {
@@ -48,6 +54,12 @@ impl RelationalCoupledChainOverlay {
     }
     pub fn exclusive_entities(&self) -> &[EntityId] {
         &self.exclusive_entities
+    }
+    /// The chain's relations with changed live adjacency, sorted by id. Each is
+    /// exclusive to the chain: a later member's write to one stops the round
+    /// with `IntervenedOutput` before this overlay exists.
+    pub fn relations(&self) -> &[RelationalCoupledOverlayRelation] {
+        &self.relations
     }
     pub fn prior_touches(&self) -> &[ValidatedMutationTouch] {
         &self.prior_touches
@@ -72,6 +84,10 @@ pub(super) fn chain_overlay(
     state: &WorkingState,
     changed: &[RecordRef],
     part: &CoupledPublicationPart,
+    current: impl FnOnce() -> Result<
+        RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+        TransactionCommitError,
+    >,
 ) -> Result<RelationalCoupledChainOverlay, TransactionCommitError> {
     let source = part
         .publication
@@ -108,9 +124,16 @@ pub(super) fn chain_overlay(
         .collect::<Vec<_>>();
     exclusive_entities.sort_unstable();
     exclusive_entities.dedup();
+    let relations = overlay_relations::overlay_relations(
+        execution,
+        &part.records,
+        &part.chain.head_input,
+        &current()?,
+    )?;
     Ok(RelationalCoupledChainOverlay {
         head_pre_pin: part.chain.head_input.clone(),
         exclusive_entities,
+        relations,
         prior_touches,
     })
 }

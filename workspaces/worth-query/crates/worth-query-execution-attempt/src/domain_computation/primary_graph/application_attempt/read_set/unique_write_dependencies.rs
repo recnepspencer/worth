@@ -63,17 +63,28 @@ impl<Schema, Operation, Input, Scope>
             |index, kind, locator, value| {
                 self.lease.handle().with_runtime(execution, |runtime| {
                     if let Some(candidate) = self.lease.applied_projection() {
-                        return observe_applied_indexed_entity_selection(
-                            execution,
-                            runtime,
-                            self.lease.snapshot(),
-                            candidate,
-                            index,
-                            kind,
-                            locator,
-                            value,
-                            UNIQUE_VALUE_CANDIDATE_LIMIT,
-                        );
+                        let observe_at = |pin| {
+                            observe_applied_indexed_entity_selection(
+                                execution,
+                                runtime,
+                                self.lease.snapshot(),
+                                pin,
+                                index,
+                                kind,
+                                locator.clone(),
+                                value.clone(),
+                                UNIQUE_VALUE_CANDIDATE_LIMIT,
+                            )
+                        };
+                        let fact = observe_at(candidate)?;
+                        // A successor round's view (#277 r4 A): a holder its
+                        // chain created is the record its re-create writes in
+                        // place (Native folds the same-key create), so the
+                        // value is observed as the view serves it.
+                        let Some(own) = self.lease.own_outputs() else {
+                            return Ok(fact);
+                        };
+                        return Ok(served_selection(fact, observe_at(own.head())?, own));
                     }
                     observe_indexed_entity_selection(
                         runtime,
@@ -148,6 +159,40 @@ pub fn observe_unique_values(
 }
 
 pub mod writes;
+
+/// `current`'s selection with its candidates served through `own`.
+fn served_selection(
+    current: WorthQueryApplicationObservedFact,
+    head: WorthQueryApplicationObservedFact,
+    own: &crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay,
+) -> WorthQueryApplicationObservedFact {
+    match (current, head) {
+        (
+            WorthQueryApplicationObservedFact::IndexedEntitySelection {
+                index_id,
+                definition,
+                entity_kind,
+                locator,
+                value,
+                candidate_limit,
+                candidates,
+            },
+            WorthQueryApplicationObservedFact::IndexedEntitySelection {
+                candidates: at_head,
+                ..
+            },
+        ) => WorthQueryApplicationObservedFact::IndexedEntitySelection {
+            index_id,
+            definition,
+            entity_kind,
+            locator,
+            value,
+            candidate_limit,
+            candidates: own.serve_candidates(candidates, at_head),
+        },
+        (current, _) => current,
+    }
+}
 
 fn selection_key(fact: &WorthQueryApplicationObservedFact) -> Option<SelectionKey> {
     match fact {

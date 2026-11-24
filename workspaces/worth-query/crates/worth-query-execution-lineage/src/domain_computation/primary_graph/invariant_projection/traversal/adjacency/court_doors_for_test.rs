@@ -9,7 +9,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
         member: EntityId,
         kind: KindId,
         direction: RelationDirection,
-    ) -> Result<BoundedAdjacencyTruthRead, WorthQueryInvariantProjectionTraversalDenial> {
+    ) -> Result<Vec<RelationReadRecord>, WorthQueryInvariantProjectionTraversalDenial> {
         Self::read_adjacency(self, subject, member, kind, direction)
     }
 }
