@@ -35,9 +35,9 @@ pub use branches::{
     WorthQueryApplicationProductBranches, WorthQueryExpectedProductBasisSelectionDenial,
     WorthQueryExpectedProductBranch, WorthQueryExpectedProductBranchAdoptionDenial,
     WorthQueryExpectedProductBranchAdoptionFailure, WorthQueryExpectedProductBranchCloseFailure,
-    WorthQueryExpectedProductBranchFork, WorthQueryOwnedProductHead,
-    WorthQueryOwnedProductHeadCloseFailure, WorthQueryProductBranchInventory,
-    WorthQueryProductBranchInventoryDenial,
+    WorthQueryExpectedProductBranchCreationContinuation, WorthQueryExpectedProductBranchFork,
+    WorthQueryOwnedProductHead, WorthQueryOwnedProductHeadCloseFailure,
+    WorthQueryProductBranchInventory, WorthQueryProductBranchInventoryDenial,
 };
 pub use cleanup::{
     WorthQueryApplicationProductBranchCleanup, WorthQueryApplicationProductBranchCleanupDenial,

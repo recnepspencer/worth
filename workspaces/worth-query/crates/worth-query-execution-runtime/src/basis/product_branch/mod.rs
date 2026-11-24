@@ -13,9 +13,9 @@ pub use creation::{
     WorthQuerySourceProgramResolver,
 };
 pub use creation_recovery::{
-    map_recovery_denial, WorthQueryProductBranchCreationContinuation,
-    WorthQueryProductBranchCreationRecovery, WorthQueryProductBranchCreationRecoveryCause,
-    WorthQueryProductBranchCreationRecoveryFailure,
+    map_recovery_denial, ProductBranchCreationRecoveryInternalPort,
+    WorthQueryProductBranchCreationContinuation, WorthQueryProductBranchCreationRecovery,
+    WorthQueryProductBranchCreationRecoveryCause, WorthQueryProductBranchCreationRecoveryFailure,
     WorthQueryProductBranchCreationRecoveryInspection,
     WorthQueryProductBranchCreationRecoveryNextAction,
     WorthQueryProductBranchCreationRecoveryRelease,

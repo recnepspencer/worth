@@ -33,16 +33,13 @@ impl WorthQueryProductRuntime {
         use worth_query_installation::facade::{
             InstalledExternalEffectContract, PublishedAftermathPosture,
         };
-        if contracts.body().is_some()
-            || !matches!(
-                contracts.external_effect(),
-                InstalledExternalEffectContract::None
-            )
-            || contracts.aftermath().is_some_and(|aftermath| {
-                aftermath.published_posture() != PublishedAftermathPosture::Irreversible
-                    || aftermath.mechanism().is_some()
-            })
-        {
+        if !matches!(
+            contracts.external_effect(),
+            InstalledExternalEffectContract::None
+        ) || contracts.aftermath().is_some_and(|aftermath| {
+            aftermath.published_posture() != PublishedAftermathPosture::Irreversible
+                || aftermath.mechanism().is_some()
+        }) {
             return Err(Denial::UnsupportedCorrectionCompensation);
         }
         Ok(())

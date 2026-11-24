@@ -14,6 +14,12 @@ impl<Schema: ApplicationSchema> ApplicationSchemaDeclarationBuilder<Schema> {
                 Correction,
             >())
             .finish();
+        let definition = match Correction::source_body() {
+            Some(body) => definition
+                .with_body(body)
+                .expect("the correction source is newly defined"),
+            None => definition,
+        };
         let builder = self.declared_operation(definition);
         let builder = if builder
             .member_provenance
