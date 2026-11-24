@@ -8605,6 +8605,19 @@ maintained prefix/geometry compositions use this same strategy. Prefix summaries
 keep exact UTF-8 extrema; geometry summaries use the numerical owner's closed
 bounds and union, without Query-specific tolerances or field policy.
 
+For standard ordered point/prefix or interval-overlap indexes, you do not need
+to author a balanced binary source tree by hand. Use
+`host::ordered_index::WorthQueryOrderedIndexAdapter` and implement
+`WorthQueryOrderedIndexDomain` (plus `WorthQueryOrderedIndexPredicateDomain`
+when live watches are needed). Your domain supplies only metered row ordering,
+a source summary with associative summary combination, and the exact metered
+probe predicate (with `WorthQueryOrderedSlotBounds`, `read_ordered_field`, and
+the metered text/prefix helpers in `host::ordered_index` for string keys). The
+adapter owns the height-balanced binary source tree, incremental
+insert/update/delete, deterministic slot tie-breaking, bottom-up summary
+propagation, and checked `WorthQueryManagedIndexProvider` /
+`WorthQueryManagedIndexPredicateProvider` wiring.
+
 Both complete strategies record the actual visited regions and checked prunes.
 Before releasing slots, Query verifies that this cut covers the checked tree and
 that matched Source occurrences correspond exactly to those slots. The receiver

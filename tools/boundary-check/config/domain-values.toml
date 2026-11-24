@@ -176,3 +176,10 @@ binding = "TagBytesProbeBinding"
 posture = "domain"
 reason = "Reference-free two-byte prefix value exercised by public managed-index probe and watch courts."
 forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-testkit-document-retention/src/managed_probe_binding.rs"
+binding = "FocusWindowProbeBinding"
+posture = "domain"
+reason = "Reference-free half-open integer interval value exercised by public ordered managed-index adapter courts."
+forbidden_types = []

@@ -325,8 +325,6 @@ pub use worth_query_declaration::{
     worth_query_operation_emits, worth_query_operation_reads, worth_query_operation_writes,
     worth_query_portable_type, worth_query_structured_value_binding, worth_query_workflow,
 };
-pub use worth_query_execution::facade::application_contribution;
-pub use worth_query_execution::facade::application_discovery;
 /// Explain saved query results and authored source operations for audit or debugging.
 ///
 /// Start with [`application_entry::WorthQueryApplicationRequest::inspect`] for an
@@ -336,27 +334,11 @@ pub use worth_query_execution::facade::application_discovery;
 /// explanation or materialized original values. Each execution checks current
 /// inspection permission; saving an original does not preserve an access grant.
 pub use worth_query_execution::facade::application_inspection as causal_inspection;
+pub use worth_query_execution::facade::{application_contribution, application_discovery};
 pub use worth_query_execution::facade::{application_installation, application_invariants};
 pub mod application_naming;
-/// Read-only observations for facade-only certification; these reports grant no authority.
-pub use worth_query_execution::facade::certification;
-pub use worth_query_execution::facade::convergence_epoch;
-pub use worth_query_execution::facade::installed;
-pub use worth_query_execution::facade::primary_graph;
-pub use worth_query_execution::facade::product;
-pub use worth_query_execution::facade::runtime;
-pub use worth_query_execution::facade::worth_query_application_contribution;
-pub use worth_query_installation::facade as domain;
-pub use worth_query_installation::facade::{
-    inspect_installed_graph_obligations, WorthQueryGraphObligationAdoptionDenial,
-    WorthQueryGraphObligationAdoptionDenialKind, WorthQueryGraphObligationAdoptionProof,
-    WorthQueryGraphObligationAdoptionRow,
-};
-pub use worth_query_installation::worth_query_conditional_node;
-pub use worth_query_macros::*;
-pub use worth_query_publication::facade as publication;
-pub use worth_query_publication::facade::application_entry;
-
+/// Standard checked ordered managed-index adapter and metered prefix/field helpers.
+pub mod ordered_index;
 pub use crate::application_home::{
     discard_home, ApplicationHomeQueryRootDenial, HomeCustodyReadmissionDenial,
     NoHomeProgramTransition, QueryHomeProgramActivationDenial, UnadmittedHomeQueryCustodyRefused,
@@ -376,6 +358,24 @@ pub use crate::application_home::{
     WorthQueryWorkflowHomeBindingRefused, WorthQueryWorkflowHomeCloseRefused,
     WorthQueryWorkflowHomeClosed,
 };
+/// Read-only observations for facade-only certification; these reports grant no authority.
+pub use worth_query_execution::facade::certification;
+pub use worth_query_execution::facade::convergence_epoch;
+pub use worth_query_execution::facade::installed;
+pub use worth_query_execution::facade::primary_graph;
+pub use worth_query_execution::facade::product;
+pub use worth_query_execution::facade::runtime;
+pub use worth_query_execution::facade::worth_query_application_contribution;
+pub use worth_query_installation::facade as domain;
+pub use worth_query_installation::facade::{
+    inspect_installed_graph_obligations, WorthQueryGraphObligationAdoptionDenial,
+    WorthQueryGraphObligationAdoptionDenialKind, WorthQueryGraphObligationAdoptionProof,
+    WorthQueryGraphObligationAdoptionRow,
+};
+pub use worth_query_installation::worth_query_conditional_node;
+pub use worth_query_macros::*;
+pub use worth_query_publication::facade as publication;
+pub use worth_query_publication::facade::application_entry;
 /// Relational DATA for a Home transition author. These values grant no step,
 /// initialization, publication or Native owner access.
 pub mod home_program_transition;
