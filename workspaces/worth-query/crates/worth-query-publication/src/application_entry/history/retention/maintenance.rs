@@ -11,11 +11,11 @@ where
         &mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<WorthQueryHistoryReleaseOutcome, WorthQueryApplicationHistoryDenial> {
-        let runtime = self.owner.application();
-        if !std::ptr::eq(runtime, request.application) {
+        if !std::ptr::eq(self.owner.application(), request.application) {
             return Err(WorthQueryApplicationHistoryDenial::ForeignRuntime);
         }
-        runtime
+        request
+            .application
             .with_application_advancement(request.scope, |phase| {
                 self.owner
                     .release_history_owner_after_output_cleanup(

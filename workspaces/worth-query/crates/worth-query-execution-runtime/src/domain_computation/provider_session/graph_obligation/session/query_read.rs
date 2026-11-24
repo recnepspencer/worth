@@ -64,13 +64,42 @@ fn same_managed_product<Stop>(
             .issued_from(right.relational_basis()))
 }
 
+/// World equality's fixed layouts and variable bytes for a session's product
+/// and the occurrence a Source context recorded.
+fn managed_occurrence_work(
+    product: &crate::basis::WorthQueryProductObservationLease,
+    occurrence: &crate::basis::WorthQueryProductBranchReadIdentity,
+) -> Option<u64> {
+    use worth_runtime_world::facade::{
+        CompositeBasisKey, CompositeCommitIdentity, ProductBranchIdentity,
+        ProductBranchIncarnation, ProductBranchReferenceGeneration,
+    };
+    [
+        size_of::<ProductBranchIdentity>(),
+        size_of::<ProductBranchIncarnation>(),
+        size_of::<ProductBranchReferenceGeneration>(),
+        size_of::<CompositeCommitIdentity>(),
+        size_of::<CompositeBasisKey>(),
+    ]
+    .into_iter()
+    .try_fold(0usize, usize::checked_add)
+    .and_then(|bytes| bytes.checked_mul(2))
+    .and_then(|bytes| bytes.checked_add(product.branch_identity().name().as_str().len()))
+    .and_then(|bytes| bytes.checked_add(occurrence.branch_identity().name().as_str().len()))
+    .and_then(|bytes| u64::try_from(bytes).ok())
+}
+
 /// Issued by the genuine Query session; selectors cannot construct this context.
+///
+/// A completed Source terminal carries this context into facts that outlive
+/// its read, so it names the admitted product occurrence and retains none of
+/// it. The sessions that compare it hold the World and component custody.
 pub struct WorthQueryQuerySourceContext {
     session: super::WorthQueryGraphWorkSessionIdentity,
     runtime: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
     principal: worth_relational::facade::identity::EntityId,
     scope: worth_relational::facade::identity::EntityId,
-    product: crate::basis::WorthQueryProductObservationLease,
+    occurrence: crate::basis::WorthQueryProductBranchReadIdentity,
 }
 
 impl WorthQueryQuerySourceContext {
@@ -80,7 +109,7 @@ impl WorthQueryQuerySourceContext {
         admit: &mut impl FnMut(u64) -> Result<(), Stop>,
         overflow: impl FnOnce() -> Stop,
     ) -> Result<bool, Stop> {
-        parent.admits_managed_product(&self.product, admit, overflow)
+        parent.admits_managed_occurrence(&self.occurrence, admit, overflow)
     }
     pub fn session(&self) -> super::WorthQueryGraphWorkSessionIdentity {
         self.session
@@ -113,6 +142,22 @@ impl WorthQueryManagedGraphWorkSession {
         same_managed_product(&read._product, product, admit, overflow)
     }
 
+    /// As `admits_managed_product`, for the occurrence a Source context
+    /// recorded. Its basis key holds the Relational admission that
+    /// `issued_from` compares, so the identity drops no axis of that check.
+    fn admits_managed_occurrence<Stop>(
+        &self,
+        occurrence: &crate::basis::WorthQueryProductBranchReadIdentity,
+        admit: &mut impl FnMut(u64) -> Result<(), Stop>,
+        overflow: impl FnOnce() -> Stop,
+    ) -> Result<bool, Stop> {
+        let Ok(read) = self.query_read_basis() else {
+            return Ok(false);
+        };
+        admit(managed_occurrence_work(&read._product, occurrence).ok_or_else(overflow)?)?;
+        Ok(occurrence.matches_observation(read._product.observation()))
+    }
+
     pub fn retain_query_source_context(
         &self,
     ) -> Result<WorthQueryQuerySourceContext, WorthQueryManagedGraphReadDenial> {
@@ -130,7 +175,9 @@ impl WorthQueryManagedGraphWorkSession {
             runtime: self.runtime,
             principal: self.principal,
             scope,
-            product: _product.retained_clone(),
+            occurrence: crate::basis::WorthQueryProductBranchReadIdentity::from_observation(
+                _product.observation(),
+            ),
         })
     }
 

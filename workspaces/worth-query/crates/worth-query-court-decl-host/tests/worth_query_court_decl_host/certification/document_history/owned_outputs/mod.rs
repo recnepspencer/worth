@@ -71,3 +71,5 @@ mod group_recording;
 mod predecessor;
 
 mod synchronous_edit;
+
+pub(crate) mod history_envelope;

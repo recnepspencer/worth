@@ -34,6 +34,31 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             phase, access, &completed, installed, operation, reserved, candidate, origin, callback,
         )
     }
+    /// Lend recording authority for an envelope's bound output trees. The
+    /// envelope's stage admissions stand in for the single recorded operation.
+    pub fn with_document_history_envelope_recording_outputs<'runtime, 'scope, H, T>(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'scope>,
+        access: &WorthQueryProgramPublicationAccess,
+        document: &WorthQueryDocumentHistory<'runtime, S, H>,
+        read: WorthQueryDocumentHistoryRead<'_, S, H>,
+        reserved: &WorthQueryDocumentHistoryReservation,
+        candidate: &WorthQueryExpectedProductBranch<'runtime, S>,
+        constraint: &crate::domain_computation::primary_graph::WorthQueryDocumentHistoryEnvelopeConstraint,
+        origin: &std::sync::Arc<WorthQueryHistoryRecordingOutputOrigin>,
+        callback: impl FnOnce(&WorthQueryHistoryOutputAuthority<'_, 'scope>) -> T,
+    ) -> Result<T, WorthQueryHistoryNavigationDenial>
+    where
+        H: ApplicationHistoryBinding<S>,
+        Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
+    {
+        let completed = read
+            .complete_metadata_read(self, phase, document, access)
+            .map_err(WorthQueryHistoryNavigationDenial::Document)?;
+        document.with_envelope_recording_output_authority(
+            phase, &completed, reserved, candidate, constraint, origin, callback,
+        )
+    }
     pub fn with_document_history_group_recording_outputs<'runtime, 'scope, H, M, T>(
         &self,
         phase: &WorthQueryAdvancementPhase<'scope>,

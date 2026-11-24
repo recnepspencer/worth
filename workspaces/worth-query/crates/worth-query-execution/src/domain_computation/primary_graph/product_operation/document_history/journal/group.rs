@@ -8,7 +8,12 @@ impl<S> HistoryJournal<'_, S> {
         meaning: WorthQueryApplicationIdempotencyBinding,
         label: &str,
     ) -> Result<ReservedHistoryRecord, Denial> {
-        let record = self.reserve(execution, meaning, label)?;
+        let record = self.reserve(
+            execution,
+            meaning,
+            label,
+            &WorthQueryHistoryStepMetadata::none(),
+        )?;
         self.pending = Some(PendingRecord::Group(record.node));
         Ok(record)
     }

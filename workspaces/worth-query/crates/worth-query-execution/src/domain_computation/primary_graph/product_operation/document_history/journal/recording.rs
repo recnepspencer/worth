@@ -1,13 +1,28 @@
 //! Ordinary edit reservation and exact completed binding use prepaid slots.
+use super::super::head_custody::HistoryHeadCustody;
 use super::*;
 use worth_query_execution_query::facade::ports::HistoryNodeIdInternalPort as _;
 
 impl<'runtime, S> HistoryJournal<'runtime, S> {
+    /// Refuse step metadata above the installed bound before anything is reserved.
+    pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn admit_step_metadata(
+        &self,
+        metadata: &WorthQueryHistoryStepMetadata,
+    ) -> Result<(), Denial> {
+        let length = metadata.bytes().len();
+        let maximum = self.retention_resources.maximum_step_metadata_bytes;
+        if length > maximum {
+            return Err(Denial::StepMetadataTooLarge { length, maximum });
+        }
+        Ok(())
+    }
+
     pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn reserve(
         &mut self,
         execution: &ExecutionRequest<'_, '_>,
         meaning: WorthQueryApplicationIdempotencyBinding,
         label: &str,
+        metadata: &WorthQueryHistoryStepMetadata,
     ) -> Result<ReservedHistoryRecord, Denial> {
         self.access(Access::Selection);
         if self.pending.is_some() {
@@ -28,8 +43,12 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
             .ok_or(Denial::RecordingIdentityExhausted)?;
         // Every real tree slot is inserted before any candidate creation or operation effect.
         // Failure while acquiring the grants drops only new grants, leaving the journal intact.
+        let described = label
+            .len()
+            .checked_add(metadata.bytes().len())
+            .ok_or(Denial::RecordingIdentityExhausted)?;
         let node_allocation = self
-            .allocate::<(u64, HistoryNode)>(execution, self.nodes.len(), label.len())
+            .allocate::<(u64, HistoryNode)>(execution, self.nodes.len(), described)
             .map_err(Denial::Recording)?;
         let attempt_allocation = self
             .allocate::<([u8; 32], HistoryAttempt)>(execution, self.attempts.len(), 0)
@@ -54,6 +73,7 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
                 binding: NodeBinding::Reserved {
                     parent: self.current,
                     label,
+                    metadata: metadata.clone(),
                 },
                 head_slot: None,
                 _allocation: node_allocation,
@@ -100,6 +120,39 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
         &mut self,
         reserved: ReservedHistoryRecord,
     ) {
+        self.cancel_head(reserved.transition);
+        self.release_record(&reserved);
+    }
+
+    /// Cancel a reservation whose private candidate did not close. The prepaid
+    /// head slot keeps that exact live head, close owner or cleanup owner, so
+    /// retention maintenance and final disposal retry it like any other past head.
+    pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn cancel_parking(
+        &mut self,
+        reserved: ReservedHistoryRecord,
+        custody: HistoryHeadCustody<'runtime, S>,
+    ) {
+        debug_assert!(matches!(
+            custody,
+            HistoryHeadCustody::Live(_)
+                | HistoryHeadCustody::Refused { .. }
+                | HistoryHeadCustody::Retired { .. }
+        ));
+        self.access(Access::Custody);
+        let slot = self
+            .past_heads
+            .get(&reserved.transition)
+            .expect("original reserved head slot");
+        let previous = std::mem::replace(&mut *slot.custody.lock(), custody);
+        assert!(
+            matches!(previous, HistoryHeadCustody::Reserved),
+            "only an unused reserved slot can park a failed candidate"
+        );
+        self.queue_head(reserved.transition);
+        self.release_record(&reserved);
+    }
+
+    fn release_record(&mut self, reserved: &ReservedHistoryRecord) {
         self.access(Access::Node);
         self.nodes.remove(&reserved.node.ordinal());
         self.access(Access::Attempt);
@@ -107,7 +160,6 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
         self.access(Access::Child);
         self.children
             .remove(&(reserved.parent.ordinal(), reserved.node.ordinal()));
-        self.cancel_head(reserved.transition);
         let source = self
             .retained
             .remove(&reserved.node.ordinal())
