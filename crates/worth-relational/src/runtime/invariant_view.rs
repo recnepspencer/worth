@@ -36,28 +36,7 @@ impl RelationalPreparationRuntime {
         &self,
         state: &crate::branch::root::RelationalBranchRootState,
     ) -> InvariantRuntimeView<'_> {
-        InvariantRuntimeView::from_inputs(InvariantRuntimeInputs {
-            selected_registry: crate::schema::SchemaRegistryCustody::Selected(
-                self.execution_registry
-                    .clone()
-                    .unwrap_or_else(|| state.root().schema_authority().registry_arc()),
-            ),
-            prior_registry: self.home_target.as_ref().map(|_| {
-                crate::schema::SchemaRegistryCustody::Selected(
-                    state.root().schema_authority().registry_arc(),
-                )
-            }),
-            commit_work_budget: self.commit_work_budget.clone(),
-            config: std::sync::Arc::clone(&self.config),
-            schema_contract_runtime: std::sync::Arc::clone(&self.schema_contract_runtime),
-            instrumentation: &self.services.instrumentation,
-            #[cfg(test)]
-            current_version_id: self.current_version_id(),
-            entity_count: state.entity_slot_count(),
-            relation_count: state.relation_slot_count(),
-            version_depth: self.current_version_id().0 as usize,
-            snapshot_pressure: self.published_snapshot_count() > 10,
-        })
+        self.candidate_validation_inputs().select(state)
     }
 }
 
@@ -68,6 +47,27 @@ impl<'a> From<&'a crate::mvcc::RelationalTransactionValidationInput>
         Self {
             operation: input.control(),
             retention: &input.basis().inner.retention_binding,
+        }
+    }
+}
+
+impl From<&crate::mvcc::RelationalTransactionValidationInput>
+    for crate::validation::candidate_source::ManagedSourceIssueInputs
+{
+    fn from(input: &crate::mvcc::RelationalTransactionValidationInput) -> Self {
+        let catalog_receipt = input
+            .home_target()
+            .map(|target| &target.meaning)
+            .or_else(|| input.basis().inner.root.execution_contracts.get())
+            .map(|meaning| meaning.catalog_receipt());
+        Self {
+            physical_basis: input.basis().clone(),
+            posture: input.intent().materialization_mode(),
+            materialization: input.intent().materialization_source().cloned(),
+            restoration: input.intent().restoration_origin().cloned(),
+            home_target_step: input.home_target().map(|target| target.step),
+            home_coverage: input.home_target_coverage().cloned(),
+            catalog_receipt,
         }
     }
 }

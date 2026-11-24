@@ -2,6 +2,7 @@ pub(crate) mod artifact_execution;
 mod authority_context;
 mod boundary_validation;
 mod bulk_mutation_telemetry;
+pub(crate) mod candidate_invariant_inputs;
 pub(crate) mod candidate_preparation;
 mod draft_execution;
 mod draft_preparation_phase;
@@ -16,6 +17,8 @@ pub(crate) mod performed_outcome;
 mod phase_backing;
 pub(crate) mod publication_execution;
 mod rejection;
+pub(crate) mod runtime_candidate_orchestration;
+pub(crate) mod runtime_merge_draft;
 mod semantic_result;
 mod snapshot_validation;
 
@@ -31,7 +34,6 @@ mod request_checkpoints;
 pub(crate) use request_checkpoints::observation as stage_observation;
 pub(crate) use request_checkpoints::{consult_stage, CommitStage};
 
-pub(crate) use candidate_preparation::prepare_consulted_authoritative_commit;
 pub use phase_backing::RelationalCommitPhaseBackingForTest;
 pub(crate) use phase_backing::{CommitPhaseBacking, CommitPhaseReservation};
 #[cfg(test)]

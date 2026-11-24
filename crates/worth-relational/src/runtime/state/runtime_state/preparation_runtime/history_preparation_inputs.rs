@@ -3,7 +3,8 @@ use super::RelationalPreparationRuntime;
 use crate::authority::commit::pipeline::candidate_preparation::CandidateHistoryInputs;
 use crate::authority::commit::pipeline::execution_admission::AdmittedCommitState;
 use crate::authority::commit::pipeline::history_preparation::HistoryPreparationInputs;
-use crate::authority::commit::pipeline::merge_draft::{prepare_merge_draft, AcceptedMergeDraft};
+use crate::authority::commit::pipeline::merge_draft::AcceptedMergeDraft;
+use crate::authority::commit::pipeline::runtime_merge_draft::prepare_merge_draft;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_execution::ExecutionRequest;
 

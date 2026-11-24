@@ -4,8 +4,6 @@ use std::sync::Arc;
 use worth_foundational::FoundationalBranchTarget;
 
 use crate::history::data::CanonicalCommitEnvelope;
-#[cfg(test)]
-use crate::history::RelationalCommitCatalog;
 
 use super::HistorySubsystem;
 

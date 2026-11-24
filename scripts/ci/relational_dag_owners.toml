@@ -74,6 +74,15 @@ floor = 32000
 depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "indexes", "durability", "publication"]
 
 [paths]
+"authority/commit/pipeline/execution.rs" = "runtime"
+"authority/commit/pipeline/runtime_candidate_orchestration.rs" = "runtime"
+"authority/commit/pipeline/runtime_merge_draft.rs" = "runtime"
+"runtime/state/subsystems/history_catalog_recovery/court_catalog.rs" = "branch"
+"runtime/state/subsystems/history_checkpoint_catalog.rs" = "branch"
+"runtime/state/subsystems/history_recovery.rs" = "branch"
+"validation/candidate_source/applied.rs" = "publication"
+"runtime/home_program_transition/coverage/captured_records.rs" = "mutation"
+
 "derived_relation/read_shape.rs" = "contracts"
 "runtime/invariant_view.rs" = "runtime"
 "durability/authority/checkpoint_complete/interim/verified/freeze.rs" = "runtime"
@@ -100,7 +109,7 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "branch/model_ownership/traversal.rs" = "branch"
 "durability/artifact_payload_emission.rs" = "durability"
 "durability/canonical_commit_artifact/body_read.rs" = "durability"
-"durability/canonical_commit_artifact/checkpoint_body.rs" = "durability"
+"durability/canonical_commit_artifact/checkpoint_body.rs" = "branch"
 "durability/canonical_commit_artifact/decoded_quote" = "durability"
 "durability/canonical_commit_artifact/frame_encoding.rs" = "durability"
 "durability/canonical_commit_artifact/frame_reference_encoding.rs" = "durability"
@@ -870,6 +879,7 @@ root_custody = [
     "durability/canonical_commit_artifact/decoded_quote/checkpoint_effect_data.rs",
     "authority/commit/preparation/storage_denial.rs",
     "history/retention/selected_snapshot.rs",
+    "visibility/snapshot_observation_registration.rs",
     "visibility/materialization/read_records/projection/checkpoint_selection.rs",
     "visibility/snapshot_states/retained_state_building.rs",
     "runtime/state/subsystems/visibility/snapshot_handles/head_selection.rs",
@@ -915,6 +925,15 @@ ordinary_checkpoint = ["durability/ordinary_checkpoint", "durability/checkpoints
 reconstruction = ["durability/reconstruction", "durability/recovery", "replay", "durability/authority/recovery", "durability/authority/runtime_rebuild"]
 
 [reassignments]
+"authority/commit/pipeline/execution.rs" = "runtime"
+"authority/commit/pipeline/runtime_candidate_orchestration.rs" = "runtime"
+"authority/commit/pipeline/runtime_merge_draft.rs" = "runtime"
+"runtime/state/subsystems/history_catalog_recovery/court_catalog.rs" = "branch"
+"runtime/state/subsystems/history_checkpoint_catalog.rs" = "branch"
+"runtime/state/subsystems/history_recovery.rs" = "branch"
+"validation/candidate_source/applied.rs" = "publication"
+"runtime/home_program_transition/coverage/captured_records.rs" = "mutation"
+
 "derived_relation/read_shape.rs" = "contracts"
 "runtime/invariant_view.rs" = "runtime"
 "durability/authority/checkpoint_complete/interim/verified/freeze.rs" = "runtime"
@@ -941,7 +960,7 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "branch/model_ownership/traversal.rs" = "branch"
 "durability/artifact_payload_emission.rs" = "durability"
 "durability/canonical_commit_artifact/body_read.rs" = "durability"
-"durability/canonical_commit_artifact/checkpoint_body.rs" = "durability"
+"durability/canonical_commit_artifact/checkpoint_body.rs" = "branch"
 "durability/canonical_commit_artifact/decoded_quote" = "durability"
 "durability/canonical_commit_artifact/frame_encoding.rs" = "durability"
 "durability/canonical_commit_artifact/frame_reference_encoding.rs" = "durability"

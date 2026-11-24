@@ -22,7 +22,7 @@ pub use crate::schema::home_program_catalog_receipt::RelationalHomeProgramCatalo
 mod catalog_source;
 pub use catalog_source::RelationalHomeProgramCatalogReadmissionSource;
 pub(in crate::runtime) mod configuration;
-mod coverage;
+pub(crate) mod coverage;
 mod installation_readmission;
 mod promotion;
 pub use promotion::RelationalHomeProgramPromotionRefused;

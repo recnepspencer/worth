@@ -8,7 +8,7 @@ use crate::runtime::state::subsystems::history::history_preparation_binding::Rel
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_execution::ExecutionRequest;
 pub(crate) mod registration;
-mod stages;
+pub(super) mod stages;
 use super::phase_backing::CommitPhaseBacking;
 
 pub(crate) struct SelectedCandidateSymbols {
@@ -32,7 +32,7 @@ pub(crate) struct CandidateHistoryInputs<'a, Draft> {
     pub(crate) prepare: HistoryPreparationInputs<'a, Draft>,
 }
 
-struct HistoryPreparedCandidate<'scope, 'authority> {
+pub(super) struct HistoryPreparedCandidate<'scope, 'authority> {
     scope_control: crate::validation::engine::InvariantPreparationControl<'scope, 'authority>,
     history_bound: CommitPhaseBacking<super::history_binding::HistoryBoundCommitExecution>,
     runtime_instance_id: u64,
@@ -56,69 +56,9 @@ struct HistoryPreparedCandidate<'scope, 'authority> {
     diagnostic_capture: crate::publication::diagnostic_store::RelationalDiagnosticOperationCapture,
 }
 
-pub(crate) fn prepare_consulted_authoritative_commit(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &crate::runtime::RelationalPreparationRuntime,
-    mut context: AuthoritativeCommitContext,
-) -> Result<crate::mvcc::publication::PreparedRelationalCommitCandidate, TransactionCommitError> {
-    if matches!(&context.authority_input,
-        super::authority_context::CommitAuthorityInput::Mutation(plan) if plan.retained().is_some())
-        && runtime.durability_admission.has_attached_medium()
-    {
-        return Err(TransactionCommitError::publication_denied(
-            crate::mvcc::publication::outcome::refusals::RelationalPublicationDenial::RetainedEntitySelectionDurabilityUnsupported,
-        ));
-    }
-    runtime
-        .durability_admission
-        .admit_home_program_write(
-            context
-                .validation_input
-                .home_step()
-                .map(std::sync::Arc::as_ref),
-            context
-                .validation_input
-                .recovered_codec_publication_custody()
-                .map(std::sync::Arc::as_ref),
-        )
-        .map_err(|cause| {
-            TransactionCommitError::publication_denied(
-                crate::mvcc::publication::outcome::refusals::RelationalPublicationDenial::HomeProgramTransition(cause),
-            )
-        })?;
-    if let Some(step) = context.validation_input.home_step()
-        && !context
-            .caller_association
-            .as_ref()
-            .is_some_and(|association| step.admits_association(association.as_bytes()))
-    {
-        return Err(TransactionCommitError::publication_denied(
-            crate::mvcc::publication::outcome::refusals::RelationalPublicationDenial::HomeProgramTransition(
-                crate::durability::medium::home_write_denial::RelationalHomeProgramWriteDenial::TransitionRequired,
-            ),
-        ));
-    }
-    let original = context
-        .recovered_index_catalog
-        .take()
-        .map(|catalog| catalog.original_for(runtime.runtime_instance_id()))
-        .transpose()?;
-    let history = prepare_history(execution, runtime.candidate_history_inputs(), context)?;
-    let (symbols, validated) = stages::validate(execution, history)?;
-    let artifact_owners = runtime.bind_candidate_artifacts(&symbols, original.as_ref());
-    let assembled = stages::assemble(execution, artifact_owners, validated)?;
-    let publication_owners = runtime.publication_phase_owners(&symbols.dictionary);
-    let published = stages::publish(execution, publication_owners, assembled)?;
-    stages::register(
-        execution,
-        runtime.candidate_registration_inputs(&symbols.dictionary),
-        published,
-    )
-}
-
 // Later publication locals must not occupy the deep admission/draft call's frame.
 #[inline(never)]
-fn prepare_history<'scope, 'authority, Draft>(
+pub(super) fn prepare_history<'scope, 'authority, Draft>(
     execution: &worth_execution::ExecutionRequest<'scope, 'authority>,
     inputs: CandidateHistoryInputs<'_, Draft>,
     mut context: AuthoritativeCommitContext,

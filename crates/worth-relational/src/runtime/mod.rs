@@ -24,7 +24,7 @@ mod durability_authority;
 mod field_text;
 mod guided;
 mod historical_ancestry;
-mod home_program_transition;
+pub(crate) mod home_program_transition;
 mod initial_schema_installation;
 pub use home_program_transition::{
     home_program_transition_body_digest, PreparedRelationalHomeProgramContracts,

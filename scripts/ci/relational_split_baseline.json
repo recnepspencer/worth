@@ -1773,11 +1773,11 @@
       "merge -> publication": 0,
       "merge -> runtime": 0,
       "mutation -> merge": 0,
-      "mutation -> publication": 42,
-      "mutation -> runtime": 174,
+      "mutation -> publication": 40,
+      "mutation -> runtime": 168,
       "mutation/authorization_and_derivation -> mutation/candidate_source": 0,
       "mutation/candidate_source -> mutation/authorization_and_derivation": 0,
-      "publication -> runtime": 154,
+      "publication -> runtime": 152,
       "storage -> branch": 3,
       "storage -> contracts": 0,
       "storage -> durability": 63,
@@ -1798,7 +1798,7 @@
       "branch -> runtime": 2,
       "branch/envelope -> branch/root_custody": 0,
       "branch/projection_view -> branch/envelope": 0,
-      "branch/projection_view -> branch/root_custody": 8,
+      "branch/projection_view -> branch/root_custody": 7,
       "contracts -> branch": 0,
       "contracts -> durability": 0,
       "contracts -> indexes": 0,
@@ -1808,8 +1808,8 @@
       "contracts -> publication": 0,
       "contracts -> runtime": 0,
       "contracts -> storage": 0,
-      "durability -> publication": 3,
-      "durability -> runtime": 31,
+      "durability -> publication": 2,
+      "durability -> runtime": 32,
       "indexes -> durability": 0,
       "indexes -> merge": 0,
       "indexes -> mutation": 0,
@@ -1822,11 +1822,11 @@
       "merge -> publication": 0,
       "merge -> runtime": 0,
       "mutation -> merge": 0,
-      "mutation -> publication": 38,
-      "mutation -> runtime": 29,
+      "mutation -> publication": 35,
+      "mutation -> runtime": 22,
       "mutation/authorization_and_derivation -> mutation/candidate_source": 0,
       "mutation/candidate_source -> mutation/authorization_and_derivation": 0,
-      "publication -> runtime": 16,
+      "publication -> runtime": 14,
       "storage -> branch": 16,
       "storage -> contracts": 0,
       "storage -> durability": 48,
@@ -1860,7 +1860,7 @@
       "contracts -> runtime": 0,
       "contracts -> storage": 0,
       "courts -> contracts": 0,
-      "durability -> branch": 1,
+      "durability -> branch": 0,
       "durability -> contracts": 0,
       "durability -> runtime": 0,
       "durability -> storage": 0,
@@ -1880,7 +1880,7 @@
       "merge -> storage": 0,
       "mutation -> branch": 0,
       "mutation -> contracts": 0,
-      "mutation -> publication": 1,
+      "mutation -> publication": 0,
       "mutation -> runtime": 7,
       "mutation -> storage": 0,
       "publication -> branch": 3,
@@ -1888,7 +1888,7 @@
       "publication -> mutation": 4,
       "publication -> runtime": 2,
       "publication -> storage": 0,
-      "runtime -> branch": 6,
+      "runtime -> branch": 3,
       "runtime -> contracts": 0,
       "runtime -> durability": 0,
       "runtime -> storage": 0,
@@ -2161,8 +2161,6 @@
         ["crates/worth-relational/src/mvcc/validation/proposal_validation.rs", "authority::commit::semantic_plan::PreparedRetainedEntityPayload", 1],
         ["crates/worth-relational/src/mvcc/validation/validated_proposal.rs", "authority::commit::phases::applied_mutation::AppliedMutationDraft", 1],
         ["crates/worth-relational/src/mvcc/validation/validated_proposal.rs", "authority::commit::phases::prepare::PreparedWorkingStateScope", 1],
-        ["crates/worth-relational/src/validation/candidate_source/applied.rs", "authority::commit::phases::applied_mutation::AppliedMutationDraft", 1],
-        ["crates/worth-relational/src/validation/candidate_source/correspondence.rs", "authority::commit::phases::applied_mutation::AppliedMutationDraft", 1],
         ["crates/worth-relational/src/validation/candidate_source/publication.rs", "mvcc::publication::CandidateCompanionBinding", 1]
       ],
       "mutation -> runtime": [
@@ -2298,23 +2296,15 @@
         ["crates/worth-relational/src/mvcc/validation/validated_proposal.rs", "transactions::data::ProvenanceCompleteBulkMutationBatch", 2],
         ["crates/worth-relational/src/mvcc/validation/validated_proposal.rs", "transactions::data::TransactionCommitError", 1],
         ["crates/worth-relational/src/mvcc/validation/validated_proposal.rs", "transactions::data::TransactionId", 1],
-        ["crates/worth-relational/src/validation/candidate_source/applied.rs", "runtime::RelationalPreparationRuntime", 1],
         ["crates/worth-relational/src/validation/candidate_source/applied_read.rs", "runtime::RelationalAppliedCandidateReadIdentity", 1],
         ["crates/worth-relational/src/validation/candidate_source/applied_read.rs", "runtime::RelationalPinnedRead", 1],
         ["crates/worth-relational/src/validation/candidate_source/applied_read/publication.rs", "runtime::RelationalRuntime", 1],
-        ["crates/worth-relational/src/validation/candidate_source/correspondence.rs", "runtime::RelationalPreparationRuntime", 1],
-        ["crates/worth-relational/src/validation/candidate_source/interpretation.rs", "mvcc::RelationalTransactionValidationInput", 1],
-        ["crates/worth-relational/src/validation/candidate_source/interpretation.rs", "runtime::AdmittedRelationalHomeProgramTarget", 1],
-        ["crates/worth-relational/src/validation/candidate_source/interpretation.rs", "runtime::RelationalHomeTargetCoverage", 1],
-        ["crates/worth-relational/src/validation/candidate_source/interpretation.rs", "runtime::RelationalRootExecutionContracts", 1],
         ["crates/worth-relational/src/validation/candidate_source/interpretation.rs", "runtime::RelationalRuntimePublicationBinding", 2]
       ],
       "publication -> runtime": [
         ["crates/worth-relational/src/authority/commit/pipeline/authority_context.rs", "mvcc::RelationalTransactionValidationInput", 1],
-        ["crates/worth-relational/src/authority/commit/pipeline/candidate_preparation.rs", "runtime::RelationalPreparationRuntime", 1],
-        ["crates/worth-relational/src/authority/commit/pipeline/execution.rs", "runtime::RelationalRuntime", 1],
         ["crates/worth-relational/src/authority/commit/pipeline/execution_admission.rs", "mvcc::RelationalTransactionValidationInput", 1],
-        ["crates/worth-relational/src/authority/commit/pipeline/merge_draft.rs", "runtime::RelationalPreparationRuntime", 1],
+        ["crates/worth-relational/src/authority/commit/pipeline/mod.rs", "authority::commit::pipeline::execution::execute_authoritative_commit", 1],
         ["crates/worth-relational/src/mvcc/publication/application_publication.rs", "mvcc::ValidatedRelationalProposal", 1],
         ["crates/worth-relational/src/mvcc/publication/application_publication/coupled_assembly.rs", "mvcc::BranchBoundRelationalTransaction", 1],
         ["crates/worth-relational/src/mvcc/publication/application_publication/coupled_assembly.rs", "mvcc::OwnedNormalizedPlan", 2],
@@ -2566,7 +2556,6 @@
       "branch/projection_view -> branch/root_custody": [
         ["crates/worth-relational/src/runtime/state/subsystems/visibility/snapshot_handle_binding.rs", "history::retention::selected_snapshot::VisibilitySnapshotBasis", 1],
         ["crates/worth-relational/src/runtime/state/subsystems/visibility/snapshot_handles/published_release.rs", "history::retention::snapshot_basis_retirement::VisibilitySnapshotBasisRetirement", 1],
-        ["crates/worth-relational/src/visibility/snapshot_observation.rs", "history::retention::selected_snapshot::VisibilitySnapshotBasis", 1],
         ["crates/worth-relational/src/visibility/snapshot_states/mod.rs", "history::retention::selected_snapshot::VisibilitySnapshotBasis", 1],
         ["crates/worth-relational/src/visibility/snapshot_states/mod.rs", "history::retention::snapshot_basis_retirement::VisibilitySnapshotBasisRetirement", 1],
         ["crates/worth-relational/src/visibility/snapshot_states/resident_basis.rs", "history::retention::selected_snapshot::VisibilitySnapshotBasis", 1],
@@ -2575,7 +2564,6 @@
       ],
       "durability -> publication": [
         ["crates/worth-relational/src/durability/authority/runtime_rebuild/envelope_replay/effect.rs", "authority::commit::pipeline::authority_context::AuthoritativeCommitContext", 1],
-        ["crates/worth-relational/src/durability/authority/runtime_rebuild/envelope_replay/effect.rs", "authority::commit::pipeline::execution::execute_authoritative_commit", 1],
         ["crates/worth-relational/src/durability/authority/runtime_rebuild/envelope_replay/effect.rs", "mvcc::publication::preparation_denial::PublicationPreparationDenial", 1]
       ],
       "durability -> runtime": [
@@ -2589,6 +2577,7 @@
         ["crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore/history_readmission.rs", "runtime::state::runtime_state::RelationalRuntime", 1],
         ["crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore/root_schema_readmission.rs", "runtime::state::runtime_state::RelationalRuntime", 1],
         ["crates/worth-relational/src/durability/authority/runtime_rebuild/envelope_replay.rs", "runtime::state::runtime_state::RelationalRuntime", 1],
+        ["crates/worth-relational/src/durability/authority/runtime_rebuild/envelope_replay/effect.rs", "authority::commit::pipeline::execution::execute_authoritative_commit", 1],
         ["crates/worth-relational/src/durability/authority/runtime_rebuild/envelope_replay/effect.rs", "mvcc::validation::RelationalTransactionValidationInput", 1],
         ["crates/worth-relational/src/durability/authority/runtime_rebuild/envelope_replay/effect.rs", "runtime::state::runtime_state::RelationalRuntime", 1],
         ["crates/worth-relational/src/durability/authority/runtime_rebuild/envelope_replay/naming_recovery.rs", "runtime::state::runtime_state::RelationalRuntime", 1],
@@ -2643,11 +2632,8 @@
         ["crates/worth-relational/src/mvcc/validation/validated_proposal.rs", "authority::commit::phases::applied_mutation::AppliedMutationDraft", 1],
         ["crates/worth-relational/src/mvcc/validation/validated_proposal.rs", "authority::commit::phases::prepare::PreparedWorkingStateScope", 1],
         ["crates/worth-relational/src/mvcc/validation/validated_proposal.rs", "mvcc::publication::application_publication::RequiredOutputPublicationAdmission", 1],
-        ["crates/worth-relational/src/validation/candidate_source/applied.rs", "authority::commit::phases::applied_mutation::AppliedMutationDraft", 1],
-        ["crates/worth-relational/src/validation/candidate_source/applied/context.rs", "authority::commit::phases::applied_mutation::AppliedMutationDraft", 1],
         ["crates/worth-relational/src/validation/candidate_source/applied_read.rs", "visibility::materialization::read_records::reader::pinned_read::RelationalPinnedRead", 1],
         ["crates/worth-relational/src/validation/candidate_source/applied_read.rs", "visibility::materialization::read_records::reader::pinned_read::candidate::RelationalAppliedCandidateReadIdentity", 1],
-        ["crates/worth-relational/src/validation/candidate_source/correspondence.rs", "authority::commit::phases::applied_mutation::AppliedMutationDraft", 1],
         ["crates/worth-relational/src/validation/candidate_source/interpretation.rs", "runtime::state::runtime_state::publication_lifecycle::RelationalRuntimePublicationBinding", 1],
         ["crates/worth-relational/src/validation/candidate_source/publication.rs", "mvcc::publication::companion::preflight::CandidateCompanionBinding", 1]
       ],
@@ -2673,21 +2659,12 @@
         ["crates/worth-relational/src/mvcc/validation/proposal_validation.rs", "runtime::state::runtime_state::preparation_runtime::RelationalPreparationRuntime", 1],
         ["crates/worth-relational/src/mvcc/validation/validated_proposal.rs", "mvcc::validation::RelationalTransactionValidationInput", 1],
         ["crates/worth-relational/src/mvcc/validation/validated_proposal.rs", "runtime::home_program_transition::RelationalRootExecutionContracts", 1],
-        ["crates/worth-relational/src/validation/candidate_source/applied.rs", "runtime::state::runtime_state::preparation_runtime::RelationalPreparationRuntime", 1],
-        ["crates/worth-relational/src/validation/candidate_source/applied/context.rs", "runtime::state::runtime_state::preparation_runtime::RelationalPreparationRuntime", 1],
-        ["crates/worth-relational/src/validation/candidate_source/applied_read/publication.rs", "runtime::state::runtime_state::RelationalRuntime", 1],
-        ["crates/worth-relational/src/validation/candidate_source/correspondence.rs", "runtime::state::runtime_state::preparation_runtime::RelationalPreparationRuntime", 1],
-        ["crates/worth-relational/src/validation/candidate_source/interpretation.rs", "mvcc::validation::RelationalTransactionValidationInput", 1],
-        ["crates/worth-relational/src/validation/candidate_source/interpretation.rs", "runtime::home_program_transition::RelationalRootExecutionContracts", 1],
-        ["crates/worth-relational/src/validation/candidate_source/interpretation.rs", "runtime::home_program_transition::coverage::RelationalHomeTargetCoverage", 1],
-        ["crates/worth-relational/src/validation/candidate_source/interpretation.rs", "runtime::home_program_transition::target_step::AdmittedRelationalHomeProgramTarget", 1]
+        ["crates/worth-relational/src/validation/candidate_source/applied_read/publication.rs", "runtime::state::runtime_state::RelationalRuntime", 1]
       ],
       "publication -> runtime": [
         ["crates/worth-relational/src/authority/commit/pipeline/authority_context.rs", "mvcc::validation::RelationalTransactionValidationInput", 1],
-        ["crates/worth-relational/src/authority/commit/pipeline/candidate_preparation.rs", "runtime::state::runtime_state::preparation_runtime::RelationalPreparationRuntime", 1],
-        ["crates/worth-relational/src/authority/commit/pipeline/execution.rs", "runtime::state::runtime_state::RelationalRuntime", 1],
         ["crates/worth-relational/src/authority/commit/pipeline/execution_admission.rs", "mvcc::validation::RelationalTransactionValidationInput", 1],
-        ["crates/worth-relational/src/authority/commit/pipeline/merge_draft.rs", "runtime::state::runtime_state::preparation_runtime::RelationalPreparationRuntime", 1],
+        ["crates/worth-relational/src/authority/commit/pipeline/mod.rs", "authority::commit::pipeline::execution::execute_authoritative_commit", 1],
         ["crates/worth-relational/src/mvcc/publication/application_publication/coupled_assembly.rs", "mvcc::transaction::bound::BranchBoundRelationalTransaction", 1],
         ["crates/worth-relational/src/mvcc/publication/application_publication/coupled_assembly.rs", "runtime::state::runtime_state::preparation_runtime::RelationalPreparationRuntime", 1],
         ["crates/worth-relational/src/mvcc/publication/application_publication/coupled_assembly/completion.rs", "mvcc::transaction::bound::BranchBoundRelationalTransaction", 1],
@@ -2773,12 +2750,6 @@
       "branch -> publication": [
         ["crates/worth-relational/src/visibility/materialization/read_records/reader/query_execution/pinned_walk.rs", "visibility::materialization::read_records::reader::pinned_read::RelationalPinnedRead", 1]
       ],
-      "durability -> branch": [
-        ["crates/worth-relational/src/durability/canonical_commit_artifact/checkpoint_body.rs", "history::data::canonical_commit_envelope::CanonicalCommitEnvelope", 1]
-      ],
-      "mutation -> publication": [
-        ["crates/worth-relational/src/validation/candidate_source/applied.rs", "authority::commit::phases::applied_mutation::AppliedMutationDraft", 1]
-      ],
       "mutation -> runtime": [
         ["crates/worth-relational/src/mvcc/validation/invariant_plan.rs", "mvcc::transaction::bound::BranchBoundRelationalTransaction", 1],
         ["crates/worth-relational/src/mvcc/validation/proposal_identity.rs", "runtime::state::runtime_state::preparation_runtime::RelationalPreparationRuntime", 1],
@@ -2804,11 +2775,8 @@
       ],
       "runtime -> branch": [
         ["crates/worth-relational/src/runtime/state/subsystems/history_catalog_recovery.rs", "runtime::state::subsystems::history::HistorySubsystem", 1],
-        ["crates/worth-relational/src/runtime/state/subsystems/history_catalog_recovery/court_catalog.rs", "runtime::state::subsystems::history::HistorySubsystem", 1],
         ["crates/worth-relational/src/runtime/state/subsystems/history_catalog_recovery/inventory.rs", "runtime::state::subsystems::history::HistorySubsystem", 1],
-        ["crates/worth-relational/src/runtime/state/subsystems/history_catalog_recovery/source_binding.rs", "runtime::state::subsystems::history::HistorySubsystem", 1],
-        ["crates/worth-relational/src/runtime/state/subsystems/history_checkpoint_catalog.rs", "runtime::state::subsystems::history::HistorySubsystem", 1],
-        ["crates/worth-relational/src/runtime/state/subsystems/history_recovery.rs", "runtime::state::subsystems::history::HistorySubsystem", 1]
+        ["crates/worth-relational/src/runtime/state/subsystems/history_catalog_recovery/source_binding.rs", "runtime::state::subsystems::history::HistorySubsystem", 1]
       ]
     },
     "cfg_test": {
@@ -2862,7 +2830,7 @@
         ["crates/worth-relational/src/visibility/materialization/read_records/reader/request_paid_truth.rs", "tests::support", 1]
       ],
       "branch -> durability": [
-        ["crates/worth-relational/src/history/commit/artifact_tests/shared_readmission.rs", "durability::canonical_commit_artifact::checkpoint_body::readmit_checkpoint_body", 1],
+        ["crates/worth-relational/src/durability/canonical_commit_artifact/checkpoint_body.rs", "durability::canonical_commit_artifact::decoded_quote", 1],
         ["crates/worth-relational/src/history/commit/artifact_tests/shared_readmission.rs", "durability::canonical_commit_artifact::frame_encoding::encode_canonical_frame_for_request", 1],
         ["crates/worth-relational/src/history/commit/artifact_tests/shared_readmission.rs", "durability::canonical_commit_artifact::verified_frame::VerifiedCanonicalCommitFrame", 1],
         ["crates/worth-relational/src/history/commit/artifact_tests/shared_readmission.rs", "durability::canonical_commit_artifact::verified_frame::VerifiedCanonicalCommitFrame::from_owned_bytes", 1],

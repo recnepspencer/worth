@@ -32,6 +32,8 @@ pub(crate) struct RelationalPreparationOwnerBinding {
         crate::durability::published_medium::RelationalDurablePreparationAdmission,
 }
 
+mod source_inputs;
+
 /// Narrow cloneable state used only for validation and candidate preparation.
 #[derive(Debug, Clone)]
 pub(crate) struct RelationalPreparationRuntime {

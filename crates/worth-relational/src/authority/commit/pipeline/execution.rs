@@ -16,7 +16,7 @@ pub(crate) fn execute_authoritative_commit(
     } else {
         preparation
     };
-    let candidate = super::candidate_preparation::prepare_consulted_authoritative_commit(
+    let candidate = super::runtime_candidate_orchestration::prepare_consulted_authoritative_commit(
         execution,
         &preparation,
         context,

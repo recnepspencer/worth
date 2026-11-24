@@ -20,22 +20,22 @@ struct PublicationInputs {
         Option<std::sync::Arc<crate::history::data::CanonicalRequiredOutputMaterialization>>,
     caller: Option<crate::history::data::RelationalCallerAssociation>,
 }
-pub(super) struct ValidatedCandidate {
+pub(in crate::authority::commit::pipeline) struct ValidatedCandidate {
     context: CandidateContext,
     inputs: PublicationInputs,
     validated: CommitPhaseBacking<snapshot_validation::SnapshotValidatedCommitExecution>,
 }
-pub(super) struct AssembledCandidate {
+pub(in crate::authority::commit::pipeline) struct AssembledCandidate {
     context: CandidateContext,
     inputs: PublicationInputs,
     assembled: CommitPhaseBacking<artifact_execution::AssembledCommitExecution>,
 }
-pub(super) struct PublishedCandidate {
+pub(in crate::authority::commit::pipeline) struct PublishedCandidate {
     registration: CandidateRegistration,
     prepared: CommitPhaseBacking<super::super::PreparedCommitPublicationExecution>,
 }
 #[inline(never)]
-pub(super) fn validate(
+pub(in crate::authority::commit::pipeline) fn validate(
     request: &ExecutionRequest<'_, '_>,
     history: CommitPhaseBacking<HistoryPreparedCandidate<'_, '_>>,
 ) -> Result<
@@ -100,7 +100,7 @@ pub(super) fn validate(
     Ok((symbols, validated))
 }
 #[inline(never)]
-pub(super) fn assemble(
+pub(in crate::authority::commit::pipeline) fn assemble(
     request: &ExecutionRequest<'_, '_>,
     inputs_for_assembly: CandidateArtifactSelection<'_>,
     checked: CommitPhaseBacking<ValidatedCandidate>,
@@ -136,7 +136,9 @@ pub(super) fn assemble(
     )
 }
 #[inline(never)]
-pub(super) fn publish<Attach: FnOnce(&crate::branch::root::PreparedRelationalBranchRootCapture)>(
+pub(in crate::authority::commit::pipeline) fn publish<
+    Attach: FnOnce(&crate::branch::root::PreparedRelationalBranchRootCapture),
+>(
     request: &ExecutionRequest<'_, '_>,
     owners: PublicationPhaseOwners<'_, Attach>,
     source: CommitPhaseBacking<AssembledCandidate>,
@@ -166,7 +168,7 @@ pub(super) fn publish<Attach: FnOnce(&crate::branch::root::PreparedRelationalBra
     )
 }
 #[inline(never)]
-pub(super) fn register(
+pub(in crate::authority::commit::pipeline) fn register(
     request: &ExecutionRequest<'_, '_>,
     inputs: CandidateRegistrationInputs<'_>,
     source: CommitPhaseBacking<PublishedCandidate>,

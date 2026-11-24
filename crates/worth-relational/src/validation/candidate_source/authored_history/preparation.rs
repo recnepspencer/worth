@@ -1,5 +1,6 @@
 //! Complete conservative scope candidates from actual authored and physical inputs.
-use super::super::applied::{DiscoveredSource, SourcePreparationContext};
+use super::super::applied::context::SourcePreparationContext;
+use super::super::applied::discovery::DiscoveredSource;
 use super::{
     admission, collection::AuthoredSourceInputs, ManagedSourceImpactKey, ManagedSourceImpactRows,
     PreparedSourceImpactHistory,
@@ -14,7 +15,7 @@ use crate::validation::candidate_source::program::ManagedIndexSourceProgram;
 use crate::validation::custom_rule::structural_views::StructuralRelationView;
 use crate::validation::custom_rule::{CustomInvariantWorkMeter, CustomPreparationBudget};
 use crate::validation::engine::state_view::InvariantStateView;
-use crate::validation::engine::InvariantObservation;
+use crate::validation::engine::{InvariantObservation, InvariantRuntimeView};
 use std::sync::Arc;
 use worth_execution::{ExecutionOrderedMap, ExecutionRequest};
 
@@ -22,6 +23,7 @@ pub(in crate::validation::candidate_source) fn prepare<'a>(
     context: &'a SourcePreparationContext<'a>,
     budget: &CustomPreparationBudget,
     authored: Option<&MergedCommitPlan>,
+    validation_view: impl FnOnce() -> InvariantRuntimeView<'a>,
 ) -> Result<
     (
         Option<Arc<PreparedSourceImpactHistory>>,
@@ -30,39 +32,40 @@ pub(in crate::validation::candidate_source) fn prepare<'a>(
     Denial,
 > {
     let SourcePreparationContext {
-        draft,
+        state,
+        outcome,
+        allocations,
+        interpretation,
+        registry,
+        home_target,
         execution,
-        runtime,
         selected,
         proposal,
         records: _,
     } = *context;
-    let catalog = &runtime
-        .schema_contract_runtime
-        .custom_invariant_registries
-        .source_history;
+    let catalog = &registry.source_history;
     let Some(plan) = authored else {
         return Ok((None, Vec::new()));
     };
-    if !catalog.has_programs() || draft.source_interpretation.materialization_mode().is_some() {
+    if !catalog.has_programs() || interpretation.materialization_mode().is_some() {
         return Ok((None, Vec::new()));
     }
     let before = InvariantStateView::new(&selected, selected.version_id());
-    let overlay = OverlayStateView::new(&selected, draft.state());
+    let overlay = OverlayStateView::new(&selected, state);
     let after = InvariantStateView::new(&overlay, proposal.proposed_version_id());
-    let runtime_view = runtime.invariant_validation_view(selected.selected().state());
+    let runtime_view = validation_view();
     let observation = InvariantObservation::applied_with_proposal(
-        OverlayStateView::new(&selected, draft.state()),
+        OverlayStateView::new(&selected, state),
         selected.version_id(),
         Some(proposal.clone()),
-        &draft.outcome.created_entities,
+        &outcome.created_entities,
     );
     let mut discoveries = Vec::new();
     let Some(input) = AuthoredSourceInputs::collect(
         execution,
         budget,
-        draft.identities.records.canonical(),
-        &draft.outcome.effect,
+        allocations,
+        &outcome.effect,
         plan,
         &before,
         &after,
@@ -78,18 +81,10 @@ pub(in crate::validation::candidate_source) fn prepare<'a>(
             )
         })?,
     )?;
-    let groups = if runtime.home_target.is_some() {
-        runtime
-            .schema_contract_runtime
-            .custom_invariant_registries
-            .all_source_groups()
-            .iter()
-            .collect()
+    let groups = if home_target {
+        registry.all_source_groups().iter().collect()
     } else {
-        runtime
-            .schema_contract_runtime
-            .custom_invariant_registries
-            .source_groups(input.entity_kinds(&before, &after), input.relation_kinds())
+        registry.source_groups(input.entity_kinds(&before, &after), input.relation_kinds())
     };
     let adjacency = input.deltas(budget)?;
     let mut seen = ExecutionOrderedMap::<usize, ()>::default();
@@ -120,7 +115,7 @@ pub(in crate::validation::candidate_source) fn prepare<'a>(
             let new = StructuralRelationView::new(after.clone(), execution, work.clone(), access)
                 .with_structural_source(&runtime_view, &observation, false);
             let records = source_records(execution, budget, program, &input, &before, &after)?;
-            let closure = if runtime.home_target.is_some() {
+            let closure = if home_target {
                 super::super::scope_closure::discover_home_target(
                     runtime_view.selected_registry.registry(),
                     program,
@@ -171,7 +166,7 @@ pub(in crate::validation::candidate_source) fn prepare<'a>(
             }
         }
     }
-    let basis = draft.source_interpretation.physical_basis();
+    let basis = interpretation.physical_basis();
     let branch = basis.identity().branch_id();
     let memory = admission::header::<PreparedSourceImpactHistory>(execution, branch.0.len())?;
     admission::work(budget, branch.0.len())?;

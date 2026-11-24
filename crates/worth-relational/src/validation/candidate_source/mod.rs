@@ -37,7 +37,7 @@ pub(crate) use observation::{
 };
 pub use observation::{ManagedIndexSourceRead, PreparedManagedIndexSourceRead};
 pub(crate) use preparation::SourceViews;
-mod applied;
+pub(crate) mod applied;
 mod applied_affinity;
 mod applied_read;
 pub use applied_read::{ManagedIndexAppliedSourcePublication, ManagedIndexAppliedSourceRead};
@@ -55,5 +55,6 @@ pub use program::{
 pub use projection::{ManagedIndexSourceProjection, PreparedManagedIndexRelationRead};
 
 pub(crate) use interpretation::{
-    NativeManagedSourceInterpretation, NativeMaterializationSource, NativeSourceRestorationOrigin,
+    ManagedSourceIssueInputs, NativeManagedSourceInterpretation, NativeMaterializationSource,
+    NativeSourceRestorationOrigin,
 };

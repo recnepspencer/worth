@@ -1,5 +1,7 @@
 //! Rebuild the test catalog from its actual recorded cells without creating payload bytes.
-use super::*;
+use crate::history::commit::{RelationalCommitArtifact, RelationalCommitCatalog};
+use crate::runtime::state::subsystems::history::HistorySubsystem;
+use std::sync::Arc;
 impl HistorySubsystem {
     pub(crate) fn replace_catalog_from_legacy_for_test(&self) {
         let (cells, existing) = {
@@ -25,7 +27,7 @@ impl HistorySubsystem {
                         .original_owner()
                         .expect("changed court cell retains its actual Original owner");
                     Arc::new(
-                        crate::history::RelationalCommitArtifact::from_preencoded(original)
+                        RelationalCommitArtifact::from_preencoded(original)
                             .expect("court envelope keeps canonical parentage"),
                     )
                 }
