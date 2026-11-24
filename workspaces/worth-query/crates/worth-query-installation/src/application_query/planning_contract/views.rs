@@ -199,7 +199,8 @@ pub(super) fn predicate_view(
             aspect: predicate.aspect_key(),
             field: predicate.field_key(),
         },
-        parameter: Some(predicate.parameter()),
+        parameter: predicate.parameter(),
+        literal_value: predicate.literal_value(),
         scalar_family: predicate.scalar_family(),
     }
 }
@@ -213,6 +214,7 @@ pub(super) fn relation_predicate_view(
             |(aspect, field)| WorthQueryReadGraphPredicateTarget::Field { aspect, field },
         ),
         parameter: predicate.parameter(),
+        literal_value: None,
         scalar_family: predicate.scalar_family(),
     }
 }

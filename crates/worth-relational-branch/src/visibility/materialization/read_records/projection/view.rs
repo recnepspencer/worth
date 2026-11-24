@@ -125,6 +125,12 @@ impl VisibilityProjectionView {
         .map_err(crate::execution::denial_cause::RelationalExecutionDenialCause::ProjectionContract)
     }
 
+    /// Exact number of executable aspect bindings installed for `kind_id`.
+    pub fn entity_aspect_binding_count(&self, kind_id: KindId) -> usize {
+        self.entity_aspect_plan(kind_id)
+            .map_or(0, |plan| plan.executable_bindings.len())
+    }
+
     pub(super) fn entity_aspect_plan(
         &self,
         kind_id: KindId,

@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
-use worth_foundational::facade::ScalarAspectType;
+use worth_foundational::facade::{AspectValue, ScalarAspectType};
 
 mod authoring;
 mod builder;
@@ -31,12 +31,20 @@ pub enum ApplicationQueryCardinality {
     Many,
 }
 
+/// The right-hand side of a structured equality predicate: either a declared
+/// runtime parameter or an authored scalar constant.
+#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
+pub enum ApplicationQueryPredicateExpected {
+    Parameter(String),
+    Value(AspectValue),
+}
+
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct ApplicationQueryPredicate {
     entity: String,
     aspect: String,
     field: String,
-    parameter: String,
+    expected: ApplicationQueryPredicateExpected,
     scalar_family: ScalarAspectType,
 }
 
@@ -52,7 +60,23 @@ impl ApplicationQueryPredicate {
             entity,
             aspect,
             field,
-            parameter,
+            expected: ApplicationQueryPredicateExpected::Parameter(parameter),
+            scalar_family,
+        }
+    }
+
+    pub fn from_untrusted_value(
+        entity: String,
+        aspect: String,
+        field: String,
+        value: AspectValue,
+        scalar_family: ScalarAspectType,
+    ) -> Self {
+        Self {
+            entity,
+            aspect,
+            field,
+            expected: ApplicationQueryPredicateExpected::Value(value),
             scalar_family,
         }
     }
@@ -61,12 +85,33 @@ impl ApplicationQueryPredicate {
         (&self.entity, &self.aspect, &self.field)
     }
 
-    pub fn parameter(&self) -> &str {
-        &self.parameter
+    pub fn parameter(&self) -> Option<&str> {
+        match &self.expected {
+            ApplicationQueryPredicateExpected::Parameter(parameter) => Some(parameter),
+            ApplicationQueryPredicateExpected::Value(_) => None,
+        }
+    }
+
+    pub fn literal_value(&self) -> Option<&AspectValue> {
+        match &self.expected {
+            ApplicationQueryPredicateExpected::Parameter(_) => None,
+            ApplicationQueryPredicateExpected::Value(value) => Some(value),
+        }
+    }
+
+    pub const fn expected(&self) -> &ApplicationQueryPredicateExpected {
+        &self.expected
     }
 
     pub const fn scalar_family(&self) -> ScalarAspectType {
         self.scalar_family
+    }
+
+    /// Declaration-owned local validity check for a structured literal expected
+    /// value (canonical representation, exact non-null scalar family, portable
+    /// string, and bounded byte width).
+    pub fn literal_value_is_valid(value: &AspectValue, scalar_family: ScalarAspectType) -> bool {
+        super::predicate_literal_is_valid(value, scalar_family)
     }
 }
 

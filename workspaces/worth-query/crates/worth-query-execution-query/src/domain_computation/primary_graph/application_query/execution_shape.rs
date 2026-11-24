@@ -69,29 +69,24 @@ pub fn validate_one_shot_shape<Schema, Query, Parameters, QueryResult, Scope>(
     let graph = query.read_family_binding().planning_contract();
     let root = graph.root_entity();
     let exact_root_scope = root == query.scope_entity();
-    let bounded_exact_selection = match graph.predicates() {
-        [] => true,
-        [predicate] => predicate.field().0 == root,
-        _ => false,
-    };
+    let root_predicates_valid = graph
+        .predicates()
+        .iter()
+        .all(|predicate| predicate.field().0 == root);
     // A path union is the index-seeking bound; root-entity `where_equal`
     // predicates and the where filter then narrow its candidates.
-    let declared_path_selection = !graph.root_paths().is_empty()
-        && graph
-            .predicates()
-            .iter()
-            .all(|predicate| predicate.field().0 == root);
+    let declared_path_selection = !graph.root_paths().is_empty() && root_predicates_valid;
     let managed_selection = graph.managed_index_selection().is_some()
         && graph.root_paths().is_empty()
         && graph.orbit().is_none()
         && graph.component_selection().is_none()
-        && bounded_exact_selection;
+        && root_predicates_valid;
     let declared_result = graph.component_selection().is_some()
         || graph.orbit().is_some()
         || !graph.projections().is_empty()
         || !graph.relations().is_empty();
     if declared_result
-        && ((exact_root_scope && graph.root_paths().is_empty() && bounded_exact_selection)
+        && ((exact_root_scope && graph.root_paths().is_empty() && root_predicates_valid)
             || declared_path_selection
             || managed_selection)
     {

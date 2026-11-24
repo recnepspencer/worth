@@ -41,7 +41,7 @@ impl WorthQueryInstalledGraphReadContract {
                     entity: entity.to_string(),
                     aspect: admitted_aspect_key(aspect),
                     field: admitted_field_key(field),
-                    parameter: predicate.parameter().to_string(),
+                    expected: predicate.expected().clone(),
                     scalar_family: predicate.scalar_family(),
                 }
             })

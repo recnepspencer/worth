@@ -94,7 +94,10 @@ fn validate_predicates_and_ordering(
 ) -> Result<(), ApplicationSchemaDeclarationDenial> {
     for predicate in definition.predicates() {
         let (entity, aspect, field) = predicate.field();
-        validate_identifiers([entity, aspect, field, predicate.parameter()])?;
+        validate_identifiers([entity, aspect, field])?;
+        if let Some(parameter) = predicate.parameter() {
+            validate_simple_identifier(parameter)?;
+        }
     }
     for ordering in definition.ordering() {
         let (entity, aspect, field) = ordering.field();
