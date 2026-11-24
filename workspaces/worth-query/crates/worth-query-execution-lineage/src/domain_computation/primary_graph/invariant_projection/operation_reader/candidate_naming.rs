@@ -41,7 +41,9 @@ use worth_query_execution_naming::facade::{ExecutionNameReader, NameReadDependen
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::history::BranchId;
 use worth_relational::facade::lineage::LineageRecordTarget;
-use worth_relational::facade::runtime::{ProjectionAspectScope, VisibilityProjectionView};
+use worth_relational::facade::runtime::{
+    ProjectionAspectScope, RelationalRuntime, VisibilityProjectionView,
+};
 use worth_relational::facade::storage::RecordLifecycleState;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause;
 
@@ -62,7 +64,14 @@ impl<Schema: ApplicationSchema, Operation>
         &mut self,
         read: impl FnOnce(&ExecutionNameReader<'_>) -> T,
     ) -> Result<T, Denial> {
-        let read = self.aligned_name_read(read);
+        let (execution, observation) = (self.reader.execution, &self.reader.observation);
+        let read = self.aligned_runtime_read(|runtime| {
+            read(&ExecutionNameReader::at_observation(
+                runtime,
+                execution,
+                observation,
+            ))
+        });
         if read.is_err() {
             self.decision_facts
                 .veto_persistent_name(PersistentNameReadVeto::ReadFailed);
@@ -70,19 +79,15 @@ impl<Schema: ApplicationSchema, Operation>
         read
     }
 
-    fn aligned_name_read<T>(
+    /// Runs `read` over the committed runtime at this reader's basis
+    /// snapshot, under the same alignment proof as `with_name_reader`.
+    pub(super) fn aligned_runtime_read<T>(
         &self,
-        read: impl FnOnce(&ExecutionNameReader<'_>) -> T,
+        read: impl FnOnce(&RelationalRuntime) -> T,
     ) -> Result<T, Denial> {
         let reader = &*self.reader;
         let (before, candidate) = match &reader.native {
-            NativeProjectionRead::Committed(runtime) => {
-                return Ok(read(&ExecutionNameReader::at_observation(
-                    runtime,
-                    reader.execution,
-                    &reader.observation,
-                )));
-            }
+            NativeProjectionRead::Committed(runtime) => return Ok(read(runtime)),
             NativeProjectionRead::Applied {
                 before, candidate, ..
             } => (before, candidate),
@@ -111,11 +116,7 @@ impl<Schema: ApplicationSchema, Operation>
                 return;
             }
             if let Some(read) = read.take() {
-                answer = Some(read(&ExecutionNameReader::at_observation(
-                    runtime,
-                    reader.execution,
-                    &reader.observation,
-                )));
+                answer = Some(read(runtime));
             }
         });
         answer.ok_or(Denial::CandidateBasis)

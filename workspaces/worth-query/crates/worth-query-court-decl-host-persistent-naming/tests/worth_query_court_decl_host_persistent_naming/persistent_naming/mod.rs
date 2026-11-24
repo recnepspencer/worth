@@ -32,6 +32,7 @@ pub(crate) mod outputs;
 pub(crate) mod probe;
 mod query;
 mod refusals;
+mod retarget;
 mod scope;
 mod scoped;
 mod stored;
@@ -88,6 +89,8 @@ pub(crate) fn entry() -> ApplicationFeatureSpecBuilder<Schema, ApplicationRootCo
         .action::<outputs::sculpt::Binding, Completion>()
         .finish_action()
         .action::<stored::Binding, Completion>()
+        .finish_action()
+        .action::<retarget::Binding, Completion>()
         .finish_action()
         .action::<coupled::producer::shape::Binding, Completion>()
         .finish_action()

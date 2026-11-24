@@ -39,6 +39,9 @@ pub enum PersistentGroupAnswer {
     Unknown,
 }
 
+mod candidate_support;
+pub use candidate_support::CandidateGroupSupport;
+
 use worth_relational::facade::lineage::{
     PersistentNameKey, PersistentNameObservationView, PersistentNameResolution,
     PersistentNameResolutionDenial, PersistentNameSelection, PersistentNameSubjectKind,

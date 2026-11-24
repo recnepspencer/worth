@@ -242,6 +242,14 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         self.read.replace(Some(read.clone()));
         Ok(read)
     }
+
+    /// Whether the unpublished envelope claims group scheme `scheme` (#361).
+    pub fn claims_group_scheme(&self, scheme: &str) -> bool {
+        let stages = self.stages.iter().map(|stage| stage.naming.as_ref());
+        let parts = self.parts.iter().map(|part| part.naming.as_ref());
+        let root = self.transaction.naming_plan.as_deref();
+        part_naming::claims_group_scheme(root, stages.chain(parts), scheme)
+    }
 }
 
 impl BranchBoundRelationalTransaction {

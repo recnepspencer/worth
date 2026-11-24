@@ -136,7 +136,15 @@ the scheme's continuity rule at commit, refusing typed
 canonical group lineage frame, and rebuilds group state on fork, history
 navigation, checkpoint restore, cold open and replay. Decisions read
 `group_name_of::<G, Member>` / `resolve_group::<G, Member>` as tracked facts
-(`Exact`/`Plural`/`Retired`/`Ambiguous`; committed basis), and
+(`Exact`/`Plural`/`Retired`/`Ambiguous`), on a committed basis or, in a coupled
+producer or later edit-envelope stage, on the unpublished candidate
+([#361](https://github.com/recnepspencer/worth/issues/361)): answered from the
+commit basis only while the envelope claims no partition of `G`'s scheme
+(`CandidateGroupState`), the answer rests on no ended member name or ended,
+split or unborn held group (`CandidateNameHistory`), and every member it rests
+on stays live (`EndedInCandidate`), each refusal vetoing the envelope with zero
+effects; a member that claims `G` after a candidate read of it refuses the
+envelope (`PersistentNamingGroupsCandidate.tla`), and
 `#[worth_query(group_name)]` projects a row's group names in its read
 ([group schemes](build-an-application.md#persistent-naming-schemes)).
 Declare roles, discriminators and occurrences as Rust types
