@@ -17,7 +17,8 @@ pub(super) fn query_denial(denial: BankApplicationQueryDenial) -> BankHttpDenial
         BankApplicationQueryDenial::ExecutionRequest(cause) => {
             super::advancement_denial::advancement(cause)
         }
-        BankApplicationQueryDenial::RequestMode
+        BankApplicationQueryDenial::InputPreparation(_)
+        | BankApplicationQueryDenial::RequestMode
         | BankApplicationQueryDenial::LiveRetainedBasis
         | BankApplicationQueryDenial::LiveControls(_) => malformed(),
         BankApplicationQueryDenial::Installation(_)
