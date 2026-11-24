@@ -80,10 +80,29 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         if origin.publication().producer() != producer {
             return Ok(None);
         }
-        let current = graph.with_runtime(execution, |native| {
-            self.restored_output_is_current::<Family>(execution, native, &selected, &candidate)
-        })?;
-        if !current {
+        let (current, verified_at) = graph.with_runtime(execution, |native| {
+            let current =
+                self.restored_output_is_current::<Family>(execution, native, &selected, &candidate);
+            // `HistoricalOutputRead::is_current` compares in full at the
+            // selected application basis: publication ownership, the source
+            // facts (`restored_facts_hold`), the output witness
+            // (`unchanged_since_restoration`) and any consumed upstream.
+            // `verified_at` is that same snapshot, so marks name only the
+            // basis compared. Only a root (no consumed outputs) is marked:
+            // `establish_verified_root` records no upstream (public #353).
+            let verified_at = candidate
+                .consumed_outputs
+                .is_empty()
+                .then(|| {
+                    native
+                        .read_truth()
+                        .positioned_snapshot(selected.application_basis().snapshot_handle())
+                        .ok()
+                })
+                .flatten();
+            (current, verified_at)
+        });
+        if !current? {
             return Ok(None);
         }
         let Some(epoch) = observed_source.output_source_epoch() else {
@@ -97,7 +116,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         Ok(Some(ReadmittedOutput {
             computation_source: origin.computation_source(),
             settlement: std::sync::Arc::clone(origin.settlement()),
-            verified_at: None,
+            verified_at,
             restored: WorthQueryRestoredAcceptedOutput {
                 origin: RestoredOutputOrigin::HistoricalSelection(origin),
                 correspondence: candidate.correspondence,
