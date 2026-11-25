@@ -80,6 +80,7 @@ impl<'a, S: ApplicationSchema> WorthQueryApplicationCorrectionRequest<'a, '_, '_
                     let (input, source) = target.derive_required_output_correction::<C, R>(
                         access, &phase, principal, scope, source, key,
                         limits.maximum_ancestors, limits.maximum_disclosure_results,
+                        None,
                     ).map_err(Denial::Derivation)?;
                     demand = Some(<Inverse<S, C> as WorthQueryApplicationRequiredOutputSource<S, Connection<S, R>>>::demand_from_source(input.input())
                         .map_err(|cause| Denial::RequiredOutputs(crate::application_entry::WorthQueryPerformedMutationExecutionDenial::Connection(cause)))?);

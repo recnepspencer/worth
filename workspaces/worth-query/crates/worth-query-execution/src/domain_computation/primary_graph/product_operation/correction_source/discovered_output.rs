@@ -67,6 +67,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         key: &WorthQueryCorrectionCommandKey,
         maximum_history: Option<NonZeroUsize>,
         maximum_results: NonZeroUsize,
+        navigation: Option<&dyn super::restored_support::WorthQueryCorrectionNavigationLineage>,
     ) -> Result<(
         ApplicationEncodedInput<<ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<Schema>>::InputBinding>,
         std::sync::Arc<WorthQueryPreparedCorrectionSource>,
@@ -92,6 +93,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             Some(PreparedOutputRootKind::Discovered(
                 crate::equality_type_id::EqualityTypeId::of::<Root>(),
             )),
+            navigation,
         )
     }
 }

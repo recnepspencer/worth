@@ -135,6 +135,10 @@ pub(in crate::domain_computation::primary_graph) struct HistoryJournal {
     // Correction sources: an envelope's commit -> its step's ordinal.
     sources: BTreeMap<worth_runtime_world::facade::CompositeCommitIdentity, (u64, HistoryInsertionAllocation)>,
     pending_source: Option<worth_runtime_world::facade::CompositeCommitIdentity>,
+    // A step's retained basis (its relational commit) -> its ordinal, which a
+    // navigation commit names as the basis it selected.
+    endpoints: BTreeMap<worth_relational::facade::history::CommitId, (u64, HistoryInsertionAllocation)>,
+    pending_endpoint: Option<worth_relational::facade::history::CommitId>,
 }
 
 pub(super) enum AttemptLookup {
@@ -243,6 +247,8 @@ impl HistoryJournal {
             observation: None,
             sources: BTreeMap::new(),
             pending_source: None,
+            endpoints: BTreeMap::new(),
+            pending_endpoint: None,
         })
     }
 

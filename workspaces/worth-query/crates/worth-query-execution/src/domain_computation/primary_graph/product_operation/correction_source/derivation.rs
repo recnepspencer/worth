@@ -27,6 +27,7 @@ pub(in crate::domain_computation::primary_graph) fn derive_correction_inverse<Sc
     maximum_history: Option<NonZeroUsize>,
     maximum_results: NonZeroUsize,
     required_root: Option<PreparedOutputRootKind>,
+    navigation: Option<&dyn super::restored_support::WorthQueryCorrectionNavigationLineage>,
 ) -> Result<
     (
         ApplicationEncodedInput<<ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<Schema>>::InputBinding>,
@@ -58,6 +59,7 @@ where
         ancestry,
         maximum_history,
         required_root,
+        navigation,
     )?;
     if let Some(material) = source.occurrence().home_material()
         && target

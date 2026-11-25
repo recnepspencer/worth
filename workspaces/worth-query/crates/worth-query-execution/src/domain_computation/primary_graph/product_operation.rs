@@ -18,9 +18,10 @@ pub use correction_source::{
     WorthQueryCorrectionDerivationDenial, WorthQueryCorrectionHistoryDenial,
     WorthQueryCorrectionHistoryRecord, WorthQueryCorrectionHistoryState,
     WorthQueryCorrectionInputSelection, WorthQueryCorrectionIntent,
-    WorthQueryCorrectionOutputProjectionDenial, WorthQueryCorrectionRestoredSupportDenial,
-    WorthQueryCorrectionSelectionDenial, WorthQueryPreparedCorrectionSource,
-    WorthQuerySelectedCorrectionAlternative, WorthQuerySelectedCorrectionSource,
+    WorthQueryCorrectionNavigationLineage, WorthQueryCorrectionOutputProjectionDenial,
+    WorthQueryCorrectionRestoredSupportDenial, WorthQueryCorrectionSelectionDenial,
+    WorthQueryPreparedCorrectionSource, WorthQuerySelectedCorrectionAlternative,
+    WorthQuerySelectedCorrectionSource,
 };
 pub(crate) mod generated_materialization;
 mod history;

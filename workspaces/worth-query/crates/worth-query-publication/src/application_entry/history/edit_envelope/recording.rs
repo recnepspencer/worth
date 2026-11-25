@@ -76,7 +76,8 @@ where
             return refuse(document, Denial::Empty);
         }
         let mut admission = Admission::Unreached;
-        let executed = envelope.execute_with_history_front(allocation, |context, phase, captured, correction| {
+        let navigation = document.owner.correction_navigation_lineage();
+        let executed = envelope.execute_with_history_front(allocation, Some(&*navigation), |context, phase, captured, correction| {
             admission = admit(&document, context, phase, captured, correction, &metadata);
             match &admission {
                 Admission::Running {

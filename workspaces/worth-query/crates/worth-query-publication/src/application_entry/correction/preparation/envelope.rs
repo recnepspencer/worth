@@ -116,7 +116,7 @@ impl<'a, 'p, 's, 'h, S: ApplicationSchema>
             .idempotency(key)
             .runtime_stages(program);
         let mut this = self;
-        Ok(runtime.with_correction_front::<ApplicationInverseBinding<S, C>>(Box::new(move |context, program, phase, key, entries| {
+        Ok(runtime.with_correction_front::<ApplicationInverseBinding<S, C>>(Box::new(move |context, program, phase, key, entries, navigation| {
             let correction_denial = |denial| WorthQueryEditEnvelopeExecutionDenial::envelope(P::IDENTITY.as_str(),
                 crate::application_entry::WorthQueryPerformedMutationExecutionDenial::Correction(Box::new(denial)));
             let reselected;
@@ -148,6 +148,7 @@ impl<'a, 'p, 's, 'h, S: ApplicationSchema>
                 drop(target);
                 source = &reselected;
             }
+            let navigation = navigation.filter(|_| history);
             let request = WorthQueryApplicationCorrectionRequest {
                 correction: super::super::inspection::WorthQueryApplicationCorrection {
                     request: this.correction.request,
@@ -165,6 +166,7 @@ impl<'a, 'p, 's, 'h, S: ApplicationSchema>
                 |target, _access, command| R::inverse::<C>(
                     target, phase, principal, scope, selected_source, command,
                     limits.maximum_ancestors, limits.maximum_disclosure_results,
+                    navigation,
                 ).map_err(Denial::Derivation),
                 |request, target, _, _, selected, phase| {
                     context.correction = Some(selected.intent);

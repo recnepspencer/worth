@@ -18,6 +18,7 @@
 mod corrective_cascade;
 mod driver;
 mod history_correction;
+mod history_navigation;
 pub(super) mod fixture;
 mod reference;
 mod regressions;
