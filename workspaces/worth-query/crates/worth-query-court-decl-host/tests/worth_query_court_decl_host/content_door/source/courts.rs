@@ -285,22 +285,8 @@ fn content_recovered_current_source_rebuilds_from_native_checkpoint_bytes() {
         root: "record".into(),
         minimum: 10,
     };
-    let selected = world::pin(&recovered);
-    let refused = match request.query(find()).open_index::<Index>() {
-        Err(cause) => cause,
-        Ok(_) => panic!("recovered bytes cannot mint a live managed Source image"),
-    };
-    let WorthQueryApplicationRequestQueryDenial::ManagedIndex(cause) = refused else {
-        panic!("{refused:?}")
-    };
-    assert!(matches!(
-        cause.cause(),
-        WorthQueryManagedIndexDenialCause::Refused(WorthQueryManagedIndexRefusal::RootUnavailable)
-    ));
-    assert_eq!(
-        world::pin(&recovered).selected_commit(),
-        selected.selected_commit()
-    );
+    // Left unbuilt, so the authored transition below still cold-stages.
+    cold_index(&recovered, None);
     calls.records.lock().unwrap().clear();
     // A genuine authored transition may cold-stage current data; it does not mint old live history.
     // Alpha remains unchanged, so its recovered bytes must also reach the consuming candidate.
@@ -315,6 +301,7 @@ fn content_recovered_current_source_rebuilds_from_native_checkpoint_bytes() {
         .any(|(b, a)| b.as_ref() == Some(&before) && a == &after));
     let index = request.query(find()).open_index::<Index>().unwrap();
     request.query(find()).rebuild_index(&index).unwrap();
+    assert_eq!(index.lifecycle(), WorthQueryManagedIndexLifecycle::Ready);
     assert_eq!(keys(request.query(find()).execute().unwrap().rows()), after);
     index.close();
 }
