@@ -70,6 +70,31 @@ impl<Schema, Operation, Input, Scope>
     }
 }
 
+impl<Schema, Operation, Input, Scope>
+    WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope>
+{
+    /// Emits an installed body's ordinary effect, its payload derived and
+    /// validated from the exact operation input; the emit program admits it.
+    pub(crate) fn body_effect_emission(
+        &mut self,
+        recipe: &worth_query_declaration::facade::application_schema::ApplicationOperationBodyEffectRecipe,
+        input: &dyn std::any::Any,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        let effect = &recipe.meaning().effect;
+        self.admit_program_target(&ApplicationOperationProgramTarget::Emit {
+            effect: effect.clone(),
+        })?;
+        let payload = recipe
+            .derive(input)
+            .map_err(|_| invalid_payload_denial(effect))?;
+        self.reserve_effects(1)?;
+        self.effects.push(WorthQueryApplicationRealizedEffect::Emit(
+            WorthQueryApplicationEmission::from_body_payload(payload),
+        ));
+        Ok(())
+    }
+}
+
 fn invalid_payload_denial(effect: &str) -> WorthQueryApplicationAttemptDenial {
     denial(
         WorthQueryApplicationAttemptDenialKind::InvalidEffectValue,

@@ -1,20 +1,15 @@
-//! The governed live shared-project read and the rename that drives it: one
-//! `#[derive(WorthQuery)]` declares its stock-scope-access disclosure and its
-//! effect-driven live mode, so it names no strings, slots, causes or intents.
+//! The governed live shared-project read and the declarative rename body that
+//! drives it: one `#[derive(WorthQuery)]` declares its stock-scope-access
+//! disclosure and effect-driven live mode, and the rename emits that effect
+//! from its body, so neither names strings, slots, causes, intents or handlers.
 use serde::{Deserialize, Serialize};
+use worth_query_decl::facade::application_schema::ApplicationOperationDefinition;
 use worth_query_decl::facade::{
     application_identity::ApplicationIdentityNamespace, worth_query_effect,
     worth_query_identity_namespace, worth_query_portable_type,
     worth_query_structured_value_binding, WorthQuery, WorthQueryAction, WorthQueryRow,
 };
-use worth_query_host::facade::{
-    primary_graph::{
-        CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
-        WorthQueryInvariantMutationTarget, WorthQueryOperationBodyDenial,
-        WorthQueryOperationDurableCapability,
-    },
-    worth_query_remote_codec,
-};
+use worth_query_host::facade::worth_query_remote_codec;
 
 use super::schema::{project_access, *};
 
@@ -70,14 +65,7 @@ pub struct SharedProjectRead {
     schema = BoardSchema, context = Desktop, namespace = SHARED, member,
     input = RenameProjectInput, operation = RenameProjectOp,
     binding = RenameProjectBinding, delivery = ProjectRenameDelivered,
-    result = UnitResult, decision = WorthQueryInvariantMutationTarget<BoardSchema, Project>,
-    program,
-    access(
-        read_entities: [Project];
-        read_fields: [ProjectFacts::project_id(), ProjectFacts::name()];
-        writes: [ProjectFacts::name()];
-        emits: [ProjectRenamedEffect];
-    )
+    body, program, reads(Project), emits(ProjectRenamedEffect)
 )]
 pub struct RenameProject {
     #[worth_query(scope = ProjectId)]
@@ -85,49 +73,23 @@ pub struct RenameProject {
     pub name: String,
 }
 
-pub struct RenameProjectHandler;
-impl OperationHandler<BoardSchema, RenameProjectBinding> for RenameProjectHandler {
-    fn declared_durable_capabilities() -> Option<&'static [WorthQueryOperationDurableCapability]> {
-        Some(&[
-            WorthQueryOperationDurableCapability::RelationalMutation,
-            WorthQueryOperationDurableCapability::ExternalEmission,
-        ])
+/// The effect payload is derived from the rename's own input.
+impl From<&RenameProject> for ProjectRenamed {
+    fn from(rename: &RenameProject) -> Self {
+        Self {
+            project: rename.project.clone(),
+        }
     }
+}
 
-    fn decide(
-        &self,
-        input: &RenameProject,
-        reader: &mut DecisionReader<'_, '_, '_, BoardSchema, RenameProjectBinding>,
-    ) -> HandlerResult<
-        WorthQueryInvariantMutationTarget<BoardSchema, Project>,
-        WorthQueryOperationBodyDenial,
-    > {
-        (|| {
-            let project =
-                reader.resolve_entity(ProjectFacts::project_id(), input.project.clone())?;
-            reader.field(&project, ProjectFacts::name())?;
-            reader.mutation_target(&project)
-        })()
-        .into()
-    }
-
-    fn build_candidate(
-        &self,
-        input: &RenameProject,
-        target: WorthQueryInvariantMutationTarget<BoardSchema, Project>,
-        writer: &mut CandidateWriter<'_, BoardSchema, RenameProjectBinding>,
-    ) -> HandlerResult<(), WorthQueryOperationBodyDenial> {
-        (|| -> Result<(), HandlerExecutionDenial> {
-            let project = writer.projected_entity(&target)?;
-            writer.write_field(&project, ProjectFacts::name(), input.name.clone())?;
-            writer.emit(
-                ProjectRenamedEffect::reference(),
-                ProjectRenamed {
-                    project: input.project.clone(),
-                },
-            )?;
-            Ok(())
-        })()
-        .into()
-    }
+/// Renaming is a declarative body: it assigns the name and emits the typed
+/// effect that wakes the live shared read, with no operation handler.
+pub fn rename_project_operation(
+) -> ApplicationOperationDefinition<BoardSchema, RenameProjectOp, RenameProject> {
+    RenameProjectOp::reference()
+        .typed_body()
+        .assign_input(ProjectFacts::name(), RenameProject::name_input())
+        .emit_effect(ProjectRenamedEffect::reference())
+        .finish_pure_definition()
+        .expect("rename body admits")
 }

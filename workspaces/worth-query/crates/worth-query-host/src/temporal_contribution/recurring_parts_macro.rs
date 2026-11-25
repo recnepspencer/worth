@@ -6,7 +6,11 @@
 macro_rules! __worth_query_recurring_rule_parts {
     ([$vis:vis $Rule:ident, $Schema:ty, $identity:literal, $Operation:ident, $operation_name:literal,
       $Context:ty, $Entity:ident, $Fields:ty, $Link:ty, $hub:expr, $Query:ty,
-      $ScheduleBinding:ty, $ScheduleHandler:ident]) => {
+      $ScheduleBinding:ty, $ScheduleHandler:ident]
+     [$($Hook:ty { $($kind:ident: [$($Member:tt)*];)* })?]) => {
+        $($($crate::facade::temporal_contribution::__worth_query_operation_access!(
+            @capabilities $kind $Operation [$($Member)*]
+        );)*)?
         impl $Rule {
             fn node_spec() -> $crate::facade::temporal_contribution::WorthQueryDesktopTemporalNodeSpec {
                 $crate::facade::temporal_contribution::WorthQueryDesktopTemporalNodeSpec::from_fields(
@@ -67,10 +71,21 @@ macro_rules! __worth_query_recurring_rule_parts {
                     .operation_write(op, <$Fields>::due_ns())
                     .operation_write(op, <$Fields>::fired_count())
                     .operation_write(op, <$Fields>::lifecycle()))
+                $(.map(|builder| {
+                    let operation = op;
+                    let _hook = ::core::marker::PhantomData::<$Hook>;
+                    $(let builder = $crate::facade::temporal_contribution::__worth_query_operation_access!(
+                        @register $kind builder operation [$($Member)*]
+                    );)*
+                    let _ = operation;
+                    builder
+                }))?
             }
         }
 
-        $crate::__worth_query_recurring_rule_invoker!([$Rule, $Schema, $Operation, $Entity, $Fields]);
+        $crate::__worth_query_recurring_rule_invoker!(
+            [$Rule, $Schema, $Operation, $Entity, $Fields] [$($Hook)?]
+        );
         $crate::__worth_query_recurring_rule_schedule!(
             [$vis $Schema, $Entity, $Fields, $Link, $hub, $ScheduleBinding, $ScheduleHandler]
         );
@@ -83,7 +98,7 @@ macro_rules! __worth_query_recurring_rule_parts {
 #[doc(hidden)]
 #[macro_export]
 macro_rules! __worth_query_recurring_rule_invoker {
-    ([$Rule:ident, $Schema:ty, $Operation:ident, $Entity:ident, $Fields:ty]) => {
+    ([$Rule:ident, $Schema:ty, $Operation:ident, $Entity:ident, $Fields:ty] [$($Hook:ty)?]) => {
         impl $crate::facade::primary_graph::WorthQueryTemporalOperationInvoker<
                 $Schema,
                 $Operation,
@@ -153,6 +168,16 @@ macro_rules! __worth_query_recurring_rule_invoker {
                 effects
                     .write_field(&rule, <$Fields>::fired_count(), input.fired_count.saturating_add(1))
                     .map_err(|cause| failure(kind, cause))?;
+                $(<$Hook as $crate::facade::temporal_contribution::WorthQueryRecurringFireHook<
+                    $Schema,
+                    $Operation,
+                    $Entity,
+                >>::on_fire(
+                    $crate::facade::temporal_contribution::WorthQueryRecurringFire::new(&input),
+                    &rule,
+                    effects,
+                )
+                .map_err(|cause| failure(kind, cause))?;)?
                 ::core::result::Result::Ok(())
             }
         }

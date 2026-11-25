@@ -18,6 +18,13 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         self.candidate.body_external_emission(selection)
     }
+    pub(crate) fn body_effect_emission(
+        &mut self,
+        recipe: &worth_query_declaration::facade::application_schema::ApplicationOperationBodyEffectRecipe,
+        input: &dyn std::any::Any,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        self.candidate.body_effect_emission(recipe, input)
+    }
     pub(crate) fn body_retire_owned_selection(
         &mut self,
         owner: &super::WorthQueryInvariantMutationTarget<Schema, ()>,

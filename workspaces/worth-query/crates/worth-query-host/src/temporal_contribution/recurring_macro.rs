@@ -15,6 +15,7 @@
 ///         row: RecurrenceRow,
 ///         query: ReadRecurrencesBinding,
 ///         schedule: ScheduleRecurrenceBinding => ScheduleRecurrenceHandler,
+///         on_fire: CreateRecurringTask { creates: [Task]; links: [RuleTasks]; },
 ///     }
 /// }
 /// ```
@@ -38,9 +39,20 @@
 /// the conditional binding a program installs with
 /// `conditionals: Configuration { field: Rule }`. Each fire advances
 /// `fired_count`; WORTH reschedules `due_ns` and `revision` until `max_fires`
-/// fires, then marks the rule `Completed`. The rule row is the only record of
-/// fires. Catch up with
+/// fires, then marks the rule `Completed`. Catch up with
 /// `session.catch_up_temporal::<Rule>(now, WorthQueryTemporalCatchUpPolicy::bounded(64)?)`.
+///
+/// An optional trailing `on_fire: Hook { creates: [Task]; links: [RuleTasks];
+/// writes: [TaskFacts::title()]; }` runs `Hook`'s
+/// [`WorthQueryRecurringFireHook`](crate::facade::temporal_contribution::WorthQueryRecurringFireHook)
+/// atomically inside each fire commit, with exactly the declared access (the
+/// same `kind: [..];` clauses as `worth_query_operation!` access blocks).
+/// A hook creating one entity per fire under
+/// `fire.entity_key()` creates each exactly once: each occurrence commits once,
+/// and a refused hook commits nothing, `fired_count` included. The fire
+/// projection observes only the rule row, so fields the hook initializes may
+/// not be `unique` (the commit refuses them). Without
+/// `on_fire`, the rule row is the only record of fires.
 #[macro_export]
 macro_rules! worth_query_recurring_rule {
     (
@@ -53,7 +65,8 @@ macro_rules! worth_query_recurring_rule {
             hub: $hub:expr,
             row: $Row:ty,
             query: $Query:ty,
-            schedule: $ScheduleBinding:ty => $ScheduleHandler:ident $(,)?
+            schedule: $ScheduleBinding:ty => $ScheduleHandler:ident
+            $(, on_fire: $Hook:ty { $($kind:ident: [$($Member:tt)*];)* })? $(,)?
         }
     ) => {
         #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -97,6 +110,7 @@ macro_rules! worth_query_recurring_rule {
         $crate::__worth_query_recurring_rule_parts!(
             [$vis $Rule, $Schema, $identity, $Operation, $operation_name, $Context, $Entity,
              $Fields, $Link, $hub, $Query, $ScheduleBinding, $ScheduleHandler]
+            [$($Hook { $($kind: [$($Member)*];)* })?]
         );
     };
 }

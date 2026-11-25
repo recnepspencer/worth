@@ -357,6 +357,7 @@
 mod application_home;
 pub mod facade;
 mod ordinary_contract;
+mod producer_stop_contract;
 mod program_transition;
 mod refusal_summary;
 mod workflow_owner_contract;
@@ -375,6 +376,7 @@ mod closed_delivery_contract;
 
 mod collection_contract;
 
+mod local_calendar;
 mod logical_member_contract;
 mod ordered_index;
 

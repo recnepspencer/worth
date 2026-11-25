@@ -1,5 +1,5 @@
 //! Stock scope access end to end: typed grants gate a remote governed read and
-//! live watch, revocation fails closed, the read-only level refuses watches,
+//! live watch woken by a declarative body's effect, revocation fails closed, the read-only level refuses watches,
 //! and a restarted owner issues fresh grants without idempotency-key reuse.
 mod program;
 mod schema;
@@ -106,6 +106,7 @@ fn stock_scope_grants_gate_remote_read_watch_and_revoke_across_restart() {
         .recv_watch_open::<BoardSchema, BoardProgram>()
         .unwrap();
     assert_eq!(watch.initial_rows(), project("Launch").as_slice());
+    // The declarative rename body emits the typed effect the live read keys on.
     rename(&home, "Liftoff");
     watch.send_poll().unwrap();
     assert!(server.serve_once(Duration::from_secs(2)).unwrap());

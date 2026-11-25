@@ -72,8 +72,8 @@ fn observe_and_rebuild(host: &world::Host, expected: &[&str]) {
     index.close();
 }
 
-fn observe_cold_source(host: &world::Host) {
-    let selected = world::pin(host);
+/// Reopen keeps the authored Source and opens the managed index cold (#359).
+fn observe_cold_source(host: &world::Host, rebuilt: Option<&[&str]>) {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.runtime().request(&principal, &scope);
@@ -90,27 +90,8 @@ fn observe_cold_source(host: &world::Host) {
             .collect::<Vec<_>>(),
         ["alpha"]
     );
-    let refused = match request
-        .query(query::Find {
-            root: "record".into(),
-            minimum: 10,
-        })
-        .open_index::<Index>()
-    {
-        Err(cause) => cause,
-        Ok(_) => panic!("reopen must not eagerly recreate a live managed Source image"),
-    };
-    let WorthQueryApplicationRequestQueryDenial::ManagedIndex(cause) = refused else {
-        panic!("{refused:?}")
-    };
-    assert!(matches!(
-        cause.cause(),
-        WorthQueryManagedIndexDenialCause::Refused(WorthQueryManagedIndexRefusal::RootUnavailable)
-    ));
-    assert_eq!(
-        world::pin(host).selected_commit(),
-        selected.selected_commit()
-    );
+    drop(rows);
+    cold_index(host, rebuilt);
 }
 
 #[test]
@@ -149,7 +130,7 @@ fn a_nonempty_declared_source_reads_and_mutates_after_directory_home_reopen() {
     assert_eq!(receiving.content_reads.load(Ordering::SeqCst), 0);
     assert_eq!(receiving.exact_reads.load(Ordering::SeqCst), 0);
     assert_eq!(receiving.updates.load(Ordering::SeqCst), 0);
-    observe_cold_source(home.runtime());
+    observe_cold_source(home.runtime(), None);
     receiving.records.lock().unwrap().clear();
     assert!(matches!(
         world::edit(
@@ -179,7 +160,20 @@ fn a_nonempty_declared_source_reads_and_mutates_after_directory_home_reopen() {
 
     let last = Arc::new(Calls::default());
     let home = open(&location, &execution, last, false);
-    observe_cold_source(home.runtime());
+    // The owner's rebuild places the image at the readmitted head, which then
+    // serves reads and follows the next authored mutation.
+    observe_cold_source(home.runtime(), Some(&[]));
+    assert!(matches!(
+        world::edit(
+            home.runtime(),
+            19,
+            vec![12],
+            b"alpha".to_vec(),
+            "after-cold-rebuild"
+        ),
+        WorthQueryApplicationMutationOutcome::Committed { .. }
+    ));
+    observe_and_rebuild(home.runtime(), &["alpha"]);
     home.close(&execution)
         .unwrap_or_else(|refused| panic!("second Source reopen close: {refused:?}"));
     std::fs::remove_dir_all(location).unwrap();

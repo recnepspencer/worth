@@ -242,6 +242,29 @@ impl<C: WorthQueryOrderedCoord, const D: usize> WorthQueryAxisEnvelope<C, D> {
         Ordering::Equal
     }
 
+    /// Envelope of one row's bounds; a row without bounds (an absent
+    /// Optional endpoint) contributes [`Self::Empty`].
+    pub fn from_row_bounds(
+        bounds: Option<([C; D], [C; D])>,
+        inclusion: WorthQueryRangeInclusion,
+    ) -> Self {
+        bounds.map_or(Self::Empty, |(min, max)| {
+            Self::from_bounds(min, max, inclusion)
+        })
+    }
+
+    /// Total row order: rows without bounds first, then [`Self::lex_cmp`].
+    pub fn row_cmp(a: Option<([C; D], [C; D])>, b: Option<([C; D], [C; D])>) -> Ordering {
+        match (a, b) {
+            (None, None) => Ordering::Equal,
+            (None, Some(_)) => Ordering::Less,
+            (Some(_), None) => Ordering::Greater,
+            (Some((a_min, a_max)), Some((b_min, b_max))) => {
+                Self::lex_cmp(a_min, a_max, b_min, b_max)
+            }
+        }
+    }
+
     pub fn bounds_valid(min: [C; D], max: [C; D], inclusion: WorthQueryRangeInclusion) -> bool {
         (0..D).all(|i| inclusion.is_valid_span(min[i], max[i]))
     }

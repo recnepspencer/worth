@@ -50,11 +50,13 @@ impl<S, O, I, E> ApplicationOperationBodyCreationBuilder<S, O, I, E> {
             || !peer.program.outputs().is_empty()
             || peer.program.succession().is_some()
             || peer.program.external_emission().is_some()
+            || peer.program.effect_emission().is_some()
             || !peer.program.retirements().is_empty()
             || !peer.program.path_input_expectations().is_empty()
             || !peer.program.path_value_assignments().is_empty()
             || !peer.program.reference_inputs().is_empty()
             || peer.external_emission_recipe.is_some()
+            || peer.effect_emission_recipe.is_some()
         {
             return Err(Denial::InvalidCreationLink);
         }

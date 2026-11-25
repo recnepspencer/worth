@@ -19,6 +19,7 @@ impl ApplicationOperationBodyProgram {
             outputs: _,
             succession: _,
             external_emission: _,
+            effect_emission: _,
             values: _,
             retirements,
             path_input_expectations,

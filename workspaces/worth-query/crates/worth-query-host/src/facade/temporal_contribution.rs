@@ -21,10 +21,13 @@ pub use crate::temporal_contribution::{
     recurring_installation_denial, recurring_invocation_failure, recurring_next_occurrence,
 };
 pub use crate::temporal_contribution::{
-    WorthQueryRecurringClock, WorthQueryRecurringConfig, WorthQueryRecurringGate,
+    WorthQueryRecurringClock, WorthQueryRecurringConfig, WorthQueryRecurringFire,
+    WorthQueryRecurringFireDenial, WorthQueryRecurringFireHook, WorthQueryRecurringGate,
     WorthQueryRecurringGateBinding, WorthQueryRecurringInvoker, WorthQueryRecurringLifecycle,
     WorthQueryRecurringLifecycleBinding, WorthQueryRecurringNode, WorthQueryRecurringOccurrence,
     WorthQueryRecurringOccurrenceBinding, WorthQueryRecurringOwner, WorthQueryRecurringProjector,
     WorthQueryRecurringRow, WorthQueryRecurringRuleIdentity, WorthQueryRecurringRuleRefusal,
     WorthQueryRecurringScheduleDecision,
 };
+#[doc(hidden)]
+pub use worth_query_declaration::__worth_query_operation_access;

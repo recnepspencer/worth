@@ -68,6 +68,70 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query
         Query: ApplicationQueryMarkerIdentity<Schema>,
         Slot: WorthQueryPortableType,
     {
+        let projected = match self.disclosed_optional_projected(selector)? {
+            WorthQueryApplicationDisclosed::Disclosed(Some(projected)) => projected,
+            WorthQueryApplicationDisclosed::Disclosed(None) => {
+                return Ok(WorthQueryApplicationDisclosed::Disclosed(None));
+            }
+            WorthQueryApplicationDisclosed::Omitted(omission) => {
+                return Ok(WorthQueryApplicationDisclosed::Omitted(omission));
+            }
+        };
+        let value = self
+            .decode
+            .decode::<Field::Binding>(
+                selector.entity(),
+                selector.aspect(),
+                selector.field(),
+                projected.value(),
+            )
+            .ok_or_else(|| {
+                projection_denial(
+                    WorthQueryApplicationProjectionDenialKind::FieldTypeMismatch,
+                    projected.result_path(),
+                )
+            })?;
+        Ok(WorthQueryApplicationDisclosed::Disclosed(Some(value)))
+    }
+
+    /// The projected, undecoded Optional field of this row; `None` when the
+    /// row carries no value. A governed omission refuses as `FieldOmitted`.
+    pub fn optional_projected_field<Slot, Entity, Aspect, Field, Value>(
+        &self,
+        selector: ApplicationQueryOptionalResultFieldRef<Query, Slot, Schema, Field>,
+    ) -> Result<
+        Option<&super::WorthQueryApplicationProjectedField>,
+        WorthQueryApplicationProjectionDenial,
+    >
+    where
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
+        Query: ApplicationQueryMarkerIdentity<Schema>,
+        Slot: WorthQueryPortableType,
+    {
+        self.disclosed_optional_projected(selector)?
+            .into_required(WorthQueryApplicationProjectionDenialKind::FieldOmitted)
+    }
+
+    fn disclosed_optional_projected<Slot, Entity, Aspect, Field, Value>(
+        &self,
+        selector: ApplicationQueryOptionalResultFieldRef<Query, Slot, Schema, Field>,
+    ) -> Result<
+        WorthQueryApplicationDisclosed<Option<&super::WorthQueryApplicationProjectedField>>,
+        WorthQueryApplicationProjectionDenial,
+    >
+    where
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
+        Query: ApplicationQueryMarkerIdentity<Schema>,
+        Slot: WorthQueryPortableType,
+    {
         let slot = selector.slot_key();
         if let Some(omission) = self.omission(&slot) {
             return Ok(WorthQueryApplicationDisclosed::Omitted(omission));
@@ -87,21 +151,7 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query
                 projected.result_path(),
             ));
         }
-        let value = self
-            .decode
-            .decode::<Field::Binding>(
-                selector.entity(),
-                selector.aspect(),
-                selector.field(),
-                projected.value(),
-            )
-            .ok_or_else(|| {
-                projection_denial(
-                    WorthQueryApplicationProjectionDenialKind::FieldTypeMismatch,
-                    projected.result_path(),
-                )
-            })?;
-        Ok(WorthQueryApplicationDisclosed::Disclosed(Some(value)))
+        Ok(WorthQueryApplicationDisclosed::Disclosed(Some(projected)))
     }
 
     pub fn disclosed_optional<Slot, Relation, From, To, Direction>(

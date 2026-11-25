@@ -214,7 +214,8 @@ pub use crate::ordered_index::{
     WorthQueryInterval1DEnvelope, WorthQueryInterval1DIndex, WorthQueryInterval1DProbe,
     WorthQueryOrderedCoord, WorthQueryOrderedIndexAdapter, WorthQueryOrderedIndexDomain,
     WorthQueryOrderedIndexNode, WorthQueryOrderedIndexPredicateDomain,
-    WorthQueryOrderedIndexSources, WorthQueryOrderedPrefixOrder, WorthQueryOrderedSlotBounds,
-    WorthQueryOrderedTextOrder, WorthQueryRangeInclusion, WorthQueryStockIndexDenial,
-    WorthQueryTextPrefixDomain, WorthQueryTextPrefixIndex,
+    WorthQueryOrderedIndexSources, WorthQueryOrderedKeyField, WorthQueryOrderedPrefixOrder,
+    WorthQueryOrderedSlotBounds, WorthQueryOrderedTextKeyField, WorthQueryOrderedTextOrder,
+    WorthQueryRangeInclusion, WorthQueryStockIndexDenial, WorthQueryTextPrefixDomain,
+    WorthQueryTextPrefixIndex,
 };

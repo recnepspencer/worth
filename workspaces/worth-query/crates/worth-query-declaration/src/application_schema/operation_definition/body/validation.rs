@@ -38,6 +38,9 @@ pub(crate) fn validate_operation_bodies(
         super::path_value::validate(operation, body, members)?;
         super::reference_input::validate(operation, body, members)?;
         super::emission::validate_emission(operation, body, members)?;
+        if let Some(emission) = body.effect_emission() {
+            super::validate_effect_emission(operation, emission, members)?;
+        }
         super::value::validate_values(operation, body, members)?;
         super::output_validation::validate_outputs(operation, body, members)?;
         if !super::enrollment::valid(body) {
@@ -161,6 +164,7 @@ pub(crate) fn validate_operation_bodies(
             && body.creation().is_none()
             && body.outputs().is_empty()
             && body.external_emission().is_none()
+            && body.effect_emission().is_none()
         {
             return Err(ApplicationSchemaDeclarationDenial::program_body_dependency(
                 operation,
