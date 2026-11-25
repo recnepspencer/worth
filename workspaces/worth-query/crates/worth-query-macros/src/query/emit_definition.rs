@@ -46,12 +46,13 @@ pub(super) fn definition_builder(
     let aschema = quote!(#decl::application_schema);
     let (schema_alias, result_alias, root_alias) =
         (&names.schema_alias, &names.result_alias, &names.root_alias);
-    let (shape_local, builder_local, clauses_local, related_local, encode_lit_fn) = (
+    let (shape_local, builder_local, clauses_local, related_local, encode_lit_fn, lit_bind_local) = (
         &names.shape_local,
         &names.builder_local,
         &names.clauses_local,
         &names.related_local,
         &names.encode_lit_fn,
+        &names.lit_bind_local,
     );
 
     let param_val = quote!(
@@ -129,6 +130,7 @@ pub(super) fn definition_builder(
     partition_predicates(
         &def.predicates,
         encode_lit_fn,
+        lit_bind_local,
         &mut structured_eq_steps,
         &mut filter_predicates,
     );
@@ -137,6 +139,7 @@ pub(super) fn definition_builder(
         builder_local,
         clauses_local,
         encode_lit_fn,
+        lit_bind_local,
         root_alias,
         &aq,
     );
@@ -150,6 +153,7 @@ pub(super) fn definition_builder(
                 related_local,
                 clauses_local,
                 encode_lit_fn,
+                lit_bind_local,
                 &aq,
             )
         })
@@ -198,12 +202,27 @@ pub(super) fn definition_builder(
                 .flat_map(|r| &r.target_predicates),
         )
         .any(|p| matches!(p.rhs, PredicateRhs::Literal(_)));
-    let (lit_field_ty, lit_val_ty, lit_val_local) =
-        (&names.lit_field_ty, &names.lit_val_ty, &names.lit_val_local);
+    let (same_ty_trait, lit_field_ty, lit_val_ty, lit_val_local) = (
+        &names.same_ty_trait,
+        &names.lit_field_ty,
+        &names.lit_val_ty,
+        &names.lit_val_local,
+    );
     let encode_lit_def = has_literal.then(|| {
         quote! {
             #[allow(dead_code, non_snake_case)]
             fn #lit_val_local() {}
+
+            #[allow(dead_code)]
+            trait #same_ty_trait<__WorthOther> {
+                fn __worth_exact(self) -> __WorthOther;
+            }
+
+            impl<__WorthT> #same_ty_trait<__WorthT> for __WorthT {
+                fn __worth_exact(self) -> __WorthT {
+                    self
+                }
+            }
 
             #[allow(dead_code)]
             fn #encode_lit_fn<#lit_field_ty, #lit_val_ty>(
@@ -215,9 +234,12 @@ pub(super) fn definition_builder(
             >
             where
                 #lit_field_ty: #frag::RecordSelection,
-                #lit_field_ty::Binding: #aschema::ApplicationReadableScalarValueBinding<Value = #lit_val_ty>,
+                #lit_field_ty::Binding: #aschema::ApplicationReadableScalarValueBinding,
+                #lit_val_ty: #same_ty_trait<<<#lit_field_ty as #frag::RecordSelection>::Binding as #aschema::ApplicationScalarValueBinding>::Value>,
             {
-                #aschema::ApplicationEncodedScalarValue::<<#lit_field_ty as #frag::RecordSelection>::Binding>::try_new(#lit_val_local)
+                #aschema::ApplicationEncodedScalarValue::<<#lit_field_ty as #frag::RecordSelection>::Binding>::try_new(
+                    <#lit_val_ty as #same_ty_trait<_>>::__worth_exact(#lit_val_local),
+                )
             }
         }
     });
@@ -238,6 +260,8 @@ pub(super) fn definition_builder(
                 fn #clauses_local() {}
                 #[allow(dead_code, non_snake_case)]
                 fn #related_local() {}
+                #[allow(dead_code, non_snake_case)]
+                fn #lit_bind_local() {}
 
                 impl #query {
                     #default_definition

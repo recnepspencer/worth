@@ -164,20 +164,29 @@ where
         let principal = principal.borrow();
         let graph = self.primary_graph();
         let mut head_slot = Some(head);
-        let attached = graph.with_application_advancement(scope, |phase| {
-            let head = head_slot.take().expect("advancement runs once");
-            let request = graph.request(principal, scope).on_branch(head.branch());
-            match request.attach_owned_history::<H, Program>(self.runtime(), &phase, head, access) {
-                Ok(document) => Ok(document),
-                Err(failure) => {
-                    let (head, denial) = failure.into_parts();
-                    Err(WorthQueryHomeOwnedHistoryDenial::Attachment {
-                        denial,
-                        head: Box::new(head),
-                    })
+        let attached = graph.with_funded_application_completion(
+            scope,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            |phase| {
+                let head = head_slot.take().expect("advancement runs once");
+                let request = graph.request(principal, scope).on_branch(head.branch());
+                match request.attach_owned_history::<H, Program>(
+                    self.runtime(),
+                    &phase,
+                    head,
+                    access,
+                ) {
+                    Ok(document) => Ok(document),
+                    Err(failure) => {
+                        let (head, denial) = failure.into_parts();
+                        Err(WorthQueryHomeOwnedHistoryDenial::Attachment {
+                            denial,
+                            head: Box::new(head),
+                        })
+                    }
                 }
-            }
-        });
+            },
+        );
         match attached {
             Ok(result) => result,
             Err(denial) => match head_slot.take() {

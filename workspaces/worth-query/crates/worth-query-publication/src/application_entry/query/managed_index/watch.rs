@@ -107,6 +107,42 @@ where
         finish_next(advancement, completed)
     }
 
+    /// Refreshes the whole Parent for the next notification under an explicit
+    /// allocation policy while preserving any `Delivered` update after ACK.
+    pub fn next_watch_with_allocation<I: ApplicationManagedIndexBinding<Schema>>(
+        self,
+        watch: &mut WorthQueryManagedIndexWatch<Schema, I>,
+        allocation_policy: worth_query_execution::facade::runtime::ExecutionAllocationPolicy<
+            '_,
+            '_,
+        >,
+    ) -> Result<
+        WorthQueryManagedIndexWatchOutcome<
+            Query<Schema, Intent::Binding>,
+            Row<Schema, Intent::Binding>,
+        >,
+        WorthQueryApplicationRequestQueryDenial,
+    >
+    where
+        <Intent::Binding as ApplicationQueryBinding<Schema>>::ScopeBinding:
+            ApplicationQueryScopeResolution<
+                Schema,
+                <Intent::Binding as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
+            >,
+        Row<Schema, Intent::Binding>:
+            WorthQueryApplicationProjection<Schema, Query<Schema, Intent::Binding>>,
+    {
+        let application = self.application;
+        let request = self.scope;
+        let mut completed = None;
+        let advancement = application
+            .with_funded_application_advancement(request, allocation_policy, |phase| {
+                completed = Some(self.next_watch_in_advancement::<I>(&phase, watch));
+            })
+            .map_err(WorthQueryApplicationRequestQueryDenial::ExecutionRequest);
+        finish_next(advancement, completed)
+    }
+
     /// Borrowed-phase counterpart to [`Self::next_watch`].
     pub fn next_watch_in_advancement<I: ApplicationManagedIndexBinding<Schema>>(
         self,

@@ -25,9 +25,11 @@ pub(super) struct HygienicNames {
     pub(super) clauses_local: Ident,
     pub(super) related_local: Ident,
     pub(super) encode_lit_fn: Ident,
+    pub(super) same_ty_trait: Ident,
     pub(super) lit_field_ty: Ident,
     pub(super) lit_val_ty: Ident,
     pub(super) lit_val_local: Ident,
+    pub(super) lit_bind_local: Ident,
 }
 
 impl HygienicNames {
@@ -48,9 +50,11 @@ impl HygienicNames {
             clauses_local: fresh_ident("__worth_query_clauses", mixed, &mut used),
             related_local: fresh_ident("__worth_query_related", mixed, &mut used),
             encode_lit_fn: fresh_ident("__worth_query_encode_lit", mixed, &mut used),
+            same_ty_trait: fresh_ident("__WorthQueryExactLitType", mixed, &mut used),
             lit_field_ty: fresh_ident("__WorthQueryLitField", mixed, &mut used),
             lit_val_ty: fresh_ident("__WorthQueryLitValue", mixed, &mut used),
             lit_val_local: fresh_ident("__worth_query_lit_value", mixed, &mut used),
+            lit_bind_local: fresh_ident("__worth_query_lit_bind", mixed, &mut used),
         }
     }
 }

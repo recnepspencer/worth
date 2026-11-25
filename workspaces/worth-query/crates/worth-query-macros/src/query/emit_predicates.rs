@@ -10,6 +10,7 @@ use syn::{Expr, Ident, Lit};
 pub(super) fn partition_predicates<'a>(
     predicates: &'a [QueryPredicate],
     encode_lit_fn: &Ident,
+    lit_bind_local: &Ident,
     eq_steps: &mut Vec<TokenStream>,
     filter_preds: &mut Vec<&'a QueryPredicate>,
 ) {
@@ -27,7 +28,10 @@ pub(super) fn partition_predicates<'a>(
                 PredicateRhs::Literal(expr) => {
                     let field = &pred.field;
                     let lit = literal_value_expr(expr);
-                    eq_steps.push(quote_spanned!(pred.span=> .try_where_equal_value(#field, #encode_lit_fn(&(#field), #lit))));
+                    eq_steps.push(quote_spanned!(pred.span=> .try_where_equal_value(#field, {
+                        let #lit_bind_local = #lit;
+                        #encode_lit_fn(&(#field), #lit_bind_local)
+                    })));
                 }
                 PredicateRhs::Parameter { optional: true, .. } => filter_preds.push(pred),
             }
@@ -42,6 +46,7 @@ pub(super) fn emit_filter_block(
     target_local: &Ident,
     clauses_local: &Ident,
     encode_lit_fn: &Ident,
+    lit_bind_local: &Ident,
     root_alias: &Ident,
     aq: &TokenStream,
 ) -> TokenStream {
@@ -50,7 +55,7 @@ pub(super) fn emit_filter_block(
     }
     let clause_calls = filter_preds
         .iter()
-        .map(|pred| emit_clause_call(pred, clauses_local, encode_lit_fn, aq));
+        .map(|pred| emit_clause_call(pred, clauses_local, encode_lit_fn, lit_bind_local, aq));
     quote! {
         let mut #clauses_local = #aq::ApplicationQueryWhereFilterClauses::<Self, #root_alias>::new();
         #(#clause_calls)*
@@ -64,6 +69,7 @@ pub(super) fn emit_related_predicate(
     related_local: &Ident,
     clauses_local: &Ident,
     encode_lit_fn: &Ident,
+    lit_bind_local: &Ident,
     aq: &TokenStream,
 ) -> TokenStream {
     let relation = &rel.relation;
@@ -80,6 +86,7 @@ pub(super) fn emit_related_predicate(
     partition_predicates(
         &rel.target_predicates,
         encode_lit_fn,
+        lit_bind_local,
         &mut eq_steps,
         &mut filter_preds,
     );
@@ -88,7 +95,7 @@ pub(super) fn emit_related_predicate(
     } else {
         let clause_calls = filter_preds
             .iter()
-            .map(|pred| emit_clause_call(pred, clauses_local, encode_lit_fn, aq));
+            .map(|pred| emit_clause_call(pred, clauses_local, encode_lit_fn, lit_bind_local, aq));
         quote! {
             let mut #clauses_local = #aq::ApplicationQueryWhereFilterClauses::<Self, _>::new();
             #(#clause_calls)*
@@ -107,6 +114,7 @@ fn emit_clause_call(
     pred: &QueryPredicate,
     clauses_local: &Ident,
     encode_lit_fn: &Ident,
+    lit_bind_local: &Ident,
     aq: &TokenStream,
 ) -> TokenStream {
     let field = &pred.field;
@@ -125,7 +133,10 @@ fn emit_clause_call(
                 #clauses_local = #clauses_local.and_compare_literal(
                     #aq::ApplicationQueryComparisonOp::#op_ident,
                     #field,
-                    #encode_lit_fn(&(#field), #lit),
+                    {
+                        let #lit_bind_local = #lit;
+                        #encode_lit_fn(&(#field), #lit_bind_local)
+                    },
                 );
             }
         }

@@ -69,6 +69,9 @@ worth_query_application_program! {
             body_action(ProbeOccupiedTaskStateBinding, ProbeOccupiedTaskStateDelivery) as ProbeOccupiedTaskStateAction {
                 operation: probe_occupied_task_state_definition();
             };
+            body_action(ExhaustedKeyTaskStateBinding, ExhaustedKeyTaskStateDelivery) as ExhaustedKeyTaskStateAction {
+                operation: exhausted_key_task_state_definition();
+            };
             body_action_ref(RestoreTaskStateBinding, RestoreTaskStateDelivery) as RestoreTaskStateAction {};
             body_action_ref(SetTaskStateBinding, SetTaskStateDelivery) as SetTaskStateAction {};
         }

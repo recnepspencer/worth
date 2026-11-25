@@ -1,5 +1,6 @@
-//! One-shot mutation and query execution methods on [`WorthQueryHostSession`],
-//! enforcing the session's configured [`ExecutionRequestPolicy`] on every lane.
+//! One-shot mutation execution methods on [`WorthQueryHostSession`], charging
+//! seed reads and occupied-key probes cumulatively against one metered request
+//! and never retrying a recovered commit of the current attempt.
 use worth_execution::ExecutionAllocationPolicy;
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityRequest,
@@ -12,10 +13,11 @@ use worth_query_declaration::facade::{
     application_schema::ApplicationSchema,
 };
 use worth_query_publication::facade::application_entry::{
-    WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestMutationDenial,
+    WorthQueryApplicationMutationOutcome, WorthQueryApplicationProgramMutationPreparation,
+    WorthQueryApplicationRequestMutationDenial,
 };
 
-use super::auto_key::{durable_branch_seed, DurableSeedDenial, MAX_AUTO_KEY_PROBES};
+use super::auto_key::{durable_branch_seed_in_advancement, MAX_AUTO_KEY_PROBES};
 use super::{
     WorthQueryAutoIdempotencyKey, WorthQueryHostSession, WorthQuerySessionCommit,
     WorthQuerySessionRunDenial,
@@ -52,23 +54,15 @@ fn map_mutation_outcome<D, R>(
     }
 }
 
-fn map_seed_denial<D>(denial: DurableSeedDenial) -> WorthQuerySessionRunDenial<D> {
-    match denial {
-        DurableSeedDenial::Advancement(cause) => WorthQuerySessionRunDenial::Request(
-            WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause),
-        ),
-        DurableSeedDenial::Selection(cause) => WorthQuerySessionRunDenial::Request(
-            WorthQueryApplicationRequestMutationDenial::ProductSelection(cause),
-        ),
-    }
-}
-
-fn is_occupied_key<D>(denial: &WorthQuerySessionRunDenial<D>) -> bool {
+/// Only pre-submission settlement (from `prepare` before `commit` runs) proves
+/// an existing prior entry owns the key; `RecoveredCommitted` after `commit` is
+/// NEVER treated as an occupied collision to retry.
+fn is_pre_submission_occupied<D, R>(outcome: &WorthQueryApplicationMutationOutcome<D, R>) -> bool {
     matches!(
-        denial,
-        WorthQuerySessionRunDenial::AlreadyCommitted(_)
-            | WorthQuerySessionRunDenial::RecoveredCommitted(_)
-            | WorthQuerySessionRunDenial::IdempotencyIntentDrift
+        outcome,
+        WorthQueryApplicationMutationOutcome::AlreadyCommitted(_)
+            | WorthQueryApplicationMutationOutcome::RecoveredCommitted(_)
+            | WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift
     )
 }
 
@@ -78,7 +72,8 @@ where
     Program: ApplicationProgramDefinition<Schema>,
 {
     /// Runs a sourceless program mutation with a deterministic, restart-safe
-    /// auto idempotency key derived from the branch's durable committed head.
+    /// auto idempotency key derived from canonical durable branch state,
+    /// charging cumulative work across seed read and probes to one request.
     pub fn run<Intent>(
         &self,
         intent: Intent,
@@ -100,23 +95,72 @@ where
             >,
     {
         let scope = self.fresh_scope();
-        let seed = durable_branch_seed(self.home.primary_graph(), self.branch, self.policy, &scope)
-            .map_err(map_seed_denial)?;
-        let mut last_occupied = None;
-        for probe in 0..MAX_AUTO_KEY_PROBES {
-            let key =
-                <Intent::Binding as ApplicationMutationBinding<Schema>>::IdempotencyKey::derive_auto_key(
-                    seed, probe,
-                );
-            match self.run_with_key(intent.clone(), &key) {
-                Ok(committed) => return Ok(committed),
-                Err(denial) if is_occupied_key(&denial) => {
-                    last_occupied = Some(denial);
+        let lease = self.open_lease(&scope).map_err(|cause| {
+            WorthQuerySessionRunDenial::Request(
+                WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause),
+            )
+        })?;
+        let allocation = ExecutionAllocationPolicy::Execution(&lease);
+        let graph = self.home.primary_graph();
+        graph
+            .with_funded_application_completion(&scope, allocation, |phase| {
+                let seed =
+                    durable_branch_seed_in_advancement(graph, self.branch, &phase).map_err(
+                        |cause| {
+                            WorthQuerySessionRunDenial::Request(
+                                WorthQueryApplicationRequestMutationDenial::ProductSelection(cause),
+                            )
+                        },
+                    )?;
+                let request = self.request(&scope);
+                for probe in 0..MAX_AUTO_KEY_PROBES {
+                    let key =
+                        <Intent::Binding as ApplicationMutationBinding<Schema>>::IdempotencyKey::derive_auto_key(
+                            seed, probe,
+                        );
+                    let mut staged = request
+                        .advanced()
+                        .mutate(intent.clone())
+                        .without_source()
+                        .idempotency(&key);
+                    let prepared = staged
+                        .prepare_in_program_report_in_advancement(
+                            &phase,
+                            self.home.runtime(),
+                            allocation,
+                        )
+                        .into_outcome()
+                        .map_err(WorthQuerySessionRunDenial::Request)?;
+                    match prepared {
+                        WorthQueryApplicationProgramMutationPreparation::Settled(outcome)
+                            if is_pre_submission_occupied(&outcome) =>
+                        {
+                            continue;
+                        }
+                        WorthQueryApplicationProgramMutationPreparation::Settled(outcome) => {
+                            return map_mutation_outcome(outcome);
+                        }
+                        WorthQueryApplicationProgramMutationPreparation::Prepared(candidate) => {
+                            let committed = candidate
+                                .commit_report_in_advancement(&phase, allocation)
+                                .into_outcome();
+                            if matches!(
+                                committed,
+                                WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift
+                            ) {
+                                continue;
+                            }
+                            return map_mutation_outcome(committed);
+                        }
+                    }
                 }
-                Err(other) => return Err(other),
-            }
-        }
-        Err(last_occupied.expect("probe loop ran at least once"))
+                Err(WorthQuerySessionRunDenial::AutoIdempotencyKeysExhausted)
+            })
+            .map_err(|cause| {
+                WorthQuerySessionRunDenial::Request(
+                    WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause),
+                )
+            })?
     }
 
     /// Runs a sourceless program mutation with an explicit caller idempotency key.
@@ -160,7 +204,7 @@ where
     }
 
     /// Runs a capability-governed sourceless program mutation with a
-    /// deterministic, restart-safe auto idempotency key.
+    /// deterministic, restart-safe auto idempotency key under one metered request.
     pub fn run_governed<Intent>(
         &self,
         intent: Intent,
@@ -193,23 +237,71 @@ where
             >,
 {
         let scope = self.fresh_scope();
-        let seed = durable_branch_seed(self.home.primary_graph(), self.branch, self.policy, &scope)
-            .map_err(map_seed_denial)?;
-        let mut last_occupied = None;
-        for probe in 0..MAX_AUTO_KEY_PROBES {
-            let key =
-                <Intent::Binding as ApplicationMutationBinding<Schema>>::IdempotencyKey::derive_auto_key(
-                    seed, probe,
-                );
-            match self.run_governed_with_key(intent.clone(), &key) {
-                Ok(committed) => return Ok(committed),
-                Err(denial) if is_occupied_key(&denial) => {
-                    last_occupied = Some(denial);
+        let lease = self.open_lease(&scope).map_err(|cause| {
+            WorthQuerySessionRunDenial::Request(
+                WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause),
+            )
+        })?;
+        let allocation = ExecutionAllocationPolicy::Execution(&lease);
+        let graph = self.home.primary_graph();
+        graph
+            .with_funded_application_completion(&scope, allocation, |phase| {
+                let seed =
+                    durable_branch_seed_in_advancement(graph, self.branch, &phase).map_err(
+                        |cause| {
+                            WorthQuerySessionRunDenial::Request(
+                                WorthQueryApplicationRequestMutationDenial::ProductSelection(cause),
+                            )
+                        },
+                    )?;
+                let request = self.request(&scope);
+                for probe in 0..MAX_AUTO_KEY_PROBES {
+                    let key =
+                        <Intent::Binding as ApplicationMutationBinding<Schema>>::IdempotencyKey::derive_auto_key(
+                            seed, probe,
+                        );
+                    let mut staged = request
+                        .advanced()
+                        .mutate(intent.clone())
+                        .without_source()
+                        .idempotency(&key);
+                    let prepared = staged
+                        .prepare_capability_in_program_in_advancement(
+                            &phase,
+                            self.home.runtime(),
+                            allocation,
+                        )
+                        .map_err(WorthQuerySessionRunDenial::Request)?;
+                    match prepared {
+                        WorthQueryApplicationProgramMutationPreparation::Settled(outcome)
+                            if is_pre_submission_occupied(&outcome) =>
+                        {
+                            continue;
+                        }
+                        WorthQueryApplicationProgramMutationPreparation::Settled(outcome) => {
+                            return map_mutation_outcome(outcome);
+                        }
+                        WorthQueryApplicationProgramMutationPreparation::Prepared(candidate) => {
+                            let committed = candidate
+                                .commit_report_in_advancement(&phase, allocation)
+                                .into_outcome();
+                            if matches!(
+                                committed,
+                                WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift
+                            ) {
+                                continue;
+                            }
+                            return map_mutation_outcome(committed);
+                        }
+                    }
                 }
-                Err(other) => return Err(other),
-            }
-        }
-        Err(last_occupied.expect("probe loop ran at least once"))
+                Err(WorthQuerySessionRunDenial::AutoIdempotencyKeysExhausted)
+            })
+            .map_err(|cause| {
+                WorthQuerySessionRunDenial::Request(
+                    WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause),
+                )
+            })?
     }
 
     /// Runs a capability-governed sourceless program mutation with an explicit key.

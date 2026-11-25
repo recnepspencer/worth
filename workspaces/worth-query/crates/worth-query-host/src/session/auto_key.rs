@@ -1,11 +1,12 @@
-//! Deterministic, restart-safe auto idempotency key derivation rooted in
-//! durable branch state rather than wall-clock timestamps.
+//! Deterministic, restart-safe auto idempotency key derivation rooted purely
+//! in canonical durable branch and commit identity components (never process
+//! owner ordinals, live incarnation fences, or wall-clock samples).
 use sha2::{Digest, Sha256};
 use worth_foundational::facade::ExecutionRequestPolicy;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_query_execution::facade::{
-    application_contribution::WorthQueryAdvancementDenial,
+    application_contribution::{WorthQueryAdvancementDenial, WorthQueryAdvancementPhase},
     primary_graph::{
         WorthQueryPrimaryGraphApplicationRuntime, WorthQueryProductBranchAdmissionDenial,
     },
@@ -13,14 +14,16 @@ use worth_query_execution::facade::{
 };
 
 /// Maximum deterministic probes when skipping already-occupied keys.
-pub(crate) const MAX_AUTO_KEY_PROBES: u64 = 1024;
+/// Bounded so cumulative probing inside one metered request exhausts cleanly
+/// into `AutoIdempotencyKeysExhausted` within the default host work ceiling.
+pub(crate) const MAX_AUTO_KEY_PROBES: u64 = 64;
 
 /// Deterministic restart-safe auto idempotency key derivation for
 /// [`WorthQueryHostSession::run`](super::WorthQueryHostSession::run).
 ///
-/// Keys are derived from the target branch's durable committed head identity
-/// plus a deterministic probe index, never from wall-clock samples, and
-/// callers skip any already-occupied key cleanly without side effects.
+/// Keys are derived from canonical durable branch and commit coordinates plus
+/// a deterministic probe index, never from wall-clock samples or live process
+/// owner/incarnation fences.
 pub trait WorthQueryAutoIdempotencyKey: Sized {
     fn derive_auto_key(seed: [u8; 32], probe: u64) -> Self;
 }
@@ -87,28 +90,44 @@ pub(crate) enum DurableSeedDenial {
     Selection(WorthQueryProductBranchAdmissionDenial),
 }
 
-/// Derives a deterministic 32-byte seed from the target branch's durable
-/// committed head identity under the caller's execution policy.
+/// Computes the canonical 32-byte seed purely from durable branch/commit
+/// components — never hashing process owner ordinals, live incarnation fences,
+/// or `Debug` formatting.
+pub(crate) fn durable_branch_seed_in_advancement<Schema: ApplicationSchema>(
+    graph: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    branch: WorthQueryProductBranch,
+    phase: &WorthQueryAdvancementPhase<'_>,
+) -> Result<[u8; 32], WorthQueryProductBranchAdmissionDenial> {
+    let selected = graph.on_branch(branch).select(phase)?;
+    let product = selected.product();
+    let branch_name = product.branch_identity().name().as_str();
+    let lifecycle_ordinal = product.lifecycle_incarnation().ordinal();
+    let reference_generation = product.reference_generation().get();
+    let commit_ordinal = product.selected_commit().ordinal();
+
+    let mut hasher = Sha256::new();
+    hasher.update(b"worth.durable-branch-seed.v2");
+    hasher.update((branch_name.len() as u64).to_le_bytes());
+    hasher.update(branch_name.as_bytes());
+    hasher.update(lifecycle_ordinal.to_le_bytes());
+    hasher.update(reference_generation.to_le_bytes());
+    hasher.update(commit_ordinal.to_le_bytes());
+    let digest = hasher.finalize();
+    let mut out = [0u8; 32];
+    out.copy_from_slice(&digest);
+    Ok(out)
+}
+
+/// Derives the canonical durable branch seed under the caller's execution policy.
 pub(crate) fn durable_branch_seed<Schema: ApplicationSchema>(
     graph: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     branch: WorthQueryProductBranch,
     policy: ExecutionRequestPolicy,
     scope: &WorthQueryRequestScope,
 ) -> Result<[u8; 32], DurableSeedDenial> {
-    let selected_digest = super::lease::with_policy_advancement(graph, policy, scope, |phase| {
-        let selected = graph
-            .on_branch(branch)
-            .select(&phase)
-            .map_err(DurableSeedDenial::Selection)?;
-        let mut hasher = Sha256::new();
-        hasher.update(b"worth.durable-branch-seed.v1");
-        hasher.update(format!("{:?}", selected.product().branch_identity()).as_bytes());
-        hasher.update(format!("{:?}", selected.product().selected_commit()).as_bytes());
-        let digest = hasher.finalize();
-        let mut out = [0u8; 32];
-        out.copy_from_slice(&digest);
-        Ok(out)
+    super::lease::with_policy_advancement(graph, policy, scope, |phase| {
+        durable_branch_seed_in_advancement(graph, branch, &phase)
+            .map_err(DurableSeedDenial::Selection)
     })
-    .map_err(DurableSeedDenial::Advancement)?;
-    selected_digest
+    .map_err(DurableSeedDenial::Advancement)?
 }

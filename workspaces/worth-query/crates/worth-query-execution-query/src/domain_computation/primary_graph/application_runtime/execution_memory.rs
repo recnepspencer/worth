@@ -44,4 +44,23 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .request_lease(request)
             .map_err(WorthQueryExecutionLeaseDenial::Lease)
     }
+
+    /// Reads the World's installed execution policy (serial or leased) so host
+    /// session wrappers never exceed installed serial ceilings.
+    pub fn installed_execution_policy(
+        &self,
+    ) -> Option<worth_foundational::facade::ExecutionRequestPolicy> {
+        self.runtime
+            .product_runtime
+            .owner_ref()
+            .publication_port()
+            .with_execution_placement(|placement| match placement {
+                worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
+                | worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased {
+                    policy,
+                    ..
+                } => policy,
+            })
+            .ok()
+    }
 }

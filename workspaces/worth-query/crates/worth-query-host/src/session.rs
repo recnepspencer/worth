@@ -33,9 +33,7 @@ use worth_query_publication::facade::application_entry::{
     WorthQueryApplicationRequestMutationDenial,
 };
 
-use crate::application_home::{
-    WorthQueryApplicationHome, WorthQueryCorrectionEntry, DEFAULT_HOST_EXECUTION_POLICY,
-};
+use crate::application_home::{WorthQueryApplicationHome, WorthQueryCorrectionEntry};
 
 pub(crate) mod auto_key;
 mod execution;
@@ -101,6 +99,8 @@ pub enum WorthQuerySessionRunDenial<DomainDenial> {
     AlreadyCommitted(WorthQueryApplicationCommitReceipt),
     RecoveredCommitted(WorthQueryRecoveredApplicationCommitReceipt),
     IdempotencyIntentDrift,
+    /// All bounded deterministic auto-idempotency probe slots were already occupied.
+    AutoIdempotencyKeysExhausted,
     Cancelled,
     DeadlineExceeded,
     Uncommitted(WorthQueryApplicationUncommitted),
@@ -151,12 +151,14 @@ impl<Schema: ApplicationSchema, Program> WorthQueryApplicationHome<Schema, Progr
     ) -> WorthQueryHostSession<'home, Schema, Program> {
         let principal = principal.borrow().clone();
         let clock = principal.clock().clone();
+        let policy =
+            lease::default_session_policy(self.primary_graph().installed_execution_policy());
         WorthQueryHostSession {
             home: self,
             principal,
             branch: self.active_branch(),
             clock,
-            policy: DEFAULT_HOST_EXECUTION_POLICY,
+            policy,
             deadline: None,
             cancellation: None,
             live_buffer_capacity: DEFAULT_LIVE_BUFFER_CAPACITY,

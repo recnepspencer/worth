@@ -24,14 +24,91 @@ pub const CORRECT_STATE_NS: ApplicationIdentityNamespace =
     worth_query_identity_namespace!("daymark.unified.correct-state.v1");
 pub const PROBE_KEY_NS: ApplicationIdentityNamespace =
     worth_query_identity_namespace!("daymark.unified.probe-occupied-key.v1");
+pub const EXHAUST_KEY_NS: ApplicationIdentityNamespace =
+    worth_query_identity_namespace!("daymark.unified.exhaust-auto-key.v1");
+
+static LAST_CAPTURED_SEED: std::sync::Mutex<Option<[u8; 32]>> = std::sync::Mutex::new(None);
+
+pub fn take_captured_auto_key_seed() -> Option<[u8; 32]> {
+    LAST_CAPTURED_SEED
+        .lock()
+        .unwrap_or_else(|p| p.into_inner())
+        .take()
+}
 
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct SequencedAutoKey(pub u64);
 
 impl worth_query_host::facade::WorthQueryAutoIdempotencyKey for SequencedAutoKey {
-    fn derive_auto_key(_seed: [u8; 32], probe: u64) -> Self {
+    fn derive_auto_key(seed: [u8; 32], probe: u64) -> Self {
+        if probe == 0 {
+            *LAST_CAPTURED_SEED.lock().unwrap_or_else(|p| p.into_inner()) = Some(seed);
+        }
         Self(probe + 1)
     }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
+pub struct ConstantAutoKey(pub u64);
+
+impl worth_query_host::facade::WorthQueryAutoIdempotencyKey for ConstantAutoKey {
+    fn derive_auto_key(_seed: [u8; 32], _probe: u64) -> Self {
+        Self(1)
+    }
+}
+
+pub struct ConstantKeyContext;
+impl ApplicationBindingContext<DaymarkSchema> for ConstantKeyContext {
+    type PrincipalBinding = DaymarkPrincipal;
+    type Mapping = ExternalMapping;
+    type Principal = Principal;
+    type PrincipalIdentity = u64;
+    type PrincipalIdentityBinding = U64ApplicationValueBinding;
+    type IdempotencyKey = ConstantAutoKey;
+    type DenialBinding = BodyDenialBinding;
+    const IDEMPOTENCY_IDENTITY: &'static str =
+        worth_query_decl::facade::worth_query_identity!(EXHAUST_KEY_NS, idempotency);
+    fn principal_binding() -> ApplicationPrincipalBindingRef<
+        DaymarkSchema,
+        DaymarkPrincipal,
+        ExternalMapping,
+        Principal,
+        u64,
+        U64ApplicationValueBinding,
+    > {
+        DaymarkPrincipal::reference()
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, WorthValue, WorthQueryAction)]
+#[worth_query(
+    schema = DaymarkSchema,
+    context = ConstantKeyContext,
+    namespace = EXHAUST_KEY_NS,
+    input = ExhaustedKeyTaskStateInput,
+    operation = ExhaustedKeyTaskStateOperation,
+    binding = ExhaustedKeyTaskStateBinding,
+    delivery = ExhaustedKeyTaskStateDelivery,
+    body,
+    program,
+    reads(Task),
+)]
+pub struct ExhaustedKeyTaskState {
+    #[worth_query(scope = TaskKey)]
+    pub task: u64,
+    pub state: String,
+}
+
+pub fn exhausted_key_task_state_definition() -> ApplicationOperationDefinition<
+    DaymarkSchema,
+    ExhaustedKeyTaskStateOperation,
+    ExhaustedKeyTaskState,
+> {
+    ExhaustedKeyTaskStateOperation::reference()
+        .typed_body()
+        .assign_input(TaskFacts::state(), ExhaustedKeyTaskState::state_input())
+        .finish_pure_definition()
+        .expect("exhausted_key_task_state body admits")
 }
 
 pub struct SequencedKeyContext;

@@ -90,25 +90,29 @@ where
     ) -> Result<Option<&[QueryRow<Schema, Intent>]>, WorthQueryTypedManagedIndexRefreshDenial> {
         use WorthQueryTypedManagedIndexRefreshDenial as Denial;
         let scope = session.fresh_scope();
+        let lease = match session.open_lease(&scope) {
+            Ok(lease) => lease,
+            Err(advancement_denial) => {
+                self.invalidate();
+                return Err(Denial::Query(
+                    WorthQueryApplicationRequestQueryDenial::ExecutionRequest(advancement_denial),
+                ));
+            }
+        };
         let fresh_request = session.request(&scope);
         let query_req = fresh_request.query(self.intent.clone());
         let query_req = match self.result_limit {
             Some(limit) => query_req.limit_results(limit),
             None => query_req,
         };
-        let outcome = match session.with_funded_advancement(&scope, |phase| {
-            query_req.next_watch_in_advancement(&phase, &mut self.watch)
-        }) {
-            Ok(Ok(outcome)) => outcome,
-            Ok(Err(query_denial)) => {
+        let outcome = match query_req.next_watch_with_allocation(
+            &mut self.watch,
+            worth_execution::ExecutionAllocationPolicy::Execution(&lease),
+        ) {
+            Ok(outcome) => outcome,
+            Err(query_denial) => {
                 self.invalidate();
                 return Err(Denial::Query(query_denial));
-            }
-            Err(advancement_denial) => {
-                self.invalidate();
-                return Err(Denial::Query(
-                    WorthQueryApplicationRequestQueryDenial::ExecutionRequest(advancement_denial),
-                ));
             }
         };
         self.apply_outcome(outcome)

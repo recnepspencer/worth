@@ -126,6 +126,8 @@ mod hygiene_collision {
         pub state: String,
         #[worth_query(equality)]
         pub priority: u64,
+        pub row: String,
+        pub value: u64,
     }
 
     pub struct HygPrincipal;

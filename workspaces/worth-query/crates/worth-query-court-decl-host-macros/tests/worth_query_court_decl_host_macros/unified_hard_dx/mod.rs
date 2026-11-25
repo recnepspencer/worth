@@ -11,3 +11,5 @@ mod sol_round1_custody_and_key_courts;
 mod sol_round1_hygiene_court;
 mod sol_round1_policy_and_live_courts;
 mod sol_round1_predicate_refusal_court;
+mod sol_round2_durable_key_courts;
+mod sol_round2_policy_and_custody_courts;

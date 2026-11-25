@@ -16,8 +16,15 @@ pub(super) fn record(input: &DeriveInput, record: &RecordDeclaration) -> TokenSt
         ..
     } = record;
     let shape = shape(row, &record.columns);
-    let members = record.columns.iter().map(|column| &column.member);
-    let constructor_members = members.clone();
+    let members: Vec<_> = record.columns.iter().map(|column| &column.member).collect();
+    let binders: Vec<_> = (0..members.len())
+        .map(|index| {
+            syn::Ident::new(
+                &format!("__worth_record_field_{index}"),
+                proc_macro2::Span::mixed_site(),
+            )
+        })
+        .collect();
     let selections = selections(input, record);
     quote! {
         #vis struct #aspect;
@@ -30,9 +37,9 @@ pub(super) fn record(input: &DeriveInput, record: &RecordDeclaration) -> TokenSt
         #[allow(clippy::clone_on_copy, non_snake_case)]
         impl #frag::Record<#row> for #bindings {
             fn record() -> impl #frag::Shape<#row, Self> {
-                #shape.build(|#(#members,)* _: &mut <Self as #frag::BindingSet>::Work<'_>| {
+                #shape.build(|#(#binders,)* _: &mut <Self as #frag::BindingSet>::Work<'_>| {
                     ::core::result::Result::Ok::<_, ::core::convert::Infallible>(
-                        #row { #(#constructor_members,)* },
+                        #row { #(#members: #binders,)* },
                     )
                 })
             }
