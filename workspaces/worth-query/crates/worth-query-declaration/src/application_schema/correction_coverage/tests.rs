@@ -3,7 +3,8 @@
 use super::*;
 use crate::application_aftermath::{
     DeclaredAftermathPostcondition, DeclaredCorrectionAuthority, DeclaredLoweringCorrespondenceRef,
-    PortableApplicationAftermathContract, PortablePreImageDemand, PortableRecordedInverse,
+    DeclaredPreImageDemandDenial, PortableApplicationAftermathContract, PortablePreImageDemand,
+    PortablePreImageFieldOutput, PortableRecordedInverse, PreImageOutputFieldCapture,
 };
 use crate::application_schema::{
     ApplicationFieldBindingLocus, ApplicationOperationBodyProgram,
@@ -55,6 +56,10 @@ fn members(retained: &[&str], restored: &[&str], omitted: &[&str]) -> Vec<Applic
         ARCHIVE_DECODE,
         omitted.iter().map(|field| locus(field)).collect(),
     );
+    with_demand(demand, restored)
+}
+
+fn with_demand(demand: PortablePreImageDemand, restored: &[&str]) -> Vec<ApplicationSchemaMember> {
     let inverse = PortableRecordedInverse::from_untrusted_fields(
         ARCHIVE_DECODE,
         "RestoreTask".into(),
@@ -116,5 +121,56 @@ fn a_half_undo_fails_closed_unless_covered_or_explicitly_granted() {
     assert_eq!(
         gap(&members(&["title", "due"], &["title", "due"], &["notes"])),
         Some(("notes".into(), Gap::UnwrittenOmission))
+    );
+}
+
+fn demand_denial(members: &[ApplicationSchemaMember]) -> DeclaredPreImageDemandDenial {
+    match validate(members) {
+        Err(ApplicationSchemaDeclarationDenial::InvalidCorrectionDemand { correction, cause }) => {
+            assert_eq!(correction, "EditTask");
+            cause
+        }
+        other => panic!("expected an invalid demand, got {other:?}"),
+    }
+}
+
+#[test]
+fn readmitted_omission_grants_are_validated_on_every_recorded_inverse() {
+    use DeclaredPreImageDemandDenial as Denial;
+    let grant = |loci: Vec<PortablePreImageLocus>| {
+        PortablePreImageDemand::from_untrusted_fields(ARCHIVE_DECODE, vec![locus("title")], 64)
+            .with_untrusted_omitted_reversals(ARCHIVE_DECODE, loci)
+    };
+    let readmit = |loci| with_demand(grant(loci), &["title"]);
+    assert_eq!(
+        demand_denial(&readmit(vec![locus("title")])),
+        Denial::ContradictoryOmittedReversal
+    );
+    assert_eq!(
+        demand_denial(&readmit(vec![locus("due"), locus("due")])),
+        Denial::DuplicateLocus
+    );
+    assert_eq!(
+        demand_denial(&readmit(vec![locus(" ")])),
+        Denial::EmptyLocusAxis
+    );
+    // A handler source (no body) cannot carry a grant.
+    let mut handler = readmit(vec![locus("due")]);
+    handler.retain(|member| {
+        !matches!(member, ApplicationSchemaMember::OperationBody { operation, .. } if operation == "EditTask")
+    });
+    assert_eq!(demand_denial(&handler), Denial::UnsupportedOmittedReversal);
+    // Nor can an output-role capture.
+    let output = grant(vec![locus("due")]).with_untrusted_output_fields(
+        PortablePreImageFieldOutput::from_untrusted_fields(
+            ARCHIVE_DECODE,
+            "task".into(),
+            "Task".into(),
+            PreImageOutputFieldCapture::ChangedPreserved,
+        ),
+    );
+    assert_eq!(
+        demand_denial(&with_demand(output, &["title"])),
+        Denial::UnsupportedOmittedReversal
     );
 }

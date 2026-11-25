@@ -21,6 +21,8 @@ mod document_history;
 mod external_effect;
 #[path = "canonical_identity_inbound_occurrence_tests.rs"]
 mod inbound_occurrence;
+#[path = "canonical_identity_omitted_reversal_tests.rs"]
+mod omitted_reversal;
 
 #[test]
 fn every_application_schema_member_family_changes_identity() {

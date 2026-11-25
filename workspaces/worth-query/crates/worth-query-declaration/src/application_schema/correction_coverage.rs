@@ -5,7 +5,10 @@
 //! correction's pre-image demand and written back by its inverse body. A
 //! handler inverse (no body) declares no writes here, so only its pre-image
 //! is judged. Output-role captures keep their own vocabulary validation.
-use crate::application_aftermath::{PortableCorrectionMechanism, PortablePreImageLocus};
+use crate::application_aftermath::{
+    DeclaredPreImageDemandDenial, PortableCorrectionMechanism, PortablePreImageDemand,
+    PortablePreImageLocus,
+};
 use crate::application_schema::{
     ApplicationOperationBodyProgram, ApplicationSchemaDeclarationDenial, ApplicationSchemaMember,
 };
@@ -39,7 +42,14 @@ pub(super) fn validate(
             continue;
         };
         let demand = inverse.preimage_demand();
-        let Some(source) = body(members, operation) else {
+        let source = body(members, operation);
+        grants(demand, source.is_some()).map_err(|cause| {
+            ApplicationSchemaDeclarationDenial::InvalidCorrectionDemand {
+                correction: operation.clone(),
+                cause,
+            }
+        })?;
+        let Some(source) = source else {
             continue;
         };
         if demand.output_fields().is_some() {
@@ -87,6 +97,39 @@ pub(super) fn validate(
             {
                 return refuse(target, ApplicationCorrectionCoverageGap::InverseWrites);
             }
+        }
+    }
+    Ok(())
+}
+
+/// Omission grants are judged on every recorded inverse, including ones
+/// readmitted from an archive that never passed declaration validation: each
+/// names a distinct, complete field locus outside the retained loci, and only
+/// a source body's field capture can grant one.
+fn grants(
+    demand: &PortablePreImageDemand,
+    source_has_body: bool,
+) -> Result<(), DeclaredPreImageDemandDenial> {
+    let omitted = demand.omitted_reversals();
+    if omitted.is_empty() {
+        return Ok(());
+    }
+    if !source_has_body || demand.output_fields().is_some() {
+        return Err(DeclaredPreImageDemandDenial::UnsupportedOmittedReversal);
+    }
+    for (index, grant) in omitted.iter().enumerate() {
+        let (entity, aspect, field) = locus(grant);
+        if [entity, aspect, field]
+            .iter()
+            .any(|axis| axis.trim().is_empty())
+        {
+            return Err(DeclaredPreImageDemandDenial::EmptyLocusAxis);
+        }
+        if omitted[..index].contains(grant) {
+            return Err(DeclaredPreImageDemandDenial::DuplicateLocus);
+        }
+        if demand.loci().contains(grant) {
+            return Err(DeclaredPreImageDemandDenial::ContradictoryOmittedReversal);
         }
     }
     Ok(())

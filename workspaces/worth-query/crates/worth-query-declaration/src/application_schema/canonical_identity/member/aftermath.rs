@@ -157,6 +157,27 @@ fn append_mechanism(
                 basis.text(format!("{prefix}.preimage-{index}.aspect"), locus.aspect());
                 basis.text(format!("{prefix}.preimage-{index}.field"), locus.field());
             }
+            // Grants enter identity only when declared, so schemas without
+            // grants keep their established digest.
+            for (index, locus) in inverse
+                .preimage_demand()
+                .omitted_reversals()
+                .iter()
+                .enumerate()
+            {
+                basis.text(
+                    format!("{prefix}.omitted-reversal-{index}.entity"),
+                    locus.entity(),
+                );
+                basis.text(
+                    format!("{prefix}.omitted-reversal-{index}.aspect"),
+                    locus.aspect(),
+                );
+                basis.text(
+                    format!("{prefix}.omitted-reversal-{index}.field"),
+                    locus.field(),
+                );
+            }
             for (index, locus) in inverse.preimage_demand().relations().iter().enumerate() {
                 basis.text(
                     format!("{prefix}.preimage-relation-{index}.kind"),

@@ -124,6 +124,11 @@ impl<Schema> DeclaredPreImageDemand<Schema> {
                 return Err(DeclaredPreImageDemandDenial::InvalidOutputFieldCapture);
             }
         }
+        if !self.omitted_reversals.is_empty()
+            && (self.created_entity || self.output_fields.is_some())
+        {
+            return Err(DeclaredPreImageDemandDenial::UnsupportedOmittedReversal);
+        }
         if self.created_entity {
             return Ok(());
         }
@@ -293,4 +298,7 @@ pub enum DeclaredPreImageDemandDenial {
     InvalidOutputFieldCapture,
     /// A field is both demanded for reversal and granted as omitted.
     ContradictoryOmittedReversal,
+    /// Only a source body's field capture can grant an omitted reversal; a
+    /// created-entity, output-role or handler-source correction cannot.
+    UnsupportedOmittedReversal,
 }
