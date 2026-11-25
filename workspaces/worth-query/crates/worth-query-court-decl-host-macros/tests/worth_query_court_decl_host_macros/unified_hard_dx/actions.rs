@@ -16,10 +16,77 @@ pub const RESCHEDULE_NS: ApplicationIdentityNamespace =
     worth_query_identity_namespace!("daymark.unified.reschedule.v1");
 pub const RENAME_PROJECT_NS: ApplicationIdentityNamespace =
     worth_query_identity_namespace!("daymark.unified.rename-project.v1");
+pub const RENAME_TASK_NS: ApplicationIdentityNamespace =
+    worth_query_identity_namespace!("daymark.unified.rename-task.v1");
 pub const RESTORE_STATE_NS: ApplicationIdentityNamespace =
     worth_query_identity_namespace!("daymark.unified.restore-state.v1");
 pub const CORRECT_STATE_NS: ApplicationIdentityNamespace =
     worth_query_identity_namespace!("daymark.unified.correct-state.v1");
+pub const PROBE_KEY_NS: ApplicationIdentityNamespace =
+    worth_query_identity_namespace!("daymark.unified.probe-occupied-key.v1");
+
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
+pub struct SequencedAutoKey(pub u64);
+
+impl worth_query_host::facade::WorthQueryAutoIdempotencyKey for SequencedAutoKey {
+    fn derive_auto_key(_seed: [u8; 32], probe: u64) -> Self {
+        Self(probe + 1)
+    }
+}
+
+pub struct SequencedKeyContext;
+impl ApplicationBindingContext<DaymarkSchema> for SequencedKeyContext {
+    type PrincipalBinding = DaymarkPrincipal;
+    type Mapping = ExternalMapping;
+    type Principal = Principal;
+    type PrincipalIdentity = u64;
+    type PrincipalIdentityBinding = U64ApplicationValueBinding;
+    type IdempotencyKey = SequencedAutoKey;
+    type DenialBinding = BodyDenialBinding;
+    const IDEMPOTENCY_IDENTITY: &'static str =
+        worth_query_decl::facade::worth_query_identity!(PROBE_KEY_NS, idempotency);
+    fn principal_binding() -> ApplicationPrincipalBindingRef<
+        DaymarkSchema,
+        DaymarkPrincipal,
+        ExternalMapping,
+        Principal,
+        u64,
+        U64ApplicationValueBinding,
+    > {
+        DaymarkPrincipal::reference()
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, WorthValue, WorthQueryAction)]
+#[worth_query(
+    schema = DaymarkSchema,
+    context = SequencedKeyContext,
+    namespace = PROBE_KEY_NS,
+    input = ProbeOccupiedTaskStateInput,
+    operation = ProbeOccupiedTaskStateOperation,
+    binding = ProbeOccupiedTaskStateBinding,
+    delivery = ProbeOccupiedTaskStateDelivery,
+    body,
+    program,
+    reads(Task),
+)]
+pub struct ProbeOccupiedTaskState {
+    #[worth_query(scope = TaskKey)]
+    pub task: u64,
+    pub state: String,
+}
+
+pub fn probe_occupied_task_state_definition() -> ApplicationOperationDefinition<
+    DaymarkSchema,
+    ProbeOccupiedTaskStateOperation,
+    ProbeOccupiedTaskState,
+> {
+    ProbeOccupiedTaskStateOperation::reference()
+        .typed_body()
+        .assign_input(TaskFacts::state(), ProbeOccupiedTaskState::state_input())
+        .finish_pure_definition()
+        .expect("probe_occupied_task_state body admits")
+}
 
 #[derive(Clone, Debug, PartialEq, Eq, WorthValue, serde::Deserialize, WorthQueryAction)]
 #[worth_query(
@@ -106,6 +173,34 @@ pub fn rename_project_definition(
         .assign_input(ProjectFacts::label(), RenameProject::label_input())
         .finish_pure_definition()
         .expect("rename_project body admits")
+}
+
+#[derive(Clone, Debug, WorthValue, WorthQueryAction)]
+#[worth_query(
+    schema = DaymarkSchema,
+    context = DaymarkContext,
+    namespace = RENAME_TASK_NS,
+    input = RenameTaskInput,
+    operation = RenameTaskOperation,
+    binding = RenameTaskBinding,
+    delivery = RenameTaskDelivery,
+    body,
+    program,
+    reads(Task),
+)]
+pub struct RenameTask {
+    #[worth_query(scope = TaskKey)]
+    pub task: u64,
+    pub title: String,
+}
+
+pub fn rename_task_definition(
+) -> ApplicationOperationDefinition<DaymarkSchema, RenameTaskOperation, RenameTask> {
+    RenameTaskOperation::reference()
+        .typed_body()
+        .assign_input(TaskFacts::title(), RenameTask::title_input())
+        .finish_pure_definition()
+        .expect("rename_task body admits")
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, WorthValue, serde::Deserialize, WorthQueryAction)]

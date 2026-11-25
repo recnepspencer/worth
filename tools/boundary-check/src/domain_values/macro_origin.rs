@@ -2,7 +2,143 @@
 use super::modules::Sources;
 use syn::{Item, Path};
 
+#[derive(Debug, Eq, PartialEq)]
+pub(super) enum BinaryDeriveTarget {
+    Approved,
+    ForgedBinary,
+    Unresolvable(String),
+    Other,
+}
+
 impl Sources<'_> {
+    pub(super) fn is_worth_binary_derive(&self, context: &[String], path: &Path) -> bool {
+        self.resolve_binary_derive(context, path) == BinaryDeriveTarget::Approved
+    }
+
+    pub(super) fn resolve_binary_derive(
+        &self,
+        context: &[String],
+        path: &Path,
+    ) -> BinaryDeriveTarget {
+        let mut names: Vec<_> = path
+            .segments
+            .iter()
+            .map(|segment| segment.ident.to_string())
+            .collect();
+        if path.leading_colon.is_some() {
+            names.insert(0, "::".into());
+        }
+        self.resolve_binary_names(context, &names, 0, false)
+    }
+
+    fn resolve_binary_names(
+        &self,
+        context: &[String],
+        path: &[String],
+        depth: usize,
+        followed_import: bool,
+    ) -> BinaryDeriveTarget {
+        if depth > 128 {
+            return BinaryDeriveTarget::Unresolvable(
+                "macro import resolution depth refused".into(),
+            );
+        }
+        let Some((first, rest)) = path.split_first() else {
+            return BinaryDeriveTarget::Other;
+        };
+        if first == "::" {
+            return self.classify_external_binary_derive(rest);
+        }
+        if ["crate", "self", "super"].contains(&first.as_str()) {
+            let mut owner = context.to_vec();
+            match first.as_str() {
+                "crate" => owner.truncate(1),
+                "super" => {
+                    if owner.len() < 2 {
+                        return BinaryDeriveTarget::Unresolvable(
+                            "derive macro path escapes crate".into(),
+                        );
+                    }
+                    owner.pop();
+                }
+                _ => (),
+            }
+            return self.resolve_binary_names(&owner, rest, depth + 1, true);
+        }
+        let Ok(module) = self.module(context) else {
+            return if followed_import {
+                BinaryDeriveTarget::Unresolvable(format!(
+                    "unresolvable derive module context {}",
+                    context.join("::")
+                ))
+            } else {
+                BinaryDeriveTarget::Other
+            };
+        };
+        let (imports, _glob) = module.imports(first);
+        if imports.len() > 1 {
+            return BinaryDeriveTarget::Unresolvable(format!(
+                "ambiguous derive macro import `{first}`"
+            ));
+        }
+        if let Some(import) = imports.first() {
+            let mut target = import.clone();
+            target.extend_from_slice(rest);
+            return self.resolve_binary_names(context, &target, depth + 1, true);
+        }
+        let children: Vec<_> = module
+            .items
+            .iter()
+            .filter_map(|item| match item {
+                Item::Mod(child) if child.ident == first => Some(child),
+                _ => None,
+            })
+            .collect();
+        if !children.is_empty() {
+            if children.len() != 1 {
+                return BinaryDeriveTarget::Unresolvable(format!(
+                    "ambiguous derive macro module `{first}`"
+                ));
+            }
+            let mut owner = context.to_vec();
+            owner.push(first.clone());
+            return self.resolve_binary_names(&owner, rest, depth + 1, true);
+        }
+        if self.roots.contains_key(first)
+            || matches!(first.as_str(), "core" | "std" | "alloc" | "serde")
+            || path.last().is_some_and(|seg| seg == "WorthBinaryValue")
+        {
+            return self.classify_external_binary_derive(path);
+        }
+        if followed_import {
+            return BinaryDeriveTarget::Unresolvable(format!(
+                "unresolvable derive macro alias `{}` in `{}`",
+                path.join("::"),
+                context.join("::")
+            ));
+        }
+        BinaryDeriveTarget::Other
+    }
+
+    fn classify_external_binary_derive(&self, path: &[String]) -> BinaryDeriveTarget {
+        let name = path.join("::");
+        let approved = [
+            "worth_query_decl::facade::WorthBinaryValue",
+            "worth_query_macros::WorthBinaryValue",
+        ];
+        if approved.contains(&name.as_str())
+            && path
+                .first()
+                .is_some_and(|root| self.roots.contains_key(root))
+        {
+            return BinaryDeriveTarget::Approved;
+        }
+        if path.last().is_some_and(|seg| seg == "WorthBinaryValue") {
+            return BinaryDeriveTarget::ForgedBinary;
+        }
+        BinaryDeriveTarget::Other
+    }
+
     pub(super) fn macro_origin(
         &self,
         context: &[String],

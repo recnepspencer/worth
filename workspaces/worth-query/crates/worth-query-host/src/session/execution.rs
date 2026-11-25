@@ -1,34 +1,24 @@
-//! One-shot mutation and query execution methods on [`WorthQueryHostSession`].
+//! One-shot mutation and query execution methods on [`WorthQueryHostSession`],
+//! enforcing the session's configured [`ExecutionRequestPolicy`] on every lane.
 use worth_execution::ExecutionAllocationPolicy;
 use worth_query_declaration::facade::{
-    application_capability::{ApplicationCapabilityRef, ApplicationCapabilityRequest},
+    application_capability::ApplicationCapabilityRequest,
     application_operation::{
         ApplicationCapabilityMutationBinding, ApplicationMutationBinding,
         ApplicationMutationIntent, ApplicationMutationScopeBinding,
         ApplicationMutationScopeResolution, NoApplicationMutationSource,
     },
     application_program::ApplicationProgramDefinition,
-    application_query::{
-        ApplicationQueryBinding, ApplicationQueryIntent, ApplicationQueryScopeResolution,
-    },
-    application_schema::{
-        ApplicationOperationMarkerIdentity, ApplicationOperationRef, ApplicationSchema,
-        ApplicationStructuredValueBinding,
-    },
+    application_schema::ApplicationSchema,
 };
-use worth_query_execution::facade::primary_graph::{
-    WorthQueryApplicationProjection, WorthQueryApprovedElevation,
-};
-use worth_query_publication::facade::{
-    application_entry::{
-        WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestQueryDenial,
-    },
-    domain_computation::WorthQueryPublishedApplicationResult,
+use worth_query_publication::facade::application_entry::{
+    WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestMutationDenial,
 };
 
+use super::auto_key::{durable_branch_seed, DurableSeedDenial, MAX_AUTO_KEY_PROBES};
 use super::{
-    QueryBinding, QueryMarker, QueryRow, QueryScope, WorthQueryAutoIdempotencyKey,
-    WorthQueryHostSession, WorthQuerySessionCommit, WorthQuerySessionRunDenial,
+    WorthQueryAutoIdempotencyKey, WorthQueryHostSession, WorthQuerySessionCommit,
+    WorthQuerySessionRunDenial,
 };
 
 fn map_mutation_outcome<D, R>(
@@ -62,13 +52,33 @@ fn map_mutation_outcome<D, R>(
     }
 }
 
+fn map_seed_denial<D>(denial: DurableSeedDenial) -> WorthQuerySessionRunDenial<D> {
+    match denial {
+        DurableSeedDenial::Advancement(cause) => WorthQuerySessionRunDenial::Request(
+            WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause),
+        ),
+        DurableSeedDenial::Selection(cause) => WorthQuerySessionRunDenial::Request(
+            WorthQueryApplicationRequestMutationDenial::ProductSelection(cause),
+        ),
+    }
+}
+
+fn is_occupied_key<D>(denial: &WorthQuerySessionRunDenial<D>) -> bool {
+    matches!(
+        denial,
+        WorthQuerySessionRunDenial::AlreadyCommitted(_)
+            | WorthQuerySessionRunDenial::RecoveredCommitted(_)
+            | WorthQuerySessionRunDenial::IdempotencyIntentDrift
+    )
+}
+
 impl<Schema, Program> WorthQueryHostSession<'_, Schema, Program>
 where
     Schema: ApplicationSchema,
     Program: ApplicationProgramDefinition<Schema>,
 {
-    /// Runs a sourceless program mutation with an automatic restart-safe
-    /// idempotency key.
+    /// Runs a sourceless program mutation with a deterministic, restart-safe
+    /// auto idempotency key derived from the branch's durable committed head.
     pub fn run<Intent>(
         &self,
         intent: Intent,
@@ -89,9 +99,24 @@ where
                 <Intent::Binding as ApplicationMutationBinding<Schema>>::PrincipalIdentity,
             >,
     {
-        let key =
-            <Intent::Binding as ApplicationMutationBinding<Schema>>::IdempotencyKey::next_restart_safe_key();
-        self.run_with_key(intent, &key)
+        let scope = self.fresh_scope();
+        let seed = durable_branch_seed(self.home.primary_graph(), self.branch, self.policy, &scope)
+            .map_err(map_seed_denial)?;
+        let mut last_occupied = None;
+        for probe in 0..MAX_AUTO_KEY_PROBES {
+            let key =
+                <Intent::Binding as ApplicationMutationBinding<Schema>>::IdempotencyKey::derive_auto_key(
+                    seed, probe,
+                );
+            match self.run_with_key(intent.clone(), &key) {
+                Ok(committed) => return Ok(committed),
+                Err(denial) if is_occupied_key(&denial) => {
+                    last_occupied = Some(denial);
+                }
+                Err(other) => return Err(other),
+            }
+        }
+        Err(last_occupied.expect("probe loop ran at least once"))
     }
 
     /// Runs a sourceless program mutation with an explicit caller idempotency key.
@@ -115,6 +140,11 @@ where
             >,
     {
         let scope = self.fresh_scope();
+        let lease = self.open_lease(&scope).map_err(|cause| {
+            WorthQuerySessionRunDenial::Request(
+                WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause),
+            )
+        })?;
         let request = self.request(&scope);
         let outcome = request
             .advanced()
@@ -123,13 +153,14 @@ where
             .idempotency(idempotency_key)
             .execute_in_program(
                 self.home.runtime(),
-                ExecutionAllocationPolicy::SystemAllocation,
+                ExecutionAllocationPolicy::Execution(&lease),
             )
             .map_err(WorthQuerySessionRunDenial::Request)?;
         map_mutation_outcome(outcome)
     }
 
-    /// Runs a capability-governed sourceless program mutation with a fresh key.
+    /// Runs a capability-governed sourceless program mutation with a
+    /// deterministic, restart-safe auto idempotency key.
     pub fn run_governed<Intent>(
         &self,
         intent: Intent,
@@ -161,9 +192,24 @@ where
                 <Intent::Binding as ApplicationMutationBinding<Schema>>::PrincipalIdentity,
             >,
 {
-        let key =
-            <Intent::Binding as ApplicationMutationBinding<Schema>>::IdempotencyKey::next_restart_safe_key();
-        self.run_governed_with_key(intent, &key)
+        let scope = self.fresh_scope();
+        let seed = durable_branch_seed(self.home.primary_graph(), self.branch, self.policy, &scope)
+            .map_err(map_seed_denial)?;
+        let mut last_occupied = None;
+        for probe in 0..MAX_AUTO_KEY_PROBES {
+            let key =
+                <Intent::Binding as ApplicationMutationBinding<Schema>>::IdempotencyKey::derive_auto_key(
+                    seed, probe,
+                );
+            match self.run_governed_with_key(intent.clone(), &key) {
+                Ok(committed) => return Ok(committed),
+                Err(denial) if is_occupied_key(&denial) => {
+                    last_occupied = Some(denial);
+                }
+                Err(other) => return Err(other),
+            }
+        }
+        Err(last_occupied.expect("probe loop ran at least once"))
     }
 
     /// Runs a capability-governed sourceless program mutation with an explicit key.
@@ -198,6 +244,11 @@ where
             >,
 {
         let scope = self.fresh_scope();
+        let lease = self.open_lease(&scope).map_err(|cause| {
+            WorthQuerySessionRunDenial::Request(
+                WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause),
+            )
+        })?;
         let request = self.request(&scope);
         let outcome = request
             .advanced()
@@ -206,122 +257,9 @@ where
             .idempotency(idempotency_key)
             .execute_capability_in_program(
                 self.home.runtime(),
-                ExecutionAllocationPolicy::SystemAllocation,
+                ExecutionAllocationPolicy::Execution(&lease),
             )
             .map_err(WorthQuerySessionRunDenial::Request)?;
         map_mutation_outcome(outcome)
-    }
-
-    /// Executes a one-shot query and returns its typed projected rows directly.
-    pub fn query<Intent>(
-        &self,
-        intent: Intent,
-    ) -> Result<Vec<QueryRow<Schema, Intent>>, WorthQueryApplicationRequestQueryDenial>
-    where
-        Intent: ApplicationQueryIntent<Schema>,
-        <QueryBinding<Schema, Intent> as ApplicationQueryBinding<Schema>>::ScopeBinding:
-            ApplicationQueryScopeResolution<
-                Schema,
-                <QueryBinding<Schema, Intent> as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
-            >,
-        QueryRow<Schema, Intent>: WorthQueryApplicationProjection<Schema, QueryMarker<Schema, Intent>>,
-{
-        self.query_result(intent)
-            .map(|published| published.into_rows())
-    }
-
-    /// Executes a one-shot query and retains the full published result (rows,
-    /// publication receipt, and observed sources).
-    pub fn query_result<Intent>(
-        &self,
-        intent: Intent,
-    ) -> Result<
-        WorthQueryPublishedApplicationResult<QueryMarker<Schema, Intent>, QueryRow<Schema, Intent>>,
-        WorthQueryApplicationRequestQueryDenial,
-    >
-    where
-        Intent: ApplicationQueryIntent<Schema>,
-        <QueryBinding<Schema, Intent> as ApplicationQueryBinding<Schema>>::ScopeBinding:
-            ApplicationQueryScopeResolution<
-                Schema,
-                <QueryBinding<Schema, Intent> as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
-            >,
-        QueryRow<Schema, Intent>: WorthQueryApplicationProjection<Schema, QueryMarker<Schema, Intent>>,
-{
-        let scope = self.fresh_scope();
-        let request = self.request(&scope);
-        let query_req = request.query(intent);
-        let query_req = match self.query_result_limit {
-            Some(limit) => query_req.limit_results(limit),
-            None => query_req,
-        };
-        query_req.execute()
-    }
-
-    /// Executes a capability-governed one-shot query and returns its typed rows.
-    pub fn query_governed<Intent, Capability, Operation, Input>(
-        &self,
-        intent: Intent,
-        capability: ApplicationCapabilityRef<Schema, Capability>,
-        operation: ApplicationOperationRef<Schema, Operation, Input>,
-        input: Input,
-    ) -> Result<Vec<QueryRow<Schema, Intent>>, WorthQueryApplicationRequestQueryDenial>
-    where
-        Intent: ApplicationQueryIntent<Schema>,
-        <QueryBinding<Schema, Intent> as ApplicationQueryBinding<Schema>>::ScopeBinding:
-            ApplicationQueryScopeResolution<
-                Schema,
-                <QueryBinding<Schema, Intent> as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
-            >,
-        QueryRow<Schema, Intent>: WorthQueryApplicationProjection<Schema, QueryMarker<Schema, Intent>>,
-        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
-        Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
-        Input: ApplicationCapabilityRequest<Schema, Capability, Scope = QueryScope<Schema, Intent>>
-            + 'static,
-{
-        let scope = self.fresh_scope();
-        let request = self.request(&scope);
-        let query_req = request.query(intent);
-        let query_req = match self.query_result_limit {
-            Some(limit) => query_req.limit_results(limit),
-            None => query_req,
-        };
-        query_req
-            .execute_governed(capability, operation, input)
-            .map(|published| published.into_rows())
-    }
-
-    /// Executes an approved-elevation one-shot query and returns its typed rows.
-    pub fn query_approved<Intent, Capability, Operation, Input>(
-        &self,
-        intent: Intent,
-        approved: &WorthQueryApprovedElevation,
-        capability: ApplicationCapabilityRef<Schema, Capability>,
-        operation: ApplicationOperationRef<Schema, Operation, Input>,
-        input: Input,
-    ) -> Result<Vec<QueryRow<Schema, Intent>>, WorthQueryApplicationRequestQueryDenial>
-    where
-        Intent: ApplicationQueryIntent<Schema>,
-        <QueryBinding<Schema, Intent> as ApplicationQueryBinding<Schema>>::ScopeBinding:
-            ApplicationQueryScopeResolution<
-                Schema,
-                <QueryBinding<Schema, Intent> as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
-            >,
-        QueryRow<Schema, Intent>: WorthQueryApplicationProjection<Schema, QueryMarker<Schema, Intent>>,
-        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
-        Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
-        Input: ApplicationCapabilityRequest<Schema, Capability, Scope = QueryScope<Schema, Intent>>
-            + 'static,
-{
-        let scope = self.fresh_scope();
-        let request = self.request(&scope);
-        let query_req = request.query(intent);
-        let query_req = match self.query_result_limit {
-            Some(limit) => query_req.limit_results(limit),
-            None => query_req,
-        };
-        query_req
-            .execute_approved(approved, capability, operation, input)
-            .map(|published| published.into_rows())
     }
 }

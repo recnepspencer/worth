@@ -1,13 +1,14 @@
 //! Reusable authenticated Host session facade (`home.session(me)`).
 //!
-//! Each method opens a fresh `WorthQueryRequestScope`, re-admits principal and
-//! grants on the targeted branch, and executes under explicit finite policy
-//! defaults. Nothing caches authority across calls.
+//! Each method opens a fresh `WorthQueryRequestScope`, enforces this session's
+//! configured `ExecutionRequestPolicy` through a metered lease, re-admits
+//! principal and grants on the targeted branch, and executes under explicit
+//! finite policy defaults. Nothing caches authority across calls.
 use std::borrow::Borrow;
 use std::num::NonZeroUsize;
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::time::{Instant, SystemTime, UNIX_EPOCH};
+use std::time::Instant;
 
+use worth_execution::ExecutionResourceLease;
 use worth_foundational::facade::{ExecutionBudget, ExecutionRequestPolicy};
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAdmissionClock, WorthQueryAuthenticatedExternalPrincipal,
@@ -20,6 +21,7 @@ use worth_query_declaration::facade::{
     application_schema::{ApplicationSchema, ApplicationStructuredValueBinding},
 };
 use worth_query_execution::facade::{
+    application_contribution::{WorthQueryAdvancementDenial, WorthQueryAdvancementPhase},
     primary_graph::{
         WorthQueryApplicationCommitReceipt, WorthQueryApplicationUncommitted,
         WorthQueryRecoveredApplicationCommitReceipt,
@@ -35,9 +37,13 @@ use crate::application_home::{
     WorthQueryApplicationHome, WorthQueryCorrectionEntry, DEFAULT_HOST_EXECUTION_POLICY,
 };
 
+pub(crate) mod auto_key;
 mod execution;
+mod lease;
 mod live_subscription;
 mod managed_index;
+mod query_execution;
+pub use auto_key::WorthQueryAutoIdempotencyKey;
 pub use live_subscription::{
     WorthQueryTypedLiveCloseDenial, WorthQueryTypedLiveRefreshDenial,
     WorthQueryTypedLiveSubscription,
@@ -53,57 +59,6 @@ pub(super) type QueryBinding<S, I> = <I as ApplicationQueryIntent<S>>::Binding;
 pub(super) type QueryMarker<S, I> = <QueryBinding<S, I> as ApplicationQueryBinding<S>>::Query;
 pub(super) type QueryRow<S, I> = <<QueryBinding<S, I> as ApplicationQueryBinding<S>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
 pub(super) type QueryScope<S, I> = <<QueryBinding<S, I> as ApplicationQueryBinding<S>>::ScopeBinding as ApplicationQueryScopeBinding<S>>::Scope;
-
-/// Restart-safe auto idempotency key generation for [`WorthQueryHostSession::run`].
-///
-/// Mixes a process-startup wall-clock seed with a monotonic atomic counter so
-/// keys generated across separate launches of a persistent Directory Home do
-/// not collide. Call [`WorthQueryHostSession::run_with_key`] whenever you need
-/// deterministic caller-chosen replay keys.
-pub trait WorthQueryAutoIdempotencyKey: Sized {
-    fn next_restart_safe_key() -> Self;
-}
-
-fn next_restart_safe_pair() -> (u64, u64) {
-    static SEQUENCE: AtomicU64 = AtomicU64::new(1);
-    let nanos = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_or(0, |duration| duration.as_nanos() as u64);
-    let seq = SEQUENCE.fetch_add(1, Ordering::Relaxed);
-    (nanos, seq)
-}
-
-impl WorthQueryAutoIdempotencyKey for u64 {
-    fn next_restart_safe_key() -> Self {
-        let (nanos, seq) = next_restart_safe_pair();
-        let mixed = (nanos << 20) ^ seq.wrapping_mul(0x9E37_79B9_7F4A_7C15);
-        if mixed == 0 {
-            1
-        } else {
-            mixed
-        }
-    }
-}
-
-impl WorthQueryAutoIdempotencyKey for i64 {
-    fn next_restart_safe_key() -> Self {
-        (u64::next_restart_safe_key() & (i64::MAX as u64)).max(1) as i64
-    }
-}
-
-impl WorthQueryAutoIdempotencyKey for u128 {
-    fn next_restart_safe_key() -> Self {
-        let (nanos, seq) = next_restart_safe_pair();
-        ((u128::from(nanos)) << 64) | u128::from(seq)
-    }
-}
-
-impl WorthQueryAutoIdempotencyKey for String {
-    fn next_restart_safe_key() -> Self {
-        let (nanos, seq) = next_restart_safe_pair();
-        format!("worth-session-{nanos:016x}-{seq:016x}")
-    }
-}
 
 /// A committed mutation result paired with its live commit receipt.
 #[derive(Debug)]
@@ -154,9 +109,9 @@ pub enum WorthQuerySessionRunDenial<DomainDenial> {
 /// Reusable authenticated session over a [`WorthQueryApplicationHome`].
 ///
 /// Construct via [`WorthQueryApplicationHome::session`]. Every call opens a
-/// fresh [`WorthQueryRequestScope`] and re-admits authority on the configured
+/// fresh [`WorthQueryRequestScope`], enforces this session's
+/// [`ExecutionRequestPolicy`], and re-admits authority on the configured
 /// branch with explicit bounded defaults.
-#[derive(Clone)]
 pub struct WorthQueryHostSession<'home, Schema: ApplicationSchema, Program> {
     pub(super) home: &'home WorthQueryApplicationHome<Schema, Program>,
     pub(super) principal: WorthQueryAuthenticatedExternalPrincipal<Schema>,
@@ -168,6 +123,23 @@ pub struct WorthQueryHostSession<'home, Schema: ApplicationSchema, Program> {
     pub(super) live_buffer_capacity: usize,
     pub(super) live_maximum_results: Option<usize>,
     pub(super) query_result_limit: Option<NonZeroUsize>,
+}
+
+impl<Schema: ApplicationSchema, Program> Clone for WorthQueryHostSession<'_, Schema, Program> {
+    fn clone(&self) -> Self {
+        Self {
+            home: self.home,
+            principal: self.principal.clone(),
+            branch: self.branch,
+            clock: self.clock.clone(),
+            policy: self.policy,
+            deadline: self.deadline,
+            cancellation: self.cancellation.clone(),
+            live_buffer_capacity: self.live_buffer_capacity,
+            live_maximum_results: self.live_maximum_results,
+            query_result_limit: self.query_result_limit,
+        }
+    }
 }
 
 impl<Schema: ApplicationSchema, Program> WorthQueryApplicationHome<Schema, Program> {
@@ -257,7 +229,7 @@ impl<'home, Schema: ApplicationSchema, Program> WorthQueryHostSession<'home, Sch
         self
     }
 
-    /// Narrows the per-query result limit ceiling for one-shot and live reads.
+    /// Narrows the per-query result limit ceiling for one-shot, live, and watch reads.
     pub const fn with_result_limit(mut self, maximum_results: NonZeroUsize) -> Self {
         self.query_result_limit = Some(maximum_results);
         self
@@ -290,5 +262,20 @@ impl<'home, Schema: ApplicationSchema, Program> WorthQueryHostSession<'home, Sch
             .primary_graph()
             .request(&self.principal, scope)
             .on_branch(self.branch)
+    }
+
+    pub(super) fn open_lease(
+        &self,
+        scope: &WorthQueryRequestScope,
+    ) -> Result<ExecutionResourceLease<'home>, WorthQueryAdvancementDenial> {
+        lease::open_policy_lease(self.home.primary_graph(), self.policy, scope)
+    }
+
+    pub(super) fn with_funded_advancement<R>(
+        &self,
+        scope: &WorthQueryRequestScope,
+        body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+    ) -> Result<R, WorthQueryAdvancementDenial> {
+        lease::with_policy_advancement(self.home.primary_graph(), self.policy, scope, body)
     }
 }

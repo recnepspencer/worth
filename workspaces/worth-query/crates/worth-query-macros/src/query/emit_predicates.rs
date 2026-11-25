@@ -27,7 +27,7 @@ pub(super) fn partition_predicates<'a>(
                 PredicateRhs::Literal(expr) => {
                     let field = &pred.field;
                     let lit = literal_value_expr(expr);
-                    eq_steps.push(quote_spanned!(pred.span=> .where_equal_value(#field, #encode_lit_fn(&(#field), #lit))));
+                    eq_steps.push(quote_spanned!(pred.span=> .try_where_equal_value(#field, #encode_lit_fn(&(#field), #lit))));
                 }
                 PredicateRhs::Parameter { optional: true, .. } => filter_preds.push(pred),
             }
@@ -42,6 +42,7 @@ pub(super) fn emit_filter_block(
     target_local: &Ident,
     clauses_local: &Ident,
     encode_lit_fn: &Ident,
+    root_alias: &Ident,
     aq: &TokenStream,
 ) -> TokenStream {
     if filter_preds.is_empty() {
@@ -51,13 +52,9 @@ pub(super) fn emit_filter_block(
         .iter()
         .map(|pred| emit_clause_call(pred, clauses_local, encode_lit_fn, aq));
     quote! {
-        let mut #clauses_local = #aq::ApplicationQueryWhereFilterClauses::<Self>::new();
+        let mut #clauses_local = #aq::ApplicationQueryWhereFilterClauses::<Self, #root_alias>::new();
         #(#clause_calls)*
-        #target_local = #target_local.where_filter(
-            #clauses_local
-                .finish()
-                .expect("derived WorthQuery where_filter clauses admit"),
-        );
+        #target_local = #target_local.try_where_filter(#clauses_local.finish());
     }
 }
 
@@ -86,13 +83,18 @@ pub(super) fn emit_related_predicate(
         &mut eq_steps,
         &mut filter_preds,
     );
-    let filter_block = emit_filter_block(
-        &filter_preds,
-        related_local,
-        clauses_local,
-        encode_lit_fn,
-        aq,
-    );
+    let filter_block = if filter_preds.is_empty() {
+        TokenStream::new()
+    } else {
+        let clause_calls = filter_preds
+            .iter()
+            .map(|pred| emit_clause_call(pred, clauses_local, encode_lit_fn, aq));
+        quote! {
+            let mut #clauses_local = #aq::ApplicationQueryWhereFilterClauses::<Self, _>::new();
+            #(#clause_calls)*
+            #related_local = #related_local.try_where_filter_clauses(#clauses_local);
+        }
+    };
     quote_spanned! {rel.span=> {
         #[allow(unused_mut)]
         let mut #related_local = #aq::ApplicationQueryRelatedPredicate::#dir_ctor(<#relation>::reference()) #(#eq_steps)*;
@@ -111,24 +113,20 @@ fn emit_clause_call(
     let op_ident = format_ident!("{}", pred.op.variant_ident(), span = Span::mixed_site());
     match &pred.rhs {
         PredicateRhs::Parameter { selector, .. } => quote_spanned! {pred.span=>
-            #clauses_local = #clauses_local
-                .compare_parameter(
-                    #aq::ApplicationQueryComparisonOp::#op_ident,
-                    #field,
-                    Self::#selector(),
-                )
-                .expect("derived WorthQuery parameter clause admits");
+            #clauses_local = #clauses_local.and_compare_parameter(
+                #aq::ApplicationQueryComparisonOp::#op_ident,
+                #field,
+                Self::#selector(),
+            );
         },
         PredicateRhs::Literal(expr) => {
             let lit = literal_value_expr(expr);
             quote_spanned! {pred.span=>
-                #clauses_local = #clauses_local
-                    .compare_literal(
-                        #aq::ApplicationQueryComparisonOp::#op_ident,
-                        #field,
-                        #encode_lit_fn(&(#field), #lit),
-                    )
-                    .expect("derived WorthQuery literal clause admits");
+                #clauses_local = #clauses_local.and_compare_literal(
+                    #aq::ApplicationQueryComparisonOp::#op_ident,
+                    #field,
+                    #encode_lit_fn(&(#field), #lit),
+                );
             }
         }
     }

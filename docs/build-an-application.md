@@ -26,7 +26,7 @@ exercises the complete desktop application flow on a real Directory Home:
 
 <!-- illustrative -->
 ```rust,ignore
-use worth_foundational::facade::CanonicalDate;
+use worth_query_decl::facade::application_schema::CanonicalDate;
 use worth_query_decl::facade::{WorthQuery, WorthQueryRow, WorthQueryCorrection};
 use worth_query_host::facade::{
     worth_query_application_program, WorthQueryApplicationHome, WorthQueryHomeConfig,
@@ -93,6 +93,8 @@ home.close_branch(previous)?;
 
 // 'static owned history + restart-safe authored-body undo/redo:
 let doc = home.owned_history::<DaymarkHistory>(&me, ReadProjectTasks { project: 1 })?;
+// Hold `doc` in UI state as long as needed, then release/close it before closing the Home.
+drop(doc);
 let entry = commit.correction_entry();
 home.undo_authored::<CorrectTaskState>(&entry, &me)?;
 home.redo_authored::<CorrectTaskState>(&entry, &me)?;

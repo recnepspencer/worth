@@ -102,13 +102,12 @@ fn parameter_items(
         .bindings
         .as_ref()
         .map_or_else(|| quote!(#frag::NativeScalars), |ty| quote!(#ty));
-    let (schema_alias, bindings_alias, params_local, input_local, value_local, witness_local) = (
+    let (schema_alias, bindings_alias, params_local, input_local, value_local) = (
         &names.schema_alias,
         &names.bindings_alias,
         &names.params_local,
         &names.input_local,
         &names.value_local,
-        &names.witness_local,
     );
     let schema = &decl_spec.schema;
     let markers = decl_spec.params.iter().map(|param| {
@@ -172,11 +171,8 @@ fn parameter_items(
                 }
             }
         });
-    let binds = decl_spec
-        .params
-        .iter()
-        .zip(scalar_bindings.iter())
-        .map(|(param, scalar_binding)| {
+    let binds = decl_spec.params.iter().zip(scalar_bindings.iter()).map(
+        |(param, scalar_binding)| {
             let (member, selector, ty) = (&param.member, &param.selector, &param.value_ty);
             let expected_scalar = quote!(
                 <#scalar_binding as #decl::application_schema::ApplicationScalarValueBinding>::Value
@@ -184,8 +180,7 @@ fn parameter_items(
             if param.optional_inner.is_some() {
                 quote_spanned! {ty.span()=>
                     let _: fn(*mut #ty) -> *mut #ty =
-                        (|#witness_local| #witness_local)
-                            as fn(*mut ::core::option::Option<#expected_scalar>) -> *mut ::core::option::Option<#expected_scalar>;
+                        ::core::convert::identity::<*mut ::core::option::Option<#expected_scalar>>;
                     let #value_local: #ty =
                         <#ty as ::core::clone::Clone>::clone(&#input_local.#member);
                     #params_local = #params_local.bind_optional(
@@ -196,8 +191,7 @@ fn parameter_items(
             } else {
                 quote_spanned! {ty.span()=>
                     let _: fn(*mut #ty) -> *mut #ty =
-                        (|#witness_local| #witness_local)
-                            as fn(*mut #expected_scalar) -> *mut #expected_scalar;
+                        ::core::convert::identity::<*mut #expected_scalar>;
                     let #value_local: #ty =
                         <#ty as ::core::clone::Clone>::clone(&#input_local.#member);
                     #params_local = #params_local.bind(
@@ -206,7 +200,8 @@ fn parameter_items(
                     )?;
                 }
             }
-        });
+        },
+    );
     let doc = format!("Named query parameter markers of `{request}`.");
     Some(quote! {
         #[doc = #doc]
@@ -224,8 +219,6 @@ fn parameter_items(
                 fn #input_local() {}
                 #[allow(dead_code, non_snake_case)]
                 fn #value_local() {}
-                #[allow(dead_code, non_snake_case)]
-                fn #witness_local() {}
 
                 impl #query {
                     #(#accessors)*
@@ -270,9 +263,12 @@ fn scope_extractor(
         const _: () = {
             #[allow(dead_code, non_snake_case)]
             fn #input_local() {}
+
             impl #request {
                 #[doc(hidden)]
-                fn worth_query_scope(#input_local: Self) -> <#selection as #frag::RecordSelection>::Value {
+                fn worth_query_scope(
+                    #input_local: Self,
+                ) -> <#selection as #frag::RecordSelection>::Value {
                     #read
                 }
             }

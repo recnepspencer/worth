@@ -1,5 +1,6 @@
 use std::marker::PhantomData;
 mod managed_index;
+mod predicates;
 
 use crate::application_query::ApplicationQueryMarkerIdentity;
 use crate::application_query::{
@@ -15,13 +16,12 @@ use crate::application_query::{
 use crate::portable_identity::WorthQueryPortableType;
 
 use super::authoring::{ApplicationQueryDefinitionParts, ApplicationQueryRootAuthoring};
-use super::{
-    ApplicationQueryDefinition, ApplicationQueryPredicate, ApplicationQueryPredicateExpected,
-};
+use super::ApplicationQueryDefinition;
 
 pub struct ApplicationQueryDefinitionBuilder<Schema, Query, Parameters, QueryResult, Scope> {
     definition: ApplicationQueryDefinition<Schema, Query, Parameters, QueryResult, Scope>,
     unit_bearing_literal_predicate: bool,
+    deferred_denial: Option<ApplicationQueryDefinitionDenial>,
 }
 
 impl<Schema, Query, Parameters, QueryResult, Scope>
@@ -69,6 +69,7 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
                 _marker: PhantomData,
             },
             unit_bearing_literal_predicate: false,
+            deferred_denial: None,
         }
     }
 
@@ -108,110 +109,6 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
         selection: super::super::ApplicationQueryComponentRef<Schema, Query, Slot, Set, Entity>,
     ) -> Self {
         self.definition.component_selection = Some(selection.into_meaning());
-        self
-    }
-
-    pub fn where_equal<Field, Parameter, Binding>(
-        mut self,
-        field: Field,
-        parameter: ApplicationQueryParameterRef<Query, Parameter, Binding>,
-    ) -> Self
-    where
-        Field: crate::application_schema::fragment::RecordSelection<Binding = Binding>,
-        Binding: crate::application_schema::ApplicationReadableScalarValueBinding,
-    {
-        self.definition
-            .field_expectations
-            .push(field.expected_recipe());
-        self.definition.predicates.push(ApplicationQueryPredicate {
-            entity: field.entity().to_owned(),
-            aspect: field.aspect().to_owned(),
-            field: field.field().to_owned(),
-            expected: ApplicationQueryPredicateExpected::Parameter(parameter.name().to_owned()),
-            scalar_family: Binding::SCALAR_FAMILY,
-        });
-        self
-    }
-
-    /// Narrows the root entity by equality against one authored scalar constant,
-    /// without declaring a runtime query parameter.
-    pub fn where_equal_value<Field, Binding>(
-        mut self,
-        field: Field,
-        expected: crate::application_schema::ApplicationEncodedScalarValue<Binding>,
-    ) -> Self
-    where
-        Field: crate::application_schema::fragment::RecordSelection<Binding = Binding>,
-        Binding: crate::application_schema::ApplicationReadableScalarValueBinding,
-    {
-        if Binding::UNIT.is_some() {
-            self.unit_bearing_literal_predicate = true;
-        }
-        self.definition
-            .field_expectations
-            .push(field.expected_recipe());
-        self.definition.predicates.push(ApplicationQueryPredicate {
-            entity: field.entity().to_owned(),
-            aspect: field.aspect().to_owned(),
-            field: field.field().to_owned(),
-            expected: ApplicationQueryPredicateExpected::Value(expected.into_foundational_value()),
-            scalar_family: Binding::SCALAR_FAMILY,
-        });
-        self
-    }
-
-    /// Narrows the index-selected candidate rows by one admitted Boolean
-    /// expression over root fields and typed parameters. Structured
-    /// `where_equal` and root paths remain the index-seeking selection.
-    pub fn where_filter(
-        mut self,
-        filter: crate::application_query::ApplicationQueryWhereFilter<Query>,
-    ) -> Self {
-        let (program, fields) = filter.into_parts();
-        self.definition.field_expectations.extend(fields);
-        self.definition.where_filter = Some(program);
-        self
-    }
-
-    /// Narrows candidate rows to those having ZERO related live target records
-    /// matching `predicate` (`NOT EXISTS`).
-    pub fn where_no_related<Root, Target>(
-        mut self,
-        predicate: crate::application_query::ApplicationQueryRelatedPredicate<
-            Schema,
-            Query,
-            Root,
-            Target,
-        >,
-    ) -> Self {
-        let (meaning, fields, invalid) =
-            predicate.into_parts(crate::application_query::ApplicationQueryRelatedPolarity::Absent);
-        if invalid {
-            self.unit_bearing_literal_predicate = true;
-        }
-        self.definition.field_expectations.extend(fields);
-        self.definition.related_predicates.push(meaning);
-        self
-    }
-
-    /// Narrows candidate rows to those having AT LEAST ONE related live target
-    /// record matching `predicate` (`EXISTS`).
-    pub fn where_related_exists<Root, Target>(
-        mut self,
-        predicate: crate::application_query::ApplicationQueryRelatedPredicate<
-            Schema,
-            Query,
-            Root,
-            Target,
-        >,
-    ) -> Self {
-        let (meaning, fields, invalid) =
-            predicate.into_parts(crate::application_query::ApplicationQueryRelatedPolarity::Exists);
-        if invalid {
-            self.unit_bearing_literal_predicate = true;
-        }
-        self.definition.field_expectations.extend(fields);
-        self.definition.related_predicates.push(meaning);
         self
     }
 
@@ -352,6 +249,9 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
         ApplicationQueryDefinition<Schema, Query, Parameters, QueryResult, Scope>,
         ApplicationQueryDefinitionDenial,
     > {
+        if let Some(denial) = self.deferred_denial {
+            return Err(denial);
+        }
         if self.unit_bearing_literal_predicate {
             return Err(ApplicationQueryDefinitionDenial::InvalidPredicateValue);
         }

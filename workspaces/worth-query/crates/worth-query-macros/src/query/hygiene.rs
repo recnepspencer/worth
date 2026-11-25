@@ -20,12 +20,14 @@ pub(super) struct HygienicNames {
     pub(super) params_local: Ident,
     pub(super) input_local: Ident,
     pub(super) value_local: Ident,
-    pub(super) witness_local: Ident,
     pub(super) builder_local: Ident,
     pub(super) shape_local: Ident,
     pub(super) clauses_local: Ident,
     pub(super) related_local: Ident,
     pub(super) encode_lit_fn: Ident,
+    pub(super) lit_field_ty: Ident,
+    pub(super) lit_val_ty: Ident,
+    pub(super) lit_val_local: Ident,
 }
 
 impl HygienicNames {
@@ -41,12 +43,14 @@ impl HygienicNames {
             params_local: fresh_ident("__worth_query_params", mixed, &mut used),
             input_local: fresh_ident("__worth_query_input", mixed, &mut used),
             value_local: fresh_ident("__worth_query_param_val", mixed, &mut used),
-            witness_local: fresh_ident("__worth_query_witness", mixed, &mut used),
             builder_local: fresh_ident("__worth_query_builder", mixed, &mut used),
             shape_local: fresh_ident("__worth_query_shape", mixed, &mut used),
             clauses_local: fresh_ident("__worth_query_clauses", mixed, &mut used),
             related_local: fresh_ident("__worth_query_related", mixed, &mut used),
             encode_lit_fn: fresh_ident("__worth_query_encode_lit", mixed, &mut used),
+            lit_field_ty: fresh_ident("__WorthQueryLitField", mixed, &mut used),
+            lit_val_ty: fresh_ident("__WorthQueryLitValue", mixed, &mut used),
+            lit_val_local: fresh_ident("__worth_query_lit_value", mixed, &mut used),
         }
     }
 }

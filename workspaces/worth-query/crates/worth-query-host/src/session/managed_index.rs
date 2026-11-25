@@ -1,4 +1,7 @@
-//! Managed-index `session.watch(...)` and `session.ensure_index_ready(...)` helpers.
+//! Managed-index `session.watch(...)` and `session.ensure_index_ready(...)` helpers,
+//! preserving session execution policies and result ceilings across open and refresh.
+use std::num::NonZeroUsize;
+
 use worth_query_declaration::facade::{
     application_capability::{ApplicationCapabilityRef, ApplicationCapabilityRequest},
     application_query::{
@@ -31,8 +34,8 @@ pub enum WorthQueryTypedManagedIndexRefreshDenial {
     Closed,
 }
 
-/// Typed managed-index watch holding the latest projected rows and the
-/// underlying [`WorthQueryManagedIndexWatch`].
+/// Typed managed-index watch holding the latest projected rows, the configured
+/// result ceiling, and the underlying [`WorthQueryManagedIndexWatch`].
 #[must_use = "close the managed-index watch when finished"]
 pub struct WorthQueryTypedManagedIndexWatch<Schema, Intent>
 where
@@ -42,7 +45,8 @@ where
 {
     intent: Intent,
     watch: WorthQueryManagedIndexWatch<Schema, Intent::Index>,
-    current: Vec<QueryRow<Schema, Intent>>,
+    result_limit: Option<NonZeroUsize>,
+    current: Option<Vec<QueryRow<Schema, Intent>>>,
     last_notification: Option<WorthQueryCommittedProductPublication>,
 }
 
@@ -57,52 +61,113 @@ where
         >,
     QueryRow<Schema, Intent>: WorthQueryApplicationProjection<Schema, QueryMarker<Schema, Intent>>,
 {
-    /// The latest projected rows from the managed-index watch.
-    pub fn current(&self) -> &[QueryRow<Schema, Intent>] {
-        &self.current
+    fn invalidate(&mut self) {
+        self.current = None;
+        self.last_notification = None;
     }
 
-    /// The latest notification publication that triggered a refresh, if any.
+    /// Returns `true` while this watch holds a current snapshot.
+    pub const fn is_current(&self) -> bool {
+        self.current.is_some()
+    }
+
+    /// The latest projected rows from the managed-index watch, or `None` after
+    /// a refusal invalidated currentness.
+    pub fn current(&self) -> Option<&[QueryRow<Schema, Intent>]> {
+        self.current.as_deref()
+    }
+
+    /// The latest notification publication that triggered a refresh, if current.
     pub const fn last_notification(&self) -> Option<&WorthQueryCommittedProductPublication> {
         self.last_notification.as_ref()
     }
 
-    /// Refreshes the watch under a fresh request scope and fresh principal
-    /// admission from `session`.
+    /// Refreshes the watch under `session`'s configured execution policy,
+    /// preserved result ceiling, fresh request scope, and fresh principal admission.
     pub fn refresh<Program>(
         &mut self,
         session: &WorthQueryHostSession<'_, Schema, Program>,
     ) -> Result<Option<&[QueryRow<Schema, Intent>]>, WorthQueryTypedManagedIndexRefreshDenial> {
+        use WorthQueryTypedManagedIndexRefreshDenial as Denial;
         let scope = session.fresh_scope();
         let fresh_request = session.request(&scope);
-        self.refresh_with_request(&fresh_request)
+        let query_req = fresh_request.query(self.intent.clone());
+        let query_req = match self.result_limit {
+            Some(limit) => query_req.limit_results(limit),
+            None => query_req,
+        };
+        let outcome = match session.with_funded_advancement(&scope, |phase| {
+            query_req.next_watch_in_advancement(&phase, &mut self.watch)
+        }) {
+            Ok(Ok(outcome)) => outcome,
+            Ok(Err(query_denial)) => {
+                self.invalidate();
+                return Err(Denial::Query(query_denial));
+            }
+            Err(advancement_denial) => {
+                self.invalidate();
+                return Err(Denial::Query(
+                    WorthQueryApplicationRequestQueryDenial::ExecutionRequest(advancement_denial),
+                ));
+            }
+        };
+        self.apply_outcome(outcome)
     }
 
-    /// Refreshes the watch using an explicit fresh [`WorthQueryApplicationRequest`].
+    /// Refreshes the watch using an explicit fresh [`WorthQueryApplicationRequest`],
+    /// preserving the result ceiling captured when the watch opened.
     pub fn refresh_with_request(
         &mut self,
         fresh_request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
     ) -> Result<Option<&[QueryRow<Schema, Intent>]>, WorthQueryTypedManagedIndexRefreshDenial> {
+        use WorthQueryTypedManagedIndexRefreshDenial as Denial;
+        let query_req = fresh_request.query(self.intent.clone());
+        let query_req = match self.result_limit {
+            Some(limit) => query_req.limit_results(limit),
+            None => query_req,
+        };
+        let outcome = match query_req.next_watch(&mut self.watch) {
+            Ok(outcome) => outcome,
+            Err(query_denial) => {
+                self.invalidate();
+                return Err(Denial::Query(query_denial));
+            }
+        };
+        self.apply_outcome(outcome)
+    }
+
+    fn apply_outcome(
+        &mut self,
+        outcome: WorthQueryManagedIndexWatchOutcome<
+            QueryMarker<Schema, Intent>,
+            QueryRow<Schema, Intent>,
+        >,
+    ) -> Result<Option<&[QueryRow<Schema, Intent>]>, WorthQueryTypedManagedIndexRefreshDenial> {
         use WorthQueryManagedIndexWatchOutcome as Outcome;
         use WorthQueryTypedManagedIndexRefreshDenial as Denial;
-        let outcome = fresh_request
-            .query(self.intent.clone())
-            .next_watch(&mut self.watch)
-            .map_err(Denial::Query)?;
         match outcome {
             Outcome::Pending => Ok(None),
             Outcome::Delivered(update) => {
                 self.last_notification = Some(update.notification().clone());
-                self.current = update.into_read().into_rows();
-                Ok(Some(&self.current))
+                self.current = Some(update.into_read().into_rows());
+                Ok(self.current.as_deref())
             }
             Outcome::Overflow {
                 missed_commit_batches,
-            } => Err(Denial::Overflow {
-                missed_commit_batches,
-            }),
-            Outcome::Unavailable => Err(Denial::Unavailable),
-            Outcome::Closed => Err(Denial::Closed),
+            } => {
+                self.invalidate();
+                Err(Denial::Overflow {
+                    missed_commit_batches,
+                })
+            }
+            Outcome::Unavailable => {
+                self.invalidate();
+                Err(Denial::Unavailable)
+            }
+            Outcome::Closed => {
+                self.invalidate();
+                Err(Denial::Closed)
+            }
         }
     }
 
@@ -141,11 +206,16 @@ where
             Some(limit) => query_req.limit_results(limit),
             None => query_req,
         };
-        let (initial, watch) = query_req.watch_index::<Intent::Index>()?;
+        let (initial, watch) = self
+            .with_funded_advancement(&scope, |phase| {
+                query_req.watch_index_in_advancement::<Intent::Index>(&phase)
+            })
+            .map_err(WorthQueryApplicationRequestQueryDenial::ExecutionRequest)??;
         Ok(WorthQueryTypedManagedIndexWatch {
             intent,
             watch,
-            current: initial.into_rows(),
+            result_limit: self.query_result_limit,
+            current: Some(initial.into_rows()),
             last_notification: None,
         })
     }
@@ -166,9 +236,12 @@ where
 {
         let scope = self.fresh_scope();
         let request = self.request(&scope);
-        request
-            .query(parent_intent)
-            .ensure_index_ready::<Intent::Index>()
+        self.with_funded_advancement(&scope, |phase| {
+            request
+                .query(parent_intent)
+                .ensure_index_ready_in_advancement::<Intent::Index>(&phase)
+        })
+        .map_err(WorthQueryApplicationRequestQueryDenial::ExecutionRequest)?
     }
 
     /// Ensures the managed index backing a `Default`-constructible parent query
@@ -210,9 +283,14 @@ where
 {
         let scope = self.fresh_scope();
         let request = self.request(&scope);
-        request
-            .query(parent_intent)
-            .ensure_index_ready_governed::<Intent::Index, _, _, _>(capability, operation, input)
+        self.with_funded_advancement(&scope, |phase| {
+            request
+                .query(parent_intent)
+                .ensure_index_ready_governed_in_advancement::<Intent::Index, _, _, _>(
+                    &phase, capability, operation, input,
+                )
+        })
+        .map_err(WorthQueryApplicationRequestQueryDenial::ExecutionRequest)?
     }
 
     /// Ensures an approved-elevation managed index is `Ready` for `parent_intent`,
@@ -239,10 +317,13 @@ where
 {
         let scope = self.fresh_scope();
         let request = self.request(&scope);
-        request
-            .query(parent_intent)
-            .ensure_index_ready_approved::<Intent::Index, _, _, _>(
-                approved, capability, operation, input,
-            )
+        self.with_funded_advancement(&scope, |phase| {
+            request
+                .query(parent_intent)
+                .ensure_index_ready_approved_in_advancement::<Intent::Index, _, _, _>(
+                    &phase, approved, capability, operation, input,
+                )
+        })
+        .map_err(WorthQueryApplicationRequestQueryDenial::ExecutionRequest)?
     }
 }

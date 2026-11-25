@@ -350,8 +350,10 @@ fn unified_predicates_optional_params_related_and_live_whole_result_expand_clean
         "bind_optional (ReadyTasksQuery :: priority ()",
         "live_whole_result ()",
         "with_live ()",
-        "where_equal_value (TaskFacts :: state ()",
-        "ApplicationQueryWhereFilterClauses :: < Self > :: new ()",
+        "try_where_equal_value (TaskFacts :: state ()",
+        "ApplicationQueryWhereFilterClauses :: < Self ,",
+        "and_compare_parameter",
+        "try_where_filter_clauses",
         "ApplicationQueryComparisonOp :: LessThanOrEqual",
         "where_no_related",
         "where_related_exists",
@@ -360,4 +362,8 @@ fn unified_predicates_optional_params_related_and_live_whole_result_expand_clean
     ] {
         assert!(expanded.contains(needle), "missing `{needle}` in: {expanded}");
     }
+    assert!(
+        !expanded.contains(". expect ("),
+        "generated definition must never panic via .expect(): {expanded}"
+    );
 }

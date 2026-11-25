@@ -63,6 +63,12 @@ worth_query_application_program! {
             body_action(RenameProjectBinding, RenameProjectDelivery) as RenameProjectAction {
                 operation: rename_project_definition();
             };
+            body_action(RenameTaskBinding, RenameTaskDelivery) as RenameTaskAction {
+                operation: rename_task_definition();
+            };
+            body_action(ProbeOccupiedTaskStateBinding, ProbeOccupiedTaskStateDelivery) as ProbeOccupiedTaskStateAction {
+                operation: probe_occupied_task_state_definition();
+            };
             body_action_ref(RestoreTaskStateBinding, RestoreTaskStateDelivery) as RestoreTaskStateAction {};
             body_action_ref(SetTaskStateBinding, SetTaskStateDelivery) as SetTaskStateAction {};
         }

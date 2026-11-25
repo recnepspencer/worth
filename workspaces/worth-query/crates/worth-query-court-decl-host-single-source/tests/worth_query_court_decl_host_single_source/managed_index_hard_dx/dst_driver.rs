@@ -4,7 +4,7 @@ use super::dst_watches::ActiveWatches;
 use super::operations::AssetSpec;
 use super::schema::*;
 use super::{
-    create_asset, delete_asset, home_lease, install, keys, limits, open_directory_home_with_limits,
+    create_asset, delete_asset, home_lease, install, limits, open_directory_home_with_limits,
     update_asset, Home, Host,
 };
 use std::path::PathBuf;
@@ -251,43 +251,39 @@ impl FourFamilyDriver {
         let checks = [
             (
                 "TextPrefix",
-                keys(
-                    req.query(qp(prefix))
-                        .execute()
-                        .map_err(|e| format!("prefix: {e:?}"))?
-                        .rows(),
-                ),
-                oracle.prefix_matches(prefix),
+                req.query(qp(prefix))
+                    .execute()
+                    .map_err(|e| format!("prefix: {e:?}"))?
+                    .rows()
+                    .to_vec(),
+                oracle.prefix_rows(prefix),
             ),
             (
                 "Interval1D",
-                keys(
-                    req.query(qi(w))
-                        .execute()
-                        .map_err(|e| format!("iv: {e:?}"))?
-                        .rows(),
-                ),
-                oracle.interval_matches(w.start, w.end),
+                req.query(qi(w))
+                    .execute()
+                    .map_err(|e| format!("iv: {e:?}"))?
+                    .rows()
+                    .to_vec(),
+                oracle.interval_rows(w.start, w.end),
             ),
             (
                 "Box2D",
-                keys(
-                    req.query(q2(b2))
-                        .execute()
-                        .map_err(|e| format!("box2d: {e:?}"))?
-                        .rows(),
-                ),
-                oracle.box2d_matches(b2),
+                req.query(q2(b2))
+                    .execute()
+                    .map_err(|e| format!("box2d: {e:?}"))?
+                    .rows()
+                    .to_vec(),
+                oracle.box2d_rows(b2),
             ),
             (
                 "Box3D",
-                keys(
-                    req.query(q3(b3))
-                        .execute()
-                        .map_err(|e| format!("box3d: {e:?}"))?
-                        .rows(),
-                ),
-                oracle.box3d_matches(b3),
+                req.query(q3(b3))
+                    .execute()
+                    .map_err(|e| format!("box3d: {e:?}"))?
+                    .rows()
+                    .to_vec(),
+                oracle.box3d_rows(b3),
             ),
         ];
         for (name, got, exp) in checks {

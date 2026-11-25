@@ -165,6 +165,8 @@ fn emit_provider_registration(
         }
     };
     let outer_helper = quote! {
+        #[allow(dead_code, non_snake_case)]
+        fn #setup_param() {}
         fn #install_fn(
             #setup_param: &mut #contrib::WorthQueryApplicationContributionSetup<'_, #schema_alias>,
         ) -> ::core::result::Result<(), #pg::WorthQueryPrimaryGraphInstallationDenial> {
@@ -172,6 +174,8 @@ fn emit_provider_registration(
         }
     };
     let inner_impl = quote! {
+        #[allow(dead_code, non_snake_case)]
+        fn #setup_param() {}
         impl #contrib::WorthQueryApplicationManagedIndexRegistration<#schema_alias> for #index_alias {
             fn install_managed_index(
                 #setup_param: &mut #contrib::WorthQueryApplicationContributionSetup<'_, #schema_alias>,

@@ -55,7 +55,7 @@ fn shape(row: &syn::Ident, columns: &[Column]) -> TokenStream {
                 ..
             } = column;
             let read = quote_spanned!(member.span()=>
-                #name, |row: &#row| ::core::clone::Clone::clone(&row.#member)
+                #name, |__worth_record_row: &#row| ::core::clone::Clone::clone(&__worth_record_row.#member)
             );
             let start = if index == 0 {
                 quote!(#frag::field(#read))

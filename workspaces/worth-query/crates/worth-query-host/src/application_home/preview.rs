@@ -1,5 +1,5 @@
-//! Expected-source preview forks ("what-if" branches) with atomic adoption and discard.
-use std::fmt;
+//! Expected-source preview forks ("what-if" branches) with atomic adoption,
+//! custody-preserving continuation recovery, and active-branch close protection.
 use std::time::{Duration, Instant};
 
 use worth_execution::ExecutionAllocationPolicy;
@@ -7,21 +7,20 @@ use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAdmissionClock, WorthQueryCancellationSource, WorthQueryRequestScope,
 };
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
-use worth_query_execution::facade::{
-    application_contribution::WorthQueryAdvancementDenial,
-    primary_graph::{
-        WorthQueryApplicationProductBranchCloseDenial, WorthQueryProductBranchAdmissionDenial,
-    },
-    product::{
-        WorthQueryExpectedProductBranch, WorthQueryExpectedProductBranchAdoptionDenial,
-        WorthQueryExpectedProductBranchCreationContinuation, WorthQueryProductBranch,
-        WorthQueryProductBranchCloseReceipt, WorthQueryProductBranchCreateError,
-        WorthQueryProductBranchCreationRecovery, WorthQueryProductBranchReadIdentity,
-        WorthQueryProductBranchRecoveryDenial,
-    },
+use worth_query_execution::facade::product::{
+    WorthQueryExpectedProductBranch, WorthQueryExpectedProductBranchCreationContinuation,
+    WorthQueryProductBranch, WorthQueryProductBranchCloseReceipt,
+    WorthQueryProductBranchCreateError, WorthQueryProductBranchCreationRecovery,
+    WorthQueryProductBranchReadIdentity, WorthQueryProductBranchRecoveryDenial,
 };
 
 use super::WorthQueryApplicationHome;
+
+mod denials;
+pub use denials::{
+    WorthQueryPreviewAdoptDenial, WorthQueryPreviewAdoptFailure, WorthQueryPreviewDiscardDenial,
+    WorthQueryPreviewDiscardFailure, WorthQueryPreviewForkDenial,
+};
 
 const FORK_CONTINUATION_TIMEOUT: Duration = Duration::from_secs(15);
 const FORK_CONTINUATION_RETRY_DELAY: Duration = Duration::from_millis(10);
@@ -98,127 +97,6 @@ impl<'home, Schema: ApplicationSchema> WorthQueryPreviewFork<'home, Schema> {
     }
 }
 
-/// Why creating a preview fork was refused.
-#[derive(Debug)]
-pub enum WorthQueryPreviewForkDenial {
-    Advancement(WorthQueryAdvancementDenial),
-    Selection(WorthQueryProductBranchAdmissionDenial),
-    Create(WorthQueryProductBranchCreateError),
-    Recovery {
-        denial: WorthQueryProductBranchRecoveryDenial,
-        recovery: WorthQueryProductBranchCreationRecovery,
-    },
-    ContinuationNotPerformed,
-}
-
-/// Why adopting a preview fork as the Home's active head was refused.
-#[derive(Debug)]
-pub enum WorthQueryPreviewAdoptDenial {
-    Advancement(WorthQueryAdvancementDenial),
-    Adoption(WorthQueryExpectedProductBranchAdoptionDenial),
-}
-
-impl WorthQueryPreviewAdoptDenial {
-    /// Returns `true` when adoption was refused because the Home's active head
-    /// advanced or its committed source basis changed since this preview forked.
-    pub fn is_stale_head(&self) -> bool {
-        use worth_relational::facade::branch::RelationalBranchBasisDenial as Basis;
-        matches!(
-            self,
-            Self::Adoption(
-                WorthQueryExpectedProductBranchAdoptionDenial::HeadMoved
-                    | WorthQueryExpectedProductBranchAdoptionDenial::HeadReplaced
-                    | WorthQueryExpectedProductBranchAdoptionDenial::SourceBasis(
-                        Basis::StaleReferenceGeneration
-                            | Basis::WrongBranchLocalTruthVersion
-                            | Basis::EmptyCommittedTargetMismatch
-                            | Basis::UnavailableRetainedTarget
-                    )
-            )
-        )
-    }
-}
-
-/// Failed adoption retains the preview fork intact so the caller can inspect
-/// the refusal and either retry or discard it.
-#[must_use = "retain or discard the preview fork returned by failed adoption"]
-pub struct WorthQueryPreviewAdoptFailure<'home, Schema: ApplicationSchema> {
-    preview: WorthQueryPreviewFork<'home, Schema>,
-    denial: WorthQueryPreviewAdoptDenial,
-}
-
-impl<'home, Schema: ApplicationSchema> WorthQueryPreviewAdoptFailure<'home, Schema> {
-    pub fn preview(&self) -> &WorthQueryPreviewFork<'home, Schema> {
-        &self.preview
-    }
-
-    pub fn denial(&self) -> &WorthQueryPreviewAdoptDenial {
-        &self.denial
-    }
-
-    pub fn into_parts(
-        self,
-    ) -> (
-        WorthQueryPreviewFork<'home, Schema>,
-        WorthQueryPreviewAdoptDenial,
-    ) {
-        (self.preview, self.denial)
-    }
-}
-
-impl<Schema: ApplicationSchema> fmt::Debug for WorthQueryPreviewAdoptFailure<'_, Schema> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("WorthQueryPreviewAdoptFailure")
-            .field("label", &self.preview.label)
-            .field("branch", &self.preview.branch())
-            .field("denial", &self.denial)
-            .finish()
-    }
-}
-
-/// Why discarding a preview fork was refused.
-#[derive(Debug)]
-pub enum WorthQueryPreviewDiscardDenial {
-    Advancement(WorthQueryAdvancementDenial),
-    Close(WorthQueryApplicationProductBranchCloseDenial),
-}
-
-/// Failed discard retains the preview fork intact for retry or inspection.
-#[must_use = "retain or retry discarding the preview fork"]
-pub struct WorthQueryPreviewDiscardFailure<'home, Schema: ApplicationSchema> {
-    preview: WorthQueryPreviewFork<'home, Schema>,
-    denial: WorthQueryPreviewDiscardDenial,
-}
-
-impl<'home, Schema: ApplicationSchema> WorthQueryPreviewDiscardFailure<'home, Schema> {
-    pub fn preview(&self) -> &WorthQueryPreviewFork<'home, Schema> {
-        &self.preview
-    }
-
-    pub fn denial(&self) -> &WorthQueryPreviewDiscardDenial {
-        &self.denial
-    }
-
-    pub fn into_parts(
-        self,
-    ) -> (
-        WorthQueryPreviewFork<'home, Schema>,
-        WorthQueryPreviewDiscardDenial,
-    ) {
-        (self.preview, self.denial)
-    }
-}
-
-impl<Schema: ApplicationSchema> fmt::Debug for WorthQueryPreviewDiscardFailure<'_, Schema> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("WorthQueryPreviewDiscardFailure")
-            .field("label", &self.preview.label)
-            .field("branch", &self.preview.branch())
-            .field("denial", &self.denial)
-            .finish()
-    }
-}
-
 fn fresh_preview_scope() -> WorthQueryRequestScope {
     WorthQueryRequestScope::new(
         None,
@@ -227,62 +105,42 @@ fn fresh_preview_scope() -> WorthQueryRequestScope {
     )
 }
 
-pub(super) fn fork_expected_from_active<'home, Schema: ApplicationSchema, Program>(
+pub(super) fn continue_expected_recovery<'home, Schema: ApplicationSchema, Program>(
     home: &'home WorthQueryApplicationHome<Schema, Program>,
-    clock: &WorthQueryAdmissionClock,
+    mut recovery: WorthQueryProductBranchCreationRecovery,
+    scope: &WorthQueryRequestScope,
 ) -> Result<WorthQueryExpectedProductBranch<'home, Schema>, WorthQueryPreviewForkDenial> {
     use WorthQueryExpectedProductBranchCreationContinuation as Continued;
-    let active = home.active_branch();
     let graph = home.primary_graph();
-    let scope = WorthQueryRequestScope::new(
-        None,
-        WorthQueryCancellationSource::new().token(),
-        clock.clone(),
-    );
-    let initial = graph
-        .with_funded_application_completion(
-            &scope,
-            ExecutionAllocationPolicy::SystemAllocation,
-            |phase| {
-                let selected = graph
-                    .on_branch(active)
-                    .select(&phase)
-                    .map_err(WorthQueryPreviewForkDenial::Selection)?;
-                let fork = graph
-                    .branches()
-                    .fork_expected(selected)
-                    .map_err(WorthQueryPreviewForkDenial::Selection)?;
-                fork.components(|parts| parts.fork_relational().reuse_exact_signal_basis())
-                    .create(&phase)
-                    .map_err(WorthQueryPreviewForkDenial::Create)
-            },
-        )
-        .map_err(WorthQueryPreviewForkDenial::Advancement)?;
-    let mut recovery = match initial {
-        Ok(candidate) => return Ok(candidate),
-        Err(WorthQueryPreviewForkDenial::Create(
-            WorthQueryProductBranchCreateError::ProductUnpublished(original),
-        )) => original,
-        Err(other) => return Err(other),
-    };
     let deadline = Instant::now() + FORK_CONTINUATION_TIMEOUT;
     while Instant::now() < deadline {
-        let retry_scope = WorthQueryRequestScope::new(
-            None,
-            WorthQueryCancellationSource::new().token(),
-            clock.clone(),
-        );
-        let step = graph
-            .with_funded_application_completion(
-                &retry_scope,
-                ExecutionAllocationPolicy::SystemAllocation,
-                |phase| graph.branches().continue_expected(recovery, &phase),
-            )
-            .map_err(WorthQueryPreviewForkDenial::Advancement)?;
+        let mut slot = Some(recovery);
+        let step = match graph.with_funded_application_completion(
+            scope,
+            ExecutionAllocationPolicy::SystemAllocation,
+            |phase| {
+                let current = slot.take().expect("advancement runs once");
+                graph.branches().continue_expected(current, &phase)
+            },
+        ) {
+            Ok(step) => step,
+            Err(denial) => match slot.take() {
+                Some(recovery) => {
+                    return Err(WorthQueryPreviewForkDenial::ContinuationAdvancement {
+                        denial,
+                        recovery,
+                    });
+                }
+                None => return Err(WorthQueryPreviewForkDenial::Advancement(denial)),
+            },
+        };
         match step {
             Ok(Continued::Performed(candidate)) => return Ok(candidate),
-            Ok(Continued::NoEffect(_) | Continued::ReleasedOriginal(_)) => {
-                return Err(WorthQueryPreviewForkDenial::ContinuationNotPerformed);
+            Ok(Continued::NoEffect(receipt)) => {
+                return Err(WorthQueryPreviewForkDenial::NoEffect(receipt));
+            }
+            Ok(Continued::ReleasedOriginal(receipt)) => {
+                return Err(WorthQueryPreviewForkDenial::ReleasedOriginal(receipt));
             }
             Err(failure) if failure.denial() == WorthQueryProductBranchRecoveryDenial::Busy => {
                 recovery = failure.into_recovery();
@@ -302,6 +160,41 @@ pub(super) fn fork_expected_from_active<'home, Schema: ApplicationSchema, Progra
     })
 }
 
+pub(super) fn fork_expected_from_active_with_scope<'home, Schema: ApplicationSchema, Program>(
+    home: &'home WorthQueryApplicationHome<Schema, Program>,
+    scope: &WorthQueryRequestScope,
+) -> Result<WorthQueryExpectedProductBranch<'home, Schema>, WorthQueryPreviewForkDenial> {
+    let active = home.active_branch();
+    let graph = home.primary_graph();
+    let initial = graph
+        .with_funded_application_completion(
+            scope,
+            ExecutionAllocationPolicy::SystemAllocation,
+            |phase| {
+                let selected = graph
+                    .on_branch(active)
+                    .select(&phase)
+                    .map_err(WorthQueryPreviewForkDenial::Selection)?;
+                let fork = graph
+                    .branches()
+                    .fork_expected(selected)
+                    .map_err(WorthQueryPreviewForkDenial::Selection)?;
+                fork.components(|parts| parts.fork_relational().reuse_exact_signal_basis())
+                    .create(&phase)
+                    .map_err(WorthQueryPreviewForkDenial::Create)
+            },
+        )
+        .map_err(WorthQueryPreviewForkDenial::Advancement)?;
+    let recovery = match initial {
+        Ok(candidate) => return Ok(candidate),
+        Err(WorthQueryPreviewForkDenial::Create(
+            WorthQueryProductBranchCreateError::ProductUnpublished(original),
+        )) => original,
+        Err(other) => return Err(other),
+    };
+    continue_expected_recovery(home, recovery, scope)
+}
+
 impl<Schema: ApplicationSchema, Program> WorthQueryApplicationHome<Schema, Program> {
     /// Forks a new preview branch from the Home's exact current active head,
     /// completing Directory Home product publication when needed.
@@ -309,9 +202,32 @@ impl<Schema: ApplicationSchema, Program> WorthQueryApplicationHome<Schema, Progr
         &self,
         label: impl Into<String>,
     ) -> Result<WorthQueryPreviewFork<'_, Schema>, WorthQueryPreviewForkDenial> {
+        let scope = fresh_preview_scope();
+        self.fork_preview_with_scope(label, &scope)
+    }
+
+    /// Forks a new preview branch under an explicit [`WorthQueryRequestScope`],
+    /// preserving exact recovery custody on pre-entry refusal.
+    pub fn fork_preview_with_scope(
+        &self,
+        label: impl Into<String>,
+        scope: &WorthQueryRequestScope,
+    ) -> Result<WorthQueryPreviewFork<'_, Schema>, WorthQueryPreviewForkDenial> {
         let label = label.into();
-        let clock = WorthQueryAdmissionClock::system();
-        let expected = fork_expected_from_active(self, &clock)?;
+        let expected = fork_expected_from_active_with_scope(self, scope)?;
+        Ok(WorthQueryPreviewFork { label, expected })
+    }
+
+    /// Continues an unpublished preview creation recovery under `scope`,
+    /// preserving exact recovery custody if pre-entry admission refuses.
+    pub fn continue_preview_recovery(
+        &self,
+        label: impl Into<String>,
+        recovery: WorthQueryProductBranchCreationRecovery,
+        scope: &WorthQueryRequestScope,
+    ) -> Result<WorthQueryPreviewFork<'_, Schema>, WorthQueryPreviewForkDenial> {
+        let label = label.into();
+        let expected = continue_expected_recovery(self, recovery, scope)?;
         Ok(WorthQueryPreviewFork { label, expected })
     }
 
@@ -366,12 +282,24 @@ impl<Schema: ApplicationSchema, Program> WorthQueryApplicationHome<Schema, Progr
 
     /// Closes a previously replaced branch (such as the branch returned by
     /// [`Self::adopt_preview`]) cleanly under application completion.
+    ///
+    /// Refuses with [`WorthQueryPreviewDiscardDenial::ActiveBranchProtected`]
+    /// if `branch` is currently this Home's active head, coordinated atomically
+    /// with [`Self::adopt_preview`].
     pub fn close_branch(
         &self,
         branch: WorthQueryProductBranch,
     ) -> Result<WorthQueryProductBranchCloseReceipt, WorthQueryPreviewDiscardDenial> {
+        let head = self
+            .active_head
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        if *head == branch {
+            return Err(WorthQueryPreviewDiscardDenial::ActiveBranchProtected);
+        }
         let scope = fresh_preview_scope();
-        self.primary_graph()
+        let result = self
+            .primary_graph()
             .with_funded_application_completion(
                 &scope,
                 ExecutionAllocationPolicy::SystemAllocation,
@@ -382,6 +310,8 @@ impl<Schema: ApplicationSchema, Program> WorthQueryApplicationHome<Schema, Progr
                         .map_err(WorthQueryPreviewDiscardDenial::Close)
                 },
             )
-            .map_err(WorthQueryPreviewDiscardDenial::Advancement)?
+            .map_err(WorthQueryPreviewDiscardDenial::Advancement)?;
+        drop(head);
+        result
     }
 }

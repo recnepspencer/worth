@@ -123,6 +123,7 @@ fn target_dx_1_2_3_5_8_unified_query_session_directory_open_managed_index_and_te
         assert_eq!(
             watch
                 .current()
+                .expect("watch snapshot is current")
                 .iter()
                 .map(|r| r.task_key)
                 .collect::<Vec<_>>(),
@@ -210,7 +211,11 @@ fn target_dx_6_whole_result_live_subscription_wakes_on_blocker_and_due_date_not_
             })
             .unwrap();
         assert_eq!(
-            sub.current().iter().map(|r| r.task_key).collect::<Vec<_>>(),
+            sub.current()
+                .expect("initial live snapshot is current")
+                .iter()
+                .map(|r| r.task_key)
+                .collect::<Vec<_>>(),
             vec![1, 3]
         );
 
@@ -258,7 +263,11 @@ fn target_dx_6_whole_result_live_subscription_wakes_on_blocker_and_due_date_not_
             vec![2]
         );
         assert_eq!(
-            sub.current().iter().map(|r| r.task_key).collect::<Vec<_>>(),
+            sub.current()
+                .expect("refreshed live snapshot is current")
+                .iter()
+                .map(|r| r.task_key)
+                .collect::<Vec<_>>(),
             vec![2]
         );
         sub.close().unwrap();

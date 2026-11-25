@@ -5,7 +5,7 @@ use super::dst_oracle::{
 };
 use super::operations::AssetSpec;
 use super::schema::*;
-use super::{keys, Host};
+use super::Host;
 use worth_query_host::facade::application_entry::WorthQueryApplicationRequestExt;
 use worth_query_host::facade::primary_graph::*;
 use worth_query_testkit_document_retention::facade::document_retention_model::operator_identity::{
@@ -52,12 +52,12 @@ impl ActiveWatches {
             .query(q3(box3d))
             .watch_index::<RouteBox3DIndex>()
             .map_err(|e| format!("w_3: {e:?}"))?;
-        if keys(rp.rows()) != oracle.prefix_matches(prefix)
-            || keys(ri.rows()) != oracle.interval_matches(window.start, window.end)
-            || keys(r2.rows()) != oracle.box2d_matches(box2d)
-            || keys(r3.rows()) != oracle.box3d_matches(box3d)
+        if rp.rows() != oracle.prefix_rows(prefix).as_slice()
+            || ri.rows() != oracle.interval_rows(window.start, window.end).as_slice()
+            || r2.rows() != oracle.box2d_rows(box2d).as_slice()
+            || r3.rows() != oracle.box3d_rows(box3d).as_slice()
         {
-            return Err("watch initial snapshot mismatch".to_owned());
+            return Err("watch initial projected row snapshot mismatch".to_owned());
         }
         Ok(Self {
             prefix: prefix.to_owned(),
@@ -100,7 +100,7 @@ impl ActiveWatches {
                 check_watch(
                     "TextPrefix",
                     req.query(qp(&self.prefix)).next_watch(&mut self.w_prefix),
-                    &oracle.prefix_matches(&self.prefix),
+                    &oracle.prefix_rows(&self.prefix),
                     expected[0],
                 )?,
                 expected[0],
@@ -109,7 +109,7 @@ impl ActiveWatches {
                 check_watch(
                     "Interval1D",
                     req.query(qi(self.window)).next_watch(&mut self.w_iv),
-                    &oracle.interval_matches(self.window.start, self.window.end),
+                    &oracle.interval_rows(self.window.start, self.window.end),
                     expected[1],
                 )?,
                 expected[1],
@@ -118,7 +118,7 @@ impl ActiveWatches {
                 check_watch(
                     "Box2D",
                     req.query(q2(self.box2d)).next_watch(&mut self.w_b2),
-                    &oracle.box2d_matches(self.box2d),
+                    &oracle.box2d_rows(self.box2d),
                     expected[2],
                 )?,
                 expected[2],
@@ -127,7 +127,7 @@ impl ActiveWatches {
                 check_watch(
                     "Box3D",
                     req.query(q3(self.box3d)).next_watch(&mut self.w_b3),
-                    &oracle.box3d_matches(self.box3d),
+                    &oracle.box3d_rows(self.box3d),
                     expected[3],
                 )?,
                 expected[3],

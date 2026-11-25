@@ -5,6 +5,7 @@ mod courts;
 mod courts_f64;
 mod courts_lifecycle;
 mod dst;
+mod dst_budget;
 mod dst_driver;
 mod dst_oracle;
 mod dst_watches;

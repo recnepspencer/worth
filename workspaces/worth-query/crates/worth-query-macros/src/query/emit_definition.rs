@@ -137,6 +137,7 @@ pub(super) fn definition_builder(
         builder_local,
         clauses_local,
         encode_lit_fn,
+        root_alias,
         &aq,
     );
     let related_blocks: Vec<TokenStream> = def
@@ -197,19 +198,26 @@ pub(super) fn definition_builder(
                 .flat_map(|r| &r.target_predicates),
         )
         .any(|p| matches!(p.rhs, PredicateRhs::Literal(_)));
+    let (lit_field_ty, lit_val_ty, lit_val_local) =
+        (&names.lit_field_ty, &names.lit_val_ty, &names.lit_val_local);
     let encode_lit_def = has_literal.then(|| {
         quote! {
+            #[allow(dead_code, non_snake_case)]
+            fn #lit_val_local() {}
+
             #[allow(dead_code)]
-            fn #encode_lit_fn<__F>(
-                _field: &__F,
-                value: <<__F as #frag::RecordSelection>::Binding as #aschema::ApplicationScalarValueBinding>::Value,
-            ) -> #aschema::ApplicationEncodedScalarValue<<__F as #frag::RecordSelection>::Binding>
+            fn #encode_lit_fn<#lit_field_ty, #lit_val_ty>(
+                _: &#lit_field_ty,
+                #lit_val_local: #lit_val_ty,
+            ) -> ::core::result::Result<
+                #aschema::ApplicationEncodedScalarValue<<#lit_field_ty as #frag::RecordSelection>::Binding>,
+                #aschema::ApplicationValueEncodeDenial,
+            >
             where
-                __F: #frag::RecordSelection,
-                __F::Binding: #aschema::ApplicationReadableScalarValueBinding,
+                #lit_field_ty: #frag::RecordSelection,
+                #lit_field_ty::Binding: #aschema::ApplicationReadableScalarValueBinding<Value = #lit_val_ty>,
             {
-                #aschema::ApplicationEncodedScalarValue::<<__F as #frag::RecordSelection>::Binding>::try_new(value)
-                    .expect("derived WorthQuery literal constant encodes")
+                #aschema::ApplicationEncodedScalarValue::<<#lit_field_ty as #frag::RecordSelection>::Binding>::try_new(#lit_val_local)
             }
         }
     });

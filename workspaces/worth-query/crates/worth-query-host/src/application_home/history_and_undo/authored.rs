@@ -26,6 +26,9 @@ use worth_query_publication::facade::application_entry::{
 };
 use worth_runtime_world::facade::ProductUnpublishedRecoveryHandle;
 
+use crate::session::auto_key::{
+    derive_decimal_correction_key, durable_branch_seed, MAX_AUTO_KEY_PROBES,
+};
 use crate::source_custody::{
     WorthQueryAnyCorrectionCustodyOutcome, WorthQueryAnySourceCompletion,
     WorthQueryAnySourceCustody, WorthQueryAnySourceCustodyStep,
@@ -33,8 +36,8 @@ use crate::source_custody::{
 };
 
 use super::{
-    map_undo_denial, next_restart_safe_correction_key, WorthQueryApplicationHome,
-    WorthQueryCorrectionEntry, WorthQueryHomeUndoDenial, DEFAULT_CORRECTION_HISTORY_LIMITS,
+    map_seed_denial, map_undo_denial, WorthQueryApplicationHome, WorthQueryCorrectionEntry,
+    WorthQueryHomeUndoDenial, DEFAULT_CORRECTION_HISTORY_LIMITS, DEFAULT_HOST_EXECUTION_POLICY,
 };
 
 /// Outcome of an authored-body undo or redo via [`WorthQueryAnySourceCustody`].
@@ -109,6 +112,19 @@ fn map_any_custody_outcome<Schema, Program>(
     }
 }
 
+fn is_occupied_authored_outcome<Schema, Program>(
+    outcome: &WorthQueryHomeAuthoredCorrectionOutcome<Schema, Program>,
+) -> bool {
+    matches!(
+        outcome,
+        WorthQueryHomeAuthoredCorrectionOutcome::IdempotencyIntentDrift
+    ) || matches!(
+        outcome,
+        WorthQueryHomeAuthoredCorrectionOutcome::Committed { evidence, .. }
+            if evidence.live_receipt().is_none()
+    )
+}
+
 impl<Schema, Program> WorthQueryApplicationHome<Schema, Program>
 where
     Schema: ApplicationSchema + 'static,
@@ -149,8 +165,30 @@ where
             WorthQueryCapturedMutationInput<Schema, ApplicationInverseBinding<Schema, C>>,
         >: fmt::Debug,
 {
-        let key = next_restart_safe_correction_key();
-        self.undo_authored_with_key::<C>(entry, principal, &key)
+        let principal = principal.borrow();
+        let scope = WorthQueryRequestScope::new(
+            None,
+            WorthQueryCancellationSource::new().token(),
+            principal.clock().clone(),
+        );
+        let seed = durable_branch_seed(
+            self.primary_graph(),
+            self.active_branch(),
+            DEFAULT_HOST_EXECUTION_POLICY,
+            &scope,
+        )
+        .map_err(map_seed_denial)?;
+        let mut last_occupied = None;
+        for probe in 0..MAX_AUTO_KEY_PROBES {
+            let key = derive_decimal_correction_key(seed, b"undo-authored", probe);
+            let outcome = self.undo_authored_with_key::<C>(entry, principal, &key)?;
+            if is_occupied_authored_outcome(&outcome) {
+                last_occupied = Some(outcome);
+                continue;
+            }
+            return Ok(outcome);
+        }
+        Ok(last_occupied.expect("probe loop ran at least once"))
     }
 
     /// Reverses an authored-body correction with an explicit caller idempotency
@@ -260,8 +298,30 @@ where
             >,
         >: fmt::Debug,
     {
-        let key = next_restart_safe_correction_key();
-        self.redo_authored_with_key::<C>(entry, principal, &key)
+        let principal = principal.borrow();
+        let scope = WorthQueryRequestScope::new(
+            None,
+            WorthQueryCancellationSource::new().token(),
+            principal.clock().clone(),
+        );
+        let seed = durable_branch_seed(
+            self.primary_graph(),
+            self.active_branch(),
+            DEFAULT_HOST_EXECUTION_POLICY,
+            &scope,
+        )
+        .map_err(map_seed_denial)?;
+        let mut last_occupied = None;
+        for probe in 0..MAX_AUTO_KEY_PROBES {
+            let key = derive_decimal_correction_key(seed, b"redo-authored", probe);
+            let outcome = self.redo_authored_with_key::<C>(entry, principal, &key)?;
+            if is_occupied_authored_outcome(&outcome) {
+                last_occupied = Some(outcome);
+                continue;
+            }
+            return Ok(outcome);
+        }
+        Ok(last_occupied.expect("probe loop ran at least once"))
     }
 
     /// Reapplies a previously reversed authored-body entry with an explicit key.

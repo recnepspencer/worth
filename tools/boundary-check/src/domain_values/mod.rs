@@ -1,5 +1,6 @@
 //! Per-binding source guard for explicit domain-atom contracts.
 mod attributes;
+mod binary_derive_claims;
 mod canonical_claims;
 mod claims;
 mod closure;
@@ -94,23 +95,40 @@ fn check_sources(
 ) -> Result<(), Vec<String>> {
     let registrations = registrations(files, registry).map_err(|error| vec![error])?;
     let sources = modules::Sources::new(files, roots);
+    let binary_crate_dirs: Vec<String> = sources
+        .roots
+        .values()
+        .filter_map(|root| root.rsplit_once('/').map(|(dir, _)| format!("{dir}/")))
+        .filter(|dir| {
+            files.iter().any(|(path, text)| {
+                path.ends_with(".rs")
+                    && path.starts_with(dir)
+                    && (text.contains("WorthBinaryValue") || text.contains("worth_binary"))
+            })
+        })
+        .collect();
     let mut claims = Vec::new();
     let mut errors = Vec::new();
     for (source, text) in files {
+        let in_binary_crate_with_derive = text.contains("derive")
+            && (binary_crate_dirs.iter().any(|dir| source.starts_with(dir))
+                || text.contains("worth_query"));
         if source.ends_with(".rs")
-            && [
-                "binary",
-                "domain_value",
-                "DOMAIN_VALUE",
-                "domain",
-                "ApplicationCanonicalValueContract",
-                "canonical_contract",
-                "WorthBinaryValue",
-            ]
-            .iter()
-            .any(|marker| text.contains(marker))
+            && (in_binary_crate_with_derive
+                || [
+                    "binary",
+                    "domain_value",
+                    "DOMAIN_VALUE",
+                    "domain",
+                    "ApplicationCanonicalValueContract",
+                    "canonical_contract",
+                    "WorthBinaryValue",
+                    "worth_binary",
+                ]
+                .iter()
+                .any(|marker| text.contains(marker)))
         {
-            match claims::discover(source, text) {
+            match claims::discover(source, text, &sources) {
                 Ok(found) => claims.extend(found),
                 Err(error) => errors.push(error),
             }

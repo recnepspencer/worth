@@ -2,6 +2,7 @@
 use std::fmt;
 use std::num::NonZeroUsize;
 use std::path::PathBuf;
+use std::time::SystemTime;
 
 use worth_foundational::facade::{
     ApplicationBuildIdentity, DeterminismContract, ExecutionBudget, ExecutionPosture,
@@ -28,7 +29,7 @@ use worth_query_execution::facade::{
     },
     primary_graph::{
         WorthQueryPrimaryGraphBootstrap, WorthQueryPrimaryGraphInstallationDenial,
-        WorthQueryRuntimeTimeSource,
+        WorthQueryRuntimeTimeSource, WorthQueryRuntimeTimeSourceDenial,
     },
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
@@ -247,6 +248,20 @@ impl<Schema: ApplicationSchemaComposition, Program> fmt::Display
     }
 }
 
+struct ConfiguredAdmissionClockTimeSource {
+    clock: WorthQueryAdmissionClock,
+}
+
+impl WorthQueryRuntimeTimeSource for ConfiguredAdmissionClockTimeSource {
+    fn admission_clock(&self) -> WorthQueryAdmissionClock {
+        self.clock.clone()
+    }
+
+    fn current_time(&self) -> Result<SystemTime, WorthQueryRuntimeTimeSourceDenial> {
+        Ok(SystemTime::now())
+    }
+}
+
 impl<Schema, Program> WorthQueryApplicationHome<Schema, Program>
 where
     Schema: ApplicationSchemaComposition,
@@ -285,6 +300,7 @@ where
             .with_schema(&declaration)
             .validated_program()
             .map_err(Denial::ProgramValidation)?;
+        let admission_clock = config.clock.clone();
         let limits = match config.limits {
             Some(limits) => limits,
             None => WorthQueryApplicationLimits::bounded_serial(config.clock)
@@ -303,9 +319,12 @@ where
             config.initial_state,
         )
         .with_checkpoint_limits(config.checkpoint_limits);
-        if let Some(source) = config.authorization_time_source {
-            request.authorization_time_source = Some(source);
-        }
+        request.authorization_time_source = Some(match config.authorization_time_source {
+            Some(source) => source,
+            None => Box::new(ConfiguredAdmissionClockTimeSource {
+                clock: admission_clock,
+            }),
+        });
         with_bootstrap_advancement(config.execution_policy, |phase| {
             request.open_in_advancement(&phase)
         })

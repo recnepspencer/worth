@@ -40,25 +40,39 @@ where
         let mut completed = None;
         let advancement = application
             .with_application_advancement(request, |phase| {
-                completed = Some(self.with_admitted_query(
-                    &phase,
-                    |application, binding, external, plan| {
-                        application
-                            .open_application_managed_index_watch::<Intent::Binding, I>(
-                                &phase, binding, external, plan,
-                            )
-                            .map(|(read, watch)| {
-                                (
-                                    publish_application_result(read.into_admitted_disclosed()),
-                                    watch,
-                                )
-                            })
-                            .map_err(WorthQueryApplicationRequestQueryDenial::ManagedIndex)
-                    },
-                ));
+                completed = Some(self.watch_index_in_advancement::<I>(&phase));
             })
             .map_err(WorthQueryApplicationRequestQueryDenial::ExecutionRequest);
         completion::completed_effect(advancement, completed)
+    }
+
+    /// Borrowed-phase counterpart to [`Self::watch_index`].
+    pub fn watch_index_in_advancement<I: ApplicationManagedIndexBinding<Schema>>(
+        self,
+        phase: &AdvancementPhase<'_>,
+    ) -> Result<OpenedWatch<Schema, Intent::Binding, I>, WorthQueryApplicationRequestQueryDenial>
+    where
+        <Intent::Binding as ApplicationQueryBinding<Schema>>::ScopeBinding:
+            ApplicationQueryScopeResolution<
+                Schema,
+                <Intent::Binding as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
+            >,
+        Row<Schema, Intent::Binding>:
+            WorthQueryApplicationProjection<Schema, Query<Schema, Intent::Binding>>,
+    {
+        self.with_admitted_query(phase, |application, binding, external, plan| {
+            application
+                .open_application_managed_index_watch::<Intent::Binding, I>(
+                    phase, binding, external, plan,
+                )
+                .map(|(read, watch)| {
+                    (
+                        publish_application_result(read.into_admitted_disclosed()),
+                        watch,
+                    )
+                })
+                .map_err(WorthQueryApplicationRequestQueryDenial::ManagedIndex)
+        })
     }
 
     /// Refreshes the whole Parent for the next notification. Notification B and
@@ -87,19 +101,40 @@ where
         let mut completed = None;
         let advancement = application
             .with_application_advancement(request, |phase| {
-                completed = Some(self.with_admitted_query(
-                    &phase,
-                    |application, binding, external, plan| {
-                        application
-                            .next_application_managed_index_watch::<Intent::Binding, I>(
-                                &phase, binding, external, plan, watch,
-                            )
-                            .map_err(WorthQueryApplicationRequestQueryDenial::ManagedIndex)
-                    },
-                ));
+                completed = Some(self.next_watch_in_advancement::<I>(&phase, watch));
             })
             .map_err(WorthQueryApplicationRequestQueryDenial::ExecutionRequest);
         finish_next(advancement, completed)
+    }
+
+    /// Borrowed-phase counterpart to [`Self::next_watch`].
+    pub fn next_watch_in_advancement<I: ApplicationManagedIndexBinding<Schema>>(
+        self,
+        phase: &AdvancementPhase<'_>,
+        watch: &mut WorthQueryManagedIndexWatch<Schema, I>,
+    ) -> Result<
+        WorthQueryManagedIndexWatchOutcome<
+            Query<Schema, Intent::Binding>,
+            Row<Schema, Intent::Binding>,
+        >,
+        WorthQueryApplicationRequestQueryDenial,
+    >
+    where
+        <Intent::Binding as ApplicationQueryBinding<Schema>>::ScopeBinding:
+            ApplicationQueryScopeResolution<
+                Schema,
+                <Intent::Binding as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
+            >,
+        Row<Schema, Intent::Binding>:
+            WorthQueryApplicationProjection<Schema, Query<Schema, Intent::Binding>>,
+    {
+        self.with_admitted_query(phase, |application, binding, external, plan| {
+            application
+                .next_application_managed_index_watch::<Intent::Binding, I>(
+                    phase, binding, external, plan, watch,
+                )
+                .map_err(WorthQueryApplicationRequestQueryDenial::ManagedIndex)
+        })
     }
 }
 

@@ -7,12 +7,13 @@ use super::{
     WorthQueryPortableApplicationQueryRelatedPredicateParts,
 };
 use crate::application_query::{
-    ApplicationQueryParameterRef, ApplicationQueryWhereFilter, ApplicationQueryWhereFilterProgram,
-    RelationDirection,
+    ApplicationQueryParameterRef, ApplicationQueryWhereFilter, ApplicationQueryWhereFilterClauses,
+    ApplicationQueryWhereFilterDenial, ApplicationQueryWhereFilterProgram, RelationDirection,
 };
 use crate::application_schema::{
     fragment::RecordSelection, ApplicationEncodedScalarValue, ApplicationFieldBindingRecipe,
     ApplicationFieldPresence, ApplicationReadableScalarValueBinding, ApplicationRelationRef,
+    ApplicationValueEncodeDenial,
 };
 
 /// Typed related-record predicate over one declared relation.
@@ -150,6 +151,26 @@ impl<Schema, Query, Root, Target> ApplicationQueryRelatedPredicate<Schema, Query
         self
     }
 
+    /// Non-panicking variant of [`Self::where_equal_value`] that records an
+    /// encode refusal as a deferred predicate denial rather than panicking.
+    pub fn try_where_equal_value<Field, Binding>(
+        mut self,
+        field: Field,
+        expected: Result<ApplicationEncodedScalarValue<Binding>, ApplicationValueEncodeDenial>,
+    ) -> Self
+    where
+        Field: RecordSelection<Entity = Target, Binding = Binding>,
+        Binding: ApplicationReadableScalarValueBinding,
+    {
+        match expected {
+            Ok(value) => self.where_equal_value(field, value),
+            Err(_) => {
+                self.invalid_literal_or_field = true;
+                self
+            }
+        }
+    }
+
     /// Narrow matching related target records by one admitted Foundation
     /// Boolean expression over `Target`'s fields, declared parameters
     /// (required or optional), and authored literals.
@@ -158,6 +179,26 @@ impl<Schema, Query, Root, Target> ApplicationQueryRelatedPredicate<Schema, Query
         self.field_expectations.extend(fields);
         self.target_where_filter = Some(program);
         self
+    }
+
+    /// Narrow matching related target records by typed `Target`-bound clauses,
+    /// enforcing `Field::Entity = Target` at compile time and deferring any
+    /// clause admission refusal to definition validation without panicking.
+    pub fn try_where_filter_clauses(
+        mut self,
+        clauses: ApplicationQueryWhereFilterClauses<Query, Target>,
+    ) -> Self {
+        match clauses.finish() {
+            Ok(filter) => self.where_filter(filter),
+            Err(denial) => {
+                self.record_filter_denial(denial);
+                self
+            }
+        }
+    }
+
+    fn record_filter_denial(&mut self, _denial: ApplicationQueryWhereFilterDenial) {
+        self.invalid_literal_or_field = true;
     }
 
     pub(in crate::application_query) fn into_parts(

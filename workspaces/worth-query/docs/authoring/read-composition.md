@@ -162,7 +162,7 @@ let rows: Vec<TaskRow> = session.query(ReadyTasks {
 let mut live = session.subscribe(ReadyTasks {
     project: 1, priority: None, due_before: Some(cutoff),
 })?;
-let current: &[TaskRow] = live.current();
+let current: Option<&[TaskRow]> = live.current();
 if let Some(updated) = live.refresh(&session)? {
     let _ = updated;
 }
