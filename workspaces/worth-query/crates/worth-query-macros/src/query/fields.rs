@@ -2,13 +2,15 @@
 use super::grammar::{QueryParam, QueryScope, StructScope};
 use super::DERIVE;
 use crate::case::pascal_case;
-use crate::grammar::{flag, member_name, selection_column, unknown_key, value, visit_keys, Once};
+use crate::grammar::{
+    flag, member_name, option_inner, selection_column, unknown_key, value, visit_keys, Once,
+};
 use std::collections::BTreeSet;
 use syn::meta::ParseNestedMeta;
 use syn::{DeriveInput, Field, FieldsNamed, Ident, LitStr, Token, Type};
 
 const FIELD_KEYS: &[&str] = &[
-    "scope", "column", "param", "probe", "name", "binding", "selector", "skip",
+    "scope", "column", "param", "probe", "optional", "name", "binding", "selector", "skip",
 ];
 const RESERVED_SELECTORS: &[&str] = &["reference", "definition", "definition_with"];
 
@@ -17,6 +19,7 @@ struct FieldKeys {
     column: Once<LitStr>,
     param: Once<bool>,
     probe: Once<bool>,
+    optional: Once<bool>,
     name: Once<LitStr>,
     binding: Once<Type>,
     selector: Once<Ident>,
@@ -30,6 +33,7 @@ impl FieldKeys {
             column: Once::new("column"),
             param: Once::new("param"),
             probe: Once::new("probe"),
+            optional: Once::new("optional"),
             name: Once::new("name"),
             binding: Once::new("binding"),
             selector: Once::new("selector"),
@@ -51,6 +55,7 @@ impl FieldKeys {
             "column" => self.column.set(meta, value(meta)?),
             "param" => self.param.set(meta, flag(meta)?),
             "probe" => self.probe.set(meta, flag(meta)?),
+            "optional" => self.optional.set(meta, flag(meta)?),
             "name" => self.name.set(meta, value(meta)?),
             "binding" => self.binding.set(meta, value(meta)?),
             "selector" => self.selector.set(meta, value(meta)?),
@@ -62,6 +67,7 @@ impl FieldKeys {
     fn refuse_param_keys(&self, role: &str) -> syn::Result<()> {
         self.param.refuse_unless(false, role)?;
         self.probe.refuse_unless(false, role)?;
+        self.optional.refuse_unless(false, role)?;
         self.name.refuse_unless(false, role)?;
         self.binding.refuse_unless(false, role)?;
         self.selector.refuse_unless(false, role)?;
@@ -208,11 +214,26 @@ fn parse_field(
         return keys.refuse_param_keys("a query with `parameters_fn`");
     }
     let is_probe = keys.probe.is_set();
+    let optional_inner = option_inner(&field.ty).cloned();
+    if let Some(span) = keys.optional.span()
+        && optional_inner.is_none()
+    {
+        return Err(syn::Error::new(
+            span,
+            "`optional` requires an `Option<T>` parameter field type",
+        ));
+    }
     if let Some(span) = keys.probe.span() {
         if !has_managed_index {
             return Err(syn::Error::new(
                 span,
                 "`probe` requires struct-level `#[worth_query(managed_index = Index)]`",
+            ));
+        }
+        if optional_inner.is_some() {
+            return Err(syn::Error::new(
+                span,
+                "managed-index `probe` field cannot be `Option<T>`",
             ));
         }
         keys.param.refuse_unless(false, "a `probe` field")?;
@@ -232,6 +253,7 @@ fn parse_field(
     params.push(QueryParam {
         selector: keys.selector.optional().unwrap_or_else(|| member.clone()),
         value_ty: field.ty.clone(),
+        optional_inner,
         member,
         wire_name,
         marker,

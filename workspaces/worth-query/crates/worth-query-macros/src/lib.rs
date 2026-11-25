@@ -93,6 +93,13 @@ pub fn derive_worth_query_projection(input: TokenStream) -> TokenStream {
     expand(input, projection::expand)
 }
 
+/// Alias for [`WorthQueryProjection`]: declares a typed query result row's
+/// slots, result shape, projection, and self-binding for `result = Row`.
+#[proc_macro_derive(WorthQueryRow, attributes(worth_query))]
+pub fn derive_worth_query_row(input: TokenStream) -> TokenStream {
+    expand(input, projection::expand)
+}
+
 /// Declares a typed application query, its parameter references, its request
 /// binding and optional definition defaults from one request struct.
 #[proc_macro_derive(WorthQuery, attributes(worth_query))]

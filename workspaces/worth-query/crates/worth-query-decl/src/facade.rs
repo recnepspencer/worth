@@ -51,7 +51,7 @@ pub use worth_query_declaration::{
 /// `::worth_query_host`, so a crate deriving it depends on both.
 pub use worth_query_macros::{
     WorthBinaryValue, WorthManagedIndex, WorthQuery, WorthQueryAction, WorthQueryCorrection,
-    WorthQueryProjection, WorthQueryRecord, WorthQueryRelation, WorthQuerySchema,
+    WorthQueryProjection, WorthQueryRecord, WorthQueryRelation, WorthQueryRow, WorthQuerySchema,
 };
 
 /// Canonical proof-carrying query artifact for declaration consumers.

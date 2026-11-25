@@ -29,12 +29,13 @@ pub use managed_index::{
     ApplicationManagedIndexBindingDescriptor, ApplicationManagedIndexColdSource,
     ApplicationManagedIndexDefinition, ApplicationManagedIndexDefinitionDenial,
     ApplicationManagedIndexMaintenance, ApplicationManagedIndexMembership,
-    ApplicationManagedIndexProbeMeaning, ApplicationManagedIndexRef,
-    ApplicationManagedIndexSelectionRecipe, ApplicationManagedIndexSourceMeaning,
-    ApplicationManagedIndexSourceParameters, ApplicationManagedIndexSourceScope,
-    ApplicationManagedIndexSourceStructure, ApplicationQueryManagedIndexMeaning,
-    ErasedApplicationManagedIndexDefinition, WorthQueryPortableManagedIndexParts,
-    WorthQueryPortableManagedIndexProbeParts, WorthQueryPortableQueryManagedIndexParts,
+    ApplicationManagedIndexProbeMeaning, ApplicationManagedIndexQueryIntent,
+    ApplicationManagedIndexRef, ApplicationManagedIndexSelectionRecipe,
+    ApplicationManagedIndexSourceMeaning, ApplicationManagedIndexSourceParameters,
+    ApplicationManagedIndexSourceScope, ApplicationManagedIndexSourceStructure,
+    ApplicationQueryManagedIndexMeaning, ErasedApplicationManagedIndexDefinition,
+    WorthQueryPortableManagedIndexParts, WorthQueryPortableManagedIndexProbeParts,
+    WorthQueryPortableQueryManagedIndexParts,
 };
 mod orbit;
 mod ordering;
@@ -158,9 +159,10 @@ pub(crate) use validation::{
     predicate_literal_is_valid, validate_portable_application_query_freshly,
 };
 pub use where_filter::{
-    ApplicationQueryWhereFilter, ApplicationQueryWhereFilterDenial,
-    ApplicationQueryWhereFilterOperand, ApplicationQueryWhereFilterOperands,
-    ApplicationQueryWhereFilterProgram, ApplicationQueryWhereFilterSource,
+    ApplicationQueryComparisonOp, ApplicationQueryWhereFilter, ApplicationQueryWhereFilterClauses,
+    ApplicationQueryWhereFilterDenial, ApplicationQueryWhereFilterOperand,
+    ApplicationQueryWhereFilterOperands, ApplicationQueryWhereFilterProgram,
+    ApplicationQueryWhereFilterSource,
 };
 
 #[cfg(test)]

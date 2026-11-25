@@ -36,6 +36,24 @@ pub(super) fn projection(input: &DeriveInput, projection: &ProjectionDeclaration
     );
     let (project_row, project) = (project_row(input, projection), project(input, projection));
     let projects_names = projects_names(input, projection);
+    let self_binding = projection.namespace.as_ref().map(|namespace| {
+        quote! {
+            impl #decl::application_schema::ApplicationStructuredValueBinding for #row {
+                type Value = Self;
+                const IDENTITY_NAME: &'static str =
+                    #decl::worth_query_identity!(#namespace, result);
+
+                fn validate(
+                    _: &Self::Value,
+                ) -> ::core::result::Result<
+                    (),
+                    #decl::application_schema::ApplicationValueValidationDenial,
+                > {
+                    ::core::result::Result::Ok(())
+                }
+            }
+        }
+    });
     let doc = format!("Result slot markers of `{row}`, one per projected field.");
     quote! {
         #[doc = #doc]
@@ -43,6 +61,7 @@ pub(super) fn projection(input: &DeriveInput, projection: &ProjectionDeclaration
             #(#markers)*
         }
         #(#identities)*
+        #self_binding
         impl #row {
             #(#selectors)*
             #builder

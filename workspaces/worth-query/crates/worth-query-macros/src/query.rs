@@ -28,8 +28,12 @@ use syn::DeriveInput;
 
 mod defaults;
 mod emit;
+mod emit_definition;
+mod emit_predicates;
 mod fields;
 mod grammar;
+mod hygiene;
+mod predicates;
 #[cfg(test)]
 mod tests;
 

@@ -47,6 +47,18 @@ Use these entry points to find an API and its worked use.
 
 ## Task index
 
+### Unified Application DX Quick Reference (Target DX #1–#8)
+
+| Task | Primary Entry Point | Facade | Notes |
+|---|---|---|---|
+| Declare schema, records, relations, rows, actions & program in one block | `#[derive(WorthQuerySchema)]`, `#[derive(WorthQueryRecord)]`, `#[derive(WorthQueryRelation)]`, `#[derive(WorthQueryRow)]`, `#[derive(WorthQueryAction)]`, `worth_query_application_program!` | `decl::`, `host::` | `#[derive(WorthQueryRow)]` binds directly as `result = MyRow` on `#[derive(WorthQuery)]`; `worth_query_application_program!` accepts `managed_indexes: [...]` |
+| Declare filtered, optional-param, related-absence & live queries | `#[derive(WorthQuery)]` (`where_equal`/`where_not_equal`/`where_lt`/`where_lte`/`where_gt`/`where_gte`, `where_optional`/`*_optional`, `where_no_related`/`where_related_exists`, `root_path`, `order_by`, `managed_index`, `live = whole_result`) | `decl::` | Exact-type nominal witnesses reject `Deref` wrappers (`Box<T>`); zero string field names |
+| Open or reopen a persistent Directory Home in one call | `WorthQueryApplicationHome::open_directory(&path, WorthQueryHomeConfig::desktop_default(build))`, `home.open_disposition()`, `home.close_clean()` | `host::` | Explicit finite execution policy (`DEFAULT_HOST_EXECUTION_POLICY`); distinguishes `Created` vs `Opened`; preserves recovery custody on refusal |
+| Run actions, typed queries, live subscriptions & managed-index watches | `let session = home.session(&me);` → `session.run`, `session.run_with_key`, `session.run_governed`, `session.query -> Vec<Row>`, `session.subscribe -> WorthQueryTypedLiveSubscription`, `session.watch`, `session.ensure_index_ready(intent)` / `session.ensure_default_index_ready::<Query>()` | `host::` | Re-admits principal and grants fresh every call; restart-safe auto keys; bounded finite defaults (`with_policy` / `with_budget` / `on_branch`) |
+| Fork "what-if" previews & adopt atomically | `home.fork_preview("label")`, `home.adopt_preview(preview)`, `preview.discard(&home)`, `home.close_branch(prev)` | `host::` | Uses exact expected-source adoption; refuses stale previews with `HeadMoved` while retaining preview custody |
+| Attach `'static` owned history & perform restart-safe undo/redo | `#[derive(WorthQueryCorrection)]` (`mode = recorded_inverse \| authored_body`), `home.owned_history::<H>(&me, access)`, `home.undo` / `home.undo_authored::<C>` / `home.redo` / `home.redo_authored::<C>` | `decl::`, `host::` | `WorthQueryOwnedApplicationHistoryDocument` and `WorthQueryCorrectionEntry` are `'static`; authored-body undo/redo uses `WorthQueryAnySourceCustody` and surfaces `WorthQueryHomeUndoDenial::Conflict` on `SourceDiverged` |
+| Parse, format & offset canonical civil dates and timestamps | `CanonicalDate::parse_iso`, `CanonicalDate::add_days`, `CanonicalDate::start_of_day_utc`, `Display` / `FromStr` / `Ord` on `CanonicalDate` & `CanonicalTimestamp` | `decl::application_schema`, `worth_foundational::facade` | Checked ISO-8601 parsing and overflow-checked day arithmetic returning `CanonicalTemporalTextDenial` |
+
 Declare application graph membership with the type-owned
 [native schema fragment API](native-schema-fragments.md): entities list aspects
 and outgoing relations, fragments list entities and nested fragments, and one

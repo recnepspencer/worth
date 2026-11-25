@@ -23,6 +23,28 @@ an invariant callback or construct an admitted plan.
 
 ## Stable Entry Points
 
+Start with the **unified derive facade** (zero `ApplicationQueryDefinitionBuilder`
+and zero string field names):
+
+- `#[derive(WorthQueryRow)]` / `#[derive(WorthQueryProjection)]` (directly
+  usable as `result = MyRow` on `#[derive(WorthQuery)]`)
+- `#[derive(WorthQuery)]` supporting:
+  - `where_equal` / `where_not_equal` / `where_lt` / `where_lte` / `where_gt` /
+    `where_gte` (literal constants and required parameters)
+  - `where_optional` / `where_equal_optional` / `where_not_equal_optional` /
+    `where_lt_optional` / `where_lte_optional` / `where_gt_optional` /
+    `where_gte_optional` for `Option<T>` parameters
+  - `where_no_related(Relation, ...)` (`NOT EXISTS`) and
+    `where_related_exists(Relation, ...)` (`EXISTS`)
+  - `root_path(...)`, `order_by(...)`, `managed_index = Idx`, and
+    `live = whole_result`
+- `home.session(&me)` (`WorthQueryHostSession`) exposing
+  `session.query(intent) -> Result<Vec<Row>, ...>`,
+  `session.subscribe(intent) -> Result<WorthQueryTypedLiveSubscription, ...>`,
+  `session.watch(intent)`, and `session.ensure_index_ready(intent)` / `session.ensure_default_index_ready::<Query>()`
+
+Lower-level builder entry points for dynamic or specialized composition:
+
 - `application_schema::fragment::{Fragment, Entity, Aspect, Record, Scalar}`
 - `worth_query_application_query!`
 - `ApplicationQueryDefinitionBuilder`
@@ -98,7 +120,56 @@ means that the schema value was missing.
 Historical, preview, continuation, and live lanes change their basis or
 lifecycle posture. They do not construct another graph-read plan.
 
-## Small Example
+## Recommended Unified Derive Example
+
+Declare the row and the complete filtered, related-absence, whole-result live
+query directly on the Rust structs:
+
+```rust
+#[derive(Clone, Debug, Eq, PartialEq, WorthQueryRow)]
+#[worth_query(schema = DaymarkSchema, root = Task, namespace = ROW_NS)]
+pub struct TaskRow {
+    #[worth_query(field = TaskKey)] pub task_key: u64,
+    #[worth_query(field = Title)]   pub title: String,
+    #[worth_query(field = State)]   pub state: String,
+    #[worth_query(field = Priority)] pub priority: u64,
+    #[worth_query(field = DueDate)] pub due_date: Option<CanonicalDate>,
+}
+
+#[derive(Clone, Debug, WorthQuery)]
+#[worth_query(
+    schema = DaymarkSchema, context = DaymarkContext, namespace = READY_NS,
+    result = TaskRow, root = Task, scope = ProjectKey, fields = TaskFacts,
+    root_path(Contains),
+    where_equal(state = "OPEN"),
+    where_optional(priority = priority),
+    where_lte_optional(due_date = due_before),
+    where_no_related(BlockedBy, state = "OPEN"),
+    order_by(TaskRow::task_key(), Ascending),
+    live = whole_result,
+    limits = 64,
+)]
+pub struct ReadyTasks {
+    #[worth_query(scope)] pub project: u64,
+    pub priority: Option<u64>,
+    pub due_before: Option<CanonicalDate>,
+}
+
+let session = home.session(&me);
+let rows: Vec<TaskRow> = session.query(ReadyTasks {
+    project: 1, priority: Some(1), due_before: Some(cutoff),
+})?;
+let mut live = session.subscribe(ReadyTasks {
+    project: 1, priority: None, due_before: Some(cutoff),
+})?;
+let current: &[TaskRow] = live.current();
+if let Some(updated) = live.refresh(&session)? {
+    let _ = updated;
+}
+live.close()?;
+```
+
+## Small Builder Example
 
 ```rust
 worth_query_application_query!(

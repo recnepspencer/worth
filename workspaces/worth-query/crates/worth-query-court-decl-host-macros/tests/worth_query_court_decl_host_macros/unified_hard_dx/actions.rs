@@ -1,0 +1,172 @@
+//! Derived actions and `mode = authored_body` correction for the Daymark court.
+use super::program::{DaymarkProgram, RestoreTaskStateAction, SetTaskStateAction};
+use super::queries::ReadTaskDetailsBinding;
+use super::schema::*;
+use worth_foundational::facade::WorthValue;
+use worth_query_decl::facade::application_aftermath::*;
+use worth_query_decl::facade::application_identity::ApplicationIdentityNamespace;
+use worth_query_decl::facade::application_schema::*;
+use worth_query_decl::facade::{
+    worth_query_identity_namespace, WorthQueryAction, WorthQueryCorrection,
+};
+
+pub const SET_STATE_NS: ApplicationIdentityNamespace =
+    worth_query_identity_namespace!("daymark.unified.set-state.v1");
+pub const RESCHEDULE_NS: ApplicationIdentityNamespace =
+    worth_query_identity_namespace!("daymark.unified.reschedule.v1");
+pub const RENAME_PROJECT_NS: ApplicationIdentityNamespace =
+    worth_query_identity_namespace!("daymark.unified.rename-project.v1");
+pub const RESTORE_STATE_NS: ApplicationIdentityNamespace =
+    worth_query_identity_namespace!("daymark.unified.restore-state.v1");
+pub const CORRECT_STATE_NS: ApplicationIdentityNamespace =
+    worth_query_identity_namespace!("daymark.unified.correct-state.v1");
+
+#[derive(Clone, Debug, PartialEq, Eq, WorthValue, serde::Deserialize, WorthQueryAction)]
+#[worth_query(
+    schema = DaymarkSchema,
+    context = DaymarkContext,
+    namespace = SET_STATE_NS,
+    input = SetTaskStateInput,
+    operation = SetTaskStateOperation,
+    binding = SetTaskStateBinding,
+    delivery = SetTaskStateDelivery,
+    body,
+    program,
+    reads(Task),
+)]
+pub struct SetTaskState {
+    #[worth_query(scope = TaskKey)]
+    pub task: u64,
+    pub state: String,
+}
+
+pub fn set_task_state_body(
+) -> ApplicationOperationBody<DaymarkSchema, SetTaskStateOperation, SetTaskState> {
+    SetTaskStateOperation::reference()
+        .typed_body()
+        .assign_input(TaskFacts::state(), SetTaskState::state_input())
+        .finish()
+        .expect("set_task_state body admits")
+}
+
+#[derive(Clone, Debug, serde::Serialize, WorthQueryAction)]
+#[worth_query(
+    schema = DaymarkSchema,
+    context = DaymarkContext,
+    namespace = RESCHEDULE_NS,
+    input = RescheduleTaskInput,
+    operation = RescheduleTaskOperation,
+    binding = RescheduleTaskBinding,
+    delivery = RescheduleTaskDelivery,
+    body,
+    program,
+    reads(Task),
+)]
+pub struct RescheduleTask {
+    #[worth_query(scope = TaskKey)]
+    pub task: u64,
+    pub due_date: Option<CanonicalDate>,
+}
+
+pub fn reschedule_task_definition(
+) -> ApplicationOperationDefinition<DaymarkSchema, RescheduleTaskOperation, RescheduleTask> {
+    RescheduleTaskOperation::reference()
+        .typed_body()
+        .assign_optional_input(
+            TaskFactsValue::select_due_date(),
+            RescheduleTask::due_date_input(),
+        )
+        .finish_pure_definition()
+        .expect("reschedule_task body admits")
+}
+
+#[derive(Clone, Debug, WorthValue, WorthQueryAction)]
+#[worth_query(
+    schema = DaymarkSchema,
+    context = DaymarkContext,
+    namespace = RENAME_PROJECT_NS,
+    input = RenameProjectInput,
+    operation = RenameProjectOperation,
+    binding = RenameProjectBinding,
+    delivery = RenameProjectDelivery,
+    body,
+    program,
+    reads(Project),
+)]
+pub struct RenameProject {
+    #[worth_query(scope = ProjectKey)]
+    pub project: u64,
+    pub label: String,
+}
+
+pub fn rename_project_definition(
+) -> ApplicationOperationDefinition<DaymarkSchema, RenameProjectOperation, RenameProject> {
+    RenameProjectOperation::reference()
+        .typed_body()
+        .assign_input(ProjectFacts::label(), RenameProject::label_input())
+        .finish_pure_definition()
+        .expect("rename_project body admits")
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, WorthValue, serde::Deserialize, WorthQueryAction)]
+#[worth_query(
+    schema = DaymarkSchema,
+    context = DaymarkContext,
+    namespace = RESTORE_STATE_NS,
+    input = RestoreTaskStateInput,
+    operation = RestoreTaskStateOperation,
+    binding = RestoreTaskStateBinding,
+    delivery = RestoreTaskStateDelivery,
+    body,
+    program,
+    reads(Task),
+)]
+pub struct RestoreTaskState {
+    #[worth_query(scope = TaskKey)]
+    pub task: u64,
+    pub expected_state: String,
+    pub restored_state: String,
+}
+
+pub fn restore_task_state_definition(
+) -> ApplicationOperationDefinition<DaymarkSchema, RestoreTaskStateOperation, RestoreTaskState> {
+    RestoreTaskStateOperation::reference()
+        .typed_body()
+        .expect_input(TaskFacts::state(), RestoreTaskState::expected_state_input())
+        .assign_input(TaskFacts::state(), RestoreTaskState::restored_state_input())
+        .finish_pure_definition()
+        .expect("restore_task_state body admits")
+}
+
+/// Target DX #4: `#[derive(WorthQueryCorrection)]` with `mode = authored_body`,
+/// wiring both `home.undo_authored::<CorrectTaskState>` and
+/// `home.redo_authored::<CorrectTaskState>`!
+#[derive(WorthQueryCorrection)]
+#[worth_query(
+    schema = DaymarkSchema,
+    namespace = CORRECT_STATE_NS,
+    mode = authored_body,
+    source = SetTaskStateBinding,
+    inverse = RestoreTaskState,
+    disclosure = ReadTaskDetailsBinding,
+    source_body = set_task_state_body,
+    preimage_fields(TaskFacts::state()),
+    preimage_bytes = 64,
+    derive = derive_restore_task_state,
+    reapply,
+    program = DaymarkProgram,
+    inverse_action = RestoreTaskStateAction,
+    source_action = SetTaskStateAction,
+)]
+pub struct CorrectTaskState;
+
+fn derive_restore_task_state(
+    original: &SetTaskState,
+    preimage: &dyn ApplicationCorrectionPreImage<DaymarkSchema>,
+) -> Result<RestoreTaskState, ApplicationCorrectionDerivationDenial> {
+    Ok(RestoreTaskState {
+        task: original.task,
+        expected_state: original.state.clone(),
+        restored_state: decode_preimage_field(preimage, TaskFacts::state())?,
+    })
+}

@@ -11,10 +11,93 @@ explain *why* the platform works the way it does
 ([How WORTH Works](how-it-works.md)). This one shows *which names you call, in
 which order*.
 
-For a new feature, use the complete feature definition below. It keeps the
-feature's schema members, actions, required lifecycle roles and runtime slots
-together; the SDK derives their projections. The lower-level builders later in
-this guide explain the underlying contracts and support specialized composition.
+For a new feature, start with the **unified Target DX** (`worth_query_application_program!`,
+`#[derive(WorthQueryRow)]`, unified `#[derive(WorthQuery)]` with predicates and
+`live = whole_result`, `#[derive(WorthQueryCorrection)]`, `WorthQueryApplicationHome::open_directory`,
+`home.session(me)`, `fork_preview` / `adopt_preview`, `owned_history`, and
+`home.undo` / `home.undo_authored`). The lower-level builders later in this guide
+explain the underlying contracts and support specialized composition.
+
+### Unified Application Quickstart (Target DX #1–#8)
+
+The runnable end-to-end court in
+[`unified_hard_dx`](../workspaces/worth-query/crates/worth-query-court-decl-host-macros/tests/worth_query_court_decl_host_macros/unified_hard_dx/courts.rs)
+exercises the complete desktop application flow on a real Directory Home:
+
+<!-- illustrative -->
+```rust,ignore
+use worth_foundational::facade::CanonicalDate;
+use worth_query_decl::facade::{WorthQuery, WorthQueryRow, WorthQueryCorrection};
+use worth_query_host::facade::{
+    worth_query_application_program, WorthQueryApplicationHome, WorthQueryHomeConfig,
+};
+
+// 1. Projected row directly usable as `result = TaskRow` on queries.
+#[derive(Clone, Debug, Eq, PartialEq, WorthQueryRow)]
+#[worth_query(schema = DaymarkSchema, root = Task, namespace = ROW_NS)]
+pub struct TaskRow {
+    #[worth_query(field = TaskKey)] pub task_key: u64,
+    #[worth_query(field = Title)]   pub title: String,
+    #[worth_query(field = State)]   pub state: String,
+    #[worth_query(field = Priority)] pub priority: u64,
+    #[worth_query(field = DueDate)] pub due_date: Option<CanonicalDate>,
+}
+
+// 2. Unified query derive: literal equality, Option<T> predicates, related-record
+//    absence (`NOT EXISTS`), ordering, and whole-result live subscriptions.
+#[derive(Clone, Debug, WorthQuery)]
+#[worth_query(
+    schema = DaymarkSchema, context = DaymarkContext, namespace = READY_NS,
+    result = TaskRow, root = Task, scope = ProjectKey, fields = TaskFacts,
+    root_path(Contains),
+    where_equal(state = "OPEN"),
+    where_optional(priority = priority),
+    where_lte_optional(due_date = due_before),
+    where_no_related(BlockedBy, state = "OPEN"),
+    order_by(TaskRow::task_key(), Ascending),
+    live = whole_result,
+    limits = 64,
+)]
+pub struct ReadyTasks {
+    #[worth_query(scope)] pub project: u64,
+    pub priority: Option<u64>,
+    pub due_before: Option<CanonicalDate>,
+}
+
+// 3. One-line persistent Directory Home open, reusable session, live refresh,
+//    preview forks, 'static owned history, and restart-safe authored-body undo.
+let home = WorthQueryApplicationHome::<DaymarkSchema, DaymarkProgram>::open_directory(
+    &path,
+    WorthQueryHomeConfig::new(build_id, (DaymarkRuntime::new(),))
+        .with_initial_state(|_, graph, installed| seed(graph, installed)),
+)?;
+let session = home.session(&me);
+let cutoff = CanonicalDate::parse_iso("2026-11-24")?.add_days(7)?;
+let rows: Vec<TaskRow> = session.query(ReadyTasks {
+    project: 1,
+    priority: Some(1),
+    due_before: Some(cutoff),
+})?;
+let mut live = session.subscribe(ReadyTasks {
+    project: 1, priority: None, due_before: Some(cutoff),
+})?;
+let commit = session.run(SetTaskState { task: 1, state: "DONE".into() })?;
+let updated = live.refresh(&session)?; // re-admits principal & grants fresh every call
+live.close()?;
+
+// What-if preview fork + atomic adoption:
+let preview = home.fork_preview("What-If")?;
+home.session(&me).on_branch(preview.branch()).run(RescheduleTask { task: 3, due_date: Some(cutoff) })?;
+let previous = home.adopt_preview(preview)?;
+home.close_branch(previous)?;
+
+// 'static owned history + restart-safe authored-body undo/redo:
+let doc = home.owned_history::<DaymarkHistory>(&me, ReadProjectTasks { project: 1 })?;
+let entry = commit.correction_entry();
+home.undo_authored::<CorrectTaskState>(&entry, &me)?;
+home.redo_authored::<CorrectTaskState>(&entry, &me)?;
+home.close_clean()?;
+```
 
 Directory Homes support the declared track-H families through the real installed
 owners in [§4](#4-install-or-reopen). Use graceful close and fresh-process reopen
@@ -103,11 +186,11 @@ some declaration macros. `worth_query_mutation_binding!`,
 
 | Step | What you do | The call | Section |
 |---|---|---|---|
-| 1 | Declare the schema and its contributions | `worth_query_application!`, `worth_query_application_contribution!`, `impl WorthQueryApplicationContribution` | [§2](#2-declare-the-schema-and-its-contributions) |
-| 2 | Declare features and the program | `worth_query_application_contribution! { pub feature ... }`, its `ApplicationFeatureDefinition` projections, `impl ApplicationProgramDefinition` | [Complete definitions](#complete-feature-definitions), [§3](#3-declare-features-and-the-program) |
-| 3 | Validate the program | `ApplicationProgramAuthoring::<S, P>::begin().validated_program()` | [§3.5](#35-validate) |
-| 4 | Install or reopen | `WorthQueryApplicationHomeRequest::open_in_advancement(&phase)` | [§4](#4-install-or-reopen) |
-| 5 | Run program-owned actions | `request.mutate(intent)…idempotency_owned(key)?.retain_operation::<Program, Action>(&runtime)`, then `operation.advance(&fresh_request)` | [§5](#5-run-the-program) |
+| 1 | Declare schema, rows, actions, corrections & unified queries | `#[derive(WorthQuerySchema)]`, `#[derive(WorthQueryRecord)]`, `#[derive(WorthQueryRow)]`, `#[derive(WorthQueryAction)]`, `#[derive(WorthQueryCorrection)]`, `#[derive(WorthQuery)]` | [Quickstart](#unified-application-quickstart-target-dx-18), [§2](#2-declare-the-schema-and-its-contributions) |
+| 2 | Declare features, managed indexes & the program in one block | `worth_query_application_program!` | [Complete definitions](#complete-feature-definitions), [§3](#3-declare-features-and-the-program) |
+| 3 | Open or reopen a persistent Directory Home | `WorthQueryApplicationHome::open_directory(&path, WorthQueryHomeConfig::desktop_default(build))` / `home.open_disposition()` / `home.close_clean()` | [§4](#4-install-or-reopen) |
+| 4 | Run actions, typed queries, whole-result live subscriptions & managed-index watches | `let session = home.session(&me);` → `session.run(...)`, `session.query(...) -> Vec<Row>`, `session.subscribe(...)`, `session.watch(...)`, `session.ensure_index_ready(intent)` / `session.ensure_default_index_ready::<Query>()` | [§5](#5-run-the-program) |
+| 5 | Fork "what-if" previews, attach `'static` history & undo/redo | `home.fork_preview(...)` / `home.adopt_preview(...)`, `home.owned_history::<H>(...)`, `home.undo(...)` / `home.undo_authored::<C>(...)` / `home.redo_authored::<C>(...)` | [§5](#5-run-the-program) |
 | 6 | Install the workflow vocabulary | `WorthQueryApplicationWorkflowSpecInstallation::begin(..)…finish()`, then `retain_workflow_spec(..)` | [§6.2](#62-install-the-workflow-vocabulary-once) |
 | 7 | Author and validate a workflow | `ApplicationWorkflowDefinitionBuilder::<Spec>::new(..)`, nodes, connections, `finish()?.validate()?` | [§6.3](#63-author-a-definition) |
 | 8 | Publish, start, and advance it | `bind_definition`, `prepare_workflow_publication`, `prepare_workflow_instance_start`, `prepare_workflow_advance` | [§6.6](#66-publish-discover-start-advance) |

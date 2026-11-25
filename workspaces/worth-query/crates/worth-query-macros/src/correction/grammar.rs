@@ -1,10 +1,12 @@
 //! Attribute grammar for `#[derive(WorthQueryCorrection)]`.
 use super::DERIVE;
-use crate::grammar::{expr_list, unknown_key, value, visit_keys, Once};
+use crate::grammar::{expr_list, flag, unknown_key, value, visit_keys, Once};
+use syn::ext::IdentExt;
 use syn::meta::ParseNestedMeta;
-use syn::{DeriveInput, Expr, LitStr, Path, Type};
+use syn::{DeriveInput, Expr, Ident, LitStr, Path, Type};
 
 const KEYS: &[&str] = &[
+    "mode",
     "schema",
     "namespace",
     "identity",
@@ -20,7 +22,24 @@ const KEYS: &[&str] = &[
     "derive",
     "inverse_key",
     "capability",
+    "reapply",
+    "reapplication_key",
+    "program",
+    "inverse_action",
+    "source_action",
 ];
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(super) enum CorrectionMode {
+    RecordedInverse,
+    AuthoredBody,
+}
+
+pub(super) struct AuthoredBodyActions {
+    pub(super) program: Type,
+    pub(super) inverse_action: Type,
+    pub(super) source_action: Option<Type>,
+}
 
 pub(super) struct CorrectionDeclaration {
     pub(super) schema: Type,
@@ -35,6 +54,9 @@ pub(super) struct CorrectionDeclaration {
     pub(super) derive_fn: Path,
     pub(super) inverse_key: Option<Path>,
     pub(super) capability: Option<Type>,
+    pub(super) reapply: bool,
+    pub(super) reapplication_key: Option<Path>,
+    pub(super) authored_actions: Option<AuthoredBodyActions>,
 }
 
 pub(super) enum CorrectionIdentity {
@@ -48,6 +70,7 @@ pub(super) enum PreImageDemandSpec {
 }
 
 struct Keys {
+    mode: Once<CorrectionMode>,
     schema: Once<Type>,
     namespace: Once<Path>,
     identity: Once<LitStr>,
@@ -63,6 +86,11 @@ struct Keys {
     derive_fn: Once<Path>,
     inverse_key: Once<Path>,
     capability: Once<Type>,
+    reapply: Once<bool>,
+    reapplication_key: Once<Path>,
+    program: Once<Type>,
+    inverse_action: Once<Type>,
+    source_action: Once<Type>,
 }
 
 impl CorrectionDeclaration {
@@ -70,6 +98,11 @@ impl CorrectionDeclaration {
         let mut keys = Keys::new();
         visit_keys(&input.attrs, |key, meta| keys.read(key, meta))?;
         let missing = input.ident.span();
+        let mode_span = keys.mode.span();
+        let mode = keys
+            .mode
+            .optional()
+            .unwrap_or(CorrectionMode::RecordedInverse);
         let identity = resolve_identity(keys.namespace, keys.identity, missing)?;
         let demand = resolve_demand(
             keys.demand,
@@ -77,19 +110,38 @@ impl CorrectionDeclaration {
             keys.preimage_bytes,
             missing,
         )?;
+        let source_body = keys.source_body.optional();
+        if mode == CorrectionMode::AuthoredBody && source_body.is_none() {
+            return Err(syn::Error::new(
+                mode_span.unwrap_or(missing),
+                "`mode = authored_body` requires `source_body = fn_path`",
+            ));
+        }
+        let reapplication_key = keys.reapplication_key.optional();
+        let reapply = keys.reapply.is_set() || reapplication_key.is_some();
+        let authored_actions = resolve_authored_actions(
+            mode,
+            reapply,
+            keys.program,
+            keys.inverse_action,
+            keys.source_action,
+        )?;
         Ok(Self {
             schema: keys.schema.required(missing, DERIVE)?,
             identity,
             source: keys.source.required(missing, DERIVE)?,
             inverse: keys.inverse.required(missing, DERIVE)?,
             disclosure: keys.disclosure.required(missing, DERIVE)?,
-            source_body: keys.source_body.optional(),
+            source_body,
             source_definition: keys.source_definition.optional(),
             disclosure_parameters: keys.disclosure_parameters.optional(),
             demand,
             derive_fn: keys.derive_fn.required(missing, DERIVE)?,
             inverse_key: keys.inverse_key.optional(),
             capability: keys.capability.optional(),
+            reapply,
+            reapplication_key,
+            authored_actions,
         })
     }
 }
@@ -97,6 +149,7 @@ impl CorrectionDeclaration {
 impl Keys {
     fn new() -> Self {
         Self {
+            mode: Once::new("mode"),
             schema: Once::new("schema"),
             namespace: Once::new("namespace"),
             identity: Once::new("identity"),
@@ -112,11 +165,17 @@ impl Keys {
             derive_fn: Once::new("derive"),
             inverse_key: Once::new("inverse_key"),
             capability: Once::new("capability"),
+            reapply: Once::new("reapply"),
+            reapplication_key: Once::new("reapplication_key"),
+            program: Once::new("program"),
+            inverse_action: Once::new("inverse_action"),
+            source_action: Once::new("source_action"),
         }
     }
 
     fn read(&mut self, key: &str, meta: &ParseNestedMeta<'_>) -> syn::Result<()> {
         match key {
+            "mode" => self.mode.set(meta, parse_mode(meta)?),
             "schema" => self.schema.set(meta, value(meta)?),
             "namespace" => self.namespace.set(meta, value(meta)?),
             "identity" => self.identity.set(meta, value(meta)?),
@@ -132,9 +191,62 @@ impl Keys {
             "derive" => self.derive_fn.set(meta, value(meta)?),
             "inverse_key" => self.inverse_key.set(meta, value(meta)?),
             "capability" => self.capability.set(meta, value(meta)?),
+            "reapply" => self.reapply.set(meta, flag(meta)?),
+            "reapplication_key" => self.reapplication_key.set(meta, value(meta)?),
+            "program" => self.program.set(meta, value(meta)?),
+            "inverse_action" => self.inverse_action.set(meta, value(meta)?),
+            "source_action" => self.source_action.set(meta, value(meta)?),
             _ => Err(unknown_key(meta, DERIVE, KEYS)),
         }
     }
+}
+
+fn parse_mode(meta: &ParseNestedMeta<'_>) -> syn::Result<CorrectionMode> {
+    let ident: Ident = meta.value()?.parse()?;
+    match ident.unraw().to_string().as_str() {
+        "recorded_inverse" => Ok(CorrectionMode::RecordedInverse),
+        "authored_body" => Ok(CorrectionMode::AuthoredBody),
+        other => Err(syn::Error::new(
+            ident.span(),
+            format!("unknown `mode = {other}`; expected `recorded_inverse` or `authored_body`"),
+        )),
+    }
+}
+
+fn resolve_authored_actions(
+    mode: CorrectionMode,
+    reapply: bool,
+    program: Once<Type>,
+    inverse_action: Once<Type>,
+    source_action: Once<Type>,
+) -> syn::Result<Option<AuthoredBodyActions>> {
+    let is_authored = mode == CorrectionMode::AuthoredBody;
+    let role = "a `mode = recorded_inverse` correction";
+    program.refuse_unless(is_authored, role)?;
+    inverse_action.refuse_unless(is_authored, role)?;
+    source_action.refuse_unless(is_authored, role)?;
+    let any_span = program
+        .span()
+        .or(inverse_action.span())
+        .or(source_action.span());
+    let Some(span) = any_span else {
+        return Ok(None);
+    };
+    let program = program.required(span, DERIVE)?;
+    let inverse_action = inverse_action.required(span, DERIVE)?;
+    if let Some(src_span) = source_action.span()
+        && !reapply
+    {
+        return Err(syn::Error::new(
+            src_span,
+            "`source_action` requires `reapply` (or `reapplication_key = fn`)",
+        ));
+    }
+    Ok(Some(AuthoredBodyActions {
+        program,
+        inverse_action,
+        source_action: source_action.optional(),
+    }))
 }
 
 fn resolve_identity(

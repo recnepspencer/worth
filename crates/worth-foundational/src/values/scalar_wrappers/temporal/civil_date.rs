@@ -1,11 +1,41 @@
 //! Proleptic Gregorian conversion over the complete native day range.
-use super::{CanonicalDate, CanonicalTemporalTextDenial as Denial};
+use super::{
+    timestamp_text::MICROS_PER_DAY, CanonicalDate, CanonicalTemporalTextDenial as Denial,
+    CanonicalTimestamp,
+};
 use std::{fmt, str::FromStr};
 
 const DAYS_PER_ERA: i64 = 146_097;
 const UNIX_EPOCH_FROM_MARCH_0000: i64 = 719_468;
 
 impl CanonicalDate {
+    /// Parses a canonical ISO-8601 civil date (`YYYY-MM-DD`, or expanded signed year).
+    pub fn parse_iso(text: &str) -> Result<Self, Denial> {
+        text.parse()
+    }
+
+    /// Shifts this date by `days` on the proleptic Gregorian calendar, failing
+    /// closed with `OutOfRange` on overflow.
+    pub fn add_days(self, days: i64) -> Result<Self, Denial> {
+        let shifted = i64::from(self.days_from_unix_epoch)
+            .checked_add(days)
+            .ok_or(Denial::OutOfRange)?;
+        Ok(Self {
+            days_from_unix_epoch: i32::try_from(shifted).map_err(|_| Denial::OutOfRange)?,
+        })
+    }
+
+    /// Returns midnight (`00:00:00Z`) at the start of this UTC civil date,
+    /// failing closed with `OutOfRange` when outside the `i64` microsecond range.
+    pub fn start_of_day_utc(&self) -> Result<CanonicalTimestamp, Denial> {
+        let micros = i64::from(self.days_from_unix_epoch)
+            .checked_mul(MICROS_PER_DAY)
+            .ok_or(Denial::OutOfRange)?;
+        Ok(CanonicalTimestamp {
+            micros_since_unix_epoch: micros,
+        })
+    }
+
     /// Constructs a date in the proleptic Gregorian calendar, with a year zero.
     pub fn from_ymd(year: i32, month: u8, day: u8) -> Result<Self, Denial> {
         let maximum_day = match month {

@@ -259,5 +259,12 @@ where
         ApplicationHomeOpeningStage::QueryReadmission,
         ApplicationHomeOpeningEdge::After,
     );
-    super::service::finish_service(phase, query, home, checkpoint_limits, observation)
+    super::service::finish_service(
+        phase,
+        query,
+        home,
+        checkpoint_limits,
+        WorthQueryHomeOpenDisposition::Created,
+        observation,
+    )
 }
