@@ -60,29 +60,15 @@ impl ExecutionResourceLease<'_> {
             .find_map(|id| ledger.serial_budgets.get(id))
             .cloned();
         let new_budget = self.lineage_serial_budget_node();
-        match (old_budget.as_ref(), new_budget.map(|(_, b)| b)) {
-            (Some(old_b), Some(new_b)) if old_b.same_lineage(new_b) => {
-                if held != 0 || memory_bytes != 0 {
-                    new_b.resize(held, memory_bytes).map_err(|denial| {
-                        LeaseDenial::MemoryExhausted(denial.offset_ancestor(lineage.len() as u32))
-                    })?;
-                }
-            }
-            (old_opt, new_opt) => {
-                if let Some(new_b) = new_opt
-                    && memory_bytes != 0
-                {
-                    new_b.resize(0, memory_bytes).map_err(|denial| {
-                        LeaseDenial::MemoryExhausted(denial.offset_ancestor(lineage.len() as u32))
-                    })?;
-                }
-                if let Some(old_b) = old_opt
-                    && held != 0
-                {
-                    let _ = old_b.resize(held, 0);
-                }
-            }
-        }
+        crate::SerialMemoryBudget::rebind_between(
+            old_budget.as_ref(),
+            new_budget.map(|(_, b)| b),
+            held,
+            memory_bytes,
+        )
+        .map_err(|denial| {
+            LeaseDenial::MemoryExhausted(denial.offset_ancestor(lineage.len() as u32))
+        })?;
         let process_used = ledger.charged_memory_bytes - held;
         let process_after = process_used + memory_bytes;
         ledger.charged_memory_bytes = process_after;
@@ -92,10 +78,7 @@ impl ExecutionResourceLease<'_> {
                 .get_mut(id)
                 .expect("retained reservation has a node");
             usage.charged_memory_bytes -= held;
-            if usage.active_workers == 0 && usage.charged_memory_bytes == 0 {
-                ledger.nodes.remove(id);
-                ledger.serial_budgets.remove(id);
-            }
+            ledger.retire_if_idle(*id);
         }
         if memory_bytes != 0 {
             if let Some((budget_node_id, budget)) = new_budget {

@@ -388,4 +388,5 @@ impl Drop for ExecutionMemoryReservation {
     }
 }
 
+mod rebind;
 mod split;

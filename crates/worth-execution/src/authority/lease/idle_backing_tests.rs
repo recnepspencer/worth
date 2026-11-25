@@ -32,6 +32,10 @@ fn assert_idle(authority: &ExecutionAuthority) {
     let ledger = authority.inner.ledger.lock().unwrap();
     assert_eq!((ledger.active_workers, ledger.charged_memory_bytes), (0, 0));
     assert!(ledger.nodes.is_empty());
+    assert!(
+        ledger.serial_budgets.is_empty(),
+        "idle ledger must retire attached serial budgets"
+    );
     assert_eq!(ledger.nodes.capacity(), 0, "idle backing must be released");
 }
 
@@ -125,4 +129,57 @@ fn an_empty_tombstone_table_retires_even_when_reported_capacity_is_zero() {
         .expect("physical backing must leave the idle owner even with zero reported capacity");
     assert!(backing.is_empty());
     drop(backing);
+}
+
+#[test]
+fn serial_budgets_retire_when_lease_memory_outlives_resource_reservation() {
+    let authority = authority();
+    let budget = crate::SerialMemoryBudget::new(Some(1_024));
+    let lease = authority
+        .request_lease_with_serial_budget(request(), Some(budget.clone()))
+        .unwrap();
+
+    // Part A: LeaseMemory outlives ResourceReservation and then drops (resize to 0).
+    let framework_hold = lease.reserve_retained_memory(200).unwrap();
+    let query_hold = lease.reserve_memory(300).unwrap();
+    assert_eq!(budget.charged_memory_bytes(), 500);
+    assert_eq!(
+        authority.inner.ledger.lock().unwrap().serial_budgets.len(),
+        1
+    );
+    drop(framework_hold);
+    assert_eq!(budget.charged_memory_bytes(), 300);
+    assert_eq!(
+        authority.inner.ledger.lock().unwrap().serial_budgets.len(),
+        1
+    );
+    drop(query_hold);
+    assert_eq!(budget.charged_memory_bytes(), 0);
+    assert_idle(&authority);
+
+    // Part B: LeaseMemory outlives ResourceReservation and then rebinds to another lease.
+    let target_budget = crate::SerialMemoryBudget::new(Some(1_024));
+    let target = authority
+        .request_lease_with_serial_budget(request(), Some(target_budget.clone()))
+        .unwrap();
+    let framework_hold = lease.reserve_retained_memory(150).unwrap();
+    let mut query_hold = lease.reserve_memory(250).unwrap();
+    drop(framework_hold);
+    assert_eq!(
+        authority.inner.ledger.lock().unwrap().serial_budgets.len(),
+        1
+    );
+    target.transfer_memory(&mut query_hold).unwrap();
+    assert_eq!(budget.charged_memory_bytes(), 0);
+    assert_eq!(target_budget.charged_memory_bytes(), 250);
+    assert!(authority
+        .inner
+        .ledger
+        .lock()
+        .unwrap()
+        .serial_budgets
+        .is_empty());
+    drop(query_hold);
+    assert_eq!(target_budget.charged_memory_bytes(), 0);
+    assert_idle(&authority);
 }

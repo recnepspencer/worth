@@ -128,9 +128,7 @@ impl LeaseMemory {
         for node in self.lineage() {
             let usage = ledger.nodes.entry(node.id).or_default();
             usage.charged_memory_bytes = usage.charged_memory_bytes - held + bytes;
-            if usage.active_workers == 0 && usage.charged_memory_bytes == 0 {
-                ledger.nodes.remove(&node.id);
-            }
+            ledger.retire_if_idle(node.id);
         }
         self.bytes = bytes;
         let retired = ledger.take_unused_nodes();
@@ -170,36 +168,14 @@ impl LeaseMemory {
             bytes,
         )
         .map_err(LeaseDenial::MemoryExhausted)?;
-        match (old_budget, new_budget) {
-            (Some(old_b), Some(new_b)) if old_b.same_lineage(new_b) => {
-                if held != 0 || bytes != 0 {
-                    new_b.resize(held, bytes).map_err(|denial| {
-                        LeaseDenial::MemoryExhausted(denial.offset_ancestor(new.len() as u32))
-                    })?;
-                }
-            }
-            (old_opt, new_opt) => {
-                if let Some(new_b) = new_opt
-                    && bytes != 0
-                {
-                    new_b.resize(0, bytes).map_err(|denial| {
-                        LeaseDenial::MemoryExhausted(denial.offset_ancestor(new.len() as u32))
-                    })?;
-                }
-                if let Some(old_b) = old_opt
-                    && held != 0
-                {
-                    let _ = old_b.resize(held, 0);
-                }
-            }
-        }
+        crate::SerialMemoryBudget::rebind_between(old_budget, new_budget, held, bytes).map_err(
+            |denial| LeaseDenial::MemoryExhausted(denial.offset_ancestor(new.len() as u32)),
+        )?;
         ledger.charged_memory_bytes = ledger.charged_memory_bytes - held + bytes;
         for id in old.iter().filter(|_| held != 0) {
             let usage = ledger.nodes.get_mut(id).expect("held memory has a node");
             usage.charged_memory_bytes -= held;
-            if usage.active_workers == 0 && usage.charged_memory_bytes == 0 {
-                ledger.nodes.remove(id);
-            }
+            ledger.retire_if_idle(*id);
         }
         for node in new.iter().filter(|_| bytes != 0) {
             ledger

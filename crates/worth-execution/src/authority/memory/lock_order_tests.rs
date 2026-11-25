@@ -23,3 +23,30 @@ fn serial_lock_order_follows_issue_order_when_addresses_reverse_it() {
     let opposite = b.within_parent(&a);
     assert_eq!(opposite.lock_order()[0].1.issue_order, first);
 }
+
+#[test]
+fn rebind_between_overlapping_lineages_counts_held_bytes_on_shared_parent() {
+    let parent = SerialMemoryBudget::new(Some(1000));
+    let _parent_hold = parent.reserve(600).unwrap();
+    let child_a = SerialMemoryBudget::new(Some(500)).within_parent(&parent);
+    let child_b = SerialMemoryBudget::new(Some(450)).within_parent(&parent);
+    child_a.resize(0, 300).unwrap();
+    assert_eq!(parent.charged_memory_bytes(), 900);
+    assert_eq!(child_a.charged_memory_bytes(), 300);
+
+    // Refusal on child_b (500 > 450) leaves every ledger untouched.
+    assert!(SerialMemoryBudget::rebind_between(Some(&child_a), Some(&child_b), 300, 500).is_err());
+    assert_eq!(parent.charged_memory_bytes(), 900);
+    assert_eq!(child_a.charged_memory_bytes(), 300);
+    assert_eq!(child_b.charged_memory_bytes(), 0);
+
+    // Rebinding 300 -> 350 counts held 300 as room on shared parent (900 - 300 + 350 = 950 <= 1000).
+    SerialMemoryBudget::rebind_between(Some(&child_a), Some(&child_b), 300, 350).unwrap();
+    assert_eq!(parent.charged_memory_bytes(), 950);
+    assert_eq!(child_a.charged_memory_bytes(), 0);
+    assert_eq!(child_b.charged_memory_bytes(), 350);
+
+    SerialMemoryBudget::rebind_between(Some(&child_b), None, 350, 0).unwrap();
+    assert_eq!(parent.charged_memory_bytes(), 600);
+    assert_eq!(child_b.charged_memory_bytes(), 0);
+}

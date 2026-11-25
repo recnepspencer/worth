@@ -281,10 +281,7 @@ fn preexisting_serial_caller_hold_narrows_inner_lease_and_rejects_over_budget_al
         // Only ~4 KiB remains on the caller's serial budget: both ordinary
         // inner-lease allocations and retained reserves of 6 KiB must fail
         // cleanly (never NestedLeaseMisuse).
-        assert!(phase
-            .borrowed_request_for_test()
-            .reserve_retained_memory(6 * 1024)
-            .is_err());
+        assert!(reserve_phase_memory(&phase, 6 * 1024).is_err());
         assert!(matches!(
             exec.reserve(6 * 1024),
             Err(Resource::MemoryLimit { .. })
@@ -337,9 +334,7 @@ fn two_advancements_sharing_cloned_serial_budget_and_overlapping_raw_holds_never
     exec_a
         .run_advancement(None, None, |phase_a| {
             // Raw inner phase reservation charges the shared 16 KiB SerialMemoryBudget.
-            let raw_a = phase_a
-                .borrowed_request_for_test()
-                .reserve_retained_memory(10 * 1024)
+            let raw_a = reserve_phase_memory(&phase_a, 10 * 1024)
                 .expect("first 10 KiB raw phase hold fits in shared 16 KiB budget")
                 .expect("leased inner phase returns reservation");
 
@@ -351,17 +346,12 @@ fn two_advancements_sharing_cloned_serial_budget_and_overlapping_raw_holds_never
                     assert!(caller_b.reserve_retained_memory(10 * 1024).is_err());
                     exec_b
                         .run_advancement(None, None, |phase_b| {
-                            assert!(phase_b
-                                .borrowed_request_for_test()
-                                .reserve_retained_memory(10 * 1024)
-                                .is_err());
+                            assert!(reserve_phase_memory(&phase_b, 10 * 1024).is_err());
                             assert!(matches!(
                                 exec_b.reserve(10 * 1024),
                                 Err(Resource::MemoryLimit { .. })
                             ));
-                            let small = phase_b
-                                .borrowed_request_for_test()
-                                .reserve_retained_memory(2 * 1024)
+                            let small = reserve_phase_memory(&phase_b, 2 * 1024)
                                 .expect("2 KiB fits alongside live 10 KiB hold")
                                 .expect("leased inner phase returns reservation");
                             drop(small);
@@ -376,9 +366,7 @@ fn two_advancements_sharing_cloned_serial_budget_and_overlapping_raw_holds_never
                 scope.spawn(|| {
                     exec_b
                         .run_advancement(None, None, |phase_b| {
-                            let after = phase_b
-                                .borrowed_request_for_test()
-                                .reserve_retained_memory(10 * 1024)
+                            let after = reserve_phase_memory(&phase_b, 10 * 1024)
                                 .expect("10 KiB succeeds after sibling raw hold drops")
                                 .expect("leased inner phase returns reservation");
                             drop(after);
@@ -391,3 +379,15 @@ fn two_advancements_sharing_cloned_serial_budget_and_overlapping_raw_holds_never
 
     assert_eq!(shared_budget.charged_memory_bytes(), 0);
 }
+
+fn reserve_phase_memory(
+    phase: &WorthQueryAdvancementPhase<'_>,
+    bytes: u64,
+) -> Result<Option<worth_execution::ExecutionMemoryReservation>, worth_execution::WorkCeilingDenial>
+{
+    phase
+        .borrowed_request_for_test()
+        .reserve_retained_memory(bytes)
+}
+
+mod nested_serial;

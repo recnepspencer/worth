@@ -150,8 +150,10 @@ fn run_admitted_advancement(
     };
     let outcome = match caller_serial {
         Some(caller) => {
-            let run_within_serial =
-                |_: Option<&worth_execution::ExecutionResourceLease<'_>>| run_inner(execution);
+            let run_within_serial = |_: Option<&worth_execution::ExecutionResourceLease<'_>>| {
+                let scoped = execution.within_active_serial_request(caller);
+                run_inner(&scoped)
+            };
             let outer = if caller.has_accounting() || caller.work_ceiling().is_some() {
                 caller
                     .run_completion(

@@ -17,3 +17,14 @@ pub(crate) fn available_serial_memory_bytes() -> Option<u64> {
             .min()
     })
 }
+
+pub(crate) fn active_serial_memory_lineage() -> Option<crate::SerialMemoryBudget> {
+    ACTIVE_METER.with(|active| {
+        active
+            .borrow()
+            .iter()
+            .rev()
+            .filter_map(|meter| meter.borrow().limits.serial_memory.clone())
+            .reduce(|inner, outer| inner.within_parent(&outer))
+    })
+}

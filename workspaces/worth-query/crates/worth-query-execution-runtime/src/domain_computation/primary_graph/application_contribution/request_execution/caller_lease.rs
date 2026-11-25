@@ -154,6 +154,47 @@ impl<'a> QueryRequestExecution<'a> {
         }
     }
 
+    /// Re-attaches any enclosing active serial lineage when an advancement
+    /// runs inside an outer serial scope, deduplicating shared ledgers.
+    pub(super) fn within_active_serial_request(
+        &self,
+        caller: worth_execution::ExecutionRequest<'a, 'a>,
+    ) -> Self {
+        let form = match &self.form {
+            Form::Serial {
+                lease,
+                policy,
+                caller_serial,
+            } => Form::Serial {
+                lease: lease
+                    .as_ref()
+                    .map(|lease| lease.child_within_request(caller))
+                    .map_err(|denial| *denial),
+                policy: *policy,
+                caller_serial: *caller_serial,
+            },
+            Form::Leased {
+                lease,
+                policy,
+                caller_serial,
+            } => Form::Leased {
+                lease: lease
+                    .as_ref()
+                    .map(|lease| lease.child_within_request(caller))
+                    .map_err(|denial| *denial),
+                policy: *policy,
+                caller_serial: *caller_serial,
+            },
+        };
+        Self {
+            cancellation: self.cancellation.clone(),
+            deadline: self.deadline.clone(),
+            declared_work: self.declared_work,
+            certified_seed: self.certified_seed,
+            form,
+        }
+    }
+
     /// The request's cancellation or elapsed deadline, if either happened,
     /// including a cancellation anywhere in its lease or serial caller lineage.
     pub fn interruption(&self) -> Option<WorthQueryManagedComputationInterruption> {

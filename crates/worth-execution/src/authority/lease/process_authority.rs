@@ -119,10 +119,10 @@ impl ExecutionAuthority {
             (Some(left), None) => Some(left),
             (None, right) => right,
         };
-        self.request_lease_with_serial_budget(request, caller.serial_memory_budget_cloned())
+        self.request_lease_with_serial_budget(request, caller.effective_serial_memory_budget())
     }
 
-    fn request_lease_with_serial_budget(
+    pub(super) fn request_lease_with_serial_budget(
         &self,
         request: LeaseRequest,
         serial_budget: Option<crate::SerialMemoryBudget>,
