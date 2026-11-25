@@ -153,36 +153,132 @@ pub fn touch_definition() {{
     )
 }
 
-fn locate_worth_query_decl_rlib(deps_dir: &Path) -> PathBuf {
-    std::fs::read_dir(deps_dir)
-        .expect("read test binary deps dir")
-        .filter_map(Result::ok)
-        .map(|entry| entry.path())
-        .filter(|path| {
-            path.file_name()
-                .and_then(|name| name.to_str())
-                .is_some_and(|name| {
-                    name.starts_with("libworth_query_decl-") && name.ends_with(".rlib")
-                })
-        })
-        .max_by_key(|path| {
-            std::fs::metadata(path)
-                .and_then(|meta| meta.modified())
-                .ok()
-        })
-        .expect("compiled libworth_query_decl-*.rlib exists in deps dir")
+struct TempDirGuard(PathBuf);
+
+impl TempDirGuard {
+    fn create(path: PathBuf) -> Self {
+        std::fs::create_dir_all(&path).expect("create diagnostic tmp dir under target");
+        Self(path)
+    }
+
+    fn path(&self) -> &Path {
+        &self.0
+    }
 }
 
-fn check_fixture_with_rustc(label: &str, source: &str) -> std::process::Output {
+impl Drop for TempDirGuard {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
+fn extract_rlib_from_cargo_artifact_line(line: &str) -> Option<PathBuf> {
+    if !line.contains("\"reason\":\"compiler-artifact\"")
+        || !line.contains("\"name\":\"worth_query_decl\"")
+    {
+        return None;
+    }
+    let after = line.split_once("\"filenames\":[")?.1;
+    let list_end = after.find(']')?;
+    let mut rest = &after[..list_end];
+    while let Some(start) = rest.find('"') {
+        rest = &rest[start + 1..];
+        let mut parsed = String::new();
+        let mut chars = rest.chars();
+        let mut consumed = 0;
+        let mut closed = false;
+        while let Some(ch) = chars.next() {
+            consumed += ch.len_utf8();
+            if ch == '\\' {
+                if let Some(escaped) = chars.next() {
+                    consumed += escaped.len_utf8();
+                    parsed.push(escaped);
+                }
+            } else if ch == '"' {
+                closed = true;
+                break;
+            } else {
+                parsed.push(ch);
+            }
+        }
+        if !closed {
+            break;
+        }
+        rest = &rest[consumed..];
+        if parsed.ends_with(".rlib") {
+            return Some(PathBuf::from(parsed));
+        }
+    }
+    None
+}
+
+/// Resolves the exact `worth-query-decl` `.rlib` artifact and its `deps`
+/// directory directly from Cargo's own offline build metadata (never via
+/// mtime heuristics across stale `.rlib` files in a warm cache).
+fn resolve_worth_query_decl_artifact() -> (PathBuf, PathBuf, PathBuf) {
     let exe = std::env::current_exe().expect("current_exe");
     let deps_dir = exe.parent().expect("test binary lives in deps dir");
-    let decl_rlib = locate_worth_query_decl_rlib(deps_dir);
-    let out_dir = deps_dir
+    let profile_dir = deps_dir.parent().expect("deps dir lives under profile dir");
+    let is_release = profile_dir.file_name().is_some_and(|n| n == "release");
+    let target_dir = std::env::var_os("CARGO_TARGET_DIR")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| {
+            profile_dir
+                .parent()
+                .expect("profile dir lives under target dir")
+                .to_path_buf()
+        });
+    let workspace_manifest = Path::new(env!("CARGO_MANIFEST_DIR"))
         .parent()
-        .unwrap_or(deps_dir)
-        .join("tmp-sol-r4-diag");
-    std::fs::create_dir_all(&out_dir).expect("create diagnostic tmp dir under target");
-    let rmeta = out_dir.join(format!("sol_r4_{label}_{}.rmeta", std::process::id()));
+        .and_then(Path::parent)
+        .expect("court crate lives under workspaces/worth-query/crates/")
+        .join("Cargo.toml");
+
+    let cargo = std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
+    let mut cmd = Command::new(cargo);
+    cmd.arg("build")
+        .arg("--lib")
+        .arg("--offline")
+        .arg("--manifest-path")
+        .arg(&workspace_manifest)
+        .arg("-p")
+        .arg("worth-query-decl")
+        .arg("--target-dir")
+        .arg(&target_dir)
+        .arg("--message-format=json");
+    if is_release {
+        cmd.arg("--release");
+    }
+    let output = cmd.output().expect("resolve worth-query-decl via cargo");
+    assert!(
+        output.status.success(),
+        "cargo build --lib -p worth-query-decl --offline failed:\n{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let decl_rlib = stdout
+        .lines()
+        .find_map(extract_rlib_from_cargo_artifact_line)
+        .expect("cargo JSON output reported worth_query_decl .rlib artifact");
+    let artifact_profile_dir = decl_rlib
+        .parent()
+        .expect("resolved rlib lives under profile dir")
+        .to_path_buf();
+    let artifact_deps_dir = artifact_profile_dir.join("deps");
+    (decl_rlib, artifact_deps_dir, artifact_profile_dir)
+}
+
+fn check_fixture_with_rustc(
+    label: &str,
+    source: &str,
+    decl_rlib: &Path,
+    deps_dir: &Path,
+    profile_dir: &Path,
+) -> std::process::Output {
+    let out_dir = TempDirGuard::create(
+        profile_dir.join(format!("tmp-sol-r4-diag-{}-{label}", std::process::id())),
+    );
+    let rmeta = out_dir.path().join(format!("sol_r4_{label}.rmeta"));
 
     let rustc = std::env::var_os("RUSTC").unwrap_or_else(|| "rustc".into());
     let mut child = Command::new(rustc)
@@ -209,16 +305,22 @@ fn check_fixture_with_rustc(label: &str, source: &str) -> std::process::Output {
         .expect("rustc stdin")
         .write_all(source.as_bytes())
         .expect("write fixture to rustc stdin");
-    let output = child.wait_with_output().expect("wait for rustc");
-    let _ = std::fs::remove_file(&rmeta);
-    output
+    child.wait_with_output().expect("wait for rustc")
 }
 
 #[test]
 fn sol_r4_blocker_1_deref_str_ref_literal_rejects_with_e0277_exact_type_bound() {
+    let (decl_rlib, deps_dir, profile_dir) = resolve_worth_query_decl_artifact();
+
     // 1. Positive control: exact `&'static str` constant compiles cleanly (exit 0).
     let positive_src = static_str_query_fixture("OPEN_CODE");
-    let positive = check_fixture_with_rustc("positive_control", &positive_src);
+    let positive = check_fixture_with_rustc(
+        "positive_control",
+        &positive_src,
+        &decl_rlib,
+        &deps_dir,
+        &profile_dir,
+    );
     assert!(
         positive.status.success(),
         "exact &'static str control fixture must compile cleanly; stderr:\n{}",
@@ -228,7 +330,13 @@ fn sol_r4_blocker_1_deref_str_ref_literal_rejects_with_e0277_exact_type_bound() 
     // 2. Negative fixture: `&Box::new("OPEN")` fails strictly with E0277 on the
     //    exact literal type-identity trait bound — never E0308 or missing items.
     let negative_src = static_str_query_fixture(r#"&Box::new("OPEN")"#);
-    let negative = check_fixture_with_rustc("negative_deref", &negative_src);
+    let negative = check_fixture_with_rustc(
+        "negative_deref",
+        &negative_src,
+        &decl_rlib,
+        &deps_dir,
+        &profile_dir,
+    );
     let stderr = String::from_utf8_lossy(&negative.stderr);
     assert!(
         !negative.status.success(),
