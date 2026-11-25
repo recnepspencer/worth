@@ -1,4 +1,5 @@
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::{
     validate_portable_application_schema_freshly, ApplicationSchemaMember,
     ErasedApplicationSchemaDeclaration, WorthQueryPortableApplicationSchemaParts,
@@ -7,6 +8,7 @@ use worth_query_declaration::facade::application_schema::{
 
 fn schema(name: &str, count: usize) -> ErasedApplicationSchemaDeclaration {
     let record = WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationSchemaParts {
             owner: "worth.commitment-test".into(),
             name: name.into(),
@@ -181,7 +183,7 @@ fn fresh_reconstruction_rejects_cross_spliced_schema_source() {
         entity: "Entity00000009".into(),
     };
     let foreign = validate_portable_application_schema_freshly(
-        WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts),
+        WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(ARCHIVE_DECODE, parts),
     )
     .unwrap();
     let source = package()
@@ -228,7 +230,7 @@ fn fresh_reconstruction_rejects_cross_spliced_schema_source() {
     let candidate = intake.close().unwrap().materialize().unwrap();
     assert!(matches!(
         candidate.validate_freshly(
-            WorthQueryExpectedPortablePackageIdentity::from_untrusted_identity(
+            WorthQueryExpectedPortablePackageIdentity::new(
                 source.identity().clone(),
             ),
         ),

@@ -1,5 +1,6 @@
 //! Authority-free projection of canonical query meaning for portable records.
 
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 use crate::authoring::{QueryFamily, ResultShapeFamily, RootEntityKey};
 use crate::binding::IdentityBindingDescriptor;
 use crate::diagnostics::{CanonicalizationCounters, CanonicalizationReport};
@@ -115,7 +116,10 @@ impl WorthQueryPortableCanonicalQueryBundleRecord {
     /// Constructs an authority-free record from decoded, untrusted fields.
     ///
     /// This performs no validation and mints no canonicalization authority.
-    pub fn from_untrusted_parts(parts: WorthQueryPortableCanonicalQueryBundleParts) -> Self {
+    pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
+        parts: WorthQueryPortableCanonicalQueryBundleParts,
+    ) -> Self {
         Self {
             query: WorthQueryPortableCanonicalQueryRecord {
                 digest: parts.query_digest,

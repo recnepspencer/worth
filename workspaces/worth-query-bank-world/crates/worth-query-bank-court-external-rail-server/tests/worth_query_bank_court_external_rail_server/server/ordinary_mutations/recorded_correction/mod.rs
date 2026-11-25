@@ -22,13 +22,16 @@ fn recorded_bank_correction_preserves_intervening_money_after_normal_close() {
             .select_recorded(&original, limits())
             .unwrap();
 
-        let mixed = WorthQueryRecordedCorrectionSource::from_untrusted_parts(
-            intervening.world().clone(),
-            original.relational().clone(),
-            original.member(),
-        );
+        let intervening_world = intervening.coordinates();
+        let mixed =
+            worth_query_host::facade::primary_graph::WorthQueryCorrectionSourceCoordinates::new(
+                intervening_world.world_owner(),
+                intervening_world.world_commit(),
+                original.relational().clone(),
+                original.member(),
+            );
         assert!(matches!(
-            request.corrections().select_recorded(&mixed, limits()),
+            request.corrections().select_coordinates(&mixed, limits()),
             Err(WorthQueryApplicationCorrectionDenial::Source(
                 WorthQueryCorrectionSelectionDenial::SourcePublicationMismatch,
             )),

@@ -1,4 +1,5 @@
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_host::facade::worth_query_portable_type;
 use worth_query_host::facade::{
     application_entry::{
@@ -144,7 +145,7 @@ fn history_definition_validation_rejects_malformed_portable_membership_with_a_va
     let mut bad_name = valid.clone();
     bad_name.identity = "invalid history".to_owned();
     let mut bad_access = valid.clone();
-    bad_access.access = worth_query_host::facade::declaration::application_query::ApplicationQueryBindingReference::from_untrusted_parts({
+    bad_access.access = worth_query_host::facade::declaration::application_query::ApplicationQueryBindingReference::from_untrusted_parts(ARCHIVE_DECODE, {
         let mut parts = valid.access.parts().clone(); parts.query_name.clear(); parts
     });
     let mut missing = valid.clone();
@@ -161,12 +162,13 @@ fn history_definition_validation_rejects_malformed_portable_membership_with_a_va
         (duplicate, Denial::DuplicateOperation),
     ] {
         assert_eq!(
-            ErasedApplicationHistoryDefinition::from_untrusted_parts(parts).validate(),
+            ErasedApplicationHistoryDefinition::from_untrusted_parts(ARCHIVE_DECODE, parts)
+                .validate(),
             Err(expected)
         );
     }
     assert_eq!(
-        ErasedApplicationHistoryDefinition::from_untrusted_parts(valid).validate(),
+        ErasedApplicationHistoryDefinition::from_untrusted_parts(ARCHIVE_DECODE, valid).validate(),
         Ok(())
     );
 }
@@ -193,6 +195,7 @@ fn metadata_meaning_rejects_missing_duplicate_and_foreign_facets_with_a_valid_tw
     for rules in [missing, duplicate] {
         let mut bad = valid.clone();
         bad.metadata_disclosure = ApplicationQueryDisclosureContract::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableApplicationQueryDisclosureParts {
                 posture: contract.posture(),
                 classification: contract.classification().to_owned(),
@@ -202,7 +205,8 @@ fn metadata_meaning_rejects_missing_duplicate_and_foreign_facets_with_a_valid_tw
             },
         );
         assert_eq!(
-            ErasedApplicationHistoryDefinition::from_untrusted_parts(bad).validate(),
+            ErasedApplicationHistoryDefinition::from_untrusted_parts(ARCHIVE_DECODE, bad)
+                .validate(),
             Err(Denial::InvalidMetadataDisclosure)
         );
     }
@@ -216,11 +220,12 @@ fn metadata_meaning_rejects_missing_duplicate_and_foreign_facets_with_a_valid_tw
         .clone();
     foreign.metadata_disclosure = contract.clone();
     assert_eq!(
-        ErasedApplicationHistoryDefinition::from_untrusted_parts(foreign).validate(),
+        ErasedApplicationHistoryDefinition::from_untrusted_parts(ARCHIVE_DECODE, foreign)
+            .validate(),
         Err(Denial::InvalidMetadataDisclosure)
     );
     assert_eq!(
-        ErasedApplicationHistoryDefinition::from_untrusted_parts(valid).validate(),
+        ErasedApplicationHistoryDefinition::from_untrusted_parts(ARCHIVE_DECODE, valid).validate(),
         Ok(())
     );
 }

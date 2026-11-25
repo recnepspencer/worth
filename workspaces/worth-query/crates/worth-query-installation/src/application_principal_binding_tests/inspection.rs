@@ -1,4 +1,5 @@
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::{
     application_query::*, application_schema::ApplicationSchemaDeclaration,
 };
@@ -72,6 +73,7 @@ fn typed_inspection_rules_are_canonical_for_both_authoring_orders() {
             facets.reverse();
         }
         let metadata = ApplicationQueryDisclosureContract::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableApplicationQueryDisclosureParts {
                 posture: ApplicationQueryDisclosurePosture::Governed,
                 classification: "inspection".into(),

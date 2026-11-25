@@ -6,6 +6,7 @@ use crate::application_schema::{
     ApplicationDeclaredOperation, ApplicationOperationDefinitionBuilder, ApplicationSchema,
     ApplicationSchemaDeclarationDenial,
 };
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
 pub type ApplicationInverseBinding<Schema, Correction> =
@@ -168,7 +169,10 @@ pub struct DeclaredCorrectionBinding {
 
 impl DeclaredCorrectionBinding {
     /// Reconstructs descriptive meaning; native installation validates the association.
-    pub fn from_untrusted_parts(parts: DeclaredCorrectionBindingParts) -> Self {
+    pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
+        parts: DeclaredCorrectionBindingParts,
+    ) -> Self {
         Self {
             identity: parts.identity,
             source: parts.source,

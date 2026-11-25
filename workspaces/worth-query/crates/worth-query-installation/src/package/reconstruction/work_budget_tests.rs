@@ -5,6 +5,7 @@ use crate::package::{
     WorthQueryPortableDomainPackage, WorthQueryPortablePackageManifest,
     WorthQueryPortablePackageRecord, WorthQueryPortablePackageRecordFamily,
 };
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 
 const HOSTILE_LOGICAL_LIMIT: u64 = 64 * 1024;
 const HOSTILE_TEXT_BYTES: usize = 1024 * 1024;
@@ -13,6 +14,7 @@ const HOSTILE_TEXT_BYTES: usize = 1024 * 1024;
 fn forged_small_manifest_cannot_bypass_actual_logical_byte_admission() {
     let exported = fixture().export_typed_records().unwrap();
     let forged = WorthQueryPortablePackageManifest::from_untrusted_fields(
+        ARCHIVE_DECODE,
         exported.manifest().version(),
         exported.manifest().package_identity().clone(),
         exported.manifest().record_count(),
@@ -55,7 +57,7 @@ fn oversized_schema_owner_is_denied_at_push_before_records_can_close() {
     let mut parts = schema.into_parts();
     parts.owner = "x".repeat(HOSTILE_TEXT_BYTES);
     let schema = WorthQueryPortablePackageRecord::ApplicationSchema(
-        worth_query_declaration::facade::application_schema::WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts),
+        worth_query_declaration::facade::application_schema::WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(ARCHIVE_DECODE, parts),
     );
     assert_push_logical_denial(
         exported.manifest(),
@@ -87,6 +89,7 @@ fn oversized_artifact_evidence_is_denied_at_push_before_records_can_close() {
     );
     let artifact = WorthQueryPortablePackageRecord::ArtifactContract(
         crate::domain_computation::WorthQueryPortableArtifactContractRecord::from_untrusted_parts(
+            ARCHIVE_DECODE,
             parts,
         ),
     );
@@ -118,10 +121,14 @@ fn oversized_operation_workflow_identity_is_denied_at_push_before_records_can_cl
     );
     parts.semantics =
         crate::package::WorthQueryPortableDomainOperationSemanticRecord::from_untrusted_parts(
+            ARCHIVE_DECODE,
             semantics,
         );
     let operation = WorthQueryPortablePackageRecord::DomainOperation(
-        crate::package::WorthQueryPortableDomainOperationRecord::from_untrusted_parts(parts),
+        crate::package::WorthQueryPortableDomainOperationRecord::from_untrusted_parts(
+            ARCHIVE_DECODE,
+            parts,
+        ),
     );
     assert_push_logical_denial(
         exported.manifest(),
@@ -167,6 +174,7 @@ fn nested_query_entries_are_bounded_before_semantic_materialization() {
 fn forged_small_canonical_claim_cannot_widen_materialization_work() {
     let exported = operation_fixture().export_typed_records().unwrap();
     let forged = WorthQueryPortablePackageManifest::from_untrusted_fields(
+        ARCHIVE_DECODE,
         exported.manifest().version(),
         exported.manifest().package_identity().clone(),
         exported.manifest().record_count(),
@@ -230,6 +238,7 @@ fn assert_push_logical_denial(
     counts[WorthQueryPortablePackageRecordFamily::DomainIdentity as usize] = 1;
     counts[family as usize] = 1;
     let manifest = WorthQueryPortablePackageManifest::from_untrusted_fields(
+        ARCHIVE_DECODE,
         source.version(),
         source.package_identity().clone(),
         2,

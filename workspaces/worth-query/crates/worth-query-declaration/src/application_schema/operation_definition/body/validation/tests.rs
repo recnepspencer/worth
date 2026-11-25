@@ -4,6 +4,7 @@ use crate::application_schema::{
     ApplicationOperationBodyCreation, ApplicationOperationBodyProgram,
     ApplicationOperationBodyScopeField,
 };
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 use worth_foundational::facade::{AspectValue, ScalarAspectType};
 
@@ -12,7 +13,8 @@ fn portable_scope_initializer_requires_matching_declared_units() {
     let scope = ApplicationFieldBindingLocus::new("Item", "Facts", "Current");
     let source = ApplicationFieldBindingLocus::new("Item", "Facts", "Prior");
     let target = ApplicationFieldBindingLocus::new("Audit", "Facts", "Prior");
-    let codec = WorthQueryPortableTypeIdentity::from_untrusted("worth.rust.u64".to_owned());
+    let codec =
+        WorthQueryPortableTypeIdentity::from_untrusted(ARCHIVE_DECODE, "worth.rust.u64".to_owned());
     let scope_step = ApplicationOperationBodyScopeField::Assign {
         field: scope.clone(),
         binding: codec.clone(),
@@ -46,6 +48,7 @@ fn portable_scope_initializer_requires_matching_declared_units() {
         ApplicationSchemaMember::Operation {
             operation: "Set".to_owned(),
             input_type: WorthQueryPortableTypeIdentity::from_untrusted(
+                ARCHIVE_DECODE,
                 "worth.rust.unit".to_owned(),
             ),
         },
@@ -77,8 +80,10 @@ fn portable_scope_initializer_requires_matching_declared_units() {
         ApplicationSchemaMember::OperationBody {
             operation: "Set".to_owned(),
             body: ApplicationOperationBodyProgram::from_untrusted_with_creation(
+                ARCHIVE_DECODE,
                 vec![scope_step],
                 Some(ApplicationOperationBodyCreation::from_untrusted(
+                    ARCHIVE_DECODE,
                     "Audit".to_owned(),
                     "audit".to_owned(),
                     vec![created_step],
@@ -103,6 +108,7 @@ fn portable_scope_initializer_requires_matching_declared_units() {
         .collect();
     let definition =
         crate::application_schema::ApplicationDecisionReadScopeMeaning::from_untrusted_parts(
+            ARCHIVE_DECODE,
             targets,
             Vec::new(),
         )
@@ -144,13 +150,17 @@ fn portable_optional_clear_refuses_a_required_field() {
     let field = ApplicationFieldBindingLocus::new("Item", "Facts", "Note");
     let step = ApplicationOperationBodyScopeField::ClearOptional {
         field: field.clone(),
-        binding: WorthQueryPortableTypeIdentity::from_untrusted("worth.rust.string".to_owned()),
+        binding: WorthQueryPortableTypeIdentity::from_untrusted(
+            ARCHIVE_DECODE,
+            "worth.rust.string".to_owned(),
+        ),
         scalar_family: ScalarAspectType::String,
     };
     let mut members = vec![
         ApplicationSchemaMember::Operation {
             operation: "Clear".to_owned(),
             input_type: WorthQueryPortableTypeIdentity::from_untrusted(
+                ARCHIVE_DECODE,
                 "worth.rust.unit".to_owned(),
             ),
         },
@@ -179,7 +189,10 @@ fn portable_optional_clear_refuses_a_required_field() {
         },
         ApplicationSchemaMember::OperationBody {
             operation: "Clear".to_owned(),
-            body: ApplicationOperationBodyProgram::from_untrusted_scope_fields(vec![step]),
+            body: ApplicationOperationBodyProgram::from_untrusted_scope_fields(
+                ARCHIVE_DECODE,
+                vec![step],
+            ),
         },
         ApplicationSchemaMember::Entity {
             entity: "Item".to_owned(),

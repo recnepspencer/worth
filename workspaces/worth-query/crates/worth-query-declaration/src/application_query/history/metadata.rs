@@ -1,3 +1,4 @@
+use crate::archive_decode_authority::{ArchiveDecodeAuthority, ARCHIVE_DECODE};
 use std::marker::PhantomData;
 
 use crate::portable_identity::{WorthQueryPortableType, WorthQueryPortableTypeIdentity};
@@ -42,6 +43,7 @@ pub struct ApplicationHistoryMetadataMeaning {
 
 impl ApplicationHistoryMetadataMeaning {
     pub fn from_untrusted_fields(
+        _: ArchiveDecodeAuthority,
         history: WorthQueryPortableTypeIdentity,
         facet: ApplicationHistoryMetadataFacet,
     ) -> Self {
@@ -85,6 +87,7 @@ impl<History: WorthQueryPortableType> ApplicationHistoryMetadataRef<History> {
 
     pub fn meaning(&self) -> ApplicationHistoryMetadataMeaning {
         ApplicationHistoryMetadataMeaning::from_untrusted_fields(
+            ARCHIVE_DECODE,
             History::PORTABLE_TYPE_IDENTITY,
             self.facet,
         )

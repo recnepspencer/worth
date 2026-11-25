@@ -1,5 +1,6 @@
 //! Carriage proof: topology and repeated-kind site multiplicity survive independently of authority.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::{
     ApplicationOperationBodyChildCreation as Child, ApplicationOperationBodyCreationLink as Link,
     ApplicationOperationBodyCreationLinkDirection as Direction,
@@ -8,27 +9,38 @@ use worth_query_declaration::facade::application_schema::{
 fn child(parent: &str, from: &str, to: &str, key: &str, relation: &str) -> Child {
     Child {
         parent_key: parent.into(),
-        creation: ApplicationOperationBodyCreation::from_untrusted(to.into(), key.into(), vec![])
-            .with_untrusted_links(vec![Link {
-                relation: relation.into(),
-                from: from.into(),
-                to: to.into(),
-                key: key.into(),
-                direction: Direction::FromScope,
-                posture: Posture::Append,
-                source: Default::default(),
-            }]),
+        creation: ApplicationOperationBodyCreation::from_untrusted(
+            ARCHIVE_DECODE,
+            to.into(),
+            key.into(),
+            vec![],
+        )
+        .with_untrusted_links(vec![Link {
+            relation: relation.into(),
+            from: from.into(),
+            to: to.into(),
+            key: key.into(),
+            direction: Direction::FromScope,
+            posture: Posture::Append,
+            source: Default::default(),
+        }]),
     }
 }
 #[test]
 fn child_sites_v36_preserve_preorder_parent_links_and_exact_nested_measure() {
-    let root = ApplicationOperationBodyCreation::from_untrusted("Row".into(), "row".into(), vec![])
-        .with_untrusted_children(vec![
-            child("row", "Row", "Cell", "physical", "RowCells"),
-            child("physical", "Cell", "Detail", "detail", "CellDetails"),
-            child("row", "Row", "Cell", "electronic", "RowCells"),
-        ]);
+    let root = ApplicationOperationBodyCreation::from_untrusted(
+        ARCHIVE_DECODE,
+        "Row".into(),
+        "row".into(),
+        vec![],
+    )
+    .with_untrusted_children(vec![
+        child("row", "Row", "Cell", "physical", "RowCells"),
+        child("physical", "Cell", "Detail", "detail", "CellDetails"),
+        child("row", "Row", "Cell", "electronic", "RowCells"),
+    ]);
     let body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
         "Ncr".into(),
         vec![],
         Some(root),
@@ -72,6 +84,7 @@ fn child_sites_v36_preserve_preorder_parent_links_and_exact_nested_measure() {
             "CellDetails",
         )]);
     let malformed = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
         "Ncr".into(),
         vec![],
         Some(
@@ -99,16 +112,27 @@ fn multiple_child_parent_links_require_v39_in_root_and_peer_trees() {
         ..links[0].clone()
     });
     child.creation = child.creation.with_untrusted_links(links);
-    let site = ApplicationOperationBodyCreation::from_untrusted("Row".into(), "row".into(), vec![])
-        .with_untrusted_children(vec![child]);
+    let site = ApplicationOperationBodyCreation::from_untrusted(
+        ARCHIVE_DECODE,
+        "Row".into(),
+        "row".into(),
+        vec![],
+    )
+    .with_untrusted_children(vec![child]);
     for peer in [false, true] {
         let root = if peer {
-            ApplicationOperationBodyCreation::from_untrusted("Other".into(), "other".into(), vec![])
-                .with_untrusted_peers(vec![site.clone()])
+            ApplicationOperationBodyCreation::from_untrusted(
+                ARCHIVE_DECODE,
+                "Other".into(),
+                "other".into(),
+                vec![],
+            )
+            .with_untrusted_peers(vec![site.clone()])
         } else {
             site.clone()
         };
         let body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+            ARCHIVE_DECODE,
             "Tenant".into(),
             vec![],
             Some(root),

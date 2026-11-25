@@ -5,6 +5,7 @@ use crate::{
     binary_encoding::BinaryEncodingSink, binary_input::BinaryInput,
     denial::WorthQueryPackageArchiveDenial,
 };
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::{
     ApplicationOperationComponentReadMeaning, WorthQueryPortableOperationComponentReadParts,
 };
@@ -54,6 +55,7 @@ pub(super) fn decode(
     )?;
     Ok(
         ApplicationOperationComponentReadMeaning::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableOperationComponentReadParts {
                 operation,
                 set,

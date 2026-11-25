@@ -8,6 +8,7 @@ use crate::application_schema::{
     fragment::RecordSelection, ApplicationEncodedScalarValue, ApplicationFieldBindingRecipe,
     ApplicationScalarValueBinding,
 };
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 use std::marker::PhantomData;
 use worth_foundational::expression_api::{expressions, ExpressionDraft};
 
@@ -132,8 +133,11 @@ impl<Query> ApplicationQueryWhereFilterOperands<Query> {
         if self.operands.iter().any(|operand| operand.name() == name) {
             return Err(Denial::DuplicateOperand);
         }
-        self.operands
-            .push(Operand::from_untrusted(name.to_owned(), source));
+        self.operands.push(Operand::from_untrusted(
+            ARCHIVE_DECODE,
+            name.to_owned(),
+            source,
+        ));
         Ok(self)
     }
 }

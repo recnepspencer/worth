@@ -1,5 +1,6 @@
 //! Refinement metadata survives the real archive; no callback/root is serialized.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 #[test]
 fn row_local_refinement_member_round_trip_preserves_meaning_and_legacy_absence() {
     let old = definition();
@@ -9,7 +10,11 @@ fn row_local_refinement_member_round_trip_preserves_meaning_and_legacy_absence()
     parts.structure = ApplicationManagedIndexSourceStructure::BinarySourceTree;
     parts.membership = ApplicationManagedIndexMembership::CheckedSummarySourceTree;
     assert_eq!(
-        ErasedApplicationManagedIndexDefinition::from_untrusted_parts(parts.clone()).validate(),
+        ErasedApplicationManagedIndexDefinition::from_untrusted_parts(
+            ARCHIVE_DECODE,
+            parts.clone()
+        )
+        .validate(),
         Err(ApplicationManagedIndexDefinitionDenial::UnsupportedRefinement)
     );
     let refined = ErasedApplicationManagedIndexDefinition::from_refinement_parts(

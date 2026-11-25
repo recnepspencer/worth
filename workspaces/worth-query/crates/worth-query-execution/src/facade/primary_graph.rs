@@ -28,7 +28,11 @@ pub use resources::*;
 /// Read-only aggregate lineage vocabulary and original commit occurrence diagnostics.
 pub use worth_foundational::facade::AggregateLineageKind;
 /// Original Native commit occurrence; lineage diagnostics grant no authority.
-pub use worth_relational::facade::history::{CommitId, RelationalAuthoredWriteDenial};
+/// The receipt vocabulary also describes typed correction-source coordinates.
+pub use worth_relational::facade::history::{
+    BranchId, CommitId, RelationalAuthoredWriteDenial, RelationalCommitReceipt,
+};
+pub use worth_relational::facade::identity::VersionId;
 
 pub use crate::domain_computation::{
     WorthQueryInvariantExecutionDenialKind, WorthQueryInvariantExecutionFailure,

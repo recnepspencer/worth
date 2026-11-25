@@ -3,6 +3,7 @@ use super::*;
 use crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceCoordinates;
 use std::alloc::Layout;
 use worth_execution::{ExecutionAllocationDenial, ExecutionMemoryReservation, ExecutionRequest};
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_relational::facade::history::{BranchId, CommitId, RelationalCommitReceipt};
 
 #[derive(Debug)]
@@ -52,6 +53,7 @@ impl WorthQueryCorrectionHistoryPageAllocation {
         root: &WorthQueryRecordedCorrectionSource,
     ) -> Result<WorthQueryRecordedCorrectionSource, Denial> {
         Ok(WorthQueryRecordedCorrectionSource::from_untrusted_parts(
+            ARCHIVE_DECODE,
             root.world().clone(),
             self.clone_receipt(root.relational())?,
             root.member(),
@@ -92,7 +94,7 @@ impl WorthQueryCorrectionHistoryPageAllocation {
         &mut self,
         source: &WorthQueryCorrectionSourceCoordinates,
     ) -> Result<WorthQueryCorrectionSourceCoordinates, Denial> {
-        Ok(WorthQueryCorrectionSourceCoordinates::from_untrusted_parts(
+        Ok(WorthQueryCorrectionSourceCoordinates::new(
             source.world_owner(),
             source.world_commit(),
             self.clone_receipt(source.relational())?,

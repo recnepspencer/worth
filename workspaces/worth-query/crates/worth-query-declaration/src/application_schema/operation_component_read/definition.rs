@@ -1,3 +1,4 @@
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 use std::marker::PhantomData;
 
 use crate::application_query::{ApplicationQueryRootPath, ApplicationQueryRootPathMeaning};
@@ -51,6 +52,7 @@ impl<Schema, Operation, Root, Set, Member>
         self.paths.sort();
         self.paths.dedup();
         ApplicationOperationComponentReadMeaning::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableOperationComponentReadParts {
                 operation: self.operation.to_owned(),
                 set: self.reference.name().to_owned(),

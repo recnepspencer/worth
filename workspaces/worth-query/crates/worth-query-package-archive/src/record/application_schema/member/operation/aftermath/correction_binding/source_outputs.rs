@@ -12,6 +12,7 @@ use crate::{
     },
     record::decode_budget::RecordDecodeAttempt,
 };
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::{
     application_aftermath::{DeclaredCorrectionOutputField, DeclaredCorrectionOutputFieldParts},
     application_schema::ApplicationSchemaMember,
@@ -74,6 +75,7 @@ pub(super) fn decode(
             return Err(Denial::new(Kind::UnsupportedRecordVariant));
         };
         Ok(DeclaredCorrectionOutputField::from_untrusted_parts(
+            ARCHIVE_DECODE,
             DeclaredCorrectionOutputFieldParts {
                 source_binding,
                 role,
@@ -82,7 +84,10 @@ pub(super) fn decode(
                 field,
                 presence,
                 scalar_family,
-                value_binding: WorthQueryPortableTypeIdentity::from_untrusted(value_type),
+                value_binding: WorthQueryPortableTypeIdentity::from_untrusted(
+                    ARCHIVE_DECODE,
+                    value_type,
+                ),
                 unit,
                 binding_unit,
                 frame,

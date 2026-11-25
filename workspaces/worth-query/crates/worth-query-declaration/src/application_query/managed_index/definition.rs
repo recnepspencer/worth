@@ -2,6 +2,7 @@
 use super::{ApplicationManagedIndexBinding, ApplicationManagedIndexProbeMeaning};
 use crate::application_query::ApplicationQueryBindingReference;
 use crate::application_schema::{ApplicationEntityMarkerIdentity, ApplicationSchema};
+use crate::archive_decode_authority::{ArchiveDecodeAuthority, ARCHIVE_DECODE};
 
 /// Refusals while describing or resolving a managed index.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -57,7 +58,10 @@ impl ErasedApplicationManagedIndexDefinition {
     pub const REFINEMENT_VERSION: u16 = 4;
     pub const CANDIDATE_MEMBERSHIP_VERSION: u16 = 3;
 
-    pub fn from_untrusted_parts(parts: WorthQueryPortableManagedIndexParts) -> Self {
+    pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
+        parts: WorthQueryPortableManagedIndexParts,
+    ) -> Self {
         Self {
             parts,
             refinement: None,
@@ -130,6 +134,7 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>
     pub fn new() -> Self {
         let mut value = Self {
             erased: ErasedApplicationManagedIndexDefinition::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 WorthQueryPortableManagedIndexParts {
                     semantic_version: if I::MAINTENANCE.native_cold().is_some() {
                         ErasedApplicationManagedIndexDefinition::CURRENT_VERSION

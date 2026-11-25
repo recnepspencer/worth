@@ -1,5 +1,6 @@
 //! Committed-index selector payload; version is checked before field allocation.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryManagedIndexMeaning as Meaning,
     WorthQueryPortableQueryManagedIndexParts as Parts,
@@ -39,7 +40,7 @@ pub(super) fn decode(input: &mut BinaryInput<'_>) -> Result<Meaning, Denial> {
             crate::record::managed_index_refinement::decode(input)?,
         )
     } else {
-        Meaning::from_untrusted_parts(parts)
+        Meaning::from_untrusted_parts(ARCHIVE_DECODE, parts)
     };
     meaning
         .validate()
@@ -55,14 +56,17 @@ mod tests {
     };
     #[test]
     fn refined_selector_round_trip_keeps_explicit_mode_and_domain_contract() {
-        let old = Meaning::from_untrusted_parts(Parts {
-            semantic_version: 1,
-            index: "Prefix".into(),
-            probe_parameter: "probe".into(),
-        });
+        let old = Meaning::from_untrusted_parts(
+            ARCHIVE_DECODE,
+            Parts {
+                semantic_version: 1,
+                index: "Prefix".into(),
+                probe_parameter: "probe".into(),
+            },
+        );
         let mut parts = old.parts().clone();
         parts.semantic_version = 2;
-        assert!(Meaning::from_untrusted_parts(parts.clone())
+        assert!(Meaning::from_untrusted_parts(ARCHIVE_DECODE, parts.clone())
             .validate()
             .is_err());
         let refined = Meaning::from_refinement_parts(

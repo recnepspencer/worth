@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::{
     ApplicationSchemaDeclarationDenial, WorthQueryPortableApplicationSchemaRecord,
 };
@@ -32,9 +33,11 @@ fn duplicate_nested_domain_operation_meaning_is_not_normalized_into_validity() {
     let duplicate = *semantic_parts.required_capabilities.first().unwrap();
     semantic_parts.required_capabilities.push(duplicate);
     *operation = WorthQueryPortableDomainOperationRecord::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableDomainOperationParts {
             identity: operation_parts.identity,
             semantics: WorthQueryPortableDomainOperationSemanticRecord::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 semantic_parts,
             ),
             canonical_identity: operation_parts.canonical_identity,
@@ -91,7 +94,8 @@ fn reordered_application_schema_members_are_not_normalized_into_validity() {
         .unwrap();
     let mut parts = schema.clone().into_parts();
     parts.members.swap(0, 1);
-    *schema = WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts);
+    *schema =
+        WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(ARCHIVE_DECODE, parts);
 
     let structural = close_records(
         exported.manifest(),
@@ -121,7 +125,8 @@ fn duplicate_artifact_roles_are_not_normalized_into_validity() {
     let mut parts = contract.clone().into_parts();
     let duplicate = parts.producer_roles.first().unwrap().clone();
     parts.producer_roles.push(duplicate);
-    *contract = WorthQueryPortableArtifactContractRecord::from_untrusted_parts(parts);
+    *contract =
+        WorthQueryPortableArtifactContractRecord::from_untrusted_parts(ARCHIVE_DECODE, parts);
 
     let structural = close_records(
         exported.manifest(),
@@ -150,7 +155,8 @@ fn oversized_schema_text_is_denied_before_canonical_basis_allocation() {
         .unwrap();
     let mut parts = schema.clone().into_parts();
     parts.owner = "x".repeat(128 * 1_024);
-    *schema = WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts);
+    *schema =
+        WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(ARCHIVE_DECODE, parts);
     let limits = WorthQueryPortablePackageReconstructionLimits::DEFAULT.with_work_bounds(
         1_024 * 1_024,
         u64::MAX,
@@ -181,7 +187,8 @@ fn oversized_artifact_text_is_denied_before_canonicalization_clone() {
         .unwrap();
     let mut parts = contract.clone().into_parts();
     parts.producer_roles = vec!["x".repeat(128 * 1_024)];
-    *contract = WorthQueryPortableArtifactContractRecord::from_untrusted_parts(parts);
+    *contract =
+        WorthQueryPortableArtifactContractRecord::from_untrusted_parts(ARCHIVE_DECODE, parts);
     let limits = WorthQueryPortablePackageReconstructionLimits::DEFAULT.with_work_bounds(
         1_024 * 1_024,
         u64::MAX,

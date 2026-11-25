@@ -1,3 +1,4 @@
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
 use super::{
@@ -52,7 +53,10 @@ pub struct ApplicationMutationOutputRoleFamilyDescription {
 }
 
 impl ApplicationMutationDescription {
-    pub fn from_untrusted_parts(parts: ApplicationMutationDescriptionParts) -> Self {
+    pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
+        parts: ApplicationMutationDescriptionParts,
+    ) -> Self {
         Self {
             parts,
             coupled_outputs: Vec::new(),

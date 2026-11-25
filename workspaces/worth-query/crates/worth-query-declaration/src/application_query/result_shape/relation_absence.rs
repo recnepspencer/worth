@@ -1,4 +1,5 @@
 use super::*;
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 
 impl<Schema, Query, Entity, Row, ShapeBinding>
     ApplicationQueryResultShapeBuilder<Schema, Query, Entity, Row, ShapeBinding>
@@ -54,6 +55,7 @@ where
         self.field_expectations.extend(nested_fields);
         self.relations
             .push(ApplicationQueryResultRelation::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 WorthQueryPortableApplicationQueryResultRelationParts {
                     query_type: relation.slot_key().query_identity(),
                     slot_type: relation.slot_key().slot_identity(),

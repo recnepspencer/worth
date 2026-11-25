@@ -1,5 +1,6 @@
 //! Current capability recipes for history-window and bookmark changes.
 use super::{ApplicationHistoryBinding, ApplicationHistoryModel};
+use crate::archive_decode_authority::{ArchiveDecodeAuthority, ARCHIVE_DECODE};
 use crate::{
     application_capability::{
         ApplicationCapabilityMarkerIdentity, ApplicationCapabilityRef, ApplicationCapabilityRequest,
@@ -67,16 +68,22 @@ impl ApplicationHistoryRetentionDeclaration {
     {
         let capability = ApplicationCapabilityRef::<S, N::Capability>::from_declaration();
         let operation = ApplicationOperationRef::<S, N::Operation, N::Input>::from_declaration();
-        Self::from_untrusted_parts(WorthQueryPortableApplicationHistoryRetentionParts {
-            binding: N::IDENTITY.to_owned(),
-            capability: capability.name().to_owned(),
-            capability_type: capability.marker_identity(),
-            operation: operation.name().to_owned(),
-            input_type: operation.input_identity(),
-        })
+        Self::from_untrusted_parts(
+            ARCHIVE_DECODE,
+            WorthQueryPortableApplicationHistoryRetentionParts {
+                binding: N::IDENTITY.to_owned(),
+                capability: capability.name().to_owned(),
+                capability_type: capability.marker_identity(),
+                operation: operation.name().to_owned(),
+                input_type: operation.input_identity(),
+            },
+        )
     }
 
-    pub fn from_untrusted_parts(parts: WorthQueryPortableApplicationHistoryRetentionParts) -> Self {
+    pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
+        parts: WorthQueryPortableApplicationHistoryRetentionParts,
+    ) -> Self {
         Self { parts }
     }
 

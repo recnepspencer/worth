@@ -4,6 +4,7 @@ use worth_foundational::facade::{
     FieldDeclaration, FieldKey, FieldRequirement, ProjectionMask, ScalarAspectType,
     StructAspectShape,
 };
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::{
     ApplicationExternalEffectProtocol, WorthQueryExternalEffectCorrelationFamily,
 };
@@ -18,7 +19,10 @@ use worth_query_installation::facade::{
 };
 
 pub(super) fn complete_record() -> WorthQueryPortableApplicationOperationContractRecord {
-    WorthQueryPortableApplicationOperationContractRecord::from_untrusted_parts(complete_parts())
+    WorthQueryPortableApplicationOperationContractRecord::from_untrusted_parts(
+        ARCHIVE_DECODE,
+        complete_parts(),
+    )
 }
 
 pub(super) fn wrapped_complete_record() -> WorthQueryPortablePackageRecord {
@@ -37,6 +41,7 @@ pub(super) fn complete_parts() -> WorthQueryPortableApplicationOperationContract
         schema: "ArchiveOperationSchema".to_owned(),
         operation: "settle".to_owned(),
         input_type: WorthQueryPortableTypeIdentity::from_untrusted(
+            ARCHIVE_DECODE,
             "archive.operation.input".to_owned(),
         ),
         graph_reads: vec![
@@ -91,6 +96,7 @@ pub(super) fn complete_parts() -> WorthQueryPortableApplicationOperationContract
         external_effect: Some(external_effect()),
         reconciliation: Some(
             WorthQueryPortableInstalledReconciliationProcedureRecord::from_untrusted_procedure_slot(
+                ARCHIVE_DECODE,
                 "settle-reconciliation".to_owned(),
             ),
         ),
@@ -120,11 +126,13 @@ fn field_path() -> CanonicalFieldPath {
 
 fn external_effect() -> WorthQueryPortableExternalEffectContractRecord {
     WorthQueryPortableExternalEffectContractRecord::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableExternalEffectContractParts {
             correlation_family: WorthQueryExternalEffectCorrelationFamily::new("dispatch-rail")
                 .unwrap(),
             effect: "payment".to_owned(),
             payload_type: WorthQueryPortableTypeIdentity::from_untrusted(
+                ARCHIVE_DECODE,
                 "archive.effect.payload".to_owned(),
             ),
             protocol: ApplicationExternalEffectProtocol::new(

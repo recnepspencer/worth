@@ -5,6 +5,7 @@ use super::super::{
 };
 use super::*;
 use worth_execution::ExecutionRequest;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_relational::facade::durability::{
     CapturedNativeInterimAdmission, CapturedNativeInterimOrigin,
 };
@@ -21,6 +22,18 @@ impl WorthQueryApplicationCheckpoint {
     /// from bytes. Imported byte DATA never reconstructs this proof.
     pub fn capture_origin(&self) -> Option<WorthQueryInterimCheckpointOrigin> {
         self.origin.clone()
+    }
+
+    /// Readmit checkpoint bytes an application transported, authenticated by
+    /// the capture origin the issuing owners retained. Bytes alone never
+    /// restore: the format and both owners' transport proofs are checked here,
+    /// before any installation or initializer runs.
+    pub fn readmit_transported(
+        bytes: impl Into<Box<[u8]>>,
+        origin: WorthQueryInterimCheckpointOrigin,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<Self, Denial> {
+        Self::from_untrusted_bytes(ARCHIVE_DECODE, bytes).with_capture_origin(origin, request)
     }
 
     pub fn with_capture_origin(

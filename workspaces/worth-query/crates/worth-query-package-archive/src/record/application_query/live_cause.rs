@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryLiveCauseContract, ApplicationQueryLiveTargetMode,
     WorthQueryPortableApplicationQueryLiveCauseParts,
@@ -43,6 +44,7 @@ pub(super) fn decode(
     input: &mut BinaryInput<'_>,
 ) -> Result<ApplicationQueryLiveCauseContract, Denial> {
     Ok(ApplicationQueryLiveCauseContract::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationQueryLiveCauseParts {
             binding_type: decode_type_identity(input)?,
             effect: input.text()?.to_owned(),

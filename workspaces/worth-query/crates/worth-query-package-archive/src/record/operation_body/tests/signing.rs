@@ -5,6 +5,7 @@ use super::{
     ApplicationOperationBodyProgram, BinaryInput, BinaryOutput, Kind, RecordDecodeAttempt,
     ScalarAspectType, WorthQueryPackageArchiveLimits, WorthQueryPortableTypeIdentity,
 };
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::{
     ApplicationFieldPresence as Presence, ApplicationOperationBodyCaptureRole as Role,
     ApplicationOperationBodyRequirementExpression as Expression,
@@ -21,15 +22,20 @@ fn body(binding: WorthQueryPortableTypeIdentity) -> ApplicationOperationBodyProg
     let reader =
         worth_foundational::expression_api::expressions().reading_within(Expression::PROFILE);
     let assigned = Requirement::from_untrusted(
+        ARCHIVE_DECODE,
         "assigned".into(),
         vec![Operand::from_untrusted(
+            ARCHIVE_DECODE,
             "signer".into(),
             Source::PrincipalIdentity {
                 scope: "Draft".into(),
                 mutation_binding: "SignBinding".into(),
                 principal_binding: "PrincipalBinding".into(),
                 field: Locus::new("Principal", "Identity", "Id"),
-                binding: WorthQueryPortableTypeIdentity::from_untrusted("worth.rust.u64".into()),
+                binding: WorthQueryPortableTypeIdentity::from_untrusted(
+                    ARCHIVE_DECODE,
+                    "worth.rust.u64".into(),
+                ),
                 scalar_family: ScalarAspectType::UInt64,
             },
         )],
@@ -42,16 +48,19 @@ fn body(binding: WorthQueryPortableTypeIdentity) -> ApplicationOperationBodyProg
     )
     .unwrap();
     ApplicationOperationBodyProgram::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
         "Draft".into(),
         vec![],
         Some(
             ApplicationOperationBodyCreation::from_untrusted(
+                ARCHIVE_DECODE,
                 "Evidence".into(),
                 "evidence".into(),
                 vec![
                     Field::PresentScopeField {
                         field: Locus::new("Evidence", "Facts", "Text"),
                         binding: WorthQueryPortableTypeIdentity::from_untrusted(
+                            ARCHIVE_DECODE,
                             "worth.rust.string".into(),
                         ),
                         scalar_family: ScalarAspectType::String,
@@ -60,6 +69,7 @@ fn body(binding: WorthQueryPortableTypeIdentity) -> ApplicationOperationBodyProg
                     Field::PrincipalIdentity {
                         field: actor.clone(),
                         binding: WorthQueryPortableTypeIdentity::from_untrusted(
+                            ARCHIVE_DECODE,
                             "worth.rust.u64".into(),
                         ),
                         scalar_family: ScalarAspectType::UInt64,
@@ -75,6 +85,7 @@ fn body(binding: WorthQueryPortableTypeIdentity) -> ApplicationOperationBodyProg
             )
             .with_untrusted_signing(Some(
                 ApplicationOperationBodySigningSpec::from_untrusted(
+                    ARCHIVE_DECODE,
                     "verification".into(),
                     actor,
                     provenance,
@@ -147,10 +158,12 @@ fn classified(role: Role, presence: Presence) -> ApplicationOperationBodyProgram
         },
     );
     ApplicationOperationBodyProgram::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
         "Draft".into(),
         vec![],
         Some(
             ApplicationOperationBodyCreation::from_untrusted(
+                ARCHIVE_DECODE,
                 "Evidence".into(),
                 "evidence".into(),
                 fields,
@@ -178,6 +191,7 @@ fn lifecycle_uses_v15_and_preserves_every_declared_association_and_bound() {
             maximum_evidence: 32,
         }));
     let body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
         "Draft".into(),
         vec![],
         Some(creation),

@@ -1,5 +1,6 @@
 //! Authority-free native operand selectors; schema admission binds them.
 use super::ApplicationOperationBodyRequirementDenial;
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 use crate::{
     application_schema::{
         ApplicationFieldBindingLocus, ApplicationFieldPresence,
@@ -78,7 +79,11 @@ pub struct ApplicationOperationBodyRequirementOperand {
 }
 
 impl ApplicationOperationBodyRequirementOperand {
-    pub fn from_untrusted(name: String, source: ApplicationOperationBodyRequirementSource) -> Self {
+    pub fn from_untrusted(
+        _: ArchiveDecodeAuthority,
+        name: String,
+        source: ApplicationOperationBodyRequirementSource,
+    ) -> Self {
         Self { name, source }
     }
     pub fn name(&self) -> &str {

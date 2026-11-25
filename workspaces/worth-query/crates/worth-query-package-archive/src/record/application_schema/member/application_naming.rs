@@ -1,5 +1,6 @@
 use super::*;
 use crate::record::sequence::{decode_sequence, write_sequence};
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_naming::{
     ApplicationGroupContinuityRule, ApplicationNameRoleDependency, ApplicationNameSubjectKind,
     ErasedApplicationGroupNameScheme, ErasedApplicationNameScheme,
@@ -56,6 +57,7 @@ pub(super) fn decode_group(
     let boundary_role = decode_optional_text(input)?;
     Ok(ApplicationSchemaMember::ApplicationGroupNameScheme {
         definition: ErasedApplicationGroupNameScheme::from_untrusted_parts(
+            ARCHIVE_DECODE,
             name_scheme,
             continuity_rule,
             anchor_role,
@@ -116,6 +118,7 @@ fn decode_scheme_fields(
         decode_sequence(input, budget, 2, |input, _| Ok(input.text()?.to_owned()))?;
     let require_authored_occurrence = decode_bool(input)?;
     Ok(ErasedApplicationNameScheme::from_untrusted_parts(
+        ARCHIVE_DECODE,
         scheme_id,
         subject_kind,
         subject_name,

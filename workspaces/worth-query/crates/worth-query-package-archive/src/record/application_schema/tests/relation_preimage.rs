@@ -1,11 +1,14 @@
 //! Persist exact relation axes and the current output-field selection meaning.
 use super::{decode_member, encode_member, try_decode_member};
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::{
     application_aftermath::*, application_schema::ApplicationSchemaMember,
 };
 fn member(relations: Vec<PortablePreImageRelationLocus>) -> ApplicationSchemaMember {
     let demand = PortablePreImageDemand::from_untrusted_fields(
+        ARCHIVE_DECODE,
         vec![PortablePreImageLocus::from_untrusted_fields(
+            ARCHIVE_DECODE,
             "Stage".into(),
             "Facts".into(),
             "key".into(),
@@ -14,6 +17,7 @@ fn member(relations: Vec<PortablePreImageRelationLocus>) -> ApplicationSchemaMem
     )
     .with_untrusted_relations(relations);
     let inverse = PortableRecordedInverse::from_untrusted_fields(
+        ARCHIVE_DECODE,
         "RestoreStage".into(),
         DeclaredLoweringCorrespondenceRef::new("stage-splice.v1"),
         DeclaredAftermathPostcondition::ExactPriorTruth,
@@ -22,6 +26,7 @@ fn member(relations: Vec<PortablePreImageRelationLocus>) -> ApplicationSchemaMem
     ApplicationSchemaMember::OperationAftermath {
         operation: "RetireStage".into(),
         contract: PortableApplicationAftermathContract::from_untrusted_fields(
+            ARCHIVE_DECODE,
             DeclaredCorrectionAuthority::RuntimeAlone,
             Some(PortableCorrectionMechanism::RecordedInverse(inverse)),
             None,
@@ -31,6 +36,7 @@ fn member(relations: Vec<PortablePreImageRelationLocus>) -> ApplicationSchemaMem
 #[test]
 fn relation_preimage_archive_retains_kind_and_both_endpoint_axes() {
     let original = member(vec![PortablePreImageRelationLocus::from_untrusted_fields(
+        ARCHIVE_DECODE,
         "PreviousStage".into(),
         "Stage".into(),
         "Stage".into(),
@@ -68,6 +74,7 @@ fn output_field_archives_keep_mode_and_exact_output_distinct_from_strict_capture
         for relations in [
             vec![],
             vec![PortablePreImageRelationLocus::from_untrusted_fields(
+                ARCHIVE_DECODE,
                 "PreviousStage".into(),
                 "Stage".into(),
                 "Stage".into(),
@@ -85,6 +92,7 @@ fn output_field_archives_keep_mode_and_exact_output_distinct_from_strict_capture
                 unreachable!()
             };
             let changed = PortableRecordedInverse::from_untrusted_fields(
+                ARCHIVE_DECODE,
                 inverse.inverse_operation_slot().to_owned(),
                 inverse.lowering_correspondence().clone(),
                 inverse.postcondition().clone(),
@@ -93,6 +101,7 @@ fn output_field_archives_keep_mode_and_exact_output_distinct_from_strict_capture
                     .clone()
                     .with_untrusted_output_fields(
                         PortablePreImageFieldOutput::from_untrusted_fields(
+                            ARCHIVE_DECODE,
                             "owner-role".into(),
                             "Stage".into(),
                             capture,
@@ -102,6 +111,7 @@ fn output_field_archives_keep_mode_and_exact_output_distinct_from_strict_capture
             let original = ApplicationSchemaMember::OperationAftermath {
                 operation,
                 contract: PortableApplicationAftermathContract::from_untrusted_fields(
+                    ARCHIVE_DECODE,
                     DeclaredCorrectionAuthority::RuntimeAlone,
                     Some(PortableCorrectionMechanism::RecordedInverse(changed)),
                     None,

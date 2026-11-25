@@ -1,5 +1,6 @@
 //! V7 retains both expressions and exact typed collection/field correspondence.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::{
     ApplicationFieldPresence, ApplicationOperationBodyRequirementDirection as Direction,
     ApplicationOperationBodyRequirementExpression as Expression,
@@ -13,13 +14,16 @@ fn conditional_requirement_v7_roundtrips_and_old_record_leaves_rejected_trailing
     let reader =
         worth_foundational::expression_api::expressions().reading_within(Expression::PROFILE);
     let requirement = Requirement::from_untrusted(
+        ARCHIVE_DECODE,
         "members-minimum".to_owned(),
         vec![
             Operand::from_untrusted(
+                ARCHIVE_DECODE,
                 "active".to_owned(),
                 Source::Field {
                     field: ApplicationFieldBindingLocus::new("Item", "Facts", "Active"),
                     binding: WorthQueryPortableTypeIdentity::from_untrusted(
+                        ARCHIVE_DECODE,
                         "worth.rust.bool".to_owned(),
                     ),
                     scalar_family: ScalarAspectType::Bool,
@@ -28,6 +32,7 @@ fn conditional_requirement_v7_roundtrips_and_old_record_leaves_rejected_trailing
                 },
             ),
             Operand::from_untrusted(
+                ARCHIVE_DECODE,
                 "members".to_owned(),
                 Source::RelatedItemCount {
                     relation: "Members".to_owned(),
@@ -46,9 +51,13 @@ fn conditional_requirement_v7_roundtrips_and_old_record_leaves_rejected_trailing
     )
     .unwrap();
     let body = ApplicationOperationBodyProgram::from_untrusted_with_requirements(
+        ARCHIVE_DECODE,
         vec![ApplicationOperationBodyScopeField::Assign {
             field: ApplicationFieldBindingLocus::new("Item", "Facts", "Ready"),
-            binding: WorthQueryPortableTypeIdentity::from_untrusted("worth.rust.bool".to_owned()),
+            binding: WorthQueryPortableTypeIdentity::from_untrusted(
+                ARCHIVE_DECODE,
+                "worth.rust.bool".to_owned(),
+            ),
             value: AspectValue::Bool(true),
         }],
         None,

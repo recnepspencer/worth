@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 pub(crate) use worth_query_testkit_certification_application_graph::facade::certification::application_graph::workflow_definition_readmission::*;
 
 #[test]
@@ -6,7 +7,8 @@ fn workflow_actor_contract_authentic_predecessor_refuses_before_native_restore()
         "../../../../../../worth-query-testkit-certification-application-graph/src/certification/application_graph/workflow_definition_readmission/missing_input.checkpoint"
     );
     let original = bytes.to_vec();
-    let checkpoint = WorthQueryApplicationCheckpoint::from_untrusted_bytes(original.clone());
+    let checkpoint =
+        WorthQueryApplicationCheckpoint::from_untrusted_bytes(ARCHIVE_DECODE, original.clone());
     let retained = checkpoint.clone();
     let backing = retained.bytes().as_ptr();
     let denial = restore_on_first_program(
@@ -54,7 +56,7 @@ fn workflow_actor_contract_reheadered_predecessor_refuses_without_capture_origin
     bytes.extend_from_slice(&Sha256::digest(&body));
     bytes.extend_from_slice(&body);
     assert_eq!(&bytes[86..86 + native_len], &original[66..66 + native_len]);
-    let checkpoint = WorthQueryApplicationCheckpoint::from_untrusted_bytes(bytes);
+    let checkpoint = WorthQueryApplicationCheckpoint::from_untrusted_bytes(ARCHIVE_DECODE, bytes);
     let retained = checkpoint.clone();
     let intact = retained.bytes().to_vec();
     let backing = retained.bytes().as_ptr();
@@ -136,7 +138,8 @@ fn current_checkpoint_refusal_preserves_source_and_existing_application() {
             *bytes.last_mut().unwrap() ^= 1;
             Kind::CheckpointRecoveryRejected
         };
-        let checkpoint = WorthQueryApplicationCheckpoint::from_untrusted_bytes(bytes.clone());
+        let checkpoint =
+            WorthQueryApplicationCheckpoint::from_untrusted_bytes(ARCHIVE_DECODE, bytes.clone());
         let retained = checkpoint.clone();
         let denial = restore_on_first_program(
             checkpoint,

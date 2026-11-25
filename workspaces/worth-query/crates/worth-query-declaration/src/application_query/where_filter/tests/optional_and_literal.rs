@@ -1,9 +1,11 @@
 //! Static admission, validation, and canonical identity for optional
 //! parameters (`G7`) and authored literal constants (`DX-2`).
 use super::*;
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 
 fn optional_parameter(name: &str, scalar: ScalarAspectType) -> Operand {
     Operand::from_untrusted(
+        ARCHIVE_DECODE,
         name.to_owned(),
         Source::OptionalParameter {
             parameter: name.to_owned(),
@@ -14,6 +16,7 @@ fn optional_parameter(name: &str, scalar: ScalarAspectType) -> Operand {
 
 fn literal(name: &str, scalar: ScalarAspectType, value: AspectValue) -> Operand {
     Operand::from_untrusted(
+        ARCHIVE_DECODE,
         name.to_owned(),
         Source::Literal {
             scalar_family: scalar,
@@ -89,6 +92,7 @@ fn optional_parameters_validate_presence_type_and_predicate_restrictions() {
     pred_opt.parameters =
         vec![declared("status", ScalarAspectType::String).with_optional_presence()];
     pred_opt.predicates = vec![ApplicationQueryPredicate::from_untrusted_fields(
+        ARCHIVE_DECODE,
         "Entity".into(),
         "Task".into(),
         "Status".into(),
@@ -165,6 +169,7 @@ fn literal_operands_and_value_predicates_validate_types_bounds_and_canonical_ide
 
     let mut pred_val = definition_parts();
     pred_val.predicates = vec![ApplicationQueryPredicate::from_untrusted_value(
+        ARCHIVE_DECODE,
         "Entity".into(),
         "Task".into(),
         "Due".into(),
@@ -179,6 +184,7 @@ fn literal_operands_and_value_predicates_validate_types_bounds_and_canonical_ide
     );
     let mut bad_pred = definition_parts();
     bad_pred.predicates = vec![ApplicationQueryPredicate::from_untrusted_value(
+        ARCHIVE_DECODE,
         "Entity".into(),
         "Task".into(),
         "Due".into(),
@@ -198,6 +204,7 @@ fn literal_operands_and_value_predicates_validate_types_bounds_and_canonical_ide
     assert!(!bad_time.has_canonical_representation());
     let mut noncanonical_pred = definition_parts();
     noncanonical_pred.predicates = vec![ApplicationQueryPredicate::from_untrusted_value(
+        ARCHIVE_DECODE,
         "Entity".into(),
         "Task".into(),
         "At".into(),
@@ -214,6 +221,7 @@ fn literal_operands_and_value_predicates_validate_types_bounds_and_canonical_ide
     assert!(!bad_f64.has_canonical_representation());
     let mut noncanonical_f64_pred = definition_parts();
     noncanonical_f64_pred.predicates = vec![ApplicationQueryPredicate::from_untrusted_value(
+        ARCHIVE_DECODE,
         "Entity".into(),
         "Task".into(),
         "Score".into(),
@@ -238,6 +246,7 @@ fn literal_operands_and_value_predicates_validate_types_bounds_and_canonical_ide
     // Erased literal predicate on a unit-bearing field refuses at schema closure.
     let mut unit_pred = definition_parts();
     unit_pred.predicates = vec![ApplicationQueryPredicate::from_untrusted_value(
+        ARCHIVE_DECODE,
         "Entity".into(),
         "Task".into(),
         "Meters".into(),
@@ -266,6 +275,7 @@ fn literal_operands_and_value_predicates_validate_types_bounds_and_canonical_ide
         crate::application_schema::ApplicationSchemaMember::ApplicationQuery {
             definition:
                 crate::application_query::ErasedApplicationQueryDefinition::from_untrusted_parts(
+                    ARCHIVE_DECODE,
                     unit_pred,
                 ),
         },
@@ -278,6 +288,7 @@ fn literal_operands_and_value_predicates_validate_types_bounds_and_canonical_ide
     // A relation EqualParameter predicate must carry a parameter, never a literal value.
     let mut forged_rel = definition_parts();
     let child = ApplicationQueryResultShape::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationQueryResultShapeParts {
             query_type: forged_rel.query_type.clone(),
             root_entity: "Entity".into(),
@@ -287,12 +298,14 @@ fn literal_operands_and_value_predicates_validate_types_bounds_and_canonical_ide
         },
     );
     forged_rel.result_shape = ApplicationQueryResultShape::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationQueryResultShapeParts {
             query_type: forged_rel.query_type.clone(),
             root_entity: "Entity".into(),
             result_type: forged_rel.result_type.clone(),
             fields: vec![],
             relations: vec![ApplicationQueryResultRelation::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 WorthQueryPortableApplicationQueryResultRelationParts {
                     query_type: forged_rel.query_type.clone(),
                     slot_type: WorthQueryPortableTypeIdentity::declared("worth.tests.rel-slot.v1"),
@@ -304,6 +317,7 @@ fn literal_operands_and_value_predicates_validate_types_bounds_and_canonical_ide
                     cardinality: ApplicationQueryCardinality::OptionalOne,
                     predicate: Some(ApplicationQueryRelationPredicate::EqualParameter(
                         ApplicationQueryPredicate::from_untrusted_value(
+                            ARCHIVE_DECODE,
                             "Entity".into(),
                             "Task".into(),
                             "Status".into(),

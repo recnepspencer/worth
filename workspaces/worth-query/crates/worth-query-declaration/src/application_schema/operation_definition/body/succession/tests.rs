@@ -4,6 +4,7 @@ use crate::application_operation::ApplicationMutationOutputRoleDescription;
 use crate::application_schema::{
     ApplicationOperationBodyOutput, ApplicationOperationBodyOutputTarget,
 };
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 
 #[test]
 fn succession_requires_exact_preserved_scope_and_canonical_target_identity() {
@@ -18,11 +19,13 @@ fn succession_requires_exact_preserved_scope_and_canonical_target_identity() {
         target: ApplicationOperationBodyOutputTarget::Scope,
     };
     let attachment = ApplicationOperationBodySuccession::from_untrusted(
+        ARCHIVE_DECODE,
         "workflow".into(),
         "renew".into(),
         "root".into(),
     );
     let body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
         "Root".into(),
         vec![],
         None,
@@ -33,16 +36,19 @@ fn succession_requires_exact_preserved_scope_and_canonical_target_identity() {
     assert!(valid(&body));
     for changed in [
         ApplicationOperationBodySuccession::from_untrusted(
+            ARCHIVE_DECODE,
             "workflow".into(),
             "other-binding".into(),
             "root".into(),
         ),
         ApplicationOperationBodySuccession::from_untrusted(
+            ARCHIVE_DECODE,
             "workflow".into(),
             "renew".into(),
             "other-role".into(),
         ),
         ApplicationOperationBodySuccession::from_untrusted(
+            ARCHIVE_DECODE,
             " workflow".into(),
             "renew".into(),
             "root".into(),

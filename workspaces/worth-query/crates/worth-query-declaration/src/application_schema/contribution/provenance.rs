@@ -1,4 +1,5 @@
 use super::ApplicationSchemaContributionIdentity;
+use crate::archive_decode_authority::{ArchiveDecodeAuthority, ARCHIVE_DECODE};
 
 /// Canonical ownership of schema members by one explicit contribution.
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -18,9 +19,16 @@ impl ApplicationSchemaContributionProvenance {
         }
     }
 
-    pub fn from_untrusted_parts(identity: String, member_ordinals: Vec<u32>) -> Self {
+    pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
+        identity: String,
+        member_ordinals: Vec<u32>,
+    ) -> Self {
         Self {
-            identity: ApplicationSchemaContributionIdentity::from_untrusted(identity),
+            identity: ApplicationSchemaContributionIdentity::from_untrusted(
+                ARCHIVE_DECODE,
+                identity,
+            ),
             member_ordinals,
         }
     }

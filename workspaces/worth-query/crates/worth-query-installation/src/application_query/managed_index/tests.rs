@@ -8,6 +8,7 @@ use crate::facade::{
     WorthQueryInstallationRuntimeIdentity, WorthQueryInstalledPackageIndex,
     WorthQueryPortableDomainIdentity, WorthQueryPortableDomainPackage,
 };
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_query::{
     ApplicationManagedIndexBinding, ApplicationQueryBindingReference,
 };
@@ -115,7 +116,10 @@ fn managed_index_checks_actual_binding_and_probe_before_installation() {
             parts.provider = "worth.query.tests.unrelated-provider.v1".into();
         }
         let foreign = ApplicationSchemaMember::ManagedIndex {
-            definition: ErasedApplicationManagedIndexDefinition::from_untrusted_parts(parts),
+            definition: ErasedApplicationManagedIndexDefinition::from_untrusted_parts(
+                ARCHIVE_DECODE,
+                parts,
+            ),
         };
         assert_eq!(
             validate_definitions(&[foreign], std::slice::from_ref(&recipe), &[], &bindings)
@@ -133,9 +137,13 @@ fn managed_index_checks_actual_binding_and_probe_before_installation() {
     let mut parts = recipe.meaning().parts().clone();
     let mut changed = parts.source.binding.parts().clone();
     changed.input = WorthQueryPortableTypeIdentity::declared("worth.query.tests.foreign-input.v1");
-    parts.source.binding = ApplicationQueryBindingReference::from_untrusted_parts(changed);
+    parts.source.binding =
+        ApplicationQueryBindingReference::from_untrusted_parts(ARCHIVE_DECODE, changed);
     let foreign = ApplicationSchemaMember::ManagedIndex {
-        definition: ErasedApplicationManagedIndexDefinition::from_untrusted_parts(parts),
+        definition: ErasedApplicationManagedIndexDefinition::from_untrusted_parts(
+            ARCHIVE_DECODE,
+            parts,
+        ),
     };
     assert_eq!(
         validate_definitions(&[foreign], std::slice::from_ref(&recipe), &[], &bindings)
@@ -149,7 +157,10 @@ fn managed_index_checks_actual_binding_and_probe_before_installation() {
             worth_query_declaration::facade::application_schema::U64ApplicationValueBinding,
         >();
     let mismatched = ApplicationSchemaMember::ManagedIndex {
-        definition: ErasedApplicationManagedIndexDefinition::from_untrusted_parts(parts.clone()),
+        definition: ErasedApplicationManagedIndexDefinition::from_untrusted_parts(
+            ARCHIVE_DECODE,
+            parts.clone(),
+        ),
     };
     assert_eq!(
         validate_definitions(&[mismatched], std::slice::from_ref(&recipe), &[], &bindings)
@@ -160,11 +171,14 @@ fn managed_index_checks_actual_binding_and_probe_before_installation() {
     let mut unsupported = parts.probe.parts().clone();
     unsupported.supports_admitted_decode = false;
     parts.probe =
-        worth_query_declaration::facade::application_query::ApplicationManagedIndexProbeMeaning::from_untrusted_parts(
+        worth_query_declaration::facade::application_query::ApplicationManagedIndexProbeMeaning::from_untrusted_parts(ARCHIVE_DECODE,
             unsupported,
         );
     let invalid = ApplicationSchemaMember::ManagedIndex {
-        definition: ErasedApplicationManagedIndexDefinition::from_untrusted_parts(parts),
+        definition: ErasedApplicationManagedIndexDefinition::from_untrusted_parts(
+            ARCHIVE_DECODE,
+            parts,
+        ),
     };
     assert_eq!(
         validate_definitions(&[invalid], &[recipe], &[], &bindings)

@@ -1,5 +1,6 @@
 //! Conditional owned-selection retirement is inert transported meaning.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::ApplicationOperationBodyOwnedSelectionRetirement as Rule;
 pub(super) fn write(output: &mut dyn BinaryEncodingSink, rules: &[Rule]) -> Result<(), Denial> {
     write_sequence(output, rules, |output, rule| {
@@ -32,7 +33,8 @@ pub(super) fn decode(
     decode_sequence(input, budget, 50, |input, _| {
         let trigger =
             ApplicationFieldBindingLocus::new(input.text()?, input.text()?, input.text()?);
-        let binding = WorthQueryPortableTypeIdentity::from_untrusted(input.text()?.into());
+        let binding =
+            WorthQueryPortableTypeIdentity::from_untrusted(ARCHIVE_DECODE, input.text()?.into());
         let member = input.text()?.into();
         let owners_relation = input.text()?.into();
         let scope = input.text()?.into();

@@ -1,20 +1,24 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 pub(crate) use worth_query_testkit_installation::facade::installation::installation_contracts::untrusted_application_capability_construction::*;
 
 #[test]
 fn downstream_decoder_constructs_owned_capability_meaning_without_typed_references() {
     let field = field("Field");
     let accepted = ApplicationCapabilityAcceptedValues::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationCapabilityAcceptedValuesParts {
             field: field.clone(),
             values: vec![AspectValue::UInt64(2), AspectValue::UInt64(1)],
         },
     );
     let guard = ApplicationCapabilityScopeGuard::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationCapabilityScopeGuardParts {
             requirements: vec![accepted],
         },
     );
     let path = ApplicationAuthorizationPath::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationAuthorizationPathParts {
             effect: ApplicationAuthorizationPathEffect::Allow,
             principal_entity: "Principal".to_owned(),
@@ -24,6 +28,7 @@ fn downstream_decoder_constructs_owned_capability_meaning_without_typed_referenc
         },
     );
     let clause = ApplicationCapabilityGraphClause::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationCapabilityGraphClauseParts {
             path,
             guard: ApplicationCapabilityScopeGuard::unconditional(),
@@ -31,16 +36,18 @@ fn downstream_decoder_constructs_owned_capability_meaning_without_typed_referenc
         },
     );
     let requirement = ApplicationCapabilityGraphRequirement::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationCapabilityGraphRequirementParts {
             clauses: vec![clause],
         },
     );
     let allow = ApplicationCapabilityGraphRule::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationCapabilityGraphRuleParts {
             requirements: vec![requirement],
         },
     );
-    let contract = ErasedApplicationCapabilityContract::from_untrusted_parts(
+    let contract = ErasedApplicationCapabilityContract::from_untrusted_parts(ARCHIVE_DECODE,
         WorthQueryPortableApplicationCapabilityContractParts {
             name: "Capability".to_owned(),
             capability_type: identity("worth.tests.capability.v1"),
@@ -55,7 +62,7 @@ fn downstream_decoder_constructs_owned_capability_meaning_without_typed_referenc
                 ApplicationCapabilityFieldDimension::Bound(field.clone()),
                 value("Purpose", 1),
             ),
-            constraints: ApplicationCapabilityConstraintDefinition::from_untrusted_parts(
+            constraints: ApplicationCapabilityConstraintDefinition::from_untrusted_parts(ARCHIVE_DECODE,
                 WorthQueryPortableApplicationCapabilityConstraintParts {
                     magnitude: ApplicationCapabilityFieldDimension::NotApplicable,
                     cardinality: ApplicationCapabilityCardinalityDimension::One,
@@ -96,7 +103,7 @@ fn downstream_decoder_constructs_owned_capability_meaning_without_typed_referenc
         &[AspectValue::UInt64(2), AspectValue::UInt64(1)]
     );
     assert_eq!(
-        ErasedApplicationCapabilityContract::from_untrusted_parts(contract.parts()),
+        ErasedApplicationCapabilityContract::from_untrusted_parts(ARCHIVE_DECODE, contract.parts()),
         contract
     );
 }

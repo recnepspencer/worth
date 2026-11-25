@@ -8,6 +8,7 @@ use crate::application_schema::{
     ApplicationRelationIntegrity as Integrity, ApplicationSchemaDeclarationDenial as Denial,
     ApplicationSchemaMember as Member,
 };
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 fn self_edge(from: &str) -> Body {
     let link = Link {
         relation: "Watches".into(),
@@ -18,9 +19,16 @@ fn self_edge(from: &str) -> Body {
         posture: Posture::Append,
         source: Source::Scope,
     };
-    let creation = Creation::from_untrusted("Project".into(), "project".into(), vec![])
-        .with_untrusted_links(vec![link]);
-    Body::from_untrusted_in_scope("Workspace".into(), vec![], Some(creation), vec![])
+    let creation =
+        Creation::from_untrusted(ARCHIVE_DECODE, "Project".into(), "project".into(), vec![])
+            .with_untrusted_links(vec![link]);
+    Body::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
+        "Workspace".into(),
+        vec![],
+        Some(creation),
+        vec![],
+    )
 }
 fn members(from: &str, integrity: Integrity) -> Vec<Member> {
     let link = self_edge(from).creation().unwrap().links()[0].program_target();

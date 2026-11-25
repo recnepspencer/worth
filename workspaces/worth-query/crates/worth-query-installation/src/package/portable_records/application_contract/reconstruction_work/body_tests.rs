@@ -2,6 +2,7 @@
 
 use super::*;
 use worth_foundational::facade::ScalarAspectType;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::{
     application_schema::{
         ApplicationFieldBindingLocus, ApplicationOperationBodyProgram,
@@ -15,7 +16,7 @@ fn clear_optional_portable_operation_reconstruction_accounts_without_input() {
     let record = WorthQueryPortableApplicationOperationContractRecord::new(
         "Schema".to_owned(),
         "Clear".to_owned(),
-        WorthQueryPortableTypeIdentity::from_untrusted("Input".to_owned()),
+        WorthQueryPortableTypeIdentity::from_untrusted(ARCHIVE_DECODE, "Input".to_owned()),
         vec![],
         vec![],
         vec![],
@@ -23,15 +24,17 @@ fn clear_optional_portable_operation_reconstruction_accounts_without_input() {
         None,
     )
     .with_body(Some(
-        ApplicationOperationBodyProgram::from_untrusted_scope_fields(vec![
-            ApplicationOperationBodyScopeField::ClearOptional {
+        ApplicationOperationBodyProgram::from_untrusted_scope_fields(
+            ARCHIVE_DECODE,
+            vec![ApplicationOperationBodyScopeField::ClearOptional {
                 field: ApplicationFieldBindingLocus::new("Item", "Draft", "Note"),
                 binding: WorthQueryPortableTypeIdentity::from_untrusted(
+                    ARCHIVE_DECODE,
                     "worth.rust.string".to_owned(),
                 ),
                 scalar_family: ScalarAspectType::String,
-            },
-        ]),
+            }],
+        ),
     ));
     let work = record.reconstruction_work();
     assert!(work.logical_bytes > 0);
@@ -45,12 +48,13 @@ fn principal_initializer_reconstruction_accounts_for_every_source_component() {
     };
     let value = worth_foundational::facade::AspectValue::UInt64(1);
     let target = ApplicationFieldBindingLocus::new("Audit", "Facts", "Actor");
-    let binding = WorthQueryPortableTypeIdentity::from_untrusted("worth.rust.u64".to_owned());
+    let binding =
+        WorthQueryPortableTypeIdentity::from_untrusted(ARCHIVE_DECODE, "worth.rust.u64".to_owned());
     let record = |step| {
         WorthQueryPortableApplicationOperationContractRecord::new(
             "Schema".to_owned(),
             "Change".to_owned(),
-            WorthQueryPortableTypeIdentity::from_untrusted("Input".to_owned()),
+            WorthQueryPortableTypeIdentity::from_untrusted(ARCHIVE_DECODE, "Input".to_owned()),
             vec![],
             vec![],
             vec![],
@@ -59,9 +63,11 @@ fn principal_initializer_reconstruction_accounts_for_every_source_component() {
         )
         .with_body(Some(
             ApplicationOperationBodyProgram::from_untrusted_in_scope(
+                ARCHIVE_DECODE,
                 "Item".to_owned(),
                 vec![],
                 Some(ApplicationOperationBodyCreation::from_untrusted(
+                    ARCHIVE_DECODE,
                     "Audit".to_owned(),
                     "audit".to_owned(),
                     vec![step],

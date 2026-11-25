@@ -8,6 +8,7 @@ license.workspace = true
 publish = false
 
 [dev-dependencies]
+worth-query-declaration = { path = "../worth-query-declaration" }
 worth-query-testkit-package-archive = { path = "../worth-query-testkit-package-archive" }
 
 [[test]]

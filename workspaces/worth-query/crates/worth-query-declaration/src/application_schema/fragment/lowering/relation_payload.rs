@@ -5,6 +5,7 @@ use crate::application_schema::{
     ApplicationRelationFieldDefinition, ApplicationSchemaMember, AspectIdentity,
     ErasedApplicationRelationAspectDefinition, WorthQueryPortableRelationAspectParts,
 };
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 use worth_foundational::facade::AbsenceLaw;
 
 pub trait RelationMember<S, Set, Witness> {
@@ -201,6 +202,7 @@ fn emit<S, Set: Record<A::Row>, R: Relation, A: Aspect>(
     let revision = super::aspect::revision(&definition, &mut revision_fields, None)?;
     builder.push_member_in_place(ApplicationSchemaMember::RelationAspect {
         definition: ErasedApplicationRelationAspectDefinition::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableRelationAspectParts {
                 relation: R::NAME.to_owned(),
                 from: from.to_owned(),

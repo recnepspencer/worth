@@ -1,3 +1,4 @@
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 use std::any::TypeId;
 
 use super::{
@@ -138,6 +139,7 @@ impl ApplicationMutationBindingDescriptor {
         Schema: crate::application_schema::ApplicationSchema,
     {
         let description = ApplicationMutationDescription::from_untrusted_parts(
+            ARCHIVE_DECODE,
             ApplicationMutationDescriptionParts {
                 binding_identity: WorthQueryPortableTypeIdentity::declared(identity),
                 operation: operation_name.to_owned(),

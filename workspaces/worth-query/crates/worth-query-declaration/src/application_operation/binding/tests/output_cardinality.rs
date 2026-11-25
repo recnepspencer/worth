@@ -1,3 +1,4 @@
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 use worth_foundational::facade::{
     canonicalization, CanonicalBasisLocus, CanonicalBasisValue, CanonicalDigestAlgorithmId,
     CanonicalDigestWorkBudget, InternedString,
@@ -113,10 +114,13 @@ fn with_every_role(
             for role in &mut description_parts.output_roles {
                 role.cardinality = cardinality;
             }
-            *description = ApplicationMutationDescription::from_untrusted_parts(description_parts);
+            *description = ApplicationMutationDescription::from_untrusted_parts(
+                ARCHIVE_DECODE,
+                description_parts,
+            );
         }
     }
-    WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts)
+    WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(ARCHIVE_DECODE, parts)
 }
 
 fn mutation_description(

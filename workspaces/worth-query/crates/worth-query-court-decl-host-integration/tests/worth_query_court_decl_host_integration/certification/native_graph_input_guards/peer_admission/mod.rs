@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 pub(crate) use worth_query_testkit_certification::facade::certification::native_graph_input_guards::peer_admission::*;
 
 #[test]
@@ -27,6 +28,7 @@ fn portable_independent_sites_require_exact_scope_keys_source_and_effect_closure
                         "duplicate-key" => {
                             let peer = &peers[0];
                             peers[0] = ApplicationOperationBodyCreation::from_untrusted(
+                                ARCHIVE_DECODE,
                                 peer.entity().into(),
                                 root.key().into(),
                                 peer.fields().to_vec(),
@@ -41,6 +43,7 @@ fn portable_independent_sites_require_exact_scope_keys_source_and_effect_closure
                         "wrong-scope" => {
                             let mut paths = peers[0].path_links().to_vec();
                             paths[0].path = ApplicationQueryRootPathMeaning::from_untrusted_parts(
+                                ARCHIVE_DECODE,
                                 WorthQueryPortableApplicationQueryRootPathParts {
                                     start_entity: "Parent".into(),
                                     terminal_entity: "Parent".into(),
@@ -53,6 +56,7 @@ fn portable_independent_sites_require_exact_scope_keys_source_and_effect_closure
                         "reusable-path" => {
                             let path = ApplicationOperationBodyCreationPathLink {
                                 path: ApplicationQueryRootPathMeaning::from_untrusted_parts(
+                                    ARCHIVE_DECODE,
                                     WorthQueryPortableApplicationQueryRootPathParts {
                                         start_entity: "Row".into(),
                                         terminal_entity: "Row".into(),
@@ -84,6 +88,7 @@ fn portable_independent_sites_require_exact_scope_keys_source_and_effect_closure
                             };
                             *mutation_binding = "another-binding".into();
                             peers[0] = ApplicationOperationBodyCreation::from_untrusted(
+                                ARCHIVE_DECODE,
                                 peer.entity().into(),
                                 peer.key().into(),
                                 fields,
@@ -133,7 +138,10 @@ fn portable_independent_sites_require_exact_scope_keys_source_and_effect_closure
         };
         assert_eq!(
             validate_portable_application_schema_freshly(
-                WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts)
+                WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(
+                    ARCHIVE_DECODE,
+                    parts
+                )
             )
             .unwrap_err(),
             expected,

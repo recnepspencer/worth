@@ -1,4 +1,5 @@
 //! Exact declared fields of an original mutation's created output.
+use crate::archive_decode_authority::{ArchiveDecodeAuthority, ARCHIVE_DECODE};
 use crate::{
     application_operation::{
         ApplicationMutationBinding, WorthQueryApplicationDeclaredOutputRole,
@@ -38,7 +39,10 @@ pub struct DeclaredCorrectionOutputFieldParts {
 }
 
 impl DeclaredCorrectionOutputField {
-    pub fn from_untrusted_parts(parts: DeclaredCorrectionOutputFieldParts) -> Self {
+    pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
+        parts: DeclaredCorrectionOutputFieldParts,
+    ) -> Self {
         Self { parts }
     }
     pub fn parts(&self) -> &DeclaredCorrectionOutputFieldParts {
@@ -212,6 +216,7 @@ where
                     let recipe = checked.recipe();
                     Ok(ResolvedOutputField {
                         declaration: DeclaredCorrectionOutputField::from_untrusted_parts(
+                            ARCHIVE_DECODE,
                             DeclaredCorrectionOutputFieldParts {
                                 source_binding: Source::descriptor()
                                     .description()

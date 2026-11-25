@@ -1,6 +1,7 @@
 //! Schema-affine aftermath authoring and portable installed meaning.
 
 use crate::application_schema::AftermathAssociationAuthority;
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 
 use super::{
     DeclaredCorrectionAuthority, DeclaredCorrectionMechanism, DeclaredReconciliationProcedure,
@@ -208,6 +209,7 @@ impl PortableApplicationAftermathContract {
     /// Reconstructs untrusted descriptive meaning without minting schema
     /// admission or installed-package authority.
     pub fn from_untrusted_fields(
+        _: ArchiveDecodeAuthority,
         authority: DeclaredCorrectionAuthority,
         mechanism: Option<PortableCorrectionMechanism>,
         reconciliation: Option<DeclaredReconciliationProcedure>,

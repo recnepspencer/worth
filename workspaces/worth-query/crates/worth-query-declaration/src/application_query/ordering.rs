@@ -1,3 +1,4 @@
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 use worth_foundational::facade::ScalarAspectType;
 
 use crate::application_schema::ApplicationScalarValueBinding;
@@ -38,7 +39,10 @@ pub struct WorthQueryPortableApplicationQueryOrderingParts {
 }
 
 impl ApplicationQueryOrderingTerm {
-    pub fn from_untrusted_parts(parts: WorthQueryPortableApplicationQueryOrderingParts) -> Self {
+    pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
+        parts: WorthQueryPortableApplicationQueryOrderingParts,
+    ) -> Self {
         Self {
             query_type: parts.query_type,
             slot_type: parts.slot_type,

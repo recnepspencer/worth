@@ -1,4 +1,5 @@
 use super::*;
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 
 use crate::application_capability::{
     ApplicationCapabilityLifecycleEffect, ErasedApplicationCapabilityContract,
@@ -141,8 +142,10 @@ fn bound_lifecycle_effect_derives_only_from_the_typed_input() {
 fn portable_lifecycle_effect_retains_meaning_without_retaining_derivation() {
     let typed = lifecycle_contract(EffectPosture::Derived, ResourceRelationPosture::Governed);
     let portable_parts = typed.parts();
-    let reconstructed =
-        ErasedApplicationCapabilityContract::from_untrusted_parts(portable_parts.clone());
+    let reconstructed = ErasedApplicationCapabilityContract::from_untrusted_parts(
+        ARCHIVE_DECODE,
+        portable_parts.clone(),
+    );
     let typed_transition = typed
         .elevation()
         .definition()
@@ -173,6 +176,7 @@ fn portable_lifecycle_effect_retains_meaning_without_retaining_derivation() {
 #[test]
 fn portable_schema_carriage_strips_the_live_lifecycle_recipe() {
     let record = WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(
+        ARCHIVE_DECODE,
         super::super::super::WorthQueryPortableApplicationSchemaParts {
             owner: "WORTH.tests".to_owned(),
             name: "callback-free-capability".to_owned(),

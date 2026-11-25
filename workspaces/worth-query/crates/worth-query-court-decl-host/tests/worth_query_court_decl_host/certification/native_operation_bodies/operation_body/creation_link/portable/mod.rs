@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 pub(crate) use worth_query_testkit_certification_operation::facade::certification::native_operation_bodies::operation_body::creation_link::portable::*;
 
 #[test]
@@ -28,6 +29,7 @@ fn portable_creation_links_refuse_wrong_direction_endpoint_and_membership() {
                 }
                 let creation = creation.clone().with_untrusted_links(links);
                 *body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+                    ARCHIVE_DECODE,
                     body.scope_entity().unwrap().to_owned(),
                     body.scope_fields().to_vec(),
                     Some(creation),
@@ -48,7 +50,10 @@ fn portable_creation_links_refuse_wrong_direction_endpoint_and_membership() {
         parts.members.sort();
         assert!(
             validate_portable_application_schema_freshly(
-                WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts)
+                WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(
+                    ARCHIVE_DECODE,
+                    parts
+                )
             )
             .is_err(),
             "{defect}"

@@ -1,5 +1,6 @@
 //! Schema-affine relation kind and endpoint roles for historical inverse material.
 use crate::application_schema::ApplicationRelationRef;
+use crate::archive_decode_authority::{ArchiveDecodeAuthority, ARCHIVE_DECODE};
 use std::{
     cmp::Ordering,
     fmt,
@@ -14,7 +15,12 @@ pub struct PortablePreImageRelationLocus {
     to: String,
 }
 impl PortablePreImageRelationLocus {
-    pub fn from_untrusted_fields(relation: String, from: String, to: String) -> Self {
+    pub fn from_untrusted_fields(
+        _: ArchiveDecodeAuthority,
+        relation: String,
+        from: String,
+        to: String,
+    ) -> Self {
         Self { relation, from, to }
     }
     pub fn relation(&self) -> &str {
@@ -38,6 +44,7 @@ impl<Schema> DeclaredPreImageRelationLocus<Schema> {
     ) -> Self {
         Self {
             portable: PortablePreImageRelationLocus::from_untrusted_fields(
+                ARCHIVE_DECODE,
                 relation.name().to_owned(),
                 relation.from().to_owned(),
                 relation.to().to_owned(),

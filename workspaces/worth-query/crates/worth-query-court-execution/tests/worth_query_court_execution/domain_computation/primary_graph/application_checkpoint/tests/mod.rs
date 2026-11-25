@@ -1,5 +1,6 @@
 use sha2::Digest;
 use sha2::Sha256;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::capture::merge_accepted_outputs;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::BODY_PREFIX_BYTES;
@@ -299,7 +300,7 @@ pub fn checkpoint_from_body(body: Vec<u8>) -> WorthQueryApplicationCheckpoint {
     bytes.extend_from_slice(MAGIC);
     bytes.extend_from_slice(&checksum);
     bytes.extend_from_slice(&body);
-    WorthQueryApplicationCheckpoint::from_untrusted_bytes(bytes.into_boxed_slice())
+    WorthQueryApplicationCheckpoint::from_untrusted_bytes(ARCHIVE_DECODE, bytes.into_boxed_slice())
 }
 
 #[path = "backing/mod.rs"]

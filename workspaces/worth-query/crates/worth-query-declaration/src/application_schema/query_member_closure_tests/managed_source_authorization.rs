@@ -2,6 +2,7 @@
 use super::*;
 use crate::application_query::*;
 use crate::application_schema::*;
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 use crate::portable_identity::WorthQueryPortableTypeIdentity as Id;
 crate::worth_query_application_query!(ParentQuery for TestSchema,
     identity "worth.tests.source-authorization.parent.v1", parameters AccountQueryParametersBinding,
@@ -28,6 +29,7 @@ fn members_with_source(
         ApplicationQueryAuthorizationRequirement::Public
     };
     let binding = ApplicationQueryBindingReference::from_untrusted_parts(
+        ARCHIVE_DECODE,
         ApplicationQueryBindingReferenceParts {
             binding: Id::declared("worth.tests.source-authorization.binding.v1"),
             input: Id::declared("worth.tests.source-authorization.input.v1"),
@@ -46,6 +48,7 @@ fn members_with_source(
     );
     let probe = ApplicationManagedIndexProbeMeaning::of::<ProbeBinding>();
     let index = ErasedApplicationManagedIndexDefinition::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableManagedIndexParts {
             semantic_version: 3,
             name: "AccountIndex".into(),
@@ -82,6 +85,7 @@ fn members_with_source(
     parent.authorization = ApplicationQueryAuthorizationRequirement::Public;
     parent.basis_support = basis;
     parent.parameters = vec![ApplicationQueryParameterDefinition::from_untrusted_fields(
+        ARCHIVE_DECODE,
         "probe".into(),
         probe.parts().scalar_family,
         probe.parts().binding.clone(),
@@ -89,6 +93,7 @@ fn members_with_source(
         None,
     )];
     parent.managed_index = Some(ApplicationQueryManagedIndexMeaning::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableQueryManagedIndexParts {
             semantic_version: 1,
             index: "AccountIndex".into(),
@@ -110,11 +115,17 @@ fn members_with_source(
     }
     members.extend([
         ApplicationSchemaMember::ApplicationQuery {
-            definition: ErasedApplicationQueryDefinition::from_untrusted_parts(source),
+            definition: ErasedApplicationQueryDefinition::from_untrusted_parts(
+                ARCHIVE_DECODE,
+                source,
+            ),
         },
         ApplicationSchemaMember::ManagedIndex { definition: index },
         ApplicationSchemaMember::ApplicationQuery {
-            definition: ErasedApplicationQueryDefinition::from_untrusted_parts(parent),
+            definition: ErasedApplicationQueryDefinition::from_untrusted_parts(
+                ARCHIVE_DECODE,
+                parent,
+            ),
         },
     ]);
     members

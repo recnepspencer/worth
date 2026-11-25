@@ -1,11 +1,13 @@
 //! Fresh readmission cannot discard peer authority or alias creation-site identity.
 pub use super::program;
 pub use worth_query_decl::facade::{application_query::*, application_schema::*};
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 pub fn replace_root(
     body: &ApplicationOperationBodyProgram,
     root: ApplicationOperationBodyCreation,
 ) -> ApplicationOperationBodyProgram {
     ApplicationOperationBodyProgram::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
         "Row".into(),
         body.scope_fields().to_vec(),
         Some(root),

@@ -1,4 +1,5 @@
 pub use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 pub use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 pub use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 
@@ -302,6 +303,7 @@ pub fn checkpoint_bytes_are_denied(
     cause: &str,
 ) {
     let corrupt = application_installation::WorthQueryApplicationCheckpoint::from_untrusted_bytes(
+        ARCHIVE_DECODE,
         corrupted_bytes.into_boxed_slice(),
     );
     let contacts = ContactCounters::default();

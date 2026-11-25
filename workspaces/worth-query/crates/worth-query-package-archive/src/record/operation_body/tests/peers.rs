@@ -1,5 +1,6 @@
 //! New site/path transport has exact nested budgeting without reinterpreting old bodies.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::{
     application_query::{
         ApplicationQueryRootPathMeaning, ApplicationQueryRootPathStep, RelationDirection,
@@ -15,11 +16,11 @@ use worth_query_declaration::facade::{
 #[test]
 fn v38_preserves_independent_root_and_existing_anchor_without_changing_old_profile() {
     let path = PathLink {
-        path: ApplicationQueryRootPathMeaning::from_untrusted_parts(
+        path: ApplicationQueryRootPathMeaning::from_untrusted_parts(ARCHIVE_DECODE,
             WorthQueryPortableApplicationQueryRootPathParts {
                 start_entity: "Row".into(),
                 terminal_entity: "Parent".into(),
-                steps: vec![ApplicationQueryRootPathStep::from_untrusted_fields(
+                steps: vec![ApplicationQueryRootPathStep::from_untrusted_fields(ARCHIVE_DECODE,
                     "Rows".into(),
                     "Parent".into(),
                     "Row".into(),
@@ -39,11 +40,13 @@ fn v38_preserves_independent_root_and_existing_anchor_without_changing_old_profi
         },
     };
     let root = ApplicationOperationBodyCreation::from_untrusted(
+        ARCHIVE_DECODE,
         "Snapshot".into(),
         "current".into(),
         vec![],
     );
     let body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
         "Row".into(),
         vec![],
         Some(root.clone()),
@@ -53,10 +56,15 @@ fn v38_preserves_independent_root_and_existing_anchor_without_changing_old_profi
     write(&mut old, &body).unwrap();
     let old = old.into_bytes();
     assert_eq!(&old[..2], &8_u16.to_be_bytes());
-    let peer =
-        ApplicationOperationBodyCreation::from_untrusted("Journal".into(), "audit".into(), vec![])
-            .with_untrusted_path_links(vec![path]);
+    let peer = ApplicationOperationBodyCreation::from_untrusted(
+        ARCHIVE_DECODE,
+        "Journal".into(),
+        "audit".into(),
+        vec![],
+    )
+    .with_untrusted_path_links(vec![path]);
     let body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
         "Row".into(),
         vec![],
         Some(root.with_untrusted_peers(vec![peer.clone()])),
@@ -79,6 +87,7 @@ fn v38_preserves_independent_root_and_existing_anchor_without_changing_old_profi
     write(&mut measure, &body).unwrap();
     assert_eq!(measure.nested_entries(), budget.finish().nested_entries());
     let malformed = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
         "Row".into(),
         vec![],
         Some(

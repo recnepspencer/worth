@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::{
     ApplicationAuthorizationPath, ApplicationAuthorizationPathEffect,
     ApplicationAuthorizationPredicate, ApplicationAuthorizationTraversal,
@@ -43,6 +44,7 @@ pub(super) fn decode(
     let traversals = decode_sequence(input, budget, 16, |input, _| decode_traversal(input))?;
     let predicates = decode_sequence(input, budget, 18, |input, _| decode_predicate(input))?;
     Ok(ApplicationAuthorizationPath::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationAuthorizationPathParts {
             effect,
             principal_entity,
@@ -68,6 +70,7 @@ pub(super) fn decode_traversal(
     input: &mut BinaryInput<'_>,
 ) -> Result<ApplicationAuthorizationTraversal, Denial> {
     Ok(ApplicationAuthorizationTraversal::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationAuthorizationTraversalParts {
             relation: input.text()?.to_owned(),
             from: input.text()?.to_owned(),
@@ -93,6 +96,7 @@ fn decode_predicate(
     input: &mut BinaryInput<'_>,
 ) -> Result<ApplicationAuthorizationPredicate, Denial> {
     Ok(ApplicationAuthorizationPredicate::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationAuthorizationPredicateParts {
             traversal_ordinal: super::wire_vocabulary::decode_usize(input)?,
             entity: input.text()?.to_owned(),

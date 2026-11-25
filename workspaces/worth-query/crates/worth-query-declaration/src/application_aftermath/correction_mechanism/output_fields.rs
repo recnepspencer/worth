@@ -1,4 +1,5 @@
 //! The field truth selected from one declared output; installation binds its role.
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub enum PreImageOutputFieldCapture {
     ChangedPreserved,
@@ -22,6 +23,7 @@ pub struct PortablePreImageFieldOutput {
 impl PortablePreImageFieldOutput {
     /// Untrusted data; association checks the actual role, lifecycle and reads.
     pub fn from_untrusted_fields(
+        _: ArchiveDecodeAuthority,
         role: String,
         entity: String,
         capture: PreImageOutputFieldCapture,

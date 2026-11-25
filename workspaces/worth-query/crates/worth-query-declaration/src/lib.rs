@@ -88,6 +88,8 @@ mod binary_value_binding_macro;
 mod structured_value_binding_macro;
 #[macro_use]
 mod native_scalar_bindings_macro;
+#[doc(hidden)]
+pub mod archive_decode_authority;
 mod binding;
 mod branch;
 mod canonicalization;

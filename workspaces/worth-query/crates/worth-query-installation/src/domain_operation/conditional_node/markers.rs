@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ArchiveDecodeAuthority;
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct WorthQueryTypedFamilyIdentity(String);
 
@@ -17,6 +18,7 @@ impl WorthQueryTypedFamilyIdentity {
     /// that a provider, comparator, condition family, trigger family, or unit is
     /// registered in the current host.
     pub fn from_untrusted_portable_identity(
+        _: ArchiveDecodeAuthority,
         value: String,
     ) -> Result<Self, WorthQueryPortableFamilyIdentityDenial> {
         let identity = Self(value);

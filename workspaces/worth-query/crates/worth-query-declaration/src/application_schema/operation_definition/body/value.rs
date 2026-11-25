@@ -1,4 +1,5 @@
 //! One authored value may feed many candidate sinks without repeated calculation.
+use crate::archive_decode_authority::{ArchiveDecodeAuthority, ARCHIVE_DECODE};
 mod authoring;
 mod validation;
 use super::{
@@ -41,6 +42,7 @@ impl<S, O, B: ApplicationScalarValueBinding> ApplicationOperationBodyValue<S, O,
         }
         Ok(Self {
             program: ApplicationOperationBodyValueProgram::from_untrusted(
+                ARCHIVE_DECODE,
                 identity.to_owned(),
                 B::IDENTITY,
                 operands.into_operands(),
@@ -53,6 +55,7 @@ impl<S, O, B: ApplicationScalarValueBinding> ApplicationOperationBodyValue<S, O,
 impl ApplicationOperationBodyValueProgram {
     /// Pure transported meaning; this grants neither source nor mutation authority.
     pub fn from_untrusted(
+        _: ArchiveDecodeAuthority,
         identity: String,
         binding: WorthQueryPortableTypeIdentity,
         mut operands: Vec<Operand>,
@@ -131,7 +134,10 @@ impl ApplicationOperationBodyValueProgram {
 #[derive(Clone, Debug)]
 pub struct ApplicationOperationBodyValueSnapshot(Arc<[(String, ExpressionValue)]>);
 impl ApplicationOperationBodyValueSnapshot {
-    pub fn from_untrusted_values(values: Vec<(String, ExpressionValue)>) -> Self {
+    pub fn from_untrusted_values(
+        _: ArchiveDecodeAuthority,
+        values: Vec<(String, ExpressionValue)>,
+    ) -> Self {
         Self(values.into())
     }
     pub fn value(&self, name: &str) -> Option<&ExpressionValue> {
@@ -149,6 +155,7 @@ pub struct ApplicationOperationBodyEvaluationSnapshot {
 }
 impl ApplicationOperationBodyEvaluationSnapshot {
     pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
         query: ApplicationQueryExpressionSnapshot,
         values: ApplicationOperationBodyValueSnapshot,
     ) -> Self {

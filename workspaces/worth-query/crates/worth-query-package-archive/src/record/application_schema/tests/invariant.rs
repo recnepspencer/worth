@@ -1,5 +1,6 @@
 use super::{decode_member, encode_member, RecordDecodeAttempt, WorthQueryPackageArchiveLimits};
 use std::num::NonZeroU64;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::{
     validate_portable_application_schema_freshly, ApplicationInvariantCostPosture as Cost,
     ApplicationInvariantEnforcement as Enforcement, ApplicationInvariantExecutionPoint as Point,
@@ -162,6 +163,7 @@ fn schema(invariant: ApplicationSchemaMember) -> WorthQueryPortableApplicationSc
     ];
     members.sort();
     WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationSchemaParts {
             owner: "archive.tests".to_owned(),
             name: "InvariantSchema".to_owned(),

@@ -1,5 +1,6 @@
 use crate::application_query::ApplicationQueryAuthorizationRequirement;
 use crate::application_schema::ApplicationAbilityRef;
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum ApplicationResourceAction {
@@ -60,6 +61,7 @@ impl ApplicationResourceAuthorization {
     }
 
     pub fn from_untrusted_requirements(
+        _: ArchiveDecodeAuthority,
         requirements: [ApplicationQueryAuthorizationRequirement; 4],
     ) -> Self {
         Self { requirements }

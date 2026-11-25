@@ -1,13 +1,17 @@
 //! Current resource wire meaning includes complete codec profiles, never recipes.
 use super::*;
 use worth_foundational::facade::{AspectValue, ValueDecodeBounds};
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::{
     application_query::*, application_resource::*, application_schema::*,
     portable_identity::WorthQueryPortableTypeIdentity,
 };
 
 fn identity(name: &str) -> WorthQueryPortableTypeIdentity {
-    WorthQueryPortableTypeIdentity::from_untrusted(format!("worth.archive.resource.{name}.v1"))
+    WorthQueryPortableTypeIdentity::from_untrusted(
+        ARCHIVE_DECODE,
+        format!("worth.archive.resource.{name}.v1"),
+    )
 }
 
 fn definition() -> ErasedApplicationResourceDefinition {
@@ -22,6 +26,7 @@ fn definition() -> ErasedApplicationResourceDefinition {
     );
     result.supports_admitted_decode = true;
     let disclosure = ApplicationQueryDisclosureContract::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationQueryDisclosureParts {
             posture: ApplicationQueryDisclosurePosture::Governed,
             classification: "resource".to_owned(),
@@ -31,8 +36,10 @@ fn definition() -> ErasedApplicationResourceDefinition {
                 .into_iter()
                 .map(|facet| {
                     ApplicationQueryDisclosureRule::from_untrusted_fields(
+                        ARCHIVE_DECODE,
                         ApplicationQueryDisclosureSelector::Resource(
                             ApplicationResourceDisclosureMeaning::from_untrusted_fields(
+                                ARCHIVE_DECODE,
                                 resource.clone(),
                                 facet,
                             ),
@@ -47,11 +54,13 @@ fn definition() -> ErasedApplicationResourceDefinition {
         },
     );
     ErasedApplicationResourceDefinition::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationResourceParts {
             name: "Assessment".to_owned(),
             resource_type: resource,
             provider_role: identity("provider"),
             access: ApplicationQueryBindingReference::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 ApplicationQueryBindingReferenceParts {
                     binding: identity("binding"),
                     input: identity("input"),
@@ -69,7 +78,10 @@ fn definition() -> ErasedApplicationResourceDefinition {
                 },
             ),
             input: ApplicationResourceValueBindingReference::of::<U64ApplicationValueBinding>(),
-            result: ApplicationResourceValueBindingReference::from_untrusted_parts(result),
+            result: ApplicationResourceValueBindingReference::from_untrusted_parts(
+                ARCHIVE_DECODE,
+                result,
+            ),
             failure: ApplicationResourceValueBindingReference::of::<StringApplicationValueBinding>(
             ),
             profile: ApplicationResourceRequestResponseProfile {
@@ -84,24 +96,27 @@ fn definition() -> ErasedApplicationResourceDefinition {
                 maximum_input_bytes: 32,
                 maximum_frame_bytes: 2048,
             },
-            authorization: ApplicationResourceAuthorization::from_untrusted_requirements([
-                ApplicationQueryAuthorizationRequirement::Ability {
-                    ability: "StartAssessment".to_owned(),
-                    scope_entity: "Node".to_owned(),
-                },
-                ApplicationQueryAuthorizationRequirement::Ability {
-                    ability: "InspectAssessment".to_owned(),
-                    scope_entity: "Node".to_owned(),
-                },
-                ApplicationQueryAuthorizationRequirement::Ability {
-                    ability: "AdvanceAssessment".to_owned(),
-                    scope_entity: "Node".to_owned(),
-                },
-                ApplicationQueryAuthorizationRequirement::Ability {
-                    ability: "CloseAssessment".to_owned(),
-                    scope_entity: "Node".to_owned(),
-                },
-            ]),
+            authorization: ApplicationResourceAuthorization::from_untrusted_requirements(
+                ARCHIVE_DECODE,
+                [
+                    ApplicationQueryAuthorizationRequirement::Ability {
+                        ability: "StartAssessment".to_owned(),
+                        scope_entity: "Node".to_owned(),
+                    },
+                    ApplicationQueryAuthorizationRequirement::Ability {
+                        ability: "InspectAssessment".to_owned(),
+                        scope_entity: "Node".to_owned(),
+                    },
+                    ApplicationQueryAuthorizationRequirement::Ability {
+                        ability: "AdvanceAssessment".to_owned(),
+                        scope_entity: "Node".to_owned(),
+                    },
+                    ApplicationQueryAuthorizationRequirement::Ability {
+                        ability: "CloseAssessment".to_owned(),
+                        scope_entity: "Node".to_owned(),
+                    },
+                ],
+            ),
             disclosure,
         },
     )
@@ -143,6 +158,7 @@ fn resource_direct_payload_disclosure_does_not_authorize_cleanup_counts_or_forei
         let selector = if foreign {
             ApplicationQueryDisclosureSelector::Resource(
                 ApplicationResourceDisclosureMeaning::from_untrusted_fields(
+                    ARCHIVE_DECODE,
                     identity("other-resource"),
                     ApplicationResourceDisclosureFacet::CleanupDetail,
                 ),
@@ -158,11 +174,13 @@ fn resource_direct_payload_disclosure_does_not_authorize_cleanup_counts_or_forei
             ])
         };
         rules[position] = ApplicationQueryDisclosureRule::from_untrusted_fields(
+            ARCHIVE_DECODE,
             selector,
             rule.disclosure_value().clone(),
             influence,
         );
         parts.disclosure = ApplicationQueryDisclosureContract::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableApplicationQueryDisclosureParts {
                 posture: contract.posture(),
                 classification: contract.classification().to_owned(),
@@ -171,7 +189,8 @@ fn resource_direct_payload_disclosure_does_not_authorize_cleanup_counts_or_forei
                 rules,
             },
         );
-        let invalid = ErasedApplicationResourceDefinition::from_untrusted_parts(parts);
+        let invalid =
+            ErasedApplicationResourceDefinition::from_untrusted_parts(ARCHIVE_DECODE, parts);
         assert_eq!(
             invalid.validate(),
             Err(ApplicationResourceDefinitionDenial::InvalidDisclosure)

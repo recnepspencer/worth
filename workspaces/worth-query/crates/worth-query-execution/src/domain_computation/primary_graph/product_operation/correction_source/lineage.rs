@@ -4,6 +4,7 @@ use crate::domain_computation::application_aftermath::{
     WorthQueryAftermathCausalRole, WorthQueryCorrectionLineageBinding,
     WorthQueryRecordedCorrectionSource,
 };
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
@@ -12,6 +13,7 @@ pub(super) fn source_locator<Schema>(
     source: &WorthQuerySelectedCorrectionSource<'_, Schema>,
 ) -> WorthQueryRecordedCorrectionSource {
     WorthQueryRecordedCorrectionSource::from_untrusted_parts(
+        ARCHIVE_DECODE,
         source.ancestry().source().identity().clone(),
         source.occurrence().commit_reference().clone(),
         source.occurrence().member(),

@@ -1,4 +1,5 @@
 use std::collections::BTreeSet;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 
 use worth_foundational::facade::{AspectBinding, AspectKey, FieldKey};
 use worth_query_installation::facade::{
@@ -48,6 +49,7 @@ pub(super) fn decode_payload(
     let binding = decode_binding(input)?;
     Ok(WorthQueryPortablePackageRecord::NativeAspectContract(
         WorthQueryPortableNativeAspectContractRecord::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableNativeAspectContractParts {
                 schema,
                 entity,

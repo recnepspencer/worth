@@ -1,5 +1,6 @@
 //! V28 preserves one definition and two named sinks; old readers refuse it.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::{
     ApplicationFieldPresence, ApplicationOperationBodyExpression as Expression,
     ApplicationOperationBodyRequirementOperand as Operand,
@@ -9,12 +10,15 @@ use worth_query_declaration::facade::application_schema::{
 
 #[test]
 fn shared_computed_value_v28_roundtrips_and_cannot_downgrade_to_v27() {
-    let binding = WorthQueryPortableTypeIdentity::from_untrusted("worth.rust.u64".into());
+    let binding =
+        WorthQueryPortableTypeIdentity::from_untrusted(ARCHIVE_DECODE, "worth.rust.u64".into());
     let field = ApplicationFieldBindingLocus::new("Item", "Facts", "Revision");
     let value = Value::from_untrusted(
+        ARCHIVE_DECODE,
         "next".into(),
         binding.clone(),
         vec![Operand::from_untrusted(
+            ARCHIVE_DECODE,
             "revision".into(),
             Source::Field {
                 field: field.clone(),
@@ -32,6 +36,7 @@ fn shared_computed_value_v28_roundtrips_and_cannot_downgrade_to_v27() {
     )
     .unwrap();
     let body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
         "Item".into(),
         vec![ApplicationOperationBodyScopeField::AssignValue {
             field,
@@ -39,6 +44,7 @@ fn shared_computed_value_v28_roundtrips_and_cannot_downgrade_to_v27() {
             value: "next".into(),
         }],
         Some(ApplicationOperationBodyCreation::from_untrusted(
+            ARCHIVE_DECODE,
             "Audit".into(),
             "audit".into(),
             vec![ApplicationOperationBodyCreatedField::Computed {

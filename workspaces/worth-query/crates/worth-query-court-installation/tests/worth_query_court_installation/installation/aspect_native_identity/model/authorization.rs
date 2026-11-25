@@ -1,5 +1,6 @@
 //! Genuine declaration closure for principal-bound authorization identities.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::authentication::*;
 mod records;
 use records::{Authorization, External, Mapping, MappingTarget, Principal, PrincipalFacts};
@@ -75,6 +76,7 @@ impl<const MANY: bool> ApplicationSchema for Authorized<MANY> {
 
 fn path(values: impl IntoIterator<Item = u64>) -> ApplicationAuthorizationPath {
     ApplicationAuthorizationPath::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationAuthorizationPathParts {
             effect: ApplicationAuthorizationPathEffect::Allow,
             principal_entity: "Principal".into(),
@@ -84,6 +86,7 @@ fn path(values: impl IntoIterator<Item = u64>) -> ApplicationAuthorizationPath {
                 .into_iter()
                 .map(|value| {
                     ApplicationAuthorizationPredicate::from_untrusted_parts(
+                        ARCHIVE_DECODE,
                         WorthQueryPortableApplicationAuthorizationPredicateParts {
                             traversal_ordinal: 0,
                             entity: "Principal".into(),

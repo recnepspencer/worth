@@ -1,4 +1,5 @@
 use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersion};
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::{
     ApplicationExternalEffectProtocol, ApplicationInboundOccurrenceLimits,
     ApplicationInboundOccurrenceProtocol, ApplicationMutationPreconditionFamily,
@@ -309,6 +310,7 @@ fn decode_precondition_target(
     };
     Ok(
         ApplicationMutationPreconditionTarget::from_untrusted_fields(
+            ARCHIVE_DECODE,
             family,
             input.text()?.to_owned(),
             input.text()?.to_owned(),

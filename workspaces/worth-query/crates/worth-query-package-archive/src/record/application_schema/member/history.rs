@@ -1,5 +1,6 @@
 //! Portable history meaning; decoding never captures a subject or an observation.
 use worth_foundational::facade::{AspectContractRevision, AspectIdentity};
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_query::{
     ApplicationHistoryAspectSelection, ApplicationHistoryTarget,
     ErasedApplicationHistoryQueryDefinition, WorthQueryPortableApplicationHistoryQueryParts,
@@ -54,6 +55,7 @@ pub(super) fn decode(
     require_canonical_sequence(&aspects)?;
     let metadata_disclosure = application_query::disclosure::decode(input, budget)?;
     let definition = ErasedApplicationHistoryQueryDefinition::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationHistoryQueryParts {
             name,
             history_type,

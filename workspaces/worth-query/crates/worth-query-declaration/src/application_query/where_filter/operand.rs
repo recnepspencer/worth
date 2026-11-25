@@ -2,6 +2,7 @@
 //! and authored literal constants.
 use super::{ApplicationQueryWhereFilterDenial as Denial, ApplicationQueryWhereFilterProgram};
 use crate::application_schema::ApplicationFieldPresence;
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 use std::borrow::Cow;
 use worth_foundational::{
     expression_api::{ExpressionResource, ExpressionType, ExpressionValue},
@@ -105,7 +106,11 @@ pub struct ApplicationQueryWhereFilterOperand {
 }
 
 impl ApplicationQueryWhereFilterOperand {
-    pub fn from_untrusted(name: String, source: ApplicationQueryWhereFilterSource) -> Self {
+    pub fn from_untrusted(
+        _: ArchiveDecodeAuthority,
+        name: String,
+        source: ApplicationQueryWhereFilterSource,
+    ) -> Self {
         Self { name, source }
     }
 

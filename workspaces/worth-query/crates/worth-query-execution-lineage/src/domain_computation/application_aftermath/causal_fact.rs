@@ -1,5 +1,6 @@
 //! Query aftermath meaning carried into Relational-owned commit history.
 
+use worth_query_declaration::archive_decode_authority::ArchiveDecodeAuthority;
 use worth_relational::facade::history::{CommitId, RelationalCommitReceipt};
 use worth_relational::facade::transactions::RecordRef;
 pub mod correction_lineage;
@@ -31,6 +32,7 @@ pub struct WorthQueryRecordedCorrectionSource {
 impl WorthQueryRecordedCorrectionSource {
     /// Descriptive coordinates to be resolved against retained native evidence.
     pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
         world: worth_runtime_world::facade::CompositeCommitIdentity,
         relational: RelationalCommitReceipt,
         member: super::correction_coordinates::WorthQueryCorrectionSourceMember,

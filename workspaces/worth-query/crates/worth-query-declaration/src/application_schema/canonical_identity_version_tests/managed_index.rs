@@ -1,5 +1,6 @@
 //! Pure index preimages; these comparisons grant no schema or Source admission.
 use super::*;
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 use crate::facade::{
     application_query::*, application_schema::*,
     portable_identity::WorthQueryPortableTypeIdentity as Identity,
@@ -32,6 +33,7 @@ fn parts(version: u16) -> WorthQueryPortableManagedIndexParts {
         },
         source: ApplicationManagedIndexSourceMeaning::same_scope_without_parameters(
             ApplicationQueryBindingReference::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 ApplicationQueryBindingReferenceParts {
                     binding: Identity::declared("worth.tests.source-binding.v1"),
                     input: Identity::declared("worth.tests.source-input.v1"),
@@ -106,7 +108,10 @@ fn explicit_maintenance_cold_and_optional_refinement_have_distinct_canonical_pre
                 ApplicationManagedIndexRefinement::row_local("domain.exact.v1", 1).meaning(),
             )
         } else {
-            ErasedApplicationManagedIndexDefinition::from_untrusted_parts(parts(version))
+            ErasedApplicationManagedIndexDefinition::from_untrusted_parts(
+                ARCHIVE_DECODE,
+                parts(version),
+            )
         };
         assert_eq!(definition.maintenance(), Maintenance::WhenRequired);
         let identity = identity(definition);

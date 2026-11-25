@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::authoring::{
     AspectFieldKey, DeliveredFieldName, OrderingDirection, QueryFamily, RelationName,
     ResultShapeFamily, RootEntityKey, WorthQueryPredicateOperand,
@@ -77,7 +78,7 @@ pub(super) fn decode_query(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<DecodedQuery, Denial> {
     Ok(DecodedQuery {
-        digest: CanonicalQueryDigest::from_untrusted(input.text()?.to_owned()),
+        digest: CanonicalQueryDigest::from_untrusted(ARCHIVE_DECODE, input.text()?.to_owned()),
         family: query_family_from_tag(input.u16()?)?,
         root: RootEntityKey::new(input.text()?.to_owned())
             .map_err(|_| Denial::new(Kind::InvalidRecordShape))?,
@@ -135,7 +136,10 @@ pub(super) fn decode_result_shape(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<DecodedResultShape, Denial> {
     Ok(DecodedResultShape {
-        digest: CanonicalResultShapeDigest::from_untrusted(input.text()?.to_owned()),
+        digest: CanonicalResultShapeDigest::from_untrusted(
+            ARCHIVE_DECODE,
+            input.text()?.to_owned(),
+        ),
         family: result_shape_family_from_tag(input.u16()?)?,
         fields: decode_sequence(input, budget, 16, |input, _| {
             Ok(CanonicalResultField {

@@ -1,3 +1,4 @@
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 use std::borrow::Cow;
 use std::marker::PhantomData;
 
@@ -16,7 +17,7 @@ impl ApplicationSchemaContributionIdentity {
         Self(Cow::Borrowed(identity))
     }
 
-    pub fn from_untrusted(identity: String) -> Self {
+    pub fn from_untrusted(_: ArchiveDecodeAuthority, identity: String) -> Self {
         Self(Cow::Owned(identity))
     }
 

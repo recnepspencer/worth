@@ -1,4 +1,5 @@
 //! A separately versioned domain predicate over one genuine projected Source row.
+use crate::archive_decode_authority::{ArchiveDecodeAuthority, ARCHIVE_DECODE};
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct ApplicationManagedIndexRefinement {
     identity: &'static str,
@@ -10,6 +11,7 @@ impl ApplicationManagedIndexRefinement {
     }
     pub fn meaning(self) -> ApplicationManagedIndexRefinementMeaning {
         ApplicationManagedIndexRefinementMeaning::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableManagedIndexRefinementParts {
                 semantic_version: 1,
                 identity: self.identity.to_owned(),
@@ -36,7 +38,10 @@ pub struct ApplicationManagedIndexRefinementMeaning {
     parts: WorthQueryPortableManagedIndexRefinementParts,
 }
 impl ApplicationManagedIndexRefinementMeaning {
-    pub fn from_untrusted_parts(parts: WorthQueryPortableManagedIndexRefinementParts) -> Self {
+    pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
+        parts: WorthQueryPortableManagedIndexRefinementParts,
+    ) -> Self {
         Self { parts }
     }
     pub fn parts(&self) -> &WorthQueryPortableManagedIndexRefinementParts {
@@ -71,7 +76,7 @@ mod tests {
             index: "Prefix".into(),
             probe_parameter: "probe".into(),
         };
-        let missing = Selection::from_untrusted_parts(parts.clone());
+        let missing = Selection::from_untrusted_parts(ARCHIVE_DECODE, parts.clone());
         assert_eq!(
             missing.posture(),
             ApplicationManagedIndexMatchPosture::Refined
@@ -101,10 +106,10 @@ mod tests {
         let mut old = parts;
         old.semantic_version = 1;
         assert_eq!(
-            Selection::from_untrusted_parts(old.clone()).posture(),
+            Selection::from_untrusted_parts(ARCHIVE_DECODE, old.clone()).posture(),
             ApplicationManagedIndexMatchPosture::Candidates
         );
-        assert!(Selection::from_untrusted_parts(old.clone())
+        assert!(Selection::from_untrusted_parts(ARCHIVE_DECODE, old.clone())
             .validate()
             .is_ok());
         assert!(Selection::from_refinement_parts(old, valid)

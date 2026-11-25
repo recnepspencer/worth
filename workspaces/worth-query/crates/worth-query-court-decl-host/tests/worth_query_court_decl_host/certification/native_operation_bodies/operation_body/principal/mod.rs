@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 pub(crate) use worth_query_testkit_certification_operation::facade::certification::native_operation_bodies::operation_body::principal::*;
 
 #[test]
@@ -107,6 +108,7 @@ fn portable_actor_contract_refuses_missing_read_unit_codec_and_binding() {
                             match defect {
                                 "codec" => {
                                     *binding = WorthQueryPortableTypeIdentity::from_untrusted(
+                                        ARCHIVE_DECODE,
                                         "wrong.codec".to_owned(),
                                     )
                                 }
@@ -128,12 +130,14 @@ fn portable_actor_contract_refuses_missing_read_unit_codec_and_binding() {
                         }
                     }
                     let creation = ApplicationOperationBodyCreation::from_untrusted(
+                        ARCHIVE_DECODE,
                         creation.entity().to_owned(),
                         creation.key().to_owned(),
                         fields,
                     )
                     .with_untrusted_links(creation.links().to_vec());
                     *body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+                        ARCHIVE_DECODE,
                         body.scope_entity().unwrap().to_owned(),
                         body.scope_fields().to_vec(),
                         Some(creation),
@@ -170,11 +174,11 @@ fn portable_actor_contract_refuses_missing_read_unit_codec_and_binding() {
                 }
             }
             ordinals.sort_unstable();
-            *contribution = worth_query_host::facade::declaration::application_schema::ApplicationSchemaContributionProvenance::from_untrusted_parts(contribution.identity().as_str().to_owned(), ordinals);
+            *contribution = worth_query_host::facade::declaration::application_schema::ApplicationSchemaContributionProvenance::from_untrusted_parts(ARCHIVE_DECODE, contribution.identity().as_str().to_owned(), ordinals);
         }
         parts.members.sort();
         let denial = validate_portable_application_schema_freshly(
-            WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts),
+            WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(ARCHIVE_DECODE, parts),
         )
         .unwrap_err();
         if defect == "read" {

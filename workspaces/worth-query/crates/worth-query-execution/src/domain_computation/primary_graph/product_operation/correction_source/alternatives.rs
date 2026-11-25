@@ -1,4 +1,5 @@
 //! Bounded lineage projection carries complete active-reversal resolution into selection.
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
@@ -256,6 +257,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             .map_err(|cause| Denial::Selection(Box::new(cause)))?;
             (
                 WorthQueryRecordedCorrectionSource::from_untrusted_parts(
+                    ARCHIVE_DECODE,
                     world,
                     expected_fact.source.relational().clone(),
                     expected_fact.source.member(),

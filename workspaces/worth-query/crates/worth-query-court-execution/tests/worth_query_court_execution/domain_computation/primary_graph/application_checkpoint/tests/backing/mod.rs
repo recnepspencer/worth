@@ -1,6 +1,7 @@
 //! Physical byte custody across Query framing and native handoff. Literal native
 //! bytes deliberately prove no Relational recovery admission or graph authority.
 use std::sync::Arc;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_relational::facade::durability::RelationalNativeCheckpoint;
 
 use worth_execution::ExecutionAllocationPolicy as CapturePolicy;
@@ -13,7 +14,7 @@ use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_co
 fn untrusted_query_clones_share_moved_bytes_after_original_owner_drops() {
     let bytes = b"untrusted-query".to_vec().into_boxed_slice();
     let expected = bytes.as_ptr();
-    let checkpoint = WorthQueryApplicationCheckpoint::from_untrusted_bytes(bytes);
+    let checkpoint = WorthQueryApplicationCheckpoint::from_untrusted_bytes(ARCHIVE_DECODE, bytes);
     let clones = [checkpoint.clone(), checkpoint.clone(), checkpoint.clone()];
     drop(checkpoint);
     for clone in &clones {
@@ -22,7 +23,10 @@ fn untrusted_query_clones_share_moved_bytes_after_original_owner_drops() {
         assert_eq!(clone.charged_payload_bytes(), None);
         assert_eq!(
             clone,
-            &WorthQueryApplicationCheckpoint::from_untrusted_bytes(b"untrusted-query".to_vec())
+            &WorthQueryApplicationCheckpoint::from_untrusted_bytes(
+                ARCHIVE_DECODE,
+                b"untrusted-query".to_vec()
+            )
         );
     }
 }

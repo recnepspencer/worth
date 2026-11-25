@@ -1,16 +1,25 @@
 //! Transport descriptions enter fresh native occurrence lookup.
 use super::super::protocol::{BankHttpCorrectionCommit, BankHttpCorrectionSource};
-use worth_query_host::facade::primary_graph::WorthQueryCorrectionSourceCoordinates;
+use worth_query_host::facade::primary_graph::{
+    BranchId, CommitId, RelationalCommitReceipt, VersionId, WorthQueryCorrectionSourceCoordinates,
+};
 
 impl From<BankHttpCorrectionSource> for WorthQueryCorrectionSourceCoordinates {
     fn from(source: BankHttpCorrectionSource) -> Self {
-        Self::from_untrusted_fields(
+        Self::new(
             source.world_owner,
             source.world_commit,
-            source.relational.branch_id,
-            source.relational.commit_id,
-            source.relational.version_id,
-            source.relational.parents,
+            RelationalCommitReceipt {
+                commit_id: CommitId(source.relational.commit_id),
+                version_id: VersionId(source.relational.version_id),
+                branch_id: BranchId(source.relational.branch_id),
+                parents: source
+                    .relational
+                    .parents
+                    .into_iter()
+                    .map(CommitId)
+                    .collect(),
+            },
             source.member,
         )
     }

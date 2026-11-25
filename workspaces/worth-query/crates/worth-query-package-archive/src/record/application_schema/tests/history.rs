@@ -3,16 +3,21 @@ use super::*;
 use worth_foundational::facade::{
     AbsenceLaw, AspectContractRevision, AspectIdentity, AspectValue, ScalarAspectType,
 };
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::{
     application_query::*, application_schema::*, portable_identity::WorthQueryPortableTypeIdentity,
 };
 
 fn identity(name: &str) -> WorthQueryPortableTypeIdentity {
-    WorthQueryPortableTypeIdentity::from_untrusted(format!("worth.archive.history.{name}.v1"))
+    WorthQueryPortableTypeIdentity::from_untrusted(
+        ARCHIVE_DECODE,
+        format!("worth.archive.history.{name}.v1"),
+    )
 }
 pub(super) fn history() -> ErasedApplicationHistoryQueryDefinition {
     let history_type = identity("history");
     let disclosure = ApplicationQueryDisclosureContract::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationQueryDisclosureParts {
             posture: ApplicationQueryDisclosurePosture::Governed,
             classification: "audit-metadata".to_owned(),
@@ -22,8 +27,10 @@ pub(super) fn history() -> ErasedApplicationHistoryQueryDefinition {
                 .into_iter()
                 .map(|facet| {
                     ApplicationQueryDisclosureRule::from_untrusted_fields(
+                        ARCHIVE_DECODE,
                         ApplicationQueryDisclosureSelector::HistoryMetadata(
                             ApplicationHistoryMetadataMeaning::from_untrusted_fields(
+                                ARCHIVE_DECODE,
                                 history_type.clone(),
                                 facet,
                             ),
@@ -36,10 +43,12 @@ pub(super) fn history() -> ErasedApplicationHistoryQueryDefinition {
         },
     );
     ErasedApplicationHistoryQueryDefinition::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationHistoryQueryParts {
             name: "InspectHistory".to_owned(),
             history_type,
             subject_read: ApplicationQueryBindingReference::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 ApplicationQueryBindingReferenceParts {
                     binding: identity("binding"),
                     input: identity("input"),
@@ -70,6 +79,7 @@ pub(super) fn history() -> ErasedApplicationHistoryQueryDefinition {
 }
 fn relation_aspect() -> ErasedApplicationRelationAspectDefinition {
     ErasedApplicationRelationAspectDefinition::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableRelationAspectParts {
             relation: "Edge".to_owned(),
             from: "Node".to_owned(),
@@ -106,7 +116,8 @@ fn exact_history_and_relation_aspect_members_roundtrip_without_entity_aliases() 
         cardinality: ApplicationQueryCardinality::Many,
         output_name: "edges".to_owned(),
     };
-    let relation = ErasedApplicationHistoryQueryDefinition::from_untrusted_parts(relation);
+    let relation =
+        ErasedApplicationHistoryQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, relation);
     relation.validate().unwrap();
     assert_ne!(entity.canonical_basis(), relation.canonical_basis());
     for member in [
@@ -136,8 +147,10 @@ fn history_metadata_cannot_borrow_subject_slots_or_omit_a_facet() {
         rules: source_metadata.rules().to_vec(),
     };
     metadata.rules.pop();
-    parts.metadata_disclosure = ApplicationQueryDisclosureContract::from_untrusted_parts(metadata);
-    let incomplete = ErasedApplicationHistoryQueryDefinition::from_untrusted_parts(parts);
+    parts.metadata_disclosure =
+        ApplicationQueryDisclosureContract::from_untrusted_parts(ARCHIVE_DECODE, metadata);
+    let incomplete =
+        ErasedApplicationHistoryQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, parts);
     assert_eq!(
         incomplete.validate(),
         Err(ApplicationHistoryQueryDefinitionDenial::InvalidMetadataDisclosure)
@@ -146,7 +159,8 @@ fn history_metadata_cannot_borrow_subject_slots_or_omit_a_facet() {
     let mut stolen = source.parts().clone();
     stolen.history_type = identity("other-history");
     assert_eq!(
-        ErasedApplicationHistoryQueryDefinition::from_untrusted_parts(stolen).validate(),
+        ErasedApplicationHistoryQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, stolen)
+            .validate(),
         Err(ApplicationHistoryQueryDefinitionDenial::InvalidMetadataDisclosure)
     );
     let member = ApplicationSchemaMember::ApplicationHistoryQuery {
@@ -167,7 +181,10 @@ fn relation_payload_canonical_contract_refuses_before_any_member_bytes() {
         worth_foundational::facade::ValueDecodeBounds::new(16, 16, 1, 1),
     ));
     let member = ApplicationSchemaMember::RelationAspect {
-        definition: ErasedApplicationRelationAspectDefinition::from_untrusted_parts(parts),
+        definition: ErasedApplicationRelationAspectDefinition::from_untrusted_parts(
+            ARCHIVE_DECODE,
+            parts,
+        ),
     };
     let mut output = BinaryOutput::with_capacity(0);
     assert_eq!(
@@ -188,24 +205,31 @@ fn legacy_entity_body_refuses_a_relation_locus_hidden_in_a_child_of_a_peer() {
     let child = ApplicationOperationBodyChildCreation {
         parent_key: "peer".to_owned(),
         creation: ApplicationOperationBodyCreation::from_untrusted(
+            ARCHIVE_DECODE,
             "Node".to_owned(),
             "child".to_owned(),
             vec![field],
         ),
     };
     let peer = ApplicationOperationBodyCreation::from_untrusted(
+        ARCHIVE_DECODE,
         "Node".to_owned(),
         "peer".to_owned(),
         vec![],
     )
     .with_untrusted_children(vec![child]);
     let root = ApplicationOperationBodyCreation::from_untrusted(
+        ARCHIVE_DECODE,
         "Node".to_owned(),
         "root".to_owned(),
         vec![],
     )
     .with_untrusted_peers(vec![peer]);
-    let body = ApplicationOperationBodyProgram::from_untrusted_with_creation(vec![], Some(root));
+    let body = ApplicationOperationBodyProgram::from_untrusted_with_creation(
+        ARCHIVE_DECODE,
+        vec![],
+        Some(root),
+    );
     assert!(!body.has_only_entity_field_loci());
     let mut output = BinaryOutput::with_capacity(0);
     assert_eq!(

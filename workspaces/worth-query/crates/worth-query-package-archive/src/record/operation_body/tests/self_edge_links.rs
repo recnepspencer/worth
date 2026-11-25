@@ -1,5 +1,6 @@
 //! V41 carries a created-to-created link; older profiles cannot express it.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::{
     ApplicationOperationBodyCreationLink as Link,
     ApplicationOperationBodyCreationLinkDirection as Direction,
@@ -21,6 +22,7 @@ fn link(relation: &str, from: &str, direction: Direction) -> Link {
 fn self_edge_v41_roundtrips_beside_a_scope_link_and_refuses_older_profiles() {
     let self_edge = link("Watches", "Project", Direction::SelfEdge);
     let creation = ApplicationOperationBodyCreation::from_untrusted(
+        ARCHIVE_DECODE,
         "Project".into(),
         "project".into(),
         vec![],
@@ -30,6 +32,7 @@ fn self_edge_v41_roundtrips_beside_a_scope_link_and_refuses_older_profiles() {
         self_edge.clone(),
     ]);
     let body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
         "Workspace".into(),
         vec![],
         Some(creation),

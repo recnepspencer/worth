@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity;
 use worth_query_installation::facade::{
     WorthQueryPortableApplicationOperationContractParts,
@@ -64,7 +65,8 @@ pub(super) fn decode_payload(
 ) -> Result<WorthQueryPortablePackageRecord, Denial> {
     let schema = input.text()?.to_owned();
     let operation = input.text()?.to_owned();
-    let input_type = WorthQueryPortableTypeIdentity::from_untrusted(input.text()?.to_owned());
+    let input_type =
+        WorthQueryPortableTypeIdentity::from_untrusted(ARCHIVE_DECODE, input.text()?.to_owned());
     let graph_reads = decode_sequence(input, budget, 2, graph_read::decode)?;
     require_canonical_sequence_by_order(&graph_reads, graph_read::canonical_order)?;
     let touches = decode_sequence(input, budget, 2, touch::decode)?;
@@ -81,6 +83,7 @@ pub(super) fn decode_payload(
     Ok(
         WorthQueryPortablePackageRecord::ApplicationOperationContract(
             WorthQueryPortableApplicationOperationContractRecord::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 WorthQueryPortableApplicationOperationContractParts {
                     schema,
                     operation,

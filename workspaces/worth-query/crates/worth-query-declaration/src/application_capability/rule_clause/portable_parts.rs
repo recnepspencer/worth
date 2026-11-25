@@ -1,3 +1,4 @@
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 use worth_foundational::facade::AspectValue;
 
 use super::{
@@ -18,6 +19,7 @@ pub struct WorthQueryPortableApplicationCapabilityAcceptedValuesParts {
 
 impl ApplicationCapabilityAcceptedValues {
     pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
         parts: WorthQueryPortableApplicationCapabilityAcceptedValuesParts,
     ) -> Self {
         Self {
@@ -41,6 +43,7 @@ pub struct WorthQueryPortableApplicationCapabilityScopeGuardParts {
 
 impl ApplicationCapabilityScopeGuard {
     pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
         parts: WorthQueryPortableApplicationCapabilityScopeGuardParts,
     ) -> Self {
         Self {
@@ -64,6 +67,7 @@ pub struct WorthQueryPortableApplicationCapabilityGraphClauseParts {
 
 impl ApplicationCapabilityGraphClause {
     pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
         parts: WorthQueryPortableApplicationCapabilityGraphClauseParts,
     ) -> Self {
         Self {
@@ -89,6 +93,7 @@ pub struct WorthQueryPortableApplicationCapabilityGraphRequirementParts {
 
 impl ApplicationCapabilityGraphRequirement {
     pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
         parts: WorthQueryPortableApplicationCapabilityGraphRequirementParts,
     ) -> Self {
         Self {
@@ -110,6 +115,7 @@ pub struct WorthQueryPortableApplicationCapabilityGraphRuleParts {
 
 impl ApplicationCapabilityGraphRule {
     pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
         parts: WorthQueryPortableApplicationCapabilityGraphRuleParts,
     ) -> Self {
         Self {

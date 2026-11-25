@@ -2,6 +2,7 @@
 
 use super::super::postcondition::DeclaredAftermathPostcondition;
 use super::recorded_inverse::DeclaredLoweringCorrespondenceRef;
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct PortablePreImageLocus {
@@ -11,7 +12,12 @@ pub struct PortablePreImageLocus {
 }
 
 impl PortablePreImageLocus {
-    pub fn from_untrusted_fields(entity: String, aspect: String, field: String) -> Self {
+    pub fn from_untrusted_fields(
+        _: ArchiveDecodeAuthority,
+        entity: String,
+        aspect: String,
+        field: String,
+    ) -> Self {
         Self {
             entity,
             aspect,
@@ -42,6 +48,7 @@ pub struct PortablePreImageDemand {
 
 impl PortablePreImageDemand {
     pub fn from_untrusted_fields(
+        _: ArchiveDecodeAuthority,
         loci: Vec<PortablePreImageLocus>,
         maximum_encoded_bytes: usize,
     ) -> Self {
@@ -96,6 +103,7 @@ pub struct PortableRecordedInverse {
 
 impl PortableRecordedInverse {
     pub fn from_untrusted_fields(
+        _: ArchiveDecodeAuthority,
         inverse_operation_slot: String,
         lowering_correspondence: DeclaredLoweringCorrespondenceRef,
         postcondition: DeclaredAftermathPostcondition,

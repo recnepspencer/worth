@@ -1,3 +1,4 @@
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
 use super::super::{
@@ -40,6 +41,7 @@ pub struct WorthQueryPortableApplicationQueryResultRelationParts {
 
 impl ApplicationQueryResultRelation {
     pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
         parts: WorthQueryPortableApplicationQueryResultRelationParts,
     ) -> Self {
         let slot_key = ApplicationQueryResultSlotKey::relation(

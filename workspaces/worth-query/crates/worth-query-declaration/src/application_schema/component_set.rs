@@ -1,4 +1,5 @@
 //! Descriptive component-set meaning; installation owns its graph binding.
+use crate::archive_decode_authority::{ArchiveDecodeAuthority, ARCHIVE_DECODE};
 use std::marker::PhantomData;
 
 use super::{ApplicationEntityRef, ApplicationRelationRef};
@@ -21,7 +22,10 @@ pub struct WorthQueryPortableApplicationComponentSetParts {
 }
 
 impl ApplicationComponentSetMeaning {
-    pub fn from_untrusted_parts(mut parts: WorthQueryPortableApplicationComponentSetParts) -> Self {
+    pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
+        mut parts: WorthQueryPortableApplicationComponentSetParts,
+    ) -> Self {
         parts.relations.sort();
         parts.relations.dedup();
         Self {
@@ -107,6 +111,7 @@ impl<Schema, Set, Entity> ApplicationComponentSetDefinition<Schema, Set, Entity>
     }
     pub(crate) fn into_meaning(self) -> ApplicationComponentSetMeaning {
         ApplicationComponentSetMeaning::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableApplicationComponentSetParts {
                 name: self.reference.name.into(),
                 member: self.reference.member.name().into(),

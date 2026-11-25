@@ -7,6 +7,7 @@ use crate::application_schema::{
     CanonicalTimestampApplicationValueBinding, InlineBytesApplicationValueBinding,
     StringApplicationValueBinding, ValueCodecDenial, ValueDecodeAdmission, ValueDecodeBounds,
 };
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 use worth_foundational::facade::AspectValue;
 
 struct ProbeByte;
@@ -109,7 +110,8 @@ fn admitted_native_scalars_and_binary_binding_are_supported() {
     let mut forged = binary.parts().clone();
     forged.scalar_family = ScalarAspectType::String;
     assert!(
-        !ApplicationManagedIndexProbeMeaning::from_untrusted_parts(forged).has_supported_profile()
+        !ApplicationManagedIndexProbeMeaning::from_untrusted_parts(ARCHIVE_DECODE, forged)
+            .has_supported_profile()
     );
 
     for invalid_bytes in [None, Some(0), Some(InlineBytes::MAXIMUM_LENGTH as u64 + 1)] {
@@ -117,10 +119,11 @@ fn admitted_native_scalars_and_binary_binding_are_supported() {
         let mut canonical = forged.canonical.take().unwrap().parts().clone();
         canonical.maximum_wire_bytes = invalid_bytes;
         forged.canonical = Some(ApplicationCanonicalValueReference::from_untrusted_parts(
+            ARCHIVE_DECODE,
             canonical,
         ));
         assert!(
-            !ApplicationManagedIndexProbeMeaning::from_untrusted_parts(forged)
+            !ApplicationManagedIndexProbeMeaning::from_untrusted_parts(ARCHIVE_DECODE, forged)
                 .has_supported_profile()
         );
     }
@@ -129,21 +132,24 @@ fn admitted_native_scalars_and_binary_binding_are_supported() {
     assert!(canonical_json.has_supported_profile());
     let mut wrong_family = canonical_json.parts().clone();
     wrong_family.scalar_family = ScalarAspectType::InlineBytes;
-    assert!(
-        !ApplicationManagedIndexProbeMeaning::from_untrusted_parts(wrong_family)
-            .has_supported_profile()
-    );
+    assert!(!ApplicationManagedIndexProbeMeaning::from_untrusted_parts(
+        ARCHIVE_DECODE,
+        wrong_family
+    )
+    .has_supported_profile());
 
     let mut unknown_protocol = canonical_json.parts().clone();
     let mut canonical = unknown_protocol.canonical.take().unwrap().parts().clone();
     canonical.protocol = "worth.unknown.v1".into();
     unknown_protocol.canonical = Some(ApplicationCanonicalValueReference::from_untrusted_parts(
+        ARCHIVE_DECODE,
         canonical,
     ));
-    assert!(
-        !ApplicationManagedIndexProbeMeaning::from_untrusted_parts(unknown_protocol)
-            .has_supported_profile()
-    );
+    assert!(!ApplicationManagedIndexProbeMeaning::from_untrusted_parts(
+        ARCHIVE_DECODE,
+        unknown_protocol
+    )
+    .has_supported_profile());
 }
 
 #[test]
@@ -153,7 +159,8 @@ fn native_profile_requires_admitted_decode_and_native_admission() {
         .clone();
     parts.supports_admitted_decode = false;
     assert!(
-        !ApplicationManagedIndexProbeMeaning::from_untrusted_parts(parts).has_supported_profile()
+        !ApplicationManagedIndexProbeMeaning::from_untrusted_parts(ARCHIVE_DECODE, parts)
+            .has_supported_profile()
     );
 
     let unadmitted = ApplicationManagedIndexProbeMeaning::of::<UnadmittedNativeBinding>();

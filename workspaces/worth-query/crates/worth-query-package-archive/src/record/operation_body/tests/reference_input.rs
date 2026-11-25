@@ -1,22 +1,32 @@
 //! The new reference profile charges its sequence and leaves older bodies untouched.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::{
     ApplicationOperationBodyReferenceInput as Reference,
     ApplicationOperationBodyReferenceInputMode as Mode,
 };
 fn body(mode: Mode) -> ApplicationOperationBodyProgram {
-    ApplicationOperationBodyProgram::from_untrusted_in_scope("Row".into(), vec![], None, vec![])
-        .with_untrusted_reference_inputs(vec![Reference {
-            relation: "Validator".into(),
-            from: "Row".into(),
-            to: "Principal".into(),
-            field: ApplicationFieldBindingLocus::new("Principal", "Facts", "Identity"),
-            binding: WorthQueryPortableTypeIdentity::from_untrusted("worth.rust.u64".into()),
-            scalar_family: worth_foundational::facade::ScalarAspectType::UInt64,
-            member: "validator".into(),
-            key: "validator".into(),
-            mode,
-        }])
+    ApplicationOperationBodyProgram::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
+        "Row".into(),
+        vec![],
+        None,
+        vec![],
+    )
+    .with_untrusted_reference_inputs(vec![Reference {
+        relation: "Validator".into(),
+        from: "Row".into(),
+        to: "Principal".into(),
+        field: ApplicationFieldBindingLocus::new("Principal", "Facts", "Identity"),
+        binding: WorthQueryPortableTypeIdentity::from_untrusted(
+            ARCHIVE_DECODE,
+            "worth.rust.u64".into(),
+        ),
+        scalar_family: worth_foundational::facade::ScalarAspectType::UInt64,
+        member: "validator".into(),
+        key: "validator".into(),
+        mode,
+    }])
 }
 fn budget(bytes: &[u8]) -> RecordDecodeAttempt {
     RecordDecodeAttempt::begin(

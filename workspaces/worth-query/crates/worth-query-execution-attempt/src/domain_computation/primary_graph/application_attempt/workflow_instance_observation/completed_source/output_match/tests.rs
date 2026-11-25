@@ -1,4 +1,5 @@
 //! Pure ordering/absence regression; these tokens assert no workflow authority.
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::history::operation_outputs::ObservedOperationOutput;
 use std::collections::BTreeMap;
@@ -34,6 +35,7 @@ fn occurrence(
 #[test]
 fn latest_named_occurrence_wins_and_missing_latest_context_or_role_never_falls_back() {
     let matching = ApplicationOperationBodySuccessionOutputMatch::from_untrusted(
+        ARCHIVE_DECODE,
         "selected".into(),
         "certify".into(),
         ApplicationMutationOutputRoleDescription {

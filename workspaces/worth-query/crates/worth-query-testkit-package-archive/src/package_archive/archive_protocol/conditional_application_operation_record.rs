@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 pub use worth_query_declaration::facade::application_schema::{
     ApplicationOperationMarkerIdentity, ApplicationOperationRef, ApplicationSchema,
     ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder,
@@ -84,11 +85,13 @@ pub fn decode_hex(encoded: &str) -> Vec<u8> {
 pub fn conditional_package() -> WorthQueryValidatedPortableDomainPackage {
     let operation = super::domain_operation_record::fixture::operation();
     let binding = WorthQueryPortableApplicationConditionalOperationBinding::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationConditionalOperationBindingParts {
             schema_owner: Schema::OWNER.to_owned(),
             schema_name: <Schema as ApplicationSchema>::NAME.to_owned(),
             application_operation: Operation::IDENTIFIER.to_owned(),
             input_type: WorthQueryPortableTypeIdentity::from_untrusted(
+                ARCHIVE_DECODE,
                 "worth.query.archive.conditional-input".to_owned(),
             ),
             domain_operation_slot: operation.identity().slot(),

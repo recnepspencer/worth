@@ -1,5 +1,6 @@
 //! A residual filter is selection meaning a complete Source cannot carry.
 use super::is_complete_membership;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_query::*;
 use worth_query_declaration::facade::application_schema::ApplicationEntityRef;
 use worth_query_declaration::*;
@@ -30,10 +31,12 @@ fn source() -> WorthQueryPortableApplicationQueryParts {
         .into_erased()
         .into_parts();
     parts.root_paths = vec![ApplicationQueryRootPathMeaning::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationQueryRootPathParts {
             start_entity: "Item".into(),
             terminal_entity: "Item".into(),
             steps: vec![ApplicationQueryRootPathStep::from_untrusted_fields(
+                ARCHIVE_DECODE,
                 "Next".into(),
                 "Item".into(),
                 "Item".into(),
@@ -50,12 +53,12 @@ fn source() -> WorthQueryPortableApplicationQueryParts {
 fn a_parameterless_filtered_source_is_not_complete_membership() {
     let plain = source();
     assert!(is_complete_membership(
-        &ErasedApplicationQueryDefinition::from_untrusted_parts(plain.clone())
+        &ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, plain.clone())
     ));
     let mut filtered = plain;
     filtered.where_filter = Some(
-        ApplicationQueryWhereFilterProgram::from_untrusted(
-            vec![ApplicationQueryWhereFilterOperand::from_untrusted(
+        ApplicationQueryWhereFilterProgram::from_untrusted(ARCHIVE_DECODE,
+            vec![ApplicationQueryWhereFilterOperand::from_untrusted(ARCHIVE_DECODE,
                 "rank".into(),
                 ApplicationQueryWhereFilterSource::Field {
                     entity: "Item".into(),
@@ -73,6 +76,6 @@ fn a_parameterless_filtered_source_is_not_complete_membership() {
         .unwrap(),
     );
     assert!(!is_complete_membership(
-        &ErasedApplicationQueryDefinition::from_untrusted_parts(filtered)
+        &ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, filtered)
     ));
 }

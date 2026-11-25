@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 pub(crate) use worth_query_testkit_certification::facade::certification::native_graph_input_guards::child_admission::*;
 
 #[test]
@@ -64,6 +65,7 @@ fn transported_children_cannot_change_parent_topology_or_drop_contracts() {
                                 .collect();
                             children[2].creation =
                                 ApplicationOperationBodyCreation::from_untrusted(
+                                    ARCHIVE_DECODE,
                                     c.entity().into(),
                                     c.key().into(),
                                     fields,
@@ -73,6 +75,7 @@ fn transported_children_cannot_change_parent_topology_or_drop_contracts() {
                         _ => unreachable!(),
                     }
                     *body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+                        ARCHIVE_DECODE,
                         "Parent".into(),
                         body.scope_fields().to_vec(),
                         Some(root.clone().with_untrusted_children(children)),
@@ -113,7 +116,10 @@ fn transported_children_cannot_change_parent_topology_or_drop_contracts() {
         parts.members.sort();
         assert_eq!(
             validate_portable_application_schema_freshly(
-                WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts)
+                WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(
+                    ARCHIVE_DECODE,
+                    parts
+                )
             )
             .unwrap_err(),
             ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency {

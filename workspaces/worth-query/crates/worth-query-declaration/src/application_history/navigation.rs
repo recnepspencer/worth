@@ -1,5 +1,6 @@
 //! Snapshot eligibility and a separate capability recipe; neither grants permission.
 use super::{ApplicationHistoryBinding, ApplicationHistoryModel};
+use crate::archive_decode_authority::{ArchiveDecodeAuthority, ARCHIVE_DECODE};
 use crate::{
     application_capability::{
         ApplicationCapabilityMarkerIdentity, ApplicationCapabilityRef, ApplicationCapabilityRequest,
@@ -56,16 +57,20 @@ impl ApplicationHistoryNavigationDeclaration {
     {
         let capability = ApplicationCapabilityRef::<S, N::Capability>::from_declaration();
         let operation = ApplicationOperationRef::<S, N::Operation, N::Input>::from_declaration();
-        Self::from_untrusted_parts(WorthQueryPortableApplicationHistoryNavigationParts {
-            binding: N::IDENTITY.to_owned(),
-            capability: capability.name().to_owned(),
-            capability_type: capability.marker_identity(),
-            operation: operation.name().to_owned(),
-            input_type: operation.input_identity(),
-        })
+        Self::from_untrusted_parts(
+            ARCHIVE_DECODE,
+            WorthQueryPortableApplicationHistoryNavigationParts {
+                binding: N::IDENTITY.to_owned(),
+                capability: capability.name().to_owned(),
+                capability_type: capability.marker_identity(),
+                operation: operation.name().to_owned(),
+                input_type: operation.input_identity(),
+            },
+        )
     }
 
     pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
         parts: WorthQueryPortableApplicationHistoryNavigationParts,
     ) -> Self {
         Self { parts }

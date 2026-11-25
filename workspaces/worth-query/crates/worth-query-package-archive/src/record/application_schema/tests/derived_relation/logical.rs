@@ -1,6 +1,7 @@
 //! The public authoring route and the distinct canonical transport meet here.
 use super::*;
 use crate::facade::WorthQueryPackageArchiveDenialKind as Kind;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::*;
 
 struct Fixture;
@@ -100,7 +101,7 @@ fn logical_recipe_and_components_have_distinct_canonical_transport_and_real_carr
         unreachable!()
     };
     *case = "Foreign".into();
-    *derived = Definition::from_untrusted_parts(parts);
+    *derived = Definition::from_untrusted_parts(ARCHIVE_DECODE, parts);
     assert!(matches!(
         readmit(logical_schema(restored)),
         Err(Denial::InvalidApplicationDerivedRelation {
@@ -165,14 +166,17 @@ fn text(bytes: &mut Vec<u8>, value: &str) {
 
 fn logical_schema(mut members: Vec<Member>) -> WorthQueryPortableApplicationSchemaRecord {
     members.sort();
-    WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(Parts {
-        owner: Fixture::OWNER.into(),
-        name: <Fixture as ApplicationSchema>::NAME.into(),
-        major: 1,
-        minor: 0,
-        members,
-        contributions: vec![],
-    })
+    WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(
+        ARCHIVE_DECODE,
+        Parts {
+            owner: Fixture::OWNER.into(),
+            name: <Fixture as ApplicationSchema>::NAME.into(),
+            major: 1,
+            minor: 0,
+            members,
+            contributions: vec![],
+        },
+    )
 }
 
 struct FixtureRecords;

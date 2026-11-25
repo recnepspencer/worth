@@ -7,11 +7,12 @@ use crate::application_capability::{
     WorthQueryPortableApplicationCapabilityGraphRuleParts,
     WorthQueryPortableApplicationCapabilityScopeGuardParts,
 };
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 
 #[test]
 fn owned_capability_parts_round_trip_exact_meaning_and_fresh_closure() {
     let original = contract(false, false, true);
-    let reconstructed = ErasedContract::from_untrusted_parts(original.parts());
+    let reconstructed = ErasedContract::from_untrusted_parts(ARCHIVE_DECODE, original.parts());
 
     assert_eq!(reconstructed, original);
     assert_eq!(
@@ -25,9 +26,10 @@ fn owned_capability_parts_round_trip_exact_meaning_and_fresh_closure() {
 fn forged_operation_identity_is_not_admitted_as_authored_capability_meaning() {
     let mut parts = contract(false, false, true).into_parts();
     parts.operation_type = crate::portable_identity::WorthQueryPortableTypeIdentity::from_untrusted(
+        ARCHIVE_DECODE,
         "worth.tests.forged-operation.v1".to_owned(),
     );
-    let reconstructed = ErasedContract::from_untrusted_parts(parts);
+    let reconstructed = ErasedContract::from_untrusted_parts(ARCHIVE_DECODE, parts);
 
     assert_eq!(
         build_from_members(members(reconstructed)),
@@ -45,6 +47,7 @@ fn noncanonical_accepted_values_are_preserved_then_denied() {
     let mut parts = canonical.parts();
     parts.values.reverse();
     let requirement = ApplicationCapabilityAcceptedValues::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationCapabilityAcceptedValuesParts {
             field: parts.field,
             values: parts.values,
@@ -54,6 +57,7 @@ fn noncanonical_accepted_values_are_preserved_then_denied() {
     assert!(requirement.values()[0] > requirement.values()[1]);
 
     let guard = ApplicationCapabilityScopeGuard::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationCapabilityScopeGuardParts {
             requirements: vec![requirement],
         },
@@ -76,6 +80,7 @@ fn duplicate_graph_requirements_are_preserved_then_denied() {
     let base = composition(true);
     let requirement = base.decision().allow().graph().requirements()[0].clone();
     let allow = ApplicationCapabilityGraphRule::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationCapabilityGraphRuleParts {
             requirements: vec![requirement.clone(), requirement],
         },
@@ -107,8 +112,10 @@ fn reconstructed_authorization_path_must_still_close_over_declared_topology() {
     let mut path_parts = source_clause.path().parts();
     path_parts.scope_entity = "Grant".to_owned();
     let clause = ApplicationCapabilityGraphClause::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationCapabilityGraphClauseParts {
             path: crate::application_schema::ApplicationAuthorizationPath::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 path_parts,
             ),
             guard: source_clause.guard().clone(),
@@ -116,11 +123,13 @@ fn reconstructed_authorization_path_must_still_close_over_declared_topology() {
         },
     );
     let requirement = ApplicationCapabilityGraphRequirement::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationCapabilityGraphRequirementParts {
             clauses: vec![clause],
         },
     );
     let allow = ApplicationCapabilityGraphRule::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationCapabilityGraphRuleParts {
             requirements: vec![requirement],
         },

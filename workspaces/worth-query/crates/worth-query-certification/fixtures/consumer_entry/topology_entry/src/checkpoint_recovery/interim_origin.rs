@@ -26,40 +26,26 @@ fn binding_policy() -> worth_foundational::ExecutionRequestPolicy {
         ),
     )
 }
-fn refused(checkpoint: application_installation::WorthQueryApplicationCheckpoint, expected: Kind) {
-    let seeds = std::cell::Cell::new(0);
-    let result = support::try_install_program_with_limits::<CheckpointProgram>(
-        Some(checkpoint),
-        Default::default(),
-        support::limits(support::DEFAULT_RETAINED_COMMITS, support::invalidation()),
-        |_| seeds.set(seeds.get() + 1),
-    );
-    let Err(denial) = result else {
-        panic!("an unauthenticated interim transport must refuse");
-    };
-    let application_installation::WorthQueryApplicationPreparationDenial::Graph(denial) =
-        denial.as_ref()
-    else {
-        panic!("expected the typed interim admission refusal: {denial:?}");
-    };
-    assert_eq!(denial.kind(), expected);
-    assert_eq!(
-        seeds.get(),
-        0,
-        "a refused restore cannot run its initializer"
-    );
-}
-#[test]
-fn checkpoint_bytes_without_capture_origin_refuse_before_initialization() {
-    let _guard = checkpoint_recovery_test_guard();
-    let application = install(None);
-    let checkpoint = capture(&application);
-    refused(
-        application_installation::WorthQueryApplicationCheckpoint::from_untrusted_bytes(
-            checkpoint.bytes().to_vec(),
-        ),
-        Kind::InterimCheckpointCaptureOriginMissing,
-    );
+/// Readmits transported bytes under the capture origin `origin_of` retained.
+/// Consumers cannot build an origin-less checkpoint from bytes at all.
+fn readmit(
+    bytes: Vec<u8>,
+    origin_of: &application_installation::WorthQueryApplicationCheckpoint,
+) -> Result<
+    application_installation::WorthQueryApplicationCheckpoint,
+    worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenial,
+> {
+    worth_query_host::facade::application_contribution::with_bootstrap_advancement(
+        binding_policy(),
+        |phase| {
+            application_installation::WorthQueryApplicationCheckpoint::readmit_transported(
+                bytes,
+                origin_of.capture_origin().unwrap(),
+                &phase.execution_request(),
+            )
+        },
+    )
+    .unwrap()
 }
 #[test]
 fn an_origin_from_another_capture_cannot_authenticate_equal_state_bytes() {
@@ -67,19 +53,7 @@ fn an_origin_from_another_capture_cannot_authenticate_equal_state_bytes() {
     let application = install(None);
     let first = capture(&application);
     let second = capture(&application);
-    let transported =
-        application_installation::WorthQueryApplicationCheckpoint::from_untrusted_bytes(
-            first.bytes().to_vec(),
-        );
-    let denial = worth_query_host::facade::application_contribution::with_bootstrap_advancement(
-        binding_policy(),
-        |phase| {
-            transported
-                .with_capture_origin(second.capture_origin().unwrap(), &phase.execution_request())
-        },
-    )
-    .unwrap()
-    .unwrap_err();
+    let denial = readmit(first.bytes().to_vec(), &second).unwrap_err();
     assert_eq!(denial.kind(), Kind::InterimCheckpointCaptureOriginMismatch);
 }
 #[test]
@@ -95,10 +69,11 @@ fn retained_capture_origin_authenticates_transport_after_source_owner_drops() {
         worth_query_host::facade::application_contribution::with_bootstrap_advancement(
             binding_policy(),
             |phase| {
-                application_installation::WorthQueryApplicationCheckpoint::from_untrusted_bytes(
+                application_installation::WorthQueryApplicationCheckpoint::readmit_transported(
                     bytes,
+                    origin,
+                    &phase.execution_request(),
                 )
-                .with_capture_origin(origin, &phase.execution_request())
             },
         )
         .unwrap()
@@ -122,7 +97,7 @@ fn retained_capture_origin_authenticates_transport_after_source_owner_drops() {
     );
 }
 #[test]
-fn predecessor_interim_format_refuses_before_capture_origin_or_initialization() {
+fn predecessor_interim_format_refuses_readmission_before_capture_origin() {
     let _guard = checkpoint_recovery_test_guard();
     let application = install(None);
     let checkpoint = capture(&application);
@@ -130,8 +105,8 @@ fn predecessor_interim_format_refuses_before_capture_origin_or_initialization() 
     bytes[40..42].copy_from_slice(&13_u16.to_be_bytes());
     let checksum = Sha256::digest(&bytes[40..]);
     bytes[8..40].copy_from_slice(&checksum);
-    refused(
-        application_installation::WorthQueryApplicationCheckpoint::from_untrusted_bytes(bytes),
+    assert_eq!(
+        readmit(bytes, &checkpoint).unwrap_err().kind(),
         Kind::UnsupportedCheckpointFormat {
             observed: 13,
             supported: 14,

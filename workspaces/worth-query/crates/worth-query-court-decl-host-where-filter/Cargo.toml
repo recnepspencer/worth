@@ -11,6 +11,7 @@ publish = false
 worth-execution = { path = "../../../../crates/worth-execution" }
 worth-foundational = { path = "../../../../crates/worth-foundational" }
 worth-query-decl = { path = "../worth-query-decl" }
+worth-query-declaration = { path = "../worth-query-declaration" }
 worth-query-execution = { path = "../worth-query-execution" }
 worth-query-host = { path = "../worth-query-host" }
 worth-query-testkit-document-retention = { path = "../worth-query-testkit-document-retention" }

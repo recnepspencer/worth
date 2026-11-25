@@ -10,6 +10,7 @@ use crate::{
         WorthQueryPackageArchiveDenial as Denial, WorthQueryPackageArchiveDenialKind as Kind,
     },
 };
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_capability::{
     ApplicationCapabilityRelationBinding, ApplicationCapabilityResourcePath,
 };
@@ -45,6 +46,7 @@ pub(super) fn decode(
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     Ok(ApplicationCapabilityResourcePath::from_untrusted_parts(
+        ARCHIVE_DECODE,
         head,
         Some(root),
         traversals,

@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::{
     WorthQueryPortableApplicationSchemaParts, WorthQueryPortableApplicationSchemaRecord,
 };
@@ -75,6 +76,7 @@ pub(super) fn decode_payload(
     };
     Ok(WorthQueryPortablePackageRecord::ApplicationSchema(
         WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableApplicationSchemaParts {
                 owner,
                 name,

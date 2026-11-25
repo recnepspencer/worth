@@ -4,6 +4,7 @@
 //! anchor name, continuity rule)` and never from allocation order. This module
 //! declares which rule a group kind follows and which declared roles carry the
 //! anchor (or producer) and boundary meaning that rule reads.
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 use std::fmt;
 use std::marker::PhantomData;
 
@@ -106,6 +107,7 @@ pub struct ErasedApplicationGroupNameScheme {
 
 impl ErasedApplicationGroupNameScheme {
     pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
         name_scheme: ErasedApplicationNameScheme,
         continuity_rule: ApplicationGroupContinuityRule,
         anchor_role: Option<String>,

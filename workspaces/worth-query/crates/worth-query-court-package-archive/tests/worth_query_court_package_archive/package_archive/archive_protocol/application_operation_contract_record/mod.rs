@@ -28,11 +28,9 @@ fn production_export_operation_contract_frames_reenter_fresh_validation() {
         .unwrap()
         .materialize()
         .unwrap()
-        .validate_freshly(
-            WorthQueryExpectedPortablePackageIdentity::from_untrusted_identity(
-                source.identity().clone(),
-            ),
-        )
+        .validate_freshly(WorthQueryExpectedPortablePackageIdentity::new(
+            source.identity().clone(),
+        ))
         .unwrap();
     assert_eq!(reconstructed.identity(), source.identity());
 }
@@ -82,10 +80,8 @@ fn operation_contract_semantic_tamper_decodes_but_cannot_mint_package_identity()
         .unwrap()
         .materialize()
         .unwrap()
-        .validate_freshly(
-            WorthQueryExpectedPortablePackageIdentity::from_untrusted_identity(
-                source.identity().clone(),
-            ),
-        )
+        .validate_freshly(WorthQueryExpectedPortablePackageIdentity::new(
+            source.identity().clone(),
+        ),)
         .is_err());
 }

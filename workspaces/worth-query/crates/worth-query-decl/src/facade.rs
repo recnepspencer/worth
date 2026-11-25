@@ -16,6 +16,76 @@
 //! ```compile_fail,E0432
 //! use worth_query_decl::facade::application_program::ApplicationDiscoveredAction;
 //! ```
+//!
+//! Applications author access, disclosure, capability and schema meaning only
+//! through typed declarations. Every raw-part `from_untrusted*` archive decoder
+//! demands an internal witness this audience never names:
+//!
+//! ```compile_fail,E0432
+//! use worth_query_decl::facade::archive_decode_authority::ARCHIVE_DECODE;
+//! ```
+//!
+//! A disclosure contract cannot be decoded from a raw classification string,
+//! and the witness cannot be conjured by inference:
+//!
+//! ```compile_fail,E0277
+//! use worth_query_decl::facade::application_query::{
+//!     ApplicationQueryDisclosureContract as Contract,
+//!     WorthQueryPortableApplicationQueryDisclosureParts as Parts,
+//! };
+//! fn forge(parts: Parts) -> Contract {
+//!     Contract::from_untrusted_parts(Default::default(), parts)
+//! }
+//! ```
+//!
+//! Capability, authorization and schema decoders demand the same witness:
+//!
+//! ```compile_fail,E0061
+//! use worth_query_decl::facade::application_capability::{
+//!     ErasedApplicationCapabilityContract as Contract,
+//!     WorthQueryPortableApplicationCapabilityContractParts as Parts,
+//! };
+//! fn forge(parts: Parts) -> Contract {
+//!     Contract::from_untrusted_parts(parts)
+//! }
+//! ```
+//!
+//! ```compile_fail,E0277
+//! use worth_query_decl::facade::application_schema::{
+//!     ApplicationAuthorizationPath as Path,
+//!     WorthQueryPortableApplicationAuthorizationPathParts as Parts,
+//! };
+//! fn forge(parts: Parts) -> Path {
+//!     Path::from_untrusted_parts(Default::default(), parts)
+//! }
+//! ```
+//!
+//! ```compile_fail,E0061
+//! use worth_query_decl::facade::application_schema::{
+//!     WorthQueryPortableApplicationSchemaParts as Parts,
+//!     WorthQueryPortableApplicationSchemaRecord as Record,
+//! };
+//! fn forge(parts: Parts) -> Record {
+//!     Record::from_untrusted_parts(parts)
+//! }
+//! ```
+//!
+//! The same declarations remain nameable and readable through this audience:
+//!
+//! ```
+//! use worth_query_decl::facade::{application_capability, application_query, application_schema};
+//! fn read(
+//!     capability: &application_capability::ErasedApplicationCapabilityContract,
+//!     disclosure: &application_query::ApplicationQueryDisclosureContract,
+//!     authorization: &application_schema::ApplicationAuthorizationPath,
+//! ) -> (
+//!     application_capability::WorthQueryPortableApplicationCapabilityContractParts,
+//!     String,
+//!     application_schema::WorthQueryPortableApplicationAuthorizationPathParts,
+//! ) {
+//!     (capability.parts(), disclosure.classification().to_owned(), authorization.parts())
+//! }
+//! ```
 
 pub use crate::program_transition;
 pub use worth_query_declaration::facade::{

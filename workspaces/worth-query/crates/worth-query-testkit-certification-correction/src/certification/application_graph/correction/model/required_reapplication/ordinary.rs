@@ -1,6 +1,7 @@
 //! Ordinary source and calculation co-commit, then reuse their real lineage.
 use super::super::{calculation, program, schema::NumericSchema};
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_host::facade::application_installation::*;
 use worth_query_host::facade::domain::ApplicationSchema;
 use worth_relational::facade::inspection::observe_maintenance_work;
@@ -112,8 +113,11 @@ pub(super) fn run(worker: bool) {
             let execution = phase
                 .checked_execution_request_for(application.runtime().product_runtime())
                 .unwrap();
-            WorthQueryApplicationCheckpoint::from_untrusted_bytes(bytes.into_boxed_slice())
-                .with_capture_origin(origin, &execution)
+            WorthQueryApplicationCheckpoint::from_untrusted_bytes(
+                ARCHIVE_DECODE,
+                bytes.into_boxed_slice(),
+            )
+            .with_capture_origin(origin, &execution)
         })
         .unwrap()
         .expect("disk bytes retain their actual captured Native and World origin");

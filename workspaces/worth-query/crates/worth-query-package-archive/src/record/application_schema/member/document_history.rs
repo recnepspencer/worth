@@ -5,6 +5,7 @@ use crate::record::{
     application_query::disclosure,
     sequence::{decode_sequence, write_sequence},
 };
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_history::{
     ApplicationHistoryModelDomain as Domain, ApplicationHistoryNavigationDeclaration,
     ApplicationHistoryOperation, ApplicationHistoryRetentionDeclaration as Retention,
@@ -122,13 +123,16 @@ pub(super) fn decode(
     };
     let navigation = if flags & 1 != 0 {
         Some(
-            ApplicationHistoryNavigationDeclaration::from_untrusted_parts(NavigationParts {
-                binding: input.text()?.to_owned(),
-                capability: input.text()?.to_owned(),
-                capability_type: wire_vocabulary::decode_type_identity(input)?,
-                operation: input.text()?.to_owned(),
-                input_type: wire_vocabulary::decode_type_identity(input)?,
-            }),
+            ApplicationHistoryNavigationDeclaration::from_untrusted_parts(
+                ARCHIVE_DECODE,
+                NavigationParts {
+                    binding: input.text()?.to_owned(),
+                    capability: input.text()?.to_owned(),
+                    capability_type: wire_vocabulary::decode_type_identity(input)?,
+                    operation: input.text()?.to_owned(),
+                    input_type: wire_vocabulary::decode_type_identity(input)?,
+                },
+            ),
         )
     } else {
         None
@@ -158,29 +162,35 @@ pub(super) fn decode(
         return Err(Denial::new(Kind::InvalidRecordShape));
     }
     let member = ApplicationSchemaMember::ApplicationHistory {
-        definition: Definition::from_untrusted_parts(Parts {
-            identity,
-            history_type,
-            access,
-            metadata_disclosure,
-            model_domain,
-            operations,
-            ownership,
-            navigation,
-            window,
-            bookmarks,
-        }),
+        definition: Definition::from_untrusted_parts(
+            ARCHIVE_DECODE,
+            Parts {
+                identity,
+                history_type,
+                access,
+                metadata_disclosure,
+                model_domain,
+                operations,
+                ownership,
+                navigation,
+                window,
+                bookmarks,
+            },
+        ),
     };
     require_shape(&member)?;
     Ok(member)
 }
 
 fn decode_retention(input: &mut BinaryInput<'_>) -> Result<Retention, Denial> {
-    Ok(Retention::from_untrusted_parts(RetentionParts {
-        binding: input.text()?.to_owned(),
-        capability: input.text()?.to_owned(),
-        capability_type: wire_vocabulary::decode_type_identity(input)?,
-        operation: input.text()?.to_owned(),
-        input_type: wire_vocabulary::decode_type_identity(input)?,
-    }))
+    Ok(Retention::from_untrusted_parts(
+        ARCHIVE_DECODE,
+        RetentionParts {
+            binding: input.text()?.to_owned(),
+            capability: input.text()?.to_owned(),
+            capability_type: wire_vocabulary::decode_type_identity(input)?,
+            operation: input.text()?.to_owned(),
+            input_type: wire_vocabulary::decode_type_identity(input)?,
+        },
+    ))
 }

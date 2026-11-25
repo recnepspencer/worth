@@ -1,5 +1,6 @@
 //! Codec roundtrip is descriptive only; supplier tests prove fresh native producer affinity.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::{
     ApplicationOperationBodyRequirementExpression as Expression,
     ApplicationOperationBodyRequirementOperand as Operand,
@@ -31,8 +32,10 @@ fn current_signed_evidence_v16_preserves_the_producer_and_v15_cannot_accept_it()
     let reader =
         worth_foundational::expression_api::expressions().reading_within(Expression::PROFILE);
     let requirement = Requirement::from_untrusted(
+        ARCHIVE_DECODE,
         "verified".into(),
         vec![Operand::from_untrusted(
+            ARCHIVE_DECODE,
             "verified".into(),
             Source::SignedEvidence(evidence()),
         )],
@@ -42,6 +45,7 @@ fn current_signed_evidence_v16_preserves_the_producer_and_v15_cannot_accept_it()
     )
     .unwrap();
     let body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
         "Item".into(),
         vec![],
         None,
@@ -78,8 +82,10 @@ fn related_signed_evidence_v18_preserves_selection_and_rejects_older_opcode_prof
     let reader =
         worth_foundational::expression_api::expressions().reading_within(Expression::PROFILE);
     let requirement = Requirement::from_untrusted(
+        ARCHIVE_DECODE,
         "verified".into(),
         vec![Operand::from_untrusted(
+            ARCHIVE_DECODE,
             "verified".into(),
             Source::RelatedSignedEvidence {
                 relation: "CurrentRound".into(),
@@ -94,6 +100,7 @@ fn related_signed_evidence_v18_preserves_selection_and_rejects_older_opcode_prof
     )
     .unwrap();
     let body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
         "Root".into(),
         vec![],
         None,

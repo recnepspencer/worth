@@ -1,4 +1,5 @@
 //! A freshly validated portable schema, assembled from real declaration fixtures.
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::*;
 use worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity;
 mod graph;
@@ -25,6 +26,7 @@ pub(crate) fn declaration() -> ErasedApplicationSchemaDeclaration {
         })
         .expect("the complete fixture declares entities");
     let definition = ApplicationDecisionReadScopeMeaning::from_untrusted_parts(
+        ARCHIVE_DECODE,
         vec![ApplicationOperationDecisionReadTarget::Entity {
             entity: entity.clone(),
         }],
@@ -32,7 +34,7 @@ pub(crate) fn declaration() -> ErasedApplicationSchemaDeclaration {
     )
     .unwrap();
     members.push(ApplicationSchemaMember::ApplicationNameScheme {
-        definition: worth_query_declaration::facade::application_naming::ErasedApplicationNameScheme::from_untrusted_parts(
+        definition: worth_query_declaration::facade::application_naming::ErasedApplicationNameScheme::from_untrusted_parts(ARCHIVE_DECODE,
             "worth.budget.entity.v1".into(),
             worth_query_declaration::facade::application_naming::ApplicationNameSubjectKind::Entity,
             entity,
@@ -45,8 +47,8 @@ pub(crate) fn declaration() -> ErasedApplicationSchemaDeclaration {
         ),
     });
     members.push(ApplicationSchemaMember::ApplicationGroupNameScheme {
-        definition: worth_query_declaration::facade::application_naming::ErasedApplicationGroupNameScheme::from_untrusted_parts(
-            worth_query_declaration::facade::application_naming::ErasedApplicationNameScheme::from_untrusted_parts(
+        definition: worth_query_declaration::facade::application_naming::ErasedApplicationGroupNameScheme::from_untrusted_parts(ARCHIVE_DECODE,
+            worth_query_declaration::facade::application_naming::ErasedApplicationNameScheme::from_untrusted_parts(ARCHIVE_DECODE,
                 "worth.budget.group.v1".into(),
                 worth_query_declaration::facade::application_naming::ApplicationNameSubjectKind::Group,
                 "BudgetLoop".into(),
@@ -75,6 +77,7 @@ pub(crate) fn declaration() -> ErasedApplicationSchemaDeclaration {
     members.dedup();
     validate_portable_application_schema_freshly(
         WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableApplicationSchemaParts {
                 owner: "worth.budget-fixture".into(),
                 name: "AllDeclarationFamilies".into(),

@@ -1,4 +1,5 @@
 //! Native earned selection and once-prepared payload of one installed external effect.
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 pub mod installation;
 use crate::domain_computation::primary_graph::application_query::ObservedQueryExpressionContext;
 use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind as DenialKind;
@@ -107,7 +108,7 @@ pub fn prepare<Schema: worth_query_installation::facade::ApplicationSchema, Oper
         None
     };
     let values = if emit && matches!(recipe.meaning().source, worth_query_declaration::facade::application_schema::ApplicationOperationBodyExternalPayloadSource::Evaluation { .. }) { Some(values.cloned().ok_or_else(|| invalid_payload(&recipe, DenialKind::MissingAuthoritativeFact))?) } else { None };
-    let evaluation = backing.as_ref().zip(values.as_ref()).map(|(context, values)| worth_query_declaration::facade::application_schema::ApplicationOperationBodyEvaluationSnapshot::from_untrusted_parts(context.snapshot().clone(), values.snapshot().clone()));
+    let evaluation = backing.as_ref().zip(values.as_ref()).map(|(context, values)| worth_query_declaration::facade::application_schema::ApplicationOperationBodyEvaluationSnapshot::from_untrusted_parts(ARCHIVE_DECODE, context.snapshot().clone(), values.snapshot().clone()));
     let source: &dyn std::any::Any = if let Some(evaluation) = &evaluation {
         evaluation
     } else {

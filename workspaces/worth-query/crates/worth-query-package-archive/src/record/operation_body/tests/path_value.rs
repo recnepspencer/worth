@@ -1,5 +1,6 @@
 //! v33 preserves target meaning and charges the same nested path entries on decode.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::{
     application_query::*,
     application_schema::{
@@ -15,7 +16,7 @@ fn path_value_v33_roundtrips_and_old_version_cannot_consume_the_assignment() {
         Some(RelationDirection::Forward),
     ] {
         let terminal = if direction.is_none() { "Row" } else { "Parent" };
-        let path = ApplicationQueryRootPathMeaning::from_untrusted_parts(
+        let path = ApplicationQueryRootPathMeaning::from_untrusted_parts(ARCHIVE_DECODE,
             WorthQueryPortableApplicationQueryRootPathParts {
                 start_entity: "Row".into(),
                 terminal_entity: terminal.into(),
@@ -23,7 +24,7 @@ fn path_value_v33_roundtrips_and_old_version_cannot_consume_the_assignment() {
                 steps: direction
                     .map(|direction| match direction {
                         RelationDirection::Reverse => {
-                            ApplicationQueryRootPathStep::from_untrusted_fields(
+                            ApplicationQueryRootPathStep::from_untrusted_fields(ARCHIVE_DECODE,
                                 "ParentRows".into(),
                                 "Parent".into(),
                                 "Row".into(),
@@ -31,7 +32,7 @@ fn path_value_v33_roundtrips_and_old_version_cannot_consume_the_assignment() {
                              worth_query_declaration::facade::application_query::ApplicationQueryRootPathTraversal::OneHop,)
                         }
                         RelationDirection::Forward => {
-                            ApplicationQueryRootPathStep::from_untrusted_fields(
+                            ApplicationQueryRootPathStep::from_untrusted_fields(ARCHIVE_DECODE,
                                 "RowParent".into(),
                                 "Row".into(),
                                 "Parent".into(),
@@ -44,6 +45,7 @@ fn path_value_v33_roundtrips_and_old_version_cannot_consume_the_assignment() {
             },
         );
         let body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+            ARCHIVE_DECODE,
             "Row".into(),
             vec![],
             None,
@@ -56,7 +58,10 @@ fn path_value_v33_roundtrips_and_old_version_cannot_consume_the_assignment() {
                     field: ApplicationFieldBindingLocus::new(terminal, "Facts", "Revision"),
                     presence: ApplicationFieldPresence::Required,
                 },
-                binding: WorthQueryPortableTypeIdentity::from_untrusted("worth.rust.u64".into()),
+                binding: WorthQueryPortableTypeIdentity::from_untrusted(
+                    ARCHIVE_DECODE,
+                    "worth.rust.u64".into(),
+                ),
                 value: "next".into(),
             },
         ]);

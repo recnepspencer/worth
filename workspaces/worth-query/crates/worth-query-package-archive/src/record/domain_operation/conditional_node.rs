@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 mod condition;
 mod dependency;
 mod vocabulary;
@@ -59,6 +60,7 @@ fn decode_node(
 ) -> Result<WorthQueryPortableConditionalNodeDeclaration, Denial> {
     Ok(
         WorthQueryPortableConditionalNodeDeclaration::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableConditionalNodeParts {
                 identity: input.text()?.to_owned(),
                 role: role(input.u16()?)?,
@@ -278,8 +280,11 @@ fn decode_artifact_equivalence(
 }
 
 fn decode_family(input: &mut BinaryInput<'_>) -> Result<WorthQueryTypedFamilyIdentity, Denial> {
-    WorthQueryTypedFamilyIdentity::from_untrusted_portable_identity(input.text()?.to_owned())
-        .map_err(|_| invalid())
+    WorthQueryTypedFamilyIdentity::from_untrusted_portable_identity(
+        ARCHIVE_DECODE,
+        input.text()?.to_owned(),
+    )
+    .map_err(|_| invalid())
 }
 
 fn unsupported<T>() -> Result<T, Denial> {

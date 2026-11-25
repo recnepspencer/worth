@@ -1,5 +1,6 @@
 //! Body authoring derives each target's binding from its typed field.
 
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 use std::collections::BTreeSet;
 use std::marker::PhantomData;
 
@@ -158,6 +159,7 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
             return Err(ApplicationOperationBodyAuthoringDenial::Empty);
         }
         let program = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+            ARCHIVE_DECODE,
             scope.to_owned(),
             self.steps,
             creation,

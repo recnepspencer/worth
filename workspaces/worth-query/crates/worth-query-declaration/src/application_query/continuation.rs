@@ -2,6 +2,7 @@ use super::{
     ApplicationQueryCardinality, ApplicationQueryMarkerIdentity, ApplicationQueryResultRelationRef,
     ApplicationQueryResultTraversal, ApplicationQueryResultTraversalDirection, ManyResults,
 };
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 use crate::portable_identity::{WorthQueryPortableType, WorthQueryPortableTypeIdentity};
 
 /// Identity-bearing declaration of the one result collection advanced by an
@@ -28,6 +29,7 @@ pub struct WorthQueryPortableApplicationQueryContinuationParts {
 
 impl ApplicationQueryContinuationTarget {
     pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
         parts: WorthQueryPortableApplicationQueryContinuationParts,
     ) -> Self {
         Self {

@@ -5,6 +5,7 @@ use crate::{
     binary_input::BinaryInput, binary_output::BinaryOutput, limits::WorthQueryPackageArchiveLimits,
     record::decode_budget::RecordDecodeAttempt,
 };
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::{
     application_capability::{
         application_capability_canonical_components, ApplicationCapabilityResourcePath,
@@ -66,21 +67,28 @@ fn rooted_resource_member_preserves_order_direction_and_context_slot_without_nor
         .clone();
     let head = parts.target.resource().clone();
     let path = ApplicationCapabilityResourcePath::from_untrusted_parts(
+        ARCHIVE_DECODE,
         head.clone(),
         Some(root),
         vec![
-            ApplicationAuthorizationTraversal::from_untrusted_parts(Step {
-                relation: "Current".into(),
-                from: head.to().into(),
-                to: "Leaf".into(),
-                direction: Direction::Forward,
-            }),
-            ApplicationAuthorizationTraversal::from_untrusted_parts(Step {
-                relation: "Parent".into(),
-                from: "Scope".into(),
-                to: "Leaf".into(),
-                direction: Direction::Reverse,
-            }),
+            ApplicationAuthorizationTraversal::from_untrusted_parts(
+                ARCHIVE_DECODE,
+                Step {
+                    relation: "Current".into(),
+                    from: head.to().into(),
+                    to: "Leaf".into(),
+                    direction: Direction::Forward,
+                },
+            ),
+            ApplicationAuthorizationTraversal::from_untrusted_parts(
+                ARCHIVE_DECODE,
+                Step {
+                    relation: "Parent".into(),
+                    from: "Scope".into(),
+                    to: "Leaf".into(),
+                    direction: Direction::Reverse,
+                },
+            ),
         ],
     );
     parts.target = ApplicationCapabilityTargetDefinition::new(
@@ -90,7 +98,7 @@ fn rooted_resource_member_preserves_order_direction_and_context_slot_without_nor
         parts.target.field().clone(),
         parts.target.purpose().clone(),
     );
-    let contract = ErasedApplicationCapabilityContract::from_untrusted_parts(parts);
+    let contract = ErasedApplicationCapabilityContract::from_untrusted_parts(ARCHIVE_DECODE, parts);
     assert_eq!(contract.target().resource_path().scope_entity(), "Scope");
     assert!(application_capability_canonical_components(&contract)
         .iter()

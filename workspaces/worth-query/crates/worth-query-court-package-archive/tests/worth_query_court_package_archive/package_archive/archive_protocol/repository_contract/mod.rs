@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 pub(crate) use worth_query_testkit_package_archive::facade::package_archive::archive_protocol::repository_contract::*;
 
 #[test]
@@ -85,6 +86,7 @@ fn repository_record_requires_a_canonical_supported_envelope() {
     let mut unsupported = record.into_exact_envelope_bytes();
     unsupported[8..10].copy_from_slice(&2_u16.to_be_bytes());
     let denial = WorthQuerySignedPackageArchiveRecord::from_untrusted_envelope_bytes(
+        ARCHIVE_DECODE,
         unsupported,
         WorthQueryPackageEnvelopeLimits::DEFAULT,
     )
@@ -105,6 +107,7 @@ fn repository_record_requires_a_canonical_supported_envelope() {
 
     assert!(
         WorthQuerySignedPackageArchiveRecord::from_untrusted_envelope_bytes(
+            ARCHIVE_DECODE,
             vec![0; 8],
             WorthQueryPackageEnvelopeLimits::DEFAULT,
         )
@@ -122,6 +125,7 @@ fn loaded_repository_bytes_cannot_bypass_fresh_expected_identity_validation() {
         WorthQueryPackageEnvelopeLimits::DEFAULT,
     );
     let loaded = WorthQueryUntrustedLoadedPackageArchive::from_untrusted_bytes(
+        ARCHIVE_DECODE,
         request,
         foreign_record.into_exact_envelope_bytes(),
     )
@@ -150,10 +154,8 @@ fn loaded_repository_bytes_cannot_bypass_fresh_expected_identity_validation() {
         .unwrap()
         .materialize()
         .unwrap()
-        .validate_freshly(
-            WorthQueryExpectedPortablePackageIdentity::from_untrusted_identity(
-                independently_expected,
-            ),
-        )
+        .validate_freshly(WorthQueryExpectedPortablePackageIdentity::new(
+            independently_expected,
+        ),)
         .is_err());
 }

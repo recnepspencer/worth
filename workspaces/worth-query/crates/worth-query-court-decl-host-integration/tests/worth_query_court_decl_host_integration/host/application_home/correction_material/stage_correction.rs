@@ -150,7 +150,7 @@ macro_rules! foreign_member {
         let WorthQueryCorrectionSourceMember::AuthoredStage { identity, .. } = real.member() else {
             panic!("stage 2 is an authored stage member: {:?}", real.member())
         };
-        let forged = WorthQueryCorrectionSourceCoordinates::from_untrusted_parts(
+        let forged = WorthQueryCorrectionSourceCoordinates::new(
             real.world_owner(),
             real.world_commit(),
             real.relational().clone(),

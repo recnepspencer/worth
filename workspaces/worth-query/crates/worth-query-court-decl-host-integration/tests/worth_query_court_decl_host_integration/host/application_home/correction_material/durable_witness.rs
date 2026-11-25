@@ -149,11 +149,11 @@ fn a_directory_home_refuses_a_forged_coordinate_in_a_restored_fact() {
     };
     assert!(matches!(seal(&|_| {}), Ok(Some(_))), "the real fact seals");
     let ordinal = |c: &WorthQueryCorrectionSourceCoordinates| {
-        WorthQueryCorrectionSourceCoordinates::from_untrusted_parts(
+        WorthQueryCorrectionSourceCoordinates::new(
             c.world_owner(), c.world_commit() + 1, c.relational().clone(), c.member())
     };
     let memory = |c: &WorthQueryCorrectionSourceCoordinates| {
-        WorthQueryCorrectionSourceCoordinates::from_untrusted_parts(
+        WorthQueryCorrectionSourceCoordinates::new(
             worth_foundational::facade::WorldOwnerCoordinate::MemoryOnly { observation: 0 },
             c.world_commit(), c.relational().clone(), c.member())
     };

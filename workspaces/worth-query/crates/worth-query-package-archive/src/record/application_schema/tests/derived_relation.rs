@@ -1,4 +1,5 @@
 //! Fresh transport and completed-schema closure for descriptive derived sources.
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 mod logical;
 mod ordered_events;
 use super::{decode_member, encode_member, try_decode_member};
@@ -187,13 +188,16 @@ fn source(kind: SourceKind, relation: &str) -> Node {
 
 fn derived(name: &str, nodes: Vec<Node>) -> Member {
     Member::DerivedRelation {
-        definition: Definition::from_untrusted_parts(DerivedParts {
-            relation: name.into(),
-            from: "E".into(),
-            to: "E".into(),
-            expression: Expression { nodes },
-            laws: Laws::unbounded().acyclic(),
-        }),
+        definition: Definition::from_untrusted_parts(
+            ARCHIVE_DECODE,
+            DerivedParts {
+                relation: name.into(),
+                from: "E".into(),
+                to: "E".into(),
+                expression: Expression { nodes },
+                laws: Laws::unbounded().acyclic(),
+            },
+        ),
     }
 }
 
@@ -224,12 +228,15 @@ fn schema(mut members: Vec<Member>) -> Schema {
         },
     ]);
     members.sort();
-    Schema::from_untrusted_parts(Parts {
-        owner: "archive.tests".into(),
-        name: "DerivedSources".into(),
-        major: 1,
-        minor: 0,
-        members,
-        contributions: Vec::new(),
-    })
+    Schema::from_untrusted_parts(
+        ARCHIVE_DECODE,
+        Parts {
+            owner: "archive.tests".into(),
+            name: "DerivedSources".into(),
+            major: 1,
+            minor: 0,
+            members,
+            contributions: Vec::new(),
+        },
+    )
 }

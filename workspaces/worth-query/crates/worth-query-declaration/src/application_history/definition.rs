@@ -1,3 +1,4 @@
+use crate::archive_decode_authority::{ArchiveDecodeAuthority, ARCHIVE_DECODE};
 use std::{collections::BTreeSet, marker::PhantomData};
 
 use crate::application_operation::{ApplicationMutationBinding, ApplicationMutationScopeBinding};
@@ -69,7 +70,10 @@ pub enum ApplicationHistoryDefinitionDenial {
 }
 
 impl ErasedApplicationHistoryDefinition {
-    pub fn from_untrusted_parts(parts: WorthQueryPortableApplicationHistoryParts) -> Self {
+    pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
+        parts: WorthQueryPortableApplicationHistoryParts,
+    ) -> Self {
         Self { parts }
     }
 
@@ -163,6 +167,7 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> ApplicationHistoryDe
     pub fn for_binding(metadata_disclosure: ApplicationQueryDisclosureContract) -> Self {
         Self {
             erased: ErasedApplicationHistoryDefinition::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 WorthQueryPortableApplicationHistoryParts {
                     identity: H::IDENTITY.to_owned(),
                     history_type: H::PORTABLE_TYPE_IDENTITY,

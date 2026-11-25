@@ -6,32 +6,39 @@ use crate::{
     record::decode_budget::{RecordDecodeAttempt, WorthQueryPackageArchiveDecodeWork},
 };
 use worth_foundational::facade::ScalarAspectType;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::{
     application_schema::ApplicationFieldPresence, portable_identity::WorthQueryPortableTypeIdentity,
 };
 fn identity(entity: &str) -> DeclaredAuthoredCorrection {
-    DeclaredAuthoredCorrection::from_untrusted_parts(DeclaredAuthoredCorrectionParts {
-        family: WorthQueryPortableTypeIdentity::from_untrusted(format!("fixture.{entity}.v1")),
-        logical_key: Box::new(ApplicationSchemaMember::Field {
-            entity: entity.into(),
-            aspect: "Facts".into(),
-            field: "Key".into(),
-            presence: ApplicationFieldPresence::Required,
-            scalar_family: ScalarAspectType::UInt64,
-            value_type: "worth.rust.u64".into(),
-            canonical: None,
-            content_format: None,
-            unit: None,
-            frame: None,
-            writable: false,
-            equality_queryable: false,
-            unique: false,
-        }),
-        binding_unit: None,
-        source_role: format!("retired-{entity}"),
-        inverse_role: format!("restored-{entity}"),
-        source_posture: Posture::Retire,
-    })
+    DeclaredAuthoredCorrection::from_untrusted_parts(
+        ARCHIVE_DECODE,
+        DeclaredAuthoredCorrectionParts {
+            family: WorthQueryPortableTypeIdentity::from_untrusted(
+                ARCHIVE_DECODE,
+                format!("fixture.{entity}.v1"),
+            ),
+            logical_key: Box::new(ApplicationSchemaMember::Field {
+                entity: entity.into(),
+                aspect: "Facts".into(),
+                field: "Key".into(),
+                presence: ApplicationFieldPresence::Required,
+                scalar_family: ScalarAspectType::UInt64,
+                value_type: "worth.rust.u64".into(),
+                canonical: None,
+                content_format: None,
+                unit: None,
+                frame: None,
+                writable: false,
+                equality_queryable: false,
+                unique: false,
+            }),
+            binding_unit: None,
+            source_role: format!("retired-{entity}"),
+            inverse_role: format!("restored-{entity}"),
+            source_posture: Posture::Retire,
+        },
+    )
 }
 fn roundtrip(value: &DeclaredAuthoredCorrection) -> Result<DeclaredAuthoredCorrection, Denial> {
     let mut output = BinaryOutput::with_capacity(512);
@@ -51,6 +58,7 @@ fn roundtrip(value: &DeclaredAuthoredCorrection) -> Result<DeclaredAuthoredCorre
 fn authored_member_ownership_and_optional_coanchors_survive_the_archive() {
     let member =
         identity("Member").with_member_owner(PortablePreImageRelationLocus::from_untrusted_fields(
+            ARCHIVE_DECODE,
             "MemberOf".into(),
             "Member".into(),
             "Anchor".into(),
@@ -73,6 +81,7 @@ fn nested_authored_coanchors_refuse_instead_of_opening_a_recursive_wire_shape() 
 fn a_single_members_live_owner_survives_the_archive() {
     let value = identity("Member").with_live_member_owner(
         PortablePreImageRelationLocus::from_untrusted_fields(
+            ARCHIVE_DECODE,
             "MemberOf".into(),
             "Member".into(),
             "Anchor".into(),

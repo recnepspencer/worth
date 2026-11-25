@@ -86,35 +86,11 @@ impl std::fmt::Display for WorthQueryCorrectionSourceMember {
 }
 
 impl WorthQueryCorrectionSourceCoordinates {
-    /// Carries descriptive fields received by an application transport.
-    /// Selection resolves every field against retained native evidence.
-    pub fn from_untrusted_fields(
-        world_owner: WorldOwnerCoordinate,
-        world_commit: u64,
-        relational_branch: String,
-        relational_commit: u64,
-        relational_version: u64,
-        relational_parents: Vec<u64>,
-        member: WorthQueryCorrectionSourceMember,
-    ) -> Self {
-        use worth_relational::facade::{
-            history::{BranchId, CommitId},
-            identity::VersionId,
-        };
-        Self::from_untrusted_parts(
-            world_owner,
-            world_commit,
-            RelationalCommitReceipt {
-                branch_id: BranchId(relational_branch),
-                commit_id: CommitId(relational_commit),
-                version_id: VersionId(relational_version),
-                parents: relational_parents.into_iter().map(CommitId).collect(),
-            },
-            member,
-        )
-    }
-
-    pub fn from_untrusted_parts(
+    /// Describes one recorded occurrence an application transport carried,
+    /// from typed World and Relational coordinates. Possession grants no
+    /// authority: selection resolves every field against retained native
+    /// evidence and refuses coordinates that do not name one.
+    pub fn new(
         world_owner: WorldOwnerCoordinate,
         world_commit: u64,
         relational: RelationalCommitReceipt,
@@ -151,7 +127,7 @@ impl WorthQueryRecordedCorrectionSource {
         }
     }
     pub fn coordinates(&self) -> WorthQueryCorrectionSourceCoordinates {
-        WorthQueryCorrectionSourceCoordinates::from_untrusted_parts(
+        WorthQueryCorrectionSourceCoordinates::new(
             self.world_owner_coordinate(),
             self.world().ordinal(),
             self.relational().clone(),

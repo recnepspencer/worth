@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 pub(crate) use worth_query_testkit_certification_operation::facade::certification::native_operation_bodies::operation_body::output::portable::*;
 
 #[test]
@@ -56,14 +57,20 @@ fn portable_outputs_preserve_meaning_and_reject_mismatched_contract_or_target() 
                     let mut binding = description.clone().into_parts();
                     binding.output_roles[0].cardinality =
                         ApplicationMutationOutputRoleCardinality::ExactlyOne;
-                    *description = ApplicationMutationDescription::from_untrusted_parts(binding);
+                    *description = ApplicationMutationDescription::from_untrusted_parts(
+                        ARCHIVE_DECODE,
+                        binding,
+                    );
                 }
             }
         }
         parts.members.sort();
         assert!(
             validate_portable_application_schema_freshly(
-                WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts)
+                WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(
+                    ARCHIVE_DECODE,
+                    parts
+                )
             )
             .is_err(),
             "{defect} must not readmit"
@@ -88,7 +95,7 @@ fn output_only_body_requires_a_real_entity_decision_read() {
     parts.members.sort();
     assert!(matches!(
         validate_portable_application_schema_freshly(
-            WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts)
+            WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(ARCHIVE_DECODE, parts)
         )
         .unwrap_err(),
         ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency { .. }
