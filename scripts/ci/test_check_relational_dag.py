@@ -212,7 +212,7 @@ class RelationalDagTests(unittest.TestCase):
 
     def test_unmounted_file_cannot_hide_under_an_assigned_prefix(self):
         self.write('low/hidden.rs', 'use crate::high::Other;')
-        with self.assertRaisesRegex(ValueError, 'unmounted source:.*low/hidden.rs'):
+        with self.assertRaisesRegex(ValueError, r'unmounted source:.*low[/\\]hidden\.rs'):
             self.audit()
 
     def test_a_removed_reference_does_not_pay_for_another_at_the_same_direction(self):
