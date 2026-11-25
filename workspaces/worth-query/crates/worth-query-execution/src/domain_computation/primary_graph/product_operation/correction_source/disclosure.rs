@@ -138,7 +138,10 @@ where
             .inner
             .runtime
             .primary_provider_ref()
-            .observe_correction_material(source.occurrence().commit_reference())
+            .observe_correction_material(
+                source.occurrence().commit_reference(),
+                source.occurrence().member(),
+            )
             .map_err(Denial::Material)?;
     }
     let disclosure = source

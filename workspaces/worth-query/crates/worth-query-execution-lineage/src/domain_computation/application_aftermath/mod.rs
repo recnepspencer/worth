@@ -5,7 +5,7 @@ pub use correction::OriginalCorrectionDisclosure;
 pub use worth_query_execution_obligations::facade::aftermath::correction_material;
 pub mod causal_fact;
 pub mod correction_coordinates;
-pub use correction_coordinates::WorthQueryCorrectionSourceCoordinates;
+pub use correction_coordinates::{WorthQueryCorrectionSourceCoordinates, WorthQueryCorrectionSourceMember};
 pub use worth_query_execution_obligations::facade::aftermath::derivation_failure;
 pub mod external_effect;
 pub mod retained_preimage;

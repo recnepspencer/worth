@@ -193,14 +193,7 @@ pub fn recover(
 pub fn coordinates(
     receipt: &WorthQueryApplicationCommitReceipt,
 ) -> WorthQueryCorrectionSourceCoordinates {
-    WorthQueryRecordedCorrectionSource::from_untrusted_parts(
-        receipt
-            .committed_product_publication()
-            .composite_commit()
-            .clone(),
-        receipt.commit_reference().clone(),
-    )
-    .coordinates()
+    receipt.correction_source().coordinates()
 }
 
 /// This trusted adapter authenticates one exact external envelope; it never issues completion.

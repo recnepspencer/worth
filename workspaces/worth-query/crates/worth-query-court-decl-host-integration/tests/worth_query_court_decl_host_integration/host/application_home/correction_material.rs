@@ -11,6 +11,7 @@ mod original_operation;
 mod prepared_reopen;
 mod program;
 mod refused_custody;
+mod stage_correction;
 use program::*;
 use super::*;
 use worth_query_host::facade::application_entry::{WorthQueryApplicationMutationOutcome as Outcome,
@@ -110,8 +111,7 @@ fn home_correction_uses_original_material_and_the_durable_key_after_graceful_reo
     let execution = worth_execution::ExecutionRequest::leased(&lease);
     let home = open(location.clone(), execution);
     let receipt = edit(&home);
-    let coordinate = worth_query_host::facade::primary_graph::WorthQueryRecordedCorrectionSource::from_untrusted_parts(
-        receipt.committed_product_publication().composite_commit().clone(), receipt.commit_reference().clone()).coordinates();
+    let coordinate = receipt.correction_source().coordinates();
     drop(receipt);
     home.close(&execution)
         .unwrap_or_else(|refused| panic!("before correction close: {refused:?}"))

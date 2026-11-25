@@ -2,12 +2,17 @@
 """Run TLC model checking or NDJSON trace validation with zero external dependencies.
 
 Usage:
-  python tools/tla/run_tlc.py check specs/tla/<subsystem>/<Model>.tla [workers]
-  python tools/tla/run_tlc.py trace <TraceSpec.tla> <trace.ndjson>
+  python tools/tla/run_tlc.py check specs/tla/<subsystem>/<Model>.tla [workers] [--include <dir> ...]
+  python tools/tla/run_tlc.py trace <TraceSpec.tla> <trace.ndjson> [--include <dir> ...]
 
 Locates `java` (PATH or ~/.local/tools/tla/jre/bin/java[.exe]) and
 `tla2tools.jar` (TLA2TOOLS_JAR env var, ~/.local/tools/tla/tla2tools.jar,
 or /opt/homebrew/opt/tla-plus/libexec/tla2tools.jar).
+
+Automatically exposes sibling `tla/*` or `specs/tla/*` module directories (plus any
+explicit `--include <dir>`) via `-DTLA-Library` and stages them for `trace` mode so
+composed specifications (e.g. `StoreM4ScaleReclaim.tla` composing `StoreDurability`)
+resolve cleanly across directories.
 """
 
 from __future__ import annotations
@@ -57,6 +62,19 @@ def find_tla2tools() -> str:
     raise SystemExit("ERROR: tla2tools.jar not found. Set TLA2TOOLS_JAR or download into ~/.local/tools/tla/tla2tools.jar.")
 
 
+def collect_library_dirs(tla_path: pathlib.Path, extra_includes: list[pathlib.Path]) -> list[pathlib.Path]:
+    dirs: list[pathlib.Path] = []
+    parent_root = tla_path.parent.parent
+    if parent_root.is_dir() and parent_root.name == "tla":
+        for child in sorted(parent_root.iterdir()):
+            if child.is_dir() and child != tla_path.parent:
+                dirs.append(child)
+    for inc in extra_includes:
+        if inc.is_dir() and inc not in dirs:
+            dirs.append(inc)
+    return dirs
+
+
 def to_tla_literal(value: object) -> str:
     if isinstance(value, bool):
         return "TRUE" if value else "FALSE"
@@ -75,34 +93,42 @@ def to_tla_literal(value: object) -> str:
     raise TypeError(f"Unsupported JSON value for TLA+ literal: {value!r}")
 
 
-def run_check(tla_path: pathlib.Path, cfg_path: pathlib.Path | None, workers: str) -> int:
+def run_check(
+    tla_path: pathlib.Path,
+    cfg_path: pathlib.Path | None,
+    workers: str,
+    lib_dirs: list[pathlib.Path],
+) -> int:
     java = find_java()
     jar = find_tla2tools()
     cfg = cfg_path or tla_path.with_suffix(".cfg")
     if not cfg.is_file():
         raise SystemExit(f"ERROR: cfg not found: {cfg}")
     with tempfile.TemporaryDirectory(prefix="tlc-meta-") as metadir:
-        cmd = [
-            java,
-            "-XX:+UseParallelGC",
-            "-cp",
-            jar,
-            "tlc2.TLC",
-            "-cleanup",
-            "-metadir",
-            metadir,
-            "-workers",
-            workers,
-            "-config",
-            str(cfg),
-            str(tla_path),
-        ]
+        cmd = [java, "-XX:+UseParallelGC"]
+        if lib_dirs:
+            cmd.append("-DTLA-Library=" + os.pathsep.join(str(d) for d in lib_dirs))
+        cmd.extend(
+            [
+                "-cp",
+                jar,
+                "tlc2.TLC",
+                "-cleanup",
+                "-metadir",
+                metadir,
+                "-workers",
+                workers,
+                "-config",
+                str(cfg),
+                str(tla_path),
+            ]
+        )
         print("Running:", " ".join(cmd), flush=True)
         proc = subprocess.run(cmd, cwd=str(tla_path.parent))
         return proc.returncode
 
 
-def run_trace(trace_tla: pathlib.Path, ndjson_path: pathlib.Path) -> int:
+def run_trace(trace_tla: pathlib.Path, ndjson_path: pathlib.Path, extra_includes: list[pathlib.Path]) -> int:
     rows = []
     with ndjson_path.open("r", encoding="utf-8") as fh:
         for line in fh:
@@ -112,6 +138,7 @@ def run_trace(trace_tla: pathlib.Path, ndjson_path: pathlib.Path) -> int:
     if not rows:
         raise SystemExit(f"ERROR: empty trace file: {ndjson_path}")
 
+    lib_dirs = collect_library_dirs(trace_tla, extra_includes)
     with tempfile.TemporaryDirectory(prefix="tlc-trace-") as tmp:
         tmp_dir = pathlib.Path(tmp)
         for p in trace_tla.parent.glob("*.tla"):
@@ -127,7 +154,21 @@ def run_trace(trace_tla: pathlib.Path, ndjson_path: pathlib.Path) -> int:
             "====\n",
             encoding="utf-8",
         )
-        return run_check(tmp_dir / trace_tla.name, tmp_dir / trace_tla.with_suffix(".cfg").name, "1")
+        return run_check(tmp_dir / trace_tla.name, tmp_dir / trace_tla.with_suffix(".cfg").name, "1", lib_dirs)
+
+
+def parse_includes(args: list[str]) -> tuple[list[str], list[pathlib.Path]]:
+    positional: list[str] = []
+    includes: list[pathlib.Path] = []
+    i = 0
+    while i < len(args):
+        if args[i] == "--include" and i + 1 < len(args):
+            includes.append(pathlib.Path(args[i + 1]).resolve())
+            i += 2
+        else:
+            positional.append(args[i])
+            i += 1
+    return positional, includes
 
 
 def main(argv: list[str]) -> int:
@@ -135,15 +176,14 @@ def main(argv: list[str]) -> int:
         print(__doc__)
         return 2
     mode = argv[1]
-    if mode == "check":
-        tla_path = pathlib.Path(argv[2]).resolve()
-        workers = argv[3] if len(argv) > 3 else "auto"
-        return run_check(tla_path, None, workers)
-    if mode == "trace":
-        if len(argv) < 4:
-            print(__doc__)
-            return 2
-        return run_trace(pathlib.Path(argv[2]).resolve(), pathlib.Path(argv[3]).resolve())
+    pos, includes = parse_includes(argv[2:])
+    if mode == "check" and len(pos) >= 1:
+        tla_path = pathlib.Path(pos[0]).resolve()
+        workers = pos[1] if len(pos) >= 2 else "auto"
+        lib_dirs = collect_library_dirs(tla_path, includes)
+        return run_check(tla_path, None, workers, lib_dirs)
+    if mode == "trace" and len(pos) >= 2:
+        return run_trace(pathlib.Path(pos[0]).resolve(), pathlib.Path(pos[1]).resolve(), includes)
     print(__doc__)
     return 2
 

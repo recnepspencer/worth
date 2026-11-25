@@ -11,6 +11,8 @@ use worth_foundational::facade::{
 #[cfg(test)]
 mod tests;
 pub mod validation;
+/// One writer's material: its publication attempt and coupled-group member.
+pub type MaterialKey = (Original, crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceMember);
 #[derive(Clone, Debug)]
 pub struct MaterialMetadata {
     pub program: [u8; 32],
@@ -73,7 +75,7 @@ pub struct MaterialCatalog {
     pub digest: [u8; 32],
     pub payload_digest: [u8; 32],
     pub generation: u64,
-    pub material: BTreeMap<Original, MaterialEntry>,
+    pub material: BTreeMap<MaterialKey, MaterialEntry>,
     pub pins: BTreeMap<CorrectionMaterialPinIdentity, MaterialPinRow>,
     pub(super) discharged: BTreeMap<[u8; 32], (Original, [u8; 32])>,
     pub(super) released: BTreeMap<CorrectionMaterialPinIdentity, CorrectionMaterialPinOwner>,
@@ -132,7 +134,7 @@ impl MaterialCatalog {
             MaterialRecord::Capture { material } => {
                 let capture: Arc<MaterialCapture> = Arc::from(material);
                 self.material.insert(
-                    capture.original,
+                    (capture.original, capture.member),
                     MaterialEntry {
                         metadata: MaterialMetadata {
                             program: capture.program,
@@ -149,7 +151,7 @@ impl MaterialCatalog {
             MaterialRecord::Ready { material } => {
                 let entry = self
                     .material
-                    .get_mut(&material.original)
+                    .get_mut(&(material.original, material.member))
                     .expect("validated original capture");
                 let MaterialBody::Captured(capture) = &entry.body else {
                     unreachable!("validated capture phase")
@@ -228,22 +230,19 @@ impl MaterialCatalog {
                         .expect("validated publication pin");
                     self.released.insert(identity, pin.owner);
                 }
-                self.material
-                    .get_mut(&original)
-                    .expect("validated capture")
-                    .body = MaterialBody::Abandoned;
+                for (_, entry) in self.original_entries_mut(original) {
+                    entry.body = MaterialBody::Abandoned;
+                }
             }
             MaterialRecord::Expire { original } => {
-                let entry = self
-                    .material
-                    .get_mut(&original)
-                    .expect("validated original");
-                let MaterialBody::Ready { ready, .. } = &entry.body else {
-                    unreachable!("validated available material")
-                };
-                entry.body = MaterialBody::Expired {
-                    commit: ready.commit.clone(),
-                };
+                for (_, entry) in self.original_entries_mut(original) {
+                    let MaterialBody::Ready { ready, .. } = &entry.body else {
+                        unreachable!("validated available material")
+                    };
+                    entry.body = MaterialBody::Expired {
+                        commit: ready.commit.clone(),
+                    };
+                }
             }
         }
         self.position = frame.position();
@@ -251,6 +250,32 @@ impl MaterialCatalog {
         self.payload_digest = frame.payload_digest();
         self.generation = frame.publication_generation().get();
         Ok(change)
+    }
+    /// Every member's material of one publication attempt, in member order.
+    pub fn original_entries(
+        &self,
+        original: Original,
+    ) -> impl Iterator<Item = (&MaterialKey, &MaterialEntry)> {
+        self.material
+            .range((original, crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceMember::Primary)..)
+            .take_while(move |((attempt, _), _)| *attempt == original)
+    }
+    fn original_entries_mut(
+        &mut self,
+        original: Original,
+    ) -> impl Iterator<Item = (&MaterialKey, &mut MaterialEntry)> {
+        self.material
+            .range_mut((original, crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceMember::Primary)..)
+            .take_while(move |((attempt, _), _)| *attempt == original)
+    }
+    pub fn contains_original(&self, original: Original) -> bool {
+        self.original_entries(original).next().is_some()
+    }
+    /// Every member's material of the attempt is available; `missing` names an attempt without any.
+    pub fn original_available(&self, original: Original, missing: Denial) -> Result<(), Denial> {
+        let mut entries = self.original_entries(original).peekable();
+        entries.peek().ok_or(missing)?;
+        entries.try_for_each(|(_, entry)| entry.available().map(drop))
     }
     pub fn pin_count(&self, original: Original) -> usize {
         self.pins

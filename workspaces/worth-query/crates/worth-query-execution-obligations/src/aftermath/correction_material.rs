@@ -95,6 +95,9 @@ pub enum QueryCorrectionMaterialDenial {
     AdmissionRequired,
     AdmissionAlreadyRecorded,
     Unavailable,
+    /// The commit retains material only for other writers of its coupled
+    /// group, never the named member (public #368).
+    MemberUnavailable,
     NonPortableValue,
     RetentionClassMismatch,
     OriginalMismatch,

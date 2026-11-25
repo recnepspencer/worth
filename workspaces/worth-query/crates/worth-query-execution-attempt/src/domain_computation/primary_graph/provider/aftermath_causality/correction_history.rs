@@ -280,6 +280,9 @@ impl WorthQueryPrimaryGraphProvider {
                 .composite_commit()
                 .clone(),
             fact.child.clone(),
+            crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceMember::of_writer(
+                completed.commit_evidence().idempotency().authored_stage_identity(),
+            ),
         ))
     }
     fn with_correction_snapshot<T>(

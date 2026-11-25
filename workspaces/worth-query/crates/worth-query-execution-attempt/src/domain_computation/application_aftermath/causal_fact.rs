@@ -30,6 +30,7 @@ impl WorthQueryPendingAftermathCausality {
             source: WorthQueryRecordedCorrectionSource::from_untrusted_parts(
                 correction.source_world().clone(),
                 correction.source_commit().clone(),
+                correction.source_member(),
             ),
             correction,
         }

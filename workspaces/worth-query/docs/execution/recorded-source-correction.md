@@ -325,11 +325,23 @@ full Relational receipt. Its `coordinates()` method returns the serializable
 application's history entry. A transport can define its own scalar wire type
 and construct native coordinates with
 `WorthQueryCorrectionSourceCoordinates::from_untrusted_fields`, supplying the
-World owner and commit, Relational branch and commit, version, and parent list.
-Then call `request.corrections().select_coordinates(&coordinates, limits)`.
+World owner and commit, Relational branch and commit, version, parent list and
+source member. Then call
+`request.corrections().select_coordinates(&coordinates, limits)`.
 Selection resolves the actual retained completed evidence, compares its World
 identity and checks ancestry and current disclosure on the target branch. Keep
 the complete coordinates together when serializing them.
+
+A multi-stage edit envelope commits every stage in one Relational commit, so the
+commit alone does not name a source. The `member` coordinate does:
+`WorthQueryCorrectionSourceMember::Primary` is the envelope's root stage and
+`AuthoredStage { ordinal, identity }` a later authored stage. Each stage's
+receipt fills it, and each stage is corrected, replayed and reversed on its own.
+Its canonical scalar text is `primary` or `stage:{ordinal}:{identity hex}`
+(`text` and `parse`). A member that names no writer of the commit refuses
+`SourceMemberUnavailable` on memory and Directory Homes. A reversal's command
+key also binds the member, so reusing it for another stage refuses as intent
+drift.
 
 Normal operation close releases its custody while the native history owner
 governs source retention. Selection returns a typed refusal when that evidence

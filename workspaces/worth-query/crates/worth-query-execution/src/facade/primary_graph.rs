@@ -312,6 +312,7 @@ pub use crate::domain_computation::application_aftermath::{
     ExternalRailTransportFault, WorthQueryAdmittedIdempotencyRead, WorthQueryAftermathCausalRole,
     WorthQueryAftermathDerivationFailure, WorthQueryCommittedAftermathCausality,
     WorthQueryCorrectionLineageBinding, WorthQueryCorrectionSourceCoordinates,
+    WorthQueryCorrectionSourceMember,
     WorthQueryDispatchOutboxDurabilityPosture, WorthQueryDispatchOutboxRecord,
     WorthQueryExternalDispatchCausalRelation, WorthQueryExternalDispatchPosture,
     WorthQueryExternalDispatchPostureKind, WorthQueryExternalDispatchRequest,

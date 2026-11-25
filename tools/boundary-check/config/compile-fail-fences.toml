@@ -1,0 +1,47 @@
+# Milestone 4 external-crate compile-fail fences (`plans/database-foundation/milestone-4.md` §11).
+# Verified on stable rustc via `trybuild` against checked `.stderr` snapshots.
+
+[[fences]]
+id = "m4.head_view_forbids_history_access"
+milestone = "store-m4"
+phase = "M4.0"
+crate_manifest = "docs/dx-reference/store_m4_spike/Cargo.toml"
+fixture = "docs/dx-reference/store_m4_spike/tests/ui/head_view_forbids_history_access.rs"
+expected_codes = ["E0599"]
+law = "Head/History type fence: HeadOnlyView cannot invoke historical/versioned scan accessors."
+
+[[fences]]
+id = "m4.reader_loan_view_cannot_outlive_cursor"
+milestone = "store-m4"
+phase = "M4.0"
+crate_manifest = "docs/dx-reference/store_m4_spike/Cargo.toml"
+fixture = "docs/dx-reference/store_m4_spike/tests/ui/reader_loan_view_cannot_outlive_cursor.rs"
+expected_codes = ["E0505", "E0515"]
+law = "ReaderLoan lifetime fence: borrowed views from HistoricalCursor cannot outlive drop(cursor)."
+
+[[fences]]
+id = "m4.opaque_token_and_pin_private_fields"
+milestone = "store-m4"
+phase = "M4.0"
+crate_manifest = "docs/dx-reference/store_m4_spike/Cargo.toml"
+fixture = "docs/dx-reference/store_m4_spike/tests/ui/opaque_token_and_pin_private_fields.rs"
+expected_codes = ["E0451"]
+law = "Opaque token & manifest fence: external crates cannot hand-construct RetainedBasisToken, HomeRootManifest, or ExtentAllocationGeneration."
+
+[[fences]]
+id = "m4.pin_id_constructor_is_private"
+milestone = "store-m4"
+phase = "M4.0"
+crate_manifest = "docs/dx-reference/store_m4_spike/Cargo.toml"
+fixture = "docs/dx-reference/store_m4_spike/tests/ui/pin_id_constructor_is_private.rs"
+expected_codes = ["E0423"]
+law = "Opaque PinId fence: external crates cannot hand-construct PinId tuple values."
+
+[[fences]]
+id = "m4.bounded_streaming_and_unauthenticated_summary"
+milestone = "store-m4"
+phase = "M4.0"
+crate_manifest = "docs/dx-reference/store_m4_spike/Cargo.toml"
+fixture = "docs/dx-reference/store_m4_spike/tests/ui/bounded_streaming_and_unauthenticated_summary.rs"
+expected_codes = ["E0599", "E0308"]
+law = "Bounded streaming & summary authority fence: ValueReader forbids unbounded materialization and cold skip refuses unauthenticated ChunkKindAdjacencySummary."

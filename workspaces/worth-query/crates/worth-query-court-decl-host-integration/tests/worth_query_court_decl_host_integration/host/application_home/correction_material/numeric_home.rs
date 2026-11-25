@@ -73,9 +73,21 @@ pub(in crate::host) fn app_limits() -> WorthQueryApplicationLimits {
     )
 }
 
+/// The Numbers a stage court sets one per envelope stage (#368). Every other
+/// court keeps the single Number, so its work stays inside the default ceiling.
+pub(in crate::host) const STAGE_NUMBERS: &[&str] = &["numeric", "numeric-b", "numeric-c"];
+
 pub(in crate::host) fn seed_numeric(
     graph: &mut WorthQueryPrimaryGraphBootstrap<NumericSchema>,
     installed: &WorthQueryInstalledApplicationSchema<NumericSchema>,
+) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+    seed_numbers(graph, installed, &["numeric"])
+}
+
+pub(in crate::host) fn seed_numbers(
+    graph: &mut WorthQueryPrimaryGraphBootstrap<NumericSchema>,
+    installed: &WorthQueryInstalledApplicationSchema<NumericSchema>,
+    numbers: &[&str],
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
     let binding = installed
         .principal_binding(ActorBinding::reference())
@@ -94,34 +106,36 @@ pub(in crate::host) fn seed_numeric(
         reviewer_identity(),
         WorthQueryPrincipalMappingStatus::Enabled,
     )?;
-    graph.bind_entity(
-        WorthQueryApplicationEntitySeed::new(
-            Number::reference(),
-            WorthQueryApplicationEntityKey::new("numeric").unwrap(),
-        )
-        .field(Key::at("Key"), "numeric".to_owned())
-        .field(Primary::at("Primary"), Counter(5_u64))
-        .field(Secondary::at("Secondary"), 7_u64)
-        .field(ReadEnabled::at("ReadEnabled"), true)
-        .field(Ceiling::at("Ceiling"), 100_u64)
-        .field(Calculated::at("Calculated"), 0_u64)
-        .field(
-            model::write_admission::Binary::at("Binary"),
-            BinaryCounter(5_u64),
-        )
-        .field(
-            model::write_admission::Canonical::at("Canonical"),
-            model::write_admission::CanonicalCounter(5),
-        )
-        .field(
-            model::write_admission::Delegated::at("Delegated"),
-            DelegatedCounter(5_u64),
-        )
-        .field(
-            model::composite_definition_model::DefinitionRevision::at("DefinitionRevision"),
-            5_u64,
-        ),
-    )?;
+    for &key in numbers {
+        graph.bind_entity(
+            WorthQueryApplicationEntitySeed::new(
+                Number::reference(),
+                WorthQueryApplicationEntityKey::new(key).unwrap(),
+            )
+            .field(Key::at("Key"), key.to_owned())
+            .field(Primary::at("Primary"), Counter(5_u64))
+            .field(Secondary::at("Secondary"), 7_u64)
+            .field(ReadEnabled::at("ReadEnabled"), true)
+            .field(Ceiling::at("Ceiling"), 100_u64)
+            .field(Calculated::at("Calculated"), 0_u64)
+            .field(
+                model::write_admission::Binary::at("Binary"),
+                BinaryCounter(5_u64),
+            )
+            .field(
+                model::write_admission::Canonical::at("Canonical"),
+                model::write_admission::CanonicalCounter(5),
+            )
+            .field(
+                model::write_admission::Delegated::at("Delegated"),
+                DelegatedCounter(5_u64),
+            )
+            .field(
+                model::composite_definition_model::DefinitionRevision::at("DefinitionRevision"),
+                5_u64,
+            ),
+        )?;
+    }
     model::adoption::seed(graph);
     model::causal_inspection::capability::seed(graph);
     Ok(())
@@ -170,6 +184,15 @@ pub(in crate::host) fn open_program_home(
     execution: worth_execution::ExecutionRequest<'_, '_>,
     seed: bool,
 ) -> NumericHome {
+    open_program_home_with(location, execution, seed, &["numeric"])
+}
+
+pub(in crate::host) fn open_program_home_with(
+    location: std::path::PathBuf,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
+    seed: bool,
+    numbers: &'static [&'static str],
+) -> NumericHome {
     let declaration = NumericSchema::declaration().unwrap();
     let request = WorthQueryApplicationHomeRequest::new(
         WorthQueryApplicationHomeLocation::Directory(location),
@@ -181,7 +204,7 @@ pub(in crate::host) fn open_program_home(
         app_limits(),
         move |_, graph, installed| {
             assert!(seed, "reopened NumericHome must not re-initialize");
-            seed_numeric(graph, installed)
+            seed_numbers(graph, installed, numbers)
         },
     );
     with_bootstrap_advancement_from_request(execution, |phase| request.open_in_advancement(&phase))
@@ -192,6 +215,13 @@ pub(in crate::host) fn open_program_home(
 pub(in crate::host) fn open_memory_program_home(
     execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> MemoryNumericHome {
+    open_memory_program_home_with(execution, &["numeric"])
+}
+
+pub(in crate::host) fn open_memory_program_home_with(
+    execution: worth_execution::ExecutionRequest<'_, '_>,
+    numbers: &'static [&'static str],
+) -> MemoryNumericHome {
     let declaration = NumericSchema::declaration().unwrap();
     let request = WorthQueryApplicationHomeRequest::new(
         WorthQueryApplicationHomeLocation::MemoryOnly,
@@ -201,7 +231,7 @@ pub(in crate::host) fn open_memory_program_home(
         ((),),
         ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap(),
         app_limits(),
-        |_, graph, installed| seed_numeric(graph, installed),
+        move |_, graph, installed| seed_numbers(graph, installed, numbers),
     );
     with_bootstrap_advancement_from_request(execution, |phase| request.open_in_advancement(&phase))
         .unwrap()

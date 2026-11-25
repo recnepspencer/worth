@@ -61,16 +61,16 @@ fn expiry_refuses_a_pinned_original_and_is_terminal_after_release() {
     );
     append(&mut ledger, MaterialRecord::Expire { original });
     assert_eq!(
-        ledger.material[&original].available().unwrap_err(),
+        ledger.material[&(original, PRIMARY)].available().unwrap_err(),
         Denial::RetainedMaterialExpired
     );
-    assert_eq!(ledger.material[&original].metadata.key, [4; 32]);
+    assert_eq!(ledger.material[&(original, PRIMARY)].metadata.key, [4; 32]);
     assert_eq!(
-        ledger.material[&original].metadata.intent,
+        ledger.material[&(original, PRIMARY)].metadata.intent,
         "recorded exact intent"
     );
     assert!(
-        matches!(&ledger.material[&original].body, MaterialBody::Expired { commit } if *commit == receipt())
+        matches!(&ledger.material[&(original, PRIMARY)].body, MaterialBody::Expired { commit } if *commit == receipt())
     );
     assert_eq!(
         ledger.frame(
@@ -166,9 +166,9 @@ fn released_unpublished_owner_discharges_only_its_publication_pin() {
     assert_eq!(frame.body_retention_class(), RetentionClass::Authoritative);
     assert_eq!(ledger.pin_count(source), 0);
     assert_eq!(ledger.pin_count(unpublished), 0);
-    assert!(ledger.material[&source].available().is_ok());
+    assert!(ledger.material[&(source, PRIMARY)].available().is_ok());
     assert!(matches!(
-        ledger.material[&unpublished].body,
+        ledger.material[&(unpublished, PRIMARY)].body,
         MaterialBody::Abandoned
     ));
     assert_eq!(
@@ -213,7 +213,7 @@ fn a_recovery_material_pin_refuses_optional_expiry_until_its_original_use_is_rel
     );
     append(&mut ledger, MaterialRecord::Expire { original });
     assert_eq!(
-        ledger.material[&original].available().unwrap_err(),
+        ledger.material[&(original, PRIMARY)].available().unwrap_err(),
         Denial::RetainedMaterialExpired
     );
 }
@@ -266,7 +266,7 @@ fn abandon_publication_pin_discharges_never_captured_pin_and_keeps_source_usable
     assert_eq!(frame.body_retention_class(), RetentionClass::Authoritative);
     assert_eq!(ledger.pin_count(source), 0);
     assert_eq!(ledger.pin_count(never_captured), 0);
-    assert!(ledger.material[&source].available().is_ok());
+    assert!(ledger.material[&(source, PRIMARY)].available().is_ok());
     assert_eq!(
         ledger.released[&identity],
         CorrectionMaterialPinOwner::Publication {
@@ -275,7 +275,7 @@ fn abandon_publication_pin_discharges_never_captured_pin_and_keeps_source_usable
     );
     append(&mut ledger, MaterialRecord::Expire { original: source });
     assert_eq!(
-        ledger.material[&source].available().unwrap_err(),
+        ledger.material[&(source, PRIMARY)].available().unwrap_err(),
         Denial::RetainedMaterialExpired
     );
 }

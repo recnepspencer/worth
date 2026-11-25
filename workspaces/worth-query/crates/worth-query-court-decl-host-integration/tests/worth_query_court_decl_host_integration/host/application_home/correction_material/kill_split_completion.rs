@@ -285,6 +285,7 @@ fn reader() {
             worth_foundational::facade::WorldOwnerCoordinate::Home { owner: orig_durable.branch().owner() },
             orig_durable.selected_commit().ordinal(),
             orig_replay.commit_reference().clone(),
+            worth_query_host::facade::primary_graph::WorthQueryCorrectionSourceMember::Primary,
         );
         let selected = req.corrections().select_coordinates(&orig_coords, numeric_home::limits()).unwrap();
         let WorthQueryRequiredCorrectionPreparation::Settled(

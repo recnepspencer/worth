@@ -1,0 +1,21 @@
+error[E0599]: no method named `read_all_to_vec` found for struct `store_m4_dx_spike::ValueReader<'loan>` in the current scope
+ --> tests/ui/bounded_streaming_and_unauthenticated_summary.rs:4:32
+  |
+4 |     let _all: Vec<u8> = reader.read_all_to_vec();
+  |                                ^^^^^^^^^^^^^^^ method not found in `store_m4_dx_spike::ValueReader<'_>`
+
+error[E0308]: mismatched types
+ --> tests/ui/bounded_streaming_and_unauthenticated_summary.rs:6:42
+  |
+6 |     let _skip = evaluate_cold_chunk_skip(&raw, 1);
+  |                 ------------------------ ^^^^ expected `&VerifiedChunkSummary`, found `&ChunkKindAdjacencySummary`
+  |                 |
+  |                 arguments to this function are incorrect
+  |
+  = note: expected reference `&VerifiedChunkSummary`
+             found reference `&store_m4_dx_spike::ChunkKindAdjacencySummary`
+note: function defined here
+ --> src/lib.rs
+  |
+  | pub fn evaluate_cold_chunk_skip(summary: &VerifiedChunkSummary, required_kind_mask: u64) -> bool {
+  |        ^^^^^^^^^^^^^^^^^^^^^^^^

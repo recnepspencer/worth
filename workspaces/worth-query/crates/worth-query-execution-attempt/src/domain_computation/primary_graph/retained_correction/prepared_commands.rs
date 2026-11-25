@@ -189,7 +189,7 @@ impl CorrectionMaterialOwner {
             let published = state
                 .catalog
                 .material
-                .get(&original)
+                .get(&(original, crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceMember::Primary))
                 .ok_or(Denial::MaterialNotReady)?;
             published.available()?;
             if published.metadata.key != pin.prepared()?.key {

@@ -2,6 +2,7 @@
 use super::*;
 use crate::domain_computation::application_aftermath::{
     WorthQueryAftermathCausalRole, WorthQueryCorrectionSourceCoordinates,
+    WorthQueryCorrectionSourceMember,
 };
 use worth_relational::facade::history::CommitId;
 pub mod borrowed;
@@ -82,25 +83,25 @@ pub(super) fn decode(
         return Err(Unavailable);
     }
     let source = coordinates(runtime, &values, 5, owner)?.ok_or(Unavailable)?;
-    let root = coordinates(runtime, &values, 9, owner)?.ok_or(Unavailable)?;
-    let selected = coordinates(runtime, &values, 13, owner)?;
-    let active = coordinates(runtime, &values, 17, owner)?;
-    let prior = coordinates(runtime, &values, 21, owner)?;
+    let root = coordinates(runtime, &values, 10, owner)?.ok_or(Unavailable)?;
+    let selected = coordinates(runtime, &values, 15, owner)?;
+    let active = coordinates(runtime, &values, 20, owner)?;
+    let prior = coordinates(runtime, &values, 25, owner)?;
     let shape = match role {
         WorthQueryAftermathCausalRole::RecordedReverse => {
             selected.is_none()
                 && active.is_none()
-                && values[25].as_ref() == Some(&lineage_fields::selector(&root))
-                && values[26].as_ref() == Some(&lineage_fields::selector(&source))
-                && values[27].is_none()
+                && values[30].as_ref() == Some(&lineage_fields::selector(&root))
+                && values[31].as_ref() == Some(&lineage_fields::selector(&source))
+                && values[32].is_none()
         }
         WorthQueryAftermathCausalRole::RecordedReapply => {
             selected.is_some()
                 && active.is_some()
                 && prior == active
-                && values[25].is_none()
-                && values[26].is_none()
-                && values[27].as_ref()
+                && values[30].is_none()
+                && values[31].is_none()
+                && values[32].as_ref()
                     == active
                         .as_ref()
                         .map(|active| lineage_fields::consumption_selector(active.relational()))
@@ -130,7 +131,7 @@ fn coordinates(
     owner: worth_foundational::facade::WorldOwnerCoordinate,
 ) -> Result<Option<WorthQueryCorrectionSourceCoordinates>, WorthQueryAftermathCausalityReadDenial> {
     use WorthQueryAftermathCausalityReadDenial::Unavailable;
-    if values[start..start + 4].iter().all(Option::is_none) {
+    if values[start..start + 5].iter().all(Option::is_none) {
         return Ok(None);
     }
     if number(values, start)? != owner.row_owner_number() {
@@ -143,11 +144,14 @@ fn coordinates(
     if relational.branch_id.0 != string(values, start + 2)? {
         return Err(Unavailable);
     }
+    let member = WorthQueryCorrectionSourceMember::parse(&string(values, start + 4)?)
+        .ok_or(Unavailable)?;
     Ok(Some(
         WorthQueryCorrectionSourceCoordinates::from_untrusted_parts(
             owner,
             number(values, start + 1)?,
             relational,
+            member,
         ),
     ))
 }

@@ -14,6 +14,7 @@ pub(super) fn source_locator<Schema>(
     WorthQueryRecordedCorrectionSource::from_untrusted_parts(
         source.ancestry().source().identity().clone(),
         source.occurrence().commit_reference().clone(),
+        source.occurrence().member(),
     )
 }
 

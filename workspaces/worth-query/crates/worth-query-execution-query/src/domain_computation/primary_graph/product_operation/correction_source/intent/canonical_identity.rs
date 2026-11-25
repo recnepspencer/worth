@@ -1,6 +1,7 @@
 //! Port-free canonical correction identity; Home scope excludes the live receiver.
 use crate::domain_computation::application_aftermath::{
-    WorthQueryAftermathCausalRole, WorthQueryRecordedCorrectionSource,
+    WorthQueryAftermathCausalRole, WorthQueryCorrectionSourceMember,
+    WorthQueryRecordedCorrectionSource,
 };
 use sha2::{Digest, Sha256};
 use worth_foundational::facade::{DurableWorldOwnerIdentity, WorldOwnerCoordinate};
@@ -16,6 +17,7 @@ pub(super) struct Coordinate<'a> {
     pub native_commit: CommitId,
     pub native_version: VersionId,
     pub native_branch: &'a str,
+    pub member: WorthQueryCorrectionSourceMember,
 }
 impl<'a> Coordinate<'a> {
     pub(super) fn from_source(source: &'a WorthQueryRecordedCorrectionSource) -> Self {
@@ -25,6 +27,7 @@ impl<'a> Coordinate<'a> {
             native_commit: source.relational().commit_id,
             native_version: source.relational().version_id,
             native_branch: &source.relational().branch_id.0,
+            member: source.member(),
         }
     }
 }
@@ -34,6 +37,9 @@ pub(super) struct CorrectionIntentFields<'a> {
     pub role: WorthQueryAftermathCausalRole,
     pub source_owner: WorldOwnerCoordinate,
     pub source_commit: u64,
+    /// The coupled-group writer the correction names (public #368): two stages
+    /// of one commit may share a binding and an input, never a member.
+    pub source_member: WorthQueryCorrectionSourceMember,
     pub target_owner: WorldOwnerCoordinate,
     pub target_branch: &'a str,
     pub target_lifecycle: u64,
@@ -60,12 +66,13 @@ pub(super) fn encode(fields: CorrectionIntentFields<'_>) -> [u8; 32] {
             .flatten()
             .any(|coordinate| coordinate.owner.home_owner().is_some());
     let domain: &[u8] = if home {
-        b"worth-query.recorded-correction.intent.home.v1"
+        b"worth-query.recorded-correction.intent.home.v2"
     } else {
-        b"worth-query.recorded-correction.intent.v2"
+        b"worth-query.recorded-correction.intent.v3"
     };
     let (source, source_len) = owner_frame(fields.source_owner, home);
     let (target, target_len) = owner_frame(fields.target_owner, home);
+    let source_member = fields.source_member.text();
     let mut digest = Sha256::new();
     for part in [
         domain,
@@ -79,6 +86,7 @@ pub(super) fn encode(fields: CorrectionIntentFields<'_>) -> [u8; 32] {
         &target[..target_len],
         &fields.target_lifecycle.to_be_bytes(),
         fields.original_intent,
+        source_member.as_bytes(),
     ] {
         digest.update((part.len() as u64).to_be_bytes());
         digest.update(part);
@@ -98,6 +106,9 @@ pub(super) fn encode(fields: CorrectionIntentFields<'_>) -> [u8; 32] {
             let branch = coordinate.native_branch.as_bytes();
             digest.update((branch.len() as u64).to_be_bytes());
             digest.update(branch);
+            let member = coordinate.member.text();
+            digest.update((member.len() as u64).to_be_bytes());
+            digest.update(member.as_bytes());
         }
     }
     digest.finalize().into()

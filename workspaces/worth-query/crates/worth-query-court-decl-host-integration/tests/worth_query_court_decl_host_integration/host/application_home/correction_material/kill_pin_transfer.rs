@@ -77,6 +77,7 @@ fn replay_source_coordinates(
         },
         durable.selected_commit().ordinal(),
         replayed.commit_reference().clone(),
+        worth_query_host::facade::primary_graph::WorthQueryCorrectionSourceMember::Primary,
     )
 }
 

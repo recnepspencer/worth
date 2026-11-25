@@ -159,6 +159,7 @@ fn replay_coords(
         },
         durable.selected_commit().ordinal(),
         replayed.commit_reference().clone(),
+        worth_query_host::facade::primary_graph::WorthQueryCorrectionSourceMember::Primary,
     );
     (coords, replayed.commit_reference().commit_id.0)
 }

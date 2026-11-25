@@ -50,6 +50,7 @@ async fn closed_money_correction_survives_response_loss_and_exact_replay() {
         world_owner: intervening.world_owner,
         world_commit: intervening.world_commit,
         relational: original.relational.clone(),
+        member: original.member,
     };
     let mixed_request = create(
         "mixed-source",
