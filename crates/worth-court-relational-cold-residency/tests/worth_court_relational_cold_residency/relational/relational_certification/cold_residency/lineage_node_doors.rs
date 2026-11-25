@@ -1,8 +1,5 @@
 //! Shipping node consumers share the actual page refusal contract.
-use super::{
-    checkpoint_read_refusal::{memory_stop, native_stop},
-    lineage_node_source::NodeFixture,
-};
+use super::{checkpoint_read_refusal::memory_stop, lineage_node_source::NodeFixture};
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::{
     change_source::RelationalObservationReadDenial as Observation, history::BranchId,
@@ -12,7 +9,6 @@ use worth_relational::facade::{
 #[derive(Clone, Copy, Debug)]
 pub(super) enum NodeDoor {
     MemoryCheckpoint,
-    EmbeddedCheckpoint,
     Point,
     RecordHistory,
     AspectHistory,
@@ -20,9 +16,8 @@ pub(super) enum NodeDoor {
     ObservationVisible,
 }
 impl NodeDoor {
-    pub const ALL: [Self; 7] = [
+    pub const ALL: [Self; 6] = [
         Self::MemoryCheckpoint,
-        Self::EmbeddedCheckpoint,
         Self::Point,
         Self::RecordHistory,
         Self::AspectHistory,
@@ -111,11 +106,6 @@ impl NodeDoor {
                 .checkpoint(request)
                 .map(|image| assert!(!image.partition_images.is_empty()))
                 .map_err(memory_stop),
-            Self::EmbeddedCheckpoint => runtime
-                .durability_authority()
-                .native_checkpoint(request, request.allocation_policy())
-                .map(|image| assert!(!image.bytes().is_empty()))
-                .map_err(native_stop),
         }
     }
 }

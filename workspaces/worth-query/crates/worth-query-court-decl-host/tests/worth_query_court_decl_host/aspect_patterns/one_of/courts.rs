@@ -1,7 +1,10 @@
 use super::*;
 #[test]
 fn class_transition_is_atomic_and_invalid_final_states_do_not_publish() {
-    let host = world::install();
+    let dir = worth_query_testkit_document_retention::facade::directory_home::unique_directory(
+        "one-of-transition",
+    );
+    let host = world::open_directory(dir);
     assert_eq!(
         world::read(&host),
         query::Row {
@@ -64,6 +67,7 @@ fn class_transition_is_atomic_and_invalid_final_states_do_not_publish() {
         ),
         "{outcome:?}"
     );
+    drop(outcome);
     assert_eq!(
         world::read(&host),
         query::Row {
@@ -74,19 +78,8 @@ fn class_transition_is_atomic_and_invalid_final_states_do_not_publish() {
             third: None
         }
     );
-    let checkpoint = host
-        .runtime()
-        .with_host_advancement(|phase| {
-            host.runtime()
-                .capture_application_checkpoint(
-                    &phase,
-                    WorthQueryCheckpointCapturePolicy::SystemAllocation,
-                )
-                .unwrap()
-        })
-        .unwrap();
-    drop(host);
-    let host = world::restore(checkpoint);
+    let dir = host.checkpoint_and_close_for_reopen();
+    let host = world::open_directory(dir);
     assert_eq!(
         world::read(&host),
         query::Row {
@@ -101,36 +94,39 @@ fn class_transition_is_atomic_and_invalid_final_states_do_not_publish() {
 
 #[test]
 fn recorded_inverse_restores_the_selected_class_and_all_payload_fields() {
-    let host = world::install();
+    let dir = worth_query_testkit_document_retention::facade::directory_home::unique_directory("one-of-inverse");
+    let host = world::open_directory(dir);
     let before = world::pin(&host);
     let outcome = world::edit(&host, authoring::Change::Second, "original-transition");
     let WorthQueryApplicationMutationOutcome::Committed { receipt, .. } = outcome else {
         panic!("transition must commit: {outcome:?}");
     };
     let after = world::pin(&host);
-    let scope = request_scope();
-    let principal = authenticate_operator(host.installed_schema(), &scope);
-    let request = host.runtime().request(&principal, &scope);
-    let limits = WorthQueryCorrectionHistoryLimits::new(None, std::num::NonZeroUsize::MIN);
-    let selected = request.corrections().select(&receipt, limits).unwrap();
-    let prepared = request
-        .corrections()
-        .reverse(&selected)
-        .idempotency("undo-transition")
-        .limits(limits)
-        .prepare()
-        .unwrap();
-    let WorthQueryApplicationCorrectionPreparation::Prepared(prepared) = prepared else {
-        panic!("recorded inverse must prepare");
-    };
-    let outcome = prepared.publish().unwrap();
-    assert!(
-        matches!(
-            outcome,
-            WorthQueryApplicationMutationOutcome::Committed { .. }
-        ),
-        "{outcome:?}"
-    );
+    {
+        let scope = request_scope();
+        let principal = authenticate_operator(host.installed_schema(), &scope);
+        let request = host.runtime().request(&principal, &scope);
+        let limits = WorthQueryCorrectionHistoryLimits::new(None, std::num::NonZeroUsize::MIN);
+        let selected = request.corrections().select(&receipt, limits).unwrap();
+        let prepared = request
+            .corrections()
+            .reverse(&selected)
+            .idempotency("undo-transition")
+            .limits(limits)
+            .prepare()
+            .unwrap();
+        let WorthQueryApplicationCorrectionPreparation::Prepared(prepared) = prepared else {
+            panic!("recorded inverse must prepare");
+        };
+        let outcome = prepared.publish().unwrap();
+        assert!(
+            matches!(
+                outcome,
+                WorthQueryApplicationMutationOutcome::Committed { .. }
+            ),
+            "{outcome:?}"
+        );
+    }
     assert_eq!(
         world::read(&host),
         query::Row {
@@ -141,8 +137,9 @@ fn recorded_inverse_restores_the_selected_class_and_all_payload_fields() {
             third: None
         }
     );
-    drop((before, after));
-    let recovered = world::restore(world::checkpoint(&host));
+    drop((receipt, before, after));
+    let dir = host.checkpoint_and_close_for_reopen();
+    let recovered = world::open_directory(dir);
     assert_eq!(
         world::read(&recovered),
         query::Row {
@@ -227,6 +224,7 @@ fn inverse_requires_a_complete_first_image() {
         ),
         "{outcome:?}"
     );
+    drop(outcome);
     let before = world::pin(&host);
     let outcome = world::restore_variant(
         &host,

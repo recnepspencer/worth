@@ -2,8 +2,6 @@
 pub mod application_attempt;
 #[path = "application_outcome_identity/mod.rs"]
 pub mod application_outcome_identity;
-#[path = "checkpoint_allocation/mod.rs"]
-pub mod checkpoint_allocation;
 #[path = "committed_publication/mod.rs"]
 pub mod committed_publication;
 #[path = "current_output_selection/mod.rs"]
@@ -26,10 +24,6 @@ pub mod product_managed_admission_affinity;
 pub mod product_publication_cancellation;
 #[path = "program_support_admission/mod.rs"]
 pub mod program_support_admission;
-#[path = "restored_first_commit/mod.rs"]
-pub mod restored_first_commit;
-#[path = "retired_index_checkpoint/mod.rs"]
-pub mod retired_index_checkpoint;
 #[path = "retirement_checkpoint_gate/mod.rs"]
 pub mod retirement_checkpoint_gate;
 #[path = "successful_resolution/mod.rs"]

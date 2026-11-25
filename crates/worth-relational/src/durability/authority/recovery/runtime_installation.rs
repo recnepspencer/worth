@@ -20,15 +20,18 @@ impl<'runtime> DurabilityRecoveryAuthority<'runtime> {
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         checkpoint: &crate::durability::data::RelationalNativeCheckpoint,
+        source: std::sync::Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
     ) -> Result<(RuntimeRecoveryOutcome, RecoveredRelationalRuntimeAuthority), RelationalRecoveryStop>
     {
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
         let native_bytes_read = checkpoint.bytes().len();
-        let checkpoint = crate::durability::log::native_checkpoint_codec::decode_checkpoint(
-            execution,
-            checkpoint.bytes(),
-        )?
-        .checkpoint;
+        let checkpoint =
+            crate::durability::log::native_checkpoint_codec::decode_checkpoint_from_source(
+                execution,
+                checkpoint.bytes(),
+                source,
+            )?
+            .checkpoint;
         self.restore_decoded_native_checkpoint_with_authority(
             execution,
             checkpoint,
@@ -45,15 +48,22 @@ impl<'runtime> DurabilityRecoveryAuthority<'runtime> {
         self.runtime
             .durability
             .install_source_root_inventory(recovered_roots.clone());
-        Ok(recovered_authority(self.runtime, recovered_roots))
+        let authority = recovered_authority(self.runtime, recovered_roots);
+        self.runtime
+            .durability
+            .install_home_readmission_phase(std::sync::Arc::clone(
+                &authority.home_readmission_phase,
+            ));
+        Ok(authority)
     }
 
     pub fn restore_native_checkpoint(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         checkpoint: &crate::durability::data::RelationalNativeCheckpoint,
+        source: std::sync::Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
     ) -> Result<RuntimeRecoveryOutcome, RelationalRecoveryStop> {
-        self.restore_native_checkpoint_with_authority(execution, checkpoint)
+        self.restore_native_checkpoint_with_authority(execution, checkpoint, source)
             .map(|(outcome, _authority)| outcome)
     }
 
@@ -136,8 +146,13 @@ pub(super) fn recovered_authority(
         .into_iter()
         .map(|cell| (cell.branch_id, (cell.observation, cell.truth_version)))
         .collect();
+    let home_readmission_phase = std::sync::Arc::new(crate::durability::authority::HomeReadmissionMetadataPhase::new(
+        runtime.runtime_instance_id(),
+        runtime.history().latest_commit().map(|receipt| receipt.commit_id),
+        runtime.schema_contract_runtime.home_readmission_metadata_kinds.clone(),
+    ));
     RecoveredRelationalRuntimeAuthority {
-        interim_bootstrap_phase: None,
+        home_readmission_phase,
         home_catalog_readmission: std::sync::Mutex::new(()),
         home_program_predecessor: None,
         runtime_instance_id: runtime.runtime_instance_id(),
@@ -283,6 +298,7 @@ pub(super) fn publish_recovered_runtime(
         },
         checkpoint_restore_work,
     };
+    runtime.durability.close_home_readmission_phase();
     *runtime = restored;
     (outcome, recovered_roots)
 }

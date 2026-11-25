@@ -2,8 +2,6 @@
 pub mod application_branch;
 #[path = "application_entry/mod.rs"]
 pub mod application_entry;
-#[path = "bootstrap/mod.rs"]
-pub mod bootstrap;
 #[path = "entity_resolution/mod.rs"]
 pub mod entity_resolution;
 #[path = "fact_verification_observation/mod.rs"]

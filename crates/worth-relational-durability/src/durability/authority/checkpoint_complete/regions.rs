@@ -4,15 +4,6 @@ use worth_relational_contracts::internal_port as contracts;
 pub mod covered;
 pub mod emission;
 pub mod grouping;
-pub(super) enum CheckpointMirror<'a> {
-    CurrentMainRoot,
-    Substrate {
-        edition:
-            &'a worth_relational_storage::internal_port::runtime::state::subsystems::storage::partition_edition::PartitionEdition,
-        schema: &'a worth_relational_branch::internal_port::branch::root::schema::RelationalBranchRootSchemaAuthority,
-        carrier: CanonicalDigestId,
-    },
-}
 use super::{branches::BranchImages, roots::CapturedRoots, schemas::CompleteSchemas};
 use crate::durability::data::*;
 use contracts::history::data::coordinates::BranchId;
@@ -82,37 +73,7 @@ pub(super) fn capture<
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<RegionOutput, Denial> {
     let grouped = Grouped::capture(observations, main, branches, roots, schemas, request)?;
-    emission::capture(
-        grouped,
-        roots,
-        base,
-        CheckpointMirror::CurrentMainRoot,
-        dictionary,
-        members,
-        request,
-    )
-}
-pub(super) fn capture_interim<
-    'a,
-    I: Iterator<
-        Item = (
-            &'a RelationalBranchBasisDescriptor,
-            &'a Arc<RelationalBranchRoot>,
-        ),
-    >,
->(
-    observations: impl Fn() -> I,
-    main: &BranchId,
-    branches: &BranchImages<'_>,
-    roots: &CapturedRoots,
-    schemas: &CompleteSchemas<'_>,
-    mirror: CheckpointMirror<'_>,
-    dictionary: &dyn SymbolTextLookup,
-    members: &mut ExecutionOrderedMap<RelationalDurableMemberLocator, RelationalCheckpointMember>,
-    request: &ExecutionRequest<'_, '_>,
-) -> Result<RegionOutput, Denial> {
-    let grouped = Grouped::capture(observations, main, branches, roots, schemas, request)?;
-    emission::capture(grouped, roots, None, mirror, dictionary, members, request)
+    emission::capture(grouped, roots, base, dictionary, members, request)
 }
 fn request_stop(
     cause: contracts::execution::denial_cause::RelationalExecutionDenialCause,

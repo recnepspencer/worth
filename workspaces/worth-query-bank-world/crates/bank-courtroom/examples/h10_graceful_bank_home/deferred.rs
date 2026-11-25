@@ -68,9 +68,17 @@ pub(super) fn retain(
             WorthQueryOperationAdvance::Settled(_) => {
                 panic!("output observation was not started separately")
             }
-            WorthQueryOperationAdvance::Refused { denial, .. }
-            | WorthQueryOperationAdvance::Terminal { denial, .. } => {
+            WorthQueryOperationAdvance::Refused { denial, .. } => {
                 panic!("reject must start real outputs: {denial:?}")
+            }
+            WorthQueryOperationAdvance::Terminal {
+                operation, denial, ..
+            } => {
+                panic!(
+                    "reject must start real outputs: {denial:?} (native={:?}, producer={:?})",
+                    operation.native_outcome(),
+                    operation.producer_native_outcome()
+                )
             }
         }
     }

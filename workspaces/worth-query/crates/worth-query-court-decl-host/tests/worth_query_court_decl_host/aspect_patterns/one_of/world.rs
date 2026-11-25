@@ -82,6 +82,50 @@ pub fn install_with_neighbour() -> Host {
 pub fn install_retirement() -> Host {
     try_install_seed_with_neighbour(None, Some(11), true, true).unwrap()
 }
+fn seed_one_of(
+    graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>,
+    installed: &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<Schema>,
+    first: Option<u64>,
+    neighbour: bool,
+    retirement: bool,
+) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+    graph.bind_principal(
+        &installed.principal_binding(Actor::reference()).unwrap(),
+        WorthQueryApplicationPrincipalKey::new("operator").unwrap(),
+        1,
+        operator_identity(),
+        WorthQueryPrincipalMappingStatus::Enabled,
+    )?;
+    let mut seed = WorthQueryApplicationEntitySeed::new(
+        Record::reference(),
+        WorthQueryApplicationEntityKey::new("record").unwrap(),
+    )
+    .field(Key::at("Key"), "record".to_owned());
+    if let Some(first) = first {
+        seed = seed.field(FirstValue::at("FirstValue"), first);
+    }
+    if retirement {
+        seed = seed.field(sparse::annotation::AnnotationValue::at("Value"), 21);
+    }
+    graph.bind_entity(seed)?;
+    if neighbour {
+        let seed = WorthQueryApplicationEntitySeed::new(
+            Record::reference(),
+            WorthQueryApplicationEntityKey::new("neighbour").unwrap(),
+        )
+        .field(Key::at("Key"), "neighbour".to_owned());
+        let seed = if retirement {
+            seed.field(ThirdValue::at("ThirdValue"), 33)
+                .field(sparse::annotation::AnnotationValue::at("Value"), 81)
+                .field(sparse::annotation::AnnotationNote::at("Note"), 77)
+        } else {
+            seed.field(FirstValue::at("FirstValue"), 99)
+        };
+        graph.bind_entity(seed)?;
+    }
+    Ok(())
+}
+
 fn try_install_seed_with_neighbour(
     cancellation: Option<WorthQueryCancellationSource>,
     first: Option<u64>,
@@ -94,51 +138,44 @@ fn try_install_seed_with_neighbour(
         (cancellation,),
         build(),
         host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
-        |_, graph, installed| {
-            graph.bind_principal(
-                &installed.principal_binding(Actor::reference()).unwrap(),
-                WorthQueryApplicationPrincipalKey::new("operator").unwrap(),
-                1,
-                operator_identity(),
-                WorthQueryPrincipalMappingStatus::Enabled,
-            )?;
-            let mut seed = WorthQueryApplicationEntitySeed::new(
-                    Record::reference(),
-                    WorthQueryApplicationEntityKey::new("record").unwrap(),
-                )
-                .field(Key::at("Key"), "record".to_owned());
-            if let Some(first) = first { seed = seed.field(FirstValue::at("FirstValue"), first); }
-            if retirement { seed = seed.field(sparse::annotation::AnnotationValue::at("Value"), 21); }
-            graph.bind_entity(seed)?;
-            if neighbour {
-                let seed = WorthQueryApplicationEntitySeed::new(
-                    Record::reference(), WorthQueryApplicationEntityKey::new("neighbour").unwrap())
-                    .field(Key::at("Key"), "neighbour".to_owned());
-                let seed = if retirement {
-                    seed.field(ThirdValue::at("ThirdValue"), 33)
-                        .field(sparse::annotation::AnnotationValue::at("Value"), 81)
-                        .field(sparse::annotation::AnnotationNote::at("Note"), 77)
-                } else { seed.field(FirstValue::at("FirstValue"), 99) };
-                graph.bind_entity(seed)?;
-            }
-            Ok(())
+        |_, graph, installed| seed_one_of(graph, installed, first, neighbour, retirement),
+    )
+}
+
+pub type DirHost = worth_query_testkit_document_retention::facade::directory_home::DirectoryHomeGuard<Schema, Program>;
+
+pub fn open_directory(directory: std::path::PathBuf) -> DirHost {
+    open_directory_with(directory, Some(11), false, false)
+}
+
+fn open_directory_with(
+    directory: std::path::PathBuf,
+    first: Option<u64>,
+    neighbour: bool,
+    retirement: bool,
+) -> DirHost {
+    let lease = worth_query_testkit_document_retention::facade::directory_home::directory_lease();
+    let home = with_bootstrap_advancement_from_request(
+        worth_execution::ExecutionRequest::leased(&lease),
+        |phase| {
+            worth_query_host::facade::WorthQueryApplicationHomeRequest::new(
+                worth_query_host::facade::WorthQueryApplicationHomeLocation::Directory(
+                    directory.clone(),
+                ),
+                program(),
+                WorthQueryApplicationProgramRoster::new(),
+                Schema::declaration().unwrap(),
+                (None,),
+                build(),
+                host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
+                |_, graph, installed| seed_one_of(graph, installed, first, neighbour, retirement),
+            )
+            .open_in_advancement(&phase)
         },
     )
-}
-pub fn restore(checkpoint: WorthQueryApplicationCheckpoint) -> Host {
-    try_restore(checkpoint).unwrap()
-}
-pub fn try_restore(
-    checkpoint: WorthQueryApplicationCheckpoint,
-) -> Result<Host, WorthQueryApplicationPreparationDenial> {
-    WorthQueryInterimCheckpointRestore::program(
-        program(),
-        Schema::declaration().unwrap(),
-        (None,),
-        build(),
-        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
-        checkpoint,
-    )
+    .expect("directory open bootstrap request")
+    .unwrap_or_else(|refused| panic!("one_of directory open refused: {refused:?}"));
+    DirHost::wrap(home, directory)
 }
 pub fn read(host: &Host) -> query::Row {
     let scope = request_scope();
@@ -215,18 +252,5 @@ pub fn pin(
     host.runtime()
         .request(&principal, &scope)
         .retain_current_read()
-        .unwrap()
-}
-
-pub fn checkpoint(host: &Host) -> WorthQueryApplicationCheckpoint {
-    host.runtime()
-        .with_host_advancement(|phase| {
-            host.runtime()
-                .capture_application_checkpoint(
-                    &phase,
-                    WorthQueryCheckpointCapturePolicy::SystemAllocation,
-                )
-                .unwrap()
-        })
         .unwrap()
 }

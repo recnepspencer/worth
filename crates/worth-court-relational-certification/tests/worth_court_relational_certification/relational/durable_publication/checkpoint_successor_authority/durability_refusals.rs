@@ -16,7 +16,7 @@ fn refused_durable_transition_returns_its_authority_and_moves_nothing() {
     let host_request = serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let (mut runtime, authority, medium) = recovered_world(execution);
+    let (mut runtime, authority, medium, _members) = recovered_world(execution);
     let predecessor = main_basis(&runtime);
     let count = runtime.history().immutable_commit_count();
     medium.script_next_publication(ScriptedPublication::ProvenNoEffect);
@@ -75,7 +75,7 @@ fn unresolved_durable_transition_installs_nothing_and_names_its_fate() {
     let host_request = serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let (mut runtime, authority, medium) = recovered_world(execution);
+    let (mut runtime, authority, medium, _members) = recovered_world(execution);
     let predecessor = main_basis(&runtime);
     let count = runtime.history().immutable_commit_count();
     medium.script_next_publication(ScriptedPublication::IndeterminateWithoutEffect);

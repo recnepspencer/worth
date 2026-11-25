@@ -5,7 +5,7 @@ fn none_producers_reopen_same_build_and_regenerate_changed_build_with_original_e
     let provider_observation = crate::producer::ProviderContacts::default();
     let build_a = ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap();
     let build_b = ApplicationBuildIdentity::parse("22222222-2222-2222-2222-222222222222").unwrap();
-    let mut original =
+    let original =
         install_no_reuse_with_build(None, build_a, Some(provider_observation.clone()));
     let (source_entity, final_entity, original_root_commit, original_final_commit) = {
         let (scope, principal) = support::authenticate(&original);
@@ -97,21 +97,13 @@ fn none_producers_reopen_same_build_and_regenerate_changed_build_with_original_e
             original_final_commit,
         )
     };
-    let checkpoint = original
-        .with_host_advancement(|phase| {
-            original
-                .capture_application_checkpoint(&phase, CapturePolicy::SystemAllocation)
-                .unwrap()
-        })
-        .unwrap();
-    let saved = checkpoint;
-    assert!(original.close_live_delivery().owner_terminal());
-    original.close_conditional_runtime().unwrap();
-    drop(original);
+    let saved = original.checkpoint_and_close_for_reopen();
+    let snapshot =
+        support::directory::ClosedDirectorySnapshot::capture(&saved, "build-identity-reopen");
 
     reset_contacts(&provider_observation);
-    let mut same = install_no_reuse_with_build(
-        Some(reopen(&saved)),
+    let same = install_no_reuse_with_build(
+        Some(saved.clone()),
         build_a,
         Some(provider_observation.clone()),
     );
@@ -149,13 +141,12 @@ fn none_producers_reopen_same_build_and_regenerate_changed_build_with_original_e
         assert_eq!(provider_observation.count(), 0);
         assert_eq!(crate::final_output::provider_contacts(), 0);
     }
-    assert!(same.close_live_delivery().owner_terminal());
-    same.close_conditional_runtime().unwrap();
-    drop(same);
+    let saved = same.close_for_reopen();
 
     reset_contacts(&provider_observation);
-    let mut changed = install_no_reuse_with_build(
-        Some(reopen(&saved)),
+    snapshot.restore_into(&saved);
+    let changed = install_no_reuse_with_build(
+        Some(saved),
         build_b,
         Some(provider_observation.clone()),
     );
@@ -253,7 +244,5 @@ fn none_producers_reopen_same_build_and_regenerate_changed_build_with_original_e
         assert_values(&request);
         assert_eq!(verify_current(&request, &changed, 0x2712_0104), Ok(()));
     }
-    assert!(changed.close_live_delivery().owner_terminal());
-    changed.close_conditional_runtime().unwrap();
     drop(changed);
 }

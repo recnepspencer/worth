@@ -177,14 +177,3 @@ pub(crate) fn encode_value(
     }
     bytes.seal().map_err(Denial::Allocation)
 }
-
-pub(crate) fn copy_bytes(
-    control: &mut CheckpointEncodingControl<'_, '_, '_, '_, '_>,
-    input: &[u8],
-) -> Result<ExecutionImmutableBytes, Denial> {
-    let mut bytes = control.allocate(input.len())?;
-    let mut writer = EmissionWriter::new(control, &mut bytes);
-    let copied = writer.write_all(input);
-    writer.finish(copied)?;
-    bytes.seal().map_err(Denial::Allocation)
-}

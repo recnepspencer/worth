@@ -12,7 +12,7 @@ fn content_decoded_root_omission_refuses_without_using_envelope_bytes_as_a_cache
     publish(&runtime, &execution, &contract);
     let checkpoint = runtime
         .durability_authority()
-        .native_checkpoint(&execution, execution.allocation_policy())
+        .native_checkpoint_with_policy(&execution, execution.allocation_policy(), worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
         .unwrap();
     let mut bytes = checkpoint.bytes().to_vec();
     // The manifest precedes members/envelopes. Exact key framing distinguishes
@@ -30,10 +30,14 @@ fn content_decoded_root_omission_refuses_without_using_envelope_bytes_as_a_cache
     let end = value_end(&bytes, start);
     bytes.splice(start..end, [0x90]);
     assert!(
-        bytes
-            .windows(super::expected::FRAME.len())
-            .any(|word| word == super::expected::FRAME),
-        "transport still contains the correct bytes"
+        checkpoint.members().iter().any(|member| matches!(
+            member,
+            RelationalCheckpointMember::New { bytes, .. }
+                if bytes
+                    .windows(super::expected::FRAME.len())
+                    .any(|word| word == super::expected::FRAME)
+        )),
+        "external member transport still contains the correct bytes"
     );
     let corrupt = RelationalNativeCheckpoint::from_untrusted_bytes(bytes);
     let (mut target, _) = fixture();
@@ -43,7 +47,11 @@ fn content_decoded_root_omission_refuses_without_using_envelope_bytes_as_a_cache
         .0;
     let refusal = target
         .durability_recovery()
-        .restore_native_checkpoint(&execution, &corrupt)
+        .restore_native_checkpoint(
+            &execution,
+            &corrupt,
+            worth_testkit_relational::cold_recovery::members_source(&checkpoint),
+        )
         .unwrap_err();
     assert!(
         matches!(

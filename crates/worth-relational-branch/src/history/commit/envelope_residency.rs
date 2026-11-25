@@ -4,7 +4,6 @@ pub mod authored_writes;
 pub mod selected_checkpoint;
 pub use selected_checkpoint::RetiredCanonicalPlacement;
 pub mod demand;
-pub mod interim_original;
 pub mod original_frame_digest;
 pub mod recovered_position;
 pub mod source_readmission;
@@ -21,9 +20,13 @@ use crate::storage::data::{
 use crate::storage::residency::RelationalResidencyDemandFailure as Failure;
 use std::sync::{Arc, Mutex};
 
+/// Readmit one journal commit. A captured read protection for the same
+/// source charges only the actual record bytes; without one the bounded
+/// legacy read reserves its complete temporary first.
 pub type JournalCommitReadmission = fn(
     &RelationalCommitIndexEntry,
-    &dyn RelationalDurableColdSource,
+    &Arc<dyn RelationalDurableColdSource>,
+    Option<&crate::durability::medium::RelationalDurableReadProtection>,
     &worth_execution::ExecutionRequest<'_, '_>,
     u64,
 )

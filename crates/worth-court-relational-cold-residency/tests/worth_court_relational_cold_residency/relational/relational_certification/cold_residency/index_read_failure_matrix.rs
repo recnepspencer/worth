@@ -89,10 +89,7 @@ fn residency_failure_matrix_index_doors_preserve_every_failure_class() {
                     door.read(&runtime, execution, index, &generation),
                     Err(expected)
                 );
-                if matches!(
-                    door,
-                    IndexDoor::MemoryCheckpoint | IndexDoor::EmbeddedCheckpoint
-                ) {
+                if matches!(door, IndexDoor::MemoryCheckpoint) {
                     assert_eq!(failed_reads(), failed_before);
                 } else {
                     assert_eq!(source.reads.load(Ordering::Relaxed), reads);

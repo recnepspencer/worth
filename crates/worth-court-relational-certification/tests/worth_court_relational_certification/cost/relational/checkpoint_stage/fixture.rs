@@ -160,7 +160,7 @@ pub(super) fn memory_outcome(
     }
     let outcome = runtime
         .durability_authority()
-        .native_checkpoint(&request, request.allocation_policy())
+        .native_checkpoint_with_policy(&request, request.allocation_policy(), worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
         .map(|checkpoint| {
             let held = match &lease {
                 Some(lease) => lease.charged_memory_bytes(),

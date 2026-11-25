@@ -76,9 +76,6 @@ pub mod readiness;
 #[path = "required_content_read/mod.rs"]
 pub mod required_content_read;
 
-#[path = "retained_recovery/mod.rs"]
-pub mod retained_recovery;
-
 #[path = "schema/mod.rs"]
 pub mod schema;
 

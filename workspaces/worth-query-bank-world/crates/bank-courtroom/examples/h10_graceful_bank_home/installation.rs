@@ -214,6 +214,25 @@ fn notification_estate_inputs() -> bank_domain::estate::BankEstateWorld {
         .with_estate_assignment(NOTIFICATION_ESTATE, estate::ASSIGNMENT)
         .with_grant(grant)
 }
+pub(super) fn checkpoint(home: &Home) -> u64 {
+    with_bootstrap_advancement(home_policy(), |phase| {
+        home.checkpoint(&phase.execution_request())
+    })
+    .unwrap()
+    .unwrap()
+    .generation()
+}
+pub(super) fn checkpoint_covered_journals(home: &Home) -> Vec<(String, u64)> {
+    with_bootstrap_advancement(home_policy(), |phase| {
+        home.inspect_checkpoint(&phase.execution_request())
+    })
+    .unwrap()
+    .unwrap()
+    .journals
+    .into_iter()
+    .map(|journal| (journal.name.to_owned(), journal.covered))
+    .collect()
+}
 pub(super) fn close(home: Home) {
     let closed = with_bootstrap_advancement(home_policy(), |phase| {
         home.close(&phase.execution_request())

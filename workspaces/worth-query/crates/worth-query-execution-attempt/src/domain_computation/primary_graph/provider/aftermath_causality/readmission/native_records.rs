@@ -6,16 +6,42 @@ pub(super) fn read(
     layout: &WorthQueryAftermathCausalityLayout,
     basis: &AdmittedRelationalBranchBasis,
     owner: WorldOwnerCoordinate,
+    metadata_authority: Option<&worth_relational::facade::durability::HomeReadmissionMetadataAuthority>,
 ) -> Result<Vec<WorthQueryCanonicalCorrectionFact>, Denial> {
-    let view = native
-        .read_truth()
-        .project_observation(&basis.observation())
-        .map_err(|cause| source_denial(format!("correction Native observation: {cause:?}")))?;
-    let population = view
-        .bounded_entities_of_kind(execution, layout.entity_kind, usize::MAX)
-        .map_err(crate::domain_computation::primary_graph::bootstrap::request_read_denial::read)
-        .map_err(Denial::Source)?
-        .map_err(Denial::Population)?;
+    let population = match metadata_authority {
+        Some(authority) => {
+            use worth_relational::facade::runtime::HomeReadmissionMetadataReadDenial as ReadDenial;
+            let view = native
+                .read_truth()
+                .project_home_readmission_metadata(authority, &basis.observation())
+                .map_err(|cause| source_denial(format!("correction Native observation: {cause:?}")))?;
+            view.bounded_entities_of_kind(execution, layout.entity_kind, usize::MAX)
+                .map_err(|cause| match cause {
+                    ReadDenial::Execution(cause) => Denial::Source(
+                        crate::domain_computation::primary_graph::bootstrap::request_read_denial::read(
+                            cause,
+                        ),
+                    ),
+                    ReadDenial::PhaseClosed => {
+                        source_denial("Home readmission metadata phase already closed")
+                    }
+                    ReadDenial::KindNotAdmitted(kind) => source_denial(format!(
+                        "Home readmission metadata kind {} is not admitted",
+                        kind.0
+                    )),
+                })?
+        }
+        None => {
+            let view = native
+                .read_truth()
+                .project_observation(&basis.observation())
+                .map_err(|cause| source_denial(format!("correction Native observation: {cause:?}")))?;
+            view.bounded_entities_of_kind(execution, layout.entity_kind, usize::MAX)
+                .map_err(crate::domain_computation::primary_graph::bootstrap::request_read_denial::read)
+                .map_err(Denial::Source)?
+        }
+    }
+    .map_err(Denial::Population)?;
     if population.records().is_empty() {
         return Ok(Vec::new());
     }

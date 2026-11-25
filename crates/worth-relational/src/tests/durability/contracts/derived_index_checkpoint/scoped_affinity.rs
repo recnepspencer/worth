@@ -57,9 +57,9 @@ fn fork_checkpoint(
     let generation = built.generations[0].generation_id;
     drop(basis);
     release_test_commit_snapshot(&runtime, &anchor);
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     let plan = medium
-        .recovery_plan(
+        .expanded_recovery_plan(
             execution,
             &runtime,
             RecoveryMode::NormalRecoveryVerification,
@@ -222,9 +222,9 @@ fn checkpoint_index_artifact_missing_payload_denies_before_recovery() {
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);
     create_entity_outcome(execution, &runtime, "checkpoint-missing-index-payload");
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     let mut plan = medium
-        .recovery_plan(
+        .expanded_recovery_plan(
             execution,
             &runtime,
             RecoveryMode::NormalRecoveryVerification,
@@ -245,7 +245,7 @@ fn checkpoint_index_artifact_missing_payload_denies_before_recovery() {
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
 
     let mut old_format = medium
-        .recovery_plan(
+        .expanded_recovery_plan(
             execution,
             &runtime,
             RecoveryMode::NormalRecoveryVerification,
@@ -278,9 +278,9 @@ fn checkpoint_recovery_denies_a_digest_valid_foreign_generation_affinity() {
         let index = name_index(&runtime);
         build(execution, &runtime, index.index_id, &commit);
         release_test_commit_snapshot(&runtime, &commit);
-        medium.file_embedded_checkpoint(execution, &runtime);
+        capture_and_file_checkpoint(execution, &runtime, &medium);
         let mut plan = medium
-            .recovery_plan(
+            .expanded_recovery_plan(
                 execution,
                 &runtime,
                 RecoveryMode::NormalRecoveryVerification,

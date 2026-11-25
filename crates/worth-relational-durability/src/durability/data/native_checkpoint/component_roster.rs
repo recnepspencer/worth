@@ -15,14 +15,13 @@ pub struct RelationalCheckpointComponentRoster {
 }
 
 impl super::RelationalNativeCheckpoint {
-    /// Decode this capture's directory (deferred or Embedded) through `source`
-    /// (its external members' read port; `None` for an Embedded capture) and
+    /// Decode this capture's external-member directory through `source` and
     /// count its retained component roster. `None` means the bytes carry no
     /// directory. Cost: one full checkpoint decode, charged to `execution`.
     pub fn inspect_component_roster(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        source: Option<Arc<dyn worth_relational_storage::internal_port::durability::medium::cold_source::RelationalDurableColdSource>>,
+        source: Arc<dyn worth_relational_storage::internal_port::durability::medium::cold_source::RelationalDurableColdSource>,
     ) -> Result<
         Option<RelationalCheckpointComponentRoster>,
         contracts::durability::data::recovery_stop::RelationalRecoveryStop,

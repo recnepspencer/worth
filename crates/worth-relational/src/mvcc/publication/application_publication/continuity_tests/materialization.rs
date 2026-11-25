@@ -213,7 +213,14 @@ fn run(owned: bool, changed: u8, fieldless: bool) {
     }
     let saved = runtime
         .durability_authority()
-        .native_checkpoint(execution, execution.allocation_policy())
+        .native_checkpoint_with_policy(
+            execution,
+            execution.allocation_policy(),
+            crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
+        )
         .unwrap();
     drop((services, birth, owner, installed));
     drop(runtime);
@@ -225,7 +232,11 @@ fn run(owned: bool, changed: u8, fieldless: bool) {
         .unwrap();
     recovered
         .durability_recovery()
-        .restore_native_checkpoint(execution, &saved)
+        .restore_native_checkpoint(
+            execution,
+            &saved,
+            crate::tests::support::durability::captured_members_source(&saved),
+        )
         .unwrap();
     let receipt = recovered
         .readmit_recovered_initial_schema_installation(receipt)

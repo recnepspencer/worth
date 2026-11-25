@@ -9,12 +9,15 @@ fn exercise(worker: bool) {
     } else {
         host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
     };
-    let host =
-        world::install_program_with_other_model::<support_program::Program>(limits, 2, Some(3));
+    let host = world::install_program_with_other_model::<support_program::Program>(
+        limits,
+        2,
+        Some(3),
+    );
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
-    let before = super::super::super::failure::checkpoint(&host);
+    let before = super::super::super::failure::memory_basis_state(&host);
     let source = request
         .query(query::model::Read("a".into()))
         .execute()
@@ -67,7 +70,7 @@ fn exercise(worker: bool) {
         host.producer_contacts_on_this_thread_for_test(),
         contacts + 1
     );
-    super::super::super::failure::assert_model_unchanged(&host, &before);
+    super::super::super::failure::assert_memory_basis_unchanged(&host, &before);
     assert!(request
         .query(query::second_output::Read("second:a".into()))
         .execute()
@@ -97,7 +100,7 @@ fn an_ordered_prefix_producer_cannot_invalidate_its_own_root_selection() {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
-    let before = super::super::super::failure::checkpoint(&host);
+    let before = super::super::super::failure::memory_basis_state(&host);
     let mut edit = request
         .edit_envelope()
         .idempotency("ordered-invalidated-root-query".to_owned())
@@ -129,7 +132,7 @@ fn an_ordered_prefix_producer_cannot_invalidate_its_own_root_selection() {
             && refusal.detail().contains("later writer producer"),
         "{refusal:?}"
     );
-    super::super::super::failure::assert_model_unchanged(&host, &before);
+    super::super::super::failure::assert_memory_basis_unchanged(&host, &before);
     assert!(request
         .query(query::second_output::Read("second:a".into()))
         .execute()
@@ -174,7 +177,7 @@ fn a_root_selections_own_producer_owed_by_its_stage_stays_inside_its_window() {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
-    let before = super::super::super::failure::checkpoint(&host);
+    let before = super::super::super::failure::memory_basis_state(&host);
     let mut edit = request
         .edit_envelope()
         .idempotency("windowed-invalidated-root-query".to_owned())
@@ -208,5 +211,5 @@ fn a_root_selections_own_producer_owed_by_its_stage_stays_inside_its_window() {
         refusal.detail().contains("later writer producer owned-outputs.decision-write"),
         "{refusal:?}"
     );
-    super::super::super::failure::assert_model_unchanged(&host, &before);
+    super::super::super::failure::assert_memory_basis_unchanged(&host, &before);
 }

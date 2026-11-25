@@ -43,6 +43,7 @@ where
                 &self.prepared.state.support.initial_revision,
                 &root,
                 self.prepared.state.transition_installation.as_ref(),
+                self.prepared.metadata_readmission_authority.as_ref(),
             ) {
                 Ok(publication) => publication,
                 Err(cause) => {

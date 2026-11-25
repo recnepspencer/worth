@@ -20,6 +20,16 @@ use worth_relational_storage::internal_port::storage::residency::cell::{
 
 const MEMBER_LIMIT: u64 = 1 << 30;
 
+pub(super) fn validate_manifest(
+    manifest: &RelationalCheckpointManifest,
+) -> Result<super::manifest_validation::ManifestDirectoryFacts, RelationalRecoveryStop> {
+    worth_relational_contracts::internal_port::storage::substrate::maintenance::reconstruction::ReconstructionLane::enter_reconstruction(|lane| {
+        super::manifest_validation::validate(lane, manifest)
+    })
+    .map_err(Into::into)
+}
+
+#[allow(dead_code)]
 pub(super) fn expand(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     manifest: RelationalCheckpointManifest,

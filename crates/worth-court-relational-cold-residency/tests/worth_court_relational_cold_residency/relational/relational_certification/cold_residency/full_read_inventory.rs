@@ -8,7 +8,6 @@ pub(super) enum FullReadDoor {
     IndexCommitBuild,
     IndexBasisBuild,
     MemoryCheckpoint,
-    EmbeddedCheckpoint,
     GraphInspection,
     SnapshotRead,
     SnapshotCapabilityPin,
@@ -44,7 +43,7 @@ pub(super) enum FullReadDoor {
 }
 
 impl FullReadDoor {
-    pub(super) const ALL: [Self; 47] = [
+    pub(super) const ALL: [Self; 46] = [
         Self::ProjectionScan(
             super::full_projection_scans::ProjectionScanDoor::EntityKind,
             false,
@@ -83,7 +82,6 @@ impl FullReadDoor {
         Self::IndexCommitBuild,
         Self::IndexBasisBuild,
         Self::MemoryCheckpoint,
-        Self::EmbeddedCheckpoint,
         Self::GraphInspection,
         Self::SnapshotRead,
         Self::SnapshotCapabilityPin,
@@ -141,7 +139,7 @@ impl FullReadDoor {
         )
     }
     pub(super) fn is_checkpoint(self) -> bool {
-        matches!(self, Self::MemoryCheckpoint | Self::EmbeddedCheckpoint)
+        matches!(self, Self::MemoryCheckpoint)
     }
     pub(super) fn prepare(self, runtime: &worth_relational::facade::runtime::RelationalRuntime) {
         if matches!(self, Self::IndexCommitBuild | Self::IndexBasisBuild) {

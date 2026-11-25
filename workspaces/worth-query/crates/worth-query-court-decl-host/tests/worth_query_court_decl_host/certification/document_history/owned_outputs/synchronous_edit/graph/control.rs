@@ -8,12 +8,13 @@ fn exercise(worker: bool, field: &'static str, subject: &str, producers: u64) {
     let controller = WorthQueryAdmissionTimeController::new().unwrap();
     controller.hold();
     let clock = controller.clock();
-    let host = world::authorization_clock::install::<program::Program>(clock.clone(), worker, 2);
+    let host =
+        world::authorization_clock::install::<program::Program>(clock.clone(), worker, 2);
     let scope =
         WorthQueryRequestScope::new(None, WorthQueryCancellationSource::new().token(), clock);
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
-    let before = super::super::failure::checkpoint(&host);
+    let before = super::super::failure::memory_basis_state(&host);
     let contacts = host.producer_contacts_on_this_thread_for_test();
     let control = host
         .runtime()
@@ -67,7 +68,7 @@ fn exercise(worker: bool, field: &'static str, subject: &str, producers: u64) {
         contacts + producers,
         "no producer may run after the expired lookup"
     );
-    super::super::failure::assert_model_unchanged(&host, &before);
+    super::super::failure::assert_memory_basis_unchanged(&host, &before);
 }
 #[test]
 fn discovery_expiry_after_current_principal_issuance_refuses_without_effect() {

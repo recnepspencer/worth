@@ -72,9 +72,23 @@ fn open_record_store(
             denial.into_runtime().close();
             Err(Refusal::new(Stage::ServingOpen, reason))
         }
-        _ => Err(Refusal::new(
+        TransitionOutcome::Stale(stale) => {
+            let reason = format!("{:?}", stale.reason());
+            stale.into_runtime().close();
+            Err(Refusal::new(Stage::ServingOpen, reason))
+        }
+        TransitionOutcome::RebindRequired(rebind) => {
+            let reason = format!("{:?}", rebind.reason());
+            rebind.into_runtime().close();
+            Err(Refusal::new(Stage::ServingOpen, reason))
+        }
+        TransitionOutcome::Failed(failure) => Err(Refusal::new(
             Stage::ServingOpen,
-            "serving open after recovery did not complete",
+            format!("{:?}", failure.cause()),
+        )),
+        other => Err(Refusal::new(
+            Stage::ServingOpen,
+            unfinished_outcome(&other),
         )),
     }
 }

@@ -22,6 +22,7 @@ pub use failure::WorthQueryGeneratedOutputRestorationFailureCause;
 use failure::{preparation_failure_cause, restoration_failure};
 pub use invariant_denial::WorthQueryGeneratedOutputInvariantAdmissionDenial;
 
+pub(super) use no_effect::map_world_cause;
 pub use no_effect::{
     WorthQueryGeneratedOutputPublicationNoEffect, WorthQueryGeneratedOutputPublicationNoEffectCause,
 };
@@ -107,6 +108,16 @@ impl WorthQueryUnpublishedGeneratedOutputRestoration {
         recovery::RestorationRetry,
     ) {
         (self.product, self.retry)
+    }
+
+    pub fn next_actions(&self) -> &[worth_runtime_world::facade::ProductUnpublishedNextAction] {
+        self.product.next_actions()
+    }
+
+    pub fn into_world_recovery(
+        self,
+    ) -> crate::domain_computation::WorthQueryProductUnpublishedRecovery {
+        self.product.into_recovery()
     }
 
     pub fn into_recovery(self) -> WorthQueryGeneratedOutputRestorationRecovery {

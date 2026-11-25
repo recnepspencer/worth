@@ -4,8 +4,15 @@ fn refused(action: u8) {
     let app = world::install_two_levels();
     let (scope, principal) = world::authenticate(&app);
     let request = app.runtime().request(&principal, &scope);
-    close(settle(&app, &request), &request);
-    let before = checkpoint::capture(&app);
+    let settled = settle(&app, &request);
+    let receipt = settled
+        .settlement()
+        .root_settlement()
+        .application_commit_receipt()
+        .expect("settled root producer commit receipt")
+        .clone();
+    close(settled, &request);
+    let head_before = world::native_head(&app);
     let node = request.query(Read("root".into())).execute().unwrap().rows()[0].native_id;
     let member = request
         .query(realization_read::ReadRealization("root".into()))
@@ -13,26 +20,8 @@ fn refused(action: u8) {
         .unwrap()
         .rows()[0]
         .native_id;
-    let history = checkpoint::envelopes(&before);
-    let origin = history
-        .iter()
-        .filter_map(|e| e.get("required_output_origin"))
-        .find(|origin| origin["meaning"]["source_scope"] == serde_json::to_value(node).unwrap())
-        .unwrap();
-    let publication = serde_json::from_value(origin["commit"]["commit_id"].clone()).unwrap();
-    let edge = serde_json::from_value(
-        origin["relations"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .find(|r| {
-                r["target"] == serde_json::to_value(node).unwrap()
-                    && r["source"] == serde_json::to_value(member).unwrap()
-            })
-            .unwrap()["id"]
-            .clone(),
-    )
-    .unwrap();
+    let publication = receipt.commit_reference().commit_id;
+    let _ = write_fence::take_last_realizes_edge();
     let outcome = request
         .advanced()
         .mutate(ExternalWrite {
@@ -45,6 +34,8 @@ fn refused(action: u8) {
             worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
+    let edge = write_fence::take_last_realizes_edge()
+        .expect("realizes relation read by write_fence handler");
     let WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted::Denied(
         denial,
     )) = outcome
@@ -69,8 +60,8 @@ fn refused(action: u8) {
     };
     assert_eq!(error.context.affected_records, expected);
     assert_eq!(
-        checkpoint::envelopes(&checkpoint::capture(&app)),
-        history,
+        world::native_head(&app),
+        head_before,
         "refusal has no canonical effect"
     );
     assert_live(&request, &["root", "root.0", "root.1"]);

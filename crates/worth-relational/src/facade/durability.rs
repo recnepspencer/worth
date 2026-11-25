@@ -4,8 +4,8 @@ pub use crate::durability::authority::recovery::catalog_readmission::refusal::{
 };
 pub use crate::durability::authority::recovery::prepared_home::refusal::RefusedPreparedRelationalHomeRecovery;
 pub use crate::durability::authority::CapturedRelationalCheckpointAdmissionImage;
+pub use crate::durability::HomeReadmissionMetadataAuthority;
 pub use crate::durability::authority::{
-    CapturedNativeInterimAdmission, CapturedNativeInterimComponent, CapturedNativeInterimOrigin,
     ReadmittedRelationalAssociatedFork, RefusedRelationalForkReadmission,
     RelationalForkReadmissionCause,
 };
@@ -120,9 +120,6 @@ pub use crate::durability::{
     RelationalHomeProgramTransitionSource, RelationalHomeProgramTransitionSourceRefusal,
 };
 
-pub use crate::durability::authority::checkpoint_complete::interim::{
-    bootstrap::NativeInterimBootstrapContinuation, receiver::AdmittedNativeInterimReceiver,
-};
 pub use crate::durability::authority::fresh_source::{
     FreshRelationalSourceAdmission, RelationalFreshSourceAdmissionStop,
 };

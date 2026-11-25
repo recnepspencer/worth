@@ -36,6 +36,60 @@ pub fn install_with_feeds<L: LawPolicy>(
         .unwrap();
     install_program(program, nodes, edges, leaves, feeds).unwrap()
 }
+pub(super) fn seed_graph<L: LawPolicy>(
+    graph: &mut WorthQueryPrimaryGraphBootstrap<GraphSchema<L>>,
+    installed: &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<
+        GraphSchema<L>,
+    >,
+    nodes: u64,
+    edges: &[(u64, u64)],
+    leaves: u64,
+    feeds: &[(u64, u64)],
+) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+    let binding = installed
+        .principal_binding(GraphPrincipal::reference())
+        .unwrap();
+    graph.bind_principal(
+        &binding,
+        WorthQueryApplicationPrincipalKey::new("graph-operator").unwrap(),
+        1_u64,
+        operator_identity(),
+        WorthQueryPrincipalMappingStatus::Enabled,
+    )?;
+    for node in 0..nodes {
+        graph.bind_entity(
+            WorthQueryApplicationEntitySeed::new(
+                super::schema::node::<GraphSchema<L>>(),
+                key::<L>(node),
+            )
+            .field(node_key::<GraphSchema<L>>(), node),
+        )?;
+    }
+    for leaf in 0..leaves {
+        graph.bind_entity(
+            WorthQueryApplicationEntitySeed::new(Leaf::reference(), leaf_key::<L>(leaf))
+                .field(LeafKey::at("LeafKey"), leaf),
+        )?;
+    }
+    for (index, &(source, target)) in feeds.iter().enumerate() {
+        graph.bind_relation(WorthQueryApplicationRelationSeed::new(
+            super::schema::feeds::<GraphSchema<L>>(),
+            format!("feed-seed-{index}"),
+            key::<L>(source),
+            leaf_key::<L>(target),
+        ))?;
+    }
+    for (index, &(source, target)) in edges.iter().enumerate() {
+        graph.bind_relation(WorthQueryApplicationRelationSeed::new(
+            precedes::<GraphSchema<L>>(),
+            format!("seed-{index}"),
+            key::<L>(source),
+            key::<L>(target),
+        ))?;
+    }
+    Ok(())
+}
+
 pub fn install_program<L: LawPolicy>(
     program: ValidatedApplicationProgram<GraphSchema<L>, GraphProgram<L>>,
     nodes: u64,
@@ -53,45 +107,7 @@ pub fn install_program<L: LawPolicy>(
         host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         |_, graph, installed| {
             projection = Some(graph.retain_invariant_projection_authority());
-            let binding = installed
-                .principal_binding(GraphPrincipal::reference())
-                .unwrap();
-            graph.bind_principal(
-                &binding,
-                WorthQueryApplicationPrincipalKey::new("graph-operator").unwrap(),
-                1_u64,
-                operator_identity(),
-                WorthQueryPrincipalMappingStatus::Enabled,
-            )?;
-            for node in 0..nodes {
-                graph.bind_entity(
-                    WorthQueryApplicationEntitySeed::new(super::schema::node::<GraphSchema<L>>(), key::<L>(node))
-                        .field(node_key::<GraphSchema<L>>(), node),
-                )?;
-            }
-            for leaf in 0..leaves {
-                graph.bind_entity(
-                    WorthQueryApplicationEntitySeed::new(Leaf::reference(), leaf_key::<L>(leaf))
-                        .field(LeafKey::at("LeafKey"), leaf),
-                )?;
-            }
-            for (index, &(source, target)) in feeds.iter().enumerate() {
-                graph.bind_relation(WorthQueryApplicationRelationSeed::new(
-                    super::schema::feeds::<GraphSchema<L>>(),
-                    format!("feed-seed-{index}"),
-                    key::<L>(source),
-                    leaf_key::<L>(target),
-                ))?;
-            }
-            for (index, &(source, target)) in edges.iter().enumerate() {
-                graph.bind_relation(WorthQueryApplicationRelationSeed::new(
-                    precedes::<GraphSchema<L>>(),
-                    format!("seed-{index}"),
-                    key::<L>(source),
-                    key::<L>(target),
-                ))?;
-            }
-            Ok(())
+            seed_graph::<L>(graph, installed, nodes, edges, leaves, feeds)
         },
     )?;
     Ok(World {

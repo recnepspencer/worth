@@ -173,7 +173,14 @@ fn settlement_releases_a_journal_flight_but_preserves_memory_history_and_positio
     for journal_backed in [false, true] {
         let (entry, source) = selected(&execution, None);
         let performed = entry
-            .readmit_journal_for_test(source.as_ref(), &execution, 1 << 30)
+            .readmit_journal_for_test(
+                &(Arc::clone(&source)
+                    as Arc<
+                        dyn worth_relational_storage::internal_port::durability::medium::cold_source::RelationalDurableColdSource,
+                    >),
+                &execution,
+                1 << 30,
+            )
             .unwrap();
         let position = performed.position();
         let body = performed.canonical_arc().clone();

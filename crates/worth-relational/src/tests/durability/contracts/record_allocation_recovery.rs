@@ -213,7 +213,7 @@ fn tail_replay_rejects_canonical_allocation_targeting_a_live_slot() {
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);
     let original = create_entity(execution, &runtime, "allocation-live");
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     create_entity(execution, &runtime, "allocation-tail");
     let mut plan = medium
         .recovery_plan(
@@ -262,7 +262,7 @@ fn tail_replay_rejects_missing_canonical_allocation_evidence() {
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);
     create_entity(execution, &runtime, "allocation-checkpoint");
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     create_entity(execution, &runtime, "allocation-tail");
     let mut plan = medium
         .recovery_plan(
@@ -297,7 +297,7 @@ fn tail_replay_gap_admission_cannot_replace_a_different_canonical_effect() {
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);
     let checkpoint_entity = create_entity(execution, &runtime, "allocation-gap-checkpoint");
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     let tail_entity = create_entity(execution, &runtime, "allocation-gap-tail");
     let mut plan = medium
         .recovery_plan(
@@ -352,7 +352,7 @@ fn metadata_only_merge_rejects_unconsumable_allocation_evidence() {
         entity,
         BranchId("allocation-feature".to_owned()),
     );
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     let prepared = runtime
         .prepare_merge_execution(
             execution,

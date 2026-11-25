@@ -73,7 +73,7 @@ pub use crate::world_section::{
     WorldHomeClosePosture, WorldHomeCloseRefused, WorldHomeReadmissionRefused,
     WorldReadmittedApplicationHome, WorldSealedApplicationHome,
 };
-pub use worth_foundational::facade::{HomeIdentity, HomeIncarnation, UncleanRecoveryUnsupported};
+pub use worth_foundational::facade::{HomeIdentity, HomeIncarnation};
 
 pub use crate::signal_medium::HomeSignalInitialSourceDenial;
 

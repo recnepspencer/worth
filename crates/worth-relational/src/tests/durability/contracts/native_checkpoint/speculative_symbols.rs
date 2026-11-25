@@ -16,9 +16,13 @@ fn unpublished_client_keys_leave_checkpoint_dictionary_equal_and_published_keys_
     let capture = || {
         runtime
             .durability_authority()
-            .native_checkpoint(
+            .native_checkpoint_with_policy(
                 execution,
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                    current_members: &[],
+                    source: None,
+                },
             )
             .unwrap()
     };
@@ -41,9 +45,10 @@ fn unpublished_client_keys_leave_checkpoint_dictionary_equal_and_published_keys_
     drop(candidate);
     let after = capture();
     let decode = |checkpoint: &crate::durability::data::RelationalNativeCheckpoint| {
-        crate::durability::log::native_checkpoint_codec::decode_checkpoint(
+        crate::durability::log::native_checkpoint_codec::decode_expanded_checkpoint(
             execution,
             checkpoint.bytes(),
+            crate::tests::support::durability::captured_members_source(checkpoint),
         )
         .unwrap()
         .checkpoint
@@ -119,7 +124,11 @@ fn unpublished_client_keys_leave_checkpoint_dictionary_equal_and_published_keys_
     let mut recovered = runtime_with_test_schema();
     let restored = recovered
         .durability_recovery()
-        .restore_native_checkpoint(execution, &published)
+        .restore_native_checkpoint(
+            execution,
+            &published,
+            crate::tests::support::durability::captured_members_source(&published),
+        )
         .unwrap();
     assert_eq!(restored.latest_commit, Some(committed.commit.clone()));
     recovered
@@ -159,12 +168,16 @@ fn checkpoint_recovery_preserves_abandoned_symbol_identity_frontiers() {
     drop(abandoned);
     let native = runtime
         .durability_authority()
-        .native_checkpoint(&execution, execution.allocation_policy())
+        .native_checkpoint_with_policy(
+&execution,
+execution.allocation_policy(),
+crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None },
+)
         .unwrap();
     let mut recovered = runtime_with_test_schema();
     recovered
         .durability_recovery()
-        .restore_native_checkpoint(&execution, &native)
+        .restore_native_checkpoint(&execution, &native, crate::tests::support::durability::captured_members_source(&native))
         .unwrap();
     let mut candidate = recovered.services.symbols.begin_pending_meanings();
     let fresh = loop {

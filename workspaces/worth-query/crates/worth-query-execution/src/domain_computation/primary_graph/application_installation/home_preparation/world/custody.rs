@@ -200,6 +200,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
             crate::domain_computation::primary_graph::bootstrap::branch_activation_history::verify(
                 self.runtime.runtime(),
                 execution,
+                self.metadata_readmission_authority.as_ref(),
             )
         {
             return Err(QueryHomeCustodyReadmissionRefused {
@@ -216,6 +217,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
             execution,
             &unpublished.continuable,
             &unpublished.all,
+            self.metadata_readmission_authority.as_ref(),
         ) {
             return Err(QueryHomeCustodyReadmissionRefused {
                 query: self,

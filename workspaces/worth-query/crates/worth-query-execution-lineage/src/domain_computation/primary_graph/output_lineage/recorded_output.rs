@@ -75,6 +75,18 @@ impl RecordedOutputMutable {
             computation,
         }
     }
+    pub fn new_prior(
+        verification_requirement: Option<FullVerificationReason>,
+        facts: Option<super::RetainedSourceFacts>,
+        computation: super::retained_computation::RecordedComputation,
+    ) -> Self {
+        Self {
+            verification_requirement,
+            observed_source_facts: facts.map(|facts| facts.postconditions().clone()),
+            stable_fact_spans: None,
+            computation,
+        }
+    }
     pub fn replace_retained_facts(&mut self, facts: super::RetainedSourceFacts) {
         self.stable_fact_spans = None;
         self.observed_source_facts = Some(facts.postconditions().clone());

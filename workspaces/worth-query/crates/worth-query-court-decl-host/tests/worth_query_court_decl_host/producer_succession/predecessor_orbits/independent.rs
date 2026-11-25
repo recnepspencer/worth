@@ -22,7 +22,6 @@ fn non_opted_in_predecessor_orbit_keeps_its_existing_source_observation_behavior
         Fault::None,
         0,
         true,
-        None,
     )
     .unwrap();
     let (scope, principal) = world::authenticate(&app);

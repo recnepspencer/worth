@@ -19,12 +19,7 @@ fn relation_only_custom_invariant_refuses_closed_retirement_before_effects() {
     let (runtime, receipt) = install(1);
     let world = world_with_installation(execution, runtime, receipt);
     let (mut target, _) = install(2);
-    let (_, mut recovered) = target
-        .durability_recovery()
-        .restore_native_checkpoint_for_codec_transition_with_authority(
-            execution,
-            &capture(execution, &world.runtime),
-        )
+    let (_, mut recovered) = crate::relational::relational_certification::cold_residency::codec_neutrality::fixture::restore_codec_transition(&mut target, execution, &capture(execution, &world.runtime))
         .unwrap();
     let before = capture(execution, &target);
     let selected = basis(&target);

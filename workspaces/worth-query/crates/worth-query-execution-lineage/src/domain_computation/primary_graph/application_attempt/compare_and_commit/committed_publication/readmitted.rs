@@ -2,10 +2,52 @@
 use super::*;
 use crate::domain_computation::primary_graph::provider::WorthQueryCommittedDispatchOutboxReadDenial as Denial;
 use worth_runtime_world::facade::{
-    CompositeCommitProvenance, CompositeRuntimeWorldCommit, WorldReadmittedPublication,
+    CompositeCommitProvenance, CompositeRuntimeWorldCommit, WorldObservedHomePublication,
+    WorldReadmittedPublication,
 };
 
 impl WorthQueryCommittedProductPublication {
+    pub(crate) fn from_observed_home(
+        original: &WorldObservedHomePublication,
+        signal_publication: Option<CompositeSignalPublicationIdentity>,
+    ) -> Result<Self, Denial> {
+        if original.before().branch() != original.after().branch()
+            || original.before().incarnation() != original.after().incarnation()
+            || original.composite_commit().owner_identity().durable()
+                != Some(original.after().branch().owner())
+        {
+            return Err(Denial::CommitMismatch);
+        }
+        match original.signal_posture() {
+            CompositeComponentChangePosture::Published => {
+                if original.signal_source().is_none() {
+                    return Err(Denial::CommitMismatch);
+                }
+            }
+            CompositeComponentChangePosture::RetainExact => {
+                if signal_publication.is_some() || original.signal_source().is_some() {
+                    return Err(Denial::CommitMismatch);
+                }
+            }
+        }
+        Ok(Self {
+            custody: PublicationCustody::Described(Arc::new(DescriptiveProductPublication {
+                product_branch: original.product_branch().clone(),
+                product_incarnation: original.product_incarnation(),
+                product_generation: original.product_generation(),
+                composite_commit: original.composite_commit().clone(),
+                publication_attempt: original.publication_attempt().clone(),
+                relational_commit: original.native_receipt().clone(),
+                relational_posture: CompositeComponentChangePosture::Published,
+                signal_posture: original.signal_posture(),
+                signal_publication,
+                durable_signal_source: original.signal_source().cloned(),
+                // A prior live conditional counter is not recovered source evidence.
+                conditional_definition_generation: None,
+            })),
+        })
+    }
+
     pub(crate) fn from_readmitted(
         original: &WorldReadmittedPublication,
         commit: &CompositeRuntimeWorldCommit,
@@ -35,6 +77,7 @@ impl WorthQueryCommittedProductPublication {
                 relational_posture: commit.relational_change(),
                 signal_posture: commit.signal_change(),
                 signal_publication: commit.signal_publication_identity().cloned(),
+                durable_signal_source: None,
                 // A prior live conditional counter is not recovered source evidence.
                 conditional_definition_generation: None,
             })),
@@ -181,6 +224,10 @@ impl WorthQueryCommittedProductPublication {
 /// lifecycle, custody, and one-shot observation extraction. Never exported on
 /// `worth-query-execution::facade` or Host.
 pub trait CommittedProductPublicationInternalPort: Sized {
+    fn from_observed_home(
+        original: &WorldObservedHomePublication,
+        signal_publication: Option<CompositeSignalPublicationIdentity>,
+    ) -> Result<Self, Denial>;
     fn from_readmitted(
         original: &WorldReadmittedPublication,
         commit: &CompositeRuntimeWorldCommit,
@@ -231,6 +278,13 @@ pub trait CommittedProductPublicationInternalPort: Sized {
 }
 
 impl CommittedProductPublicationInternalPort for WorthQueryCommittedProductPublication {
+    fn from_observed_home(
+        original: &WorldObservedHomePublication,
+        signal_publication: Option<CompositeSignalPublicationIdentity>,
+    ) -> Result<Self, Denial> {
+        Self::from_observed_home(original, signal_publication)
+    }
+
     fn from_readmitted(
         original: &WorldReadmittedPublication,
         commit: &CompositeRuntimeWorldCommit,

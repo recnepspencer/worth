@@ -6,7 +6,7 @@ use worth_relational::facade::{
     transactions::RecordRef,
 };
 
-fn refuses_foreign_writer(host: &world::Host) {
+fn refuses_foreign_writer(host: &world::DirHost) {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
@@ -56,21 +56,17 @@ fn refuses_foreign_writer(host: &world::Host) {
 #[test]
 fn a_foreign_prepared_writer_cannot_publish_the_source_edit() {
     let _observation = WorthQueryExecutionObservation::install_on_this_thread();
-    refuses_foreign_writer(&world::install());
+    refuses_foreign_writer(&world::open_directory_host(false));
 }
 #[test]
 fn worker_only_foreign_prepared_writer_cannot_publish_the_source_edit() {
     let _observation = WorthQueryExecutionObservation::install_on_this_thread();
-    refuses_foreign_writer(&world::install_worker_only());
+    refuses_foreign_writer(&world::open_directory_host(true));
 }
 
 fn replayed_continuation(worker: bool) {
     let _observation = WorthQueryExecutionObservation::install_on_this_thread();
-    let host = if worker {
-        world::install_worker_only()
-    } else {
-        world::install()
-    };
+    let host = world::open_directory_host(worker);
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
@@ -125,11 +121,7 @@ fn worker_only_real_native_continuation_is_consumed_exactly_once() {
 /// A continued round with an effect would be the route's second producing round.
 fn continued_effect_refuses(worker: bool, changed_patch: bool) {
     let _observation = WorthQueryExecutionObservation::install_on_this_thread();
-    let host = if worker {
-        world::install_worker_only()
-    } else {
-        world::install()
-    };
+    let host = world::open_directory_host(worker);
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);

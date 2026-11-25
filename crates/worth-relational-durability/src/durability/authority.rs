@@ -11,7 +11,6 @@ pub use associated_effects::RelationalAssociatedEffectSubject;
 pub mod checkpoint_capture;
 pub mod checkpoint_complete;
 pub use checkpoint_complete::{
-    CapturedNativeInterimAdmission, CapturedNativeInterimComponent, CapturedNativeInterimOrigin,
     CapturedRelationalCheckpointAdmissionImage, CompleteRelationalNativeCheckpoint,
 };
 pub mod checkpoint_components;
@@ -25,6 +24,7 @@ pub mod checkpoint_region_consistency;
 pub mod checkpoint_transition;
 pub mod checkpointing;
 pub mod diagnostics;
+pub mod home_readmission_phase;
 mod lineage_allocation;
 
 #[doc(hidden)]

@@ -18,6 +18,8 @@ pub(in crate::domain_computation::primary_graph::application_installation::home_
     pub(in crate::domain_computation::primary_graph::application_installation::home_preparation) readiness_routes: crate::domain_computation::primary_graph::application_contribution::WorthQueryInstalledOutputReadinessRoutes,
     pub(in crate::domain_computation::primary_graph::application_installation::home_preparation) bridge:
         super::super::super::super::managed_bridge::WorthQueryInstalledApplicationBridge,
+    pub(in crate::domain_computation::primary_graph::application_installation::home_preparation) metadata_readmission_authority:
+        Option<worth_relational::facade::durability::HomeReadmissionMetadataAuthority>,
 }
 pub(in crate::domain_computation::primary_graph::application_installation::home_preparation) fn prepare<
     Schema: ApplicationSchemaComposition,

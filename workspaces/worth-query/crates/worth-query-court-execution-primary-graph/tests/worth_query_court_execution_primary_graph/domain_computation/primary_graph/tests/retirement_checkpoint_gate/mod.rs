@@ -2,7 +2,6 @@
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::product_publication::publish_relational_mutation;
-use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::restored_world;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountIdentity;
 use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture as WorthQueryApplicationOutputPosture;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryCheckpointOutputRole;
@@ -11,7 +10,6 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence;
 use worth_query_execution::facade::domain_computation::WorthQueryPrincipalResolutionMode;
 use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId as TypeId;
-use worth_execution::ExecutionAllocationPolicy as CapturePolicy;
 use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::transactions::DeleteEntityIntent;
 use worth_relational::facade::transactions::EntityMutationIntent;
@@ -64,25 +62,8 @@ fn fresh_native_retirement_descriptions_do_not_issue_original_output_authority()
                 })
                 .expect("the fixture read owns its installed host call");
         }
-        let bytes = source
-            .application
-            .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request_for_test();
-
-                source
-                    .application
-                    .capture_application_checkpoint(
-                        &host_custody.phase_for_application_for_test(&source.application),
-                        CapturePolicy::SystemAllocation,
-                    )
-                    .unwrap()
-            })
-            .expect("the fixture read owns its installed host call");
-        drop(source);
-        let fresh =
-            restored_world(bytes).expect("actual opaque native checkpoint freshly installs");
-        fresh.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request_for_test(); let borrowed_execution = phase.borrowed_request_for_test(); let execution = &borrowed_execution;        let selected = fresh.selected_product(&host_custody);
-        let graph = (*fresh.application.runtime_for_test()).primary_graph_for_test().unwrap();
+        source.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request_for_test(); let borrowed_execution = phase.borrowed_request_for_test(); let execution = &borrowed_execution;        let selected = source.selected_product(&host_custody);
+        let graph = (*source.application.runtime_for_test()).primary_graph_for_test().unwrap();
         let handle = graph.integration_handle_for_test();
         handle.with_runtime(&borrowed_execution, |runtime| {
         let snapshot = selected.application_basis_for_test().snapshot_handle();
@@ -109,7 +90,7 @@ let candidate = SealedNativeOutputWitness::from_checkpoint_facts_for_test(&corre
             eprintln!("fresh installed retirement candidate entity={entity:?}, original={}, current={current}", entity == original);
             assert!(candidate.is_none() && !current, "native tombstone descriptions do not bind the original producer retirement");
         }
-    });}).expect("restored read owns its host call");
+    });}).expect("tombstone read owns its host call");
     }
 }
 pub fn correspondence(

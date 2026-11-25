@@ -33,6 +33,7 @@ pub struct DurableDemandRecording {
     pub producer: String,
     pub query: [u8; 32],
     pub branch: String,
+    pub lifecycle: u64,
     pub basis: DurableCompositeCommitIdentity,
     pub root: worth_relational::facade::identity::EntityId,
     pub parameters: Arc<crate::domain_computation::primary_graph::application_query::WorthQueryRetainedObservedParameters>,
@@ -100,6 +101,7 @@ impl RequiredOutputReadmission {
             let result = held.history.link_output_demand(
                 execution,
                 held.position,
+                recording.lifecycle,
                 sources.clone(),
                 prerequisites.clone(),
                 checkpoints.clone(),
@@ -131,7 +133,7 @@ impl RequiredOutputReadmission {
         row.checkpoint_prerequisites = checkpoints;
         let retained = recording
             .history
-            .retain_output_demand(execution, row)
+            .retain_output_demand(execution, row, recording.lifecycle)
             .map_err(|cause| {
                 WorthQueryOutputDemandDenial::new(
                     WorthQueryOutputDemandDenialKind::ObligationPublication(cause),

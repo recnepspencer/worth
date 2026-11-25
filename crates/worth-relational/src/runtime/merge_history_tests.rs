@@ -31,16 +31,27 @@ fn restored_intermediate_source_commit_refuses_merge_parent_overlap() {
         BranchId("main".into()),
     );
     release_test_commit_snapshot(&source, &target);
-    // The owner encodes its actual journal; its InlineCheckpointSource reads
+    // The owner encodes its actual journal; its cold source reads
     // these originals on restore. Cold demand is proved by the public court.
     let checkpoint = source
         .durability_authority()
-        .native_checkpoint(request, request.allocation_policy())
+        .native_checkpoint_with_policy(
+            request,
+            request.allocation_policy(),
+            crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
+        )
         .unwrap();
     let mut runtime = runtime_with_test_schema();
     runtime
         .durability_recovery()
-        .restore_native_checkpoint(request, &checkpoint)
+        .restore_native_checkpoint(
+            request,
+            &checkpoint,
+            crate::tests::support::durability::captured_members_source(&checkpoint),
+        )
         .unwrap();
     assert_eq!(
         runtime

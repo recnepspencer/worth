@@ -40,6 +40,19 @@ fn custody_survives_interrupted_frames_and_declines_once_history_is_full() {
         settled(custody.resume(home.runtime(), &request))
     };
 
+    // Hold a live read observation on the seeded head so seed + the two commits
+    // below genuinely fill the retained-history budget of 3 commits even with
+    // durable history retirement active.
+    let pinned_seed = home
+        .runtime()
+        .with_host_advancement(|phase| {
+            home.runtime()
+                .request(&principal, &scope)
+                .retain_read(&phase)
+                .unwrap()
+        })
+        .unwrap();
+
     let custody = cancelled_before_retention(&home, &principal, &clock, set_balance(5));
     assert_eq!(fresh_frame(custody), "committed 5");
 
@@ -62,7 +75,7 @@ fn custody_survives_interrupted_frames_and_declines_once_history_is_full() {
         "the full history refuses before preparation: {declined}"
     );
     assert_eq!(read_balance(&home, &principal, &scope), Ok(vec![6]));
-    drop((principal, expiring));
+    drop((pinned_seed, principal, expiring));
     close_home(home, &execution);
 }
 

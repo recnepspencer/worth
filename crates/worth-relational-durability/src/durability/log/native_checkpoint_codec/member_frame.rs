@@ -4,7 +4,7 @@ use worth_relational_storage::internal_port::durability::medium::cold_source::Re
 pub use worth_relational_storage::internal_port::storage::data::member_frame::locator;
 use worth_relational_storage::internal_port::storage::data::member_frame::MAGIC;
 pub(crate) use worth_relational_storage::internal_port::storage::data::member_frame::{
-    decode, encode, locator_for_request, locator_in_stage, MemberKind,
+    decode, encode, locator_for_request, MemberKind,
 };
 
 /// Admit and emit the same complete frame through the original request.

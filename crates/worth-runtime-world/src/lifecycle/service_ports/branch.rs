@@ -184,4 +184,17 @@ impl RuntimeWorldBranchPort {
             .retire_product_branch(observed)
             .map_err(super::super::RuntimeWorldServiceDenial::Denied)
     }
+
+    pub fn retire_product_branch_with_request(
+        &self,
+        observed: &crate::branch::ProductBranchObservation,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        crate::branch::ProductBranchRetirementReport,
+        super::super::RuntimeWorldServiceDenial<crate::branch::RuntimeWorldBranchRetirementDenial>,
+    > {
+        self.service()?
+            .retire_product_branch_with_request(observed, execution)
+            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+    }
 }

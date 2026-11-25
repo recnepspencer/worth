@@ -234,8 +234,6 @@ impl Default for Court {
 
 #[path = "binding_succession/mod.rs"]
 pub mod binding_succession;
-#[path = "checkpoint_locator_copy/mod.rs"]
-pub mod checkpoint_locator_copy;
 #[path = "checkpoint_selection_denial/mod.rs"]
 pub mod checkpoint_selection_denial;
 #[path = "inherited_settlement/mod.rs"]

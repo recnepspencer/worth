@@ -58,31 +58,37 @@ fn original_cancellation_after_candidate_build_prevents_publication() {
 
 #[test]
 fn retirement_and_recovery_keep_the_record_absent() {
-    let host = world::install();
-    let scope = request_scope();
-    let principal = authenticate_operator(host.installed_schema(), &scope);
-    let request = host.runtime().request(&principal, &scope);
-    let result = request
-        .advanced()
-        .mutate(retirement::Retire {
-            key: "record".into(),
-        })
-        .without_source()
-        .idempotency(&"retire".to_owned())
-        .execute_in_program(
-            &host,
-            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    assert!(
-        matches!(
-            result,
-            WorthQueryApplicationMutationOutcome::Committed { .. }
-        ),
-        "{result:?}"
+    let dir = worth_query_testkit_document_retention::facade::directory_home::unique_directory(
+        "one-of-retire",
     );
+    let host = world::open_directory(dir);
+    {
+        let scope = request_scope();
+        let principal = authenticate_operator(host.installed_schema(), &scope);
+        let request = host.runtime().request(&principal, &scope);
+        let result = request
+            .advanced()
+            .mutate(retirement::Retire {
+                key: "record".into(),
+            })
+            .without_source()
+            .idempotency(&"retire".to_owned())
+            .execute_in_program(
+                &host,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .unwrap();
+        assert!(
+            matches!(
+                result,
+                WorthQueryApplicationMutationOutcome::Committed { .. }
+            ),
+            "{result:?}"
+        );
+    }
     assert_absent(&host);
-    let recovered = world::restore(world::checkpoint(&host));
+    let dir = host.checkpoint_and_close_for_reopen();
+    let recovered = world::open_directory(dir);
     assert_absent(&recovered);
 }
 

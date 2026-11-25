@@ -112,12 +112,16 @@ fn content_native_checkpoint_reconstructs_bytes_under_installed_format_authority
     let (id, entity) = publish(&runtime, &execution, &contract);
     let checkpoint = runtime
         .durability_authority()
-        .native_checkpoint(&execution, execution.allocation_policy())
+        .native_checkpoint_with_policy(&execution, execution.allocation_policy(), worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
         .unwrap();
     let (mut restored, _) = fixture();
     restored
         .durability_recovery()
-        .restore_native_checkpoint(&execution, &checkpoint)
+        .restore_native_checkpoint(
+            &execution,
+            &checkpoint,
+            worth_testkit_relational::cold_recovery::members_source(&checkpoint),
+        )
         .unwrap();
     super::selected_value::assert_selected(&restored, &execution, entity, id);
     let (_, basis) = restored
@@ -148,7 +152,7 @@ fn content_checkpoint_member_payload_keeps_original_serial_custody_until_last_cl
     let capture = ExecutionRequest::serial(&capture_request);
     let checkpoint = runtime
         .durability_authority()
-        .native_checkpoint(&capture, capture.allocation_policy())
+        .native_checkpoint_with_policy(&capture, capture.allocation_policy(), worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
         .unwrap();
     let content: Vec<_> = checkpoint
         .members()
@@ -303,12 +307,16 @@ fn content_retained_selection_persists_restored_historical_bytes() {
     super::journal_recovery::assert_retained_selection_journal_refuses(&runtime, &execution);
     let checkpoint = runtime
         .durability_authority()
-        .native_checkpoint(&execution, execution.allocation_policy())
+        .native_checkpoint_with_policy(&execution, execution.allocation_policy(), worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
         .unwrap();
     let (mut restored, _) = fixture();
     restored
         .durability_recovery()
-        .restore_native_checkpoint(&execution, &checkpoint)
+        .restore_native_checkpoint(
+            &execution,
+            &checkpoint,
+            worth_testkit_relational::cold_recovery::members_source(&checkpoint),
+        )
         .unwrap();
     super::selected_value::assert_selected(&restored, &execution, entity, old_id);
     let (_, basis) = restored

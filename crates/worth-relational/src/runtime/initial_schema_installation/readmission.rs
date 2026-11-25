@@ -39,6 +39,7 @@ impl RelationalInitialSchemaInstallationReceipt {
             || contracts.custom_invariant_generation != self.custom_invariant_generation
             || inventory != self.custom_invariant_inventory_digest
             || contracts.custom_invariant_registries.source_inventory() != self.source_groups
+            || contracts.home_readmission_metadata_kinds != self.home_readmission_metadata_kinds
             || (*registry.owner_entity_kinds()).len() != self.retained_entity_kind_count
             || (*registry.owner_relation_kinds()).len() != self.retained_relation_kind_count
             || schema != self.retained_schema_authority_digest
@@ -73,6 +74,7 @@ impl RelationalInitialSchemaInstallationReceipt {
             || contracts.custom_invariant_generation != self.custom_invariant_generation
             || actual != self.custom_invariant_inventory_digest
             || contracts.custom_invariant_registries.source_inventory() != self.source_groups
+            || contracts.home_readmission_metadata_kinds != self.home_readmission_metadata_kinds
             || (*registry.owner_entity_kinds()).len() != self.retained_entity_kind_count
             || (*registry.owner_relation_kinds()).len() != self.retained_relation_kind_count
             || schema != self.retained_schema_authority_digest

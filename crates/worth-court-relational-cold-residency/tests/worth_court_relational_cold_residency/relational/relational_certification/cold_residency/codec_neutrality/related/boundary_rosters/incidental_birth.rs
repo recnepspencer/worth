@@ -184,7 +184,7 @@ fn restore(
 ) {
     let (mut cold, receipt) = installed_references(1);
     cold.durability_recovery()
-        .restore_native_checkpoint(execution, checkpoint)
+        .restore_native_checkpoint(execution, checkpoint, worth_testkit_relational::cold_recovery::members_source(checkpoint))
         .unwrap();
     let receipt = cold
         .readmit_recovered_initial_schema_installation(receipt)

@@ -112,16 +112,11 @@ impl CapturedRelationalCheckpointAdmissionImage {
         request
             .consult()
             .map_err(|cause| Refusal::Request(cause.into()))?;
-        let (native_origin, complete_source_digest) = match cut.scope() {
-            CheckpointAdmissionScope::Home {
-                native_origin,
-                complete_source_digest,
-                ..
-            } => (native_origin, complete_source_digest),
-            CheckpointAdmissionScope::Interim { .. } => {
-                return Err(Refusal::BindingMismatch(Mismatch::Scope))
-            }
-        };
+        let CheckpointAdmissionScope::Home {
+            native_origin,
+            complete_source_digest,
+            ..
+        } = cut.scope();
         if native_origin != self.initial_digest.bytes() {
             return Err(Refusal::BindingMismatch(Mismatch::NativeOrigin));
         }

@@ -1,11 +1,7 @@
 //! Changed canonical source data can compute the same capped output.
-use super::super::failure;
 use super::*;
 use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
-fn prepare(
-    host: &WorthQueryProgramApplicationRuntime<Schema, program::Lazy>,
-    expected: snapshot::Snapshot,
-) {
+fn prepare(host: &world::DirHost<program::Lazy>, expected: snapshot::Snapshot) {
     let cap_scope = request_scope();
     let cap_principal = authenticate_operator(host.installed_schema(), &cap_scope);
     let request = host.request(&cap_principal, &cap_scope);
@@ -55,10 +51,7 @@ fn prepare(
     );
 }
 
-fn verify_adoption(
-    host: &WorthQueryProgramApplicationRuntime<Schema, program::Lazy>,
-    expected: snapshot::Snapshot,
-) {
+fn verify_adoption(host: &world::DirHost<program::Lazy>, expected: snapshot::Snapshot) {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
@@ -66,18 +59,14 @@ fn verify_adoption(
 }
 
 fn run(worker: bool, cold: bool) {
-    let mut saved = None;
-    courts::with_legacy_rows(worker, |host, _, expected| {
-        prepare(host, expected.clone());
-        if cold {
-            saved = Some((failure::checkpoint(host), expected));
-        } else {
-            verify_adoption(host, expected);
-        }
-    });
-    if let Some((checkpoint, expected)) = saved {
-        let _observation = WorthQueryExecutionObservation::install_on_this_thread();
-        let host = world::restore_program_checkpoint::<program::Lazy>(checkpoint, worker, false);
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+    let (host, expected) = courts::build_legacy_rows(worker);
+    prepare(&host, expected.clone());
+    if cold {
+        let directory = host.checkpoint_and_close_for_reopen();
+        let host = world::reopen_program_directory::<program::Lazy>(directory, worker, false);
+        verify_adoption(&host, expected);
+    } else {
         verify_adoption(&host, expected);
     }
 }

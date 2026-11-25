@@ -30,37 +30,74 @@ pub fn assert_original(
         original.recorded_output_settlement()
     );
     let publication = original.committed_product_publication();
-    let head = recorded
-        .new_product_head()
-        .memory()
-        .expect("the court owns an explicit memory World");
-    assert_eq!(
-        head.owner(),
-        publication.product_branch().owner_identity().get()
-    );
-    assert_eq!(head.branch(), publication.product_branch().name().as_str());
-    assert_eq!(
-        head.incarnation(),
-        publication.product_incarnation().ordinal()
-    );
-    assert_eq!(head.generation(), publication.product_generation().get());
-    assert_eq!(
-        head.selected_commit(),
-        publication.composite_commit().ordinal()
-    );
-    assert_eq!(
-        recorded.attempt_identity().ordinal(),
-        publication.publication_attempt().ordinal()
-    );
-    assert_eq!(
-        recorded.attempt_identity().owner(),
-        WorldOwnerCoordinate::MemoryOnly {
-            observation: publication.publication_attempt().owner_identity().get(),
-        }
-    );
-    assert!(recorded.publishing_incarnation().is_none());
-    assert!(recorded.world_journal_position().is_none());
-    assert!(recorded.world_artifact_digest().is_none());
+    if let Some(head) = recorded.new_product_head().memory() {
+        assert_eq!(
+            head.owner(),
+            publication.product_branch().owner_identity().get()
+        );
+        assert_eq!(head.branch(), publication.product_branch().name().as_str());
+        assert_eq!(
+            head.incarnation(),
+            publication.product_incarnation().ordinal()
+        );
+        assert_eq!(head.generation(), publication.product_generation().get());
+        assert_eq!(
+            head.selected_commit(),
+            publication.composite_commit().ordinal()
+        );
+        assert_eq!(
+            recorded.attempt_identity().ordinal(),
+            publication.publication_attempt().ordinal()
+        );
+        assert_eq!(
+            recorded.attempt_identity().owner(),
+            WorldOwnerCoordinate::MemoryOnly {
+                observation: publication.publication_attempt().owner_identity().get(),
+            }
+        );
+        assert!(recorded.publishing_incarnation().is_none());
+        assert!(recorded.world_journal_position().is_none());
+        assert!(recorded.world_artifact_digest().is_none());
+    } else {
+        let head = recorded
+            .new_product_head()
+            .durable()
+            .expect("the court owns either a memory World or a Directory Home");
+        assert_eq!(
+            publication.product_branch().owner_identity().durable(),
+            Some(head.branch().owner())
+        );
+        assert_eq!(
+            publication.product_branch().name().as_str(),
+            head.branch().name()
+        );
+        assert_eq!(
+            publication.product_incarnation().ordinal(),
+            head.incarnation().ordinal()
+        );
+        assert_eq!(
+            publication.product_generation().get(),
+            head.generation().get()
+        );
+        assert_eq!(
+            publication.composite_commit().ordinal(),
+            head.selected_commit().ordinal()
+        );
+        assert_eq!(
+            recorded.attempt_identity().ordinal(),
+            publication.publication_attempt().ordinal()
+        );
+        assert_eq!(
+            recorded.attempt_identity().owner(),
+            WorldOwnerCoordinate::Home {
+                owner: publication
+                    .publication_attempt()
+                    .owner_identity()
+                    .durable()
+                    .expect("durable Directory Home owner"),
+            }
+        );
+    }
 }
 
 /// Recovered data identifies the exact original transition; it cannot perform it.

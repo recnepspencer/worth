@@ -49,6 +49,7 @@ struct DescriptiveProductPublication {
     relational_posture: CompositeComponentChangePosture,
     signal_posture: CompositeComponentChangePosture,
     signal_publication: Option<CompositeSignalPublicationIdentity>,
+    durable_signal_source: Option<worth_signal::facade::durability::SignalRecordedSourcePoint>,
     conditional_definition_generation: Option<u64>,
 }
 
@@ -102,6 +103,7 @@ impl WorthQueryCommittedProductPublication {
             relational_posture: self.relational_posture(),
             signal_posture: self.signal_posture(),
             signal_publication: self.signal_publication().cloned(),
+            durable_signal_source: self.durable_signal_source().cloned(),
             conditional_definition_generation: self.conditional_definition_generation(),
         };
         Self {
@@ -253,6 +255,19 @@ impl WorthQueryCommittedProductPublication {
             | PublicationCustody::CoCommitted { description, .. }
             | PublicationCustody::SettledMovement { description, .. } => {
                 description.signal_publication.as_ref()
+            }
+        }
+    }
+
+    pub fn durable_signal_source(
+        &self,
+    ) -> Option<&worth_signal::facade::durability::SignalRecordedSourcePoint> {
+        match &self.custody {
+            PublicationCustody::Performed(_) => None,
+            PublicationCustody::Described(description)
+            | PublicationCustody::CoCommitted { description, .. }
+            | PublicationCustody::SettledMovement { description, .. } => {
+                description.durable_signal_source.as_ref()
             }
         }
     }

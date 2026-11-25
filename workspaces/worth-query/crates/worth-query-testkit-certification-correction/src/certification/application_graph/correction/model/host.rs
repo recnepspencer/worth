@@ -1,5 +1,8 @@
 //! Install, edit, read and close through the public application owners.
+mod directory;
 mod limits;
+pub(super) use directory::open_directory_with_seed_and_limits;
+pub use directory::{open_directory, open_directory_with_outputs, open_directory_with_projection};
 use super::{authentication::*, edit, other_edit, program::*, query, schema::*};
 pub(super) use limits::{installation_limits, worker_limits};
 use worth_query_host::facade::{
@@ -10,10 +13,15 @@ use worth_query_host::facade::{
     primary_graph::*,
     runtime,
 };
+pub use worth_query_testkit_document_retention::facade::directory_home::{
+    unique_directory, with_directory_bootstrap, DirectoryHomeGuard,
+};
 pub use worth_query_testkit_document_retention::facade::document_world_resources as world_resources;
 pub type Host = WorthQueryProgramApplicationRuntime<NumericSchema, Program>;
 pub type OutputHost =
     WorthQueryProgramApplicationRuntime<NumericSchema, super::output_program::OutputProgram>;
+pub type DirHost = DirectoryHomeGuard<NumericSchema, Program>;
+pub type DirOutputHost = DirectoryHomeGuard<NumericSchema, super::output_program::OutputProgram>;
 impl WorthQueryApplicationContribution<NumericSchema> for NumericContribution {
     type Configuration = ();
     fn contracts(
@@ -180,6 +188,62 @@ where
 {
     install_program_with_seed_and_limits(program, roster, seed, installation_limits())
 }
+fn seed_numeric_graph(
+    graph: &mut WorthQueryPrimaryGraphBootstrap<NumericSchema>,
+    installed: &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<
+        NumericSchema,
+    >,
+) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+    let binding = installed
+        .principal_binding(ActorBinding::reference())
+        .unwrap();
+    graph.bind_principal(
+        &binding,
+        WorthQueryApplicationPrincipalKey::new("numeric-operator").unwrap(),
+        1_u64,
+        operator_identity(),
+        WorthQueryPrincipalMappingStatus::Enabled,
+    )?;
+    graph.bind_principal(
+        &binding,
+        WorthQueryApplicationPrincipalKey::new("numeric-reviewer").unwrap(),
+        2_u64,
+        reviewer_identity(),
+        WorthQueryPrincipalMappingStatus::Enabled,
+    )?;
+    graph.bind_entity(
+        WorthQueryApplicationEntitySeed::new(
+            Number::reference(),
+            WorthQueryApplicationEntityKey::new("numeric").unwrap(),
+        )
+        .field(Key::at("Key"), "numeric".to_owned())
+        .field(Primary::at("Primary"), Counter(5_u64))
+        .field(Secondary::at("Secondary"), 7_u64)
+        .field(ReadEnabled::at("ReadEnabled"), true)
+        .field(Ceiling::at("Ceiling"), 100_u64)
+        .field(Calculated::at("Calculated"), 0_u64)
+        .field(
+            super::write_admission::Binary::at("Binary"),
+            BinaryCounter(5_u64),
+        )
+        .field(
+            super::write_admission::Canonical::at("Canonical"),
+            super::write_admission::CanonicalCounter(5),
+        )
+        .field(
+            super::write_admission::Delegated::at("Delegated"),
+            DelegatedCounter(5_u64),
+        )
+        .field(
+            super::composite_definition_model::DefinitionRevision::at("DefinitionRevision"),
+            5_u64,
+        ),
+    )?;
+    super::adoption::seed(graph);
+    super::causal_inspection::capability::seed(graph);
+    Ok(())
+}
+
 pub(super) fn install_program_with_seed_and_limits<P>(
     program: ValidatedApplicationProgram<NumericSchema, P>,
     roster: WorthQueryApplicationProgramRoster<'_, NumericSchema>,
@@ -200,53 +264,7 @@ where
         ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap(),
         limits,
         |_, graph, installed| {
-            let binding = installed
-                .principal_binding(ActorBinding::reference())
-                .unwrap();
-            graph.bind_principal(
-                &binding,
-                WorthQueryApplicationPrincipalKey::new("numeric-operator").unwrap(),
-                1_u64,
-                operator_identity(),
-                WorthQueryPrincipalMappingStatus::Enabled,
-            )?;
-            graph.bind_principal(
-                &binding,
-                WorthQueryApplicationPrincipalKey::new("numeric-reviewer").unwrap(),
-                2_u64,
-                reviewer_identity(),
-                WorthQueryPrincipalMappingStatus::Enabled,
-            )?;
-            graph.bind_entity(
-                WorthQueryApplicationEntitySeed::new(
-                    Number::reference(),
-                    WorthQueryApplicationEntityKey::new("numeric").unwrap(),
-                )
-                .field(Key::at("Key"), "numeric".to_owned())
-                .field(Primary::at("Primary"), Counter(5_u64))
-                .field(Secondary::at("Secondary"), 7_u64)
-                .field(ReadEnabled::at("ReadEnabled"), true)
-                .field(Ceiling::at("Ceiling"), 100_u64)
-                .field(Calculated::at("Calculated"), 0_u64)
-                .field(
-                    super::write_admission::Binary::at("Binary"),
-                    BinaryCounter(5_u64),
-                )
-                .field(
-                    super::write_admission::Canonical::at("Canonical"),
-                    super::write_admission::CanonicalCounter(5),
-                )
-                .field(
-                    super::write_admission::Delegated::at("Delegated"),
-                    DelegatedCounter(5_u64),
-                )
-                .field(
-                    super::composite_definition_model::DefinitionRevision::at("DefinitionRevision"),
-                    5_u64,
-                ),
-            )?;
-            super::adoption::seed(graph);
-            super::causal_inspection::capability::seed(graph);
+            seed_numeric_graph(graph, installed)?;
             seed(graph)
         },
     )
@@ -270,16 +288,26 @@ pub fn edit_on(
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.runtime().request(&principal, &scope).on_branch(branch);
-    let operation = request
+    let description = request
         .mutate(edit::Edit {
             key: "numeric".to_owned(),
             value,
         })
         .without_source()
         .idempotency_owned(key.to_owned())
-        .unwrap_or_else(|(_, _, error)| panic!("input capture: {error:?}"))
-        .retain_operation::<Program, Action>(host)
-        .unwrap_or_else(|(_, error)| panic!("action construction: {error:?}"));
+        .unwrap_or_else(|(_, _, error)| panic!("input capture: {error:?}"));
+    let operation = match description.retain_operation::<Program, Action>(host) {
+        Ok(operation) => operation,
+        Err((
+            description,
+            WorthQueryOperationConstructionDenial::Original(
+                WorthQueryOriginalOperationDenial::OwnershipMaterialUnavailable,
+            ),
+        )) => description
+            .retain_durable_operation::<Program, Action>(&request, host)
+            .unwrap_or_else(|(_, error)| panic!("durable action construction: {error:?}")),
+        Err((_, error)) => panic!("action construction: {error:?}"),
+    };
     let completed = match operation.advance(&request) {
         WorthQuerySourceOnlyAdvance::Completed(completed) => completed,
         WorthQuerySourceOnlyAdvance::Refused { denial, .. } => {
@@ -367,22 +395,5 @@ pub fn install_with_projection() -> (
             Ok(())
         },
     );
-    (
-        application,
-        authority.expect("actual bootstrap issued projection authority"),
-    )
-}
-
-/// Reopen the exact current fixture representation; no migration is inferred.
-pub fn restore(checkpoint: WorthQueryApplicationCheckpoint) -> Host {
-    WorthQueryInterimCheckpointRestore::rostered_program(
-        validated::<Program>(),
-        roster().support(validated::<super::output_program::OutputProgram>()),
-        NumericSchema::declaration().unwrap(),
-        ((),),
-        ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap(),
-        installation_limits(),
-        checkpoint,
-    )
-    .expect("current inline-domain checkpoint reopens")
+    (application, authority.expect("bootstrap projection authority"))
 }

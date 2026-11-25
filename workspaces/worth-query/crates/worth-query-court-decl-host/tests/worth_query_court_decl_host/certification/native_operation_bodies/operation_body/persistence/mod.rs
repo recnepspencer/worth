@@ -3,35 +3,22 @@ pub(crate) use worth_query_testkit_certification_operation::facade::certificatio
 
 #[test]
 fn authored_body_checkpoint_keeps_the_original_program_and_destination() {
-    let old = install::<8>();
-    let revision = *old.installed_program().revision();
-    let checkpoint = old
-        .with_host_advancement(|phase| {
-            old.runtime()
-                .capture_application_checkpoint(
-                    &phase,
-                    WorthQueryCheckpointCapturePolicy::SystemAllocation,
-                )
-                .unwrap()
-        })
-        .unwrap();
-    drop(old);
+    let dir = unique_directory("persistence-dest");
+    let old = open_directory::<8>(&dir);
+    let revision = *old.runtime().installed_program().revision();
+    close_directory(old);
     let successor = install::<9>();
-    let schema = program::schema::<8>();
-    let restored = WorthQueryInterimCheckpointRestore::program(
-        program::validated::<8>(&schema),
-        schema,
-        (program::Installation::Native,),
-        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
-        checkpoint,
-    )
-    .unwrap();
-    assert_eq!(*restored.installed_program().revision(), revision);
-    assert!(matches!(invoke(&restored, 86), Outcome::Committed { .. }));
+    let restored = open_directory::<8>(&dir);
+    assert_eq!(*restored.runtime().installed_program().revision(), revision);
+    assert!(matches!(
+        invoke(restored.runtime(), 86),
+        Outcome::Committed { .. }
+    ));
     assert!(matches!(invoke(&successor, 96), Outcome::Committed { .. }));
-    assert_eq!(read_retention(&restored), 8);
+    assert_eq!(read_retention(restored.runtime()), 8);
     assert_eq!(read_retention(&successor), 9);
+    close_directory(restored);
+    let _ = std::fs::remove_dir_all(&dir);
 }
 
 #[test]
@@ -67,38 +54,21 @@ fn authored_body_portable_readmission_preserves_values_and_rejects_incomplete_re
 
 #[test]
 fn authored_body_input_survives_checkpoint_and_fresh_portable_readmission() {
-    let old = install::<100>();
-    let revision = *old.installed_program().revision();
-    let checkpoint = old
-        .with_host_advancement(|phase| {
-            old.runtime()
-                .capture_application_checkpoint(
-                    &phase,
-                    WorthQueryCheckpointCapturePolicy::SystemAllocation,
-                )
-                .unwrap()
-        })
-        .unwrap();
-    drop(old);
+    let dir = unique_directory("persistence-input");
+    let old = open_directory::<100>(&dir);
+    let revision = *old.runtime().installed_program().revision();
+    close_directory(old);
     let schema = program::schema::<100>();
     let portable = WorthQueryPortableApplicationSchemaRecord::project(schema.erased());
     assert_eq!(
         validate_portable_application_schema_freshly(portable).unwrap(),
         *schema.erased()
     );
-    let restored = WorthQueryInterimCheckpointRestore::program(
-        program::validated::<100>(&schema),
-        schema,
-        (program::Installation::Native,),
-        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
-        checkpoint,
-    )
-    .unwrap();
-    assert_eq!(*restored.installed_program().revision(), revision);
+    let restored = open_directory::<100>(&dir);
+    assert_eq!(*restored.runtime().installed_program().revision(), revision);
     assert!(matches!(
         invoke_input(
-            &restored,
+            restored.runtime(),
             1005,
             super::input::SetRetentionInput {
                 identity: super::DOCUMENT_IDENTITY.to_owned(),
@@ -108,5 +78,7 @@ fn authored_body_input_survives_checkpoint_and_fresh_portable_readmission() {
         ),
         Outcome::Committed { .. }
     ));
-    assert_eq!(read_retention(&restored), 42);
+    assert_eq!(read_retention(restored.runtime()), 42);
+    close_directory(restored);
+    let _ = std::fs::remove_dir_all(&dir);
 }

@@ -3,8 +3,7 @@
 //! TestDurableMedium using the owner's read-only lineage residency observation.
 use super::*;
 use worth_relational::facade::{
-    durability::RelationalCheckpointArtifactPolicy,
-    runtime::RelationalRuntime,
+    durability::RelationalCheckpointArtifactPolicy, runtime::RelationalRuntime,
 };
 
 #[derive(Clone, Copy, Debug)]
@@ -90,7 +89,10 @@ fn checkpoint_restore_protects_published_lineage_identities_in_each_lane() {
                     source: None,
                 }
             } else {
-                RelationalCheckpointArtifactPolicy::Embedded
+                RelationalCheckpointArtifactPolicy::ExternalMembers {
+                    current_members: &[],
+                    source: None,
+                }
             };
             let native = producer
                 .durability_authority()

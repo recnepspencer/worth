@@ -90,6 +90,7 @@ pub fn readmit_latest(
     originals: &WorldProgramActivationHistory,
     selected: &CompositeCommitIdentity,
     material: Option<&super::super::WorthQueryPrimaryGraphProvider>,
+    metadata_authority: Option<&worth_relational::facade::durability::HomeReadmissionMetadataAuthority>,
 ) -> Result<Option<RecordRef>, Denial> {
     let empty_map = std::collections::BTreeMap::new();
     let empty_set = std::collections::BTreeSet::new();
@@ -101,6 +102,7 @@ pub fn readmit_latest(
         selected,
         material,
         (&empty_map, &empty_set),
+        metadata_authority,
     )
 }
 pub fn readmit_latest_with_unpublished(
@@ -117,6 +119,7 @@ pub fn readmit_latest_with_unpublished(
         >,
         &std::collections::BTreeSet<CommitId>,
     ),
+    metadata_authority: Option<&worth_relational::facade::durability::HomeReadmissionMetadataAuthority>,
 ) -> Result<Option<RecordRef>, Denial> {
     let (_, basis) = native
         .observe_branch(&native.main_branch_identity())
@@ -129,6 +132,7 @@ pub fn readmit_latest_with_unpublished(
         JoinScope::CurrentNativeHead(selected, unpublished.0, unpublished.1),
         &basis,
         material,
+        metadata_authority,
     )
 }
 pub fn readmit_branch(
@@ -138,6 +142,7 @@ pub fn readmit_branch(
     originals: &WorldProgramActivationHistory,
     branch: &ProductBranchObservation,
     material: Option<&super::super::WorthQueryPrimaryGraphProvider>,
+    metadata_authority: Option<&worth_relational::facade::durability::HomeReadmissionMetadataAuthority>,
 ) -> Result<Option<RecordRef>, Denial> {
     readmit(
         execution,
@@ -147,6 +152,7 @@ pub fn readmit_branch(
         JoinScope::SelectedWorldBranch(branch),
         branch.basis().relational_basis(),
         material,
+        metadata_authority,
     )
 }
 fn readmit(
@@ -157,6 +163,7 @@ fn readmit(
     scope: JoinScope<'_>,
     basis: &AdmittedRelationalBranchBasis,
     material: Option<&super::super::WorthQueryPrimaryGraphProvider>,
+    metadata_authority: Option<&worth_relational::facade::durability::HomeReadmissionMetadataAuthority>,
 ) -> Result<Option<RecordRef>, Denial> {
     let owner = scope
         .selected()
@@ -169,6 +176,7 @@ fn readmit(
         layout,
         basis,
         WorldOwnerCoordinate::Home { owner },
+        metadata_authority,
     )?;
     if let JoinScope::CurrentNativeHead(_, continuable, all_unpublished) = scope {
         // Released-only unpublished Native rows cannot continue; continuable rows

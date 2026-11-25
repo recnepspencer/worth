@@ -4,6 +4,9 @@ use super::*;
 #[doc(hidden)]
 pub trait RecoveryPlanOwnerPort: Sized {
     fn branch_transitions(&self) -> &super::super::RecoveryBranchTransitions;
+    /// Medium recovery read its checkpoint from the selected durable source.
+    fn acknowledge_selected_checkpoint(&mut self);
+    fn selected_checkpoint_acknowledged(&self) -> bool;
     fn attach_original_source(
         &mut self,
         source: Option<
@@ -77,6 +80,14 @@ pub trait RecoveryPlanOwnerPort: Sized {
 impl RecoveryPlanOwnerPort for RecoveryPlan {
     fn branch_transitions(&self) -> &super::super::RecoveryBranchTransitions {
         &self.branch_transitions
+    }
+
+    fn acknowledge_selected_checkpoint(&mut self) {
+        self.selected_checkpoint_acknowledged = self.checkpoint.is_some();
+    }
+
+    fn selected_checkpoint_acknowledged(&self) -> bool {
+        self.selected_checkpoint_acknowledged
     }
 
     fn attach_original_source(

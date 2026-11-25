@@ -1,5 +1,4 @@
 use worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandProgress;
-use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 
 use super::*;
 
@@ -60,23 +59,16 @@ mod serial {
     fn restored_output_reuses_under_receiving_host_policy_without_provider_contact() {
         let _guard = checkpoint_recovery_test_guard();
         let provider_observation = crate::producer::ProviderContacts::default();
-        let application = support::observed::install(None, &provider_observation);
+        let application = support::observed::open_directory(None, &provider_observation);
         let (scope, principal) = authenticate(&application);
         let request = application.request(&principal, &scope);
         drop(settle(&request, &application));
         drop(principal);
         drop(scope);
-        let checkpoint = application
-            .with_host_advancement(|host_phase| {
-                application
-                    .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
-                    .unwrap()
-            })
-            .expect("installed host call opens");
-        drop(application);
+        let directory = application.checkpoint_and_close_for_reopen();
 
-        let restored = support::observed::install_program::<CheckpointProgram>(
-            Some(checkpoint),
+        let restored = support::observed::open_directory_program::<CheckpointProgram>(
+            Some(directory),
             worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::new(
                 NonZeroUsize::new(32).unwrap(),
             ),
@@ -93,22 +85,15 @@ mod serial {
     #[test]
     fn restored_final_output_keeps_original_create_producer_and_zero_contact() {
         let _guard = checkpoint_recovery_test_guard();
-        let application = install(None);
+        let application = support::open_directory(None);
         let (scope, principal) = authenticate(&application);
         let request = application.request(&principal, &scope);
         drop(settle(&request, &application));
         drop(principal);
         drop(scope);
-        let checkpoint = application
-            .with_host_advancement(|host_phase| {
-                application
-                    .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
-                    .unwrap()
-            })
-            .expect("installed host call opens");
-        drop(application);
+        let directory = application.checkpoint_and_close_for_reopen();
 
-        let restored = install(Some(checkpoint));
+        let restored = support::open_directory(Some(directory));
         let (scope, principal) = authenticate(&restored);
         let request = restored.request(&principal, &scope);
         let controls = WorthQueryOutputDemandControls::default();

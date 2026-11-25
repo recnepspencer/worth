@@ -13,9 +13,18 @@ pub(crate) trait RuntimeWorldRecoveryService:
     fn retire_changed_history(
         &self,
     ) -> Result<Vec<crate::identity::CompositeCommitIdentity>, HistoryReclamationDenial>;
+    fn retire_changed_history_with_request(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Vec<crate::identity::CompositeCommitIdentity>, HistoryReclamationDenial>;
     fn release_retired_branch_history(
         &self,
         from: &crate::identity::CompositeCommitIdentity,
+    ) -> Result<crate::history::RetiredBranchHistoryRelease, HistoryReclamationDenial>;
+    fn release_retired_branch_history_with_request(
+        &self,
+        from: &crate::identity::CompositeCommitIdentity,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<crate::history::RetiredBranchHistoryRelease, HistoryReclamationDenial>;
     fn inspect_recovered_effects(
         &self,

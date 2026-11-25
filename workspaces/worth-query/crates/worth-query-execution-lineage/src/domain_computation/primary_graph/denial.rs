@@ -163,22 +163,10 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     InvariantInstallationReceiptMismatch,
     /// Recovery from a checkpoint was rejected.
     CheckpointRecoveryRejected,
-    InterimCheckpointCaptureOriginMissing,
-    InterimCheckpointCaptureOriginMismatch,
-    InterimCheckpointReceiverMismatch,
-    UnsupportedCheckpointFormat {
-        observed: u16,
-        supported: u16,
-    },
-    UnsupportedCheckpointWorkflowContract {
-        facts: u16,
-        instances: u16,
-    },
     UnsupportedCheckpointProducerFactVersion {
         observed: u16,
         supported: u16,
     },
-    UnsupportedRecoveredNativeAuthorityLayout,
     /// A declared output producer has no binding.
     MissingProducerBinding,
     /// A producer is bound more than once.

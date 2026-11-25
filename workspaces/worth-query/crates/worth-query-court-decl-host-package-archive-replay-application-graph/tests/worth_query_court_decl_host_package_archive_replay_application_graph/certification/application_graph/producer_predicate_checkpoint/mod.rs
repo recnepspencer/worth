@@ -2,78 +2,69 @@ pub(crate) use worth_query_testkit_certification_application_graph::facade::cert
 
 #[test]
 fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_change() {
-    let (checkpoint, subject, foreign_settlement) = {
-        let host = publish(
+    let directory = unique_directory("producer-predicate-reopen");
+    let (directory, subject) = {
+        let host = open_directory(
+            directory,
             validated_program(),
             WorthQueryApplicationProgramRoster::new().support(validated_second_program()),
         )
         .unwrap();
-        let runtime = host.runtime();
+        let subject = {
+            let runtime = host.runtime();
+            let scope = request_scope();
+            let principal = authenticate_operator(runtime.installed_schema(), &scope);
+            let request = runtime.request(&principal, &scope);
+            let mut handle = request
+                .demand(RetentionAssessmentDemand::new(DOCUMENT_IDENTITY))
+                .start_in_program::<_, AssessmentRoot>(&host)
+                .expect("the installed producer demand starts");
+            let WorthQueryApplicationOutputDemandProgress::Settled(settled) =
+                handle.settle(&request).unwrap()
+            else {
+                panic!("the installed producer must settle");
+            };
+            assert_eq!(settled.producer_contacts_in_this_demand(), 1);
+            assert!(settled.application_commit_receipt().is_some());
+            settled
+                .outputs_of::<RetentionAssessmentOutputs>()
+                .unwrap()
+                .entity::<AssessmentOutput>()
+                .unwrap()
+                .entity_id()
+        };
+        let directory = host.checkpoint_and_close_for_reopen();
+        (directory, subject)
+    };
+    let foreign_host = open_directory(
+        unique_directory("producer-predicate-foreign"),
+        validated_program(),
+        WorthQueryApplicationProgramRoster::new().support(validated_second_program()),
+    )
+    .unwrap();
+    let foreign_settlement = {
+        let runtime = foreign_host.runtime();
         let scope = request_scope();
         let principal = authenticate_operator(runtime.installed_schema(), &scope);
         let request = runtime.request(&principal, &scope);
         let mut handle = request
             .demand(RetentionAssessmentDemand::new(DOCUMENT_IDENTITY))
-            .start_in_program::<_, AssessmentRoot>(&host)
-            .expect("the installed producer demand starts");
+            .start_in_program::<_, AssessmentRoot>(&foreign_host)
+            .unwrap();
         let WorthQueryApplicationOutputDemandProgress::Settled(settled) =
             handle.settle(&request).unwrap()
         else {
-            panic!("the installed producer must settle");
+            panic!("foreign producer must settle");
         };
-        assert_eq!(settled.producer_contacts_in_this_demand(), 1);
-        assert!(settled.application_commit_receipt().is_some());
-        let subject = settled
-            .outputs_of::<RetentionAssessmentOutputs>()
-            .unwrap()
-            .entity::<AssessmentOutput>()
-            .unwrap()
-            .entity_id();
-        let (checkpoint, sections) = runtime
-            .with_host_advancement(|host_phase| {
-                runtime
-                    .capture_application_checkpoint_with_sections(
-                        &host_phase,
-                        CapturePolicy::SystemAllocation,
-                    )
-                    .unwrap()
-            })
-            .expect("installed host call opens");
-        assert_eq!(
-            sections.accepted_output_count(),
-            1,
-            "the actual ready output is captured"
-        );
-        assert_captured_document_predicate(
-            checkpoint.bytes(),
-            sections.accepted_output_bytes(),
-            subject,
-        );
-        (checkpoint, subject, settled)
+        settled
     };
-    let restored = restore(
+    let restored = open_directory(
+        directory,
         validated_program(),
-        checkpoint,
         WorthQueryApplicationProgramRoster::new().support(validated_second_program()),
     )
     .expect("the producer and output are readmitted by their installed owners");
     let runtime = restored.runtime();
-    let (recaptured, sections) = runtime
-        .with_host_advancement(|host_phase| {
-            runtime
-                .capture_application_checkpoint_with_sections(
-                    &host_phase,
-                    CapturePolicy::SystemAllocation,
-                )
-                .unwrap()
-        })
-        .expect("installed host call opens");
-    assert_eq!(sections.accepted_output_count(), 1);
-    assert_captured_document_predicate(
-        recaptured.bytes(),
-        sections.accepted_output_bytes(),
-        subject,
-    );
     let scope = request_scope();
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
     let request = runtime.request(&principal, &scope);
@@ -93,7 +84,7 @@ fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_ch
     );
     assert!(
         settled.application_commit_receipt().is_none(),
-        "this authority came from the checkpoint"
+        "this authority came from Directory Home recovery"
     );
     assert_eq!(
         settled
@@ -151,7 +142,6 @@ fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_ch
 pub(crate) mod ordinary_source;
 
 mod changed_build;
-pub(crate) mod transition;
 
 mod directory_changed_build;
 mod directory_source_custody;

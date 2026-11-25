@@ -15,7 +15,7 @@ pub(super) fn check(
 ) {
     let saved = runtime
         .durability_authority()
-        .native_checkpoint(execution, execution.allocation_policy())
+        .native_checkpoint_with_policy(execution, execution.allocation_policy(), worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
         .unwrap();
     let mut reopened = registration::runtime();
     let receipt = reopened
@@ -25,7 +25,11 @@ pub(super) fn check(
         .unwrap();
     reopened
         .durability_recovery()
-        .restore_native_checkpoint(execution, &saved)
+        .restore_native_checkpoint(
+            execution,
+            &saved,
+            worth_testkit_relational::cold_recovery::members_source(&saved),
+        )
         .unwrap();
     let receipt = reopened
         .readmit_recovered_initial_schema_installation(receipt)

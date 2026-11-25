@@ -22,7 +22,6 @@ fn authored_source_walk_is_not_reclassified_as_predecessor_output() {
         Fault::None,
         0,
         false,
-        None,
     )
     .unwrap();
     let (scope, principal) = world::authenticate(&app);

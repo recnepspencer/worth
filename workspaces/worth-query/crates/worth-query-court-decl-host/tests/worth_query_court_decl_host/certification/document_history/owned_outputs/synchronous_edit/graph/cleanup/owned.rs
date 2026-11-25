@@ -20,7 +20,7 @@ fn exercise(worker: bool, interrupted: bool) {
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
     let original_head = courts::native_head(&host);
-    let before = super::super::super::failure::checkpoint(&host);
+    let before = super::super::super::failure::memory_basis_state(&host);
     let key = "owned-native-cleanups".to_owned();
     let operation = request
         .mutate(edit::Intent {
@@ -75,7 +75,7 @@ fn exercise(worker: bool, interrupted: bool) {
         contacts + 2
     );
     assert_eq!(courts::native_head(&host), original_head);
-    super::super::super::failure::assert_model_unchanged(&host, &before);
+    super::super::super::failure::assert_memory_basis_unchanged(&host, &before);
     drop(schedule);
     if interrupted {
         use worth_query_host::facade::admission::authenticated_principal::{
@@ -123,7 +123,7 @@ fn exercise(worker: bool, interrupted: bool) {
             "the first owner really released, the other remains owned"
         );
         assert_eq!(courts::native_head(&host), original_head);
-        super::super::super::failure::assert_model_unchanged(&host, &before);
+        super::super::super::failure::assert_memory_basis_unchanged(&host, &before);
         drop(control);
         let mut remaining = remaining;
         let _replacement = remaining
@@ -174,7 +174,7 @@ fn exercise(worker: bool, interrupted: bool) {
         0
     );
     assert_eq!(courts::native_head(&host), original_head);
-    super::super::super::failure::assert_model_unchanged(&host, &before);
+    super::super::super::failure::assert_memory_basis_unchanged(&host, &before);
 }
 #[test]
 fn one_fixed_edit_retains_both_native_cleanup_owners_and_receipts() {

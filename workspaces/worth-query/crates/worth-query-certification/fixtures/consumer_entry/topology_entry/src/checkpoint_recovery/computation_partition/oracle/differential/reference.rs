@@ -1,12 +1,10 @@
 //! Independent model history preserves Native bindings without reading the tested runtime.
 use super::*;
-use std::any::Any;
+use std::any::TypeId;
 use std::cell::{Cell, RefCell};
+use std::path::PathBuf;
 use worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile;
 
-// The four-round independent model captured 77 checkpoints through 162 events.
-// Its ordinary model calls keep their finite World policy; whole-history capture
-// borrows the separate population setup request.
 const FULL_RUN_HISTORY_POLICY: worth_foundational::ExecutionRequestPolicy =
     worth_foundational::ExecutionRequestPolicy::new(
         worth_foundational::ExecutionPosture::Serial,
@@ -39,8 +37,15 @@ pub(in super::super) struct Reference {
     model: RefCell<Option<ModelRuntime>>,
 }
 struct ModelRuntime {
-    application: Box<dyn Any>,
+    type_id: TypeId,
+    directory: PathBuf,
+    snapshot: Option<support::directory::ClosedDirectorySnapshot>,
     applied: usize,
+}
+impl Drop for ModelRuntime {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.directory);
+    }
 }
 impl Reference {
     pub(in super::super) fn new(seed: &Model) -> Self {
@@ -56,12 +61,11 @@ impl Reference {
     pub(in super::super) fn demanded(&mut self, write: Option<OwnWrite>) {
         self.history.push(Event::Demand(write));
     }
-    /// The independent model runtime applies each model command once. Each
-    /// comparison installs a fresh runtime from that model's Native truth alone;
-    /// it never reads the tested runtime's records or snapshots.
-    /// Source entity generations need their creation/deletion history. Generated
-    /// output allocations additionally need the model's earlier demands, run
-    /// without computation reuse; the final runtime receives Native truth only.
+    /// The independent model runtime applies each model command once into a
+    /// closed Directory Home. Each comparison restores that closed snapshot
+    /// in-place into the same Home directory and opens a fresh runtime with a
+    /// fresh build identity so no carried producer output cache is reused; it
+    /// never reads the tested runtime.
     pub(in super::super) fn install<
         const REUSE: bool,
         const WORK: usize,
@@ -71,20 +75,39 @@ impl Reference {
         &self,
         profile: WorthQueryOutputDemandResourceProfile,
         seed: impl FnOnce(&mut Graph, &Model),
-    ) -> Application<REUSE, WORK, RUNS, MODE> {
+    ) -> installation::DirApplication<REUSE, WORK, RUNS, MODE> {
         let execution_policy = if MODE == 2 {
             model_history_policy()
         } else {
             FULL_RUN_HISTORY_POLICY
         };
+        let target_type = TypeId::of::<installation::DirApplication<REUSE, WORK, RUNS, MODE>>();
         let mut model = self.model.borrow_mut();
-        if !model.as_ref().is_some_and(|model| {
-            model
-                .application
-                .is::<Application<REUSE, WORK, RUNS, MODE>>()
-        }) {
-            *model = Some(ModelRuntime {
-                application: Box::new(installation::install_variant_with_observations::<
+        let (application, applied) = match model.take() {
+            Some(mut existing) if existing.type_id == target_type => {
+                if let Some(snapshot) = existing.snapshot.take() {
+                    snapshot.restore_into(&existing.directory);
+                }
+                let dir = existing.directory.clone();
+                let applied = existing.applied;
+                std::mem::forget(existing);
+                let app = installation::open_directory_variant_with_observations::<
+                    REUSE,
+                    WORK,
+                    RUNS,
+                    MODE,
+                >(
+                    Some(dir),
+                    profile,
+                    0,
+                    execution_policy,
+                    |_| panic!("independent Native model truth does not reseed"),
+                );
+                (app, applied)
+            }
+            other => {
+                drop(other);
+                let app = installation::open_directory_variant_with_observations::<
                     REUSE,
                     WORK,
                     RUNS,
@@ -95,77 +118,71 @@ impl Reference {
                     0,
                     execution_policy,
                     |graph| seed(graph, &self.seed),
-                )),
-                applied: 0,
-            });
-        }
-        let model = model
-            .as_mut()
-            .expect("the independently seeded model runtime exists");
-        let application = model
-            .application
-            .downcast_ref::<Application<REUSE, WORK, RUNS, MODE>>()
-            .expect("the model runtime's concrete program was selected above");
-        let (scope, principal) = authenticate(application);
-        let request = application.request(&principal, &scope);
-        let mut command = 0x69_f000 + model.applied as u64;
-        MODEL_REPLAY.set(true);
-        let replay = ModelReplay;
-        for event in &self.history[model.applied..] {
-            command += 1;
-            match event {
-                Event::Edit(Change::Entry(change)) => {
-                    edit(&request, application, change.clone(), command)
-                }
-                Event::Edit(Change::Ordinate(y)) => adjust(&request, application, *y, command),
-                Event::Demand(write) if MODE == 2 => {
-                    arm_own_write(*write);
-                    demand(&request, application);
-                    arm_own_write(None);
-                }
-                Event::Demand(Some(write)) => edit(
-                    &request,
-                    application,
-                    at_demand_scope(EntryEdit::new(
-                        "even",
-                        write.number,
-                        super::super::super::entry_edit::EntryFact::Value,
-                        write.bits,
-                    )),
-                    command,
-                ),
-                Event::Demand(None) => {}
+                );
+                (app, 0)
             }
+        };
+        {
+            let (scope, principal) = authenticate(&application);
+            let request = application.request(&principal, &scope);
+            let mut command = 0x69_f000 + applied as u64;
+            MODEL_REPLAY.set(true);
+            let replay = ModelReplay;
+            for event in &self.history[applied..] {
+                command += 1;
+                match event {
+                    Event::Edit(Change::Entry(change)) => {
+                        edit(&request, &application, change.clone(), command)
+                    }
+                    Event::Edit(Change::Ordinate(y)) => {
+                        adjust(&request, &application, *y, command)
+                    }
+                    Event::Demand(write) if MODE == 2 => {
+                        arm_own_write(*write);
+                        demand(&request, &application);
+                        arm_own_write(None);
+                    }
+                    Event::Demand(Some(write)) => edit(
+                        &request,
+                        &application,
+                        at_demand_scope(EntryEdit::new(
+                            "even",
+                            write.number,
+                            super::super::super::entry_edit::EntryFact::Value,
+                            write.bits,
+                        )),
+                        command,
+                    ),
+                    Event::Demand(None) => {}
+                }
+            }
+            drop(replay);
         }
-        drop(replay);
-        model.applied = self.history.len();
-        let capture = worth_query_host::facade::primary_graph::query_test_execution_authority_for_test()
-            .request_lease(worth_query_host::facade::runtime::LeaseRequest {
-                policy: crate::checkpoint_recovery::support::observation::POPULATION_BOOTSTRAP_POLICY,
-                cancellation: worth_query_host::facade::runtime::CancellationToken::new(),
-                deadline: None,
-            }).expect("the population owns its original checkpoint-capture request");
-        let native = application
-            .with_funded_host_advancement(worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy::Execution(&capture), |host_phase| {
-                application
-                    .capture_native_truth_checkpoint_for_test(&host_phase)
-                    .unwrap()
-            })
-            .expect("installed host call opens");
-        installation::install_variant_with_observations::<REUSE, WORK, RUNS, MODE>(
-            Some(native),
+        let closed_dir = application.checkpoint_and_close_for_reopen();
+        let snapshot =
+            support::directory::ClosedDirectorySnapshot::capture(&closed_dir, "oracle-reference");
+        *model = Some(ModelRuntime {
+            type_id: target_type,
+            directory: closed_dir.clone(),
+            snapshot: Some(snapshot),
+            applied: self.history.len(),
+        });
+        let fresh_build = application_installation::ApplicationBuildIdentity::parse(
+            "22222222-2222-2222-2222-222222222222",
+        )
+        .unwrap();
+        installation::open_directory_variant_with_build::<REUSE, WORK, RUNS, MODE>(
+            Some(closed_dir),
             profile,
             0,
             execution_policy,
             |_| panic!("independent Native model truth does not reseed"),
+            fresh_build,
         )
+        .without_dir_cleanup()
     }
 }
 
-// Generated payloads retain their Native creation/deletion history. Its positive
-// checkpoint journey funds content closure, encoding, integrity and charged
-// per-root kind reconstruction separately
-// from the logical partition ceilings; the shared refusal World stays at 8m.
 pub(in super::super) fn model_history_policy() -> worth_foundational::ExecutionRequestPolicy {
     worth_foundational::ExecutionRequestPolicy::new(
         worth_foundational::ExecutionPosture::Serial,

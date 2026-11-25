@@ -16,7 +16,7 @@ pub use checkpoint::{
     WorldProgramActivationHistory, WorldProgramActivationHistoryEntry, WORLD_CHECKPOINT_PROTOCOL,
     WORLD_CHECKPOINT_VERSION,
 };
-pub(crate) use codec::DecodedWorldRecord;
+pub(crate) use codec::{decode as decode_record, DecodedWorldRecord};
 mod prepared_home_source;
 pub use prepared_home_source::{PreparedWorldHomeData, PreparedWorldHomeSource};
 mod frontiers;
@@ -57,8 +57,8 @@ pub(crate) use association::{
 };
 pub(crate) use binding::{
     ActualWorldNoEffectPublication, ActualWorldPublication, HomeProgramBindingReservation,
-    WorldCommittedPublication, WorldDurableMediumBinding, WorldDurablePublicationStop,
-    WorldPublicationRefusal,
+    PreparedOccurrenceLocation, WorldCommittedPublication, WorldDurableMediumBinding,
+    WorldDurablePublicationStop, WorldPublicationRefusal,
 };
 pub(crate) use frontiers::WorldIdentityFrontiers;
 pub use medium::{

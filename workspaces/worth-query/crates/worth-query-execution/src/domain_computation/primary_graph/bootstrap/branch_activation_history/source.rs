@@ -12,17 +12,23 @@ pub(in crate::domain_computation::primary_graph) struct BranchActivationSource<'
     native: &'a RelationalRuntime,
     layout: &'a WorthQueryPrimaryGraphLayout,
     published: EntityId,
+    metadata_authority:
+        Option<&'a worth_relational::facade::durability::HomeReadmissionMetadataAuthority>,
 }
 impl<'a> BranchActivationSource<'a> {
     pub(in crate::domain_computation::primary_graph) const fn new(
         native: &'a RelationalRuntime,
         layout: &'a WorthQueryPrimaryGraphLayout,
         published: EntityId,
+        metadata_authority: Option<
+            &'a worth_relational::facade::durability::HomeReadmissionMetadataAuthority,
+        >,
     ) -> Self {
         Self {
             native,
             layout,
             published,
+            metadata_authority,
         }
     }
 
@@ -33,15 +39,21 @@ impl<'a> BranchActivationSource<'a> {
         branch: &ProductBranchObservation,
     ) -> Result<(Self, AspectValue), Denial> {
         let (published, current) =
-            read_record(execution, native, layout, branch.basis().relational_basis())?;
-        Ok((Self::new(native, layout, published), current))
+            read_record(execution, native, layout, branch.basis().relational_basis(), None)?;
+        Ok((Self::new(native, layout, published, None), current))
     }
     pub(in crate::domain_computation::primary_graph) fn read(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
     ) -> Result<AspectValue, Denial> {
-        let (identity, value) = read_record(execution, self.native, self.layout, basis)?;
+        let (identity, value) = read_record(
+            execution,
+            self.native,
+            self.layout,
+            basis,
+            self.metadata_authority,
+        )?;
         if identity != self.published {
             return Err(Denial::SupportUnavailable);
         }
@@ -63,19 +75,37 @@ impl<'a> BranchActivationSource<'a> {
         loop {
             execution.consult().map_err(Denial::Execution)?;
             let prepared = observation
-                .prepare_exact_product_history_page(*execution, &cursor)
+                .prepare_retained_product_history_page(*execution, &cursor)
                 .map_err(Denial::History)?;
             let (page, next) = cursor.accept_page(prepared).map_err(Denial::Continuation)?;
             if let Some(commit) = page.commit() {
                 let value = self.read(execution, commit.basis().relational_basis())?;
                 revisions.insert(recorded_revision(&value)?);
-                if let Some((expected, revision)) = predecessor.take() {
-                    if commit.identity().owner_identity().durable() != Some(expected.owner())
+                if let Some((mut expected, mut revision)) = predecessor.take() {
+                    while commit.identity().owner_identity().durable() != Some(expected.owner())
                         || commit.identity().ordinal() != expected.ordinal()
                     {
-                        return Err(Denial::HistoryPredecessorMismatch {
-                            branch: branch.branch_identity().clone(),
-                        });
+                        execution.consult().map_err(Denial::Execution)?;
+                        if !originals.is_retired(expected) {
+                            return Err(Denial::HistoryPredecessorMismatch {
+                                branch: branch.branch_identity().clone(),
+                            });
+                        }
+                        let skipped = originals.recorded_entry(expected).ok_or_else(|| {
+                            Denial::HistoryPredecessorMismatch {
+                                branch: branch.branch_identity().clone(),
+                            }
+                        })?;
+                        let skipped_revision = skipped
+                            .expected_activation(execution)
+                            .map_err(|cause| Denial::Source(RuntimeWorldServiceDenial::Denied(cause)))?;
+                        revisions.insert(CanonicalDigestId::new(skipped_revision));
+                        expected = skipped.predecessor().ok_or_else(|| {
+                            Denial::HistoryPredecessorMismatch {
+                                branch: branch.branch_identity().clone(),
+                            }
+                        })?;
+                        revision = skipped_revision;
                     }
                     compare(&value, revision, branch, commit.identity())?;
                 }
@@ -95,10 +125,25 @@ impl<'a> BranchActivationSource<'a> {
                 }
             }
             if page.is_complete() {
-                if predecessor.is_some() {
-                    return Err(Denial::HistoryPredecessorMismatch {
-                        branch: branch.branch_identity().clone(),
-                    });
+                while let Some((expected, _)) = predecessor.take() {
+                    execution.consult().map_err(Denial::Execution)?;
+                    if !originals.is_retired(expected) {
+                        return Err(Denial::HistoryPredecessorMismatch {
+                            branch: branch.branch_identity().clone(),
+                        });
+                    }
+                    let skipped = originals.recorded_entry(expected).ok_or_else(|| {
+                        Denial::HistoryPredecessorMismatch {
+                            branch: branch.branch_identity().clone(),
+                        }
+                    })?;
+                    let skipped_revision = skipped
+                        .expected_activation(execution)
+                        .map_err(|cause| Denial::Source(RuntimeWorldServiceDenial::Denied(cause)))?;
+                    revisions.insert(CanonicalDigestId::new(skipped_revision));
+                    if let Some(parent) = skipped.predecessor() {
+                        predecessor = Some((parent, skipped_revision));
+                    }
                 }
                 return Ok(revisions);
             }
@@ -136,29 +181,55 @@ fn read_record(
     native: &RelationalRuntime,
     layout: &WorthQueryPrimaryGraphLayout,
     basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
+    metadata_authority: Option<
+        &worth_relational::facade::durability::HomeReadmissionMetadataAuthority,
+    >,
 ) -> Result<(EntityId, AspectValue), Denial> {
-    let view = native
-        .read_truth()
-        .project_observation(&basis.observation())
-        .map_err(|cause| {
-            Denial::Native(WorthQueryPrimaryGraphInstallationDenial::new(
-                WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
-                format!("branch activation observation refused: {cause:?}"),
-            ))
-        })?;
+    let map_refusal = |cause| {
+        Denial::Native(WorthQueryPrimaryGraphInstallationDenial::new(
+            WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
+            format!("branch activation observation refused: {cause:?}"),
+        ))
+    };
     let mut value = None;
-    let (identity, _) = super::super::read_activation(
-        execution,
-        &view,
-        layout.program_activation(),
-        usize::MAX,
-        "branch activation could not be read",
-        |rendering| {
-            value = Some(rendering.clone());
-            true
-        },
-    )
-    .map_err(Denial::Native)?;
+    let (identity, _) = match metadata_authority {
+        Some(authority) => {
+            let view = native
+                .read_truth()
+                .project_home_readmission_metadata(authority, &basis.observation())
+                .map_err(map_refusal)?;
+            super::super::program_activation_recovery::read_activation_home_readmission(
+                execution,
+                &view,
+                layout.program_activation(),
+                usize::MAX,
+                "branch activation could not be read",
+                |rendering| {
+                    value = Some(rendering.clone());
+                    true
+                },
+            )
+            .map_err(Denial::Native)?
+        }
+        None => {
+            let view = native
+                .read_truth()
+                .project_observation(&basis.observation())
+                .map_err(map_refusal)?;
+            super::super::read_activation(
+                execution,
+                &view,
+                layout.program_activation(),
+                usize::MAX,
+                "branch activation could not be read",
+                |rendering| {
+                    value = Some(rendering.clone());
+                    true
+                },
+            )
+            .map_err(Denial::Native)?
+        }
+    };
     Ok((
         identity,
         value.expect("successful exact activation read visits its value"),

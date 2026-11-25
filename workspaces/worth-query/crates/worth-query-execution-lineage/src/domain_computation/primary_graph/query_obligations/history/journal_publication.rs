@@ -52,28 +52,46 @@ impl QueryObligationPublication<'_> {
                 QueryObligationPublicationOutcome::ProvenNoEffect(proof) => {
                     Self::admit_subject(proof.subject(), medium, &frame)?;
                     medium.acknowledge_no_effect(proof)?;
-                    let mut state = self.lifecycle.state();
-                    if let Some(transfer) = state
-                        .journal
-                        .as_ref()
-                        .and_then(|journal| journal.interpretation_transfer.as_ref())
+                    let prune_pins = matches!(
+                        frame.record(),
+                        QueryObligationRecord::OutputDemand(
+                            QueryOutputDemandRecord::Retain(_)
+                                | QueryOutputDemandRecord::Links { .. }
+                        ) | QueryObligationRecord::OutputSource(QueryOutputSourceRecord::Retain(_))
+                    );
                     {
-                        transfer.validate(&state, &frame)?;
+                        let mut state = self.lifecycle.state();
+                        if let Some(transfer) = state
+                            .journal
+                            .as_ref()
+                            .and_then(|journal| journal.interpretation_transfer.as_ref())
+                        {
+                            transfer.validate(&state, &frame)?;
+                        }
+                        if let Some(transfer) = state
+                            .journal
+                            .as_mut()
+                            .expect("original pending journal")
+                            .interpretation_transfer
+                            .take()
+                        {
+                            transfer.no_effect(&mut state);
+                        }
+                        if let QueryObligationRecord::OutputDemand(
+                            QueryOutputDemandRecord::Retain(row),
+                        ) = frame.record()
+                        {
+                            state.demand_lifecycles.remove(&row.acquire_position);
+                        }
+                        state
+                            .journal
+                            .as_mut()
+                            .expect("original pending journal")
+                            .pending = None;
                     }
-                    if let Some(transfer) = state
-                        .journal
-                        .as_mut()
-                        .expect("original pending journal")
-                        .interpretation_transfer
-                        .take()
-                    {
-                        transfer.no_effect(&mut state);
+                    if prune_pins {
+                        self.lifecycle.prune_attached_obligation_basis_pins();
                     }
-                    state
-                        .journal
-                        .as_mut()
-                        .expect("original pending journal")
-                        .pending = None;
                     return Err(QueryObligationDenial::PublicationNoEffect);
                 }
                 QueryObligationPublicationOutcome::Pending => {
@@ -117,7 +135,16 @@ impl QueryObligationPublication<'_> {
         proof: worth_proof::DurablyCommitted<worth_proof::CommittedHomeQueryObligation>,
         medium: &dyn QueryObligationsMedium,
     ) -> Result<(), QueryObligationDenial> {
-        proof.consume(|publication| {
+        let prune_pins = matches!(
+            frame.record(),
+            QueryObligationRecord::OutputDemand(QueryOutputDemandRecord::Discharge { .. })
+                | QueryObligationRecord::OutputSource(QueryOutputSourceRecord::Discharge { .. })
+        ) || matches!(
+            frame.record(),
+            QueryObligationRecord::OutputSource(QueryOutputSourceRecord::Retain(row))
+                if row.discovery_recipe.is_none()
+        );
+        let result = proof.consume(|publication| {
             Self::admit_subject(publication.subject(), medium, &frame)?;
             let mut state = self.lifecycle.state();
             if let Some(transfer) = state
@@ -154,13 +181,23 @@ impl QueryObligationPublication<'_> {
             {
                 entry.status = *after;
             }
+            if let QueryObligationRecord::OutputDemand(QueryOutputDemandRecord::Discharge {
+                acquire_position,
+            }) = frame.record()
+            {
+                state.demand_lifecycles.remove(acquire_position);
+            }
             state
                 .journal
                 .as_mut()
                 .expect("prepared original journal")
                 .pending = None;
             Ok(())
-        })
+        });
+        if result.is_ok() && prune_pins {
+            self.lifecycle.prune_attached_obligation_basis_pins();
+        }
+        result
     }
     pub fn publish(
         &self,
@@ -177,6 +214,9 @@ impl QueryObligationPublication<'_> {
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), QueryObligationDenial> {
         self.finish_pending(medium, request)?;
+        request
+            .consult()
+            .map_err(QueryObligationDenial::Execution)?;
         {
             let mut state = self.lifecycle.state();
             state

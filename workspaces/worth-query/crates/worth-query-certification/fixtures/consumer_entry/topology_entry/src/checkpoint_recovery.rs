@@ -8,7 +8,6 @@ use worth_query_decl::facade::application_program::{
     ApplicationSharedRuleRef,
 };
 use worth_query_decl::facade::application_schema::ApplicationSchemaComposition;
-use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 use worth_query_host::facade::{
     admission::authenticated_principal as authentication,
     application_entry::{
@@ -32,7 +31,6 @@ mod demand_only;
 mod demand_policy;
 mod generated_restoration;
 mod input_cutoff;
-mod interim_origin;
 worth_execution::needs_os_threads! {
     mod late_cancellation;
 }
@@ -226,22 +224,15 @@ mod serial {
     fn recovered_output_survives_an_unrelated_settled_edit_without_producer_contact() {
         let _guard = checkpoint_recovery_test_guard();
         let provider_observation = crate::producer::ProviderContacts::default();
-        let application = support::observed::install(None, &provider_observation);
+        let application = support::observed::open_directory(None, &provider_observation);
         let (scope, principal) = authenticate(&application);
         let request = application.request(&principal, &scope);
         drop(settle(&request, &application));
         drop(principal);
         drop(scope);
-        let checkpoint = application
-            .with_host_advancement(|host_phase| {
-                application
-                    .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
-                    .expect("the ready output is checkpointable")
-            })
-            .expect("installed host call opens");
-        drop(application);
+        let directory = application.checkpoint_and_close_for_reopen();
 
-        let restored = support::observed::install(Some(checkpoint), &provider_observation);
+        let restored = support::observed::open_directory(Some(directory), &provider_observation);
         let (scope, principal) = authenticate(&restored);
         let request = restored.request(&principal, &scope);
         drop(settle(&request, &restored));
@@ -275,22 +266,15 @@ mod serial {
     fn unadopted_recovered_output_survives_an_unrelated_edit_before_first_demand() {
         let _guard = checkpoint_recovery_test_guard();
         let provider_observation = crate::producer::ProviderContacts::default();
-        let application = support::observed::install(None, &provider_observation);
+        let application = support::observed::open_directory(None, &provider_observation);
         let (scope, principal) = authenticate(&application);
         let request = application.request(&principal, &scope);
         drop(settle(&request, &application));
         drop(principal);
         drop(scope);
-        let checkpoint = application
-            .with_host_advancement(|host_phase| {
-                application
-                    .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
-                    .expect("the ready output is checkpointable")
-            })
-            .expect("installed host call opens");
-        drop(application);
+        let directory = application.checkpoint_and_close_for_reopen();
 
-        let restored = support::observed::install(Some(checkpoint), &provider_observation);
+        let restored = support::observed::open_directory(Some(directory), &provider_observation);
         let (scope, principal) = authenticate(&restored);
         let request = restored.request(&principal, &scope);
         let unrelated = request
@@ -323,24 +307,17 @@ mod serial {
     fn checkpoint_reopens_sibling_parameter_partitions_without_contact_or_panic() {
         let _guard = checkpoint_recovery_test_guard();
         let provider_observation = crate::producer::ProviderContacts::default();
-        let application = support::observed::install(None, &provider_observation);
+        let application = support::observed::open_directory(None, &provider_observation);
         let (scope, principal) = authenticate(&application);
         let request = application.request(&principal, &scope);
         drop(settle_for(&request, &application, "anchor-a"));
         drop(settle_for(&request, &application, "anchor-b"));
         drop(principal);
         drop(scope);
-        let checkpoint = application
-            .with_host_advancement(|host_phase| {
-                application
-                    .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
-                    .expect("both parameter partitions are checkpointable")
-            })
-            .expect("installed host call opens");
-        drop(application);
+        let directory = application.checkpoint_and_close_for_reopen();
 
         provider_observation.reset();
-        let restored = support::observed::install(Some(checkpoint), &provider_observation);
+        let restored = support::observed::open_directory(Some(directory), &provider_observation);
         let (scope, principal) = authenticate(&restored);
         let request = restored.request(&principal, &scope);
         let first = settle_for(&request, &restored, "anchor-a");

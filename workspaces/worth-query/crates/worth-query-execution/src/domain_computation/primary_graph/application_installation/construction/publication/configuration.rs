@@ -25,8 +25,6 @@ pub(super) fn prepare<Schema: ApplicationSchemaComposition>(
         authorization_time_source,
         admitted_program_support,
         activation,
-        decoded_checkpoint,
-        interim_continuation,
     } = prepared.consume();
     let (route, installed_conditionals) = if conditionals.is_empty() && producers.is_empty() {
         let route = BootstrapPublicationReservation::prepare(&phase.execution_request())
@@ -78,8 +76,6 @@ pub(super) fn prepare<Schema: ApplicationSchemaComposition>(
         build_identity,
         admitted_program_support,
         activation,
-        decoded_checkpoint,
-        interim_continuation,
     });
     Ok(storage.fill(ConfiguredMemoryService {
         route,

@@ -25,7 +25,7 @@ fn reverse(
 }
 #[test]
 fn undo_regrows_fresh_owned_publications_and_redo_retires_that_fresh_closure() {
-    let app = world::install(2, Arc::default());
+    let app = world::install_memory(2, Arc::default());
     let (scope, principal) = world::authenticate(&app);
     let request = app.runtime().request(&principal, &scope);
     let first = settle(&app, &request);

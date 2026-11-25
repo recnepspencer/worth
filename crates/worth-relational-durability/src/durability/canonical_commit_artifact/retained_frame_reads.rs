@@ -14,6 +14,7 @@ use contracts::storage::data::storage_unavailable::{
 };
 use worth_relational_branch::internal_port as branch;
 use worth_relational_contracts::internal_port as contracts;
+use worth_relational_storage::internal_port::durability::medium::read_protection::RelationalDurableOwnedReadRefusal as Refusal;
 
 /// Strict capture reads original frames only; resident body encoding is forbidden.
 pub fn require_original_artifact(
@@ -90,6 +91,25 @@ pub fn export_artifact(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<Artifact, Denial> {
     contracts::execution::request_custody::check_request(execution).map_err(Denial::Request)?;
+    // Capture journal read protection before holding the cell, so protected
+    // owned reads never wait on a provider while the envelope loan is held.
+    let journal = match cell.loan_artifact_source().backing() {
+        EnvelopeBacking::Journal { entry, source, .. } => {
+            Some((entry.position, std::sync::Arc::clone(source)))
+        }
+        _ => None,
+    };
+    let captured = match journal {
+        None => Ok(None),
+        Some((position, source)) => {
+            use worth_relational_storage::internal_port::durability::medium::read_protection::RelationalDurableReadProtection as Protection;
+            match Protection::capture_journal_when_available(&source, execution) {
+                Ok(protection) => Ok(Some((source, protection))),
+                Err(Refusal::UnsupportedProvider) => Ok(None),
+                Err(cause) => Err(owned_export_denial(cause, position)),
+            }
+        }
+    };
     let mut loan = cell.loan_artifact_source();
     if let Some(failure) = loan.damage() {
         return Err(Denial::StorageUnavailable(failure));
@@ -128,37 +148,31 @@ pub fn export_artifact(
         subject: RelationalStorageSubject::Envelope(entry.position),
         cause,
     };
-    // The existing port certifies no length before reading. Reserve its
-    // complete bounded temporary before asking it to allocate; never guess
-    // a size from unrelated current-root content or read uncharged first.
     const LIMIT: u64 =
         contracts::durability::canonical_commit_artifact::frame_contract::MAXIMUM_ARTIFACT_BYTES
             as u64;
-    let _read = execution
-        .reserve_retained_memory(LIMIT)
-        .map_err(|cause| Denial::Request(cause.into()))?;
-    let read = source.read_commit(entry.position, LIMIT);
-    let result = match read {
-        Err(cause) => Err(Denial::StorageUnavailable(failure(cause))),
-        Ok(bytes) => {
-            use contracts::durability::canonical_commit_artifact::frame_contract::ControlledFrameCopyDenial as Copy;
-            Artifact::copy_frame_original(&bytes, execution)
-                .map_err(|cause| match cause {
-                    Copy::Request(cause) => Denial::Request(cause),
-                    Copy::Allocation(cause) => Denial::Allocation(cause),
-                    Copy::Frame(cause) => Denial::Frame(cause),
-                })
-                .and_then(|artifact| {
-                    if artifact.position() != entry.position
-                        || artifact.commit_id() != entry.commit.commit_id
-                        || artifact.payload_digest().as_bytes() != &entry.payload_digest
-                    {
-                        return Err(Denial::StorageUnavailable(failure(
-                            Cause::IntegrityMismatch,
-                        )));
-                    }
-                    Ok(artifact)
-                })
+    let result = match captured {
+        Err(cause) => Err(cause),
+        Ok(Some((actual, protection))) if std::sync::Arc::ptr_eq(&actual, source) => {
+            match protection.read_commit_owned_at(&actual, execution, entry.position, LIMIT) {
+                Err(cause) => Err(owned_export_denial(cause, entry.position)),
+                Ok(bytes) => Artifact::from_owned_original(bytes, execution)
+                    .map_err(frame_copy_denial)
+                    .and_then(|artifact| verify_exported_entry(entry, artifact, failure)),
+            }
+        }
+        Ok(_) => {
+            // Cold sources without protected owned reads certify no length
+            // before reading; reserve the complete bounded temporary first.
+            let _read = execution
+                .reserve_retained_memory(LIMIT)
+                .map_err(|cause| Denial::Request(cause.into()))?;
+            match source.read_commit(entry.position, LIMIT) {
+                Err(cause) => Err(Denial::StorageUnavailable(failure(cause))),
+                Ok(bytes) => Artifact::copy_frame_original(&bytes, execution)
+                    .map_err(frame_copy_denial)
+                    .and_then(|artifact| verify_exported_entry(entry, artifact, failure)),
+            }
         }
     };
     if matches!(&result, Err(Denial::Frame(cause)) if frame_proves_damage(cause)) {
@@ -174,6 +188,47 @@ pub fn export_artifact(
                 .map_err(Denial::Request)?;
             Ok(artifact)
         }
+    }
+}
+
+fn verify_exported_entry(
+    entry: &RelationalCommitIndexEntry,
+    artifact: Artifact,
+    failure: impl Fn(Cause) -> RelationalStorageUnavailable,
+) -> Result<Artifact, Denial> {
+    if artifact.position() != entry.position
+        || artifact.commit_id() != entry.commit.commit_id
+        || artifact.payload_digest().as_bytes() != &entry.payload_digest
+    {
+        return Err(Denial::StorageUnavailable(failure(Cause::IntegrityMismatch)));
+    }
+    Ok(artifact)
+}
+
+fn owned_export_denial(
+    cause: Refusal,
+    position: contracts::publication::patch::data::patch_position::PatchStreamPosition,
+) -> Denial {
+    let unavailable = |cause| {
+        Denial::StorageUnavailable(RelationalStorageUnavailable {
+            subject: RelationalStorageSubject::Envelope(position),
+            cause,
+        })
+    };
+    match cause {
+        Refusal::Request(cause) => Denial::Request(cause),
+        Refusal::Buffer(cause) => Denial::from(cause),
+        Refusal::Storage(cause) => unavailable(cause),
+        Refusal::CanonicalFrame(cause) => Denial::Frame(cause),
+        Refusal::ForeignSource | Refusal::ForeignProtection | Refusal::Busy | Refusal::Bounds => {
+            unavailable(Cause::SourceUnavailable)
+        }
+        Refusal::UnsupportedProvider | Refusal::TransitionFrame(_) => export_stop(
+            worth_relational_storage::internal_port::durability::medium::owned_read_stop::owned_stop(
+                cause,
+                RelationalStorageSubject::Envelope(position),
+            ),
+        ),
     }
 }
 

@@ -1,9 +1,11 @@
 use crate::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 use std::collections::BTreeMap;
 pub mod coupled;
+pub mod lookup;
 pub mod semantic;
 pub mod withdrawal;
 pub use coupled::CoupledOriginalRelationCreates;
+pub use lookup::BorrowedEntityRef;
 
 use crate::identity::data::{EntityId, KindId, PartitionId, RelationId};
 #[cfg(test)]
@@ -125,12 +127,13 @@ impl CommitCreatedRelationBindings {
     }
 
     pub fn resolve(&self, created: &CreatedRelationRef) -> Option<RelationId> {
-        if let Some(relation_id) = self.by_exact_reference.get(created) {
-            return Some(*relation_id);
-        }
-        self.by_stable_reference
-            .get(&stable_reference_without_interner(created)?)
-            .copied()
+        self.resolve_parts(
+            created.partition_id,
+            created.kind_id,
+            &created.client_key,
+            BorrowedEntityRef::from_ref(&created.source),
+            BorrowedEntityRef::from_ref(&created.target),
+        )
     }
 }
 
@@ -147,18 +150,6 @@ fn stable_reference(
     })
 }
 
-fn stable_reference_without_interner(
-    created: &CreatedRelationRef,
-) -> Option<StableCreatedRelationRef> {
-    Some(StableCreatedRelationRef {
-        partition_id: created.partition_id,
-        kind_id: created.kind_id,
-        client_key: created.client_key.as_raw_str()?.to_owned(),
-        source: stable_entity_reference_without_interner(&created.source)?,
-        target: stable_entity_reference_without_interner(&created.target)?,
-    })
-}
-
 fn stable_entity_reference(
     reference: &EntityReference,
     symbols: &dyn SymbolTextLookup,
@@ -169,19 +160,6 @@ fn stable_entity_reference(
             partition_id: created.partition_id,
             kind_id: created.kind_id,
             client_key: resolve_client_key(&created.client_key, symbols)?.to_owned(),
-        }),
-    }
-}
-
-fn stable_entity_reference_without_interner(
-    reference: &EntityReference,
-) -> Option<StableEntityReference> {
-    match reference {
-        EntityReference::Existing(entity_id) => Some(StableEntityReference::Existing(*entity_id)),
-        EntityReference::Created(created) => Some(StableEntityReference::Created {
-            partition_id: created.partition_id,
-            kind_id: created.kind_id,
-            client_key: created.client_key.as_raw_str()?.to_owned(),
         }),
     }
 }

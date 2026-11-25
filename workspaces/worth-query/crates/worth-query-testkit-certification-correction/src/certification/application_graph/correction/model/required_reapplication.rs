@@ -20,8 +20,20 @@ pub fn ordinary_outputs() {
     ordinary::run(true);
 }
 pub fn run() {
-    run_in(host::install_with_outputs());
-    run_in(host::install_with_output_limits(host::worker_limits()));
+    run_in(
+        host::open_directory_with_outputs(
+            host::unique_directory("required-reapplication"),
+            host::installation_limits(),
+        ),
+        host::installation_limits(),
+    );
+    run_in(
+        host::open_directory_with_outputs(
+            host::unique_directory("required-reapplication-worker"),
+            host::worker_limits(),
+        ),
+        host::worker_limits(),
+    );
     overlapping::run(false);
     overlapping::run(true);
 }
@@ -29,8 +41,12 @@ pub fn overlapping_fields() {
     overlapping::run(false);
     overlapping::run(true);
 }
-fn run_in(application: host::OutputHost) {
-    let scope = request_scope();
+fn run_in(
+    application: host::DirOutputHost,
+    limits_cfg: worth_query_host::facade::application_installation::WorthQueryApplicationLimits,
+) {
+    {
+        let scope = request_scope();
     let principal = authenticate_operator(application.installed_schema(), &scope);
     let request = application.runtime().request(&principal, &scope);
     let source_key = "required-reapplication-source".to_owned();
@@ -195,5 +211,11 @@ fn run_in(application: host::OutputHost) {
     assert_eq!(replayed.commit_reference(), reapplied.commit_reference());
     assert_eq!(head(&application), before_retry);
     assert_eq!(read_calculation(&application), 23);
+    }
+    super::required_output_courts::co_committed::cold::assert_reopened_ready(
+        application,
+        23,
+        limits_cfg,
+    );
     println!("retained source reapplication preserves fixed required-output delivery and exact completed replay");
 }

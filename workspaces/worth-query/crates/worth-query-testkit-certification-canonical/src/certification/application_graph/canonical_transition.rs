@@ -46,7 +46,6 @@ pub mod successor;
 pub use worth_query_testkit_document_retention::facade::document_retention_model::operator_identity::{
     authenticate_operator, request_scope,
 };
-pub use installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 pub use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 pub use worth_query_host::facade::{
     application_entry::*, application_installation as installation,

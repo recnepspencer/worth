@@ -80,10 +80,12 @@ pub fn adopt_round(parts: &mut [CoupledPublicationPart], index: usize, round: Ap
     let latest = appended_rounds(parts);
     let part = &mut parts[index];
     let chain = &mut part.chain;
+    // Prior touches stay exact (§1.5): a retraction inverse is no effect of
+    // an earlier round, and Query would judge reads against it.
     chain.prior_touches.extend(round.superseded.iter().cloned());
     chain.prior_touches.sort_unstable();
     chain.prior_touches.dedup();
-    chain.last_superseded = round.superseded;
+    chain.last_superseded = with_retraction_kinds(round.superseded);
     chain.touched.extend(round.records.iter().cloned());
     chain.ledger.bind_round(&round.creates);
     let prior = std::mem::replace(&mut chain.batches, round.batches);

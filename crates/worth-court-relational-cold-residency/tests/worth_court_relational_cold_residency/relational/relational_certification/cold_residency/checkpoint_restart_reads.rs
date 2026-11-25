@@ -41,7 +41,7 @@ fn checkpoint_restart_cycles_preserve_full_reads_and_retention() {
         .checkpoint()
         .unwrap()
         .checkpoint()
-        .inspect_history_fold_bounds(execution, Some(archive.clone()))
+        .inspect_history_fold_bounds(execution, archive.clone())
         .unwrap()
         .expect("external-member checkpoint carries a directory");
     let cycles = initial_bounds.max_layers_limit * 4;
@@ -115,7 +115,7 @@ fn checkpoint_restart_cycles_preserve_full_reads_and_retention() {
             .unwrap();
         archive = archive.with_selected_members(native.members());
         let bounds = native
-            .inspect_history_fold_bounds(execution, Some(archive.clone()))
+            .inspect_history_fold_bounds(execution, archive.clone())
             .unwrap()
             .expect("external-member checkpoint carries a directory");
         assert!(bounds.all_within_bounds);

@@ -116,7 +116,7 @@ fn readmit_covered_checkpoint(
         None => crate::durability::log::native_checkpoint_codec::decode_checkpoint_from_source(
             execution,
             source.checkpoint().bytes(),
-            Some(cold_source),
+            cold_source,
         ),
     }?
     .checkpoint;

@@ -29,6 +29,11 @@ macro_rules! part {
         pub struct Decision { target: WorthQueryInvariantMutationTarget<Schema, $entity>, result: StageResult }
         pub struct Handler;
         impl OperationHandler<Schema, Binding> for Handler {
+    fn declared_durable_capabilities(
+    ) -> Option<&'static [worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability]> {
+        Some(&[worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability::RelationalMutation])
+    }
+
             fn supports_candidate_planning() -> bool { false $(|| $planning)? }
             fn decide(&self, input: &Intent, reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>) -> HandlerResult<Decision, Denial> {
                 if input.value > 1000 { return HandlerResult::DomainDenied(Denial::ValueOutOfRange); }

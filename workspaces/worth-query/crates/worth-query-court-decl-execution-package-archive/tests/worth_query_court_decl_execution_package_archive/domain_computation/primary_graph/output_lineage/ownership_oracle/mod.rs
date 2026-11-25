@@ -42,7 +42,6 @@ use worth_query_execution::facade::domain_computation::WorthQueryApplicationComm
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationEntityKey;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationEntitySeed;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationIdempotencyBinding;
-use worth_query_execution::facade::domain_computation::WorthQueryApplicationInvariantProjectionAuthority;
 use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture as WorthQueryApplicationOutputPosture;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationPrincipalKey;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationQueryAccessContext;

@@ -38,23 +38,24 @@ mod serial {
             worth_foundational::DeterminismContract::CanonicalBitwise,
             worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::MIN, None, None),
         );
-        let application = installation::install_variant_with_observations::<false, TOTALS_WORK, 1, 0>(
-            None, profile, 0, policy, seed,
-        );
+        let application =
+            installation::open_directory_variant_with_observations::<false, TOTALS_WORK, 1, 0>(
+                None, profile, 0, policy, seed,
+            );
         let (scope, principal) = authenticate(&application);
         let request = application.request(&principal, &scope);
         let (_, first) = demand(&request, &application);
         assert_eq!(first[0].runs, [Run::Full(Cause::FirstRun)]);
-        let checkpoint =
-            worth_query_testkit_host::facade::host::checkpoint_capture::capture(&application);
-        drop(application);
-        let application = installation::install_variant_with_observations::<false, TOTALS_WORK, 1, 0>(
-            Some(checkpoint),
-            profile,
-            0,
-            policy,
-            seed,
-        );
+        drop((principal, scope));
+        let directory = application.checkpoint_and_close_for_reopen();
+        let application =
+            installation::open_directory_variant_with_observations::<false, TOTALS_WORK, 1, 0>(
+                Some(directory),
+                profile,
+                0,
+                policy,
+                seed,
+            );
         let (scope, principal) = authenticate(&application);
         let request = application.request(&principal, &scope);
         edit(

@@ -25,7 +25,11 @@ fn retired_checkpoint_refuses_before_reading_legacy_publication_meaning() {
     let checkpoint = RelationalNativeCheckpoint::from_untrusted_bytes(bytes.to_vec());
     let stop = runtime
         .durability_recovery()
-        .restore_native_checkpoint(&execution, &checkpoint)
+        .restore_native_checkpoint(
+            &execution,
+            &checkpoint,
+            worth_testkit_relational::cold_recovery::members_source(&checkpoint),
+        )
         .unwrap_err();
     assert!(matches!(stop, RelationalRecoveryStop::Durability(failure)
         if failure.class == RecoveryFailureClass::UnsupportedLegacySemantics));
@@ -56,7 +60,11 @@ fn current_checkpoint_readmits_original_owned_publication_and_live_members() {
         .unwrap();
     runtime
         .durability_recovery()
-        .restore_native_checkpoint(execution, &checkpoint)
+        .restore_native_checkpoint(
+            execution,
+            &checkpoint,
+            worth_testkit_relational::cold_recovery::members_source(&checkpoint),
+        )
         .unwrap();
     let receipt = runtime
         .readmit_recovered_initial_schema_installation(expected)
@@ -166,7 +174,7 @@ fn capture_publication(
     release_test_commit_snapshot(&runtime, &publication);
     let checkpoint = runtime
         .durability_authority()
-        .native_checkpoint(execution, execution.allocation_policy())
+        .native_checkpoint_with_policy(execution, execution.allocation_policy(), worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
         .unwrap();
     (checkpoint, source, output, meaning)
 }

@@ -70,6 +70,9 @@ worth_query_mutation_binding!(pub Binding for Control, schema Schema,
 );
 pub struct Handler;
 impl OperationHandler<Schema, Binding> for Handler {
+    fn declared_durable_capabilities() -> Option<&'static [WorthQueryOperationDurableCapability]> {
+        Some(&[WorthQueryOperationDurableCapability::RelationalMutation])
+    }
     fn decide(
         &self,
         input: &Control,

@@ -43,14 +43,6 @@ impl CapturedCheckpointBasis {
                     .is_none()
             });
         }
-        let resident_event_rows = if placement.is_embedded() {
-            self.lineage_events
-                .iter()
-                .map(|row| (row.event.event_id(), row.clone()))
-                .collect()
-        } else {
-            BTreeMap::new()
-        };
         let mut event_rows = std::mem::take(&mut self.lineage_events);
         if carry_metadata && let Some(prior) = &prior {
             let covered = prior
@@ -309,9 +301,6 @@ impl CapturedCheckpointBasis {
             }
         }
         captured.guarded_members.extend(guarded_member_sources);
-        if placement.is_embedded() {
-            captured.materialize_resident_event_members(&resident_event_rows, policy)?;
-        }
         captured.manifest.coverage.up_to_commit = captured
             .manifest
             .commits

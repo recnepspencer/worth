@@ -204,3 +204,56 @@ pub fn demand_expected<Schema: BirthSchema>(
         })
         .unwrap()
 }
+
+pub fn materialize_source_in_phase<Schema: BirthSchema>(
+    runtime: &Application<Schema>,
+    phase: &WorthQueryAdvancementPhase<'_>,
+) {
+    use worth_relational::facade::transactions::*;
+    let scope = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
+    let execution = phase
+        .execution_request_for_for_test((*runtime.runtime_for_test()).product_runtime_for_test())
+        .unwrap();
+    let source = runtime
+        .on_branch(runtime.current_world())
+        .select(phase)
+        .unwrap()
+        .resolve_entity(
+            phase,
+            BodyKey::at("BodyKey"),
+            ANCHOR.to_owned(),
+            &scope,
+            WorthQueryPrincipalResolutionMode::Ordinary,
+        )
+        .unwrap();
+    let field = SourceContent::at("SourceContent");
+    let native = runtime
+        .installed_schema()
+        .native_contracts()
+        .aspect(field.entity(), field.aspect())
+        .unwrap();
+    let contract = native.contract();
+    let patch = worth_foundational::facade::PortableRecordAspectPatch::new([
+        worth_foundational::facade::PortableAspectPatchOperation::SetWhole {
+            basis: worth_foundational::facade::PortableAspectContractBasis::from_contract(contract),
+            value: worth_foundational::facade::ContractValidationInput::Struct(
+                worth_foundational::facade::StructAspectValue::new([(
+                    worth_foundational::facade::FieldKey::new(field.field()).unwrap(),
+                    StringApplicationValueBinding::encode(&"complete-required-content".to_owned())
+                        .unwrap(),
+                )])
+                .unwrap(),
+            ),
+        },
+    ]);
+    let batch =
+        WorkerIntentBatch::new("materialize-optional-source-aspect").push(MutationIntent::Entity(
+            EntityMutationIntent::ApplyAspectPatch(ApplyEntityAspectPatchIntent {
+                entity_id: source.entity_id_for_test(),
+                aspect_patch: patch,
+            }),
+        ));
+    worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::product_publication::publish_relational_mutation_on_application(
+        &execution, runtime, batch,
+    );
+}

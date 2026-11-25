@@ -43,7 +43,8 @@ fn host(limit: u64) -> SerialRequest {
 }
 fn never_read_journal(
     _: &RelationalCommitIndexEntry,
-    _: &dyn crate::durability::medium::RelationalDurableColdSource,
+    _: &std::sync::Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
+    _: Option<&crate::durability::medium::RelationalDurableReadProtection>,
     _: &ExecutionRequest<'_, '_>,
     _: u64,
 ) -> Result<PositionedCanonicalCommit, crate::durability::data::recovery_stop::RelationalRecoveryStop>

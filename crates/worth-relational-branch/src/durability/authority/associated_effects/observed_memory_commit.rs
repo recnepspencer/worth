@@ -3,14 +3,11 @@ use crate::internal_port::history::data::canonical_commit_envelope::CanonicalCom
 use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_semantic_result::assemble_recovered_relational_semantic_result;
 use super::created_row_read::{read_created_entity, ReadmittedRelationalCreatedEntity};
 use super::refusal::RelationalAssociatedEffectRefusal as Refusal;
-use crate::durability::canonical_commit_artifact::decoded_quote::checkpoint_effect_data::CheckpointEffectData;
-use crate::durability::checkpoint_admission::admitted_commit::CheckpointAdmittedCommit;
 use crate::history::data::canonical_commit_envelope::shared::SharedCanonicalCommitEnvelopeOwnerPort as _;
 use crate::history::data::{
     PositionedCanonicalCommit, RelationalCommitReceipt, SharedCanonicalCommitEnvelope,
 };
 use crate::publication::patch::data::PatchStreamPosition;
-use crate::runtime::state::subsystems::services::sequence::origin::RelationalRuntimeOrigin;
 use crate::transactions::data::outcomes::commit_semantic_result::RecoveredRelationalSemanticResult;
 use std::sync::Arc;
 
@@ -28,11 +25,6 @@ enum MemoryCommitOrigin {
         position: PatchStreamPosition,
         canonical: SharedCanonicalCommitEnvelope,
     },
-    Interim {
-        owner: RelationalRuntimeOrigin,
-        admitted: CheckpointAdmittedCommit,
-        data: CheckpointEffectData,
-    },
 }
 
 impl ObservedRelationalMemoryCommit {
@@ -45,7 +37,6 @@ impl ObservedRelationalMemoryCommit {
     pub fn position(&self) -> PatchStreamPosition {
         match &self.origin {
             MemoryCommitOrigin::Live { position, .. } => *position,
-            MemoryCommitOrigin::Interim { admitted, .. } => admitted.index().position,
         }
     }
     pub fn artifact_digest(&self) -> &[u8; 32] {
@@ -60,20 +51,6 @@ impl ObservedRelationalMemoryCommit {
             MemoryCommitOrigin::Live { canonical, .. } => {
                 std::ptr::eq(expected.as_ptr(), canonical.as_ref())
             }
-            MemoryCommitOrigin::Interim { .. } => false,
-        }
-    }
-
-    pub(crate) fn matches_interim(
-        &self,
-        expected: &RelationalRuntimeOrigin,
-        row: &CheckpointAdmittedCommit,
-    ) -> bool {
-        match &self.origin {
-            MemoryCommitOrigin::Live { .. } => false,
-            MemoryCommitOrigin::Interim {
-                owner, admitted, ..
-            } => owner.same_origin(expected) && admitted.same_owner(row),
         }
     }
 
@@ -89,7 +66,6 @@ impl ObservedRelationalMemoryCommit {
                 MemoryCommitOrigin::Live { canonical, .. } => {
                     &canonical.patch.authoritative_record_patches
                 }
-                MemoryCommitOrigin::Interim { data, .. } => &data.creations,
             },
             entity,
         )
@@ -99,12 +75,6 @@ impl ObservedRelationalMemoryCommit {
 /// Operations used by the Relational owners.
 pub trait ObservedRelationalMemoryCommitOwnerPort: Sized {
     fn from_live(positioned: PositionedCanonicalCommit, digest: [u8; 32]) -> Self;
-    fn from_interim(
-        owner: RelationalRuntimeOrigin,
-        admitted: CheckpointAdmittedCommit,
-        data: CheckpointEffectData,
-        digest: [u8; 32],
-    ) -> Self;
 }
 
 impl ObservedRelationalMemoryCommitOwnerPort for ObservedRelationalMemoryCommit {
@@ -120,23 +90,6 @@ impl ObservedRelationalMemoryCommitOwnerPort for ObservedRelationalMemoryCommit 
             origin: MemoryCommitOrigin::Live {
                 position,
                 canonical,
-            },
-            digest,
-        }
-    }
-
-    fn from_interim(
-        owner: RelationalRuntimeOrigin,
-        admitted: CheckpointAdmittedCommit,
-        data: CheckpointEffectData,
-        digest: [u8; 32],
-    ) -> Self {
-        Self {
-            semantic: assemble_recovered_relational_semantic_result(data.semantic.clone()),
-            origin: MemoryCommitOrigin::Interim {
-                owner,
-                admitted,
-                data,
             },
             digest,
         }

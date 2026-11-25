@@ -20,9 +20,9 @@ fn checkpoint_duplicate_lineage_event_ids_deny() {
     let runtime = durable_runtime_for_medium(&medium);
     create_entity_outcome(execution, &runtime, "checkpoint-duplicate-first");
     create_entity_outcome(execution, &runtime, "checkpoint-duplicate-second");
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     let mut plan = medium
-        .recovery_plan(
+        .expanded_recovery_plan(
             execution,
             &runtime,
             RecoveryMode::NormalRecoveryVerification,
@@ -64,11 +64,11 @@ fn tail_duplicate_lineage_event_ids_deny() {
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);
     create_entity_outcome(execution, &runtime, "tail-duplicate-checkpoint");
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     create_entity_outcome(execution, &runtime, "tail-duplicate-first");
     create_entity_outcome(execution, &runtime, "tail-duplicate-second");
     let mut plan = medium
-        .recovery_plan(
+        .expanded_recovery_plan(
             execution,
             &runtime,
             RecoveryMode::NormalRecoveryVerification,
@@ -104,10 +104,10 @@ fn checkpoint_and_tail_lineage_event_id_collision_denies() {
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);
     create_entity_outcome(execution, &runtime, "cross-checkpoint-head");
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     create_entity_outcome(execution, &runtime, "cross-checkpoint-tail");
     let mut plan = medium
-        .recovery_plan(
+        .expanded_recovery_plan(
             execution,
             &runtime,
             RecoveryMode::NormalRecoveryVerification,
@@ -145,9 +145,9 @@ fn checkpoint_lineage_commit_cross_splice_denies() {
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);
     create_entity_outcome(execution, &runtime, "checkpoint-cross-splice");
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     let mut plan = medium
-        .recovery_plan(
+        .expanded_recovery_plan(
             execution,
             &runtime,
             RecoveryMode::NormalRecoveryVerification,
@@ -180,7 +180,7 @@ fn replay_and_durable_lineage_payload_conflict_denies() {
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);
     create_entity_outcome(execution, &runtime, "payload-conflict-checkpoint");
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     let first = create_entity_outcome(execution, &runtime, "payload-conflict-first");
     let second = create_entity_outcome(execution, &runtime, "payload-conflict-second");
     let first_lineage = runtime
@@ -190,7 +190,7 @@ fn replay_and_durable_lineage_payload_conflict_denies() {
         .expect("first tail lineage")
         .lineage_id();
     let mut plan = medium
-        .recovery_plan(
+        .expanded_recovery_plan(
             execution,
             &runtime,
             RecoveryMode::NormalRecoveryVerification,
@@ -227,9 +227,9 @@ fn checkpoint_lineage_node_deletion_denies_before_installation() {
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);
     create_entity_outcome(execution, &runtime, "checkpoint-node-deletion");
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     let mut plan = medium
-        .recovery_plan(
+        .expanded_recovery_plan(
             execution,
             &runtime,
             RecoveryMode::NormalRecoveryVerification,
@@ -255,9 +255,9 @@ fn checkpoint_lineage_node_remap_denies_before_installation() {
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);
     create_entity_outcome(execution, &runtime, "checkpoint-node-remap");
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     let mut plan = medium
-        .recovery_plan(
+        .expanded_recovery_plan(
             execution,
             &runtime,
             RecoveryMode::NormalRecoveryVerification,
@@ -351,9 +351,9 @@ fn two_entity_checkpoint_plan(
     transaction
         .commit(execution, &runtime)
         .expect("two-entity commit");
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     medium
-        .recovery_plan(
+        .expanded_recovery_plan(
             execution,
             &runtime,
             RecoveryMode::NormalRecoveryVerification,

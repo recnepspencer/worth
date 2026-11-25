@@ -104,15 +104,33 @@ fn proposed_derived_violation_and_managed_count_share_the_real_recipe_without_ca
     );
     assert_eq!(read::committed(&world).edges, before_failed_read);
     value(&world, 108, 1);
-    let checkpoint = super::super::compatibility::capture(&world);
     world.close();
-    let mut restored = super::super::compatibility::restore::<Derived>(checkpoint).unwrap();
+    let dir = worth_query_testkit_document_retention::facade::directory_home::unique_directory(
+        "relation-laws-derived",
+    );
+    let durable = super::super::compatibility::open_directory::<Derived>(
+        dir,
+        6,
+        &[(0, 1), (0, 4), (4, 3)],
+    )
+    .unwrap_or_else(|refused| panic!("derived directory open refused: {refused:?}"));
+    let observed = count(&durable, 108, false).unwrap();
+    assert_eq!(observed.result().map(|result| result.count), Some(1));
+    drop(observed);
+    let dir = durable.checkpoint_and_close_for_reopen();
+    let restored = super::super::compatibility::open_directory::<Derived>(
+        dir,
+        6,
+        &[(0, 1), (0, 4), (4, 3)],
+    )
+    .unwrap_or_else(|refused| panic!("derived directory reopen refused: {refused:?}"));
     let observed = count(&restored, 109, false).unwrap();
     assert_eq!(
         observed.result().map(|result| result.count),
         Some(1),
         "the genuine reopened Query layout keeps its actual Native source issuer: {observed:?}"
     );
+    drop(observed);
     let scope = request_scope();
     let principal = authenticate_operator(restored.installed_schema(), &scope);
     let command = 110_u64;
@@ -136,6 +154,6 @@ fn proposed_derived_violation_and_managed_count_share_the_real_recipe_without_ca
     assert_eq!(outcome::denied(refused).decode_invariant_refusal::<
         worth_query_host::facade::application_invariants::WorthQueryEmptyInvariantRefusal>().unwrap(),(),
         "reopened rules judge the genuinely proposed 0→2 source, not the lawful committed {{3}}");
-    assert!(restored.close_live_delivery().owner_terminal());
-    restored.close_conditional_runtime().unwrap();
+    drop((principal, scope));
+    drop(restored);
 }

@@ -51,9 +51,19 @@ impl WorthQueryGeneratedOutputPublicationNoEffect {
         }
     }
 
+    pub(super) const fn from_cause(cause: WorthQueryGeneratedOutputPublicationNoEffectCause) -> Self {
+        Self { cause }
+    }
+
     pub const fn cause(&self) -> WorthQueryGeneratedOutputPublicationNoEffectCause {
         self.cause
     }
+}
+
+pub(in super::super) const fn map_world_cause(
+    cause: worth_runtime_world::facade::NoEffectCause,
+) -> WorthQueryGeneratedOutputPublicationNoEffectCause {
+    map_cause(cause)
 }
 
 const fn map_cause(

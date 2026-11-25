@@ -1,5 +1,8 @@
-//! Creates the actual predecessor checkpoint for transition tests.
+//! Creates the actual predecessor Directory Home for D16 program transition tests.
 pub use super::*;
+use worth_query_host::facade::{
+    WorthQueryApplicationHome, WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeRequest,
+};
 
 pub struct LegacyTemporalProgram;
 impl ApplicationProgramDefinition<TemporalHostSchema> for LegacyTemporalProgram {
@@ -29,16 +32,25 @@ pub fn configuration() -> (TemporalContributionConfiguration,) {
     },)
 }
 
-pub fn source() -> (
-    application_installation::WorthQueryApplicationCheckpoint,
-    Predecessor,
-) {
+pub fn transition_resources(
+) -> worth_relational::facade::indexes::DerivedIndexMaintenanceBudget {
+    worth_relational::facade::indexes::DerivedIndexMaintenanceBudget {
+        maximum_work_units: Some(500_000),
+        maximum_cold_record_slots: Some(8_192),
+        maximum_derived_rows: Some(8_192),
+    }
+}
+
+pub fn predecessor_request(
+    location: std::path::PathBuf,
+) -> WorthQueryApplicationHomeRequest<'static, TemporalHostSchema, LegacyTemporalProgram> {
     let program = ApplicationProgramAuthoring::<TemporalHostSchema, LegacyTemporalProgram>::begin()
         .validated_program()
         .unwrap();
-    let predecessor = Predecessor::new(&program.revision().to_string()).unwrap();
-    let application = application_installation::in_memory_program(
+    WorthQueryApplicationHomeRequest::new(
+        WorthQueryApplicationHomeLocation::Directory(location),
         program,
+        application_installation::WorthQueryApplicationProgramRoster::new(),
         TemporalHostSchema::declaration().unwrap(),
         configuration(),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
@@ -51,15 +63,32 @@ pub fn source() -> (
             Ok(())
         },
     )
-    .unwrap();
-    (
-        application
-            .with_host_advancement(|phase| {
-                application
-                    .capture_application_checkpoint(&phase, CapturePolicy::SystemAllocation)
-                    .unwrap()
-            })
-            .expect("installed host call opens"),
-        predecessor,
+}
+
+pub fn successor_request(
+    location: std::path::PathBuf,
+) -> WorthQueryApplicationHomeRequest<'static, TemporalHostSchema, TemporalInstallationProgram> {
+    WorthQueryApplicationHomeRequest::new(
+        WorthQueryApplicationHomeLocation::Directory(location),
+        validated_program(),
+        application_installation::WorthQueryApplicationProgramRoster::new(),
+        TemporalHostSchema::declaration().unwrap(),
+        configuration(),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
+        checkpoint::checkpoint_limits(),
+        |_, _, _| panic!("existing Home cannot initialize during successor open"),
     )
+}
+
+pub fn open_predecessor_directory(
+    location: std::path::PathBuf,
+) -> WorthQueryApplicationHome<TemporalHostSchema, LegacyTemporalProgram> {
+    let lease = crate::facade::host::checkpoint_capture::lease(128 * 1024 * 1024);
+    let execution = worth_execution::ExecutionRequest::leased(&lease);
+    worth_query_host::facade::application_contribution::with_bootstrap_advancement_from_request(
+        execution,
+        |phase| predecessor_request(location).open_in_advancement(&phase),
+    )
+    .expect("bootstrap opens")
+    .expect("predecessor Directory Home opens")
 }

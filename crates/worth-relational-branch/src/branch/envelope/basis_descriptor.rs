@@ -107,9 +107,19 @@ impl RelationalBranchBasisDescriptor {
 /// Operations used by the Relational owners.
 pub trait RelationalBranchBasisDescriptorOwnerPort: Sized {
     fn with_reference(&self, reference: RelationalBranchReferenceObservation) -> Self;
+    fn with_recorded_posture(
+        axes: RelationalLiveBranchBasisDescriptorAxes,
+        posture: RelationalBranchBasisPosture,
+    ) -> Self;
 }
 
 impl RelationalBranchBasisDescriptorOwnerPort for RelationalBranchBasisDescriptor {
+    fn with_recorded_posture(
+        axes: RelationalLiveBranchBasisDescriptorAxes,
+        posture: RelationalBranchBasisPosture,
+    ) -> Self {
+        Self::with_posture(axes, posture)
+    }
     fn with_reference(&self, reference: RelationalBranchReferenceObservation) -> Self {
         Self::with_posture(
             RelationalLiveBranchBasisDescriptorAxes {

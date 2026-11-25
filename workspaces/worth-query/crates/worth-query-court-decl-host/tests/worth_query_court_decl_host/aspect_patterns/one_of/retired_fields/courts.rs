@@ -142,10 +142,6 @@ fn complete_retired_root_restores_value_field_absence_and_aspect_absence_then_re
         .entity_id();
     assert_ne!(successor, old_id);
     restored(&host);
-    let recovered = world::restore(world::checkpoint(&host));
-    restored(&recovered);
-    // Interim restoration observes DATA; the issued receipt belongs to this runtime.
-    drop(recovered);
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.runtime().request(&principal, &scope);

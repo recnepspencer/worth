@@ -50,6 +50,7 @@ where
             self.original_mutation_binding(),
             self.runtime_authority(),
             *self.installed_operation_identity_bytes(),
+            *self.operation_definition_identity(),
             self.allowed_graph_contract().aftermath().cloned(),
             self.operation_scope_binding().clone(),
             idempotency_binding,

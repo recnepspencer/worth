@@ -5,9 +5,12 @@ use worth_relational::facade::schema::*;
 use worth_testkit_relational::aspect_storage::AspectSchemaFixture;
 
 mod content;
+mod derived_law;
 mod optional_struct;
 mod replay;
 pub use content::{attachments, content_create};
+pub use derived_law::USES;
+use derived_law::{Extra, BARE};
 use optional_struct::*;
 
 const RETAIN: CascadeDeletePolicy = CascadeDeletePolicy::RetainDanglingForAudit;
@@ -35,27 +38,27 @@ impl World {
             false,
             false,
             false,
-            None,
+            BARE,
             RETAIN,
         )
     }
     pub fn new_with_status(execution: &ExecutionRequest<'_, '_>) -> Self {
-        Self::with_aspects(execution, true, true, true, false, false, None, RETAIN)
+        Self::with_aspects(execution, true, true, true, false, false, BARE, RETAIN)
     }
     /// An owned-source world whose relation kind is deleted with an endpoint.
     pub fn new_cascading(execution: &ExecutionRequest<'_, '_>) -> Self {
-        Self::with_aspects(execution, true, true, false, false, false, None, CASCADE)
+        Self::with_aspects(execution, true, true, false, false, false, BARE, CASCADE)
     }
     /// An owned-source world whose kind also declares the Struct aspect `summary`.
     pub fn new_with_summary(execution: &ExecutionRequest<'_, '_>) -> Self {
-        let mut world = Self::with_aspects(execution, true, true, false, true, false, None, RETAIN);
+        let mut world = Self::with_aspects(execution, true, true, false, true, false, BARE, RETAIN);
         world.summary = true;
         world
     }
     /// An owned-source world without `LifecycleTransition`, declaring only the
     /// Optional Struct aspect `summary`, matching Query-compiled fieldless kinds.
     pub fn new_optional_struct_only(execution: &ExecutionRequest<'_, '_>) -> Self {
-        let mut world = Self::with_aspects(execution, true, true, false, true, true, None, RETAIN);
+        let mut world = Self::with_aspects(execution, true, true, false, true, true, BARE, RETAIN);
         world.summary = true;
         world.optional_struct_only = true;
         world
@@ -71,7 +74,7 @@ impl World {
             false,
             false,
             false,
-            Some(rule),
+            Extra::rule(rule),
             RETAIN,
         )
     }
@@ -82,7 +85,7 @@ impl World {
         with_status: bool,
         with_summary: bool,
         optional_struct_only: bool,
-        rule: Option<CustomInvariantRegistration>,
+        extra: Extra,
         cascade: CascadeDeletePolicy,
     ) -> Self {
         let mut fixture = if optional_struct_only {
@@ -113,18 +116,19 @@ impl World {
                 .entity_aspects
                 .push(DeclaredAspectContractBinding { binding, contract });
         }
+        let registry = extra.extend(fixture.build_registry(), &fixture);
         let registry = if storage {
             register_current_publication_storage(
-                fixture.build_registry(),
+                registry,
                 &fixture.schema_id,
                 fixture.schema_version_id,
             )
             .unwrap()
         } else {
-            fixture.build_registry()
+            registry
         };
         let builder = RelationalRuntimeApi::builder().schema_registry(registry.clone());
-        let builder = if let Some(rule) = rule {
+        let builder = if let Some(rule) = extra.rule {
             builder.custom_invariant(rule)
         } else {
             builder

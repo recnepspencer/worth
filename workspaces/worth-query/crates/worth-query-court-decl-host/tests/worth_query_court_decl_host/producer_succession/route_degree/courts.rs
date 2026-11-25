@@ -4,7 +4,7 @@ use std::collections::BTreeSet;
 use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 use worth_relational::facade::identity::EntityId;
 
-fn settle_parameter(app: &world::App, request: &Request<'_, '_, '_>, parameter: u64) {
+fn settle_parameter(app: &world::RuntimeApp, request: &Request<'_, '_, '_>, parameter: u64) {
     let mut operation = request
         .demand(producers::parameter_routes::Demand(
             "root".into(),
@@ -28,7 +28,7 @@ fn settle_parameter(app: &world::App, request: &Request<'_, '_, '_>, parameter: 
     }
     panic!("parameter route did not settle");
 }
-fn settle_twin(app: &world::App, request: &Request<'_, '_, '_>) {
+fn settle_twin(app: &world::RuntimeApp, request: &Request<'_, '_, '_>) {
     let mut operation = request
         .demand(producers::twin::Demand("root".into()))
         .retain_program_outputs::<Program, program::TwinTree>(app)
@@ -53,7 +53,7 @@ fn subject(request: &Request<'_, '_, '_>, key: &str) -> EntityId {
     request.query(Read(key.into())).execute().unwrap().rows()[0].native_id
 }
 fn assert_touches(
-    app: &world::App,
+    app: &world::RuntimeApp,
     request: &Request<'_, '_, '_>,
     scope: &worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope,
     n: usize,
@@ -135,7 +135,7 @@ fn assert_touches(
         expected.presence_rows.iter().copied().collect()
     );
     assert_eq!(member[0].position_work, n as u64);
-    let before = checkpoint::envelopes(&checkpoint::capture(app));
+    let before = world::native_head(app);
     let outcome = request
         .advanced()
         .mutate(write_fence::ExternalWrite {
@@ -188,7 +188,7 @@ fn assert_touches(
         "each source incidence is charged by the original request"
     );
     assert_eq!(
-        checkpoint::envelopes(&checkpoint::capture(app)),
+        world::native_head(app),
         before,
         "refusal has no effect"
     );
@@ -202,21 +202,14 @@ fn parameter_route_degree_is_charged_only_for_destructive_source_changes() {
     let (scope, principal) = world::authenticate(&app);
     let request = app.runtime().request(&principal, &scope);
     close(settle_key(&app, &request, "outside"), &request);
+    let mut parameter_commits = BTreeSet::new();
     for partition in 1..=3 {
         resize(&app, &request, partition, partition);
         settle_parameter(&app, &request, partition);
+        parameter_commits.insert(world::native_head(&app).0);
     }
-    let origins = checkpoint::envelopes(&checkpoint::capture(&app))
-        .into_iter()
-        .filter_map(|e| e.get("required_output_origin").cloned())
-        .collect::<Vec<_>>();
-    let routes = origins
-        .iter()
-        .filter(|o| o["meaning"]["family"] == "parameter-route")
-        .map(|o| o["meaning"]["source_partition"].to_string())
-        .collect::<BTreeSet<_>>();
     assert_eq!(
-        routes.len(),
+        parameter_commits.len(),
         3,
         "one family, three actual parameter partitions"
     );

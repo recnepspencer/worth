@@ -106,7 +106,13 @@ fn pending(
 ) -> Stop {
     let retained = guard.preparation_mut();
     retained.stage = stage;
-    let pending = Pending::new(
+    let native_error = match &retained.query_denial {
+        Some(Cause::Candidate(super::durable_custody::QueryCandidatePreparationDenial::Native(
+            error,
+        ))) => Some(error.clone()),
+        _ => None,
+    };
+    let mut pending = Pending::new(
         stage,
         retained.recovery_handle.clone(),
         retained
@@ -117,6 +123,9 @@ fn pending(
             .recovery(),
         provider.unpublished_idempotency_disposition(),
     );
+    if let Some(error) = native_error {
+        pending = pending.with_native_preparation_error(error);
+    }
     Stop::ProductPreparationPending(
         worth_query_execution_runtime::facade::ports::OpaqueProductPublicationOutcome::new(
             pending.retaining_preparation(Box::new(guard)),

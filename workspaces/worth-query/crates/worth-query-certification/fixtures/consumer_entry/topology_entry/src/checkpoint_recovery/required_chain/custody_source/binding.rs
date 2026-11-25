@@ -83,6 +83,7 @@ pub(in crate::checkpoint_recovery::required_chain) struct ValueSourceHandler;
 impl<Schema: TopologySchemaBinding> OperationHandler<Schema, ValueSourceBinding<Schema>>
     for ValueSourceHandler
 {
+    fn declared_durable_capabilities() -> Option<&'static [worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability]> { Some(&[worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability::RelationalMutation]) }
     fn decide(
         &self,
         input: &ValueSourceInput,

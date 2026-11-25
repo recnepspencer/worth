@@ -7,10 +7,11 @@ use worth_query_host::facade::primary_graph::{
 };
 #[test]
 fn actual_v2_three_role_retirement_unlinks_only_observed_edges_and_reopens_current_source() {
-    let original = host::install(model::authored_value()).unwrap();
-    let _old = host::produce(&original);
-    let target = journey::successor(host::capture(&original));
-    let _new = successor::host::produce(&target);
+    let dir = worth_query_testkit_document_retention::facade::directory_home::unique_directory(
+        "canonical-related-retirement",
+    );
+    let target = journey::successor_directory(dir, model::authored_value());
+    drop(successor::host::produce(&target));
     journey::assert_target_pages(&target, false);
     let source_id = successor::host::source_id(&target);
     let owned = successor::host::read_derived(&target);
@@ -36,7 +37,7 @@ fn actual_v2_three_role_retirement_unlinks_only_observed_edges_and_reopens_curre
         .execute_in_program(&target, ExecutionAllocationPolicy::SystemAllocation)
         .unwrap();
     let WorthQueryApplicationMutationOutcome::Committed { receipt, .. } = outcome else {
-        panic!("precise native retirement must publish")
+        panic!("precise native retirement must publish: {outcome:?}")
     };
     let roles = receipt
         .outputs_of::<successor::output::RetiredOutputs>()
@@ -52,9 +53,12 @@ fn actual_v2_three_role_retirement_unlinks_only_observed_edges_and_reopens_curre
         .is_err());
     assert_eq!(successor::output::literals(&owned).1, 1012);
     assert_eq!(successor::host::read(&target), model::authored_value());
-    let checkpoint = successor::host::capture(&target);
-    drop(target);
-    let reopened = successor::host::restore(checkpoint);
+    drop(receipt);
+    drop(observed);
+    drop(principal);
+    drop(scope);
+    let dir = target.checkpoint_and_close_for_reopen();
+    let reopened = journey::successor_directory(dir, model::authored_value());
     assert_eq!(successor::host::source_id(&reopened), source_id);
     assert_eq!(successor::host::read(&reopened), model::authored_value());
     assert_eq!(successor::output::literals(&owned).1, 1012);

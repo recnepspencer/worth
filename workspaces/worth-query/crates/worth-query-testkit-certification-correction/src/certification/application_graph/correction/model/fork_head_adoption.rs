@@ -11,8 +11,8 @@ use super::{
     tree_reapplication::*,
 };
 use worth_query_host::facade::{
-    application_entry::*, application_installation::WorthQueryCheckpointCapturePolicy,
-    primary_graph::*, product::WorthQueryProductBranch, runtime::ExecutionAllocationPolicy,
+    application_entry::*, primary_graph::*, product::WorthQueryProductBranch,
+    runtime::ExecutionAllocationPolicy,
 };
 
 pub fn run() {
@@ -25,7 +25,7 @@ pub fn run() {
 pub const CYCLES: usize = 100;
 
 pub fn adoption_cycles_retain_linear_history() {
-    let host = host::install();
+    let host = host::open_directory(host::unique_directory("fork-head-adoption"));
     let mut head = fork(&host, host.runtime().current_world());
     let anchor = host::edit_on(&host, head, Value::Primary(11), "anchor");
     let mut bytes = vec![checkpoint_bytes(&host)];
@@ -160,15 +160,39 @@ pub fn corrections_reach_across_an_adoption() {
 }
 
 pub fn fork(host: &host::Host, from: WorthQueryProductBranch) -> WorthQueryProductBranch {
-    host.with_host_advancement(|phase| {
-        host.runtime()
-            .branches()
-            .fork(from)
-            .components(|components| components.fork_relational().reuse_exact_signal_basis())
-            .create(&phase)
+    use worth_query_host::facade::product::{
+        WorthQueryProductBranchCreateError as Create,
+        WorthQueryProductBranchCreationContinuation as Continued,
+    };
+    let created = host
+        .with_host_advancement(|phase| {
+            host.runtime()
+                .branches()
+                .fork(from)
+                .components(|components| components.fork_relational().reuse_exact_signal_basis())
+                .create(&phase)
+        })
+        .unwrap();
+    let mut original = match created {
+        Ok(branch) => return branch,
+        Err(Create::ProductUnpublished(original)) => original,
+        Err(cause) => panic!("fork branch: {cause:?}"),
+    };
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(60);
+    loop {
+        assert!(std::time::Instant::now() < deadline, "fork settles");
+        match host
+            .with_host_advancement(|phase| original.continue_in_advancement(&phase))
             .unwrap()
-    })
-    .unwrap()
+        {
+            Ok(Continued::Performed(branch)) => return branch,
+            Ok(other) => panic!("unexpected fork continuation: {other:?}"),
+            Err(failure) => {
+                original = failure.into_recovery();
+                std::thread::yield_now();
+            }
+        }
+    }
 }
 
 /// Closes a replaced head; its cleanup must finish now, not wait on its fork.
@@ -184,18 +208,8 @@ pub fn adopt(host: &host::Host, replaced: WorthQueryProductBranch) {
     assert!(closed.is_complete());
 }
 
-pub fn checkpoint_bytes(host: &host::Host) -> usize {
-    host.with_host_advancement(|phase| {
-        host.runtime()
-            .capture_application_checkpoint(
-                &phase,
-                WorthQueryCheckpointCapturePolicy::SystemAllocation,
-            )
-            .unwrap()
-    })
-    .unwrap()
-    .bytes()
-    .len()
+pub fn checkpoint_bytes(host: &host::DirHost) -> usize {
+    host.capture_native_checkpoint_frame().len()
 }
 
 pub fn selected_commit(

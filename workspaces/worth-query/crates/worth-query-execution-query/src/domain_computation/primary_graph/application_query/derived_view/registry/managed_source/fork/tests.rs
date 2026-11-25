@@ -295,15 +295,13 @@ fn refused_first_post_recovery_publish_leaves_expired_slot_that_cold_refill_repl
         born.created_entity(&ca).unwrap(),
         born.created_entity(&cx).unwrap(),
     );
-    let ckpt = seed_rt
-        .durability_authority()
-        .native_checkpoint(&seed_exec, seed_exec.allocation_policy())
-        .unwrap();
+    let (ckpt, members) =
+        worth_testkit_relational::cold_recovery::capture_external_checkpoint(&seed_exec, &seed_rt);
 
     let (mut recovered, _) = install(reg, program.clone());
     recovered
         .durability_recovery()
-        .restore_native_checkpoint(&seed_exec, &ckpt)
+        .restore_native_checkpoint(&seed_exec, &ckpt, members)
         .unwrap();
     recovered
         .readmit_recovered_initial_schema_installation(receipt)

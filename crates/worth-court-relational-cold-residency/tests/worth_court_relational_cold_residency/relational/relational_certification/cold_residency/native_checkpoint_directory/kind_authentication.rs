@@ -18,7 +18,11 @@ fn checkpoint_readmission_refuses_retired_integer_array_digest_before_restore() 
     create_entity(&execution, &runtime, "binary-digest-checkpoint");
     let native = runtime
         .durability_authority()
-        .native_checkpoint(&execution, execution.allocation_policy())
+        .native_checkpoint_with_policy(
+&execution,
+execution.allocation_policy(),
+worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None },
+)
         .unwrap();
     restore(&execution, &native);
     let leaf = rows(field(manifest(&native), "mirror"))[0];
@@ -50,6 +54,7 @@ fn checkpoint_readmission_refuses_retired_integer_array_digest_before_restore() 
         .restore_native_checkpoint(
             &execution,
             &RelationalNativeCheckpoint::from_untrusted_bytes(bytes),
+                worth_testkit_relational::cold_recovery::members_source(&native),
         )
         .unwrap_err();
     assert_eq!(

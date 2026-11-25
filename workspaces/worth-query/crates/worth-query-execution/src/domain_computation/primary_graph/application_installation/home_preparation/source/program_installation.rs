@@ -35,6 +35,8 @@ pub(in crate::domain_computation::primary_graph::application_installation::home_
     pub(in crate::domain_computation::primary_graph::application_installation::home_preparation) definition_routes: crate::domain_computation::primary_graph::conditional_operation::definition_declarations::ConditionalDefinitionDeclarations,
     pub(in crate::domain_computation::primary_graph::application_installation::home_preparation) readiness_routes:
         WorthQueryInstalledOutputReadinessRoutes,
+    pub(in crate::domain_computation::primary_graph::application_installation::home_preparation) metadata_readmission_authority:
+        Option<worth_relational::facade::durability::HomeReadmissionMetadataAuthority>,
 }
 pub(in crate::domain_computation::primary_graph::application_installation::home_preparation) struct HomeSignalProgramParts<
     Schema: ApplicationSchemaComposition,
@@ -58,6 +60,9 @@ pub(in crate::domain_computation::primary_graph::application_installation::home_
     source: RuntimeBridgeRelationalSource,
     ordinary: RuntimeBridge,
     seed: Option<super::super::super::super::bootstrap::WorthQueryProgramActivationSeed>,
+    metadata_readmission_authority: Option<
+        worth_relational::facade::durability::HomeReadmissionMetadataAuthority,
+    >,
 ) -> Result<
     HomeSignalProgramParts<Schema, Program>,
     super::program_preparation_custody::QueryHomeSignalProgramPreparationRefused<Schema, Program>,
@@ -73,6 +78,7 @@ pub(in crate::domain_computation::primary_graph::application_installation::home_
         source,
         ordinary,
         seed,
+        metadata_readmission_authority,
     });
     let owner = match super::admit_registered_source(
         &input.state,
@@ -94,11 +100,17 @@ pub(in crate::domain_computation::primary_graph::application_installation::home_
         source,
         ordinary,
         seed,
+        metadata_readmission_authority,
     } = *input;
     let (state, mut bootstrap) = assembly::prepare(*state, *schema, restore, owner);
     bootstrap.program_activation_seed = seed;
-    let mut custody =
-        HomeProgramInstallationCustody::from_meaning(state, bootstrap, source, ordinary);
+    let mut custody = HomeProgramInstallationCustody::from_meaning(
+        state,
+        bootstrap,
+        source,
+        ordinary,
+        metadata_readmission_authority,
+    );
     use super::program_preparation_denial::QueryHomeSignalProgramPreparationDenial as D;
     let result = (|| -> Result<(), D> {
         let ctx = &mut *custody;

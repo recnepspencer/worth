@@ -21,8 +21,8 @@ use worth_relational::facade::durability::RelationalNativeCheckpoint;
 
 pub struct Case {
     pub denial: WorthQueryApplicationCommitDenial,
-    pub before: Vec<u8>,
-    pub after: Vec<u8>,
+    pub before: RelationalNativeCheckpoint,
+    pub after: RelationalNativeCheckpoint,
     pub reservations: WorthQueryRecordReservationReport,
     pub visits: Vec<u64>,
     pub reads: Vec<crate::domain_computation::primary_graph::tests::application_attempt::typed_invariant_refusal::rule::ReadSample>,
@@ -36,8 +36,15 @@ impl Case {
             self.reservations.records().len() > 0,
             "this refused commit really reserved ids"
         );
-        let before = RelationalNativeCheckpoint::inspect_bytes(&execution, &self.before).unwrap();
-        let after = RelationalNativeCheckpoint::inspect_bytes(&execution, &self.after).unwrap();
+        assert_eq!(
+            self.before.members(),
+            self.after.members(),
+            "refused commit must leave every external checkpoint member unchanged"
+        );
+        let before =
+            RelationalNativeCheckpoint::inspect_bytes(&execution, self.before.bytes()).unwrap();
+        let after =
+            RelationalNativeCheckpoint::inspect_bytes(&execution, self.after.bytes()).unwrap();
         assert_eq!(before.model, after.model);
         assert!(
             after.symbol_identity_frontier >= before.symbol_identity_frontier,
@@ -70,7 +77,7 @@ impl Drop for RestorePlacement {
 
 pub fn checkpoint(
     world: &crate::domain_computation::primary_graph::tests::application_attempt::typed_invariant_refusal::world::World,
-) -> Vec<u8> {
+) -> RelationalNativeCheckpoint {
     world
         .application
         .with_host_advancement(|phase| {
@@ -80,10 +87,15 @@ pub fn checkpoint(
             .with_runtime(&execution, |runtime| {
                 runtime
                     .durability_authority()
-                    .native_checkpoint(&execution, execution.allocation_policy())
+                    .native_checkpoint_with_policy(
+                        &execution,
+                        execution.allocation_policy(),
+                        worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                            current_members: &[],
+                            source: None,
+                        },
+                    )
                     .unwrap()
-                    .bytes()
-                    .to_vec()
             })
         })
         .unwrap()

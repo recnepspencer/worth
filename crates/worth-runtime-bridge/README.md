@@ -405,8 +405,10 @@ custody refuses Home close. Reopen restores published authored state. After an
 unclean end, a Native effect without its World occurrence is retained as
 recovered `ProductUnpublished` custody that the same key continues, and a Signal
 effect with its recorded open is readmitted; a Signal effect with no recorded
-open (damage, not a kill) still refuses with `UncleanRecoveryUnsupported` (D18,
-retired in C5). Crash recovery is not yet certified.
+open (damage, not a kill) refuses before service with
+`WorldReadmissionDenial::OrphanSignalAssociation` (D18 has been retired). Track
+C1–C3 crash-recovery cases and C5 retirement are complete; full
+adversarial-oracle and Tier-3 certification runs in Track C4 / Landing 3.
 
 Writeback execution records and replay-comparison records are process-local
 diagnostics. Current enumeration returns retained entries; historical reads take

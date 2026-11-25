@@ -1,6 +1,96 @@
 //! The existing accepted-output format is shared by checkpoint and obligation custody.
-use super::super::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity;
+use super::super::application_output_demand::{
+    WorthQueryAcceptedOutputCheckpointIdentity, WorthQueryAcceptedOutputCheckpointPosture,
+};
+use super::super::WorthQueryApplicationOutputPosture;
 use super::*;
+
+pub fn encode(
+    accepted: &WorthQueryAcceptedOutputCheckpointIdentity,
+    policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+) -> Result<Vec<u8>, String> {
+    policy
+        .check_live()
+        .map_err(|cause| format!("accepted output allocation policy stopped: {cause:?}"))?;
+    let facts = accepted
+        .producer_facts
+        .as_ref()
+        .map_or(&[][..], |bytes| bytes.as_slice());
+    let mut total = 8usize
+        .checked_add(accepted.producer.len())
+        .and_then(|n| n.checked_add(1 + 16 + 32 + 32 + 16 + 32 + 1 + 32 + 32 + 8))
+        .ok_or_else(|| "accepted output size overflow".to_owned())?;
+    for role in accepted.roles.iter() {
+        total = total
+            .checked_add(8)
+            .and_then(|n| n.checked_add(role.role.len()))
+            .and_then(|n| n.checked_add(1 + 8))
+            .and_then(|n| n.checked_add(role.entity_name.len()))
+            .and_then(|n| n.checked_add(16))
+            .ok_or_else(|| "accepted output role size overflow".to_owned())?;
+    }
+    total = total
+        .checked_add(2 + 8)
+        .and_then(|n| n.checked_add(facts.len()))
+        .ok_or_else(|| "accepted output facts size overflow".to_owned())?;
+    let mut bytes = worth_execution::ExecutionByteBuffer::allocate(total, policy)
+        .map_err(|cause| format!("accepted output allocation failed: {cause:?}"))?;
+    let push_len = |buf: &mut worth_execution::ExecutionByteBuffer, len: usize| -> Result<(), String> {
+        let wire = u64::try_from(len).map_err(|_| "accepted output length overflow".to_owned())?;
+        buf.extend_from_slice(&wire.to_be_bytes())
+            .map_err(|cause| format!("accepted output write failed: {cause:?}"))
+    };
+    let push_bytes =
+        |buf: &mut worth_execution::ExecutionByteBuffer, slice: &[u8]| -> Result<(), String> {
+            buf.extend_from_slice(slice)
+                .map_err(|cause| format!("accepted output write failed: {cause:?}"))
+        };
+    push_len(&mut bytes, accepted.producer.len())?;
+    push_bytes(&mut bytes, accepted.producer.as_bytes())?;
+    push_bytes(
+        &mut bytes,
+        &[match accepted.posture {
+            WorthQueryAcceptedOutputCheckpointPosture::Performed => 0,
+            WorthQueryAcceptedOutputCheckpointPosture::StableReused => 1,
+        }],
+    )?;
+    push_bytes(&mut bytes, &accepted.implementation.build_identity())?;
+    push_bytes(&mut bytes, &accepted.implementation.edition())?;
+    push_bytes(&mut bytes, &accepted.source)?;
+    push_bytes(&mut bytes, &accepted.scope.partition_id().to_be_bytes())?;
+    push_bytes(&mut bytes, &accepted.scope.local_slot().to_be_bytes())?;
+    push_bytes(&mut bytes, &accepted.scope.generation().to_be_bytes())?;
+    push_bytes(&mut bytes, &accepted.source_partition)?;
+    push_bytes(&mut bytes, &[u8::from(accepted.producer_dependency.is_some())])?;
+    push_bytes(&mut bytes, &accepted.producer_dependency.unwrap_or_default())?;
+    push_bytes(&mut bytes, &accepted.idempotency_key)?;
+    push_len(&mut bytes, accepted.roles.len())?;
+    for role in accepted.roles.iter() {
+        push_len(&mut bytes, role.role.len())?;
+        push_bytes(&mut bytes, role.role.as_bytes())?;
+        push_bytes(
+            &mut bytes,
+            &[match role.posture {
+                WorthQueryApplicationOutputPosture::Preserve => 0,
+                WorthQueryApplicationOutputPosture::Create => 1,
+                WorthQueryApplicationOutputPosture::Retire => 2,
+            }],
+        )?;
+        push_len(&mut bytes, role.entity_name.len())?;
+        push_bytes(&mut bytes, role.entity_name.as_bytes())?;
+        push_bytes(&mut bytes, &role.entity.partition_value().to_be_bytes())?;
+        push_bytes(&mut bytes, &role.entity.local_slot_value().to_be_bytes())?;
+        push_bytes(&mut bytes, &role.entity.generation_value().to_be_bytes())?;
+    }
+    push_bytes(&mut bytes, &accepted.producer_fact_wire_version.to_be_bytes())?;
+    push_len(&mut bytes, facts.len())?;
+    push_bytes(&mut bytes, facts)?;
+    if bytes.len() != total {
+        return Err("accepted output encoded length mismatch".to_owned());
+    }
+    Ok(bytes.bytes().to_vec())
+}
+
 pub fn decode(
     bytes: &[u8],
     execution: &worth_execution::ExecutionRequest<'_, '_>,

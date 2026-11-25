@@ -128,7 +128,28 @@ impl WorthQueryProductBranchOwnerCleanup {
     ) -> Result<(), WorthQueryProductBranchOwnerCleanupDenial> {
         self.runtime
             .owner_cleanup
-            .release_history(self.identity, &self.runtime, retirements)
+            .release_history(self.identity, &self.runtime, retirements, None)
+    }
+
+    pub(crate) fn release_retired_history_with_request(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        retirements: &mut OwnerCleanupRetirements,
+    ) -> Result<(), WorthQueryProductBranchOwnerCleanupDenial> {
+        self.runtime.owner_cleanup.release_history(
+            self.identity,
+            &self.runtime,
+            retirements,
+            Some(execution),
+        )
+    }
+
+    pub(crate) fn retired_application_occurrence(
+        &self,
+    ) -> Option<WorthQueryRetiredProductOccurrence> {
+        self.runtime
+            .owner_cleanup
+            .retired_application_occurrence(self.identity)
     }
 
     pub(crate) fn pending_signal_bases(
@@ -259,7 +280,7 @@ impl WorthQueryProductBranchOwnerCleanupRecord {
                 .checked_add(1)
                 .ok_or(WorthQueryProductBranchOwnerCleanupDenial::WorldHistoryUnavailable)?,
         )?;
-        self.release_retired_history(runtime)?;
+        self.release_retired_history(runtime, Some(execution))?;
         while let Some(work) = self.pending.first() {
             checkpoint(1)?;
             runtime.retire_owner_component(execution, work, retirements)?;

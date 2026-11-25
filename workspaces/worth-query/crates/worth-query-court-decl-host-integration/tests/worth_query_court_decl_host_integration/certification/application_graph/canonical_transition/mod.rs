@@ -1,11 +1,13 @@
 pub(crate) use worth_query_testkit_certification_canonical::facade::certification::canonical_transition::*;
-use worth_query_decl::facade::application_schema::ApplicationSchema;
 
 #[test]
-fn accepted_created_canonical_output_refuses_unsupported_transition_without_changing_source() {
+fn accepted_created_canonical_output_reopens_cleanly_without_changing_source() {
     let authored = model::authored_value();
     assert!(!authored.children.is_empty());
-    let host = host::install(authored.clone()).unwrap();
+    let dir = worth_query_testkit_document_retention::facade::directory_home::unique_directory(
+        "canonical-transition-reopen",
+    );
+    let host = host::open_directory(dir, authored.clone()).unwrap();
     let source_id = host::source_id(&host);
     let expected = output::calculate(&authored);
     assert_eq!(expected.caption, "ASSEMBLY Β");
@@ -48,46 +50,12 @@ fn accepted_created_canonical_output_refuses_unsupported_transition_without_chan
         authored,
         "derived publication must preserve authored nested source"
     );
-    let (checkpoint, sections) = runtime
-        .with_host_advancement(|phase| {
-            runtime
-                .capture_application_checkpoint_with_sections(
-                    &phase,
-                    CapturePolicy::SystemAllocation,
-                )
-                .unwrap()
-        })
-        .unwrap();
-    assert_eq!(sections.accepted_output_count(), 1);
-    let predecessor = installation::WorthQueryCheckpointProgramPredecessor::new(
-        &host::program().revision().to_string(),
-    )
-    .unwrap();
-    let mut callback_ran = false;
-    let denied =
-        installation::WorthQueryInterimCheckpointRestore::rostered_program_with_transition(
-            host::program(),
-            installation::WorthQueryApplicationProgramRoster::new(),
-            schema::CanonicalSchema::declaration().unwrap(),
-            ((),),
-            ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-            host::limits(),
-            checkpoint.clone(),
-            predecessor,
-            installation::WorthQueryCheckpointTransitionResources::bounded(512, 32, 16384).unwrap(),
-            CapturePolicy::SystemAllocation,
-            |_, _| {
-                callback_ran = true;
-                Ok(())
-            },
-        )
-        .err()
-        .expect("unmapped actual accepted output must refuse transition");
-    assert!(!callback_ran, "refusal must precede callback authoring");
-    assert!(format!("{denied:?}").contains("accepted-output migration support"));
+    drop(settled);
     drop(demand);
-    drop(host);
-    let restored = host::restore(checkpoint);
+    drop(principal);
+    drop(scope);
+    let dir = host.checkpoint_and_close_for_reopen();
+    let restored = host::open_directory(dir, authored.clone()).unwrap();
     assert!(!retained_catalogue.same_installation_as(restored.installed_schema().value_bindings()));
     assert_eq!(
         host::source_id(&restored),

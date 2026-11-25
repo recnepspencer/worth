@@ -77,7 +77,7 @@ fn sealed_absent_parent_initialization_stales_before_any_native_effect() {
                 panic!("real complete initializer must prepare");
             };
             let (program, _) = candidate.into_parts();
-            crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::retained_recovery::materialize_source_in_phase(&runtime, &phase);
+            crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::journey::materialize_source_in_phase(&runtime, &phase);
             let execution = phase
                 .execution_request_for_for_test((*runtime.runtime_for_test()).product_runtime_for_test())
                 .unwrap();

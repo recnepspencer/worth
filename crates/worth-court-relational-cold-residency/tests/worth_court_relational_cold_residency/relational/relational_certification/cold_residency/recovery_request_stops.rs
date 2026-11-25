@@ -56,7 +56,11 @@ fn cancelled_checkpoint_restore_consults_before_decoding_corrupt_bytes() {
     assert_eq!(
         target
             .durability_recovery()
-            .restore_native_checkpoint(&ExecutionRequest::serial(&host), &corrupt,)
+            .restore_native_checkpoint(
+                &ExecutionRequest::serial(&host),
+                &corrupt,
+                worth_testkit_relational::cold_recovery::members_source(&corrupt),
+            )
             .unwrap_err(),
         RelationalRecoveryStop::Request(Cause::Cancelled),
     );

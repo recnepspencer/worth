@@ -11,6 +11,36 @@ use worth_runtime_world::facade::{
 };
 
 impl WorthQueryPrimaryGraphProvider {
+    pub fn completion_original_outbox_from_observed(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        source: worth_runtime_world::facade::WorldObservedHomePublication,
+        completed: &WorthQueryCanonicalCompletionRow,
+        maximum_created_records: std::num::NonZeroUsize,
+    ) -> Result<
+        crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord,
+        Denial,
+    > {
+        let publication = OriginalPublication::Home(source);
+        self.outbox_from_original_bindings(
+            execution,
+            &publication,
+            completed,
+            maximum_created_records,
+        )
+    }
+
+    pub fn observe_home_publication_for_receipt(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        receipt: &worth_relational::facade::history::RelationalCommitReceipt,
+        observation: &RuntimeWorldObservationPort,
+    ) -> Result<worth_runtime_world::facade::WorldObservedHomePublication, Denial> {
+        self.graph.with_runtime(execution, |runtime| {
+            observe_home_for_receipt(runtime, execution, receipt, observation)
+        })
+    }
+
     pub fn completion_original_outbox(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -128,16 +158,26 @@ fn original_publication(
             .map(OriginalPublication::Memory)
             .map_err(world_read_denial);
     }
-    let exact = authority
+    observe_home_for_receipt(runtime, execution, receipt, observation)
+        .map(OriginalPublication::Home)
+}
+
+fn observe_home_for_receipt(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    receipt: &worth_relational::facade::history::RelationalCommitReceipt,
+    observation: &RuntimeWorldObservationPort,
+) -> Result<worth_runtime_world::facade::WorldObservedHomePublication, Denial> {
+    let authority = runtime.durability_authority();
+    let subject = authority
         .discover_associated_effect(execution, receipt)
         .map_err(native_read_denial)?
         .ok_or(Denial::CommitUnavailable)?;
     let native = authority
-        .readmit_associated_effect(execution, &exact)
+        .readmit_associated_effect(execution, &subject)
         .map_err(native_read_denial)?;
     observation
-        .readmitted_native_publication(execution, native)
-        .map(OriginalPublication::Home)
+        .observe_home_original_publication(execution, native)
         .map_err(world_read_denial)
 }
 
@@ -148,8 +188,9 @@ fn matches_world(
 ) -> bool {
     match source {
         OriginalPublication::Home(source) => {
-            source.after().selected_commit() == world
-                && source.after().lifecycle_incarnation() == incarnation
+            world.owner_identity().durable() == Some(source.after().branch().owner())
+                && source.after().selected_commit().ordinal() == world.ordinal()
+                && source.after().incarnation().ordinal() == incarnation.ordinal()
         }
         // The actual World observation service admits the current receiver
         // against the exact Native artifact; these are original DATA coordinates.

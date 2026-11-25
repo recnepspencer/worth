@@ -284,12 +284,7 @@ pub(super) fn recover(
     RelationalInitialSchemaInstallationReceipt,
 ) {
     let (mut target, receipt) = installed(2);
-    let (_, recovered) = target
-        .durability_recovery()
-        .restore_native_checkpoint_for_codec_transition_with_authority(
-            execution,
-            &capture(execution, &world.runtime),
-        )
+    let (_, recovered) = crate::relational::relational_certification::cold_residency::codec_neutrality::fixture::restore_codec_transition(&mut target, execution, &capture(execution, &world.runtime))
         .unwrap();
     (target, recovered, receipt)
 }

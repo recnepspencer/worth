@@ -88,6 +88,14 @@ where
         &self,
         observed: &ProductBranchObservation,
     ) -> Result<ProductBranchRetirementReport, RuntimeWorldBranchRetirementDenial> {
-        self.retire_observed_branch(observed)
+        self.retire_observed_branch(observed, None)
+    }
+
+    fn retire_product_branch_with_request(
+        &self,
+        observed: &ProductBranchObservation,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<ProductBranchRetirementReport, RuntimeWorldBranchRetirementDenial> {
+        self.retire_observed_branch(observed, Some(execution))
     }
 }

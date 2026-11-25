@@ -127,12 +127,16 @@ fn partition_high_water_includes_both_record_classes_pending_and_burned_namespac
     );
     let checkpoint = runtime
         .durability_authority()
-        .native_checkpoint(&request, Policy::SystemAllocation)
+        .native_checkpoint_with_policy(&request, Policy::SystemAllocation, worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
         .unwrap();
     let mut restored = durable_runtime(&medium);
     restored
         .durability_recovery()
-        .restore_native_checkpoint(&request, &checkpoint)
+        .restore_native_checkpoint(
+            &request,
+            &checkpoint,
+            worth_testkit_relational::cold_recovery::members_source(&checkpoint),
+        )
         .unwrap();
     assert_eq!(
         restored

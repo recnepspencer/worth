@@ -104,7 +104,7 @@ fn absent_aspect_read_stales_when_other_field_materializes_before_commit() {
             let program = reads.begin_effect_program().finish().unwrap();
             // Close the read before entering the distinct actual native publication.
             // The original read/program and its pin remain retained for comparison.
-            crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::retained_recovery::materialize_source_in_phase(&runtime, &phase);
+            crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::journey::materialize_source_in_phase(&runtime, &phase);
             let input = Input {
                 scope_key: crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::installation::ANCHOR.to_owned(),
                 incomplete: false,

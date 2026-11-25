@@ -89,6 +89,19 @@ impl WorthQueryProductBranchLease {
             })
     }
 
+    pub(crate) fn carry_selected_program_source_from(
+        &mut self,
+        prior: &Self,
+    ) -> Result<(), super::WorthQueryProductBranchAdmissionDenial> {
+        self.publication
+            .carry_selected_program_source_from(&prior.publication)
+            .map_err(|_| {
+                super::WorthQueryProductBranchAdmissionDenial::Refused(
+                    super::WorthQueryProductBranchAdmissionRefusalKind::ObservationRejected,
+                )
+            })
+    }
+
     pub(crate) fn read_lease(&self) -> WorthQueryProductObservationLease {
         self.read.retained_clone()
     }

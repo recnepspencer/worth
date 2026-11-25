@@ -22,6 +22,7 @@ pub use suspension::{
     WorthQueryGeneratedOutputSuspensionRecoveryFailure,
     WorthQueryGeneratedOutputSuspensionRecoveryStage,
 };
+mod durable_publication;
 mod preparation_execution;
 pub(crate) mod restoration;
 mod suspend;

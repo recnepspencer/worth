@@ -111,6 +111,46 @@ impl WorthQueryProductPublicationBinding {
             Some(_) => Err(SelectedProgramSourceRetentionDenial::ConflictingObservation),
         }
     }
+    pub(crate) fn carry_selected_program_source_from(
+        &mut self,
+        prior: &Self,
+    ) -> Result<(), SelectedProgramSourceRetentionDenial> {
+        let revision = match &prior.program_source {
+            BranchProgramSourceCache::MemoryOnly => return Ok(()),
+            BranchProgramSourceCache::Directory { selected, .. } => {
+                let Some(selected) = selected else {
+                    return Ok(());
+                };
+                selected.revision
+            }
+        };
+        let slot = match &mut self.program_source {
+            BranchProgramSourceCache::MemoryOnly => return Ok(()),
+            BranchProgramSourceCache::Directory { selected, .. } => selected,
+        };
+        let commitment = worth_runtime_world::facade::world_branch_program_source_commitment(
+            &self.observation,
+            revision,
+        )
+        .map_err(SelectedProgramSourceRetentionDenial::Head)?;
+        let candidate = SelectedBranchProgramSource {
+            revision,
+            commitment,
+        };
+        match slot {
+            None => {
+                *slot = Some(candidate);
+                Ok(())
+            }
+            Some(original)
+                if (original.revision, original.commitment)
+                    == (candidate.revision, candidate.commitment) =>
+            {
+                Ok(())
+            }
+            Some(_) => Err(SelectedProgramSourceRetentionDenial::ConflictingObservation),
+        }
+    }
     pub(crate) fn admitted_program_source(
         &self,
     ) -> Result<

@@ -275,13 +275,17 @@ fn expanded_restore_reemits_checkpoint_only_definitions_without_fabricating_sele
             .unwrap();
         let checkpoint = source
             .durability_authority()
-            .native_checkpoint(execution, execution.allocation_policy())
+            .native_checkpoint_with_policy(execution, execution.allocation_policy(), worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
             .unwrap();
         let destination = TestDurableMedium::new();
         let mut restored = durable_runtime(&destination);
         restored
             .durability_recovery()
-            .restore_native_checkpoint(execution, &checkpoint)
+            .restore_native_checkpoint(
+                execution,
+                &checkpoint,
+                worth_testkit_relational::cold_recovery::members_source(&checkpoint),
+            )
             .unwrap();
         assert_eq!(
             restored.index_access().matching_definition(&installed),
@@ -292,7 +296,11 @@ fn expanded_restore_reemits_checkpoint_only_definitions_without_fabricating_sele
         let mut reconstructed = memory_runtime();
         reconstructed
             .durability_recovery()
-            .restore_native_checkpoint(execution, &checkpoint)
+            .restore_native_checkpoint(
+                execution,
+                &checkpoint,
+                worth_testkit_relational::cold_recovery::members_source(&checkpoint),
+            )
             .unwrap();
         if seeded {
             populate(
@@ -308,6 +316,7 @@ fn expanded_restore_reemits_checkpoint_only_definitions_without_fabricating_sele
             delta(&result)["definitions"][0]["index_id"],
             installed.index_id.0
         );
+        assert_eq!(delta(&result)["definitions"].as_array().unwrap().len(), 1);
         release_test_commit_snapshot(&reconstructed, &result);
     }
 }

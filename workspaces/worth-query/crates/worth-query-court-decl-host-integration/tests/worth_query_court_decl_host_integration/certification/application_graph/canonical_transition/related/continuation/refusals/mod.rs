@@ -15,8 +15,7 @@ fn changed_codec_continuation_swallowed_refusal_and_original_cancellation_never_
         journey::page(&original).into_parts().1.unwrap(),
     ];
     let final_retry = journey::page(&original).into_parts().1.unwrap();
-    let checkpoint = host::capture(&original);
-    let target = journey::successor(checkpoint);
+    let target = journey::successor_install(journey::heavy());
     assert_eq!(successor::output::decodes(), 0);
     let _target_settled = successor::host::produce(&target);
     projection::reset();

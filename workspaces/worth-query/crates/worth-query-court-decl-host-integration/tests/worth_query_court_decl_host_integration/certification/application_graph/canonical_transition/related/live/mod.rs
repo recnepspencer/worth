@@ -16,7 +16,7 @@ fn held_v1_live_cause_uses_original_decoder_and_v2_live_uses_regenerated_output(
         .subscribe(WorthQueryApplicationLiveLimits::bounded(4, 1))
         .unwrap();
     publish_old(&original, 180301);
-    let target = journey::successor(host::capture(&original));
+    let target = journey::successor_install(model::authored_value());
     assert_eq!(successor::output::decodes(), 0);
     let fresh = request_scope();
     let principal = authenticate_operator(original.installed_schema(), &fresh);
@@ -58,7 +58,7 @@ fn held_v1_live_cause_uses_original_decoder_and_v2_live_uses_regenerated_output(
 fn changed_codec_live_swallowed_refusal_and_cancelled_domain_error_cannot_ack() {
     let original = host::install(journey::heavy()).unwrap();
     let _old = host::produce(&original);
-    let target = journey::successor(host::capture(&original));
+    let target = journey::successor_install(journey::heavy());
     let _new = successor::host::produce(&target);
     let mut funded = successor::live_native::open(&target);
     publish_target(&target, 180311);

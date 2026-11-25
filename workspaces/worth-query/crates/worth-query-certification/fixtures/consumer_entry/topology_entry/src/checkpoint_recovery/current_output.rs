@@ -2,7 +2,6 @@ use super::*;
 use crate::{PlanarEdit, PlanarMutation};
 use worth_query_consumer_values::{PlanarCurrentOutputExpectation, PlanarOperation};
 use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
-use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 
 #[cfg(test)]
 mod serial {
@@ -12,21 +11,17 @@ mod serial {
     };
     const EXPECTATIONS: usize = 8_193;
 
-    fn restore(contacts: &crate::producer::ProviderContacts, work: u64) -> support::Application {
-        let application = support::observed::install(None, contacts);
+    fn restore(
+        contacts: &crate::producer::ProviderContacts,
+        work: u64,
+    ) -> support::DirApplication {
+        let application = support::observed::open_directory(None, contacts);
         let (scope, principal) = authenticate(&application);
         let request = application.request(&principal, &scope);
         drop(settle(&request, &application));
         drop(principal);
         drop(scope);
-        let checkpoint = application
-            .with_host_advancement(|host_phase| {
-                application
-                    .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
-                    .unwrap()
-            })
-            .expect("installed host call opens");
-        drop(application);
+        let directory = application.checkpoint_and_close_for_reopen();
 
         contacts.reset();
         let policy = ExecutionRequestPolicy::new(
@@ -41,7 +36,7 @@ mod serial {
             support::invalidation(),
             policy,
         );
-        support::observed::install_with_limits(Some(checkpoint), limits, contacts)
+        support::observed::open_directory_with_limits(Some(directory), limits, contacts)
     }
 
     fn verification() -> PlanarEdit {

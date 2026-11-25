@@ -70,6 +70,9 @@ macro_rules! phase {
             readiness!($identity);
             pub struct Handler(pub Selections);
             impl OperationHandler<Schema, Binding> for Handler {
+                fn declared_durable_capabilities() -> Option<&'static [WorthQueryOperationDurableCapability]> {
+                    Some(&[WorthQueryOperationDurableCapability::RelationalMutation])
+                }
                 fn decide(&self, input: &Input, reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>) -> HandlerResult<Decision, Denial> {
                     let result = (|| {
                         let source = reader.resolve_entity(Key::at("Key"), input.0.key.clone())?;

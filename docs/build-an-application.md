@@ -103,10 +103,12 @@ home.close_clean()?;
 
 Directory Homes support the declared track-H families through the real installed
 owners in [§4](#4-install-or-reopen). Use graceful close and fresh-process reopen
-for durable continuation; MemoryOnly carries no restart guarantee. Reopen after
-a kill recovers the cases listed in [After a crash](application-home.md#after-a-crash-or-unclean-close);
-crash recovery is not yet certified. For the short lifecycle path (open, write, retry, close,
-crash behavior, discard) start with [Use an Application Home](application-home.md).
+for durable continuation; MemoryOnly carries no restart guarantee. Reopen after a kill recovers the cases listed in
+[After a crash](application-home.md#after-a-crash-or-unclean-close) (Track C1–C3
+crash-recovery cases and C5 retirement are complete; full adversarial-oracle and
+Tier-3 certification runs in Track C4 / Landing 3). For the short lifecycle path
+(open, write, retry, close, crash behavior, discard) start with
+[Use an Application Home](application-home.md).
 
 | Your next task | Start here | What you supply |
 |---|---|---|
@@ -1333,7 +1335,7 @@ Ordinary deletion and producer Retire alone do not authorize a fresh Birth. Nati
 recovery preserves the same physical carrier and unchanged authored records,
 retires the old output before adopting target contracts and indexes, and leaves
 reconstruction to the installed target producer. The
-[native codec journey](../workspaces/worth-query/crates/worth-query-testkit-certification-canonical/src/certification/application_graph/canonical_transition/successor/adoption.rs)
+[native codec journey](../crates/worth-court-relational-cold-residency/tests/worth_court_relational_cold_residency/relational/relational_certification/cold_residency/codec_neutrality.rs)
 uses nonempty authored source, incompatible V1/V2 output codecs, real producer
 publication, a source edit through Preserve, and current-format reopen.
 
@@ -2809,6 +2811,13 @@ impl<Schema: TopologySchemaBinding> RegionTotalsHandler<Schema> {
 impl<Schema: TopologySchemaBinding> OperationHandler<Schema, RegionTotalsDemandBinding<Schema>>
     for RegionTotalsHandler<Schema>
 {
+    fn declared_durable_capabilities() -> Option<
+        &'static [worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability],
+    > {
+        Some(&[
+            worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability::RelationalMutation,
+        ])
+    }
     fn decide(
         &self,
         input: &RegionTotalsDemand,
@@ -3084,10 +3093,11 @@ the ordinary discharge doors remove the rows
 Native effect that World had not yet recorded as recovered `ProductUnpublished`
 custody, releases a no-effect original, and resumes an interrupted program
 transition ([After a crash](application-home.md#after-a-crash-or-unclean-close)).
-Only an unobserved dispatch attempt and damage-shaped Signal or fork tails keep
-`UncleanRecoveryUnsupported` (D18, C5); C2 owns durable-history/branch cleanup;
-C4 owns the adversarial oracle; C5 owns retirement and final certification.
-**Crash recovery is not yet certified.**
+The temporary D18 `UncleanRecoveryUnsupported` refusal surface and D13 interim
+application-checkpoint path are retired (C5); damage-shaped Signal or fork
+mismatches refuse directly as `WorldReadmissionDenial::OrphanSignalAssociation`
+and `WorldReadmissionDenial::MissingCreationIntent`, while Track C4 / Landing 3
+runs final adversarial-oracle and Tier-3 milestone certification.
 Correction shapes without admitted relation pre-images, output material or
 coupled-output correspondence retain their specific typed refusals. The working
 no-output divergent correction does not authorize those shapes. MemoryOnly adds
@@ -3845,44 +3855,28 @@ an owning refusal if opening fails after recording the intent; inspect
 
 #### Interrupted Directory transitions
 
-Resume, drift, interrupted binding and process-kill qualification remain pending.
+Interrupted or process-killed relational transitions resume cleanly when the
+Directory Home is reopened with the same successor transition request.
 
-### Internal checkpoint admission — cleanup track C5
+### Reopening and program transitions on Directory Home
 
-Ordinary applications reopen their Directory Home as described above. The
-remaining internal certification door is scheduled for deletion by C5; do not
-use it as application-owned byte transport. Its original-request option is:
-`host::application_installation::WorthQueryInterimCheckpointRestore::rostered_program_in_advancement`
-takes that bootstrap phase first, followed by the validated program, roster,
-declaration, configuration, build identity, unchanged World limits and checkpoint.
-It reconstructs through the ordinary restore core and accepts no seed or transition
-callback. Use a separately funded opening request for a large recovered population;
-its allowance does not increase later World business calls. Default ordinary
-checkpoint restoration continues to open from the World request policy.
+Ordinary applications reopen their Directory Home by constructing
+`WorthQueryApplicationHomeRequest::new` with
+`WorthQueryApplicationHomeLocation::Directory(dir)` and calling
+`.open_in_advancement(&phase)` inside `with_bootstrap_advancement` (or inside
+`host::application_contribution::with_bootstrap_advancement_from_request` for an
+already admitted execution request). The Directory Home's authoritative journals
+and derived checkpoint are the sole model source on reopen; `initial_state` is
+never replayed.
 
-When installation belongs to an already admitted execution attempt, borrow its
-`ExecutionRequest` through `host::application_contribution::with_bootstrap_advancement_from_request`
-and pass the resulting phase to
-`host::application_installation::WorthQueryInterimCheckpointRestore::rostered_program_with_transition_in_advancement`.
-This variant takes the existing transition arguments with the phase first and a
-required capture policy. It borrows the original cancellation/deadline and
-remaining cumulative work through construction, roster admission, native transition,
-final assembly and capture. Native nested scopes charge the original parent; they
-do not renew its allowance. Capture is capped by the caller-named policy, which must
-be `Execution(&lease)` for the funding lease itself or a lease descending from it,
-for example a child with its own smaller memory limit; there is no default and no
-silent inheritance. Entry checks that descent before any work or charge: a sibling,
-a parent or another lineage's lease refuses with
-`ExecutionDenied(ExecutionResource { NestedLeaseMisuse })`. A capture child that runs
-out after the native ACK returns the acknowledged capsule with the child's own
-refusal (`Policy { ancestor: 0 }`) for repair.
-`SystemAllocation` and bare serial backing have no admitted capture allocation policy and refuse before
-effects with `ExecutionDenied(ResourceEnvelopeMismatch)`, rather than falling back
-to SystemAllocation. The ordinary convenience constructor retains its explicit
-owned-request/policy contract. Its `Execution(&lease)` policy funds the whole
-transition: the bootstrap runs on that lease, as if borrowed through
-`with_bootstrap_advancement_from_request`, so the lease carries the transition's
-work as well as the captured frame.
+To upgrade an existing Directory Home to a successor program, attach
+`.with_program_transition(...)` to `WorthQueryApplicationHomeRequest` and call
+`.open_in_advancement(&phase)`. Relational program transitions (including
+reopening after interruption or process kill with the same successor request)
+run on Directory Home; authored Signal programme migration remains deferred to
+its later migration phase and refuses cleanly before authoring while leaving the
+predecessor Directory Home reopenable. The retired D13 interim
+application-checkpoint restore/transition surface has been removed.
 
 ### Durable branch creation, retirement, and history disposal
 
@@ -7855,13 +7849,13 @@ recorded-actor policy. Capture declares occurrence-only requirements; archival
 requires the authored approval. The admitted proposal and approval supply their
 actors. Business input never supplies an actor override.
 
-These examples describe graceful current-version Home handoffs. Crash recovery is
-not yet certified. Their caller cutover still needs focused execution at the
-integrated H6 source epoch; it does not certify the milestone's full-family
-positive divergent-correction/materialization journey. That positive journey
-remains a separate H10 prerequisite, including the currently refused coupled or
-authored correction output shapes. C1 recovers the crash core; C2–C5 own the
-remaining unclean recovery and retirement certification.
+These examples run against the public `worth-query-host` and its real Directory
+Home owners (`observable_workflow`, `authored_workflow`, `ordinary_product_workflow`,
+`shared_execution`, and the Bank reference journey). Track C1–C3 crash-recovery
+cases and C5 retirement are complete on Directory Home (with currently unsupported
+relation-preimage, coupled-output, and authored-output correction shapes still
+explicitly refused); Track C4 / Landing 3 owns the exhaustive adversarial crash
+oracle and Tier-3 certification.
 
 #### Keep a basis, reacquire a locator
 
@@ -9911,10 +9905,10 @@ authored state and committed receipts without repeating either effect.
 Unresolved live publication custody refuses close. After an unclean end, a
 Native effect without its World occurrence reopens as recovered
 `ProductUnpublished` custody that the same key continues, and a Signal effect
-with its recorded open is readmitted. A Signal effect with no recorded open
-(damage, not a kill) still refuses with `UncleanRecoveryUnsupported` before
-service (D18). A retained original cannot become a no-effect result; pending
-settlement recovery belongs to track C.
+with its recorded open is readmitted. A Signal effect with no recorded open (damage, not a kill) refuses before
+service with `WorldReadmissionDenial::OrphanSignalAssociation` (D18
+`UncleanRecoveryUnsupported` has been retired). A retained original cannot
+become a no-effect result.
 
 Use `bind_conditional_definition` to install authored conditional membership
 without a managed clock or temporal operation. Actual temporal installation and

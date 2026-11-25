@@ -14,7 +14,8 @@ fn exercise(worker: bool, cold: bool) {
     } else {
         host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
     };
-    let mut host = world::install_program_with_other_model::<program::Program>(limits, 2, Some(3));
+    let mut host =
+        world::open_directory_program_with_other_model::<program::Program>(limits, 2, Some(3));
     let scope = request_scope();
     let observation = source_projection::Observation::begin();
     let retention = SynchronousCaptureRetentionForTest::install_on_this_thread();
@@ -135,10 +136,9 @@ fn exercise(worker: bool, cold: bool) {
 
         if cold && ordinal == 0 {
             drop(outputs);
-            let checkpoint = super::super::failure::checkpoint(&host);
             drop(principal);
-            drop(host);
-            host = world::restore_program_checkpoint::<program::Program>(checkpoint, worker, false);
+            let directory = host.checkpoint_and_close_for_reopen();
+            host = world::reopen_program_directory::<program::Program>(directory, worker, false);
         }
     }
 }

@@ -114,6 +114,9 @@ impl BoundLivePublicationInputs {
                                 binding: basis.owner_inner().retention_binding.clone(),
                                 applied,
                                 publication_cell: basis.publication_cell().clone(),
+                                _count_guard: worth_relational_branch::internal_port::history::retention::publication_basis::PublicationBasisCountGuard::acquire(
+                                    &basis.owner_inner().retention_binding,
+                                ),
                                 _hold: hold,
                                 _funding: funding,
                             }),

@@ -21,10 +21,7 @@ fn abandoned_client_preparation_leaves_publication_unchanged_and_later_keys_reco
     let capture = || {
         runtime
             .durability_authority()
-            .native_checkpoint(
-                execution,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
+            .native_checkpoint_with_policy(execution, worth_execution::ExecutionAllocationPolicy::SystemAllocation, worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
             .unwrap()
     };
     let _before = capture();
@@ -52,7 +49,11 @@ fn abandoned_client_preparation_leaves_publication_unchanged_and_later_keys_reco
     let mut recovered = durable_runtime(&medium);
     let restored = recovered
         .durability_recovery()
-        .restore_native_checkpoint(execution, &published)
+        .restore_native_checkpoint(
+            execution,
+            &published,
+            worth_testkit_relational::cold_recovery::members_source(&published),
+        )
         .unwrap();
     assert_eq!(restored.latest_commit, Some(committed.commit.clone()));
     assert_eq!(

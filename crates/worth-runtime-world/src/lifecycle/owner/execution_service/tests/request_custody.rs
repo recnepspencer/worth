@@ -385,6 +385,5 @@ fn post_admission_no_effect_refunds_registry_growth_and_leaves_no_phantom_slot()
     assert_eq!(relational_head(&fixture), before_native);
     assert_eq!(memory.charged_memory_bytes(), 0);
     assert_eq!(owner.state.history.memory_original_capacity_for_test(), 0);
-    assert_eq!(owner.state.history.snapshot_memory_originals(&request).unwrap().len(), 0);
-    assert!(owner.state.history.reserve_memory_readmission().is_ok());
+    assert_eq!(owner.state.history.committed_memory_original_count_for_test(), 0);
 }

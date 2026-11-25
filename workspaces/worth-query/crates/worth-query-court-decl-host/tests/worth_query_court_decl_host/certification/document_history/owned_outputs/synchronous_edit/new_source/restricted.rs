@@ -26,6 +26,11 @@ worth_query_mutation_binding!(pub Binding for Intent, schema Schema,
 );
 pub struct Handler;
 impl OperationHandler<Schema, Binding> for Handler {
+    fn declared_durable_capabilities(
+    ) -> Option<&'static [worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability]> {
+        Some(&[worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability::RelationalMutation])
+    }
+
     fn decide(
         &self,
         _: &Intent,
@@ -97,11 +102,7 @@ fn run(worker: bool) {
     let _observation = WorthQueryExecutionObservation::install_on_this_thread();
     let mut refusals = Vec::new();
     for create in [true, false] {
-        let host = if worker {
-            world::install_worker_only()
-        } else {
-            world::install()
-        };
+        let host = world::open_directory_host(worker);
         let scope = request_scope();
         let principal = authenticate_operator(host.installed_schema(), &scope);
         let request = host.request(&principal, &scope);

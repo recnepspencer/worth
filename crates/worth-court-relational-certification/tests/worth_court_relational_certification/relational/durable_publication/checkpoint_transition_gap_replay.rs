@@ -16,9 +16,7 @@ use worth_relational::facade::{
     replay::{RelationalReplayRequest, ReplayExecutionMode, ReplayVerificationMode},
     runtime::{RelationalRuntime, RelationalRuntimeApi},
 };
-use worth_testkit_relational::{
-    durable_medium::TestDurableMedium, durable_publication::schema,
-};
+use worth_testkit_relational::{durable_medium::TestDurableMedium, durable_publication::schema};
 
 #[derive(Debug)]
 struct CountedTransitionReads {
@@ -102,7 +100,7 @@ fn replay_reads_only_the_gap_after_its_checkpoint() {
         }
         runtime
             .durability_authority()
-            .native_checkpoint(execution, execution.allocation_policy())
+            .native_checkpoint_with_policy(execution, execution.allocation_policy(), worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
             .unwrap();
         let target = create_entity_outcome_on_branch(
             execution,

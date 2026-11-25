@@ -29,6 +29,7 @@ impl<'runtime, S: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime
         principal: &WorthQueryAuthenticatedExternalPrincipal<S>,
         request: &WorthQueryRequestScope,
         coordinates: &WorthQueryCorrectionSourceCoordinates,
+        known: Option<&worth_runtime_world::facade::CompositeCommitIdentity>,
         maximum: Option<NonZeroUsize>,
         maximum_results: NonZeroUsize,
         walked: Option<WalkedOriginal>,
@@ -71,9 +72,10 @@ impl<'runtime, S: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime
         {
             return Err(D::SourcePublicationMismatch);
         }
-        let (observed, ancestor_bound) = match walked {
-            Some(walked) => (walked.identity, Some(walked.parent_links_bound)),
-            None => (
+        let (observed, ancestor_bound) = match (walked, known) {
+            (Some(walked), _) => (walked.identity, Some(walked.parent_links_bound)),
+            (None, Some(known)) => (known.clone(), maximum),
+            (None, None) => (
                 exact_original::resolve(
                     execution,
                     &owner.observation_port(),
@@ -93,6 +95,16 @@ impl<'runtime, S: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime
                 ancestor_bound,
             )
             .map_err(D::Ancestry)?;
+        if ancestry
+            .source()
+            .basis()
+            .relational_basis()
+            .observation()
+            .commit_receipt()
+            != Some(coordinates.relational())
+        {
+            return Err(D::SourcePublicationMismatch);
+        }
         let source_type = application
             .installed_schema()
             .installed_mutation_binding_descriptor(&material.capture.mutation)

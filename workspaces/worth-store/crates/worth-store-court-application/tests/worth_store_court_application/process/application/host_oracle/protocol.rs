@@ -7,6 +7,10 @@ pub(super) enum Request {
         key: u64,
         value: u64,
     },
+    MutateDroppingResponse {
+        key: u64,
+        value: u64,
+    },
     Close,
     Checkpoint,
     CheckpointAndDiscard,

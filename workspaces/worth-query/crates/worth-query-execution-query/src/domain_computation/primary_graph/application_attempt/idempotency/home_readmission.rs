@@ -10,17 +10,28 @@ use worth_execution::{ExecutionRequest, WorkCeilingDenial};
 use worth_foundational::facade::{
     AspectValue, CanonicalDigestId, ContractValidatedAspectValueView,
 };
-use worth_relational::facade::runtime::{RelationalRuntime, VisibilityProjectionView};
+use worth_relational::facade::runtime::{
+    HomeReadmissionMetadataReadDenial, HomeReadmissionMetadataView, RelationalRuntime,
+};
 
 pub fn readmit(
     native: &RelationalRuntime,
-    view: &VisibilityProjectionView,
+    view: &HomeReadmissionMetadataView<'_>,
     layout: &WorthQueryProviderIdempotencyLayout,
     execution: &ExecutionRequest<'_, '_>,
 ) -> Result<(), Denial> {
     let rows = view
         .bounded_entities_of_kind(execution, layout.entity_kind, usize::MAX)
-        .map_err(request_read_denial::read)?
+        .map_err(|cause| match cause {
+            HomeReadmissionMetadataReadDenial::Execution(cause) => request_read_denial::read(cause),
+            HomeReadmissionMetadataReadDenial::PhaseClosed => {
+                denied("Home readmission metadata phase already closed")
+            }
+            HomeReadmissionMetadataReadDenial::KindNotAdmitted(kind) => denied(format!(
+                "Home readmission metadata kind {} is not admitted",
+                kind.0
+            )),
+        })?
         .map_err(|_| denied("Home idempotency scan exceeded its bound"))?;
     let bytes = rows
         .records()

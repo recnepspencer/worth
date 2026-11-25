@@ -10,11 +10,12 @@ impl WorthQueryProductBranchOwnerCleanupRecord {
     pub(super) fn release_retired_history(
         &mut self,
         runtime: &WorthQueryProductRuntime,
+        execution: Option<&worth_execution::ExecutionRequest<'_, '_>>,
     ) -> Result<(), WorthQueryProductBranchOwnerCleanupDenial> {
         let Some(WorthQueryProductBranchHistoryCleanup { resume }) = self.history.as_mut() else {
             return Ok(());
         };
-        let walked = walk(runtime, resume);
+        let walked = walk(runtime, resume, execution);
         // Every release, complete or not, is followed before it reports.
         runtime.owner_cleanup.history_released();
         walked?;
@@ -33,15 +34,15 @@ impl WorthQueryProductBranchOwnerCleanupRecord {
 fn walk(
     runtime: &WorthQueryProductRuntime,
     resume: &mut Vec<CompositeCommitIdentity>,
+    execution: Option<&worth_execution::ExecutionRequest<'_, '_>>,
 ) -> Result<(), WorthQueryProductBranchOwnerCleanupDenial> {
     let mut index = 0;
     while let Some(from) = resume.get(index) {
-        let release = match runtime
-            .fields()
-            .owner
-            .recovery_port()
-            .release_retired_branch_history(from)
-        {
+        let port = runtime.fields().owner.recovery_port();
+        let release = match match execution {
+            Some(execution) => port.release_retired_branch_history_with_request(from, execution),
+            None => port.release_retired_branch_history(from),
+        } {
             Ok(release) => release,
             Err(worth_runtime_world::facade::HistoryReclamationDenial::PartialPublication {
                 resume_from,

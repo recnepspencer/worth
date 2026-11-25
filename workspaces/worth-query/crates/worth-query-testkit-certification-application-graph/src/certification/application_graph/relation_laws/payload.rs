@@ -21,6 +21,11 @@ impl<L: LawPolicy> Default for PayloadHandler<L> {
     }
 }
 impl<L: LawPolicy> OperationHandler<GraphSchema<L>, EditBinding<L>> for PayloadHandler<L> {
+    fn declared_durable_capabilities(
+    ) -> Option<&'static [worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability]> {
+        Some(&[worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability::RelationalMutation])
+    }
+
     fn decide(
         &self,
         input: &EdgeEdit,

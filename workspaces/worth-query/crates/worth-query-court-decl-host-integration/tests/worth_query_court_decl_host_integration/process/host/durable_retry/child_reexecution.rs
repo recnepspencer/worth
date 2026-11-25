@@ -175,7 +175,8 @@ fn reader() {
     let (_, live) = scope();
     assert_eq!(balance(home.runtime(), &live), 9);
     let expected = std::fs::read_to_string(std::env::var_os(EXPECTED).unwrap()).unwrap();
-    assert_original(home.runtime(), &live, &expected);
+    // Before a newer publication retires commit 1, both replay and historical selection succeed.
+    assert_original(home.runtime(), &live, &expected, true);
     assert!(matches!(
         set(home.runtime(), &live, 0x7265747279, 10).unwrap(),
         Outcome::IdempotencyIntentDrift
@@ -185,7 +186,9 @@ fn reader() {
         set(home.runtime(), &live, 0x726574727b, 11).unwrap(),
         Outcome::Committed { result: 11, .. }
     ));
-    assert_original(home.runtime(), &live, &expected);
+    // Publishing commit 3 retires unprotected commit 1: replay still returns its
+    // exact original receipt without running a handler, while live selection fails closed.
+    assert_original(home.runtime(), &live, &expected, false);
     assert_eq!(contacts.load(Ordering::SeqCst), 1);
     assert_eq!(balance(home.runtime(), &live), 11);
     drop(home);
@@ -195,6 +198,7 @@ fn assert_original(
     runtime: &worth_query_host::facade::application_installation::WorthQueryProgramApplicationRuntime<fixture::schema::HomeIdentitySchema, fixture::HomeProgram>,
     live: &WorthQueryRequestScope,
     expected: &str,
+    expect_selectable: bool,
 ) {
     match set(runtime, live, 0x7265747279, 8).unwrap() {
         Outcome::RecoveredCommitted(receipt) => {
@@ -208,25 +212,38 @@ fn assert_original(
                 runtime.runtime().installed_schema(),
                 live,
             );
-            let historical = runtime
+            let selection = runtime
                 .runtime()
                 .with_application_advancement(live, |phase| {
                     runtime
                         .request(&principal, live)
                         .at_recorded_commit(&phase, original, None)
-                        .unwrap()
-                        .query(fixture::balance_query::AccountRead(
-                            "account-001".to_owned(),
-                        ))
-                        .execute_in_advancement(&phase)
-                        .unwrap()
+                        .map(|selected| {
+                            selected
+                                .query(fixture::balance_query::AccountRead(
+                                    "account-001".to_owned(),
+                                ))
+                                .execute_in_advancement(&phase)
+                                .unwrap()
+                        })
                 })
                 .unwrap();
-            assert_eq!(
-                historical.rows(),
-                &[8],
-                "original data selects its actual historical state after later mutations"
-            );
+            if expect_selectable {
+                assert_eq!(
+                    selection.unwrap().rows(),
+                    &[8],
+                    "original data selects its actual historical state while retained"
+                );
+            } else {
+                assert!(
+                    matches!(
+                        selection,
+                        Err(worth_query_host::facade::application_entry::WorthQueryApplicationHistorySelectionDenial::CommitUnavailable)
+                    ),
+                    "retired historical commit must fail closed on live selection: {:?}",
+                    selection.err()
+                );
+            }
         }
         other => {
             panic!("retry must return the exact original receipt without a handler: {other:?}")

@@ -77,7 +77,7 @@ fn assert_header_refused(
         RelationalNativeCheckpoint::from_untrusted_bytes([CHECKPOINT_MAGIC, &payload].concat());
     let stop = memory_runtime()
         .durability_recovery()
-        .restore_native_checkpoint(execution, &changed)
+        .restore_native_checkpoint(execution, &changed, worth_testkit_relational::cold_recovery::members_source(&changed))
         .unwrap_err();
     let error = expect_durability_failure(stop);
     assert_eq!(

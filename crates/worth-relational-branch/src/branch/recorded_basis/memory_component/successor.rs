@@ -28,7 +28,7 @@ pub fn live_bytes(
     descriptor: &RelationalBranchBasisDescriptor,
     parents: usize,
 ) -> Result<usize, Refusal> {
-    std::mem::size_of::<MemoryComponentOrigin>()
+    std::mem::size_of::<MemoryComponentMeaning>()
         .checked_add(2 * std::mem::size_of::<usize>())
         .and_then(|bytes| bytes.checked_add(descriptor.branch_id().0.len()))
         .and_then(|bytes| bytes.checked_add(descriptor.reference().branch_id().as_str().len()))

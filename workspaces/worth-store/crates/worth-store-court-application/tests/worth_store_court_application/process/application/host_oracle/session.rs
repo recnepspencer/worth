@@ -144,7 +144,6 @@ fn host_oracle_service_child() {
         None => run(),
     }
 }
-
 fn run_host_oracle_service_child(channel: PathBuf) {
     let path = PathBuf::from(std::env::var_os("WORTH_HOST_ORACLE_HOME").unwrap());
     let seed = std::env::var("WORTH_HOST_ORACLE_SEED")
@@ -209,6 +208,34 @@ fn run_host_oracle_service_child(channel: PathBuf) {
                     },
                     &mut originals,
                 );
+            }
+            Request::MutateDroppingResponse { key, value } => {
+                let outcome = super::execution::mutation(
+                    home.as_ref().unwrap(),
+                    &HostCommand::Mutate {
+                        branch: BranchLabel::Main,
+                        key,
+                        value,
+                    },
+                    &mut originals,
+                );
+                let dropped = Response {
+                    state: home
+                        .as_ref()
+                        .map(|h| host_observation::projection::observe(h.runtime(), &execution)),
+                    mutation: outcome,
+                    disposition: None,
+                    initialized: initialized.load(std::sync::atomic::Ordering::SeqCst),
+                    contacts: contacts.load(std::sync::atomic::Ordering::SeqCst),
+                    closed: false,
+                };
+                crate::killed_child::announce(
+                    &channel.join("dropped_response_observation"),
+                    &serde_json::to_vec(&dropped).unwrap(),
+                );
+                loop {
+                    std::thread::sleep(std::time::Duration::from_secs(60));
+                }
             }
             Request::Close => {
                 let result = home

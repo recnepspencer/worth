@@ -74,6 +74,22 @@ pub(crate) trait RuntimeWorldObservationService:
         crate::history::WorldObservedMemoryPublication,
         crate::history::WorldReadmittedPublicationDenial,
     >;
+    fn observe_home_original_publication(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        effect: worth_relational::facade::durability::ReadmittedRelationalAssociatedEffect,
+    ) -> Result<
+        crate::history::WorldObservedHomePublication,
+        crate::history::WorldReadmittedPublicationDenial,
+    >;
+    fn observe_home_original_publication_with_before_component(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        effect: worth_relational::facade::durability::ReadmittedRelationalAssociatedEffect,
+    ) -> Result<
+        crate::history::WorldObservedHomePublication,
+        crate::history::WorldReadmittedPublicationDenial,
+    >;
     fn readmitted_native_publication(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -106,6 +122,11 @@ pub(crate) trait RuntimeWorldObservationService:
         crate::branch::ProductBranchCurrentnessScope<'selected>,
         RuntimeWorldBranchAdmissionDenial,
     >;
+
+    fn installed_product_branches(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<crate::branch::InstalledProductBranches, crate::branch::ProductBranchInventoryDenial>;
 
     fn observe_installed_product_branches(
         &self,
@@ -154,6 +175,15 @@ pub(crate) trait RuntimeWorldObservationService:
     ) -> Result<crate::branch::ProductExactHistoryCursor, crate::branch::ProductExactHistoryDenial>;
 
     fn prepare_exact_product_history_page<'request, 'authority>(
+        &self,
+        execution: worth_execution::ExecutionRequest<'request, 'authority>,
+        cursor: &crate::branch::ProductExactHistoryCursor,
+    ) -> Result<
+        crate::branch::PreparedProductExactHistoryPage<'request, 'authority>,
+        crate::branch::ProductExactHistoryDenial,
+    >;
+
+    fn prepare_retained_product_history_page<'request, 'authority>(
         &self,
         execution: worth_execution::ExecutionRequest<'request, 'authority>,
         cursor: &crate::branch::ProductExactHistoryCursor,
@@ -225,6 +255,13 @@ pub(crate) trait RuntimeWorldBranchService:
         &self,
         observed: &ProductBranchObservation,
     ) -> Result<ProductBranchRetirementReport, RuntimeWorldBranchRetirementDenial>;
+
+    /// Retire the installed occurrence under the caller's active execution request.
+    fn retire_product_branch_with_request(
+        &self,
+        observed: &ProductBranchObservation,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<ProductBranchRetirementReport, RuntimeWorldBranchRetirementDenial>;
 }
 
 /// Shared internal seam for the serial owner execution pipeline. Preparation
@@ -285,6 +322,10 @@ pub(crate) trait RuntimeWorldLifecycleService:
     fn retire_changed_history(
         &self,
     ) -> Result<Vec<crate::identity::CompositeCommitIdentity>, HistoryReclamationDenial>;
+    fn retire_changed_history_with_request(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Vec<crate::identity::CompositeCommitIdentity>, HistoryReclamationDenial>;
     /// Retire the unprotected history behind `keep` and reclaim the pins only
     /// that history held. Returns the retired commits, oldest first.
     fn retire_unprotected_history(
@@ -296,6 +337,11 @@ pub(crate) trait RuntimeWorldLifecycleService:
     fn release_retired_branch_history(
         &self,
         from: &crate::identity::CompositeCommitIdentity,
+    ) -> Result<crate::history::RetiredBranchHistoryRelease, HistoryReclamationDenial>;
+    fn release_retired_branch_history_with_request(
+        &self,
+        from: &crate::identity::CompositeCommitIdentity,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<crate::history::RetiredBranchHistoryRelease, HistoryReclamationDenial>;
     /// The commits of `candidates` history still retains.
     fn retained_commits(

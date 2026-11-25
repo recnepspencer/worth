@@ -1,5 +1,4 @@
 //! Restore historical source meaning while retaining a distinct native target.
-use worth_relational_durability::internal_port::durability::authority::checkpoint_complete::interim::origin::CapturedNativeInterimOriginOwnerPort as _;
 use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
 mod output_correspondence;
 pub(crate) use worth_relational_durability::internal_port::durability::authority::recovery::codec_transition::{publication_custody, schema_proposal, source_schema};
@@ -37,6 +36,7 @@ impl DurabilityRecoveryAuthority<'_> {
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         native: &RelationalNativeCheckpoint,
+        source: std::sync::Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
     ) -> Result<
         (
             crate::durability::data::RecoveryOutcome,
@@ -53,41 +53,14 @@ impl DurabilityRecoveryAuthority<'_> {
                 detail,
             )
         })?;
-        let checkpoint = crate::durability::log::native_checkpoint_codec::decode_checkpoint(
-            execution,
-            native.bytes(),
-        )?
-        .checkpoint;
+        let checkpoint =
+            crate::durability::log::native_checkpoint_codec::decode_checkpoint_from_source(
+                execution,
+                native.bytes(),
+                source,
+            )?
+            .checkpoint;
         self.restore_decoded_for_codec_transition(execution, checkpoint, native.bytes().len())
-    }
-
-    pub(in crate::durability::authority) fn restore_decoded_interim_for_codec_transition(
-        &mut self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        checkpoint: crate::durability::data::DurableCheckpoint,
-        origin: &super::super::CapturedNativeInterimOrigin,
-    ) -> Result<
-        (
-            crate::durability::data::RecoveryOutcome,
-            RecoveredRelationalRuntimeAuthority,
-        ),
-        RelationalRecoveryStop,
-    > {
-        let target_registry = self.runtime.config().schema.registry;
-        let source_registry = source_schema::readmit_interim_current_source_schema(
-            execution,
-            origin,
-            &checkpoint,
-            self.runtime.main_branch_identity().branch_id(),
-            target_registry.owner_content_formats(),
-        )?;
-        self.restore_codec_source(
-            execution,
-            checkpoint,
-            origin.native_len(),
-            source_registry,
-            target_registry,
-        )
     }
 
     fn restore_decoded_for_codec_transition(

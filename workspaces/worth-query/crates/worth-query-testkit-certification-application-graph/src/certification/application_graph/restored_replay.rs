@@ -9,7 +9,6 @@
 //! answers that the key's commit took effect, names that commit, and commits
 //! nothing a second time.
 
-pub use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 #[path = "restored_replay/cross_process.rs"]
 pub mod cross_process;
 
@@ -20,11 +19,11 @@ pub use worth_query_host::facade::application_entry::{
     WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestExt,
     WorthQueryApplicationRequestMutationDenial,
 };
-pub use worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster;
+pub use worth_query_testkit_document_retention::facade::directory_home::unique_directory;
 pub use worth_relational::facade::history::CommitId;
 
 pub use worth_query_testkit_document_retention::facade::document_retention_model::host::{
-    publish_on_first_program, restore_on_first_program, DocumentRetentionRuntime, SEED_RETENTION,
+    open_directory_on_first_program, DocumentRetentionRuntime, SEED_RETENTION,
 };
 pub use worth_query_testkit_document_retention::facade::document_retention_model::operator_identity::authenticate_operator;
 pub use worth_query_testkit_document_retention::facade::document_retention_model::presented_request::set_retention;

@@ -6,6 +6,7 @@ mod checkpoint_field_revisions;
 mod checkpoint_transition_compaction;
 mod checkpoint_transition_gap_replay;
 mod cold_envelope_custody;
+mod home_readmission_metadata;
 mod index_catalog;
 mod initial_schema_recovery;
 mod lineage_frontiers;

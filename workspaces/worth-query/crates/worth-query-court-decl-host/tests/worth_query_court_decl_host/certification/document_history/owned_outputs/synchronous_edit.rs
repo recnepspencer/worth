@@ -31,6 +31,11 @@ worth_query_mutation_binding!(pub Binding for Intent, schema Schema,
 );
 pub struct Handler;
 impl OperationHandler<Schema, Binding> for Handler {
+    fn declared_durable_capabilities(
+    ) -> Option<&'static [worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability]> {
+        Some(&[worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability::RelationalMutation])
+    }
+
     fn decide(
         &self,
         input: &Intent,
@@ -95,8 +100,7 @@ mod cold;
 mod corruption;
 mod courts;
 pub(super) use courts::native_head;
-mod failure;
-pub(in crate::certification::document_history::owned_outputs) use failure::checkpoint;
+pub(super) mod failure;
 mod initial;
 mod lost_refusal;
 mod publication_count;

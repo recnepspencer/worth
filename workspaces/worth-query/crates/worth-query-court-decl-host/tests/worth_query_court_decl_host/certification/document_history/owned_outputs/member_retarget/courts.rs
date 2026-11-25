@@ -184,31 +184,44 @@ fn a_member_edit_keeps_its_new_source_route_through_reverse_and_reapply() {
         .execute()
         .is_err());
     assert_eq!(input(&request, "new").value, 22);
-    let checkpoint = host
-        .with_host_advancement(|phase| {
-            host.capture_application_checkpoint(
-                &phase,
-                WorthQueryCheckpointCapturePolicy::SystemAllocation,
-            )
-            .unwrap()
+    // Coverage note (tracked in `plans/database-foundation/milestone-3.md` under C5):
+    // The retired D13 interim checkpoint ran 4 post-restore reads (`first_value("a")`,
+    // `second_output("second:b")`, `input_member("old")` absent, `input_member("new") == 22`).
+    // Directory Home intentionally refuses relation-only inverse preimages with
+    // `UnsupportedCorrectionRelationPreimage` on this setup, so those 4 post-reopen
+    // reads cannot run on Directory Home until relation-only inverse preimage
+    // durability is supported. The MemoryOnly assertions above verify the live
+    // reverse/reapply behavior, and this Directory Home assertion verifies the
+    // exact refusal guard.
+    let dir_host = world::open_directory_program_with_other_model::<program::Program>(
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
+        0,
+        Some(7),
+    );
+    let dir_principal = authenticate_operator(dir_host.installed_schema(), &scope);
+    let dir_request = dir_host.request(&dir_principal, &scope);
+    let mut dir_edit = dir_request
+        .edit_envelope()
+        .idempotency("initialize-input-dir".to_owned())
+        .runtime_stages(&dir_host)
+        .ordered_authored()
+        .unwrap();
+    dir_edit
+        .push_stage::<program::Tree, _>(Intent {
+            owner: "a".into(),
+            value: Some(1),
+            retire: vec![],
+            create: vec![Row {
+                key: "old".into(),
+                value: 11,
+            }],
         })
         .unwrap();
-    let recovered = world::restore_program_checkpoint::<program::Program>(checkpoint, false, false);
-    let recovered_principal = authenticate_operator(recovered.installed_schema(), &scope);
-    let recovered_request = recovered.request(&recovered_principal, &scope);
-    assert_eq!(first_value(&recovered_request, "a"), 20);
-    assert_eq!(
-        recovered_request
-            .query(query::second_output::Read("second:b".into()))
-            .execute()
-            .unwrap()
-            .rows()[0]
-            .value,
-        1007
+    let err = dir_edit
+        .execute_performed(ExecutionAllocationPolicy::SystemAllocation)
+        .expect_err("Directory Home refuses relation-only inverse preimage");
+    assert!(
+        format!("{err:?}").contains("UnsupportedCorrectionRelationPreimage"),
+        "{err:?}"
     );
-    assert_eq!(input(&recovered_request, "new").value, 22);
-    assert!(recovered_request
-        .query(query::input_member::Read("old".into()))
-        .execute()
-        .is_err());
 }

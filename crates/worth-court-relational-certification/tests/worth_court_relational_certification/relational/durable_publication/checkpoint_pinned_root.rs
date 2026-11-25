@@ -14,10 +14,7 @@ fn native_checkpoint_keeps_the_original_pinned_reader_after_revisions_and_siblin
         super::checkpoint_root_publications::create_entity(execution, &source, "work-seed");
     let _small = source
         .durability_authority()
-        .native_checkpoint(
-            execution,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .native_checkpoint_with_policy(execution, worth_execution::ExecutionAllocationPolicy::SystemAllocation, worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
         .unwrap();
     super::checkpoint_root_publications::create_in_partition(
         execution,
@@ -27,10 +24,7 @@ fn native_checkpoint_keeps_the_original_pinned_reader_after_revisions_and_siblin
     );
     let _grown = source
         .durability_authority()
-        .native_checkpoint(
-            execution,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .native_checkpoint_with_policy(execution, worth_execution::ExecutionAllocationPolicy::SystemAllocation, worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
         .unwrap();
     let pinned = snapshot_for_owner_branch(&source, &BranchId("main".into()));
     super::checkpoint_root_publications::update_entity(execution, &source, entity, "work-revised");
@@ -47,15 +41,16 @@ fn native_checkpoint_keeps_the_original_pinned_reader_after_revisions_and_siblin
     release_test_commit_snapshot(&source, &sibling_commit);
     let native = source
         .durability_authority()
-        .native_checkpoint(
-            execution,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .native_checkpoint_with_policy(execution, worth_execution::ExecutionAllocationPolicy::SystemAllocation, worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
         .unwrap();
     let mut recovered = durable_runtime(&medium);
     recovered
         .durability_recovery()
-        .restore_native_checkpoint(execution, &native)
+        .restore_native_checkpoint(
+            execution,
+            &native,
+            worth_testkit_relational::cold_recovery::members_source(&native),
+        )
         .unwrap();
     assert_eq!(
         source

@@ -37,6 +37,32 @@ impl PublicationBasisRoute {
 /// The original applied read is retained here for the publication that issued it.
 pub trait RetainedAppliedPublicationPin: std::fmt::Debug + Send + Sync + std::any::Any {}
 
+/// Counts a head-owned publication predecessor basis while it is retained,
+/// so such holds are never mistaken for detached retention obligations.
+#[derive(Debug)]
+pub struct PublicationBasisCountGuard(Weak<super::owner::RelationalBranchRetentionOwnerInner>);
+
+impl PublicationBasisCountGuard {
+    pub fn acquire(binding: &super::RelationalBranchRetentionBinding) -> Self {
+        if let Some(owner) = binding.owner.upgrade() {
+            owner
+                .live_publication_basis_count
+                .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        }
+        Self(binding.owner.clone())
+    }
+}
+
+impl Drop for PublicationBasisCountGuard {
+    fn drop(&mut self) {
+        if let Some(owner) = self.0.upgrade() {
+            owner
+                .live_publication_basis_count
+                .fetch_sub(1, std::sync::atomic::Ordering::Release);
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct RetainedPublicationBasis {
     pub publication: CommitId,
@@ -48,6 +74,7 @@ pub struct RetainedPublicationBasis {
     /// depend on that branch still being registered after it is deleted.
     pub publication_cell:
         crate::branch::reference_publication_cell::RelationalBranchPublicationCell,
+    pub _count_guard: PublicationBasisCountGuard,
     pub _hold: super::RelationalObservationRetentionObligation,
     pub _funding: Option<worth_execution::ExecutionMemoryReservation>,
 }

@@ -34,6 +34,13 @@ pub enum WorthQueryGeneratedOutputRestorationRecoveryStage {
     OwnerSettlement,
     /// Adopting the settled effects could not be prepared.
     AdoptionPreparation,
+    /// World retained an early durable open before Native preparation completed
+    /// and requires Home reopen before the original occurrence can be resolved.
+    ReopenRequired,
+    /// World retained an early attempt before Native preparation completed and
+    /// allows releasing the World recovery record directly via
+    /// `into_world_recovery()`.
+    ReleaseRequired,
     /// The adoption is not published yet; continue again.
     AdoptionPublication,
     /// Releasing an earlier recovery authority did not finish.
@@ -101,7 +108,7 @@ pub(super) struct RestorationRetry {
     pub(super) branch: crate::basis::WorthQueryProductBranch,
     pub(super) correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
     pub(super) producer: ProducerQualification,
-    pub(super) completion: RelationalRematerializationCompletion,
+    pub(super) completion: Option<RelationalRematerializationCompletion>,
 }
 
 impl WorthQueryGeneratedOutputRestorationRecovery {
@@ -121,6 +128,40 @@ impl WorthQueryGeneratedOutputRestorationRecovery {
             | RecoveryState::HandoffCleanup { retry, .. } => retry.branch,
             RecoveryState::PublishedWorld { settlement, .. }
             | RecoveryState::PublishedCleanup { settlement, .. } => settlement.retry.branch,
+        }
+    }
+
+    pub fn next_actions(
+        &self,
+    ) -> Result<
+        Vec<worth_runtime_world::facade::ProductUnpublishedNextAction>,
+        worth_runtime_world::facade::RuntimeWorldRecoveryDenial,
+    > {
+        match &self.state {
+            RecoveryState::Unpublished { unpublished } => Ok(unpublished.next_actions().to_vec()),
+            RecoveryState::World { recovery, .. }
+            | RecoveryState::HandoffWorld { next: recovery, .. }
+            | RecoveryState::HandoffCleanup { next: recovery, .. }
+            | RecoveryState::PublishedWorld { recovery, .. } => {
+                Ok(recovery.inspect()?.next_actions().to_vec())
+            }
+            RecoveryState::PublishedCleanup { .. } => Ok(Vec::new()),
+        }
+    }
+
+    /// Hand back World's unpublished recovery handle when this recovery holds a
+    /// single unpublished World record (`Unpublished` or `World`). States with
+    /// handoff or pending cleanup custody return `Err(self)` intact.
+    pub fn into_world_recovery(
+        self,
+    ) -> Result<WorthQueryProductUnpublishedRecovery, Self> {
+        match self.state {
+            RecoveryState::Unpublished { unpublished } => Ok(unpublished.into_world_recovery()),
+            RecoveryState::World { recovery, .. } => Ok(recovery),
+            state @ (RecoveryState::HandoffWorld { .. }
+            | RecoveryState::HandoffCleanup { .. }
+            | RecoveryState::PublishedWorld { .. }
+            | RecoveryState::PublishedCleanup { .. }) => Err(Self { state }),
         }
     }
 }
@@ -184,6 +225,18 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 ));
             }
         };
+        if unpublished.next_actions().contains(
+            &worth_runtime_world::facade::ProductUnpublishedNextAction::ReopenRequired,
+        ) {
+            return Err(failure(
+                WorthQueryGeneratedOutputRestorationRecoveryStage::ReopenRequired,
+                RecoveryState::World { recovery, retry },
+            ));
+        }
+        if retry.completion.is_none() {
+            let stage = early_restoration_stage(&unpublished);
+            return Err(failure(stage, RecoveryState::World { recovery, retry }));
+        }
         let prepared = match retry
             .publication
             .prepare_settled_relational_adoption(&unpublished, request)
@@ -268,6 +321,20 @@ fn restoration_retry_matches<Schema: ApplicationSchema>(
 ) -> bool {
     retry.producer.runtime_authority == runtime.inner.runtime.authority_identity().as_u64()
         && retry.producer.schema == runtime.inner.installed_schema.binding_identity()
+}
+
+fn early_restoration_stage(
+    unpublished: &crate::domain_computation::WorthQueryProductUnpublishedApplication,
+) -> WorthQueryGeneratedOutputRestorationRecoveryStage {
+    use worth_runtime_world::facade::ProductUnpublishedNextAction as Action;
+    let actions = unpublished.next_actions();
+    if actions.contains(&Action::ReopenRequired) {
+        WorthQueryGeneratedOutputRestorationRecoveryStage::ReopenRequired
+    } else if actions.contains(&Action::ReleaseObligations) {
+        WorthQueryGeneratedOutputRestorationRecoveryStage::ReleaseRequired
+    } else {
+        WorthQueryGeneratedOutputRestorationRecoveryStage::AdoptionPreparation
+    }
 }
 
 pub(super) fn failure(

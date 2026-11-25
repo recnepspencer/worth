@@ -3,39 +3,31 @@ pub(crate) use worth_query_testkit_certification_operation::facade::certificatio
 
 #[test]
 fn conditional_requirement_survives_checkpoint_and_fresh_schema_readmission() {
-    let (old, projection) = super::super::install_with_projection::<25>();
-    assert_eq!(guidance(&old, &projection), Status::Met);
-    let revision = *old.installed_program().revision();
-    let checkpoint = old
-        .with_host_advancement(|phase| {
-            old.runtime()
-                .capture_application_checkpoint(
-                    &phase,
-                    WorthQueryCheckpointCapturePolicy::SystemAllocation,
-                )
-                .unwrap()
-        })
-        .unwrap();
+    let dir = super::super::unique_directory("cond-req");
+    let old = super::super::open_directory::<25>(&dir);
+    let projection = old.retain_invariant_projection_authority();
+    assert_eq!(guidance(old.runtime(), &projection), Status::Met);
+    let revision = *old.runtime().installed_program().revision();
     drop(projection);
-    drop(old);
+    super::super::close_directory(old);
     let schema = program::schema::<25>();
     let portable = WorthQueryPortableApplicationSchemaRecord::project(schema.erased());
     assert_eq!(
         validate_portable_application_schema_freshly(portable).unwrap(),
         *schema.erased()
     );
-    let restored = WorthQueryInterimCheckpointRestore::program(
-        program::validated::<25>(&schema),
-        schema,
-        (program::Installation::Native,),
-        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        super::super::host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
-        checkpoint,
-    )
-    .unwrap();
-    assert_eq!(*restored.installed_program().revision(), revision);
-    assert!(matches!(invoke(&restored, 507), Outcome::Committed { .. }));
-    assert_eq!(super::super::draft_query::read_audit_source(&restored), 12);
+    let restored = super::super::open_directory::<25>(&dir);
+    assert_eq!(*restored.runtime().installed_program().revision(), revision);
+    assert!(matches!(
+        invoke(restored.runtime(), 507),
+        Outcome::Committed { .. }
+    ));
+    assert_eq!(
+        super::super::draft_query::read_audit_source(restored.runtime()),
+        12
+    );
+    super::super::close_directory(restored);
+    let _ = std::fs::remove_dir_all(&dir);
 }
 
 #[test]

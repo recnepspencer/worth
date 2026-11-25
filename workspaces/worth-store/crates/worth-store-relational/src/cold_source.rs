@@ -5,8 +5,11 @@ use std::sync::{
     Arc, RwLock, Weak,
 };
 
+use worth_execution::{ExecutionImmutableBytes, ExecutionRequest};
 use worth_relational::facade::durability::{
     RelationalDurableColdSource, RelationalDurableMemberCustody, RelationalDurableMemberLocator,
+    RelationalDurableOwnedReadRefusal as OwnedReadRefusal,
+    RelationalDurableReadBounds as ReadBounds, RelationalDurableReadPayload as ReadPayload,
 };
 use worth_relational::facade::publication::PatchStreamPosition;
 use worth_relational::facade::storage::RelationalStorageUnavailableCause as Cause;
@@ -209,82 +212,64 @@ impl RelationalDurableColdSource for StoreColdSource {
     }
     fn read_member_prefix_owned(
         &self,
-        request: &worth_execution::ExecutionRequest<'_, '_>,
+        request: &ExecutionRequest<'_, '_>,
         original: &(dyn std::any::Any + Send + Sync),
         member: RelationalDurableMemberLocator,
         length: usize,
-    ) -> Result<
-        worth_execution::ExecutionImmutableBytes,
-        worth_relational::facade::durability::RelationalDurableOwnedReadRefusal,
-    > {
+    ) -> Result<ExecutionImmutableBytes, OwnedReadRefusal> {
         self.owned_member_prefix(request, original, member, length)
     }
     fn read_initial_inputs_owned(
         &self,
-        request: &worth_execution::ExecutionRequest<'_, '_>,
+        request: &ExecutionRequest<'_, '_>,
         original: &(dyn std::any::Any + Send + Sync),
         limit: u64,
-    ) -> Result<
-        Option<worth_execution::ExecutionImmutableBytes>,
-        worth_relational::facade::durability::RelationalDurableOwnedReadRefusal,
-    > {
+    ) -> Result<Option<ExecutionImmutableBytes>, OwnedReadRefusal> {
         self.owned_initial_inputs(request, original, limit)
     }
     fn checkpoint_selected_read_protection(
         &self,
-        request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<
-        worth_relational::facade::durability::RelationalDurableReadPayload,
-        worth_relational::facade::durability::RelationalDurableOwnedReadRefusal,
-    > {
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<ReadPayload, OwnedReadRefusal> {
         self.capture_selected_read(request)
     }
     fn checkpoint_read_protection(
         &self,
-        request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<
-        (
-            worth_relational::facade::durability::RelationalDurableReadBounds,
-            worth_relational::facade::durability::RelationalDurableReadPayload,
-        ),
-        worth_relational::facade::durability::RelationalDurableOwnedReadRefusal,
-    > {
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(ReadBounds, ReadPayload), OwnedReadRefusal> {
         self.capture_native_read(request)
+    }
+    fn journal_read_protection(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(ReadBounds, ReadPayload), OwnedReadRefusal> {
+        self.capture_journal_read(request)
     }
     fn read_commit_owned(
         &self,
-        request: &worth_execution::ExecutionRequest<'_, '_>,
+        request: &ExecutionRequest<'_, '_>,
         original: &(dyn std::any::Any + Send + Sync),
         position: PatchStreamPosition,
         limit: u64,
-    ) -> Result<
-        worth_execution::ExecutionImmutableBytes,
-        worth_relational::facade::durability::RelationalDurableOwnedReadRefusal,
-    > {
+    ) -> Result<ExecutionImmutableBytes, OwnedReadRefusal> {
         self.owned_commit(request, original, position, limit)
     }
     fn read_transition_owned(
         &self,
-        request: &worth_execution::ExecutionRequest<'_, '_>,
+        request: &ExecutionRequest<'_, '_>,
         original: &(dyn std::any::Any + Send + Sync),
         sequence: worth_relational::facade::branch::RelationalBranchTransitionSequence,
         limit: u64,
-    ) -> Result<
-        worth_execution::ExecutionImmutableBytes,
-        worth_relational::facade::durability::RelationalDurableOwnedReadRefusal,
-    > {
+    ) -> Result<ExecutionImmutableBytes, OwnedReadRefusal> {
         self.owned_transition(request, original, sequence, limit)
     }
     fn read_member_owned(
         &self,
-        request: &worth_execution::ExecutionRequest<'_, '_>,
+        request: &ExecutionRequest<'_, '_>,
         original: &(dyn std::any::Any + Send + Sync),
         locator: RelationalDurableMemberLocator,
         limit: u64,
-    ) -> Result<
-        worth_execution::ExecutionImmutableBytes,
-        worth_relational::facade::durability::RelationalDurableOwnedReadRefusal,
-    > {
+    ) -> Result<ExecutionImmutableBytes, OwnedReadRefusal> {
         self.owned_member(request, original, locator, limit)
     }
     fn validate_member_custody_retirement(
@@ -389,7 +374,11 @@ impl RelationalDurableColdSource for StoreColdSource {
 }
 
 fn record_failure(error: RecordReadError) -> Cause {
-    match error.denial() {
+    record_denial_cause(error.denial())
+}
+
+pub(super) fn record_denial_cause(denial: RecordReadDenial) -> Cause {
+    match denial {
         RecordReadDenial::RecordNotFound => Cause::MissingMember,
         RecordReadDenial::ArtifactDamaged | RecordReadDenial::FormatMismatch => Cause::Damaged,
         _ => Cause::SourceUnavailable,

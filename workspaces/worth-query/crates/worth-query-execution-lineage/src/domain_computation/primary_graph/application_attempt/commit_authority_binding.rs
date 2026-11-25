@@ -169,6 +169,7 @@ pub struct WorthQueryApplicationCommitAuthorityBinding {
     /// minting into, so one runtime cannot mint a handle for another's commit.
     runtime_authority: WorthQueryRuntimeAuthorityIdentity,
     installed_operation: [u8; 32],
+    operation_definition_identity: [u8; 32],
     installed_recovery_contract:
         Option<worth_query_installation::facade::InstalledAftermathRecoveryContract>,
     published_aftermath_posture:
@@ -189,6 +190,10 @@ impl std::fmt::Debug for WorthQueryApplicationCommitAuthorityBinding {
             .field("original_mutation_binding", &self.original_mutation_binding)
             .field("runtime_authority", &self.runtime_authority)
             .field("installed_operation", &self.installed_operation)
+            .field(
+                "operation_definition_identity",
+                &self.operation_definition_identity,
+            )
             .field("installed_aftermath", &self.installed_aftermath)
             .field("principal_scope", &self.principal_scope)
             .field("idempotency_binding", &self.idempotency_binding)
@@ -207,6 +212,7 @@ impl PartialEq for WorthQueryApplicationCommitAuthorityBinding {
         self.original_mutation_binding == other.original_mutation_binding
             && self.runtime_authority == other.runtime_authority
             && self.installed_operation == other.installed_operation
+            && self.operation_definition_identity == other.operation_definition_identity
             && self.installed_aftermath == other.installed_aftermath
             && self.principal_scope == other.principal_scope
             && self.idempotency_binding == other.idempotency_binding
@@ -235,6 +241,7 @@ impl WorthQueryApplicationCommitAuthorityBinding {
         original_mutation_binding: Option<std::any::TypeId>,
         runtime_authority: WorthQueryRuntimeAuthorityIdentity,
         installed_operation: [u8; 32],
+        operation_definition_identity: [u8; 32],
         installed_aftermath: Option<WorthQueryInstalledAftermathContract>,
         principal_scope: WorthQueryOperationScopeBinding,
         idempotency_binding: WorthQueryApplicationIdempotencyBinding,
@@ -254,6 +261,7 @@ impl WorthQueryApplicationCommitAuthorityBinding {
             original_mutation_binding,
             runtime_authority,
             installed_operation,
+            operation_definition_identity,
             installed_recovery_contract,
             published_aftermath_posture,
             installed_aftermath: installed_aftermath.map(Box::new),
@@ -272,6 +280,10 @@ impl WorthQueryApplicationCommitAuthorityBinding {
 
     pub const fn installed_operation(&self) -> &[u8; 32] {
         &self.installed_operation
+    }
+
+    pub const fn operation_definition_identity(&self) -> &[u8; 32] {
+        &self.operation_definition_identity
     }
 
     pub const fn original_mutation_binding(&self) -> Option<std::any::TypeId> {
@@ -315,7 +327,9 @@ impl WorthQueryApplicationCommitAuthorityBinding {
         self.retained_governed_input.as_deref()?.downcast_ref()
     }
 
-    pub(crate) fn retained_governed_input_carrier(&self) -> Option<&WorthQueryRetainedGovernedInput> {
+    pub(crate) fn retained_governed_input_carrier(
+        &self,
+    ) -> Option<&WorthQueryRetainedGovernedInput> {
         self.retained_governed_input.as_deref()
     }
 

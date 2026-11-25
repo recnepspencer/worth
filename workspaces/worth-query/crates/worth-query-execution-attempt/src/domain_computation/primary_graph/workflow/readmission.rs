@@ -56,14 +56,31 @@ pub fn readmit(
     branch: &ProductBranchObservation,
     current: CanonicalDigestId,
     history: &BTreeSet<CanonicalDigestId>,
+    metadata_authority: Option<&worth_relational::facade::durability::HomeReadmissionMetadataAuthority>,
 ) -> Result<(), Denial> {
     let basis = branch.basis().relational_basis();
-    let view = native.read_truth().project_observation(&basis.observation()).map_err(|cause| Denial::Source(
+    let map_source = |cause| Denial::Source(
         crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial::new(
             crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
             format!("workflow source observation refused: {cause:?}"),
-        )))?;
-    let population = WorkflowPopulation::read(&view, execution, layout)?;
+        ),
+    );
+    let population = match metadata_authority {
+        Some(authority) => {
+            let view = native
+                .read_truth()
+                .project_home_readmission_metadata(authority, &basis.observation())
+                .map_err(map_source)?;
+            WorkflowPopulation::read_home_readmission(&view, execution, layout)?
+        }
+        None => {
+            let view = native
+                .read_truth()
+                .project_observation(&basis.observation())
+                .map_err(map_source)?;
+            WorkflowPopulation::read(&view, execution, layout)?
+        }
+    };
     if population.is_empty() {
         return Ok(());
     }

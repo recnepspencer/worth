@@ -13,6 +13,16 @@ mod next_writer;
 /// admits 32 live branches.
 const STOP_POINTS: usize = 16;
 
+/// Consult `point` of the sweep. Each point is shifted back by a quarter of
+/// the stride, and the quarter rotates, so both maintained (even) and
+/// re-recorded (odd) stops reach every phase of a stride. A sweep on whole
+/// strides alone missed the window after a producer published and before it
+/// delivered (public #406).
+fn stop_point(consults: usize, stride: usize, point: usize) -> usize {
+    let quarter = (1 + point + point / 4) % 4;
+    consults - point * stride - quarter * stride / 4
+}
+
 /// Run history maintenance under a fresh request until nothing is pending;
 /// return what each pass did.
 fn maintain(host: &world::Host, document: &mut Forest<'_>) -> Vec<WorthQueryHistoryReleaseOutcome> {
@@ -90,7 +100,7 @@ fn a_request_stopped_anywhere_in_an_envelope_rolls_back_and_the_same_key_then_re
     let (mut refusals, mut refusals_after_a_producer, mut parked) = (0, 0, 0);
     let mut recorded_before_maintenance = 0;
     for point in 0..STOP_POINTS {
-        let stop_at = consults - point * stride;
+        let stop_at = stop_point(consults, stride, point);
         let before = observe(&host, &document);
         let original = snapshot(&host, &document);
         let stages = Stages {

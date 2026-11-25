@@ -37,12 +37,7 @@ fn changed_ordering_key_meaning_refuses_before_destination_restore() {
     let (mut target, _) = installed(2);
     let before = capture(execution, &target).bytes().to_vec();
     let owner = target.runtime_instance_id();
-    let denial = target
-        .durability_recovery()
-        .restore_native_checkpoint_for_codec_transition_with_authority(
-            execution,
-            &capture(execution, &world.runtime),
-        )
+    let denial = crate::relational::relational_certification::cold_residency::codec_neutrality::fixture::restore_codec_transition(&mut target, execution, &capture(execution, &world.runtime))
         .unwrap_err();
     assert!(
         matches!(&denial, worth_relational::facade::durability::RelationalRecoveryStop::Durability(error)

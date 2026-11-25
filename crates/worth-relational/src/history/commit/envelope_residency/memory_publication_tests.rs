@@ -57,7 +57,14 @@ fn memory_original_frame_survives_export_checkpoint_and_last_alias() {
     );
     let native = runtime
         .durability_authority()
-        .native_checkpoint(&execution, execution.allocation_policy())
+        .native_checkpoint_with_policy(
+            &execution,
+            execution.allocation_policy(),
+            crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
+        )
         .unwrap();
     assert!(native
         .bytes()

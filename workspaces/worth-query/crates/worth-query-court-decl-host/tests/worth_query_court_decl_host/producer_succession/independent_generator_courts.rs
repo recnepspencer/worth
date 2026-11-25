@@ -53,7 +53,7 @@ fn a_non_opted_in_generator_shrinks_and_retires_its_childs_owned_closure() {
         sibling
     );
 
-    let history = checkpoint::envelopes(&checkpoint::capture(&app));
+    let history = checkpoint::envelopes(&app);
     let event = history
         .iter()
         .find(|e| {

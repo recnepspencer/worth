@@ -254,6 +254,32 @@ fn empty_native_fork_source_refuses_before_original_publication() {
     f.finish(&request);
 }
 
+#[test]
+fn a_native_fork_without_its_creation_intent_refuses_before_serving() {
+    let funding = crate::test_execution_policy::serial_request();
+    let request = ExecutionRequest::serial(&funding);
+    let mut f = Fixture::journal(&request);
+    let parent = root(&mut f, &request);
+    let RuntimeWorldBranchCreationOutcome::Performed(child) =
+        create(&f, &request, &parent, "orphan-fork", true, false)
+    else {
+        panic!("expected performed native fork")
+    };
+    drop((child, parent));
+    f.recorder
+        .rewrite_latest(worth_foundational::facade::WorldDurableJournal::Branches, |_| None);
+    f.recorder
+        .rewrite_latest(worth_foundational::facade::WorldDurableJournal::Custody, |_| None);
+    let denial = match f.try_reopen(&request) {
+        Ok(_) => panic!("an orphan Native fork cannot reach service"),
+        Err(denial) => denial,
+    };
+    assert!(
+        matches!(denial, WorldReadmissionDenial::MissingCreationIntent),
+        "{denial:?}"
+    );
+}
+
 mod codec;
 mod wire;
 

@@ -14,11 +14,10 @@ module (such as `host::primary_graph::..`) lives in that module.
 | `host::WorthQueryApplicationHomeLocation::Directory(path)` | Yes: survives graceful close and a fresh-process reopen | Applications that must keep their data |
 | `host::WorthQueryApplicationHomeLocation::MemoryOnly` | No restart guarantee | Tests and process-local tools |
 
-**Crash recovery is not yet certified.** A Directory Home survives graceful
-close, and a process kill while no operation is executing. After a kill during
-an operation, the named cases reopen and continue or release the interrupted
-work, and a few damage-shaped cases still refuse to open; see
-[After a crash](#after-a-crash-or-unclean-close).
+A Directory Home survives graceful close, quiescent process kills, and the
+interrupted-operation crash-recovery cases completed in Milestone 3 Tracks C1–C3
+(see [After a crash](#after-a-crash-or-unclean-close)); full adversarial-oracle
+and Tier-3 milestone certification runs in Track C4 / Landing 3.
 
 ## Open a Home
 
@@ -386,12 +385,13 @@ fixed owner order before the Home serves anything.
   `OwnershipMaterialUnavailable`.
 - **A kill while graceful close was publishing its checkpoint:** reopen recovers
   the state committed before that close.
-- **Still refused (D18):** a Signal effect with no recorded open, and a Native
-  branch fork with no creation intent. Both arise only from damaged files, not
-  from a kill. Opening refuses before service with a typed
-  `UncleanRecoveryUnsupported { owner, effect }` (the `DurableOwnerFamily` and
-  the effect digest); `refused.unclean_recovery_unsupported()` returns it in
-  both cases. Close the refusal as above; a development Home can be discarded.
+- **Damage-shaped owner mismatches:** a Signal effect with no recorded open
+  (`WorldReadmissionDenial::OrphanSignalAssociation`) and a Native branch fork
+  with no creation intent (`WorldReadmissionDenial::MissingCreationIntent`)
+  cannot arise from a process kill — only from damaged or forged journal files —
+  and refuse before service as typed World readmission denials (the temporary
+  D18 `UncleanRecoveryUnsupported` refusal surface has been retired). Close the
+  refusal as above; a development Home can be discarded.
 - **Contended or discard-pending location:** `refused.physical_refusal()` returns
   `Some(&host::ApplicationHomePhysicalRefusal)`; its `kind()` is
   `host::ApplicationHomePhysicalRefusalKind::MutationOwnerContended` (another
@@ -409,8 +409,9 @@ fixed owner order before the Home serves anything.
   provider is contacted, and World still decides each business original.
   Owner-held custody (a mandatory owned-async request) is never cold-released.
 
-Certification of crash recovery comes later in Milestone 3's cleanup track
-(C4–C5; see [Milestone 3 status](../plans/database-foundation/milestone-3.md#cleanup-track-status)).
+Track C1–C3 owner crash-recovery cases and C5 retirement are complete on
+Directory Home; final adversarial-oracle and Tier-3 certification runs in Track
+C4 / Landing 3 (see [Milestone 3 status](../plans/database-foundation/milestone-3.md#cleanup-track-status)).
 
 ## Discard
 
@@ -456,9 +457,9 @@ retained history, and that reconstructive work grows with the retained commits,
 so desktop applications do not need a custom policy to reopen, rebuild indexes
 or run actions.
 
-`host::application_installation::WorthQueryInterimCheckpointRestore` is an
-internal certification door scheduled for deletion. Applications reopen their
-Directory instead.
+The interim D13 application-checkpoint restore surface has been retired.
+Applications reopen their Directory Home directly through
+`WorthQueryApplicationHomeRequest`.
 
 ## Shared Scope Access
 

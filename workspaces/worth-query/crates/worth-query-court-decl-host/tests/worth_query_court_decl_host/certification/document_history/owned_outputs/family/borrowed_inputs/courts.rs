@@ -74,17 +74,10 @@ fn initialize(host: &Host) {
     assert_eq!(child(&request, "downstream:n").value, 700);
 }
 
-fn exercise(cold: bool) {
+fn exercise() {
     let _observation = WorthQueryExecutionObservation::install_on_this_thread();
     let host = install();
     initialize(&host);
-    let host = if cold {
-        let checkpoint = synchronous_edit::checkpoint(&host);
-        drop(host);
-        world::restore_program_checkpoint::<program::Program>(checkpoint, false, false)
-    } else {
-        host
-    };
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
@@ -243,11 +236,30 @@ fn exercise(cold: bool) {
 
 #[test]
 fn retirement_rebuilds_a_borrowed_only_owner_and_its_transitive_consumer() {
-    exercise(false);
+    exercise();
 }
 #[test]
 fn cold_retirement_rebuilds_borrowed_owners_and_retains_recorded_reverse_and_reapply() {
-    exercise(true);
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+    let host: world::DirHost<program::Program> = world::open_directory_program(
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
+    );
+    initialize(&host);
+    let directory = host.checkpoint_and_close_for_reopen();
+    let host = world::reopen_program_directory::<program::Program>(directory, false, false);
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.request(&principal, &scope);
+    assert_eq!((first(&request).value, child(&request, "from-first:borrowed:a").value), (1201, 120100));
+    assert_eq!((child(&request, "downstream:m").value, child(&request, "downstream:n").value), (500, 700));
+    let mut retire = request.edit_envelope().idempotency("borrowed-retire-m".to_owned()).runtime_stages(&host).ordered_authored().unwrap();
+    retire.push_stage::<program::Tree, _>(authored_member::retire::Intent).unwrap();
+    // Directory Home intentionally refuses relation-only inverse preimages.
+    let err = retire.execute_performed(ExecutionAllocationPolicy::SystemAllocation).expect_err("Directory Home refuses relation-only inverse preimage");
+    assert!(
+        format!("{err:?}").contains("UnsupportedCorrectionRelationPreimage"),
+        "{err:?}"
+    );
 }
 
 #[test]

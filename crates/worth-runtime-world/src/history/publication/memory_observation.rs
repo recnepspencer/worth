@@ -12,7 +12,6 @@ use worth_relational::facade::{
 #[derive(Debug)]
 pub(crate) struct MemoryPublicationRecord {
     pub(crate) meaning: Arc<MemoryPublicationMeaning>,
-    pub(crate) receiver: MemoryPublicationReceiver,
     pub(crate) before_component: ObservedRelationalMemoryComponent,
     pub(crate) after_component: ObservedRelationalMemoryComponent,
     pub(crate) committed: AtomicBool,
@@ -25,27 +24,12 @@ pub(crate) struct MemoryPublicationMeaning {
     pub(crate) attempt: RecordedCompositePublicationAttemptIdentity,
     pub(crate) _funding: Option<worth_execution::ExecutionMemoryReservation>,
 }
-#[derive(Debug, Clone)]
-pub(crate) enum MemoryPublicationReceiver {
-    Live,
-    Restored(Arc<MemoryPublicationReceiverScope>),
-    Archived,
-}
-#[derive(Debug)]
-pub(crate) struct MemoryPublicationReceiverScope {
-    pub(crate) reference: MemoryProductBranchReference,
-    pub(crate) _funding: Option<worth_execution::ExecutionMemoryReservation>,
-}
 impl MemoryPublicationRecord {
     pub(crate) fn matches_receiver(
         &self,
         observation: &crate::branch::ProductBranchObservation,
     ) -> bool {
-        let reference = match &self.receiver {
-            MemoryPublicationReceiver::Live => &self.meaning.after,
-            MemoryPublicationReceiver::Restored(scope) => &scope.reference,
-            MemoryPublicationReceiver::Archived => return false,
-        };
+        let reference = &self.meaning.after;
         reference.owner() == observation.owner_identity().get()
             && reference.branch() == observation.branch_identity().name().as_str()
             && reference.incarnation() == observation.lifecycle_incarnation().ordinal()

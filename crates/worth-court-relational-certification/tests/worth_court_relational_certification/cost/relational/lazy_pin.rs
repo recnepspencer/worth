@@ -298,7 +298,10 @@ fn fixed_read_work(regions: u32, history: usize, width: usize, check_refusal: bo
 }
 #[test]
 fn lazy_pin_and_fixed_read_do_not_grow_with_unrelated_regions_or_history() {
-    let model = (fixed_read_work(8, 8, 1, true), fixed_read_work(16, 8, 1, false));
+    let model = (
+        fixed_read_work(8, 8, 1, true),
+        fixed_read_work(16, 8, 1, false),
+    );
     let history = (
         fixed_read_work(4, 16, 1, false),
         fixed_read_work(4, 32, 1, false),

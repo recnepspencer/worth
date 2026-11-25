@@ -33,14 +33,25 @@ pub fn operation_receipt_requires_recovery(receipt: &WorthQueryApplicationCommit
 }
 
 pub fn receipt_identity_from_outcome(
+    durable_owner: Option<worth_foundational::facade::DurableWorldOwnerIdentity>,
     runtime_authority: u64,
     outcome_identity: u64,
-    installed_operation: &[u8; 32],
+    operation_definition_identity: &[u8; 32],
 ) -> [u8; 32] {
     let mut digest = Sha256::new();
-    digest.update(b"worth-query.workflow-operation-receipt.v1");
-    digest.update(runtime_authority.to_le_bytes());
+    digest.update(b"worth-query.workflow-operation-receipt.v2");
+    match durable_owner {
+        Some(durable) => {
+            digest.update(b"home");
+            digest.update(durable.home().bytes());
+            digest.update(durable.slot().get().to_le_bytes());
+        }
+        None => {
+            digest.update(b"memory");
+            digest.update(runtime_authority.to_le_bytes());
+        }
+    }
     digest.update(outcome_identity.to_le_bytes());
-    digest.update(installed_operation);
+    digest.update(operation_definition_identity);
     digest.finalize().into()
 }

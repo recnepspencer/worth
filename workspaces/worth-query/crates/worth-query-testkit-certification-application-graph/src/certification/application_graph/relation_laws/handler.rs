@@ -5,6 +5,11 @@ pub use worth_query_host::facade::primary_graph::*;
 
 pub struct Handler;
 impl<L: LawPolicy> OperationHandler<GraphSchema<L>, EditBinding<L>> for Handler {
+    fn declared_durable_capabilities(
+    ) -> Option<&'static [worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability]> {
+        Some(&[worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability::RelationalMutation])
+    }
+
     fn decide(
         &self,
         input: &EdgeEdit,

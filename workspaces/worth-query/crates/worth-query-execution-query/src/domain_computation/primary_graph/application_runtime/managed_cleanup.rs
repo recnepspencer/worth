@@ -39,6 +39,18 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .map(|support| support.lifecycle().managed_cleanup_obligations())
             .unwrap_or_default()
     }
+    /// Read-only check whether the durable obligation row at `original`'s
+    /// acquire position is currently active (not discharged) in this Home.
+    pub fn is_output_demand_retained(
+        &self,
+        original: &crate::domain_computation::primary_graph::application_contribution::WorthQueryOriginalOutputDemand,
+    ) -> bool {
+        self.installed_program_support().is_some_and(|support| {
+            support
+                .obligation_history()
+                .output_demand_retained(original.acquire_position())
+        })
+    }
     /// Discharges only the logical obligation. This never changes World's business fate.
     pub fn discharge_managed_cleanup(
         &self,
