@@ -26,6 +26,8 @@ pub use definition_preparation::{
     RelationalIndexDefinitionPreparationDenial,
 };
 pub mod admitted_selection;
+#[cfg(test)]
+mod catalog_certification_tests;
 pub mod generation_publication_gate;
 #[cfg(test)]
 pub mod identity_exhaustion_tests;

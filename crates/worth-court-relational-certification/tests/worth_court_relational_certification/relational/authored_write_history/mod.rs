@@ -21,6 +21,7 @@ mod branches;
 mod custody;
 mod field_writes;
 mod indexed;
+mod span_seed;
 
 fn selected(
     runtime: &RelationalRuntime,

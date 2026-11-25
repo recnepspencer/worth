@@ -116,7 +116,7 @@ pub mod history {
         RelationalAuthoredWriteDenial, RelationalAuthoredWriteOccurrence,
         RelationalAuthoredWritePage, RelationalAuthoredWritePageLimits,
         RelationalAuthoredWriteScope, RelationalAuthoredWriteSelector,
-        RelationalPreparedAuthoredWritePage,
+        RelationalAuthoredWriteSpan, RelationalPreparedAuthoredWritePage,
     };
     pub use crate::history::{
         RelationalCanonicalRecordHistoryCursor, RelationalPreparedRecordHistoryPage,

@@ -1,5 +1,6 @@
 //! Actual immutable definition capture and source-backed identity readmission.
 use super::*;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::authored_index_writes::CanonicalAuthoredIndexWrites;
 use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::index_catalog::CanonicalIndexDefinitionDelta;
 
 #[derive(Debug, Clone)]
@@ -28,6 +29,41 @@ impl CapturedIndexDefinitionCatalog {
             .definitions
             .range(DerivedIndexId(base)..)
             .map(|(_, definition)| definition)
+    }
+
+    /// The only issuer of coverage for readmitted (decoded or replayed) packets.
+    /// Mirrors WAL replay: the receiving catalog's coverage before the persisted
+    /// bound, in this incarnation. Legacy, unavailable, mismatched and
+    /// not-yet-installed bounds certify nothing; the caller marks the ordinal
+    /// incomplete.
+    pub fn certify_readmitted_writes(
+        &self,
+        writes: &CanonicalAuthoredIndexWrites,
+        delta_next_index_id: u64,
+        context: &mut worth_execution::MapKernelContext<'_, '_>,
+    ) -> Result<
+        Option<IndexCatalogCoverage>,
+        worth_relational_branch::internal_port::history::access::relevant_writes::RelationalAuthoredWriteDenial,
+    >{
+        let Some(bound) = self.readmitted_bound(writes, delta_next_index_id) else {
+            return Ok(None);
+        };
+        // One introductions range descent.
+        super::admitted_definition::navigation(context, self.catalog.definition_count(), 1)?;
+        Ok(Some(self.catalog.coverage_before(bound)))
+    }
+
+    /// The bound a readmitted packet may be certified at: persisted, equal to
+    /// its commit's catalog delta, and installed in this catalog.
+    pub(super) fn readmitted_bound(
+        &self,
+        writes: &CanonicalAuthoredIndexWrites,
+        delta_next_index_id: u64,
+    ) -> Option<u64> {
+        let Some((Some(bound), _)) = writes.persisted_entries() else {
+            return None;
+        };
+        (bound == delta_next_index_id && bound <= self.next_index_id).then_some(bound)
     }
 }
 impl IndexingState {
@@ -71,6 +107,10 @@ impl IndexingState {
         definitions: &[DerivedIndexDefinition],
         frontier: u64,
     ) -> Result<(), &'static str> {
+        // Epoch monotonicity over the restored prefix needs a fresh catalog.
+        if !self.catalog.is_empty() || self.next_index_id != 1 {
+            return Err("checkpoint index catalog readmits only into a fresh catalog");
+        }
         if frontier == 0 || frontier.checked_sub(1) != Some(definitions.len() as u64) {
             return Err("checkpoint index catalog frontier disagrees with definitions");
         }

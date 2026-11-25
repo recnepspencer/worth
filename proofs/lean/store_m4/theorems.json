@@ -1,5 +1,9 @@
 {
-  "imports": ["StoreM4", "StoreM4.PinSafety"],
+  "imports": [
+    "StoreM4",
+    "StoreM4.PinSafety",
+    "StoreM4.GCPinSafety"
+  ],
   "allowed_axioms": [],
   "theorems": [
     {
@@ -21,6 +25,22 @@
     {
       "name": "StoreM4.PinSafety.reclaim_disjoint_preserves_active_pins",
       "type": "∀ (t : StoreM4.PinSafety.PinTable) (reclaimSet : Nat → Prop) (e : StoreM4.PinSafety.PinEntry), (∀ r, reclaimSet r → ¬ StoreM4.PinSafety.PinTable.reachableRoot t r) → e ∈ t → e.protectsRoot → ¬ reclaimSet e.root"
+    },
+    {
+      "name": "StoreM4.GCPinSafety.StoreGCPinSafety",
+      "type": "∀ (liveRoots : Nat → Prop) (t : StoreM4.PinSafety.PinTable) (reclaimSet : Nat → Prop), StoreM4.GCPinSafety.Reachable t → (∀ r, reclaimSet r → ¬ StoreM4.GCPinSafety.projectedReach liveRoots t r) → ∀ r, StoreM4.GCPinSafety.fullReach liveRoots t r → ¬ reclaimSet r"
+    },
+    {
+      "name": "StoreM4.GCPinSafety.LeaseExpiryNoReaderLoss",
+      "type": "∀ (t t' : StoreM4.PinSafety.PinTable) (id : Nat), StoreM4.GCPinSafety.Reachable t → StoreM4.GCPinSafety.leaseExpire t id = some t' → (∀ e ∈ t, e.protectsRoot → (e.activeReaderLoans > 0 ∨ StoreM4.GCPinSafety.childCount t e.id > 0) → ∃ e' ∈ t', e'.id = e.id ∧ e'.root = e.root ∧ e'.protectsRoot) ∧ (∀ e' ∈ t', e'.id = id → e'.state = StoreM4.PinSafety.LeaseState.expired → e'.activeReaderLoans = 0 ∧ e'.liveChildPins = 0 ∧ StoreM4.GCPinSafety.childCount t' id = 0) ∧ (∀ e' ∈ t', e'.id = id → e'.state ≠ StoreM4.PinSafety.LeaseState.active → StoreM4.GCPinSafety.loanAcquire t' id = none) ∧ (∀ e' ∈ t', e'.protectsRoot → ∀ a, StoreM4.GCPinSafety.OverlayAncestor t' e' a → a ∈ t' ∧ a.protectsRoot)"
+    },
+    {
+      "name": "StoreM4.GCPinSafety.Reachable.wf",
+      "type": "∀ {t : StoreM4.PinSafety.PinTable}, StoreM4.GCPinSafety.Reachable t → StoreM4.GCPinSafety.WellFormed t"
+    },
+    {
+      "name": "StoreM4.GCPinSafety.expire_completes_when_drained",
+      "type": "∀ (t : StoreM4.PinSafety.PinTable) (e : StoreM4.PinSafety.PinEntry), StoreM4.GCPinSafety.Reachable t → e ∈ t → e.state = StoreM4.PinSafety.LeaseState.expiring → e.activeReaderLoans = 0 → e.liveChildPins = 0 → ∃ t', StoreM4.GCPinSafety.leaseExpire t e.id = some t' ∧ ∀ e' ∈ t', e'.id = e.id → e'.state = StoreM4.PinSafety.LeaseState.expired"
     }
   ]
 }

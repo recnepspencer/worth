@@ -2,15 +2,19 @@ use super::{PhysicalProtectedRootObservation, RootProtectionRegistry};
 
 impl RootProtectionRegistry {
     /// Reclaim inspection owns exactly one acquisition. Its descendants share
-    /// that slot; every other acquisition at or below the source is external.
-    /// The caller holds the current-root lock, so no new capture can race the
-    /// check with installation of the reclaim fence.
+    /// that slot; every other acquisition at or below the source is external,
+    /// and so is every durable root pin at or below it. The caller holds the
+    /// current-root lock, so no new capture or pin can race the check with
+    /// installation of the reclaim fence.
     pub(in crate::physical_runtime) fn external_root_at_or_below(
         &self,
         inspector: PhysicalProtectedRootObservation,
         source_generation: u64,
     ) -> bool {
         if inspector.runtime() != self.runtime {
+            return true;
+        }
+        if self.pins.protects_root_at_or_below(source_generation) {
             return true;
         }
         let mut state = self

@@ -13,6 +13,7 @@ mod home_context;
 #[cfg(feature = "certification-test-authority")]
 mod home_controls_for_test;
 mod home_request;
+mod home_retention;
 mod open;
 mod opening_control;
 mod query_corrections;

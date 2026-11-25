@@ -6,8 +6,9 @@
 //! is repeated inside the patch-position reservation, where no commit can
 //! move the source; and the target is installed only after the medium
 //! answers `Committed`. A refusal or an unresolved fate installs nothing.
-//! Retained-source forks instead select original live immutable custody,
-//! require a memory-only owner, and record distinct canonical meaning.
+//! Retained-source forks instead select an original immutable historical
+//! root, record it as a distinct `RetainedFork` transition, and recovery
+//! rebuilds that exact root from durable history before replaying the fork.
 
 use crate::history::data::{BranchCreateError, CommitId};
 
@@ -32,9 +33,6 @@ pub enum RelationalForkDenial {
     RetiredTarget,
     ForeignRuntime,
     StaleSource,
-    /// This receiver requires live immutable custody and supports no durable
-    /// historical-root reopening. Refused before destination reservation.
-    RetainedSourceDurabilityUnsupported,
     DurableAssociationRequiresMedium,
     MissingArtifact,
     /// Original-request or structural refusal before derived fork selection is installed.

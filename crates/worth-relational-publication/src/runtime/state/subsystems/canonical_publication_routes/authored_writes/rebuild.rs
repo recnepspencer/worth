@@ -20,6 +20,7 @@ impl super::super::RelationalCanonicalPublicationRoutes {
         _lane: &worth_relational_contracts::internal_port::storage::substrate::maintenance::reconstruction::ReconstructionLane<'_>,
         execution: ExecutionRequest<'_, '_>,
         selected: CommitId,
+        catalog: &worth_relational_indexes::internal_port::runtime::state::subsystems::indexing::catalog_publication::CapturedIndexDefinitionCatalog,
     ) -> Result<usize, Denial> {
         let (generation, count) =
             branch::history::access::relevant_writes::run(execution, |context| {
@@ -63,7 +64,13 @@ impl super::super::RelationalCanonicalPublicationRoutes {
                         .demand_envelope(&execution, *commit)
                         .map_err(|cause| Denial::Execution(cause.into()))?
                         .ok_or(Denial::CanonicalEvidenceUnavailable)?;
-                    super::extend_generation(&mut generation, execution, context, &envelope)?;
+                    super::extend_generation(
+                        &mut generation,
+                        execution,
+                        context,
+                        &envelope,
+                        Some(catalog),
+                    )?;
                 }
                 Ok((
                     generation,

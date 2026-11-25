@@ -110,3 +110,6 @@ mod membership;
 
 #[path = "indexed/recovery.rs"]
 mod recovery;
+
+#[path = "indexed/durable_coverage.rs"]
+mod durable_coverage;

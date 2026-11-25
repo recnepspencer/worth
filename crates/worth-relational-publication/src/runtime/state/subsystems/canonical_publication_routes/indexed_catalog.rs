@@ -208,6 +208,22 @@ impl RelationalCanonicalPublicationRoutes {
             .map(|entry| entry.position)
     }
 
+    /// The publication-order position of a visible performed or checkpointed
+    /// commit, including a Memory-backed checkpoint artifact. A parent is
+    /// always published before its child, so its position is strictly lower.
+    pub(crate) fn ordered_position(&self, commit_id: CommitId) -> Option<PatchStreamPosition> {
+        if let Some(route) = self.by_commit.get(&commit_id)
+            && route.is_visible()
+        {
+            return route.position();
+        }
+        self.checkpoint_catalog
+            .read()
+            .unwrap_or_else(|error| error.into_inner())
+            .get(&commit_id)
+            .and_then(|artifact| artifact.envelope_residency().captured_position())
+    }
+
     pub(crate) fn positioned_commit(
         &self,
         commit_id: CommitId,

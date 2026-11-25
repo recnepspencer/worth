@@ -85,9 +85,26 @@ impl RelationalPublicationHistory {
         lane: &contracts::storage::substrate::maintenance::reconstruction::ReconstructionLane<'_>,
         execution: worth_execution::ExecutionRequest<'_, '_>,
         commit: CommitId,
+        catalog: &worth_relational_indexes::internal_port::runtime::state::subsystems::indexing::catalog_publication::CapturedIndexDefinitionCatalog,
     ) -> Result<usize, worth_relational_branch::internal_port::history::access::relevant_writes::RelationalAuthoredWriteDenial>{
         self.canonical_publication_routes
-            .rebuild_authored_generation(lane, execution, commit)
+            .rebuild_authored_generation(lane, execution, commit, catalog)
+    }
+    pub fn seed_authored_write_span(
+        &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+        original: CommitId,
+        commit: CommitId,
+        maximum_links: Option<std::num::NonZeroUsize>,
+        catalog: &worth_relational_indexes::internal_port::runtime::state::subsystems::indexing::catalog_publication::CapturedIndexDefinitionCatalog,
+    ) -> Result<worth_relational_branch::internal_port::history::access::relevant_writes::RelationalAuthoredWriteSpan, worth_relational_branch::internal_port::history::access::relevant_writes::RelationalAuthoredWriteDenial>{
+        self.canonical_publication_routes.seed_authored_span(
+            execution,
+            original,
+            commit,
+            maximum_links,
+            catalog,
+        )
     }
     pub fn authored_write_generation(
         &self,

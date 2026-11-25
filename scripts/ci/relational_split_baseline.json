@@ -530,6 +530,7 @@
     "facade::history::RelationalAuthoredWritePageLimits",
     "facade::history::RelationalAuthoredWriteScope",
     "facade::history::RelationalAuthoredWriteSelector",
+    "facade::history::RelationalAuthoredWriteSpan",
     "facade::history::RelationalCanonicalRecordHistoryCursor",
     "facade::history::RelationalCommitArtifactDenial",
     "facade::history::RelationalCommitCatalogAppendDenial",

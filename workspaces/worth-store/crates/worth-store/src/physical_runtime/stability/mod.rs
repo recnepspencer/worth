@@ -2,6 +2,7 @@
 
 mod admission;
 mod byte_guard;
+pub mod durable_pins;
 mod lifecycle;
 mod read_plan;
 mod retention;
@@ -17,6 +18,6 @@ pub use retention::{PhysicalReadProtectionObservation, PhysicalReadProtectionObs
 
 pub(in crate::physical_runtime) use lifecycle::PhysicalReadProtectionOwner;
 pub(in crate::physical_runtime) use retention::{
-    PhysicalRootReadLease, PhysicalRootReadRetirementDenial, RootProtectionRegistry,
-    TerminalHeadNoReaderOrRecoveryHold,
+    inline_tail_of, PhysicalRootReadLease, PhysicalRootReadRetirementDenial, PinnedPhysicalRoot,
+    RootProtectionRegistry, TerminalHeadNoReaderOrRecoveryHold,
 };

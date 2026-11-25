@@ -98,8 +98,9 @@ impl Output {
     pub(super) fn finish(
         self,
         coverage: worth_relational_branch::internal_port::runtime::state::subsystems::indexing::catalog_coverage::IndexCatalogCoverage,
+        covered_next_index_id: u64,
     ) -> Evidence {
-        Evidence::prepared(self.entries, self.memory, coverage)
+        Evidence::prepared(self.entries, self.memory, coverage, covered_next_index_id)
     }
 }
 

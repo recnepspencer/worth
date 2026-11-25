@@ -109,6 +109,12 @@ fn valid_delta_shape_still_refuses_source_identity_gap_and_conflicting_overlap()
             replace_delta_scalar(&mut changed, "base_next_index_id", 1, 2);
             replace_delta_scalar(&mut changed, "next_index_id", 2, 3);
             replace_delta_scalar(&mut changed, "index_id", 1, 2);
+            // The authored-write bound names the same prefix as the delta, so
+            // only the catalog gap remains for the receiving owner to refuse.
+            let key = "covered_next_index_id";
+            let offset = key_offset(&changed, key) + rmp_serde::to_vec_named(key).unwrap().len();
+            assert_eq!(changed[offset], 2);
+            changed[offset] = 3;
         }
         let bad = reseal(&artifact, &changed);
         Artifact::readmit(&bad, execution)

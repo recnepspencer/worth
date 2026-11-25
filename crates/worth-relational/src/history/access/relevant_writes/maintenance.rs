@@ -28,14 +28,20 @@ impl RelationalRuntime {
         selected: RelationalSelectedCommit,
     ) -> Result<usize, Denial> {
         require_exact(self, &selected)?;
+        // One catalog capture certifies every readmitted commit in the ancestry.
+        let catalog = self.indexes.catalog_binding().capture_catalog();
         crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
-            self.history
-                .rebuild_authored_write_generation(lane, execution, selected.commit_id())
+            self.history.rebuild_authored_write_generation(
+                lane,
+                execution,
+                selected.commit_id(),
+                &catalog,
+            )
         })
     }
 }
 
-fn require_exact(
+pub(super) fn require_exact(
     runtime: &RelationalRuntime,
     selected: &RelationalSelectedCommit,
 ) -> Result<(), Denial> {

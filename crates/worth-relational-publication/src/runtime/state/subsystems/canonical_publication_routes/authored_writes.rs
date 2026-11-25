@@ -13,6 +13,8 @@ pub mod managed_source;
 pub mod projection;
 #[path = "authored_writes/rebuild.rs"]
 pub mod rebuild;
+#[path = "authored_writes/span_seed.rs"]
+pub mod span_seed;
 use branch::history::access::relevant_writes::RelationalAuthoredWriteDenial as Denial;
 use branch::history::data::canonical_commit_envelope::CanonicalCommitEnvelope;
 use contracts::history::data::coordinates::CommitId;
@@ -55,7 +57,8 @@ impl super::RelationalCanonicalPublicationRoutes {
                 },
                 _ => return Ok(Some(AuthoredWriteGeneration::unsupported_merge())),
             };
-            extend_generation(&mut generation, execution, context, envelope)?;
+            // Live commits carry issued coverage or are unavailable.
+            extend_generation(&mut generation, execution, context, envelope, None)?;
             Ok(Some(generation))
         })
     }
@@ -112,6 +115,7 @@ pub fn commit_denial(
         | Denial::UnsupportedAdjacencySelector
         | Denial::UnsupportedMergeInterval
         | Denial::NotSelectedPrefix
+        | Denial::SpanBoundReached
         | Denial::EmptySelection
         | Denial::InvalidContinuation
         | Denial::PageStorageTooSmall
@@ -126,13 +130,14 @@ fn extend_generation(
     execution: ExecutionRequest<'_, '_>,
     context: &mut worth_execution::MapKernelContext<'_, '_>,
     envelope: &Arc<CanonicalCommitEnvelope>,
+    catalog: Option<&worth_relational_indexes::internal_port::runtime::state::subsystems::indexing::catalog_publication::CapturedIndexDefinitionCatalog>,
 ) -> Result<(), Denial> {
     if generation.unsupported_merge {
         return Ok(());
     }
     generation.advance(execution, context, envelope.commit.commit_id)?;
     managed_source::append(generation, execution, context, envelope)?;
-    indexed::append(generation, execution, context, envelope)?;
+    indexed::append(generation, execution, context, envelope, catalog)?;
     adjacency::append(generation, execution, context, envelope)?;
     projection::append(execution, context, generation, envelope)
 }

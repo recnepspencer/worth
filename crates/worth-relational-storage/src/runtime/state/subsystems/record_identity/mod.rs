@@ -11,6 +11,7 @@ pub mod reclaimed;
 pub mod reclamation;
 pub mod record_ref;
 pub mod recovery;
+mod replay_gaps;
 pub mod reservation;
 
 #[cfg(test)]
@@ -40,6 +41,7 @@ struct RecordIdentityState {
     generation_high_water: BTreeMap<RecordSlotKey, u32>,
     pending: BTreeMap<RecordSlotKey, PendingRecordReservation>,
     staged_replay_allocations: Option<Vec<CanonicalRecordAllocation>>,
+    replay_gaps: replay_gaps::ReplayGaps,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -159,6 +161,7 @@ impl RecordIdentitySubsystem {
     pub fn detached(&self) -> Self {
         let mut state = self.lock().clone();
         state.staged_replay_allocations = None;
+        state.replay_gaps.clear();
         let fork = Self {
             state: Arc::new(Mutex::new(state)),
         };
@@ -206,6 +209,7 @@ impl RecordIdentitySubsystem {
                     generation_high_water,
                     pending: BTreeMap::new(),
                     staged_replay_allocations: None,
+                    replay_gaps: Default::default(),
                 })),
             },
             reservation,

@@ -214,13 +214,12 @@ fn a_directory_home_refuses_coordinates_naming_a_foreign_member() {
     foreign_member!(home, DirectoryProgram);
 }
 
-/// Reversals of two stages of one commit stay distinct across a Directory
-/// reopen: both stay active and each refuses a second reversal.
-#[test]
-fn a_directory_home_reopens_after_reversing_two_stages_of_one_commit() {
-    let location = fixture::location();
-    let lease = checkpoint_capture::lease(256 << 20);
-    let execution = worth_execution::ExecutionRequest::leased(&lease);
+/// Reverses stages 1 and 2 of one commit, reopens, and proves both reversals
+/// stay distinct: both stay active and each refuses a second reversal.
+fn reopen_after_reversing_two_stages(
+    location: std::path::PathBuf,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
+) -> (NumericHome, Vec<WorthQueryCorrectionSourceCoordinates>) {
     let home = open_program_home_with(location.clone(), execution, true, STAGE_NUMBERS);
     let sources: Vec<_> = envelope!(home).iter().map(|receipt| receipt.correction_source().coordinates()).collect();
     for (stage, key) in [(1, "undo-1"), (2, "undo-2")] {
@@ -239,8 +238,24 @@ fn a_directory_home_reopens_after_reversing_two_stages_of_one_commit() {
         );
     }
     assert_eq!(values(home.runtime()), restored(&[1, 2]));
-    // Stage 0 is not reversed after this reopen: an older source refuses
-    // `GenerationUnavailable` once a later correction heads the reopened Home,
-    // with Primary-only sources too (public #382).
+    (home, sources)
 }
 
+#[test]
+fn a_directory_home_reopens_after_reversing_two_stages_of_one_commit() {
+    let lease = checkpoint_capture::lease(256 << 20);
+    reopen_after_reversing_two_stages(fixture::location(), worth_execution::ExecutionRequest::leased(&lease));
+}
+
+/// Two corrections head the reopened Home, so stage 0 needs history from
+/// before the reopen (public #382). That history is index-keyed and crosses
+/// checkpoint-restored commits.
+#[test]
+fn a_reopened_directory_home_reverses_the_first_stage_after_two_later_reversals() {
+    let lease = checkpoint_capture::lease(256 << 20);
+    let (home, sources) =
+        reopen_after_reversing_two_stages(fixture::location(), worth_execution::ExecutionRequest::leased(&lease));
+    reverse!(home, DirectoryProgram, "undo-0", |corrections| corrections.select_coordinates(&sources[0], limits()))
+        .unwrap_or_else(|cause| panic!("stage 0 reverses after reopen: {cause}"));
+    assert_eq!(values(home.runtime()), restored(&[0, 1, 2]));
+}

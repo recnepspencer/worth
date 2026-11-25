@@ -8,11 +8,42 @@ impl<'a> Fold<'a> {
         entry: &'a TransitionOriginalRecord,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), Refusal> {
-        if matches!(&entry.transition, Transition::RetainedFork { .. }) {
-            return Err(Refusal::Native(contracts::durability::data::recovery_errors::DurabilityError::new(
-                contracts::durability::data::recovery_errors::RecoveryFailureClass::UnsupportedRetainedForkReplay,
-                "retained-source forks require original live root custody; historical tail reconstruction is unsupported",
-            ).into()));
+        if let Transition::RetainedFork {
+            target,
+            source,
+            source_generation,
+            source_truth_version,
+            source_head,
+        } = &entry.transition
+        {
+            // The source must still be live; the forked head is the exact
+            // historical observation the source held at the recorded axes.
+            let current = self.current.get(&source).ok_or(Refusal::Malformed)?;
+            if self.current.get(&target).is_some()
+                || current.removed
+                || current.lifecycle != Lifecycle::Live
+            {
+                return Err(Refusal::Malformed);
+            }
+            let key = ObservationKey::live(
+                source,
+                *source_generation,
+                *source_truth_version,
+                contracts::history::data::coordinates::CommitId(source_head.selected_commit_id()),
+            );
+            let mut state = self
+                .observations
+                .get(&key)
+                .cloned()
+                .ok_or(Refusal::Malformed)?;
+            if !state.matches_basis(source_head) || state.schema != entry.schema {
+                return Err(Refusal::Malformed);
+            }
+            state.generation = worth_foundational::FoundationalBranchReferenceGeneration::initial();
+            state.truth = contracts::branch::version::RelationalBranchVersion::initial();
+            state.lifecycle = Lifecycle::Live;
+            state.removed = false;
+            return self.record(target, state, request);
         }
         if let Transition::Fork {
             target,

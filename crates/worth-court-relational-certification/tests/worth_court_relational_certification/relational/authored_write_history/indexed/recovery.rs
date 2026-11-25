@@ -1,4 +1,5 @@
-//! Cold checkpoint history can replay field occurrences without extending the live index interval.
+//! Cold checkpoint history is certified by the receiving catalog owner: decoded
+//! commits extend an index introduced before them and refuse one introduced after.
 use super::super::{admit_main, name_locator, selected};
 use super::membership::{key, register};
 use super::{
@@ -15,13 +16,14 @@ use worth_relational::facade::{
 use worth_testkit_relational::aspect_storage::{aspect_key, field_key};
 
 #[test]
-fn index_rebuild_requires_live_verified_canonical_evidence() {
+fn index_rebuild_requires_owner_certified_canonical_evidence() {
     let host = serial_request();
     let execution = ExecutionRequest::serial(&host);
     let runtime = runtime_with_test_schema();
     let created = create_entity_outcome(&execution, &runtime, "before");
     let entity = changed_entities(&created)[0];
     let pre_install_source = admit_main(&runtime).unwrap();
+    fork(&execution, &runtime, "pre-install");
     let uncovered = update_entity(&execution, &runtime, entity, "before");
     let source = admit_main(&runtime).unwrap();
     let definition = register(&runtime, name_locator());
@@ -150,15 +152,34 @@ fn index_rebuild_requires_live_verified_canonical_evidence() {
         [equal.commit.commit_id],
         "cold field history retains the exact authored no-op despite an unchanged value"
     );
+    assert_eq!(
+        scan(
+            &recovered,
+            execution,
+            &recovered_source,
+            &recovered_target,
+            key(&definition, "before")
+        )
+        .0,
+        [equal.commit.commit_id],
+        "a decoded commit made after the index was introduced is owner-certified"
+    );
+    let recovered_pre_install = recovered
+        .admit_branch_basis(
+            &recovered
+                .branch_identity(&BranchId("pre-install".into()))
+                .unwrap(),
+        )
+        .unwrap();
     assert!(matches!(
         recovered.authored_write_history_cursor(
             execution,
-            &recovered_source,
+            &recovered_pre_install,
             selected(&recovered, &recovered_target),
             &[key(&definition, "before")]
         ),
         Err(RelationalAuthoredWriteDenial::IncompleteIndexHistory)
-    ));
+    ), "a decoded commit made before the index was introduced never covers it");
     let fresh_source = admit_main(&recovered).unwrap();
     let fresh = update_entity(&execution, &recovered, entity, "after-recovery");
     let fresh_target = admit_main(&recovered).unwrap();
