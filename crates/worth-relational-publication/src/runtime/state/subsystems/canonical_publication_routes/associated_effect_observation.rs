@@ -19,6 +19,17 @@ impl RelationalCanonicalPublicationRoutes {
             .collect()
     }
 
+    /// The one performed route of `id`, under the same filter as the enumeration.
+    pub(crate) fn performed_effect_residency(
+        &self,
+        id: worth_relational_contracts::internal_port::history::data::coordinates::CommitId,
+    ) -> Option<Arc<RelationalCommitEnvelopeResidency>> {
+        self.by_commit
+            .get(&id)
+            .filter(|route| route.is_performed())
+            .map(|route| route.envelope.clone())
+    }
+
     pub(crate) fn associated_effect_settlement(
         &self,
         entry: &RelationalCommitIndexEntry,

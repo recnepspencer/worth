@@ -12,6 +12,7 @@ use worth_execution::ExecutionRequest;
 use worth_runtime_world::facade::WorldProgramActivationHistory;
 pub mod authored_key;
 pub mod capture;
+pub mod durable_witness;
 pub mod expiry;
 pub mod native_source;
 pub mod original_join;
