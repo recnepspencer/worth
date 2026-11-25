@@ -10,9 +10,12 @@ use super::super::*;
 use crate::facade::correction_material::QueryCorrectionMaterialDenial as Material;
 use crate::facade::primary_graph::{
     WorthQueryApplicationOneShotDenialKind as Read,
+    WorthQueryApplicationProjectionDenialKind as Projection,
     WorthQueryApplicationQueryAdmissionDenialKind as Admit,
     WorthQueryEntityResolutionDenialKind as Resolve,
     WorthQueryEntityResolutionRefusalKind as Refused,
+    WorthQueryOperationAuthorizationDenialKind as Authorization,
+    WorthQueryOperationAuthorizationRefusalKind as Policy,
 };
 use worth_runtime_world::facade::{
     CompositeAncestorSelectionDenial as History, ProductExactHistoryDenial,
@@ -84,13 +87,47 @@ fn disclosure_omits(cause: &WorthQueryCorrectionDerivationDenial) -> bool {
         D::Selection(cause) => omits_entry(cause),
         D::Material(cause) => material_omits(cause),
         D::Scope(cause) => cause.kind() == Resolve::Refused(Refused::UnknownEntity),
-        D::Admission(cause) => matches!(
-            cause.kind(),
-            Admit::Authorization(_) | Admit::StalePrincipal
-        ),
-        D::Read(cause) => matches!(cause.kind(), Read::Authorization(_) | Read::Projection(_)),
+        D::Admission(cause) => admission_omits(cause.kind()),
+        D::Read(cause) => read_omits(cause.kind()),
         _ => false,
     }
+}
+
+fn admission_omits(kind: Admit) -> bool {
+    matches!(kind, Admit::Authorization(Authorization::Refused(refusal)) if policy_omits(refusal))
+}
+
+fn read_omits(kind: Read) -> bool {
+    match kind {
+        Read::Authorization(Authorization::Refused(refusal)) => policy_omits(refusal),
+        Read::Projection(projection) => matches!(
+            projection,
+            Projection::FieldOmitted
+                | Projection::RelationOmitted
+                | Projection::DomainProjectionRejected
+        ),
+        _ => false,
+    }
+}
+
+/// Installed policy refused this principal for this one entry. Stops and
+/// runtime, staleness or capacity refusals are never per-entry.
+fn policy_omits(refusal: Policy) -> bool {
+    matches!(
+        refusal,
+        Policy::CapabilityGrantMissing
+            | Policy::CapabilityAuthorizationMissing
+            | Policy::CapabilityRequired
+            | Policy::CapabilityExpired
+            | Policy::PurposeMismatch
+            | Policy::ExplicitDenyRuleMatched
+            | Policy::ConflictRuleMatched
+            | Policy::SeparationOfDutyRuleMatched
+            | Policy::DistinctActorRuleMatched
+            | Policy::ElevationRequired
+            | Policy::MandatoryReviewRejected
+            | Policy::DelegationRejected
+    )
 }
 
 #[cfg(test)]
@@ -123,5 +160,38 @@ mod tests {
         ] {
             assert!(!omits_entry(&propagated), "{propagated:?}");
         }
+    }
+
+    #[test]
+    fn stopped_authorization_and_decode_never_omit_an_entry() {
+        use super::{admission_omits, read_omits};
+        use crate::facade::primary_graph::{
+            WorthQueryApplicationOneShotDenialKind as Read,
+            WorthQueryApplicationProjectionDenialKind as Projection,
+            WorthQueryApplicationQueryAdmissionDenialKind as Admit,
+            WorthQueryOperationAuthorizationDenialKind as Authorization,
+            WorthQueryOperationAuthorizationRefusalKind as Policy,
+            WorthQueryProviderSessionControlStopKind as Control, WorthQueryValueDecodeDenial,
+        };
+        assert!(!admission_omits(Admit::StalePrincipal));
+        assert!(!admission_omits(Admit::Authorization(
+            Authorization::Stopped(Err(Control::Cancelled))
+        )));
+        assert!(!admission_omits(Admit::Authorization(
+            Authorization::Refused(Policy::ForeignRuntime)
+        )));
+        assert!(!read_omits(Read::Authorization(Authorization::Stopped(
+            Err(Control::TimedOut)
+        ))));
+        assert!(!read_omits(Read::Projection(Projection::ValueDecode(
+            WorthQueryValueDecodeDenial::Checkpoint(worth_execution::MapKernelStop::Cancelled)
+        ))));
+        assert!(!read_omits(Read::Projection(
+            Projection::PersistentNamesUnavailable
+        )));
+        assert!(admission_omits(Admit::Authorization(
+            Authorization::Refused(Policy::CapabilityGrantMissing)
+        )));
+        assert!(read_omits(Read::Projection(Projection::FieldOmitted)));
     }
 }

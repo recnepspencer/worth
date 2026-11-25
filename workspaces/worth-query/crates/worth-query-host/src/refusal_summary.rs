@@ -19,6 +19,7 @@ mod preview;
 mod query_read;
 mod request;
 mod session;
+mod stops;
 mod summary;
 mod transition;
 mod world_history;

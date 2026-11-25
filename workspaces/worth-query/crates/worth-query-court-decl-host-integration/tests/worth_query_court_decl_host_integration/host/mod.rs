@@ -2,6 +2,7 @@ pub(crate) mod application_entry_current_read;
 pub(crate) mod application_home;
 mod application_startup;
 pub(crate) mod program_transition;
+mod refusal_summary_stops;
 mod shared_access;
 mod source_custody;
 

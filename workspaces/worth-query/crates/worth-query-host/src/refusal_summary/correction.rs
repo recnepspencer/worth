@@ -3,7 +3,7 @@ use worth_query_execution::facade::{
     correction_material::QueryCorrectionMaterialDenial as Material,
     primary_graph::{
         WorthQueryAftermathCausalityReadDenial as Lineage, WorthQueryCorrectionDerivationDenial,
-        WorthQueryCorrectionSelectionDenial, WorthQueryProviderSessionControlStopKind as Stop,
+        WorthQueryCorrectionSelectionDenial,
     },
 };
 use worth_query_publication::facade::application_entry::{
@@ -13,11 +13,12 @@ use worth_query_publication::facade::application_entry::{
 
 use crate::application_home::WorthQueryHomeUndoDenial;
 
+use super::stops::stopped;
 use super::world_history::{ancestry, exact_history};
 
 use super::request::{
-    ALREADY_DONE, BUSY, CANCELLED, CAPACITY, INTERNAL, PERMISSION, RULE_REFUSED, STALE, STORAGE,
-    TIMED_OUT, VERSION_MISMATCH,
+    ALREADY_DONE, BUSY, CAPACITY, INTERNAL, PERMISSION, RULE_REFUSED, STALE, STORAGE,
+    VERSION_MISMATCH,
 };
 use super::summary::{
     WorthQueryRefusalCategory as Category, WorthQueryRefusalSummary as Summary,
@@ -184,10 +185,8 @@ fn material(cause: &Material) -> Summary {
 /// The canonical correction lineage index's own reason it could not be read.
 fn lineage(cause: &Lineage) -> Summary {
     match cause {
-        Lineage::ExecutionDenied(Err(Stop::Cancelled)) => CANCELLED,
-        Lineage::ExecutionDenied(Err(Stop::TimedOut)) => TIMED_OUT,
-        Lineage::ExecutionDenied(Ok(_))
-        | Lineage::ActiveSnapshotCapacityExhausted { .. }
+        Lineage::ExecutionDenied(stop) => stopped(stop),
+        Lineage::ActiveSnapshotCapacityExhausted { .. }
         | Lineage::RetentionCapacityExhausted
         | Lineage::RetentionIdentityExhausted
         | Lineage::SnapshotIdentityExhausted => CAPACITY,

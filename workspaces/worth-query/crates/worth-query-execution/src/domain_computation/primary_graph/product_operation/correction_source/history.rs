@@ -196,7 +196,8 @@ impl<'runtime, S: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime
                 })
             });
             let complete = page.is_complete()
-                || maximum_history.is_some_and(|maximum| distance >= maximum.get());
+                || maximum_history
+                    .is_some_and(|maximum| distance.saturating_add(1) >= maximum.get());
             if !complete {
                 let (_, next) = cursor
                     .accept_page(page)

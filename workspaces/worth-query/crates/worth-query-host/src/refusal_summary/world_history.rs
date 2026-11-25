@@ -6,7 +6,8 @@ use worth_runtime_world::facade::{
 };
 
 use super::correction::{HISTORY_GONE, OTHER_VERSION};
-use super::request::{BUSY, CANCELLED, CAPACITY, INTERNAL, STORAGE, TIMED_OUT};
+use super::request::{BUSY, CANCELLED, CAPACITY, INTERNAL, TIMED_OUT};
+use super::stops::{catalog, work};
 use super::summary::{WorthQueryRefusalCategory as Category, WorthQueryRefusalSummary as Summary};
 
 const VERSION_CLOSED: Summary = Summary::with_message(
@@ -19,7 +20,8 @@ pub(super) fn exact_history(cause: &Service<Exact>) -> Summary {
         Service::OwnerUnavailable(_) => BUSY,
         Service::Denied(Exact::Branch(cause)) => branch(cause),
         Service::Denied(Exact::History(cause)) => history(cause, HISTORY_GONE),
-        Service::Denied(Exact::Request(_) | Exact::Allocation(_)) => CAPACITY,
+        Service::Denied(Exact::Request(cause)) => work(cause),
+        Service::Denied(Exact::Allocation(_)) => CAPACITY,
         Service::Denied(Exact::InvalidContinuation) => INTERNAL,
     }
 }
@@ -39,8 +41,9 @@ fn history(cause: &History, not_here: Summary) -> Summary {
         | History::SelectionLimitReached
         | History::RetiredHistoryGap => HISTORY_GONE,
         History::TargetUnavailable => BUSY,
-        History::Allocation(_) | History::Request(_) => CAPACITY,
-        History::Catalog(_) => STORAGE,
+        History::Allocation(_) => CAPACITY,
+        History::Request(cause) => work(cause),
+        History::Catalog(cause) => catalog(cause),
     }
 }
 

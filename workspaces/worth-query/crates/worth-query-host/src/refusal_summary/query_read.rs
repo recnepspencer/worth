@@ -12,12 +12,16 @@ use super::request::{
     BAD_INPUT, BUSY, CANCELLED, CAPACITY, INTERNAL, MISSING_ITEM, PERMISSION, STALE, STORAGE,
     TIMED_OUT,
 };
+use super::stops::{authorization, native, projection, session};
 use super::summary::{WorthQueryRefusalSummary as Summary, WorthQueryUserFacingRefusal};
 
 impl WorthQueryUserFacingRefusal for WorthQueryApplicationOneShotDenial {
     fn user_summary(&self) -> Summary {
         match self.kind() {
-            Read::StalePrincipal | Read::Authorization(_) | Read::Projection(_) => PERMISSION,
+            Read::StalePrincipal => PERMISSION,
+            Read::Authorization(kind) => authorization(&kind),
+            Read::Projection(kind) => projection(&kind),
+            Read::ExecutionRequest(kind) => session(&kind),
             Read::StaleScope => MISSING_ITEM,
             Read::Cancelled => CANCELLED,
             Read::DeadlineExceeded => TIMED_OUT,
@@ -33,8 +37,7 @@ impl WorthQueryUserFacingRefusal for WorthQueryApplicationOneShotDenial {
             | Read::ExpressionContextIncomplete
             | Read::ProjectionInspectionUnavailable
             | Read::ProjectionInspectionIncomplete => BUSY,
-            Read::ExecutionRequest(_)
-            | Read::ActiveSnapshotCapacityExhausted { .. }
+            Read::ActiveSnapshotCapacityExhausted { .. }
             | Read::RetentionCapacityExhausted
             | Read::RetentionIdentityExhausted
             | Read::SnapshotIdentityExhausted
@@ -51,7 +54,10 @@ impl WorthQueryUserFacingRefusal for WorthQueryApplicationOneShotDenial {
 impl WorthQueryUserFacingRefusal for WorthQueryApplicationContinuationDenial {
     fn user_summary(&self) -> Summary {
         match self.kind() {
-            Page::StalePrincipal | Page::Authorization(_) | Page::Projection(_) => PERMISSION,
+            Page::StalePrincipal => PERMISSION,
+            Page::Authorization(kind) => authorization(&kind),
+            Page::Projection(kind) => projection(&kind),
+            Page::ExecutionRequest(kind) => session(&kind),
             Page::StaleScope => MISSING_ITEM,
             Page::Cancelled => CANCELLED,
             Page::DeadlineExceeded => TIMED_OUT,
@@ -66,8 +72,7 @@ impl WorthQueryUserFacingRefusal for WorthQueryApplicationContinuationDenial {
             | Page::TraversalUnavailable
             | Page::ContinuationIndexUnavailable
             | Page::ProjectionUnavailable => BUSY,
-            Page::ExecutionRequest(_)
-            | Page::RetentionCapacityExhausted
+            Page::RetentionCapacityExhausted
             | Page::RetentionIdentityExhausted
             | Page::SnapshotIdentityExhausted
             | Page::ResultLimitExceeded
@@ -83,8 +88,9 @@ impl WorthQueryUserFacingRefusal for WorthQueryApplicationContinuationDenial {
 impl WorthQueryUserFacingRefusal for WorthQueryApplicationQueryAdmissionDenial {
     fn user_summary(&self) -> Summary {
         match self.kind() {
+            Admit::Authorization(kind) => authorization(&kind),
+            Admit::ExecutionRequest(kind) => session(&kind),
             Admit::StalePrincipal
-            | Admit::Authorization(_)
             | Admit::DisclosureAuthorizationMismatch
             | Admit::InternalComputationDenied => PERMISSION,
             Admit::StaleScope
@@ -101,8 +107,7 @@ impl WorthQueryUserFacingRefusal for WorthQueryApplicationQueryAdmissionDenial {
             | Admit::BranchMaterializationSuspended
             | Admit::RuntimeSupportUnavailable
             | Admit::GraphWorkAdmissionUnavailable => BUSY,
-            Admit::ExecutionRequest(_)
-            | Admit::ActiveSnapshotCapacityExhausted { .. }
+            Admit::ActiveSnapshotCapacityExhausted { .. }
             | Admit::SnapshotIdentityExhausted
             | Admit::RetentionCapacityExhausted
             | Admit::RetentionIdentityExhausted
@@ -134,7 +139,7 @@ impl WorthQueryUserFacingRefusal for WorthQueryApplicationQueryAdmissionDenial {
 impl WorthQueryUserFacingRefusal for WorthQueryEntityResolutionDenial {
     fn user_summary(&self) -> Summary {
         match self.kind() {
-            Resolve::Stopped(_) => CAPACITY,
+            Resolve::Stopped(cause) => native(&cause),
             Resolve::Refused(Refused::UnknownEntity) => MISSING_ITEM,
             Resolve::Refused(Refused::EqualityIndexUnavailable) => BUSY,
             Resolve::Refused(Refused::CorruptIdentityIndex) => STORAGE,
