@@ -26,6 +26,8 @@ pub struct ApplicationOperationBodyBuilder<Schema, Operation, Input> {
     pub(super) external_emission: Option<super::ApplicationOperationBodyExternalEmission>,
     pub(super) external_emission_recipe:
         Option<super::ApplicationOperationBodyExternalEffectRecipe>,
+    pub(super) effect_emission: Option<super::ApplicationOperationBodyEffectEmission>,
+    pub(super) effect_emission_recipe: Option<super::ApplicationOperationBodyEffectRecipe>,
     marker: PhantomData<fn(Input) -> (Schema, Operation)>,
 }
 
@@ -154,6 +156,7 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
             && creation.is_none()
             && self.outputs.is_empty()
             && self.external_emission.is_none()
+            && self.effect_emission.is_none()
         {
             return Err(ApplicationOperationBodyAuthoringDenial::Empty);
         }
@@ -165,7 +168,8 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
         )
         .with_untrusted_outputs(self.outputs)
         .with_untrusted_succession(self.succession)
-        .with_untrusted_external_emission(self.external_emission);
+        .with_untrusted_external_emission(self.external_emission)
+        .with_untrusted_effect_emission(self.effect_emission);
         let program = program
             .with_untrusted_values(self.values)
             .with_untrusted_retirements(self.retirements);
@@ -207,6 +211,7 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
         Ok(ApplicationOperationBody {
             program,
             external_emission_recipe: self.external_emission_recipe,
+            effect_emission_recipe: self.effect_emission_recipe,
             marker: PhantomData,
         })
     }

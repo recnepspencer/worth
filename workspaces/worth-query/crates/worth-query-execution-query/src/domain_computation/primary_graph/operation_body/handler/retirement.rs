@@ -15,6 +15,7 @@ impl<Schema, Binding> OperationBodyHandler<Schema, Binding> {
             body: _,
             values: _,
             external_emission: _,
+            effect_emission: _,
             marker: _,
             input_bindings: _,
             outputs: _,

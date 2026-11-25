@@ -3,7 +3,8 @@ use crate::application_schema::{
     ApplicationOperationBodyProgram, ApplicationOperationBodyScopeField,
 };
 pub(super) fn name(body: &ApplicationOperationBodyProgram) -> &'static str {
-    if body.has_multiple_child_links() { "operation-body-v29" }
+    if body.effect_emission().is_some() { "operation-body-v30" }
+    else if body.has_multiple_child_links() { "operation-body-v29" }
     else if body.creation().is_some_and(|c| !c.peers().is_empty() || !c.path_links().is_empty()) { "operation-body-v28" }
     else if !body.reference_inputs().is_empty() { "operation-body-v27" }
     else if body.creation().is_some_and(|creation| !creation.children().is_empty()) { "operation-body-v26" }

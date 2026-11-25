@@ -10,6 +10,8 @@ mod collection_values;
 mod creation_links;
 #[path = "tests/creation_reuse.rs"]
 mod creation_reuse;
+#[path = "tests/effect_emission.rs"]
+mod effect_emission;
 #[path = "tests/enrollment.rs"]
 mod enrollment;
 #[path = "tests/external_emission.rs"]

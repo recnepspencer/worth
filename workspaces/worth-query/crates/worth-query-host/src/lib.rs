@@ -374,6 +374,7 @@ mod closed_delivery_contract;
 
 mod collection_contract;
 
+mod local_calendar;
 mod logical_member_contract;
 mod ordered_index;
 

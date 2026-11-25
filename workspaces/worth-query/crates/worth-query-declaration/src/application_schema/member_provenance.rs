@@ -1,3 +1,4 @@
+mod body_effect_recipes;
 mod content;
 use std::any::TypeId;
 
@@ -59,6 +60,7 @@ pub struct ApplicationSchemaMemberProvenance {
     operations: Vec<DeclaredApplicationMemberMarker>,
     effects: Vec<DeclaredApplicationMemberMarker>,
     body_external_effects: Vec<super::ApplicationOperationBodyExternalEffectRecipe>,
+    body_effects: Vec<super::ApplicationOperationBodyEffectRecipe>,
     mutation_bindings: Vec<ApplicationMutationBindingDescriptor>,
     query_bindings: Vec<ApplicationQueryBindingDescriptor>,
     managed_indexes: Vec<crate::application_query::ApplicationManagedIndexBindingDescriptor>,
@@ -103,6 +105,7 @@ impl ApplicationSchemaMemberProvenance {
             && self.operations.is_empty()
             && self.effects.is_empty()
             && self.body_external_effects.is_empty()
+            && self.body_effects.is_empty()
             && self.mutation_bindings.is_empty()
             && self.query_bindings.is_empty()
             && self.managed_indexes.is_empty()
@@ -246,6 +249,7 @@ impl ApplicationSchemaMemberProvenance {
     pub(super) fn normalize(&mut self) {
         self.body_external_effects
             .sort_by_key(|recipe| recipe.operation());
+        self.body_effects.sort_by_key(|recipe| recipe.operation());
         self.entities.sort_by(|left, right| left.0.cmp(&right.0));
         let order = |left: &DeclaredApplicationMemberMarker,
                      right: &DeclaredApplicationMemberMarker| {
@@ -312,39 +316,6 @@ impl ApplicationSchemaMemberProvenance {
     pub fn mutation_bindings(&self) -> &[ApplicationMutationBindingDescriptor] {
         &self.mutation_bindings
     }
-    pub(super) fn register_body_external_effect(
-        &mut self,
-        recipe: super::ApplicationOperationBodyExternalEffectRecipe,
-    ) {
-        self.body_external_effects.push(recipe);
-    }
-    /// A codec is compiler-local correspondence, never an emission permit.
-    pub fn body_external_effect(
-        &self,
-        operation: &str,
-    ) -> Option<&super::ApplicationOperationBodyExternalEffectRecipe> {
-        let mut recipes = self
-            .body_external_effects
-            .iter()
-            .filter(|recipe| recipe.operation() == operation);
-        let recipe = recipes.next()?;
-        if recipes.next().is_some() {
-            return None;
-        }
-        (self.operations.iter().any(|member| {
-            member.name == operation
-                && member.marker_type == recipe.operation_type()
-                && member.value_type == recipe.input_type()
-                && member.value_identity == recipe.meaning().input_binding
-        }) && self.effects.iter().any(|member| {
-            member.name == recipe.meaning().effect
-                && member.marker_type == recipe.effect_type()
-                && member.value_type == recipe.payload_type()
-                && member.value_identity == recipe.meaning().payload_binding
-        }))
-        .then_some(recipe)
-    }
-
     #[doc(hidden)]
     pub fn admits_mutation_binding_operation(
         &self,

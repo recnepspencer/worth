@@ -1,10 +1,13 @@
 //! Stock checked 1D interval-overlap managed-index adapter built on
 //! [`WorthQueryOrderedIndexAdapter`].
-use super::bounds::read_ordered_field;
+//!
+//! Either endpoint may be an Optional field: a row with an absent endpoint is
+//! sparse (see [`WorthQueryOrderedKeyField`]).
 use super::coord::{
     WorthQueryAxisEnvelope, WorthQueryOrderedCoord, WorthQueryRangeInclusion,
     WorthQueryStockIndexDenial,
 };
+use super::key_field::WorthQueryOrderedKeyField;
 use super::probes::WorthQueryInterval1DProbe;
 use super::{
     WorthQueryOrderedIndexAdapter, WorthQueryOrderedIndexDomain,
@@ -13,13 +16,7 @@ use super::{
 use std::cmp::Ordering;
 use std::marker::PhantomData;
 use worth_query_declaration::facade::{
-    application_query::{
-        ApplicationManagedIndexBinding, ApplicationQueryBinding, ApplicationQueryResultFieldRef,
-    },
-    application_schema::{
-        fragment::RecordSelection, ApplicationReadableScalarValueBinding, ApplicationSchema,
-    },
-    portable_identity::WorthQueryPortableType,
+    application_query::ApplicationManagedIndexBinding, application_schema::ApplicationSchema,
 };
 use worth_query_execution::facade::primary_graph::{
     WorthQueryManagedIndexControl, WorthQueryManagedIndexProbeValue,
@@ -27,66 +24,48 @@ use worth_query_execution::facade::primary_graph::{
     WorthQueryManagedIndexSourceSlot,
 };
 
-type SourceQuery<S, I> =
-    <<I as ApplicationManagedIndexBinding<S>>::SourceBinding as ApplicationQueryBinding<S>>::Query;
-
 /// Fixed-size `Copy` associative 1D interval envelope summary.
 pub type WorthQueryInterval1DEnvelope<C> = WorthQueryAxisEnvelope<C, 1>;
 
-/// Stock checked 1D interval domain over declared `(start, end)` fields of
-/// `i64`, `u64`, `CanonicalDate`, `CanonicalTimestamp`, or `CanonicalF64`.
-pub struct WorthQueryInterval1DDomain<
-    S,
-    I,
-    StartSlot,
-    StartField: RecordSelection,
-    EndSlot,
-    EndField: RecordSelection,
-    C,
-> where
+/// Stock checked 1D interval domain over declared Required or Optional
+/// `(start, end)` fields of `i64`, `u64`, `CanonicalDate`, `CanonicalTimestamp`,
+/// or `CanonicalF64`.
+pub struct WorthQueryInterval1DDomain<S, I, Start, End, C>
+where
     S: ApplicationSchema,
     I: ApplicationManagedIndexBinding<S>,
     C: WorthQueryOrderedCoord,
 {
-    start: ApplicationQueryResultFieldRef<SourceQuery<S, I>, StartSlot, S, StartField>,
-    end: ApplicationQueryResultFieldRef<SourceQuery<S, I>, EndSlot, S, EndField>,
+    start: Start,
+    end: End,
     inclusion: WorthQueryRangeInclusion,
     _marker: PhantomData<fn() -> (S, I, C)>,
 }
 
 /// Stock checked 1D interval-overlap managed-index provider with optional inverse watch routing.
-pub type WorthQueryInterval1DIndex<S, I, StartSlot, StartField, EndSlot, EndField, C> =
-    WorthQueryOrderedIndexAdapter<
-        WorthQueryInterval1DDomain<S, I, StartSlot, StartField, EndSlot, EndField, C>,
-    >;
+pub type WorthQueryInterval1DIndex<S, I, Start, End, C> =
+    WorthQueryOrderedIndexAdapter<WorthQueryInterval1DDomain<S, I, Start, End, C>>;
 
-impl<S, I, StartSlot, StartField: RecordSelection, EndSlot, EndField: RecordSelection, C>
-    WorthQueryInterval1DIndex<S, I, StartSlot, StartField, EndSlot, EndField, C>
+impl<S, I, Start, End, C> WorthQueryInterval1DIndex<S, I, Start, End, C>
 where
     S: ApplicationSchema,
     I: ApplicationManagedIndexBinding<S>,
     C: WorthQueryOrderedCoord,
 {
     /// Half-open `[start, end)` interval index (valid iff `start < end`).
-    pub const fn half_open(
-        start: ApplicationQueryResultFieldRef<SourceQuery<S, I>, StartSlot, S, StartField>,
-        end: ApplicationQueryResultFieldRef<SourceQuery<S, I>, EndSlot, S, EndField>,
-    ) -> Self {
+    pub const fn half_open(start: Start, end: End) -> Self {
         Self::new_with_inclusion(start, end, WorthQueryRangeInclusion::HalfOpen)
     }
 
     /// Closed `[start, end]` interval index (valid iff `start <= end`).
-    pub const fn closed(
-        start: ApplicationQueryResultFieldRef<SourceQuery<S, I>, StartSlot, S, StartField>,
-        end: ApplicationQueryResultFieldRef<SourceQuery<S, I>, EndSlot, S, EndField>,
-    ) -> Self {
+    pub const fn closed(start: Start, end: End) -> Self {
         Self::new_with_inclusion(start, end, WorthQueryRangeInclusion::Closed)
     }
 
     /// Interval index with explicit [`WorthQueryRangeInclusion`].
     pub const fn new_with_inclusion(
-        start: ApplicationQueryResultFieldRef<SourceQuery<S, I>, StartSlot, S, StartField>,
-        end: ApplicationQueryResultFieldRef<SourceQuery<S, I>, EndSlot, S, EndField>,
+        start: Start,
+        end: End,
         inclusion: WorthQueryRangeInclusion,
     ) -> Self {
         WorthQueryOrderedIndexAdapter::new(WorthQueryInterval1DDomain {
@@ -98,44 +77,38 @@ where
     }
 }
 
-impl<S, I, StartSlot, StartField, EndSlot, EndField, C>
-    WorthQueryInterval1DDomain<S, I, StartSlot, StartField, EndSlot, EndField, C>
+type RowBounds<C> = Option<([C; 1], [C; 1])>;
+
+impl<S, I, Start, End, C> WorthQueryInterval1DDomain<S, I, Start, End, C>
 where
     S: ApplicationSchema,
     I: ApplicationManagedIndexBinding<S>,
     C: WorthQueryOrderedCoord,
-    StartField: RecordSelection<Value = C> + 'static,
-    StartField::Binding: ApplicationReadableScalarValueBinding,
-    StartSlot: WorthQueryPortableType + 'static,
-    EndField: RecordSelection<Value = C> + 'static,
-    EndField::Binding: ApplicationReadableScalarValueBinding,
-    EndSlot: WorthQueryPortableType + 'static,
+    Start: WorthQueryOrderedKeyField<S, I, Value = C>,
+    End: WorthQueryOrderedKeyField<S, I, Value = C>,
 {
+    /// The row's `([start], [end])`, or `None` when either endpoint is absent.
     fn read_bounds(
         &self,
         row: &WorthQueryManagedIndexSourceRow<'_, S, I>,
         control: &WorthQueryManagedIndexControl<'_>,
-    ) -> Result<([C; 1], [C; 1]), WorthQueryManagedIndexProviderStop<WorthQueryStockIndexDenial>>
-    {
-        let lo = read_ordered_field(row, self.start, control)?;
-        let hi = read_ordered_field(row, self.end, control)?;
-        Ok(([lo], [hi]))
+    ) -> Result<RowBounds<C>, WorthQueryManagedIndexProviderStop<WorthQueryStockIndexDenial>> {
+        let Some(lo) = self.start.read_key(row, control)? else {
+            return Ok(None);
+        };
+        Ok(self.end.read_key(row, control)?.map(|hi| ([lo], [hi])))
     }
 }
 
-impl<S, I, StartSlot, StartField, EndSlot, EndField, C> WorthQueryOrderedIndexDomain<S, I>
-    for WorthQueryInterval1DDomain<S, I, StartSlot, StartField, EndSlot, EndField, C>
+impl<S, I, Start, End, C> WorthQueryOrderedIndexDomain<S, I>
+    for WorthQueryInterval1DDomain<S, I, Start, End, C>
 where
     S: ApplicationSchema,
     I: ApplicationManagedIndexBinding<S>,
     C: WorthQueryOrderedCoord,
     WorthQueryManagedIndexProbeValue<S, I>: WorthQueryInterval1DProbe<C>,
-    StartField: RecordSelection<Value = C> + 'static,
-    StartField::Binding: ApplicationReadableScalarValueBinding,
-    StartSlot: WorthQueryPortableType + 'static,
-    EndField: RecordSelection<Value = C> + 'static,
-    EndField::Binding: ApplicationReadableScalarValueBinding,
-    EndSlot: WorthQueryPortableType + 'static,
+    Start: WorthQueryOrderedKeyField<S, I, Value = C>,
+    End: WorthQueryOrderedKeyField<S, I, Value = C>,
 {
     type Summary = WorthQueryInterval1DEnvelope<C>;
     type Denial = WorthQueryStockIndexDenial;
@@ -148,10 +121,10 @@ where
         right: WorthQueryManagedIndexSourceRow<'_, S, I>,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<Ordering, WorthQueryManagedIndexProviderStop<Self::Denial>> {
-        let (l_min, l_max) = self.read_bounds(&left, control)?;
-        let (r_min, r_max) = self.read_bounds(&right, control)?;
+        let left = self.read_bounds(&left, control)?;
+        let right = self.read_bounds(&right, control)?;
         control.checkpoint(1)?;
-        Ok(WorthQueryAxisEnvelope::lex_cmp(l_min, l_max, r_min, r_max))
+        Ok(WorthQueryAxisEnvelope::row_cmp(left, right))
     }
 
     fn source_summary(
@@ -160,11 +133,10 @@ where
         row: WorthQueryManagedIndexSourceRow<'_, S, I>,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<Self::Summary, WorthQueryManagedIndexProviderStop<Self::Denial>> {
-        let (min, max) = self.read_bounds(&row, control)?;
+        let bounds = self.read_bounds(&row, control)?;
         control.checkpoint(1)?;
-        Ok(WorthQueryAxisEnvelope::from_bounds(
-            min,
-            max,
+        Ok(WorthQueryAxisEnvelope::from_row_bounds(
+            bounds,
             self.inclusion,
         ))
     }
@@ -213,32 +185,24 @@ where
         probe: &WorthQueryManagedIndexProbeValue<S, I>,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<bool, WorthQueryManagedIndexProviderStop<Self::Denial>> {
-        let (r_min, r_max) = self.read_bounds(&row, control)?;
+        let bounds = self.read_bounds(&row, control)?;
         control.checkpoint(1)?;
         let (p_lo, p_hi) = probe.interval_1d_bounds();
-        Ok(WorthQueryAxisEnvelope::bounds_overlap(
-            r_min,
-            r_max,
-            [p_lo],
-            [p_hi],
-            self.inclusion,
-        ))
+        Ok(bounds.is_some_and(|(r_min, r_max)| {
+            WorthQueryAxisEnvelope::bounds_overlap(r_min, r_max, [p_lo], [p_hi], self.inclusion)
+        }))
     }
 }
 
-impl<S, I, StartSlot, StartField, EndSlot, EndField, C> WorthQueryOrderedIndexPredicateDomain<S, I>
-    for WorthQueryInterval1DDomain<S, I, StartSlot, StartField, EndSlot, EndField, C>
+impl<S, I, Start, End, C> WorthQueryOrderedIndexPredicateDomain<S, I>
+    for WorthQueryInterval1DDomain<S, I, Start, End, C>
 where
     S: ApplicationSchema,
     I: ApplicationManagedIndexBinding<S>,
     C: WorthQueryOrderedCoord,
     WorthQueryManagedIndexProbeValue<S, I>: WorthQueryInterval1DProbe<C>,
-    StartField: RecordSelection<Value = C> + 'static,
-    StartField::Binding: ApplicationReadableScalarValueBinding,
-    StartSlot: WorthQueryPortableType + 'static,
-    EndField: RecordSelection<Value = C> + 'static,
-    EndField::Binding: ApplicationReadableScalarValueBinding,
-    EndSlot: WorthQueryPortableType + 'static,
+    Start: WorthQueryOrderedKeyField<S, I, Value = C>,
+    End: WorthQueryOrderedKeyField<S, I, Value = C>,
 {
     type PredicateSummary = WorthQueryInterval1DEnvelope<C>;
 
@@ -280,8 +244,9 @@ where
         row: WorthQueryManagedIndexSourceRow<'_, S, I>,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<bool, WorthQueryManagedIndexProviderStop<Self::Denial>> {
-        let (r_min, r_max) = self.read_bounds(&row, control)?;
+        let bounds = self.read_bounds(&row, control)?;
         control.checkpoint(1)?;
-        Ok(summary.may_overlap_bounds(r_min, r_max, self.inclusion))
+        Ok(bounds
+            .is_some_and(|(r_min, r_max)| summary.may_overlap_bounds(r_min, r_max, self.inclusion)))
     }
 }

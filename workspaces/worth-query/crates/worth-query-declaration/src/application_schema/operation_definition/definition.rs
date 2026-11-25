@@ -20,6 +20,7 @@ pub struct ApplicationOperationDefinition<Schema, Operation, Input> {
     pub(super) body: Option<super::ApplicationOperationBodyProgram>,
     pub(super) external_emission_recipe:
         Option<super::ApplicationOperationBodyExternalEffectRecipe>,
+    pub(super) effect_emission_recipe: Option<super::ApplicationOperationBodyEffectRecipe>,
     pub(super) marker: PhantomData<fn(Input) -> (Schema, Operation)>,
 }
 
@@ -49,6 +50,7 @@ impl<Schema, Operation, Input> ApplicationOperationDefinition<Schema, Operation,
         }
         self.body = Some(body.program);
         self.external_emission_recipe = body.external_emission_recipe;
+        self.effect_emission_recipe = body.effect_emission_recipe;
         Ok(self)
     }
 }

@@ -47,6 +47,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
             })
             .collect::<Result<Vec<_>, _>>()?;
         let external_emission = super::emission::install::<Schema, Binding>(schema, body)?;
+        let effect_emission = super::effect_emission::install::<Schema, Binding>(schema, body)?;
         if body.scope_entity() != Some(Binding::scope_field().entity()) {
             return Err(denied());
         }
@@ -273,6 +274,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
             marker: PhantomData,
             input_bindings,
             external_emission,
+            effect_emission,
             retirement_inputs,
             child_parents: super::children::parent_indices(body),
         })

@@ -194,6 +194,7 @@ impl<Schema, Operation, Input>
             aftermath: self.aftermath,
             body: None,
             external_emission_recipe: None,
+            effect_emission_recipe: None,
             marker: PhantomData,
         }
     }

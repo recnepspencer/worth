@@ -110,6 +110,22 @@ impl WorthQueryApplicationEmission {
         }
     }
 
+    /// An installed body's ordinary effect payload, already derived and
+    /// validated by its payload binding.
+    pub fn from_body_payload(
+        payload: worth_query_declaration::facade::application_schema::ApplicationOperationBodyEffectPayload,
+    ) -> Self {
+        Self {
+            effect: payload.effect,
+            payload_type: payload.payload_binding,
+            payload_type_id: TypeId::from(payload.payload_type),
+            payload: payload.payload,
+            external_payload: None,
+            _native_query_backing: None,
+            _native_values_backing: None,
+        }
+    }
+
     fn external_payload(&self) -> Option<&WorthQueryExternalPayloadProjection> {
         self.external_payload.as_ref()
     }

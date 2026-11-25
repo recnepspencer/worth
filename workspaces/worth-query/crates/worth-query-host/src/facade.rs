@@ -265,6 +265,7 @@ pub use worth_query_execution::facade::application_inspection as causal_inspecti
 pub use worth_query_execution::facade::{application_contribution, application_discovery};
 pub use worth_query_execution::facade::{application_installation, application_invariants};
 pub mod application_naming;
+pub mod local_calendar;
 pub mod ordered_index;
 /// Shared scope access grants and authenticated single-owner remote transport.
 pub mod shared_access;

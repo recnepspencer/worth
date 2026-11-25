@@ -6,7 +6,8 @@ use super::{
 };
 use crate::domain_computation::primary_graph::{
     application_query::projection::{
-        WorthQueryApplicationProjectionDenial, WorthQueryApplicationProjectionRow,
+        WorthQueryApplicationProjectedField, WorthQueryApplicationProjectionDenial,
+        WorthQueryApplicationProjectionRow,
     },
     value_decode::ValueDecodeSession,
 };
@@ -14,7 +15,7 @@ use worth_execution::ExecutionRequest;
 use worth_query_declaration::facade::{
     application_query::{
         ApplicationManagedIndexBinding, ApplicationQueryBinding, ApplicationQueryMarkerIdentity,
-        ApplicationQueryResultFieldRef,
+        ApplicationQueryOptionalResultFieldRef, ApplicationQueryResultFieldRef,
     },
     application_schema::{ApplicationScalarValueBinding, ApplicationSchema},
     portable_identity::WorthQueryPortableType,
@@ -39,6 +40,15 @@ impl From<WorthQueryApplicationProjectionDenial> for WorthQueryManagedIndexTextR
     fn from(cause: WorthQueryApplicationProjectionDenial) -> Self {
         Self::Projection(cause)
     }
+}
+
+/// The installed identity of one lent text field.
+struct TextKey<'key> {
+    entity: &'key str,
+    aspect: &'key str,
+    field: &'key str,
+    output: &'key str,
+    slot: &'key str,
 }
 
 /// A row selected and admitted from one actual immutable Source image.
@@ -94,18 +104,68 @@ impl<'a, S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>
 
         FieldSlot: WorthQueryPortableType,
     {
+        let slot = FieldSlot::PORTABLE_TYPE_IDENTITY;
+        let key = TextKey {
+            entity: selector.entity(),
+            aspect: selector.aspect(),
+            field: selector.field(),
+            output: selector.output_name(),
+            slot: slot.as_str(),
+        };
+        let key_work = self.admit_text_key::<Field::Binding>(&key)?;
+        let projected = self.row.required_field(selector)?;
+        self.lend_text::<Field::Binding, _>(&key, key_work, projected, body)
+    }
+
+    /// Lend an Optional field's admitted decoded text under the same controls
+    /// as [`Self::with_text`]; a row without a value lends nothing (`None`).
+    pub fn with_optional_text<FieldSlot, Entity, Aspect, Field, Output>(
+        &self,
+        selector: ApplicationQueryOptionalResultFieldRef<Query<S, I>, FieldSlot, S, Field>,
+        body: impl FnOnce(&str) -> Output,
+    ) -> Result<Option<Output>, WorthQueryManagedIndexTextReadDenial>
+    where
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+        >,
+        Field::Binding: ApplicationReadableScalarValueBinding,
+        Field::Value: Into<String>,
+        FieldSlot: WorthQueryPortableType,
+    {
+        let slot = FieldSlot::PORTABLE_TYPE_IDENTITY;
+        let key = TextKey {
+            entity: selector.entity(),
+            aspect: selector.aspect(),
+            field: selector.field(),
+            output: selector.output_name(),
+            slot: slot.as_str(),
+        };
+        let key_work = self.admit_text_key::<Field::Binding>(&key)?;
+        let Some(projected) = self.row.optional_projected_field(selector)? else {
+            return Ok(None);
+        };
+        self.lend_text::<Field::Binding, _>(&key, key_work, projected, body)
+            .map(Some)
+    }
+
+    /// Charges the canonical comparison work of one text key: borrowed
+    /// portable identities as well as all four field names (retained heap
+    /// bytes alone omit them).
+    fn admit_text_key<Binding: ApplicationScalarValueBinding>(
+        &self,
+        key: &TextKey<'_>,
+    ) -> Result<usize, WorthQueryManagedIndexTextReadDenial> {
         self.check()?;
         self.control.checkpoint(1)?;
-        // Canonical comparison work includes borrowed portable identities as
-        // well as all four field names; retained heap bytes alone omit them.
         let key_work = [
-            selector.entity(),
-            selector.aspect(),
-            selector.field(),
-            selector.output_name(),
+            key.entity,
+            key.aspect,
+            key.field,
+            key.output,
             Query::<S, I>::QUERY_TYPE_IDENTITY.as_str(),
-            FieldSlot::PORTABLE_TYPE_IDENTITY.as_str(),
-            Field::Binding::IDENTITY.as_str(),
+            key.slot,
+            Binding::IDENTITY.as_str(),
         ]
         .into_iter()
         .try_fold(size_of::<Slot>() + size_of::<usize>(), |sum, part| {
@@ -117,27 +177,40 @@ impl<'a, S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>
             .and_then(|work| work.checked_mul(2))
             .ok_or_else(|| self.control.refuse(Stop::CapacityOverflow))?;
         self.control.checkpoint(admission_work)?;
-        let projected = self.row.required_field(selector)?;
-        let key = projected.slot_key_identity();
-        let binding = self
-            .text
-            .binding(key, key_work, &self.execution, self.control, || {
-                self.decode
-                    .shared_field(selector.entity(), selector.aspect(), selector.field())
-                    .ok_or_else(|| self.decode_stop())
-            })?;
-        if !self.decode.verify_binding::<Field::Binding>(&binding) {
+        Ok(key_work)
+    }
+
+    fn lend_text<Binding, Output>(
+        &self,
+        key: &TextKey<'_>,
+        key_work: usize,
+        projected: &WorthQueryApplicationProjectedField,
+        body: impl FnOnce(&str) -> Output,
+    ) -> Result<Output, WorthQueryManagedIndexTextReadDenial>
+    where
+        Binding: ApplicationReadableScalarValueBinding,
+        Binding::Value: Into<String>,
+    {
+        let slot_key = projected.slot_key_identity();
+        let binding =
+            self.text
+                .binding(slot_key, key_work, &self.execution, self.control, || {
+                    self.decode
+                        .shared_field(key.entity, key.aspect, key.field)
+                        .ok_or_else(|| self.decode_stop())
+                })?;
+        if !self.decode.verify_binding::<Binding>(&binding) {
             return Err(self.decode_stop().into());
         }
         let text = self.text.text(
             self.slot,
-            key,
+            slot_key,
             key_work,
             &self.execution,
             self.control,
             || {
                 self.decode
-                    .decode_installed::<Field::Binding>(&binding, projected.value())
+                    .decode_installed::<Binding>(&binding, projected.value())
                     .map(Into::into)
                     .ok_or_else(|| self.decode_stop())
             },

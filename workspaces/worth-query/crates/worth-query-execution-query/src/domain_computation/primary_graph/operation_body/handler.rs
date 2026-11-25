@@ -29,6 +29,7 @@ pub struct OperationBodyHandler<Schema, Binding> {
     pub body: ApplicationOperationBodyProgram,
     pub values: Vec<super::value::InstalledBodyValue>,
     pub external_emission: Option<std::sync::Arc<worth_query_declaration::facade::application_schema::ApplicationOperationBodyExternalEffectRecipe>>,
+    pub effect_emission: Option<std::sync::Arc<worth_query_declaration::facade::application_schema::ApplicationOperationBodyEffectRecipe>>,
     pub marker: PhantomData<fn() -> (Schema, Binding)>,
     pub input_bindings:
         Vec<worth_query_installation::facade::WorthQueryInstalledApplicationValueBinding>,
@@ -209,10 +210,35 @@ where
 
     fn build_candidate(
         &self,
-        _: &Binding::Input,
+        input: &Binding::Input,
         decision: Binding::Decision,
         writer: &mut CandidateWriter<'_, Schema, Binding>,
     ) -> HandlerResult<(), Binding::Denial> {
-        self.build_body_candidate(decision, writer)
+        match self.build_body_candidate(decision, writer) {
+            HandlerResult::Completed(()) => self.emit_body_effect(input, writer),
+            stopped => stopped,
+        }
+    }
+}
+
+impl<Schema, Binding> OperationBodyHandler<Schema, Binding>
+where
+    Schema: ApplicationSchema,
+    Binding: ApplicationMutationBinding<Schema>,
+{
+    /// Emits the body's ordinary effect, its payload derived from the exact
+    /// typed operation input, after every body write is assembled.
+    fn emit_body_effect(
+        &self,
+        input: &Binding::Input,
+        writer: &mut CandidateWriter<'_, Schema, Binding>,
+    ) -> HandlerResult<(), Binding::Denial> {
+        let Some(recipe) = &self.effect_emission else {
+            return HandlerResult::Completed(());
+        };
+        match writer.body_effect_emission(recipe, input) {
+            Ok(()) => HandlerResult::Completed(()),
+            Err(cause) => HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause)),
+        }
     }
 }
