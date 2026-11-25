@@ -2,6 +2,7 @@ use crate::internal_port::transactions::data::outcomes::commit_conflict::CommitC
 use std::collections::{BTreeMap, BTreeSet};
 
 pub mod semantic;
+pub mod withdrawal;
 
 use crate::identity::data::EntityId;
 use crate::identity::data::{KindId, PartitionId};

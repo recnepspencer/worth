@@ -44,12 +44,15 @@ pub struct CoupledPublicationPart {
     /// commands; a successor round's plan replaces its predecessor's, whose
     /// batches are withdrawn. Taken once into the envelope's plan.
     pub naming: Option<contracts::lineage::data::CommitNamingPlan>,
+    /// The content the chain's live round attached; replaced by each round.
+    pub content: worth_relational_storage::internal_port::content::attachments::RelationalContentAttachments,
 }
 
 /// One later authored stage applied over the candidate pin under the authored
 /// writer's custody. It is never a producer posture and owns no output route.
 pub struct CoupledAuthoredStagePart {
-    pub fragments: std::ops::Range<usize>,
+    /// The stage's entries in the candidate's accumulators.
+    pub span: super::succession::segment::MemberSpan,
     pub roles: Vec<RequiredOutputRoleTarget>,
     pub output_ids: worth_execution::ExecutionArray<contracts::identity::data::record_ids::EntityId>,
     pub source: contracts::identity::data::record_ids::EntityId,
@@ -58,4 +61,6 @@ pub struct CoupledAuthoredStagePart {
     pub records: Vec<contracts::transactions::data::primitives::RecordRef>,
     /// The stage's naming plan, rescoped with its commands.
     pub naming: Option<contracts::lineage::data::CommitNamingPlan>,
+    /// The content the stage attached.
+    pub content: worth_relational_storage::internal_port::content::attachments::RelationalContentAttachments,
 }

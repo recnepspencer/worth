@@ -75,7 +75,9 @@ pub use canonical_commit_envelope::{
     CanonicalOutputPublication,
 };
 pub use canonical_record_allocation::RecordAllocationClass;
-pub use canonical_record_allocation::{CanonicalRecordAllocation, RecordAllocationOrigin};
+pub use canonical_record_allocation::{
+    CancelledRecordAllocation, CanonicalRecordAllocation, RecordAllocationOrigin,
+};
 pub use committed_version::CommittedVersionSummary;
 pub use merge_branch_basis::{
     MergeBaseSelectionRule, MergeBasisAncestors, RelationalMergeBranchBasis,

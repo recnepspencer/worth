@@ -42,18 +42,6 @@ impl FieldCandidate {
         &self.operations
     }
 
-    pub(crate) fn into_portable(
-        self,
-    ) -> (
-        worth_foundational::facade::PortableRecordAspectPatch,
-        Option<ExecutionMemoryReservation>,
-    ) {
-        (
-            worth_foundational::facade::PortableRecordAspectPatch::new(self.operations),
-            self.funding,
-        )
-    }
-
     /// This causal relation-prefix copy is admitted BEFORE any owned clone.
     pub(super) fn copy_portable(
         request: &ExecutionRequest<'_, '_>,

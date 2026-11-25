@@ -1,7 +1,7 @@
 //! Each admitted participant keeps its local Create coordinates in the combined transaction.
 use crate::mvcc::publication::application_publication::custody;
 use contracts::execution::request_stage::checkpoint;
-use contracts::lineage::data::{CommitNamingPlan, PendingBirthTarget};
+use contracts::lineage::data::CommitNamingPlan;
 use contracts::mvcc::publication::application_publication::output_meaning::RequiredOutputRoleTarget;
 use contracts::symbols::data::client_key::ClientKey;
 use contracts::symbols::data::string_interner::StringInterner;
@@ -83,20 +83,23 @@ pub fn scope(
     Ok(chosen)
 }
 
-/// Rewrite a successor round's keys to the coordinates its chain head chose.
-/// `Err(())` when the successor names a key the head never did: a new record
-/// or reference that a fold cannot lower in place.
+/// Rewrite a successor round's keys to its chain's coordinates. A key no
+/// round of the chain used gets a new coordinate in the head's framing
+/// (`WORTH.coupled.{head}.{salt}.{len}:{text}`), salted against every key of
+/// the candidate and the chain, and joins the chain's keys.
 pub fn rescope(
     execution: &ExecutionRequest<'_, '_>,
-    head: &LocalKeys,
+    keys: &mut LocalKeys,
+    head: usize,
+    prior: &CommitCreatedEntityBindings,
+    ledger: &super::succession::ledger::ChainCreateLedger,
     symbols: &StringInterner,
     batches: &mut [WorkerIntentBatch],
     roles: &mut [RequiredOutputRoleTarget],
     naming: Option<&mut CommitNamingPlan>,
-) -> Result<Result<(), ()>, TransactionCommitError> {
+) -> Result<(), TransactionCommitError> {
     execution
         .run_native_with_checkpoint(|context| {
-            let mut unknown = false;
             let mut rewrite = |key: &mut ClientKey| {
                 let text = key.resolve_with_interner(symbols).ok_or_else(|| {
                     contracts::transactions::data::outcomes::transaction_commit_error::origin_denial(
@@ -104,10 +107,34 @@ pub fn rescope(
                     )
                 })?;
                 checkpoint(context, text.len() as u64 + 1).map_err(custody::execution_stop)?;
-                match head.get(text) {
-                    Some(name) => *key = ClientKey::raw(name.clone()),
-                    None => unknown = true,
+                if let Some(name) = keys.get(text) {
+                    *key = ClientKey::raw(name.clone());
+                    return Ok(());
                 }
+                let capacity = text.len().checked_add(128).ok_or_else(overflow)?;
+                let mut salt = 0u64;
+                let name = loop {
+                    checkpoint(context, capacity as u64).map_err(custody::execution_stop)?;
+                    let mut name = String::new();
+                    name.try_reserve_exact(capacity).map_err(|_| {
+                        custody::execution_stop(
+                            contracts::execution::denial_cause::RelationalExecutionDenialCause::AllocationFailed,
+                        )
+                    })?;
+                    write!(name, "WORTH.coupled.{head}.{salt}.{}:{text}", text.len())
+                        .expect("reserved String framing");
+                    let taken = ledger.knows_text(&name)
+                        || keys.values().any(|chosen| *chosen == name)
+                        || prior.contains_client_key_text(&name, |work| {
+                            checkpoint(context, work).map_err(custody::execution_stop)
+                        })?;
+                    if !taken {
+                        break name;
+                    }
+                    salt = salt.checked_add(1).ok_or_else(overflow)?;
+                };
+                keys.insert(text.to_owned(), name.clone());
+                *key = ClientKey::raw(name);
                 Ok::<_, TransactionCommitError>(())
             };
             for batch in batches {
@@ -123,112 +150,16 @@ pub fn rescope(
             if let Some(plan) = naming {
                 super::part_naming::visit_client_keys_mut(plan, &mut rewrite)?;
             }
-            Ok(if unknown { Err(()) } else { Ok(()) })
-        })
-        .map_err(custody::execution_stop)?
-        .0
-}
-/// A successor round's attempt issues its own mutation partition; the chain's
-/// records live where its head allocated them. Each rescoped key names one
-/// chain record of its create kind (entity and relation keys are separate
-/// namespaces), so its creates and created references take the head's
-/// partition for that key.
-pub fn repartition(
-    execution: &ExecutionRequest<'_, '_>,
-    head: &[contracts::transactions::data::intents::mutation_intent::MutationIntent],
-    symbols: &StringInterner,
-    batches: &mut [WorkerIntentBatch],
-    roles: &mut [RequiredOutputRoleTarget],
-    naming: Option<&mut CommitNamingPlan>,
-) -> Result<(), TransactionCommitError> {
-    use contracts::transactions::data::intents::mutation_intent::CreateIntent;
-    use contracts::transactions::data::intents::mutation_intent::MutationIntent;
-    execution
-        .run_native_with_checkpoint(|context| {
-            // Keyed by (relation create, text): an entity and a relation may
-            // share a key text without sharing a partition.
-            let mut partitions = std::collections::BTreeMap::new();
-            for intent in head {
-                let (relation, key, partition) = match intent {
-                    MutationIntent::Create(CreateIntent::Entity(spec)) => {
-                        (false, &spec.client_key, spec.partition_id)
-                    }
-                    MutationIntent::Create(CreateIntent::Relation(spec)) => {
-                        (true, &spec.client_key, spec.partition_id)
-                    }
-                    _ => continue,
-                };
-                let text = key.resolve_with_interner(symbols).ok_or_else(|| {
-                    contracts::transactions::data::outcomes::transaction_commit_error::origin_denial(
-                        "coupled local key has no actual Native symbol meaning",
-                    )
-                })?;
-                checkpoint(context, text.len() as u64 + 1).map_err(custody::execution_stop)?;
-                partitions.insert((relation, text.to_owned()), partition);
-            }
-            let head_partition = |relation: bool, key: &ClientKey| {
-                key.as_raw_str()
-                    .and_then(|text| partitions.get(&(relation, text.to_owned())))
-                    .copied()
-            };
-            // A created reference always names an entity.
-            let mut repartition = |reference: &mut EntityReference| {
-                if let EntityReference::Created(created) = reference
-                    && let Some(partition) = head_partition(false, &created.client_key)
-                {
-                    created.partition_id = partition;
-                }
-                Ok::<_, TransactionCommitError>(())
-            };
-            for batch in batches {
-                for intent in &mut batch.intents {
-                    checkpoint(context, 1).map_err(custody::execution_stop)?;
-                    let created = match intent {
-                        MutationIntent::Create(CreateIntent::Entity(spec)) => {
-                            Some((false, &spec.client_key, &mut spec.partition_id))
-                        }
-                        MutationIntent::Create(CreateIntent::Relation(spec)) => {
-                            Some((true, &spec.client_key, &mut spec.partition_id))
-                        }
-                        _ => None,
-                    };
-                    if let Some((relation, key, partition)) = created
-                        && let Some(head) = head_partition(relation, key)
-                    {
-                        *partition = head;
-                    }
-                    intent.visit_entity_references_mut(&mut repartition)?;
-                }
-            }
-            for role in roles {
-                checkpoint(context, 1).map_err(custody::execution_stop)?;
-                repartition(&mut role.target)?;
-            }
-            if let Some(plan) = naming {
-                super::part_naming::visit_targets_mut(plan, |target| {
-                    checkpoint(context, 1).map_err(custody::execution_stop)?;
-                    let (relation, key, partition) = match target {
-                        PendingBirthTarget::CreatedEntity(created) => {
-                            (false, &created.client_key, &mut created.partition_id)
-                        }
-                        PendingBirthTarget::CreatedRelation(created) => {
-                            repartition(&mut created.source)?;
-                            repartition(&mut created.target)?;
-                            (true, &created.client_key, &mut created.partition_id)
-                        }
-                    };
-                    if let Some(head) = head_partition(relation, key) {
-                        *partition = head;
-                    }
-                    Ok::<_, TransactionCommitError>(())
-                })?;
-            }
             Ok::<_, TransactionCommitError>(())
         })
         .map_err(custody::execution_stop)?
         .0
 }
-fn overflow() -> TransactionCommitError {
+
+mod repartition;
+pub use repartition::repartition;
+
+pub(super) fn overflow() -> TransactionCommitError {
     custody::execution_stop(
         contracts::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow,
     )

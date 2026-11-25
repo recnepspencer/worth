@@ -255,36 +255,43 @@ fn aspect_patch_rounds_fold_and_cover() {
         chain(execution, &world, Route::Preserve, values, &round).0
     };
     assert_eq!(patch(&["round-1", "round-2"]), patch(&["round-2"]));
-    let world = World::new_with_summary(execution);
-    let prior = world.birth(execution, "owned", "owned-output");
-    let target = output(&prior);
-    let head = vec![summary_patch(target, &[("title", "a"), ("status", "a")])];
-    let rounds = |round: Vec<WorkerIntentBatch>| {
-        let (world, prior, head) = (&world, &prior, &head);
-        assemble(move |execution, candidate| {
-            candidate.append_publication(
+    // A later round may write any subset: an earlier aspect patch a round no
+    // longer makes returns to its earlier image (#119 N5).
+    let run = |rounds: &[Vec<(&str, &str)>]| {
+        let world = World::new_with_summary(execution);
+        let prior = world.birth(execution, "owned", "owned-output");
+        let target = output(&prior);
+        let round = |fields: &Vec<(&str, &str)>| vec![summary_patch(target, fields)];
+        let proposal = world
+            .prepare(
                 execution,
-                preserve(world, prior),
-                &none(),
-                head.clone(),
-            )?;
-            successor(execution, candidate, preserve(world, prior), round.clone())
-        })
+                &assemble(|execution, candidate| {
+                    candidate.append_publication(
+                        execution,
+                        preserve(&world, &prior),
+                        &none(),
+                        round(&rounds[0]),
+                    )?;
+                    for fields in &rounds[1..] {
+                        successor(
+                            execution,
+                            candidate,
+                            preserve(&world, &prior),
+                            round(fields),
+                        )?;
+                    }
+                    Ok(())
+                }),
+            )
+            .unwrap();
+        committed(&world, execution, proposal, &preserve_meaning(&prior)).0
     };
-    // A field update of the same fields covers an earlier aspect patch.
-    world
-        .prepare(execution, &rounds(vec![summary_update(target, "b", "b")]))
-        .unwrap();
-    // A patch of fewer fields leaves the earlier patch uncovered.
-    let before = world.basis();
-    let err = world
-        .prepare(
-            execution,
-            &rounds(vec![summary_patch(target, &[("title", "b")])]),
-        )
-        .unwrap_err();
-    assert_eq!(refusal(err), postponed(Reason::UncoveredWrite));
-    assert_eq!(world.basis(), before);
+    let fewer = vec![("title", "b")];
+    assert_eq!(
+        run(&[vec![("title", "a"), ("status", "a")], fewer.clone()]),
+        run(&[fewer]),
+        "a patch of fewer fields reverts the rest"
+    );
 }
 
 #[test]

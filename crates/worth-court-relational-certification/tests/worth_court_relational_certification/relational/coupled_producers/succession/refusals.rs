@@ -1,57 +1,153 @@
-//! Negative succession courts: every non-folding round refuses with its
-//! typed #119 reason or custody error without publishing anything.
+//! Succession courts formerly refused by the PR A fold: each round now
+//! supersedes its chain's earlier round and the commit is the one-round
+//! answer, or refuses with its typed #119 reason or ordinary cause without
+//! publishing anything.
 use super::*;
 
-#[test]
-fn a_round_that_leaves_an_earlier_write_uncovered_refuses() {
+/// One Birth route in a fresh world: each entry is a round's roles and
+/// creates; the first is appended, the rest are successors.
+fn birth_rounds(rounds: &[(Vec<RequiredOutputRoleTarget>, Vec<WorkerIntentBatch>)]) -> Observed {
+    let host = request();
+    let execution = &ExecutionRequest::serial(&host);
+    let world = World::new(execution, true, true);
+    let proposal = world
+        .prepare(
+            execution,
+            &assemble(|execution, candidate| {
+                let (roles, batches) = &rounds[0];
+                candidate.append_publication(
+                    execution,
+                    birth_roles(&world, execution, roles.clone()),
+                    &none(),
+                    batches.clone(),
+                )?;
+                for (roles, batches) in &rounds[1..] {
+                    let posture = birth_roles(&world, execution, roles.clone());
+                    successor(execution, candidate, posture, batches.clone())?;
+                }
+                Ok(())
+            }),
+        )
+        .unwrap();
+    committed(&world, execution, proposal, &world.meaning("owned")).0
+}
+
+/// One Preserve route in a fresh world: each entry is a round's role posture
+/// and output value (`None` writes nothing).
+fn preserve_rounds(rounds: &[(RequiredOutputRolePosture, Option<&str>)]) -> Observed {
+    let host = request();
+    let execution = &ExecutionRequest::serial(&host);
+    let world = World::new(execution, true, true);
+    let prior = world.birth(execution, "owned", "owned-output");
+    let round = |value: Option<&str>| {
+        value
+            .map(|value| update(output(&prior), value))
+            .into_iter()
+            .collect()
+    };
+    let proposal = world
+        .prepare(
+            execution,
+            &assemble(|execution, candidate| {
+                let (posture, value) = rounds[0];
+                candidate.append_publication(
+                    execution,
+                    preserve_as(&world, &prior, posture),
+                    &none(),
+                    round(value),
+                )?;
+                for &(posture, value) in &rounds[1..] {
+                    successor(
+                        execution,
+                        candidate,
+                        preserve_as(&world, &prior, posture),
+                        round(value),
+                    )?;
+                }
+                Ok(())
+            }),
+        )
+        .unwrap();
+    committed(&world, execution, proposal, &preserve_meaning(&prior)).0
+}
+
+/// The refusal one Preserve route's rounds stop with, having published nothing.
+fn preserve_refusal(rounds: &[(RequiredOutputRolePosture, Option<&str>)]) -> Cause {
     let host = request();
     let execution = &ExecutionRequest::serial(&host);
     let world = World::new(execution, true, true);
     let prior = world.birth(execution, "owned", "owned-output");
     let before = world.basis();
+    let round = |value: Option<&str>| {
+        value
+            .map(|value| update(output(&prior), value))
+            .into_iter()
+            .collect()
+    };
     let err = world
         .prepare(
             execution,
             &assemble(|execution, candidate| {
+                let (posture, value) = rounds[0];
                 candidate.append_publication(
                     execution,
-                    preserve(&world, &prior),
+                    preserve_as(&world, &prior, posture),
                     &none(),
-                    vec![update(output(&prior), "round-1")],
+                    round(value),
                 )?;
-                successor(execution, candidate, preserve(&world, &prior), Vec::new())
+                for &(posture, value) in &rounds[1..] {
+                    successor(
+                        execution,
+                        candidate,
+                        preserve_as(&world, &prior, posture),
+                        round(value),
+                    )?;
+                }
+                Ok(())
             }),
         )
+        .and_then(|proposal| {
+            world
+                .runtime
+                .prepare_validated_proposal(execution, proposal)
+                .map(|_| ())
+        })
         .unwrap_err();
-    assert_eq!(refusal(err), postponed(Reason::UncoveredWrite));
-    // An allocation the head made and the round leaves out is uncovered too.
-    let fresh = World::new(execution, true, true);
-    let err = fresh
-        .prepare(
-            execution,
-            &assemble(|execution, candidate| {
-                let keys = ["owned-output", "owned-second"];
-                candidate.append_publication(
-                    execution,
-                    birth(&fresh, execution, &keys),
-                    &none(),
-                    creates(&keys, "round-1"),
-                )?;
-                successor(
-                    execution,
-                    candidate,
-                    birth(&fresh, execution, &keys),
-                    creates(&keys[..1], "round-2"),
-                )
-            }),
-        )
-        .unwrap_err();
-    assert_eq!(refusal(err), postponed(Reason::UncoveredWrite));
-    assert_eq!(world.basis(), before, "nothing published");
+    assert_eq!(world.basis(), before);
+    refusal(err)
 }
 
+fn roles_of(keys: &[&str]) -> Vec<RequiredOutputRoleTarget> {
+    keys.iter().map(|key| created(key)).collect()
+}
+
+/// A round that no longer writes what an earlier round wrote reverts it to
+/// the head's image (N5); one that no longer creates an earlier record drops
+/// it (N2). Both commit the one-round answer.
 #[test]
-fn a_round_deleting_its_chains_allocation_refuses() {
+fn a_round_leaving_out_an_earlier_write_or_create_commits_the_one_round_answer() {
+    use RequiredOutputRolePosture::Preserve as Keep;
+    assert_eq!(
+        preserve_rounds(&[(Keep, Some("round-1")), (Keep, None)]),
+        preserve_rounds(&[(Keep, None)]),
+        "an uncovered field write reverts"
+    );
+    let keys = ["owned-output", "owned-second"];
+    assert_eq!(
+        birth_rounds(&[
+            (roles_of(&keys), creates(&keys, "round-1")),
+            (roles_of(&keys[..1]), creates(&keys[..1], "round-2")),
+        ])
+        .alpha(),
+        birth_rounds(&[(roles_of(&keys[..1]), creates(&keys[..1], "round-2"))]).alpha(),
+        "an omitted create is dropped"
+    );
+}
+
+/// Naming a record only a superseded round of the chain created can only
+/// come from reading that round's effect: `PriorEffectRead`.
+#[test]
+fn a_round_naming_its_chains_superseded_allocation_refuses_prior_effect_read() {
     let host = request();
     let execution = &ExecutionRequest::serial(&host);
     let world = World::new(execution, true, true);
@@ -82,7 +178,7 @@ fn a_round_deleting_its_chains_allocation_refuses() {
             }),
         )
         .unwrap_err();
-    assert_eq!(refusal(err), postponed(Reason::FreshDelete));
+    assert_eq!(refusal(err), postponed(Reason::PriorEffectRead));
     assert_eq!(world.basis(), before);
 }
 
@@ -123,37 +219,35 @@ fn a_round_after_another_writer_changed_its_output_refuses() {
     assert_eq!(world.basis(), before);
 }
 
+/// A round creating a record its head did not is an ordinary create; the
+/// commit equals the one-round answer (exact: no other key was added after).
 #[test]
-fn a_round_with_a_new_record_refuses_as_structural() {
+fn a_round_with_a_new_record_commits_the_one_round_answer() {
+    let keys = ["owned-output", "owned-new"];
+    assert_eq!(
+        birth_rounds(&[
+            (roles_of(&keys[..1]), creates(&keys[..1], "round-1")),
+            (roles_of(&keys[..1]), creates(&keys, "round-2")),
+        ]),
+        birth_rounds(&[(roles_of(&keys[..1]), creates(&keys, "round-2"))]),
+    );
+}
+
+/// A round is applied as written: two writes of one record in a round are
+/// that round's own ordinary conflict.
+#[test]
+fn a_round_writing_one_record_twice_is_the_ordinary_conflict() {
     let host = request();
     let execution = &ExecutionRequest::serial(&host);
     let world = World::new(execution, true, true);
-    let before = world.basis();
-    let err = world
-        .prepare(
-            execution,
-            &assemble(|execution, candidate| {
-                candidate.append_publication(
-                    execution,
-                    birth(&world, execution, &["owned-output"]),
-                    &none(),
-                    creates(&["owned-output"], "round-1"),
-                )?;
-                successor(
-                    execution,
-                    candidate,
-                    birth(&world, execution, &["owned-output"]),
-                    creates(&["owned-output", "owned-new"], "round-2"),
-                )
-            }),
-        )
-        .unwrap_err();
-    assert_eq!(refusal(err), postponed(Reason::StructuralEffect));
-    assert_eq!(world.basis(), before);
-    // A round writes each chain record once; two writes of one record are
-    // not one round's answer.
     let prior = world.birth(execution, "owned", "owned-output");
     let before = world.basis();
+    let twice = || {
+        vec![
+            update(output(&prior), "round-2"),
+            update(output(&prior), "round-3"),
+        ]
+    };
     let err = world
         .prepare(
             execution,
@@ -164,94 +258,41 @@ fn a_round_with_a_new_record_refuses_as_structural() {
                     &none(),
                     vec![update(output(&prior), "round-1")],
                 )?;
-                successor(
-                    execution,
-                    candidate,
-                    preserve(&world, &prior),
-                    vec![
-                        update(output(&prior), "round-2"),
-                        update(output(&prior), "round-3"),
-                    ],
-                )
+                successor(execution, candidate, preserve(&world, &prior), twice())
             }),
         )
         .unwrap_err();
-    assert_eq!(refusal(err), postponed(Reason::StructuralEffect));
+    assert!(
+        matches!(err, TransactionCommitError::Conflict { .. }),
+        "{err:?}"
+    );
     assert_eq!(world.basis(), before);
 }
 
+/// A round may change its roles: drop one, swap two, or retire a preserved
+/// output. Its posture and ordinary roles are re-resolved; the commit is the
+/// one-round answer.
 #[test]
-fn a_round_that_changes_its_roles_refuses() {
-    let host = request();
-    let execution = &ExecutionRequest::serial(&host);
+fn a_round_that_changes_its_roles_commits_the_one_round_answer() {
     let keys = ["owned-output", "owned-second"];
-    let birth_with = |roles: Vec<RequiredOutputRoleTarget>| {
-        let world = World::new(execution, true, true);
-        let before = world.basis();
-        let err = world
-            .prepare(
-                execution,
-                &assemble(|execution, candidate| {
-                    candidate.append_publication(
-                        execution,
-                        birth(&world, execution, &keys),
-                        &none(),
-                        creates(&keys, "round-1"),
-                    )?;
-                    successor(
-                        execution,
-                        candidate,
-                        birth_roles(&world, execution, roles.clone()),
-                        creates(&keys, "round-2"),
-                    )
-                }),
-            )
-            .unwrap_err();
-        assert_eq!(world.basis(), before);
-        refusal(err)
-    };
-    assert_eq!(
-        birth_with(vec![created(keys[0])]),
-        postponed(Reason::UncoveredWrite),
-        "a dropped role"
-    );
-    let mut swapped = vec![created(keys[0]), created(keys[1])];
+    let head = || (roles_of(&keys), creates(&keys, "round-1"));
+    let mut swapped = roles_of(&keys);
     swapped[0].role = keys[1].into();
     swapped[1].role = keys[0].into();
+    for roles in [roles_of(&keys[..1]), swapped] {
+        assert_eq!(
+            birth_rounds(&[head(), (roles.clone(), creates(&keys, "round-2"))]),
+            birth_rounds(&[(roles, creates(&keys, "round-2"))]),
+        );
+    }
+    // Retiring a preserved output is refused for one round alone; after an
+    // earlier Preserve round it is the same ordinary refusal.
+    use RequiredOutputRolePosture::{Preserve as Keep, Retire};
     assert_eq!(
-        birth_with(swapped),
-        postponed(Reason::UncoveredWrite),
-        "swapped roles"
-    );
-    // A Preserve whose round retires its output is not the same chain.
-    let world = World::new(execution, true, true);
-    let prior = world.birth(execution, "owned", "owned-output");
-    let before = world.basis();
-    let err = world
-        .prepare(
-            execution,
-            &assemble(|execution, candidate| {
-                candidate.append_publication(
-                    execution,
-                    preserve(&world, &prior),
-                    &none(),
-                    vec![update(output(&prior), "round-1")],
-                )?;
-                successor(
-                    execution,
-                    candidate,
-                    preserve_as(&world, &prior, RequiredOutputRolePosture::Retire),
-                    vec![update(output(&prior), "round-2")],
-                )
-            }),
-        )
-        .unwrap_err();
-    assert_eq!(
-        refusal(err),
-        postponed(Reason::UncoveredWrite),
+        preserve_refusal(&[(Keep, Some("round-1")), (Retire, Some("round-2"))]),
+        preserve_refusal(&[(Retire, Some("round-2"))]),
         "Preserve to Retire"
     );
-    assert_eq!(world.basis(), before);
 }
 
 #[test]

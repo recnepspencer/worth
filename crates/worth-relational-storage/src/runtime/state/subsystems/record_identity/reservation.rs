@@ -42,6 +42,15 @@ impl RecordSlotReservation {
         }
     }
 
+    pub(super) fn names(
+        &self,
+        class: RecordAllocationClass,
+        partition_id: PartitionId,
+        slot: usize,
+    ) -> bool {
+        self.class == class && self.partition_id == partition_id && self.slot == slot
+    }
+
     pub(super) fn consume(&mut self) {
         self.remove_pending();
         self.consumed = true;

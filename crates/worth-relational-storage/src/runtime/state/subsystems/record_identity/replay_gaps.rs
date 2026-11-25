@@ -74,43 +74,59 @@ mod tests {
 
     #[test]
     fn interleaved_multi_record_replay_consumes_interior_gaps_and_burns_unpublished_slots() {
-        use crate::history::data::canonical_record_allocation::RecordAllocationOrigin;
+        use crate::history::data::canonical_record_allocation::{
+            CanonicalRecordAllocation, RecordAllocationOrigin,
+        };
+        use crate::identity::data::EntityId;
         use crate::runtime::state::subsystems::record_identity::RecordIdentitySubsystem;
         use crate::transactions::data::outcomes::conflict_class::record_allocation_denial::RecordAllocationDenial;
+        use crate::transactions::data::primitives::RecordRef;
 
         let authority = RecordIdentitySubsystem::default();
         let class = RecordAllocationClass::Entity;
         let partition = PartitionId::main();
         let origin = RecordAllocationOrigin::AppendFrontier;
+        let live = |ordinal, slot| {
+            let record = RecordRef::Entity(EntityId::new(partition, slot, 1));
+            CanonicalRecordAllocation::with_origin(ordinal, record, origin)
+        };
+        let replay = |slots: &[u64]| {
+            let evidence = slots.iter().enumerate();
+            let evidence = evidence.map(|(ordinal, &slot)| live(ordinal as u64, slot));
+            authority
+                .stage_replay_allocations(evidence.collect(), Vec::new())
+                .unwrap();
+            let reserved = slots
+                .iter()
+                .enumerate()
+                .map(|(ordinal, &slot)| {
+                    authority
+                        .reserve_exact(ordinal as u64, class, partition, slot as usize, 1, origin)
+                        .unwrap()
+                })
+                .collect::<Vec<_>>();
+            authority.clear_staged_replay_allocations();
+            reserved
+        };
 
         // First published commit owns interleaved slots [0, 2] (gap at 1) and [4] (gap at 3).
-        let r0 = authority
-            .reserve_exact(0, class, partition, 0, 1, origin)
-            .unwrap();
-        let r2 = authority
-            .reserve_exact(1, class, partition, 2, 1, origin)
-            .unwrap();
-        let r4 = authority
-            .reserve_exact(2, class, partition, 4, 1, origin)
-            .unwrap();
+        let first = replay(&[0, 2, 4]);
         assert_eq!(authority.frontier_snapshot(), vec![(class, partition, 5)]);
 
         // Second published commit consumes skipped interior slot 1 cleanly.
-        let r1 = authority
-            .reserve_exact(0, class, partition, 1, 1, origin)
-            .unwrap();
-        for mut res in [r0, r2, r4, r1] {
+        let second = replay(&[1]);
+        for mut res in first.into_iter().chain(second) {
             res.consume();
         }
 
         // End of replay burns unpublished gap slot 3; replaying it later is refused.
         authority.release_unowned_reservations();
         let err = authority
-            .reserve_exact(0, class, partition, 3, 1, origin)
+            .stage_replay_allocations(vec![live(0, 3)], Vec::new())
             .unwrap_err();
         assert!(matches!(
             err,
-            RecordAllocationDenial::ReplayAppendFrontierMismatch {
+            RecordAllocationDenial::ReplayEvidenceBlockBroken {
                 expected_slot: 5,
                 observed_slot: 3,
                 ..

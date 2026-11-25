@@ -1,0 +1,6 @@
+name = "coupled_succession"
+version = "0.1.0"
+defaultTargets = ["CoupledSuccession"]
+
+[[lean_lib]]
+name = "CoupledSuccession"

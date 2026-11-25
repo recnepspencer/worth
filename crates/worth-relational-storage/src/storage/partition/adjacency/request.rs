@@ -118,7 +118,7 @@ impl AdjacencySet {
         )
     }
 }
-fn insert_kind(
+pub(super) fn insert_kind(
     kinds: &mut Option<SharedMap<KindId, RelationSet>>,
     kind: KindId,
     relation: RelationId,

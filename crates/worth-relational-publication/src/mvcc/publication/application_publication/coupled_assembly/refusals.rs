@@ -1,5 +1,4 @@
 //! Typed coupled assembly and provenance refusals.
-use crate::mvcc::publication::application_publication::custody;
 use contracts::publication::data::authored_retirement_refusal::AuthoredRetirementRefusal as Cause;
 use contracts::publication::data::publication_error::PublicationErrorOwnerPort as _;
 use contracts::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
@@ -57,11 +56,5 @@ pub fn postponed(
             reason,
         },
         subject,
-    )
-}
-
-pub(super) fn overflow() -> TransactionCommitError {
-    custody::execution_stop(
-        contracts::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow,
     )
 }

@@ -160,6 +160,7 @@ pub(super) fn complete(
     changed.extend(effect.publication.changed_records);
     crate::authority::commit::phases::publication::canonicalize_changed_records(changed);
     canonical.install_record_allocations(identities.records.canonical().to_vec());
+    canonical.install_cancelled_record_allocations(identities.records.cancelled().to_vec());
     identities.records.finish_mutation().map_err(|denial| {
         TransactionCommitError::conflict(contracts::transactions::data::outcomes::commit_conflict::CommitConflict::new(
             contracts::transactions::data::outcomes::conflict_class::ConflictClass::RecordAllocationDenied { denial },

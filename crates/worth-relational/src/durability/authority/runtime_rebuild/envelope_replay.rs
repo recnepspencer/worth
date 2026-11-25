@@ -82,7 +82,10 @@ pub(super) fn replay_readmitted_envelope(
         let replays_mutation_pipeline = envelope.authority_kind()
             == CanonicalCommitAuthorityKind::VersionedTransaction
             && !is_metadata_only_merge_commit(envelope);
-        if !replays_mutation_pipeline && !envelope.record_allocations().is_empty() {
+        if !replays_mutation_pipeline
+            && (!envelope.record_allocations().is_empty()
+                || !envelope.cancelled_record_allocations().is_empty())
+        {
             return Err(DurabilityError::new(
                 RecoveryFailureClass::ReplayFailure,
                 format!(
@@ -94,9 +97,12 @@ pub(super) fn replay_readmitted_envelope(
         if replays_mutation_pipeline {
             restored
                 .record_identity
-                .stage_replay_allocations_with_leading_gaps(envelope.record_allocations().to_vec())
-                .map_err(|detail| {
-                    DurabilityError::new(RecoveryFailureClass::ReplayFailure, detail)
+                .stage_replay_allocations(
+                    envelope.record_allocations().to_vec(),
+                    envelope.cancelled_record_allocations().to_vec(),
+                )
+                .map_err(|denial| {
+                    DurabilityError::new(RecoveryFailureClass::ReplayFailure, denial.detail())
                 })?;
         }
         let replay_result = replay_envelope_effect(

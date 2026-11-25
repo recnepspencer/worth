@@ -82,6 +82,9 @@ fn canonical_effect_drift(
     if durable.record_allocations() != replayed.record_allocations() {
         drifted.push("record_allocations");
     }
+    if durable.cancelled_record_allocations() != replayed.cancelled_record_allocations() {
+        drifted.push("cancelled_record_allocations");
+    }
     if (*durable.owner_revision_symbol_references())
         != (*replayed.owner_revision_symbol_references())
     {

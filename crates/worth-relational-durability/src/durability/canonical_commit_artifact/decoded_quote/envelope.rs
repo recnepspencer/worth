@@ -3,7 +3,9 @@ use worth_relational_contracts::internal_port as contracts;
 use super::*;
 use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::wire_projection::EnvelopeProjection;
 use contracts::history::data::coordinates::{BranchId, CommitId};
-use contracts::history::data::canonical_record_allocation::CanonicalRecordAllocation;
+use contracts::history::data::canonical_record_allocation::{
+    CancelledRecordAllocation, CanonicalRecordAllocation,
+};
 use contracts::symbols::data::symbol::Symbol;
 
 pub(in super::super) fn quote(
@@ -141,6 +143,9 @@ fn field_allocation(
         "record_allocations" => {
             vector::<CanonicalRecordAllocation>(value, request, |_| Ok(OwnerAllocation::default()))?
         }
+        "cancelled_record_allocations" => {
+            vector::<CancelledRecordAllocation>(value, request, |_| Ok(OwnerAllocation::default()))?
+        }
         "patch" => super::patch::quote(value, request)?,
         "descriptive_touches" => super::touches::quote(value, request)?,
         "lineage" => super::lineage::quote(value, request)?,
@@ -185,7 +190,7 @@ fn require_empty(
         Ok(())
     })
 }
-const FIELDS: [&str; 36] = [
+const FIELDS: [&str; 37] = [
     "content",
     "coupled_authored_publication",
     "historical_output_selection",
@@ -213,6 +218,7 @@ const FIELDS: [&str; 36] = [
     "symbol_texts",
     "revision_symbol_references",
     "record_allocations",
+    "cancelled_record_allocations",
     "patch",
     "descriptive_touches",
     "diagnostics_summary",

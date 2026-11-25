@@ -1,7 +1,9 @@
 use std::collections::VecDeque;
 
+use super::allocation_source::AllocationSource;
 use crate::history::data::canonical_record_allocation::{
-    CanonicalRecordAllocation, RecordAllocationClass, RecordAllocationOrigin,
+    CancelledRecordAllocation, CanonicalRecordAllocation, RecordAllocationClass,
+    RecordAllocationOrigin,
 };
 use crate::identity::data::PartitionId;
 use crate::transactions::data::outcomes::conflict_class::record_allocation_denial::RecordAllocationDenial;
@@ -9,8 +11,9 @@ use crate::transactions::data::primitives::RecordRef;
 
 use super::record_ref::{record_generation, record_partition, record_slot};
 use super::reservation::RecordSlotReservation;
-use super::RecordIdentitySubsystem;
+use super::{RecordIdentitySubsystem, StagedReplayAllocations};
 
+mod coupled;
 #[cfg(test)]
 mod tests;
 
@@ -27,6 +30,20 @@ pub struct PendingRecordAllocations {
     reservations: Vec<RecordSlotReservation>,
     pending_origins: VecDeque<RecordAllocationOrigin>,
     canonical: Vec<CanonicalRecordAllocation>,
+    /// Live mode: the intent occurrence that allocated each `canonical` entry.
+    sources: Vec<Option<AllocationSource>>,
+    /// Live mode: the allocations the intent being applied will make, in order.
+    next_sources: VecDeque<AllocationSource>,
+    /// Slots reserved and then cancelled. Live mode holds each reservation in
+    /// `held` until `commit`, so no slot is reissued within the candidate;
+    /// replay mode carries the staged evidence for the history parity check.
+    cancelled: Vec<CancelledRecordAllocation>,
+    held: Vec<RecordSlotReservation>,
+    /// Live mode: records a coupled successor round re-creates under a key its
+    /// chain already allocated; such a create reuses the identity (`prebind`).
+    prebound: std::collections::BTreeMap<AllocationSource, RecordRef>,
+    /// The allocation being made reuses a prebound identity.
+    reusing: bool,
 }
 
 impl PendingRecordAllocations {
@@ -40,7 +57,23 @@ impl PendingRecordAllocations {
             reservations: Vec::new(),
             pending_origins: VecDeque::new(),
             canonical: Vec::new(),
+            sources: Vec::new(),
+            next_sources: VecDeque::new(),
+            cancelled: Vec::new(),
+            held: Vec::new(),
+            prebound: Default::default(),
+            reusing: false,
         }
+    }
+
+    /// Replay one durable commit's staged live and cancelled evidence.
+    pub(super) fn replaying(
+        authority: RecordIdentitySubsystem,
+        staged: StagedReplayAllocations,
+    ) -> Self {
+        let mut pending = Self::new(authority, Some(staged.live));
+        pending.cancelled = staged.cancelled;
+        pending
     }
 
     pub fn reserve(
@@ -48,6 +81,9 @@ impl PendingRecordAllocations {
         class: RecordAllocationClass,
         partition_id: PartitionId,
     ) -> Result<ReservedRecordAllocation, RecordAllocationDenial> {
+        if let Some(reused) = self.reuse_prebound(class, partition_id)? {
+            return Ok(reused);
+        }
         let ordinal = self.reservations.len() as u64;
         let (reservation, generation, expected_decision) = match self.expected.as_mut() {
             Some(expected) => {
@@ -98,6 +134,10 @@ impl PendingRecordAllocations {
     }
 
     pub fn record(&mut self, record: RecordRef) {
+        if std::mem::take(&mut self.reusing) {
+            self.next_sources.pop_front();
+            return;
+        }
         if self.expected.is_none() {
             let origin = self
                 .pending_origins
@@ -108,6 +148,14 @@ impl PendingRecordAllocations {
                 record,
                 origin,
             ));
+            self.sources.push(self.next_sources.pop_front());
+        }
+    }
+
+    /// Name the allocations the next applied intent makes (live mode only).
+    pub fn begin_intent(&mut self, sources: Vec<AllocationSource>) {
+        if self.expected.is_none() {
+            self.next_sources = sources.into();
         }
     }
 
@@ -128,6 +176,9 @@ impl PendingRecordAllocations {
         self.reservations.len()
     }
 
+    /// Consume every live reservation. A held cancelled reservation is then
+    /// released by its own drop: an append slot stays burned, a reclaimed
+    /// slot returns to reuse at its spent generation.
     pub fn commit(mut self) {
         for reservation in &mut self.reservations {
             reservation.consume();

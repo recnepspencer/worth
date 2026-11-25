@@ -91,10 +91,11 @@ pub fn compare_retained_input(
             if *head_index >= consumer_index || *head_index != rep_index {
                 return Ok(None);
             }
-            // A fold admits a round only with the head's producer and
-            // roles over the same records (`prove_succession` Identity),
-            // so the chain's current part carries them; the meaning a
-            // fold may change (implementation, epoch) is the retained one.
+            // A successor round supersedes its chain in place: the same
+            // route and producer (`route::require_same_route`), so the
+            // chain's part carries its live round's producer and roles
+            // (re-resolved at adoption); the meaning a round may change
+            // (implementation, epoch) is the retained one.
             let head = &parts[*head_index];
             let (producer, _) = head.publication.lineage_attribution().expect("head owner");
             let roles = resolve_part_roles(execution, &parts[*head_index], created)?;

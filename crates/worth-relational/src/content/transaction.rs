@@ -23,6 +23,12 @@ impl crate::mvcc::BranchBoundRelationalTransaction {
         self.last_merged_plan = None;
         Ok(())
     }
+    /// Replace the transaction's attachments with a coupled candidate's live
+    /// union (#119 D6): a superseded round's content never publishes.
+    pub(crate) fn replace_content(&mut self, attachments: super::RelationalContentAttachments) {
+        self.content = attachments;
+        self.last_merged_plan = None;
+    }
     pub fn admit_content(
         &mut self,
         execution: &ExecutionRequest<'_, '_>,

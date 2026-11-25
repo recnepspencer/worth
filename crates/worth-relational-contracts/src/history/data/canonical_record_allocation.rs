@@ -54,6 +54,35 @@ impl CanonicalRecordAllocation {
     }
 }
 
+/// A slot a coupled candidate reserved and cancelled before commit (#119 N2),
+/// burned exactly as a live allocation would be; recovery replays it too.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CancelledRecordAllocation {
+    record: RecordRef,
+    origin: RecordAllocationOrigin,
+}
+
+impl CancelledRecordAllocation {
+    pub fn new(record: RecordRef, origin: RecordAllocationOrigin) -> Self {
+        Self { record, origin }
+    }
+
+    pub fn record(&self) -> &RecordRef {
+        &self.record
+    }
+
+    pub const fn origin(&self) -> RecordAllocationOrigin {
+        self.origin
+    }
+
+    pub fn class(&self) -> RecordAllocationClass {
+        match self.record {
+            RecordRef::Entity(_) => RecordAllocationClass::Entity,
+            RecordRef::Relation(_) => RecordAllocationClass::Relation,
+        }
+    }
+}
+
 /// Receiver-scoped fixtures for the Relational unit courts.
 #[doc(hidden)]
 pub trait CanonicalRecordAllocationFixturePort: Sized {
