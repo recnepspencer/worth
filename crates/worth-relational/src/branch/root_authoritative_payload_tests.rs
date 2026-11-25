@@ -113,12 +113,13 @@ fn content_old_retained_contract_cannot_hide_a_reference_after_current_binding_i
         *root.descriptor().unwrap().truth_root(),
         authority.registry().authority_digest_bytes(),
     );
+    let read = root.read();
     let partitions = root
         .partition_ids_iter()
         .map(|id| {
             (
                 id,
-                root.resident_full_region_witness(id)
+                read.resident_full_region_witness(id)
                     .unwrap()
                     .unwrap()
                     .full_view()

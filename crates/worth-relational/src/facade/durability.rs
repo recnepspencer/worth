@@ -83,6 +83,7 @@ pub use crate::runtime::cold_residency_census::{
 };
 pub use crate::runtime::CompleteRelationalCheckpointPreparation;
 pub use crate::runtime::RelationalCanonicalPositionAdmissionDenial;
+pub use crate::storage::residency::working_set::ResidencyPressureSnapshot;
 pub use crate::transactions::data::RecoveredRelationalSemanticResult;
 
 #[doc(hidden)]

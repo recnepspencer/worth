@@ -1,6 +1,5 @@
 use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::group_selection::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
-use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeFixturePort as _;
 use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::basis_reads::VisibilityProjectionViewFixturePort as _;
 #[cfg(test)]
@@ -129,8 +128,6 @@ fn native_performed_origin_is_exact_and_an_ordinary_equal_write_revokes_retireme
     );
     let original_basis = basis;
     let original_partition = original_basis
-        .owner_inner()
-        .root
         .partition_state(entity.partition_id)
         .unwrap()
         .unwrap();
@@ -172,8 +169,6 @@ fn native_performed_origin_is_exact_and_an_ordinary_equal_write_revokes_retireme
     release_test_commit_snapshot(&runtime, &changed);
     let current_basis = test_owner_main_basis(&runtime).unwrap();
     let current_partition = current_basis
-        .owner_inner()
-        .root
         .partition_state(entity.partition_id)
         .unwrap()
         .unwrap();

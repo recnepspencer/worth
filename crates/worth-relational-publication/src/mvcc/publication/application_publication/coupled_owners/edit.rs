@@ -1,8 +1,6 @@
 //! Ordinary edit custody is selected by the current ownership owner.
 use super::*;
-use worth_relational_branch::internal_port::branch::basis::{
-    AdmittedRelationalBranchBasisFieldsPort as _, AdmittedRelationalBranchBasisOwnerPort as _,
-};
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisOwnerPort as _;
 use worth_relational_storage::internal_port::storage::overlay::current_access::CurrentPartitionAccess;
 
 impl AuthoredPublicationReads<'_> {
@@ -29,13 +27,9 @@ impl AuthoredPublicationReads<'_> {
             return Err(foreign());
         }
         basis
-            .owner_inner()
-            .root
             .demand_head_partition(execution, source.partition_id)
             .map_err(custody::execution_stop)?;
         if !basis
-            .owner_inner()
-            .root
             .get_current_partition(source.partition_id)
             .and_then(|partition| partition.entity_arena().get(&source))
             .is_some_and(|row| row.is_live())

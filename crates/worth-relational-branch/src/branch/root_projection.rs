@@ -12,8 +12,8 @@ use crate::storage::overlay::{
     CurrentPartitionAccess, PartitionAccess, PartitionIdMemory, PartitionIdsDenial, PartitionState,
 };
 use crate::storage::residency::{
-    Full, Head, LiveRecordCounts, PartitionHeadProbe, PartitionProbe, RelationalRegionHeadView,
-    RelationalResidencyDemandFailure, RelationalResidencyLease,
+    Full, Head, LiveRecordCounts, OperationResidency, PartitionHeadProbe, PartitionProbe,
+    RelationalRegionHeadView, RelationalResidencyDemandFailure, RelationalResidencyLease,
 };
 use worth_execution::ExecutionRequest;
 
@@ -21,14 +21,53 @@ use worth_execution::ExecutionRequest;
 #[derive(Clone, Debug)]
 pub struct SnapshotProjectionRoot<'a> {
     pub(super) regions: &'a RelationalPersistentRegionSet,
+    pub(super) residency: &'a OperationResidency,
     pub(super) schema: SnapshotProjectionSchema<'a>,
     pub(super) id: u64,
     pub(super) storage_version: Option<VersionId>,
 }
 
 impl<'a> SnapshotProjectionRoot<'a> {
-    pub fn partition_access(&self) -> &'a dyn PartitionAccess {
+    pub fn residency(&self) -> &'a OperationResidency {
+        self.residency
+    }
+
+    pub fn probe_full_region(&self, id: PartitionId) -> PartitionProbe<'a> {
+        self.regions.probe_full_region(id, self.residency)
+    }
+
+    pub fn probe_head_region(&self, id: PartitionId) -> PartitionHeadProbe<'a> {
+        self.regions.probe_head_region(id, self.residency)
+    }
+
+    /// Owned Head borrow that neither this projection nor its root retains.
+    pub fn borrow_region_head(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        id: PartitionId,
+    ) -> Result<Option<RelationalResidencyLease<Head>>, RelationalResidencyDemandFailure> {
         self.regions
+            .get(id)
+            .map(|region| region.partition.borrow_head(execution, 1 << 30))
+            .transpose()
+    }
+
+    pub fn demand_full_region_cached(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        id: PartitionId,
+    ) -> Result<(), RelationalResidencyDemandFailure> {
+        self.regions
+            .demand_full_region_cached(execution, id, self.residency)
+    }
+
+    pub fn demand_head_region_cached(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        id: PartitionId,
+    ) -> Result<(), RelationalResidencyDemandFailure> {
+        self.regions
+            .demand_region_head_cached(execution, id, self.residency)
     }
 
     pub fn id(&self) -> u64 {
@@ -111,21 +150,22 @@ impl<'a> SnapshotProjectionRoot<'a> {
     }
 
     pub fn accepted_full_region(&self, id: PartitionId) -> Option<&'a PartitionState> {
-        self.regions.accepted_full_region(id)
+        self.regions.accepted_full_region(id, self.residency)
     }
 
     pub fn accepted_head_region_view(
         &self,
         id: PartitionId,
     ) -> Option<RelationalRegionHeadView<'a>> {
-        self.regions.accepted_head_region_view(id)
+        self.regions.accepted_head_region_view(id, self.residency)
     }
 
     pub fn accepted_head_region_witness(
         &self,
         id: PartitionId,
     ) -> Result<Option<RelationalResidencyLease<Head>>, PartitionId> {
-        self.regions.accepted_head_region_witness(id)
+        self.regions
+            .accepted_head_region_witness(id, self.residency)
     }
 
     pub fn demand_region_head(
@@ -133,7 +173,8 @@ impl<'a> SnapshotProjectionRoot<'a> {
         execution: &ExecutionRequest<'_, '_>,
         id: PartitionId,
     ) -> Result<Option<RelationalResidencyLease<Head>>, RelationalResidencyDemandFailure> {
-        self.regions.demand_region_head(execution, id)
+        self.regions
+            .demand_region_head(execution, id, self.residency)
     }
 
     pub fn demand_region_full(
@@ -141,7 +182,8 @@ impl<'a> SnapshotProjectionRoot<'a> {
         execution: &ExecutionRequest<'_, '_>,
         id: PartitionId,
     ) -> Result<Option<RelationalResidencyLease<Full>>, RelationalResidencyDemandFailure> {
-        self.regions.demand_region_full(execution, id)
+        self.regions
+            .demand_region_full(execution, id, self.residency)
     }
 
     pub fn demand_all_full(
@@ -149,7 +191,12 @@ impl<'a> SnapshotProjectionRoot<'a> {
         execution: &ExecutionRequest<'_, '_>,
         symbols: &RuntimeSymbolTable,
     ) -> Result<(), RelationalResidencyDemandFailure> {
-        self.regions.demand_all_full(execution, symbols)
+        self.regions.demand_regions_full(
+            execution,
+            symbols,
+            self.regions.partition_ids_iter(),
+            self.residency,
+        )
     }
 
     pub fn demand_regions_head(
@@ -158,7 +205,8 @@ impl<'a> SnapshotProjectionRoot<'a> {
         symbols: &RuntimeSymbolTable,
         ids: impl IntoIterator<Item = PartitionId>,
     ) -> Result<(), RelationalResidencyDemandFailure> {
-        self.regions.demand_regions_head(execution, symbols, ids)
+        self.regions
+            .demand_regions_head(execution, symbols, ids, self.residency)
     }
 
     pub fn demand_regions_full(
@@ -167,14 +215,15 @@ impl<'a> SnapshotProjectionRoot<'a> {
         symbols: &RuntimeSymbolTable,
         ids: impl IntoIterator<Item = PartitionId>,
     ) -> Result<(), RelationalResidencyDemandFailure> {
-        self.regions.demand_regions_full(execution, symbols, ids)
+        self.regions
+            .demand_regions_full(execution, symbols, ids, self.residency)
     }
 
     pub fn symbol_admitted_projection(
         &self,
         symbols: &'a RuntimeSymbolTable,
     ) -> impl PartitionAccess + 'a + use<'a> {
-        SymbolAdmittedRootRead::new(self.regions, symbols)
+        SymbolAdmittedRootRead::new(self.regions, symbols, self.residency)
     }
 }
 
@@ -218,33 +267,38 @@ impl<'a> SnapshotProjectionSchema<'a> {
 
 impl PartitionAccess for SnapshotProjectionRoot<'_> {
     fn get_partition(&self, id: PartitionId) -> Option<&PartitionState> {
-        self.regions.get_partition(id)
+        match self.probe_full_partition(id) {
+            PartitionProbe::Resident(partition) => Some(partition),
+            _ => None,
+        }
     }
     fn probe_full_partition(&self, id: PartitionId) -> PartitionProbe<'_> {
-        self.regions.probe_full_partition(id)
+        self.regions.probe_full_region(id, self.residency)
     }
     fn demand_full_partition(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         id: PartitionId,
     ) -> Result<(), RelationalResidencyDemandFailure> {
-        self.regions.demand_full_partition(execution, id)
+        self.regions
+            .demand_full_region_cached(execution, id, self.residency)
     }
 }
 
 impl CurrentPartitionAccess for SnapshotProjectionRoot<'_> {
     fn get_current_partition(&self, id: PartitionId) -> Option<RelationalRegionHeadView<'_>> {
-        self.regions.get_current_partition(id)
+        self.regions.accepted_head_region_view(id, self.residency)
     }
     fn probe_head_partition(&self, id: PartitionId) -> PartitionHeadProbe<'_> {
-        self.regions.probe_head_partition(id)
+        self.regions.probe_head_region(id, self.residency)
     }
     fn demand_head_partition(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         id: PartitionId,
     ) -> Result<(), RelationalResidencyDemandFailure> {
-        self.regions.demand_region_head_cached(execution, id)
+        self.regions
+            .demand_region_head_cached(execution, id, self.residency)
     }
     fn partition_ids(&self) -> Vec<PartitionId> {
         self.regions.partition_ids_iter().collect()
@@ -253,7 +307,11 @@ impl CurrentPartitionAccess for SnapshotProjectionRoot<'_> {
         &self,
         memory: &mut dyn PartitionIdMemory,
     ) -> Result<Vec<PartitionId>, PartitionIdsDenial> {
-        self.regions.partition_ids_with_memory(memory)
+        crate::storage::overlay::collect_partition_ids(
+            self.regions.len(),
+            self.regions.partition_ids_iter(),
+            memory,
+        )
     }
     fn partition_ids_iter(&self) -> Box<dyn Iterator<Item = PartitionId> + '_> {
         Box::new(self.regions.partition_ids_iter())

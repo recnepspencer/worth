@@ -48,9 +48,12 @@ pub fn read_view_from_snapshot_state(
         SnapshotStateBasis::Historical(basis) => materialize_historical(
             inputs,
             state,
-            basis
-                .root()
-                .map(|root| (root.partition_access(), root.schema_authority().registry())),
+            basis.root().map(|root| {
+                (
+                    &state.basis as &dyn crate::storage::overlay::PartitionAccess,
+                    root.schema_authority().registry(),
+                )
+            }),
             state.handle.version_id,
             charge,
             memory,

@@ -5,16 +5,21 @@ use crate::branch::root::{projection::SnapshotProjectionRoot, RelationalBranchRo
 use crate::history::data::{BranchId, CommitId};
 use crate::identity::data::{PartitionId, VersionId};
 use crate::internal_port::mvcc::observation::RelationalBranchObservationOwnerPort as _;
+use crate::storage::residency::OperationResidency;
 use crate::visibility::snapshot_states::VisibilitySnapshotStateKey;
 use std::sync::Arc;
 
 impl SelectedSnapshotSource for RelationalBranchRoot {
-    fn project(&self) -> SnapshotProjectionRoot<'_> {
-        self.project_snapshot()
+    fn project<'a>(&'a self, residency: &'a OperationResidency) -> SnapshotProjectionRoot<'a> {
+        self.project_snapshot_within(residency)
     }
 
-    fn project_head(&self, partition: PartitionId) -> SelectedSnapshotHead<'_> {
-        self.project_selected_head(partition)
+    fn project_head<'a>(
+        &'a self,
+        partition: PartitionId,
+        residency: &'a OperationResidency,
+    ) -> SelectedSnapshotHead<'a> {
+        self.project_selected_head_within(partition, residency)
     }
 
     fn root_id(&self) -> u64 {
@@ -41,6 +46,7 @@ impl VisibilitySnapshotBasis {
             ),
             root,
             _retained_observation: None,
+            residency: Default::default(),
         }
     }
 
@@ -58,6 +64,7 @@ impl VisibilitySnapshotBasis {
             ),
             root,
             _retained_observation: Some(observation.clone()),
+            residency: Default::default(),
         }
     }
 

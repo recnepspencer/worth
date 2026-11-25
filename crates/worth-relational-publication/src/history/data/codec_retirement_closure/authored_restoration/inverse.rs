@@ -80,8 +80,7 @@ pub fn prepare(
         .chain(co_anchors.iter().map(|(id, target)| (*id, target)))
     {
         basis
-            .owner_inner()
-            .root
+
             .demand_full_partition(execution, original.partition_id)
             .map_err(|cause| {
                 failure(worth_relational_branch::internal_port::history::data::codec_retirement_closure::request(
@@ -89,8 +88,6 @@ pub fn prepare(
                 ))
             })?;
         let partition = basis
-            .owner_inner()
-            .root
             .partition_state(original.partition_id)
             .map_err(|cause| failure(cause.into()))?
             .ok_or_else(|| reject(Cause::InvalidAuthoredAnchor, original))?;

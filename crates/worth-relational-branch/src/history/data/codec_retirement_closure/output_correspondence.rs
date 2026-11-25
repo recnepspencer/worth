@@ -46,8 +46,6 @@ pub fn validate_codec_output_correspondence<'r>(
                 // validation read native rows in every region, so each is demanded
                 // through this request before the first resident read.
                 basis
-                    .inner
-                    .root
                     .demand_all_full(execution, runtime.input.projection.symbols)
                     .map_err(|failure| Stop::Request(failure.into()))?;
                 let branch = crate::visibility::materialization::read_records::projection::VisibilityProjectionView::from_observation(
@@ -157,7 +155,7 @@ pub fn validate_codec_output_correspondence<'r>(
                     }
                 }
                 let (envelope, origin) = first.ok_or("complete output association absent")?;
-                super::relations::validate_complete_publication(runtime, &basis.inner.root, &origin, validated_history, context, lease)?;
+                super::relations::validate_complete_publication(runtime, &basis.root_read(), &origin, validated_history, context, lease)?;
                 charge(context, bound)?;
                 let mut ordinal = None;
                 for (index, candidate) in envelope.output_origins().enumerate() {

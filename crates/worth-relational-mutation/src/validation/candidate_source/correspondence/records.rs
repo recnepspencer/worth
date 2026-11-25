@@ -35,11 +35,7 @@ pub(super) fn matches(
             return Ok(false);
         }
     }
-    let backing = source
-        .basis()
-        .owner_inner()
-        .root
-        .symbol_admitted_projection(symbols);
+    let backing = source.basis().symbol_admitted_projection(symbols);
     let before = InvariantStateView::new(&backing, source.basis().observation().version_id());
     for entry in manifest {
         charge(context, 8)?;

@@ -20,11 +20,13 @@ pub(super) struct StagedSuccessorOverlay {
     pub(super) region_count: usize,
 }
 
+/// One maintenance operation's view; its clones share one read residency.
 #[derive(Clone)]
 pub struct IndexRootView {
     root: Arc<RelationalBranchRoot>,
     version: VersionId,
     staged: Option<Arc<StagedSuccessorOverlay>>,
+    residency: Arc<worth_relational_storage::internal_port::storage::residency::OperationResidency>,
 }
 impl IndexRootView {
     pub(super) fn new(root: Arc<RelationalBranchRoot>) -> Self {
@@ -36,6 +38,7 @@ impl IndexRootView {
             root,
             version,
             staged: None,
+            residency: Default::default(),
         }
     }
     pub(super) fn staged_successor(
@@ -47,6 +50,7 @@ impl IndexRootView {
             root: predecessor_root,
             version,
             staged: Some(Arc::new(overlay)),
+            residency: Default::default(),
         }
     }
     pub fn from_projection(view: &VisibilityProjectionView) -> Result<Self, Denial> {
@@ -63,6 +67,7 @@ impl IndexRootView {
             root,
             version: view.version_id(),
             staged: None,
+            residency: Default::default(),
         })
     }
     pub(super) fn root(&self) -> &Arc<RelationalBranchRoot> {
@@ -111,6 +116,7 @@ impl IndexRootView {
             root,
             version,
             staged: None,
+            residency: Default::default(),
         }
     }
 
@@ -129,6 +135,7 @@ impl IndexRootView {
             )));
         }
         self.root
+            .read_within(&self.residency)
             .demand_region_head_cached(execution, id)
             .map_err(|failure| {
                 use worth_relational_storage::internal_port::storage::residency::demand_failure::RelationalResidencyDemandFailure as Failure;
@@ -140,6 +147,8 @@ impl IndexRootView {
                     Failure::Content(cause) => cause.into_execution_cause(),
                 })
             })?;
-        Ok(self.root.accepted_head_region_view(id))
+        Ok(self
+            .root
+            .accepted_head_region_view_within(id, &self.residency))
     }
 }

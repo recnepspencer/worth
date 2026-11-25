@@ -157,7 +157,12 @@ pub(super) fn rebuild_runtime_from_plan(
             &restored.history,
             &restored.config.schema.registry,
             restored.durability.checkpoint_selection(),
-        )?;
+        )?
+        .with_historical_working_set(
+            restored
+                .partitions
+                .working_set(restored.config.storage.residency_budget),
+        );
         let replay_schedule::RecoveryReplaySchedule {
             commits: pending_tail,
             mut transitions,

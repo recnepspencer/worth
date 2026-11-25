@@ -40,8 +40,6 @@ pub fn capture_materialization_producers<'r>(
         })
         .collect::<std::collections::BTreeSet<_>>();
     basis
-        .inner
-        .root
         .demand_regions_full(execution, runtime.input.projection.symbols, regions)
         .map_err(|failure| stop(Stop::Request(failure.into())))?;
     execution
@@ -110,8 +108,6 @@ pub fn capture_materialization_producers<'r>(
                         let complete = (|| {
                             for member in &origin.members {
                                 let partition = basis
-                                    .inner
-                                    .root
                                     .partition_state(member.id.partition_id)?
                                     .ok_or("producer member partition absent")?;
                                 let row = partition
@@ -132,7 +128,7 @@ pub fn capture_materialization_producers<'r>(
                             let origin = Arc::clone(origin);
                             super::super::relations::validate_complete_publication(
                                 runtime,
-                                &basis.inner.root,
+                                &basis.root_read(),
                                 &origin,
                                 validated_history,
                                 context,
@@ -175,8 +171,6 @@ pub fn capture_materialization_producers<'r>(
                         }
                         let before_write = match record {
                             RecordRef::Entity(id) => basis
-                                .inner
-                                .root
                                 .partition_state(id.partition_id)
                                 .map_err(|failure| stop(Stop::from(failure)))?
                                 .and_then(|part| {
@@ -185,8 +179,6 @@ pub fn capture_materialization_producers<'r>(
                                 .and_then(|history| history.get(history.len().checked_sub(1)?))
                                 .map(|entry| entry.effective_at),
                             RecordRef::Relation(id) => basis
-                                .inner
-                                .root
                                 .partition_state(id.partition_id)
                                 .map_err(|failure| stop(Stop::from(failure)))?
                                 .and_then(|part| {

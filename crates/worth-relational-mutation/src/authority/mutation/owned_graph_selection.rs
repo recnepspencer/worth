@@ -17,7 +17,6 @@ use worth_relational_storage::internal_port::storage::overlay::working_state::Wo
 use crate::contracts::transactions::data::outcomes::commit_conflict::{CommitConflict, CommitConflictOwnerPort as _};
 use crate::contracts::transactions::data::outcomes::conflict_class::ConflictClass;
 use crate::contracts::transactions::data::primitives::RecordRef;
-use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 pub mod entities;
 pub mod relations;
 
@@ -34,12 +33,8 @@ pub fn apply(
     budget: Option<crate::contracts::execution::request_work::RequestWorkBudget>,
 ) -> Result<MutationApplyOutcome, MutationApplyDenial> {
     let graph = &retained.graph;
-    let source = graph
-        .entities()
-        .selected_basis()
-        .owner_inner()
-        .root
-        .as_ref();
+    // The selected basis lends custody its own preparation admitted.
+    let source = graph.entities().selected_basis();
     let mut workspace = MutationWorkspace::new(
         *execution,
         state,

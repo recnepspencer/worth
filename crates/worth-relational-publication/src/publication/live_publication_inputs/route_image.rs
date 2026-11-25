@@ -22,7 +22,7 @@ impl BoundLivePublicationInputs {
         next: &Arc<RelationalBranchRoot>,
     ) -> Result<Arc<dyn PublicationBasisAccess>, TransactionCommitError> {
         let previous = PublicationBasisImage::at_for_owner(
-            &basis.owner_inner().root,
+            &basis.root_read(),
             &basis.owner_inner().retention_binding,
         );
         let envelope = next

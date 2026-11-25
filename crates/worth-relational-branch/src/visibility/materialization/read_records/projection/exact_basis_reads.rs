@@ -39,19 +39,35 @@ impl<'view> ExactProjectionReader<'view> {
     ) -> impl Iterator<Item = crate::identity::data::RelationId> + '_ {
         self.root.relation_ids_of_kind(kind, partition)
     }
-    pub(in crate::internal_port::visibility::materialization::read_records) fn demand_head(
+    /// One rolling-window step: an owned Head borrow of partition that the
+    /// scan drops before borrowing the next, so a scan never pins the root.
+    /// A pinned read lends from its own pin custody instead.
+    pub(in crate::internal_port::visibility::materialization::read_records) fn borrow_head(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         partition: PartitionId,
     ) -> Result<
-        crate::storage::residency::RelationalRegionHeadView<'_>,
+        crate::storage::residency::RelationalResidencyLease<crate::storage::residency::Head>,
         crate::execution::denial_cause::RelationalExecutionDenialCause,
     > {
-        self.view.demand_regions_head(execution, [partition])?;
-        self.view
-            .admitted_head_region(partition)
-            .ok_or_else(|| self.membership_failure(partition))
+        if let Some(resident) = &self.view.resident {
+            resident.demand_regions_head(execution, [partition])?;
+            return resident
+                .basis()
+                .projection_root()
+                .accepted_head_region_witness(partition)
+                .ok()
+                .flatten()
+                .ok_or_else(|| self.membership_failure(partition));
+        }
+        let lease = self
+            .root
+            .borrow_region_head(execution, partition)?
+            .ok_or_else(|| self.membership_failure(partition))?;
+        lease.admit_symbols(execution, &self.view.symbols)?;
+        Ok(lease)
     }
+
     pub(in crate::internal_port::visibility::materialization::read_records) fn membership_failure(
         &self,
         partition: PartitionId,

@@ -246,10 +246,8 @@ impl<'subsystem> PartitionEditionWriter<'subsystem> {
     }
 
     pub(crate) fn insert(&mut self, id: PartitionId, partition: PartitionState) {
-        let retained = RelationalRegionRetention::resident(partition);
-        let lease = retained
-            .pin_lease()
-            .expect("newly owned Full contents are resident");
+        let lease =
+            crate::storage::residency::RelationalRegionResidency::resident_uncommitted(partition);
         if let Some(entry) = self.edits.remove(&id) {
             entry
                 .target
@@ -263,7 +261,7 @@ impl<'subsystem> PartitionEditionWriter<'subsystem> {
             );
         }
         self.map_mut()
-            .insert(id, RelationalRegionRetention::from_lease(lease));
+            .insert(id, RelationalRegionRetention::mirror_owned(lease));
     }
 
     pub fn install(&mut self, partitions: PartitionMap) {

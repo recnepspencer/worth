@@ -3,7 +3,6 @@ use worth_relational_branch::internal_port::branch::root_snapshot_custody::Visib
 
 use worth_relational_contracts::internal_port::identity::data::record_ids::{EntityId, RelationId};
 use worth_relational_contracts::internal_port::storage::data::read_records::RecordLifecycleState;
-use worth_relational_storage::internal_port::storage::overlay::access::PartitionAccess;
 use worth_relational_contracts::internal_port::visibility::materialization::read_records::projection::contracts::projection_aspect_scope::ProjectionAspectScope;
 use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::adjacency_revision_read::{AdjacencyStructuralRevisionDenial, RelationalAdjacencyDirection};
 use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::view::VisibilityProjectionView;
@@ -185,7 +184,7 @@ pub(super) fn capture_relation(
     remaining: &mut usize,
 ) -> Result<RelationDependency, Denial> {
     consume(remaining)?;
-    let root = view.selected_root().ok_or(Denial::InexactSnapshot)?;
+    let root = view.selected_partitions().ok_or(Denial::InexactSnapshot)?;
     let partition = root
         .get_partition(relation.partition_id)
         .ok_or(Denial::DependencyUnavailable)?;

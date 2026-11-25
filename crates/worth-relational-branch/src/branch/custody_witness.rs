@@ -74,15 +74,15 @@ impl RelationalBasisCustodyWitness {
             return Ok(None);
         };
         let owner = owner.into();
-        let held = AdmittedRelationalBranchBasis { inner };
+        let held = AdmittedRelationalBranchBasis::from_inner(inner);
         // Ownership precedes every effect: a foreign runtime's symbols and
         // residency are never touched for another runtime's observation.
         if held.observation().identity().runtime_instance_id() != owner.runtime_identity {
             return Err(RelationalBasisCustodyReadDenial::ForeignRuntime);
         }
-        held.inner
-            .root
-            .demand_all_full(execution, owner.symbols)
+        // This witness read's admissions end with the call, never in the root.
+        let root = held.inner.root.read();
+        root.demand_all_full(execution, owner.symbols)
             .map_err(|failure| RelationalBasisCustodyReadDenial::Demand(failure.into()))?;
         let read = owner
             .snapshot_for_observation(&held.observation())

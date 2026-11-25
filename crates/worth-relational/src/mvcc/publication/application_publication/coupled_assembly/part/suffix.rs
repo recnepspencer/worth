@@ -68,13 +68,11 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         let (intents, originals) =
             suffix_scope::normalize(execution, intents, &self.mutation.outcome.created_entities)?;
         let read = self.pin_source(execution)?;
-        let root = read.resident_basis().root();
-        let plan = self.transaction.build_merged_plan_for_state(
-            &runtime,
-            root.as_ref(),
-            intents,
-            execution,
-        )?;
+        // The pin's own read residency lends the base partitions.
+        let root = read.resident_basis().basis();
+        let plan = self
+            .transaction
+            .build_merged_plan_for_state(&runtime, root, intents, execution)?;
         self.fresh_records
             .require(execution, creator, source, plan.plan())?;
         let deferred_edges = super::super::writer_custody::require(
@@ -139,7 +137,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         let content = crate::authority::commit::phases::applied_mutation::content::prepare(
             execution,
             &runtime,
-            root,
+            read.resident_basis().root(),
             &self.prepared.schema_authority,
             content,
             &state,

@@ -10,7 +10,6 @@ impl PartitionEdition {
     pub(in crate::internal_port::runtime::state::subsystems::storage) fn source_retirement_cell(
         &self,
         after: Option<PartitionId>,
-        retire_native: bool,
     ) -> Option<(
         PartitionId,
         Arc<crate::storage::residency::RelationalRegionResidency>,
@@ -22,11 +21,6 @@ impl PartitionEdition {
             Some(key) => PartitionId(key.as_u32().checked_add(1)?),
         };
         let next = self.partitions.lower_bound(&first);
-        next.map(|(&id, region)| {
-            if retire_native {
-                region.retire_native_leases();
-            }
-            (id, region.cell().clone())
-        })
+        next.map(|(&id, region)| (id, region.cell().clone()))
     }
 }

@@ -35,7 +35,14 @@ pub(crate) struct ReadmittedRegionDirectory {
     directory: Arc<RelationalCheckpointDirectory>,
     symbols: worth_relational_storage::internal_port::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     cells: ExecutionOrderedMap<CellKey, Arc<RelationalRegionResidency>>,
+    /// The runtime working set every readmitted cold cell joins, if bounded.
+    working_set: Option<RegionWorkingSet>,
 }
+
+pub(crate) type RegionWorkingSet = (
+    Arc<worth_relational_storage::internal_port::storage::residency::working_set::WorkingSetAccountant>,
+    worth_relational_storage::internal_port::storage::residency::working_set::ResidencyPoolKind,
+);
 
 #[derive(Debug, Clone)]
 pub enum ReadmittedSchemas {
@@ -94,6 +101,7 @@ impl ReadmittedRegionDirectory {
                 )?,
                 directory,
                 cells: Default::default(),
+                working_set: None,
             });
         }
         if directory.admission_image.is_some() {
@@ -161,6 +169,7 @@ impl ReadmittedRegionDirectory {
             // the demanding runtime separately, including after a fork.
             symbols: symbols.detached_owner_snapshot(),
             cells: Default::default(),
+            working_set: None,
         })
     }
 
@@ -177,8 +186,15 @@ impl ReadmittedRegionDirectory {
             symbols,
             schemas,
             cells: Default::default(),
+            working_set: None,
         })
     }
+    /// Bind every cold cell this directory readmits to pool of ccountant.
+    pub(crate) fn with_working_set(mut self, working_set: Option<RegionWorkingSet>) -> Self {
+        self.working_set = working_set;
+        self
+    }
+
     pub(crate) fn regions(
         &mut self,
         schema_digest: [u8; 32],
@@ -241,6 +257,10 @@ impl ReadmittedRegionDirectory {
                         &self.directory.history_members,
                         request,
                     )?;
+                    if let Some((accountant, pool)) = &self.working_set {
+                        // Fresh cold cells are backed and unbound: binding cannot refuse.
+                        let _ = cell.bind_working_set(accountant, *pool);
+                    }
                     self.cells
                         .insert_cloned_native_for_request(&key, &cell, *request)
                         .map_err(contracts::durability::data::recovery_stop::map_stop)?;

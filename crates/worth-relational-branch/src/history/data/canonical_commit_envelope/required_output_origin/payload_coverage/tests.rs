@@ -328,6 +328,7 @@ fn birth_fixture(
         &std::collections::BTreeMap::from([(id.partition_id, partition)]),
         &delta,
         None,
+        &crate::storage::residency::OperationResidency::new(),
         std::sync::Arc::new(envelope.independent_fixture_image()),
         &Default::default(),
         &registry,
@@ -336,7 +337,8 @@ fn birth_fixture(
     )
     .unwrap()
     .into_root();
-    let payload = root
+    let read = root.read();
+    let payload = read
         .partition_state(id.partition_id)
         .unwrap()
         .unwrap()

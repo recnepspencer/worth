@@ -34,6 +34,8 @@ impl MirrorResidencyDemandBinding {
         branch == &self.main_branch
     }
 
+    /// The mirror's own edition: publication demands admit into its entries'
+    /// owner slots, from which the writer then admits its edit targets.
     pub fn edition(&self) -> super::PartitionEdition {
         self.partitions.read().edition.clone()
     }
@@ -58,6 +60,8 @@ impl MirrorResidencyDemandBinding {
         if branch != &self.main_branch {
             return Ok(());
         }
+        // Publication admits these targets from the mirror's own custody, which
+        // the mirror retains as its edit targets; readers never share it.
         let edition = self.partitions.read().edition.clone();
         let source = edition.with_symbol_admission(symbols);
         for id in ids {

@@ -163,6 +163,9 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
                     .capture_applied_candidate_root(
                         execution,
                         &previous_root,
+                        previous.map_or(basis.residency(), |previous| {
+                            previous.resident_basis().basis().residency()
+                        }),
                         state,
                         content,
                         &dictionary,

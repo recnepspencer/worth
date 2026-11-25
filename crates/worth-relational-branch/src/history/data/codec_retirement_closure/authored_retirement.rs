@@ -201,13 +201,9 @@ fn has_owned_birth(
             return Err("authored retirement requires only Retire roles".into());
         }
         basis
-            .inner
-            .root
             .demand_full_partition(execution, id.partition_id)
             .map_err(super::request)?;
         let partition = basis
-            .inner
-            .root
             .partition_state(id.partition_id)?
             .ok_or("retirement before-image partition absent")?;
         let row = partition

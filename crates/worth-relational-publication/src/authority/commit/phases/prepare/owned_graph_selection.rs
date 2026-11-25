@@ -2,7 +2,6 @@
 use worth_relational_mutation::internal_port as mutation;
 use mutation::mvcc::transaction::footprint::retained_selection::RelationalTransactionFootprintOwnerPort as _;
 use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::owned_graph_selection::CanonicalOwnedGraphSelectionOwnerPort as _;
-use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use super::*;
 use mutation::mvcc::owned_graph_selection::prepared::PreparedOwnedGraphSelection;
@@ -51,8 +50,7 @@ where
             .graph
             .entities()
             .selected_basis()
-            .owner_inner()
-            .root
+
             .demand_head_partition(execution, partition)
             .map_err(|cause| {
                 worth_relational_branch::internal_port::authority::commit::preparation::storage_denial::storage_read_denial(

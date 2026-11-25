@@ -161,7 +161,7 @@ pub(super) fn capture(
             let identity = Arc::as_ptr(cell) as usize;
             let key = (identity, carrier);
             if !cache.contains_key(&key) {
-                let lease = retention.demand_full(request, 1 << 30).map_err(|cause| {
+                let lease = retention.borrow_full(request, 1 << 30).map_err(|cause| {
                     contracts::durability::data::native_checkpoint_capture_denial::capture_stop(
                         cause.into(),
                     )

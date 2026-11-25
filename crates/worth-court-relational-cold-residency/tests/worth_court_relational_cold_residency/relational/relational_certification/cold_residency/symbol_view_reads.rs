@@ -142,18 +142,17 @@ fn current_symbols_preserve_full_history_refusal_and_original_head_values() {
 }
 
 #[test]
-fn read_only_cold_observations_never_increment_acquisitions_or_install_shared_leases() {
+fn read_only_cold_observations_never_increment_acquisitions_or_read_storage() {
     use worth_relational::facade::durability::RelationalRegionProbeStatus as Probe;
     let host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let request = &worth_execution::ExecutionRequest::serial(&host);
     let recipe = SymbolViewRecipe::new(request);
     let main_branch = BranchId("main".into());
 
-    // Case A: Warm the shared region cell to Full through the branch carrier on
-    // this runtime (admitting both Head and Full symbols in this runtime),
-    // while the separate mirror carrier wrapping that same warm cell has not
-    // accepted any Head or Full lease. Pure observations must neither increment
-    // `partition_editions_acquired` nor install a lease on the mirror carrier.
+    // Case A: a branch read warms the shared region cell to Full and admits
+    // its symbols. Carriers retain no lease of their own (Store M4 D1), so
+    // the branch and mirror censuses both report what that cell serves, and
+    // repeated observations neither acquire editions nor read storage.
     let fixture = recipe.reopen(request);
     let (_, basis) = fixture
         .runtime
@@ -174,41 +173,25 @@ fn read_only_cold_observations_never_increment_acquisitions_or_install_shared_le
             .unwrap();
         assert_eq!(branch_probe.head, Probe::Resident);
         assert_eq!(branch_probe.full, Probe::Resident);
-        let mirror_probe = fixture
-            .runtime
-            .observe_mirror_region_residency(fixture.entity.partition_id);
         assert_eq!(
-            mirror_probe.head,
-            Probe::Cold,
-            "observing a shared warm cell must not install a Head lease on the unaccepted mirror carrier"
-        );
-        assert_eq!(
-            mirror_probe.full,
-            Probe::Cold,
-            "observing a shared warm cell must not install a Full lease on the unaccepted mirror carrier"
+            fixture
+                .runtime
+                .observe_mirror_region_residency(fixture.entity.partition_id),
+            branch_probe,
+            "the mirror observes the same shared warm cell"
         );
         assert!(fixture
             .runtime
             .observe_branch_partition_slot_census(&main_branch, fixture.entity.partition_id)
             .is_some());
-        assert!(
-            fixture
-                .runtime
-                .observe_partition_slot_census(fixture.entity.partition_id)
-                .is_none(),
-            "mirror slot census must stay absent while mirror carrier has no accepted lease"
-        );
+        assert!(fixture
+            .runtime
+            .observe_partition_slot_census(fixture.entity.partition_id)
+            .is_some());
         assert!(fixture
             .runtime
             .observe_resident_entity_metadata_history_len(&main_branch, fixture.entity)
             .is_some());
-        assert!(
-            fixture
-                .runtime
-                .entity_replay_pin_count(fixture.entity)
-                .is_none(),
-            "mirror replay pin observation must stay absent while mirror carrier has no accepted lease"
-        );
         let _ = fixture.runtime.observe_resident_symbol_dictionary();
         let _ = fixture.runtime.observe_lineage_residency();
         let _ = fixture.runtime.observe_replay_retention_residency();
@@ -223,20 +206,6 @@ fn read_only_cold_observations_never_increment_acquisitions_or_install_shared_le
         reads_before,
         "read-only observations must perform zero cold I/O"
     );
-    // Positive control: explicit mirror-Head demand accepts the lease from the
-    // already-warm shared cell without extra member I/O, flipping mirror Head
-    // to Resident while mirror Full remains Cold.
-    let _ = fixture
-        .runtime
-        .inspect_what_happened()
-        .resolve_lineage_record_history(request, &main_branch, fixture.entity)
-        .unwrap();
-    let mirror_after_demand = fixture
-        .runtime
-        .observe_mirror_region_residency(fixture.entity.partition_id);
-    assert_eq!(mirror_after_demand.head, Probe::Resident);
-    assert_eq!(mirror_after_demand.full, Probe::Cold);
-
     // Case B: Fork-warmed shared cell with unadmitted local symbols must also
     // report Cold/None across all read-only observations with zero counter or I/O delta.
     let fork_warmed = recipe.reopen(request);

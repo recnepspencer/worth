@@ -5,7 +5,6 @@ use super::*;
 use crate::mvcc::publication::application_publication::meaning_fixture::{
     native_meaning_for_test, native_roles_for_test,
 };
-use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 #[path = "retirement/authored.rs"]
 mod authored;
 
@@ -130,8 +129,6 @@ fn all_retired_then_disjoint_create_rejects_stale_complete_predecessor_before_mo
     let before = test_owner_main_basis(&runtime).unwrap();
     for id in ids {
         assert!(!before
-            .owner_inner()
-            .root
             .partition_state(id.partition_id)
             .unwrap()
             .unwrap()

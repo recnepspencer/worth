@@ -235,6 +235,7 @@ fn selected_images(
             &BTreeMap::from([(partition_id, partition)]),
             &delta,
             previous,
+            &crate::storage::residency::OperationResidency::new(),
             Arc::new(envelope),
             &Default::default(),
             &registry,

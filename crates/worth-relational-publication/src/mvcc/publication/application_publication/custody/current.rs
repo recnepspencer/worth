@@ -1,6 +1,6 @@
 //! Current custody is readmitted from Native's durable roster, without history.
 use worth_relational_contracts::internal_port as contracts;
-use worth_relational_branch::internal_port::branch::basis::{AdmittedRelationalBranchBasis, AdmittedRelationalBranchBasisFieldsPort as _, AdmittedRelationalBranchBasisOwnerPort as _};
+use worth_relational_branch::internal_port::branch::basis::{AdmittedRelationalBranchBasis, AdmittedRelationalBranchBasisOwnerPort as _};
 use contracts::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaningOwnerPort as _;
 use super::*;
 use contracts::execution::request_stage::checkpoint;
@@ -160,8 +160,6 @@ fn owner_matches(
             .scope_kind(&origin.producer)
             == Some(kind)
         && basis
-            .owner_inner()
-            .root
             .get_current_partition(origin.meaning.source_scope.partition_id)
             .and_then(|partition| partition.entity_arena().get(&origin.meaning.source_scope))
             .is_some_and(|row| row.is_live() && row.kind_id() == Some(kind))

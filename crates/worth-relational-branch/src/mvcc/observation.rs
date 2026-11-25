@@ -147,9 +147,7 @@ pub trait RelationalBranchObservationOwnerPort: Sized {
 
 impl RelationalBranchObservationOwnerPort for RelationalBranchObservation {
     fn admitted_basis(&self) -> AdmittedRelationalBranchBasis {
-        AdmittedRelationalBranchBasis {
-            inner: self.inner.clone(),
-        }
+        AdmittedRelationalBranchBasis::from_inner(self.inner.clone())
     }
 
     fn selected_root(&self) -> &Arc<RelationalBranchRoot> {

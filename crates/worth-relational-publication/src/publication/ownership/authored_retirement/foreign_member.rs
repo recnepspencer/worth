@@ -33,8 +33,6 @@ pub(super) fn classify(
     // Independent producers deliberately have no ownership roster. Their birth
     // provenance is historical evidence, not an alternative current owner set.
     let Some(partition) = basis
-        .owner_inner()
-        .root
         .partition_state(id.partition_id)
         .map_err(|cause| stopped(Stop::from(cause)))?
     else {

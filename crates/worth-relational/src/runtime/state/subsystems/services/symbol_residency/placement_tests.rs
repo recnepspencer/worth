@@ -315,6 +315,7 @@ fn metadata_pin_refuses_shared_head_until_its_runtime_has_the_aspect_meanings() 
     basis
         .observation()
         .selected_root()
+        .read()
         .demand_region_head_cached(execution, entity.partition_id)
         .unwrap();
     assert_eq!(source.member_reads(), reads);

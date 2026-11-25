@@ -14,7 +14,6 @@ use contracts::transactions::data::primitives::RecordRef;
 use worth_foundational::facade::{AspectKey, CanonicalFieldPath};
 use worth_foundational::FoundationalBranchTarget;
 use worth_relational_branch::internal_port::branch::basis_descriptor::RelationalBranchBasisDescriptor;
-use worth_relational_branch::internal_port::branch::root::RelationalBranchRoot;
 use worth_relational_contracts::internal_port as contracts;
 
 /// Caller-selected hard bounds for the read-only candidate summary.
@@ -89,7 +88,7 @@ pub fn summarize(
     let (before_commit_id, before_version) = before_basis(&basis);
     if basis.runtime_instance_id() != candidate.runtime_instance_id()
         || basis.branch_id() != candidate.branch()
-        || basis.root_identity() != before_root.id()
+        || basis.root_identity() != before_root.root().id()
     {
         return Err(Denial::BasisMismatch);
     }
@@ -139,8 +138,8 @@ pub fn summarize(
         let (before_endpoints, after_endpoints) = match patch.target {
             RecordRef::Entity(_) => (None, None),
             RecordRef::Relation(relation_id) => (
-                live_relation_endpoints(&before_root, relation_id)?,
-                live_relation_endpoints(&after_root, relation_id)?,
+                live_relation_endpoints(&before_root.read(), relation_id)?,
+                live_relation_endpoints(&after_root.read(), relation_id)?,
             ),
         };
         records.push(PreparedRelationalRecordChange {
@@ -159,7 +158,7 @@ pub fn summarize(
         after_commit_id: envelope.commit.commit_id,
         before_version,
         after_version: envelope.commit.version_id,
-        before_root_identity: before_root.id(),
+        before_root_identity: before_root.root().id(),
         after_root_identity: after_root.id(),
         records,
     })
@@ -209,7 +208,7 @@ fn before_basis(basis: &RelationalBranchBasisDescriptor) -> (Option<CommitId>, V
 }
 
 fn live_relation_endpoints(
-    root: &RelationalBranchRoot,
+    root: &worth_relational_branch::internal_port::branch::root::RelationalRootRead<'_>,
     relation_id: RelationId,
 ) -> Result<Option<PreparedRelationalRelationEndpoints>, PreparedRelationalChangeSummaryDenial> {
     use PreparedRelationalChangeSummaryDenial::MissingLiveRelationEndpoints;

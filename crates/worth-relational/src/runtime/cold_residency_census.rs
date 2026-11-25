@@ -128,7 +128,11 @@ impl RelationalRuntime {
     }
     pub fn entity_replay_pin_count(&self, entity: EntityId) -> Option<u32> {
         let edition = self.peek_partition_edition();
-        let partition = edition.peek_accepted_full_partition(entity.partition_id)?;
+        let PartitionProbe::Resident(partition) =
+            edition.peek_full_region_with_symbols(entity.partition_id, &self.services.symbols)
+        else {
+            return None;
+        };
         partition.entity_arena.replay_pin_count(entity.slot_index())
     }
     pub fn observe_mirror_region_residency(
@@ -145,29 +149,51 @@ impl RelationalRuntime {
             ),
         }
     }
+    /// Point-in-time pressure on this runtime's bounded working set, or `None`
+    /// when `storage.residency_budget` is unset. Observation grants nothing.
+    pub fn residency_pressure(
+        &self,
+    ) -> Option<crate::storage::residency::working_set::ResidencyPressureSnapshot> {
+        self.partitions.residency_pressure()
+    }
+
     pub fn observe_branch_region_residency(
         &self,
         branch: &BranchId,
         partition: PartitionId,
     ) -> Option<RelationalRegionResidencyObservation> {
         let root = self.history.branch_cell(branch)?.root()?;
-        Some(RelationalRegionResidencyObservation {
-            head: head_status(
-                root.peek_head_region_with_symbols(partition, &self.services.symbols),
-            ),
-            full: full_status(
-                root.peek_full_region_with_symbols(partition, &self.services.symbols),
-            ),
-        })
+        let status = |resident| {
+            if resident {
+                RelationalRegionProbeStatus::Resident
+            } else {
+                RelationalRegionProbeStatus::Cold
+            }
+        };
+        Some(
+            match root.region_residency_census(partition, &self.services.symbols) {
+                None => RelationalRegionResidencyObservation {
+                    head: RelationalRegionProbeStatus::Absent,
+                    full: RelationalRegionProbeStatus::Absent,
+                },
+                Some((head, full)) => RelationalRegionResidencyObservation {
+                    head: status(head),
+                    full: status(full),
+                },
+            },
+        )
     }
     pub fn observe_partition_slot_census(
         &self,
         partition: PartitionId,
     ) -> Option<RelationalPartitionSlotCensus> {
         let edition = self.peek_partition_edition();
-        Some(partition_slot_census(
-            edition.peek_accepted_full_partition(partition)?,
-        ))
+        let PartitionProbe::Resident(state) =
+            edition.peek_full_region_with_symbols(partition, &self.services.symbols)
+        else {
+            return None;
+        };
+        Some(partition_slot_census(state))
     }
     pub fn observe_branch_partition_slot_census(
         &self,
@@ -175,6 +201,7 @@ impl RelationalRuntime {
         partition: PartitionId,
     ) -> Option<RelationalPartitionSlotCensus> {
         let root = self.history.branch_cell(branch)?.root()?;
+        let root = observed_read(&root, partition);
         if let PartitionProbe::Resident(state) =
             root.peek_full_region_with_symbols(partition, &self.services.symbols)
         {
@@ -220,6 +247,7 @@ impl RelationalRuntime {
         entity: EntityId,
     ) -> Option<usize> {
         let root = self.history.branch_cell(branch)?.root()?;
+        let root = observed_read(&root, entity.partition_id);
         let PartitionProbe::Resident(state) =
             root.peek_full_region_with_symbols(entity.partition_id, &self.services.symbols)
         else {
@@ -242,4 +270,16 @@ impl RelationalRuntime {
     pub fn observe_carried_index_checkpoint_image(&self) -> Option<RelationalDurableMemberLocator> {
         self.indexes.carried_checkpoint_image()
     }
+}
+
+/// A census observes what a fresh read admits without storage I/O: a root
+/// retains no residency of its own once its readers finish (Store M4 D1).
+fn observed_read(
+    root: &crate::branch::RelationalBranchRoot,
+    partition: PartitionId,
+) -> crate::branch::root::RelationalRootRead<'_> {
+    let read = root.read();
+    let _ = read.probe_full_region(partition);
+    let _ = read.probe_head_region(partition);
+    read
 }

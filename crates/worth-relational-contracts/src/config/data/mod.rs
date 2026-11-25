@@ -2,6 +2,7 @@ pub mod overrides;
 pub mod policies;
 pub mod profiles;
 pub mod provenance;
+pub mod residency_budget;
 pub mod runtime_config;
 pub mod sections;
 
@@ -15,6 +16,7 @@ pub use policies::{
     VisibilityCachePolicy,
 };
 pub use provenance::{ConfigProvenance, ConfigProvenanceEntry, ConfigValueSource};
+pub use residency_budget::ResidencyBudget;
 pub use runtime_config::RelationalRuntimeConfig;
 pub use sections::{
     CommitStrategiesConfig, DiagnosticsConfig, DurabilityConfig, ExecutionConfig, HistoryConfig,

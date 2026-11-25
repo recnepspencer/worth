@@ -1,23 +1,31 @@
 //! Bind shared branch cells to the reading runtime's dictionary authority.
+//! Admitted leases live in the enclosing operation's residency.
 use crate::branch::root_regions::backing::RelationalPersistentRegionSet;
 use crate::identity::data::PartitionId;
 use crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable;
 use crate::storage::overlay::{CurrentPartitionAccess, PartitionAccess, PartitionState};
 use crate::storage::residency::{
-    PartitionHeadProbe, PartitionProbe, RelationalRegionHeadView, RelationalResidencyDemandFailure,
+    OperationResidency, PartitionHeadProbe, PartitionProbe, RelationalRegionHeadView,
+    RelationalResidencyDemandFailure,
 };
 
 pub struct SymbolAdmittedRootRead<'read> {
     regions: &'read RelationalPersistentRegionSet,
     symbols: &'read RuntimeSymbolTable,
+    residency: &'read OperationResidency,
 }
 
 impl<'read> SymbolAdmittedRootRead<'read> {
     pub(super) fn new(
         regions: &'read RelationalPersistentRegionSet,
         symbols: &'read RuntimeSymbolTable,
+        residency: &'read OperationResidency,
     ) -> Self {
-        Self { regions, symbols }
+        Self {
+            regions,
+            symbols,
+            residency,
+        }
     }
 }
 
@@ -30,7 +38,7 @@ impl PartitionAccess for SymbolAdmittedRootRead<'_> {
     }
     fn probe_full_partition(&self, id: PartitionId) -> PartitionProbe<'_> {
         self.regions
-            .probe_full_region_with_symbols(id, self.symbols)
+            .probe_full_region_with_symbols(id, self.symbols, self.residency)
     }
     fn demand_full_partition(
         &self,
@@ -38,7 +46,7 @@ impl PartitionAccess for SymbolAdmittedRootRead<'_> {
         id: PartitionId,
     ) -> Result<(), RelationalResidencyDemandFailure> {
         self.regions
-            .demand_regions_full(execution, self.symbols, [id])
+            .demand_regions_full(execution, self.symbols, [id], self.residency)
     }
 }
 
@@ -51,7 +59,7 @@ impl CurrentPartitionAccess for SymbolAdmittedRootRead<'_> {
     }
     fn probe_head_partition(&self, id: PartitionId) -> PartitionHeadProbe<'_> {
         self.regions
-            .probe_head_region_with_symbols(id, self.symbols)
+            .probe_head_region_with_symbols(id, self.symbols, self.residency)
     }
     fn demand_head_partition(
         &self,
@@ -59,7 +67,7 @@ impl CurrentPartitionAccess for SymbolAdmittedRootRead<'_> {
         id: PartitionId,
     ) -> Result<(), RelationalResidencyDemandFailure> {
         self.regions
-            .demand_region_head_with_symbols(execution, id, self.symbols)
+            .demand_region_head_with_symbols(execution, id, self.symbols, self.residency)
     }
     fn partition_ids(&self) -> Vec<PartitionId> {
         self.regions.partition_ids_iter().collect()

@@ -25,7 +25,7 @@ pub(super) fn candidate_matches(
     let mut origin_frames = OutputOriginHistory::default();
     let validated_history = &mut origin_frames;
     let origin = original.materialization_origin_for_route(meaning, context)?;
-    let after = OverlayStateView::new(basis.inner.root.as_ref(), state);
+    let after = OverlayStateView::new(basis, state);
     for member in records {
         if !header::owns(origin, &member.record) {
             continue;

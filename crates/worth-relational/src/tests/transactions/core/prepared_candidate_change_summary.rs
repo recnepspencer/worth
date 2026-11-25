@@ -66,11 +66,12 @@ fn prepared_summary_reads_exact_whole_scalar_scope_without_publishing() {
         .iter()
         .any(|scope| { scope.aspect_key.as_str() == "name" && scope.field_path.is_none() }));
     let (_, before_root, after_root) = candidate.change_summary_basis_and_roots().unwrap();
-    let before_partition = before_root
+    let (before_read, after_read) = (before_root.read(), after_root.read());
+    let before_partition = before_read
         .partition_state(entity.partition_id)
         .expect("fixture root has admitted Full custody")
         .unwrap();
-    let after_partition = after_root
+    let after_partition = after_read
         .partition_state(entity.partition_id)
         .expect("fixture root has admitted Full custody")
         .unwrap();
@@ -140,11 +141,12 @@ fn unchanged_entity_update_has_empty_scope_and_preserves_native_field_revision()
         .find(|patch| patch.target == RecordRef::Entity(entity))
         .unwrap();
     assert!(patch.semantic_changes.is_empty());
-    let before = before_root
+    let (before_read, after_read) = (before_root.read(), after_root.read());
+    let before = before_read
         .partition_state(entity.partition_id)
         .expect("fixture root has admitted Full custody")
         .unwrap();
-    let after = after_root
+    let after = after_read
         .partition_state(entity.partition_id)
         .expect("fixture root has admitted Full custody")
         .unwrap();

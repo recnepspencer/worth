@@ -5,9 +5,7 @@ use contracts::mvcc::publication::application_publication::output_meaning::Requi
 use contracts::publication::data::publication_error::PublicationErrorOwnerPort as _;
 use contracts::transactions::data::primitives::RecordRef;
 use worth_execution::MapKernelContext;
-use worth_relational_branch::internal_port::branch::basis::{
-    AdmittedRelationalBranchBasis, AdmittedRelationalBranchBasisFieldsPort as _,
-};
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasis;
 use worth_relational_contracts::internal_port as contracts;
 use worth_relational_storage::internal_port::storage::overlay::access::OverlayStateView;
 use worth_relational_storage::internal_port::storage::overlay::current_access::CurrentPartitionAccess;
@@ -55,9 +53,12 @@ pub(super) fn validate(
     }) {
         return Err(invalid());
     }
-    let source_root = source_input.map_or(basis.owner_inner().root.as_ref(), |input| {
-        input.resident_basis().root()
-    });
+    let source_root: &dyn worth_relational_storage::internal_port::storage::overlay::current_access::CurrentPartitionAccess =
+        match source_input {
+            // The pin's read residency lends the candidate's source regions.
+            Some(input) => input.resident_basis().basis(),
+            None => basis,
+        };
     let row = source_root
         .get_current_partition(meaning.source_scope.partition_id)
         .and_then(|partition| {
@@ -66,7 +67,7 @@ pub(super) fn validate(
                 .get(&meaning.source_scope)
                 .map(|row| (row.is_live(), row.kind_id()))
         });
-    let after = OverlayStateView::new(basis.owner_inner().root.as_ref(), state);
+    let after = OverlayStateView::new(basis, state);
     let live_after = after
         .get_current_partition(meaning.source_scope.partition_id)
         .and_then(|partition| {

@@ -134,8 +134,9 @@ pub fn compare_retained_input(
         return Ok(None);
     }
     let current_pin = pin_current()?;
-    let old_root = old_parent_pin.resident_basis().root();
-    let new_root = current_pin.resident_basis().root();
+    // Each pin's read residency lends its own selected partitions.
+    let old_root = old_parent_pin.resident_basis().basis();
+    let new_root = current_pin.resident_basis().basis();
     let payload_equal = compare::payloads_equal(execution, old_root, new_root, &rep_roles)?;
     if !payload_equal {
         return Ok(None);

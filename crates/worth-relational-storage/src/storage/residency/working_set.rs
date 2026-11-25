@@ -20,17 +20,8 @@ const MAX_EXPANSION_RATIO: u64 = 16 * EXPANSION_UNIT;
 /// Bounded re-sweeps of one reservation under concurrent eviction.
 const EVICTION_ROUNDS: usize = 16;
 
-/// Declarative residency ceilings. Head and historical working sets are
-/// separate pools, so historical reads can never evict or starve head cells.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct ResidencyBudget {
-    pub head_working_set_bytes: u64,
-    pub historical_working_set_bytes: u64,
-    /// Encoded member bytes concurrently being read from cold storage.
-    pub max_in_flight_fill_bytes: u64,
-    /// Upper bound on one rolling-window step, in bytes of declared demand.
-    pub streaming_window_bytes: u32,
-}
+/// Declarative residency ceilings, configured as `storage.residency_budget`.
+pub use worth_relational_contracts::internal_port::config::data::ResidencyBudget;
 
 /// The pool a bound cell draws from, fixed when the cell is bound.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

@@ -9,7 +9,7 @@ pub trait PreparedRelationalCommitCandidateOwnerPort: Sized {
         &self,
     ) -> Option<(
         RelationalBranchBasisDescriptor,
-        Arc<RelationalBranchRoot>,
+        worth_relational_branch::internal_port::branch::root::RelationalBranchRootState,
         Arc<RelationalBranchRoot>,
     )>;
 
@@ -71,7 +71,7 @@ impl PreparedRelationalCommitCandidateOwnerPort for PreparedRelationalCommitCand
         &self,
     ) -> Option<(
         RelationalBranchBasisDescriptor,
-        Arc<RelationalBranchRoot>,
+        worth_relational_branch::internal_port::branch::root::RelationalBranchRootState,
         Arc<RelationalBranchRoot>,
     )> {
         self.change_summary_basis_and_roots()

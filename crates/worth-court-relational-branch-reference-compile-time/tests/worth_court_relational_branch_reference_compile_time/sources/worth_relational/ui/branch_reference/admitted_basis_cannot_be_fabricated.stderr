@@ -1,5 +1,5 @@
-error[E0451]: field `inner` of struct `AdmittedRelationalBranchBasis` is private
+error[E0451]: fields `inner` and `residency` of struct `AdmittedRelationalBranchBasis` are private
  --> tests/ui/branch_reference/admitted_basis_cannot_be_fabricated.rs:4:39
   |
 4 |     AdmittedRelationalBranchBasis { ..value }
-  |                                       ^^^^^ field `inner` is private
+  |                                       ^^^^^ fields `inner` and `residency` are private

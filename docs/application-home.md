@@ -460,6 +460,47 @@ or run actions.
 internal certification door scheduled for deletion. Applications reopen their
 Directory instead.
 
+## Bound the working set
+
+A Home larger than memory stays usable when you give it a `ResidencyBudget`.
+Set it once on the limits you open with; every open and reopen of that Home
+enforces it:
+
+```rust
+let limits = limits.with_residency_budget(ResidencyBudget {
+    head_working_set_bytes: 32 * 1024 * 1024,      // current branch heads
+    historical_working_set_bytes: 8 * 1024 * 1024, // history, time travel
+    max_in_flight_fill_bytes: 4 * 1024 * 1024,     // concurrent cold loads
+    streaming_window_bytes: 256 * 1024,            // reserved for streaming
+});
+```
+
+Cold regions load on demand and are evicted again under pressure. Head and
+history reads have separate budgets, so a long historical scan never starves
+current reads. Keeping a snapshot, observation or branch handle open costs only
+what a read is borrowing *right now*. Region images are borrowed for one
+operation and released when it ends. A scan reads one region at a time, so its
+memory stays under the budget however large the Home grows. Without a budget,
+residency is unbounded, as before.
+
+Size `head_working_set_bytes` to cover what is borrowed at the same moment:
+each concurrent reader's current region, plus the regions open transactions
+are editing. `max_in_flight_fill_bytes` caps bytes being loaded from cold
+storage at once. `streaming_window_bytes` is reserved for streamed large-value
+reads and is not consumed yet.
+
+When borrowed regions fill the whole budget and nothing can be evicted, the
+read or write that needs more memory is refused with
+`RelationalStorageUnavailableCause::MemoryExhausted`. Nothing has been
+published or partly read, and no panic occurs. The refusal is transient.
+Release borrows by finishing or dropping open reads, cursors and prepared
+transactions, then retry the same request. A server can map it to retry or
+HTTP 503. If the refusal keeps happening while the application is otherwise
+idle, the budget is too small for the workload.
+`RelationalRuntime::residency_pressure()` returns a
+`ResidencyPressureSnapshot` for each pool: resident and borrowed bytes, bytes
+in flight, completed evictions, and victims skipped because they were busy.
+
 ## Shared Scope Access
 
 A single-owner Directory Home can delegate governed read (or read+watch) access

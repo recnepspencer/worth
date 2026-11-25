@@ -6,9 +6,8 @@ use crate::authority::commit::phases::prepare::{
     prepare_authoritative_working_state_scope_for_base, working_state_inputs::WorkingStatePreparation,
 };
 use worth_execution::ExecutionRequest;
-use worth_relational_branch::internal_port::branch::root::{
-    schema::RelationalBranchRootSchemaAuthority, RelationalBranchRoot,
-};
+use worth_relational_branch::internal_port::branch::root::schema::RelationalBranchRootSchemaAuthority;
+use worth_relational_branch::internal_port::history::retention::VisibilitySnapshotBasis;
 use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::CanonicalRequiredOutputOrigin;
 use contracts::config::data::{policies::MutationConfig, RelationalRuntimeConfig};
 use contracts::execution::{
@@ -29,7 +28,8 @@ use super::super::super::RelationalAuthoredCoupledOwners;
 
 pub fn verify(
     execution: &ExecutionRequest<'_, '_>,
-    root: &RelationalBranchRoot,
+    // The pinned source: its read residency lends the base partitions.
+    root: &VisibilitySnapshotBasis,
     plan: &MergedCommitPlan,
     owners: &RelationalAuthoredCoupledOwners,
     predecessor: Option<&CanonicalRequiredOutputOrigin>,

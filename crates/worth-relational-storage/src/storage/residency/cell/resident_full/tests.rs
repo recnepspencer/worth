@@ -211,6 +211,7 @@ fn actual_successor_supplements_equal_independent_head_and_full_closure_differen
                 &execution,
                 RegionCaptureBasis {
                     retention: &previous.retention,
+                    scope: &crate::storage::residency::OperationResidency::new(),
                     directory: &previous.directory,
                     kind_commitment: previous.kind_commitment,
                     inventory: previous.inventory,

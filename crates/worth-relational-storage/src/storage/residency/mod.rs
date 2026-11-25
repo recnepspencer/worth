@@ -61,10 +61,12 @@ pub use views::{RelationalRegionFullView, RelationalRegionHeadView};
 pub use cell::ResidentRegion;
 pub use cell::{ReconstructedRegionHead, RelationalColdRegion, RelationalRegionResidency};
 
+pub mod operation_residency;
 pub mod retention;
 pub mod rolling_window;
 pub mod working_set;
-pub use retention::RelationalRegionRetention;
+pub use operation_residency::OperationResidency;
+pub use retention::{MirrorOwnerSlot, RelationalRegionRetention, ResidencyCustody};
 
 pub mod checkpoint_capture;
 pub mod checkpoint_kind_images;

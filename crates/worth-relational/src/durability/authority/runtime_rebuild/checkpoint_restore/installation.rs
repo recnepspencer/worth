@@ -111,6 +111,10 @@ fn install_cold_directory(
         checkpoint,
         directory,
         work,
+        restored
+            .partitions
+            .working_set(restored.config.storage.residency_budget)
+            .as_ref(),
     )?;
     let history = restore_canonical_routes(
         &restored.history,

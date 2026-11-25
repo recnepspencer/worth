@@ -53,8 +53,6 @@ impl AuthoredPublicationReads<'_> {
             ));
         }
         basis
-            .owner_inner()
-            .root
             .demand_head_partition(execution, anchor.partition_id)
             .map_err(super::super::custody::execution_stop)?;
         let axes = basis
@@ -63,7 +61,7 @@ impl AuthoredPublicationReads<'_> {
             .axes()
             .ok_or_else(|| reject(Cause::InvalidAuthoredAnchor, RecordRef::Entity(anchor)))?;
         let state = InvariantStateView::new(
-            basis.owner_inner().root.as_ref(),
+            basis,
             contracts::identity::data::primitives::VersionId(axes.storage_version),
         );
         use contracts::execution::request_stage::checkpoint;
@@ -75,8 +73,6 @@ impl AuthoredPublicationReads<'_> {
                     checkpoint(context, kinds.len() as u64 + 1)
                         .map_err(super::super::custody::execution_stop)?;
                     basis
-                        .owner_inner()
-                        .root
                         .demand_head_partition(execution, id.partition_id)
                         .map_err(super::super::custody::execution_stop)?;
                     let edge = roster::owner_metadata(id, state.relation_metadata(id))?;
@@ -90,8 +86,6 @@ impl AuthoredPublicationReads<'_> {
                         continue;
                     };
                     basis
-                        .owner_inner()
-                        .root
                         .demand_head_partition(execution, edge.source.partition_id)
                         .map_err(super::super::custody::execution_stop)?;
                     roster.observe_member(

@@ -8,14 +8,14 @@ use worth_relational_contracts::internal_port::schema::data::RelationalSchemaReg
 use super::codec_retirement_closure::{
     charge, request, CodecRetirementClosureStop, OwnedCodecRetirementClosure,
 };
-use crate::branch::root::RelationalBranchRoot;
+use crate::branch::root::RelationalRootRead;
 use crate::identity::data::{EntityId, RelationId};
 use crate::schema::data::program_activation::RecoveredCheckpointProgramActivationUpdate;
 
 pub fn validate_retired_codec_closure(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    before: &RelationalBranchRoot,
-    after: &RelationalBranchRoot,
+    before: &RelationalRootRead<'_>,
+    after: &RelationalRootRead<'_>,
     closure: &OwnedCodecRetirementClosure,
     activation: &RecoveredCheckpointProgramActivationUpdate,
 ) -> Result<(), CodecRetirementClosureStop> {
@@ -34,8 +34,8 @@ pub fn validate_retired_codec_closure(
 }
 
 fn validate_metered(
-    before: &RelationalBranchRoot,
-    after: &RelationalBranchRoot,
+    before: &RelationalRootRead<'_>,
+    after: &RelationalRootRead<'_>,
     closure: &OwnedCodecRetirementClosure,
     activation: &RecoveredCheckpointProgramActivationUpdate,
     context: &mut worth_execution::MapKernelContext<'_, '_>,

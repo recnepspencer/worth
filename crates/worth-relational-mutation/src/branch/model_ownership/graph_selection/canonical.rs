@@ -7,7 +7,6 @@ use crate::contracts::transactions::data::outcomes::conflict_class::ConflictClas
 use crate::contracts::transactions::data::outcomes::conflict_class::mutation_state_inconsistency::MutationStateInconsistencyEvidence;
 use crate::contracts::transactions::data::outcomes::transaction_commit_error::{TransactionCommitError, origin_denial};
 use crate::contracts::transactions::data::primitives::RecordRef;
-use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 use worth_relational_branch::internal_port::branch::canonical_runtime_frame::RelationalBranchBasisDescriptorOwnerPort as _;
 
 impl RelationalOwnedModelGraphSelection {
@@ -19,8 +18,6 @@ impl RelationalOwnedModelGraphSelection {
         for &id in self.restored_entities() {
             let kind = entities
                 .selected_basis()
-                .owner_inner()
-                .root
                 .get_current_partition(id.partition_id)
                 .and_then(|region| region.entity(id))
                 .filter(|slot| slot.is_live())

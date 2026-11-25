@@ -71,7 +71,8 @@ impl RecoveredRootInventory {
                 symbols.clone(),
                 execution,
                 schema,
-            )?;
+            )?
+            .with_working_set(self.historical_pool());
         let root = match recorded.target() {
             Target::Empty => {
                 let header = directory
@@ -142,7 +143,8 @@ impl RecoveredRootInventory {
                 symbols.clone(),
                 execution,
                 schema,
-            )?;
+            )?
+            .with_working_set(self.historical_pool());
         let root = regions.readmit_root(history, header, execution)?;
         Ok(retain_materialized(image, root))
     }
@@ -196,4 +198,17 @@ pub(super) fn bind_recorded_descriptor(
     descriptor
         .bind_readmitted_root(runtime_id, root)
         .map_err(|cause| corrupt(format!("recorded component binding: {cause:?}")).into())
+}
+
+impl RecoveredRootInventory {
+    fn historical_pool(
+        &self,
+    ) -> Option<crate::durability::checkpoints::region_directory::RegionWorkingSet> {
+        self.historical_working_set.clone().map(|accountant| {
+            (
+                accountant,
+                worth_relational_storage::internal_port::storage::residency::working_set::ResidencyPoolKind::Historical,
+            )
+        })
+    }
 }

@@ -3,7 +3,6 @@ use super::*;
 use crate::contracts::execution::packet_memory::PacketMemory;
 use crate::contracts::execution::read_only_packets::{PacketBudgetDenial, ReadOnlyPacket, execute_read_only_packets};
 use crate::contracts::identity::data::primitives::PartitionId;
-use worth_relational_storage::internal_port::storage::overlay::access::PartitionAccess;
 use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::view::VisibilityProjectionView;
 use std::{
     num::NonZeroUsize,
@@ -54,7 +53,7 @@ pub fn verify_native_field_navigation_for_test(
     relations: bool,
 ) {
     let source = IndexProjectionSource::exact(view).unwrap();
-    let root = source.projection.selected_root().unwrap();
+    let root = source.projection.selected_partitions().unwrap();
     let partition = root.get_partition(PartitionId::main()).unwrap();
     let slots = if relations {
         &partition.relation_arena.live_bitset

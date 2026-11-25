@@ -35,14 +35,9 @@ impl RelationalMaterializationPort {
             return Err(RelationalMaterializationError::CandidateManifestMismatch);
         }
         basis
-            .owner_inner()
-            .root
             .demand_regions_head(execution, &runtime.services.symbols, [entity.partition_id])
             .map_err(|failure| RelationalMaterializationError::Read(failure.into()))?;
-        let partition = basis
-            .owner_inner()
-            .root
-            .accepted_head_region_view(entity.partition_id)
+        let partition = worth_relational_storage::internal_port::storage::overlay::current_access::CurrentPartitionAccess::get_current_partition(basis, entity.partition_id)
             .ok_or_else(|| missing_entity(entity))?;
         partition
             .entity_arena()

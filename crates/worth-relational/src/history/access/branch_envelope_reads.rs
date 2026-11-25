@@ -19,7 +19,11 @@ impl HistoryAccess<'_> {
         if let Some(cell) = self.runtime.history.branch_cell(branch)
             && let Some(root) = cell.root()
         {
-            root.demand_regions_full(execution, &self.runtime.services.symbols, partitions)?;
+            root.read().demand_regions_full(
+                execution,
+                &self.runtime.services.symbols,
+                partitions,
+            )?;
         }
         Ok(())
     }

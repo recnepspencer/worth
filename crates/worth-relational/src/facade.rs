@@ -20,9 +20,9 @@ pub mod config {
         CompiledLanePolicy, ConfigProvenance, ConfigProvenanceEntry, ConfigValueSource,
         CrossContextPolicy, DiagnosticsBoundary, DurabilityPolicy, DurableLogPolicy,
         DurableLogRetentionMode, MvccConfig, PublicationConfig, RelationalConfigOverride,
-        RelationalRuntimeProfile, RetentionBackend, RetentionPolicy, RuntimeExecutionLane,
-        RuntimeProfileBoundaryPolicy, SnapshotReleasePolicy, StorageLayoutConfig,
-        VisibilityCachePolicy,
+        RelationalRuntimeProfile, ResidencyBudget, RetentionBackend, RetentionPolicy,
+        RuntimeExecutionLane, RuntimeProfileBoundaryPolicy, SnapshotReleasePolicy,
+        StorageLayoutConfig, VisibilityCachePolicy,
     };
 }
 pub mod commit_strategies {
@@ -115,8 +115,8 @@ pub mod history {
         RelationalAuthoredManagedSourceSelector, RelationalAuthoredWriteCursor,
         RelationalAuthoredWriteDenial, RelationalAuthoredWriteOccurrence,
         RelationalAuthoredWritePage, RelationalAuthoredWritePageLimits,
-        RelationalAuthoredWriteScope, RelationalAuthoredWriteSelector,
-        RelationalAuthoredWriteSpan, RelationalPreparedAuthoredWritePage,
+        RelationalAuthoredWriteScope, RelationalAuthoredWriteSelector, RelationalAuthoredWriteSpan,
+        RelationalPreparedAuthoredWritePage,
     };
     pub use crate::history::{
         RelationalCanonicalRecordHistoryCursor, RelationalPreparedRecordHistoryPage,

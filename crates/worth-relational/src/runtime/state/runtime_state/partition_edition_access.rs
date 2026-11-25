@@ -25,7 +25,7 @@ impl RelationalRuntimeState {
 
     /// Pure read-only peek of the current partition map without counting an acquisition.
     pub(crate) fn peek_partition_edition(&self) -> PartitionEdition {
-        self.partitions.acquire()
+        self.partitions.observe_edition()
     }
 
     /// Exclusive authority to install the next ordinary edition.

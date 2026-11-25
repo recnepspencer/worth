@@ -222,8 +222,6 @@ fn assert_suspended_records(
     relation: crate::identity::data::RelationId,
 ) {
     let partition = basis
-        .owner_inner()
-        .root
         .partition_state(PartitionId::main())
         .expect("fixture root has admitted Full custody")
         .expect("the suspended root retains its partition identity");

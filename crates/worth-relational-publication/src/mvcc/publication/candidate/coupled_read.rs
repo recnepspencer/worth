@@ -1,6 +1,8 @@
 //! The complete prepared image keeps its genuine proposal and registration phase.
 use super::PreparedRelationalCommitCandidate;
-use worth_relational_branch::internal_port::branch::basis::{AdmittedRelationalBranchBasis, AdmittedRelationalBranchBasisFieldsPort as _};
+use worth_relational_branch::internal_port::branch::basis::{
+    AdmittedRelationalBranchBasis, AdmittedRelationalBranchBasisFieldsPort as _,
+};
 use worth_relational_mutation::internal_port::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity;
 use worth_relational_branch::internal_port::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;
 use worth_relational_storage::internal_port::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable;

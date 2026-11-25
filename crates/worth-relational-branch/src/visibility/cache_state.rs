@@ -47,7 +47,8 @@ pub fn cached_state<'a>(
     key: &VisibilitySnapshotStateKey,
 ) -> Option<SnapshotState> {
     let inputs = inputs.into();
-    inputs.cache.state(key)
+    // A cached state keeps root custody only; each hit reads in its own residency.
+    inputs.cache.state(key).map(|state| state.reading())
 }
 
 pub fn cached_historical_state_for_version<'a>(
@@ -56,7 +57,10 @@ pub fn cached_historical_state_for_version<'a>(
 ) -> Option<SnapshotState> {
     let inputs = inputs.into();
     let basis = historical_basis_for_retained_version(inputs, version_id).ok()?;
-    inputs.cache.state(&basis_key(&basis))
+    inputs
+        .cache
+        .state(&basis_key(&basis))
+        .map(|state| state.reading())
 }
 
 pub fn residency<'a>(
@@ -80,7 +84,7 @@ pub fn residency_for_version<'a>(
 
 pub fn insert_state<'a>(inputs: impl Into<VisibilityCacheInputs<'a>>, state: SnapshotState) {
     let inputs = inputs.into();
-    inputs.cache.insert_state(state);
+    inputs.cache.insert_state(state.reading());
 }
 
 pub fn bump_active_snapshot_ref<'a>(

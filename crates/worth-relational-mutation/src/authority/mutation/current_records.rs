@@ -101,7 +101,7 @@ impl<'a, 'request, 'scope, 'kernel, 'authority> Writer<'a, 'request, 'scope, 'ke
         kind: KindId,
     ) -> Result<Vec<RelationId>, TransactionCommitError> {
         let view = crate::validation::engine::state_view::InvariantStateView::new(
-            self.basis.owner_inner().root.as_ref(),
+            self.basis,
             self.candidate.commit.version_id,
         );
         view.outgoing_relations_for_entity_observed(entity, || self.checkpoint(1))
@@ -277,8 +277,7 @@ impl<'a, 'request, 'scope, 'kernel, 'authority> Writer<'a, 'request, 'scope, 'ke
         partitions.extend(entities.iter().map(|id| id.partition_id));
         partitions.extend(relations.iter().map(|id| id.partition_id));
         for partition in &partitions {
-            self.basis.owner_inner()
-                .root
+            self.basis
                 .demand_head_partition(self.execution, *partition)
                 .map_err(|cause| {
                     worth_relational_branch::internal_port::authority::commit::preparation::storage_denial::storage_read_denial(
@@ -289,7 +288,7 @@ impl<'a, 'request, 'scope, 'kernel, 'authority> Writer<'a, 'request, 'scope, 'ke
         let mut held = self.funding.bytes();
         let funding = &mut self.funding;
         self.working.materialize_consequence_records(
-            self.basis.owner_inner().root.as_ref(),
+            self.basis,
             &partitions,
             &entities,
             &relations,

@@ -53,6 +53,9 @@ pub struct CandidatePayload {
     companion_read: Option<super::companion::CompanionReadCondition>,
     expected_basis: RelationalBranchBasisDescriptor,
     expected_root: Arc<RelationalBranchRoot>,
+    /// The decision basis' transaction residency: preparation's admissions of
+    /// the expected root, released with this candidate.
+    expected_residency: Arc<worth_relational_storage::internal_port::storage::residency::OperationResidency>,
     publication_cell: worth_relational_branch::internal_port::branch::reference_publication_cell::RelationalBranchPublicationCell,
     execution: crate::authority::commit::pipeline::PreparedCommitPublicationExecution,
     retention: worth_relational_branch::internal_port::history::retention::obligation::RelationalCandidateRetentionObligation,
@@ -93,6 +96,9 @@ impl PreparedRelationalCommitCandidate {
         branch_id: BranchId,
         expected_basis: RelationalBranchBasisDescriptor,
         expected_root: Arc<RelationalBranchRoot>,
+        expected_residency: Arc<
+            worth_relational_storage::internal_port::storage::residency::OperationResidency,
+        >,
         publication_cell: worth_relational_branch::internal_port::branch::reference_publication_cell::RelationalBranchPublicationCell,
         execution: crate::authority::commit::pipeline::PreparedCommitPublicationExecution,
         retention: worth_relational_branch::internal_port::history::retention::obligation::RelationalCandidateRetentionObligation,
@@ -108,6 +114,7 @@ impl PreparedRelationalCommitCandidate {
             managed_source_reads: None,
             expected_basis,
             expected_root,
+            expected_residency,
             publication_cell,
             execution,
             retention,
@@ -231,7 +238,7 @@ impl PreparedRelationalCommitCandidate {
         &self,
     ) -> Option<(
         RelationalBranchBasisDescriptor,
-        Arc<RelationalBranchRoot>,
+        worth_relational_branch::internal_port::branch::root::RelationalBranchRootState,
         Arc<RelationalBranchRoot>,
     )> {
         let payload = self
@@ -241,7 +248,10 @@ impl PreparedRelationalCommitCandidate {
         let payload = payload.as_ref()?;
         Some((
             payload.expected_basis.clone(),
-            Arc::clone(&payload.expected_root),
+            worth_relational_branch::internal_port::branch::root::RelationalBranchRootState::within(
+                Arc::clone(&payload.expected_root),
+                Arc::clone(&payload.expected_residency),
+            ),
             Arc::clone(payload.execution.prepared_root()),
         ))
     }

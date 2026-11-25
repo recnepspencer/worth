@@ -15,11 +15,23 @@ impl ProjectionRecordReader<'_> {
     ) -> Result<BoundedEntityKindTruthRead, NativeScanStop<EntityKindTruthReadLimitExceeded>> {
         let mut scan = EntityKindScan::with_limit(maximum, charge, Some(memory));
         let registry = source.registry();
+        // Rolling one-region window (Store M4 D7): the previous borrow drops
+        // before the next region is demanded, so the scan never pins the root.
+        let mut window = None;
         for id in source.entity_ids(kind, partition) {
             scan.examine_slot()?;
-            let head = source
-                .demand_head(execution, id.partition_id)
-                .map_err(NativeScanStop::Request)?;
+            if window.as_ref().map(|(region, _)| *region) != Some(id.partition_id) {
+                // Release the previous borrow before demanding the next region.
+                drop(window.take());
+                let lease = source
+                    .borrow_head(execution, id.partition_id)
+                    .map_err(NativeScanStop::Request)?;
+                window = Some((id.partition_id, lease));
+            }
+            let head = window.as_ref().map(|(_, lease)| lease.head_view()).expect(
+                /* Proof: The window was filled for this exact partition immediately above. */
+                "window holds the current region",
+            );
             if head
                 .entity_arena()
                 .get(&id)

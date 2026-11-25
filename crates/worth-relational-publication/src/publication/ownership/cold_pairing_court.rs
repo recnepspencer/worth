@@ -4,10 +4,9 @@ use contracts::identity::data::record_ids::EntityId;
 use contracts::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use contracts::transactions::data::primitives::RecordRef;
 use worth_execution::ExecutionRequest;
-use worth_relational_branch::internal_port::branch::basis::{
-    AdmittedRelationalBranchBasis, AdmittedRelationalBranchBasisFieldsPort as _,
-};
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasis;
 use worth_relational_contracts::internal_port as contracts;
+use worth_relational_storage::internal_port::storage::overlay::current_access::CurrentPartitionAccess as _;
 
 pub fn selected_publication(
     execution: &ExecutionRequest<'_, '_>,
@@ -35,9 +34,7 @@ pub fn observe_unrelated(
     assert!(
         matches!(
             basis
-                .owner_inner()
-                .root
-                .probe_head_region(owner.partition_id),
+                .probe_head_partition(owner.partition_id),
             worth_relational_storage::internal_port::storage::residency::head_probe::PartitionHeadProbe::Cold
         ),
         "the pairing court must reach a genuinely cold current member after recovery"

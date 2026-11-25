@@ -105,8 +105,6 @@ pub(super) fn validate_member(
         .find(|member| member.id == id)
         .ok_or("publication omits exact member")?;
     let partition = basis
-        .inner
-        .root
         .partition_state(id.partition_id)?
         .ok_or("output partition absent")?;
     let row = partition

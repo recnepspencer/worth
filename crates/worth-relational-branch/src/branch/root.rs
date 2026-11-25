@@ -6,7 +6,7 @@ use super::target::RelationalBranchRootDescriptor;
 use crate::branch::root_regions::RelationalPersistentRegionSet;
 use crate::history::data::{CanonicalCommitEnvelope, CommitId};
 use crate::identity::data::PartitionId;
-use crate::storage::overlay::{PartitionAccess, PartitionState};
+use crate::storage::overlay::PartitionAccess;
 use crate::storage::RelationalPublishedPartitionDelta;
 
 #[path = "root_allocation.rs"]
@@ -47,6 +47,8 @@ pub mod projection;
 #[cfg(test)]
 #[path = "root_projection_tests.rs"]
 mod projection_tests;
+#[path = "root_read.rs"]
+pub mod read;
 #[path = "root_readmission.rs"]
 pub mod readmission;
 #[path = "root_region_access.rs"]
@@ -69,6 +71,7 @@ pub use allocation::{
     RelationalRootAuthoritativeAllocationObservation,
 };
 pub use identity::RelationalBranchRootIdentityIssuer;
+pub use read::{RelationalBranchRootState, RelationalRootRead};
 pub use schema::{
     retained_compilation_tree_bytes, RelationalBranchRootSchemaAuthority,
     RetainedRelationalAspectPlans, RetainedRelationalSchemaRegistry,
@@ -149,11 +152,6 @@ impl AsRef<RelationalBranchRoot> for RelationalBranchRoot {
 #[path = "root_managed_fork.rs"]
 pub mod managed_fork;
 
-#[derive(Debug, Clone)]
-pub struct RelationalBranchRootState {
-    pub(super) root: Arc<RelationalBranchRoot>,
-}
-
 pub struct PreparedRelationalBranchRootCapture {
     root: Arc<RelationalBranchRoot>,
 }
@@ -168,16 +166,6 @@ impl PreparedRelationalBranchRootCapture {
     }
 }
 
-impl RelationalBranchRootState {
-    pub fn new(root: Arc<RelationalBranchRoot>) -> Self {
-        Self { root }
-    }
-
-    pub fn root(&self) -> &Arc<RelationalBranchRoot> {
-        &self.root
-    }
-}
-
 impl RelationalBranchRoot {
     pub fn prepare_capture(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -185,6 +173,7 @@ impl RelationalBranchRoot {
         partitions: &impl PartitionAccess,
         published_delta: &RelationalPublishedPartitionDelta,
         previous: Option<&Arc<Self>>,
+        previous_residency: &crate::storage::residency::OperationResidency,
         envelope: Arc<CanonicalCommitEnvelope>,
         content: &crate::content::publication::ContentPublication,
         registry: &crate::schema::data::RelationalSchemaRegistry,
@@ -197,6 +186,7 @@ impl RelationalBranchRoot {
             partitions,
             published_delta,
             previous,
+            previous_residency,
             envelope,
             content,
             registry,
@@ -209,27 +199,6 @@ impl RelationalBranchRoot {
     }
     pub(super) fn regions_for_projection(&self) -> &RelationalPersistentRegionSet {
         &self.regions
-    }
-
-    pub fn project_snapshot(&self) -> projection::SnapshotProjectionRoot<'_> {
-        use self::projection::{SnapshotProjectionRoot, SnapshotProjectionSchema};
-
-        let (version, semantics, evidence) = self.query_schema_context();
-        SnapshotProjectionRoot {
-            regions: &self.regions,
-            id: self.id,
-            storage_version: self
-                .axes()
-                .map(|axes| crate::identity::data::VersionId(axes.storage_version)),
-            schema: SnapshotProjectionSchema {
-                registry: self.schema_authority.registry(),
-                plans: self.schema_authority.aspect_plans(),
-                digest: self.schema_authority.authority_digest(),
-                version,
-                semantics,
-                evidence,
-            },
-        }
     }
 
     pub const fn id(&self) -> u64 {

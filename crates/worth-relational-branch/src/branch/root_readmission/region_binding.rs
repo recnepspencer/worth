@@ -179,7 +179,8 @@ impl RelationalBranchRoot {
             content: crate::content::ContentDirectory::default(),
             execution_contracts: Default::default(),
             managed_source_image:
-                crate::branch::projection_view::managed_source::ManagedSourceRootImages::readmitted(),
+                crate::branch::projection_view::managed_source::ManagedSourceRootImages::readmitted(
+                ),
             id: root_id,
             regions,
             entity_slot_count,
@@ -199,7 +200,7 @@ impl RelationalBranchRoot {
             }),
             _memory: memory,
         };
-        root.content =
+        let content =
             crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(
                 |lane| {
                     crate::content::ContentDirectory::reconstruct(
@@ -208,12 +209,13 @@ impl RelationalBranchRoot {
                         root.schema_authority.registry(),
                         content_records,
                         root.schema_authority.retained_aspect_contracts(),
-                        &root,
+                        &root.read(),
                         version,
                     )
                 },
             )
             .map_err(RelationalBranchRootCaptureDenial::Content)?;
+        root.content = content;
         Ok(Arc::new(root))
     }
 }
@@ -261,7 +263,7 @@ pub(super) fn readmit_checkpoint_content(
             root.schema_authority.registry(),
             records,
             root.schema_authority.retained_aspect_contracts(),
-            root,
+            &root.read(),
             version,
         )
     })

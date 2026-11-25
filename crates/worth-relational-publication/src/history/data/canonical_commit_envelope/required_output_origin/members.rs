@@ -29,7 +29,7 @@ pub(super) fn capture(
     dependency: [u8; 32],
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<Vec<CanonicalOutputMember>, TransactionCommitError> {
-    let after_image = OverlayStateView::new(basis.owner_inner().root.as_ref(), state);
+    let after_image = OverlayStateView::new(basis, state);
     let mut members = Vec::with_capacity(roles.len());
     for (member_ordinal, role) in roles.iter().enumerate() {
         context
@@ -69,8 +69,7 @@ pub(super) fn capture(
                         )
                     })?;
                 let partition = basis
-                    .owner_inner()
-                    .root
+
                     .get_current_partition(id.partition_id)
                     .ok_or_else(|| contracts::transactions::data::outcomes::transaction_commit_error::origin_denial("prior output partition absent"))?;
                 let row = partition

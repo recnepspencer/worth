@@ -51,7 +51,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             records.len() + deltas.len() + others.anchors.len(),
         )?;
         let chain = &self.parts[index].chain;
-        let root = chain.head_input.resident_basis().root();
+        let root = chain.head_input.resident_basis().basis();
         retract_chain_segment(
             execution,
             &mut self.mutation.state,

@@ -42,13 +42,9 @@ pub fn authored_birth(
     }
 
     basis
-        .inner
-        .root
         .demand_full_partition(execution, anchor.partition_id)
         .map_err(|cause| stopped(super::request(cause)))?;
     let partition = basis
-        .inner
-        .root
         .partition_state(anchor.partition_id)
         .map_err(|cause| stopped(Stop::from(cause)))?
         .ok_or_else(|| reject(Cause::InvalidAuthoredAnchor, anchor))?;

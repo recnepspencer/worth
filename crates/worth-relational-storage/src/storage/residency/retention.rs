@@ -1,31 +1,83 @@
-//! A root or edition retains its cell and any residency it has admitted
-//! through its caching doors. `borrow_head`/`borrow_full` are operation-scoped
-//! instead: they never retain, so an open root does not pin bound cells.
-//! Accessors never perform storage I/O; cold cells must be demanded first.
-use std::sync::{Arc, OnceLock};
+//! A root retains only its cell's durable member custody. Every lease a read
+//! admits lives in the demanding operation's [`OperationResidency`], so keeping
+//! a root open never pins a resident image past the operation that read it
+//! (Store M4 D1). Only the runtime's current mirror keeps per-entry owner
+//! slots: they hold its edit targets and drop with the entry it replaces.
+//! Accessors never perform storage I/O; cold cells must be demanded first,
+//! into the same custody that later lends their views.
+use std::sync::Arc;
 
-use super::{Full, RelationalRegionResidency, RelationalResidencyLease};
+use super::operation_residency::{OperationResidency, ScopedRegion};
+use super::{Full, Head, RelationalRegionResidency, RelationalResidencyLease};
+use crate::storage::data::{
+    RelationalStorageSubject, RelationalStorageUnavailable, RelationalStorageUnavailableCause,
+};
 use crate::storage::overlay::PartitionState;
+
+type Failure = super::RelationalResidencyDemandFailure;
+
+mod accepted;
 
 #[derive(Debug)]
 pub struct RelationalRegionRetention {
     cell: Arc<RelationalRegionResidency>,
     authority: Option<Arc<super::RelationalRegionKindAuthority>>,
-    full: OnceLock<RelationalResidencyLease<Full>>,
-    head: OnceLock<RelationalResidencyLease<super::Head>>,
+    owner: ScopedRegion,
     clear_pins_on_write: bool,
 }
 
-impl RelationalRegionRetention {
-    pub fn retire_native_leases(&self) {
-        if let Some(lease) = self.full.get() {
-            lease.retire_native();
-        }
-        if let Some(lease) = self.head.get() {
-            lease.retire_native();
+/// Where admitted leases live: one operation's scope, or the mirror's entry.
+#[derive(Clone, Copy)]
+pub enum ResidencyCustody<'s> {
+    Operation(&'s OperationResidency),
+    Mirror(MirrorOwnerSlot<'s>),
+}
+
+/// The current mirror's own per-entry slot; only the storage owner names it.
+#[derive(Clone, Copy)]
+pub struct MirrorOwnerSlot<'s>(&'s ScopedRegion);
+
+impl<'s> From<&'s OperationResidency> for ResidencyCustody<'s> {
+    fn from(scope: &'s OperationResidency) -> Self {
+        Self::Operation(scope)
+    }
+}
+
+impl<'s> ResidencyCustody<'s> {
+    fn slot(self, cell: &Arc<RelationalRegionResidency>) -> &'s ScopedRegion {
+        match self {
+            Self::Operation(scope) => scope.slot(cell),
+            Self::Mirror(MirrorOwnerSlot(slot)) => slot,
         }
     }
 
+    fn existing(self, cell: &Arc<RelationalRegionResidency>) -> Option<&'s ScopedRegion> {
+        match self {
+            Self::Operation(scope) => scope.existing(cell),
+            Self::Mirror(MirrorOwnerSlot(slot)) => Some(slot),
+        }
+    }
+}
+
+impl Clone for RelationalRegionRetention {
+    fn clone(&self) -> Self {
+        let owner = ScopedRegion::default();
+        if let Some(lease) = self.owner.full.get() {
+            let _ = owner.full.set(lease.clone());
+        }
+        if let Some(lease) = self.owner.head.get() {
+            let _ = owner.head.set(lease.clone());
+        }
+        Self {
+            cell: self.cell.clone(),
+            authority: self.authority.clone(),
+            owner,
+            clear_pins_on_write: self.clear_pins_on_write,
+        }
+    }
+}
+
+impl RelationalRegionRetention {
     pub fn new(
         cell: Arc<RelationalRegionResidency>,
         authority: Option<Arc<super::RelationalRegionKindAuthority>>,
@@ -33,295 +85,179 @@ impl RelationalRegionRetention {
         Self {
             cell,
             authority,
-            full: OnceLock::new(),
-            head: OnceLock::new(),
+            owner: ScopedRegion::default(),
             clear_pins_on_write: false,
         }
     }
 
     pub fn resident(partition: PartitionState) -> Self {
-        let lease = RelationalRegionResidency::resident_uncommitted(partition);
-        Self::from_lease(lease)
+        Self::from_lease(RelationalRegionResidency::resident_uncommitted(partition))
     }
 
+    /// The cell keeps serving its published image; the publishing lease is
+    /// released here, never retained for the root's lifetime.
     pub fn from_lease(lease: RelationalResidencyLease<Full>) -> Self {
-        let cell = lease.cell().clone();
-        Self {
-            cell,
-            authority: None,
-            full: OnceLock::from(lease),
-            head: OnceLock::new(),
-            clear_pins_on_write: false,
-        }
+        Self::new(lease.cell().clone(), None)
     }
 
-    pub fn from_head_lease(lease: RelationalResidencyLease<super::Head>) -> Self {
-        Self {
-            cell: lease.cell().clone(),
-            authority: None,
-            full: OnceLock::new(),
-            head: OnceLock::from(lease),
-            clear_pins_on_write: false,
-        }
+    pub fn from_head_lease(lease: RelationalResidencyLease<Head>) -> Self {
+        Self::new(lease.cell().clone(), None)
     }
 
-    pub fn capture_region(
-        &self,
-    ) -> Result<Option<&super::ResidentRegion>, crate::storage::data::RelationalStorageUnavailable>
-    {
-        self.cell.check_damage()?;
-        if let Some(lease) = self.full.get() {
-            return Ok(Some(lease.resident_region()));
-        }
-        if self.head.get().is_none()
-            && let Some(lease) = self.cell.lease_resident_head()?
-        {
-            let _ = self.head.set(lease);
-        }
-        Ok(self.head.get().map(|lease| lease.resident_region()))
+    /// A mirror entry that keeps its edit target's lease until replaced.
+    pub(crate) fn mirror_owned(lease: RelationalResidencyLease<Full>) -> Self {
+        let retention = Self::new(lease.cell().clone(), None);
+        let _ = retention.owner.full.set(lease);
+        retention
     }
 
-    pub fn reconstruct_head(
-        &self,
-        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<super::ReconstructedRegionHead, super::RelationalResidencyDemandFailure> {
-        self.cell
-            .reconstruct_head(lane, execution, self.authority.as_deref())
+    pub(crate) fn mirror_owned_head(lease: RelationalResidencyLease<Head>) -> Self {
+        let retention = Self::new(lease.cell().clone(), None);
+        let _ = retention.owner.head.set(lease);
+        retention
+    }
+
+    pub(crate) fn mirror_custody(&self) -> ResidencyCustody<'_> {
+        ResidencyCustody::Mirror(MirrorOwnerSlot(&self.owner))
     }
 
     pub fn cell(&self) -> &Arc<RelationalRegionResidency> {
         &self.cell
     }
 
-    pub fn demand_full(
+    pub fn kind_authority(&self) -> Option<Arc<super::RelationalRegionKindAuthority>> {
+        self.authority.clone()
+    }
+
+    pub fn reconstruct_head(
+        &self,
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<super::ReconstructedRegionHead, Failure> {
+        self.cell
+            .reconstruct_head(lane, execution, self.authority.as_deref())
+    }
+
+    fn unavailable(&self) -> RelationalStorageUnavailable {
+        RelationalStorageUnavailable {
+            subject: RelationalStorageSubject::Region(self.cell.partition_id),
+            cause: RelationalStorageUnavailableCause::SourceUnavailable,
+        }
+    }
+
+    /// Owned Full borrow that no root or scope retains; dropping it releases
+    /// the counted borrow and lets a bound cell be evicted.
+    pub fn borrow_full(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         limit: u64,
-    ) -> Result<RelationalResidencyLease<Full>, super::RelationalResidencyDemandFailure> {
-        crate::execution::check_request(execution)
-            .map_err(super::RelationalResidencyDemandFailure::Request)?;
+    ) -> Result<RelationalResidencyLease<Full>, Failure> {
+        crate::execution::check_request(execution).map_err(Failure::Request)?;
         self.cell.check_damage()?;
-        if let Some(lease) = self.full.get() {
+        self.cell
+            .demand_full(execution, limit, self.authority.as_deref())
+    }
+
+    /// Owned Head borrow with the same non-retaining contract.
+    pub fn borrow_head(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        limit: u64,
+    ) -> Result<RelationalResidencyLease<Head>, Failure> {
+        crate::execution::check_request(execution).map_err(Failure::Request)?;
+        self.cell.check_damage()?;
+        self.cell
+            .demand_head(execution, limit, self.authority.as_deref())
+    }
+
+    /// Demand Full residency into `custody`, which then lends its views.
+    pub fn demand_full<'s>(
+        &'s self,
+        custody: impl Into<ResidencyCustody<'s>>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        limit: u64,
+    ) -> Result<RelationalResidencyLease<Full>, Failure> {
+        crate::execution::check_request(execution).map_err(Failure::Request)?;
+        self.cell.check_damage()?;
+        let slot = custody.into().slot(&self.cell);
+        if let Some(lease) = slot.full.get() {
             return Ok(lease.clone());
         }
         let lease = self
             .cell
             .demand_full(execution, limit, self.authority.as_deref())?;
-        let _ = self.full.set(lease.clone());
+        let _ = slot.full.set(lease.clone());
         Ok(lease)
     }
 
-    /// Operation-scoped Full borrow: reuses custody this root already holds,
-    /// otherwise demands and returns a lease that this root never retains.
-    /// Dropping the lease releases the borrow, so a long-lived root does not
-    /// pin the image and a bound cell becomes evictable again.
-    pub fn borrow_full(
-        &self,
+    pub fn demand_head_cached<'s>(
+        &'s self,
+        custody: impl Into<ResidencyCustody<'s>>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         limit: u64,
-    ) -> Result<RelationalResidencyLease<Full>, super::RelationalResidencyDemandFailure> {
-        crate::execution::check_request(execution)
-            .map_err(super::RelationalResidencyDemandFailure::Request)?;
-        self.cell.check_damage()?;
-        match self.full.get() {
-            Some(lease) => Ok(lease.clone()),
-            None => self
-                .cell
-                .demand_full(execution, limit, self.authority.as_deref()),
-        }
+    ) -> Result<(), Failure> {
+        self.demand_head(custody, execution, limit).map(drop)
     }
 
-    /// Operation-scoped Head borrow with the same non-retaining contract.
-    pub fn borrow_head(
-        &self,
+    pub fn demand_head<'s>(
+        &'s self,
+        custody: impl Into<ResidencyCustody<'s>>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         limit: u64,
-    ) -> Result<RelationalResidencyLease<super::Head>, super::RelationalResidencyDemandFailure>
-    {
-        crate::execution::check_request(execution)
-            .map_err(super::RelationalResidencyDemandFailure::Request)?;
+    ) -> Result<RelationalResidencyLease<Head>, Failure> {
+        crate::execution::check_request(execution).map_err(Failure::Request)?;
         self.cell.check_damage()?;
-        match self.accepted_head_lease() {
-            Some(lease) => Ok(lease),
-            None => self
-                .cell
-                .demand_head(execution, limit, self.authority.as_deref()),
+        let slot = custody.into().slot(&self.cell);
+        if let Some(lease) = slot.full.get() {
+            return Ok(lease.as_head());
         }
-    }
-
-    /// Lend only a previously admitted full view. A probe records `None` as a
-    /// miss and discards its provisional result before any demand can run.
-    pub fn admitted_partition(&self) -> Option<&PartitionState> {
-        // A probe turns every unavailable state into a discovered demand. The
-        // round discards this provisional absence before the typed demand runs.
-        self.try_admitted_partition().ok().flatten()
-    }
-
-    pub fn try_admitted_partition(
-        &self,
-    ) -> Result<Option<&PartitionState>, super::super::data::RelationalStorageUnavailable> {
-        self.cell.check_damage()?;
-        if self.full.get().is_none()
-            && let Some(lease) = self.cell.lease_resident_full()?
-        {
-            let _ = self.full.set(lease);
-        }
-        Ok(self.full.get().map(|lease| lease.full_view().partition()))
-    }
-
-    /// Borrow custody already accepted by this immutable root. Fresh operations
-    /// must demand first; later transport damage cannot revoke this lease.
-    pub fn accepted_head_view(&self) -> Option<super::RelationalRegionHeadView<'_>> {
-        self.full
-            .get()
-            .map(|lease| lease.head_view())
-            .or_else(|| self.head.get().map(|lease| lease.head_view()))
-    }
-
-    pub fn admitted_head_view(&self) -> Option<super::RelationalRegionHeadView<'_>> {
-        self.cell.check_damage().ok()?;
-        if let Some(full) = self.full.get() {
-            return Some(full.head_view());
-        }
-        if self.head.get().is_none() {
-            let lease = self.cell.lease_resident_head().ok().flatten()?;
-            let _ = self.head.set(lease);
-        }
-        self.head.get().map(|lease| lease.head_view())
-    }
-
-    pub fn head_symbols_admitted(
-        &self,
-        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
-    ) -> bool {
-        let identity = self
-            .full
-            .get()
-            .map(|lease| lease.head_symbol_admission_identity())
-            .or_else(|| {
-                self.head
-                    .get()
-                    .map(|lease| lease.head_symbol_admission_identity())
-            });
-        identity.is_some_and(|identity| symbols.region_symbols_admitted(identity))
-    }
-
-    pub fn demand_head_cached(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        limit: u64,
-    ) -> Result<(), super::RelationalResidencyDemandFailure> {
-        crate::execution::check_request(execution)
-            .map_err(super::RelationalResidencyDemandFailure::Request)?;
-        self.cell.check_damage()?;
-        if self.full.get().is_none() && self.head.get().is_none() {
-            let lease = self
-                .cell
-                .demand_head(execution, limit, self.authority.as_deref())?;
-            let _ = self.head.set(lease);
-        }
-        Ok(())
-    }
-
-    pub fn pin_lease(
-        &self,
-    ) -> Result<RelationalResidencyLease<Full>, crate::storage::data::RelationalStorageUnavailable>
-    {
-        self.cell.check_damage()?;
-        if let Some(lease) = self.full.get() {
+        if let Some(lease) = slot.head.get() {
             return Ok(lease.clone());
         }
-        self.cell
-            .lease_resident_full()?
-            .ok_or(crate::storage::data::RelationalStorageUnavailable {
-                subject: crate::storage::data::RelationalStorageSubject::Region(
-                    self.cell.partition_id,
-                ),
-                cause: crate::storage::data::RelationalStorageUnavailableCause::SourceUnavailable,
-            })
+        let lease = self
+            .cell
+            .demand_head(execution, limit, self.authority.as_deref())?;
+        let _ = slot.head.set(lease.clone());
+        Ok(lease)
     }
 
-    /// The root retains this exact Full lease; accepted read capabilities can
-    /// keep using its immutable bytes after a later fresh demand finds damage.
-    pub fn accepted_full_partition(&self) -> Option<&PartitionState> {
-        self.full.get().map(|lease| lease.full_view().partition())
-    }
-
-    /// Pure read-only peek of an already-accepted Full lease whose symbols are
-    /// admitted in `symbols`. Never queries the shared cell or installs a lease.
-    pub fn peek_full_partition_with_symbols(
-        &self,
-        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
-    ) -> Option<&PartitionState> {
-        let lease = self.full.get()?;
-        symbols
-            .region_symbols_admitted(lease.symbol_admission_identity())
-            .then(|| lease.full_view().partition())
-    }
-
-    /// Pure read-only peek of an already-accepted Head (or Full) lease whose
-    /// head symbols are admitted in `symbols`. Never queries the shared cell or
-    /// installs a lease.
-    pub fn peek_head_view_with_symbols(
-        &self,
-        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
-    ) -> Option<super::RelationalRegionHeadView<'_>> {
-        let view = self.accepted_head_view()?;
-        self.head_symbols_admitted(symbols).then_some(view)
-    }
-
-    /// Clone custody already accepted by this immutable root, without a fresh
-    /// admission decision. A cold cell alone supplies no witness here.
-    pub fn accepted_head_lease(&self) -> Option<RelationalResidencyLease<super::Head>> {
-        self.head
-            .get()
-            .cloned()
-            .or_else(|| self.full.get().map(|lease| lease.as_head()))
-    }
-
-    pub fn pin_head_lease(
-        &self,
-    ) -> Result<
-        RelationalResidencyLease<super::Head>,
-        crate::storage::data::RelationalStorageUnavailable,
-    > {
+    pub fn capture_region<'s>(
+        &'s self,
+        custody: impl Into<ResidencyCustody<'s>>,
+    ) -> Result<Option<&'s super::ResidentRegion>, RelationalStorageUnavailable> {
         self.cell.check_damage()?;
-        self.head
-            .get()
-            .cloned()
-            .or_else(|| self.full.get().map(|lease| lease.as_head()))
-            .ok_or(crate::storage::data::RelationalStorageUnavailable {
-                subject: crate::storage::data::RelationalStorageSubject::Region(
-                    self.cell.partition_id,
-                ),
-                cause: crate::storage::data::RelationalStorageUnavailableCause::SourceUnavailable,
-            })
-    }
-
-    pub fn kind_authority(&self) -> Option<Arc<super::RelationalRegionKindAuthority>> {
-        self.authority.clone()
-    }
-    pub fn admitted_full_lease(&self) -> Option<RelationalResidencyLease<Full>> {
-        self.full.get().cloned()
-    }
-    pub fn demand_head(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        limit: u64,
-    ) -> Result<super::RelationalResidencyLease<super::Head>, super::RelationalResidencyDemandFailure>
-    {
-        self.demand_head_cached(execution, limit)?;
-        if let Some(head) = self.head.get() {
-            return Ok(head.clone());
+        let slot = custody.into().slot(&self.cell);
+        if let Some(lease) = slot.full.get() {
+            return Ok(Some(lease.resident_region()));
         }
-        self.cell
-            .demand_head(execution, limit, self.authority.as_deref())
+        if slot.head.get().is_none()
+            && let Some(lease) = self.cell.lease_resident_head()?
+        {
+            let _ = slot.head.set(lease);
+        }
+        Ok(slot.head.get().map(|lease| lease.resident_region()))
     }
 
+    /// Diagnostic census: whether the cell serves Head / Full with `symbols`
+    /// admitted. Grants no custody, performs no I/O, and needs no operation.
+    pub fn residency_census(
+        &self,
+        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
+    ) -> (bool, bool) {
+        use super::working_set::ResidencyLevelKind as Level;
+        use super::RelationalRegionSymbolAdmissionIdentity as Identity;
+        let level = self.cell.resident_level();
+        let head = level.is_some() && symbols.region_symbols_admitted(Identity::head(&self.cell));
+        let full = level == Some(Level::Full)
+            && symbols.region_symbols_admitted(Identity::full(&self.cell));
+        (head, full)
+    }
+
+    /// No other root, edition or live borrow observes this cell.
     pub fn is_uniquely_owned(&self) -> bool {
         Arc::strong_count(&self.cell)
-            == 1 + usize::from(self.full.get().is_some()) + usize::from(self.head.get().is_some())
+            == 1 + usize::from(self.owner.full.get().is_some())
+                + usize::from(self.owner.head.get().is_some())
     }
 
     pub fn fork(&self) -> Self {
@@ -332,25 +268,5 @@ impl RelationalRegionRetention {
 
     pub fn clears_pins_on_write(&self) -> bool {
         self.clear_pins_on_write
-    }
-}
-
-impl Clone for RelationalRegionRetention {
-    fn clone(&self) -> Self {
-        let full = OnceLock::new();
-        if let Some(lease) = self.full.get() {
-            let _ = full.set(lease.clone());
-        }
-        let head = OnceLock::new();
-        if let Some(lease) = self.head.get() {
-            let _ = head.set(lease.clone());
-        }
-        Self {
-            cell: self.cell.clone(),
-            authority: self.authority.clone(),
-            full,
-            head,
-            clear_pins_on_write: self.clear_pins_on_write,
-        }
     }
 }

@@ -165,7 +165,9 @@ fn inventory_root(
         let region = region.map_err(|_| {
             crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial::AuthoritativeByteBoundOverflow
         })?;
-        let partition = root
+        // Inventory admits one region at a time and releases it after.
+        let read = root.read();
+        let partition = read
             .partition_state(region.partition_id).map_err(crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial::StorageUnavailable)?
             .expect(/* Proof: The physical inventory row is generated while traversing this retained root partition; its locator is constructed as a partition locator from that same traversal. */ "observed region owns its partition");
         let mut payload = PayloadLedger {
