@@ -155,7 +155,7 @@ impl Fact {
                 if let Some(equal) = retired(*anchor)? {
                     return Ok(equal);
                 }
-                a.compare_adjacency_support(execution, &b, *anchor, *relation_kind, *direction)
+                a.compare_live_source_adjacency_support(execution, &b, *anchor, *relation_kind, *direction)
                     .map_err(|cause| match cause {
                         EdgeStop::Execution(cause) => physical(cause),
                         EdgeStop::Allocation(cause) => {
@@ -188,6 +188,29 @@ impl Fact {
             {
                 observation.supports_final_candidate(execution, runtime, before, complete)
             }
+            // A coupled decision's aligned read: current at C, no later
+            // append changed its Source or Parent reads, and the permission
+            // C granted keeps every locus at the image. That is judged from
+            // C, as for an applied Source read: neither an earlier member nor
+            // the reader's own effect may change the permission's support.
+            Self::ManagedIndexSource { observation }
+                if observation.applied_alignment().is_some() =>
+            {
+                let alignment = observation.applied_alignment().expect("guarded alignment");
+                Ok(self.remains_equal_in_image(runtime, execution, before, None)?
+                    && alignment.unchanged_between(
+                        after_own.candidate_identity(),
+                        complete.candidate_identity(),
+                    )
+                    && observation.authorization().permission_equal_between(
+                        execution,
+                        &runtime
+                            .read_truth()
+                            .project_snapshot(before)
+                            .ok_or_else(unavailable)?,
+                        &b,
+                    )?)
+            }
             Self::SourcePublication { observation }
                 if observation.applied_candidate().is_some() =>
             {
@@ -196,6 +219,33 @@ impl Fact {
                     .map_err(source_stop)?
                     && observation
                         .applied_support_equal(execution, runtime, before, after_own, complete)?)
+            }
+            // A candidate group answer is its basis answer while no member
+            // claims the scheme (claims refuse at append) and every member
+            // record it rests on stays as it was: each compares like an
+            // entity fact (#361).
+            Self::PersistentGroup { read, answer } => {
+                let unobservable = |_| unavailable();
+                if !read
+                    .remains_equal(answer, runtime, before)
+                    .map_err(unobservable)?
+                {
+                    return Ok(false);
+                }
+                let members = read.rested_members(answer, runtime, before);
+                for entity in members.map_err(unobservable)?.unwrap_or_default() {
+                    let equal = match retired(entity)? {
+                        Some(equal) => equal,
+                        None => {
+                            left.live_kind(execution, entity).map_err(physical)?
+                                == right.live_kind(execution, entity).map_err(physical)?
+                        }
+                    };
+                    if !equal {
+                        return Ok(false);
+                    }
+                }
+                Ok(true)
             }
             // Control and external publication observations retain their ordinary
             // owners. A moved unsupported observation refuses, never grants support.

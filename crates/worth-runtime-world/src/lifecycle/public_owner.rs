@@ -20,7 +20,7 @@ where
 {
     // Presence relinquishes admission before the ordinary Root field is dropped.
     pub(super) presence: presence::PublicWorldPresence,
-    pub(super) root: Arc<RuntimeWorldOwnerRoot<D, I, E, Ctx, T>>,
+    pub(super) root: super::owner_backing::StrongWorldOwner<RuntimeWorldOwnerRoot<D, I, E, Ctx, T>>,
 }
 impl RuntimeWorldOwner<(), (), (), (), ()> {
     pub fn builder() -> RuntimeWorldOwnerBuilder<
@@ -44,9 +44,10 @@ where
 {
     pub(in crate::lifecycle) fn from_root(root: RuntimeWorldOwnerRoot<D, I, E, Ctx, T>) -> Self {
         let root = Arc::new(root);
+        let presence = presence::PublicWorldPresence::new(&root);
         Self {
-            presence: presence::PublicWorldPresence::new(&root),
-            root,
+            presence,
+            root: super::owner_backing::StrongWorldOwner::from_arc(root),
         }
     }
 
@@ -233,32 +234,32 @@ where
     }
 
     pub fn publication_port(&self) -> RuntimeWorldPublicationPort<D, I, E, Ctx, T> {
-        RuntimeWorldPublicationPort::new(Arc::downgrade(&self.root))
+        RuntimeWorldPublicationPort::new(self.root.downgrade())
     }
     pub fn observation_port(&self) -> RuntimeWorldObservationPort {
         let service: Arc<dyn super::ports::RuntimeWorldObservationService + Send + Sync> =
-            self.root.clone();
+            self.root.to_arc();
         RuntimeWorldObservationPort::new(Arc::downgrade(&service))
     }
     pub fn branch_port(&self) -> RuntimeWorldBranchPort {
         let service: Arc<dyn super::ports::RuntimeWorldBranchService + Send + Sync> =
-            self.root.clone();
+            self.root.to_arc();
         RuntimeWorldBranchPort::new(Arc::downgrade(&service))
     }
     pub fn lifecycle_port(&self) -> RuntimeWorldLifecyclePort {
         let service: Arc<dyn super::ports::RuntimeWorldLifecycleService + Send + Sync> =
-            self.root.clone();
+            self.root.to_arc();
         RuntimeWorldLifecyclePort::new(Arc::downgrade(&service))
     }
 
     pub fn inspection_port(&self) -> super::RuntimeWorldInspectionPort {
         let service: Arc<dyn crate::inspection::RuntimeWorldInspectionService + Send + Sync> =
-            self.root.clone();
+            self.root.to_arc();
         super::RuntimeWorldInspectionPort::new(Arc::downgrade(&service))
     }
     pub fn recovery_port(&self) -> RuntimeWorldRecoveryPort {
         let service: Arc<dyn super::ports::RuntimeWorldRecoveryService + Send + Sync> =
-            self.root.clone();
+            self.root.to_arc();
         RuntimeWorldRecoveryPort::new(Arc::downgrade(&service))
     }
     /// Clone only a weak reference to the actual attached durable binding.

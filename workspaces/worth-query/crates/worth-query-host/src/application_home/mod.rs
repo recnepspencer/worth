@@ -1,14 +1,20 @@
 //! The Host owns concrete Home custody and its installed Query service together.
 mod checkpoint;
 mod close;
+mod close_policy;
+mod desktop_open;
 mod discard;
 mod dispatch_journal;
 mod failure_close;
+mod history_and_undo;
 mod maintenance;
 mod opening;
+mod preview;
 mod refusal;
 mod request;
+mod retirement;
 mod runtime;
+mod temporal_catch_up;
 mod transition;
 mod workflow;
 pub use checkpoint::WorthQueryApplicationHomeCheckpointDenial;
@@ -16,21 +22,39 @@ pub use close::{
     WorthQueryApplicationHomeClosePhase, WorthQueryApplicationHomeCloseRefused,
     WorthQueryApplicationHomeClosed,
 };
+pub use close_policy::WorthQueryHomeClosePolicyRefused;
+pub use desktop_open::{
+    WorthQueryDirectoryOpenDenial, WorthQueryHomeConfig, DEFAULT_HOST_EXECUTION_POLICY,
+    DEFAULT_HOST_EXECUTION_WORK_CEILING,
+};
 pub use discard::{discard_home, WorthQueryApplicationHomeDiscardDenial};
 pub use failure_close::{
     WorthQueryApplicationHomeOpeningCloseRefused, WorthQueryApplicationHomeOpeningClosed,
 };
+pub use history_and_undo::{
+    WorthQueryCorrectionEntry, WorthQueryHomeAuthoredCorrectionOutcome,
+    WorthQueryHomeCorrectionOutcome, WorthQueryHomeOwnedHistoryDenial, WorthQueryHomeUndoDenial,
+    DEFAULT_CORRECTION_HISTORY_LIMITS,
+};
+pub use preview::{
+    WorthQueryPreviewAdoptDenial, WorthQueryPreviewAdoptFailure, WorthQueryPreviewDiscardDenial,
+    WorthQueryPreviewDiscardFailure, WorthQueryPreviewFork, WorthQueryPreviewForkDenial,
+};
 pub use refusal::{
     HomeCustodyReadmissionDenial, UnadmittedHomeQueryCustodyRefused, UnadmittedHomeQueryService,
-    WorthQueryApplicationHomeOpenRefused,
+    WorthQueryApplicationHomeOpenRefused, WorthQueryApplicationHomeOpenRefusedPhase,
 };
 pub use request::{WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeRequest};
-pub use runtime::WorthQueryApplicationHome;
+pub use retirement::{
+    WorthQueryDirectoryOpenRetired, WorthQueryHomeRetirement, WorthQueryHomeRetirementStop,
+};
+pub use runtime::{WorthQueryApplicationHome, WorthQueryHomeOpenDisposition};
 pub use transition::{
     NoHomeProgramTransition, WorthQueryApplicationHomeTransitionRequired,
-    WorthQueryHomeProgramTransition, WorthQueryHomeProgramTransitionDenial,
-    WorthQueryHomeProgramTransitionOpenPhase, WorthQueryHomeProgramTransitionOpenRefused,
-    WorthQueryHomeProgramTransitionPlan, WorthQueryHomeProgramTransitionStep,
+    WorthQueryHomePredecessorRefusal, WorthQueryHomeProgramTransition,
+    WorthQueryHomeProgramTransitionDenial, WorthQueryHomeProgramTransitionOpenPhase,
+    WorthQueryHomeProgramTransitionOpenRefused, WorthQueryHomeProgramTransitionPlan,
+    WorthQueryHomeProgramTransitionStep,
 };
 pub use workflow::{
     WorthQueryWorkflowApplicationHome, WorthQueryWorkflowHomeBindingRefused,

@@ -59,10 +59,10 @@ where
             WorthQueryDocumentHistoryDenial,
         >,
     ) -> Result<(), WorthQueryApplicationHistoryDenial> {
-        let runtime = self.owner.application();
-        if !std::ptr::eq(runtime, request.application) {
+        if !std::ptr::eq(self.owner.application(), request.application) {
             return Err(WorthQueryApplicationHistoryDenial::ForeignRuntime);
         }
+        let runtime = request.application;
         let current = WorthQueryApplicationRequest {
             application: runtime,
             principal: request.principal,

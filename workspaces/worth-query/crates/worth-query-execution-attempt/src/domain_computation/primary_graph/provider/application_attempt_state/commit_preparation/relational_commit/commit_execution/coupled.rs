@@ -45,10 +45,8 @@ pub(super) fn prepare_members(
             )
             .map_err(Denial::CoupledSupport)?;
         }
-        support::require_read_support(
-            execution, provider, root, before, complete, members,
-        )
-        .map_err(Denial::CoupledSupport)?;
+        support::require_read_support(execution, provider, root, before, complete, members)
+            .map_err(Denial::CoupledSupport)?;
         for member in members.iter() {
             let source = member.source();
             let owned = member.owned.as_ref().expect("atomic group extraction");

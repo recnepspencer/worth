@@ -14,6 +14,7 @@ pub struct PreparedCoupledWriter<'run> {
     pub publication: RelationalCoupledProducerPosture,
     pub batch: WorkerIntentBatch,
     pub content: worth_relational::facade::content::RelationalContentAttachments,
+    pub naming: Option<worth_relational::facade::lineage::CommitNamingPlan>,
 }
 
 pub trait InstalledCoupledProducerExecutor<Schema> {
@@ -70,6 +71,7 @@ pub trait InstalledCoupledProducerExecutor<Schema> {
         candidate: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
         participants: &dyn crate::domain_computation::primary_graph::provider::AppliedOutputParticipants,
+        assembly: &worth_relational::facade::mvcc::RelationalAuthoredCoupledCandidate<'_>,
         source: ErasedAppliedProducerSource,
         edition: super::super::InstalledProducerEdition,
         captured: Option<(Box<dyn CapturedProducerInputRead>, std::any::TypeId)>,
@@ -164,6 +166,7 @@ where
         candidate: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
         participants: &dyn crate::domain_computation::primary_graph::provider::AppliedOutputParticipants,
+        assembly: &worth_relational::facade::mvcc::RelationalAuthoredCoupledCandidate<'_>,
         source: ErasedAppliedProducerSource,
         edition: super::super::InstalledProducerEdition,
         captured: Option<(Box<dyn CapturedProducerInputRead>, std::any::TypeId)>,
@@ -203,6 +206,7 @@ where
             candidate,
             own_outputs,
             participants,
+            assembly,
             source,
             predecessor.as_ref(),
             edition,
@@ -212,7 +216,10 @@ where
             &execution, phase, runtime, prepared,
         )
         .map_err(|outcome| coupled_preparation::preparation_denial(Binding::IDENTITY, outcome))?;
-        let (writer, publication, batch, content) = inspect_coupled_application::<Schema, Binding>(
+        let (writer, publication, batch, content, naming) = inspect_coupled_application::<
+            Schema,
+            Binding,
+        >(
             &execution,
             phase,
             runtime,
@@ -227,6 +234,7 @@ where
             publication,
             batch,
             content,
+            naming,
         })
     }
 

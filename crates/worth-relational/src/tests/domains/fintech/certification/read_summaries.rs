@@ -121,7 +121,7 @@ pub(super) fn read_summary(
         .read_truth()
         .read_snapshot(&snapshot, execution)
         .expect("read request remains live")
-        .ok_or_else(|| format!("snapshot `{}` is unavailable", snapshot.snapshot_id.0))?;
+        .ok_or_else(|| format!("snapshot `{}` is unavailable", snapshot.snapshot_id().0))?;
     let corrected_trades = read
         .entities()
         .iter()
@@ -144,7 +144,7 @@ pub(super) fn read_summary(
         })
         .count();
     Ok(CertifiedFintechReadSummary::snapshot_read(
-        snapshot.snapshot_id.0,
+        snapshot.snapshot_id().0,
         read.entities().len(),
         read.relations().len(),
         corrected_trades,

@@ -2,6 +2,8 @@ pub use worth_query_host::facade::{declaration, domain, primary_graph};
 
 pub use super::super::schema::*;
 
+worth_query_decl::facade::worth_query_principal_issuer!(IssuerExampleIssuer);
+
 pub fn seed_graph(
     graph: &mut primary_graph::WorthQueryPrimaryGraphBootstrap<TemporalHostSchema>,
     principal_binding: &domain::WorthQueryInstalledPrincipalBinding<
@@ -23,7 +25,7 @@ pub fn seed_graph(
             primary_graph::WorthQueryApplicationPrincipalKey::new("temporal-host").unwrap(),
             1_u64,
             declaration::authentication::WorthQueryExternalPrincipalIdentity::new(
-                "https://issuer.example",
+                IssuerExampleIssuer,
                 "temporal-host",
             )
             .unwrap(),

@@ -12,6 +12,8 @@ use worth_query_host::facade::{
     *,
 };
 
+worth_query_decl::facade::worth_query_disclosure_classification!(NumericCausalDiagnosticDisclosure);
+
 macro_rules! query {
     ($module:ident, $name:literal, $identity:literal, $result:literal, $input:literal, $binding:literal,
      $primary_slot:literal, $scalar_slot:literal, $audience:ident) => {
@@ -59,7 +61,7 @@ macro_rules! query {
     };
     (@disclosure ordinary, $primary:expr, $scalar:expr) => { ApplicationQueryDisclosureContract::public() };
     (@disclosure governed, $primary:expr, $scalar:expr) => {
-        ApplicationQueryDisclosureContract::governed_by("numeric-causal-diagnostic", capability::Inspect::reference())
+        ApplicationQueryDisclosureContract::governed_by(NumericCausalDiagnosticDisclosure, capability::Inspect::reference())
             .disclose_field_by($primary, capability::text("calculation"), ApplicationQueryInfluenceContract::permit_all())
             .disclose_optional_aspect_field_by($scalar, capability::text("calculation"), ApplicationQueryInfluenceContract::permit_all())
     };

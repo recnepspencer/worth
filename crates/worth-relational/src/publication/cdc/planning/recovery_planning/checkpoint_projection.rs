@@ -7,6 +7,7 @@ use crate::publication::cdc::planning::assess_subscriber_continuity;
 use crate::publication::cdc::planning::checkpoint_resolution::checkpoint_basis_from_envelope;
 use crate::runtime::RelationalRuntime;
 use crate::schema::data::DescriptorSemanticsVersion;
+use worth_relational_publication::internal_port::publication::cdc::data::subscriber_checkpoint::SubscriberCheckpointOwnerPort as _;
 
 pub(super) fn latest_available_assessment(
     runtime: &RelationalRuntime,

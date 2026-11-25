@@ -16,12 +16,16 @@ use crate::domain_computation::primary_graph::conditional_operation::{
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
+pub type ConditionalHandoffBridge<'a> =
+    crate::domain_computation::primary_graph::managed_bridge::conditional_execution::ConditionalExecutionOwner<'a>;
+
 pub trait WorthQueryInstalledConditionalOperation<Schema>: Send {
     fn binding_identity(&self) -> &str;
     fn handoff_to_home(
         &mut self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        bridge: &ConditionalHandoffBridge<'_>,
     ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryHomeRetirementDenial>;
 
     fn pending_managed_cleanup(
@@ -105,8 +109,8 @@ pub trait WorthQueryInstalledConditionalOperation<Schema>: Send {
 
     fn observe_clock(
         &mut self,
+        caller_execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
-
         bridge: &BridgeConditionalExecutionView<'_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         truth: &WorthQueryConditionalTruthBasis,
@@ -138,6 +142,16 @@ pub trait WorthQueryInstalledConditionalOperation<Schema>: Send {
         unreachable!("continuation replay is only defined for installed temporal operations")
     }
 
+    fn settle_resolved_continuation(
+        &mut self,
+        _key: [u8; 32],
+        _intent: [u8; 32],
+        _finish_confirmed: bool,
+        _bridge: Option<&BridgeConditionalExecutionView<'_>>,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) {
+    }
+
     fn temporal_original_key(
         &self,
         _product: &crate::basis::WorthQueryProductBranchLease,
@@ -145,8 +159,9 @@ pub trait WorthQueryInstalledConditionalOperation<Schema>: Send {
         _revision: u64,
         _host_idempotency: &str,
         _input_identity: &str,
-    ) -> Option<Result<([u8; 32], [u8; 32]), worth_foundational::facade::CanonicalDigestDerivationDenial>>
-    {
+    ) -> Option<
+        Result<([u8; 32], [u8; 32]), worth_foundational::facade::CanonicalDigestDerivationDenial>,
+    > {
         None
     }
 }
@@ -227,6 +242,8 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryInstalledTempo
             crate::basis::WorthQueryProductBranchReadPosition,
             super::evaluation_binding::WorthQueryInactiveTemporalEvaluationBinding<Clock, Input>,
         >,
+    pub(in crate::domain_computation::primary_graph::conditional_operation) inactive_reclaim_pending:
+        bool,
     pub(in crate::domain_computation::primary_graph::conditional_operation) next_evaluation_binding_ordinal:
         u64,
 }

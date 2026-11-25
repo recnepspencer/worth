@@ -2,13 +2,17 @@
 use crate::storage::residency::RelationalResidencyDemandFailure;
 use crate::transactions::data::{EntityMutationIntent, ExistingRecordTarget, MutationIntent};
 use std::collections::BTreeSet;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_contracts::internal_port::mvcc::transaction::staging::RelationalTransactionStagingDenialOwnerPort as _;
+use worth_relational_mutation::internal_port::mvcc::transaction::footprint::client_keys::RelationalTransactionFootprintOwnerPort as _;
+use worth_relational_mutation::internal_port::mvcc::transaction::footprint::RelationalTransactionFootprintOwnerPort as _;
 
 impl super::BranchBoundRelationalTransaction {
     pub(crate) fn demand_preparation_regions(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         symbols: &crate::runtime::RuntimeSymbolTable,
-        indexes: &crate::runtime::IndexDefinitionReadBinding,
+        indexes: &crate::runtime::state::RuntimeIndexDefinitionReadBinding,
         mirror: &crate::runtime::MirrorResidencyDemandBinding,
     ) -> Result<(), crate::transactions::data::TransactionCommitError> {
         self.demand_preparation_inputs(execution, symbols, indexes)?;
@@ -22,7 +26,7 @@ impl super::BranchBoundRelationalTransaction {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         symbols: &crate::runtime::RuntimeSymbolTable,
-        indexes: &crate::runtime::IndexDefinitionReadBinding,
+        indexes: &crate::runtime::state::RuntimeIndexDefinitionReadBinding,
     ) -> Result<(), crate::transactions::data::TransactionCommitError> {
         let mut raw = BTreeSet::new();
         if symbols.has_cold_pages() && self.client_key_symbol_policy.interns_requested_strings() {
@@ -68,7 +72,7 @@ impl super::BranchBoundRelationalTransaction {
         symbols: &crate::runtime::RuntimeSymbolTable,
         mirror: &crate::runtime::MirrorResidencyDemandBinding,
     ) -> Result<(), RelationalResidencyDemandFailure> {
-        let root = &self.basis.inner.root;
+        let root = &self.basis.owner_inner().root;
         let mut partitions = self.footprint.validation_partitions();
         // A new schema carrier reframes every retained region, including
         // unchanged records. Admit those contents during the operation;

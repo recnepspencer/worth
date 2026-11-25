@@ -3,11 +3,19 @@ use super::super::region_image::*;
 use super::*;
 use crate::durability::data::*;
 use crate::durability::medium::*;
+use crate::durability::published_medium::{
+    RelationalDurableCheckpointSource, RelationalDurableRecoverySource,
+};
 use crate::identity::data::{KindId, PartitionId};
 use crate::tests::support::{
     create_entity_in_partition, create_relation_in_partition, durable_runtime_for_medium,
     OwnedTestDurableMedium,
 };
+use worth_relational_durability::internal_port::durability::data::checkpoint_roots::{
+    root::RelationalCheckpointRoot, roster::CheckpointRoots,
+};
+use worth_relational_durability::internal_port::durability::published_medium::recovery_source::RelationalDurableRecoverySourceOwnerPort as _;
+use worth_relational_storage::internal_port::storage::data::checkpoint_region::RelationalCheckpointRegion;
 
 #[derive(serde::Serialize, serde::Deserialize)]
 struct ExternalWire {
@@ -186,138 +194,143 @@ impl RelationalDurableColdSource for ForgedSource {
 
 #[test]
 fn rehashed_cross_region_kind_forgery_is_refused_by_the_canonical_root() {
-    let host = crate::test_execution_policy::serial_request();
-    let execution = worth_execution::ExecutionRequest::serial(&host);
-    let medium = OwnedTestDurableMedium::new();
-    let runtime = durable_runtime_for_medium(&medium);
-    let a = create_entity_in_partition(&execution, &runtime, "a", PartitionId(1));
-    let b = create_entity_in_partition(&execution, &runtime, "b", PartitionId(2));
-    create_relation_in_partition(&execution, &runtime, a, b, "peer-kind", PartitionId(3));
-    let native = runtime
-        .durability_authority()
-        .native_checkpoint_with_policy(
-            &execution,
-            execution.allocation_policy(),
-            RelationalCheckpointArtifactPolicy::ExternalMembers {
-                current_members: &[],
-                source: None,
-            },
-        )
-        .unwrap();
-    let magic = crate::durability::log::native_checkpoint_codec::CHECKPOINT_MAGIC;
-    let mut wire: ExternalWire =
-        rmp_serde::from_slice(native.bytes().strip_prefix(magic).unwrap()).unwrap();
-    let leaf = wire.manifest.roots[0]
-        .regions
-        .iter()
-        .find(|leaf| leaf.partition_id == a.partition_id)
-        .unwrap()
-        .clone();
-    let mut members = native
-        .members()
-        .iter()
-        .map(|member| match member {
-            RelationalCheckpointMember::New { locator, bytes } => (*locator, bytes.clone()),
-            _ => panic!("first capture owns members"),
-        })
-        .collect::<BTreeMap<_, _>>();
-    let schema_digest = wire.manifest.roots[0].schema_carrier_digest;
-    let frame = RelationalRegionImage::decode(
-        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-        &mut |_, _| Ok(()),
-        members[&leaf.head].bytes(),
-        leaf.head,
-        a.partition_id,
-        schema_digest,
-        RelationalRegionImageKind::Head,
-    )
-    .unwrap();
-    let mut head: RegionHeadImage = rmp_serde::from_slice(frame.payload).unwrap();
-    assert_eq!(head.kind_projection.len(), 1);
-    assert_eq!(
-        head.kind_projection[0].relation.partition_id,
-        PartitionId(3)
-    );
-    head.kind_projection[0].kind = KindId(999);
-    for entry in &mut head.adjacency_kinds {
-        for (kind, _) in &mut entry.kinds {
-            *kind = KindId(999);
-        }
-    }
-    let (locator, bytes) = RelationalRegionImage::encode(
-        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-        &mut |_, _| Ok(()),
-        a.partition_id,
-        schema_digest,
-        RelationalRegionImageKind::Head,
-        &head,
-    )
-    .unwrap();
-    members.insert(
-        locator,
-        worth_execution::ExecutionImmutableBytes::from_external_bytes(Arc::new(
-            bytes.into_boxed_slice(),
-        )),
-    );
-    let commitment = super::super::kind_commitment::digest(
-        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-        &head.kind_projection,
-    )
-    .unwrap();
-    let mut draft = wire.manifest.ordinary_owned_draft();
-    let forge = |forged: &mut RelationalCheckpointRegion| {
-        if forged.head == leaf.head {
-            forged.head = locator;
-            forged.kind_authority.head = commitment;
-        }
-    };
-    let roots = draft
-        .roots
-        .iter()
-        .map(|root| {
-            let mut regions = root.regions.clone();
-            regions.iter_mut().for_each(forge);
-            RelationalCheckpointRoot::from_ordinary_parts(
-                root.commit_id,
-                root.recorded_components.clone(),
-                root.schema_carrier_digest,
-                regions,
-                root.content.clone(),
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
+        let host = crate::test_execution_policy::serial_request();
+        let execution = worth_execution::ExecutionRequest::serial(&host);
+        let medium = OwnedTestDurableMedium::new();
+        let runtime = durable_runtime_for_medium(&medium);
+        let a = create_entity_in_partition(&execution, &runtime, "a", PartitionId(1));
+        let b = create_entity_in_partition(&execution, &runtime, "b", PartitionId(2));
+        create_relation_in_partition(&execution, &runtime, a, b, "peer-kind", PartitionId(3));
+        let native = runtime
+            .durability_authority()
+            .native_checkpoint_with_policy(
+                &execution,
+                execution.allocation_policy(),
+                RelationalCheckpointArtifactPolicy::ExternalMembers {
+                    current_members: &[],
+                    source: None,
+                },
             )
-        })
-        .collect();
-    draft.roots = CheckpointRoots::from_ordinary(roots);
-    draft.mirror.iter_mut().for_each(forge);
-    wire.manifest = draft.seal_ordinary();
-    let mut bytes = magic.to_vec();
-    bytes.extend(rmp_serde::to_vec_named(&wire).unwrap());
-    let source = Arc::new(ForgedSource {
-        members,
-        original: medium.recovery_source().into_parts().cold_source,
-    });
-    let recovery = RelationalDurableRecoverySource::new(
-        Some(RelationalDurableCheckpointSource::new(
-            native.covered_position().unwrap(),
-            native.covered_branch_transitions().unwrap(),
-            RelationalNativeCheckpoint::from_untrusted_bytes(bytes),
-        )),
-        Vec::new(),
-        Vec::new(),
-        source,
-    );
-    let mut receiving = durable_runtime_for_medium(&OwnedTestDurableMedium::new());
-    let plan = receiving
-        .durability()
-        .recovery_plan_from_source(
-            &execution,
-            recovery,
-            RecoveryVerificationMode::NormalRecoveryVerification,
+            .unwrap();
+        let magic = crate::durability::log::native_checkpoint_codec::CHECKPOINT_MAGIC;
+        let mut wire: ExternalWire =
+            rmp_serde::from_slice(native.bytes().strip_prefix(magic).unwrap()).unwrap();
+        let leaf = wire.manifest.roots[0]
+            .regions
+            .iter()
+            .find(|leaf| leaf.partition_id == a.partition_id)
+            .unwrap()
+            .clone();
+        let mut members = native
+            .members()
+            .iter()
+            .map(|member| match member {
+                RelationalCheckpointMember::New { locator, bytes } => (*locator, bytes.clone()),
+                _ => panic!("first capture owns members"),
+            })
+            .collect::<BTreeMap<_, _>>();
+        let schema_digest = wire.manifest.roots[0].schema_carrier_digest;
+        let frame = RelationalRegionImage::decode(
+            fixture_lane,
+            &mut |_, _| Ok(()),
+            members[&leaf.head].bytes(),
+            leaf.head,
+            a.partition_id,
+            schema_digest,
+            RelationalRegionImageKind::Head,
         )
         .unwrap();
-    let failure = receiving
-        .durability_recovery()
-        .recover(&execution, plan)
-        .unwrap_err();
-    assert!(matches!(failure, RelationalRecoveryStop::Durability(error)
+        let mut head: RegionHeadImage = rmp_serde::from_slice(frame.payload).unwrap();
+        assert_eq!(head.kind_projection.len(), 1);
+        assert_eq!(
+            head.kind_projection[0].relation.partition_id,
+            PartitionId(3)
+        );
+        head.kind_projection[0].kind = KindId(999);
+        for entry in &mut head.adjacency_kinds {
+            for (kind, _) in &mut entry.kinds {
+                *kind = KindId(999);
+            }
+        }
+        let (locator, bytes) = RelationalRegionImage::encode(
+            fixture_lane,
+            &mut |_, _| Ok(()),
+            a.partition_id,
+            schema_digest,
+            RelationalRegionImageKind::Head,
+            &head,
+        )
+        .unwrap();
+        members.insert(
+            locator,
+            worth_execution::ExecutionImmutableBytes::from_external_bytes(Arc::new(
+                bytes.into_boxed_slice(),
+            )),
+        );
+        let commitment = super::super::kind_commitment::digest_controlled(
+            fixture_lane,
+            &head.kind_projection,
+            &mut |_, _| Ok(()),
+        )
+        .unwrap();
+        let mut draft = wire.manifest.ordinary_owned_draft();
+        let forge = |forged: &mut RelationalCheckpointRegion| {
+            if forged.head == leaf.head {
+                forged.head = locator;
+                forged.kind_authority.head = commitment;
+            }
+        };
+        let roots = draft
+            .roots
+            .iter()
+            .map(|root| {
+                let mut regions = root.regions.clone();
+                regions.iter_mut().for_each(forge);
+                RelationalCheckpointRoot::from_ordinary_parts(
+                    root.commit_id,
+                    root.recorded_components.clone(),
+                    root.schema_carrier_digest,
+                    regions,
+                    root.content.clone(),
+                )
+            })
+            .collect();
+        draft.roots = CheckpointRoots::from_ordinary(roots);
+        draft.mirror.iter_mut().for_each(forge);
+        wire.manifest = draft.seal_ordinary();
+        let mut bytes = magic.to_vec();
+        bytes.extend(rmp_serde::to_vec_named(&wire).unwrap());
+        let source = Arc::new(ForgedSource {
+            members,
+            original: medium
+                .recovery_source()
+                .into_original_cold_source_for_test(),
+        });
+        let recovery = RelationalDurableRecoverySource::new(
+            Some(RelationalDurableCheckpointSource::new(
+                native.covered_position().unwrap(),
+                native.covered_branch_transitions().unwrap(),
+                RelationalNativeCheckpoint::from_untrusted_bytes(bytes),
+            )),
+            Vec::new(),
+            Vec::new(),
+            source,
+        );
+        let mut receiving = durable_runtime_for_medium(&OwnedTestDurableMedium::new());
+        let plan = receiving
+            .durability()
+            .recovery_plan_from_source(
+                &execution,
+                recovery,
+                RecoveryVerificationMode::NormalRecoveryVerification,
+            )
+            .unwrap();
+        let failure = receiving
+            .durability_recovery()
+            .recover(&execution, plan)
+            .unwrap_err();
+        assert!(matches!(failure, RelationalRecoveryStop::Durability(error)
         if error.class == RecoveryFailureClass::CorruptCheckpoint && error.detail.contains("StorageContentMismatch")));
+    })
 }

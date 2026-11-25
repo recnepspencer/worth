@@ -73,6 +73,16 @@ effects, identity, numerical validity, recovery, lifecycle, compatibility or a
 real cost claim. Keep routine wiring and established contract reuse brief.
 Do not give every phase or subsection equal treatment merely for symmetry.
 
+When written for a full milestone, target **around ~1,200 lines** (matching
+execution-grade milestone specs such as `semantic-git.md` and
+`platform-dx-hardening.md`). A milestone spec must carry real execution depth —
+concrete Rust types and signatures, compiling Hard DX caller code, authority
+and proof progression tables, failure/reviewer counterexamples, concrete
+per-phase test matrices, and formal/compile-fail verification contracts — never
+a compressed 200–300 line outline. Keep review to **one independent review
+pass** whose genuine architectural and soundness findings are folded directly
+into the owning phases; do not run multi-round spec review loops.
+
 The phase structure is a completeness aid, not a demand for a new mechanism in
 every box. Carry forward adequate designs and evidence. Combine or omit
 inapplicable subsections instead of filling them with boilerplate, repeated

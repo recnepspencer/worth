@@ -1,3 +1,5 @@
+#[cfg(test)]
+use crate::durability::canonical_commit_artifact::checkpoint_body::copy_original_for_test;
 use crate::facade::diagnostics::DiagnosticCode;
 use crate::publication::cdc::data::{
     NormalizedContinuationProof, SubscriberContinuationClassSet, SubscriberContractDeclaration,
@@ -10,6 +12,8 @@ use crate::schema::data::{
     SchemaContinuationDescriptor, SchemaStratum,
 };
 use crate::tests::support::{create_entity_outcome, diagnostic_field, runtime_with_test_schema};
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeFixturePort as _;
+use worth_relational_branch::internal_port::history::data::positioned_canonical_commit::PositionedCanonicalCommitFixturePort as _;
 
 #[test]
 fn unsupported_continuation_failure_counts_current_boundary_when_no_prior_proof_exists() {
@@ -20,7 +24,7 @@ fn unsupported_continuation_failure_counts_current_boundary_when_no_prior_proof_
     let outcome = create_entity_outcome(execution, &runtime, "a");
     let fingerprint = SchemaBoundaryFingerprint::new([7_u8; 32]);
     let envelopes = vec![envelope_with_continuation(
-        outcome.envelope().copy_original_for_test(execution),
+        copy_original_for_test(outcome.envelope(), execution),
         outcome.patch_position(),
         fingerprint,
         SchemaContinuationClassification::ContinueWithContractUpgrade,
@@ -60,7 +64,7 @@ fn unsupported_continuation_failure_deduplicates_boundary_already_present_in_pri
     let outcome = create_entity_outcome(execution, &runtime, "a");
     let fingerprint = SchemaBoundaryFingerprint::new([9_u8; 32]);
     let envelopes = vec![envelope_with_continuation(
-        outcome.envelope().copy_original_for_test(execution),
+        copy_original_for_test(outcome.envelope(), execution),
         outcome.patch_position(),
         fingerprint,
         SchemaContinuationClassification::ContinueWithContractUpgrade,
@@ -114,7 +118,7 @@ fn envelope_with_continuation(
             ),
             1,
         ));
-    crate::history::data::PositionedCanonicalCommit::for_test(
+    crate::history::data::PositionedCanonicalCommit::positioned_commit_for_test(
         position,
         std::sync::Arc::new(envelope),
     )

@@ -277,3 +277,11 @@ pub fn observe(
         custody,
     }
 }
+
+pub fn observe_head<
+    S: worth_query_host::facade::declaration::application_schema::ApplicationSchema,
+>(
+    runtime: &worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<S>,
+) -> HeadProjection {
+    HeadProjection::observe(&runtime.application_oracle_head_for_test())
+}

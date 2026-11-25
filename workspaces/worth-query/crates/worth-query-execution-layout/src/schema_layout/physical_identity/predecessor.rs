@@ -73,6 +73,13 @@ impl PhysicalIdentityBindings {
                 ));
             }
         }
+        if expected.persistent_name_schemes != actual.persistent_name_schemes
+            || expected.kind_name_schemes != actual.kind_name_schemes
+        {
+            return Err(invalid_member(
+                "original persistent-name schemes differ from the installed meaning",
+            ));
+        }
         Ok(())
     }
 }

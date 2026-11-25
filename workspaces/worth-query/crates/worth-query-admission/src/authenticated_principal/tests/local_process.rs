@@ -1,12 +1,24 @@
 //! The local principal mints through the same admitted checks as every adapter.
 use super::*;
+use worth_query_declaration::facade::authentication::{
+    WorthQueryAuthenticationAudienceIdentity, WorthQueryAuthenticationMethodIdentity,
+};
 
-fn local(audience: &str, method: &str, lifetime: Duration) -> WorthQueryLocalProcessPrincipal {
+worth_query_declaration::worth_query_principal_issuer!(BoardLocal);
+worth_query_declaration::worth_query_authentication_audience!(Board);
+worth_query_declaration::worth_query_authentication_audience!(Other);
+worth_query_declaration::worth_query_authentication_method!(LocalProcess);
+worth_query_declaration::worth_query_authentication_method!(Remote);
+
+fn local(
+    audience: impl WorthQueryAuthenticationAudienceIdentity,
+    method: impl WorthQueryAuthenticationMethodIdentity,
+    lifetime: Duration,
+) -> WorthQueryLocalProcessPrincipal {
     WorthQueryLocalProcessPrincipal::new(
-        "local-process-v1",
-        WorthQueryExternalPrincipalIdentity::new("local://board", "owner").unwrap(),
-        WorthQueryAuthenticationAudience::new(audience).unwrap(),
-        WorthQueryAuthenticationMethod::new(method).unwrap(),
+        WorthQueryExternalPrincipalIdentity::new(BoardLocal, "owner").unwrap(),
+        audience,
+        method,
         lifetime,
     )
     .unwrap()
@@ -19,8 +31,8 @@ fn admit(
     admit_authentication_adapter(
         &installed_schema(),
         WorthQueryAuthenticationAdapterAdmission::new(
-            WorthQueryAuthenticationAudience::new("board").unwrap(),
-            WorthQueryAuthenticationMethod::new("local-process").unwrap(),
+            WorthQueryAuthenticationAudience::of(Board),
+            WorthQueryAuthenticationMethod::of(LocalProcess),
             clock,
         ),
         principal,
@@ -46,24 +58,21 @@ fn denial(
 fn local_principal_refuses_wrong_audience_method_clock_and_interruption_like_any_adapter() {
     let system = WorthQueryAdmissionClock::system();
     let wrong_audience = admit(
-        local("other", "local-process", Duration::from_secs(60)),
+        local(Other, LocalProcess, Duration::from_secs(60)),
         system.clone(),
     );
     let wrong_method = admit(
-        local("board", "remote", Duration::from_secs(60)),
+        local(Board, Remote, Duration::from_secs(60)),
         system.clone(),
     );
     let foreign = admit(
-        local("board", "local-process", Duration::from_secs(60)),
+        local(Board, LocalProcess, Duration::from_secs(60)),
         WorthQueryAdmissionTimeController::new().unwrap().clock(),
     );
     let cancellation = WorthQueryCancellationSource::new();
     cancellation.cancel();
     let cancelled = WorthQueryRequestScope::new(None, cancellation.token(), system.clone());
-    let valid = admit(
-        local("board", "local-process", Duration::from_secs(60)),
-        system,
-    );
+    let valid = admit(local(Board, LocalProcess, Duration::from_secs(60)), system);
     use WorthQueryAuthenticationDenialKind as Kind;
     for (adapter, scope, expected) in [
         (&wrong_audience, live_scope(), Kind::AudienceMismatch),
@@ -80,7 +89,7 @@ fn local_principal_mints_one_finite_admitted_proof_on_the_installed_clock() {
     let time = WorthQueryAdmissionTimeController::new().unwrap();
     let held = time.hold();
     let adapter = admit(
-        local("board", "local-process", Duration::from_secs(90)),
+        local(Board, LocalProcess, Duration::from_secs(90)),
         time.clock(),
     );
     let scope = WorthQueryRequestScope::new(

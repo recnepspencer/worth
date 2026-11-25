@@ -1,18 +1,18 @@
 use std::sync::Arc;
 
 use crate::durability::data::DurableCheckpoint;
-use crate::durability::medium::RelationalTransitionHistoryReader;
-use crate::durability::medium::{RelationalDurableMedium, RelationalDurableMediumBinding};
+use crate::durability::published_medium::RelationalTransitionHistoryReader;
+use crate::durability::published_medium::{
+    RelationalDurableMedium, RelationalDurableMediumBinding,
+};
+
 use crate::history::data::{CommitId, PositionedCanonicalCommit};
 use crate::runtime::state::subsystems::{RuntimeOwnedState, RuntimeSubsystem};
 use crate::runtime::RelationalRuntimeConfig;
 
-mod checkpoint_selection;
+pub(crate) use worth_relational_durability::internal_port::runtime::state::subsystems::durability::{checkpoint_selection, commit_log, state};
 mod source_retirement;
-mod state;
-pub(crate) use checkpoint_selection::{
-    RelationalCheckpointManifestPublication, RelationalCheckpointManifestSelection,
-};
+pub(crate) use checkpoint_selection::RelationalCheckpointManifestSelection;
 
 use state::DurabilityState;
 
@@ -52,13 +52,13 @@ impl DurabilitySubsystem {
 
     pub(crate) fn attach_medium(&mut self, medium: Box<dyn RelationalDurableMedium>) {
         self.attach_recovered_medium(
-            crate::durability::medium::RelationalDurableMediumTransfer::fresh(medium),
+            crate::durability::published_medium::RelationalDurableMediumTransfer::fresh(medium),
         );
     }
 
     pub(crate) fn attach_recovered_medium(
         &mut self,
-        transfer: crate::durability::medium::RelationalDurableMediumTransfer,
+        transfer: crate::durability::published_medium::RelationalDurableMediumTransfer,
     ) {
         let binding = Arc::new(RelationalDurableMediumBinding::new(transfer));
         let source = binding.cold_source();
@@ -72,7 +72,7 @@ impl DurabilitySubsystem {
     /// to publish. `None` when it has no medium or the medium already moved.
     pub(crate) fn detach_medium(
         &self,
-    ) -> Option<crate::durability::medium::RelationalDurableMediumTransfer> {
+    ) -> Option<crate::durability::published_medium::RelationalDurableMediumTransfer> {
         self.medium().as_ref().and_then(|binding| binding.detach())
     }
 
@@ -88,15 +88,14 @@ impl DurabilitySubsystem {
         medium.map(|medium| medium.transition_history()).or(reader)
     }
 
-    pub(crate) fn push_log_envelope(
+    pub(crate) fn canonical_coverage(
         &self,
-        commit: (
-            CommitId,
-            crate::publication::patch::data::PatchStreamPosition,
-            Arc<crate::history::RelationalCommitEnvelopeResidency>,
-        ),
-    ) {
-        self.state.write().push_log_envelope(commit);
+    ) -> commit_log::read_coverage::DurableCanonicalCoverage<'_> {
+        commit_log::read_coverage::DurableCanonicalCoverage::new(&self.state)
+    }
+
+    pub(crate) fn commit_log(&self) -> commit_log::DurabilityCommitLog<'_> {
+        commit_log::DurabilityCommitLog::new(&self.state)
     }
 
     pub(crate) fn install_home_readmission_phase(
@@ -130,15 +129,7 @@ impl DurabilitySubsystem {
 
     #[cfg(test)]
     pub(crate) fn remove_log_commit(&self, commit_id: CommitId) -> bool {
-        self.state.write().remove_log_commit(commit_id)
-    }
-
-    pub(crate) fn retain_log_after(&self, commit_id: CommitId) {
-        self.state.write().retain_log_after(commit_id);
-    }
-
-    pub(crate) fn trim_log_front(&self, count: usize) {
-        self.state.write().trim_log_front(count);
+        self.state.write().remove_log_commit_for_test(commit_id)
     }
 
     pub(crate) fn durable_log_envelope(
@@ -158,13 +149,7 @@ impl DurabilitySubsystem {
     /// Every durable envelope, shared rather than copied, so scans never hold
     /// the subsystem lock while they read.
     pub(crate) fn log(&self) -> Vec<Arc<PositionedCanonicalCommit>> {
-        self.state
-            .read()
-            .log
-            .iter()
-            .filter_map(|entry| entry.2.positioned_if_resident())
-            .map(Arc::new)
-            .collect()
+        self.canonical_coverage().log()
     }
 
     pub(crate) fn log_residencies_after(
@@ -185,7 +170,7 @@ impl DurabilitySubsystem {
     }
 
     pub(crate) fn checkpoints(&self) -> Vec<Arc<DurableCheckpoint>> {
-        self.state.read().checkpoints.clone()
+        self.canonical_coverage().checkpoints()
     }
 
     pub(crate) fn latest_checkpoint(&self) -> Option<Arc<DurableCheckpoint>> {

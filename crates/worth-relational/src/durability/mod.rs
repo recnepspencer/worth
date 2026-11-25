@@ -1,44 +1,38 @@
 pub(crate) use authority::RecordedReplayResultSchema;
 pub(crate) use authority::{HomeReadmissionMetadataPhase, RecoveredRootInventory};
 pub(crate) use authority::{AdmittedRecoveredCodecPublication, RecoveredCodecPublicationCustody};
-pub mod access;
 pub mod authority;
-pub use authority::{
-    HomeReadmissionMetadataAuthority, RecoveredCheckpointTransition,
-    RecoveredCheckpointTransitionDenial, RecoveredCheckpointTransitionError,
-    RecoveredRelationalBranchBasis, RecoveredRelationalRuntimeAuthority,
-    RefusedRecoveredCheckpointTransition,
+pub use authority::checkpoint_transition::{
+    RecoveredCheckpointTransition, RecoveredCheckpointTransitionDenial,
+    RecoveredCheckpointTransitionError, RefusedRecoveredCheckpointTransition,
 };
-pub(crate) mod artifact_canonical_payload;
-pub(crate) mod artifact_payload_emission;
-pub(crate) mod branch_transition_artifact;
-pub(crate) mod canonical_commit_artifact;
+pub use authority::recovery::home_program_transition::{
+    RelationalHomeProgramTransitionSource, RelationalHomeProgramTransitionSourceRefusal,
+};
+pub use authority::HomeReadmissionMetadataAuthority;
+pub use authority::RecoveredRelationalBranchBasis;
+pub(crate) use worth_relational_durability::internal_port::durability::{
+    authority_continuity, branch_transition_artifact,
+    canonical_commit_artifact, checkpoint_admission, checkpoint_history,
+    checkpoint_selection_denial, checkpoints, cold_residency_census, derived_index_artifacts,
+    envelope_version_selection, history_source_readmission, home_world_catalog,
+    initial_schema_installation_denial, log, medium_recovery_readmission, migration,
+    published_medium, recovery_transition_history, transition_admission_denial,
+};
 mod capture_custody_census;
 pub use capture_custody_census::{
     RelationalAllocationWitness, RelationalCheckpointSelectionCensus, RelationalColdSourceWitness,
     RelationalCommitEnvelopeCustody, RelationalSelectedCheckpointObservation,
 };
-mod cold_residency_census;
 pub use cold_residency_census::{
     RelationalCompleteCarriedIndexBasis, RelationalCompleteIndexSelectionInspection,
-    RelationalHistoryFoldBounds, RelationalLineageResidencyObservation,
-    RelationalPartitionSlotCensus, RelationalRegionProbeStatus,
-    RelationalRegionResidencyObservation, RelationalReplayRetentionObservation,
-    RelationalResidentSymbolDictionary,
+    RelationalHistoryFoldBounds,
 };
-pub(crate) mod checkpoint_admission;
-pub(crate) mod checkpoint_history;
-pub(crate) mod checkpoints;
-pub mod data;
-pub(crate) mod derived_index_artifacts;
-pub(crate) mod log;
-pub(crate) mod medium;
-pub(crate) mod migration;
-pub(crate) mod naming;
-pub(crate) mod recovery;
+pub use worth_relational_durability::internal_port::durability::data;
+pub(crate) use worth_relational_lineage::internal_port::durability::naming;
+pub(crate) use worth_relational_storage::internal_port::durability::medium;
 pub(crate) mod source_initial_inputs;
 
-mod home_world_catalog;
 pub use home_world_catalog::{
     RelationalWorldCatalogDenial, RelationalWorldEffectCoordinates,
     RelationalWorldOriginalDescription, RelationalWorldSourceCatalog,

@@ -27,6 +27,10 @@ pub use worth_query_host::facade::{
     declaration::authentication::WorthQueryExternalPrincipalIdentity,
 };
 
+worth_query_host::facade::worth_query_authentication_audience!(BankEstateCertificationAudience);
+worth_query_host::facade::worth_query_principal_issuer!(EstateCertificationBankTestInvalidIssuer);
+worth_query_host::facade::worth_query_authentication_method!(ExternalCertificationAdapterMethod);
+
 pub const INSTITUTION: InstitutionId = InstitutionId::new(1).unwrap();
 pub const BRANCH: BranchId = BranchId::new(2).unwrap();
 pub const ESTATE: EstateCaseId = EstateCaseId::new(3).unwrap();
@@ -157,11 +161,8 @@ pub fn legal_compliance_grant() -> EstateCapabilityGrant {
 }
 
 pub fn external_identity(subject: &str) -> WorthQueryExternalPrincipalIdentity {
-    WorthQueryExternalPrincipalIdentity::new(
-        "https://estate-certification.bank.test.invalid",
-        subject,
-    )
-    .unwrap()
+    WorthQueryExternalPrincipalIdentity::new(EstateCertificationBankTestInvalidIssuer, subject)
+        .unwrap()
 }
 
 pub fn request_scope() -> WorthQueryRequestScope {
@@ -172,8 +173,8 @@ pub fn request_scope() -> WorthQueryRequestScope {
 
 pub fn authentication_configuration() -> BankAuthenticationConfiguration {
     BankAuthenticationConfiguration::new(
-        WorthQueryAuthenticationAudience::new("bank-estate-certification").unwrap(),
-        WorthQueryAuthenticationMethod::new("external-certification-adapter").unwrap(),
+        WorthQueryAuthenticationAudience::of(BankEstateCertificationAudience),
+        WorthQueryAuthenticationMethod::of(ExternalCertificationAdapterMethod),
     )
 }
 
@@ -182,10 +183,9 @@ pub fn local_principal(
     identity: WorthQueryExternalPrincipalIdentity,
 ) -> WorthQueryLocalProcessPrincipal {
     WorthQueryLocalProcessPrincipal::new(
-        "bank-estate-certification-local-principal-v1",
         identity,
-        WorthQueryAuthenticationAudience::new("bank-estate-certification").unwrap(),
-        WorthQueryAuthenticationMethod::new("external-certification-adapter").unwrap(),
+        BankEstateCertificationAudience,
+        ExternalCertificationAdapterMethod,
         Duration::from_secs(60),
     )
     .unwrap()

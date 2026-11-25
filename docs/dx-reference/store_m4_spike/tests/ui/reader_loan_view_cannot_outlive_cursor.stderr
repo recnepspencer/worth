@@ -1,0 +1,24 @@
+error[E0505]: cannot move out of `cursor` because it is borrowed
+  --> tests/ui/reader_loan_view_cannot_outlive_cursor.rs:14:10
+   |
+ 3 | fn borrowed_row_cannot_outlive_cursor<'a>(
+   |                                       -- lifetime `'a` defined here
+...
+ 8 |     let cursor = product
+   |         ------ binding `cursor` declared here
+...
+13 |     let borrowed = cursor.peek_borrowed_row();
+   |                    ------ borrow of `cursor` occurs here
+14 |     drop(cursor);
+   |          ^^^^^^ move out of `cursor` occurs here
+15 |     borrowed
+   |     -------- returning this value requires that `cursor` is borrowed for `'a`
+
+error[E0515]: cannot return value referencing local variable `cursor`
+  --> tests/ui/reader_loan_view_cannot_outlive_cursor.rs:15:5
+   |
+13 |     let borrowed = cursor.peek_borrowed_row();
+   |                    ------ `cursor` is borrowed here
+14 |     drop(cursor);
+15 |     borrowed
+   |     ^^^^^^^^ returns a value referencing data owned by the current function

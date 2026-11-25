@@ -1,4 +1,6 @@
-use super::{IndexProjectionSource, RelationalRuntime};
+use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::residency::VisibilityProjectionViewOwnerPort as _;
+use super::IndexProjectionSource;
+use crate::runtime::RelationalRuntime;
 
 pub(super) enum IndexBuildProjection {
     Exact(crate::runtime::VisibilityProjectionView),

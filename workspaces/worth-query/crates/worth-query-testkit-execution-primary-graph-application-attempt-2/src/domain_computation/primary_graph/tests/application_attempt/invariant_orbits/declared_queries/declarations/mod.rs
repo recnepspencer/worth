@@ -7,6 +7,8 @@ use worth_query_declaration::facade::application_query::*;
 use worth_query_declaration::facade::application_schema::*;
 use worth_query_declaration::*;
 
+worth_query_declaration::worth_query_disclosure_classification!(OrbitQueryDisclosure);
+
 #[derive(Clone, Debug)]
 pub struct Parameters;
 worth_query_portable_type!(Parameters => "worth.query.declared-orbit.parameters.v1");
@@ -89,7 +91,7 @@ pub fn disclosure<S: OrbitModel, Q: ApplicationQueryMarkerIdentity<S, Scope = No
     value: Option<u64>,
 ) -> ApplicationQueryDisclosureContract {
     let contract = ApplicationQueryDisclosureContract::governed_by(
-        "orbit-query",
+        OrbitQueryDisclosure,
         crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::declared_queries::capability::declarations::ReadOrbit::<S>::reference(),
     )
     .disclose_field_by(

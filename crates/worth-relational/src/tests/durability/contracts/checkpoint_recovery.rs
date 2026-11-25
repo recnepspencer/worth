@@ -1,5 +1,7 @@
 use super::*;
 use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
+use worth_relational_contracts::internal_port::lineage::data::graph::LineageNodeFieldsPort as _;
+use worth_relational_durability::internal_port::durability::data::checkpoint_images::DurableCheckpointOwnerPort as _;
 
 #[test]
 fn memory_checkpoint_preserves_lineage_artifact_and_original_authority() {
@@ -11,18 +13,18 @@ fn memory_checkpoint_preserves_lineage_artifact_and_original_authority() {
     let second = create_entity_outcome(execution, &runtime, "second");
     let first_entity = changed_entities(&first)[0];
     let second_entity = changed_entities(&second)[0];
-    let first_lineage = runtime
+    let first_lineage = *runtime
         .lineage_access()
         .for_record(execution, first_entity)
         .unwrap()
         .unwrap()
-        .lineage_id;
-    let second_lineage = runtime
+        .owner_lineage_id();
+    let second_lineage = *runtime
         .lineage_access()
         .for_record(execution, second_entity)
         .unwrap()
         .unwrap()
-        .lineage_id;
+        .owner_lineage_id();
     let checkpoint = runtime
         .durability_authority()
         .checkpoint(execution)
@@ -85,12 +87,12 @@ fn memory_checkpoint_preserves_lineage_artifact_and_original_authority() {
         },
     ).unwrap();
 
-    assert_eq!(graph.nodes.len(), 2);
-    assert_eq!(graph.events.len(), 2);
+    assert_eq!(graph.nodes().len(), 2);
+    assert_eq!(graph.events().len(), 2);
     assert!(graph
-        .events
+        .events()
         .iter()
-        .all(|event| event.kind == LineageEventKind::Create));
+        .all(|event| event.kind() == LineageEventKind::Create));
     assert_eq!(
         recovered
             .lineage_access()
@@ -158,7 +160,7 @@ fn durability_contract_checkpoint_tail_recovery_preserves_post_checkpoint_commit
         main.commit.commit_id
     );
     let retained = recovered.durability.latest_checkpoint().unwrap();
-    assert_eq!(retained.envelopes.len(), 1);
+    assert_eq!(retained.envelopes().len(), 1);
     assert_eq!(retained.partition_images.as_ptr(), checkpoint_images);
 }
 
@@ -219,10 +221,12 @@ fn selected_branch_views_preserve_cold_probe_and_demand() {
         RecoveryVerificationMode, RelationalCheckpointArtifactPolicy, RelationalCheckpointMember,
     };
     use crate::durability::medium::{
-        RelationalDurableCheckpointSource, RelationalDurableColdSource,
-        RelationalDurableMemberCustody, RelationalDurableMemberLocator,
-        RelationalDurableOwnedReadRefusal, RelationalDurableReadPayload,
-        RelationalDurableRecoverySource,
+        RelationalDurableColdSource, RelationalDurableMemberCustody,
+        RelationalDurableMemberLocator, RelationalDurableOwnedReadRefusal,
+        RelationalDurableReadPayload,
+    };
+    use crate::durability::published_medium::{
+        RelationalDurableCheckpointSource, RelationalDurableRecoverySource,
     };
     use crate::storage::data::RelationalStorageUnavailableCause as Cause;
     use std::collections::BTreeMap;
@@ -266,13 +270,13 @@ fn selected_branch_views_preserve_cold_probe_and_demand() {
             request
                 .check_live()
                 .map_err(|c| RelationalDurableOwnedReadRefusal::Request(c.into()))?;
-            let bytes = self
-                .0
-                .get(&locator)
-                .cloned()
-                .ok_or(RelationalDurableOwnedReadRefusal::Storage(
-                    Cause::MissingMember,
-                ))?;
+            let bytes =
+                self.0
+                    .get(&locator)
+                    .cloned()
+                    .ok_or(RelationalDurableOwnedReadRefusal::Storage(
+                        Cause::MissingMember,
+                    ))?;
             if crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes.as_ref()).is_err() {
                 self.1.fetch_add(1, Ordering::Relaxed);
             }
@@ -306,7 +310,8 @@ fn selected_branch_views_preserve_cold_probe_and_demand() {
     let host = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     let producer = runtime_with_test_schema();
-    let entity = create_entity_in_partition(execution, &producer, "selected-target", PartitionId(1));
+    let entity =
+        create_entity_in_partition(execution, &producer, "selected-target", PartitionId(1));
     let untouched =
         create_entity_in_partition(execution, &producer, "selected-sibling", PartitionId(2));
     let native = producer
@@ -348,7 +353,10 @@ fn selected_branch_views_preserve_cold_probe_and_demand() {
             RecoveryVerificationMode::NormalRecoveryVerification,
         )
         .unwrap();
-    runtime.durability_recovery().recover(execution, plan).unwrap();
+    runtime
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
     assert_eq!(source.1.load(Ordering::Relaxed), 0);
     let transaction = test_owner_begin_transaction_for_main(&runtime);
     let selected = runtime.selected_branch_state(&transaction.basis).unwrap();
@@ -357,8 +365,9 @@ fn selected_branch_views_preserve_cold_probe_and_demand() {
         0,
         "acquiring selected_branch_state performs zero cold I/O"
     );
+    let root = selected.state().root();
     assert!(matches!(
-        selected.state().root().probe_full_region(entity.partition_id),
+        root.probe_full_region(entity.partition_id),
         crate::storage::residency::PartitionProbe::Cold
     ));
     let answer = crate::storage::residency::probe_full_sources(execution, [&selected], |[view]| {
@@ -368,12 +377,12 @@ fn selected_branch_views_preserve_cold_probe_and_demand() {
     assert!(answer);
     assert!(source.1.load(Ordering::Relaxed) > 0);
     assert!(matches!(
-        selected.state().root().probe_full_region(entity.partition_id),
+        root.probe_full_region(entity.partition_id),
         crate::storage::residency::PartitionProbe::Resident(_)
     ));
     assert!(
         matches!(
-            selected.state().root().probe_full_region(untouched.partition_id),
+            root.probe_full_region(untouched.partition_id),
             crate::storage::residency::PartitionProbe::Cold
         ),
         "selected-view probe must only demand the targeted partition"

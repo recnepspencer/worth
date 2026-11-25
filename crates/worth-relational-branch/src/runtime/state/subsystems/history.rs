@@ -1,0 +1,291 @@
+use std::sync::atomic::AtomicBool;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
+
+use crate::branch::basis_registry::RelationalBranchBasisRegistryMetrics;
+use crate::branch::reference::RelationalBranchReferenceCell;
+use crate::branch::registry::RelationalBranchReferenceRegistry;
+use crate::branch::root::RelationalBranchRootIdentityIssuer;
+use crate::history::data::{BranchId, CommitId};
+use crate::identity::data::VersionId;
+use crate::storage::substrate::owned_state::RuntimeOwnedState;
+
+#[path = "canonical_publication_routes.rs"]
+pub mod canonical_publication_routes;
+#[path = "history_branch_cells.rs"]
+pub mod history_branch_cells;
+#[path = "history_branch_lifecycle.rs"]
+pub mod history_branch_lifecycle;
+#[path = "history_catalog_recovery.rs"]
+pub mod history_catalog_recovery;
+#[path = "history_checkpoint_catalog.rs"]
+pub mod history_checkpoint_catalog;
+#[path = "history_construction.rs"]
+pub mod history_construction;
+#[path = "history_cost_recording.rs"]
+pub mod history_cost_recording;
+#[path = "history_costs.rs"]
+pub mod history_costs;
+#[path = "history_fork_binding.rs"]
+pub mod history_fork_binding;
+#[path = "history_head_versions.rs"]
+pub mod history_head_versions;
+#[path = "history_identity_allocation.rs"]
+pub mod history_identity_allocation;
+#[path = "history_ledger.rs"]
+pub mod history_ledger;
+#[path = "history_ledger_access.rs"]
+pub mod history_ledger_access;
+pub use history_fork_binding::RelationalForkOwnerBinding;
+pub use history_head_versions::BranchHeadVersionIndexAuthority;
+pub use history_ledger::HistoryLedger;
+#[path = "history_memory_close.rs"]
+pub mod history_memory_close;
+#[path = "history_publication.rs"]
+pub mod history_publication;
+#[path = "history_recovery.rs"]
+pub mod history_recovery;
+#[path = "history_recovery_denial.rs"]
+pub mod history_recovery_denial;
+#[path = "history_recovery_index_basis.rs"]
+pub mod history_recovery_index_basis;
+#[path = "history_recovery_lineage.rs"]
+pub mod history_recovery_lineage;
+#[path = "history_recovery_validation.rs"]
+pub mod history_recovery_validation;
+#[path = "history_retention.rs"]
+pub mod history_retention;
+#[path = "history_root_capture.rs"]
+pub mod history_root_capture;
+use history_costs::RelationalBranchSharingCostCounters;
+pub use history_costs::RelationalForkMaterializationCost;
+pub use history_costs::RelationalPhase4ReferenceCostOwner;
+pub use history_publication::PreparedRecoveredVersionedArtifactPublication;
+pub use history_publication::PreparedVersionedArtifactPublication;
+pub use history_publication::{PreparedCommitSequence, PreparedVersionedArtifactAccelerators};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct RelationalPhase4ReferenceCostCounters {
+    pub branch_cell_lookups: u64,
+    pub catalog_lookups: u64,
+    /// Count of immutable catalog-artifact materializations. This is backed
+    /// by the catalog's only envelope-to-artifact boundary, so a fork cannot
+    /// hide eager reconstruction behind an unchanged fork-local counter.
+    pub artifact_clones: u64,
+    pub reference_allocations: u64,
+    pub branch_cell_contacts: u64,
+    /// Number of operations that inspect the whole branch population. Phase 4
+    /// fork paths must leave this at zero; later sharing/retention lanes own
+    /// any population-wide maintenance accounting.
+    pub branch_population_scans: u64,
+}
+
+#[derive(Debug)]
+pub struct HistorySubsystem {
+    pub runtime_instance_id: u64,
+    pub main_branch: BranchId,
+    pub branch_cells: RelationalBranchReferenceRegistry,
+    pub phase4_costs: RelationalPhase4ReferenceCostOwner,
+    pub root_identity_issuer: RelationalBranchRootIdentityIssuer,
+    /// Population-wide reference traversal is deliberately hidden behind
+    /// named diagnostics/checkpoint methods.  Keeping the counter separate
+    /// lets those shared-`&self` methods record a scan without making the
+    /// operational counters interior-mutable.
+    branch_population_scans: Arc<AtomicU64>,
+    branch_head_versions: history_head_versions::BranchHeadVersionIndexAuthority,
+    basis_registry_metrics: Arc<RelationalBranchBasisRegistryMetrics>,
+    pub retention_owner: crate::history::retention::RelationalBranchRetentionOwner,
+    root_capture_sabotage: Arc<AtomicBool>,
+    /// The commit catalog and its durable sidecars, owned behind their own
+    /// lock so publication installs a commit without demanding exclusive
+    /// access to the runtime.
+    pub ledger: RuntimeOwnedState<HistoryLedger>,
+    pub commit_identity_allocator: Arc<AtomicU64>,
+    pub version_identity_allocator: Arc<AtomicU64>,
+}
+
+impl HistorySubsystem {
+    pub fn fork_binding(&self) -> RelationalForkOwnerBinding {
+        RelationalForkOwnerBinding::new(
+            self.branch_cells.clone(),
+            self.phase4_costs.clone(),
+            self.branch_head_versions.clone(),
+            self.retention_owner.binding(),
+            Arc::clone(&self.basis_registry_metrics),
+            self.root_identity_issuer.clone(),
+        )
+    }
+
+    pub fn from_main_cell(mut main_cell: RelationalBranchReferenceCell) -> Self {
+        let main_branch = main_cell.identity().branch_id().clone();
+        let basis_registry_metrics = Arc::new(RelationalBranchBasisRegistryMetrics::default());
+        main_cell.bind_basis_registry_metrics(Arc::clone(&basis_registry_metrics));
+        Self {
+            runtime_instance_id: 0,
+            main_branch: main_branch.clone(),
+            branch_cells: RelationalBranchReferenceRegistry::from_main(main_cell),
+            phase4_costs: RelationalPhase4ReferenceCostOwner::default(),
+            root_identity_issuer: RelationalBranchRootIdentityIssuer::default(),
+            branch_population_scans: Arc::new(AtomicU64::new(0)),
+            branch_head_versions: Default::default(),
+            basis_registry_metrics,
+            retention_owner: crate::history::retention::RelationalBranchRetentionOwner::new(0),
+            root_capture_sabotage: Arc::new(AtomicBool::new(false)),
+            ledger: RuntimeOwnedState::default(),
+            commit_identity_allocator: Arc::new(AtomicU64::new(1)),
+            version_identity_allocator: Arc::new(AtomicU64::new(1)),
+        }
+    }
+
+    pub fn preview_next_commit_id(&self) -> CommitId {
+        self.ledger.read().preview_next_commit_id()
+    }
+
+    #[doc(hidden)]
+    pub fn preview_next_version_id_for_test(&self) -> VersionId {
+        VersionId(self.ledger.read().next_version_id)
+    }
+
+    pub fn current_version_id(&self) -> VersionId {
+        self.ledger.read().current_version_id()
+    }
+
+    pub fn move_branch_head_basis(
+        &self,
+        previous: Option<&crate::branch::root::RelationalBranchRoot>,
+        next: Option<&crate::branch::root::RelationalBranchRoot>,
+    ) {
+        self.branch_head_versions.move_head(previous, next);
+    }
+
+    pub fn oldest_branch_head_version(&self) -> Option<VersionId> {
+        self.branch_head_versions.oldest()
+    }
+
+    pub fn branch_head_version_index(&self) -> BranchHeadVersionIndexAuthority {
+        self.branch_head_versions.clone()
+    }
+
+    pub fn prepare_recovery_sequence(&self, commit_id: CommitId, version_id: VersionId) {
+        self.ledger.write().set_sequence(commit_id.0, version_id.0);
+        self.commit_identity_allocator
+            .store(commit_id.0, Ordering::Relaxed);
+        self.version_identity_allocator
+            .store(version_id.0, Ordering::Relaxed);
+    }
+
+    pub fn install_recovered_sequence_floor(&self, next_commit_id: u64, next_version_id: u64) {
+        self.ledger
+            .write()
+            .set_sequence(next_commit_id, next_version_id);
+        self.commit_identity_allocator
+            .store(next_commit_id, Ordering::Relaxed);
+        self.version_identity_allocator
+            .store(next_version_id, Ordering::Relaxed);
+    }
+
+    pub fn prepare_replay_target_sequence(
+        &self,
+        commit_id: CommitId,
+        version_id: VersionId,
+    ) -> Result<(), &'static str> {
+        {
+            let mut ledger = self.ledger.write();
+            if ledger.next_commit_id > commit_id.0 || ledger.next_version_id > version_id.0 {
+                return Err("replay basis sequence has advanced beyond the committed target");
+            }
+            ledger.set_sequence(commit_id.0, version_id.0);
+        }
+        self.commit_identity_allocator
+            .store(commit_id.0, Ordering::Relaxed);
+        self.version_identity_allocator
+            .store(version_id.0, Ordering::Relaxed);
+        Ok(())
+    }
+
+    pub fn bind_fork_runtime(
+        &mut self,
+        runtime_instance_id: u64,
+    ) -> Result<
+        (),
+        crate::branch::reference::observation::RelationalBranchObservationConstructionDenial,
+    > {
+        self.set_runtime_instance_id(runtime_instance_id)?;
+        self.phase4_costs = RelationalPhase4ReferenceCostOwner::default();
+        self.branch_population_scans = Arc::new(AtomicU64::new(0));
+        Ok(())
+    }
+
+    pub fn branch_cell(&self, branch_id: &BranchId) -> Option<RelationalBranchReferenceCell> {
+        self.branch_cells.get(branch_id)
+    }
+
+    pub fn phase4_costs(&self) -> RelationalPhase4ReferenceCostCounters {
+        let mut costs = self.phase4_costs.snapshot();
+        costs.catalog_lookups = self.ledger.read().commit_catalog.lookup_count();
+        costs.artifact_clones = self.history_materialization_count();
+        costs.branch_population_scans = self.branch_population_scans.load(Ordering::Relaxed);
+        costs
+    }
+
+    pub fn branch_population_scan_count(&self) -> u64 {
+        self.branch_population_scans.load(Ordering::Relaxed)
+    }
+
+    pub fn branch_count(&self) -> usize {
+        self.branch_cells.len()
+    }
+
+    fn history_materialization_count(&self) -> u64 {
+        self.ledger.read().commit_catalog.materialization_count()
+    }
+
+    pub fn branch_cell_mut(&self, branch_id: &BranchId) -> Option<RelationalBranchReferenceCell> {
+        self.branch_cells.get(branch_id)
+    }
+
+    pub fn insert_branch_cell(&self, mut cell: RelationalBranchReferenceCell) {
+        cell.bind_basis_registry_metrics(Arc::clone(&self.basis_registry_metrics));
+        self.branch_cells.insert(cell);
+    }
+
+    pub fn basis_registry_metrics(&self) -> (u64, u64, u64) {
+        self.basis_registry_metrics.snapshot()
+    }
+
+    pub fn has_branch(&self, branch_id: &BranchId) -> bool {
+        self.branch_cells.contains(branch_id)
+    }
+
+    /// Compare a branch's live publication state directly to an already-pinned
+    /// root without allocating a basis or acquiring an observation obligation.
+    pub fn branch_live_root_matches(
+        &self,
+        branch_id: &BranchId,
+        root: &crate::branch::root::RelationalBranchRoot,
+    ) -> bool {
+        let Some(cell) = self.branch_cell(branch_id) else {
+            return false;
+        };
+        let publication = cell.publication_cell();
+        let state = publication.enter_state();
+        state.lifecycle_posture()
+            == crate::branch::lifecycle::RelationalBranchLifecyclePosture::Live
+            && state.selected_root().is_some_and(|current| {
+                std::ptr::eq(current.as_ref(), root)
+                    && crate::branch::basis_axis_validation::require_root_matches_reference(
+                        state.observation(),
+                        &current,
+                    )
+                    .is_ok()
+            })
+    }
+
+    /// Require a branch cell already admitted by an exact checkpoint. Replay
+    /// may not synthesize a cell from a legacy branch-head projection.
+    pub fn require_recovered_branch(&self, branch_id: &BranchId) -> Result<(), String> {
+        self.has_branch(branch_id)
+            .then_some(())
+            .ok_or_else(|| format!("recovery checkpoint omitted branch cell `{}`", branch_id.0))
+    }
+}

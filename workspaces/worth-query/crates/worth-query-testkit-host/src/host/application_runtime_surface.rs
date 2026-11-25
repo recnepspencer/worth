@@ -18,6 +18,8 @@ use worth_query_host::facade::primary_graph::{
 };
 use worth_query_host::facade::{application_installation::*, runtime::*};
 
+worth_query_decl::facade::worth_query_principal_issuer!(IssuerExampleIssuer);
+
 #[path = "application_runtime_surface/declaration.rs"]
 mod declaration;
 pub use declaration::*;
@@ -131,7 +133,7 @@ pub fn seed_identity_graph(
             &binding,
             WorthQueryApplicationPrincipalKey::new("host-principal").unwrap(),
             1_u64,
-            WorthQueryExternalPrincipalIdentity::new("https://issuer.example", "subject").unwrap(),
+            WorthQueryExternalPrincipalIdentity::new(IssuerExampleIssuer, "subject").unwrap(),
             WorthQueryPrincipalMappingStatus::Enabled,
         )
         .unwrap();

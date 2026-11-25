@@ -18,6 +18,7 @@ use super::WorthQueryApplicationProductBranchCleanup;
 mod expected_basis;
 mod inventory;
 pub use inventory::{WorthQueryProductBranchInventory, WorthQueryProductBranchInventoryDenial};
+mod custody;
 mod expected_source;
 mod owned_head;
 use super::{
@@ -29,12 +30,17 @@ use crate::basis::{
     WorthQueryProductBranchRecoveryDenial, WorthQueryProductBranches,
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+pub(in crate::domain_computation::primary_graph) use custody::{
+    SharedPrimaryRuntime, WorthQueryRuntimeCustody,
+};
 pub use expected_basis::WorthQueryExpectedProductBasisSelectionDenial;
+pub(in crate::domain_computation::primary_graph) use expected_source::DetachedExpectedProductBranch;
 pub use expected_source::{
     WorthQueryExpectedProductBranch, WorthQueryExpectedProductBranchAdoptionDenial,
     WorthQueryExpectedProductBranchAdoptionFailure, WorthQueryExpectedProductBranchCloseFailure,
-    WorthQueryExpectedProductBranchFork,
+    WorthQueryExpectedProductBranchCreationContinuation, WorthQueryExpectedProductBranchFork,
 };
+pub(in crate::domain_computation::primary_graph) use owned_head::DetachedOwnedProductHead;
 pub use owned_head::{WorthQueryOwnedProductHead, WorthQueryOwnedProductHeadCloseFailure};
 
 /// The product branch lifecycle of one application runtime: fork branches,
@@ -135,14 +141,13 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
         self.branches.fork(source).with_application_lifecycle(
             std::sync::Arc::new(
                 crate::domain_computation::runtime_ports::OutputLineageForkAdapter(
-                    std::sync::Arc::clone(
-                        self.application
-                            .inner
-                            .runtime
-                            .primary_provider_ref()
-                            .graph_ref()
-                            .output_lineage_ref(),
-                    ),
+                    self.application
+                        .inner
+                        .runtime
+                        .primary_provider_ref()
+                        .graph_ref()
+                        .output_lineage_ref()
+                        .clone(),
                 ),
             ),
             self.application

@@ -1,3 +1,4 @@
+mod declared_identity;
 mod external_identity;
 mod mapping_status;
 mod purpose;
@@ -7,6 +8,10 @@ pub use verifier_identity::{
     WorthQueryAuthenticationVerifierIdentity, WorthQueryAuthenticationVerifierIdentityDenial,
 };
 
+pub use declared_identity::{
+    is_declared_vocabulary, WorthQueryAuthenticationAudienceIdentity,
+    WorthQueryAuthenticationMethodIdentity, WorthQueryPrincipalIssuerIdentity,
+};
 pub use external_identity::{
     WorthQueryExternalPrincipalIdentity, WorthQueryExternalPrincipalIdentityBinding,
     WorthQueryExternalPrincipalIdentityDenial, WorthQueryExternalPrincipalIdentityDenialKind,

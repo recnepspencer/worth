@@ -59,6 +59,19 @@ impl<S: ApplicationSchema> Reader<'_, S> {
             self.work_budget.mark_exceeded();
             return Err(Denial::new(Kind::WorkBudgetExceeded, relation.name()));
         }
+        // Native's derived traversal reads the current image: one that crosses
+        // a list a successor's own chain links touch read the chain's effect.
+        if self.native.own_outputs().is_some_and(|own| {
+            own.crossed_by_derived_traversal(
+                native
+                    .data()
+                    .adjacency_dependencies()
+                    .iter()
+                    .map(|probe| (probe.anchor, probe.relation, probe.outgoing)),
+            )
+        }) {
+            return Err(Denial::new(Kind::EndpointUnavailable, relation.name()));
+        }
         for (entity, _) in native.data().entity_dependencies() {
             self.execution
                 .check_live()

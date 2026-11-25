@@ -9,35 +9,29 @@ impl PerformanceAccess<'_> {
         scope_units: usize,
     ) {
         self.counters.count(|counters| {
-            counters.preparation_packet_count += packets;
-            counters.preparation_packet_item_count += items;
-            counters.preparation_packet_peak_width_total += max_width;
-            counters.preparation_scope_unit_count += scope_units;
+            counters.count_preparation_packet_shape(packets, items, max_width, scope_units);
         });
     }
 
     pub(crate) fn count_preparation_parallel_legal(&self) {
-        self.counters
-            .count(|counters| counters.preparation_parallel_legal_count += 1);
+        self.counters.count(
+            crate::performance::data::RuntimeComplexityCounters::count_preparation_parallel_legal,
+        );
     }
 
     pub(crate) fn count_preparation_parallel_profitable(&self) {
         self.counters
-            .count(|counters| counters.preparation_parallel_profitable_count += 1);
+            .count(crate::performance::data::RuntimeComplexityCounters::count_preparation_parallel_profitable);
     }
 
     pub(crate) fn count_preparation_serial_strategy(&self) {
-        self.counters
-            .count(|counters| counters.preparation_serial_strategy_count += 1);
+        self.counters.count(
+            crate::performance::data::RuntimeComplexityCounters::count_preparation_serial_strategy,
+        );
     }
 
     pub(crate) fn count_preparation_staged_parallel_strategy(&self) {
         self.counters
-            .count(|counters| counters.preparation_staged_parallel_strategy_count += 1);
-    }
-
-    pub(crate) fn count_preparation_reducer_conflicts(&self, conflicts: usize) {
-        self.counters
-            .count(|counters| counters.preparation_reducer_conflict_count += conflicts);
+            .count(crate::performance::data::RuntimeComplexityCounters::count_preparation_staged_parallel_strategy);
     }
 }

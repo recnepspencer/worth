@@ -1,5 +1,6 @@
 use super::native_strategy_fixtures::*;
 use crate::authority::commit::pipeline::{stage_observation, CommitStage};
+use crate::commit_strategies::data::execution::executor_registration::CommitStrategyExecutionRegistration;
 use crate::durability::data::RelationalRecoveryStop;
 use crate::execution::RelationalExecutionDenialCause as Cause;
 use std::sync::{
@@ -71,7 +72,7 @@ fn verification_memory_stop_has_no_serialized_mismatch_outcome() {
     let observed_reached = reached.clone();
     let mut validation = 0;
     let mut held = None;
-    let outcome = stage_observation::with_observer(
+    let outcome = stage_observation::with_stage_observer_for_test(
         Box::new(move |stage| {
             if stage == CommitStage::Validation {
                 validation += 1;

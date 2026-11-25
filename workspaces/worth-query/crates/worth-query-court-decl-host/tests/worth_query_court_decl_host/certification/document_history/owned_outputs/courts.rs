@@ -194,11 +194,11 @@ fn out_of_history_settlement_on_the_document_branch_diverges_its_head() {
 }
 
 /// Every Native-owned publication participates in navigation currentness.
-pub(super) fn configure_all_trees<'a>(
-    host: &'a world::Host,
-    document: world::Document<'a>,
+pub(super) fn configure_all_trees<'d>(
+    host: &world::Host,
+    document: world::Document<'d>,
 ) -> WorthQueryApplicationHistoryDocument<
-    'a,
+    'd,
     Schema,
     History,
     OrdinaryHistoryPayload,

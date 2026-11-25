@@ -15,6 +15,8 @@ use worth_query_declaration::facade::application_schema::*;
 use worth_query_declaration::facade::authentication::*;
 use worth_query_installation::facade::*;
 
+worth_query_declaration::worth_query_principal_issuer!(IssuerExampleIssuer);
+
 pub struct World {
     pub application: WorthQueryPrimaryGraphApplicationRuntime<WalkSchema>,
     pub binding: WorthQueryInstalledPrincipalBinding<
@@ -133,8 +135,7 @@ pub fn install_world(
                 &binding,
                 WorthQueryApplicationPrincipalKey::new("principal-0").unwrap(),
                 1,
-                WorthQueryExternalPrincipalIdentity::new("https://issuer.example", "alice")
-                    .unwrap(),
+                WorthQueryExternalPrincipalIdentity::new(IssuerExampleIssuer, "alice").unwrap(),
                 WorthQueryPrincipalMappingStatus::Enabled,
             )
             .unwrap();

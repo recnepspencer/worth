@@ -119,12 +119,15 @@ where
         }
         let Self { root, mut presence } = self;
         presence.disarm();
-        let root = match Arc::try_unwrap(root) {
+        let root = match Arc::try_unwrap(root.into_arc()) {
             Ok(root) => root,
             Err(root) => {
                 presence.rearm();
                 return Err((
-                    Self { root, presence },
+                    Self {
+                        root: super::super::owner_backing::StrongWorldOwner::from_arc(root),
+                        presence,
+                    },
                     cleanup,
                     RuntimeWorldHomeRetirementDenial::Close(CloseDenial::Busy),
                 ));

@@ -24,7 +24,11 @@ pub(super) fn contracts(
     contracts: &mut WorthQueryApplicationContributionContracts<Catalog>,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
     indexed::contracts(contracts)?;
-    contracts.producer::<producer::Producer>()?;
+    if producer::SOURCE_OWNED.get() {
+        contracts.producer::<producer::OwnedProducer>()?;
+    } else {
+        contracts.producer::<producer::Producer>()?;
+    }
     contracts.conditional::<readiness::Readiness>()?;
     Ok(())
 }
@@ -32,9 +36,18 @@ pub(super) fn configure(
     setup: &mut WorthQueryApplicationContributionSetup<'_, Catalog>,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
     indexed::configure(setup)?;
-    setup.handler::<operation::Binding, _>(operation::Handler)?;
+    let computation = setup.partitioned_computation::<
+        super::host::Feature,
+        operation::computation::Computation,
+        _,
+    >(operation::computation::Owner)?;
+    setup.handler::<operation::Binding, _>(operation::ComputingHandler(computation))?;
     setup.handler::<source::operation::Binding, _>(source::operation::Handler)?;
-    setup.producer::<producer::Producer>(producer::Provider)?;
+    if producer::SOURCE_OWNED.get() {
+        setup.producer::<producer::OwnedProducer>(producer::Provider)?;
+    } else {
+        setup.producer::<producer::Producer>(producer::Provider)?;
+    }
     setup.conditional::<readiness::Readiness>(())?;
     Ok(())
 }

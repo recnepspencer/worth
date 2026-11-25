@@ -105,13 +105,16 @@ fn projection_is_row(kind: WorthQueryApplicationProjectionDenialKind) -> bool {
             crate::domain_computation::primary_graph::value_decode::decode_request_cause(cause)
                 .is_none()
         }
-        Kind::FieldOmitted | Kind::RelationOmitted => false,
+        // Whether names were observed belongs to the read lane, not the row.
+        Kind::FieldOmitted | Kind::RelationOmitted | Kind::PersistentNamesUnavailable => false,
         Kind::FieldNotProjected
         | Kind::FieldContractMismatch
         | Kind::FieldTypeMismatch
         | Kind::RelationNotProjected
         | Kind::RelationContractMismatch
         | Kind::RelationCardinalityMismatch
+        | Kind::PersistentNameMissing
+        | Kind::PersistentNameKindMismatch
         | Kind::DomainProjectionRejected => true,
     }
 }

@@ -171,6 +171,7 @@ impl<'runtime> WorthQueryProductBranchFork<'runtime> {
                 ProductBranchCreationPlans::new(relational, signal),
             )
             .expect("generated Query product branch names satisfy World limits");
+            let expected = matches!(&source, ForkSource::Expected(_));
             let source = source
                 .admit(runtime)
                 .map_err(WorthQueryProductBranchCreateError::SourceAdmission)?;
@@ -206,9 +207,16 @@ impl<'runtime> WorthQueryProductBranchFork<'runtime> {
                     WorthQueryProductBranch::from_occurrence(observation.lifecycle_incarnation()),
                     source,
                 )),
-                WorthQueryProductBranchCreationOutcome::ProductUnpublished(recovery) => Err(
-                    WorthQueryProductBranchCreateError::ProductUnpublished(recovery),
-                ),
+                WorthQueryProductBranchCreationOutcome::ProductUnpublished(recovery) => {
+                    let recovery = if expected {
+                        recovery.retain_expected_source(source)
+                    } else {
+                        recovery
+                    };
+                    Err(WorthQueryProductBranchCreateError::ProductUnpublished(
+                        recovery,
+                    ))
+                }
             }
         };
         if let Some(coord) = commit_coordination {

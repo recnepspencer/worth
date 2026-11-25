@@ -26,7 +26,8 @@ pub use authorization::{
 };
 pub use bank_identity::AuthentikBankIdentity;
 pub use configuration::{
-    AuthentikOidcConfiguration, AuthentikOidcConfigurationBuilder, AuthentikOidcConfigurationError,
+    AuthentikIssuer, AuthentikOidcCodePkce, AuthentikOidcConfiguration,
+    AuthentikOidcConfigurationBuilder, AuthentikOidcConfigurationError, BankClientAudience,
 };
 pub use credential::AuthentikOidcCredential;
 pub use error::{

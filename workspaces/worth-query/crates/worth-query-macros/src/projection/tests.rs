@@ -122,14 +122,101 @@ fn relation_slots_select_cardinality_from_the_field_type_and_direction_from_the_
     for constructor in ["forward_many", "reverse_optional", "forward_one"] {
         assert!(expanded.contains(constructor), "{constructor}: {expanded}");
     }
-    assert!(expanded.contains("fn lead_slot < Q >"), "{expanded}");
     assert!(
-        expanded.contains("Self :: lead_slot :: < Q > ()"),
+        expanded.contains("fn lead_slot < __WorthProjQ >"),
         "{expanded}"
     );
-    assert!(!expanded.contains("fn lead < Q >"), "{expanded}");
+    assert!(
+        expanded.contains("Self :: lead_slot :: < __WorthProjQ > ()"),
+        "{expanded}"
+    );
+    assert!(!expanded.contains("fn lead < __WorthProjQ >"), "{expanded}");
+    assert!(!expanded.contains("fn lead_slot < Q >"), "{expanded}");
     assert!(
         expanded.contains("< PersonRow > :: project_row"),
         "{expanded}"
     );
+}
+
+/// A name slot reads the row's own name and takes no slot key.
+#[test]
+fn a_name_slot_projects_the_root_name_and_refuses_slot_keys() {
+    let expanded = expansion(&format!(
+        "{HEADER} struct Row {{ \
+         #[worth_query(name)] name: WorthQueryName<Task>, \
+         #[worth_query(name)] alias: Option<WorthQueryName<Task>>, \
+         #[worth_query(field = Title, name = \"heading\")] title: String, \
+         #[worth_query(relation = Contains, nested = Unit)] tasks: Vec<TaskRow> }}"
+    ));
+    assert!(
+        expanded.contains("name : __worth_proj_row . name :: < __WorthProjRoot > () ?"),
+        "{expanded}"
+    );
+    assert!(
+        expanded.contains("alias : __worth_proj_row . optional_name :: < __WorthProjRoot > () ?"),
+        "{expanded}"
+    );
+    assert!(
+        expanded.contains(
+            "const PROJECTS_PERSISTENT_NAMES : bool = true || < TaskRow > :: PROJECTS_PERSISTENT_NAMES ;"
+        ),
+        "{expanded}"
+    );
+    assert!(expanded.contains("\"heading\""), "{expanded}");
+    let grouped = expansion(&format!(
+        "{HEADER} struct Row {{ \
+         #[worth_query(group_name)] shell: WorthQueryName<Shell>, \
+         #[worth_query(group_name)] zone: Option<WorthQueryName<Zone>> }}"
+    ));
+    assert!(
+        grouped.contains("shell : __worth_proj_row . group_name () ?"),
+        "{grouped}"
+    );
+    assert!(
+        grouped.contains("zone : __worth_proj_row . optional_group_name () ?"),
+        "{grouped}"
+    );
+    assert!(
+        grouped.contains("const PROJECTS_PERSISTENT_NAMES : bool = true ;"),
+        "{grouped}"
+    );
+    // A name is not a result slot: no marker, selector or shape member.
+    assert!(!expanded.contains("struct Name ;"), "{expanded}");
+    assert!(!expanded.contains("fn name < __WorthProjQ >"), "{expanded}");
+
+    let plain = expansion(&format!(
+        "{HEADER} struct Row {{ #[worth_query(field = Title)] title: String }}"
+    ));
+    assert!(
+        plain.contains("const PROJECTS_PERSISTENT_NAMES : bool = false ;"),
+        "{plain}"
+    );
+
+    for (keys, expected) in [
+        (
+            "name, field = Title",
+            "`field` does not apply to a name slot",
+        ),
+        (
+            "name, slot = \"a.b\"",
+            "`slot` does not apply to a name slot",
+        ),
+        ("name, name = \"n\"", "`name` does not apply to a name slot"),
+        ("name, name", "duplicate `name` key"),
+        (
+            "group_name, field = Title",
+            "`field` does not apply to a name slot",
+        ),
+        (
+            "name, group_name",
+            "either the row's `name` or its `group_name`",
+        ),
+        ("group_name, group_name", "duplicate `group_name` key"),
+        ("grouped", "unknown key for #[derive(WorthQueryProjection)]"),
+    ] {
+        let message = refusal(&format!(
+            "{HEADER} struct Row {{ #[worth_query({keys})] name: WorthQueryName<Task> }}"
+        ));
+        assert!(message.contains(expected), "{keys}: {message}");
+    }
 }

@@ -170,8 +170,36 @@ impl WorthQueryInstalledEntityResolutionContext {
         expected: &worth_foundational::facade::AspectValue,
     ) -> Result<WorthQueryApplicationEntityIdentity<Schema, Entity>, WorthQueryEntityResolutionDenial>
     {
-        let (resolved, examined) = self.resolve_applied_with_work(
-            execution, before, candidate, entity, aspect, field, expected,
+        self.resolve_applied_identity_viewed(
+            execution, before, candidate, None, entity, aspect, field, expected,
+        )
+    }
+
+    /// As `resolve_applied_identity`, over a successor round's own-output
+    /// view when it has one: the same merged answer its reader resolves.
+    #[allow(clippy::too_many_arguments)]
+    pub fn resolve_applied_identity_viewed<Schema, Entity>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        before: &RelationalPinnedRead,
+        candidate: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+        own: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
+        entity: &str,
+        aspect: &str,
+        field: &str,
+        expected: &worth_foundational::facade::AspectValue,
+    ) -> Result<WorthQueryApplicationEntityIdentity<Schema, Entity>, WorthQueryEntityResolutionDenial>
+    {
+        let covers = |entity| own.is_some_and(|own| own.covers(entity));
+        let (resolved, examined) = self.resolve_applied_merged_with_work(
+            execution,
+            before,
+            candidate,
+            own.map(|own| (own.head(), &covers as &dyn Fn(_) -> bool)),
+            entity,
+            aspect,
+            field,
+            expected,
         );
         let resolved = resolved?;
         super::applied_read_observation::record(self, entity, before, candidate);
@@ -242,6 +270,7 @@ impl WorthQueryInstalledEntityResolutionContext {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         before: &RelationalPinnedRead,
         candidate: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+        own: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
         field: Field,
         value: Field::Value,
     ) -> Result<
@@ -261,10 +290,11 @@ impl WorthQueryInstalledEntityResolutionContext {
         };
         Field::Binding::validate(&value).map_err(|_| refused())?;
         let expected = Field::Binding::encode(&value).map_err(|_| refused())?;
-        self.resolve_applied_identity(
+        self.resolve_applied_identity_viewed(
             execution,
             before,
             candidate,
+            own,
             field.entity(),
             field.aspect(),
             field.field(),

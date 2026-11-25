@@ -4,7 +4,7 @@ use std::any::Any;
 use std::collections::BTreeMap;
 use std::sync::{Arc, Weak};
 
-use super::{Req, ReqArrayBuilder};
+use worth_execution::{ExecutionRequest as Req, ExecutionRequestArrayBuilder as ReqArrayBuilder};
 use worth_execution::{ExecutionAllocationPolicy, ExecutionImmutableBytes};
 
 use crate::durability::data::{
@@ -52,35 +52,14 @@ pub(crate) fn captured_members_source_with_fallback(
     Arc::new(CapturedMembersColdSource { members, fallback })
 }
 
-pub(crate) fn expect_durability_failure(
-    stop: crate::durability::data::RelationalRecoveryStop,
-) -> crate::durability::data::DurabilityError {
-    match stop {
-        crate::durability::data::RelationalRecoveryStop::AdmissionImage(cause) => {
-            panic!("expected failed durable evidence, received admission image refusal: {cause:?}")
-        }
-        crate::durability::data::RelationalRecoveryStop::Durability(error) => error,
-        crate::durability::data::RelationalRecoveryStop::Content(cause) => {
-            panic!("unexpected content refusal: {cause:?}")
-        }
-        crate::durability::data::RelationalRecoveryStop::Allocation(cause) => {
-            panic!("expected failed durable evidence, received allocation stop: {cause:?}")
-        }
-        crate::durability::data::RelationalRecoveryStop::Request(cause) => {
-            panic!("expected failed durable evidence, received request stop: {cause:?}")
-        }
-    }
-}
-
 pub(crate) fn empty_cold_source() -> Arc<dyn RelationalDurableColdSource> {
     Arc::new(CapturedMembersColdSource::default())
 }
 
 pub(crate) fn members_from_captured(
-    members: &crate::durability::data::CapturedCheckpointMembers,
+    members: &[RelationalCheckpointMember],
 ) -> Arc<dyn RelationalDurableColdSource> {
     let map = members
-        .entries()
         .iter()
         .map(|member| match member {
             RelationalCheckpointMember::New { locator, bytes } => (*locator, bytes.clone()),
@@ -106,13 +85,10 @@ pub(crate) fn encode_checkpoint_with_source(
     ),
     RelationalNativeCheckpointCaptureDenial,
 > {
-    let (bytes, _, members) =
-        crate::durability::log::native_checkpoint_codec::encode_checkpoint_members(
-            execution, checkpoint, policy,
-        )?;
-    let source = members_from_captured(&members);
-    let native = RelationalNativeCheckpoint::from_untrusted_bytes(bytes.bytes().to_vec())
-        .with_captured_members(members);
+    let native = crate::durability::log::native_checkpoint_codec::encode_checkpoint_members(
+        execution, checkpoint, policy,
+    )?;
+    let source = members_from_captured(native.members());
     Ok((native, source))
 }
 

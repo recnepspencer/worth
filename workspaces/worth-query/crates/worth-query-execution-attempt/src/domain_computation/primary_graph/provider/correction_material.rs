@@ -22,6 +22,7 @@ pub mod ready;
 pub mod recovery;
 
 impl WorthQueryPrimaryGraphProvider {
+    /// A correction commit's material; a correction commits as its group's primary writer.
     pub fn admit_correction_lineage_material(
         &self,
         commit: &worth_relational::facade::history::RelationalCommitReceipt,
@@ -29,11 +30,33 @@ impl WorthQueryPrimaryGraphProvider {
         self.correction_material
             .get()
             .ok_or(Denial::AdmissionRequired)?
-            .admit_original_metadata(commit)
+            .admit_original_metadata(commit, crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceMember::Primary)
+    }
+    pub fn has_captured_correction_material(
+        &self,
+        original: worth_foundational::facade::DurableCompositePublicationAttemptIdentity,
+    ) -> bool {
+        self.correction_material
+            .get()
+            .is_some_and(|owner| owner.has_captured_original(original))
+    }
+    pub fn settle_correction_pins_for_close(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+        inspection: &worth_runtime_world::facade::RuntimeWorldInspectionPort,
+    ) -> Result<(), Denial> {
+        let Some(owner) = self.correction_material.get() else {
+            return Ok(());
+        };
+        let originals = inspection
+            .observe_program_activation_history(request)
+            .map_err(|_| Denial::Unavailable)?;
+        owner.abandon_released(&originals, request)
     }
     pub fn observe_correction_material(
         &self,
         commit: &worth_relational::facade::history::RelationalCommitReceipt,
+        member: crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceMember,
     ) -> Result<
         crate::domain_computation::primary_graph::retained_correction::RetainedCorrectionMaterial,
         Denial,
@@ -41,7 +64,27 @@ impl WorthQueryPrimaryGraphProvider {
         self.correction_material
             .get()
             .ok_or(Denial::AdmissionRequired)?
-            .observe_original(commit)
+            .observe_original(commit, member)
+    }
+    /// A recorded correction's capture; a correction commits as its group's primary writer.
+    pub fn observe_correction_capture_for_replay(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+        commit: &worth_relational::facade::history::RelationalCommitReceipt,
+        inspection: &worth_runtime_world::facade::RuntimeWorldInspectionPort,
+    ) -> Result<
+        Arc<crate::domain_computation::primary_graph::retained_correction::record::MaterialCapture>,
+        Denial,
+    > {
+        let owner = self
+            .correction_material
+            .get()
+            .ok_or(Denial::AdmissionRequired)?;
+        owner.observe_capture_for_replay(commit, crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceMember::Primary, || {
+            inspection
+                .observe_program_activation_history(request)
+                .map_err(|_| Denial::Unavailable)
+        })
     }
     pub fn readmit_correction_material(
         &self,

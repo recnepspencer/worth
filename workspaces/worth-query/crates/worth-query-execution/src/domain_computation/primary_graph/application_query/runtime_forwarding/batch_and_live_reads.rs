@@ -71,6 +71,7 @@ mod domain_computation_primary_graph_application_query_live_lease_open {
     use worth_query_execution_query::facade::domain_computation::primary_graph::application_query::live::controls::WorthQueryApplicationLiveControls;
     use worth_query_execution_query::facade::domain_computation::primary_graph::application_query::live::outcome::WorthQueryApplicationLiveOpenDenial;
     use worth_query_execution_query::facade::domain_computation::primary_graph::application_query::live::lease::WorthQueryApplicationLiveLease;
+    use worth_query_execution_query::facade::domain_computation::primary_graph::application_query::live::whole_result::WorthQueryApplicationWholeResultLiveLease;
     use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationProjection;
     use crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity;
     use crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal;
@@ -189,6 +190,106 @@ mod domain_computation_primary_graph_application_query_live_lease_open {
             Input: ApplicationCapabilityRequest<Schema, Capability, Scope = Scope>,
         {
             self.inner.open_governed_application_query_live::<Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope, Target, Binding, Capability, Operation, Input>(phase, query, principal, scope, capability, parameters, controls)
+        }
+        #[allow(clippy::too_many_arguments)]
+        pub fn open_application_query_live_whole_result<
+            'principal,
+            Query,
+            Parameters,
+            QueryResult,
+            Principal,
+            PrincipalIdentity,
+            Scope,
+        >(
+            self,
+            phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+            query: WorthQueryInstalledApplicationQuery<
+                Schema,
+                Query,
+                Parameters,
+                QueryResult,
+                Scope,
+            >,
+            principal: &'principal WorthQueryAuthenticatedPrincipal<
+                Schema,
+                Principal,
+                PrincipalIdentity,
+            >,
+            scope: WorthQueryApplicationEntityIdentity<Schema, Scope>,
+            parameters: ApplicationQueryParameterSet<Query>,
+            controls: WorthQueryApplicationLiveControls,
+        ) -> Result<
+            WorthQueryApplicationWholeResultLiveLease<
+                'runtime,
+                Schema,
+                Query,
+                Parameters,
+                QueryResult,
+                Principal,
+                PrincipalIdentity,
+                Scope,
+            >,
+            WorthQueryApplicationLiveOpenDenial,
+        >
+        where
+            QueryResult: WorthQueryApplicationProjection<Schema, Query>,
+        {
+            self.inner.open_application_query_live_whole_result::<Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope>(phase, query, principal, scope, parameters, controls)
+        }
+        #[allow(clippy::too_many_arguments)]
+        pub fn open_governed_application_query_live_whole_result<
+            'principal,
+            Query,
+            Parameters,
+            QueryResult,
+            Principal,
+            PrincipalIdentity,
+            Scope,
+            Capability,
+            Operation,
+            Input,
+        >(
+            self,
+            phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+            query: WorthQueryInstalledApplicationQuery<
+                Schema,
+                Query,
+                Parameters,
+                QueryResult,
+                Scope,
+            >,
+            principal: &'principal WorthQueryAuthenticatedPrincipal<
+                Schema,
+                Principal,
+                PrincipalIdentity,
+            >,
+            scope: WorthQueryApplicationEntityIdentity<Schema, Scope>,
+            capability: crate::domain_computation::authorization::WorthQueryAdmittedApplicationCapabilityAccess<
+                Schema,
+                Capability,
+                Operation,
+                Input,
+            >,
+            parameters: ApplicationQueryParameterSet<Query>,
+            controls: WorthQueryApplicationLiveControls,
+        ) -> Result<
+            WorthQueryApplicationWholeResultLiveLease<
+                'runtime,
+                Schema,
+                Query,
+                Parameters,
+                QueryResult,
+                Principal,
+                PrincipalIdentity,
+                Scope,
+            >,
+            WorthQueryApplicationLiveOpenDenial,
+        >
+        where
+            QueryResult: WorthQueryApplicationProjection<Schema, Query>,
+            Input: ApplicationCapabilityRequest<Schema, Capability, Scope = Scope>,
+        {
+            self.inner.open_governed_application_query_live_whole_result::<Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope, Capability, Operation, Input>(phase, query, principal, scope, capability, parameters, controls)
         }
     }
 }

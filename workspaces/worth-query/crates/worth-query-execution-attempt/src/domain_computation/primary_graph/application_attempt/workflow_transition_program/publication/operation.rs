@@ -61,11 +61,30 @@ pub struct RequiredWorkflowOperation {
     pub(crate) authority: Arc<WorkflowOperationAuthoritySlot>,
 }
 
+trait WorkflowOperationAuthorityBacking:
+    Send + Sync + std::panic::UnwindSafe + std::panic::RefUnwindSafe + std::fmt::Debug
+{
+    fn take(&self) -> Option<WorkflowOperationAuthority>;
+}
+
+impl WorkflowOperationAuthorityBacking for Mutex<Option<WorkflowOperationAuthority>> {
+    fn take(&self) -> Option<WorkflowOperationAuthority> {
+        self.lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .take()
+    }
+}
+
 #[derive(Debug)]
 pub struct WorkflowOperationAuthoritySlot {
-    pub(crate) authority: Mutex<Option<WorkflowOperationAuthority>>,
-    pub(crate) issued: bool,
+    authority: Option<Box<dyn WorkflowOperationAuthorityBacking>>,
+    issued: bool,
 }
+
+const _: fn() = || {
+    fn assert_auto_traits<T: Send + Sync + std::panic::UnwindSafe + std::panic::RefUnwindSafe>() {}
+    assert_auto_traits::<WorkflowOperationAuthoritySlot>();
+};
 
 pub struct WorkflowOperationAuthority {
     pub(crate) captured_input:
@@ -105,12 +124,20 @@ impl std::fmt::Debug for WorkflowOperationAuthority {
 }
 
 impl WorkflowOperationAuthoritySlot {
+    pub(crate) fn new(authority: Option<WorkflowOperationAuthority>) -> Arc<Self> {
+        Arc::new(Self {
+            issued: authority.is_some(),
+            authority: authority.map(|value| {
+                Box::new(Mutex::new(Some(value))) as Box<dyn WorkflowOperationAuthorityBacking>
+            }),
+        })
+    }
+
     #[doc(hidden)]
     pub fn take(&self) -> Option<WorkflowOperationAuthority> {
         self.authority
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .take()
+            .as_deref()
+            .and_then(WorkflowOperationAuthorityBacking::take)
     }
 
     #[doc(hidden)]
@@ -162,10 +189,7 @@ impl RequiredWorkflowOperation {
             binding: selected.binding,
             workflow_execution_requirements: selected.workflow_execution_requirements,
             input_identity,
-            authority: Arc::new(WorkflowOperationAuthoritySlot {
-                issued: authority.is_some(),
-                authority: Mutex::new(authority),
-            }),
+            authority: WorkflowOperationAuthoritySlot::new(authority),
         }
     }
 
@@ -174,7 +198,6 @@ impl RequiredWorkflowOperation {
     }
 
     #[doc(hidden)]
-
     pub const fn branch(&self) -> crate::basis::WorthQueryProductBranch {
         self.branch
     }
@@ -358,7 +381,6 @@ impl WorkflowOperationAuthority {
     }
 
     #[doc(hidden)]
-
     pub fn facts(&self) -> &[WorthQueryApplicationObservedFact] {
         &self.facts
     }

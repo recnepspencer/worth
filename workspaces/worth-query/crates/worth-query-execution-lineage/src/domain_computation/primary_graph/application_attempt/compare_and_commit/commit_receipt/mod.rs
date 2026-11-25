@@ -122,6 +122,9 @@ impl WorthQueryApplicationCommitReceipt {
         crate::domain_computation::application_aftermath::WorthQueryRecordedCorrectionSource::from_untrusted_parts(
             self.committed_product_publication.composite_commit().clone(),
             self.commit.clone(),
+            crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceMember::of_writer(
+                self.idempotency_binding().authored_stage_identity(),
+            ),
         )
     }
 

@@ -15,6 +15,8 @@ use worth_query_decl::facade::{
     worth_query_portable_type,
 };
 
+worth_query_decl::facade::worth_query_disclosure_classification!(DocumentHistoryMetadataDisclosure);
+
 #[path = "document_history/control_roles.rs"]
 pub mod control_roles;
 #[path = "document_history/matching_read.rs"]
@@ -112,7 +114,7 @@ fn metadata_disclosure_for<
 >() -> ApplicationQueryDisclosureContract {
     use super::record_history::capability;
     let mut disclosure = ApplicationQueryDisclosureContract::governed_by(
-        "document-history-metadata",
+        DocumentHistoryMetadataDisclosure,
         capability::MetadataCapability::reference(),
     );
     for facet in ApplicationHistoryMetadataFacet::ALL {

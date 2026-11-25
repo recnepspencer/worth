@@ -1,6 +1,10 @@
-use crate::application_query::{ApplicationQueryBinding, ApplicationQueryDefinitionBuilder};
+use crate::application_query::{
+    ApplicationQueryBinding, ApplicationQueryDefinitionBuilder, ApplicationQueryScopeBinding,
+};
 
-use super::{ApplicationSchemaDeclarationBuilder, ApplicationSchemaMember};
+use super::{
+    ApplicationSchemaDeclarationBuilder, ApplicationSchemaMember, ApplicationStructuredValueBinding,
+};
 
 impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
     #[doc(hidden)]
@@ -63,6 +67,39 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
         self.member_provenance
             .register_query_binding(Binding::descriptor());
         self
+    }
+
+    /// Declare query meaning and its matching request binding in one registration.
+    ///
+    /// If an identical binding descriptor was already registered (for example as
+    /// a correction's disclosure query binding), that registration is reused;
+    /// conflicting binding meanings and duplicate query definitions are still
+    /// refused at build time.
+    pub fn bound_application_query<Binding>(
+        self,
+        definition: ApplicationQueryDefinitionBuilder<
+            Schema,
+            Binding::Query,
+            <Binding::ParameterBinding as ApplicationStructuredValueBinding>::Value,
+            <Binding::ResultBinding as ApplicationStructuredValueBinding>::Value,
+            <Binding::ScopeBinding as ApplicationQueryScopeBinding<Schema>>::Scope,
+        >,
+    ) -> Self
+    where
+        Schema: super::ApplicationSchema,
+        Binding: ApplicationQueryBinding<Schema>,
+    {
+        let builder = self.application_query(definition);
+        let descriptor = Binding::descriptor();
+        if builder
+            .member_provenance
+            .query_bindings()
+            .contains(&descriptor)
+        {
+            builder
+        } else {
+            builder.application_query_binding::<Binding>()
+        }
     }
 
     /// Declares immutable application-query meaning as part of this package.

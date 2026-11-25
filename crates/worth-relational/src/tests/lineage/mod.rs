@@ -9,6 +9,7 @@ mod name_durable_references;
 mod name_durable_reopen;
 mod name_durable_wire_order;
 mod name_durable_world;
+mod name_epoch_restore;
 mod name_event_fixtures;
 mod name_group_world;
 mod name_history_continuity;
@@ -31,8 +32,10 @@ mod posture_conservation_ops;
 mod posture_conservation_proptest;
 mod posture_corruption;
 mod posture_corruption_fixtures;
-mod posture_fixtures;
-mod posture_lineage;
+mod posture_fixtures {
+    pub(super) use worth_relational_lineage::internal_port::lineage::authority::posture_fixture::records::*;
+}
 mod posture_replay;
 mod resolution;
+mod scheme_composition;
 mod self_derived_basis;

@@ -7,7 +7,7 @@ use crate::denial::{
 };
 use crate::record::{
     decode_budget::RecordDecodeAttempt,
-    foundational_aspect,
+    foundational_aspect, foundational_value,
     sequence::{decode_sequence, write_sequence},
 };
 use worth_query_declaration::facade::application_query::{
@@ -28,6 +28,13 @@ pub(super) fn write(
     };
     output.raw_bytes(MARKER)?;
     output.u16(VERSION)?;
+    write_program_body(output, filter)
+}
+
+pub(super) fn write_program_body(
+    output: &mut dyn BinaryEncodingSink,
+    filter: &Program,
+) -> Result<(), Denial> {
     write_sequence(output, filter.operands(), write_operand)?;
     let draft = filter.draft();
     output.u32(u32::try_from(draft.len()).map_err(|_| Denial::new(Kind::NumericWidthExceeded))?)?;
@@ -45,12 +52,17 @@ pub(super) fn decode(
     if input.u16()? != VERSION {
         return Err(Denial::new(Kind::UnsupportedRecordVersion));
     }
+    decode_program_body(input, budget).map(Some)
+}
+
+pub(super) fn decode_program_body(
+    input: &mut BinaryInput<'_>,
+    budget: &mut RecordDecodeAttempt,
+) -> Result<Program, Denial> {
     let operands = decode_sequence(input, budget, 6, |input, _| decode_operand(input))?;
     let length = usize::try_from(input.u32()?).map_err(|_| Denial::new(Kind::Truncated))?;
     let draft = input.take(length)?;
-    Program::from_untrusted(operands, draft)
-        .map(Some)
-        .map_err(|_| Denial::new(Kind::InvalidRecordShape))
+    Program::from_untrusted(operands, draft).map_err(|_| Denial::new(Kind::InvalidRecordShape))
 }
 
 fn write_operand(output: &mut dyn BinaryEncodingSink, operand: &Operand) -> Result<(), Denial> {
@@ -76,10 +88,28 @@ fn write_operand(output: &mut dyn BinaryEncodingSink, operand: &Operand) -> Resu
         Source::Parameter {
             parameter,
             scalar_family,
+        }
+        | Source::OptionalParameter {
+            parameter,
+            scalar_family,
         } => {
-            output.u8(1)?;
+            output.u8(
+                if matches!(operand.source(), Source::OptionalParameter { .. }) {
+                    2
+                } else {
+                    1
+                },
+            )?;
             output.text(parameter)?;
             foundational_aspect::write_scalar_type(output, *scalar_family)
+        }
+        Source::Literal {
+            scalar_family,
+            value,
+        } => {
+            output.u8(3)?;
+            foundational_aspect::write_scalar_type(output, *scalar_family)?;
+            foundational_value::write_aspect_value(output, value)
         }
     }
 }
@@ -101,6 +131,14 @@ fn decode_operand(input: &mut BinaryInput<'_>) -> Result<Operand, Denial> {
         1 => Source::Parameter {
             parameter: input.text()?.to_owned(),
             scalar_family: foundational_aspect::decode_scalar_type(input)?,
+        },
+        2 => Source::OptionalParameter {
+            parameter: input.text()?.to_owned(),
+            scalar_family: foundational_aspect::decode_scalar_type(input)?,
+        },
+        3 => Source::Literal {
+            scalar_family: foundational_aspect::decode_scalar_type(input)?,
+            value: foundational_value::decode_aspect_value(input)?,
         },
         _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
     };

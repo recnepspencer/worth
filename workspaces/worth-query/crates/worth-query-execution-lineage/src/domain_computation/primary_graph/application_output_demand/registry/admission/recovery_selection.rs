@@ -73,26 +73,25 @@ pub(super) fn select_existing_key(
     matching_delivery: Option<WorthQueryOutputDemandKey>,
 ) -> Result<Option<WorthQueryOutputDemandKey>, WorthQueryOutputDemandDenial> {
     let stable_refresh = matches!(successor_of, Some(OutputRefreshPredecessor::Stable { .. }));
-    let exact_retained_row = if let Some(selected) =
-        selected_output.filter(|_| successor_of.is_none())
-    {
-        // An explicit accepted-authority refresh already rejected its Ready.
-        // A retained selector hint cannot rejoin that stale source address.
-        super::super::refreshed_rejoin::newest_matching_row(
-            &state.records,
-            requested_key,
-            |key, record| {
-                record.product_occurrence == product_occurrence
-                    && record.source_scope == Some(source_scope)
-                    && (admission_kind != DemandAdmissionKind::Recovery
-                        || expected_source_commit
-                            .is_some_and(|expected| record.source_commits.contains(expected)))
-                    && selected.matches_retained(requested_key, key, record)
-            },
-        )
-    } else {
-        None
-    };
+    let exact_retained_row =
+        if let Some(selected) = selected_output.filter(|_| successor_of.is_none()) {
+            // An explicit accepted-authority refresh already rejected its Ready.
+            // A retained selector hint cannot rejoin that stale source address.
+            super::super::refreshed_rejoin::newest_matching_row(
+                &state.records,
+                requested_key,
+                |key, record| {
+                    record.product_occurrence == product_occurrence
+                        && record.source_scope == Some(source_scope)
+                        && (admission_kind != DemandAdmissionKind::Recovery
+                            || expected_source_commit
+                                .is_some_and(|expected| record.source_commits.contains(expected)))
+                        && selected.matches_retained(requested_key, key, record)
+                },
+            )
+        } else {
+            None
+        };
 
     let matching_semantic_source = newest_semantic_key(state, requested_key, |record| {
         accepts_semantic_join(record)

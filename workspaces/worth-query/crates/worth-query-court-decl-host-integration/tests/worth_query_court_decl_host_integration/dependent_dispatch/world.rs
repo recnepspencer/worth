@@ -13,9 +13,13 @@ use worth_query_host::facade::{
 use worth_query_testkit_document_retention::facade::directory_home::{
     with_directory_bootstrap, DirectoryHomeGuard,
 };
+
+worth_query_decl::facade::worth_query_authentication_audience!(DispatchAudience);
+worth_query_decl::facade::worth_query_principal_issuer!(DispatchInvalidIssuer);
+worth_query_decl::facade::worth_query_authentication_method!(LocalMethod);
 pub type App = installation::WorthQueryProgramApplicationRuntime<Schema, Program>;
 pub fn identity() -> WorthQueryExternalPrincipalIdentity {
-    WorthQueryExternalPrincipalIdentity::new("https://dispatch.invalid", "operator").unwrap()
+    WorthQueryExternalPrincipalIdentity::new(DispatchInvalidIssuer, "operator").unwrap()
 }
 pub fn install(width: u64, selections: Selections) -> App {
     install_with_cell(width, selections, false)
@@ -137,8 +141,8 @@ impl auth::WorthQueryAuthenticationAdapter for Local {
             let now = SystemTime::now();
             auth::WorthQueryValidatedExternalPrincipal::new(
                 identity(),
-                auth::WorthQueryAuthenticationAudience::new("dispatch").unwrap(),
-                auth::WorthQueryAuthenticationMethod::new("local").unwrap(),
+                auth::WorthQueryAuthenticationAudience::of(DispatchAudience),
+                auth::WorthQueryAuthenticationMethod::of(LocalMethod),
                 now,
                 now + Duration::from_secs(600),
                 Vec::new(),
@@ -172,8 +176,8 @@ pub fn authenticate_cancellable(
     let adapter = auth::admit_authentication_adapter(
         app.installed_schema(),
         auth::WorthQueryAuthenticationAdapterAdmission::new(
-            auth::WorthQueryAuthenticationAudience::new("dispatch").unwrap(),
-            auth::WorthQueryAuthenticationMethod::new("local").unwrap(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
+            auth::WorthQueryAuthenticationAudience::of(DispatchAudience),
+            auth::WorthQueryAuthenticationMethod::of(LocalMethod), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         Local,
     )
     .unwrap();

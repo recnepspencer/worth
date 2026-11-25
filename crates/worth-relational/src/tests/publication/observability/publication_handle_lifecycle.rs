@@ -1,4 +1,5 @@
 use super::fixtures::*;
+use worth_relational_branch::internal_port::snapshots::data::SnapshotHandleFixturePort as _;
 
 #[test]
 fn publication_snapshot_handle_reads_without_becoming_a_pinned_snapshot() {
@@ -29,7 +30,7 @@ fn publication_snapshot_handle_reads_without_becoming_a_pinned_snapshot() {
     assert_eq!(retention.active_snapshot_count, 0);
     assert_eq!(retention.snapshot_pinned_entities, 0);
     assert_eq!(retention.snapshot_pinned_relations, 0);
-    assert_eq!(read.entities.len(), 1);
+    assert_eq!(read.entities().len(), 1);
     assert_eq!(inspection.pinned_entity_count, 0);
     assert_eq!(inspection.entity_count, 1);
     assert!(runtime
@@ -69,7 +70,7 @@ fn publication_snapshot_reads_use_authoritative_published_binding_version() {
     let created = create_entity_outcome(execution, &runtime, "first");
     let updated = update_entity(execution, &runtime, changed_entities(&created)[0], "second");
     let mut stale_handle = updated.snapshot.clone();
-    stale_handle.version_id = created.snapshot.version_id;
+    stale_handle.replace_snapshot_version_for_test(created.snapshot.version_id());
 
     let read = runtime
         .read_truth()
@@ -82,11 +83,11 @@ fn publication_snapshot_reads_use_authoritative_published_binding_version() {
         .unwrap()
         .unwrap();
 
-    assert_eq!(read.snapshot.version_id, updated.snapshot.version_id);
-    assert_eq!(inspection.version_id, updated.snapshot.version_id);
-    assert_eq!(read.entities.len(), 1);
+    assert_eq!(read.snapshot().version_id(), updated.snapshot.version_id());
+    assert_eq!(inspection.version_id, updated.snapshot.version_id());
+    assert_eq!(read.entities().len(), 1);
     assert_eq!(
-        read_entity_field(&read.entities[0], field_key("name")),
+        read_entity_field(&read.entities()[0], field_key("name")),
         Some("second".into())
     );
 }
@@ -224,7 +225,7 @@ fn published_handle_and_admitted_observation_remain_exact_until_release() {
         .snapshots()
         .snapshot_for_observation(&first_observation)
         .expect("admitted observation carries its selected root independently");
-    assert_eq!(observed.version_id, first.version_id);
+    assert_eq!(observed.version_id(), first.version_id);
     assert!(runtime
         .read_truth()
         .read_snapshot(&observed, execution)

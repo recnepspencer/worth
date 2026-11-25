@@ -4,6 +4,8 @@ use crate::facade::indexes::{
     BoundedRelatedEntityOrderedLookupRequest, DerivedIndexEntries, RelatedEntityEndpoint,
     RelatedEntityOrderingDirection, RelatedEntityOrderingField,
 };
+use worth_relational_contracts::internal_port::indexes::data::entry_map::DerivedIndexEntryMapOwnerPort as _;
+use worth_relational_contracts::internal_port::indexes::data::entry_map::DerivedIndexRowsOwnerPort as _;
 
 #[test]
 fn related_ordering_certification_rejects_a_missing_candidate() {
@@ -28,12 +30,12 @@ fn related_ordering_certification_rejects_a_missing_candidate() {
     );
     runtime
         .indexes
-        .corrupt_latest_generation(index.index_id, |generation| {
+        .corrupt_latest_generation_for_test(index.index_id, |generation| {
             let DerivedIndexEntries::RelatedEntityOrdering(entries) = &mut generation.entries
             else {
                 panic!("related-ordering generation expected");
             };
-            entries.get_mut(&parent).unwrap().remove(0);
+            entries.index_rows_mut_for_test(&parent).unwrap().remove(0);
         });
     let snapshot = runtime
         .visibility_authority()

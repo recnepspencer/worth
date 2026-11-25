@@ -1,5 +1,8 @@
 pub(crate) use worth_query_testkit_certification_application_graph::facade::certification::application_graph::workflow_approval::commit_boundary::authenticated_signer::*;
 
+worth_query_decl::facade::worth_query_authentication_method!(CertificationMethod);
+worth_query_decl::facade::worth_query_authentication_audience!(DocumentRetentionHostAudience);
+
 #[test]
 fn approval_owner_rejects_authentication_from_another_principal() {
     let (application, _, instance, proposal, required, _) =
@@ -11,8 +14,8 @@ fn approval_owner_rejects_authentication_from_another_principal() {
         admit_authentication_adapter(
             runtime.installed_schema(),
             WorthQueryAuthenticationAdapterAdmission::new(
-                WorthQueryAuthenticationAudience::new("document-retention-host").unwrap(),
-                WorthQueryAuthenticationMethod::new("certification").unwrap(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
+                WorthQueryAuthenticationAudience::of(DocumentRetentionHostAudience),
+                WorthQueryAuthenticationMethod::of(CertificationMethod), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
             SecondarySigner,
         )
         .unwrap()

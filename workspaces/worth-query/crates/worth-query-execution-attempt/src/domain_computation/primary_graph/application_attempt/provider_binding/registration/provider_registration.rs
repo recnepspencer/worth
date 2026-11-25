@@ -17,6 +17,7 @@ pub mod candidate_read_support;
 pub mod coupled_preparation;
 #[path = "provider_registration/output_contract.rs"]
 pub mod output_contract;
+pub mod persistent_names;
 #[path = "provider_registration/published_causality.rs"]
 pub mod published_causality;
 

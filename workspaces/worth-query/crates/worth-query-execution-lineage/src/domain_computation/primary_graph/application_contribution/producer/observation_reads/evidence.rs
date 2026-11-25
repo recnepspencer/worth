@@ -8,6 +8,16 @@ use worth_relational::facade::{
     history::CommitId,
     mvcc::RelationalRequiredOutputPublication,
 };
+trait ComputationFactAttributionBacking: Send + Sync {
+    fn as_attribution(&self) -> &ComputationFactAttribution;
+}
+
+impl ComputationFactAttributionBacking for ComputationFactAttribution {
+    fn as_attribution(&self) -> &ComputationFactAttribution {
+        self
+    }
+}
+
 /// Original read coordinates and keys, available only through admitted source inspection.
 /// These process-local diagnostics have no wire representation or selection conversion.
 pub struct WorthQueryHistoricalProducerRead {
@@ -16,7 +26,7 @@ pub struct WorthQueryHistoricalProducerRead {
     _applied:
         Option<worth_relational::facade::runtime::RelationalAppliedCandidateReadQualification>,
     operation: &'static str,
-    keys: Arc<ComputationFactAttribution>,
+    keys: Arc<dyn ComputationFactAttributionBacking>,
 }
 impl WorthQueryHistoricalProducerRead {
     pub fn from_read(
@@ -59,6 +69,6 @@ impl WorthQueryHistoricalProducerRead {
     }
     /// Original historical keys, never the producer's current C dependencies.
     pub fn keys(&self) -> impl Iterator<Item = &WorthQueryApplicationFactKey> {
-        self.keys.historical_handler_keys()
+        ComputationFactAttributionBacking::as_attribution(&*self.keys).historical_handler_keys()
     }
 }

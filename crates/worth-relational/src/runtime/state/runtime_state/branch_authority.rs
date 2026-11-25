@@ -26,18 +26,8 @@ impl RelationalRuntime {
         &self,
         branch_id: &BranchId,
     ) -> Result<RelationalBranchIdentity, crate::branch::RelationalBranchIdentityDenial> {
-        let cell = self.history.branch_cell(branch_id).ok_or_else(|| {
-            crate::branch::RelationalBranchIdentityDenial::UnknownBranch(branch_id.clone())
-        })?;
-        if cell.identity().runtime_instance_id() != self.runtime_instance_id() {
-            return Err(
-                crate::branch::RelationalBranchIdentityDenial::ForeignRuntime {
-                    expected_runtime_instance_id: self.runtime_instance_id(),
-                    actual_runtime_instance_id: cell.identity().runtime_instance_id(),
-                },
-            );
-        }
-        Ok(cell.identity().clone())
+        crate::branch::basis_observation_inputs::BranchObservationInputs::from(self)
+            .branch_identity(branch_id)
     }
 
     /// Return the configured main-branch identity through the same owner door

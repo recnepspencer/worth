@@ -1,7 +1,7 @@
 //! Fresh source installation alone can cross the initialization durable step.
 use super::*;
 use crate::durability::source_initial_inputs::{
-    image::InitialInputsImage, RelationalFreshInitialization,
+    fresh_initialization::RelationalFreshInitialization, image::InitialInputsImage,
 };
 use worth_execution::ExecutionRequest;
 use worth_proof::{DurablyCommitted, FreshNativeInitialization};
@@ -69,7 +69,9 @@ impl FreshRelationalInitialSchemaInstallation<'_> {
 
 pub(crate) enum InitialSchemaCutover {
     Receiver,
-    Durable(DurablyCommitted<crate::durability::medium::RelationalCommittedInitialInputs>),
+    Durable(
+        DurablyCommitted<crate::durability::published_medium::RelationalCommittedInitialInputs>,
+    ),
 }
 impl InitialSchemaCutover {
     pub(crate) fn apply(self, cutover: impl FnOnce(Option<Arc<InitialInputsImage>>)) {

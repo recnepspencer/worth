@@ -7,6 +7,7 @@ use crate::facade::lineage::{
     PersistentNameBranchIndex, PersistentNameCommittedBatch, PersistentNameHolder,
     PersistentNameKey, PersistentNameResolution, PersistentNameTarget,
 };
+use worth_relational_lineage::internal_port::lineage::index::batch::PersistentNameCommittedBatchFixturePort as _;
 
 use super::name_index_fixtures::{
     all, exact, main_branch, plural_keys, rebuild, resolve, retired, side, unknown,
@@ -23,7 +24,7 @@ fn append_only_undo_redo_checkout_continuity() {
                        snaps: &mut Vec<Vec<String>>| {
         idx.apply(&batch).expect("commit ingests");
         let serialized: Vec<String> = batch
-            .lineage_events
+            .lineage_events_for_test()
             .iter()
             .map(|e| serde_json::to_string(e).expect("serialize lineage event"))
             .collect();
@@ -92,7 +93,7 @@ fn append_only_undo_redo_checkout_continuity() {
     // Arch 8/14: ZERO prior serialized event bytes ever mutated!
     for (idx, expected_bytes) in snapshots.iter().enumerate() {
         let actual: Vec<String> = world.log()[idx]
-            .lineage_events
+            .lineage_events_for_test()
             .iter()
             .map(|e| serde_json::to_string(e).unwrap())
             .collect();
@@ -164,9 +165,9 @@ fn independent_occurrences_produce_distinct_names() {
     };
     use crate::facade::identity::VersionId;
     use crate::facade::lineage::{LineagePostureClaim, LineageRecordTarget, LineageSubject};
-    use crate::lineage::data::LineageCommitPostureInput;
     use crate::facade::transactions::RecordRef;
-    use crate::lineage::authority::finalize_postures_in_working_state;
+    use crate::lineage::authority::finalize_postures_in_working_state_for_test;
+    use crate::lineage::authority::posture_fixture::LineageCommitPostureInput;
     use crate::runtime::LineageIdentityAllocator;
 
     let allocator = LineageIdentityAllocator::new();
@@ -176,7 +177,7 @@ fn independent_occurrences_produce_distinct_names() {
     let f2 = push_entity(&mut staged, VersionId(1));
     let s1 = push_relation(&mut staged, VersionId(1), f1, f2);
     let s2 = push_relation(&mut staged, VersionId(1), f1, f2);
-    let prepared = finalize_postures_in_working_state(
+    let prepared = finalize_postures_in_working_state_for_test(
         &allocator,
         &mut staged,
         &receipt_at(1, 1),

@@ -4,6 +4,7 @@ use crate::facade::{
     BridgeLineageSourceError, BridgeLineageSourceErrorKind, ContinuityLineageSource,
 };
 
+use super::named_continuity::{project_named_authority, resolve_named_continuity};
 use super::{
     observation_bindings::RelationalBridgeSelectedObservation, RuntimeBridgeRelationalSource,
 };
@@ -20,8 +21,19 @@ impl ContinuityLineageSource for RuntimeBridgeRelationalSource {
         execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeHistoricalLineageAuthority, BridgeLineageSourceError> {
         let admitted = admit_lineage_request(self, request)?;
-        let resolved = resolve_exact_lineage(self, admitted, execution)?;
-        project_lineage_authority(self, resolved)
+        let named = resolve_named_continuity(
+            self,
+            admitted.observation.observation(),
+            admitted.entity_id,
+            &execution,
+        )?;
+        match named {
+            Some(named) => project_named_authority(self, admitted.request, named),
+            None => {
+                let resolved = resolve_exact_lineage(self, admitted, execution)?;
+                project_lineage_authority(self, resolved)
+            }
+        }
     }
 }
 

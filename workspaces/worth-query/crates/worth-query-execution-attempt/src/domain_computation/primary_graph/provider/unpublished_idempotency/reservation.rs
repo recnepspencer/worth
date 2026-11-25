@@ -7,8 +7,9 @@ use worth_runtime_world::facade::{
 };
 
 use super::{
-    WorthQueryUnpublishedIdempotencyEntry, WorthQueryUnpublishedIdempotencyKey,
-    WorthQueryUnpublishedIdempotencyPosture, WorthQueryUnpublishedIdempotencyStore,
+    SharedUnpublishedIdempotencyStore, WorthQueryUnpublishedIdempotencyEntry,
+    WorthQueryUnpublishedIdempotencyKey, WorthQueryUnpublishedIdempotencyPosture,
+    WorthQueryUnpublishedIdempotencyStore,
 };
 use crate::domain_computation::primary_graph::provider::ManagedUnpublishedAttempt;
 
@@ -16,7 +17,7 @@ use crate::domain_computation::primary_graph::provider::ManagedUnpublishedAttemp
 /// A returned terminal consumes it explicitly; unwind reconciles this one
 /// opaque handle after World has restored or retained its own custody.
 pub struct WorthQueryUnpublishedIdempotencyReservation {
-    store: Arc<Mutex<WorthQueryUnpublishedIdempotencyStore>>,
+    store: SharedUnpublishedIdempotencyStore,
     key: WorthQueryUnpublishedIdempotencyKey,
     entry: Arc<Mutex<WorthQueryUnpublishedIdempotencyEntry>>,
     recovery_handle: ProductUnpublishedRecoveryHandle,
@@ -25,8 +26,8 @@ pub struct WorthQueryUnpublishedIdempotencyReservation {
 }
 
 impl WorthQueryUnpublishedIdempotencyReservation {
-    pub fn new(
-        store: Arc<Mutex<WorthQueryUnpublishedIdempotencyStore>>,
+    pub(super) fn new(
+        store: SharedUnpublishedIdempotencyStore,
         key: WorthQueryUnpublishedIdempotencyKey,
         entry: Arc<Mutex<WorthQueryUnpublishedIdempotencyEntry>>,
         recovery_handle: ProductUnpublishedRecoveryHandle,

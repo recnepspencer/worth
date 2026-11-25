@@ -54,8 +54,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             .durable()
             .is_some()
         {
-            let coordinates = crate::domain_computation::application_aftermath::WorthQueryRecordedCorrectionSource::from_untrusted_parts(
-                receipt.committed_product_publication().composite_commit().clone(), receipt.commit_reference().clone()).coordinates();
+            let coordinates = receipt.correction_source().coordinates();
             return self.select_home_correction_source(
                 phase,
                 principal,
@@ -66,12 +65,10 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
                 maximum_results,
             );
         }
-        let occurrence = application
-            .inner
-            .runtime
-            .primary_provider_ref()
-            .observe_completed_application(receipt.commit_reference())
-            .ok_or(WorthQueryCorrectionSelectionDenial::SourceUnavailable)?;
+        let occurrence = self.observe_member(
+            receipt.commit_reference(),
+            receipt.correction_source().member(),
+        )?;
         let performed = occurrence.committed_product_publication();
         let claimed = receipt.committed_product_publication();
         if performed.composite_commit() != claimed.composite_commit()
@@ -147,13 +144,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
                 maximum_results,
             );
         }
-        let occurrence = self
-            .application()
-            .inner
-            .runtime
-            .primary_provider_ref()
-            .observe_completed_application(locator.relational())
-            .ok_or(WorthQueryCorrectionSelectionDenial::SourceUnavailable)?;
+        let occurrence = self.observe_member(locator.relational(), locator.member())?;
         let actual = occurrence
             .committed_product_publication()
             .composite_commit();
@@ -174,6 +165,24 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             maximum,
             maximum_results,
         )
+    }
+
+    /// The named writer of a completed commit's coupled group (public #368).
+    fn observe_member(
+        &self,
+        commit: &worth_relational::facade::history::RelationalCommitReceipt,
+        member: crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceMember,
+    ) -> Result<WorthQueryPrimaryGraphCommittedApplication, WorthQueryCorrectionSelectionDenial> {
+        let group = (self.application().inner.runtime.primary_provider_ref())
+            .observe_completed_application(commit)
+            .ok_or(WorthQueryCorrectionSelectionDenial::SourceUnavailable)?;
+        group
+            .publication_members()
+            .find(|writer| {
+                member.names_writer(writer.commit_evidence().idempotency().authored_stage_identity())
+            })
+            .cloned()
+            .ok_or(WorthQueryCorrectionSelectionDenial::SourceMemberUnavailable)
     }
 
     fn select_retained_occurrence(

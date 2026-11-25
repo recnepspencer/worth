@@ -154,6 +154,7 @@ struct WorthQueryProviderAttemptPreparation {
         Option<crate::domain_computation::primary_graph::product_operation::WorthQueryCheckedApplicationConditionalDefinition>,
     effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture,
     output_correspondence: super::super::super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
+    persistent_names: worth_query_execution_naming::facade::AuthoredOperationNaming,
     retain_output_demand_observation: bool,
     retain_client_observation: bool,
     producer_required_invariants:

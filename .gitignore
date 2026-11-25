@@ -70,3 +70,6 @@ plans/worth-ui/milestone-3.14.1-proof-ledger.lock
 
 # Linux platform-qualification scratch notes and the windowing spike
 .linux-ui-notes/
+
+# Lean 4 Lake build cache
+**/.lake/

@@ -23,6 +23,9 @@ use worth_query_decl::facade::{
 };
 use worth_query_host::facade::application_contribution::*;
 use worth_query_host::facade::primary_graph::*;
+worth_query_host::facade::worth_query_principal_issuer!(pub CoupledFlushIssuer);
+worth_query_host::facade::worth_query_authentication_audience!(pub CoupledFlushAudience);
+worth_query_host::facade::worth_query_authentication_method!(pub LocalProcessMethod);
 
 pub struct Catalog;
 impl Fragment for Catalog {
@@ -379,7 +382,7 @@ pub fn seed_principal(
         &installed.principal_binding(principal_binding()).unwrap(),
         WorthQueryApplicationPrincipalKey::new("coupled-flush-reader").unwrap(),
         1u64,
-        WorthQueryExternalPrincipalIdentity::new("coupled-flush", "reader").unwrap(),
+        WorthQueryExternalPrincipalIdentity::new(CoupledFlushIssuer, "reader").unwrap(),
         WorthQueryPrincipalMappingStatus::Enabled,
     )?;
     bootstrap.bind_entity(

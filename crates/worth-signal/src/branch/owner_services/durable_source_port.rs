@@ -41,7 +41,7 @@ where
     I: Copy + Ord + 'static,
     T: Copy + Ord + 'static,
 {
-    owner: Weak<SignalOwner<D, I, T>>,
+    owner: super::owner_backing::WeakSignalOwner<D, I, T>,
     publication: Weak<super::durable_publication::SignalDurablePublicationState<D, I, T>>,
     identity: DurableSignalOwnerIdentity,
     fence: worth_proof::HomeIncarnationFence,
@@ -70,7 +70,7 @@ where
     T: Copy + Ord + 'static,
 {
     pub(crate) fn new(
-        owner: Weak<SignalOwner<D, I, T>>,
+        owner: super::owner_backing::WeakSignalOwner<D, I, T>,
         publication: Weak<super::durable_publication::SignalDurablePublicationState<D, I, T>>,
         binding: &crate::durability::SignalDurableHomeBinding,
         vocabulary: Arc<SignalDurableTierVocabulary<T>>,

@@ -9,15 +9,23 @@
 //! field name) and `slot = ".."`, an explicit identity that keeps an existing
 //! wire identity. An `Option<T>` field projects an optional slot.
 //!
+//! A field marked `#[worth_query(name)]` projects the persistent name its
+//! row's root entity carries, as `WorthQueryName<Root>`; an
+//! `Option<WorthQueryName<Root>>` field projects `None` for an entity that
+//! carries no name. It is the row's own identity, not a declared result slot,
+//! so it takes no other key and adds nothing to the result shape.
+//!
 //! The derive declares a `<row>_slots` module of slot markers, their
 //! `WorthQueryPortableType` impls, one query-generic selector per field, a
-//! query-generic `result_shape()`, and `WorthQueryApplicationProjection` for
-//! every query whose result binding carries this row.
+//! query-generic `result_shape()`, `PROJECTS_PERSISTENT_NAMES` (whether this
+//! row or a related row projects a name) and `WorthQueryApplicationProjection`
+//! for every query whose result binding carries this row.
 use proc_macro2::TokenStream;
 use syn::DeriveInput;
 
 mod emit;
 mod grammar;
+mod hygiene;
 #[cfg(test)]
 mod tests;
 

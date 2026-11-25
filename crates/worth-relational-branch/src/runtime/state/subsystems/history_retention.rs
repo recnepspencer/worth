@@ -1,0 +1,283 @@
+use std::sync::Arc;
+
+use crate::branch::identity::RelationalBranchIdentity;
+use crate::branch::root::RelationalBranchRoot;
+use crate::history::data::BranchId;
+use crate::history::retention::{
+    RelationalBranchRetentionBinding, RelationalRetentionAcquisitionDenial,
+    RelationalRetentionCostCounters,
+};
+use crate::identity::data::VersionId;
+
+use super::HistorySubsystem;
+
+impl HistorySubsystem {
+    pub fn checkpoint_component_source(
+        &self,
+        branch: &BranchId,
+    ) -> Option<crate::branch::reference::CheckpointComponentCellSource> {
+        self.branch_cells.checkpoint_component_source(branch)
+    }
+    pub fn capture_external_checkpoint_components_for_request<'a>(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        current: impl IntoIterator<
+            Item = &'a crate::history::retention::RelationalBranchRetentionBinding,
+        >,
+    ) -> Result<
+        crate::history::retention::CapturedExternalCheckpointComponents,
+        crate::history::retention::RelationalRetentionRequestAcquisitionDenial,
+    > {
+        self.retention_owner
+            .capture_checkpoint_components_for_request(request, current)
+    }
+
+    pub fn external_checkpoint_components(
+        &self,
+    ) -> Vec<crate::branch::basis::AdmittedRelationalBranchBasis> {
+        self.retention_owner.checkpoint_components(|| {
+            self.branch_cells
+                .values()
+                .into_iter()
+                .filter_map(|cell| {
+                    cell.head_retention()
+                        .binding()
+                        .ok()
+                        .map(|binding| (cell.identity().branch_id().clone(), binding))
+                })
+                .collect()
+        })
+    }
+
+    pub fn retired_root_storage_inventory(
+        &self,
+    ) -> Vec<crate::history::retention::RelationalRetiredRootStorageSnapshot> {
+        self.retention_owner.storage_inventory()
+    }
+
+    pub fn current_root_storage_inventory(&self) -> Vec<Arc<RelationalBranchRoot>> {
+        self.record_branch_population_scan();
+        self.branch_cells
+            .values()
+            .into_iter()
+            .filter_map(|cell| cell.root())
+            .collect()
+    }
+
+    pub fn index_generation_basis_is_held(
+        &self,
+        generation: &crate::indexes::data::DerivedIndexGeneration,
+        branch_scoped: bool,
+    ) -> bool {
+        let basis = &generation.applicability;
+        self.index_basis_is_held(
+            basis.version_id,
+            basis.schema_version,
+            branch_scoped.then_some(&basis.branch_id),
+        )
+    }
+
+    pub fn index_basis_is_held(
+        &self,
+        version: VersionId,
+        schema: crate::schema::data::SchemaVersionId,
+        branch: Option<&BranchId>,
+    ) -> bool {
+        let head_is_live = if let Some(branch) = branch {
+            self.branch_cell(branch)
+                .and_then(|cell| cell.root())
+                .is_some_and(|root| {
+                    root.commit_receipt().map(|receipt| receipt.version_id) == Some(version)
+                        && root.schema_authority().schema_version() == schema
+                })
+        } else {
+            self.branch_head_versions.contains(version, schema)
+        };
+        head_is_live
+            || self
+                .retention_owner
+                .index_basis_is_held(version, schema, branch)
+    }
+
+    pub fn has_detached_retention_obligations(&self) -> bool {
+        self.retention_owner.has_detached_obligations()
+    }
+
+    pub fn retained_index_roots(&self) -> crate::history::retention::RetainedIndexRoots {
+        let mut roots = self.retention_owner.retained_index_roots();
+        for cell in self.branch_cells.values() {
+            let branch = cell.identity().branch_id().clone();
+            roots.latest_branches.insert(branch.clone());
+            if let Some(root) = cell.root()
+                && let Some(receipt) = root.commit_receipt()
+            {
+                roots.live.insert((
+                    branch,
+                    receipt.version_id,
+                    root.schema_authority().schema_version(),
+                ));
+            }
+        }
+        roots
+    }
+
+    pub fn retention_binding(&self) -> RelationalBranchRetentionBinding {
+        self.retention_owner.binding()
+    }
+
+    pub fn retention_cost_counters(&self) -> RelationalRetentionCostCounters {
+        self.retention_owner.counters()
+    }
+
+    pub fn retain_historical_root(
+        &self,
+        commit_id: crate::history::data::CommitId,
+    ) -> Result<
+        Option<crate::history::retention::RelationalRetainedHistoricalRoot>,
+        RelationalRetentionAcquisitionDenial,
+    > {
+        crate::history::retention::RelationalRetainedHistoricalRoot::from_owner(
+            &self.retention_owner,
+            commit_id,
+        )
+    }
+
+    pub fn install_branch_head(
+        &self,
+        identity: RelationalBranchIdentity,
+        root: &Arc<RelationalBranchRoot>,
+        head_retention: &Arc<crate::history::retention::RelationalBranchHeadRetentionCell>,
+    ) -> Result<(), RelationalRetentionAcquisitionDenial> {
+        let obligation = self.retention_owner.install_head(identity, root)?;
+        head_retention
+            .install(obligation)
+            .map_err(|_| RelationalRetentionAcquisitionDenial::OwnerUnavailable)
+    }
+
+    pub fn install_branch_root(
+        &self,
+        branch_id: &BranchId,
+        root: Arc<RelationalBranchRoot>,
+    ) -> Result<(), RelationalRetentionAcquisitionDenial> {
+        let mut cell = self
+            .branch_cell(branch_id)
+            .ok_or(RelationalRetentionAcquisitionDenial::OwnerUnavailable)?;
+        let identity = cell.identity().clone();
+        let head_retention = Arc::clone(cell.head_retention());
+        self.install_branch_head(identity, &root, &head_retention)?;
+        cell.install_root(root);
+        Ok(())
+    }
+
+    pub fn reserve_branch_head_retirement(
+        &self,
+        identity: &RelationalBranchIdentity,
+        root: &Arc<RelationalBranchRoot>,
+        head_retention: &Arc<crate::history::retention::RelationalBranchHeadRetentionCell>,
+    ) -> Result<
+        crate::history::retention::RelationalHeadRetirementReservation,
+        RelationalRetentionAcquisitionDenial,
+    > {
+        self.retention_binding()
+            .reserve_head_retirement(identity, root, head_retention)
+    }
+
+    pub fn reclaim_retired_branch_roots(
+        &self,
+        maximum_roots: usize,
+    ) -> crate::history::retention::RelationalBranchRootReclamationOutcome {
+        self.retention_owner.reclaim_retired_roots(maximum_roots)
+    }
+
+    pub fn try_reclaim_retired_branch_roots(
+        &self,
+        maximum_roots: usize,
+    ) -> Result<
+        crate::history::retention::RelationalBranchRootReclamationOutcome,
+        crate::storage::substrate::StorageAllocationOverflow,
+    > {
+        self.retention_owner
+            .try_reclaim_retired_roots(maximum_roots)
+    }
+
+    pub fn retired_branch_root_count(&self) -> usize {
+        self.retention_owner.retired_root_count()
+    }
+
+    pub fn retired_branch_binding_count_for_test(&self) -> usize {
+        self.retention_owner.retired_branch_binding_count_for_test()
+    }
+
+    pub(super) fn try_reset_retention_owner(
+        &mut self,
+        runtime_instance_id: u64,
+    ) -> Result<(), RelationalRetentionAcquisitionDenial> {
+        self.try_reset_retention_owner_from(
+            crate::history::retention::RelationalBranchRetentionOwner::new(runtime_instance_id),
+        )
+    }
+
+    fn try_reset_retention_owner_from(
+        &mut self,
+        owner: crate::history::retention::RelationalBranchRetentionOwner,
+    ) -> Result<(), RelationalRetentionAcquisitionDenial> {
+        let heads = self
+            .branch_cells
+            .values()
+            .into_iter()
+            .filter_map(|cell| {
+                cell.root().map(|root| {
+                    (
+                        cell.identity().clone(),
+                        root,
+                        Arc::clone(cell.head_retention()),
+                    )
+                })
+            })
+            .collect::<Vec<_>>();
+        let mut admitted_heads = Vec::with_capacity(heads.len());
+        for (identity, root, head_retention) in heads {
+            let obligation = owner.install_head(identity, &root)?;
+            admitted_heads.push((head_retention, obligation));
+        }
+        self.retention_owner = owner;
+        for (head_retention, obligation) in admitted_heads {
+            head_retention.reset(obligation);
+        }
+        let mut cells = self.branch_cells.take_all();
+        for cell in cells.values_mut() {
+            cell.reset_basis_registry(Arc::clone(&self.basis_registry_metrics));
+        }
+        self.branch_cells.restore_all(cells);
+        Ok(())
+    }
+
+    #[doc(hidden)]
+    pub fn reset_retention_owner_with_test_limits_for_test(
+        &mut self,
+        max_live_root_obligations: usize,
+        max_retired_branch_roots: usize,
+    ) {
+        self.try_reset_retention_owner_from(
+            crate::history::retention::RelationalBranchRetentionOwner::with_test_limits(
+                self.runtime_instance_id,
+                max_live_root_obligations,
+                max_retired_branch_roots,
+            ),
+        )
+        .expect("test retention limits must admit the installed branch heads");
+    }
+}
+
+#[cfg(test)]
+#[path = "history_retention/retained_owner_tests.rs"]
+mod retained_owner_tests;
+
+impl HistorySubsystem {
+    #[doc(hidden)]
+    pub fn retention_owner_for_test(
+        &self,
+    ) -> crate::history::retention::RelationalBranchRetentionOwner {
+        self.retention_owner.clone()
+    }
+}

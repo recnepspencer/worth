@@ -4,6 +4,10 @@ use navigation::grant;
 use navigation::{Context, Provenance};
 use worth_query_decl::facade::application_capability::*;
 use worth_query_host::facade::causal_inspection::*;
+
+worth_query_decl::facade::worth_query_disclosure_classification!(
+    PredecessorInspectionMetadataDisclosure
+);
 mod court;
 mod output;
 mod policy;
@@ -67,7 +71,10 @@ fn metadata<B: ApplicationQueryBinding<Schema>>() -> ApplicationQueryInspectionD
     let contract = ApplicationQueryInspectionMetadataFacet::ALL
         .into_iter()
         .fold(
-            ApplicationQueryDisclosureContract::governed_by(B::IDENTITY, Inspect::reference()),
+            ApplicationQueryDisclosureContract::governed_by(
+                PredecessorInspectionMetadataDisclosure,
+                Inspect::reference(),
+            ),
             |contract, facet| {
                 contract.disclose_inspection_metadata_by(
                     ApplicationQueryInspectionMetadataRef::<Schema, B>::new(facet),

@@ -10,8 +10,6 @@ use bank_server::{BankPrincipalSeed, BankWorldSeed};
 use serde::Deserialize;
 use worth_query_host::facade::declaration::authentication::WorthQueryExternalPrincipalIdentity;
 
-use crate::AuthentikOidcConfiguration;
-
 mod estate;
 pub use estate::{
     BankHttpProcessEstateAftermathWorld, BankHttpProcessEstateElevationWorld,
@@ -51,7 +49,7 @@ pub enum BankHttpProcessAccountStatus {
 }
 
 impl BankHttpProcessWorld {
-    pub(super) fn build(self, oidc: &AuthentikOidcConfiguration) -> Result<BankWorldSeed, ()> {
+    pub(super) fn build(self) -> Result<BankWorldSeed, ()> {
         let institution = InstitutionId::new(self.institution).ok_or(())?;
         let cash = AccountId::parse_canonical_text(&self.institution_cash_account).ok_or(())?;
         let mut snapshot = BankSnapshotBuilder::new(BankSnapshotVersion::new(1).ok_or(())?)
@@ -73,7 +71,7 @@ impl BankHttpProcessWorld {
             );
             funding.push((account, participant.account.activity_amounts_minor));
             let external = WorthQueryExternalPrincipalIdentity::new(
-                oidc.issuer_text(),
+                crate::AuthentikIssuer,
                 participant.external_subject,
             )
             .map_err(|_| ())?;

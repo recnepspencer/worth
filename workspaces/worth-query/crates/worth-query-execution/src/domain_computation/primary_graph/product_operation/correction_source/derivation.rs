@@ -56,6 +56,7 @@ where
         phase,
         source,
         ancestry,
+        maximum_history,
         required_root,
     )?;
     if let Some(material) = source.occurrence().home_material()

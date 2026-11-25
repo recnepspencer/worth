@@ -10,7 +10,7 @@ mod registration;
 
 pub(crate) use body::validate_operation_bodies;
 pub use body::{
-    ApplicationOperationBody, ApplicationOperationBodyAuthoringDenial,
+    ApplicationInputField, ApplicationOperationBody, ApplicationOperationBodyAuthoringDenial,
     ApplicationOperationBodyBuilder, ApplicationOperationBodyCaptureRole,
     ApplicationOperationBodyChildCreation, ApplicationOperationBodyChildCreationBuilder,
     ApplicationOperationBodyCreatedField, ApplicationOperationBodyCreation,
@@ -32,8 +32,9 @@ pub use body::{
     ApplicationOperationBodySigningLifecycleSpec, ApplicationOperationBodySigningSpec,
     ApplicationOperationBodySuccession, ApplicationOperationBodySuccessionOutputMatch,
     ApplicationOperationBodyValue, ApplicationOperationBodyValueProgram,
-    ApplicationOperationBodyValueSnapshot, ApplicationSigningEvidenceRef,
-    ApplicationSigningEvidenceSource,
+    ApplicationOperationBodyValueSnapshot, ApplicationOptionalInputField,
+    ApplicationSigningEvidenceRef, ApplicationSigningEvidenceSource,
+    TypedApplicationOperationBodyBuilder, TypedApplicationOperationBodyCreationBuilder,
 };
 pub(crate) use builder::AftermathAssociationAuthority;
 pub use builder::ApplicationOperationDefinitionBuilder;

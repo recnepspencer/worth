@@ -7,6 +7,7 @@ mod capability_revocation_progression;
 mod delegation_progression;
 mod elevation_progression;
 mod entity_resolution;
+mod equality_index_residency;
 mod execution_and_inbound_installation;
 mod inbound_receipt_and_dispatch;
 mod operation_admission;

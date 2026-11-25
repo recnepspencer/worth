@@ -10,7 +10,8 @@ impl WorthQueryProductRuntime {
         &self,
         presented: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,
     ) -> Result<(), Denial> {
-        self.owner
+        self.fields()
+            .owner
             .owner_identity()
             .admit_incarnation(presented)
             .map_err(|cause| {

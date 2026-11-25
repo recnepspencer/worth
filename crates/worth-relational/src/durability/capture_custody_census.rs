@@ -5,28 +5,11 @@
 //! acknowledgement, and grants no currentness, retirement or read authority.
 use crate::publication::patch::data::PatchStreamPosition;
 use crate::runtime::RelationalRuntime;
-use std::any::Any;
 use std::sync::{Arc, Weak};
+use worth_relational_durability::internal_port::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactOwnerPort as _;
+use worth_relational_storage::internal_port::storage::substrate::allocation_witness::RelationalAllocationWitnessOwnerPort as _;
 
-/// Weak identity of one owner allocation. It never extends that allocation.
-#[derive(Debug, Clone)]
-pub struct RelationalAllocationWitness(Weak<dyn Any + Send + Sync>);
-
-impl RelationalAllocationWitness {
-    pub(crate) fn of<T: Any + Send + Sync>(owner: &Arc<T>) -> Self {
-        let weak: Weak<dyn Any + Send + Sync> =
-            Arc::downgrade(owner) as Weak<dyn Any + Send + Sync>;
-        Self(weak)
-    }
-    /// Whether some owner still retains the witnessed allocation.
-    pub fn is_retained(&self) -> bool {
-        self.0.strong_count() != 0
-    }
-    /// Whether both witnesses name the same allocation.
-    pub fn same_allocation(&self, other: &Self) -> bool {
-        Weak::ptr_eq(&self.0, &other.0)
-    }
-}
+pub use crate::storage::substrate::allocation_witness::RelationalAllocationWitness;
 
 /// Weak identity of one attached cold source port. It never extends custody.
 #[derive(Debug, Clone)]
@@ -95,13 +78,14 @@ impl RelationalRuntime {
                 RelationalCommitEnvelopeCustody {
                     commit_id: artifact.commit_id(),
                     resident: resident_positioned.is_some(),
-                    resident_body: resident_positioned
-                        .as_ref()
-                        .map(|positioned| RelationalAllocationWitness::of(positioned.canonical_arc())),
+                    resident_body: resident_positioned.as_ref().map(|positioned| {
+                        RelationalAllocationWitness::of(positioned.canonical_arc())
+                    }),
                     resident_payload_bytes: cell.resident_payload_bytes(),
-                    selected_directory: cell
-                        .selected_directory()
-                        .map(|directory| RelationalAllocationWitness::of(&directory)),
+                    selected_directory: cell.selected_directory().map(|directory| {
+                        let directory: std::sync::Arc<dyn std::any::Any + Send + Sync> = directory;
+                        RelationalAllocationWitness::of_erased(&directory)
+                    }),
                     source_placement: cell
                         .source_placement()
                         .map(|(entry, _)| entry.allocation_witness()),
@@ -125,9 +109,8 @@ impl RelationalRuntime {
         self.history
             .commit_artifact(commit_id)
             .map(|artifact| {
-                artifact
-                    .envelope_residency()
-                    .require_original_artifact(execution, None)
+                crate::durability::canonical_commit_artifact::retained_frame_reads::require_original_artifact(&artifact.envelope_residency(), execution, None)
+                    .map(crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_verified)
             })
             .transpose()
     }
@@ -139,7 +122,7 @@ impl RelationalRuntime {
     ) -> bool {
         self.durability
             .cold_source()
-            .is_some_and(|attached| std::ptr::addr_eq(Arc::as_ptr(&attached), Arc::as_ptr(source)))
+            .is_some_and(|attached| Arc::ptr_eq(&attached, source))
     }
 
     /// Weak identity of this runtime's attached durable cold source, if any.

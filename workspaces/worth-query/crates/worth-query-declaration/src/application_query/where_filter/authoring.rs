@@ -5,7 +5,8 @@ use super::{
 };
 use crate::application_query::ApplicationQueryParameterRef;
 use crate::application_schema::{
-    fragment::RecordSelection, ApplicationFieldBindingRecipe, ApplicationScalarValueBinding,
+    fragment::RecordSelection, ApplicationEncodedScalarValue, ApplicationFieldBindingRecipe,
+    ApplicationScalarValueBinding,
 };
 use std::marker::PhantomData;
 use worth_foundational::expression_api::{expressions, ExpressionDraft};
@@ -58,10 +59,36 @@ impl<Query> ApplicationQueryWhereFilterOperands<Query> {
     }
 
     /// Reads one typed query parameter. The definition must declare it.
-    pub fn parameter<Parameter, Binding>(
+    pub fn parameter<Parameter, Binding, const OPTIONAL: bool>(
         self,
         name: &str,
-        parameter: ApplicationQueryParameterRef<Query, Parameter, Binding>,
+        parameter: ApplicationQueryParameterRef<Query, Parameter, Binding, OPTIONAL>,
+    ) -> Result<Self, Denial>
+    where
+        Binding: ApplicationScalarValueBinding,
+    {
+        if Binding::UNIT.is_some() {
+            return Err(Denial::UnitBearingOperand);
+        }
+        let source = if OPTIONAL {
+            Source::OptionalParameter {
+                parameter: parameter.name().to_owned(),
+                scalar_family: Binding::SCALAR_FAMILY,
+            }
+        } else {
+            Source::Parameter {
+                parameter: parameter.name().to_owned(),
+                scalar_family: Binding::SCALAR_FAMILY,
+            }
+        };
+        self.push(name, source)
+    }
+
+    /// Binds one typed authored scalar constant without a runtime parameter.
+    pub fn literal<Binding>(
+        self,
+        name: &str,
+        value: ApplicationEncodedScalarValue<Binding>,
     ) -> Result<Self, Denial>
     where
         Binding: ApplicationScalarValueBinding,
@@ -71,9 +98,9 @@ impl<Query> ApplicationQueryWhereFilterOperands<Query> {
         }
         self.push(
             name,
-            Source::Parameter {
-                parameter: parameter.name().to_owned(),
+            Source::Literal {
                 scalar_family: Binding::SCALAR_FAMILY,
+                value: value.into_foundational_value(),
             },
         )
     }
@@ -101,6 +128,7 @@ impl<Query> ApplicationQueryWhereFilterOperands<Query> {
 
     fn push(mut self, name: &str, source: Source) -> Result<Self, Denial> {
         source.expression_type()?;
+        source.validate_value()?;
         if self.operands.iter().any(|operand| operand.name() == name) {
             return Err(Denial::DuplicateOperand);
         }

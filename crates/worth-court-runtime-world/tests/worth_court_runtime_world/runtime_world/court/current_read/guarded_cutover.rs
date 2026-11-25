@@ -2,9 +2,7 @@ use super::*;
 use crate::court::ordinary_context::operation_control::combined_race::ReleaseRelational;
 use crate::court::ordinary_context::operation_control::{clean, serial_request, WAIT};
 use std::sync::{mpsc, Arc};
-use worth_relational::facade::mvcc::{
-    RelationalOperationControl, RelationalPatchPositionReservationGateForTest,
-};
+use worth_relational::facade::mvcc::RelationalOperationControl;
 
 #[test]
 fn exact_control_guard_spans_native_cutover_and_product_loss_retains_actual_movement() {
@@ -19,7 +17,7 @@ fn exact_control_guard_spans_native_cutover_and_product_loss_retains_actual_move
     };
     let token = RuntimeWorldCancellationSource::new().token();
     let (reached, arrival) = mpsc::sync_channel(1);
-    let gate = Arc::new(RelationalPatchPositionReservationGateForTest::default());
+    let gate = Arc::new(Default::default());
     let candidate = court.records.candidate_with_control(
         &execution,
         target.basis().relational_basis(),

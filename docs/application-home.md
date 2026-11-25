@@ -103,9 +103,11 @@ descriptors are data, not authority. See
 [Reacquire authority after reopen](build-an-application.md#reacquire-authority-after-reopen).
 
 Only one process can own a Directory. A second opener is refused with
-`WorthQueryApplicationHomeOpenRefused::Physical`; its `detail()` names
-`MutationOwnerContended`. If the owner process dies, the OS releases the lease and
-another process can open the Home.
+`WorthQueryApplicationHomeOpenRefused` (phase
+`WorthQueryApplicationHomeOpenRefusedPhase::Physical`); its `physical_refusal()`
+returns the typed Store refusal and `detail()` names `MutationOwnerContended`.
+If the owner process dies, the OS releases the lease and another process can
+open the Home.
 
 ## Write, with idempotency keys and retries
 
@@ -168,23 +170,113 @@ match home.close(&request) {
 - Dropping a Home is not a successful close.
 - `close` is the Directory lifecycle. On a MemoryOnly Home it refuses, and
   `resume()` returns the Home; a MemoryOnly Home ends when it is dropped.
-- The `ExecutionRequest` comes from a lease built with
+- `close_with_policy(policy)` (and `try_close_with_policy(policy)` on refusal)
+  acquires an owned serial `ExecutionResourceLease` from an
+  `ExecutionRequestPolicy`, removing manual lease setup while preserving the
+  exact owner on `WorthQueryHomeClosePolicyRefused::Admission`.
+- `home.primary_graph()` lends the installed primary graph directly without
+  calling `home.runtime().runtime()`.
+- The `ExecutionRequest` for direct `close(&request)` comes from a lease built with
   `host::runtime::{ExecutionResourceLease, LeaseRequest, CancellationToken}`; the
   [shared-execution example's `home.rs`](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/examples/shared_execution/home.rs)
   shows one.
 
 ## If opening is refused
 
-`host::WorthQueryApplicationHomeOpenRefused` is an owning refusal: it can hold
-the partly opened Home and its mutation lease. Do not treat it as permission to
-initialize or delete the directory. Release it with `refused.close(&request)`,
-which returns `WorthQueryApplicationHomeOpeningClosed` or
-`WorthQueryApplicationHomeOpeningCloseRefused` (retry with `try_close`). Its
-`detail()` (also its `Debug` output) describes the cause.
+`host::WorthQueryApplicationHomeOpenRefused` is a pointer-sized owning refusal:
+it can hold the partly opened Home and its mutation lease (inspectable via
+`phase()` / `into_phase()`). Do not treat it as permission to initialize or
+delete the directory. Release it with `refused.close(&request)` or
+`refused.close_with_policy(policy)`, which returns
+`WorthQueryApplicationHomeOpeningClosed` or
+`WorthQueryApplicationHomeOpeningCloseRefused` (retry with `try_close` /
+`try_close_with_policy`). Its `detail()` (also its `Display` and `Debug`
+output) describes the cause.
 
 If the recorded program or schema differs from the request, opening refuses and
 `refused.transition_required()` describes both bindings; reopen with
-`with_program_transition(..)`.
+`with_program_transition(..)` or the declarative helper below.
+
+## In-Place Program Upgrades (v2 -> v3) & Zero-Boilerplate Build Identity
+
+Applications evolving an existing Directory Home across schema/program versions
+(for example, adding a defaulted, equality-indexed field to an existing entity
+while retaining all prior rows) can declare the transition once with
+`worth_query_program_transition!` and open/upgrade in a single call through
+`host::program_transition::open_directory_with_transition`:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+use worth_query_decl::facade::worth_query_program_transition;
+use worth_query_host::facade::program_transition::{
+    open_directory_with_transition, worth_query_default_build_id,
+    WorthQueryProgramTransitionOpenConfig, WorthQueryTransitionOpenOutcome,
+};
+
+worth_query_program_transition! {
+    pub struct DaymarkV2ToV3;
+    from = (DaymarkV2Schema, DaymarkV2Program, version = 2)
+        => to = (DaymarkV3Schema, DaymarkV3Program, version = 3),
+    retained_records = [Project, Task],
+    added_defaults = [
+        task_priority_field()
+            => default = "Normal".to_owned(), required = false, label = "Priority::Normal",
+    ],
+    rebuild_indexes = [task_priority_field()],
+    description = "Add TaskPriority::Priority defaulting to Priority::Normal",
+}
+
+// Honors WORTH_IMPLEMENTATION_BUILD_ID when set; otherwise deterministically
+// derives an RFC 4122 §4.3 UUIDv5 (SHA-1) from CARGO_PKG_NAME@CARGO_PKG_VERSION.
+let build = worth_query_default_build_id!();
+let opened = open_directory_with_transition::<DaymarkV2ToV3>(
+    &phase,
+    v2_request(path.clone(), build),
+    v3_request(path, build),
+    WorthQueryProgramTransitionOpenConfig::default_bounded(),
+)?;
+
+match opened.outcome() {
+    WorthQueryTransitionOpenOutcome::CreatedFresh { program_version } => { /* new v3 Home */ }
+    WorthQueryTransitionOpenOutcome::OpenedCurrent { program_version } => { /* already v3 */ }
+    WorthQueryTransitionOpenOutcome::UpgradedInPlace {
+        from_version,
+        to_version,
+        backfilled_records,
+        indexes_marked_for_rebuild,
+    } => { /* atomically upgraded v2 -> v3 in-place */ }
+}
+```
+
+- **Typed fields only:** `added_defaults` and `rebuild_indexes` accept WORTH's
+  typed `RecordSelection` / `FieldSelection` handles, validate/encode default
+  values through the field's declared scalar binding at declaration time, refuse
+  defaults targeting fields already present in the predecessor schema, and
+  verify every `rebuild_indexes` target against the target program's installed
+  equality-index catalog before populating `indexes_marked_for_rebuild`.
+- **Optional custom step:** use `open_directory_with_transition_and_step` to
+  append custom `WorkerIntentBatch` work to the declarative target step.
+- **Fail-closed guarantees:**
+  - Opening a `v2` Home under `v3` without a transition refuses with typed
+    `refused.transition_required()`.
+  - Opening a `v1` Home with a `v2 -> v3` transition refuses with
+    `WorthQueryProgramTransitionOpenDenial::PredecessorMismatch`.
+  - Declaring duplicate/overlapping records, defaults, index rebuilds, spoofed
+    endpoint specs, or a downgrade (`v3 -> v2`) refuses with typed
+    `WorthQueryProgramTransitionOpenDenial::Declaration(...)` before touching
+    disk (and direct `v2` open on a `v3` Home refuses with `transition_required()`).
+  - Exceeding `max_entities_per_kind` refuses before durable intent publication
+    with typed `WorthQueryProgramTransitionOpenDenial::EntityScanLimitExceeded`.
+  - Budget or cancellation stops during metered backfill planning or pre-intent
+    index-budget preflight fail closed with `BudgetOrCancellationStopped` before
+    publishing `TransitionPending`, leaving the `v2` Home intact and reopenable.
+  - Reopening an upgraded `v3` Home reports `OpenedCurrent` and never re-runs
+    the transition or overwrites post-upgrade edits.
+- **Formal verification:** specified in
+  [`specs/tla/program_transition/ProgramTransition.tla`](../specs/tla/program_transition/ProgramTransition.tla)
+  and validated by the 64-seed Directory Home DST in
+  `worth-query-court-decl-host-integration` (`host::program_transition::dst`).
 
 ## After a crash or unclean close
 
@@ -347,9 +439,76 @@ the Home's durable derived checkpoint (`home.checkpoint` and its anchored
 members) so reopen reconstructs strictly from authoritative journals and
 recomputes derived state only on demand.
 
+A program installs a recurring rule declared with `worth_query_recurring_rule!`
+through `conditionals: Config { field: Rule }` in `worth_query_application_program!`
+and catches up with `session.catch_up_temporal::<Rule>(now, policy)`, which funds
+the run from the session's execution policy and fires on the session's branch.
+The rule row's lifecycle and gate are typed (`WorthQueryRecurringLifecycle`,
+`WorthQueryRecurringGate`), never strings.
+
+The default execution policy's work ceiling (`DEFAULT_HOST_EXECUTION_WORK_CEILING`)
+covers reopening a Directory Home: reopen rebuilds its admission image from
+retained history, and that reconstructive work grows with the retained commits,
+so desktop applications do not need a custom policy to reopen, rebuild indexes
+or run actions.
+
 The interim D13 application-checkpoint restore surface has been retired.
 Applications reopen their Directory Home directly through
 `WorthQueryApplicationHomeRequest`.
+
+## Shared Scope Access
+
+A single-owner Directory Home can delegate governed read (or read+watch) access
+for one application scope to authenticated remote collaborators without ever
+opening a second writer on the Directory:
+
+- Declare the stock grant schema once with `worth_query_scope_access!`: typed
+  grant records (access is `ScopeAccess`; action, purpose and disclosure are
+  closed enums), read/watch capabilities and contracts, the governed
+  disclosure (`access::disclosure()` with `access::scope_view()`) and
+  grant/revoke actions. `worth_query_shared_access! { program P for Schema {
+  access: access, payload, query, row, owner } }` then implements
+  `host::shared_access::WorthQuerySharedAccessProgram<Schema>`, and
+  `worth_query_remote_codec!(Row { field, .. })` derives each payload and row
+  wire codec. The
+  [stock scope-access court](../workspaces/worth-query/crates/worth-query-court-decl-host-macros/tests/worth_query_court_decl_host_macros/scope_access_dx/mod.rs)
+  is the worked example. A custom grant schema implements the trait or uses
+  the macro's explicit `read`/`watch`/`grant`/`revoke` form.
+- **Native commit-backed grants and revocations:**
+  `WorthQueryApplicationHome::grant_scope_access` and
+  `WorthQueryApplicationHome::revoke_scope_access` execute your declared mutation
+  intents directly through WORTH's own mutation runtime and refuse unless a
+  published commit receipt with non-zero durable record changes is produced.
+  Grants and revocations survive graceful close and reopen. On reopen, every
+  request (including `WatchPoll` and `WatchClose`) authenticates first — so
+  earlier incarnation-pinned tokens refuse with `StaleIncarnation` and unpinned
+  tokens refuse with `IncarnationPinRequired` when
+  `RemoteAuthConfig::with_require_incarnation_pin(true)` is set; when pinning is
+  optional, valid unpinned tokens bound to the same `HomeIdentity` continue to
+  authenticate, and once authenticated, prior incarnation-bound `RemoteWatchId`
+  handles always fail closed with `WatchNotFound` even after replacement watches
+  are opened.
+- **Loopback-only TCP trust boundary:** `home.serve_remote(bind_addr, auth_config)?`
+  and `WorthQueryRemoteClient::connect(addr, token)?` both fail closed with
+  `SharedAccessDenial::NonLoopbackAddressRefused` for any non-loopback address,
+  because direct frames carry reusable HMAC-SHA256 bearer tokens and row
+  payloads without transport encryption. For cross-host deployments, tunnel
+  loopback over an authenticated encrypted transport (TLS/mTLS, Tailscale, or
+  SSH) or drive `WorthQueryRemoteServer::handle_frame` over an encrypted
+  channel.
+- **Bounded, nonblocking hosting and watch reclamation:** `RemoteServerLimits`
+  and `RemoteClientLimits` enforce `MIN_MAX_FRAME_BYTES` (64 bytes, strictly
+  above the stack-encoded refusal frame), intersect remote row limits with both
+  graph cardinality and the installed query binding cap, require bounded
+  `RemoteBinaryCodec::encode_remote_bounded` streaming through
+  `RemoteByteWriter` before allocation, keep accepted TCP sockets strictly
+  nonblocking with per-tick dispatch quotas and absolute per-frame/idle
+  deadlines, verify the native admitted watch capability proof's resolved
+  resource `EntityId` against the exact bound scope entity at both open and
+  every poll, keep `active_watch_count` / `active_watches` strictly read-only,
+  roll back failed watch opens before slot insertion, and reclaim watches on
+  disconnect or token expiry via owner progress (`serve_pending`, `serve_once`,
+  or `reap_expired_watches`).
 
 ## Examples
 

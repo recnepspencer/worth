@@ -107,7 +107,7 @@ impl super::RelationalRuntime {
         });
         self.services
             .symbols
-            .place_exported_symbol_pages_cold_for_test(&input.manifest, source)
+            .place_exported_symbol_pages_cold_for_test(input.manifest.symbol_page_roster(), source)
             .expect("real exported symbol pages admit");
         // D1638: a live warm lease may have relied on the fully resident
         // dictionary. Reconstruct only its rebuildable symbol closure through

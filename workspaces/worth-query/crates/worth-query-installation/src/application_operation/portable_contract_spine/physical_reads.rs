@@ -14,7 +14,8 @@ pub(crate) fn compile_reads(
         match read {
             // The Parent and its Source admit their own reads. The operation's
             // physical projection declarations are checked independently.
-            ApplicationOperationDecisionReadTarget::ManagedIndex { .. } => {}
+            ApplicationOperationDecisionReadTarget::ManagedIndex { .. }
+            | ApplicationOperationDecisionReadTarget::SharedOwnerManagedIndex { .. } => {}
             ApplicationOperationDecisionReadTarget::Entity { entity } => {
                 entities.insert(entity);
             }

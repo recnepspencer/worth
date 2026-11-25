@@ -122,6 +122,7 @@ where
         conditional_definition,
         effect_posture,
         output_correspondence,
+        persistent_names,
         retain_output_demand_observation,
         retain_client_observation,
         producer_required_invariants,
@@ -141,6 +142,13 @@ where
         return Err(
             WorthQueryProgramMigrationPreparationDenial::UnsupportedPosture(
                 "program migration cannot transfer staged content custody",
+            ),
+        );
+    }
+    if !persistent_names.is_empty() {
+        return Err(
+            WorthQueryProgramMigrationPreparationDenial::UnsupportedPosture(
+                "program migration cannot declare persistent-name outputs",
             ),
         );
     }

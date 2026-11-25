@@ -1,5 +1,6 @@
 //! Every root-scoped catalog shares its original admitted compiled owners.
 use super::*;
+use worth_relational_contracts::internal_port::schema::home_program_catalog_receipt::RelationalHomeProgramCatalogReceiptOwnerPort as _;
 impl RelationalRuntime {
     pub(crate) fn retain_home_program_contracts(
         &self,
@@ -23,7 +24,13 @@ impl RelationalRuntime {
         let memory = request
             .reserve_retained_memory(layout.size() as u64)
             .map_err(Denial::Request)?;
-        let identity = catalog_receipt::RelationalHomeProgramCatalogIdentity::issue(request)?;
+        let identity_layout = RelationalHomeProgramCatalogReceipt::allocation_layout()
+            .map_err(|_| Denial::CapacityOverflow)?;
+        let identity_memory = request
+            .reserve_retained_memory(identity_layout.size() as u64)
+            .map_err(Denial::Request)?;
+        request.consult().map_err(Denial::Request)?;
+        let identity = RelationalHomeProgramCatalogReceipt::funded(identity_memory);
         request.consult().map_err(Denial::Request)?;
         Ok(PreparedRelationalHomeProgramContracts {
             meaning: Arc::new(RelationalRootExecutionContracts {

@@ -12,6 +12,9 @@
 "worth-store-snapshots" = { "path" = "../worth-store-snapshots" }
 "worth-store-testkit-executables" = { "path" = "../worth-store-testkit-executables" }
 
+[dev-dependencies]
+proptest = { version = "1", default-features = false, features = ["std", "bit-set"] }
+
 [[test]]
 name = "worth_store_court_snapshots"
 path = "tests/worth_store_court_snapshots.rs"

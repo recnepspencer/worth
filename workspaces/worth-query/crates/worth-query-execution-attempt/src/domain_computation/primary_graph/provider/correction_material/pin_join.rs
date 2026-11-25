@@ -19,17 +19,6 @@ pub(super) fn admit(
         })
         .collect::<std::collections::BTreeSet<_>>();
     if !prepared_keys.is_empty() {
-        // A decoded prepared row never proves absence of an unresolved original.
-        for original in originals.original_states() {
-            match original.fate() {
-                worth_foundational::facade::WorldOriginalFate::Published
-                | worth_foundational::facade::WorldOriginalFate::Released => {}
-                worth_foundational::facade::WorldOriginalFate::Open
-                | worth_foundational::facade::WorldOriginalFate::Continued => {
-                    return Err(Denial::PublicationPending)
-                }
-            }
-        }
         let layout = provider.graph.layout_ref().provider_idempotency();
         for subject in native
             .durability_authority()
@@ -76,14 +65,7 @@ pub(super) fn admit(
             if source.fate() != worth_foundational::facade::WorldOriginalFate::Published {
                 return Err(Denial::OriginalMismatch);
             }
-            let (_, ready) = catalog
-                .material
-                .get(&original)
-                .ok_or(Denial::Unavailable)?
-                .available()?;
-            if ready.original != original {
-                return Err(Denial::OriginalMismatch);
-            }
+            catalog.original_available(original, Denial::Unavailable)?;
             continue;
         }
         let prepared = row.prepared()?;

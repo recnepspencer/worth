@@ -8,17 +8,16 @@ use crate::domain_computation::authorization::WorthQueryOperationScopeBinding;
 use crate::domain_computation::primary_graph::output_lineage::ProductCoordinate;
 use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
 use crate::domain_computation::primary_graph::output_lineage::SemanticSource;
-use crate::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage;
+use crate::domain_computation::primary_graph::output_lineage::SharedOutputLineage;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::sync::Arc;
-use std::sync::Mutex;
 use std::sync::OnceLock;
 use worth_runtime_world::facade::PlannedProductReferenceSuccessor;
 
 pub fn prepare(
-    owner: &Arc<Mutex<WorthQueryApplicationOutputLineage>>,
+    owner: &SharedOutputLineage,
     scope: &WorthQueryOperationScopeBinding,
     output_binding: TypeId,
     partition: Option<[u8; 32]>,
@@ -88,7 +87,7 @@ pub fn prepare(
         original_ready_key: None,
         coupled_completion: None,
         required_publication: None,
-        owner: Arc::clone(owner),
+        owner: owner.clone(),
         output_binding_type: output_binding,
         source,
         coordinate,

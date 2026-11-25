@@ -171,6 +171,7 @@ pub(in crate::domain_computation::primary_graph) trait AuthoredEditStageExecutor
         before_pin: &RelationalPinnedRead,
         candidate: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         participants: &dyn crate::domain_computation::primary_graph::provider::AppliedOutputParticipants,
+        assembly: &worth_relational::facade::mvcc::RelationalAuthoredCoupledCandidate<'_>,
     ) -> Result<InspectedAuthoredApplication<'run>, WorthQueryOutputDemandDenial>;
     fn prepare_commit<'run>(
         &self,

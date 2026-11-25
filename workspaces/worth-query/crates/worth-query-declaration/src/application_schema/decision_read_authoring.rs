@@ -11,6 +11,8 @@ mod resolution;
 pub(crate) use resolution::operation_declares_decision_read;
 mod scope;
 #[cfg(test)]
+mod shared_owner_tests;
+#[cfg(test)]
 mod tests;
 pub use reference::ApplicationDecisionReadScopeRef;
 pub use resolution::{
@@ -37,6 +39,45 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
                     Schema,
                     Binding,
                 >(),
+            },
+        )
+    }
+
+    /// Declares the managed Parent readable at a peer scope: any `Member` that
+    /// shares an `Owner` with the operation's own scope through `relation`.
+    /// A read at any other scope, or for another principal, stays refused as
+    /// `ForeignAssociation` before any provider call. Finalization emits one
+    /// canonical decision read on the governing relation when not already
+    /// declared: reaching the peer reads it, so its edits invalidate the
+    /// decision, while multiple Parents on the same governing relation share
+    /// that read without `DuplicateMember`.
+    pub fn operation_shared_owner_managed_index_read<
+        Binding,
+        Operation,
+        Input,
+        Relation,
+        Owner,
+        Member,
+    >(
+        self,
+        operation: ApplicationOperationRef<Schema, Operation, Input>,
+        relation: ApplicationRelationRef<Schema, Relation, Owner, Member>,
+    ) -> Self
+    where
+        Schema: super::ApplicationSchema,
+        Binding: crate::application_query::ApplicationQueryBinding<Schema>,
+        Relation: OperationReads<Operation>,
+    {
+        self.decision_read(
+            operation.name(),
+            ApplicationOperationDecisionReadTarget::SharedOwnerManagedIndex {
+                parent: crate::application_query::ApplicationQueryBindingReference::of::<
+                    Schema,
+                    Binding,
+                >(),
+                relation: relation.name().to_string(),
+                owner: relation.from().to_string(),
+                member: relation.to().to_string(),
             },
         )
     }

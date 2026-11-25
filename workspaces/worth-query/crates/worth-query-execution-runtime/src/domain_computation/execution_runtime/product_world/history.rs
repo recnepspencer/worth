@@ -34,7 +34,8 @@ impl WorthQueryProductRuntime {
         worth_runtime_world::facade::ProductExactHistoryCursor,
         worth_runtime_world::facade::ProductExactHistoryDenial,
     > {
-        self.owner
+        self.fields()
+            .owner
             .observation_port()
             .open_exact_product_history(execution, target.observation())
             .map_err(exact_history_denial)
@@ -48,7 +49,8 @@ impl WorthQueryProductRuntime {
         worth_runtime_world::facade::PreparedProductExactHistoryPage<'request, 'authority>,
         worth_runtime_world::facade::ProductExactHistoryDenial,
     > {
-        self.owner
+        self.fields()
+            .owner
             .observation_port()
             .prepare_exact_product_history_page(execution, cursor)
             .map_err(exact_history_denial)
@@ -92,17 +94,18 @@ impl WorthQueryProductRuntime {
         branch: WorthQueryProductBranch,
         maximum: Option<NonZeroUsize>,
     ) -> Result<ProductBranchHistoryTraversal, WorthQueryProductBranchAdmissionDenial> {
-        if branch.occurrence().owner_identity() != self.owner.owner_identity() {
+        if branch.occurrence().owner_identity() != self.fields().owner.owner_identity() {
             return Err(WorthQueryProductBranchAdmissionDenial::Refused(
                 AdmissionRefusal::ForeignOwner,
             ));
         }
         let history = self
+            .fields()
             .owner
             .observation_port()
             .trace_product_branch_ancestry(execution, branch.occurrence(), maximum)
             .map_err(map_world_denial)?;
-        let gate = self.activations.gate(history.branch_identity())?;
+        let gate = self.fields().activations.gate(history.branch_identity())?;
         gate.with_admission(|| Ok(history))
     }
 
@@ -112,14 +115,16 @@ impl WorthQueryProductRuntime {
         previous: &ProductBranchHistoryTraversal,
         maximum: Option<NonZeroUsize>,
     ) -> Result<ProductBranchHistoryTraversal, WorthQueryProductBranchAdmissionDenial> {
-        if previous.lifecycle_incarnation().owner_identity() != self.owner.owner_identity() {
+        if previous.lifecycle_incarnation().owner_identity() != self.fields().owner.owner_identity()
+        {
             return Err(WorthQueryProductBranchAdmissionDenial::Refused(
                 AdmissionRefusal::ForeignOwner,
             ));
         }
-        let gate = self.activations.gate(previous.branch_identity())?;
+        let gate = self.fields().activations.gate(previous.branch_identity())?;
         gate.with_admission(|| {
-            self.owner
+            self.fields()
+                .owner
                 .observation_port()
                 .continue_product_branch_ancestry(execution, previous, maximum)
                 .map_err(map_world_denial)
@@ -131,14 +136,16 @@ impl WorthQueryProductRuntime {
         history: &ProductBranchHistoryTraversal,
         index: usize,
     ) -> Result<WorthQueryProductBranchLease, WorthQueryProductBranchAdmissionDenial> {
-        if history.lifecycle_incarnation().owner_identity() != self.owner.owner_identity() {
+        if history.lifecycle_incarnation().owner_identity() != self.fields().owner.owner_identity()
+        {
             return Err(WorthQueryProductBranchAdmissionDenial::Refused(
                 AdmissionRefusal::ForeignOwner,
             ));
         }
-        let gate = self.activations.gate(history.branch_identity())?;
+        let gate = self.fields().activations.gate(history.branch_identity())?;
         gate.with_admission(|| {
             let observation = self
+                .fields()
                 .owner
                 .observation_port()
                 .observe_product_branch_history_entry(history, index)

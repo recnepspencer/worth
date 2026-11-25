@@ -1,11 +1,15 @@
 //! Seal the validated successor only after candidate preparation has retired.
 use super::proposal_source::RelationalProposalSource;
 use super::proposal_validation::require_not_interrupted;
-use super::validated_proposal::{
-    RelationalMutationInvariantEvidence, ValidatedProposalState, ValidatedRelationalProposal,
-};
+use super::validated_proposal::{ValidatedProposalState, ValidatedRelationalProposal};
 use crate::runtime::RelationalPreparationRuntime;
-use crate::transactions::data::{CommitValidation, TransactionCommitError};
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::CommitValidation;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_mutation::internal_port::mvcc::validation::invariant_evidence::{
+    assemble_mutation_invariant_evidence, MutationInvariantEvidenceParts,
+};
+use worth_relational_publication::internal_port::authority::commit::structural_summary::CommitStructuralSummaryFieldsPort as _;
 #[inline(never)]
 pub(super) fn complete(
     owner: &RelationalPreparationRuntime,
@@ -31,8 +35,8 @@ pub(super) fn complete(
     let branch = basis.identity().branch_id().clone();
     require_not_interrupted(
         &transaction.control,
-        &transaction.basis.inner.retention_binding,
-        crate::mvcc::RelationalInterruptionBoundary::ProposalValidation,
+        &transaction.basis.owner_inner().retention_binding,
+        crate::runtime::operation_control::interruption_event::RelationalInterruptionBoundary::ProposalValidation,
     )?;
     let transaction_id = transaction.transaction_id;
     let proposed_version = proposal_identity.proposed_version_id();
@@ -48,9 +52,9 @@ pub(super) fn complete(
             crate::commit_strategies::data::StrategyPreviewValidationCostSummary::new(
                 proposed_version,
                 prepared.plan.view().commands().merged_intents.len(),
-                prepared.structural_summary.touched_partitions.len(),
-                prepared.structural_summary.bulk_entity_slots_reserved,
-                prepared.structural_summary.bulk_relation_slots_reserved,
+                prepared.structural_summary.touched_partitions().len(),
+                prepared.structural_summary.bulk_entity_slots_reserved(),
+                prepared.structural_summary.bulk_relation_slots_reserved(),
                 1,
             );
         strategy.artifacts.clone().with_preview_validation(
@@ -69,8 +73,8 @@ pub(super) fn complete(
         );
     require_not_interrupted(
         &transaction.control,
-        &transaction.basis.inner.retention_binding,
-        crate::mvcc::RelationalInterruptionBoundary::ProposalValidation,
+        &transaction.basis.owner_inner().retention_binding,
+        crate::runtime::operation_control::interruption_event::RelationalInterruptionBoundary::ProposalValidation,
     )?;
     // All inner and outer abandoning probes have completed. Transfer the exact
     // draft and its existing coupled posture to validated proposal custody.
@@ -95,13 +99,13 @@ pub(super) fn complete(
             prepared,
             proposed_mutation,
             invariants,
-            evidence: RelationalMutationInvariantEvidence {
+            evidence: assemble_mutation_invariant_evidence(MutationInvariantEvidenceParts {
                 branch,
                 proposed_version,
                 proposal_identity: proposal_identity.clone(),
                 summary,
                 custom_invariant_execution_receipts,
-            },
+            }),
             proposal_identity,
             validated_against_commit,
             validated_against_version,

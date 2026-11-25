@@ -12,6 +12,7 @@ mod derived_index_checkpoint;
 mod descriptor_continuity;
 mod fork_provenance_checkpoint;
 mod global_generation_reclamation;
+mod journal_owned_reads;
 mod lineage_allocator_denials;
 mod lineage_artifact_recovery;
 mod lineage_event_allocator_recovery;

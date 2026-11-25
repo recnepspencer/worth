@@ -14,7 +14,7 @@ pub(in super::super) fn reconstruct_predecessor(
     catalog
         .require_runtime(restored.runtime_instance_id())
         .map_err(|error| {
-            super::super::envelope_replay::replay_commit_stop(
+            super::super::envelope_replay::commit_stop::replay_commit_stop(
                 error,
                 "recovered index catalog belongs to another runtime".into(),
             )
@@ -22,7 +22,8 @@ pub(in super::super) fn reconstruct_predecessor(
     if catalog.delta.definitions().is_empty() {
         return Ok(());
     }
-    let basis = super::super::branch_readmission::recovered_branch_basis(restored, branch)?;
+    let basis =
+        super::super::branch_readmission::recovered_branch_basis((&*restored).into(), branch)?;
     let observation = basis.observation();
     let Some(_) = observation.commit_id() else {
         // The native pipeline already derives an authentic empty predecessor.
@@ -44,6 +45,7 @@ pub(in super::super) fn reconstruct_predecessor(
             | DerivedIndexMaintenanceDenialKind::GenerationKindMismatch(_)
             | DerivedIndexMaintenanceDenialKind::PriorEntryMismatch
             | DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired
+            | DerivedIndexMaintenanceDenialKind::ColdRecordSlotBudgetExceeded
             | DerivedIndexMaintenanceDenialKind::WorkBudgetExceeded
             | DerivedIndexMaintenanceDenialKind::ForeignCandidate
             | DerivedIndexMaintenanceDenialKind::CandidateUnavailable

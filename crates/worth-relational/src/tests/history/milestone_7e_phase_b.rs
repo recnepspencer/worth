@@ -121,11 +121,11 @@ fn foundational_current_basis_lowering_rejects_published_historical_basis_in_liv
     let prepared = runtime
         .prepare_merge_execution(
             execution,
-            crate::facade::merge::MergeExecutionRequest {
-                target_branch: BranchId("main".to_string()),
-                source_branch: BranchId("feature".to_string()),
-                merge_intent: MergeIntent::ReconcileIntoTarget,
-            },
+            crate::facade::merge::MergeExecutionRequest::new(
+                BranchId("main".to_string()),
+                BranchId("feature".to_string()),
+                MergeIntent::ReconcileIntoTarget,
+            ),
         )
         .expect("prepared merge");
     let merge = runtime

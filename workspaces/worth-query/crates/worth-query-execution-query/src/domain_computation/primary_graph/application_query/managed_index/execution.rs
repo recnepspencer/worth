@@ -13,7 +13,7 @@ mod build;
 mod maintained_build;
 pub mod purpose;
 mod select;
-pub use build::rebuild;
+pub use build::{rebuild, rebuild_claimed};
 pub use select::select;
 
 pub enum ProviderExecutionDenial {
@@ -33,6 +33,8 @@ pub enum ProviderExecutionDenial {
     Product(crate::basis::WorthQueryProductBranchAdmissionDenial),
     NativeAdmission(worth_relational::facade::mvcc::CompanionPreflightStop),
     ForeignAssociation,
+    /// A successor round's applied probe read a record its own chain wrote.
+    PriorEffectRead,
 }
 impl From<super::super::output_source_observation::SourceQueryObservationStop>
     for ProviderExecutionDenial

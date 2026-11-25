@@ -25,7 +25,8 @@ impl ForkSource {
         match self {
             Self::Current(branch) => runtime.admit_product_occurrence(branch.occurrence()),
             Self::Expected(source) => {
-                if source.observation().owner_identity() != runtime.owner.owner_identity() {
+                if source.observation().owner_identity() != runtime.fields().owner.owner_identity()
+                {
                     return Err(WorthQueryProductBranchAdmissionDenial::Refused(
                         WorthQueryProductBranchAdmissionRefusalKind::ForeignOwner,
                     ));

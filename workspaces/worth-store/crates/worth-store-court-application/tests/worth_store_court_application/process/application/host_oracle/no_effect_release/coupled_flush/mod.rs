@@ -63,23 +63,21 @@ pub(super) fn authenticate(
     home: &Home,
     scope: &WorthQueryRequestScope,
 ) -> WorthQueryAuthenticatedExternalPrincipal<Catalog> {
-    let audience = WorthQueryAuthenticationAudience::new("coupled-flush").unwrap();
-    let method = WorthQueryAuthenticationMethod::new("local-process").unwrap();
+    let local = WorthQueryLocalProcessPrincipal::new(
+        WorthQueryExternalPrincipalIdentity::new(fixture::CoupledFlushIssuer, "reader").unwrap(),
+        fixture::CoupledFlushAudience,
+        fixture::LocalProcessMethod,
+        Duration::from_secs(600),
+    )
+    .unwrap();
     let adapter = admit_authentication_adapter(
         home.runtime().runtime().installed_schema(),
         WorthQueryAuthenticationAdapterAdmission::new(
-            audience.clone(),
-            method.clone(),
+            WorthQueryAuthenticationAudience::of(fixture::CoupledFlushAudience),
+            WorthQueryAuthenticationMethod::of(fixture::LocalProcessMethod),
             WorthQueryAdmissionClock::system(),
         ),
-        WorthQueryLocalProcessPrincipal::new(
-            "coupled-flush.local.v1",
-            WorthQueryExternalPrincipalIdentity::new("coupled-flush", "reader").unwrap(),
-            audience,
-            method,
-            Duration::from_secs(600),
-        )
-        .unwrap(),
+        local,
     )
     .unwrap();
     adapter.authenticate_local(scope).unwrap()

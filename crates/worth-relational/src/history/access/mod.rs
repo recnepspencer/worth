@@ -1,22 +1,25 @@
 mod ancestry;
+pub(crate) use worth_relational_branch::internal_port::history::access::ancestry_walk;
 mod aspect_history;
+pub(crate) use worth_relational_branch::internal_port::history::access::aspect_history_projection;
 mod aspect_history_queries;
 mod bounded_commit_patches;
 mod branch_envelope_reads;
 mod commit_surfaces;
 mod envelope_reads;
+pub(crate) use worth_relational_branch::internal_port::history::access::merge_basis_resolution;
 mod merge_branch_basis;
-#[cfg(test)]
-mod merge_branch_basis_foundational;
 mod patch_stream_commit;
 pub(crate) mod relevant_writes;
+pub use relevant_writes::live_cursor::RelationalAuthoredWriteCursor;
 pub use relevant_writes::{
     RelationalAuthoredEntityIndexDefinition, RelationalAuthoredManagedSourceImpact,
     RelationalAuthoredManagedSourceMaterial, RelationalAuthoredManagedSourcePayloads,
-    RelationalAuthoredManagedSourceSelector, RelationalAuthoredWriteCursor,
-    RelationalAuthoredWriteDenial, RelationalAuthoredWriteOccurrence, RelationalAuthoredWritePage,
+    RelationalAuthoredManagedSourceSelector, RelationalAuthoredWriteDenial,
+    RelationalAuthoredWriteOccurrence, RelationalAuthoredWritePage,
     RelationalAuthoredWritePageLimits, RelationalAuthoredWriteScope,
-    RelationalAuthoredWriteSelector, RelationalPreparedAuthoredWritePage,
+    RelationalAuthoredWriteSelector, RelationalAuthoredWriteSpan,
+    RelationalPreparedAuthoredWritePage,
 };
 
 use crate::runtime::RelationalRuntime;
@@ -49,3 +52,5 @@ impl<'runtime> HistoryAccess<'runtime> {
         Self { runtime }
     }
 }
+#[cfg(test)]
+pub(crate) use worth_relational_branch::internal_port::history::access::merge_branch_basis_foundational;

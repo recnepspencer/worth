@@ -1,4 +1,6 @@
 //! Fold the authored lineage edges; posting order never chooses an alternative.
+//! Each stage of a coupled group is its own source (public #368), so sources and
+//! roots are keyed by their commit and member.
 use super::*;
 use crate::domain_computation::application_aftermath::WorthQueryAftermathCausalRole as Role;
 use std::collections::BTreeSet;
@@ -32,9 +34,12 @@ pub(super) fn readmit(
                         }
                     }
                 }
-                if !reversed.insert(fact.source.relational().commit_id)
+                if !reversed.insert((fact.source.relational().commit_id, fact.source.member()))
                     || active
-                        .insert(fact.root.relational().commit_id, fact.child.commit_id)
+                        .insert(
+                            (fact.root.relational().commit_id, fact.root.member()),
+                            fact.child.commit_id,
+                        )
                         .is_some()
                 {
                     return Err(deny());
@@ -55,7 +60,7 @@ pub(super) fn readmit(
                     || consumed_fact.root != fact.root
                     || selected_fact.source != fact.source
                     || fact.prior.as_ref() != Some(consumed)
-                    || active.remove(&fact.root.relational().commit_id)
+                    || active.remove(&(fact.root.relational().commit_id, fact.root.member()))
                         != Some(consumed_fact.child.commit_id)
                 {
                     return Err(deny());

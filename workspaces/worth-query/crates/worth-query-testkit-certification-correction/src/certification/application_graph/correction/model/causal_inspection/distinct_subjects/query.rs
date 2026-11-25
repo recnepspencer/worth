@@ -11,6 +11,10 @@ use worth_query_host::facade::{
     primary_graph::*,
     *,
 };
+
+worth_query_decl::facade::worth_query_disclosure_classification!(
+    DistinctSubjectDiagnosticDisclosure
+);
 pub struct RootSlot;
 pub struct ChildSlot;
 pub struct ValueSlot;
@@ -69,7 +73,7 @@ pub fn definition(
     .relation(references(), child)
     .build();
     let disclosure = ApplicationQueryDisclosureContract::governed_by(
-        "distinct-subject-diagnostic",
+        DistinctSubjectDiagnosticDisclosure,
         capability::Inspect::reference(),
     )
     .disclose_field_by(

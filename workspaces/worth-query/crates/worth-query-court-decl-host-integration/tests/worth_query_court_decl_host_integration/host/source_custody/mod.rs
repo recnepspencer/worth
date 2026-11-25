@@ -2,9 +2,14 @@
 //! opened under bounded serial limits and a local-process principal.
 mod bounded_history_reopen;
 mod commit_and_decline;
+mod custody_dst;
+mod erased_custody;
 mod interrupted_frames;
+mod retryable_no_effect;
 
-use super::application_startup::{close_home, local_principal, open_home, read_balance, scope};
+use super::application_startup::{
+    close_home, local_principal, open_home, open_home_with_contacts, read_balance, scope,
+};
 use std::time::Duration;
 use worth_query_host::facade::{
     admission::authenticated_principal::WorthQueryAdmissionClock,

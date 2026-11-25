@@ -13,7 +13,7 @@ impl WorthQueryProductRuntime {
     pub fn inspection_port_for_test(
         &self,
     ) -> worth_runtime_world::facade::RuntimeWorldInspectionPort {
-        self.owner.inspection_port()
+        self.fields().owner.inspection_port()
     }
 }
 
@@ -43,7 +43,7 @@ impl WorthQueryProductRuntime {
 impl WorthQueryProductRuntime {
     #[doc(hidden)]
     pub fn clock_for_test(&self) -> &WorthQueryProductWorldClock {
-        &self.clock
+        &self.fields().clock
     }
 }
 

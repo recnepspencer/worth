@@ -1,7 +1,6 @@
 //! Check that an issued required successor remains a live replacement.
 
 use std::cmp::Ordering;
-use std::sync::Arc;
 
 use super::super::WorthQueryOutputDemandInterest;
 use super::super::WorthQueryOutputDemandRegistry;
@@ -28,7 +27,7 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        if !Arc::ptr_eq(&self.state, &successor.owner.state) || !successor.requires_output {
+        if !self.state.ptr_eq(&successor.owner.state) || !successor.requires_output {
             return Ok(false);
         }
         if !matches!(

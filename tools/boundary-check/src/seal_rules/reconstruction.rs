@@ -8,7 +8,7 @@ use std::collections::BTreeSet;
 
 const CONSTRUCTOR: &str = "enter_reconstruction";
 const DEFINITION: &str =
-    "crates/worth-relational/src/storage/substrate/maintenance/reconstruction.rs";
+    "crates/worth-relational-contracts/src/storage/substrate/maintenance/reconstruction.rs";
 
 pub(super) fn check(input: &Inputs) -> Vec<Diagnostic> {
     let references: Vec<_> = input
@@ -59,7 +59,8 @@ pub(super) fn check(input: &Inputs) -> Vec<Diagnostic> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    const ORDINARY: &str = "crates/worth-relational/src/storage/residency/region_publication.rs";
+    const ORDINARY: &str =
+        "crates/worth-relational-storage/src/storage/residency/region_publication.rs";
     const COLD: &str = "crates/worth-relational/src/storage/residency/region_load.rs";
 
     fn fixture(path: &str, source: &str) -> Inputs {

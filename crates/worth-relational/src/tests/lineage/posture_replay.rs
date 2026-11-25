@@ -1,14 +1,14 @@
 use std::collections::BTreeMap;
+use worth_relational_contracts::internal_port::lineage::data::artifacts::finalization_artifact::PreparedLineageFinalizationFixturePort as _;
 
 use crate::facade::identity::VersionId;
 use crate::facade::lineage::{
-    LineageEventKind, LineageEventRecord, LineageMergeKeeper,
-    LineagePostureClaim, LineageRecordTarget, LineageSplitChild, LineageSubject,
-    PersistentNameHolder,
+    LineageEventKind, LineageEventRecord, LineageMergeKeeper, LineagePostureClaim,
+    LineageRecordTarget, LineageSplitChild, LineageSubject, PersistentNameHolder,
 };
-use crate::lineage::data::LineageCommitPostureInput;
 use crate::facade::transactions::RecordRef;
-use crate::lineage::authority::finalize_postures_in_working_state;
+use crate::lineage::authority::finalize_postures_in_working_state_for_test;
+use crate::lineage::authority::posture_fixture::LineageCommitPostureInput;
 use crate::runtime::LineageIdentityAllocator;
 
 use super::posture_fixtures::{
@@ -25,7 +25,7 @@ fn run_replayable_sequence() -> Vec<LineageEventRecord> {
     let f1 = push_entity(&mut staged, VersionId(1));
     let f2 = push_entity(&mut staged, VersionId(1));
     let s1 = push_relation(&mut staged, VersionId(1), f1, f2);
-    let c1 = finalize_postures_in_working_state(
+    let c1 = finalize_postures_in_working_state_for_test(
         &allocator,
         &mut staged,
         &receipt_at(1, 1),
@@ -62,7 +62,7 @@ fn run_replayable_sequence() -> Vec<LineageEventRecord> {
 
     let f1_lin = staged_entity_lineage(&staged, f1).unwrap();
     let f2_lin = staged_entity_lineage(&staged, f2).unwrap();
-    let s1_lin = c1.relation_lineages()[&s1];
+    let s1_lin = c1.relation_lineages_for_test()[&s1];
     let name_of = |lin| {
         c1_ev
             .iter()
@@ -82,7 +82,7 @@ fn run_replayable_sequence() -> Vec<LineageEventRecord> {
     let s1_a = push_relation(&mut staged, VersionId(2), f_replacement, f_replacement);
     let s1_b = push_relation(&mut staged, VersionId(2), f_replacement, f_replacement);
 
-    let c2 = finalize_postures_in_working_state(
+    let c2 = finalize_postures_in_working_state_for_test(
         &allocator,
         &mut staged,
         &receipt_at(2, 2),
@@ -183,7 +183,7 @@ fn default_empty_posture_path_emits_exact_create_replace_retire_and_zero_unpostu
     let e0 = push_entity(&mut staged, VersionId(1));
     let e1 = push_entity(&mut staged, VersionId(1));
     let r0 = push_relation(&mut staged, VersionId(1), e0, e1);
-    let c1 = finalize_postures_in_working_state(
+    let c1 = finalize_postures_in_working_state_for_test(
         &allocator,
         &mut staged,
         &receipt_at(1, 1),
@@ -200,7 +200,7 @@ fn default_empty_posture_path_emits_exact_create_replace_retire_and_zero_unpostu
     let e1_lin = staged_entity_lineage(&staged, e1).unwrap();
     let c1_ev = c1.artifact().event_batch().events();
     assert_eq!(c1_ev.len(), 2, "unpostured relation must emit no lineage");
-    assert!(c1.relation_lineages().is_empty());
+    assert!(c1.relation_lineages_for_test().is_empty());
     assert_eq!(c1_ev[0].kind(), LineageEventKind::Create);
     assert_eq!(c1_ev[0].targets(), &[e0_lin]);
     assert_eq!(c1_ev[1].kind(), LineageEventKind::Create);
@@ -234,7 +234,7 @@ fn default_empty_posture_path_emits_exact_create_replace_retire_and_zero_unpostu
             relation_id: r0,
         })),
     ];
-    let c2 = finalize_postures_in_working_state(
+    let c2 = finalize_postures_in_working_state_for_test(
         &allocator,
         &mut staged,
         &receipt_at(2, 2),
@@ -290,7 +290,7 @@ fn unpostured_replace_routes_to_free_entity_and_never_hijacks_posture_claimed_en
 
     // Commit 1: seed basis entity e0 under the default unpostured path.
     let e0 = push_entity(&mut staged, VersionId(1));
-    finalize_postures_in_working_state(
+    finalize_postures_in_working_state_for_test(
         &allocator,
         &mut staged,
         &receipt_at(1, 1),
@@ -317,7 +317,7 @@ fn unpostured_replace_routes_to_free_entity_and_never_hijacks_posture_claimed_en
             },
         },
     ))];
-    let c2 = finalize_postures_in_working_state(
+    let c2 = finalize_postures_in_working_state_for_test(
         &allocator,
         &mut staged,
         &receipt_at(2, 2),

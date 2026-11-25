@@ -1,3 +1,5 @@
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
+use worth_relational_durability::internal_port::durability::initial_schema_installation_denial::RelationalInitialSchemaInstallationDenialOwnerPort as _;
 mod readmission;
 use crate::runtime::{RelationalRuntime, SchemaContractRuntimeSubsystem};
 use crate::schema::data::RelationalSchemaRegistry;
@@ -16,10 +18,8 @@ pub use receipt::RelationalInitialSchemaInstallationReceipt;
 mod recovered_codec_transition;
 pub use inventory_digest::custom_invariant_inventory_digest;
 pub(crate) use inventory_digest::custom_invariant_inventory_digest_for_compilation;
+pub(crate) use recovered_codec_transition::codec_field_changes;
 pub use recovered_codec_transition::RecoveredCheckpointProgramActivationUpdate;
-pub(crate) use recovered_codec_transition::{
-    codec_field_changes, codec_field_changes_in_context, CodecFieldComparisonStop, CodecFieldLocus,
-};
 
 /// Move-only authority to extend an uncommitted runtime's initial schema.
 #[derive(Debug)]
@@ -30,10 +30,10 @@ pub struct RelationalInitialSchemaInstallation<'runtime> {
 }
 
 pub(in crate::runtime) mod denial;
-use denial::schema_denial;
-pub use denial::{
+pub use crate::durability::initial_schema_installation_denial::{
     RelationalInitialSchemaInstallationDenial, RelationalInitialSchemaInstallationDenialKind,
 };
+use denial::schema_denial;
 impl RelationalRuntime {
     pub(crate) fn initial_schema_authority_snapshot(
         &self,
@@ -185,7 +185,7 @@ impl RelationalInitialSchemaInstallation<'_> {
         managed_sources: Vec<crate::validation::candidate_source::ManagedIndexSourceProgram>,
         readmission_metadata_kinds: crate::runtime::HomeReadmissionMetadataKinds,
         publication: Option<(
-            crate::durability::source_initial_inputs::RelationalFreshInitialization,
+            crate::durability::source_initial_inputs::fresh_initialization::RelationalFreshInitialization,
             &worth_execution::ExecutionRequest<'_, '_>,
         )>,
     ) -> Result<RelationalInitialSchemaInstallationReceipt, RelationalInitialSchemaInstallationDenial>
@@ -235,7 +235,7 @@ impl RelationalInitialSchemaInstallation<'_> {
             .extend(additions)
             .map_err(schema_denial)?;
         for kind in readmission_metadata_kinds.entity_kinds() {
-            if !merged.entity_kinds.contains_key(kind) {
+            if !(*merged.owner_entity_kinds()).contains_key(kind) {
                 return Err(RelationalInitialSchemaInstallationDenial::new(
                     RelationalInitialSchemaInstallationDenialKind::SchemaRejected,
                     format!("unknown Home readmission metadata entity kind {}", kind.0),
@@ -243,7 +243,7 @@ impl RelationalInitialSchemaInstallation<'_> {
             }
         }
         for kind in readmission_metadata_kinds.relation_kinds() {
-            if !merged.relation_kinds.contains_key(kind) {
+            if !(*merged.owner_relation_kinds()).contains_key(kind) {
                 return Err(RelationalInitialSchemaInstallationDenial::new(
                     RelationalInitialSchemaInstallationDenialKind::SchemaRejected,
                     format!("unknown Home readmission metadata relation kind {}", kind.0),
@@ -251,8 +251,8 @@ impl RelationalInitialSchemaInstallation<'_> {
             }
         }
         let readmission_metadata_kinds = Arc::new(readmission_metadata_kinds);
-        let retained_entity_kind_count = merged.entity_kinds.len();
-        let retained_relation_kind_count = merged.relation_kinds.len();
+        let retained_entity_kind_count = (*merged.owner_entity_kinds()).len();
+        let retained_relation_kind_count = (*merged.owner_relation_kinds()).len();
         let retained_schema_authority_digest =
             crate::schema::data::schema_authority_snapshot_digest_bytes(
                 &merged.authority_snapshot(),
@@ -313,13 +313,13 @@ impl RelationalInitialSchemaInstallation<'_> {
         .with_home_readmission_metadata_kinds(readmission_metadata_kinds.clone());
         // All fallible schema and invariant validation completes before the
         // first owner mutation. This keeps the initial installation atomic.
-        self.runtime
-            .history
-            .transition_empty_branches_to_initial_schema(&merged, |before, after| {
+        crate::runtime::state::subsystems::history::history_branch_cells::initial_schema::transition_empty_branches_to_initial_schema(
+            &self.runtime.history,
+            &merged, |before, after| {
                 match publication {
                     None => Ok(InitialSchemaCutover::Receiver),
                     Some((_initialization, request)) => {
-                        let original = self.runtime.history.capture_original_branch_schema_inputs(request).map_err(RelationalInitialSchemaInstallationDenial::original_capture)?;
+                        let original = self.runtime.history.capture_original_branch_schema_inputs(request).map_err(denial::original_capture_denial)?;
                         let image = crate::durability::source_initial_inputs::capture::capture(
                             &installed.config.history.main_branch, &original, Some((before, after, routes.branch_transition_head())), request,
                         ).map_err(RelationalInitialSchemaInstallationDenial::from_initial_inputs)?;

@@ -59,6 +59,7 @@ impl<Schema: ApplicationSchema> ApplicationCorrectionVisitor<Schema>
             self.phase,
             self.source,
             ancestry,
+            self.maximum_history,
             None,
         )
         .map(|_| ())

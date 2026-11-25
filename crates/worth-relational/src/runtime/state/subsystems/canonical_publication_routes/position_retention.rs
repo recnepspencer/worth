@@ -1,43 +1,13 @@
-//! Retain admitted position provenance without retaining its envelope payload.
-use super::position_admission::CanonicalPositionAdmission;
-use crate::history::data::{CanonicalCommitEnvelope, PositionedCanonicalCommit};
-use crate::publication::patch::data::PatchStreamPosition;
-use std::sync::{Arc, Weak};
-
-#[derive(Debug, Clone)]
-pub(crate) struct RetainedCanonicalPosition {
-    position: PatchStreamPosition,
-    envelope: Weak<CanonicalCommitEnvelope>,
-    // LAST: release the actual Weak before its shared fixed allocation bill.
-    _control_allocation: Option<Arc<crate::history::data::CanonicalEnvelopeControlAllocation>>,
-}
-impl RetainedCanonicalPosition {
-    /// The sealed input binds this exact body allocation to its position.
-    pub(crate) fn from_positioned(commit: &PositionedCanonicalCommit) -> Self {
-        Self {
-            position: commit.position(),
-            envelope: Arc::downgrade(commit.canonical_arc()),
-            _control_allocation: commit.envelope().control_allocation.clone(),
-        }
-    }
-    pub(crate) fn position(&self) -> PatchStreamPosition {
-        self.position
-    }
-    pub(crate) fn resident(&self) -> Option<PositionedCanonicalCommit> {
-        CanonicalPositionAdmission::retained(self).map(PositionedCanonicalCommit::admit)
-    }
-    pub(super) fn upgrade_parts(
-        &self,
-    ) -> Option<(PatchStreamPosition, Arc<CanonicalCommitEnvelope>)> {
-        self.envelope
-            .upgrade()
-            .map(|envelope| (self.position, envelope))
-    }
-}
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeFixturePort as _;
+
+    use super::super::position_admission::CanonicalPositionAdmission;
+    use worth_relational_branch::internal_port::runtime::state::subsystems::history::canonical_publication_routes::retained_position::RetainedCanonicalPosition;
+    use crate::durability::canonical_commit_artifact::checkpoint_body::copy_original_for_test;
+    use crate::history::data::PositionedCanonicalCommit;
     use crate::tests::support::*;
+    use std::sync::Arc;
     #[test]
     fn position_retention_keeps_provenance_while_only_a_real_reader_keeps_the_body() {
         let host = crate::test_execution_policy::serial_request();
@@ -78,12 +48,12 @@ mod tests {
                 .pop()
                 .unwrap()
         };
-        let copy = Arc::new(sealed.envelope().copy_original_for_test(execution));
+        let copy = Arc::new(copy_original_for_test(sealed.envelope(), execution));
         let admitted = CanonicalPositionAdmission::equivalent(&sealed, copy.clone()).unwrap();
         let rebound = PositionedCanonicalCommit::admit(admitted);
         assert_eq!(rebound.position(), sealed.position());
         assert!(Arc::ptr_eq(rebound.canonical_arc(), &copy));
-        let mut different = copy.copy_original_for_test(execution);
+        let mut different = copy_original_for_test(&copy, execution);
         different.body_mut_for_test().commit.commit_id.0 += 1;
         assert!(CanonicalPositionAdmission::equivalent(&sealed, Arc::new(different)).is_err());
     }

@@ -5,11 +5,7 @@ use crate::runtime::RelationalRuntime;
 
 use super::CommitEnvelopeSource;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct PatchStreamCommitRef {
-    pub position: PatchStreamPosition,
-    pub commit_id: CommitId,
-}
+pub(crate) use crate::publication::patch::data::stream_commit_ref::PatchStreamCommitRef;
 
 pub(crate) trait PatchStreamSource: CommitEnvelopeSource {
     fn latest_patch_stream_position(&self) -> Option<PatchStreamPosition>;
@@ -62,25 +58,10 @@ impl PatchStreamSource for RelationalRuntime {
         after_position: Option<PatchStreamPosition>,
         max_commits: usize,
     ) -> Vec<PatchStreamCommitRef> {
-        let start = after_position
-            .map(std::ops::Bound::Excluded)
-            .unwrap_or(std::ops::Bound::Unbounded);
-        let mut entries = self
-            .history
-            .recorded_patch_positions_after(after_position, max_commits)
-            .into_iter()
-            .collect::<std::collections::BTreeMap<_, _>>();
-        entries.extend(
-            self.history
-                .canonical_patch_routes_after(after_position, max_commits),
-        );
-        entries
-            .range((start, std::ops::Bound::Unbounded))
-            .map(|(position, commit_id)| PatchStreamCommitRef {
-                position: *position,
-                commit_id: *commit_id,
-            })
-            .take(max_commits)
-            .collect()
+        crate::publication::canonical_history::patch_stream_commits_after(
+            &self.history,
+            after_position,
+            max_commits,
+        )
     }
 }

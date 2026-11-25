@@ -1,9 +1,14 @@
 use std::sync::Arc;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_contracts::internal_port::runtime::operation_control::RelationalOperationControlOwnerPort as _;
+use worth_relational_publication::internal_port::mvcc::publication::outcome::{
+    PerformedRelationalCommitOwnerPort as _, RelationalPublicationOutcomeOwnerPort as _,
+};
+
+use super::super::movement::cutover_deadline_elapsed;
 
 use super::{
-    PerformedRelationalCommit, PreparedBranchPublicationPreflight, RelationalPublicationDeferred,
-    RelationalPublicationDenial, RelationalPublicationFailure, RelationalPublicationFailureKind,
-    RelationalPublicationOutcome, StaleRelationalBranchObservation,
+    PerformedRelationalCommit, PreparedBranchPublicationPreflight, RelationalPublicationOutcome,
 };
 
 impl PreparedBranchPublicationPreflight {
@@ -11,7 +16,7 @@ impl PreparedBranchPublicationPreflight {
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         deadline: Option<std::time::Instant>,
-        mut allow_effect: Option<&mut dyn FnMut() -> bool>,
+        allow_effect: Option<&mut dyn FnMut() -> bool>,
     ) -> Option<RelationalPublicationOutcome> {
         let _publication_lifecycle = self
             .movement
@@ -28,227 +33,48 @@ impl PreparedBranchPublicationPreflight {
                 return Some(cutover_deadline_elapsed());
             }
         }
-        match self
-            .control
-            .observe(crate::mvcc::RelationalInterruptionBoundary::BeforeCriticalSection)
-        {
-            Some(event)
-                if event.interruption()
-                    == crate::mvcc::RelationalOperationInterruption::Cancelled =>
-            {
-                self.next_basis
-                    .inner
-                    .retention_binding
-                    .record_interruption(event);
-                return Some(RelationalPublicationOutcome::interrupted(event));
-            }
-            Some(event) => {
-                self.next_basis
-                    .inner
-                    .retention_binding
-                    .record_interruption(event);
-                return Some(RelationalPublicationOutcome::interrupted(event));
-            }
-            None => {}
+        if let Some(outcome) = self.before_critical_section_stop() {
+            return Some(outcome);
         }
         let _critical_section =
             crate::mvcc::publication::current_read::PublicationReadCoordination::enter(
                 &self.publication_cell,
                 self.current_read.as_ref(),
             );
-        if let Some(event) = self
-            .control
-            .observe(crate::mvcc::RelationalInterruptionBoundary::BeforeCriticalSection)
-        {
-            self.next_basis
-                .inner
-                .retention_binding
-                .record_interruption(event);
-            return Some(RelationalPublicationOutcome::interrupted(event));
+        if let Some(outcome) = self.before_critical_section_stop() {
+            return Some(outcome);
         }
         self.control.pause_inside_critical_section_for_test();
-        let (mut publication_state, read_state) = match _critical_section.enter_states() {
-            Ok(states) => states,
-            Err(denial) => {
-                return Some(RelationalPublicationOutcome::denied(
-                    RelationalPublicationDenial::CurrentReadDependency(denial),
-                ))
-            }
-        };
-        match publication_state.lifecycle_posture() {
-            crate::branch::RelationalBranchLifecyclePosture::Live => {}
-            crate::branch::RelationalBranchLifecyclePosture::Archived => {
-                return Some(RelationalPublicationOutcome::denied(
-                    RelationalPublicationDenial::Archived,
-                ));
-            }
-            crate::branch::RelationalBranchLifecyclePosture::Deleting => {
-                return Some(RelationalPublicationOutcome::denied(
-                    RelationalPublicationDenial::Deleting,
-                ));
-            }
-        }
-        let observed_cell = publication_state.snapshot_cell();
-        let Some(observed_root) = observed_cell.root() else {
-            return Some(RelationalPublicationOutcome::failed(
-                RelationalPublicationFailure::new(
-                    RelationalPublicationFailureKind::SelectedRootUnavailable,
-                    "selected branch root is unavailable before publication movement",
-                ),
-            ));
-        };
-        let observed = match crate::branch::descriptor_for_cell(&observed_cell, &observed_root) {
-            Ok(descriptor) => descriptor,
-            Err(denial) => {
-                return Some(RelationalPublicationOutcome::failed(
-                    RelationalPublicationFailure::new(
-                        RelationalPublicationFailureKind::BranchObservation(denial.clone()),
-                        format!("branch observation failed before movement: {denial:?}"),
-                    ),
-                ));
-            }
-        };
-        if observed != self.expected {
-            return Some(RelationalPublicationOutcome::stale(
-                StaleRelationalBranchObservation::new(self.expected.clone(), observed),
-            ));
-        }
-
-        // Capacity was reserved before head comparison so stale attempts still
-        // release their exact preflight reservation. Only this coordinated,
-        // unchanged head can turn capacity into a transfer witness.
-        let head_retirement = match self
-            .head_retirement
-            .take()
-            .expect("the owner issues one retirement reservation to one consuming cutover token")
-            .bind_current_head()
-        {
-            Ok(reservation) => reservation,
-            Err(denial) => {
-                return Some(RelationalPublicationOutcome::failed(
-                    RelationalPublicationFailure::new(
-                        RelationalPublicationFailureKind::RetentionOwner,
-                        format!(
-                            "selected head retention binding refused before movement: {denial:?}"
-                        ),
-                    ),
-                ))
-            }
-        };
-
-        if let (Some(effect), Some(binding)) = (&self.companion, &self.companion_binding)
-            && let Err(stop) = effect.matches(binding)
-        {
-            return Some(RelationalPublicationOutcome::deferred(
-                RelationalPublicationDeferred::CompanionPreflight(stop),
-            ));
-        }
-        let mut companion_cutover = match self.companion.as_mut() {
-            Some(effect) => match effect.enter_cutover() {
-                Ok(cutover) => Some(cutover),
-                Err(stop) => {
-                    return Some(RelationalPublicationOutcome::deferred(
-                        RelationalPublicationDeferred::CompanionPreflight(stop),
-                    ))
-                }
-            },
-            None => None,
-        };
-
-        // Keep the caller's original request at the final pre-effect boundary;
-        // a separate operation-control token cannot replace its first cause.
-        if let Err(stop) = crate::authority::commit::pipeline::consult_stage(
-            execution,
-            crate::authority::commit::pipeline::CommitStage::PublicationCutover,
-        ) {
-            return Some(RelationalPublicationOutcome::RequestStopped(stop));
-        }
-        if allow_effect.as_mut().is_some_and(|allow| !allow()) {
-            return None;
-        }
-
-        let next_root = &self.movement.root;
-        let reservation_pause = &self.control;
-        let medium = self.medium.clone();
-        // A durable publisher waits for a publisher whose durable I/O holds
-        // the reservation. Memory-only commits defer only behind other commits.
-        let admission = match &medium {
-            Some(_) => crate::runtime::PatchPositionReservationAdmission::WaitWithin(execution),
-            None => crate::runtime::PatchPositionReservationAdmission::DeferBehindCommit(execution),
-        };
-        let symbol_meanings = self.movement.symbol_meanings.take().expect(
-            "the owner issues one prepared symbol publication to one consuming cutover token",
-        );
-        let (positioned_commit, head_retirement) = match self
-            .movement
-            .canonical_publication_route
-            .record_performed_with_cutover(
-                self.publication_cell.clone(),
-                admission,
+        let (positioned_commit, head_retirement) =
+            match (super::super::movement::BranchMovementCutover {
+                coordination: &_critical_section,
+                publication_cell: &self.publication_cell,
+                expected: &self.expected,
+                next_state: &mut self.next_state,
+                head_retirement: &mut self.head_retirement,
+                companion: self.companion.as_mut(),
+                companion_binding: self.companion_binding.as_ref(),
+                medium: self.medium.as_deref(),
+                branch_head_versions: &self.branch_head_versions,
+            })
+            .compare_and_move(
+                &self.movement.canonical_publication_route,
+                &self.movement.root,
+                &mut self.movement.symbol_meanings,
+                execution,
                 deadline,
                 allow_effect,
-                medium.as_deref(),
-                execution,
-                |position| {
-                    symbol_meanings
-                        .publish()
-                        .expect(/* Proof: PreparedSymbolPublication can only be issued by seal_for_publication after validating the canonical snapshot against the candidate interner. Its strong owner and retained ReservedSymbolMeaning tokens pin the unique identities allocated by reserve_identity; checked owner imports cannot replace either mapping, and recovery requires exclusive runtime access. */ "minted symbol reservations preserve owner meaning");
-                    // The cutover is the only orchestration this port runs while the
-                    // global patch-position reservation is held, so this is where a
-                    // concurrent publisher can be made to meet it.
-                    reservation_pause.pause_holding_patch_position_reservation_for_test();
-                    let previous_root = publication_state.replace_with(self.next_state.take().expect(
-                        "preflight prepares the one target state before the consuming cutover token",
-                    ));
-                    if let Some(companion) = &mut companion_cutover {
-                        companion.install_at(position);
-                    }
-                    let transferred = head_retirement.transfer_head(next_root);
-                    self.branch_head_versions
-                        .move_head(Some(&observed_root), Some(next_root));
-                    drop(previous_root);
-                    drop(publication_state);
-                    transferred
+                || {
+                    self.control
+                        .pause_holding_patch_position_reservation_for_test()
                 },
+                self.settlement_reservation
+                    .as_mut()
+                    .expect("the same cutover owns its reserved completion"),
             ) {
-            Ok(positioned) => positioned,
-            Err(crate::runtime::CanonicalPublicationRecordError::CallerCutoffStopped) => {
-                return None;
-            }
-            Err(crate::runtime::CanonicalPublicationRecordError::ReservationContended) => {
-                return Some(RelationalPublicationOutcome::deferred(
-                    RelationalPublicationDeferred::PatchPositionReservationContended,
-                ));
-            }
-            Err(crate::runtime::CanonicalPublicationRecordError::ReservationWaitStopped(stop)) => {
-                return Some(RelationalPublicationOutcome::RequestStopped(stop));
-            }
-            Err(crate::runtime::CanonicalPublicationRecordError::CutoverDeadlineElapsed) => {
-                return Some(cutover_deadline_elapsed());
-            }
-            Err(crate::runtime::CanonicalPublicationRecordError::PositionCapacityExhausted) => {
-                return Some(RelationalPublicationOutcome::failed(
-                    RelationalPublicationFailure::new(
-                        RelationalPublicationFailureKind::PatchPositionCapacityExhausted,
-                        "performed publication stream position capacity exhausted",
-                    ),
-                ));
-            }
-            Err(crate::runtime::CanonicalPublicationRecordError::MemoryFrame(cause)) => {
-                return Some(memory_frame_stop_outcome(execution, cause));
-            }
-            Err(crate::runtime::CanonicalPublicationRecordError::Durable(stop)) => {
-                return Some(durable_stop_outcome(stop));
-            }
-        };
-        // Actual movement succeeded. Install only prepaid Native metadata;
-        // keep owning payload cleanup parked until outside the caller's guard.
-        self.settlement_reservation
-            .as_mut()
-            .expect("the same cutover owns its reserved completion")
-            .install_prepared_indexes();
-        drop(companion_cutover);
-        drop(read_state);
+                Ok(performed) => performed,
+                Err(outcome) => return outcome,
+            };
         let _critical_section = _critical_section.into_target_guard();
         self.control.pause_after_linearization_for_test();
         drop(_critical_section);
@@ -269,7 +95,7 @@ impl PreparedBranchPublicationPreflight {
             .observe(crate::runtime::RelationalInterruptionBoundary::AfterLinearization);
         if let Some(interruption) = late_interruption {
             self.next_basis
-                .inner
+                .owner_inner()
                 .retention_binding
                 .record_interruption(interruption);
         }
@@ -294,55 +120,15 @@ impl PreparedBranchPublicationPreflight {
             ),
         ))
     }
-}
 
-fn cutover_deadline_elapsed() -> RelationalPublicationOutcome {
-    RelationalPublicationOutcome::denied(RelationalPublicationDenial::CutoverDeadlineElapsed)
-}
-
-/// The answer for a commit the medium did not make durable. Nothing was
-/// installed, so a refusal is a pre-effect denial; an unknown fate is neither
-/// denied nor performed.
-fn durable_stop_outcome(
-    stop: crate::durability::medium::RelationalDurableStepStop,
-) -> RelationalPublicationOutcome {
-    match stop {
-        crate::durability::medium::RelationalDurableStepStop::Refused(refusal) => {
-            RelationalPublicationOutcome::denied(
-                RelationalPublicationDenial::DurablePublicationRefused(refusal),
-            )
-        }
-        crate::durability::medium::RelationalDurableStepStop::Unresolved(unresolved) => {
-            RelationalPublicationOutcome::DurabilityUnresolved(unresolved)
-        }
+    fn before_critical_section_stop(&self) -> Option<RelationalPublicationOutcome> {
+        let event = self
+            .control
+            .observe(crate::runtime::RelationalInterruptionBoundary::BeforeCriticalSection)?;
+        self.next_basis
+            .owner_inner()
+            .retention_binding
+            .record_interruption(event);
+        Some(RelationalPublicationOutcome::interrupted(event))
     }
-}
-
-fn memory_frame_stop_outcome(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    cause: crate::durability::canonical_commit_artifact::MemoryFramePreparationDenial,
-) -> RelationalPublicationOutcome {
-    use crate::durability::canonical_commit_artifact::MemoryFramePreparationDenial as Frame;
-    use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactEncodeDenial as Denial;
-    let cause = match cause {
-        Frame::Request(stop) => return RelationalPublicationOutcome::RequestStopped(stop),
-        Frame::Artifact(cause) => cause,
-    };
-    if let Err(stop) = execution.consult()
-        && stop
-            != worth_execution::WorkCeilingDenial::Stopped(
-                worth_execution::MapKernelStop::NestedStopped,
-            )
-    {
-        return RelationalPublicationOutcome::RequestStopped(stop);
-    }
-    if let Denial::Allocation(allocation) = &cause
-        && let worth_execution::ExecutionAllocationDenialClass::Request(stop) =
-            allocation.classify()
-    {
-        return RelationalPublicationOutcome::RequestStopped(stop);
-    }
-    RelationalPublicationOutcome::denied(RelationalPublicationDenial::CanonicalArtifactEncoding(
-        cause,
-    ))
 }

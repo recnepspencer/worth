@@ -1,6 +1,7 @@
 //! Real directory startup/read/owning close, extended by the ordinary commit seam.
+mod branch_preview;
 mod changed_build;
-mod correction_material;
+pub(in crate::host) mod correction_material;
 pub(crate) mod managed_cleanup;
 pub(crate) mod managed_runs;
 mod original_fixed;
@@ -51,7 +52,7 @@ fn fresh_directory_home_journey() {
             cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
         let runtime = home.runtime();
         let principal = identity::inspection_authentication::authenticate(
-            runtime.runtime().installed_schema(),
+            home.primary_graph().installed_schema(),
             &scope,
         );
         let seeded = runtime
@@ -94,7 +95,19 @@ fn fresh_directory_home_journey() {
             receipt.commit_reference().version_id.as_u64()
         );
     }
-    fresh_close::verify(home, &execution);
+    fresh_close::verify(
+        home,
+        &execution,
+        worth_foundational::facade::ExecutionRequestPolicy::new(
+            worth_foundational::facade::ExecutionPosture::Serial,
+            worth_foundational::facade::DeterminismContract::CanonicalBitwise,
+            worth_foundational::facade::ExecutionBudget::new(
+                std::num::NonZeroUsize::MIN,
+                Some(128 * 1024 * 1024),
+                None,
+            ),
+        ),
+    );
     assert_eq!(initialized.load(Ordering::SeqCst), 1);
 }
 

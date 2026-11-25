@@ -67,7 +67,7 @@ fn native_same_record_updates_conflict_before_truth_or_publication_changes() {
             .snapshot()
             .expect("current snapshot fixture is admitted");
         let after_patch = runtime.publication().latest_bundle().unwrap().patch.clone();
-        assert_eq!(after_snapshot.version_id, before_snapshot.version_id);
+        assert_eq!(after_snapshot.version_id(), before_snapshot.version_id());
         assert_eq!(after_patch, before_patch);
 
         let read = runtime

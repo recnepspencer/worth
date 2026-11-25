@@ -24,9 +24,12 @@ use super::WorthQueryApplicationQueryInstallationDenialKind;
 mod records;
 use records::*;
 
+worth_query_declaration::worth_query_disclosure_classification!(AccountHolderDisclosure);
+
 mod authority_validation_tests;
 mod canonical_basis_residue;
 mod installed_identity;
+mod related_predicate;
 mod selector_identity;
 mod shape_identity;
 mod where_filter;
@@ -198,7 +201,7 @@ where
         .result_shape(shape)
         .cardinality(ApplicationQueryCardinality::Many)
         .disclosure(ApplicationQueryDisclosureContract::installed_policy(
-            "account-holder",
+            AccountHolderDisclosure,
         ))
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot().with_historical())

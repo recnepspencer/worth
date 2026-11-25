@@ -10,7 +10,8 @@ impl WorthQueryProductRuntime {
         worth_runtime_bridge::facade::BridgeOwnedAsyncManagedRequestAdmission,
         worth_runtime_world::facade::RuntimeWorldOwnedAsyncRequestAdmissionDenial,
     > {
-        self.owner
+        self.fields()
+            .owner
             .publication_port()
             .admit_managed_owned_async_request(
                 bridge,
@@ -30,7 +31,8 @@ impl WorthQueryProductRuntime {
         worth_signal::facade::TemporalClockAdvanceSummary,
         worth_runtime_world::facade::RuntimeWorldOwnedAsyncRequestAdmissionDenial,
     > {
-        self.owner
+        self.fields()
+            .owner
             .publication_port()
             .advance_owned_async_source_clock(
                 bridge,
@@ -50,7 +52,8 @@ impl WorthQueryProductRuntime {
         worth_runtime_bridge::facade::BridgeOwnedAsyncManagedRequestAdmission,
         worth_runtime_world::facade::RuntimeWorldOwnedAsyncRequestAdmissionDenial,
     > {
-        self.owner
+        self.fields()
+            .owner
             .publication_port()
             .admit_unqueued_owned_async_request(
                 bridge,
@@ -69,7 +72,8 @@ impl WorthQueryProductRuntime {
         worth_runtime_bridge::facade::BridgeOwnedAsyncManagedRequestAdmission,
         worth_runtime_world::facade::RuntimeWorldOwnedAsyncRequestAdmissionDenial,
     > {
-        self.owner
+        self.fields()
+            .owner
             .publication_port()
             .admit_unqueued_owned_async_request_at_branch_head(
                 bridge,
@@ -88,7 +92,8 @@ impl WorthQueryProductRuntime {
         worth_runtime_bridge::facade::BridgeOwnedAsyncManagedRevalidation,
         worth_runtime_world::facade::RuntimeWorldOwnedAsyncManagedRevalidationDenial,
     > {
-        self.owner
+        self.fields()
+            .owner
             .publication_port()
             .revalidate_managed_owned_async_request(
                 bridge,

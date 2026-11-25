@@ -22,6 +22,10 @@ use crate::domain_computation::primary_graph::tests::fixture::CapabilityDisclosu
 use crate::domain_computation::primary_graph::tests::fixture::IdentityExecutionSchema;
 use crate::domain_computation::primary_graph::tests::fixture::TouchAccountCapability;
 
+worth_query_declaration::worth_query_disclosure_classification!(ForbiddenInfluenceDisclosure);
+worth_query_declaration::worth_query_disclosure_classification!(IncompleteDisclosure);
+worth_query_declaration::worth_query_disclosure_classification!(ResultRulePredicateDisclosure);
+
 worth_query_declaration::worth_query_structured_value_binding!(pub IncompleteDisclosureQueryParametersBinding for AccountSummaryParameters { identity: "AccountSummaryParameters" });
 worth_query_declaration::worth_query_structured_value_binding!(pub IncompleteDisclosureQueryResultBinding for AccountSummaryResult { identity: "AccountSummaryResult" });
 worth_query_application_query!(
@@ -64,7 +68,7 @@ pub fn incomplete_disclosure_definition() -> ApplicationQueryDefinitionBuilder<
 > {
     let shape = shape::<IncompleteDisclosureQuery>();
     let disclosure = ApplicationQueryDisclosureContract::governed_by(
-        "incomplete",
+        IncompleteDisclosure,
         TouchAccountCapability::reference(),
     )
     .disclose_field_by(
@@ -89,7 +93,7 @@ pub fn forbidden_influence_definition() -> ApplicationQueryDefinitionBuilder<
 > {
     let shape = shape::<ForbiddenInfluenceQuery>();
     let disclosure = ApplicationQueryDisclosureContract::governed_by(
-        "forbidden-influence",
+        ForbiddenInfluenceDisclosure,
         TouchAccountCapability::reference(),
     )
     .use_field_by(
@@ -124,7 +128,7 @@ pub fn result_rule_predicate_definition() -> ApplicationQueryDefinitionBuilder<
     Account,
 > {
     let disclosure = ApplicationQueryDisclosureContract::governed_by(
-        "result-rule-predicate",
+        ResultRulePredicateDisclosure,
         TouchAccountCapability::reference(),
     )
     .disclose_field_by(

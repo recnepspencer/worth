@@ -111,26 +111,37 @@ fn external_cold_directory_checkpoint_preserves_basis_nonhead_relation_and_tail_
     let execution = ExecutionRequest::leased(&lease);
     let main = BranchId("main".to_owned());
 
-    // Commit 1 (NON-HEAD pre-checkpoint): F1, F2, and named relation S1 (F1 -> F2).
+    // Commit 1 (NON-HEAD pre-checkpoint): F0, F1, F2, and named relations S1 (F1 -> F2), S2 (F0 -> F2).
+    let f0_ref = face_ref("f0");
     let f1_ref = face_ref("f1");
     let f2_ref = face_ref("f2");
     let s1_ref = seam_ref("s1", EntityReference::Created(f1_ref.clone()), EntityReference::Created(f2_ref.clone()));
+    let s2_ref = seam_ref("s2", EntityReference::Created(f0_ref.clone()), EntityReference::Created(f2_ref.clone()));
     let tx1 = begin_staged_tx(
         &source,
         "c1-nonhead",
         vec![
+            create_face_intent("f0"),
             create_face_intent("f1"),
             create_face_intent("f2"),
             create_seam_intent("s1", EntityReference::Created(f1_ref.clone()), EntityReference::Created(f2_ref.clone())),
+            create_seam_intent("s2", EntityReference::Created(f0_ref.clone()), EntityReference::Created(f2_ref.clone())),
         ],
     );
     let mut b1 = ExecutionNameBirthPlanBuilder::new(&catalog, std::iter::empty());
-    b1.add_entity_birth(ExecutionPendingEntityBirth::new(f1_ref.clone(), FACE_SCHEME_ID, "occ.cold.f1", "authored"))
+    b1.add_entity_birth(ExecutionPendingEntityBirth::new(f0_ref.clone(), FACE_SCHEME_ID, "occ.cold.f0", "authored"))
+        .unwrap()
+        .add_entity_birth(ExecutionPendingEntityBirth::new(f1_ref.clone(), FACE_SCHEME_ID, "occ.cold.f1", "authored"))
         .unwrap()
         .add_entity_birth(ExecutionPendingEntityBirth::new(f2_ref.clone(), FACE_SCHEME_ID, "occ.cold.f2", "authored"))
         .unwrap()
         .add_relation_birth(
             ExecutionPendingRelationBirth::new(s1_ref.clone(), SEAM_SCHEME_ID, "occ.cold.s1", "seam")
+                .with_discriminator(&SeamSplitDisc::Ordinal { index: 1 }),
+        )
+        .unwrap()
+        .add_relation_birth(
+            ExecutionPendingRelationBirth::new(s2_ref.clone(), SEAM_SCHEME_ID, "occ.cold.s2", "seam")
                 .with_discriminator(&SeamSplitDisc::Ordinal { index: 1 }),
         )
         .unwrap();
@@ -142,6 +153,8 @@ fn external_cold_directory_checkpoint_preserves_basis_nonhead_relation_and_tail_
     let (s1_id, _) = names1.created_relation_name::<Seam>(&res1, &s1_ref).unwrap();
     let f1_rel = names1.entity_relational_identity(f1_id).unwrap();
     let s1_rel = names1.relation_relational_identity(s1_id).unwrap();
+    let (s2_id, _) = names1.created_relation_name::<Seam>(&res1, &s2_ref).unwrap();
+    let s2_rel = names1.relation_relational_identity(s2_id).unwrap();
     release_commit_snapshot(&source, &res1);
 
     // Commit 2 (HEAD pre-checkpoint): F3 only, making Commit 1's named relation S1 strictly non-head.
@@ -209,7 +222,10 @@ fn external_cold_directory_checkpoint_preserves_basis_nonhead_relation_and_tail_
     let expected_tail_basis = source.branch_live_persistent_names(&main);
     assert!(!expected_tail_basis.contains_key(&f1_rel));
     assert!(expected_tail_basis.contains_key(&f1a_rel));
-    assert_eq!(expected_tail_basis.get(&s1_rel), Some(&PersistentNameHolder::Relation(s1_id)));
+    // S1 ran from F1, so it retired with its endpoint in the tail split and its
+    // name ended there; S2 never touched F1 and keeps its name live.
+    assert_eq!(expected_tail_basis.get(&s1_rel), None);
+    assert_eq!(expected_tail_basis.get(&s2_rel), Some(&PersistentNameHolder::Relation(s2_id)));
 
     // Part A: Cold checkpoint-only restore.
     let mut reopened_ckpt = fresh_cad_runtime();
@@ -272,10 +288,11 @@ fn external_cold_directory_checkpoint_preserves_basis_nonhead_relation_and_tail_
     assert_eq!(reopened_tail.branch_live_persistent_names(&main), expected_tail_basis);
     assert_eq!(reopened_tail.relation_lineage(s1_id), Some(expected_s1_lin));
     let live_ids: BTreeSet<_> = reopened_tail.branch_live_persistent_names(&main).keys().copied().collect();
-    assert!(live_ids.contains(&f1a_rel) && live_ids.contains(&s1_rel) && !live_ids.contains(&f1_rel));
+    assert!(live_ids.contains(&f1a_rel) && live_ids.contains(&s2_rel));
+    assert!(!live_ids.contains(&s1_rel) && !live_ids.contains(&f1_rel));
 
     let head_b = reopened_tail.admit_branch_basis(&reopened_tail.main_branch_identity()).unwrap().observation().commit_id();
-    assert_dup_seam_refuses(&reopened_tail, &execution, f2_id, f3_id, "occ.cold.s1", s1_rel, s1_id);
+    assert_dup_seam_refuses(&reopened_tail, &execution, f2_id, f3_id, "occ.cold.s2", s2_rel, s2_id);
     assert_eq!(reopened_tail.admit_branch_basis(&reopened_tail.main_branch_identity()).unwrap().observation().commit_id(), head_b);
     assert_eq!(reopened_tail.branch_live_persistent_names(&main), expected_tail_basis);
 }

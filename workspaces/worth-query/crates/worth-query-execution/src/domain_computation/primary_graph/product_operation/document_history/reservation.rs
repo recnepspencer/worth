@@ -110,7 +110,12 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         let execution = phase
             .checked_execution_request_for(runtime.inner.runtime.product_runtime_ref())
             .map_err(Denial::Stopped)?;
-        let record = selected.journal.reserve(&execution, meaning, label)?;
+        let record = selected.journal.reserve(
+            &execution,
+            meaning,
+            label,
+            &super::WorthQueryHistoryStepMetadata::none(),
+        )?;
         Ok(WorthQueryDocumentHistoryRecordPreparation::Reserved(
             WorthQueryDocumentHistoryReservation {
                 operation_scope: Some(super::HistoryOperationScope::from_admitted(admitted)),
@@ -185,7 +190,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
     }
 }
 
-impl<S> super::selection::HistorySelection<'_, S> {
+impl super::selection::HistorySelection {
     pub(super) fn validate_reservation(
         &self,
         reserved: &WorthQueryDocumentHistoryReservation,

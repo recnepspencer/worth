@@ -101,11 +101,7 @@ where
         return Err(relation_cardinality_denial(relation));
     }
     for child in relation.rows() {
-        visit(&WorthQueryApplicationProjectionRow::new(
-            row.node.child(child),
-            row.governance,
-            row.decode,
-        ))?;
+        visit(&row.related(child))?;
     }
     Ok(())
 }

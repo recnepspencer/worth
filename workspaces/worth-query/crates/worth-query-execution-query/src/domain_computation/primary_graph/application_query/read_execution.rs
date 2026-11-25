@@ -74,6 +74,9 @@ pub struct RawOneShotRows {
 
 pub struct RawNonLiveKernelOutcome {
     pub(crate) raw: RawOneShotRows,
+    /// The persistent names of the materialized rows' records, when the
+    /// read's projection asked for them and the name index answered.
+    pub(crate) persistent_names: Option<worth_query_execution_naming::facade::ObservedEntityNames>,
 }
 
 pub struct RawLiveKernelOutcome {
@@ -158,7 +161,7 @@ pub fn read_prepared_root_rows(
         plan.governance,
         plan.parameters,
         &selection.candidates,
-        selection.selected_predicate_source.as_ref(),
+        &selection.selected_predicate_sources,
         selection.root_path_source.as_ref(),
         ResultTreeCollectionSelection::Complete,
         interruption,
@@ -200,10 +203,12 @@ pub fn read_prepared_root_rows(
             has_more: false,
             actual_work,
         },
+        persistent_names: None,
     })
 }
 
 pub mod continuation_page;
+pub mod persistent_names;
 pub use continuation_page::read_continuation_page;
 
 pub use tree_materialization::validate_relation_cardinality;

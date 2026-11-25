@@ -1,5 +1,8 @@
 //! Publication gates on publication failures, using the actual proposed state.
+use super::super::super::fixture::DagFixture;
 use super::*;
+use crate::facade::runtime::RelationalRuntimeApi;
+use worth_execution::{CancellationToken, ExecutionRequest};
 
 #[test]
 fn a_native_publication_failure_blocks_custom_preparation_while_a_commit_effect_at_that_point_continues(
@@ -36,10 +39,11 @@ fn a_native_publication_failure_blocks_custom_preparation_while_a_commit_effect_
                 partition_id: PartitionId::main(),
                 kind_id: KindId(3),
                 client_key: ClientKey::raw("proposed-one"),
-                fields: crate::transactions::data::AspectFieldPatch::default(),
+                fields: crate::transactions::data::aspect_field_patch::AspectFieldPatch::default(),
             }),
         ));
-        let lease = super::super::super::fixture::request(
+        let lease = paid_dag_request_for_test(
+            worth_harness::facade::execution_fixture::test_execution_authority(),
             8 * 1024 * 1024,
             4_000_000,
             CancellationToken::new(),

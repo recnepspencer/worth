@@ -29,6 +29,10 @@ mod tests;
 
 pub use live_cause::EstateEmergencyAccessActivityLiveCause;
 
+worth_query_decl::facade::worth_query_disclosure_classification!(
+    EstateEmergencyAccessActivityDisclosure
+);
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct EstateEmergencyAccessActivityQueryParameters;
 
@@ -182,7 +186,7 @@ pub fn estate_emergency_access_activity_definition() -> ApplicationQueryDefiniti
         ApplicationQueryObservableInfluence::LiveMembership,
     ]);
     let disclosure = ApplicationQueryDisclosureContract::governed_by(
-        "estate-emergency-access-activity",
+        EstateEmergencyAccessActivityDisclosure,
         ViewEstateEmergencyProtectionCapability::reference(),
     )
     .use_field_by(

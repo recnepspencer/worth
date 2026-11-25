@@ -39,7 +39,17 @@ impl SourceReadAuthorization {
             .read_truth()
             .project_snapshot(before)
             .ok_or_else(unavailable)?;
-        let right = complete.project_candidate();
+        self.permission_equal_between(execution, &left, &complete.project_candidate())
+    }
+
+    /// Whether every locus this permission was decided from reads the same
+    /// at `left` as at `right`. Currentness at C stays with the caller.
+    pub fn permission_equal_between(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        left: &worth_relational::facade::runtime::VisibilityProjectionView,
+        right: &worth_relational::facade::runtime::VisibilityProjectionView,
+    ) -> Result<bool, Stop> {
         let physical =
             |cause| Stop::relational_read_stopped(cause, "applied Source authorization support");
         let mut equal = true;
@@ -51,14 +61,14 @@ impl SourceReadAuthorization {
                         view.entity_record_with_projection_scope(execution, entity, ProjectionAspectScope::empty(),
                             |record| Some((record.kind_id(), record.lifecycle())))
                     };
-                    read(&left).map_err(physical)? == read(&right).map_err(physical)?
+                    read(left).map_err(physical)? == read(right).map_err(physical)?
                 }
                 Locus::Relation(relation) => {
                     let read = |view: &worth_relational::facade::runtime::VisibilityProjectionView| {
                         view.relation_record_with_projection_scope(execution, relation, ProjectionAspectScope::empty(),
                             |record| Some((record.kind_id(), record.source(), record.target(), record.lifecycle())))
                     };
-                    read(&left).map_err(physical)? == read(&right).map_err(physical)?
+                    read(left).map_err(physical)? == read(right).map_err(physical)?
                 }
                 Locus::Field(entity, field) => {
                     // Native policy observations retain the installed Planned
@@ -76,7 +86,7 @@ impl SourceReadAuthorization {
                         physical_field = crate::domain_computation::primary_graph::observations::authoritative(field);
                         &physical_field
                     } else { field };
-                    left.compare_entity_field_support(execution, &right, entity, field)
+                    left.compare_entity_field_support(execution, right, entity, field)
                         .map_err(|cause| match cause {
                             worth_relational::facade::runtime::RelationalFieldSupportComparisonDenial::Execution(cause) => physical(cause),
                             _ => unavailable(),
@@ -87,7 +97,7 @@ impl SourceReadAuthorization {
                         worth_relational::facade::authorization::RelationalAuthorizationTraversalDirection::Forward => Direction::Outgoing,
                         worth_relational::facade::authorization::RelationalAuthorizationTraversalDirection::Reverse => Direction::Incoming,
                     };
-                    left.compare_adjacency_support(execution, &right, anchor, relation, direction)
+                    left.compare_adjacency_support(execution, right, anchor, relation, direction)
                         .map_err(|cause| match cause {
                             worth_relational::facade::runtime::RelationalAdjacencySupportDenial::Execution(cause) => physical(cause),
                             worth_relational::facade::runtime::RelationalAdjacencySupportDenial::Allocation(cause) => Stop::allocation_denied("applied Source authorization support", cause),

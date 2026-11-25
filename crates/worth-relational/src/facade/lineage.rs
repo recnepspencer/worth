@@ -1,10 +1,13 @@
+pub use crate::change_source::RelationalPersistentNameReadDenial;
 pub use crate::durability::naming::{
     admit_persisted_name, encode_commit_frame, encode_durable_persistent_name_log,
     encode_log_header, rebuild_name_index_from_durable_log, PersistentNameDurabilityError,
     PersistentNameReferenceRole, PersistentNameWireSection,
     FORMAT_VERSION as PERSISTENT_NAME_DURABLE_FORMAT_VERSION,
 };
-pub use crate::lineage::access::{RelationalLineageDiscoveryDenial, RelationalLineageNodeRead};
+pub use crate::lineage::access::{
+    PersistentNameObservationView, RelationalLineageDiscoveryDenial, RelationalLineageNodeRead,
+};
 pub use crate::lineage::data::{
     CommitNamingPlan, DiscriminatorBasisDenialReason, HistoricalLineageResolution,
     HistoricalLineageResolutionDigestBasis, HistoricalLineageResolutionMetrics,
@@ -21,8 +24,9 @@ pub use crate::lineage::data::{
     LineageSubject, PendingBirthTarget, PendingCommitBirth, PendingMergeClaim, PendingMergeKeeper,
     PendingMergeTarget, PendingSplitChild, PendingSplitClaim, PersistentNameBirthParts,
     PersistentNameBirthRecord, PersistentNameBirthRequest, PersistentNameDiscriminatorReference,
-    PersistentNameHolder, PersistentNameIdentity, PersistentNameKey, PersistentNameReferenceBasis,
-    PersistentNameResolution, PersistentNameResolutionDenial, PersistentNameResolutionMetrics,
+    PersistentNameHolder, PersistentNameIdentity, PersistentNameKey, PersistentNameOfRecord,
+    PersistentNameReferenceBasis, PersistentNameResolution, PersistentNameResolutionDenial,
+    PersistentNameResolutionFootprint, PersistentNameResolutionMetrics,
     PersistentNameResolutionOutcome, PersistentNameSelection, PersistentNameSubjectKind,
     PersistentNameTarget, RecordHistoryRequest,
 };

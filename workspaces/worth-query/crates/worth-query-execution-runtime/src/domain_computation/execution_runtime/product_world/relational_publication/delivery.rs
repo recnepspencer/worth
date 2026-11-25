@@ -18,16 +18,13 @@ impl WorthQueryProductSharedRoot {
             WorthQueryPerformedRelationalProductChangeDeliveryDenial as Denial,
             WorthQueryPerformedRelationalProductChangeDeliveryDenialKind as Kind,
         };
-        let execution = match phase.request_for_owner(self.owner_identity) {
-            Ok(execution) => execution,
-            Err(cause) => {
-                return Err(Denial::new(
-                    Kind::ExecutionRequest(cause.into()),
-                    "delivery phase belongs to another installed runtime",
-                    change,
-                ))
-            }
-        };
+        if let Err(cause) = phase.request_for_owner(self.owner_identity) {
+            return Err(Denial::new(
+                Kind::ExecutionRequest(cause.into()),
+                "delivery phase belongs to another installed runtime",
+                change,
+            ));
+        }
         if !self.accepts_performed_change(&change) {
             return Err(Denial::new(
                 Kind::ForeignProductRoot,
@@ -48,6 +45,58 @@ impl WorthQueryProductSharedRoot {
         let bridge = bridge
             .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
+        self.deliver_performed_relational_change_with_bridge(
+            phase,
+            &bridge,
+            lowering,
+            dependency_ordinal,
+            change,
+        )
+    }
+
+    /// Delivers a performed change using the caller's already-held Bridge read
+    /// guard, preserving the strict `bridge -> operation` lock order without
+    /// dropping and reacquiring the Bridge `RwLock`.
+    #[doc(hidden)]
+    pub fn deliver_performed_relational_change_with_bridge(
+        &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        bridge: &worth_query_execution_contracts::facade::ConditionalExecutionOwner<'_>,
+        lowering: &worth_runtime_bridge::facade::BridgeConditionalSignalBasisBinding,
+        dependency_ordinal: usize,
+        change: super::WorthQueryPerformedRelationalProductChange,
+    ) -> Result<
+        super::WorthQueryPerformedRelationalProductChangeDeliveryOutcome,
+        super::WorthQueryPerformedRelationalProductChangeDeliveryDenial,
+    > {
+        use super::{
+            WorthQueryPerformedRelationalProductChangeDeliveryDenial as Denial,
+            WorthQueryPerformedRelationalProductChangeDeliveryDenialKind as Kind,
+        };
+        let execution = match phase.request_for_owner(self.owner_identity) {
+            Ok(execution) => execution,
+            Err(cause) => {
+                return Err(Denial::new(
+                    Kind::ExecutionRequest(cause.into()),
+                    "delivery phase belongs to another installed runtime",
+                    change,
+                ));
+            }
+        };
+        if !self.accepts_performed_change(&change) {
+            return Err(Denial::new(
+                Kind::ForeignProductRoot,
+                "performed product change belongs to another application root",
+                change,
+            ));
+        }
+        if self.bridge.upgrade().is_none() {
+            return Err(Denial::new(
+                Kind::BridgeRuntimeClosed,
+                "the sealed Bridge runtime is no longer live",
+                change,
+            ));
+        }
         let signal_basis = lowering;
         if signal_basis.signal_basis().admission_identity()
             != change.signal_basis().admission_identity()

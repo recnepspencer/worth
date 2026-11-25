@@ -132,3 +132,57 @@ fn checkpoint_capture_restores_many_branches_with_long_common_names() {
     }
     assert_eq!(medium.canonical_member_reads(), reads);
 }
+
+#[test]
+fn complete_original_request_denial_and_cancel_preserve_original_empty_source() {
+    let runtime = worth_testkit_relational::durable_publication::memory_runtime();
+    let identity = runtime.main_branch_identity();
+    let original = runtime
+        .admit_branch_basis(&identity)
+        .unwrap()
+        .custody_witness();
+    let service = runtime.complete_checkpoint_service();
+    let budget = worth_execution::SerialMemoryBudget::new(Some(0));
+    let host = worth_execution::SerialRequest::from_memory(
+        budget.clone(),
+        worth_execution::CancellationSource::new().token(),
+        None,
+    );
+    let execution = ExecutionRequest::serial(&host);
+    assert!(matches!(
+        service.prepare(&execution, RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None }),
+        Err(RelationalNativeCheckpointCaptureDenial::Request(_))
+    ));
+    assert_eq!(budget.charged_memory_bytes(), 0);
+    let cancellation = worth_execution::CancellationSource::new();
+    cancellation.cancel();
+    let stopped = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(Some(16 * 1024 * 1024)),
+        cancellation.token(),
+        None,
+    );
+    assert!(matches!(
+        service.prepare(
+            &ExecutionRequest::serial(&stopped),
+            RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None }
+        ),
+        Err(RelationalNativeCheckpointCaptureDenial::Request(_))
+    ));
+    let actual = runtime
+        .admit_branch_basis(&identity)
+        .unwrap()
+        .custody_witness();
+    assert!(original.same_root(&actual));
+    let retry = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(Some(16 * 1024 * 1024)),
+        worth_execution::CancellationSource::new().token(),
+        None,
+    );
+    let result = service
+        .prepare(
+            &ExecutionRequest::serial(&retry),
+            RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None },
+        )
+        .unwrap();
+    assert!(result.checkpoint().captured_sections().unwrap().total > 0);
+}

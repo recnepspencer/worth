@@ -1,6 +1,8 @@
 //! Account summary query definitions: plain, scoped, governed and ordered.
 use super::*;
 
+worth_query_declaration::worth_query_disclosure_classification!(AccountHolderDisclosure);
+
 pub fn account_summary_definition() -> ApplicationQueryDefinitionBuilder<
     IdentityExecutionSchema,
     AccountSummaryQuery,
@@ -55,7 +57,7 @@ pub fn governed_account_summary_definition() -> ApplicationQueryDefinitionBuilde
     definition(
         GovernedAccountSummaryQuery::reference(),
         ApplicationQueryDisclosureContract::governed_by(
-            "account-holder",
+            AccountHolderDisclosure,
             TouchAccountCapability::reference(),
         )
         .use_field_by(

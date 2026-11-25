@@ -5,6 +5,8 @@ use worth_query_decl::facade::application_program::{
 };
 use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 
+worth_query_decl::facade::worth_query_principal_issuer!(ConsumerInvalidLocalIssuer);
+
 pub(in crate::application_invariant_acceptance) fn unique_directory(
     label: &str,
 ) -> std::path::PathBuf {
@@ -91,7 +93,7 @@ where
                             .unwrap(),
                         2_u64,
                         worth_query_host::facade::declaration::authentication::WorthQueryExternalPrincipalIdentity::new(
-                            "https://consumer.invalid/local",
+                            ConsumerInvalidLocalIssuer,
                             "sibling-owner",
                         )
                         .unwrap(),

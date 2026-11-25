@@ -26,6 +26,7 @@ pub(in crate::domain_computation::primary_graph::product_operation::correction_s
     phase: &WorthQueryAdvancementPhase<'_>,
     source: &WorthQuerySelectedCorrectionSource<'_, Schema>,
     facts: &FactPayload,
+    maximum_history: Option<std::num::NonZeroUsize>,
 ) -> Result<(), Denial> {
     let application = target.application();
     let execution = phase
@@ -95,6 +96,7 @@ pub(in crate::domain_computation::primary_graph::product_operation::correction_s
                 original,
                 target.product().relational_basis(),
                 &selection,
+                maximum_history,
             )
         })?;
     let occurrences = history::narrow(target, execution, facts, occurrences)

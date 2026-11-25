@@ -5,6 +5,11 @@ use crate::application_query::{
 pub(super) fn is_canonical(definition: &WorthQueryPortableApplicationQueryParts) -> bool {
     strictly_increasing(definition.parameters())
         && strictly_increasing(definition.predicates())
+        && strictly_increasing(definition.related_predicates())
+        && definition
+            .related_predicates()
+            .iter()
+            .all(|predicate| strictly_increasing(predicate.target_predicates()))
         && strictly_increasing(definition.root_paths())
         && result_shape_is_canonical(definition.result_shape())
         && strictly_increasing(definition.disclosure().rules())

@@ -1,4 +1,10 @@
-use super::*;
+use super::context::VisibilityReadContext;
+use crate::query::data::snapshot_pinned_plan::SnapshotPinnedQueryPlan;
+use crate::query::data::{
+    PlannedQueryPacket, QueryParallelLegality, QueryParallelProfitability, QueryScope,
+    QuerySerialReason,
+};
+use crate::snapshots::data::SnapshotHandle;
 
 impl<'runtime> VisibilityReadContext<'runtime> {
     /// Metadata read: planning examines descriptors and supplied targets, never stored rows; no execution request is needed.
@@ -40,10 +46,10 @@ impl<'runtime> VisibilityReadContext<'runtime> {
             let touched_partitions = targets
                 .iter()
                 .map(|target| match target {
-                    crate::transactions::data::RecordRef::Entity(entity_id) => {
+                    crate::transactions::data::primitives::RecordRef::Entity(entity_id) => {
                         entity_id.partition_id
                     }
-                    crate::transactions::data::RecordRef::Relation(relation_id) => {
+                    crate::transactions::data::primitives::RecordRef::Relation(relation_id) => {
                         relation_id.partition_id
                     }
                 })

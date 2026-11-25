@@ -16,8 +16,10 @@ pub use before_world::BeforeWorldQueryReservation;
 pub mod preparation;
 pub mod release;
 pub mod reservation;
+mod shared_store;
 pub use managed_recovery::{ManagedUnpublishedRecoveryGuard, ManagedUnpublishedRecoveryStop};
 pub use release::WorthQueryUnpublishedReleaseReservation;
+pub(super) use shared_store::SharedUnpublishedIdempotencyStore;
 
 pub use reservation::QueryDurablePreparationGuard;
 pub use reservation::WorthQueryUnpublishedIdempotencyReservation;
@@ -83,7 +85,7 @@ pub trait UnpublishedIdempotencyDispositionExt {
 
 fn store_from_disposition(
     disposition: &WorthQueryUnpublishedIdempotencyDisposition,
-) -> &Arc<Mutex<WorthQueryUnpublishedIdempotencyStore>> {
+) -> &SharedUnpublishedIdempotencyStore {
     &disposition
         .port()
         .as_any()
@@ -97,10 +99,7 @@ impl UnpublishedIdempotencyDispositionExt for WorthQueryUnpublishedIdempotencyDi
         &self,
         handle: &ProductUnpublishedRecoveryHandle,
     ) -> Result<Option<WorthQueryUnpublishedReleaseReservation>, ()> {
-        WorthQueryUnpublishedReleaseReservation::begin(
-            Arc::clone(store_from_disposition(self)),
-            handle,
-        )
+        WorthQueryUnpublishedReleaseReservation::begin(store_from_disposition(self).clone(), handle)
     }
 
     fn preparation_stage(
@@ -309,7 +308,7 @@ impl super::WorthQueryPrimaryGraphProvider {
         recovery: worth_runtime_world::facade::RuntimeWorldRecoveryPort,
     ) -> Result<ManagedUnpublishedRecoveryGuard, ManagedUnpublishedRecoveryStop> {
         ManagedUnpublishedRecoveryGuard::begin(
-            Arc::clone(&self.unpublished_idempotency),
+            self.unpublished_idempotency.clone(),
             handle,
             recovery,
         )
@@ -329,7 +328,7 @@ impl super::WorthQueryPrimaryGraphProvider {
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .reserve(product, binding, recovery_handle.clone())?;
         Ok(WorthQueryUnpublishedIdempotencyReservation::new(
-            Arc::clone(&self.unpublished_idempotency),
+            self.unpublished_idempotency.clone(),
             key,
             entry,
             recovery_handle,
@@ -341,7 +340,7 @@ impl super::WorthQueryPrimaryGraphProvider {
         &self,
     ) -> WorthQueryUnpublishedIdempotencyDisposition {
         WorthQueryUnpublishedIdempotencyDisposition::from_port(Arc::new(
-            UnpublishedIdempotencyStorePort(Arc::clone(&self.unpublished_idempotency)),
+            UnpublishedIdempotencyStorePort(self.unpublished_idempotency.clone()),
         ))
     }
 

@@ -74,6 +74,9 @@ fn runtime_supports(
             }
         }
         WorthQueryGraphReadAccessRequirementKind::LiveMaintenanceSupport => {
+            if contract.is_live_whole_result() {
+                return true;
+            }
             let Some(contract) = live else {
                 return false;
             };

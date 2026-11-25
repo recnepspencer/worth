@@ -274,6 +274,7 @@ impl PhysicalRecoveryCoordination {
         super::selected_checkpoint::RecoveryCheckpointSelection,
         Option<crate::physical_runtime::record_serving::PreparedRecoveredCustodyBacking>,
     )> {
+        self.submission.await_abandonment_idle();
         let _ = self.reconcile_signal_settlements();
         if !self.is_ready() {
             return None;

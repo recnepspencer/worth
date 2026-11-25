@@ -1,0 +1,125 @@
+use super::root_view::IndexRootView;
+use super::work::MaintenanceWork;
+use crate::contracts::identity::data::record_ids::{EntityId, RelationId};
+use crate::contracts::indexes::data::maintenance::DerivedIndexMaintenanceDenialKind as Denial;
+use crate::contracts::schema::data::RelationalSchemaRegistryFieldsPort as _;
+use crate::contracts::storage::data::read_records::RecordLifecycleState;
+use crate::contracts::transactions::data::primitives::RecordRef;
+use std::collections::BTreeSet;
+
+pub(super) struct ChangedRecords {
+    pub(super) entities: BTreeSet<EntityId>,
+    pub(super) relations: BTreeSet<RelationId>,
+}
+
+impl ChangedRecords {
+    pub(super) fn patch(
+        change: &worth_relational_branch::internal_port::branch::maintenance::CommitChange,
+        work: &mut MaintenanceWork,
+    ) -> Result<Self, Denial> {
+        let mut changed = Self {
+            entities: BTreeSet::new(),
+            relations: BTreeSet::new(),
+        };
+        for (_, partition) in change.partitions() {
+            work.note_patch_records(partition.records().len());
+            for record in partition.records() {
+                work.charge(1)?;
+                for state in record.before.iter().chain(&record.after) {
+                    match state.record {
+                        RecordRef::Entity(id) => {
+                            work.ordered::<EntityId, ()>(changed.entities.len(), 1, 0)?;
+                            changed.entities.insert(id);
+                        }
+                        RecordRef::Relation(id) => {
+                            work.ordered::<RelationId, ()>(changed.relations.len(), 1, 0)?;
+                            changed.relations.insert(id);
+                        }
+                    }
+                }
+            }
+        }
+        Ok(changed)
+    }
+
+    pub(super) fn cold(
+        _lane: &crate::contracts::storage::substrate::maintenance::reconstruction::ReconstructionLane<'_>,
+        view: &IndexRootView,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        work: &mut MaintenanceWork,
+    ) -> Result<Self, Denial> {
+        let slots = view
+            .entity_slot_count()
+            .saturating_add(view.relation_slot_count())
+            .saturating_add(view.region_count());
+        if let Some(maximum) = work.budget.maximum_cold_record_slots {
+            if maximum == 0 {
+                return Err(Denial::ColdReconstructionRequired);
+            }
+            if slots > maximum.saturating_sub(work.counts().cold_record_slots) {
+                return Err(Denial::ColdRecordSlotBudgetExceeded);
+            }
+        }
+        work.charge(slots)?;
+        work.note_cold_record_slots(slots);
+        let mut entities = BTreeSet::new();
+        let mut relations = BTreeSet::new();
+        view.try_visit_partitions(|event| {
+            let worth_relational_branch::internal_port::branch::root_regions::partition_visitation::RelationalPartitionVisit::Partition(partition_id) =
+                event
+            else {
+                return work.prepare(1, 0);
+            };
+            work.prepare(33, 0)?;
+            let Some(partition) = view.head(execution, partition_id, work)? else {
+                return Ok(());
+            };
+            for slot in partition.entity_arena().live_slots() {
+                work.read()?;
+                let Some(slot_view) = partition.entity_arena().get_slot(slot) else {
+                    continue;
+                };
+                let id = EntityId::new(partition_id, slot as u64, slot_view.generation());
+                work.lookup(
+                    (*view.schema_authority().registry().owner_entity_kinds()).len(),
+                    1,
+                )?;
+                if slot_view.lifecycle() == RecordLifecycleState::Live
+                    && slot_view.kind_id().is_some_and(|kind| {
+                        (*view.schema_authority().registry().owner_entity_kinds())
+                            .contains_key(&kind)
+                    })
+                {
+                    work.ordered::<EntityId, ()>(entities.len(), 1, 0)?;
+                    entities.insert(id);
+                }
+            }
+            for slot in partition.relation_arena().live_slots() {
+                work.read()?;
+                let Some(slot_view) = partition.relation_arena().get_slot(slot) else {
+                    continue;
+                };
+                let id = RelationId::new(partition_id, slot as u64, slot_view.generation());
+                work.lookup(
+                    (*view.schema_authority().registry().owner_relation_kinds()).len(),
+                    1,
+                )?;
+                if matches!(
+                    slot_view.lifecycle(),
+                    RecordLifecycleState::Live | RecordLifecycleState::RetainedDanglingForAudit
+                ) && slot_view.kind_id().is_some_and(|kind| {
+                    (*view.schema_authority().registry().owner_relation_kinds()).contains_key(&kind)
+                }) && slot_view.extra().endpoints.is_some()
+                {
+                    work.ordered::<RelationId, ()>(relations.len(), 1, 0)?;
+                    relations.insert(id);
+                }
+            }
+            Ok(())
+        })?;
+        Ok(Self {
+            entities,
+            relations,
+        })
+    }
+}

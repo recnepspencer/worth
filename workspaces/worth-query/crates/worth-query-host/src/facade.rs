@@ -1,5 +1,27 @@
 //! Host-audience view over the production Query authority graph.
 //!
+//! Start with the unified application facade:
+//! - Open or reopen a persistent Home in one call via
+//!   [`WorthQueryApplicationHome::open_directory`] with
+//!   [`WorthQueryHomeConfig::desktop_default`], check
+//!   [`WorthQueryApplicationHome::open_disposition`], and retire cleanly with
+//!   [`WorthQueryApplicationHome::close_clean`].
+//! - Create a reusable authenticated session via
+//!   [`WorthQueryApplicationHome::session`] (`let session = home.session(me);`)
+//!   with bounded defaults (`DEFAULT_HOST_EXECUTION_POLICY`) and run actions
+//!   (`session.run(...)`), typed queries (`session.query(...) -> Vec<Row>`),
+//!   whole-result live subscriptions (`session.subscribe(...)` returning
+//!   [`WorthQueryTypedLiveSubscription`]), and managed-index watches / cold
+//!   readiness (`session.watch(...)`, `session.ensure_index_ready(intent)` / `session.ensure_default_index_ready::<Query>()`).
+//! - Fork and atomically adopt "what-if" branches via
+//!   [`WorthQueryApplicationHome::fork_preview`] /
+//!   [`WorthQueryApplicationHome::adopt_preview`], attach `'static` document
+//!   history via [`WorthQueryApplicationHome::owned_history`], and perform
+//!   restart-safe undo/redo via [`WorthQueryApplicationHome::undo`],
+//!   [`WorthQueryApplicationHome::undo_authored`],
+//!   [`WorthQueryApplicationHome::redo`], and
+//!   [`WorthQueryApplicationHome::redo_authored`].
+//!
 //! Ordinary action owners retain the authentic installed runtime and complete
 //! installed action beyond construction. Applications keep their own genuine
 //! runtime handle for fresh requests; operation keepalive grants no admission
@@ -194,7 +216,6 @@
 //!         .correlate()?.accept()?.execute(scope)
 //! }
 //! ```
-
 //! Producer publication and admission diagnostics borrow the returned denial;
 //! the application keeps the original terminal operation and its cleanup custody.
 //! Native companion amounts are data, not a new retry or publication authority.
@@ -225,138 +246,28 @@
 //!      native.output_verification_capacity_stop())
 //! }
 //! ```
-//!
-//! Correction alternatives carry historical evidence; only Query can construct
-//! their selections. The public `application_correction` example exercises
-//! selection, retained input preparation and ordinary publication together.
-//!
-//! ```compile_fail,E0451
-//! use worth_query_host::facade::application_entry::WorthQuerySelectedCorrectionAlternative;
-//! fn forge<'a, S>() -> WorthQuerySelectedCorrectionAlternative<'a, S> {
-//!     WorthQuerySelectedCorrectionAlternative {
-//!         source: todo!(), root: todo!(), selected: todo!(), active: None,
-//!         _selected_ancestry: todo!(), _active_ancestry: None,
-//!     }
-//! }
-//! ```
-//!
-//! An applicability observation cannot replace the selected alternative.
-//!
-//! ```compile_fail,E0308
-//! use worth_query_host::facade::{domain::ApplicationSchema, application_entry::{
-//!     WorthQueryApplicationCorrections, WorthQueryCorrectionApplicability,
-//! }};
-//! fn report_is_not_selection<S: ApplicationSchema>(
-//!     request: WorthQueryApplicationCorrections<'_, '_, '_, S>,
-//!     report: WorthQueryCorrectionApplicability,
-//! ) { let _ = request.reapply(&report); }
-//! ```
-//!
-//! Publication consumes its preparation.
-//!
-//! ```compile_fail,E0382
-//! use worth_query_host::facade::application_entry::WorthQueryPreparedApplicationCorrection;
-//! fn publish_twice(prepared: WorthQueryPreparedApplicationCorrection<'_>) {
-//!     let _ = prepared.publish();
-//!     let _ = prepared.publish();
-//! }
-//! ```
-//!
-//! Reapplication derives its input from retained source custody.
-//!
-//! ```compile_fail,E0599
-//! use worth_query_host::facade::{domain::ApplicationSchema,
-//!     application_entry::WorthQueryApplicationReapplicationRequest};
-//! fn replace_input<S: ApplicationSchema, Input>(
-//!     request: WorthQueryApplicationReapplicationRequest<'_, '_, '_, '_, S>,
-//!     replacement: Input,
-//! ) { let _ = request.input(replacement); }
-//! ```
-//!
-//! The retained pre-image exposes immutable values.
-//!
-//! ```compile_fail,E0594
-//! use worth_query_host::facade::declaration::application_aftermath::{
-//!     ApplicationCorrectionPreImage, DeclaredPreImageLocus,
-//! };
-//! fn mutate_retained<S>(
-//!     read: &dyn ApplicationCorrectionPreImage<S>, locus: &DeclaredPreImageLocus<S>,
-//! ) { let value = read.field(locus).unwrap(); *value = (*value).clone(); }
-//! ```
-//!
-//! The lawful counterparts select from a disclosed page, prepare retained input,
-//! publish once and observe the original value through the read-only view.
-//!
-//! ```
-//! use worth_query_host::facade::{domain::ApplicationSchema, application_entry::{
-//!     WorthQueryApplicationCorrectionAlternatives, WorthQueryCorrectionAlternativeRef,
-//!     WorthQueryCorrectionAlternativesPage,
-//!     WorthQueryCorrectionHistoryLimits, WorthQuerySelectedCorrectionAlternative,
-//!     WorthQueryApplicationReapplicationRequest, WorthQueryApplicationCorrectionPreparation,
-//!     WorthQueryApplicationCorrectionDenial, WorthQueryPreparedApplicationCorrection,
-//!     WorthQueryApplicationCorrectionOutcome,
-//! }, declaration::application_aftermath::{ApplicationCorrectionPreImage, DeclaredPreImageLocus}};
-//! fn select<'a, S: ApplicationSchema>(
-//!     page: &WorthQueryApplicationCorrectionAlternatives<'a, '_, '_, S>,
-//!     alternative: &WorthQueryCorrectionAlternativeRef, limits: WorthQueryCorrectionHistoryLimits,
-//! ) -> Result<WorthQuerySelectedCorrectionAlternative<'a, S>, WorthQueryApplicationCorrectionDenial> {
-//!     page.select(alternative, limits)
-//! }
-//! fn detach<S: ApplicationSchema>(
-//!     page: WorthQueryApplicationCorrectionAlternatives<'_, '_, '_, S>,
-//! ) -> WorthQueryCorrectionAlternativesPage { page.into_page() }
-//! fn prepare<'a, S: ApplicationSchema>(
-//!     request: WorthQueryApplicationReapplicationRequest<'a, '_, '_, '_, S>,
-//! ) -> Result<WorthQueryApplicationCorrectionPreparation<'a>, WorthQueryApplicationCorrectionDenial> {
-//!     request.prepare()
-//! }
-//! fn publish(prepared: WorthQueryPreparedApplicationCorrection<'_>)
-//!     -> Result<WorthQueryApplicationCorrectionOutcome, WorthQueryApplicationCorrectionDenial> {
-//!     prepared.publish()
-//! }
-//! fn observe<S>(read: &dyn ApplicationCorrectionPreImage<S>, locus: &DeclaredPreImageLocus<S>) {
-//!     let _value = read.field(locus);
-//! }
-//! ```
 pub use worth_query_admission::facade as admission;
 pub use worth_query_declaration::facade as declaration;
 pub use worth_query_declaration::{
-    worth_query_application_query, worth_query_effect, worth_query_operation,
-    worth_query_operation_emits, worth_query_operation_reads, worth_query_operation_writes,
-    worth_query_portable_type, worth_query_structured_value_binding, worth_query_workflow,
+    worth_query_application_query, worth_query_authentication_audience,
+    worth_query_authentication_method, worth_query_capability, worth_query_capability_context,
+    worth_query_capability_provenance, worth_query_disclosure_classification, worth_query_effect,
+    worth_query_identity_namespace, worth_query_operation, worth_query_operation_emits,
+    worth_query_operation_reads, worth_query_operation_writes, worth_query_portable_type,
+    worth_query_principal_issuer, worth_query_structured_value_binding, worth_query_workflow,
 };
-pub use worth_query_execution::facade::application_contribution;
-pub use worth_query_execution::facade::application_discovery;
 /// Explain saved query results and authored source operations for audit or debugging.
-///
-/// Start with [`application_entry::WorthQueryApplicationRequest::inspect`] for an
-/// original query observation, or
-/// [`application_entry::WorthQueryApplicationRequest::inspect_source`] for an
-/// authored source receipt. Choose a reference report, comparison, producer
-/// explanation or materialized original values. Each execution checks current
-/// inspection permission; saving an original does not preserve an access grant.
+/// Start with [`application_entry::WorthQueryApplicationRequest::inspect`] or
+/// [`application_entry::WorthQueryApplicationRequest::inspect_source`]. Each
+/// execution checks current inspection permission; saving an original does not
+/// preserve an access grant.
 pub use worth_query_execution::facade::application_inspection as causal_inspection;
-pub use worth_query_execution::facade::application_installation;
-pub use worth_query_execution::facade::application_invariants;
-/// Read-only observations for facade-only certification; these reports grant no authority.
-pub use worth_query_execution::facade::certification;
-pub use worth_query_execution::facade::convergence_epoch;
-pub use worth_query_execution::facade::installed;
-pub use worth_query_execution::facade::primary_graph;
-pub use worth_query_execution::facade::product;
-pub use worth_query_execution::facade::runtime;
-pub use worth_query_execution::facade::worth_query_application_contribution;
-pub use worth_query_installation::facade as domain;
-pub use worth_query_installation::facade::{
-    inspect_installed_graph_obligations, WorthQueryGraphObligationAdoptionDenial,
-    WorthQueryGraphObligationAdoptionDenialKind, WorthQueryGraphObligationAdoptionProof,
-    WorthQueryGraphObligationAdoptionRow,
-};
-pub use worth_query_installation::worth_query_conditional_node;
-pub use worth_query_macros::*;
-pub use worth_query_publication::facade as publication;
-pub use worth_query_publication::facade::application_entry;
-
+pub use worth_query_execution::facade::{application_contribution, application_discovery};
+pub use worth_query_execution::facade::{application_installation, application_invariants};
+pub mod application_naming;
+pub mod ordered_index;
+/// Shared scope access grants and authenticated single-owner remote transport.
+pub mod shared_access;
 pub use crate::application_home::{
     discard_home, ApplicationHomeQueryRootDenial, HomeCustodyReadmissionDenial,
     NoHomeProgramTransition, QueryHomeProgramActivationDenial, UnadmittedHomeQueryCustodyRefused,
@@ -368,31 +279,71 @@ pub use crate::application_home::{
     WorthQueryApplicationHomeClosePhase, WorthQueryApplicationHomeCloseRefused,
     WorthQueryApplicationHomeClosed,
     WorthQueryApplicationHomeDiscardDenial, WorthQueryApplicationHomeLocation,
-    WorthQueryApplicationHomeOpenRefused, WorthQueryApplicationHomeOpeningCloseRefused,
-    WorthQueryApplicationHomeOpeningClosed, WorthQueryApplicationHomeRequest,
-    WorthQueryApplicationHomeTransitionRequired, WorthQueryHomeProgramTransition,
+    WorthQueryApplicationHomeOpenRefused, WorthQueryApplicationHomeOpenRefusedPhase,
+    WorthQueryApplicationHomeOpeningCloseRefused, WorthQueryApplicationHomeOpeningClosed,
+    WorthQueryApplicationHomeRequest, WorthQueryApplicationHomeTransitionRequired,
+    WorthQueryCorrectionEntry, WorthQueryDirectoryOpenDenial, WorthQueryDirectoryOpenRetired,
+    WorthQueryHomeAuthoredCorrectionOutcome, WorthQueryHomeClosePolicyRefused,
+    WorthQueryHomeConfig, WorthQueryHomeCorrectionOutcome, WorthQueryHomeOpenDisposition,
+    WorthQueryHomeOwnedHistoryDenial, WorthQueryHomeProgramTransition,
     WorthQueryHomeProgramTransitionDenial, WorthQueryHomeProgramTransitionOpenPhase,
     WorthQueryHomeProgramTransitionOpenRefused, WorthQueryHomeProgramTransitionPlan,
-    WorthQueryHomeProgramTransitionStep, WorthQueryWorkflowApplicationHome,
+    WorthQueryHomeProgramTransitionStep, WorthQueryHomeRetirement, WorthQueryHomeRetirementStop,
+    WorthQueryHomeUndoDenial, WorthQueryPreviewAdoptDenial, WorthQueryPreviewAdoptFailure,
+    WorthQueryPreviewDiscardDenial, WorthQueryPreviewDiscardFailure, WorthQueryPreviewFork,
+    WorthQueryPreviewForkDenial, WorthQueryWorkflowApplicationHome,
     WorthQueryWorkflowHomeBindingRefused, WorthQueryWorkflowHomeCloseRefused,
-    WorthQueryWorkflowHomeClosed,
+    WorthQueryWorkflowHomeClosed, DEFAULT_CORRECTION_HISTORY_LIMITS, DEFAULT_HOST_EXECUTION_POLICY,
+    DEFAULT_HOST_EXECUTION_WORK_CEILING,
 };
-/// Relational DATA for a Home transition author. These values grant no step,
-/// initialization, publication or Native owner access.
+/// Reusable authenticated Host session and typed whole-result / managed-index live handles.
+pub use crate::session::{
+    WorthQueryAutoIdempotencyKey, WorthQueryHostSession, WorthQuerySessionCommit,
+    WorthQuerySessionIndexedQuery, WorthQuerySessionQuery, WorthQuerySessionRunDenial,
+    WorthQueryTypedLiveCloseDenial, WorthQueryTypedLiveRefreshDenial,
+    WorthQueryTypedLiveSubscription, WorthQueryTypedManagedIndexRefreshDenial,
+    WorthQueryTypedManagedIndexWatch,
+};
+pub use crate::{
+    worth_query_recurring_rule, worth_query_remote_codec, worth_query_scope_access,
+    worth_query_shared_access,
+};
+/// Read-only observations for facade-only certification; these reports grant no authority.
+pub use worth_query_execution::facade::{
+    certification, convergence_epoch, installed, primary_graph, product, runtime,
+    worth_query_application_contribution, worth_query_application_program,
+};
+pub use worth_query_installation::facade as domain;
+pub use worth_query_installation::facade::{
+    inspect_installed_graph_obligations, WorthQueryGraphObligationAdoptionDenial,
+    WorthQueryGraphObligationAdoptionDenialKind, WorthQueryGraphObligationAdoptionProof,
+    WorthQueryGraphObligationAdoptionRow,
+};
+pub use worth_query_installation::worth_query_conditional_node;
+pub use worth_query_macros::*;
+pub use worth_query_publication::facade as publication;
+pub use worth_query_publication::facade::application_entry;
+/// Relational data for a Home transition author, without owner authority.
 pub mod home_program_transition;
+/// Declarative Directory Home program transitions (`worth_query_program_transition!`),
+/// single-call open-with-transition helpers, and package-default build identity resolution.
+pub mod program_transition;
 /// Existing owner refusal vocabulary for retained Home custody and Directory checkpoints.
 pub use crate::application_home::{ApplicationHomeCheckpointDenial, ApplicationHomeCloseDenial};
-/// Store's physical open refusal from `WorthQueryApplicationHomeOpenRefused::
-/// physical_refusal`: an application matches a contended or discard-pending
-/// open by kind. Store owns this vocabulary; Host does not copy it.
+/// The typed physical causes returned by a Home's `physical_refusal`.
 pub use crate::application_home::{
     ApplicationHomePhysicalRefusal, ApplicationHomePhysicalRefusalKind,
     ApplicationHomePhysicalStage,
 };
-/// Interactive custody of one source-only command across frames.
+/// Interactive custody of one source-only command or correction across frames.
 pub use crate::source_custody::{
-    WorthQuerySourceCustody, WorthQuerySourceCustodyPending, WorthQuerySourceCustodyStep,
+    WorthQueryAnyCorrectionCustodyOutcome, WorthQueryAnySourceCompletion,
+    WorthQueryAnySourceCustody, WorthQueryAnySourceCustodyStep,
+    WorthQueryAnyTerminalSourceEvidence, WorthQueryCorrectionCustodyOutcome,
+    WorthQuerySourceCustody, WorthQuerySourceCustodyPending, WorthQuerySourceCustodyPhase,
+    WorthQuerySourceCustodyStep, WorthQuerySourceCustodyWithdrawal,
 };
+pub mod temporal_contribution;
 pub use worth_foundational::facade::{CanonicalDigestId, DurableOwnerFamily};
 /// Typed refusal from fresh authored-program installation before Home service.
 pub use worth_query_execution::facade::application_home_integration::QueryHomeSignalProgramPreparationDenial;

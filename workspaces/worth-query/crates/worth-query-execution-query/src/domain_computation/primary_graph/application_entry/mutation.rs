@@ -1,7 +1,9 @@
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
 use worth_query_installation::facade::ApplicationSchema;
 
-pub use super::super::handler::{CandidateWriter, DecisionReader, HandlerInterruption};
+pub use super::super::handler::{
+    CandidateWriter, DecisionReader, HandlerInterruption, NamingScope,
+};
 pub use worth_query_execution_lineage::facade::primary_graph::application_entry::mutation::{
     decision_plan, durable_capability, execution_report, failure, home_retirement,
     HandlerExecutionDenial, HandlerFailure, HandlerResult, WorthQueryDecisionPlan,
@@ -49,11 +51,16 @@ where
         Ok(WorthQueryOperationHomeRetirementProgress::Complete)
     }
 
+    /// Durable capabilities beyond ordinary relational mutation.
+    ///
+    /// Defaults to an empty slice (`Some(&[])`), which admits ordinary relational
+    /// handlers on a Directory Home while still requiring explicit declaration for
+    /// external emission, dispatch, or inbound completion contracts.
     fn declared_durable_capabilities() -> Option<&'static [WorthQueryOperationDurableCapability]>
     where
         Self: Sized,
     {
-        None
+        Some(&[])
     }
 
     fn decide(

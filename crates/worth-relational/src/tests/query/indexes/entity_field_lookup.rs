@@ -269,7 +269,7 @@ fn derived_index_contract_explicit_corrupt_generation_reports_corrupt_entries() 
     assert!(build.failed_indexes.is_empty());
     runtime
         .indexes
-        .corrupt_latest_generation(index.index_id, |generation| {
+        .corrupt_latest_generation_for_test(index.index_id, |generation| {
             generation.status = crate::facade::indexes::DerivedIndexPublicationStatus::BuildFailed;
         });
 

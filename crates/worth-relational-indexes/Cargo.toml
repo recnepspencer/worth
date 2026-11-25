@@ -1,0 +1,25 @@
+[package]
+name = "worth-relational-indexes"
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+description = "Relational derived index planning and maintenance."
+publish = false
+
+[dependencies]
+worth-relational-contracts.workspace = true
+worth-relational-storage.workspace = true
+worth-relational-branch.workspace = true
+worth-foundational = { path = "../worth-foundational" }
+worth-execution = { path = "../worth-execution" }
+sized-chunks = "0.6.5"
+# Pinned with worth-signal, whose retained-storage charges describe im 15.1 nodes.
+im = { version = "=15.1.0", features = ["serde"] }
+
+[dev-dependencies]
+proptest = { version = "1", default-features = false, features = ["std", "bit-set"] }
+worth-harness.workspace = true
+
+[lints]
+workspace = true

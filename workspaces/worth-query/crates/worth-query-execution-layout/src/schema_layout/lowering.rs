@@ -303,6 +303,8 @@ impl WorthQueryPrimaryGraphLayout {
             &relation_layouts,
             &live_control_entity_kinds,
         )?;
+        let (registry, persistent_names) =
+            persistent_naming::lower(registry, schema, &entity_kinds, &relation_kinds)?;
         let registry = if current_publication_ownership {
             let registry = super::install_current_publication_ownership(registry)?;
             roles.reserve_registry(&registry);
@@ -342,6 +344,7 @@ impl WorthQueryPrimaryGraphLayout {
                 workflow: platform_entities.workflow,
                 workflow_reads: None,
                 bootstrap_publication,
+                persistent_names,
             },
             registry,
         ))

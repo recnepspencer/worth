@@ -7,6 +7,9 @@
 //! commit (8), retention-floor tag (1), and the counted sections in order.
 
 use worth_foundational::facade::AggregateIdentity;
+use worth_relational_contracts::internal_port::lineage::data::events::assemble_lineage_event_record;
+use worth_relational_contracts::internal_port::lineage::data::events::LineageEventRecordParts;
+use worth_relational_contracts::internal_port::lineage::data::naming::PersistentNameIdentityOwnerPort as _;
 
 use crate::aggregate_identity::AggregateGroupLineageEvent;
 use crate::facade::history::{BranchId, CommitId, RelationalCommitReceipt};
@@ -57,7 +60,7 @@ fn retire(event_id: u64) -> LineageEventRecord {
         branch_id: main_branch(),
         parents: Vec::new(),
     };
-    LineageEventRecord {
+    assemble_lineage_event_record(LineageEventRecordParts {
         event_id,
         commit,
         branch_id: BranchId("main".to_owned()),
@@ -68,7 +71,8 @@ fn retire(event_id: u64) -> LineageEventRecord {
         name_birth: None,
         kept_name: None,
         relation_id: None,
-    }
+        entity_id: None,
+    })
 }
 
 fn group(byte: u8) -> AggregateIdentity {
@@ -140,7 +144,8 @@ fn reordered_or_duplicated_carriers_refuse_non_canonical() {
         .with_carriers(PersistentNameKey::Group(group(1)), [name(1), name(2)])
         .with_carriers(PersistentNameKey::Group(group(2)), [name(1), name(2)]);
     let encoded = frame(&batch);
-    let declarations = SECTIONS + 5 * COUNT;
+    // Carrier declarations follow the (here empty) group scheme section.
+    let declarations = SECTIONS + 6 * COUNT;
     for tampered in swapped_and_duplicated(&encoded, declarations, CARRIER_DECLARATION) {
         assert_eq!(refusal(&tampered), non_canonical("carrier declarations"));
     }

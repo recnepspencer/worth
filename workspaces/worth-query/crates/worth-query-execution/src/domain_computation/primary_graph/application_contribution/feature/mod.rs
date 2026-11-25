@@ -3,6 +3,7 @@ mod configuration;
 mod contract;
 mod definition;
 mod definition_macro;
+mod program_macro;
 pub use configuration::install;
 pub use configuration::{
     WorthQueryFeatureConfiguration, WorthQueryFeaturePairConfiguration,
@@ -10,4 +11,4 @@ pub use configuration::{
 };
 pub use contract::{required_producers, validate_pair};
 pub use contract::{WorthQueryRequiredFeatureContract, WorthQueryRequiredFeaturePair};
-pub use definition::WorthQueryFeatureDefinition;
+pub use definition::{WorthQueryApplicationManagedIndexRegistration, WorthQueryFeatureDefinition};

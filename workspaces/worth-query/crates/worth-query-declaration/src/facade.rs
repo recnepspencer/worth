@@ -8,9 +8,14 @@
 /// siblings), each bound by `worth_query_native_scalar_bindings!`.
 pub mod application_schema {
     pub use crate::application_schema::*;
+    pub use crate::recurring_vocabulary::{
+        WorthQueryRecurringGate, WorthQueryRecurringGateBinding, WorthQueryRecurringLifecycle,
+        WorthQueryRecurringLifecycleBinding,
+    };
     pub use worth_foundational::facade::{
-        CanonicalDate, CanonicalF32, CanonicalF64, CanonicalTime, CanonicalTimestamp,
-        CanonicalTimestampTz, InlineBytes, InlineBytesLengthDenial, InternedString,
+        CanonicalDate, CanonicalF32, CanonicalF64, CanonicalTemporalTextDenial, CanonicalTime,
+        CanonicalTimestamp, CanonicalTimestampTz, InlineBytes, InlineBytesLengthDenial,
+        InternedString,
     };
     pub use worth_foundational::CanonicalDigestId;
 }
@@ -74,6 +79,12 @@ pub mod application_operation {
 /// workflows, and evolution between revisions.
 pub mod application_program {
     pub use crate::application_program::*;
+}
+
+/// Declarative Home program transition specifications and zero-boilerplate
+/// package-default build identity resolution.
+pub mod program_transition {
+    pub use crate::program_transition::*;
 }
 
 /// Principal identity values used by principal bindings: the external

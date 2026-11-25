@@ -18,6 +18,7 @@ mod historical_read_evidence;
 mod historical_source_ancestry;
 mod historical_source_presence;
 mod historical_worker;
+mod named_selection;
 mod ownership_transfer;
 mod ownership_transfer_refusals;
 mod prospective_publication;

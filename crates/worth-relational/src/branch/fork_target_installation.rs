@@ -1,6 +1,12 @@
 use std::sync::Arc;
+use worth_relational_branch::internal_port::branch::fork::assemble_fork_outcome;
+use worth_relational_branch::internal_port::branch::fork::RelationalForkOutcomeParts;
+use worth_relational_branch::internal_port::branch::fork_source_basis::RelationalForkSourceDescriptorFieldsPort as _;
 
-use super::{PreparedForkTarget, RelationalForkDenial, RelationalForkOutcome, ValidatedForkSource};
+use super::{
+    target_preparation::PreparedForkTarget, RelationalForkDenial, RelationalForkOutcome,
+    ValidatedForkSource,
+};
 use crate::branch::{AdmittedRelationalBranchBasis, RelationalForkPort};
 use crate::history::data::BranchId;
 
@@ -28,7 +34,10 @@ impl RelationalForkPort {
         mut target: PreparedForkTarget,
         return_basis: bool,
     ) -> Result<InstallableForkTarget, RelationalForkDenial> {
-        let materialization_cost = materialization_cost(&target)?;
+        let materialization_cost = crate::branch::fork_materialization::materialization_cost(
+            &target.target_cell,
+            &target.source_root,
+        )?;
         let target_root = target
             .target_cell
             .root()
@@ -101,14 +110,14 @@ impl RelationalForkPort {
         if let Some(fork_commit_id) = target.shared_commit_id {
             self.lineage_naming.register_fork_ancestry(
                 target_identity.branch_id().clone(),
-                source.descriptor.source_branch.clone(),
+                (*source.descriptor.owner_source_branch()).clone(),
                 fork_commit_id,
             );
         }
         self.owner
             .install_target(target.reservation, target.target_cell);
         (
-            RelationalForkOutcome {
+            assemble_fork_outcome(RelationalForkOutcomeParts {
                 target_identity,
                 source_observation: source.source_observation.clone(),
                 target_observation: target.target_observation,
@@ -116,37 +125,11 @@ impl RelationalForkPort {
                 source_truth_version: source.source_truth_version,
                 target_truth_version: target.target_truth_version,
                 shared_commit_id: target.shared_commit_id,
-            },
+            }),
             basis,
             target.managed_source,
         )
     }
-}
-
-fn materialization_cost(
-    target: &PreparedForkTarget,
-) -> Result<crate::runtime::RelationalForkMaterializationCost, RelationalForkDenial> {
-    let fork_materialized_authoritative_bytes = match target
-        .target_cell
-        .root()
-        .filter(|target_root| !target_root.shares_authoritative_regions_with(&target.source_root))
-    {
-        Some(target_root) => target_root
-            .logical_partition_payload_bytes()
-            .map_err(|_| RelationalForkDenial::AllocationAccountingOverflow)?,
-        None => 0,
-    };
-    let copied_commit_envelopes = target
-        .target_cell
-        .root()
-        .filter(|target_root| !target_root.shares_canonical_envelope_with(&target.source_root))
-        .map_or(0, |_| 1);
-    Ok(crate::runtime::RelationalForkMaterializationCost {
-        entity_count: 0,
-        relation_count: 0,
-        authoritative_bytes: fork_materialized_authoritative_bytes,
-        copied_commit_envelopes,
-    })
 }
 
 fn map_retention_denial(

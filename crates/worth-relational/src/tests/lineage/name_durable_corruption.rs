@@ -8,6 +8,7 @@ use crate::facade::lineage::{
     encode_commit_frame, rebuild_name_index_from_durable_log, PersistentNameDurabilityError,
     PersistentNameIdentity, PersistentNameWireSection, PERSISTENT_NAME_DURABLE_FORMAT_VERSION,
 };
+use worth_relational_lineage::internal_port::lineage::index::batch::PersistentNameCommittedBatchFixturePort as _;
 
 use super::name_durable_world::{durable_naming_history, DurableNamingHistory};
 
@@ -141,15 +142,13 @@ fn unsupported_format_versions_refuse_before_any_state() {
         PERSISTENT_NAME_DURABLE_FORMAT_VERSION
     );
     for at in [header_version, first_frame_version] {
-        for found in [0u8, 2] {
+        let supported = PERSISTENT_NAME_DURABLE_FORMAT_VERSION;
+        for found in [0u8, supported - 1, supported + 1] {
             let mut tampered = bytes.clone();
             tampered[at] = found;
             assert_eq!(
                 rebuild_name_index_from_durable_log(&tampered),
-                Err(PersistentNameDurabilityError::UnsupportedFormatVersion {
-                    found,
-                    supported: 1,
-                })
+                Err(PersistentNameDurabilityError::UnsupportedFormatVersion { found, supported })
             );
         }
     }
@@ -183,7 +182,7 @@ fn non_canonical_structure_refuses_typed() {
         Err(PersistentNameDurabilityError::TrailingBytes { remaining: 1 })
     );
 
-    let event = &anchors.lineage_events[0];
+    let event = &anchors.lineage_events_for_test()[0];
     let kind = 9
         + 8
         + 1
@@ -219,7 +218,7 @@ fn non_canonical_structure_refuses_typed() {
     );
 
     let mut reversed = history.commits[1].0.clone();
-    reversed.lineage_events.reverse();
+    reversed.lineage_events_mut_for_test().reverse();
     assert_eq!(
         encode_commit_frame(&reversed, None),
         Err(PersistentNameDurabilityError::NonCanonical {

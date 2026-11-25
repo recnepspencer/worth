@@ -3,16 +3,17 @@ use super::*;
 
 pub(super) fn locators(
     layout: &WorthQueryAftermathCausalityLayout,
-) -> [&worth_foundational::facade::AspectFieldLocator; 4] {
+) -> [&worth_foundational::facade::AspectFieldLocator; 5] {
     [
         &layout.source_world_owner_locator,
         &layout.source_world_commit_locator,
         &layout.source_branch_locator,
         &layout.source_commit_locator,
+        &layout.source_member_locator,
     ]
 }
 
-pub(super) fn values(pending: &WorthQueryPendingAftermathCausality) -> [Option<AspectValue>; 4] {
+pub(super) fn values(pending: &WorthQueryPendingAftermathCausality) -> [Option<AspectValue>; 5] {
     let source = pending.recorded_source();
     [
         Some(AspectValue::UInt64(
@@ -23,6 +24,9 @@ pub(super) fn values(pending: &WorthQueryPendingAftermathCausality) -> [Option<A
             source.relational().branch_id.0.clone(),
         ))),
         Some(AspectValue::UInt64(source.relational().commit_id.0)),
+        Some(AspectValue::String(InternedString::from(
+            source.member().text(),
+        ))),
     ]
 }
 

@@ -79,8 +79,8 @@ fn original_cancellation_and_memory_exhaustion_retain_the_same_pre_service_home(
         assert_eq!(home.home_identity(), identity);
         let competing = reopen_refusal(path.path(), cleanup);
         assert!(matches!(
-            &competing,
-            WorthQueryApplicationHomeOpenRefused::Physical { .. }
+            competing.phase(),
+            worth_query_host::facade::WorthQueryApplicationHomeOpenRefusedPhase::Physical { .. }
         ));
         assert!(competing.detail().contains("MutationOwnerContended"));
         competing

@@ -122,11 +122,11 @@ pub(super) fn ownership(name: &str) -> (&'static str, &'static str) {
             "crates/worth-relational/",
         )
     } else if name == "from_home_original_bytes" {
-        ("native-home-original-source", "crates/worth-relational/")
+        ("native-home-original-source", "crates/worth-relational-durability/src/durability/published_medium/recovery_source/home_preflight.rs")
     } else if name == "copy_home_input_for_request" {
         (
             "native-home-original-source-copy",
-            "crates/worth-relational/",
+            "crates/worth-relational-durability/src/durability/published_medium/recovery_source/home_preflight.rs",
         )
     } else if name == "from_absent_home_read" {
         (

@@ -23,7 +23,10 @@ pub use worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema;
 
 pub use worth_query_host::facade::declaration::application_schema::ApplicationSchema;
 
-pub const OPERATOR_ISSUER: &str = "https://issuer.example";
+worth_query_decl::facade::worth_query_authentication_method!(CertificationMethod);
+worth_query_decl::facade::worth_query_authentication_audience!(DocumentRetentionHostAudience);
+
+worth_query_decl::facade::worth_query_principal_issuer!(pub OperatorIssuer);
 pub const OPERATOR_SUBJECT: &str = "document-retention-operator";
 
 pub struct OperatorAdapter;
@@ -60,13 +63,13 @@ impl WorthQueryAuthenticationAdapter for OperatorAdapter {
 }
 
 pub fn operator_identity() -> WorthQueryExternalPrincipalIdentity {
-    WorthQueryExternalPrincipalIdentity::new(OPERATOR_ISSUER, OPERATOR_SUBJECT)
+    WorthQueryExternalPrincipalIdentity::new(OperatorIssuer, OPERATOR_SUBJECT)
         .expect("the operator external identity is valid")
 }
 
 /// Authenticates at the provider, but has no seeded application mapping or grant.
 pub fn secondary_signer_identity() -> WorthQueryExternalPrincipalIdentity {
-    WorthQueryExternalPrincipalIdentity::new(OPERATOR_ISSUER, "secondary-signer").unwrap()
+    WorthQueryExternalPrincipalIdentity::new(OperatorIssuer, "secondary-signer").unwrap()
 }
 
 pub fn admit_operator_adapter<S: ApplicationSchema>(
@@ -100,12 +103,11 @@ pub fn request_scope() -> WorthQueryRequestScope {
 }
 
 pub fn audience() -> WorthQueryAuthenticationAudience {
-    WorthQueryAuthenticationAudience::new("document-retention-host")
-        .expect("the operator audience is valid")
+    WorthQueryAuthenticationAudience::of(DocumentRetentionHostAudience)
 }
 
 pub fn method() -> WorthQueryAuthenticationMethod {
-    WorthQueryAuthenticationMethod::new("certification").expect("the operator method is valid")
+    WorthQueryAuthenticationMethod::of(CertificationMethod)
 }
 
 pub fn block_on<F: Future>(future: F) -> F::Output {

@@ -1,0 +1,293 @@
+use crate::commit_strategies::data::registration::CommitStrategyRegistration;
+use crate::config::data::*;
+use crate::diagnostics::data::RelationalDiagnosticsProfile;
+use crate::history::data::coordinates::{BranchId, HistoryRetentionClass, VersionGraphPolicy};
+use crate::schema::data::{
+    runtime_descriptor_canonical_basis_policy, runtime_descriptor_semantics_policy,
+    RelationalSchemaRegistry,
+};
+use crate::symbols::data::{ClientKeySymbolPolicy, StringInterner};
+use crate::validation::data::catalog::InvariantCatalog;
+
+pub(super) fn default_profile_config(profile: RelationalRuntimeProfile) -> RelationalRuntimeConfig {
+    let base = |runtime_name: &str,
+                diagnostics: RelationalDiagnosticsProfile,
+                history_retention: HistoryRetentionClass,
+                mvcc: MvccConfig,
+                retention_policy: RetentionPolicy,
+                storage_layout: StorageLayoutConfig,
+                client_key_symbol_policy: ClientKeySymbolPolicy,
+                visibility_cache_policy: VisibilityCachePolicy,
+                durability: DurabilityPolicy,
+                adjacency_policy: AdjacencyPolicy,
+                cross_context_policy: CrossContextPolicy,
+                cascade_delete_policy: CascadeDeletePolicy,
+                publication: PublicationConfig,
+                compiled_lane_policy: CompiledLanePolicy,
+                initial_entity_capacity: usize,
+                initial_relation_capacity: usize| RelationalRuntimeConfig {
+        profile,
+        execution: ExecutionConfig {
+            runtime_name: runtime_name.to_string(),
+            compiled_lane_policy,
+        },
+        diagnostics: DiagnosticsConfig {
+            profile: diagnostics,
+        },
+        history: HistoryConfig {
+            version_graph_policy: VersionGraphPolicy::CanonicalSerializedPublication,
+            retention: history_retention,
+            main_branch: BranchId("main".to_string()),
+        },
+        schema: SchemaConfig {
+            registry: RelationalSchemaRegistry::default(),
+            invariant_catalog: InvariantCatalog::default(),
+            descriptor_semantics_policy: runtime_descriptor_semantics_policy(),
+            descriptor_canonical_basis_policy: runtime_descriptor_canonical_basis_policy(),
+        },
+        commit_strategies: CommitStrategiesConfig {
+            registrations: Vec::<CommitStrategyRegistration>::new(),
+        },
+        identity: IdentityConfig {
+            client_key_symbol_policy,
+            symbol_table: StringInterner::default().snapshot(),
+        },
+        storage: StorageConfig {
+            initial_entity_capacity,
+            initial_relation_capacity,
+            mvcc,
+            retention: retention_policy,
+            layout: storage_layout,
+            adjacency_policy,
+            cross_context_policy,
+            cascade_delete_policy,
+        },
+        visibility: VisibilityConfig {
+            cache_policy: visibility_cache_policy,
+        },
+        publication: PublicationRuntimeConfig {
+            policy: publication,
+        },
+        durability: DurabilityConfig { policy: durability },
+        overrides: RelationalConfigOverride::default(),
+        provenance: ConfigProvenance {
+            profile,
+            entries: Default::default(),
+        },
+    };
+
+    match profile {
+        RelationalRuntimeProfile::CertificationCore => base(
+            "worth-relational",
+            profile.default_diagnostics_profile(),
+            HistoryRetentionClass::AuditGrade,
+            MvccConfig {
+                track_visibility_metadata: true,
+                snapshot_release_policy: SnapshotReleasePolicy::ExplicitRelease,
+                auto_reclaim_deleted_records: false,
+                reclaim_batch_size: 128,
+                retention_backend: RetentionBackend::PinTrackedRetention,
+            },
+            RetentionPolicy {
+                backend: RetentionBackend::PinTrackedRetention,
+                reclaim_batch_size: 128,
+            },
+            StorageLayoutConfig {
+                entity_chunk_size: 1024,
+                relation_chunk_size: 1024,
+                scan_packet_size: 512,
+            },
+            ClientKeySymbolPolicy::PreferInterned,
+            VisibilityCachePolicy {
+                enabled: true,
+                protect_branch_heads: true,
+                protect_replay_retained: true,
+                protect_active_snapshots: true,
+                recent_version_window: 32,
+            },
+            DurabilityPolicy {
+                log: DurableLogPolicy {
+                    retention_mode: DurableLogRetentionMode::RetainAllInMemory,
+                    max_in_memory_envelopes: 4_096,
+                    compact_after_checkpoint: false,
+                },
+            },
+            AdjacencyPolicy {
+                backend: AdjacencyBackend::InlineSmallDegreeAdjacency,
+                small_degree_inline_capacity: 4,
+            },
+            CrossContextPolicy::SchemaControlled,
+            CascadeDeletePolicy::CascadeDeleteRelations,
+            PublicationConfig {
+                coherent_publication_required: true,
+                max_patch_records_per_commit: None,
+                max_published_snapshot_handles: None,
+                max_active_snapshot_handles: None,
+                max_transaction_savepoints: 4_096,
+                max_prepared_candidates: None,
+            },
+            CompiledLanePolicy::Disabled,
+            64,
+            64,
+        ),
+        RelationalRuntimeProfile::GeometryKernel => base(
+            "worth-relational-geometry",
+            profile.default_diagnostics_profile(),
+            HistoryRetentionClass::AuditGrade,
+            MvccConfig {
+                track_visibility_metadata: true,
+                snapshot_release_policy: SnapshotReleasePolicy::ExplicitRelease,
+                auto_reclaim_deleted_records: false,
+                reclaim_batch_size: 256,
+                retention_backend: RetentionBackend::PinTrackedRetention,
+            },
+            RetentionPolicy {
+                backend: RetentionBackend::PinTrackedRetention,
+                reclaim_batch_size: 256,
+            },
+            StorageLayoutConfig {
+                entity_chunk_size: 2048,
+                relation_chunk_size: 2048,
+                scan_packet_size: 1024,
+            },
+            ClientKeySymbolPolicy::PreferInterned,
+            VisibilityCachePolicy {
+                enabled: true,
+                protect_branch_heads: true,
+                protect_replay_retained: true,
+                protect_active_snapshots: true,
+                recent_version_window: 2,
+            },
+            DurabilityPolicy {
+                log: DurableLogPolicy {
+                    retention_mode: DurableLogRetentionMode::CompactAfterCheckpoint,
+                    max_in_memory_envelopes: 2_048,
+                    compact_after_checkpoint: true,
+                },
+            },
+            AdjacencyPolicy {
+                backend: AdjacencyBackend::InlineSmallDegreeAdjacency,
+                small_degree_inline_capacity: 8,
+            },
+            CrossContextPolicy::AllowExplicit,
+            CascadeDeletePolicy::CascadeDeleteRelations,
+            PublicationConfig {
+                coherent_publication_required: true,
+                max_patch_records_per_commit: None,
+                max_published_snapshot_handles: None,
+                max_active_snapshot_handles: None,
+                max_transaction_savepoints: 1_024,
+                max_prepared_candidates: None,
+            },
+            CompiledLanePolicy::Disabled,
+            256,
+            256,
+        ),
+        RelationalRuntimeProfile::ChipSimulation => base(
+            "worth-relational-chip",
+            profile.default_diagnostics_profile(),
+            HistoryRetentionClass::AuditGrade,
+            MvccConfig {
+                track_visibility_metadata: true,
+                snapshot_release_policy: SnapshotReleasePolicy::ExplicitRelease,
+                auto_reclaim_deleted_records: false,
+                reclaim_batch_size: 512,
+                retention_backend: RetentionBackend::EpochChunkRetention,
+            },
+            RetentionPolicy {
+                backend: RetentionBackend::EpochChunkRetention,
+                reclaim_batch_size: 512,
+            },
+            StorageLayoutConfig {
+                entity_chunk_size: 4096,
+                relation_chunk_size: 4096,
+                scan_packet_size: 2048,
+            },
+            ClientKeySymbolPolicy::RequireInterned,
+            VisibilityCachePolicy {
+                enabled: true,
+                protect_branch_heads: true,
+                protect_replay_retained: true,
+                protect_active_snapshots: true,
+                recent_version_window: 2,
+            },
+            DurabilityPolicy {
+                log: DurableLogPolicy {
+                    retention_mode: DurableLogRetentionMode::CompactAfterCheckpoint,
+                    max_in_memory_envelopes: 1_024,
+                    compact_after_checkpoint: true,
+                },
+            },
+            AdjacencyPolicy {
+                backend: AdjacencyBackend::CompressedFanoutAdjacency,
+                small_degree_inline_capacity: 8,
+            },
+            CrossContextPolicy::AllowExplicit,
+            CascadeDeletePolicy::RetainDanglingForAudit,
+            PublicationConfig {
+                coherent_publication_required: true,
+                max_patch_records_per_commit: None,
+                max_published_snapshot_handles: None,
+                max_active_snapshot_handles: None,
+                max_transaction_savepoints: 1_024,
+                max_prepared_candidates: None,
+            },
+            CompiledLanePolicy::DerivedCompiledLane,
+            512,
+            512,
+        ),
+        RelationalRuntimeProfile::AiWorkflow => base(
+            "worth-relational-ai",
+            profile.default_diagnostics_profile(),
+            HistoryRetentionClass::Durable,
+            MvccConfig {
+                track_visibility_metadata: true,
+                snapshot_release_policy: SnapshotReleasePolicy::ReleaseOnRetentionPass,
+                auto_reclaim_deleted_records: true,
+                reclaim_batch_size: 512,
+                retention_backend: RetentionBackend::PinTrackedRetention,
+            },
+            RetentionPolicy {
+                backend: RetentionBackend::PinTrackedRetention,
+                reclaim_batch_size: 512,
+            },
+            StorageLayoutConfig {
+                entity_chunk_size: 2048,
+                relation_chunk_size: 1024,
+                scan_packet_size: 1024,
+            },
+            ClientKeySymbolPolicy::PreferInterned,
+            VisibilityCachePolicy {
+                enabled: true,
+                protect_branch_heads: true,
+                protect_replay_retained: true,
+                protect_active_snapshots: true,
+                recent_version_window: 16,
+            },
+            DurabilityPolicy {
+                log: DurableLogPolicy {
+                    retention_mode: DurableLogRetentionMode::CompactAfterCheckpoint,
+                    max_in_memory_envelopes: 1_024,
+                    compact_after_checkpoint: true,
+                },
+            },
+            AdjacencyPolicy {
+                backend: AdjacencyBackend::InlineSmallDegreeAdjacency,
+                small_degree_inline_capacity: 4,
+            },
+            CrossContextPolicy::AllowExplicit,
+            CascadeDeletePolicy::CascadeDeleteRelations,
+            PublicationConfig {
+                coherent_publication_required: true,
+                max_patch_records_per_commit: None,
+                max_published_snapshot_handles: None,
+                max_active_snapshot_handles: None,
+                max_transaction_savepoints: 4_096,
+                max_prepared_candidates: None,
+            },
+            CompiledLanePolicy::Disabled,
+            128,
+            128,
+        ),
+    }
+}

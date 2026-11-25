@@ -16,6 +16,15 @@ struct CurrentSourceQueryControl
     held: Option<&'a crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'a>>,
 }
 impl<'a, S: ApplicationSchema> SourceQueryReaderAccess<'a, S> {
+    /// Lends the live coupled assembly so a producer decision's managed index
+    /// read can select the aligned before basis or borrow the applied Source.
+    pub fn with_applied_managed_sources(
+        mut self,
+        assembly: &'a worth_relational::facade::mvcc::RelationalAuthoredCoupledCandidate<'a>,
+    ) -> Self {
+        self.applied_managed_sources = Some(assembly);
+        self
+    }
     pub fn with_applied_participants(
         mut self,
         participants: &'a dyn crate::domain_computation::primary_graph::provider::AppliedOutputParticipants,

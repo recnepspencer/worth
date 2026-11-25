@@ -1,0 +1,79 @@
+use super::{PinClass, RecordArena, RecordKind};
+
+#[cfg(test)]
+mod tests;
+
+impl<K: RecordKind> RecordArena<K> {
+    pub fn snapshot_pin_count(&self, slot: usize) -> Option<u32> {
+        self.physical_index(slot)
+            .and_then(|physical| self.snapshot_pins.get(physical).copied())
+    }
+
+    pub fn branch_pin_count(&self, slot: usize) -> Option<u32> {
+        self.physical_index(slot)
+            .and_then(|physical| self.branch_pins.get(physical).copied())
+    }
+
+    pub fn replay_pin_count(&self, slot: usize) -> Option<u32> {
+        self.physical_index(slot)
+            .and_then(|physical| self.replay_pins.get(physical).copied())
+    }
+
+    pub fn adjust_named_pin(&mut self, slot: usize, class: PinClass, delta: i32) -> Option<()> {
+        let physical = self.physical_index(slot)?;
+        match class {
+            PinClass::Branch => self.branch_pins.adjust(physical, delta),
+            PinClass::Replay => self.replay_pins.adjust(physical, delta),
+        }
+    }
+
+    pub fn clear_all_pins(&mut self) {
+        self.snapshot_pins.clear();
+        self.branch_pins.clear();
+        self.replay_pins.clear();
+    }
+
+    pub fn preserve_runtime_pins_from(&mut self, current: &Self) {
+        let slots = &self.slots;
+        let generations = &self.generations;
+        let remap = |source| {
+            let logical = current.slots.logical_slot(source)?;
+            let physical = slots.physical_index(logical)?;
+            let same_generation = generations[physical] == current.generations[source];
+            debug_assert!(
+                /* Proof: Generation reuse requires the owner free-slot reservation to exclude all pin classes; adjust_named_pin validates the exact existing generation before changing its private counters. */
+                same_generation,
+                "a pinned generation cannot be reused"
+            );
+            same_generation.then_some(physical)
+        };
+        self.snapshot_pins.remap_from(&current.snapshot_pins, remap);
+        self.branch_pins.remap_from(&current.branch_pins, remap);
+        self.replay_pins.remap_from(&current.replay_pins, remap);
+    }
+
+    pub(crate) fn clear_named_pins(&mut self, class: PinClass) {
+        match class {
+            PinClass::Branch => self.branch_pins.clear(),
+            PinClass::Replay => self.replay_pins.clear(),
+        }
+    }
+}
+
+/// Receiver-scoped fixtures for the Relational unit courts.
+#[doc(hidden)]
+pub trait RecordArenaFixturePort<K: RecordKind>: Sized {
+    fn clear_named_pins_for_test(&mut self, class: PinClass);
+}
+
+impl<K: RecordKind> RecordArenaFixturePort<K> for RecordArena<K> {
+    fn clear_named_pins_for_test(&mut self, class: PinClass) {
+        self.clear_named_pins(class)
+    }
+}
+
+/// The Branch pin class used by the retention unit courts.
+#[doc(hidden)]
+pub fn branch_pin_class_for_test() -> PinClass {
+    PinClass::Branch
+}

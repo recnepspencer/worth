@@ -1,9 +1,14 @@
 //! Request-bounded progress for one immutable result's original registration.
 use super::owner_binding::RelationalOwnerServiceBinding;
-use super::{RelationalCommitResultSnapshotRelease, RelationalCommitResultSnapshotReleaseDenial};
+use super::{
+    RelationalCommitResultSnapshotCleanupDenial, RelationalCommitResultSnapshotCleanupPending,
+    RelationalCommitResultSnapshotRelease, RelationalCommitResultSnapshotReleaseDenial,
+};
 use crate::{runtime::RelationalRuntime, transactions::data::CommitResult};
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
+use worth_relational_contracts::internal_port::visibility::snapshot_release::RelationalSnapshotReleaseReceiptOwnerPort as _;
+use worth_relational_publication::internal_port::transactions::data::outcomes::commit_result::CommitResultOwnerPort as _;
 
 /// Retains the original result and its SAME release-cell retirement across
 /// stops and lost responses. Final task/result/owner Drop is ordinary,
@@ -21,20 +26,6 @@ pub struct RelationalCommitResultSnapshotCleanup {
     owner: RelationalOwnerServiceBinding,
     result: Arc<CommitResult>,
     removed_here: bool,
-}
-
-#[derive(Debug)]
-pub enum RelationalCommitResultSnapshotCleanupPending {
-    Advanced,
-    Busy,
-    Stopped(worth_execution::WorkCeilingDenial),
-}
-
-#[derive(Debug)]
-pub enum RelationalCommitResultSnapshotCleanupDenial {
-    NotOwner,
-    OwnerBindingMismatch,
-    Release(RelationalCommitResultSnapshotReleaseDenial),
 }
 
 #[derive(Debug)]
@@ -87,10 +78,10 @@ impl RelationalCommitResultSnapshotCleanup {
             Ok(Some(true)) => return self.complete(),
             Ok(None) => return self.pending(Pending::Busy),
             Ok(Some(false)) => {}
-            Err(()) => {
+            Err(_) => {
                 return self.refused(Denial::Release(
                     RelationalCommitResultSnapshotReleaseDenial::RetirementInterrupted,
-                ))
+                ));
             }
         }
         if let Err(cause) = request.consult() {
@@ -103,10 +94,10 @@ impl RelationalCommitResultSnapshotCleanup {
                     return self.pending(Pending::Advanced);
                 }
                 Ok(None) => return self.pending(Pending::Busy),
-                Err(()) => {
+                Err(_) => {
                     return self.refused(Denial::Release(
                         RelationalCommitResultSnapshotReleaseDenial::RegistrationMismatch,
-                    ))
+                    ));
                 }
             }
         }
@@ -114,7 +105,7 @@ impl RelationalCommitResultSnapshotCleanup {
             Ok(Some(true)) => self.complete(),
             Ok(Some(false)) => self.pending(Pending::Advanced),
             Ok(None) => self.pending(Pending::Busy),
-            Err(()) => self.refused(Denial::Release(
+            Err(_) => self.refused(Denial::Release(
                 RelationalCommitResultSnapshotReleaseDenial::RetirementInterrupted,
             )),
         }

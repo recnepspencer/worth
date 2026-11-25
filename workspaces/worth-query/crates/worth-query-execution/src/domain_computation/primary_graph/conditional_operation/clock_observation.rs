@@ -11,10 +11,10 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationR
 pub(crate) mod erased;
 mod original_retry;
 mod product_admission;
-pub use original_retry::WorthQueryConditionalOriginalResolution;
 pub(in crate::domain_computation::primary_graph) use erased::{
     ErasedClockObservationOutcome, ErasedClockObservationReceipt,
 };
+pub use original_retry::WorthQueryConditionalOriginalResolution;
 
 /// Why a clock observation port could not be opened.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -326,8 +326,7 @@ where
                     &token,
                     None,
                 )
-                .ok()
-                .expect("prime_replay_plateau_for_test: prepare_with_signal");
+                .unwrap_or_else(|_| panic!("prime_replay_plateau_for_test: prepare_with_signal"));
             drop(prepared);
         }
     }
@@ -335,10 +334,10 @@ where
     #[doc(hidden)]
     pub fn reenter_retained_wakes_continuation_for_test(
         &mut self,
-        _execution: &worth_execution::ExecutionRequest<'_, '_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> WorthQueryConditionalClockObservationOutcome<Clock> {
         self.runtime
-            .with_host_advancement(|active_phase| {
+            .with_execution_request_advancement(*execution, |active_phase| {
                 let granular_invalidation_installation =
                     self.runtime.granular_invalidation_installation();
                 let granular_source_read_basis = self.truth.granular_source_read_basis();
@@ -363,38 +362,34 @@ where
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> WorthQueryConditionalClockObservationOutcome<Clock> {
+        if let Err(cause) = execution.consult() {
+            return WorthQueryConditionalClockObservationOutcome::Failed(
+                WorthQueryConditionalClockObservationFailure {
+                    kind: WorthQueryConditionalClockObservationFailureKind::ExecutionRequest(
+                        crate::domain_computation::primary_graph::application_contribution::advancement_denial(cause),
+                    ),
+                    detail: String::new(),
+                },
+            );
+        }
         self.runtime
-            .with_host_advancement(|active_phase| {
-                let phase = &active_phase;
-                let granular_invalidation_installation =
-                    self.runtime.granular_invalidation_installation();
+            .with_execution_request_advancement(*execution, |active_phase| {
+                let granular_invalidation_installation = self.runtime.granular_invalidation_installation();
                 let granular_source_read_basis = self.truth.granular_source_read_basis();
                 let bridge_root = self.runtime.inner.runtime.bridge_ref().conditional_operations();
-                let bridge = bridge_root
-                    .read()
-                    .unwrap_or_else(std::sync::PoisonError::into_inner);
+                let bridge = bridge_root.read().unwrap_or_else(std::sync::PoisonError::into_inner);
                 let outcome = match bridge.with_view(self.truth.signal_basis(), |view| {
-                    self.operation.observe_clock(execution, phase, &view, self.runtime, &self.truth)
+                    self.operation.observe_clock(execution, &active_phase, &view, self.runtime, &self.truth)
                 }) {
                     Ok(outcome) => outcome,
                     Err(cause) => return WorthQueryConditionalClockObservationOutcome::Failed(WorthQueryConditionalClockObservationFailure {
                         kind: WorthQueryConditionalClockObservationFailureKind::ReconstructionDenied(super::installation::WorthQueryConditionalRuntimeInstallationDenialKind::BridgeConditional(Box::new(cause.kind()))), detail: cause.detail().to_owned(),
                     }),
                 };
-                outcome.typed(
-                    granular_invalidation_installation,
-                    Some(granular_source_read_basis),
-                )
+                outcome.typed(granular_invalidation_installation, Some(granular_source_read_basis))
             })
-            .unwrap_or_else(|cause| {
-                WorthQueryConditionalClockObservationOutcome::Failed(
-                    WorthQueryConditionalClockObservationFailure {
-                        kind: WorthQueryConditionalClockObservationFailureKind::ExecutionRequest(
-                            cause,
-                        ),
-                        detail: String::new(),
-                    },
-                )
-            })
+            .unwrap_or_else(|cause| WorthQueryConditionalClockObservationOutcome::Failed(WorthQueryConditionalClockObservationFailure {
+                kind: WorthQueryConditionalClockObservationFailureKind::ExecutionRequest(cause), detail: String::new(),
+            }))
     }
 }

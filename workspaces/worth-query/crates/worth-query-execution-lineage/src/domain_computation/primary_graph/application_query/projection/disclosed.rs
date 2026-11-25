@@ -130,11 +130,7 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query
         self.disclosed_relation(&selector).and_then(|disclosure| {
             disclosure.map(|relation| match relation.rows() {
                 [] => Ok(None),
-                [row] => Ok(Some(WorthQueryApplicationProjectionRow::new(
-                    self.node.child(row),
-                    self.governance,
-                    self.decode,
-                ))),
+                [row] => Ok(Some(self.related(row))),
                 _ => Err(relation_cardinality_denial(relation)),
             })
         })
@@ -163,11 +159,7 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query
     {
         self.disclosed_relation(&selector).and_then(|disclosure| {
             disclosure.map(|relation| match relation.rows() {
-                [row] => Ok(WorthQueryApplicationProjectionRow::new(
-                    self.node.child(row),
-                    self.governance,
-                    self.decode,
-                )),
+                [row] => Ok(self.related(row)),
                 _ => Err(relation_cardinality_denial(relation)),
             })
         })
@@ -201,6 +193,7 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query
                     disclosure_parent: self.node,
                     governance: self.governance,
                     decode: self.decode,
+                    names: self.names,
                     _marker: std::marker::PhantomData,
                 })
             })

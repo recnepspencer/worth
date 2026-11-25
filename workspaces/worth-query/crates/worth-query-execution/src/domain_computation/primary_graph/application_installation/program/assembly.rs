@@ -139,9 +139,9 @@ where
             .iter()
             .map(|action| TypeId::from(action.operation_type())),
     );
-    runtime.inner.program_required_operations.extend(
-        runtime
-            .inner
+    let inner = &mut *runtime.inner;
+    inner.program_required_operations.extend(
+        inner
             .installed_schema
             .installed_mutation_binding_inventory()
             .filter(|binding| action_bindings.contains(&TypeId::from(binding.binding_type())))

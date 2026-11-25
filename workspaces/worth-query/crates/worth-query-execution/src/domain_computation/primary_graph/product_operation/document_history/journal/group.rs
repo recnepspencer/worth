@@ -1,14 +1,19 @@
 //! A group reserves one edge while allowing navigation to compete for selection.
 use super::*;
 
-impl<S> HistoryJournal<'_, S> {
+impl HistoryJournal {
     pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn reserve_group(
         &mut self,
         execution: &ExecutionRequest<'_, '_>,
         meaning: WorthQueryApplicationIdempotencyBinding,
         label: &str,
     ) -> Result<ReservedHistoryRecord, Denial> {
-        let record = self.reserve(execution, meaning, label)?;
+        let record = self.reserve(
+            execution,
+            meaning,
+            label,
+            &WorthQueryHistoryStepMetadata::none(),
+        )?;
         self.pending = Some(PendingRecord::Group(record.node));
         Ok(record)
     }

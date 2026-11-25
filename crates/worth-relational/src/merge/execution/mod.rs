@@ -1,11 +1,8 @@
-mod aspect_plan_compilation;
+#[cfg(test)]
+use worth_relational_merge::internal_port::merge::data::prepared_execution::test_support::PreparedMergeExecutionFixturePort as _;
+use worth_relational_merge::internal_port::merge::data::prepared_execution::PreparedMergeExecutionOwnerPort as _;
+pub(crate) use worth_relational_merge::internal_port::merge::execution::plan_compilation;
 mod authority_verification;
-mod lineage_continuity;
-mod plan_compilation;
-mod prepared_execution;
-mod record_plan_compilation;
-
-pub(super) use prepared_execution::execute_prepared_merge;
 
 #[cfg(test)]
 use crate::merge::data::MergeExecutionRequest;
@@ -14,10 +11,33 @@ use crate::merge::data::{
     MergeExecutionPreparationError, OwnerBoundMergeExecutionRequest, PreparedMergeExecution,
 };
 
-use super::planning_artifact::materialize_planning_artifact;
+use super::planning_artifact::selected_basis::materialize_planning_artifact;
 use super::MergeAccess;
 
 impl<'runtime> MergeAccess<'runtime> {
+    pub(crate) fn derive_merge_commit_mutation_plan(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        compiled: &CompiledMergeExecution,
+    ) -> Result<super::data::PreparedMergeMutationPlan, super::data::MergeExecutionMutationPlanError>
+    {
+        let runtime = self.runtime;
+        super::execution_mutation_plan::derive_merge_commit_mutation_plan(
+            &runtime.schema_contract_runtime.aspect_contract_plans,
+            &mut |entity| {
+                let current = runtime.storage_access().current_edition();
+                super::execution_mutation_plan::current_entity_snapshot(
+                    &current,
+                    &runtime.services.symbols,
+                    &runtime.config.schema.registry,
+                    execution,
+                    entity,
+                )
+            },
+            compiled,
+        )
+    }
+
     #[cfg(test)]
     pub fn prepare_merge_execution(
         &self,
@@ -73,12 +93,12 @@ impl<'runtime> MergeAccess<'runtime> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: OwnerBoundMergeExecutionRequest,
     ) -> Result<PreparedMergeExecution, MergeExecutionPreparationError> {
-        let normalized_request =
-            super::request_normalization::normalize_bound_merge_execution_request(request)
-                .map_err(crate::merge::data::MergePlanningError::from)
-                .map_err(MergeExecutionPreparationError::Planning)?;
+        let inputs = super::request_normalization::normalize_bound_merge_execution_request(request)
+            .map_err(crate::merge::data::MergePlanningError::from)
+            .map_err(MergeExecutionPreparationError::Planning)?;
+        let normalized_request = inputs.request.clone();
         let lowered_plan = self
-            .lower_planning_scope(execution, normalized_request.clone())
+            .lower_planning_scope(execution, &inputs)
             .map_err(MergeExecutionPreparationError::Planning)?;
         let artifact = materialize_planning_artifact(execution, self.runtime, lowered_plan.clone())
             .map_err(MergeExecutionPreparationError::Planning)?;
@@ -87,12 +107,9 @@ impl<'runtime> MergeAccess<'runtime> {
             artifact.schema_snapshot.clone(),
         )
         .map_err(MergeExecutionPreparationError::NotExecutionReady)?;
-        let bound_executable_plan = plan_compilation::compile_bound_executable_plan(
-            self.runtime,
-            &normalized_request,
-            &execution_ready_plan,
-        )
-        .map_err(MergeExecutionPreparationError::Compilation)?;
+        let bound_executable_plan =
+            compile_bound_executable_plan(self.runtime, &normalized_request, &execution_ready_plan)
+                .map_err(MergeExecutionPreparationError::Compilation)?;
 
         let compiled = CompiledMergeExecution::new(
             normalized_request,
@@ -106,6 +123,7 @@ impl<'runtime> MergeAccess<'runtime> {
         Ok(PreparedMergeExecution::from_compiled(
             compiled,
             mutation_plan,
+            (inputs.target, inputs.source),
         ))
     }
 
@@ -125,11 +143,11 @@ impl<'runtime> MergeAccess<'runtime> {
         crate::merge::data::BoundExecutableMergePlan,
         crate::merge::data::MergeExecutionCompilationError,
     > {
-        plan_compilation::compile_bound_executable_plan(
+        compile_bound_executable_plan(
             self.runtime,
             &crate::merge::data::NormalizedRelationalMergeRequest::admit_full_branch(
-                execution_ready.basis.target_head.branch_id.clone(),
-                execution_ready.basis.source_head.branch_id.clone(),
+                execution_ready.basis.owner_target_head().branch_id.clone(),
+                execution_ready.basis.owner_source_head().branch_id.clone(),
                 crate::merge::data::MergeIntent::ReconcileIntoTarget,
                 crate::merge::data::RelationalMergeCorrespondencePosture::Advisory,
                 crate::merge::data::RelationalMergeSchemaReconciliationPosture::Participate,
@@ -159,3 +177,43 @@ impl<'runtime> MergeAccess<'runtime> {
         Ok(())
     }
 }
+
+fn compile_bound_executable_plan(
+    runtime: &crate::runtime::RelationalRuntime,
+    request: &super::data::NormalizedRelationalMergeRequest,
+    execution_ready: &ExecutionReadyLoweredMergePlan,
+) -> Result<super::data::BoundExecutableMergePlan, super::data::MergeExecutionCompilationError> {
+    use super::data::{MergeExecutionCompilationError, RuntimeInstanceId};
+    let records = plan_compilation::compile_merge_records(
+        &runtime.schema_contract_runtime.aspect_contract_plans,
+        request,
+        execution_ready,
+    )?;
+    let (target_reference, target_truth_version) = runtime
+        .history()
+        .branch_reference_state(request.target_branch())
+        .ok_or(
+            MergeExecutionCompilationError::PreparedAuthorityBindingMismatch {
+                detail: "target branch is unavailable during merge compilation",
+            },
+        )?;
+    let (source_reference, source_truth_version) = runtime
+        .history()
+        .branch_reference_state(request.source_branch())
+        .ok_or(
+            MergeExecutionCompilationError::PreparedAuthorityBindingMismatch {
+                detail: "source branch is unavailable during merge compilation",
+            },
+        )?;
+
+    Ok(records.bind(
+        request,
+        execution_ready,
+        RuntimeInstanceId(runtime.runtime_instance_id()),
+        (target_reference, target_truth_version),
+        (source_reference, source_truth_version),
+    ))
+}
+
+#[cfg(test)]
+use worth_relational_contracts::internal_port::history::data::merge_branch_basis::RelationalMergeBranchBasisFieldsPort as _;

@@ -1,0 +1,53 @@
+//! Registry composition installs physical sources before their dependent bindings.
+use super::{RelationalSchemaRegistry, SchemaRegistryError};
+
+impl RelationalSchemaRegistry {
+    /// Existing authorities cannot be replaced. Preserve genuine shared entry
+    /// handles while validating memberships only after their complete sources.
+    pub fn extend(
+        mut self,
+        additions: RelationalSchemaRegistry,
+    ) -> Result<Self, SchemaRegistryError> {
+        self.content_formats = self
+            .content_formats
+            .extend(additions.content_formats)
+            .map_err(|denial| {
+                SchemaRegistryError::inconsistent_schema_basis(format!(
+                    "content registry composition denied: {denial}"
+                ))
+            })?;
+        let derived = additions.derived_relations;
+        let domains = additions.projected_member_domains;
+        let naming_schemes = additions.persistent_name_schemes;
+        let naming_bindings = additions.kind_name_schemes;
+        for registration in additions.entity_kinds.into_values() {
+            self = self.register_entity_kind(registration)?;
+        }
+        for (identity, entry) in domains {
+            if self
+                .projected_member_domains
+                .insert(identity, entry)
+                .is_some()
+            {
+                return Err(SchemaRegistryError::inconsistent_schema_basis(
+                    "projected member domain is already registered",
+                ));
+            }
+        }
+        let composed = crate::schema::source_catalog::install(
+            self,
+            additions.relation_kinds.into_values(),
+            derived
+                .into_values()
+                .map(crate::schema::source_catalog::DerivedCatalogEntry::Retained),
+        )
+        .map_err(|denial| {
+            SchemaRegistryError::inconsistent_schema_basis(format!(
+                "source catalog admission denied: {denial}"
+            ))
+        })?;
+        // Name schemes bind kinds, so they compose only after every addition's
+        // kind is registered. Empty additions leave the registry bit-identical.
+        composed.extend_persistent_name_schemes(naming_schemes, naming_bindings)
+    }
+}

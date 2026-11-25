@@ -64,29 +64,39 @@ pub struct RequiredWorkflowOperation {
     pub(crate) authority: Arc<WorkflowOperationAuthoritySlot>,
 }
 
+trait WorkflowOperationAuthorityBacking:
+    Send + Sync + std::panic::UnwindSafe + std::panic::RefUnwindSafe + std::fmt::Debug
+{
+    fn take(&self) -> Option<WorkflowOperationAuthority>;
+}
+impl WorkflowOperationAuthorityBacking for Mutex<Option<WorkflowOperationAuthority>> {
+    fn take(&self) -> Option<WorkflowOperationAuthority> {
+        self.lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .take()
+    }
+}
 #[derive(Debug)]
 pub struct WorkflowOperationAuthoritySlot {
-    authority: Mutex<Option<WorkflowOperationAuthority>>,
+    authority: Option<Box<dyn WorkflowOperationAuthorityBacking>>,
     issued: bool,
 }
+const _: fn() = || {
+    fn assert_auto_traits<T: Send + Sync + std::panic::UnwindSafe + std::panic::RefUnwindSafe>() {}
+    assert_auto_traits::<WorkflowOperationAuthoritySlot>();
+};
 
 pub struct WorkflowOperationAuthority {
     pub(crate) captured_input:
         Option<crate::domain_computation::primary_graph::WorkflowCapturedInputContract>,
-    pub(crate) operation:
-        String,
-    pub(crate) binding:
-        String,
-    pub(crate) transition_identity:
-        [u8; 32],
-    pub(crate) input_identity:
-        [u8; 32],
-    pub(crate) runtime_authority:
-        u64,
+    pub(crate) operation: String,
+    pub(crate) binding: String,
+    pub(crate) transition_identity: [u8; 32],
+    pub(crate) input_identity: [u8; 32],
+    pub(crate) runtime_authority: u64,
     pub(crate) session_identity:
         crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
-    pub(crate) observation:
-        WorthQueryProductBranchReadIdentity,
+    pub(crate) observation: WorthQueryProductBranchReadIdentity,
     pub(crate) facts: Arc<[WorthQueryApplicationObservedFact]>,
     /// The instance's deadline; the operation commits only before it.
     pub(crate) deadline: Option<u64>,
@@ -117,11 +127,9 @@ impl WorkflowOperationAuthoritySlot {
     #[doc(hidden)]
     pub fn take(&self) -> Option<WorkflowOperationAuthority> {
         self.authority
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .take()
+            .as_deref()
+            .and_then(WorkflowOperationAuthorityBacking::take)
     }
-
     #[doc(hidden)]
     pub const fn was_issued(&self) -> bool {
         self.issued
@@ -173,7 +181,9 @@ impl RequiredWorkflowOperation {
             input_identity,
             authority: Arc::new(WorkflowOperationAuthoritySlot {
                 issued: authority.is_some(),
-                authority: Mutex::new(authority),
+                authority: authority.map(|value| {
+                    Box::new(Mutex::new(Some(value))) as Box<dyn WorkflowOperationAuthorityBacking>
+                }),
             }),
         }
     }

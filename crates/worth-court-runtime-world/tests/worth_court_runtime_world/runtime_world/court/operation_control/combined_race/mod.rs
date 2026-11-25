@@ -21,9 +21,7 @@ fn combined_loser_retains_relational_movement_without_calling_signal_after_head_
     let root = court.bootstrap();
     let token = RuntimeWorldCancellationSource::new().token();
     let (reached, received) = std::sync::mpsc::sync_channel(1);
-    let gate = std::sync::Arc::new(
-        worth_relational::facade::mvcc::RelationalPatchPositionReservationGateForTest::default(),
-    );
+    let gate = std::sync::Arc::new(Default::default());
     let candidate = court.records.candidate_with_control(
         request_execution,
         root.basis().relational_basis(),

@@ -1,0 +1,129 @@
+use std::collections::BTreeSet;
+
+use crate::contracts::diagnostics::data::artifacts::DiagnosticCode;
+use crate::contracts::schema::data::structural_invariants::LoweredConnectivityMinimumContract;
+use crate::contracts::transactions::data::primitives::EntityReference;
+use crate::contracts::validation::data::execution::InvariantClass;
+use crate::contracts::validation::data::results::{InvariantViolation, InvariantViolationFields};
+
+use super::super::super::context::InvariantExecutionContext;
+use super::super::common::{contract_candidate_kind_matches, entity_reference_kind};
+use super::planned_successors::planned_successor_map;
+use super::relation_successors::PreparedSuccessorTraversal;
+use super::visible_entities::visible_entities_of_kinds;
+
+pub(in crate::internal_port::validation::engine::evaluator) fn evaluate_connectivity_minimum_contract(
+    context: &InvariantExecutionContext<'_, '_>,
+    class: InvariantClass,
+    contract: &LoweredConnectivityMinimumContract,
+) -> Option<InvariantViolation> {
+    let scope = match context.required_relation_integrity_scope(contract.relation_kind_id, class) {
+        Ok(scope) => scope,
+        Err(violation) => return Some(violation),
+    };
+    context.metrics().count_relation_contracts_evaluated(1);
+    let source_entities = visible_entities_of_kinds(
+        context,
+        &contract.source_kind_ids,
+        contract.relation_kind_id,
+    );
+    if !context.checkpoint(0) {
+        return None;
+    }
+    if source_entities.is_empty() {
+        return None;
+    }
+
+    let planned_successors = context
+        .applied_created_entities()
+        .is_none()
+        .then(|| planned_successor_map(&scope.planned_edges, context));
+    if !context.checkpoint(0) {
+        return None;
+    }
+    let traversal = PreparedSuccessorTraversal {
+        scope,
+        class,
+        kind: contract.relation_kind_id,
+        planned_successors: planned_successors.as_ref(),
+    };
+    for source in source_entities {
+        if !context.checkpoint(1) {
+            return None;
+        }
+        let reachable_target_count = match reachable_target_count_for_connectivity(
+            context,
+            &traversal,
+            source.clone(),
+            &contract.target_kind_ids,
+        ) {
+            Ok(count) => count,
+            Err(violation) => return Some(violation),
+        };
+        if reachable_target_count < contract.minimum_reachable_targets as usize {
+            let source = match (&source, context.applied_created_entities()) {
+                (EntityReference::Existing(entity_id), Some(bindings)) => bindings
+                    .original_reference(*entity_id, || context.checkpoint(1))
+                    .map(EntityReference::Created)
+                    .unwrap_or(source),
+                _ => source,
+            };
+            if !context.checkpoint(0) {
+                return None;
+            }
+            return Some(InvariantViolation {
+                class,
+                code: DiagnosticCode::InvariantViolation,
+                detail: format!(
+                    "connectivity minimum contract '{}' requires at least {} reachable target(s) for {:?}",
+                    contract.contract_id,
+                    contract.minimum_reachable_targets,
+                    source
+                ),
+                fields: InvariantViolationFields::ConnectivityMinimum {
+                    contract_id: contract.contract_id.clone(),
+                    relation_kind_id: contract.relation_kind_id,
+                    source,
+                    reachable_target_count,
+                    minimum_reachable_targets: contract.minimum_reachable_targets,
+                },
+            });
+        }
+    }
+    None
+}
+
+fn reachable_target_count_for_connectivity(
+    context: &InvariantExecutionContext<'_, '_>,
+    traversal: &PreparedSuccessorTraversal<'_>,
+    source: EntityReference,
+    target_kind_ids: &[crate::contracts::identity::data::primitives::KindId],
+) -> Result<usize, InvariantViolation> {
+    let mut visited = BTreeSet::new();
+    let mut frontier = vec![source.clone()];
+    let mut reachable_targets = BTreeSet::new();
+
+    visited.insert(source);
+
+    while let Some(entity_id) = frontier.pop() {
+        if !context.checkpoint(1) {
+            return Ok(0);
+        }
+        for next in traversal.successors(&entity_id, context) {
+            if !context.checkpoint(1) {
+                return Ok(0);
+            }
+            if !visited.insert(next.clone()) {
+                continue;
+            }
+            if let Some(kind_id) = entity_reference_kind(context, traversal.class, &next)?
+                && contract_candidate_kind_matches(kind_id, target_kind_ids)
+            {
+                reachable_targets.insert(next.clone());
+            }
+            frontier.push(next);
+        }
+    }
+
+    Ok(reachable_targets.len())
+}

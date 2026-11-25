@@ -10,10 +10,7 @@ impl MaterialCatalog {
                 if identity.home() != self.home || identity.acquire_position().get() != position {
                     return Err(Denial::OriginalMismatch);
                 }
-                self.material
-                    .get(original)
-                    .ok_or(Denial::Unavailable)?
-                    .available()?;
+                self.original_available(*original, Denial::Unavailable)?;
                 if self.pins.contains_key(identity)
                     || self.pins.values().any(|row| {
                         row.owner
@@ -27,7 +24,7 @@ impl MaterialCatalog {
             }
             MaterialRecord::Capture { material } => {
                 self.admit_original(material.original)?;
-                if self.material.contains_key(&material.original) {
+                if self.material.contains_key(&(material.original, material.member)) {
                     return Err(Denial::MaterialAlreadyCaptured);
                 }
             }
@@ -35,7 +32,7 @@ impl MaterialCatalog {
                 self.admit_original(material.original)?;
                 let entry = self
                     .material
-                    .get(&material.original)
+                    .get(&(material.original, material.member))
                     .ok_or(Denial::Unavailable)?;
                 match &entry.body {
                     MaterialBody::Captured(_) => {}
@@ -56,10 +53,7 @@ impl MaterialCatalog {
                 if identity.home() != self.home || identity.acquire_position().get() != position {
                     return Err(Denial::OriginalMismatch);
                 }
-                self.material
-                    .get(original)
-                    .ok_or(Denial::Unavailable)?
-                    .available()?;
+                self.original_available(*original, Denial::Unavailable)?;
                 match owner {
                     CorrectionMaterialPinOwner::PreparedCommand { key } if *key == prepared.key => {
                     }
@@ -144,10 +138,7 @@ impl MaterialCatalog {
                     if pin.owner != *owner || pin.original != *original {
                         return Err(Denial::PinOwnerMismatch);
                     }
-                    self.material
-                        .get(original)
-                        .ok_or(Denial::MaterialNotReady)?
-                        .available()?;
+                    self.original_available(*original, Denial::MaterialNotReady)?;
                     return Ok(());
                 }
                 match owner {
@@ -166,11 +157,16 @@ impl MaterialCatalog {
                 let CorrectionMaterialPinOwner::Publication { original } = owner else {
                     unreachable!("publication release checked above")
                 };
+                // A correction publishes as its group's single primary writer.
                 let material = self
                     .material
-                    .get(original)
+                    .get(&(*original, crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceMember::Primary))
                     .ok_or(Denial::MaterialNotReady)?;
-                material.available()?;
+                match &material.body {
+                    MaterialBody::Ready { .. } | MaterialBody::Captured(_) => {}
+                    MaterialBody::Expired { .. } => return Err(Denial::RetainedMaterialExpired),
+                    MaterialBody::Abandoned => return Err(Denial::Unavailable),
+                }
                 let intent = crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding::observe_recorded_intent(&material.metadata.intent)
                     .map_err(|_| Denial::OriginalBindingUnavailable)?;
                 if material.metadata.key != pin.prepared()?.key
@@ -201,7 +197,7 @@ impl MaterialCatalog {
                 {
                     return Err(Denial::PinOwnerMismatch);
                 }
-                if self.material.contains_key(original) {
+                if self.contains_original(*original) {
                     return Err(Denial::MaterialAlreadyCaptured);
                 }
             }
@@ -211,21 +207,23 @@ impl MaterialCatalog {
                 if self.pins.values().any(|pin| pin.original == *original) {
                     return Err(Denial::MaterialPinned);
                 }
-                match &self.material.get(original).ok_or(Denial::Unavailable)?.body {
-                    MaterialBody::Captured(_) => {}
-                    MaterialBody::Ready { .. }
-                    | MaterialBody::Expired { .. }
-                    | MaterialBody::Abandoned => return Err(Denial::OriginalMismatch),
+                if !self.contains_original(*original) {
+                    return Err(Denial::Unavailable);
+                }
+                for (_, entry) in self.original_entries(*original) {
+                    match &entry.body {
+                        MaterialBody::Captured(_) => {}
+                        MaterialBody::Ready { .. }
+                        | MaterialBody::Expired { .. }
+                        | MaterialBody::Abandoned => return Err(Denial::OriginalMismatch),
+                    }
                 }
             }
             MaterialRecord::Expire { original } => {
                 if self.pin_count(*original) != 0 {
                     return Err(Denial::MaterialPinned);
                 }
-                self.material
-                    .get(original)
-                    .ok_or(Denial::Unavailable)?
-                    .available()?;
+                self.original_available(*original, Denial::Unavailable)?;
             }
         }
         Ok(())

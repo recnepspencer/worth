@@ -45,6 +45,11 @@ pub(in crate::application_query) fn prepare_graph_basis(
         &mut entries,
         |locus, value| text(locus, value),
     );
+    crate::application_query::WorthQueryInstalledRelatedPredicate::append_canonical(
+        &meaning.related_predicates,
+        &mut entries,
+        |locus, value| text(locus, value),
+    );
     append_ordering(&mut entries, &meaning.ordering);
     entries.extend([
         unsigned("maximum-traversal-depth", meaning.maximum_traversal_depth),
@@ -194,7 +199,16 @@ fn append_predicates(
             text(format!("{path}.entity"), entity),
             text(format!("{path}.aspect"), aspect),
             text(format!("{path}.field"), field),
-            text(format!("{path}.parameter"), predicate.parameter()),
+            match predicate.expected() {
+                worth_query_declaration::facade::application_query::ApplicationQueryPredicateExpected::Parameter(parameter) => {
+                    text(format!("{path}.parameter"), parameter)
+                }
+                worth_query_declaration::facade::application_query::ApplicationQueryPredicateExpected::Value(expected) => text(
+                    format!("{path}.expected"),
+                    worth_foundational::facade::prepare_aspect_value_identity_basis(expected)
+                        .as_str(),
+                ),
+            },
             text(
                 format!("{path}.scalar"),
                 predicate.scalar_family().canonical_name(),

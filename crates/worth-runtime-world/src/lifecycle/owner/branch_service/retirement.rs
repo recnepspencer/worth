@@ -100,10 +100,12 @@ where
             .branches
             .branch_cell_by_lifecycle(observed.lifecycle_incarnation())
             .ok_or(RuntimeWorldBranchRetirementDenial::AlreadyRetired)?;
-        let (permit, snapshot) = cell.begin_durable_retirement().map_err(|denial| match denial {
-            CellDenial::Retired => RuntimeWorldBranchRetirementDenial::AlreadyRetired,
-            _ => RuntimeWorldBranchRetirementDenial::OwnerUnavailable,
-        })?;
+        let (permit, snapshot) =
+            cell.begin_durable_retirement()
+                .map_err(|denial| match denial {
+                    CellDenial::Retired => RuntimeWorldBranchRetirementDenial::AlreadyRetired,
+                    _ => RuntimeWorldBranchRetirementDenial::OwnerUnavailable,
+                })?;
         if snapshot.branch() != observed.branch_identity()
             || snapshot.lifecycle() != observed.lifecycle_incarnation()
         {

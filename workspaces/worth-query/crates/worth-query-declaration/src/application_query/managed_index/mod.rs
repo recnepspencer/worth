@@ -36,3 +36,12 @@ pub use reference::{ApplicationManagedIndexBinding, ApplicationManagedIndexRef};
 pub use selection::{
     ApplicationQueryManagedIndexMeaning, WorthQueryPortableQueryManagedIndexParts,
 };
+
+/// Associates a managed-index query intent with the exact installed managed
+/// index binding it probes, so Host sessions can watch and prepare the index
+/// without repeating the index marker type.
+pub trait ApplicationManagedIndexQueryIntent<Schema: crate::application_schema::ApplicationSchema>:
+    crate::application_query::ApplicationQueryIntent<Schema>
+{
+    type Index: ApplicationManagedIndexBinding<Schema>;
+}

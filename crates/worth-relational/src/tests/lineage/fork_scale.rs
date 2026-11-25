@@ -1,3 +1,4 @@
+use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::basis_reads::VisibilityProjectionViewFixturePort as _;
 use crate::facade::config::CascadeDeletePolicy;
 use crate::facade::history::BranchId;
 use crate::facade::identity::{EntityId, PartitionId};
@@ -116,7 +117,7 @@ fn retained_scale_fixture(
             .read_truth()
             .try_project_historical_version(version)
             .unwrap()
-            .all_authoritative_entity_records(execution)
+            .all_authoritative_entity_records_for_test(execution)
             .expect("read request remains live")
             .into_iter()
             .find(|record| record.lineage_id.is_some())

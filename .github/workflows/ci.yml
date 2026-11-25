@@ -39,6 +39,17 @@ jobs:
       - name: Reject tracked root target output
         run: python scripts/ci/check_root_build_artifacts.py
 
+  relational-dag:
+    name: Relational split ratchet
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python3 -m unittest scripts/ci/test_check_relational_dag.py
+      - run: python3 scripts/ci/check_relational_dag.py
+
   qualification-selection:
     name: Select consumer qualification from Cargo reach
     runs-on: ubuntu-latest
@@ -91,6 +102,10 @@ jobs:
         run: python -m unittest discover -s scripts/ci -p test_application_build.py
       - name: Compile and run configured Query and Bank doctests
         run: env -u CARGO_INCREMENTAL python scripts/ci/query_gate.py doc
+      - name: Build consumer facade API docs
+        run: >-
+          env -u CARGO_INCREMENTAL cargo doc --locked --manifest-path workspaces/worth-query/Cargo.toml
+          --no-deps -p worth-query-decl -p worth-query-host
       - name: Run the observable mixed workflow consumer
         run: >-
           env -u CARGO_INCREMENTAL python scripts/application_build.py cargo run --manifest-path workspaces/worth-query/Cargo.toml

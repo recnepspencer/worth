@@ -1,9 +1,16 @@
 //! Schema-classified empty entities keep actual native incidence and custody.
+#[cfg(not(test))]
+use worth_relational_publication::internal_port::mvcc::publication::application_publication::custody::RelationalRequiredOutputPublicationFieldsPort as _;
 use super::*;
+use crate::mvcc::publication::application_publication::meaning_fixture::{
+    native_meaning_for_test, native_roles_for_test,
+};
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 
 #[test]
 fn fieldless_birth_incidence_survives_warm_no_data_preserve_and_cold_readmission() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = worth_harness::facade::execution_fixture::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     let fixture = AspectSchemaFixture::default();
     let mut runtime = fixture.build_runtime();
@@ -60,7 +67,7 @@ fn fieldless_birth_incidence_survives_warm_no_data_preserve_and_cold_readmission
     let born_at = birth.commit.commit_id;
     let born_version = birth.commit.version_id;
     let envelope = &birth.publication().envelope;
-    assert_eq!(envelope.record_allocations.len(), 3);
+    assert_eq!(envelope.record_allocations().len(), 3);
     assert_eq!(envelope.patch.authoritative_record_patches.len(), 3);
     for patch in &envelope.patch.authoritative_record_patches {
         assert_eq!(
@@ -71,7 +78,7 @@ fn fieldless_birth_incidence_survives_warm_no_data_preserve_and_cold_readmission
         assert_eq!(patch.authoritative_patch.full_grammar_operation_count(), 0);
     }
     let previous = birth.required_output_publication(&installed).unwrap();
-    let origin = previous.origin.as_ref();
+    let origin = previous.origin().as_ref();
     assert_eq!(origin.outputs, ids);
     assert_eq!(origin.members.len(), 2);
     assert_eq!(origin.relations.len(), 1);
@@ -91,7 +98,7 @@ fn fieldless_birth_incidence_survives_warm_no_data_preserve_and_cold_readmission
     assert_ne!(preserved.commit.commit_id, born_at);
     let preserved_at = preserved.commit.commit_id;
     let warm = preserved.required_output_publication(&installed).unwrap();
-    let origin = warm.origin.as_ref();
+    let origin = warm.origin().as_ref();
     assert_eq!(origin.outputs, ids);
     assert_eq!(origin.birth, born_at);
     assert_eq!(origin.relations.len(), 1);
@@ -133,18 +140,22 @@ fn fieldless_birth_incidence_survives_warm_no_data_preserve_and_cold_readmission
     let (_, installed) = receipt.issue_application_publication_owner();
     let basis = test_owner_main_basis(&cold).unwrap();
     basis
-        .inner
+        .owner_inner()
         .root
-        .demand_full_region_cached(execution, PartitionId::main())
+        .demand_regions_full(
+            execution,
+            &cold.services.symbols,
+            std::iter::once(PartitionId::main()),
+        )
         .unwrap();
     let partition = basis
-        .inner
+        .owner_inner()
         .root
         .partition_state(PartitionId::main())
         .expect("fixture root has admitted Full custody")
         .unwrap();
     let plan = basis
-        .inner
+        .owner_inner()
         .root
         .schema_authority()
         .entity_aspect_plan(KindId(1))
@@ -164,15 +175,15 @@ fn fieldless_birth_incidence_survives_warm_no_data_preserve_and_cold_readmission
             &basis,
             "native-preserver",
             &[2; 32],
-            &crate::mvcc::native_meaning_fixture("native-creator"),
-            &crate::mvcc::native_roles_fixture(
+            &native_meaning_for_test("native-creator"),
+            &native_roles_for_test(
                 &ids.map(|id| (id, KindId(1))),
                 RequiredOutputRolePosture::Preserve,
             ),
         )
         .unwrap();
-    assert_eq!(readmitted.origin.commit.commit_id, preserved_at);
-    let origin = readmitted.origin.as_ref();
+    assert_eq!(readmitted.origin().commit.commit_id, preserved_at);
+    let origin = readmitted.origin().as_ref();
     assert_eq!(origin.outputs, ids);
     assert_eq!(origin.relations.len(), 1);
     assert_eq!(origin.relations[0].id, edge_id);
@@ -192,8 +203,8 @@ fn fieldless_birth_incidence_survives_warm_no_data_preserve_and_cold_readmission
             &basis,
             "native-creator",
             &[1; 32],
-            &crate::mvcc::native_meaning_fixture("native-creator"),
-            &crate::mvcc::native_roles_fixture(
+            &native_meaning_for_test("native-creator"),
+            &native_roles_for_test(
                 &[(ordinary_id, KindId(1))],
                 RequiredOutputRolePosture::Create,
             ),

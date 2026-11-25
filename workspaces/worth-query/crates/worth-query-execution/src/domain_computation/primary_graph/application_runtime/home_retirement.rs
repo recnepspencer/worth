@@ -122,7 +122,9 @@ impl<Schema: ApplicationSchema> RetiringPrimaryGraphRuntime<Schema> {
             QueryRetirementStage::Handlers
             | QueryRetirementStage::InboundCustody
             | QueryRetirementStage::TransportCustody
-            | QueryRetirementStage::Participation => self.advance_custody_stages(request, native)?,
+            | QueryRetirementStage::Participation => {
+                self.advance_custody_stages(request, native)?
+            }
             QueryRetirementStage::InstalledConditionals
             | QueryRetirementStage::RecoveredOutputs
             | QueryRetirementStage::Provider

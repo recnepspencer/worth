@@ -2,11 +2,12 @@
 use super::source_validation::ForkSourceInput;
 use super::{RelationalForkDenial, RelationalForkOutcome};
 use crate::branch::fork_source_basis::AdmittedRelationalForkSourceBasis;
+use crate::branch::transition::BranchTransitionRecordError;
 use crate::branch::{
     AdmittedRelationalBranchBasis, RelationalBranchTransitionDurableStep, RelationalForkPort,
     RelationalForkTargetReservation,
 };
-use crate::runtime::BranchTransitionRecordError;
+use worth_relational_branch::internal_port::branch::fork::association::RelationalAssociatedForkOwnerPort as _;
 type ForkFailure<S> = BranchTransitionRecordError<RelationalForkDenial, S>;
 
 pub(super) struct ForkInstallationOutcome {
@@ -14,6 +15,18 @@ pub(super) struct ForkInstallationOutcome {
     pub(super) basis: Option<AdmittedRelationalBranchBasis>,
     pub(super) evidence:
         Option<worth_proof::DurablyCommitted<crate::branch::RelationalCommittedTransitionEvidence>>,
+}
+
+impl ForkInstallationOutcome {
+    pub(super) fn into_association(self) -> super::RelationalAssociatedFork {
+        super::RelationalAssociatedFork::from_parts(
+            self.outcome,
+            self.basis
+                .expect("associated fork requests its owner-admitted basis"),
+            self.evidence
+                .expect("associated live fork requires an attached durable medium"),
+        )
+    }
 }
 
 impl RelationalForkPort {
@@ -65,11 +78,16 @@ impl RelationalForkPort {
             .lifecycle
             .admit()
             .ok_or(denied(RelationalForkDenial::OwnerUnavailable))?;
-        let publication = self.owner.begin_branch_transition();
+        let publication = self.transitions.begin_branch_transition();
         let validated = self.validate_fork_input(source).map_err(denied)?;
         // The fork association uses the actual current registration through
         // durable installation. A rebind cannot turn its pending lookup live.
-        let source_epoch = if validated.source_root.managed_source_image.get().is_some() {
+        let source_epoch = if validated
+            .source_root
+            .managed_source_image
+            .for_branch(validated.descriptor.source_branch())
+            .is_some()
+        {
             Some(self.publication.companion_epoch().map_err(|_| {
                 denied(RelationalForkDenial::ManagedSource(
                     crate::mvcc::CompanionPreflightStop::RegistrationChanged,

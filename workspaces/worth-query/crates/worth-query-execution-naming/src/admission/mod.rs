@@ -25,6 +25,25 @@ use worth_relational::facade::transactions::{CommitResult, CreatedEntityRef, Cre
 
 use crate::denial::ExecutionNamingDenial;
 
+mod birth;
+mod observed;
+mod resolved;
+mod same_commit;
+
+/// A name with digest `[byte; 32]` for this crate's unit tests, which never
+/// reach a runtime that could admit one.
+#[cfg(test)]
+pub(crate) fn test_name<K>(byte: u8) -> WorthQueryName<K> {
+    admit_minted_digest([byte; 32])
+}
+pub(crate) use birth::admit_birth_of;
+pub(crate) use observed::entity_scheme_subject;
+pub use observed::ObservedEntityNames;
+pub(crate) use resolved::{
+    kind_verified_resolved_name, resolved_group_handle, verify_resolved_subject, RequestedSubject,
+};
+pub use same_commit::same_commit_name_of;
+
 /// Sealed collection of persistent names minted during one committed
 /// Relational transaction, derived strictly from that commit's own canonical
 /// lineage artifact and Relational's installed scheme subject names.

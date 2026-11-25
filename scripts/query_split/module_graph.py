@@ -38,12 +38,12 @@ class ProductionView:
 class LibraryModel:
     """The parsed library: module index, public surface and test families, read once."""
 
-    def __init__(self, lib_source, repository):
+    def __init__(self, lib_source, repository, *, production_view=ProductionView):
         self.repository = Path(repository).resolve()
         self.tree, self.families = families(Path(lib_source))
         self.index = module_index(self.tree)
         self.surface = Surface(self.tree, self.index, [f.names for f in self.families])
-        self.views = {names: ProductionView(node) for names, node in self.index.items()
+        self.views = {names: production_view(node) for names, node in self.index.items()
                       if not self.surface.in_family(names)}
         self._references = {}
 
@@ -56,7 +56,7 @@ class LibraryModel:
             return self._references[names]
         view, result = self.views[names], set()
         words = {t.value for t in tokens(view.own_text()) if t.kind == 'ident'}
-        for reference in references(view, self.index):
+        for reference in references(view, self.index, resolver=self.surface.resolve):
             for target in self.expand(reference, words):
                 found = self.surface.origin(target.module, target.item)[0] if target.item \
                     else (target.module, None)

@@ -76,7 +76,44 @@ impl<'a> ExecutionResourceLease<'a> {
                 .any(|node| node.id == ancestor.node.id)
     }
 
+    /// Creates a child lease that also charges any enclosing active serial
+    /// lineage alongside this lease's existing serial lineage, deduplicated so
+    /// shared ledgers are charged once.
+    pub fn child_within_request(&self, caller: crate::ExecutionRequest<'_, '_>) -> Self {
+        let active = self.current_descendant();
+        let parent = active.as_ref().unwrap_or(self);
+        let merged = match (
+            caller.effective_serial_memory_budget(),
+            parent.lineage_serial_budget(),
+        ) {
+            (Some(effective), Some(existing)) => Some(effective.within_parent(existing)),
+            (Some(effective), None) => Some(effective),
+            (None, Some(existing)) => Some(existing.clone()),
+            (None, None) => None,
+        };
+        let attached = match (merged, parent.lineage_serial_budget()) {
+            (Some(merged), Some(existing)) if merged.same_lineage(existing) => None,
+            (merged, _) => merged,
+        };
+        parent.child_from_validated_request_with_serial_budget(
+            LeaseRequest {
+                policy: self.policy,
+                deadline: caller.deadline(),
+                cancellation: CancellationToken::new(),
+            },
+            attached,
+        )
+    }
+
     fn child_from_validated_request(&self, request: LeaseRequest) -> Self {
+        self.child_from_validated_request_with_serial_budget(request, None)
+    }
+
+    fn child_from_validated_request_with_serial_budget(
+        &self,
+        request: LeaseRequest,
+        serial_budget: Option<crate::SerialMemoryBudget>,
+    ) -> Self {
         Self {
             authority: Arc::clone(&self.authority),
             _authority: std::marker::PhantomData,
@@ -90,6 +127,7 @@ impl<'a> ExecutionResourceLease<'a> {
                     .policy
                     .accounting()
                     .and_then(|budget| budget.charged_memory_bytes()),
+                serial_budget,
                 deadline: match (self.node.deadline.clone(), request.deadline) {
                     (Some(parent), Some(child)) => Some(parent.meet(child)),
                     (Some(parent), None) => Some(parent),
@@ -110,7 +148,7 @@ impl<'a> ExecutionResourceLease<'a> {
         self.policy.accounting().is_some()
             || self.authority.config.charged_memory_bytes.is_some()
             || std::iter::successors(Some(self.node.as_ref()), |node| node.parent.as_deref())
-                .any(|node| node.accounted)
+                .any(|node| node.accounted || node.serial_budget.is_some())
             || (self.current_descendant().is_some()
                 && crate::backend::RunLimits::parent_accounted())
     }

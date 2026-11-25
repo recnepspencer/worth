@@ -13,6 +13,7 @@ impl CorrectionMaterialOwner {
     pub fn admit_original_metadata(
         &self,
         commit: &worth_relational::facade::history::RelationalCommitReceipt,
+        member: crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceMember,
     ) -> Result<(), Denial> {
         let state = self.state();
         if state.pending.is_some() {
@@ -21,8 +22,9 @@ impl CorrectionMaterialOwner {
         let mut matches = state
             .catalog
             .material
-            .values()
-            .filter(|entry| match &entry.body {
+            .iter()
+            .filter(|((_, writer), _)| *writer == member)
+            .filter(|(_, entry)| match &entry.body {
                 MaterialBody::Ready { ready, .. } => &ready.commit == commit,
                 MaterialBody::Expired { commit: expired } => expired == commit,
                 MaterialBody::Captured(_) | MaterialBody::Abandoned => false,
@@ -35,16 +37,29 @@ impl CorrectionMaterialOwner {
         }
         Ok(())
     }
+    pub fn has_captured_original(
+        &self,
+        original: worth_foundational::facade::DurableCompositePublicationAttemptIdentity,
+    ) -> bool {
+        let state = self.state();
+        state.pending.is_none()
+            && state
+                .catalog
+                .original_entries(original)
+                .any(|(_, entry)| matches!(entry.body, MaterialBody::Captured(_)))
+    }
     pub fn observe_original(
         &self,
         commit: &worth_relational::facade::history::RelationalCommitReceipt,
+        member: crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceMember,
     ) -> Result<RetainedCorrectionMaterial, Denial> {
         let state = self.state();
         if state.pending.is_some() {
             return Err(Denial::PublicationPending);
         }
         let mut found = None;
-        for entry in state.catalog.material.values() {
+        let writers = state.catalog.material.iter();
+        for (_, entry) in writers.filter(|((_, writer), _)| *writer == member) {
             match &entry.body {
                 MaterialBody::Ready { capture, ready } if &ready.commit == commit => {
                     if found.is_some() {
@@ -64,6 +79,63 @@ impl CorrectionMaterialOwner {
                 | MaterialBody::Expired { .. }
                 | MaterialBody::Abandoned => {}
             }
+        }
+        found.ok_or_else(|| {
+            let other_member = state.catalog.material.values().any(|entry| match &entry.body {
+                MaterialBody::Ready { ready, .. } => &ready.commit == commit,
+                MaterialBody::Expired { commit: expired } => expired == commit,
+                MaterialBody::Captured(_) | MaterialBody::Abandoned => false,
+            });
+            if other_member { Denial::MemberUnavailable } else { Denial::Unavailable }
+        })
+    }
+    pub fn observe_capture_for_replay(
+        &self,
+        commit: &worth_relational::facade::history::RelationalCommitReceipt,
+        member: crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceMember,
+        load_originals: impl FnOnce() -> Result<
+            worth_runtime_world::facade::WorldProgramActivationHistory,
+            Denial,
+        >,
+    ) -> Result<Arc<MaterialCapture>, Denial> {
+        match self.observe_original(commit, member) {
+            Ok(retained) => return Ok(retained.capture),
+            Err(Denial::Unavailable | Denial::MemberUnavailable) => {}
+            Err(cause) => return Err(cause),
+        }
+        let originals = load_originals()?;
+        let state = self.state();
+        if state.pending.is_some() {
+            return Err(Denial::PublicationPending);
+        }
+        let mut found = None;
+        for ((identity, writer), entry) in &state.catalog.material {
+            let MaterialBody::Captured(capture) = &entry.body else {
+                continue;
+            };
+            if *writer != member {
+                continue;
+            }
+            let Some(original) = originals.original_state(*identity) else {
+                continue;
+            };
+            if !matches!(
+                original.fate(),
+                worth_foundational::facade::WorldOriginalFate::Published
+                    | worth_foundational::facade::WorldOriginalFate::Continued
+            ) {
+                continue;
+            }
+            if !originals.original_observations().any(|obs| {
+                obs.identity() == original.reserved_commit()
+                    && obs.relational_commit() == Some(commit.commit_id)
+            }) {
+                continue;
+            }
+            if found.is_some() {
+                return Err(Denial::OriginalMismatch);
+            }
+            found = Some(Arc::clone(capture));
         }
         found.ok_or(Denial::Unavailable)
     }

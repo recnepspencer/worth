@@ -82,10 +82,10 @@ pub trait PreparingCommitPort: Send {
 
 /// Lower lineage-side port for managed derived-view registry operations.
 pub trait ManagedDerivedViewPort: Any + Send + Sync {
-    fn prepare_source_fork(
+    fn prepare_source_placement(
         self: Arc<Self>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        target: &worth_relational::facade::mvcc::ManagedIndexSourceForkPreparation<'_>,
+        target: &worth_relational::facade::mvcc::ManagedIndexSourceCellPlacement<'_>,
     ) -> Result<Box<dyn Any + Send + Sync>, worth_relational::facade::mvcc::CompanionPreflightStop>;
 
     fn prepare_sources(
@@ -131,10 +131,10 @@ pub trait ManagedDerivedViewPort: Any + Send + Sync {
 pub struct EmptyManagedDerivedViewPort;
 
 impl ManagedDerivedViewPort for EmptyManagedDerivedViewPort {
-    fn prepare_source_fork(
+    fn prepare_source_placement(
         self: Arc<Self>,
         _execution: &worth_execution::ExecutionRequest<'_, '_>,
-        _target: &worth_relational::facade::mvcc::ManagedIndexSourceForkPreparation<'_>,
+        _target: &worth_relational::facade::mvcc::ManagedIndexSourceCellPlacement<'_>,
     ) -> Result<Box<dyn Any + Send + Sync>, worth_relational::facade::mvcc::CompanionPreflightStop>
     {
         Ok(Box::new(()))

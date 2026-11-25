@@ -85,7 +85,11 @@ fn a_root_too_long_for_its_longest_role_is_refused() {
 fn slot_fields_are_single_bounded_segments() {
     let namespace = namespace();
     for field in ["", "a.b", "a b"] {
-        assert_eq!(namespace.slot(field), Err(Denial::InvalidSlotField), "{field:?}");
+        assert_eq!(
+            namespace.slot(field),
+            Err(Denial::InvalidSlotField),
+            "{field:?}"
+        );
     }
     let room = MAXIMUM_APPLICATION_IDENTITY_BYTES - ROOT.len() - ".slot.".len();
     assert!(namespace.slot(&"f".repeat(room)).is_ok());
@@ -111,7 +115,9 @@ fn overrides_that_would_collide_are_refused() {
             "{identity:?}"
         );
     }
-    let overridden = namespace.with_override(Role::Input, "legacy.input.v1").unwrap();
+    let overridden = namespace
+        .with_override(Role::Input, "legacy.input.v1")
+        .unwrap();
     assert_eq!(
         overridden.with_override(Role::Result, "legacy.input.v1"),
         Err(Denial::OverrideCollision { role: Role::Result })
@@ -128,7 +134,9 @@ fn malformed_and_repeated_overrides_are_refused() {
         namespace.with_override(Role::Denial, "a..b"),
         Err(Denial::InvalidOverride { role: Role::Denial })
     );
-    let once = namespace.with_override(Role::Denial, "legacy.denial.v1").unwrap();
+    let once = namespace
+        .with_override(Role::Denial, "legacy.denial.v1")
+        .unwrap();
     assert_eq!(
         once.with_override(Role::Denial, "other.denial.v1"),
         Err(Denial::DuplicateOverride { role: Role::Denial })

@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use super::DemandState;
 use super::SelectedReadyReadmission;
 use super::WorthQueryAcceptedOutputAuthority;
@@ -18,9 +16,7 @@ impl WorthQueryOutputDemandRegistry {
         interest: &WorthQueryOutputDemandInterest,
         selected: &SelectedReadyReadmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
-        if !Arc::ptr_eq(&self.state, &interest.owner.state)
-            || !selected.matches_interest(interest)?
-        {
+        if !self.state.ptr_eq(&interest.owner.state) || !selected.matches_interest(interest)? {
             return Err(WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::ForeignDemand,
                 "",

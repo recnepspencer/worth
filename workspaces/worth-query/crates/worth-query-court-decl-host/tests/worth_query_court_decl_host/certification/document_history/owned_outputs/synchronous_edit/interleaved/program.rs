@@ -135,6 +135,19 @@ impl ApplicationProgramDefinition<Schema> for RetirementProgram {
         feature_specs::<fixture::Delivery<ModelTree>>()
     }
 }
+/// The same owned world whose member retirement is completion-only, so no
+/// retirement stage republishes `a`'s route (public #348).
+pub struct CompletionRetirementProgram;
+impl ApplicationProgramDefinition<Schema> for CompletionRetirementProgram {
+    type Contributions = (Contribution,);
+    type Outputs = ApplicationProgramOutputs<(ModelTree, (ProducedTree, OwnedMemberTree))>;
+    type Rules = ApplicationRuleLeaf;
+    const IDENTITY: ApplicationProgramIdentity =
+        ApplicationProgramIdentity::new("owned-outputs.interleaved-completion-retirement");
+    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
+        feature_specs::<Completion>()
+    }
+}
 pub struct OwnedMemberRoot;
 impl ApplicationConnectionIdentity for OwnedMemberRoot {
     const IDENTITY: &'static str = "interleaved.owned-member-root";

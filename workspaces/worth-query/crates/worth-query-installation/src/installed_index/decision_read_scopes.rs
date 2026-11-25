@@ -28,6 +28,12 @@ pub(super) fn compile(
             .flat_map(|role| role.read_scopes())
             .cloned()
             .collect::<Vec<_>>();
+        // A peer-scope read is admitted only by the operation's own
+        // declaration; a shared scope cannot lend it to every member.
+        if definition.targets().iter().any(|target| matches!(target,
+            worth_query_declaration::facade::application_schema::ApplicationOperationDecisionReadTarget::SharedOwnerManagedIndex { .. })) {
+            return Err(());
+        }
         let parents = definition.targets().iter().filter_map(|target| match target {
             worth_query_declaration::facade::application_schema::ApplicationOperationDecisionReadTarget::ManagedIndex { parent } => Some(parent.clone()),
             _ => None,

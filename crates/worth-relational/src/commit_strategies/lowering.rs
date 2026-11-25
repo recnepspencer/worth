@@ -1,8 +1,15 @@
+use worth_relational_mutation::internal_port::mvcc::transaction::footprint::validation_dependencies::RelationalTransactionFootprintOwnerPort as _;
+use crate::commit_strategies::data::lowering::LoweredStrategyCommitPlan;
 use crate::commit_strategies::data::{
-    CanonicalStrategyCommitRequest, LoweredStrategyCommitPlan, StrategyExecutionDraft,
-    StrategyLoweringError, StrategyLoweringProvenance, StrategyLoweringSummary,
+    CanonicalStrategyCommitRequest, StrategyExecutionDraft, StrategyLoweringError,
+    StrategyLoweringProvenance, StrategyLoweringSummary,
 };
 use crate::runtime::RelationalRuntime;
+use worth_relational_contracts::internal_port::commit_strategies::data::lowering_meaning::StrategyLoweringErrorOwnerPort as _;
+use worth_relational_contracts::internal_port::commit_strategies::data::lowering_meaning::StrategyLoweringProvenanceOwnerPort as _;
+use worth_relational_contracts::internal_port::commit_strategies::data::lowering_meaning::StrategyLoweringSummaryOwnerPort as _;
+use worth_relational_contracts::internal_port::mvcc::transaction::staging::RelationalTransactionStagingDenialOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 
 pub(crate) fn lower_execution(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -153,6 +160,11 @@ mod boundary_tests;
 
 #[cfg(test)]
 mod tests {
+    use worth_relational_branch::internal_port::branch::reference::root_access::RelationalBranchReferenceCellFixturePort as _;
+
+    use worth_relational_contracts::internal_port::commit_strategies::data::request::CanonicalStrategyCommitRequestOwnerPort as _;
+    use worth_relational_contracts::internal_port::commit_strategies::data::request::CanonicalStrategyInputArtifactOwnerPort as _;
+    use worth_relational_contracts::internal_port::commit_strategies::data::execution::execution_draft::StrategyExecutionDraftOwnerPort as _;
     use super::lower_execution;
     use crate::commit_strategies::data::{
         CanonicalStrategyCommitRequest, CanonicalStrategyInputArtifact,

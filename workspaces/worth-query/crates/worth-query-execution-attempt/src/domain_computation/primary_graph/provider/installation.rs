@@ -16,27 +16,27 @@ impl WorthQueryPrimaryGraphProvider {
             branch_commit_coordination:
                 super::branch_commit_coordination::WorthQueryApplicationBranchCommitCoordinator::new(),
             live_delivery: crate::domain_computation::primary_graph::live_delivery::WorthQueryLiveDeliverySource::default(),
-            attempts: std::sync::Arc::new(std::sync::Mutex::new(
-                super::application_attempt_state::WorthQueryPrimaryGraphApplicationAttemptStore::default(),
-            )),
+            attempts: super::application_attempt_state::SharedApplicationAttemptStore::default(),
             application_attempt_operation_control: Default::default(),
             application_attempt_work: Default::default(),
             completed_commit_evidence: std::sync::Mutex::new(
                 super::session_commit::WorthQueryCompletedCommitEvidenceStore::default(),
             ),
-            unpublished_idempotency: std::sync::Arc::new(std::sync::Mutex::new(
-                super::unpublished_idempotency::WorthQueryUnpublishedIdempotencyStore::new(
-                    None,
+            unpublished_idempotency:
+                super::unpublished_idempotency::SharedUnpublishedIdempotencyStore::new(
+                    super::unpublished_idempotency::WorthQueryUnpublishedIdempotencyStore::new(
+                        None,
+                    ),
                 ),
-            )),
             receipt_basis_retention: std::sync::Arc::new(std::sync::Mutex::new(Default::default())),
             outstanding_dispatch: Default::default(),
             inbound_terminal_index: Default::default(),
-            pending_application_publications: std::sync::Arc::new(std::sync::Mutex::new(
-                super::pending_application_publication::registry::WorthQueryPendingApplicationPublicationRegistry::new(
-                    maximum_concurrent_graph_work.get(),
+            pending_application_publications:
+                super::pending_application_publication::registry::WorthQueryPendingApplicationPublicationRegistryOwner::new(
+                    super::pending_application_publication::registry::WorthQueryPendingApplicationPublicationRegistry::new(
+                        maximum_concurrent_graph_work.get(),
+                    ),
                 ),
-            )),
             fault_port,
             original_meaning_support: Default::default(),
             correction_material: Default::default(),

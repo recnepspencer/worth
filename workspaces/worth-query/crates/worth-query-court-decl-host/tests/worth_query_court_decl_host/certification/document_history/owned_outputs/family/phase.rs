@@ -3,6 +3,8 @@
 mod members;
 #[macro_use]
 mod dependency;
+#[macro_use]
+mod children;
 macro_rules! producer_capture_contract {
     () => {
         None
@@ -35,6 +37,45 @@ macro_rules! producer_operation {
     (DecisionInputInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read DecisionInputInitial, $entity, $key, $value, $of); };
     (SelfRelationInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read SelfRelationInitial, $entity, $key, $value, $of); };
     (SelfRelationPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read SelfRelationPreserve, $entity, $key, $value, $of); };
+    (ChildDropInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@child_drop ChildDropInitial, $entity, $key, $value, $of); };
+    (ChildDropPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@child_drop ChildDropPreserve, $entity, $key, $value, $of); };
+    // The member read, plus the output's children: created, linked, unlinked and deleted.
+    (@child_drop $operation:ident, $entity:ident, $key:ident, $value:ident, $of:ident) => {
+        worth_query_operation!(pub $operation for Schema, input InputBinding; access {
+            read_entities: [SourceEntity, $entity, Member, ChildOutput]; read_fields: [source_key(), source_value(), $key::at(stringify!($key)), $value::at(stringify!($value)), MemberKey::at("MemberKey"), MemberValue::at("MemberValue"), ChildKey::at("ChildKey"), ChildValue::at("ChildValue")];
+            read_relations: [$of, ChildOfFirst]; writes: [$key::at(stringify!($key)), $value::at(stringify!($value)), ChildKey::at("ChildKey"), ChildValue::at("ChildValue")];
+            creates: [$entity, ChildOutput]; deletes: [ChildOutput]; links: [$of, ChildOfFirst]; unlinks: [ChildOfFirst];
+        });
+    };
+    (KidLinkerInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@kid_linker KidLinkerInitial, $entity, $key, $value, $of); };
+    (KidLinkerPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@kid_linker KidLinkerPreserve, $entity, $key, $value, $of); };
+    // The member write, plus one child created and linked under output `first:a`.
+    (@kid_linker $operation:ident, $entity:ident, $key:ident, $value:ident, $of:ident) => {
+        worth_query_operation!(pub $operation for Schema, input InputBinding; access {
+            read_entities: [SourceEntity, $entity, Member, FirstOutput, ChildOutput]; read_fields: [source_key(), source_value(), $key::at(stringify!($key)), $value::at(stringify!($value)), MemberKey::at("MemberKey"), MemberValue::at("MemberValue"), FirstKey::at("FirstKey"), ChildKey::at("ChildKey"), ChildValue::at("ChildValue")];
+            read_relations: [$of]; writes: [$key::at(stringify!($key)), $value::at(stringify!($value)), MemberValue::at("MemberValue"), ChildKey::at("ChildKey"), ChildValue::at("ChildValue")];
+            creates: [$entity, ChildOutput]; links: [$of, ChildOfFirst];
+        });
+    };
+    (RingDropInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@ring_drop RingDropInitial, $entity, $key, $value, $of); };
+    (RingDropPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@ring_drop RingDropPreserve, $entity, $key, $value, $of); };
+    // The member read, plus the ring: members created and deleted, `OwnedNext` linked and unlinked, `Beside` walked.
+    (@ring_drop $operation:ident, $entity:ident, $key:ident, $value:ident, $of:ident) => {
+        worth_query_operation!(pub $operation for Schema, input InputBinding; access {
+            read_entities: [SourceEntity, $entity, Member, Incidence]; read_fields: [source_key(), source_value(), $key::at(stringify!($key)), $value::at(stringify!($value)), MemberKey::at("MemberKey"), MemberValue::at("MemberValue"), IncidenceKey::at("IncidenceKey")];
+            read_relations: [$of, OwnedNext, Beside]; writes: [$key::at(stringify!($key)), $value::at(stringify!($value)), IncidenceKey::at("IncidenceKey")];
+            creates: [$entity, Incidence]; deletes: [Incidence]; links: [$of, OwnedNext]; unlinks: [OwnedNext];
+        });
+    };
+    (RingPeerInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@ring_peer RingPeerInitial, $entity, $key, $value, $of); };
+    (RingPeerPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@ring_peer RingPeerPreserve, $entity, $key, $value, $of); };
+    // The member write, plus one record of its own (a ring of one) that it links `Beside` to `ring-drop(a)`'s ring.
+    (@ring_peer $operation:ident, $entity:ident, $key:ident, $value:ident, $of:ident) => {
+        worth_query_operation!(pub $operation for Schema, input InputBinding; access {
+            read_entities: [SourceEntity, $entity, Member, Incidence]; read_fields: [source_key(), source_value(), $key::at(stringify!($key)), $value::at(stringify!($value)), MemberKey::at("MemberKey"), MemberValue::at("MemberValue"), IncidenceKey::at("IncidenceKey")];
+            read_relations: [$of, Beside]; writes: [$key::at(stringify!($key)), $value::at(stringify!($value)), MemberValue::at("MemberValue"), IncidenceKey::at("IncidenceKey")]; creates: [$entity, Incidence]; links: [$of, Beside, OwnedNext];
+        });
+    };
     (DecisionInputPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read DecisionInputPreserve, $entity, $key, $value, $of); };
     (ParityInputInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read ParityInputInitial, $entity, $key, $value, $of); };
     (ParityInputPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read ParityInputPreserve, $entity, $key, $value, $of); };
@@ -149,6 +190,23 @@ macro_rules! publication_link {
         $writer.link($relation, $key, $output, $source)
     };
 }
+// An Initial producer finds a prior output by its key (an indexed selection);
+// self-relation can instead ask for its prior output role (#277 r4 A court).
+macro_rules! producer_initial_prior {
+    (@key $reader:ident, $key:ident, $input:ident) => {
+        $reader.resolve_optional_entity($key::at(stringify!($key)), output_key(&$input.0))?
+    };
+    (SelfRelationInitial, $reader:ident, $key:ident, $input:ident) => {
+        if super::super::self_relation::BLIND_PRIOR.with(std::cell::Cell::get) {
+            $reader.prior_output_if_present::<Binding, Output>()?
+        } else {
+            producer_initial_prior!(@key $reader, $key, $input)
+        }
+    };
+    ($operation:ident, $reader:ident, $key:ident, $input:ident) => {
+        producer_initial_prior!(@key $reader, $key, $input)
+    };
+}
 macro_rules! phase {
     ($module:ident, $ownership:ident, $direction:ident, $source_query:ident, $operation:ident, $preserve:expr, $posture:ident, $action:ty, $writer:ident, $identity:literal,
      $entity:ident, $facts:ident, $key:ident, $value:ident, $of:ident) => {
@@ -167,7 +225,7 @@ macro_rules! phase {
             ordinary_carrier_contract!($operation);
             impl ApplicationMutationOutputContract<Schema> for Outputs {
                 const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] = producer_role_descriptors!($operation);
-                const ROLE_FAMILIES: &'static [ApplicationMutationOutputRoleFamilyDescriptor] = &[];
+                const ROLE_FAMILIES: &'static [ApplicationMutationOutputRoleFamilyDescriptor] = producer_role_families!($operation);
             }
             pub struct Decision { source: WorthQueryInvariantMutationTarget<Schema, SourceEntity>, output: Option<WorthQueryInvariantMutationTarget<Schema, $entity>>, member_value: u64, member_target: Option<WorthQueryInvariantMutationTarget<Schema, Member>>, input_member: member_input_type!($operation) }
             pub struct Binding;
@@ -262,7 +320,7 @@ macro_rules! phase {
                         if let Some(denial) = producer_decision_refusal!($operation, member_value) { return Ok(Err(denial)); }
                         let member_target = producer_member_target!($operation, reader, input);
                         let prior = if $preserve { Some(reader.prior_output_preserved_or_created::<preserve::Binding, preserve::Output, initial::Binding, initial::Output>()?) }
-                            else { reader.resolve_optional_entity($key::at(stringify!($key)), output_key(&input.0))? };
+                            else { producer_initial_prior!($operation, reader, $key, input) };
                         if !$preserve && prior.is_some() { return Ok(Err(Denial::InitialHasPriorOutput)); }
                         if $preserve && prior.is_none() { return Ok(Err(Denial::PreserveMissingOutput)); }
                         let input_member = capture_member_input!($operation, reader, source, prior);

@@ -1,8 +1,37 @@
-use std::path::PathBuf;
+use std::io::Write;
+use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::thread;
 use std::time::{Duration, Instant};
 
 const WAIT_DEADLINE: Duration = Duration::from_secs(60);
+static MARKER_TEMP_SEQUENCE: AtomicU64 = AtomicU64::new(0);
+
+fn publish_marker_atomically(path: &Path, label: &str) {
+    let parent = path
+        .parent()
+        .filter(|dir| !dir.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new("."));
+    let pid = std::process::id();
+    let (mut file, tmp) = loop {
+        let seq = MARKER_TEMP_SEQUENCE.fetch_add(1, Ordering::Relaxed);
+        let candidate = parent.join(format!(".worth-yieldpoint-{pid}-{seq}.tmp"));
+        match std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&candidate)
+        {
+            Ok(file) => break (file, candidate),
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
+            Err(error) => panic!("create recovery yieldpoint temp marker: {error}"),
+        }
+    };
+    file.write_all(label.as_bytes())
+        .unwrap_or_else(|error| panic!("write recovery yieldpoint temp marker: {error}"));
+    drop(file);
+    std::fs::rename(&tmp, path)
+        .unwrap_or_else(|error| panic!("publish recovery yieldpoint marker: {error}"));
+}
 
 /// A named process boundary used by the fresh-process recovery proof.
 ///
@@ -152,8 +181,7 @@ impl PhysicalRecoveryProcessYieldpoint {
         if self.stage != stage {
             return PhysicalRecoveryYieldpointWaitResult::NotArmed;
         }
-        std::fs::write(&self.reached, stage.label())
-            .unwrap_or_else(|error| panic!("write recovery yieldpoint marker: {error}"));
+        publish_marker_atomically(&self.reached, stage.label());
         let deadline = Instant::now() + wait_deadline;
         while !self.release.exists() {
             if self.cancel.exists() {
@@ -214,6 +242,29 @@ mod tests {
             std::fs::read_to_string(reached).expect("read reached marker"),
             "staging-materialization"
         );
+    }
+
+    #[test]
+    fn marker_publication_preserves_sibling_pending_cancel_marker() {
+        let (reached_base, release, _) = test_paths("sibling-pending");
+        let dir = reached_base.parent().unwrap();
+        let reached = dir.join("stage.ready");
+        let cancel = dir.join("stage.pending");
+        std::fs::write(&cancel, "cancel").expect("arm cancel marker");
+        let yieldpoint = PhysicalRecoveryProcessYieldpoint::new(
+            PhysicalRecoveryYieldpointStage::StagingMaterialization,
+            reached.clone(),
+            release,
+            cancel.clone(),
+        );
+        assert_eq!(
+            yieldpoint.pause_after(PhysicalRecoveryYieldpointStage::StagingMaterialization),
+            PhysicalRecoveryYieldpointWaitResult::Cancelled {
+                partial_effect_possible: true,
+            }
+        );
+        assert_eq!(std::fs::read_to_string(&reached).unwrap(), "staging-materialization");
+        assert_eq!(std::fs::read_to_string(&cancel).unwrap(), "cancel");
     }
 
     #[test]

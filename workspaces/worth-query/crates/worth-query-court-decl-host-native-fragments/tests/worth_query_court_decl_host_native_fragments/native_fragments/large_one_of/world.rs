@@ -3,6 +3,8 @@ use super::*;
 use worth_execution::ExecutionAllocationPolicy::SystemAllocation;
 use worth_query_host::facade::runtime::WorthQueryExecutionRuntimeInstaller;
 
+worth_query_decl::facade::worth_query_principal_issuer!(IssuerExampleIssuer);
+
 pub struct World {
     application: WorthQueryPrimaryGraphApplicationRuntime<Fixture>,
     invariant: WorthQueryApplicationInvariantProjectionAuthority<Fixture>,
@@ -61,7 +63,7 @@ impl World {
                 bootstrap.bind_principal(
                     &binding, WorthQueryApplicationPrincipalKey::new("person").unwrap(), 1,
                     worth_query_host::facade::declaration::authentication::WorthQueryExternalPrincipalIdentity::new(
-                        "https://issuer.example", "person").unwrap(),
+                        IssuerExampleIssuer, "person").unwrap(),
                     worth_query_host::facade::declaration::authentication::WorthQueryPrincipalMappingStatus::Enabled,
                 ).unwrap();
                 for case in 1..=32 {

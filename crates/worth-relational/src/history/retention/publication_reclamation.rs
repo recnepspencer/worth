@@ -15,10 +15,13 @@ impl RelationalRuntime {
     pub fn run_index_generation_reclamation_after_publication(
         &self,
         committed: &CommitResult,
-    ) -> Result<Option<usize>, crate::mvcc::RelationalPublicationDenial> {
+    ) -> Result<
+        Option<usize>,
+        crate::mvcc::publication::outcome::refusals::RelationalPublicationDenial,
+    > {
         let actual_runtime_instance_id = committed.snapshot.runtime_instance_id();
         if actual_runtime_instance_id != self.runtime_instance_id() {
-            return Err(crate::mvcc::RelationalPublicationDenial::ForeignRuntime {
+            return Err(crate::mvcc::publication::outcome::refusals::RelationalPublicationDenial::ForeignRuntime {
                 expected_runtime_instance_id: self.runtime_instance_id(),
                 actual_runtime_instance_id,
             });

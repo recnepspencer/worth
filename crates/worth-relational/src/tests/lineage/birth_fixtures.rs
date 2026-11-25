@@ -1,3 +1,5 @@
+use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::slot_lifecycle::RecordArenaFixturePort as _;
+use worth_relational_contracts::internal_port::lineage::data::naming::InstalledPersistentNameSchemeOwnerPort as _;
 use std::collections::BTreeMap;
 
 use crate::config::data::{AdjacencyBackend, AdjacencyPolicy};
@@ -13,19 +15,21 @@ use crate::storage::substrate::{EntityRecordKind, SlotInit};
 pub(super) fn face_scheme_registry() -> InstalledPersistentNameSchemeRegistry {
     let mut registry = InstalledPersistentNameSchemeRegistry::new();
     registry
-        .register(InstalledPersistentNameScheme::from_ordered_roles(
-            "worth.cad.face.v1",
-            PersistentNameSubjectKind::Entity,
-            ["authored", "cut_piece"],
-            true,
-            true,
-        ))
+        .register(
+            InstalledPersistentNameScheme::name_scheme_from_ordered_roles_for_test(
+                "worth.cad.face.v1",
+                PersistentNameSubjectKind::Entity,
+                ["authored", "cut_piece"],
+                true,
+                true,
+            ),
+        )
         .unwrap();
     registry
 }
 
 pub(super) fn stage_two_entities() -> (WorkingState, EntityId, EntityId) {
-    let mut staged = WorkingState::new(
+    let mut staged = WorkingState::working_state_for_test(
         BTreeMap::new(),
         AdjacencyPolicy {
             backend: AdjacencyBackend::InlineSmallDegreeAdjacency,
@@ -34,12 +38,13 @@ pub(super) fn stage_two_entities() -> (WorkingState, EntityId, EntityId) {
     );
     let part = staged.get_partition_mut(PartitionId::main());
     for _ in 0..2 {
-        part.entity_arena.push_slot(SlotInit::<EntityRecordKind> {
-            partition_id: PartitionId::main(),
-            kind_id: KindId(1),
-            version_id: VersionId(1),
-            extra: Default::default(),
-        });
+        part.entity_arena
+            .push_slot_for_test(SlotInit::<EntityRecordKind> {
+                partition_id: PartitionId::main(),
+                kind_id: KindId(1),
+                version_id: VersionId(1),
+                extra: Default::default(),
+            });
     }
     (
         staged,
@@ -104,9 +109,9 @@ pub(super) fn staged_entity_lineage_id(
 pub(super) fn create_postures_input(
     scheme_registry: InstalledPersistentNameSchemeRegistry,
     births: Vec<(EntityId, PersistentNameBirthRequest)>,
-) -> crate::lineage::data::LineageCommitPostureInput {
+) -> crate::lineage::authority::posture_fixture::LineageCommitPostureInput {
     use crate::facade::lineage::{LineagePostureClaim, LineageRecordTarget};
-    use crate::lineage::data::LineageCommitPostureInput;
+    use crate::lineage::authority::posture_fixture::LineageCommitPostureInput;
 
     LineageCommitPostureInput {
         scheme_registry,

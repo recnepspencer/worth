@@ -6,21 +6,21 @@ use crate::{
             WorthQueryProductBranchCloseReceipt, WorthQueryProductBranchOwnerCleanupReceipt,
         },
         primary_graph::{
+            product_operation::{DetachedOwnedProductHead, WorthQueryRuntimeCustody},
             WorthQueryAdvancementPhase, WorthQueryApplicationProductBranchCleanupFailure,
-            WorthQueryApplicationProductBranchCloseDenial, WorthQueryOwnedProductHead,
-            WorthQueryOwnedProductHeadCloseFailure,
+            WorthQueryApplicationProductBranchCloseDenial, WorthQueryOwnedProductHeadCloseFailure,
         },
     },
 };
 use std::sync::{Arc, Mutex, MutexGuard};
 use worth_query_installation::facade::ApplicationSchema;
 
-pub(super) struct HistoryHeadSlot<'r, S> {
-    state: Mutex<HistoryHeadCustody<'r, S>>,
+pub(super) struct HistoryHeadSlot {
+    state: Mutex<HistoryHeadCustody>,
     _allocation: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
-impl<'r, S> HistoryHeadSlot<'r, S> {
+impl HistoryHeadSlot {
     pub(super) fn reserve(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Arc<Self>, super::WorthQueryDocumentHistoryDenial> {
@@ -31,20 +31,20 @@ impl<'r, S> HistoryHeadSlot<'r, S> {
             _allocation: allocation,
         }))
     }
-    pub(super) fn lock(&self) -> MutexGuard<'_, HistoryHeadCustody<'r, S>> {
+    pub(super) fn lock(&self) -> MutexGuard<'_, HistoryHeadCustody> {
         self.state
             .lock()
             .unwrap_or_else(|poison| poison.into_inner())
     }
 }
 
-pub(super) enum HistoryHeadCustody<'r, S> {
+pub(super) enum HistoryHeadCustody {
     Reserved,
     Advancing,
     Closed(ClosedHistoryHead),
-    Live(WorthQueryOwnedProductHead<'r, S>),
+    Live(DetachedOwnedProductHead),
     Refused {
-        head: WorthQueryOwnedProductHead<'r, S>,
+        head: DetachedOwnedProductHead,
         denial: WorthQueryApplicationProductBranchCloseDenial,
     },
     Retired {
@@ -62,7 +62,7 @@ pub(super) enum ClosedHistoryHead {
     },
 }
 
-impl<S> HistoryHeadCustody<'_, S> {
+impl HistoryHeadCustody {
     pub(super) fn branch(&self) -> Option<WorthQueryProductBranch> {
         match self {
             Self::Reserved | Self::Advancing | Self::Closed(_) => None,
@@ -70,26 +70,30 @@ impl<S> HistoryHeadCustody<'_, S> {
             Self::Retired { branch, .. } => Some(*branch),
         }
     }
-}
 
-impl<'r, S: ApplicationSchema> HistoryHeadCustody<'r, S> {
-    pub(super) fn retry(
+    pub(super) fn retry<S: ApplicationSchema>(
         self,
+        application: &WorthQueryRuntimeCustody<'_, S>,
         phase: &WorthQueryAdvancementPhase<'_>,
     ) -> Result<Option<ClosedHistoryHead>, Self> {
         match self {
             Self::Reserved => Ok(None),
             Self::Advancing => unreachable!("the actual slot mutex spans an entire transition"),
             Self::Closed(receipt) => Ok(Some(receipt)),
-            Self::Live(head) | Self::Refused { head, .. } => match head.close(phase) {
-                Ok(receipt) => Ok(Some(ClosedHistoryHead::Direct { _receipt: receipt })),
-                Err(WorthQueryOwnedProductHeadCloseFailure::Retained { head, denial }) => {
-                    Err(Self::Refused { head, denial })
+            Self::Live(head) | Self::Refused { head, .. } => {
+                match head.rebind(application.clone()).close(phase) {
+                    Ok(receipt) => Ok(Some(ClosedHistoryHead::Direct { _receipt: receipt })),
+                    Err(WorthQueryOwnedProductHeadCloseFailure::Retained { head, denial }) => {
+                        Err(Self::Refused {
+                            head: head.into_detached(),
+                            denial,
+                        })
+                    }
+                    Err(WorthQueryOwnedProductHeadCloseFailure::Retired { branch, failure }) => {
+                        Err(Self::Retired { branch, failure })
+                    }
                 }
-                Err(WorthQueryOwnedProductHeadCloseFailure::Retired { branch, failure }) => {
-                    Err(Self::Retired { branch, failure })
-                }
-            },
+            }
             Self::Retired { branch, failure } => {
                 match failure.into_cleanup().retry_in_advancement(phase) {
                     Ok(receipt) => Ok(Some(ClosedHistoryHead::Cleanup { _receipt: receipt })),
@@ -99,12 +103,16 @@ impl<'r, S: ApplicationSchema> HistoryHeadCustody<'r, S> {
         }
     }
 
-    pub(super) fn advance(&mut self, phase: &WorthQueryAdvancementPhase<'_>) {
+    pub(super) fn advance<S: ApplicationSchema>(
+        &mut self,
+        application: &WorthQueryRuntimeCustody<'_, S>,
+        phase: &WorthQueryAdvancementPhase<'_>,
+    ) {
         if matches!(self, Self::Reserved | Self::Closed(_)) {
             return;
         }
         let original = std::mem::replace(self, Self::Advancing);
-        *self = match original.retry(phase) {
+        *self = match original.retry(application, phase) {
             Ok(Some(receipt)) => Self::Closed(receipt),
             Ok(None) => unreachable!("a filled release slot owns an actual head"),
             Err(pending) => pending,

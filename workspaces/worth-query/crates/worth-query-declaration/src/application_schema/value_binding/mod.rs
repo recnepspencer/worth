@@ -22,18 +22,23 @@ pub use worth_foundational::facade::{
 mod admitted;
 #[cfg(test)]
 mod admitted_tests;
+mod binary_wire;
 #[cfg(test)]
 mod canonical_tests;
 mod denial;
 mod encoded_scalar;
 mod entity_ref;
 mod native_scalar;
+mod persistent_name;
 mod primitive;
 mod recipe;
 mod representation_identity;
 mod scalar;
 mod structured;
 
+pub use binary_wire::{
+    worth_binary_checked_wire_bytes, WorthBinaryWireField, WorthQueryDefaultValueBinding,
+};
 pub use denial::{
     ApplicationValueDecodeDenial, ApplicationValueEncodeDenial, ApplicationValueValidationDenial,
 };
@@ -44,6 +49,9 @@ pub use native_scalar::{
     CanonicalF64ApplicationValueBinding, CanonicalTimeApplicationValueBinding,
     CanonicalTimestampApplicationValueBinding, CanonicalTimestampTzApplicationValueBinding,
     InlineBytesApplicationValueBinding, UuidApplicationValueBinding,
+};
+pub use persistent_name::{
+    NamedTargetApplicationValueBinding, WorthQueryNameApplicationValueBinding,
 };
 pub use primitive::{
     BoolApplicationValueBinding, ContentRefApplicationValueBinding, I16ApplicationValueBinding,
@@ -68,4 +76,6 @@ pub use scalar::{
     ApplicationValueSignedAggregateUnavailable, ErasedApplicationSignedAggregateDecode,
     ErasedApplicationValueAdmittedDecode, ErasedApplicationValueDecode,
 };
-pub use structured::ApplicationStructuredValueBinding;
+pub use structured::{
+    ApplicationDeclaredInputMember, ApplicationStructuredValueBinding, UnitApplicationValueBinding,
+};

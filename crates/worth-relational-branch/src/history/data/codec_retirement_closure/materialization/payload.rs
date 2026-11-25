@@ -1,0 +1,335 @@
+//! Entity and owned-relation maintenance must preserve canonical semantic payload.
+use super::super::PublicationHistoryFailure as Failure;
+use super::*;
+use crate::history::data::canonical_commit_envelope::{
+    OutputOriginHistory, OwnedValidatedOutputOrigins,
+};
+use crate::history::data::CanonicalRequiredOutputMaterializationRecord;
+use crate::publication::patch::data::RecordStructuralChange;
+use crate::storage::overlay::{
+    current_entity_partition_source_for_slot, current_relation_partition_source_for_slot,
+    OverlayStateView, WorkingState,
+};
+use worth_execution::ExecutionResourceLease;
+
+pub(super) fn candidate_matches(
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
+    basis: &crate::branch::basis::AdmittedRelationalBranchBasis,
+    state: &WorkingState,
+    original: &OwnedValidatedOutputOrigins,
+    meaning: &crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning,
+    records: &[CanonicalRequiredOutputMaterializationRecord],
+    context: &mut MapKernelContext<'_, '_>,
+    lease: Option<&ExecutionResourceLease<'_>>,
+) -> Result<bool, Stop> {
+    let mut origin_frames = OutputOriginHistory::default();
+    let validated_history = &mut origin_frames;
+    let origin = original.materialization_origin_for_route(meaning, context)?;
+    let after = OverlayStateView::new(basis.inner.root.as_ref(), state);
+    for member in records {
+        if !header::owns(origin, &member.record) {
+            continue;
+        }
+        charge(context, 1)?;
+        let matches = match member.record {
+            RecordRef::Entity(id) => {
+                let entry = origin
+                    .members
+                    .iter()
+                    .find(|entry| entry.id == id)
+                    .ok_or("maintenance entity association absent")?;
+                let plan = basis
+                    .inner
+                    .root
+                    .schema_authority()
+                    .entity_aspect_plan(entry.kind)
+                    .ok_or("maintenance entity contract absent")?;
+                let expected = super::super::membership::reconstruct(
+                    runtime,
+                    original,
+                    id,
+                    plan,
+                    validated_history,
+                    context,
+                    lease,
+                    basis.inner.root.schema_authority(),
+                )?;
+                let (_, partition) = current_entity_partition_source_for_slot(
+                    &after,
+                    id.partition_id,
+                    id.slot_index(),
+                )
+                .ok_or("maintenance entity partition absent")?;
+                let row = partition
+                    .entity_arena()
+                    .get(&id)
+                    .filter(|row| row.is_live())
+                    .ok_or("maintenance entity generation absent")?;
+                if row.kind_id() != Some(entry.kind) {
+                    return Ok(false);
+                }
+                let actual = row.extra().authoritative_aspect_state();
+                charge(
+                    context,
+                    actual.map_or(0, |state| state.owned_allocation_capacity_bytes()),
+                )?;
+                expected.as_ref().and_then(|state| state.state.as_ref()) == actual
+            }
+            RecordRef::Relation(id) => {
+                let entry = origin
+                    .relations
+                    .iter()
+                    .find(|entry| entry.id == id)
+                    .ok_or("maintenance relation association absent")?;
+                let plan = basis
+                    .inner
+                    .root
+                    .schema_authority()
+                    .relation_aspect_plan(entry.kind)
+                    .ok_or("maintenance relation contract absent")?;
+                let expected = super::super::relation_payload::reconstruct(
+                    runtime,
+                    original,
+                    id,
+                    plan,
+                    validated_history,
+                    context,
+                    lease,
+                    basis.inner.root.schema_authority(),
+                )?;
+                let (_, partition) = current_relation_partition_source_for_slot(
+                    &after,
+                    id.partition_id,
+                    id.slot_index(),
+                )
+                .ok_or("maintenance relation partition absent")?;
+                let row = partition
+                    .relation_arena()
+                    .get(&id)
+                    .filter(|row| row.is_live())
+                    .ok_or("maintenance relation generation absent")?;
+                if row.kind_id() != Some(entry.kind)
+                    || !row.extra().endpoints.as_ref().is_some_and(|ends| {
+                        ends.source == entry.source && ends.target == entry.target
+                    })
+                {
+                    return Ok(false);
+                }
+                let actual = row.extra().authoritative_aspect_state();
+                charge(
+                    context,
+                    actual.map_or(0, |state| state.owned_allocation_capacity_bytes()),
+                )?;
+                expected.as_ref().and_then(|state| state.state.as_ref()) == actual
+            }
+        };
+        if !matches {
+            return Ok(false);
+        }
+    }
+    Ok(true)
+}
+
+pub(super) fn validate(
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
+    envelope: &CanonicalCommitEnvelope,
+    context: &mut MapKernelContext<'_, '_>,
+    lease: Option<&ExecutionResourceLease<'_>>,
+    schema: &crate::branch::root::schema::RelationalBranchRootSchemaAuthority,
+) -> Result<(), Failure> {
+    let mut origin_frames = OutputOriginHistory::default();
+    let validated_history = &mut origin_frames;
+    validate_one(runtime, envelope, validated_history, context, lease, schema)?;
+    let event = envelope
+        .required_output_materialization
+        .as_ref()
+        .ok_or("maintenance absent")?;
+    let mut oldest = None;
+    for id in &event.producer_publications {
+        let version = runtime
+            .commit(*id)?
+            .ok_or("maintenance producer history absent")?
+            .commit
+            .version_id;
+        oldest = Some(oldest.map_or(version, |old: VersionId| old.min(version)));
+    }
+    let oldest = oldest.ok_or("maintenance producers absent")?;
+    let mut next = Some(event.source_commit);
+    for _ in 0..runtime.input.projection.history.catalog_len() {
+        charge(context, 1)?;
+        let previous = runtime
+            .commit(next.ok_or("maintenance source ancestry absent")?)?
+            .ok_or("maintenance source history absent")?;
+        if previous.commit.version_id <= oldest {
+            return Ok(());
+        }
+        if previous.required_output_materialization.is_some() {
+            // The header pass has authenticated this pair and its source jump.
+            // Validate its own payload once; do not recursively revisit its prefix.
+            validate_one(
+                runtime,
+                &previous,
+                validated_history,
+                context,
+                lease,
+                schema,
+            )?;
+        }
+        next = previous
+            .required_output_materialization
+            .as_ref()
+            .map(|event| event.source_commit)
+            .or_else(|| previous.commit.parents.first().copied());
+    }
+    Err("maintenance semantic source ancestry is incomplete or cyclic".into())
+}
+
+fn validate_one(
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
+    envelope: &CanonicalCommitEnvelope,
+    validated_history: &mut OutputOriginHistory,
+    context: &mut MapKernelContext<'_, '_>,
+    lease: Option<&ExecutionResourceLease<'_>>,
+    schema: &crate::branch::root::schema::RelationalBranchRootSchemaAuthority,
+) -> Result<(), Failure> {
+    let event = envelope
+        .required_output_materialization
+        .as_ref()
+        .ok_or("maintenance absent")?;
+    for member in &event.records {
+        let mut original = None;
+        for id in &event.producer_publications {
+            let Some(envelope) = validated_history.by_commit(
+                *id,
+                &mut |commit| runtime.commit(commit),
+                &runtime.execution(),
+                context,
+            )?
+            else {
+                continue;
+            };
+            if header::owns_record(&envelope, &member.record, context)? {
+                original = Some(envelope);
+                break;
+            }
+        }
+        let original = original.ok_or("maintenance producer association absent")?;
+        let source = original
+            .materialization_origin_for_record(&member.record, context)?
+            .meaning
+            .source_scope;
+        validate_record(
+            runtime,
+            envelope,
+            &original,
+            member,
+            validated_history,
+            context,
+            lease,
+            schema,
+        )
+        .map_err(|stop| Failure::at_source(source, stop))?;
+    }
+    Ok(())
+}
+
+fn validate_record(
+    runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
+    envelope: &CanonicalCommitEnvelope,
+    original: &OwnedValidatedOutputOrigins,
+    member: &CanonicalRequiredOutputMaterializationRecord,
+    validated_history: &mut OutputOriginHistory,
+    context: &mut MapKernelContext<'_, '_>,
+    lease: Option<&ExecutionResourceLease<'_>>,
+    schema: &crate::branch::root::schema::RelationalBranchRootSchemaAuthority,
+) -> Result<(), Stop> {
+    let origin = original.materialization_origin_for_record(&member.record, context)?;
+    let (plan, expected) = match member.record {
+        RecordRef::Entity(id) => {
+            let entry = origin
+                .members
+                .iter()
+                .find(|entry| entry.id == id)
+                .ok_or("maintenance entity absent")?;
+            let plan = runtime
+                .input
+                .plans
+                .entity_plans
+                .get(&entry.kind)
+                .ok_or("maintenance entity contract absent")?;
+            if !envelope.merged_plan.merged_intents.iter().any(|intent| matches!(intent,
+                crate::transactions::data::intents::mutation_intent::MutationIntent::Materialization(crate::transactions::data::intents::materialization_intent::MaterializationMutationIntent::RematerializeEntity(value))
+                if value.entity_id == id && value.kind_id == entry.kind)) {
+                return Err("maintenance entity kind differs from producer".into());
+            }
+            (
+                plan,
+                super::super::membership::reconstruct_canonical_payload(
+                    runtime,
+                    original,
+                    id,
+                    plan,
+                    validated_history,
+                    context,
+                    lease,
+                    schema,
+                )?,
+            )
+        }
+        RecordRef::Relation(id) => {
+            let entry = origin
+                .relations
+                .iter()
+                .find(|entry| entry.id == id)
+                .ok_or("maintenance relation absent")?;
+            let plan = runtime
+                .input
+                .plans
+                .relation_plans
+                .get(&entry.kind)
+                .ok_or("maintenance relation contract absent")?;
+            let intent_matches = envelope.merged_plan.merged_intents.iter().any(|intent| matches!(intent,
+                crate::transactions::data::intents::mutation_intent::MutationIntent::Materialization(crate::transactions::data::intents::materialization_intent::MaterializationMutationIntent::RematerializeRelation(value))
+                if value.relation_id == id && value.kind_id == entry.kind && value.source == entry.source && value.target == entry.target));
+            if !intent_matches {
+                return Err("maintenance relation endpoints/kind differ from producer".into());
+            }
+            (
+                plan,
+                super::super::relation_payload::reconstruct(
+                    runtime,
+                    original,
+                    id,
+                    plan,
+                    validated_history,
+                    context,
+                    lease,
+                    schema,
+                )?,
+            )
+        }
+    };
+    let patch = envelope
+        .patch
+        .authoritative_record_patches
+        .iter()
+        .find(|patch| patch.target == member.record)
+        .ok_or("maintenance payload patch absent")?;
+    if patch.structural_change != RecordStructuralChange::Rematerialized
+        || patch.contains_opaque_aspect
+    {
+        return Err("maintenance has an unsupported physical payload operation".into());
+    }
+    let actual = super::super::payload_reconstruction::apply(
+        None,
+        &patch.authoritative_patch,
+        plan,
+        true,
+        lease,
+        context,
+    )?;
+    if actual.state.as_ref() != expected.as_ref().and_then(|state| state.state.as_ref()) {
+        return Err("maintenance changed canonical producer payload".into());
+    }
+    Ok(())
+}

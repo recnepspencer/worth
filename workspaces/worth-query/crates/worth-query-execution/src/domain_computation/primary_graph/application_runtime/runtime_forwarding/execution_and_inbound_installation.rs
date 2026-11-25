@@ -42,6 +42,12 @@ mod domain_computation_primary_graph_application_runtime_execution_memory {
         ) -> Result<ExecutionResourceLease<'_>, WorthQueryExecutionLeaseDenial> {
             self.inner.request_execution_lease(request)
         }
+
+        pub fn installed_execution_policy(
+            &self,
+        ) -> Option<worth_foundational::facade::ExecutionRequestPolicy> {
+            self.inner.installed_execution_policy()
+        }
     }
 }
 

@@ -29,7 +29,8 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     /// its answer is delivered to the caller.
     pub fn pause_after_commit_before_answer_for_test(
         &self,
-    ) -> crate::domain_computation::primary_graph::provider::WorthQueryCommitAnswerPauseForTest {
+    ) -> crate::domain_computation::primary_graph::provider::WorthQueryCommitAnswerPauseForTest
+    {
         self.runtime
             .primary_provider
             .pause_after_commit_before_answer_for_test()

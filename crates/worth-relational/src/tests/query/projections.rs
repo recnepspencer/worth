@@ -1,3 +1,5 @@
+use worth_relational_branch::internal_port::snapshots::data::SnapshotHandleFixturePort as _;
+use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::basis_reads::VisibilityProjectionViewFixturePort as _;
 use crate::facade::identity::EntityId;
 use crate::facade::runtime::{
     EntityProjectionRecord, EntityRecordProjection, ProjectionAspectScope,
@@ -215,7 +217,7 @@ fn snapshot_projection_uses_authoritative_published_binding_version() {
     let entity = changed_entities(&created)[0];
     let updated = update_entity(execution, &runtime, entity, "updated");
     let mut stale_handle = updated.snapshot.clone();
-    stale_handle.version_id = created.snapshot.version_id;
+    stale_handle.replace_snapshot_version_for_test(created.snapshot.version_id());
 
     let projected = runtime
         .read_truth()
@@ -248,7 +250,7 @@ fn projection_raw_record_escape_hatches_preserve_full_visible_record_sets() {
         .expect("read request remains live");
 
     assert_eq!(
-        view.all_authoritative_entity_records(execution,)
+        view.all_authoritative_entity_records_for_test(execution,)
             .expect("read request remains live")
             .into_iter()
             .map(|record| record.entity_id)
@@ -259,7 +261,7 @@ fn projection_raw_record_escape_hatches_preserve_full_visible_record_sets() {
             .collect::<Vec<_>>()
     );
     assert_eq!(
-        view.all_authoritative_relation_records(execution,)
+        view.all_authoritative_relation_records_for_test(execution,)
             .expect("read request remains live")
             .into_iter()
             .map(|record| record.relation_id)

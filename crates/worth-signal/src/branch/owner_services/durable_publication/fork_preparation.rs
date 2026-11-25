@@ -39,7 +39,7 @@ where
             .readmit_descriptor(expected.descriptor())
             .map_err(Dn::Source)?;
         let memory = SignalBranchMutationPort::<D, I, E, Ctx, T>::new(
-            Arc::downgrade(&owner),
+            state.owner.clone(),
             owner.runtime_instance_id(),
         );
         let reservation = memory

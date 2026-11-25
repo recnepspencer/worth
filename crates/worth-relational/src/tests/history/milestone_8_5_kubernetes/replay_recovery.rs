@@ -1,4 +1,8 @@
+use worth_relational_durability::internal_port::durability::migration::readmitted_canonical_commit::ReadmittedCanonicalCommitOwnerPort as _;
+use worth_relational_durability::internal_port::durability::data::recovery_plan::RecoveryPlanOwnerPort as _;
 use super::*;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::shared::SharedCanonicalCommitEnvelopeOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::positioned_canonical_commit::PositionedCanonicalCommitFixturePort as _;
 
 pub(super) fn replay_commit(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -149,7 +153,7 @@ pub(super) fn recover_stage_from_final_history(
                 .canonical_commit_envelope(execution, commit_id)
                 .unwrap()
                 .map(|envelope| {
-                    crate::history::data::PositionedCanonicalCommit::for_test(
+                    crate::history::data::PositionedCanonicalCommit::positioned_commit_for_test(
                         position,
                         envelope.into_arc(),
                     )
@@ -201,7 +205,7 @@ pub(super) fn recover_stage_from_final_history(
         checkpoint,
         tail_log
             .into_iter()
-            .map(crate::durability::migration::ReadmittedCanonicalCommit::exact)
+            .map(crate::durability::migration::ReadmittedCanonicalCommit::exact_for_test)
             .collect(),
         crate::durability::data::RecoveryBranchTransitions::Selected(forks),
         crate::durability::data::RecoveryAuthorityContinuityCheck::verified_at(

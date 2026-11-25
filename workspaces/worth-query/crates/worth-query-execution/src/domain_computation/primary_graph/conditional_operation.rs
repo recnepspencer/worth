@@ -65,8 +65,10 @@ pub use installation::{
 pub(in crate::domain_computation::primary_graph) use lifecycle::WorthQueryConditionalOperationRegistry;
 pub use lifecycle_inventory::WorthQueryConditionalRuntimeLifecycleProbe;
 pub use operation_invocation::{
+    WorthQueryNoTemporalDueField, WorthQueryTemporalDueField, WorthQueryTemporalDueFieldWriter,
     WorthQueryTemporalInvocationFailure, WorthQueryTemporalInvocationFailureKind,
-    WorthQueryTemporalOperationExecution, WorthQueryTemporalOperationInvoker,
+    WorthQueryTemporalOccurrenceOutcome, WorthQueryTemporalOperationExecution,
+    WorthQueryTemporalOperationInvoker,
 };
 pub(in crate::domain_computation::primary_graph) use predicate_observation::QueryTemporalPredicateProvider;
 pub(in crate::domain_computation::primary_graph) use publication::{

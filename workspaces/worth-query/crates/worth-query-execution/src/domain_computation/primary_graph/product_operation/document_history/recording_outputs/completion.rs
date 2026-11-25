@@ -218,6 +218,27 @@ impl WorthQueryCompletedRecordingOutputs {
         }
         Ok(())
     }
+    /// An envelope has no single operation scope. Its forest is bound to the
+    /// reserved record, the candidate and the envelope's own commit receipt.
+    pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn require_envelope_source(
+        &self,
+        reserved: &WorthQueryDocumentHistoryReservation,
+        candidate: &WorthQueryExpectedProductBranch<'_, impl ApplicationSchema>,
+        receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+    ) -> Result<(), WorthQueryDocumentHistoryDenial> {
+        let origin = &self.origin;
+        if origin.node != reserved.record.node
+            || origin.expected != reserved.expected
+            || origin.candidate != candidate.branch()
+            || origin.intent != receipt.idempotency_binding()
+            || &origin.source != receipt.committed_product_publication().composite_commit()
+            || origin.root_posture.is_some()
+            || self.endpoint.branch_incarnation() != candidate.branch().occurrence()
+        {
+            return Err(WorthQueryDocumentHistoryDenial::ReceiptMismatch);
+        }
+        Ok(())
+    }
     pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn endpoint(
         &self,
     ) -> &Arc<WorthQueryApplicationReadObservation> {

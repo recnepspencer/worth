@@ -5,6 +5,7 @@ use super::branch_root_content_binding::{
     assert_corrupt_recovery_leaves_no_recovered_state, basis_target, replace_descriptor,
 };
 use super::*;
+use worth_relational_durability::internal_port::durability::data::checkpoint_images::DurableCheckpointFieldsFixturePort as _;
 
 #[test]
 fn checkpoint_rejects_later_shared_root_cell_with_relabeled_schema_root() {
@@ -88,11 +89,11 @@ fn later_shared_root_cell(
         .as_mut()
         .expect("production recovery plan selects a checkpoint");
     assert_eq!(
-        checkpoint.branch_roots.len(),
+        checkpoint.branch_roots_for_test().len(),
         1,
         "sibling heads share one root"
     );
-    let [first, later] = checkpoint.branch_cells.as_mut_slice() else {
+    let [first, later] = checkpoint.branch_cells_mut_for_test().as_mut_slice() else {
         panic!("the checkpoint carries exactly the main and sibling cells");
     };
     let (first_target, later_target) = (basis_target(first), basis_target(later));

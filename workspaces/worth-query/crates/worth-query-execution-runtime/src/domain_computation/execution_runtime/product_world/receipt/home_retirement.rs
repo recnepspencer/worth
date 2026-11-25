@@ -28,8 +28,10 @@ impl WorthQueryProductPublicationReceipt {
         if self.history.is_some() {
             return Err(Denial::Busy(Owner::PublicationReceipts));
         }
-        let original =
-            Arc::get_mut(&mut self.custody).ok_or(Denial::Busy(Owner::PublicationReceipts))?;
+        let original = self
+            .custody
+            .get_mut()
+            .ok_or(Denial::Busy(Owner::PublicationReceipts))?;
         // These slots hold unfinished one-shot observation handoffs. Returning
         // Busy keeps both those actual obligations and the same Query serving.
         for observation in [
@@ -74,8 +76,10 @@ impl WorthQueryProductPublicationReceipt {
         native: &RelationalRuntime,
     ) -> Result<Progress, Denial> {
         request.consult().map_err(Denial::Execution)?;
-        let original =
-            Arc::get_mut(&mut self.custody).ok_or(Denial::Busy(Owner::PublicationReceipts))?;
+        let original = self
+            .custody
+            .get_mut()
+            .ok_or(Denial::Busy(Owner::PublicationReceipts))?;
         match &mut original.retirement {
             PublicationReceiptRetirement::Vacant => Err(Denial::Busy(Owner::PublicationReceipts)),
             PublicationReceiptRetirement::Prepared(prepared) => {

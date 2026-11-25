@@ -13,11 +13,13 @@ use worth_query_testkit_document_retention::facade::document_retention_model::{
 };
 mod schema;
 use schema::*;
+mod birth;
 mod context;
 mod edit;
 mod exclusivity;
 mod generation;
 mod gesture;
+mod history_envelope;
 mod navigation;
 mod ownership_change;
 mod query;
@@ -66,6 +68,8 @@ impl ApplicationProgramDefinition<Schema> for Program {
             .action::<generation::Binding, Completion>()
             .finish_action()
             .action::<ownership_change::Binding, Completion>()
+            .finish_action()
+            .action::<birth::Binding, Completion>()
             .finish_action()
             .finish()]
     }

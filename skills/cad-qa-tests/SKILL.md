@@ -51,6 +51,13 @@ explicitly requests it.
   formats remain valid subjects when contractual.
 - Ensure setup reaches the intended action and observation. Consider affected
   error paths.
+- Formal verification when relevant (**Verus** / **Lean 4**): do not substitute
+  spot unit tests where the specification or surface calls for a machine-checked
+  Verus proof (pure Rust topology manifold/Euler operators or leaf numerical
+  bounds) or Lean 4 proof (exact arithmetic, root isolation, Krawczyk
+  contraction, or certified enclosure soundness). Reject proofs relying on
+  `admit()`, `sorry`, or unjustified `#[verifier::external_body]` escapes, and
+  keep proof harnesses isolated from normal edit compile closure.
 
 ## Cost
 

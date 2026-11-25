@@ -1,4 +1,5 @@
 //! Program transition admission at the public Home boundary.
+mod budget_preflight;
 mod handoff;
 mod opening;
 mod plan;
@@ -18,4 +19,4 @@ pub use refusal::{
     WorthQueryHomeProgramTransitionOpenRefused,
 };
 pub use request::{NoHomeProgramTransition, WorthQueryHomeProgramTransition};
-pub use required::WorthQueryApplicationHomeTransitionRequired;
+pub use required::{WorthQueryApplicationHomeTransitionRequired, WorthQueryHomePredecessorRefusal};

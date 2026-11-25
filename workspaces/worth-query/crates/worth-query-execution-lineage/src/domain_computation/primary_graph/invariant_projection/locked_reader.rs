@@ -66,8 +66,7 @@ pub struct WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
     pub(crate) realized_scope: WorthQueryRealizedProjectionScope,
     pub(crate) aggregate_projections:
         Arc<std::sync::Mutex<super::super::aggregate_projection::WorthQueryAggregateProjections>>,
-    pub(crate) output_lineage:
-        Arc<std::sync::Mutex<super::super::output_lineage::WorthQueryApplicationOutputLineage>>,
+    pub(crate) output_lineage: super::super::output_lineage::SharedOutputLineage,
     pub(crate) invalidation_owner: Arc<super::super::SourceInvalidationOwner>,
     pub(crate) managed_views: Arc<dyn crate::ports::ManagedDerivedViewPort>,
     pub(crate) selected_product_occurrence:

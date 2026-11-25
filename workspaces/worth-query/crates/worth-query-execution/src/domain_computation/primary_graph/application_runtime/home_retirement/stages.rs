@@ -47,8 +47,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         self.inner
             .mutation_handlers
             .preflight_home_retirement(request)?;
-        self.conditional_cleanup
-            .preflight_home_retirement(request)
+        self.conditional_cleanup.preflight_home_retirement(request)
     }
 
     #[inline(never)]
@@ -61,7 +60,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             crate::domain_computation::primary_graph::application_runtime::inbound_publication::InstalledTransportCloseCustody,
         ),
         WorthQueryHomeRetirementDenial,
-    > {
+    >{
         if !self.inner.installed_producers.is_empty() {
             self.inner
                 .flush_pending_coupled_outputs(request)
@@ -113,6 +112,19 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         .inspection_port(),
                 )?;
         }
+        self.inner
+            .runtime
+            .primary_provider_ref()
+            .settle_correction_pins_for_close(
+                request,
+                &self
+                    .inner
+                    .runtime
+                    .product_runtime_ref()
+                    .owner_ref()
+                    .inspection_port(),
+            )
+            .map_err(WorthQueryHomeRetirementDenial::CorrectionMaterial)?;
         let transport = self
             .inner
             .runtime

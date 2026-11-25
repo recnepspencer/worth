@@ -9,7 +9,10 @@ pub use descriptor::{
     ApplicationQueryBindingDescriptor, ApplicationQueryPrincipalBindingContract,
     ApplicationQueryScopeContract, ApplicationQueryScopeResolutionMode,
 };
-pub use intent::{ApplicationLiveQueryIntent, ApplicationQueryBinding, ApplicationQueryIntent};
+pub use intent::{
+    ApplicationLiveQueryIntent, ApplicationQueryBinding, ApplicationQueryInputPreparationDenial,
+    ApplicationQueryIntent,
+};
 pub use limits::ApplicationQueryBindingLimits;
 pub use portable_reference::{
     ApplicationQueryBindingReference, ApplicationQueryBindingReferenceParts,

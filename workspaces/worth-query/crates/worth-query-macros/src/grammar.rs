@@ -7,7 +7,7 @@ use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
 use syn::{
     Attribute, Data, DeriveInput, Fields, FieldsNamed, GenericArgument, Ident, LitStr,
-    PathArguments, Token, Type,
+    PathArguments, Token, Type, Variant,
 };
 
 const ATTRIBUTE: &str = "worth_query";
@@ -15,17 +15,26 @@ const ATTRIBUTE: &str = "worth_query";
 /// Visits each key of every `#[worth_query(..)]` attribute, in source order.
 pub(crate) fn visit_keys(
     attributes: &[Attribute],
+    visit: impl FnMut(&str, &ParseNestedMeta<'_>) -> syn::Result<()>,
+) -> syn::Result<()> {
+    visit_keys_for(attributes, &[ATTRIBUTE], visit)
+}
+
+/// Visits each key of every attribute whose path matches one of `names`, in source order.
+pub(crate) fn visit_keys_for(
+    attributes: &[Attribute],
+    names: &[&str],
     mut visit: impl FnMut(&str, &ParseNestedMeta<'_>) -> syn::Result<()>,
 ) -> syn::Result<()> {
     for attribute in attributes
         .iter()
-        .filter(|attribute| attribute.path().is_ident(ATTRIBUTE))
+        .filter(|attribute| names.iter().any(|name| attribute.path().is_ident(name)))
     {
         attribute.parse_nested_meta(|meta| {
             let key = meta
                 .path
                 .get_ident()
-                .ok_or_else(|| meta.error("expected a `worth_query` key, such as `schema = ..`"))?
+                .ok_or_else(|| meta.error("expected an attribute key, such as `namespace = ..`"))?
                 .unraw()
                 .to_string();
             visit(&key, &meta)
@@ -102,6 +111,17 @@ pub(crate) fn type_list(meta: &ParseNestedMeta<'_>) -> syn::Result<Vec<Type>> {
         .collect())
 }
 
+/// `key(e1, e2, ..)`: a parenthesized, comma-separated list of expressions.
+pub(crate) fn expr_list(meta: &ParseNestedMeta<'_>) -> syn::Result<Vec<syn::Expr>> {
+    let content;
+    syn::parenthesized!(content in meta.input);
+    Ok(
+        Punctuated::<syn::Expr, Token![,]>::parse_terminated(&content)?
+            .into_iter()
+            .collect(),
+    )
+}
+
 /// `key(..)`: parenthesized tokens forwarded verbatim to a declaration macro.
 pub(crate) fn token_group(meta: &ParseNestedMeta<'_>) -> syn::Result<TokenStream> {
     let content;
@@ -145,6 +165,27 @@ pub(crate) fn named_fields<'a>(
     }
 }
 
+/// The struct's named fields, or `None` for a unit struct; tuple structs,
+/// enums and unions are refused at their defining token.
+pub(crate) fn named_or_unit_fields<'a>(
+    input: &'a DeriveInput,
+    derive: &str,
+) -> syn::Result<Option<&'a FieldsNamed>> {
+    no_generics(input, derive)?;
+    match &input.data {
+        Data::Struct(data) => match &data.fields {
+            Fields::Named(fields) => Ok(Some(fields)),
+            Fields::Unit => Ok(None),
+            Fields::Unnamed(_) => Err(syn::Error::new(
+                input.ident.span(),
+                format!("#[derive({derive})] requires a struct with named fields or a unit struct"),
+            )),
+        },
+        Data::Enum(data) => Err(not_a_struct(data.enum_token.span, derive)),
+        Data::Union(data) => Err(not_a_struct(data.union_token.span, derive)),
+    }
+}
+
 /// Refuses anything but a unit struct marker.
 pub(crate) fn unit_struct(input: &DeriveInput, derive: &str) -> syn::Result<()> {
     no_generics(input, derive)?;
@@ -159,7 +200,28 @@ pub(crate) fn unit_struct(input: &DeriveInput, derive: &str) -> syn::Result<()> 
     }
 }
 
-fn no_generics(input: &DeriveInput, derive: &str) -> syn::Result<()> {
+/// The enum's variants, each `each` (such as "a role"); structs, unions and
+/// enums without a variant are refused at their defining token.
+pub(crate) fn enum_variants<'a>(
+    input: &'a DeriveInput,
+    derive: &str,
+    each: &str,
+) -> syn::Result<&'a Punctuated<Variant, Token![,]>> {
+    no_generics(input, derive)?;
+    let not_an_enum =
+        |span| syn::Error::new(span, format!("#[derive({derive})] applies only to enums"));
+    match &input.data {
+        Data::Enum(data) if data.variants.is_empty() => Err(syn::Error::new(
+            input.ident.span(),
+            format!("#[derive({derive})] needs at least one variant, each {each}"),
+        )),
+        Data::Enum(data) => Ok(&data.variants),
+        Data::Struct(data) => Err(not_an_enum(data.struct_token.span)),
+        Data::Union(data) => Err(not_an_enum(data.union_token.span)),
+    }
+}
+
+pub(crate) fn no_generics(input: &DeriveInput, derive: &str) -> syn::Result<()> {
     match input.generics.params.first() {
         Some(parameter) => Err(syn::Error::new(
             parameter.span(),
@@ -234,6 +296,21 @@ pub(crate) fn selection_column(
 /// The field's identifier without a raw prefix.
 pub(crate) fn member_name(member: &Ident) -> String {
     member.unraw().to_string()
+}
+
+/// The name `what` (such as "role") is persisted under: its explicit `name`
+/// key, else its Rust name. Refused when empty or holding whitespace, which
+/// no persisted naming identifier admits.
+pub(crate) fn wire_name(explicit: Option<LitStr>, rust: &Ident, what: &str) -> syn::Result<LitStr> {
+    let name = explicit.unwrap_or_else(|| LitStr::new(&member_name(rust), rust.span()));
+    let text = name.value();
+    if text.is_empty() || text.chars().any(|ch| ch.is_whitespace() || ch.is_control()) {
+        return Err(syn::Error::new(
+            name.span(),
+            format!("a {what} name is not empty and holds no whitespace"),
+        ));
+    }
+    Ok(name)
 }
 
 #[cfg(test)]

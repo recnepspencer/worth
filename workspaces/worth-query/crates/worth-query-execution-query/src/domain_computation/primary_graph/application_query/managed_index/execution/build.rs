@@ -39,6 +39,33 @@ pub fn rebuild<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>(
     let epoch = state
         .begin_build(execution, selected)
         .map_err(Denial::Lifecycle)?;
+    rebuild_claimed(
+        execution,
+        application,
+        state,
+        parent,
+        selected,
+        selector,
+        external,
+        request,
+        allocation,
+        epoch,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn rebuild_claimed<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>(
+    execution: &ExecutionRequest<'_, '_>,
+    application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+    state: &Arc<ManagedIndexState<S, I>>,
+    parent: &WorthQueryManagedGraphWorkSession,
+    selected: &WorthQuerySelectedProductOperation<'_, S>,
+    selector: &WorthQueryObservedScopeSelector,
+    external: &WorthQueryAuthenticatedExternalPrincipal<S>,
+    request: &WorthQueryRequestScope,
+    allocation: &Arc<SourceFactsAllocation>,
+    epoch: u64,
+) -> Result<(), Denial> {
     let result = (|| {
         let source_allocation = SourceFactsAllocation::open(execution)?;
         let source = source_acquisition::acquire(

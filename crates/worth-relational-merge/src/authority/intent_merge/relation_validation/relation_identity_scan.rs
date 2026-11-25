@@ -1,0 +1,272 @@
+use std::collections::BTreeSet;
+
+use crate::contracts::transactions::data::primitives::EntityReference;
+use worth_relational_storage::internal_port::storage::overlay::current_access::CurrentPartitionAccess;
+
+pub(super) fn existing_relation_targets_for_source(
+    state: &impl CurrentPartitionAccess,
+    candidates_scanned: &mut usize,
+    partition_id: crate::contracts::identity::data::primitives::PartitionId,
+    kind_id: crate::contracts::identity::data::primitives::KindId,
+    source: &EntityReference,
+    targets: &BTreeSet<EntityReference>,
+    excluded_relation_ids: &BTreeSet<crate::contracts::identity::data::record_ids::RelationId>,
+) -> bool {
+    let EntityReference::Existing(source_entity) = source else {
+        return false;
+    };
+    let Some(source_partition) = state.get_current_partition(source_entity.partition_id) else {
+        return false;
+    };
+    let outgoing = source_partition.outgoing_candidates(*source_entity);
+    let incoming = targets
+        .iter()
+        .filter_map(|target| match target {
+            EntityReference::Existing(target) => state
+                .get_current_partition(target.partition_id)
+                .map(|partition| partition.incoming_candidates(*target)),
+            EntityReference::Created(_) => None,
+        })
+        .collect::<Vec<_>>();
+    let incoming_count = incoming.iter().map(|ids| ids.len()).sum::<usize>();
+    if incoming_count == 0 {
+        return false;
+    }
+    let mut matches = |relation_id| {
+        *candidates_scanned += 1;
+        relation_candidate_matches_target_identity(
+            state,
+            partition_id,
+            kind_id,
+            source_entity,
+            targets,
+            excluded_relation_ids,
+            relation_id,
+        )
+    };
+    if incoming_count <= outgoing.len() {
+        incoming
+            .into_iter()
+            .flat_map(|ids| ids.iter().copied())
+            .any(&mut matches)
+    } else {
+        outgoing.iter().copied().any(matches)
+    }
+}
+
+fn relation_candidate_matches_target_identity(
+    state: &impl CurrentPartitionAccess,
+    partition_id: crate::contracts::identity::data::primitives::PartitionId,
+    kind_id: crate::contracts::identity::data::primitives::KindId,
+    source_entity: &crate::contracts::identity::data::record_ids::EntityId,
+    targets: &BTreeSet<EntityReference>,
+    excluded_relation_ids: &BTreeSet<crate::contracts::identity::data::record_ids::RelationId>,
+    relation_id: crate::contracts::identity::data::record_ids::RelationId,
+) -> bool {
+    if excluded_relation_ids.contains(&relation_id) || relation_id.partition_id != partition_id {
+        return false;
+    }
+    let Some(relation_partition) = state.get_current_partition(relation_id.partition_id) else {
+        return false;
+    };
+    let Some(relation_slot) = relation_partition.relation_arena().get(&relation_id) else {
+        return false;
+    };
+    if relation_slot.kind_id() != Some(kind_id) {
+        return false;
+    }
+    let Some(endpoints) = relation_slot.extra().endpoints.as_ref() else {
+        return false;
+    };
+
+    endpoints.source == *source_entity
+        && targets.contains(&EntityReference::Existing(endpoints.target))
+}
+
+#[cfg(test)]
+pub mod tests {
+    use worth_relational_storage::internal_port::storage::partition::adjacency::AdjacencySetFixturePort as _;
+use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::slot_lifecycle::RecordArenaFixturePort as _;
+
+    use std::collections::{BTreeMap, BTreeSet};
+
+    use crate::contracts::config::data::{AdjacencyBackend, AdjacencyPolicy};
+    use crate::contracts::identity::data::{EntityId, KindId, PartitionId, RelationId, VersionId};
+    use crate::contracts::symbols::data::client_key::ClientKey;
+    use crate::contracts::transactions::data::primitives::{CreatedEntityRef, EntityReference};
+    use worth_relational_storage::internal_port::storage::overlay::{PartitionState, WorkingState};
+    use worth_relational_storage::internal_port::storage::partition::adjacency::AdjacencySet;
+    use worth_relational_storage::internal_port::storage::substrate::{
+        EntityArena, RelationArena, RelationEndpoints, RelationExtra,
+    };
+    use worth_relational_storage::internal_port::storage::substrate::{
+        EntityRecordKind, RecordKind, SlotInit,
+    };
+
+    use super::existing_relation_targets_for_source;
+
+    #[test]
+    fn relation_identity_admission_scans_the_smaller_endpoint_and_skips_new_targets() {
+        let adjacency_policy = AdjacencyPolicy {
+            backend: AdjacencyBackend::InlineSmallDegreeAdjacency,
+            small_degree_inline_capacity: 4,
+        };
+        let partition_id = PartitionId(1);
+        let mut entity_arena = EntityArena::with_capacity(3);
+        let (source_slot, source_generation, _) = entity_arena.push_slot_for_test(SlotInit {
+            partition_id,
+            kind_id: KindId(1),
+            version_id: VersionId(1),
+            extra: EntityRecordKind::empty_extra(),
+        });
+        let (left_slot, left_generation, _) = entity_arena.push_slot_for_test(SlotInit {
+            partition_id,
+            kind_id: KindId(1),
+            version_id: VersionId(1),
+            extra: EntityRecordKind::empty_extra(),
+        });
+        let (right_slot, right_generation, _) = entity_arena.push_slot_for_test(SlotInit {
+            partition_id,
+            kind_id: KindId(1),
+            version_id: VersionId(1),
+            extra: EntityRecordKind::empty_extra(),
+        });
+        let source = EntityId::new(partition_id, source_slot as u64, source_generation);
+        let left = EntityId::new(partition_id, left_slot as u64, left_generation);
+        let right = EntityId::new(partition_id, right_slot as u64, right_generation);
+
+        let mut relation_arena = RelationArena::with_capacity(4);
+        let (relation_slot, relation_generation, _) = relation_arena.push_slot_for_test(SlotInit {
+            partition_id,
+            kind_id: KindId(9),
+            version_id: VersionId(1),
+            extra: RelationExtra::from_unbudgeted_parts(
+                Some(RelationEndpoints {
+                    source,
+                    target: left,
+                }),
+                None,
+            ),
+        });
+        let relation_id = RelationId::new(partition_id, relation_slot as u64, relation_generation);
+        let (decoy_slot, decoy_generation, _) = relation_arena.push_slot_for_test(SlotInit {
+            partition_id,
+            kind_id: KindId(9),
+            version_id: VersionId(1),
+            extra: RelationExtra::from_unbudgeted_parts(
+                Some(RelationEndpoints {
+                    source,
+                    target: right,
+                }),
+                None,
+            ),
+        });
+        let decoy_id = RelationId::new(partition_id, decoy_slot as u64, decoy_generation);
+        let other_source_ids = (0..2)
+            .map(|offset| {
+                let kind = KindId(7 + offset);
+                let (slot, generation, _) = relation_arena.push_slot_for_test(SlotInit {
+                    partition_id,
+                    kind_id: kind,
+                    version_id: VersionId(1),
+                    extra: RelationExtra::from_unbudgeted_parts(
+                        Some(RelationEndpoints {
+                            source: right,
+                            target: left,
+                        }),
+                        None,
+                    ),
+                });
+                (kind, RelationId::new(partition_id, slot as u64, generation))
+            })
+            .collect::<Vec<_>>();
+        let mut adjacency = vec![AdjacencySet::new(&adjacency_policy); 3];
+        adjacency
+            .get_mut(source_slot)
+            .expect("fixture adjacency is materialized")
+            .insert_adjacent_id_for_test(KindId(9), relation_id);
+        adjacency
+            .get_mut(source_slot)
+            .expect("fixture adjacency is materialized")
+            .insert_adjacent_id_for_test(KindId(9), decoy_id);
+        let mut reverse_adjacency = vec![AdjacencySet::new(&adjacency_policy); 3];
+        reverse_adjacency
+            .get_mut(left_slot)
+            .expect("fixture adjacency is materialized")
+            .insert_adjacent_id_for_test(KindId(9), relation_id);
+        reverse_adjacency
+            .get_mut(right_slot)
+            .expect("fixture adjacency is materialized")
+            .insert_adjacent_id_for_test(KindId(9), decoy_id);
+        for (kind, other_source_id) in other_source_ids {
+            adjacency
+                .get_mut(right_slot)
+                .expect("fixture adjacency is materialized")
+                .insert_adjacent_id_for_test(kind, other_source_id);
+            reverse_adjacency
+                .get_mut(left_slot)
+                .expect("fixture adjacency is materialized")
+                .insert_adjacent_id_for_test(kind, other_source_id);
+        }
+
+        let mut partitions = BTreeMap::new();
+        partitions.insert(
+            partition_id,
+            PartitionState {
+                partition_id,
+                adjacency_policy,
+                relation_overlay_is_sparse: false,
+                entity_arena,
+                relation_arena,
+                adjacency: adjacency.into(),
+                reverse_adjacency: reverse_adjacency.into(),
+            },
+        );
+        let state = WorkingState::working_state_for_test(
+            partitions,
+            AdjacencyPolicy {
+                backend: AdjacencyBackend::InlineSmallDegreeAdjacency,
+                small_degree_inline_capacity: 4,
+            },
+        );
+        let mut candidates_scanned = 0;
+        let found = existing_relation_targets_for_source(
+            &state,
+            &mut candidates_scanned,
+            partition_id,
+            KindId(9),
+            &EntityReference::Existing(source),
+            &BTreeSet::from([EntityReference::Existing(right)]),
+            &BTreeSet::new(),
+        );
+
+        assert!(found);
+        assert_eq!(candidates_scanned, 1);
+
+        let created = EntityReference::Created(CreatedEntityRef {
+            partition_id,
+            kind_id: KindId(1),
+            client_key: ClientKey::raw("new-target"),
+        });
+        assert!(!existing_relation_targets_for_source(
+            &state,
+            &mut candidates_scanned,
+            partition_id,
+            KindId(9),
+            &EntityReference::Existing(source),
+            &BTreeSet::from([created]),
+            &BTreeSet::new(),
+        ));
+        assert_eq!(candidates_scanned, 1);
+        assert!(!existing_relation_targets_for_source(
+            &state,
+            &mut candidates_scanned,
+            partition_id,
+            KindId(9),
+            &EntityReference::Existing(source),
+            &BTreeSet::from([EntityReference::Existing(left)]),
+            &BTreeSet::from([relation_id]),
+        ));
+        assert_eq!(candidates_scanned, 3);
+    }
+}

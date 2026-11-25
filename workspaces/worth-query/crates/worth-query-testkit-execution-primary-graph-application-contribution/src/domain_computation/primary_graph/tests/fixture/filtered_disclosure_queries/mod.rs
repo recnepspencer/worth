@@ -10,6 +10,7 @@ use crate::domain_computation::primary_graph::tests::fixture::{
     Account, AccountStatus, IdentityExecutionSchema, TouchAccountCapability,
 };
 use worth_query_declaration::facade::application_query::{
+    ApplicationDisclosureClassification,
     ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
     ApplicationQueryInfluenceContract, ApplicationQueryMarkerIdentity,
     ApplicationQueryObservableInfluence as Influence, ApplicationQueryReference,
@@ -17,6 +18,9 @@ use worth_query_declaration::facade::application_query::{
 };
 use worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding;
 use worth_query_declaration::worth_query_application_query;
+
+worth_query_declaration::worth_query_disclosure_classification!(FilterMembershipDisclosure);
+worth_query_declaration::worth_query_disclosure_classification!(FilterRowPresenceOnlyDisclosure);
 
 worth_query_declaration::worth_query_structured_value_binding!(pub FilterRowPresenceOnlyParametersBinding for AccountSummaryParameters { identity: "AccountSummaryParameters" });
 worth_query_declaration::worth_query_structured_value_binding!(pub FilterRowPresenceOnlyResultBinding for AccountSummaryResult { identity: "AccountSummaryResult" });
@@ -49,7 +53,7 @@ pub fn filter_row_presence_only_definition() -> ApplicationQueryDefinitionBuilde
 > {
     filtered(
         FilterRowPresenceOnlyQuery::reference(),
-        "filter-row-presence-only",
+        FilterRowPresenceOnlyDisclosure,
         [Influence::RowPresence],
     )
 }
@@ -64,13 +68,14 @@ pub fn filter_membership_definition() -> ApplicationQueryDefinitionBuilder<
 > {
     filtered(
         FilterMembershipQuery::reference(),
-        "filter-membership",
+        FilterMembershipDisclosure,
         [Influence::RowPresence, Influence::Count],
     )
 }
 
 fn filtered<
     Query: ApplicationQueryMarkerIdentity<IdentityExecutionSchema> + 'static,
+    Classification: ApplicationDisclosureClassification,
     const N: usize,
 >(
     reference: ApplicationQueryReference<
@@ -80,7 +85,7 @@ fn filtered<
         AccountSummaryResult,
         Account,
     >,
-    classification: &'static str,
+    classification: Classification,
     influence: [Influence; N],
 ) -> ApplicationQueryDefinitionBuilder<
     IdentityExecutionSchema,

@@ -7,12 +7,14 @@
 //! statically. Index-seeking selection (`where_equal`, root paths) stays
 //! structured; the filter narrows the selected candidate rows afterwards.
 mod authoring;
+mod clauses;
 mod denial;
 mod operand;
 mod program;
 pub(super) mod validation;
 
 pub use authoring::{ApplicationQueryWhereFilter, ApplicationQueryWhereFilterOperands};
+pub use clauses::{ApplicationQueryComparisonOp, ApplicationQueryWhereFilterClauses};
 pub use denial::ApplicationQueryWhereFilterDenial;
 pub use operand::{ApplicationQueryWhereFilterOperand, ApplicationQueryWhereFilterSource};
 pub use program::ApplicationQueryWhereFilterProgram;

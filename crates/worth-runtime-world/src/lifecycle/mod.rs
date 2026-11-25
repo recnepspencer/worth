@@ -5,6 +5,7 @@ mod close;
 pub(crate) use close::{checkpoint_close_step, RecoveredCloseReceipt};
 pub mod owner;
 pub(crate) use owner::WorldDurableCreationCustody;
+mod owner_backing;
 mod owner_inputs;
 mod ports;
 

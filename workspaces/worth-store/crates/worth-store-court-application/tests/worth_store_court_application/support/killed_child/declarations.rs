@@ -29,7 +29,17 @@ pub(crate) fn run_and_kill(
     announced: &Path,
     finished: &Path,
 ) -> ChildEnd {
-    run_and_kill_observing(test, environment, announced, finished, || {})
+    run_and_kill_observing_with_ctx(test, environment, announced, finished, || {}, test)
+}
+
+pub(crate) fn run_and_kill_with_ctx(
+    test: &str,
+    environment: &[(&str, &Path)],
+    announced: &Path,
+    finished: &Path,
+    ctx: &str,
+) -> ChildEnd {
+    run_and_kill_observing_with_ctx(test, environment, announced, finished, || {}, ctx)
 }
 
 pub(crate) fn run_and_kill_observing(
@@ -38,6 +48,17 @@ pub(crate) fn run_and_kill_observing(
     announced: &Path,
     finished: &Path,
     on_park: impl FnOnce(),
+) -> ChildEnd {
+    run_and_kill_observing_with_ctx(test, environment, announced, finished, on_park, test)
+}
+
+pub(crate) fn run_and_kill_observing_with_ctx(
+    test: &str,
+    environment: &[(&str, &Path)],
+    announced: &Path,
+    finished: &Path,
+    on_park: impl FnOnce(),
+    ctx: &str,
 ) -> ChildEnd {
     let mut on_park = Some(on_park);
     let mut command = std::process::Command::new(std::env::current_exe().unwrap());
@@ -48,20 +69,41 @@ pub(crate) fn run_and_kill_observing(
     for (name, value) in environment {
         command.env(name, value);
     }
-    let mut child = command.spawn().unwrap();
+    let mut child = command
+        .spawn()
+        .unwrap_or_else(|e| panic!("{ctx}: spawn {test} failed: {e:?}"));
     let deadline = std::time::Instant::now() + PARK_DEADLINE;
+    let mut polls = 0u32;
     loop {
         if announced.is_file() {
             on_park.take().unwrap()();
-            child.kill().unwrap();
-            child.wait().unwrap();
+            let pre = child
+                .try_wait()
+                .unwrap_or_else(|e| panic!("{ctx}: poll {test} before kill: {e:?}"));
+            assert!(
+                pre.is_none(),
+                "{ctx}: child {test} exited before parent OS kill: {pre:?}"
+            );
+            child
+                .kill()
+                .unwrap_or_else(|e| panic!("{ctx}: OS kill {test} failed: {e:?}"));
+            let status = child
+                .wait()
+                .unwrap_or_else(|e| panic!("{ctx}: wait {test} after kill: {e:?}"));
+            assert_os_killed(status, ctx);
             return crate::killed_child::ChildEnd::KilledAtPark;
         }
-        if child.try_wait().unwrap().is_some() {
-            let output = child.wait_with_output().unwrap();
+        if child
+            .try_wait()
+            .unwrap_or_else(|e| panic!("{ctx}: poll {test}: {e:?}"))
+            .is_some()
+        {
+            let output = child
+                .wait_with_output()
+                .unwrap_or_else(|e| panic!("{ctx}: wait_with_output on early-exit {test}: {e:?}"));
             assert!(
                 finished.is_file() && !announced.is_file(),
-                "child {test} ended without parking: {}\n{}",
+                "{ctx}: child {test} ended without parking: {}\n{}",
                 String::from_utf8_lossy(&output.stdout),
                 String::from_utf8_lossy(&output.stderr)
             );
@@ -69,14 +111,24 @@ pub(crate) fn run_and_kill_observing(
         }
         if std::time::Instant::now() >= deadline {
             let _ = child.kill();
-            let output = child.wait_with_output().unwrap();
+            let output = child
+                .wait_with_output()
+                .unwrap_or_else(|e| panic!("{ctx}: wait_with_output on timed-out {test}: {e:?}"));
             panic!(
-                "child {test} did not park: {}\n{}",
+                "{ctx}: child {test} did not park: {}\n{}",
                 String::from_utf8_lossy(&output.stdout),
                 String::from_utf8_lossy(&output.stderr)
             );
         }
-        std::thread::sleep(std::time::Duration::from_millis(10));
+        let delay_ms = if polls < 50 {
+            1
+        } else if polls < 150 {
+            2
+        } else {
+            10
+        };
+        polls = polls.saturating_add(1);
+        std::thread::sleep(std::time::Duration::from_millis(delay_ms));
     }
 }
 
@@ -85,6 +137,36 @@ pub(crate) fn announce(path: &Path, bytes: &[u8]) {
     let pending = path.with_extension("pending");
     std::fs::write(&pending, bytes).unwrap();
     std::fs::rename(pending, path).unwrap();
+}
+
+/// Verify that `status` reflects an OS-induced termination (`SIGKILL` on Unix,
+/// `TerminateProcess` exit code `1` on Windows — rejecting normal `0` and Rust
+/// panic exit code `101`).
+pub(crate) fn assert_os_killed(status: std::process::ExitStatus, context: &str) {
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::ExitStatusExt;
+        assert_eq!(
+            status.signal(),
+            Some(9),
+            "{context}: child must end via SIGKILL (9), got {status:?}"
+        );
+    }
+    #[cfg(windows)]
+    {
+        assert_eq!(
+            status.code(),
+            Some(1),
+            "{context}: child must end via OS TerminateProcess (exit code 1, not 0 or panic 101), got {status:?}"
+        );
+    }
+    #[cfg(not(any(unix, windows)))]
+    {
+        assert!(
+            !status.success(),
+            "{context}: killed child must not exit cleanly: {status:?}"
+        );
+    }
 }
 
 /// Park the calling child forever; only the parent's kill ends it.

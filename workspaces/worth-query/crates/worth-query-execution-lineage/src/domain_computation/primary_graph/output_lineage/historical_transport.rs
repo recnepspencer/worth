@@ -1,4 +1,5 @@
 //! A graph selection restores producer custody; its rows move with it, never the head's.
+use super::recorded_cell::SharedRecordedOutputCell;
 use super::*;
 pub mod accepted;
 pub use accepted::HistoricalAcceptedOrigin;
@@ -12,7 +13,7 @@ pub use coordinate::HistoricalSelectionCoordinate;
 
 /// The selected step's own row for one route that Native restores.
 struct SelectedRow {
-    cell: Arc<OnceLock<RecordedOutput>>,
+    cell: SharedRecordedOutputCell,
     route: RelationalRequiredOutputPublication,
     locator: Option<native_prior_checkpoint::NativePriorCheckpointLocator>,
     witness: Option<Arc<OnceLock<SealedNativeOutputWitness>>>,
@@ -153,7 +154,7 @@ impl WorthQueryApplicationOutputLineage {
                     };
                     found = Some(SelectedRow {
                         witness,
-                        cell: Arc::clone(cell),
+                        cell: SharedRecordedOutputCell::from_arc(Arc::clone(cell)),
                         route: route.clone(),
                         locator,
                     });

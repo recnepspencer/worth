@@ -85,6 +85,7 @@ where
         before_pin: &RelationalPinnedRead,
         candidate: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         participants: &dyn crate::domain_computation::primary_graph::provider::AppliedOutputParticipants,
+        assembly: &worth_relational::facade::mvcc::RelationalAuthoredCoupledCandidate<'_>,
     ) -> Result<InspectedAuthoredApplication<'run>, WorthQueryOutputDemandDenial> {
         // An abandoned cold candidate's successful value is provisional. Keep
         // a real refusal sticky, but never let an old success hide a later stop.
@@ -149,7 +150,7 @@ where
                     &self.principal,
                     admission.operation,
                     before,
-                    Some((before_pin, candidate, participants)),
+                    Some((before_pin, candidate, participants, assembly)),
                     coordination,
                     execution.allocation_policy(),
                 )
@@ -222,6 +223,21 @@ where
                     crate::domain_computation::primary_graph::MutationHandlerExecutionDenial::Attempt(cause),
                 ))
             })?;
+        // Each stage is its own correction source (public #368), so it retains
+        // the original program meaning of its occurrence exactly as a root entry does.
+        let support = context
+            .application
+            .installed_program_support()
+            .ok_or_else(|| stopped(WorthQueryApplicationCommitOutcome::Denied(
+                crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::application_program_required(),
+            )))?;
+        let occurrence = application_attempt::provider_execution::program_occurrence_gate::resolve_occurrence_program(
+            execution, support, &program,
+        )
+        .map_err(|denial| stopped(WorthQueryApplicationCommitOutcome::Denied(denial)))?;
+        let program = program
+            .retain_original_program(support, occurrence.entry().revision())
+            .map_err(|denial| stopped(WorthQueryApplicationCommitOutcome::Denied(denial)))?;
         let binding = source_binding;
         let prepared = application_attempt::prepare_coupled_application::<S, B>(
             execution,

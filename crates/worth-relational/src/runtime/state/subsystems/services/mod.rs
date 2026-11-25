@@ -1,8 +1,7 @@
 mod compiled_artifacts;
-mod instrumentation;
-mod sequence;
-mod symbol_residency;
-mod symbol_table;
+pub(crate) use worth_relational_branch::internal_port::runtime::state::subsystems::services::instrumentation;
+pub(crate) mod sequence;
+pub(crate) use worth_relational_storage::internal_port::runtime::state::subsystems::services::symbol_table;
 #[cfg(test)]
 mod tests;
 
@@ -11,10 +10,9 @@ use crate::runtime::state::subsystems::RuntimeSubsystem;
 pub(crate) use compiled_artifacts::CompiledArtifactStore;
 pub(crate) use instrumentation::RuntimeInstrumentation;
 use sequence::RuntimeSequenceState;
-pub(crate) use symbol_table::{
-    ColdSymbolDirectoryDenial, MutationSymbolMeanings, PendingSymbolMeanings,
-    PreparedSymbolPublication, RuntimeSymbolTable, SymbolReservationDenial,
-};
+#[cfg(test)]
+pub(crate) use symbol_table::SymbolReservationDenial;
+pub(crate) use symbol_table::{PendingSymbolMeanings, RuntimeSymbolTable};
 
 #[derive(Debug, Clone)]
 pub(crate) struct RuntimeServices {
@@ -27,6 +25,18 @@ pub(crate) struct RuntimeServices {
 impl RuntimeServices {
     pub(crate) fn preparation_binding(&self) -> Self {
         self.clone()
+    }
+
+    pub(crate) fn detached_for_preflight(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self, crate::execution::RelationalExecutionDenialCause> {
+        Ok(Self {
+            sequence: self.sequence.detached_preserving_runtime_id(),
+            instrumentation: self.instrumentation.fork(),
+            simulation: CompiledArtifactStore::new(),
+            symbols: self.symbols.detached_owner_snapshot_for_request(request)?,
+        })
     }
     fn empty() -> Self {
         Self {
@@ -43,6 +53,10 @@ impl RuntimeServices {
 
     pub(crate) fn next_proposal_ordinal(&self) -> Option<u64> {
         self.sequence.next_proposal_ordinal()
+    }
+
+    pub(crate) fn origin_identity(&self) -> sequence::origin::RelationalRuntimeOrigin {
+        self.sequence.origin()
     }
 
     pub(crate) fn runtime_instance_id(&self) -> u64 {

@@ -18,6 +18,9 @@ pub fn delegation_activation_read(
         ApplicationOperationDecisionReadTarget::ManagedIndex { parent } => {
             ("managed-index", parent.parts().binding.as_str())
         }
+        ApplicationOperationDecisionReadTarget::SharedOwnerManagedIndex { parent, .. } => {
+            ("shared-owner-managed-index", parent.parts().binding.as_str())
+        }
         ApplicationOperationDecisionReadTarget::Entity { entity } => ("entity", entity),
         ApplicationOperationDecisionReadTarget::Field { field, .. } => ("field", field),
         ApplicationOperationDecisionReadTarget::Relation { relation, .. } => ("relation", relation),

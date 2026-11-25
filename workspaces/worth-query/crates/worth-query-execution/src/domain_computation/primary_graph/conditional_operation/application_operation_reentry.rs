@@ -25,6 +25,7 @@ use worth_query_installation::facade::{
 };
 
 use super::operation_invocation::{
+    WorthQueryTemporalDueFieldWriter, WorthQueryTemporalOccurrenceOutcome,
     WorthQueryTemporalOperationExecution, WorthQueryTemporalOperationInvoker,
 };
 use super::reconstruction_authority::{
@@ -94,8 +95,9 @@ pub enum WorthQueryTemporalAdmissionTerminalFailure {
     Invariant(crate::domain_computation::primary_graph::WorthQueryInvariantProjectionDenialKind),
 }
 
-pub(super) struct WorthQueryTemporalReentryAttempt {
+pub(super) struct WorthQueryTemporalReentryAttempt<Input> {
     pub(super) outcome: WorthQueryTemporalReentryOutcome,
+    pub(super) rescheduled: Option<WorthQueryTemporalOccurrenceOutcome<Input>>,
     pub(super) continuation_identity:
         Option<super::signal_decision_reentry::WorthQueryConditionalContinuationIdentity>,
     pub(super) admission_canonical_work:
@@ -126,6 +128,7 @@ pub(super) fn reenter_temporal_operation<
     LifecycleField,
     LifecycleValue,
     Authorization,
+    DueField,
     Clock,
 >(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -161,10 +164,14 @@ pub(super) fn reenter_temporal_operation<
         LifecycleField,
         LifecycleValue,
         Authorization,
+        DueField,
     >,
     candidate: &WorthQueryTemporalIntentCandidate<Clock, Input>,
     runtime_binding: &super::canonical_identity::WorthQueryTemporalRuntimeBindingIdentity,
-) -> Result<WorthQueryTemporalReentryAttempt, super::super::query_obligations::QueryObligationDenial>
+) -> Result<
+    WorthQueryTemporalReentryAttempt<Input>,
+    super::super::query_obligations::QueryObligationDenial,
+>
 where
     Schema: ApplicationSchema,
     Operation: 'static,
@@ -209,6 +216,7 @@ where
         >,
     LifecycleValue: Clone,
     Authorization: super::WorthQueryTemporalOperationAuthorization<Schema, Operation, Input, Scope>,
+    DueField: WorthQueryTemporalDueFieldWriter<Schema, IntentEntity>,
 {
     let selected = product.observation();
     let durable_product = selected.owner_identity().durable().map(|owner| {
@@ -232,6 +240,7 @@ where
             Err(denial) => {
                 return Ok(WorthQueryTemporalReentryAttempt {
                     continuation_identity: None,
+                    rescheduled: None,
                     outcome: WorthQueryTemporalReentryOutcome::RetryableFailure(
                         super::WorthQueryConditionalReentryFailure::Idempotency(denial),
                     ),
@@ -272,6 +281,7 @@ where
     ) {
         return Ok(WorthQueryTemporalReentryAttempt {
             outcome,
+            rescheduled: None,
             continuation_identity,
             admission_canonical_work,
         });
@@ -288,6 +298,7 @@ where
                 .expect("live_conditional_key_fate never returns RecoveredUnpublished");
             return Ok(WorthQueryTemporalReentryAttempt {
                 outcome,
+                rescheduled: None,
                 continuation_identity,
                 admission_canonical_work,
             });
@@ -295,6 +306,7 @@ where
         Err(_) => {
             return Ok(WorthQueryTemporalReentryAttempt {
                 outcome: recovered_original::live_fate_unavailable(),
+                rescheduled: None,
                 continuation_identity,
                 admission_canonical_work,
             });
@@ -312,35 +324,44 @@ where
         candidate,
         &idempotency,
     );
-    let outcome = match result {
-        Ok(outcome) => outcome,
-        Err(WorthQueryTemporalReentryDenial::Retryable(detail)) => {
-            WorthQueryTemporalReentryOutcome::RetryableFailure(detail)
-        }
+    let (outcome, rescheduled) = match result {
+        Ok((outcome, rescheduled)) => (outcome, rescheduled),
+        Err(WorthQueryTemporalReentryDenial::Retryable(detail)) => (
+            WorthQueryTemporalReentryOutcome::RetryableFailure(detail),
+            None,
+        ),
         Err(WorthQueryTemporalReentryDenial::ActiveSnapshotCapacityExhausted {
             maximum_active_snapshots,
-        }) => WorthQueryTemporalReentryOutcome::SnapshotCapacityBackpressured {
-            maximum_active_snapshots,
-        },
-        Err(WorthQueryTemporalReentryDenial::RetentionCapacityExhausted) => {
-            WorthQueryTemporalReentryOutcome::RetentionCapacityBackpressured
-        }
-        Err(WorthQueryTemporalReentryDenial::ControlStopped(cause)) => {
-            WorthQueryTemporalReentryOutcome::ControlStopped(cause)
-        }
-        Err(WorthQueryTemporalReentryDenial::ExecutionStopped(kind)) => {
+        }) => (
+            WorthQueryTemporalReentryOutcome::SnapshotCapacityBackpressured {
+                maximum_active_snapshots,
+            },
+            None,
+        ),
+        Err(WorthQueryTemporalReentryDenial::RetentionCapacityExhausted) => (
+            WorthQueryTemporalReentryOutcome::RetentionCapacityBackpressured,
+            None,
+        ),
+        Err(WorthQueryTemporalReentryDenial::ControlStopped(cause)) => (
+            WorthQueryTemporalReentryOutcome::ControlStopped(cause),
+            None,
+        ),
+        Err(WorthQueryTemporalReentryDenial::ExecutionStopped(kind)) => (
             WorthQueryTemporalReentryOutcome::TerminalFailure(
                 WorthQueryTemporalReentryDenial::execution_failure(kind),
-            )
-        }
-        Err(WorthQueryTemporalReentryDenial::Terminal(failure)) => {
+            ),
+            None,
+        ),
+        Err(WorthQueryTemporalReentryDenial::Terminal(failure)) => (
             WorthQueryTemporalReentryOutcome::TerminalFailure(
                 WorthQueryTemporalTerminalFailure::Admission(failure),
-            )
-        }
+            ),
+            None,
+        ),
     };
     Ok(WorthQueryTemporalReentryAttempt {
         outcome,
+        rescheduled,
         continuation_identity,
         admission_canonical_work,
     })

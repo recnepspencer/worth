@@ -39,6 +39,9 @@ struct PhysicalSignalWorkerShared {
     #[cfg(feature = "certification-test-authority")]
     pause_after_dequeue: Arc<Mutex<Option<super::CertificationPhysicalSignalPauseGate>>>,
     #[cfg(feature = "certification-test-authority")]
+    pause_abandonment_after_dequeue:
+        Arc<Mutex<Option<super::CertificationPhysicalSignalPauseGate>>>,
+    #[cfg(feature = "certification-test-authority")]
     fail_next_abandonment: Arc<AtomicBool>,
 }
 
@@ -108,6 +111,19 @@ impl PhysicalSignalGraphWorker {
     }
 
     #[cfg(feature = "certification-test-authority")]
+    pub(super) fn pause_abandonment_after_dequeue_for_certification(
+        &self,
+    ) -> super::CertificationPhysicalSignalPauseGate {
+        let gate = super::CertificationPhysicalSignalPauseGate::new();
+        *self
+            .shared
+            .pause_abandonment_after_dequeue
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner()) = Some(gate.worker_handle());
+        gate
+    }
+
+    #[cfg(feature = "certification-test-authority")]
     pub(super) fn fail_next_abandonment_for_certification(&self) {
         self.shared
             .fail_next_abandonment
@@ -168,6 +184,8 @@ impl PhysicalSignalWorkerShared {
             admission,
             #[cfg(feature = "certification-test-authority")]
             pause_after_dequeue: Arc::new(Mutex::new(None)),
+            #[cfg(feature = "certification-test-authority")]
+            pause_abandonment_after_dequeue: Arc::new(Mutex::new(None)),
             #[cfg(feature = "certification-test-authority")]
             fail_next_abandonment: Arc::new(AtomicBool::new(false)),
         }
@@ -315,9 +333,8 @@ fn run_graph_worker(
 }
 
 #[cfg(feature = "certification-test-authority")]
-fn pause_after_dequeue_for_certification(shared: &PhysicalSignalWorkerShared) {
-    let gate = shared
-        .pause_after_dequeue
+fn pause_at_gate(slot: &Mutex<Option<super::CertificationPhysicalSignalPauseGate>>) {
+    let gate = slot
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner())
         .as_ref()
@@ -325,6 +342,11 @@ fn pause_after_dequeue_for_certification(shared: &PhysicalSignalWorkerShared) {
     if let Some(gate) = gate {
         gate.arrive_and_wait();
     }
+}
+
+#[cfg(feature = "certification-test-authority")]
+fn pause_after_dequeue_for_certification(shared: &PhysicalSignalWorkerShared) {
+    pause_at_gate(&shared.pause_after_dequeue);
 }
 
 fn apply_next_abandonment(
@@ -337,6 +359,8 @@ fn apply_next_abandonment(
     };
     #[cfg(feature = "certification-test-authority")]
     pause_after_dequeue_for_certification(_shared);
+    #[cfg(feature = "certification-test-authority")]
+    pause_at_gate(&_shared.pause_abandonment_after_dequeue);
     #[cfg(feature = "certification-test-authority")]
     if _shared.fail_next_abandonment.swap(false, Ordering::AcqRel) {
         return Err(PhysicalSignalAbandonmentFailure::InjectedWorkerFailure);

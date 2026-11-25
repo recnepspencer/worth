@@ -1,0 +1,12 @@
+[package]
+name = "store-m4-dx-spike"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.94"
+publish = false
+description = "Self-contained M4.0 Hard DX reference spike and external-crate trybuild compile-fail fences."
+
+[workspace]
+
+[dev-dependencies]
+trybuild = "1"

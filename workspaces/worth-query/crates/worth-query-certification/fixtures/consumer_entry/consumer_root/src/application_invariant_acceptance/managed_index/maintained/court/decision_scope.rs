@@ -94,7 +94,9 @@ fn decision_index_requires_the_declared_parent_and_the_original_operation_scope(
                 DecisionRead::Declared
                 | DecisionRead::Empty
                 | DecisionRead::TwoProbes
-                | DecisionRead::Partitioned(_) => {
+                | DecisionRead::Partitioned(_)
+                | DecisionRead::Peer(_)
+                | DecisionRead::UndeclaredPeer(_) => {
                     unreachable!()
                 }
             }

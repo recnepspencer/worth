@@ -1,4 +1,5 @@
+pub(crate) use worth_relational_contracts::internal_port::lineage::data;
+#[cfg(test)]
+pub(crate) use worth_relational_lineage::internal_port::lineage::authority;
+pub(crate) use worth_relational_lineage::internal_port::lineage::index;
 pub(crate) mod access;
-pub(crate) mod authority;
-pub mod data;
-pub(crate) mod index;

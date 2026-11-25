@@ -5,6 +5,9 @@ use crate::mvcc::{
     RelationalRetainedEntitySelection, RelationalRetainedEntitySelectionDenial as Denial,
 };
 use crate::runtime::RelationalPreparationRuntime;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisOwnerPort as _;
+use worth_relational_mutation::internal_port::mvcc::transaction::intent::RelationalTransactionIntentOwnerPort as _;
 
 impl RelationalPreparationPort {
     /// Transfer the original current transaction and an actual retained source
@@ -48,6 +51,7 @@ pub(super) fn require_pristine(
         || transaction.next_savepoint_ordinal != 1
         || transaction.last_merged_plan.is_some()
         || transaction.pending_symbols.is_some()
+        || transaction.naming_plan.is_some()
         || transaction.footprint.reads().len() != 0
         || transaction.footprint.writes().len() != 0
         || transaction.footprint.write_partitions().len() != 0
@@ -89,8 +93,8 @@ impl RelationalPreparationRuntime {
         if historical.commit_identity().is_none() {
             return Err(Denial::HistoricalSourceUnavailable);
         }
-        let target_schema = current.inner.root.retained_schema_authority();
-        let source_schema = historical.inner.root.retained_schema_authority();
+        let target_schema = current.owner_inner().root.retained_schema_authority();
+        let source_schema = historical.owner_inner().root.retained_schema_authority();
         let same_authority = std::sync::Arc::ptr_eq(&source_schema, &target_schema);
         if !same_authority
             && (source_schema.authority_digest() != target_schema.authority_digest()

@@ -10,6 +10,8 @@ use worth_query_declaration::{
     worth_query_structured_value_binding,
 };
 
+worth_query_declaration::worth_query_disclosure_classification!(ResourceDisclosure);
+
 #[derive(Clone, Copy)]
 pub(super) struct ReadIntent;
 pub(super) struct Parameters;
@@ -91,7 +93,7 @@ impl ApplicationResourceBinding<Schema> for Resource {
 
 pub(super) fn definition() -> ApplicationResourceDefinition<Schema, Resource> {
     let mut disclosure = ApplicationQueryDisclosureContract::governed_by(
-        "resource",
+        ResourceDisclosure,
         ApplicationCapabilityRef::<Schema, Capability>::from_declaration(),
     );
     for facet in ApplicationResourceDisclosureFacet::ALL {

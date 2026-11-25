@@ -2,8 +2,8 @@
 use super::DERIVE;
 use crate::case::pascal_case;
 use crate::grammar::{
-    member_name, option_inner, peeled, selection_column, unknown_key, value, vec_inner, visit_keys,
-    Once,
+    flag, member_name, option_inner, peeled, selection_column, unknown_key, value, vec_inner,
+    visit_keys, Once,
 };
 use std::collections::BTreeSet;
 use syn::{DeriveInput, Field, FieldsNamed, Ident, LitStr, Path, Type};
@@ -16,16 +16,43 @@ const FIELD_KEYS: &[&str] = &[
     "reverse_from",
     "nested",
     "name",
+    "group_name",
     "slot",
     "selector",
 ];
-/// Inherent functions every derived projection declares beside its selectors.
-const GENERATED: &[&str] = &["result_shape", "result_shape_builder", "project_row"];
+/// Inherent items every derived projection declares beside its selectors.
+const GENERATED: &[&str] = &[
+    "result_shape",
+    "result_shape_builder",
+    "project_row",
+    "PROJECTS_PERSISTENT_NAMES",
+];
 
 pub(super) struct ProjectionDeclaration {
     pub(super) schema: Type,
     pub(super) root: Type,
+    pub(super) namespace: Option<Path>,
     pub(super) slots: Vec<Slot>,
+    /// Fields that project the row's own persistent name.
+    pub(super) names: Vec<NameSlot>,
+}
+
+/// A field projecting the persistent name the row's root entity carries. It
+/// is not a declared result slot, so it has no selector, marker or identity.
+pub(super) struct NameSlot {
+    pub(super) member: Ident,
+    /// The field's declared type, which the projected name must match.
+    pub(super) value: Type,
+    /// `Option<..>`: an entity carrying no name projects `None`.
+    pub(super) optional: bool,
+    /// `group_name`: the name of the group, of the field's group kind, the
+    /// row's own name belongs to.
+    pub(super) group: bool,
+}
+
+enum Member {
+    Slot(Slot),
+    Name(NameSlot),
 }
 
 pub(super) struct Slot {
@@ -95,16 +122,20 @@ impl ProjectionDeclaration {
                 "a projection needs at least one field",
             ));
         }
-        let slots = fields
-            .named
-            .iter()
-            .map(|field| slot(field, namespace.as_ref()))
-            .collect::<syn::Result<Vec<_>>>()?;
+        let (mut slots, mut names) = (Vec::new(), Vec::new());
+        for field in &fields.named {
+            match member(field, namespace.as_ref())? {
+                Member::Slot(slot) => slots.push(slot),
+                Member::Name(name) => names.push(name),
+            }
+        }
         distinct(&slots)?;
         Ok(Self {
             schema: schema.required(input.ident.span(), DERIVE)?,
             root: root.required(input.ident.span(), DERIVE)?,
+            namespace,
             slots,
+            names,
         })
     }
 }
@@ -118,8 +149,12 @@ struct KindKeys {
     nested: Once<Type>,
 }
 
-fn slot(field: &Field, namespace: Option<&Path>) -> syn::Result<Slot> {
+/// A bare `name` key projects the row's persistent name; `name = ".."` names
+/// a slot's output.
+fn member(field: &Field, namespace: Option<&Path>) -> syn::Result<Member> {
     let member = field.ident.clone().expect("named fields carry identifiers");
+    let mut named = Once::<bool>::new("name");
+    let mut grouped = Once::<bool>::new("group_name");
     let mut kind = KindKeys {
         selection: Once::new("field"),
         column: Once::new("column"),
@@ -136,17 +171,43 @@ fn slot(field: &Field, namespace: Option<&Path>) -> syn::Result<Slot> {
         "relation" => kind.relation.set(meta, value(meta)?),
         "reverse_from" => kind.reverse_from.set(meta, value(meta)?),
         "nested" => kind.nested.set(meta, value(meta)?),
-        "name" => output.set(meta, value(meta)?),
+        "name" if meta.input.peek(syn::Token![=]) => output.set(meta, value(meta)?),
+        "name" => named.set(meta, flag(meta)?),
+        "group_name" => grouped.set(meta, flag(meta)?),
         "slot" => explicit.set(meta, value(meta)?),
         "selector" => selector.set(meta, value(meta)?),
         _ => Err(unknown_key(meta, DERIVE, FIELD_KEYS)),
     })?;
+    if let (Some(span), true) = (grouped.span(), named.is_set()) {
+        return Err(syn::Error::new(
+            span,
+            "a field projects either the row's `name` or its `group_name`, not both",
+        ));
+    }
+    let group = grouped.is_set();
+    if named.is_set() || group {
+        let role = "a name slot, which projects the row's own persistent name";
+        kind.selection.refuse_unless(false, role)?;
+        kind.column.refuse_unless(false, role)?;
+        kind.relation.refuse_unless(false, role)?;
+        kind.reverse_from.refuse_unless(false, role)?;
+        kind.nested.refuse_unless(false, role)?;
+        output.refuse_unless(false, role)?;
+        explicit.refuse_unless(false, role)?;
+        selector.refuse_unless(false, role)?;
+        return Ok(Member::Name(NameSlot {
+            optional: option_inner(&field.ty).is_some(),
+            value: field.ty.clone(),
+            member,
+            group,
+        }));
+    }
     let kind = slot_kind(kind, &member, &field.ty)?;
     let output = output
         .optional()
         .unwrap_or_else(|| LitStr::new(&member_name(&member), member.span()));
     let identity = identity(explicit.optional(), namespace, &member, &output)?;
-    Ok(Slot {
+    Ok(Member::Slot(Slot {
         selector: selector.optional().unwrap_or_else(|| member.clone()),
         value: field.ty.clone(),
         marker: marker(&output)?,
@@ -154,7 +215,7 @@ fn slot(field: &Field, namespace: Option<&Path>) -> syn::Result<Slot> {
         output,
         identity,
         kind,
-    })
+    }))
 }
 
 /// Exactly one of `field` and `relation`, with only the keys that one uses.

@@ -1,6 +1,7 @@
 //! Target-only whole-candidate execution payload under an admitted Home step.
 use super::*;
 use crate::schema::data::{ProposedSchemaTransition, SchemaReconciliationPolicy};
+use worth_relational_durability::internal_port::durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenialOwnerPort as _;
 
 #[derive(Debug)]
 pub(crate) struct AdmittedRelationalHomeProgramTarget {
@@ -9,6 +10,26 @@ pub(crate) struct AdmittedRelationalHomeProgramTarget {
     pub(crate) receiver_epoch: crate::runtime::RelationalRuntimeConfigurationSnapshot,
     pub(crate) index_definitions: Option<Arc<crate::runtime::PreparedRelationalIndexDefinitions>>,
     _memory: Option<ExecutionMemoryReservation>,
+}
+
+impl AdmittedRelationalHomeProgramTarget {
+    pub(crate) fn for_preflight(target: &PreparedRelationalHomeProgramContracts) -> Arc<Self> {
+        let home = worth_foundational::facade::HomeIdentity::from_observed_bytes([1u8; 16])
+            .expect("non-zero sentinel");
+        let transition = worth_foundational::facade::HomeProgramTransitionIdentity::from_recorded(
+            home,
+            std::num::NonZeroU64::MIN,
+        );
+        Arc::new(Self {
+            step: worth_foundational::facade::HomeProgramTransitionStepAssociation::from_recorded(
+                transition, 0,
+            ),
+            meaning: target.meaning.clone(),
+            receiver_epoch: target.receiver_epoch.clone(),
+            index_definitions: target.index_definitions.clone(),
+            _memory: None,
+        })
+    }
 }
 
 impl RelationalRuntime {
@@ -38,7 +59,11 @@ impl RelationalRuntime {
         if let Some((transition, policy)) = transition {
             require_bases(basis, &target, &transition)?;
             intent = intent.with_schema_transition(transition, policy);
-        } else if basis.inner.root.schema_authority().authority_digest()
+        } else if basis
+            .owner_inner()
+            .root
+            .schema_authority()
+            .authority_digest()
             != target.schema.authority_digest()
         {
             return Err(Denial::SchemaCapture);
@@ -86,12 +111,13 @@ fn require_bases(
     target: &RelationalRootExecutionContracts,
     transition: &ProposedSchemaTransition,
 ) -> Result<(), RelationalHomeProgramContractDenial> {
-    use super::super::schema_transition_admission::{
-        registry_basis, RelationalSchemaTransitionAdmissionDenial as Cause,
+    use super::super::schema_transition_admission::registry_basis;
+    use crate::durability::transition_admission_denial::{
+        RelationalSchemaTransitionAdmissionDenial as Cause,
         RelationalSchemaTransitionAdmissionDenialKind as Kind,
     };
-    let actual_source =
-        registry_basis(source.inner.root.schema_authority().registry()).map_err(|detail| {
+    let actual_source = registry_basis(source.owner_inner().root.schema_authority().registry())
+        .map_err(|detail| {
             RelationalHomeProgramContractDenial::SchemaTransition(Cause::new(
                 Kind::SourceBasisMismatch,
                 detail,

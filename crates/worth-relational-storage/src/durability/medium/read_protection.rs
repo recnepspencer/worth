@@ -1,0 +1,193 @@
+//! A protected source cut is data custody, never publication or Complete authority.
+use super::{RelationalDurableColdSource, RelationalDurableMemberLocator};
+#[cfg(test)]
+use crate::internal_port::durability::medium::member_custody::RelationalDurableMemberCustodyOwnerPort as _;
+use crate::{
+    branch::transition::sequence::RelationalBranchTransitionSequence,
+    publication::patch::data::PatchStreamPosition,
+};
+use std::{
+    any::Any,
+    sync::{Arc, Weak},
+};
+use worth_execution::{ExecutionImmutableBytes, ExecutionRequest};
+pub mod refusal;
+pub use refusal::RelationalDurableOwnedReadRefusal;
+use RelationalDurableOwnedReadRefusal as Refusal;
+/// Descriptive immutable bounds selected by the actual provider cut.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct RelationalDurableReadBounds {
+    pub selected_checkpoint: bool,
+    pub canonical: PatchStreamPosition,
+    pub transitions: RelationalBranchTransitionSequence,
+}
+/// The provider's own original payload; no request or decoded authority is retained.
+pub type RelationalDurableReadPayload = Box<dyn Any + Send + Sync>;
+pub struct RelationalDurableReadProtection {
+    issuer: Weak<dyn RelationalDurableColdSource>,
+    bounds: RelationalDurableReadBounds,
+    original: RelationalDurableReadPayload,
+}
+impl std::fmt::Debug for RelationalDurableReadProtection {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("RelationalDurableReadProtection")
+            .field("bounds", &self.bounds)
+            .finish_non_exhaustive()
+    }
+}
+impl RelationalDurableReadProtection {
+    pub fn read_initial_inputs_owned(
+        &self,
+        source: &Arc<dyn RelationalDurableColdSource>,
+        request: &ExecutionRequest<'_, '_>,
+        limit: u64,
+    ) -> Result<Option<ExecutionImmutableBytes>, Refusal> {
+        self.validate(source)?;
+        request
+            .check_live()
+            .map_err(|cause| Refusal::Request(cause.into()))?;
+        source.read_initial_inputs_owned(request, self.original.as_ref(), limit)
+    }
+    pub fn capture_journal(
+        source: &Arc<dyn RelationalDurableColdSource>,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<Self, Refusal> {
+        request
+            .check_live()
+            .map_err(|cause| Refusal::Request(cause.into()))?;
+        let (bounds, original) = source.journal_read_protection(request)?;
+        Ok(Self {
+            issuer: Arc::downgrade(source),
+            bounds,
+            original,
+        })
+    }
+    pub fn capture_journal_when_available(
+        source: &Arc<dyn RelationalDurableColdSource>,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<Self, Refusal> {
+        let mut pause = std::time::Duration::from_micros(50);
+        loop {
+            match Self::capture_journal(source, request) {
+                Err(Refusal::Busy) => {
+                    request
+                        .check_live()
+                        .map_err(|cause| Refusal::Request(cause.into()))?;
+                    std::thread::sleep(pause);
+                    pause = (pause * 2).min(std::time::Duration::from_millis(5));
+                }
+                settled => return settled,
+            }
+        }
+    }
+    pub fn capture(
+        source: &Arc<dyn RelationalDurableColdSource>,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<Self, Refusal> {
+        request
+            .check_live()
+            .map_err(|cause| Refusal::Request(cause.into()))?;
+        let (bounds, original) = source.checkpoint_read_protection(request)?;
+        Ok(Self {
+            issuer: Arc::downgrade(source),
+            bounds,
+            original,
+        })
+    }
+    /// A provider captures its cut without waiting for its own locks, so a
+    /// concurrent reader or publication reports `Busy`. A read that needs the
+    /// original bytes retries the capture while its request stays live; the
+    /// request's own cancellation or deadline ends the wait as that stop. The
+    /// wait sleeps with a short backoff: spinning would take the CPU from the
+    /// very holder it is waiting on.
+    pub fn capture_when_available(
+        source: &Arc<dyn RelationalDurableColdSource>,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<Self, Refusal> {
+        let mut pause = std::time::Duration::from_micros(50);
+        loop {
+            match Self::capture(source, request) {
+                Err(Refusal::Busy) => {
+                    std::thread::sleep(pause);
+                    pause = (pause * 2).min(std::time::Duration::from_millis(5));
+                }
+                settled => return settled,
+            }
+        }
+    }
+    pub fn bounds(&self) -> RelationalDurableReadBounds {
+        self.bounds
+    }
+
+    pub fn read_commit_owned_at(
+        &self,
+        source: &Arc<dyn RelationalDurableColdSource>,
+        request: &ExecutionRequest<'_, '_>,
+        position: PatchStreamPosition,
+        limit: u64,
+    ) -> Result<ExecutionImmutableBytes, Refusal> {
+        self.validate(source)?;
+        if position.0 == 0 || position > self.bounds.canonical {
+            return Err(Refusal::Bounds);
+        }
+        request
+            .check_live()
+            .map_err(|cause| Refusal::Request(cause.into()))?;
+        source.read_commit_owned(request, self.original.as_ref(), position, limit)
+    }
+    pub fn read_transition_owned_at(
+        &self,
+        source: &Arc<dyn RelationalDurableColdSource>,
+        request: &ExecutionRequest<'_, '_>,
+        sequence: RelationalBranchTransitionSequence,
+        limit: u64,
+    ) -> Result<ExecutionImmutableBytes, Refusal> {
+        self.validate(source)?;
+        if sequence.0 == 0 || sequence > self.bounds.transitions {
+            return Err(Refusal::Bounds);
+        }
+        request
+            .check_live()
+            .map_err(|cause| Refusal::Request(cause.into()))?;
+        source.read_transition_owned(request, self.original.as_ref(), sequence, limit)
+    }
+    pub fn read_member_owned_at(
+        &self,
+        source: &Arc<dyn RelationalDurableColdSource>,
+        request: &ExecutionRequest<'_, '_>,
+        member: RelationalDurableMemberLocator,
+        limit: u64,
+    ) -> Result<ExecutionImmutableBytes, Refusal> {
+        self.validate(source)?;
+        if member.length > limit {
+            return Err(Refusal::Storage(
+                crate::storage::data::RelationalStorageUnavailableCause::LimitExceeded {
+                    length: member.length,
+                    limit,
+                },
+            ));
+        }
+        request
+            .check_live()
+            .map_err(|cause| Refusal::Request(cause.into()))?;
+        source.read_member_owned(request, self.original.as_ref(), member, limit)
+    }
+}
+
+#[cfg(test)]
+mod tests;
+
+/// Operations used by the Relational owners.
+pub trait RelationalDurableReadProtectionOwnerPort: Sized {
+    fn validate(&self, source: &Arc<dyn RelationalDurableColdSource>) -> Result<(), Refusal>;
+}
+
+impl RelationalDurableReadProtectionOwnerPort for RelationalDurableReadProtection {
+    fn validate(&self, source: &Arc<dyn RelationalDurableColdSource>) -> Result<(), Refusal> {
+        // The Weak keeps this allocation identity non-reusable. Never upgrade it.
+        if !Weak::ptr_eq(&self.issuer, &Arc::downgrade(source)) {
+            return Err(Refusal::ForeignSource);
+        }
+        Ok(())
+    }
+}

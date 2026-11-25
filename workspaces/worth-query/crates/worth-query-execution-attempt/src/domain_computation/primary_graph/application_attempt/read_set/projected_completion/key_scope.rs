@@ -11,7 +11,7 @@ pub(super) fn key_entities_are_in_scope(
         WorthQueryApplicationFactKey::StructuralWalk(key) => {
             key.roots().iter().all(|id| scope.admits(*id))
         }
-        WorthQueryApplicationFactKey::SourcePublication(_) | WorthQueryApplicationFactKey::ManagedIndexSource(_) | WorthQueryApplicationFactKey::SourceReadAuthorization(_) => false,
+        WorthQueryApplicationFactKey::SourcePublication(_) | WorthQueryApplicationFactKey::AppliedSource(_) | WorthQueryApplicationFactKey::ManagedIndexSource(_) | WorthQueryApplicationFactKey::SourceReadAuthorization(_) => false,
         WorthQueryApplicationFactKey::Entity { entity_id, .. }
         | WorthQueryApplicationFactKey::AspectPresence { entity_id, .. }
         | WorthQueryApplicationFactKey::Field { entity_id, .. } => scope.admits(*entity_id),
@@ -19,5 +19,7 @@ pub(super) fn key_entities_are_in_scope(
             scope.admits(*from) && scope.admits(*to)
         }
         WorthQueryApplicationFactKey::Adjacency { anchor, .. } => scope.admits(*anchor),
+        // A group read names no entity record, so it leaves no record to admit.
+        WorthQueryApplicationFactKey::PersistentGroup(_) => true,
     }
 }

@@ -19,7 +19,12 @@ fn every_complexity_contract_proof_names_a_registered_test() {
             "{} has no proof",
             contract.id
         );
-        for proof in contract.proof_tests {
+        // The complexity CI lane checks relocated Storage proofs against that binary.
+        for proof in contract
+            .proof_tests
+            .iter()
+            .filter(|name| !name.starts_with("internal_port::"))
+        {
             assert!(
                 registered.contains(proof),
                 "{} cites missing test {proof}",

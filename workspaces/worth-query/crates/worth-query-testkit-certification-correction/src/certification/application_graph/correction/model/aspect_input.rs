@@ -22,8 +22,12 @@ pub fn declare(
         .application_query_binding::<query::Binding>()
         .application_query_inspection(super::causal_inspection::independent::metadata::<
             query::Binding,
-        >("numeric-aspect-source-metadata"));
+        >(NumericAspectSourceMetadataDisclosure));
     calculation::declare(authoring::declare(schema))
 }
 
 pub use crate::facade::certification::application_graph::correction::model::schema::storage_model::{InputFacts, Bias, Sibling};
+
+worth_query_decl::facade::worth_query_disclosure_classification!(
+    NumericAspectSourceMetadataDisclosure
+);

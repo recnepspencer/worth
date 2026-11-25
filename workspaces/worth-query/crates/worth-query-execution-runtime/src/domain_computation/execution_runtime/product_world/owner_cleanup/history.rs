@@ -38,7 +38,7 @@ fn walk(
 ) -> Result<(), WorthQueryProductBranchOwnerCleanupDenial> {
     let mut index = 0;
     while let Some(from) = resume.get(index) {
-        let port = runtime.owner.recovery_port();
+        let port = runtime.fields().owner.recovery_port();
         let release = match match execution {
             Some(execution) => port.release_retired_branch_history_with_request(from, execution),
             None => port.release_retired_branch_history(from),

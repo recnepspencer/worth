@@ -39,6 +39,10 @@ pub enum WorthQueryManagedIndexRefusal {
     ForeignReadIntent,
     InstallationAccountingOverflow,
     CapacityAccountingOverflow,
+    /// A coupled successor round probed a record its own chain wrote: the
+    /// applied candidate holds the chain's effect there, so the round stops
+    /// (`PriorEffectRead`) before the probe returns a row.
+    PriorEffectRead,
 }
 
 /// The actual original cause, borrowed from the owned operation denial.

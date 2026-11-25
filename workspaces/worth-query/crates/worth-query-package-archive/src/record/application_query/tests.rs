@@ -177,3 +177,86 @@ fn committed_index_choice_v1_round_trips_and_keeps_legacy_component_bytes() {
     assert!(root_selection::choice::write(&mut output, &source).is_err());
     assert!(output.into_bytes().is_empty());
 }
+
+fn decode_query(bytes: &[u8]) -> Result<ErasedApplicationQueryDefinition, Denial> {
+    let mut input = BinaryInput::new(bytes);
+    let mut budget = RecordDecodeAttempt::begin(
+        Default::default(),
+        bytes.len() as u64,
+        crate::limits::WorthQueryPackageArchiveLimits::DEFAULT,
+    )?;
+    let decoded = decode(&mut input, &mut budget)?;
+    assert!(input.is_finished());
+    Ok(decoded)
+}
+
+#[test]
+fn live_whole_result_round_trips_and_emits_zero_bytes_when_disabled() {
+    let mut plain = parts();
+    plain.lanes = ApplicationQueryLaneEligibility::one_shot().with_live();
+    let plain_query = ErasedApplicationQueryDefinition::from_untrusted_parts(plain.clone());
+    let mut plain_out = crate::binary_output::BinaryOutput::with_capacity(512);
+    write(&mut plain_out, &plain_query).unwrap();
+    let plain_bytes = plain_out.into_bytes();
+    assert!(!plain_bytes.ends_with(&[b'W', b'Q', b'W', b'L', 0, 1, 1]));
+    assert_eq!(decode_query(&plain_bytes).unwrap(), plain_query);
+
+    let mut whole = plain;
+    whole.live_whole_result = true;
+    let whole_query = ErasedApplicationQueryDefinition::from_untrusted_parts(whole);
+    let mut whole_out = crate::binary_output::BinaryOutput::with_capacity(512);
+    write(&mut whole_out, &whole_query).unwrap();
+    let whole_bytes = whole_out.into_bytes();
+    assert_eq!(whole_bytes.len(), plain_bytes.len() + 7);
+    assert_eq!(&whole_bytes[..plain_bytes.len()], &plain_bytes[..]);
+    assert_eq!(&whole_bytes[plain_bytes.len()..], b"WQWL\x00\x01\x01");
+    let decoded = decode_query(&whole_bytes).unwrap();
+    assert!(decoded.is_live_whole_result());
+    assert_eq!(decoded, whole_query);
+}
+
+#[test]
+fn live_whole_result_rejects_forged_wire_variants_and_invalid_shapes() {
+    // 1. Write refuses invalid shape before emitting marker bytes.
+    let mut one_shot_whole = parts();
+    one_shot_whole.live_whole_result = true;
+    let bad_query = ErasedApplicationQueryDefinition::from_untrusted_parts(one_shot_whole);
+    let mut out = crate::binary_output::BinaryOutput::with_capacity(512);
+    assert_eq!(
+        write(&mut out, &bad_query).unwrap_err().kind(),
+        Kind::InvalidRecordShape
+    );
+
+    // 2. Forged WQWL trailer on a one-shot-only query is rejected at decode.
+    let plain_one_shot = ErasedApplicationQueryDefinition::from_untrusted_parts(parts());
+    let mut base_out = crate::binary_output::BinaryOutput::with_capacity(512);
+    write(&mut base_out, &plain_one_shot).unwrap();
+    let mut forged = base_out.into_bytes();
+    forged.extend_from_slice(b"WQWL\x00\x01\x01");
+    assert_eq!(
+        decode_query(&forged).unwrap_err().kind(),
+        Kind::InvalidRecordShape
+    );
+
+    // 3. Forged unsupported version and mode variant on a live query are rejected.
+    let mut live_plain = parts();
+    live_plain.lanes = ApplicationQueryLaneEligibility::one_shot().with_live();
+    let live_query = ErasedApplicationQueryDefinition::from_untrusted_parts(live_plain);
+    let mut live_out = crate::binary_output::BinaryOutput::with_capacity(512);
+    write(&mut live_out, &live_query).unwrap();
+    let live_bytes = live_out.into_bytes();
+
+    let mut bad_version = live_bytes.clone();
+    bad_version.extend_from_slice(b"WQWL\x00\x02\x01");
+    assert_eq!(
+        decode_query(&bad_version).unwrap_err().kind(),
+        Kind::UnsupportedRecordVersion
+    );
+
+    let mut bad_mode = live_bytes;
+    bad_mode.extend_from_slice(b"WQWL\x00\x01\x02");
+    assert_eq!(
+        decode_query(&bad_mode).unwrap_err().kind(),
+        Kind::UnsupportedRecordVariant
+    );
+}

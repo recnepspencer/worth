@@ -1,0 +1,87 @@
+//! Owned Head construction preserves omitted-history readmission authority.
+use super::*;
+
+impl RelationalRegionResidency {
+    pub fn current_readmission(&self) -> Option<super::super::ResidentHistoryReadmission> {
+        self.head_readmission.clone().or_else(|| {
+            self.backing.as_ref().map(|cold| {
+                super::super::ResidentHistoryReadmission::new(
+                    cold.schema.clone(),
+                    &cold.symbols,
+                    cold.readmission,
+                )
+            })
+        })
+    }
+    pub(in crate::internal_port::storage::residency) fn history_codec(
+        &self,
+    ) -> Option<&'static super::super::cold_readmission::ColdRegionReadmission> {
+        self.head_readmission
+            .as_ref()
+            .map(|inputs| inputs.codec)
+            .or_else(|| self.backing.as_ref().map(|cold| cold.readmission))
+    }
+
+    pub fn resident_head(
+        partition: PartitionState,
+        commitment: PartitionContentCommitment,
+        kind_indexes: Arc<super::super::kind_incremental::RegionKindIndexes>,
+        history_presence: super::super::history_presence::HistoryPresence,
+        readmission: super::super::ResidentHistoryReadmission,
+    ) -> RelationalResidencyLease<Head> {
+        Self::owned_head(
+            partition,
+            Some(commitment),
+            Some(kind_indexes),
+            history_presence,
+            readmission,
+        )
+    }
+
+    pub(in super::super) fn resident_current(
+        partition: PartitionState,
+        history_presence: super::super::history_presence::HistoryPresence,
+        readmission: super::super::resident_history::ResidentHistoryReadmission,
+    ) -> RelationalResidencyLease<Head> {
+        Self::owned_head(partition, None, None, history_presence, readmission)
+    }
+
+    fn owned_head(
+        partition: PartitionState,
+        commitment: Option<PartitionContentCommitment>,
+        kind_indexes: Option<Arc<super::super::kind_incremental::RegionKindIndexes>>,
+        history_presence: super::super::history_presence::HistoryPresence,
+        readmission: super::super::resident_history::ResidentHistoryReadmission,
+    ) -> RelationalResidencyLease<Head> {
+        let region = Arc::new(ResidentRegion {
+            symbol_requirements: OnceLock::new(),
+            history_presence,
+            partition,
+            sealed_watermarks: crate::storage::substrate::SealedAllocationWatermarks::capture(),
+            commitment,
+            _history_custody: None,
+            _memory: None,
+            kind_indexes,
+        });
+        let cell = Arc::new(Self {
+            partition_id: region.partition.partition_id,
+            checkpoint_bindings: Mutex::new(Default::default()),
+            backing: None,
+            head_readmission: Some(readmission),
+            raw_head: Mutex::new(None),
+            raw_full: Mutex::new(None),
+            state: Mutex::new(RegionState::new(
+                ResidencyState::Head {
+                    region: super::SharedResidentRegion::from_arc(region.clone()),
+                },
+                None,
+            )),
+            damage: OnceLock::new(),
+            symbol_inheritance: OnceLock::new(),
+            symbol_aliases: OnceLock::new(),
+            leases: AtomicUsize::new(1),
+            _control_memory: None,
+        });
+        RelationalResidencyLease::accepted(cell, region)
+    }
+}

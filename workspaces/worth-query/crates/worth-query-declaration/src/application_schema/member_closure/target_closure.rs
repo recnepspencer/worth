@@ -84,6 +84,20 @@ impl ClosureIndex<'_> {
                         && definition.managed_index().is_some())
                 })
             }
+            ApplicationOperationDecisionReadTarget::SharedOwnerManagedIndex {
+                parent,
+                relation,
+                owner,
+                member,
+            } => {
+                self.decision_read_target_exists(
+                    &ApplicationOperationDecisionReadTarget::ManagedIndex {
+                        parent: parent.clone(),
+                    },
+                ) && self
+                    .relations
+                    .contains(&(relation.as_str(), owner.as_str(), member.as_str()))
+            }
             ApplicationOperationDecisionReadTarget::Entity { entity } => {
                 self.entities.contains(entity.as_str())
             }

@@ -70,7 +70,9 @@ pub use history::{
     WorthQueryHistoryContextRefreshLimits, WorthQueryHistoryDescriptionContext,
     WorthQueryHistoryEdit, WorthQueryHistoryEditAdvance, WorthQueryHistoryEditBuilder,
     WorthQueryHistoryEditCaptureDenial, WorthQueryHistoryEditCaptureFailure,
-    WorthQueryHistoryEditDenial, WorthQueryHistoryEditDescription, WorthQueryHistoryEditFinish,
+    WorthQueryHistoryEditDenial, WorthQueryHistoryEditDescription, WorthQueryHistoryEditEnvelope,
+    WorthQueryHistoryEditEnvelopeDenial, WorthQueryHistoryEditEnvelopeFailure,
+    WorthQueryHistoryEditEnvelopeOutcome, WorthQueryHistoryEditFinish,
     WorthQueryHistoryEditOutcome, WorthQueryHistoryEditPosture, WorthQueryHistoryExpectedCheckout,
     WorthQueryHistoryGestureCompletion, WorthQueryHistoryGestureIntent,
     WorthQueryHistoryGestureMembers, WorthQueryHistoryGroupCompletionIter,
@@ -90,8 +92,9 @@ pub use history::{
     WorthQueryHistoryPreviewResult, WorthQueryHistoryRedoChoice, WorthQueryHistoryRedoChoices,
     WorthQueryHistoryReleaseOutcome, WorthQueryHistoryRetentionStatus,
     WorthQueryHistoryRootOutputAdmissionDenial, WorthQueryHistorySelection, WorthQueryHistoryStep,
-    WorthQueryHistoryTypedMembers, WorthQueryHistoryWindowChange, WorthQueryHistoryWithOutputTrees,
-    WorthQueryHistoryWithOutputs, WorthQueryOriginalReadOutputDenial,
+    WorthQueryHistoryStepMetadata, WorthQueryHistoryTypedMembers, WorthQueryHistoryWindowChange,
+    WorthQueryHistoryWithOutputTrees, WorthQueryHistoryWithOutputs,
+    WorthQueryOriginalReadOutputDenial, WorthQueryOwnedApplicationHistoryDocument,
     WorthQueryRecordingOutputQualificationDenial,
 };
 #[doc(hidden)]
@@ -99,6 +102,7 @@ pub use history::{
     WorthQueryHistoryGroupHandoffPauseForTest, WorthQueryHistoryGroupHandoffPointForTest,
 };
 mod live;
+mod live_whole_result;
 mod mandatory_review;
 mod mutation;
 mod ordinary;
@@ -178,6 +182,7 @@ pub use live::{
     WorthQueryApplicationLiveLimits, WorthQueryApplicationLiveNextDenial,
     WorthQueryApplicationLiveOpenRequestDenial, WorthQueryApplicationLiveSubscription,
 };
+pub use live_whole_result::WorthQueryApplicationWholeResultLiveSubscription;
 pub use mandatory_review::{
     WorthQueryApplicationMandatoryReviewDenial, WorthQueryApplicationMandatoryReviewFailure,
 };

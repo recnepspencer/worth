@@ -13,6 +13,7 @@ pub struct CompletedOneShotRead<Query, QueryResult, Capture = ()> {
     >,
     pub authorization:
         crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts,
+    pub governance: super::super::super::disclosure::WorthQueryApplicationQueryGovernance,
 }
 
 pub struct CompletedSourceParts<Query> {

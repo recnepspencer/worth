@@ -26,6 +26,7 @@ worth-query-execution-contracts = { path = "../worth-query-execution-contracts" 
 worth-query-execution-diagnostics = { path = "../worth-query-execution-diagnostics" }
 worth-query-execution-foundation = { path = "../worth-query-execution-foundation" }
 worth-query-execution-layout = { path = "../worth-query-execution-layout" }
+worth-query-execution-naming = { path = "../worth-query-execution-naming" }
 worth-query-execution-obligations = { path = "../worth-query-execution-obligations" }
 worth-query-execution-runtime = { path = "../worth-query-execution-runtime" }
 worth-query-installation = { path = "../worth-query-installation" }

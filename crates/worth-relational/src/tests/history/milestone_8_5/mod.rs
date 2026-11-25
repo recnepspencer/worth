@@ -1,7 +1,10 @@
+use crate::commit_strategies::data::execution::executor_registration::{
+    CommitStrategyExecutionRegistration, CommitStrategyExecutor,
+};
+use crate::commit_strategies::data::execution::observation_context::StrategyObservationContext;
 use crate::commit_strategies::data::{
-    CommitStrategyExecutionRegistration, CommitStrategyExecutor, CommitStrategyRegistration,
-    StrategyCommitArtifactBundle, StrategyExecutionResult, StrategyExecutorFailure,
-    StrategyExecutorFailureClass, StrategyObservationContext,
+    CommitStrategyRegistration, StrategyCommitArtifactBundle, StrategyExecutionResult,
+    StrategyExecutorFailure, StrategyExecutorFailureClass,
 };
 use crate::commit_strategies::strategies::{
     AspectFieldReconciliationInput, AspectFieldReconciliationStrategy,

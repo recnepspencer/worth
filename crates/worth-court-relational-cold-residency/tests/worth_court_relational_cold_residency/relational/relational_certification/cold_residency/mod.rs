@@ -11,6 +11,7 @@ mod lineage_event_matrix;
 mod lineage_integrity;
 
 mod canonical_source;
+mod codec_neutrality;
 
 mod current_publications;
 mod current_reads;
@@ -20,6 +21,9 @@ mod current_field_meanings;
 mod current_read_basis;
 
 mod lineage_event_semantics;
+mod recovery_request_stops;
+mod recovery_sibling_branches;
+mod recovery_snapshot_closeout;
 mod replay_concurrency;
 
 mod lineage_capture_rows;
@@ -42,6 +46,7 @@ mod checkpoint_read_refusal;
 mod envelope_doors;
 mod envelope_failure_matrix;
 mod envelope_source;
+mod retained_export;
 
 mod envelope_roundtrips;
 
@@ -109,3 +114,10 @@ mod tail_recovery_source;
 mod tail_recovery_subject;
 
 mod merge_history_contributions;
+
+mod checkpoint_capture_abandonment;
+
+mod checkpoint_restore_work;
+
+mod checkpoint_wire_fixture;
+mod native_checkpoint_directory;

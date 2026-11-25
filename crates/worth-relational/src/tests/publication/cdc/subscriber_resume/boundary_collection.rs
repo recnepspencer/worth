@@ -1,3 +1,5 @@
+#[cfg(test)]
+use crate::durability::canonical_commit_artifact::checkpoint_body::copy_original_for_test;
 use crate::publication::cdc::execution::collect_crossed_boundaries;
 use crate::schema::data::{
     DescriptorCanonicalBasisVersion, DescriptorSemanticsVersion,
@@ -6,6 +8,8 @@ use crate::schema::data::{
     SchemaContinuationDescriptor,
 };
 use crate::tests::support::*;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeFixturePort as _;
+use worth_relational_branch::internal_port::history::data::positioned_canonical_commit::PositionedCanonicalCommitFixturePort as _;
 
 #[test]
 fn crossed_boundary_collection_deduplicates_without_losing_first_seen_order() {
@@ -20,7 +24,7 @@ fn crossed_boundary_collection_deduplicates_without_losing_first_seen_order() {
     let fingerprint_a = SchemaBoundaryFingerprint::new([1_u8; 32]);
     let fingerprint_b = SchemaBoundaryFingerprint::new([2_u8; 32]);
 
-    let mut first_envelope = first.envelope().copy_original_for_test(execution);
+    let mut first_envelope = copy_original_for_test(first.envelope(), execution);
     first_envelope
         .body_mut_for_test()
         .schema_continuation_descriptor = Some(SchemaContinuationDescriptor::new(
@@ -37,7 +41,7 @@ fn crossed_boundary_collection_deduplicates_without_losing_first_seen_order() {
         1,
     ));
 
-    let mut second_envelope = second.envelope().copy_original_for_test(execution);
+    let mut second_envelope = copy_original_for_test(second.envelope(), execution);
     second_envelope
         .body_mut_for_test()
         .schema_continuation_descriptor = first_envelope
@@ -45,7 +49,7 @@ fn crossed_boundary_collection_deduplicates_without_losing_first_seen_order() {
         .schema_continuation_descriptor
         .clone();
 
-    let mut third_envelope = third.envelope().copy_original_for_test(execution);
+    let mut third_envelope = copy_original_for_test(third.envelope(), execution);
     third_envelope
         .body_mut_for_test()
         .schema_continuation_descriptor = Some(SchemaContinuationDescriptor::new(
@@ -63,15 +67,15 @@ fn crossed_boundary_collection_deduplicates_without_losing_first_seen_order() {
     ));
 
     let crossed = collect_crossed_boundaries(&[
-        crate::history::data::PositionedCanonicalCommit::for_test(
+        crate::history::data::PositionedCanonicalCommit::positioned_commit_for_test(
             first.patch_position(),
             std::sync::Arc::new(first_envelope),
         ),
-        crate::history::data::PositionedCanonicalCommit::for_test(
+        crate::history::data::PositionedCanonicalCommit::positioned_commit_for_test(
             second.patch_position(),
             std::sync::Arc::new(second_envelope),
         ),
-        crate::history::data::PositionedCanonicalCommit::for_test(
+        crate::history::data::PositionedCanonicalCommit::positioned_commit_for_test(
             third.patch_position(),
             std::sync::Arc::new(third_envelope),
         ),

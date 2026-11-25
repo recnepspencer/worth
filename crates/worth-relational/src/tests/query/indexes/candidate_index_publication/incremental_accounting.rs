@@ -4,6 +4,8 @@ use crate::facade::indexes::{RelationJoinDefinition, RelationJoinLeg, RelationJo
 use worth_execution::{
     CancellationSource, ExecutionRequest, ExecutionWorkCeiling, SerialMemoryBudget, SerialRequest,
 };
+#[cfg(not(test))]
+use worth_relational_publication::internal_port::mvcc::publication::candidate::PreparedRelationalCommitCandidateOwnerPort as _;
 
 #[test]
 fn selected_field_and_join_candidate_keep_original_funding_until_performed_installation() {

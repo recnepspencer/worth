@@ -4,6 +4,7 @@ use crate::replay::data::{
     ReplayObservableSurface, ReplayVerificationMode,
 };
 use crate::runtime::RelationalRuntime;
+use worth_relational_durability::internal_port::replay::data::lineage_authority::ReplayLineageAuthorityBasisOwnerPort as _;
 
 use super::super::lineage_authority::{
     lineage_decision_log_comparison_basis, lineage_event_batch_comparison_basis,

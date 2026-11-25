@@ -16,6 +16,10 @@ pub use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
 
 pub use super::super::declaration::PublicationAuthorizationSchema;
 
+worth_query_declaration::worth_query_authentication_method!(CausalTestMethod);
+worth_query_declaration::worth_query_authentication_audience!(PublicationProofAudience);
+worth_query_declaration::worth_query_principal_issuer!(PublicationProofExampleIssuer);
+
 pub fn authenticate_external(
     schema: &WorthQueryInstalledApplicationSchema<PublicationAuthorizationSchema>,
     scope: &WorthQueryRequestScope,
@@ -23,8 +27,8 @@ pub fn authenticate_external(
     let adapter = admit_authentication_adapter(
         schema,
         WorthQueryAuthenticationAdapterAdmission::new(
-            WorthQueryAuthenticationAudience::new("publication-proof").unwrap(),
-            WorthQueryAuthenticationMethod::new("causal-test").unwrap(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
+            WorthQueryAuthenticationAudience::of(PublicationProofAudience),
+            WorthQueryAuthenticationMethod::of(CausalTestMethod), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
         CausalIdentityAdapter,
     )
     .unwrap();
@@ -32,8 +36,7 @@ pub fn authenticate_external(
 }
 
 pub fn external_identity() -> WorthQueryExternalPrincipalIdentity {
-    WorthQueryExternalPrincipalIdentity::new("https://publication-proof.example", "same-subject")
-        .unwrap()
+    WorthQueryExternalPrincipalIdentity::new(PublicationProofExampleIssuer, "same-subject").unwrap()
 }
 
 pub fn request_scope() -> WorthQueryRequestScope {
@@ -64,8 +67,8 @@ impl WorthQueryAuthenticationAdapter for CausalIdentityAdapter {
             let now = SystemTime::now();
             WorthQueryValidatedExternalPrincipal::new(
                 external_identity(),
-                WorthQueryAuthenticationAudience::new("publication-proof").unwrap(),
-                WorthQueryAuthenticationMethod::new("causal-test").unwrap(),
+                WorthQueryAuthenticationAudience::of(PublicationProofAudience),
+                WorthQueryAuthenticationMethod::of(CausalTestMethod),
                 now,
                 now + Duration::from_secs(60),
                 vec![WorthQueryPrincipalAttribute::new("proof", "causal").unwrap()],

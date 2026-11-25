@@ -32,6 +32,8 @@ use worth_query_execution::facade::domain_computation::WorthQueryApplicationProj
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationProjectionDenial;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationProjectionRow;
 
+worth_query_declaration::worth_query_disclosure_classification!(AccountOmissionDisclosure);
+
 worth_query_declaration::worth_query_structured_value_binding!(NestedUnitResultBinding for () { identity: "worth.rust.unit" });
 
 pub struct StatusSlot;
@@ -141,7 +143,7 @@ pub fn governed_account_shape() -> TypedApplicationQueryResultShape<
 
 pub fn governed_account_disclosure() -> ApplicationQueryDisclosureContract {
     ApplicationQueryDisclosureContract::governed_by(
-        "account-omission",
+        AccountOmissionDisclosure,
         TouchAccountCapability::reference(),
     )
     .disclose_field_by(

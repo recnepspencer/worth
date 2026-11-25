@@ -148,6 +148,21 @@ fn managed_index_checks_actual_binding_and_probe_before_installation() {
         worth_query_declaration::facade::application_query::ApplicationManagedIndexProbeMeaning::of::<
             worth_query_declaration::facade::application_schema::U64ApplicationValueBinding,
         >();
+    let mismatched = ApplicationSchemaMember::ManagedIndex {
+        definition: ErasedApplicationManagedIndexDefinition::from_untrusted_parts(parts.clone()),
+    };
+    assert_eq!(
+        validate_definitions(&[mismatched], std::slice::from_ref(&recipe), &[], &bindings)
+            .unwrap_err()
+            .kind(),
+        Kind::ManagedIndexBindingMeaningChanged
+    );
+    let mut unsupported = parts.probe.parts().clone();
+    unsupported.supports_admitted_decode = false;
+    parts.probe =
+        worth_query_declaration::facade::application_query::ApplicationManagedIndexProbeMeaning::from_untrusted_parts(
+            unsupported,
+        );
     let invalid = ApplicationSchemaMember::ManagedIndex {
         definition: ErasedApplicationManagedIndexDefinition::from_untrusted_parts(parts),
     };

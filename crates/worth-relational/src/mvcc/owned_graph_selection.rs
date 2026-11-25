@@ -1,22 +1,14 @@
 //! Retained graph selection enters the original Native proposal lifecycle.
-use crate::{
-    branch::RelationalOwnedModelGraphSelection, history::data::CanonicalOwnedGraphSelection,
-    mvcc::BranchBoundRelationalTransaction,
-};
-use std::sync::Arc;
+use crate::mvcc::BranchBoundRelationalTransaction;
+
+pub(crate) use prepared::PreparedOwnedGraphSelection;
+pub(crate) use worth_relational_mutation::internal_port::mvcc::owned_graph_selection::prepared;
 
 #[derive(Debug)]
 pub struct RelationalOwnedGraphSelection {
     pub(crate) transaction: BranchBoundRelationalTransaction,
     pub(crate) retained: PreparedOwnedGraphSelection,
 }
-#[derive(Clone, Debug)]
-pub(crate) struct PreparedOwnedGraphSelection {
-    pub(crate) graph: Arc<RelationalOwnedModelGraphSelection>,
-    pub(crate) meaning: Arc<CanonicalOwnedGraphSelection>,
-    pub(crate) _funding: Arc<Option<worth_execution::ExecutionMemoryReservation>>,
-}
-
 /// Admission and preparation failures preserve the original Native cause.
 #[derive(Debug)]
 pub enum RelationalOwnedGraphSelectionPreparationError {

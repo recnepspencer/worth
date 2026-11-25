@@ -168,9 +168,11 @@ impl Source {
 fn correction_denial(
     refused: &WorthQueryApplicationHomeOpenRefused<HomeIdentitySchema, HomeProgram>,
 ) -> &worth_query_execution::facade::primary_graph::QueryHomeCorrectionLineageDenial {
-    use worth_query_host::facade::HomeCustodyReadmissionDenial;
-    match refused {
-        WorthQueryApplicationHomeOpenRefused::CustodyReadmission {
+    use worth_query_host::facade::{
+        HomeCustodyReadmissionDenial, WorthQueryApplicationHomeOpenRefusedPhase,
+    };
+    match refused.phase() {
+        WorthQueryApplicationHomeOpenRefusedPhase::CustodyReadmission {
             cause:
                 HomeCustodyReadmissionDenial::Query(QueryHomeCustodyReadmissionDenial::Correction(
                     cause,

@@ -1,6 +1,8 @@
 //! The application fixture installs and seeds its required real principal binding.
 use super::*;
 
+worth_query_declaration::worth_query_principal_issuer!(IssuerExampleIssuer);
+
 pub struct MappingTarget;
 impl fragment::Relation for MappingTarget {
     const NAME: &'static str = "MappingTarget";
@@ -57,7 +59,7 @@ pub fn seed(
             &binding,
             WorthQueryApplicationPrincipalKey::new("component-principal").unwrap(),
             1,
-            WorthQueryExternalPrincipalIdentity::new("https://issuer.example", "alice").unwrap(),
+            WorthQueryExternalPrincipalIdentity::new(IssuerExampleIssuer, "alice").unwrap(),
             WorthQueryPrincipalMappingStatus::Enabled,
         )
         .unwrap();

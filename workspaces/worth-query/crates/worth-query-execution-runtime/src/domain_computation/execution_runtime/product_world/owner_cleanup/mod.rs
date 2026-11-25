@@ -162,7 +162,12 @@ impl WorthQueryProductBranchOwnerCleanup {
             .owner_cleanup
             .pending_signal_references(self.identity)
             .into_iter()
-            .map(|reference| self.runtime.signal_basis.observe_current(&reference))
+            .map(|reference| {
+                self.runtime
+                    .fields()
+                    .signal_basis
+                    .observe_current(&reference)
+            })
             .collect()
     }
 
@@ -261,6 +266,7 @@ impl WorthQueryProductBranchOwnerCleanupRecord {
     {
         let history_work = self.history.as_ref().map_or(0, |_| {
             runtime
+                .fields()
                 .owner
                 .inspection_port()
                 .history_snapshot()

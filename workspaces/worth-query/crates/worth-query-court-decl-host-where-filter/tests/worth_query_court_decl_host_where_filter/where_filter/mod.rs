@@ -10,11 +10,12 @@ mod admission;
 mod combined;
 mod interruption;
 mod invalidation;
+mod optional_and_literals;
 mod portable;
 mod ranges;
 mod text_search;
 
-use queries::{ByStatus, DueBy, Fit, Search};
+use queries::{ByStatus, DueBy, Fit, LiteralFilter, OpenInbox, Search};
 use world::{board, install, keys};
 
 fn search_text(project: u64, q: &str) -> Search {

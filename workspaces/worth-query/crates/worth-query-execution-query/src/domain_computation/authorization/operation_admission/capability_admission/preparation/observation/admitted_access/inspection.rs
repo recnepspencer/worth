@@ -112,6 +112,11 @@ where
         self.resolved.resource_entity_id()
     }
 
+    /// Read-only resolved resource entity identity admitted by this capability proof.
+    pub fn admitted_resource_entity_id(&self) -> worth_relational::facade::identity::EntityId {
+        self.resolved.resource_entity_id()
+    }
+
     pub(crate) fn disclosure_value(&self) -> Option<&worth_foundational::facade::AspectValue> {
         self.projection.field_value()
     }

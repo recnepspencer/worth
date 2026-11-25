@@ -1,17 +1,20 @@
+pub use crate::durability::authority::recovered_runtime::RecoveredRelationalRuntimeAuthority;
+pub use crate::durability::authority::recovery::catalog_readmission::refusal::{
+    RefusedRelationalHomeProgramCatalogReadmission, RelationalHomeProgramCatalogReadmissionDenial,
+};
+pub use crate::durability::authority::recovery::prepared_home::refusal::RefusedPreparedRelationalHomeRecovery;
 pub use crate::durability::authority::CapturedRelationalCheckpointAdmissionImage;
+pub use crate::durability::HomeReadmissionMetadataAuthority;
 pub use crate::durability::authority::{
     ReadmittedRelationalAssociatedFork, RefusedRelationalForkReadmission,
     RelationalForkReadmissionCause,
 };
 pub use crate::durability::authority::{
-    FreshRelationalSourceAdmission, ObservedRelationalMemoryCommit, PreparedRelationalHomeRecovery,
+    ObservedRelationalMemoryCommit, PreparedRelationalHomeRecovery,
     ReadmittedRelationalAssociatedEffect, ReadmittedRelationalCreatedEntity,
-    ReadmittedRelationalHomeProgramCatalogs, RefusedPreparedRelationalHomeRecovery,
-    RefusedRelationalHomeProgramCatalogReadmission, RefusedRelationalRecordedComponent,
+    ReadmittedRelationalHomeProgramCatalogs, RefusedRelationalRecordedComponent,
     RelationalAssociatedEffectRefusal, RelationalAssociatedEffectSettlement,
-    RelationalAssociatedEffectSubject, RelationalFreshSourceAdmissionStop,
-    RelationalHomeProgramCatalogReadmissionDenial, RelationalHomeProgramPlanningRoot,
-    RelationalHomeProgramTransitionSource, RelationalHomeProgramTransitionSourceRefusal,
+    RelationalAssociatedEffectSubject, RelationalHomeProgramPlanningRoot,
     RelationalHomeRecoveryPreparationDenial, RelationalRecordedComponentAdmissionCause,
 };
 pub use crate::durability::branch_transition_artifact::{
@@ -40,55 +43,50 @@ pub use crate::durability::data::{
     RelationalCheckpointMember, RelationalNativeCheckpoint,
     RelationalNativeCheckpointCaptureDenial, RelationalRecoveryStop,
 };
-pub use crate::durability::medium::RelationalHomeProgramWriteDenial;
-pub use crate::durability::medium::RelationalInitialInputsPublicationStop;
+pub use crate::durability::medium::home_write_denial::RelationalHomeProgramWriteDenial;
 pub use crate::durability::medium::{
-    CheckpointSelectionIdentity, CheckpointSelectionObservation, DurablePublicationFate,
-    OpaqueCapturedCheckpointSubject, RelationalCheckpointAcknowledgementDenial,
-    RelationalCheckpointAcknowledgementProgress, RelationalDurabilityUnresolved,
-    RelationalDurabilityUnresolvedSubject, RelationalDurableCheckpointSource,
-    RelationalDurableColdSource, RelationalDurableMedium, RelationalDurableMemberCustody,
-    RelationalDurableMemberLocator, RelationalDurableMemberRetirement,
-    RelationalDurableMemberRetirementObservation, RelationalDurableMemberRetirementRefusal,
-    RelationalDurablePublicationRefusal, RelationalDurableRecoverySource,
+    DurablePublicationFate, RelationalCheckpointAcknowledgementDenial,
+    RelationalDurabilityUnresolved, RelationalDurabilityUnresolvedSubject,
+    RelationalDurableColdSource, RelationalDurableMemberCustody, RelationalDurableMemberLocator,
+    RelationalDurableMemberRetirement, RelationalDurableMemberRetirementObservation,
+    RelationalDurableMemberRetirementRefusal, RelationalDurablePublicationRefusal,
     RelationalDurableTransitionReadFailure, RelationalMediumRetirementDenial,
     RelationalMediumRetirementProgress, RetiredRelationalDurableMemberCustody,
 };
 pub use crate::durability::migration::ReadmittedCanonicalCommit;
+pub use crate::durability::published_medium::RelationalInitialInputsPublicationStop;
+pub use crate::durability::published_medium::{
+    CheckpointSelectionIdentity, CheckpointSelectionObservation, OpaqueCapturedCheckpointSubject,
+    RelationalCheckpointAcknowledgementProgress, RelationalDurableCheckpointSource,
+    RelationalDurableMedium, RelationalDurableRecoverySource,
+};
 pub use crate::durability::source_initial_inputs::{
-    RelationalCompleteSourceArtifact, RelationalFreshInitialization,
-    RelationalInitialInputsPublicationDetail, RelationalInitialInputsRefusal,
-    RelationalSourceInitialInputsArtifact,
+    RelationalCompleteSourceArtifact, RelationalInitialInputsPublicationDetail,
+    RelationalInitialInputsRefusal, RelationalSourceInitialInputsArtifact,
+};
+pub use crate::durability::{
+    RecoveredCheckpointTransition, RecoveredCheckpointTransitionDenial,
+    RecoveredCheckpointTransitionError, RecoveredRelationalBranchBasis,
+    RefusedRecoveredCheckpointTransition,
 };
 pub use crate::durability::{
     RelationalAllocationWitness, RelationalCheckpointSelectionCensus, RelationalColdSourceWitness,
     RelationalCommitEnvelopeCustody, RelationalCompleteCarriedIndexBasis,
     RelationalCompleteIndexSelectionInspection, RelationalHistoryFoldBounds,
+    RelationalSelectedCheckpointObservation,
+};
+pub use crate::history::data::RelationalAssociationDiscovery;
+pub use crate::runtime::cold_residency_census::{
     RelationalLineageResidencyObservation, RelationalPartitionSlotCensus,
     RelationalRegionProbeStatus, RelationalRegionResidencyObservation,
     RelationalReplayRetentionObservation, RelationalResidentSymbolDictionary,
-    RelationalSelectedCheckpointObservation,
 };
-pub use crate::durability::{
-    HomeReadmissionMetadataAuthority, RecoveredCheckpointTransition,
-    RecoveredCheckpointTransitionDenial, RecoveredCheckpointTransitionError,
-    RecoveredRelationalBranchBasis, RecoveredRelationalRuntimeAuthority,
-    RefusedRecoveredCheckpointTransition,
-};
-pub use crate::history::data::RelationalAssociationDiscovery;
 pub use crate::runtime::CompleteRelationalCheckpointPreparation;
 pub use crate::runtime::RelationalCanonicalPositionAdmissionDenial;
 pub use crate::transactions::data::RecoveredRelationalSemanticResult;
 
 #[doc(hidden)]
-pub use crate::durability::authority::{
-    CapturedRelationalCheckpointBasisForTest, RelationalRetentionGateTrialForTest,
-};
-#[doc(hidden)]
-pub use crate::history::retention::{
-    RelationalExternalRetentionTerminalCounts, RelationalRetentionCensusForTest,
-    RelationalRetentionGateForTest,
-};
+pub use crate::durability::authority::RelationalRetentionGateTrialForTest;
 pub use crate::durability::authority::{
     RefusedRelationalPublicationReadmission, RelationalRecordedSuccessorRefusal,
     RelationalRecoveredPublicationAdmissionCause, RelationalRecoveredPublicationCustody,
@@ -99,6 +97,13 @@ pub use crate::durability::data::{
     CheckpointReservationAdvanceDenial, NativeCheckpointModelBytes, RelationalCheckpointInspection,
 };
 pub use crate::history::data::RecordAllocationClass;
+#[doc(hidden)]
+pub use crate::history::retention::{
+    RelationalExternalRetentionTerminalCounts, RelationalRetentionCensusForTest,
+    RelationalRetentionGateForTest,
+};
+#[doc(hidden)]
+pub use crate::runtime::checkpoint_split_doors_for_test::CapturedRelationalCheckpointBasisForTest;
 
 pub use crate::durability::medium::{
     RelationalDurableOwnedReadRefusal, RelationalDurableReadBounds, RelationalDurableReadPayload,
@@ -110,3 +115,12 @@ pub use crate::durability::{
     RelationalWorldOriginalDescription, RelationalWorldSourceCatalog,
     RelationalWorldSourceDescription,
 };
+
+pub use crate::durability::{
+    RelationalHomeProgramTransitionSource, RelationalHomeProgramTransitionSourceRefusal,
+};
+
+pub use crate::durability::authority::fresh_source::{
+    FreshRelationalSourceAdmission, RelationalFreshSourceAdmissionStop,
+};
+pub use crate::durability::source_initial_inputs::fresh_initialization::RelationalFreshInitialization;

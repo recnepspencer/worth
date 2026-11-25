@@ -80,14 +80,16 @@ pub use composition::{
     WorthQueryApplicationContribution, WorthQueryApplicationContributionTuple,
     WorthQueryConfiguredApplicationContributions,
 };
-pub use conditional::{RefusedConditionalBatch, WorthQueryApplicationConditionalBinding};
+pub use conditional::{
+    RefusedConditionalBatch, WorthQueryApplicationConditionalBinding, WorthQueryConditionalFeature,
+};
 pub use contracts::{
     WorthQueryApplicationContractCatalog, WorthQueryApplicationContributionContracts,
 };
 pub use feature::{
-    WorthQueryFeatureConfiguration, WorthQueryFeatureDefinition,
-    WorthQueryFeaturePairConfiguration, WorthQueryFeatureRoleRuntime, WorthQueryFeatureRuntime,
-    WorthQueryRequiredFeatureContract, WorthQueryRequiredFeaturePair,
+    WorthQueryApplicationManagedIndexRegistration, WorthQueryFeatureConfiguration,
+    WorthQueryFeatureDefinition, WorthQueryFeaturePairConfiguration, WorthQueryFeatureRoleRuntime,
+    WorthQueryFeatureRuntime, WorthQueryRequiredFeatureContract, WorthQueryRequiredFeaturePair,
 };
 pub use setup::{
     WorthQueryApplicationContributionSetup, WorthQueryManagedIndexProviderRegistration,

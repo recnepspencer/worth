@@ -28,6 +28,9 @@ use worth_query_decl::facade::{
 };
 use worth_query_host::facade::application_contribution::*;
 use worth_query_host::facade::primary_graph::*;
+worth_query_host::facade::worth_query_principal_issuer!(pub GeneratedMaterializationIssuer);
+worth_query_host::facade::worth_query_authentication_audience!(pub GeneratedMaterializationAudience);
+worth_query_host::facade::worth_query_authentication_method!(pub LocalProcessMethod);
 
 pub struct Catalog;
 impl Fragment for Catalog {
@@ -301,7 +304,7 @@ pub fn seed_principal(
         &installed.principal_binding(principal_binding()).unwrap(),
         WorthQueryApplicationPrincipalKey::new("early-recovery-reader").unwrap(),
         1u64,
-        WorthQueryExternalPrincipalIdentity::new("early-recovery", "reader").unwrap(),
+        WorthQueryExternalPrincipalIdentity::new(GeneratedMaterializationIssuer, "reader").unwrap(),
         WorthQueryPrincipalMappingStatus::Enabled,
     )?;
     Ok(())

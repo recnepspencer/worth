@@ -333,9 +333,12 @@ impl Default for DemandRegistryState {
 pub use source_custody::PreparedOutputRootKind;
 use source_custody::SourcePreparationState;
 
+pub mod shared_state;
+pub use shared_state::{SharedDemandRegistryState, WeakDemandRegistryState};
+
 #[derive(Clone, Default)]
 pub struct WorthQueryOutputDemandRegistry {
-    pub state: Arc<Mutex<DemandRegistryState>>,
+    pub state: SharedDemandRegistryState,
 }
 
 pub struct WorthQueryOutputDemandInterest {

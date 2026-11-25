@@ -128,7 +128,6 @@ pub(super) fn commit(
     }
 }
 
-
 // These three governed producer calls stay in this exact registered module.
 pub mod durable_components;
 use durable_components::{QueryBoundWorldPreparation, QueryPreparedWorldPublication};

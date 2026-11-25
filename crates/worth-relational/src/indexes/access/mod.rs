@@ -1,31 +1,15 @@
-mod applied_entity_field_lookup;
-mod bounded_entity_field_lookup;
-mod field_candidate_comparison;
 pub use applied_entity_field_lookup::{
     AppliedEntityFieldLookupDenial, AppliedEntityFieldLookupOutcome, AppliedEntityFieldMatch,
 };
-mod pinned_entity_field_lookup;
-pub use bounded_entity_field_lookup::BoundedEntityFieldLookupRead;
+pub use pinning::BoundedEntityFieldLookupRead;
+pub(crate) use worth_relational_indexes::internal_port::indexes::access::{
+    applied_entity_field_lookup, bounded_related_entity_ordered_lookup, definition_lookup,
+    prepared_entity_field_lookup, selected_index,
+};
 mod selected_entity_field_lookup;
 pub use selected_entity_field_lookup::BoundedEntityFieldSelectedLookup;
-mod bounded_related_entity_ordered_lookup;
-mod bounded_relation_join_lookup;
-mod definition_lookup;
-mod entity_field_collection;
-#[cfg(test)]
-mod execution;
-mod prepared_entity_field_lookup;
-mod prepared_field_certification;
-mod prepared_lookup_admission;
-mod related_entity_prefix;
-#[cfg(test)]
-mod routing;
-#[cfg(test)]
-mod scratch;
 
 mod pinning;
-#[cfg(test)]
-pub(crate) use self::scratch::{index_query_scratch_hint_exists, purge_index_query_scratch_hints};
 use crate::runtime::RelationalRuntime;
 pub use definition_lookup::DerivedIndexDefinitionLookup;
 pub use pinning::IndexAccess;

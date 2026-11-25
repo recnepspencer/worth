@@ -36,7 +36,7 @@ impl<'runtime> StorageAccess<'runtime> {
     pub(crate) fn entity_slot_count(&self) -> usize {
         self.current_edition()
             .cells()
-            .map(|(_, region)| region.cell().slot_counts().0)
+            .map(|(_, region)| region.cell().slot_counts_for_test().0)
             .sum()
     }
 
@@ -54,7 +54,7 @@ impl<'runtime> StorageAccess<'runtime> {
     }
 
     pub fn partition_ids(&self) -> Vec<crate::identity::data::PartitionId> {
-        crate::storage::partition::storage_stats::partition_ids(self.runtime)
+        crate::storage::access::storage_stats::partition_ids(self.runtime)
     }
 
     /// Demand the whole mirror before reporting partition statistics.
@@ -66,10 +66,8 @@ impl<'runtime> StorageAccess<'runtime> {
             .current_edition()
             .demand_all(execution, &self.runtime.services.symbols)
             .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
-        let answer = crate::storage::partition::storage_stats::partition_storage_stats(
-            self.runtime,
-            &edition,
-        );
+        let answer =
+            crate::storage::access::storage_stats::partition_storage_stats(self.runtime, &edition);
         crate::execution::check_request(execution)?;
         Ok(answer)
     }
@@ -83,8 +81,7 @@ impl<'runtime> StorageAccess<'runtime> {
             .current_edition()
             .demand_all(execution, &self.runtime.services.symbols)
             .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
-        let answer =
-            crate::storage::partition::storage_stats::storage_stats(self.runtime, &edition);
+        let answer = crate::storage::access::storage_stats::storage_stats(self.runtime, &edition);
         crate::execution::check_request(execution)?;
         Ok(answer)
     }
@@ -98,7 +95,7 @@ impl<'runtime> StorageAccess<'runtime> {
             .current_edition()
             .demand_all(execution, &self.runtime.services.symbols)
             .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
-        let answer = crate::storage::partition::chunks::chunked_storage_summary(
+        let answer = crate::storage::access::chunk_inspection::chunked_storage_summary(
             self.runtime,
             &edition,
             version_id,
@@ -116,7 +113,7 @@ impl<'runtime> StorageAccess<'runtime> {
             .current_edition()
             .demand_all(execution, &self.runtime.services.symbols)
             .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
-        let answer = crate::storage::partition::chunks::chunk_diagnostics(
+        let answer = crate::storage::access::chunk_inspection::chunk_diagnostics(
             self.runtime,
             &edition,
             version_id,
@@ -130,7 +127,7 @@ impl<'runtime> StorageAccess<'runtime> {
         handle: &SnapshotHandle,
         packet: &PlannedQueryPacket,
     ) -> Option<ReadPacketPlan> {
-        crate::storage::partition::chunks::plan_read_explicit_query_packet(
+        crate::storage::access::chunk_inspection::plan_read_explicit_query_packet(
             self.runtime,
             handle,
             packet,
@@ -146,7 +143,7 @@ impl<'runtime> StorageAccess<'runtime> {
         Vec<crate::identity::data::RelationId>,
         crate::execution::RelationalExecutionDenialCause,
     > {
-        crate::storage::partition::adjacency_queries::outgoing_relations_for_entity(
+        crate::storage::access::neighborhood::outgoing_relations_for_entity(
             self.runtime,
             execution,
             entity_id,
@@ -163,7 +160,7 @@ impl<'runtime> StorageAccess<'runtime> {
         Vec<crate::identity::data::RelationId>,
         crate::execution::RelationalExecutionDenialCause,
     > {
-        crate::storage::partition::adjacency_queries::incoming_relations_for_entity(
+        crate::storage::access::neighborhood::incoming_relations_for_entity(
             self.runtime,
             execution,
             entity_id,
@@ -180,7 +177,7 @@ impl<'runtime> StorageAccess<'runtime> {
         Vec<crate::identity::data::RelationId>,
         crate::execution::RelationalExecutionDenialCause,
     > {
-        crate::storage::partition::adjacency_queries::all_relations_for_entity(
+        crate::storage::access::neighborhood::all_relations_for_entity(
             self.runtime,
             execution,
             entity_id,
@@ -230,3 +227,10 @@ pub(crate) struct RecordSlotSurface {
     pub(crate) replay_pins: u32,
     pub(crate) lifecycle: RecordLifecycleState,
 }
+
+pub(crate) mod chunk_inspection;
+pub(crate) mod neighborhood;
+mod storage_stats;
+
+#[cfg(test)]
+use worth_relational_storage::internal_port::storage::residency::cell::observation::RelationalRegionResidencyFixturePort as _;

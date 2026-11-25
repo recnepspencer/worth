@@ -17,33 +17,45 @@
 //! use worth_query_decl::facade::application_program::ApplicationDiscoveredAction;
 //! ```
 
+pub use crate::program_transition;
 pub use worth_query_declaration::facade::{
     application_aftermath, application_capability, application_history, application_identity,
-    application_naming, application_operation, application_program, application_query,
-    application_resource, application_schema, authentication, authoring, binding, branch,
-    canonicalization, collection, diagnostics, identity, identity_authority, portable_identity,
-    schema_view, typed, validation, view_declaration,
+    application_operation, application_program, application_query, application_resource,
+    application_schema, authentication, authoring, binding, branch, canonicalization, collection,
+    diagnostics, identity, identity_authority, portable_identity, schema_view, typed, validation,
+    view_declaration,
 };
+/// Persistent naming declarations, with the derives of the two traits an
+/// application implements: `WorthQueryNameRole` and
+/// `ApplicationNameDiscriminator` each name both the trait and its derive.
+pub mod application_naming {
+    pub use worth_query_declaration::facade::application_naming::*;
+    pub use worth_query_macros::{ApplicationNameDiscriminator, WorthQueryNameRole};
+}
 pub use worth_query_declaration::{
-    worth_query_ability, worth_query_application_query, worth_query_capability,
-    worth_query_capability_context, worth_query_capability_context_entity_slot,
-    worth_query_capability_provenance, worth_query_effect, worth_query_feature_spec,
-    worth_query_identity, worth_query_identity_namespace, worth_query_mutation_binding,
-    worth_query_name_discriminator, worth_query_native_scalar_bindings, worth_query_operation,
-    worth_query_operation_creates, worth_query_operation_deletes, worth_query_operation_emits,
-    worth_query_operation_expects_fact, worth_query_operation_expects_version,
-    worth_query_operation_links, worth_query_operation_reads,
-    worth_query_operation_removes_aspects, worth_query_operation_requires,
-    worth_query_operation_unlinks, worth_query_operation_writes, worth_query_policy,
-    worth_query_portable_type, worth_query_query_binding, worth_query_structured_value_binding,
-    worth_query_unit, worth_query_value_binding, worth_query_workflow,
+    worth_query_ability, worth_query_application_query, worth_query_authentication_audience,
+    worth_query_authentication_method, worth_query_capability, worth_query_capability_context,
+    worth_query_capability_context_entity_slot, worth_query_capability_provenance,
+    worth_query_default_build_id, worth_query_disclosure_classification, worth_query_effect,
+    worth_query_feature_spec, worth_query_identity, worth_query_identity_namespace,
+    worth_query_mutation_binding, worth_query_name_discriminator,
+    worth_query_native_scalar_bindings, worth_query_operation, worth_query_operation_creates,
+    worth_query_operation_deletes, worth_query_operation_emits, worth_query_operation_expects_fact,
+    worth_query_operation_expects_version, worth_query_operation_links,
+    worth_query_operation_reads, worth_query_operation_removes_aspects,
+    worth_query_operation_requires, worth_query_operation_unlinks, worth_query_operation_writes,
+    worth_query_policy, worth_query_portable_type, worth_query_principal_binding,
+    worth_query_principal_issuer, worth_query_program_transition, worth_query_query_binding,
+    worth_query_structured_value_binding, worth_query_unit, worth_query_value_binding,
+    worth_query_workflow,
 };
 /// Derive syntax over these declaration traits and macros; see
 /// [Build an Application](https://github.com/recnepspencer/worth/blob/master/docs/build-an-application.md).
 /// Expansions name `::worth_query_decl`; `WorthQueryProjection` also names
 /// `::worth_query_host`, so a crate deriving it depends on both.
 pub use worth_query_macros::{
-    WorthQueryAction, WorthQueryProjection, WorthQueryRecord, WorthQuerySchema,
+    WorthBinaryValue, WorthManagedIndex, WorthQuery, WorthQueryAction, WorthQueryCorrection,
+    WorthQueryProjection, WorthQueryRecord, WorthQueryRelation, WorthQueryRow, WorthQuerySchema,
 };
 
 /// Canonical proof-carrying query artifact for declaration consumers.

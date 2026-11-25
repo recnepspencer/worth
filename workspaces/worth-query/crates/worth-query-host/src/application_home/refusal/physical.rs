@@ -9,8 +9,8 @@ impl<Schema: ApplicationSchemaComposition, Program>
     /// Store's physical refusal when the Home location itself could not be
     /// opened: contended by a live owner or tombstoned by a pending discard.
     pub fn physical_refusal(&self) -> Option<&ApplicationHomePhysicalRefusal> {
-        match self {
-            Self::Physical {
+        match self.phase() {
+            super::WorthQueryApplicationHomeOpenRefusedPhase::Physical {
                 cause: ApplicationHomeOpenRefusal::Physical(cause),
                 ..
             } => Some(cause),

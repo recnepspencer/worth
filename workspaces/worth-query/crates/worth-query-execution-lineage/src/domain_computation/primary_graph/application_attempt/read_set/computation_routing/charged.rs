@@ -29,6 +29,7 @@ impl ChargedBytes for WorthQueryApplicationFactKey {
             // The native read retains its own actual backing and custody.
             Self::ComponentSelection(_)
             | Self::ManagedIndexSource(_)
+            | Self::AppliedSource(_)
             | Self::SourceReadAuthorization(_)
             | Self::SourcePublication(_)
             | Self::StructuralWalk(_)
@@ -43,6 +44,9 @@ impl ChargedBytes for WorthQueryApplicationFactKey {
                 .saturating_add(bytes(locator.owned_allocation_capacity_bytes())),
             Self::Relation { relation, .. } | Self::Adjacency { relation, .. } => {
                 bytes(relation.capacity())
+            }
+            Self::PersistentGroup(read) => {
+                bytes(read.group_kind.capacity()).saturating_add(bytes(read.member_kind.capacity()))
             }
         }
     }
@@ -67,6 +71,9 @@ impl ChargedBytes for WorthQueryApplicationObservedFact {
                 matching_relations, ..
             } => list(matching_relations),
             Self::Adjacency { relations, .. } => list(relations),
+            Self::PersistentGroup { read, answer } => {
+                bytes(read.group_kind.capacity()).saturating_add(answer.charged_bytes())
+            }
             // The index definition is shared with the index, not owned here.
             Self::IndexedEntitySelection {
                 locator,

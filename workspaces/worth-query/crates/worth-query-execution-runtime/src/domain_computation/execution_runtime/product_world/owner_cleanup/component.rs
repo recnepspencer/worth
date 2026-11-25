@@ -18,7 +18,11 @@ impl WorthQueryProductRuntime {
         match work {
             OwnerRetirementWork::RelationalBranchRetirement { identity, .. } => {
                 let prepared = retirements.prepare(execution, identity)?;
-                match self.relational_lifecycle.delete_branch(execution, identity) {
+                match self
+                    .fields()
+                    .relational_lifecycle
+                    .delete_branch(execution, identity)
+                {
                     Ok(RelationalBranchDeletionOutcome::Deleted(deleted)) => {
                         retirements.deleted(prepared, deleted);
                         Ok(())
@@ -33,12 +37,13 @@ impl WorthQueryProductRuntime {
                 }
             }
             OwnerRetirementWork::SignalBranchRetirement { reference, .. } => {
-                let lifecycle=match &self.signal_lifecycle {
+                let lifecycle=match &self.fields().signal_lifecycle {
                     super::super::signal_lifecycle::SignalLifecycleServices::Memory(port)=>port,
                     super::super::signal_lifecycle::SignalLifecycleServices::AuthoredHome=>return Err(WorthQueryProductBranchOwnerCleanupDenial::DurableSignalRetirementRequired),
                 };
 
                 let basis = self
+                    .fields()
                     .signal_basis
                     .observe_current(reference)
                     .map_err(|_| WorthQueryProductBranchOwnerCleanupDenial::SignalOwnerDenied)?;

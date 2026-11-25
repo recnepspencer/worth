@@ -156,7 +156,7 @@ fn public_owner_loss_denies_ports_even_when_an_in_flight_upgrade_keeps_engine_al
     );
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
-    let engine = Arc::clone(&owner.root);
+    let engine = owner.root.to_arc();
     let observation = owner.observation_port();
     let publication = owner.publication_port();
     let cancellation = RuntimeWorldCancellationSource::new();

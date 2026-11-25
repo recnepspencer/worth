@@ -1,8 +1,12 @@
 //! Association wire meaning and embedded original encoding are owner value units.
+use worth_relational_durability::internal_port::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactOwnerPort as _;
+use worth_relational_durability::internal_port::durability::data::checkpoint_images::DurableCheckpointOwnerPort as _;
+use worth_relational_storage::internal_port::runtime::state::subsystems::record_identity::recovery::RecordIdentitySubsystemFixturePort as _;
 use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact as Artifact;
 use crate::facade::mvcc::{
     RelationalCallerAssociation as Association, RelationalPublicationOutcome,
 };
+use crate::runtime::state::subsystems::history::history_canonical_routes::pending_canonical_publication_route_count;
 use crate::runtime::RelationalRuntime;
 use crate::tests::support::*;
 use worth_execution::ExecutionRequest;
@@ -117,12 +121,13 @@ fn caller_association_embedded_checkpoint_codec_preserves_original_bytes() {
     .unwrap();
     let commit = decoded
         .checkpoint
-        .envelopes
+        .envelopes()
         .iter()
         .find(|commit| commit.position() == artifact.position())
         .unwrap();
     assert_eq!(commit.envelope().caller_association(), Some(&association));
-    let reencoded = Artifact::from_positioned(commit, execution.allocation_policy()).unwrap();
+    let reencoded =
+        Artifact::from_positioned_for_test(commit, execution.allocation_policy()).unwrap();
     assert_eq!(reencoded.as_bytes(), artifact.as_bytes());
 }
 
@@ -152,7 +157,7 @@ fn caller_association_bounds_and_rebinding_refuse_without_retaining_publication(
     let host = crate::test_execution_policy::serial_request();
     let execution = &ExecutionRequest::serial(&host);
     let runtime = runtime_with_test_schema();
-    let routes = runtime.history.pending_canonical_publication_route_count();
+    let routes = pending_canonical_publication_route_count(&runtime.history);
     let association = Association::from_bytes(b"opaque\0caller\xff").unwrap();
     let proposal = propose(execution, &runtime, "rebound")
         .bind_caller_association(association.clone())
@@ -160,7 +165,10 @@ fn caller_association_bounds_and_rebinding_refuse_without_retaining_publication(
     assert!(proposal
         .bind_caller_association(association.clone())
         .is_err());
-    assert!(runtime.record_identity.pending_snapshot().is_empty());
+    assert!(runtime
+        .record_identity
+        .pending_snapshot_for_test()
+        .is_empty());
     let proposal = propose(execution, &runtime, "discarded")
         .bind_caller_association(association.clone())
         .unwrap();
@@ -169,15 +177,18 @@ fn caller_association_bounds_and_rebinding_refuse_without_retaining_publication(
         .unwrap();
     assert_eq!(candidate.caller_association().as_ref(), Some(&association));
     assert_eq!(
-        runtime.history.pending_canonical_publication_route_count(),
+        pending_canonical_publication_route_count(&runtime.history),
         routes + 1
     );
     drop(candidate);
     assert_eq!(
-        runtime.history.pending_canonical_publication_route_count(),
+        pending_canonical_publication_route_count(&runtime.history),
         routes
     );
-    assert!(runtime.record_identity.pending_snapshot().is_empty());
+    assert!(runtime
+        .record_identity
+        .pending_snapshot_for_test()
+        .is_empty());
 }
 
 #[test]
@@ -207,12 +218,13 @@ fn caller_association_survives_embedded_checkpoint_and_refuses_old_semantics() {
     .unwrap();
     let commit = decoded
         .checkpoint
-        .envelopes
+        .envelopes()
         .iter()
         .find(|commit| commit.position() == artifact.position())
         .unwrap();
     assert_eq!(commit.envelope().caller_association(), Some(&association));
-    let reencoded = Artifact::from_positioned(commit, execution.allocation_policy()).unwrap();
+    let reencoded =
+        Artifact::from_positioned_for_test(commit, execution.allocation_policy()).unwrap();
     assert_eq!(reencoded.as_bytes(), artifact.as_bytes());
     for prefix in [b"WORTH-REL-CHK13\n", b"WORTH-REL-CHK14\n"] {
         let mut old = native.bytes().to_vec();

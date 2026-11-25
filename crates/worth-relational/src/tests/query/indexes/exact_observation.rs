@@ -284,7 +284,7 @@ fn current_query_rejects_an_older_generation_and_returns_every_exact_match() {
         .expect("current query falls back to exact storage truth");
 
     assert!(older_build.failed_indexes.is_empty());
-    assert!(older_build.generations[0].applicability.version_id < snapshot.version_id);
+    assert!(older_build.generations[0].applicability.version_id < snapshot.version_id());
     assert_eq!(
         outcome.access_path,
         QueryAccessPath::DerivedIndexRejectedStorageRead {

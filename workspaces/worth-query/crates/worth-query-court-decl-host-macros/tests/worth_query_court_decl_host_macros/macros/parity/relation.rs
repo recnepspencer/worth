@@ -125,3 +125,144 @@ fn a_derived_relation_projection_declares_the_written_nested_shape() {
         written::tasks().slot_key()
     );
 }
+
+#[test]
+fn derived_relation_matches_manual_relation_integrity_and_reference() {
+    mod derived_rel {
+        use worth_query_decl::facade::application_schema::fragment::NativeScalars;
+        use worth_query_decl::facade::application_schema::*;
+        use worth_query_decl::facade::{WorthQueryRecord, WorthQueryRelation, WorthQuerySchema};
+
+        #[derive(Clone, Copy, WorthQuerySchema)]
+        #[worth_query(
+            schema,
+            owner = "macros.parity.rel",
+            name = "rel_parity",
+            members(Graph)
+        )]
+        pub struct Root;
+        #[derive(Clone, Copy, WorthQuerySchema)]
+        #[worth_query(fragment, name = "graph", bindings = NativeScalars, members(Parent, Child))]
+        pub struct Graph;
+        #[derive(Clone, Copy, WorthQuerySchema)]
+        #[worth_query(entity, aspects(ParentFacts), relations(Owns))]
+        pub struct Parent;
+        #[derive(Clone, Copy, WorthQuerySchema)]
+        #[worth_query(entity, aspects(ChildFacts))]
+        pub struct Child;
+        #[derive(WorthQueryRelation)]
+        #[worth_query(
+            to = Child,
+            from = Parent,
+            reference(Root, Graph),
+            acyclic,
+            self_edges = false,
+            unique = ApplicationRelationUniquenessScope::DirectedSemanticEdge,
+        )]
+        pub struct Owns;
+        #[derive(WorthQueryRecord)]
+        #[worth_query(bindings = NativeScalars, aspect = ParentFacts, fragment = Graph, entity = Parent)]
+        pub struct ParentRow {
+            #[worth_query(column = "ParentKey", equality, read_only)]
+            pub key: u64,
+        }
+        #[derive(WorthQueryRecord)]
+        #[worth_query(bindings = NativeScalars, aspect = ChildFacts, fragment = Graph, entity = Child)]
+        pub struct ChildRow {
+            #[worth_query(column = "ChildKey", equality, read_only)]
+            pub key: u64,
+        }
+    }
+
+    mod written_rel {
+        use worth_query_decl::facade::application_schema::fragment::{
+            Entity, NativeScalars, Relation,
+        };
+        use worth_query_decl::facade::application_schema::*;
+        use worth_query_decl::facade::{WorthQueryRecord, WorthQuerySchema};
+
+        #[derive(Clone, Copy, WorthQuerySchema)]
+        #[worth_query(
+            schema,
+            owner = "macros.parity.rel",
+            name = "rel_parity",
+            members(Graph)
+        )]
+        pub struct Root;
+        #[derive(Clone, Copy, WorthQuerySchema)]
+        #[worth_query(fragment, name = "graph", bindings = NativeScalars, members(Parent, Child))]
+        pub struct Graph;
+        #[derive(Clone, Copy)]
+        pub struct Parent;
+        impl Entity for Parent {
+            const NAME: &'static str = "Parent";
+            type Aspects = (ParentFacts,);
+            type Relations = (Owns,);
+        }
+        #[derive(Clone, Copy, WorthQuerySchema)]
+        #[worth_query(entity, aspects(ChildFacts))]
+        pub struct Child;
+        pub struct Owns;
+        impl Relation for Owns {
+            const NAME: &'static str = "Owns";
+            type To = Child;
+            const ACYCLIC: bool = true;
+            const SELF_EDGES: bool = false;
+            const UNIQUE: Option<ApplicationRelationUniquenessScope> =
+                Some(ApplicationRelationUniquenessScope::DirectedSemanticEdge);
+        }
+        impl Owns {
+            pub fn reference() -> ApplicationRelationRef<Root, Self, Parent, Child> {
+                worth_query_decl::facade::application_schema::fragment::relation(
+                    Graph, Parent, Self,
+                )
+            }
+        }
+        #[derive(WorthQueryRecord)]
+        #[worth_query(bindings = NativeScalars, aspect = ParentFacts, fragment = Graph, entity = Parent)]
+        pub struct ParentRow {
+            #[worth_query(column = "ParentKey", equality, read_only)]
+            pub key: u64,
+        }
+        #[derive(WorthQueryRecord)]
+        #[worth_query(bindings = NativeScalars, aspect = ChildFacts, fragment = Graph, entity = Child)]
+        pub struct ChildRow {
+            #[worth_query(column = "ChildKey", equality, read_only)]
+            pub key: u64,
+        }
+    }
+
+    let derived = derived_rel::Root::declaration().expect("derived relation schema declares");
+    let written = written_rel::Root::declaration().expect("written relation schema declares");
+    assert_eq!(derived.identity(), written.identity());
+    assert_eq!(derived.erased(), written.erased());
+    assert_eq!(
+        derived_rel::Owns::reference().integrity(),
+        written_rel::Owns::reference().integrity()
+    );
+    assert_eq!(
+        derived_rel::Owns::reference().name(),
+        written_rel::Owns::reference().name()
+    );
+
+    let declaration = board().build().unwrap();
+    let law = declaration
+        .erased()
+        .members()
+        .iter()
+        .find_map(|member| match member {
+            ApplicationSchemaMember::Relation {
+                relation,
+                integrity,
+                ..
+            } if relation == "Contains" => Some(integrity),
+            _ => None,
+        })
+        .expect("the derived Contains relation is declared");
+    assert!(law.acyclic);
+    assert!(!law.endpoints.self_edges_allowed);
+    assert_eq!(
+        law.unique,
+        Some(ApplicationRelationUniquenessScope::DirectedSemanticEdge)
+    );
+}

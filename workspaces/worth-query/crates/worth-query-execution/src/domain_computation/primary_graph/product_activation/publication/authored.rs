@@ -13,7 +13,7 @@ pub(super) fn publish<
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     phase: &WorthQueryAdvancementPhase<'_>,
     product: &WorthQueryProductBranchLease,
-    bridge: &Arc<worth_runtime_bridge::facade::BridgeReadmittedAuthoredAssembly>,
+    bridge: &worth_runtime_bridge::facade::BridgeReadmittedAuthoredAssembly,
     predecessor: &Arc<BridgeInstalledConditionalLowering>,
     request: BridgeOwnedConditionalInstallationRequest,
     cancellation: &RuntimeWorldCancellationToken,

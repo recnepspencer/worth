@@ -1,40 +1,44 @@
 mod complete_checkpoint_preparation;
 pub use complete_checkpoint_preparation::CompleteRelationalCheckpointPreparation;
 mod branch_authority;
+mod checkpoint_projection;
 mod close_authority;
 mod codec_recovery_destination;
 mod configuration;
 mod configuration_epoch_control;
+pub(crate) use worth_relational_mutation::internal_port::runtime::state::runtime_state::configuration_snapshot;
 mod core_access;
 mod memory_close;
+mod snapshot_visibility;
 mod source_close;
 pub use source_close::{
     PreparedRelationalSourceClose, RelationalSourceClose, RelationalSourceCloseDenial,
     RelationalSourceCloseProgress, RetiredSourceRelationalAllocation,
 };
-mod court_doors_for_test;
+pub(crate) mod indexing;
 mod merge_authority;
 mod owner_lifecycle;
 mod partition_edition_access;
 mod preparation_home_contracts;
 mod preparation_round;
-mod preparation_runtime;
+pub(crate) mod preparation_runtime;
 mod prepared_close;
-mod publication_close_custody;
-mod publication_lifecycle;
-pub use publication_close_custody::{
+pub(crate) use worth_relational_publication::internal_port::runtime::state::runtime_state::{
+    publication_lifecycle, publication_settlement_registry,
+};
+mod record_allocation_frontier;
+mod runtime_court_doors_for_test;
+pub use crate::publication::close_custody::{
     RelationalPublicationCompanionCustody, RelationalPublicationCustodyHolders,
     RelationalPublicationRegistryCustody,
 };
-mod publication_settlement_registry;
 mod tenure;
 #[cfg(test)]
 mod test_support;
 
 use super::{
-    CommitStrategiesSubsystem, DurabilitySubsystem, HistorySubsystem, IndexingSubsystem,
-    LineageSubsystem, PublicationSubsystem, RecordIdentitySubsystem, RuntimeServices,
-    StorageSubsystem, VisibilitySubsystem,
+    CommitStrategiesSubsystem, DurabilitySubsystem, LineageSubsystem, PublicationSubsystem,
+    RecordIdentitySubsystem, RuntimeServices, StorageSubsystem, VisibilitySubsystem,
 };
 
 pub(in crate::runtime) use close_authority::RelationalRuntimeCloseAuthority;
@@ -52,14 +56,11 @@ pub use prepared_close::{
     PreparedRelationalRuntimeClose, RelationalReadCustodyHolders, RelationalRuntimeCloseDenial,
     RelationalRuntimeCloseRefused,
 };
+pub(crate) use publication_lifecycle::RelationalRuntimePublicationBinding;
 pub(in crate::runtime) use publication_lifecycle::RelationalRuntimePublicationOwner;
-pub(crate) use publication_lifecycle::{
-    RelationalCandidateRegistrationDenial, RelationalRuntimePublicationBinding,
-};
 pub(crate) use publication_settlement_registry::{
-    PendingRelationalPublicationSettlement, PerformedRelationalSettlement,
-    RelationalPendingSettlementReservation, RelationalPublicationSettlementRegistry,
-    RelationalSettlementClaim, RelationalSettlementReservationDenial, ReservedRelationalSettlement,
+    RelationalPendingSettlementReservation, RelationalSettlementReservationDenial,
+    ReservedRelationalSettlement,
 };
 pub(in crate::runtime) use tenure::RelationalRuntimeTenure;
 
@@ -79,8 +80,9 @@ pub struct RelationalRuntimeState {
     pub(crate) partitions: StorageSubsystem,
     pub(crate) visibility: VisibilitySubsystem,
     pub(crate) publication: PublicationSubsystem,
-    pub(crate) history: HistorySubsystem,
-    pub(crate) indexes: IndexingSubsystem,
+    pub(crate) history:
+        super::subsystems::history::history_canonical_routes::RelationalPublicationHistory,
+    pub(crate) indexes: indexing::RuntimeIndexingSubsystem,
     pub(crate) lineage: LineageSubsystem,
     pub(crate) durability: DurabilitySubsystem,
     pub(crate) record_identity: RecordIdentitySubsystem,
@@ -110,10 +112,13 @@ pub struct RelationalRuntime {
     /// runtime lowered from it disagree.
     pub(crate) config: std::sync::Arc<crate::runtime::RelationalRuntimeConfig>,
     pub(crate) schema_contract_runtime: std::sync::Arc<super::SchemaContractRuntimeSubsystem>,
-    state: std::sync::Arc<RelationalRuntimeState>,
+    state: state_backing::StrongRelationalRuntimeState,
     tenure: RelationalRuntimeTenure,
     _outer_memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
+
+pub(crate) mod state_backing;
+pub(crate) use state_backing::{StrongRelationalRuntimeState, WeakRelationalRuntimeState};
 
 impl RelationalRuntime {
     pub(in crate::runtime) fn from_state(state: RelationalRuntimeState) -> Self {
@@ -126,7 +131,7 @@ impl RelationalRuntime {
         Self {
             config: installed.config,
             schema_contract_runtime: installed.schema_contract_runtime,
-            state: std::sync::Arc::new(state),
+            state: StrongRelationalRuntimeState::new(state),
             tenure: RelationalRuntimeTenure::Owner(close),
             _outer_memory: None,
         }
@@ -137,7 +142,7 @@ impl RelationalRuntime {
     /// The admission is carried by the handle, so the operation cannot outlive
     /// its admission and the handle cannot close the runtime it borrows.
     pub(crate) fn admitted(
-        state: std::sync::Arc<RelationalRuntimeState>,
+        state: StrongRelationalRuntimeState,
         operation: AdmittedRelationalRuntimeOperation,
     ) -> Self {
         let installed = state.configuration.snapshot();
@@ -182,8 +187,8 @@ impl RelationalRuntime {
 
     /// A weak binding to this runtime's exact state, for a service that must
     /// outlive its owner and deny once the owner is gone.
-    pub(crate) fn state_binding(&self) -> std::sync::Weak<RelationalRuntimeState> {
-        std::sync::Arc::downgrade(&self.state)
+    pub(crate) fn state_binding(&self) -> WeakRelationalRuntimeState {
+        self.state.downgrade()
     }
 }
 
@@ -247,7 +252,7 @@ impl RelationalRuntime {
         if !self.is_owner() {
             return None;
         }
-        std::sync::Arc::get_mut(&mut self.state)
+        self.state.get_mut()
     }
 }
 
@@ -284,7 +289,7 @@ fn collect_owned_inline_type_sizes(census: &mut crate::inline_type_sizes::Census
         owner.field::<std::sync::Arc<super::SchemaContractRuntimeSubsystem>>(
             "schema_contract_runtime",
         );
-        owner.field::<std::sync::Arc<RelationalRuntimeState>>("state");
+        owner.field::<StrongRelationalRuntimeState>("state");
         owner.field::<RelationalRuntimeTenure>("tenure");
         owner.field::<Option<worth_execution::ExecutionMemoryReservation>>("_outer_memory");
     }

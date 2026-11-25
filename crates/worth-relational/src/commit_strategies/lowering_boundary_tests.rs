@@ -1,5 +1,5 @@
-use super::lower_execution;
 use super::tests::{canonical_request, execution_draft, execution_draft_with_batches};
+use crate::commit_strategies::lowering::lower_execution;
 
 use crate::facade::history::BranchId;
 use crate::facade::transactions::{

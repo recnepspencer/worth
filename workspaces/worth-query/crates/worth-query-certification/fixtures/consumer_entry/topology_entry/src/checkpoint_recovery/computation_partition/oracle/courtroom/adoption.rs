@@ -6,6 +6,8 @@ use worth_query_host::facade::application_entry::WorthQueryApplicationRequestExt
 use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::application_installation::WorthQueryProgramOwner;
 
+worth_query_decl::facade::worth_query_principal_issuer!(CheckpointInvalidLocalIssuer);
+
 pub(super) struct Adopted;
 impl ApplicationProgramDefinition<CheckpointSchema> for Adopted {
     type Contributions = (installation::OracleContribution<false, TOTALS_WORK, 1, 0>,);
@@ -90,7 +92,7 @@ pub(super) fn install_rostered(model: &Model) -> installation::DirApplication<fa
             limits,
             |_bootstrap_phase, graph, installed| {
                 let binding = installed.principal_binding(ConsumerPrincipalBinding::reference::<CheckpointSchema>()).unwrap();
-                let external = worth_query_host::facade::declaration::authentication::WorthQueryExternalPrincipalIdentity::new("https://checkpoint.invalid/local", "model-owner").unwrap();
+                let external = worth_query_host::facade::declaration::authentication::WorthQueryExternalPrincipalIdentity::new(CheckpointInvalidLocalIssuer, "model-owner").unwrap();
                 graph.bind_principal(&binding, primary_graph::WorthQueryApplicationPrincipalKey::new("model-owner").unwrap(), 1_u64, external, worth_query_host::facade::declaration::authentication::WorthQueryPrincipalMappingStatus::Enabled)?;
                 support::seed_cycle(graph); model.seed(graph); crate::checkpoint_recovery::computation_partition::oracle::courtroom::correction_grant::seed(graph, SCOPE); Ok(())
             },

@@ -40,8 +40,8 @@ impl RelationalInitialSchemaInstallationReceipt {
             || inventory != self.custom_invariant_inventory_digest
             || contracts.custom_invariant_registries.source_inventory() != self.source_groups
             || contracts.home_readmission_metadata_kinds != self.home_readmission_metadata_kinds
-            || registry.entity_kinds.len() != self.retained_entity_kind_count
-            || registry.relation_kinds.len() != self.retained_relation_kind_count
+            || (*registry.owner_entity_kinds()).len() != self.retained_entity_kind_count
+            || (*registry.owner_relation_kinds()).len() != self.retained_relation_kind_count
             || schema != self.retained_schema_authority_digest
         {
             return Err(RelationalInitialSchemaInstallationDenial::new(
@@ -75,8 +75,8 @@ impl RelationalInitialSchemaInstallationReceipt {
             || actual != self.custom_invariant_inventory_digest
             || contracts.custom_invariant_registries.source_inventory() != self.source_groups
             || contracts.home_readmission_metadata_kinds != self.home_readmission_metadata_kinds
-            || registry.entity_kinds.len() != self.retained_entity_kind_count
-            || registry.relation_kinds.len() != self.retained_relation_kind_count
+            || (*registry.owner_entity_kinds()).len() != self.retained_entity_kind_count
+            || (*registry.owner_relation_kinds()).len() != self.retained_relation_kind_count
             || schema != self.retained_schema_authority_digest
         {
             return Err(RelationalInitialSchemaInstallationDenial::new(
@@ -91,7 +91,7 @@ impl RelationalInitialSchemaInstallationReceipt {
     }
 }
 
-impl crate::durability::authority::RecoveredRelationalRuntimeAuthority {
+impl crate::durability::authority::recovered_runtime::RecoveredRelationalRuntimeAuthority {
     /// Pending transitions preserve authentic initial A evidence separately
     /// from the current replay schema. No A receipt is minted from B metadata.
     pub fn readmit_home_initial_schema_installation(

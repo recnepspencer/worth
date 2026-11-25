@@ -60,7 +60,7 @@ pub(crate) struct PreparedRecoveredPublication {
 }
 /// The catalog retains the same prepared phase even if a caller unwinds.
 struct ContinuationLease {
-    owner: Arc<RecoveredWorldPublicationRecord>,
+    owner: super::SharedRecoveredWorldPublicationRecord,
     phase: Option<Box<PreparedRecoveredPublication>>,
 }
 impl Drop for ContinuationLease {

@@ -1,11 +1,14 @@
 /// Declares a typed application query and its stable protocol identity axes.
+///
+/// Omit `parameters` when the query uses only named parameters declared by the
+/// query definition. An explicit value binding preserves a legacy identity.
 #[macro_export]
 macro_rules! worth_query_application_query {
     (
         $vis:vis $Query:ident for $Schema:ty,
         identity $query_identity:expr,
-        parameters $ParameterBinding:path,
-        result $ResultBinding:path,
+        $(parameters $ParameterBinding:path,)?
+        result $ResultBinding:ty,
         scope $Scope:ty => $scope_identity:expr,
         name $name:literal
     ) => {
@@ -13,7 +16,9 @@ macro_rules! worth_query_application_query {
         $vis struct $Query;
 
         impl $crate::facade::application_query::ApplicationQueryMarkerIdentity<$Schema> for $Query {
-            type ParameterBinding = $ParameterBinding;
+            type ParameterBinding = $crate::worth_query_application_query!(
+                @parameter_binding $($ParameterBinding)?
+            );
             type ResultBinding = $ResultBinding;
             type Scope = $Scope;
 
@@ -27,7 +32,7 @@ macro_rules! worth_query_application_query {
             pub const fn reference() -> $crate::facade::application_query::ApplicationQueryReference<
                 $Schema,
                 Self,
-                <$ParameterBinding as $crate::facade::application_schema::ApplicationStructuredValueBinding>::Value,
+                <<Self as $crate::facade::application_query::ApplicationQueryMarkerIdentity<$Schema>>::ParameterBinding as $crate::facade::application_schema::ApplicationStructuredValueBinding>::Value,
                 <$ResultBinding as $crate::facade::application_schema::ApplicationStructuredValueBinding>::Value,
                 $Scope,
             > {
@@ -38,8 +43,8 @@ macro_rules! worth_query_application_query {
     (
         $vis:vis $Query:ident for Schema: $BindingTrait:path,
         identity $query_identity:expr,
-        parameters $ParameterBinding:path,
-        result $ResultBinding:path,
+        $(parameters $ParameterBinding:path,)?
+        result $ResultBinding:ty,
         scope $Scope:ty => $scope_identity:expr,
         name $name:literal
     ) => {
@@ -51,7 +56,9 @@ macro_rules! worth_query_application_query {
         where
             Schema: $BindingTrait,
         {
-            type ParameterBinding = $ParameterBinding;
+            type ParameterBinding = $crate::worth_query_application_query!(
+                @parameter_binding $($ParameterBinding)?
+            );
             type ResultBinding = $ResultBinding;
             type Scope = $Scope;
 
@@ -65,7 +72,7 @@ macro_rules! worth_query_application_query {
             pub const fn reference<Schema>() -> $crate::facade::application_query::ApplicationQueryReference<
                 Schema,
                 Self,
-                <$ParameterBinding as $crate::facade::application_schema::ApplicationStructuredValueBinding>::Value,
+                <<Self as $crate::facade::application_query::ApplicationQueryMarkerIdentity<Schema>>::ParameterBinding as $crate::facade::application_schema::ApplicationStructuredValueBinding>::Value,
                 <$ResultBinding as $crate::facade::application_schema::ApplicationStructuredValueBinding>::Value,
                 $Scope,
             >
@@ -75,5 +82,9 @@ macro_rules! worth_query_application_query {
                 $crate::facade::application_query::ApplicationQueryReference::from_declaration()
             }
         }
+    };
+    (@parameter_binding $ParameterBinding:path) => { $ParameterBinding };
+    (@parameter_binding) => {
+        $crate::facade::application_schema::UnitApplicationValueBinding
     };
 }

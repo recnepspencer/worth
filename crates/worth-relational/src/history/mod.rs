@@ -1,13 +1,9 @@
-mod access;
+pub(crate) mod access;
 mod authority;
-mod commit;
+pub(crate) mod commit;
 pub mod data;
 pub mod retention;
 
-pub(crate) use access::relevant_writes::{
-    admit_work as admit_authored_write_work, ordered_visit as visit_authored_write_lookup,
-    run as run_authored_write_stage, visit as visit_authored_write,
-};
 pub use access::{BoundedCanonicalCommitPatchDenial, HistoryAccess};
 pub(crate) use access::{CommitAncestryInspection, CommitAncestryPosture};
 pub use access::{
@@ -16,7 +12,8 @@ pub use access::{
     RelationalAuthoredManagedSourceSelector, RelationalAuthoredWriteCursor,
     RelationalAuthoredWriteDenial, RelationalAuthoredWriteOccurrence, RelationalAuthoredWritePage,
     RelationalAuthoredWritePageLimits, RelationalAuthoredWriteScope,
-    RelationalAuthoredWriteSelector, RelationalPreparedAuthoredWritePage,
+    RelationalAuthoredWriteSelector, RelationalAuthoredWriteSpan,
+    RelationalPreparedAuthoredWritePage,
 };
 pub use access::{
     RelationalCanonicalRecordHistoryCursor, RelationalPreparedRecordHistoryPage,
@@ -26,8 +23,7 @@ pub use access::{
 };
 pub use authority::{HistoryAuthority, OutputOriginHeaderCorruptionForTest};
 pub(crate) use commit::{
-    OriginalCanonicalInputs, RelationalCommitArtifact, RelationalCommitAuthoritativeAllocationKind,
-    RelationalCommitCatalog, RelationalCommitCatalogEnvelopeAppendDenial,
+    RelationalCommitArtifact, RelationalCommitAuthoritativeAllocationKind, RelationalCommitCatalog,
 };
 pub use commit::{
     RelationalCommitArtifactDenial, RelationalCommitCatalogAppendDenial,
@@ -36,12 +32,6 @@ pub use commit::{
     RelationalRetainedSelectionArtifactDenial,
 };
 
-pub(crate) use access::relevant_writes::posting_key::AuthoredWritePostingKey;
-pub(crate) use access::relevant_writes::source_impact;
-pub(crate) use commit::{
-    RelationalCommitEnvelopeResidency, RelationalCommitIndexEntry, RetainedCanonicalIndex,
-    RetiredCanonicalPlacement,
-};
+pub(crate) use commit::RelationalCommitEnvelopeResidency;
 #[cfg(test)]
-#[path = "mod_inline_type_budget.rs"]
-pub(crate) mod inline_type_budget;
+pub(crate) use commit::{RelationalCommitIndexEntry, RetainedCanonicalIndex};

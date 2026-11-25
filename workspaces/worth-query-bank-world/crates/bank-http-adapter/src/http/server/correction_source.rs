@@ -11,6 +11,7 @@ impl From<BankHttpCorrectionSource> for WorthQueryCorrectionSourceCoordinates {
             source.relational.commit_id,
             source.relational.version_id,
             source.relational.parents,
+            source.member,
         )
     }
 }
@@ -26,6 +27,7 @@ impl From<WorthQueryCorrectionSourceCoordinates> for BankHttpCorrectionSource {
                 branch_id: source.relational().branch_id.0.clone(),
                 parents: source.relational().parents.iter().map(|id| id.0).collect(),
             },
+            member: source.member(),
         }
     }
 }
@@ -36,12 +38,14 @@ mod tests {
 
     #[test]
     fn correction_wire_fields_keep_their_native_coordinate_meaning() {
+        let identity = vec![7_u8; 32];
         let wire = serde_json::json!({
             "world_owner": 7, "world_commit": 19,
             "relational": {
                 "branch_id": "product:fork", "commit_id": 23,
                 "version_id": 29, "parents": [17]
-            }
+            },
+            "member": {"AuthoredStage": {"ordinal": 2, "identity": identity}}
         });
         let description: BankHttpCorrectionSource = serde_json::from_value(wire.clone()).unwrap();
         let native = WorthQueryCorrectionSourceCoordinates::from(description);
@@ -55,6 +59,13 @@ mod tests {
         assert_eq!(native.relational().branch_id.0, "product:fork");
         assert_eq!(native.relational().commit_id.0, 23);
         assert_eq!(native.relational().version_id.0, 29);
+        assert_eq!(
+            native.member(),
+            worth_query_host::facade::primary_graph::WorthQueryCorrectionSourceMember::AuthoredStage {
+                ordinal: 2,
+                identity: [7; 32]
+            }
+        );
         assert_eq!(
             native
                 .relational()

@@ -1,11 +1,10 @@
 mod home_retirement;
 use home_retirement::PublicationReceiptRetirement;
+use std::any::Any;
+use std::ops::Deref;
 use std::sync::{Arc, Mutex, OnceLock};
 
-use worth_runtime_world::facade::{
-    ConsumedCompositePublication, ProductUnpublishedRecoveryHandle,
-    RuntimeWorldPerformedPublicationProtection,
-};
+use worth_runtime_world::facade::{ConsumedCompositePublication, ProductUnpublishedRecoveryHandle};
 
 use super::{runtime::WorthQueryProductRootIdentity, WorthQueryPerformedRelationalProductChange};
 
@@ -29,9 +28,45 @@ struct WorthQueryProductPublicationCustody {
     _recovery_handle: ProductUnpublishedRecoveryHandle,
 }
 
+trait PublicationCustodyBacking: Send + Sync {
+    fn as_custody(&self) -> &WorthQueryProductPublicationCustody;
+    fn as_custody_mut(&mut self) -> &mut WorthQueryProductPublicationCustody;
+}
+
+impl PublicationCustodyBacking for WorthQueryProductPublicationCustody {
+    fn as_custody(&self) -> &WorthQueryProductPublicationCustody {
+        self
+    }
+
+    fn as_custody_mut(&mut self) -> &mut WorthQueryProductPublicationCustody {
+        self
+    }
+}
+
+#[derive(Clone)]
+struct SharedPublicationCustody(Arc<dyn PublicationCustodyBacking>);
+
+impl SharedPublicationCustody {
+    fn new(custody: WorthQueryProductPublicationCustody) -> Self {
+        Self(Arc::new(custody))
+    }
+
+    fn get_mut(&mut self) -> Option<&mut WorthQueryProductPublicationCustody> {
+        Arc::get_mut(&mut self.0).map(PublicationCustodyBacking::as_custody_mut)
+    }
+}
+
+impl Deref for SharedPublicationCustody {
+    type Target = WorthQueryProductPublicationCustody;
+
+    fn deref(&self) -> &Self::Target {
+        self.0.as_custody()
+    }
+}
+
 /// Fill-once custody allocated before Runtime World can move either owner.
 pub struct WorthQueryReservedProductPublicationReceipt {
-    custody: Arc<WorthQueryProductPublicationCustody>,
+    custody: SharedPublicationCustody,
 }
 
 /// Named read-only custody shared by committed Query result observers after
@@ -40,7 +75,7 @@ pub struct WorthQueryReservedProductPublicationReceipt {
 /// replay copies are detached so that replay outlives the commit's history.
 #[derive(Clone)]
 pub struct WorthQueryProductPublicationReceipt {
-    custody: Arc<WorthQueryProductPublicationCustody>,
+    custody: SharedPublicationCustody,
     history: Option<WorthQueryCommitHistoryHold>,
 }
 
@@ -48,7 +83,7 @@ pub struct WorthQueryProductPublicationReceipt {
 /// evidence to the fresh caller's receipt exactly once.
 #[derive(Clone)]
 pub struct WorthQueryCommitHistoryHold {
-    _protection: Arc<RuntimeWorldPerformedPublicationProtection>,
+    _protection: Arc<dyn Any + Send + Sync>,
 }
 
 impl WorthQueryReservedProductPublicationReceipt {
@@ -76,7 +111,7 @@ impl WorthQueryReservedProductPublicationReceipt {
         retain_client_observation: bool,
     ) -> Self {
         Self {
-            custody: Arc::new(WorthQueryProductPublicationCustody {
+            custody: SharedPublicationCustody::new(WorthQueryProductPublicationCustody {
                 terminal: OnceLock::new(),
                 retirement: PublicationReceiptRetirement::Vacant,
                 fresh_delivery_available: Mutex::new(true),
@@ -98,7 +133,9 @@ impl WorthQueryReservedProductPublicationReceipt {
         conditional_definition_generation: Option<u64>,
     ) -> WorthQueryProductPublicationReceipt {
         let successor_observation = publication.take_successor_observation();
-        let history = publication.take_history_protection().map(Arc::new);
+        let history: Option<Arc<dyn Any + Send + Sync>> = publication
+            .take_history_protection()
+            .map(|protection| Arc::new(protection) as Arc<dyn Any + Send + Sync>);
         if self.custody.retain_live_observation {
             *self
                 .custody

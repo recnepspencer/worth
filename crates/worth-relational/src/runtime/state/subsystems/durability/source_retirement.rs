@@ -3,8 +3,8 @@ use super::*;
 mod checkpoints;
 use crate::durability::medium::{
     RelationalDurableColdSource, RelationalMediumRetirementDenial as Denial,
-    SealedRelationalMediumBinding,
 };
+use crate::durability::published_medium::SealedRelationalMediumBinding;
 use worth_execution::ExecutionRequest;
 impl DurabilitySubsystem {
     pub(crate) fn install_source_root_inventory(

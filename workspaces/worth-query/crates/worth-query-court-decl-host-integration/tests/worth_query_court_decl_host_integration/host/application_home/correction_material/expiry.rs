@@ -35,8 +35,7 @@ fn owning_expiry_refuses_pins_and_preserves_authored_state_and_the_original_key_
     let execution = worth_execution::ExecutionRequest::leased(&lease);
     let home = open(location.clone(), execution);
     let receipt = edit(&home);
-    let coordinates = worth_query_host::facade::primary_graph::WorthQueryRecordedCorrectionSource::from_untrusted_parts(
-        receipt.committed_product_publication().composite_commit().clone(), receipt.commit_reference().clone()).coordinates();
+    let coordinates = receipt.correction_source().coordinates();
     drop(receipt);
     let (input, earlier) = label::correction_source::preparation::retain_home_label_input(
         home.runtime().runtime(),
@@ -178,8 +177,7 @@ fn foreign_coordinates_refuse_expiry_without_releasing_either_interpretation() {
     let foreign = open(foreign_location.clone(), execution);
     drop(edit(&own));
     let receipt = edit(&foreign);
-    let coordinates = worth_query_host::facade::primary_graph::WorthQueryRecordedCorrectionSource::from_untrusted_parts(
-        receipt.committed_product_publication().composite_commit().clone(), receipt.commit_reference().clone()).coordinates();
+    let coordinates = receipt.correction_source().coordinates();
     drop(receipt);
     let own_basis = authored(&own);
     let foreign_basis = authored(&foreign);

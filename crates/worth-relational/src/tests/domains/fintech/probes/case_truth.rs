@@ -68,7 +68,7 @@ pub(crate) fn read_snapshot_probe(
     CaseTruthProbe {
         case_role: case,
         stage,
-        snapshot_id: snapshot.snapshot_id.0,
+        snapshot_id: snapshot.snapshot_id().0,
         entity_count: result.entities.len(),
         relation_count: result.relations.len(),
         corrected_trade_count: result
@@ -129,7 +129,7 @@ pub(crate) fn read_version_probe(
             0,
         )
         .expect("version probe packet fragment");
-    let reduced = crate::query::data::reduce_query_fragments(
+    let reduced = crate::query::data::reduce_query_fragments_for_test(
         crate::facade::query::QueryExecutionShape::BulkPacketized,
         crate::facade::query::QueryOrderingContract::CanonicalRecordRefOrder,
         vec![fragment],

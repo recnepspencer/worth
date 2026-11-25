@@ -1,5 +1,8 @@
 use super::native_strategy_fixtures::*;
 use crate::authority::commit::pipeline::{stage_observation, CommitStage};
+use crate::commit_strategies::data::execution::executor_registration::{
+    CommitStrategyExecutionRegistration, CommitStrategyExecutor,
+};
 use crate::durability::data::RelationalRecoveryStop;
 use crate::execution::RelationalExecutionDenialCause as Cause;
 use std::sync::{
@@ -23,7 +26,7 @@ impl CommitStrategyExecutor for RefuseOnce {
         &self,
         _: &worth_execution::ExecutionRequest<'_, '_>,
         request: &CanonicalStrategyCommitRequest,
-        _: &crate::commit_strategies::data::StrategyObservationContext<'_>,
+        _: &crate::commit_strategies::data::execution::observation_context::StrategyObservationContext<'_>,
     ) -> Result<StrategyExecutionResult, StrategyExecutorFailure> {
         assert_eq!(
             self.published.load(Ordering::SeqCst),
@@ -78,7 +81,7 @@ fn executor_memory_refusal_is_returned_by_value_without_a_verification_outcome()
     // live commit measures one publication's consults; reconstruction of the
     // same commit must make exactly that many before the executor runs.
     let counted = one_publication.clone();
-    let committed = stage_observation::with_observer(
+    let committed = stage_observation::with_stage_observer_for_test(
         Box::new(move |stage| {
             if stage == CommitStage::Publication {
                 counted.fetch_add(1, Ordering::SeqCst);
@@ -99,7 +102,7 @@ fn executor_memory_refusal_is_returned_by_value_without_a_verification_outcome()
         verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
     };
     let observed = published.clone();
-    let result = stage_observation::with_observer(
+    let result = stage_observation::with_stage_observer_for_test(
         Box::new(move |stage| {
             if stage == CommitStage::Publication {
                 observed.fetch_add(1, Ordering::SeqCst);
@@ -117,7 +120,7 @@ fn executor_memory_refusal_is_returned_by_value_without_a_verification_outcome()
     // Retry is a new verification from the same retained bytes, after the one-shot refusal.
     published.store(0, Ordering::SeqCst);
     let observed = published.clone();
-    let retry = stage_observation::with_observer(
+    let retry = stage_observation::with_stage_observer_for_test(
         Box::new(move |stage| {
             if stage == CommitStage::Publication {
                 observed.fetch_add(1, Ordering::SeqCst);

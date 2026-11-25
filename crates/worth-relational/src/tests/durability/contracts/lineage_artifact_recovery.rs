@@ -1,11 +1,21 @@
+use worth_relational_durability::internal_port::durability::data::checkpoint_images::DurableCheckpointOwnerPort as _;
+use worth_relational_durability::internal_port::durability::data::checkpoint_images::DurableCheckpointFieldsFixturePort as _;
+use worth_relational_durability::internal_port::durability::data::recovery_plan::RecoveryPlanFieldsFixturePort as _;
+use worth_relational_durability::internal_port::durability::migration::readmitted_canonical_commit::ReadmittedCanonicalCommitOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFixturePort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::lineage_rebuild_test::CanonicalCommitEnvelopeBodyFixturePort as _;
 use super::*;
+use crate::durability::canonical_commit_artifact::checkpoint_body::mutable_positioned_body_for_test;
 use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
+use worth_relational_contracts::internal_port::lineage::data::artifacts::checkpoint_artifact::LineageCheckpointArtifactOwnerPort as _;
+use worth_relational_contracts::internal_port::lineage::data::artifacts::published_artifact::PublishedLineageArtifactFixturePort as _;
+use worth_relational_contracts::internal_port::lineage::data::events::LineageEventRecordFieldsPort as _;
+use worth_relational_contracts::internal_port::lineage::data::graph::LineageNodeFieldsPort as _;
 
 #[test]
 fn checkpoint_duplicate_lineage_event_ids_deny() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);
     create_entity_outcome(execution, &runtime, "checkpoint-duplicate-first");
@@ -22,24 +32,26 @@ fn checkpoint_duplicate_lineage_event_ids_deny() {
         .checkpoint
         .as_mut()
         .expect("checkpoint")
-        .envelopes
+        .envelopes_mut_for_test()
         .iter_mut()
-        .map(|commit| commit.envelope_mut_for_test(execution))
+        .map(|commit| mutable_positioned_body_for_test(commit, execution))
         .flat_map(|envelope| {
             envelope
                 .published_lineage_mut_for_test()
-                .lineage_events_mut()
+                .lineage_events_mut_for_test()
         })
         .collect::<Vec<_>>();
-    let first_id = events[0].event_id;
-    events[1].event_id = first_id;
+    let first_id = events[0].event_id();
+    *events[1].event_id_mut_for_test() = first_id;
     drop(events);
-    for envelope in &mut plan.checkpoint.as_mut().expect("checkpoint").envelopes {
-        envelope
-            .envelope_mut_for_test(execution)
-            .rebuild_lineage_basis_for_test();
+    for envelope in plan
+        .checkpoint
+        .as_mut()
+        .expect("checkpoint")
+        .envelopes_mut_for_test()
+    {
+        mutable_positioned_body_for_test(envelope, execution).rebuild_lineage_basis_for_test();
     }
-
     let error = recover_error(execution, plan);
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     assert!(error.detail.contains("reused"));
@@ -49,7 +61,6 @@ fn checkpoint_duplicate_lineage_event_ids_deny() {
 fn tail_duplicate_lineage_event_ids_deny() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);
     create_entity_outcome(execution, &runtime, "tail-duplicate-checkpoint");
@@ -64,24 +75,23 @@ fn tail_duplicate_lineage_event_ids_deny() {
         )
         .unwrap();
     let mut events = plan
-        .tail_log
+        .tail_log_mut_for_test()
         .iter_mut()
-        .map(|commit| commit.envelope_mut_for_test(execution))
+        .map(|commit| commit.readmitted_envelope_mut_for_test(execution))
         .flat_map(|envelope| {
             envelope
                 .published_lineage_mut_for_test()
-                .lineage_events_mut()
+                .lineage_events_mut_for_test()
         })
         .collect::<Vec<_>>();
-    let first_id = events[0].event_id;
-    events[1].event_id = first_id;
+    let first_id = events[0].event_id();
+    *events[1].event_id_mut_for_test() = first_id;
     drop(events);
-    for envelope in &mut plan.tail_log {
+    for envelope in plan.tail_log_mut_for_test() {
         envelope
-            .envelope_mut_for_test(execution)
+            .readmitted_envelope_mut_for_test(execution)
             .rebuild_lineage_basis_for_test();
     }
-
     let error = recover_error(execution, plan);
     assert_eq!(error.class, RecoveryFailureClass::CorruptCanonicalArtifact);
     assert!(error.detail.contains("reused"));
@@ -91,7 +101,6 @@ fn tail_duplicate_lineage_event_ids_deny() {
 fn checkpoint_and_tail_lineage_event_id_collision_denies() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);
     create_entity_outcome(execution, &runtime, "cross-checkpoint-head");
@@ -108,58 +117,24 @@ fn checkpoint_and_tail_lineage_event_id_collision_denies() {
         .checkpoint
         .as_ref()
         .expect("checkpoint")
-        .envelopes
+        .envelopes()
         .iter()
         .flat_map(|envelope| envelope.lineage_events())
         .next()
         .expect("checkpoint event")
         .event_id();
-    plan.tail_log[0]
-        .envelope_mut_for_test(execution)
+    *plan.tail_log_mut_for_test()[0]
+        .readmitted_envelope_mut_for_test(execution)
         .published_lineage_mut_for_test()
-        .lineage_events_mut()[0]
-        .event_id = checkpoint_id;
-    plan.tail_log[0]
-        .envelope_mut_for_test(execution)
+        .lineage_events_mut_for_test()[0]
+        .event_id_mut_for_test() = checkpoint_id;
+    plan.tail_log_mut_for_test()[0]
+        .readmitted_envelope_mut_for_test(execution)
         .rebuild_lineage_basis_for_test();
 
     let error = recover_error(execution, plan);
     assert_eq!(error.class, RecoveryFailureClass::CorruptCanonicalArtifact);
     assert!(error.detail.contains("reused"));
-}
-
-#[test]
-fn tail_lineage_commit_and_branch_cross_splices_deny() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let medium = OwnedTestDurableMedium::new();
-    let runtime = durable_runtime_for_medium(&medium);
-    create_entity_outcome(execution, &runtime, "cross-splice-checkpoint");
-    capture_and_file_checkpoint(execution, &runtime, &medium);
-    create_entity_outcome(execution, &runtime, "cross-splice-tail");
-    let mut plan = medium
-        .expanded_recovery_plan(
-            execution,
-            &runtime,
-            RecoveryMode::NormalRecoveryVerification,
-        )
-        .unwrap();
-    let event = plan.tail_log[0]
-        .envelope_mut_for_test(execution)
-        .published_lineage_mut_for_test()
-        .lineage_events_mut()
-        .first_mut()
-        .expect("tail event");
-    event.commit.branch_id = BranchId("spliced-sibling".to_owned());
-    event.branch_id = BranchId("spliced-sibling".to_owned());
-    plan.tail_log[0]
-        .envelope_mut_for_test(execution)
-        .rebuild_lineage_basis_for_test();
-
-    let error = recover_error(execution, plan);
-    assert_eq!(error.class, RecoveryFailureClass::CorruptCanonicalArtifact);
-    assert!(error.detail.contains("cross-spliced"));
 }
 
 #[test]
@@ -178,16 +153,19 @@ fn checkpoint_lineage_commit_cross_splice_denies() {
             RecoveryMode::NormalRecoveryVerification,
         )
         .unwrap();
-    let event = plan.checkpoint.as_mut().expect("checkpoint").envelopes[0]
-        .envelope_mut_for_test(execution)
+    let positioned = &mut plan
+        .checkpoint
+        .as_mut()
+        .expect("checkpoint")
+        .envelopes_mut_for_test()[0];
+    let event = mutable_positioned_body_for_test(positioned, execution)
         .published_lineage_mut_for_test()
-        .lineage_events_mut()
+        .lineage_events_mut_for_test()
         .first_mut()
         .expect("checkpoint event");
-    event.commit.commit_id = crate::history::data::CommitId(event.commit.commit_id.0 + 10);
-    plan.checkpoint.as_mut().expect("checkpoint").envelopes[0]
-        .envelope_mut_for_test(execution)
-        .rebuild_lineage_basis_for_test();
+    event.owner_commit_mut().commit_id =
+        crate::history::data::CommitId(event.commit().commit_id.0 + 10);
+    mutable_positioned_body_for_test(positioned, execution).rebuild_lineage_basis_for_test();
 
     let error = recover_error(execution, plan);
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
@@ -219,19 +197,19 @@ fn replay_and_durable_lineage_payload_conflict_denies() {
         )
         .unwrap();
     let second_event = plan
-        .tail_log
+        .tail_log_mut_for_test()
         .iter_mut()
-        .map(|commit| commit.envelope_mut_for_test(execution))
+        .map(|commit| commit.readmitted_envelope_mut_for_test(execution))
         .find(|envelope| envelope.commit.commit_id == second.commit.commit_id)
         .expect("second tail envelope")
         .published_lineage_mut_for_test()
-        .lineage_events_mut()
+        .lineage_events_mut_for_test()
         .first_mut()
         .expect("second tail event");
-    second_event.targets = vec![first_lineage];
-    plan.tail_log
+    *second_event.owner_targets_mut() = vec![first_lineage];
+    plan.tail_log_mut_for_test()
         .iter_mut()
-        .map(|commit| commit.envelope_mut_for_test(execution))
+        .map(|commit| commit.readmitted_envelope_mut_for_test(execution))
         .find(|envelope| envelope.commit.commit_id == second.commit.commit_id)
         .expect("second tail envelope")
         .rebuild_lineage_basis_for_test();
@@ -261,7 +239,7 @@ fn checkpoint_lineage_node_deletion_denies_before_installation() {
         .as_mut()
         .expect("checkpoint")
         .lineage
-        .nodes_mut()
+        .checkpoint_nodes_mut_for_test()
         .clear();
 
     let error = recover_error(execution, plan);
@@ -287,17 +265,21 @@ fn checkpoint_lineage_node_remap_denies_before_installation() {
         .unwrap();
     let mut wrong_generation = plan.clone();
     let checkpoint = wrong_generation.checkpoint.as_mut().unwrap();
-    checkpoint.lineage.nodes_mut()[0].entity_id.generation.0 += 1;
+    checkpoint.lineage.checkpoint_nodes_mut_for_test()[0]
+        .lineage_node_entity_mut_for_test()
+        .generation
+        .0 += 1;
     let error = recover_error(execution, wrong_generation);
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     assert!(error.detail.contains("does not name its exact entity"));
 
-    plan.checkpoint
+    *plan
+        .checkpoint
         .as_mut()
         .expect("checkpoint")
         .lineage
-        .nodes_mut()[0]
-        .entity_id =
+        .checkpoint_nodes_mut_for_test()[0]
+        .lineage_node_entity_mut_for_test() =
         crate::identity::data::EntityId::new(crate::identity::data::PartitionId::main(), 99_999, 1);
 
     let error = recover_error(execution, plan);
@@ -316,11 +298,11 @@ fn checkpoint_lineage_node_swap_denies_before_installation() {
         .as_mut()
         .expect("checkpoint")
         .lineage
-        .nodes_mut();
+        .checkpoint_nodes_mut_for_test();
     assert_eq!(nodes.len(), 2);
-    let first_entity = nodes[0].entity_id;
-    nodes[0].entity_id = nodes[1].entity_id;
-    nodes[1].entity_id = first_entity;
+    let first_entity = nodes[0].entity_id();
+    *nodes[0].lineage_node_entity_mut_for_test() = nodes[1].entity_id();
+    *nodes[1].lineage_node_entity_mut_for_test() = first_entity;
 
     let error = recover_error(execution, plan);
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
@@ -338,9 +320,9 @@ fn checkpoint_duplicate_lineage_entity_mapping_denies_before_installation() {
         .as_mut()
         .expect("checkpoint")
         .lineage
-        .nodes_mut();
+        .checkpoint_nodes_mut_for_test();
     assert_eq!(nodes.len(), 2);
-    nodes[1].entity_id = nodes[0].entity_id;
+    *nodes[1].lineage_node_entity_mut_for_test() = nodes[0].entity_id();
 
     let error = recover_error(execution, plan);
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);

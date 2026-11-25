@@ -7,6 +7,8 @@ use crate::facade::transactions::{
 };
 use crate::history::data::RelationalDescriptiveTouch as Touch;
 use crate::storage::data::AuthoritativeFieldComparisonKey;
+use worth_relational_durability::internal_port::durability::data::checkpoint_images::DurableCheckpointFieldsFixturePort as _;
+use worth_relational_durability::internal_port::durability::data::checkpoint_images::DurableCheckpointOwnerPort as _;
 
 #[test]
 fn native_merge_touches_only_changed_revision_and_both_index_membership_keys() {
@@ -74,11 +76,11 @@ fn native_merge_touches_only_changed_revision_and_both_index_membership_keys() {
     let prepared = runtime
         .prepare_merge_execution(
             execution,
-            MergeExecutionRequest {
-                target_branch: BranchId("main".to_string()),
-                source_branch: BranchId("feature".to_string()),
-                merge_intent: MergeIntent::ReconcileIntoTarget,
-            },
+            MergeExecutionRequest::new(
+                BranchId("main".to_string()),
+                BranchId("feature".to_string()),
+                MergeIntent::ReconcileIntoTarget,
+            ),
         )
         .expect("native merge preparation");
     let merged = runtime
@@ -213,12 +215,12 @@ fn native_merge_touches_only_changed_revision_and_both_index_membership_keys() {
     .checkpoint;
     for (commit, axes, root) in original_roots {
         let expected = original
-            .branch_roots
+            .branch_roots_for_test()
             .iter()
             .find(|image| image.commit_id == commit)
             .expect("original selected Root image");
         let actual = complete
-            .branch_roots
+            .branch_roots_for_test()
             .iter()
             .find(|image| image.commit_id == commit)
             .expect("Complete must preserve both current and feature Roots");
@@ -232,8 +234,7 @@ fn native_merge_touches_only_changed_revision_and_both_index_membership_keys() {
     // and its source axes when it binds that exact generation at each head.
     assert!(complete.derived_index_artifacts.generations().is_empty());
     let carried = complete
-        .derived_index_checkpoint
-        .as_ref()
+        .derived_index_checkpoint()
         .expect("Complete carries its index checkpoint");
     for generation in &generations {
         assert!(

@@ -1,51 +1,22 @@
 //! Readmit an exact predecessor and its associated durable migration prefix.
-use super::*;
-use crate::branch::RecordedRelationalComponentTarget;
-use crate::runtime::RelationalHomeProgramCatalogReadmissionSource;
+use super::runtime_installation::{
+    admit_recovery_or_emit, move_durable_medium, publish_recovered_runtime,
+    rebuild_admitted_recovery_or_emit, recovered_authority, require_recovered_main_schema,
+};
+use crate::branch::recorded_basis::RecordedRelationalComponentTarget;
+use crate::durability::authority::recovered_runtime::DurabilityRecoveryAuthority;
+use crate::durability::authority::recovered_runtime::RecoveredRelationalRuntimeAuthority;
+use crate::durability::data::{
+    RecoveryOutcome as RuntimeRecoveryOutcome, RecoveryPlan, RelationalRecoveryStop,
+};
+use crate::runtime::{RelationalHomeProgramCatalogReadmissionSource, RelationalRuntime};
 use sha2::{Digest, Sha256};
 use worth_execution::ExecutionRequest;
+use worth_relational_durability::internal_port::durability::authority::RecoveredRelationalBranchBasisOwnerPort as _;
 
-#[derive(Debug)]
-pub enum RelationalHomeProgramTransitionSourceRefusal {
-    Recovery(RelationalRecoveryStop),
-    Predecessor(super::super::RefusedRelationalRecordedComponent),
-    PredecessorMissing,
-    PredecessorSchemaMismatch,
-    CurrentHeadMissing,
-    DurableSourceMissing {
-        commit: crate::history::data::CommitId,
-    },
-    PrefixLength {
-        expected: usize,
-        actual: usize,
-    },
-    PrefixAssociation {
-        position: crate::publication::patch::data::PatchStreamPosition,
-    },
-    PrefixParent {
-        commit: crate::history::data::CommitId,
-    },
-    PrefixBranch {
-        commit: crate::history::data::CommitId,
-    },
-    PrefixHead,
-    Backing(worth_execution::ExecutionRequestArrayDenial),
-    CapacityOverflow,
-    UnboundHome,
-    Admission(worth_proof::HomeProgramTransitionAdmissionDenial),
-    AssignmentCount,
-    Contracts(Box<crate::runtime::RelationalHomeProgramContractDenial>),
-}
-impl From<RelationalRecoveryStop> for RelationalHomeProgramTransitionSourceRefusal {
-    fn from(cause: RelationalRecoveryStop) -> Self {
-        Self::Recovery(cause)
-    }
-}
-impl From<DurabilityError> for RelationalHomeProgramTransitionSourceRefusal {
-    fn from(cause: DurabilityError) -> Self {
-        Self::Recovery(cause.into())
-    }
-}
+pub(crate) mod refusal;
+pub use refusal::RelationalHomeProgramTransitionSourceRefusal;
+
 use RelationalHomeProgramTransitionSourceRefusal as Refusal;
 
 /// Actual recovery custody, including the original planning root. A requested
@@ -127,7 +98,13 @@ impl DurabilityRecoveryAuthority<'_> {
             .admit_recorded_component(execution, &material.restored, recorded)
             .map_err(Refusal::Predecessor)?;
         let (root, _) = roots
-            .exact_image(execution, &material.restored, recorded)?
+            .exact_image(
+                execution,
+                &material.restored.history,
+                &material.restored.config.schema.registry,
+                &material.restored.services.symbols,
+                recorded,
+            )?
             .ok_or(Refusal::PredecessorMissing)?;
         if !root.schema_authority().matches(&declared) {
             return Err(Refusal::PredecessorSchemaMismatch);
@@ -149,14 +126,14 @@ impl DurabilityRecoveryAuthority<'_> {
             },
             current.schema_authority().registry(),
         );
-        declared_schema::require_declared_schema_of_recovered_main(&material.restored)?;
+        require_recovered_main_schema(&material.restored)?;
         recovered.home_program_predecessor = Some(
             material
                 .restored
                 .retain_home_predecessor_catalog(
                     execution,
                     recorded,
-                    &predecessor.basis,
+                    predecessor.readmitted_basis(),
                     original.schema_contract_runtime,
                 )
                 .map_err(|cause| Refusal::Contracts(Box::new(cause)))?,
@@ -198,7 +175,9 @@ fn validate_prefix(
         .map_err(Refusal::Backing)?;
     let bytes = artifacts
         .len()
-        .checked_mul(std::mem::size_of::<crate::history::RetainedCanonicalIndex>())
+        .checked_mul(std::mem::size_of::<
+            crate::history::commit::RetainedCanonicalIndex,
+        >())
         .and_then(|bytes| u64::try_from(bytes).ok())
         .ok_or(Refusal::CapacityOverflow)?;
     let _entries_memory = execution

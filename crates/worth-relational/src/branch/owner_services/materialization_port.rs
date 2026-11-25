@@ -1,5 +1,8 @@
 use std::collections::BTreeSet;
 use worth_execution::ExecutionAllocationPolicy as AllocationPolicy;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_branch::internal_port::branch::materialization::RelationalMaterializationCustodyOwnerPort as _;
+use worth_relational_mutation::internal_port::mvcc::transaction::intent::RelationalTransactionIntentOwnerPort as _;
 
 use crate::branch::{
     AdmittedRelationalBranchBasis, PendingRelationalMaterializationSuspension,
@@ -11,11 +14,6 @@ use crate::branch::{
     RelationalRematerializationFailure,
 };
 use crate::mvcc::{RelationalMaterializationTransactionMode, RelationalTransactionIntent};
-use crate::transactions::data::{
-    MaterializationMutationIntent, MutationIntent, RematerializeEntityIntent,
-    RematerializeRelationIntent, SuspendEntityMaterializationIntent,
-    SuspendRelationMaterializationIntent, WorkerIntentBatch,
-};
 
 use super::owner_binding::RelationalOwnerServiceBinding;
 
@@ -67,20 +65,20 @@ impl RelationalMaterializationPort {
             .admitted_runtime()
             .ok_or(RelationalMaterializationError::OwnerUnavailable)?;
         let source_commit = basis
-            .inner
+            .owner_inner()
             .root
             .commit_id()
             .ok_or(RelationalMaterializationError::SourceCommitMismatch)?;
         let records = crate::storage::residency::probe_full(
             execution,
-            &crate::branch::SymbolAdmittedRootRead::new(
-                &basis.inner.root,
-                &runtime.services.symbols,
-            ),
+            &basis
+                .owner_inner()
+                .root
+                .symbol_admitted_projection(&runtime.services.symbols),
             |state| {
                 source_generated_manifest(
                     state,
-                    basis.inner.root.schema_authority().registry(),
+                    basis.owner_inner().root.schema_authority().registry(),
                     generated_entities,
                 )
             },
@@ -292,7 +290,7 @@ fn validate_custody_basis(
     if custody.data().branch_identity != *basis.identity() {
         return Err(RelationalMaterializationError::BranchMismatch);
     }
-    if basis.inner.root.commit_id() != Some(custody.suspension_commit()) {
+    if basis.owner_inner().root.commit_id() != Some(custody.suspension_commit()) {
         return Err(RelationalMaterializationError::SuspensionCommitMismatch);
     }
     Ok(())
@@ -331,8 +329,9 @@ fn validate_candidate_manifest(
 #[path = "materialization_port_tests.rs"]
 mod tests;
 
-mod batch;
-use batch::{rematerialization_batch, suspension_batch};
+use worth_relational_mutation::internal_port::transactions::admission::materialization_batch::{
+    rematerialization_batch, suspension_batch,
+};
 
 fn missing_entity(entity_id: crate::identity::data::EntityId) -> RelationalMaterializationError {
     RelationalMaterializationError::SourceRecordUnavailable(

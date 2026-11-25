@@ -214,6 +214,10 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     CollectionOwnerMeaningMismatch,
     /// A checked collection owner has no matching declaration.
     ForeignCollectionOwner,
+    /// A home program transition entity scan exceeded its declared bound.
+    TransitionEntityScanBoundExceeded {
+        maximum_work_units: usize,
+    },
 }
 
 /// Refusal to install or publish an application's primary graph runtime.

@@ -135,7 +135,9 @@ where
             let durable_commits: Vec<DurableCompositeCommitIdentity> = pending.remaining()
                 [..chunk_len]
                 .iter()
-                .map(|commit| DurableCompositeCommitIdentity::from_recorded(owner, commit.ordinal()))
+                .map(|commit| {
+                    DurableCompositeCommitIdentity::from_recorded(owner, commit.ordinal())
+                })
                 .collect();
             let subject = match WorldDurableArtifact::from_input(
                 WorldArtifactInput::HistoryRetired {
@@ -198,8 +200,10 @@ where
             .filter_map(|slot| slot.get())
             .filter_map(|entry| entry.live_relational_commit_result())
             .collect();
-        let ordinals: std::collections::BTreeSet<u64> =
-            identities.iter().map(|identity| identity.ordinal()).collect();
+        let ordinals: std::collections::BTreeSet<u64> = identities
+            .iter()
+            .map(|identity| identity.ordinal())
+            .collect();
         drop(retired);
         if let Some(relational) = &self.state.relational {
             let basis_port = relational.basis_port();

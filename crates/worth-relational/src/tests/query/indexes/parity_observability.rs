@@ -168,8 +168,8 @@ fn derived_index_contract_sampled_parity_is_bounded_and_deterministic() {
         .query_plan_context(&snapshot)
         .expect("query plan context");
     let generation_id = build.generations[0].generation_id;
-    let sampled_key = sampled_plan_key_for(generation_id, snapshot.version_id, true);
-    let unsampled_key = sampled_plan_key_for(generation_id, snapshot.version_id, false);
+    let sampled_key = sampled_plan_key_for(generation_id, snapshot.version_id(), true);
+    let unsampled_key = sampled_plan_key_for(generation_id, snapshot.version_id(), false);
 
     let sampled_packet = crate::facade::query::PlannedQueryPacket {
         label: "entity-name-sampled".to_string(),
@@ -330,11 +330,15 @@ fn derived_index_contract_runtime_drop_releases_index_scratch_hints() {
 
         let counters = runtime.performance_access().counters();
         assert!(counters.query_index_scratch_reuse_count > 0);
-        assert!(crate::indexes::index_query_scratch_hint_exists(runtime_id));
+        assert!(
+            crate::tests::query::indexes::index_parity_scratch::index_query_scratch_hint_exists(
+                runtime_id
+            )
+        );
     }
 
     assert!(
-        !crate::indexes::index_query_scratch_hint_exists(runtime_id),
+        !crate::tests::query::indexes::index_parity_scratch::index_query_scratch_hint_exists(runtime_id),
         "runtime drop should release its own scratch hint even if other tests create hints concurrently"
     );
 }

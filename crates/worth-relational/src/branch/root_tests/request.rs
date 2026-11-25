@@ -1,197 +1,106 @@
-//! Original roots, not reconstructed expected hashes, are the independent oracle.
+//! Owner-level fork preflight.
 use super::*;
-use crate::branch::RelationalBranchRootIdentityIssuer;
-use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
+use crate::tests::support::{create_entity_outcome, runtime_with_test_schema};
+use worth_execution::{ExecutionRequest, SerialMemoryBudget, SerialRequest};
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 
 #[test]
-fn request_root_refusal_preserves_original_and_releases_partial_backing() {
-    let host = crate::test_execution_policy::serial_request();
-    let execution = ExecutionRequest::serial(&host);
-    let (_runtime, original, _) = committed_root_and_envelope(&execution);
-    let axes = original.axes();
-    let issuer = RelationalBranchRootIdentityIssuer::default();
-    let calibration = SerialMemoryBudget::new(Some(1024 * 1024));
-    let host =
-        SerialRequest::from_memory(calibration.clone(), CancellationSource::new().token(), None);
-    let execution = ExecutionRequest::serial(&host);
-    let mut controller = 0;
-    execution
-        .run_native_with_checkpoint(|_| controller = calibration.charged_memory_bytes())
-        .unwrap();
-    let budget = SerialMemoryBudget::new(Some(
-        controller + size_of::<super::super::RelationalBranchRoot>() as u64 - 1,
-    ));
-    let cancellation = CancellationSource::new();
-    let host = SerialRequest::from_memory(budget.clone(), cancellation.token(), None);
-    let execution = ExecutionRequest::serial(&host);
-    let attempt = || {
-        super::super::RelationalBranchRoot::readmit_unchanged_for_request(
-            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-            &issuer,
-            &original,
-            original.canonical_payload().unwrap(),
-            original.descriptor().unwrap().clone(),
-            original.retained_schema_authority(),
-            original.output_publication_positions.clone(),
-            &execution,
-        )
-    };
-    assert!(matches!(
-        attempt(),
-        Err(RelationalBranchRootCaptureDenial::Request(
-            crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted { .. }
-        ))
-    ));
-    assert_eq!(budget.charged_memory_bytes(), 0);
-    cancellation.cancel();
-    assert!(matches!(
-        attempt(),
-        Err(RelationalBranchRootCaptureDenial::Request(
-            crate::execution::RelationalExecutionDenialCause::Cancelled
-        ))
-    ));
-    assert_eq!(budget.charged_memory_bytes(), 0);
-    assert_eq!(original.axes(), axes);
-}
+fn fork_target_materialization_overflow_refuses_before_installing_target() {
+    crate::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
+        use crate::identity::data::PartitionId;
+        use crate::storage::overlay::RelationalPartitionAllocationInventory as Inv;
+        let host_request = worth_harness::facade::execution_fixture::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+        let runtime = runtime_with_test_schema();
+        create_entity_outcome(execution, &runtime, "branch-root-axis-binding");
+        let source_root = runtime
+            .history
+            .branch_cell(&BranchId("main".into()))
+            .unwrap()
+            .root()
+            .unwrap();
+        let target_branch = BranchId("overflow-refused-fork".to_owned());
 
-#[test]
-fn streamed_visibility_preserves_original_buffered_preimage_and_request_stop() {
-    use sha2::{Digest, Sha256};
-    let host = crate::test_execution_policy::serial_request();
-    let execution = ExecutionRequest::serial(&host);
-    let (_runtime, original, envelope) = committed_root_and_envelope(&execution);
-    let axes = original.axes().unwrap();
-    let mut reference = Sha256::new();
-    reference.update(b"worth.relational.branch-visibility.v1\0");
-    reference.update(axes.storage_root);
-    reference.update(axes.schema_root);
-    reference.update([0]);
-    reference.update(envelope.encode_authoritative_payload().unwrap());
-    let expected: [u8; 32] = reference.finalize().into();
-    assert_eq!(expected, axes.visibility.digest());
-    assert_eq!(
-        RelationalBranchVisibilityCommitment::for_root_for_request(
-            &envelope,
-            axes.storage_root,
-            axes.schema_root,
-            axes.correctness_index,
-            &execution,
-        )
-        .unwrap()
-        .digest(),
-        expected
-    );
-    let cancellation = CancellationSource::new();
-    let host =
-        SerialRequest::from_memory(SerialMemoryBudget::new(None), cancellation.token(), None);
-    cancellation.cancel();
-    assert!(matches!(
-        RelationalBranchVisibilityCommitment::for_root_for_request(
-            &envelope,
-            axes.storage_root,
-            axes.schema_root,
-            axes.correctness_index,
-            &ExecutionRequest::serial(&host),
-        ),
-        Err(RelationalBranchRootCaptureDenial::Request(
-            crate::execution::RelationalExecutionDenialCause::Cancelled
-        ))
-    ));
-}
+        let mut overflowing_root = source_root.as_ref().clone();
+        let base_region = source_root.regions_for_test().values().next().unwrap();
+        let inventory = |authoritative_bytes| Inv {
+            authoritative_bytes,
+            ..Default::default()
+        };
+        let mut regions = std::collections::BTreeMap::new();
+        regions.insert(
+            PartitionId(101),
+            Arc::new(base_region.clone_with_inventory_for_test(
+                99_001,
+                PartitionId(101),
+                inventory(u64::MAX - 8),
+            )),
+        );
+        regions.insert(
+            PartitionId(102),
+            Arc::new(base_region.clone_with_inventory_for_test(
+                99_002,
+                PartitionId(102),
+                inventory(16),
+            )),
+        );
+        overflowing_root.replace_regions_for_test(
+            crate::branch::root_regions::RelationalPersistentRegionSet::initial(
+                fixture_lane,
+                77_001,
+                regions,
+                &super::RelationalBranchRootIdentityIssuer::default(),
+            )
+            .unwrap(),
+        );
+        let overflowing_root = Arc::new(overflowing_root);
+        assert!(!overflowing_root.shares_authoritative_regions_with(&source_root));
+        assert_eq!(
+            overflowing_root.logical_partition_payload_bytes(),
+            Err(crate::storage::substrate::StorageAllocationOverflow)
+        );
 
-#[test]
-fn successor_memory_component_admission_binds_owner_and_exact_candidate_successor() {
-    use crate::branch::{RelationalBranchBasisDenial, RelationalRecordedComponentRefusal as Refusal};
-
-    let host = crate::test_execution_policy::serial_request();
-    let execution = ExecutionRequest::serial(&host);
-    let runtime = runtime_with_test_schema();
-    let _ = create_entity_outcome(&execution, &runtime, "seed");
-    let foreign = runtime_with_test_schema();
-    let _ = create_entity_outcome(&execution, &foreign, "foreign-seed");
-
-    let foreign_candidate = prepare_main_candidate(&foreign, &execution, "foreign-commit");
-    assert!(matches!(
+        let fork_port = runtime.owner_component_services().fork_port();
+        let reservation = runtime
+            .history
+            .fork_binding()
+            .reserve_target(target_branch.clone())
+            .expect("target reservation succeeds");
+        let main = BranchId("main".to_owned());
+        let source_cell = runtime.history.branch_cell(&main).unwrap();
+        let mut target_cell = source_cell.publication_cell().enter_state().snapshot_cell();
+        target_cell.install_root(overflowing_root);
+        let prepared = crate::branch::fork::target_preparation::PreparedForkTarget {
+            target_cell,
+            source_root,
+            target_observation: source_cell.observation(),
+            fork_provenance: source_cell.observation(),
+            target_truth_version: source_cell.truth_version(),
+            shared_commit_id: None,
+            source_head_version: None,
+            reservation,
+            indexes: None,
+            managed_source: None,
+        };
+        let head_installs_before = runtime.retention_cost_counters().head_installs;
+        let denial = fork_port
+            .prepare_installation(prepared, true)
+            .err()
+            .expect("overflowing materialized fork must refuse before installation");
+        assert_eq!(
+            denial,
+            crate::branch::fork::RelationalForkDenial::AllocationAccountingOverflow
+        );
+        assert!(runtime.history.branch_cell(&target_branch).is_none());
+        assert_eq!(
+            runtime.retention_cost_counters().head_installs,
+            head_installs_before,
+            "refused fork must not install a head retention obligation"
+        );
         runtime
-            .owner_component_services()
-            .basis_port()
-            .admit_successor_memory_component(&execution, &foreign_candidate),
-        Err(Refusal::Basis(RelationalBranchBasisDenial::ForeignRuntime { .. }))
-    ));
-
-    let candidate_a = prepare_main_candidate(&runtime, &execution, "candidate-a");
-    let admitted_a = runtime
-        .owner_component_services()
-        .basis_port()
-        .admit_successor_memory_component(&execution, &candidate_a)
-        .unwrap();
-    // Publish a different equal-sized commit on the same branch ("main", 1 parent).
-    let _ = create_entity_outcome(&execution, &runtime, "other-commit");
-    let (_, basis_b) = runtime
-        .observe_branch(&runtime.main_branch_identity())
-        .unwrap();
-    assert!(matches!(
-        runtime
-            .owner_component_services()
-            .basis_port()
-            .observe_admitted_memory_component(admitted_a, &basis_b),
-        Err(Refusal::Basis(
-            RelationalBranchBasisDenial::WrongImmutableTarget
-        ))
-    ));
-
-    let candidate_c = prepare_main_candidate(&runtime, &execution, "candidate-c");
-    let measure_budget = SerialMemoryBudget::new(None);
-    let measure_host = SerialRequest::from_memory(
-        measure_budget.clone(),
-        worth_execution::CancellationToken::new(),
-        None,
-    );
-    let admitted_c = runtime
-        .owner_component_services()
-        .basis_port()
-        .admit_successor_memory_component(&ExecutionRequest::serial(&measure_host), &candidate_c)
-        .unwrap();
-    let admitted_bytes = measure_budget.charged_memory_bytes();
-    assert!(admitted_bytes > 0);
-    // One byte short must refuse with typed PolicyMemoryExhausted and zero retained charge.
-    let tight_budget = SerialMemoryBudget::new(Some(admitted_bytes - 1));
-    let tight_host = SerialRequest::from_memory(
-        tight_budget.clone(),
-        worth_execution::CancellationToken::new(),
-        None,
-    );
-    assert!(matches!(
-        runtime
-            .owner_component_services()
-            .basis_port()
-            .admit_successor_memory_component(&ExecutionRequest::serial(&tight_host), &candidate_c),
-        Err(Refusal::Request(
-            crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted { .. }
-        ))
-    ));
-    assert_eq!(tight_budget.charged_memory_bytes(), 0);
-    let outcome = runtime
-        .owner_component_services()
-        .publication_port()
-        .compare_and_publish(&execution, candidate_c);
-    let crate::facade::mvcc::RelationalPublicationOutcome::Performed(performed) = outcome else {
-        panic!("expected performed publication: {outcome:?}");
-    };
-    let _ = runtime
-        .owner_component_services()
-        .settlement_port()
-        .settle_performed_publication(performed)
-        .unwrap();
-    let (_, successor_c) = runtime
-        .observe_branch(&runtime.main_branch_identity())
-        .unwrap();
-    let observed = runtime
-        .owner_component_services()
-        .basis_port()
-        .observe_admitted_memory_component(admitted_c, &successor_c)
-        .unwrap();
-    assert_eq!(measure_budget.charged_memory_bytes(), admitted_bytes);
-    drop(observed);
-    assert_eq!(measure_budget.charged_memory_bytes(), 0);
+            .history_authority()
+            .fork_branch_from(execution, target_branch.clone(), &main)
+            .expect("dropped reservation allows a clean subsequent fork");
+        assert!(runtime.history.branch_cell(&target_branch).is_some());
+    })
 }

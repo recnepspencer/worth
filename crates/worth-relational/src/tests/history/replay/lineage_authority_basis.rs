@@ -1,4 +1,7 @@
 use super::*;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFixturePort as _;
+use worth_relational_contracts::internal_port::lineage::data::artifacts::published_artifact::PublishedLineageArtifactFixturePort as _;
+use worth_relational_contracts::internal_port::lineage::data::events::LineageEventRecordFieldsPort as _;
 
 fn replay_request(commit_id: crate::history::data::CommitId) -> RelationalReplayRequest {
     RelationalReplayRequest {
@@ -22,8 +25,8 @@ fn replay_reports_owner_create_event_drift_at_digest_layer() {
         |envelope| {
             envelope
                 .published_lineage_mut_for_test()
-                .lineage_events_mut()[0]
-                .kind = crate::facade::lineage::LineageEventKind::Retire;
+                .lineage_events_mut_for_test()[0]
+                .set_event_kind_for_test(crate::facade::lineage::LineageEventKind::Retire);
         }
     ));
 
@@ -54,7 +57,7 @@ fn replay_reports_owner_create_decision_drift_at_digest_layer() {
         |envelope| {
             envelope
                 .published_lineage_mut_for_test()
-                .lineage_decision_log_mut()[0]
+                .lineage_decision_log_mut_for_test()[0]
                 .kind = crate::facade::lineage::LineageDecisionKind::RetireAccepted;
         }
     ));

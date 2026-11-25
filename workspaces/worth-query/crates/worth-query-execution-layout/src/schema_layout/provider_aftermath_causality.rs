@@ -22,6 +22,7 @@ const SOURCE_WORLD_OWNER_FIELD: &str = "source-world-owner";
 const SOURCE_WORLD_COMMIT_FIELD: &str = "source-world-commit";
 const SOURCE_BRANCH_FIELD: &str = "source-branch";
 const SOURCE_COMMIT_FIELD: &str = "source-commit";
+const SOURCE_MEMBER_FIELD: &str = "source-member";
 mod lineage;
 pub use lineage::WorthQueryCorrectionLineageLayout;
 
@@ -37,6 +38,7 @@ pub struct WorthQueryAftermathCausalityLayout {
     pub source_world_commit_locator: AspectFieldLocator,
     pub source_branch_locator: AspectFieldLocator,
     pub source_commit_locator: AspectFieldLocator,
+    pub source_member_locator: AspectFieldLocator,
     pub key_index_id: DerivedIndexId,
     pub lineage: WorthQueryCorrectionLineageLayout,
 }
@@ -60,6 +62,7 @@ pub fn lower_provider_aftermath_causality(
     let source_world_commit_locator = planned_field_locator(ASPECT, SOURCE_WORLD_COMMIT_FIELD)?;
     let source_branch_locator = planned_field_locator(ASPECT, SOURCE_BRANCH_FIELD)?;
     let source_commit_locator = planned_field_locator(ASPECT, SOURCE_COMMIT_FIELD)?;
+    let source_member_locator = planned_field_locator(ASPECT, SOURCE_MEMBER_FIELD)?;
     let shape = aspects()
         .struct_fields()
         .required(KEY_FIELD, ScalarAspectType::String)
@@ -70,14 +73,15 @@ pub fn lower_provider_aftermath_causality(
         .optional(SOURCE_WORLD_OWNER_FIELD, ScalarAspectType::UInt64)
         .optional(SOURCE_WORLD_COMMIT_FIELD, ScalarAspectType::UInt64)
         .optional(SOURCE_BRANCH_FIELD, ScalarAspectType::String)
-        .optional(SOURCE_COMMIT_FIELD, ScalarAspectType::UInt64);
+        .optional(SOURCE_COMMIT_FIELD, ScalarAspectType::UInt64)
+        .optional(SOURCE_MEMBER_FIELD, ScalarAspectType::String);
     let (shape, lineage) = lineage::lower(shape)?;
     let shape = shape.finish().map_err(|_| super::invalid_member(ASPECT))?;
     let contract = aspects()
         .contract()
         .for_key(valid_aspect_key(ASPECT)?)
         .identified_by(identity)
-        .at_revision(aspects().vocabulary().revision(4))
+        .at_revision(aspects().vocabulary().revision(5))
         .struct_aspect(shape);
     let registry = register_entity(
         registry,
@@ -105,6 +109,7 @@ pub fn lower_provider_aftermath_causality(
             source_world_commit_locator,
             source_branch_locator,
             source_commit_locator,
+            source_member_locator,
             key_index_id: DerivedIndexId(0),
             lineage,
         },

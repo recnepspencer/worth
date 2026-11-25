@@ -68,7 +68,7 @@ impl WorthQueryOutputDemandRegistry {
         interest: &WorthQueryOutputDemandInterest,
     ) -> Result<PreparedSelectedExecutionFinish<'a>, WorthQueryOutputDemandDenial> {
         // A retained diagnostic never owns the caller's cleanup.
-        if !Arc::ptr_eq(&self.state, &interest.owner.state) {
+        if !self.state.ptr_eq(&interest.owner.state) {
             return Err(WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::ForeignDemand,
                 "",

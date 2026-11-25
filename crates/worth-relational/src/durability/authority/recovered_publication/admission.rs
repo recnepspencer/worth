@@ -1,8 +1,10 @@
 //! Only complete actual root custody enters the concrete recovered phase.
 use super::*;
 use crate::branch::RecordedRelationalComponentReference;
-use crate::durability::authority::RecoveredRelationalRuntimeAuthority;
+use crate::durability::authority::associated_effects::discovery::current_settlement;
+use crate::durability::authority::recovered_runtime::RecoveredRelationalRuntimeAuthority;
 use crate::runtime::RelationalRuntime;
+use worth_relational_durability::internal_port::durability::authority::associated_effects::RelationalAssociatedEffectSubjectOwnerPort as _;
 
 impl RecoveredRelationalRuntimeAuthority {
     /// Descriptively verify that an already-readmitted Native effect advanced
@@ -20,7 +22,8 @@ impl RecoveredRelationalRuntimeAuthority {
         let Some(_operation) = runtime.owner_binding().admit() else {
             return Err(Cause::OwnerUnavailable);
         };
-        super::subject::validate(execution, self, runtime, effect, predecessor, successor)
+        require_settled_original(self, runtime, effect)?;
+        super::subject::validate(execution, effect, predecessor, successor)
     }
 
     /// Descriptively verify an already-readmitted Native effect whose disposed
@@ -40,10 +43,9 @@ impl RecoveredRelationalRuntimeAuthority {
         let Some(_operation) = runtime.owner_binding().admit() else {
             return Err(Cause::OwnerUnavailable);
         };
+        require_settled_original(self, runtime, effect)?;
         super::subject::validate_pruned_predecessor(
             execution,
-            self,
-            runtime,
             effect,
             expected_branch,
             expected_predecessor_commit,
@@ -76,14 +78,11 @@ impl RecoveredRelationalRuntimeAuthority {
         let Some(_operation) = runtime.owner_binding().admit() else {
             return Err(partial.refuse(Cause::OwnerUnavailable));
         };
-        if let Err(cause) = super::subject::validate(
-            execution,
-            self,
-            runtime,
-            &partial.effect,
-            predecessor,
-            successor,
-        ) {
+        if let Err(cause) =
+            require_settled_original(self, runtime, &partial.effect).and_then(|()| {
+                super::subject::validate(execution, &partial.effect, predecessor, successor)
+            })
+        {
             return Err(partial.refuse(cause));
         }
         partial.predecessor = match self.admit_recorded_component(execution, runtime, predecessor) {
@@ -121,18 +120,37 @@ impl RecoveredRelationalRuntimeAuthority {
         if let Err(cause) = crate::execution::check_request(execution) {
             return Err(partial.refuse(Cause::Request(cause)));
         }
-        if let Err(cause) = super::subject::validate(
-            execution,
-            self,
-            runtime,
-            &partial.effect,
-            predecessor,
-            successor,
-        ) {
+        if let Err(cause) =
+            require_settled_original(self, runtime, &partial.effect).and_then(|()| {
+                super::subject::validate(execution, &partial.effect, predecessor, successor)
+            })
+        {
             return Err(partial.refuse(cause));
         }
         partial
             .finish()
             .map(worth_proof::RelationalPublicationReadmitted::from_owner)
     }
+}
+
+fn require_settled_original(
+    recovered: &RecoveredRelationalRuntimeAuthority,
+    runtime: &RelationalRuntime,
+    effect: &ReadmittedRelationalAssociatedEffect,
+) -> Result<(), RelationalRecoveredPublicationAdmissionCause> {
+    use crate::durability::authority::RelationalAssociatedEffectSettlement as Settlement;
+    use RelationalRecoveredPublicationAdmissionCause as Cause;
+    if recovered.runtime_instance_id != runtime.runtime_instance_id()
+        || !effect
+            .subject()
+            .belongs_to_runtime(runtime.runtime_instance_id())
+    {
+        return Err(Cause::ForeignRecoveryRuntime);
+    }
+    match current_settlement(effect.subject(), runtime) {
+        Some(Settlement::PerformedPending) => return Err(Cause::PendingSettlement),
+        Some(Settlement::PerformedSettled | Settlement::CheckpointReadmitted) => {}
+        None => return Err(Cause::MissingSettlementEvidence),
+    }
+    Ok(())
 }

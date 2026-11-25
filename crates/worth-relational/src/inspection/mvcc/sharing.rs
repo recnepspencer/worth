@@ -37,10 +37,8 @@
 //! - `sharing_accounting.rs` — allocation deduplication and byte totals.
 //! - `sharing_inspection.rs` — the entry point that assembles the observation.
 
-#[path = "sharing_accounting.rs"]
-pub(super) mod accounting;
-#[path = "sharing_allocation_inventory.rs"]
-mod allocation_inventory;
+pub(crate) use worth_relational_branch::internal_port::inspection::mvcc::sharing::accounting;
+pub(crate) use worth_relational_branch::internal_port::inspection::mvcc::sharing::allocation_inventory;
 #[path = "sharing_authoritative_byte_metrics.rs"]
 mod authoritative_byte_metrics;
 #[path = "sharing_authoritative_evidence_metrics.rs"]
@@ -51,16 +49,14 @@ mod byte_metric_scope;
 mod coordination_metrics;
 #[path = "sharing_inspection.rs"]
 mod inspection;
-#[path = "sharing_inspection_denial.rs"]
-mod inspection_denial;
+pub(crate) use worth_relational_branch::internal_port::inspection::mvcc::sharing::inspection_denial;
 #[path = "sharing_inventory.rs"]
 mod inventory;
 #[path = "sharing_observation.rs"]
 mod observation;
 #[path = "sharing_recorded_cost_metrics.rs"]
 mod recorded_cost_metrics;
-#[path = "sharing_root_commitment.rs"]
-mod root_commitment;
+pub(crate) use worth_relational_branch::internal_port::inspection::mvcc::sharing::root_commitment;
 #[path = "sharing_scope.rs"]
 mod scope;
 #[path = "sharing_selection_metrics.rs"]

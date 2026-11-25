@@ -7,10 +7,20 @@ use crate::domain_computation::primary_graph::{
 use crate::domain_computation::primary_graph::{
     application_query, WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
 };
+trait CoupledCompletionBacking: Send + Sync {
+    fn as_cells(&self) -> &worth_execution::ExecutionArray<CoupledCompletionCells>;
+}
+
+impl CoupledCompletionBacking for worth_execution::ExecutionArray<CoupledCompletionCells> {
+    fn as_cells(&self) -> &worth_execution::ExecutionArray<CoupledCompletionCells> {
+        self
+    }
+}
+
 #[derive(Clone)]
 pub struct CoupledOutputCompletion {
     source: AppliedSourcePublication,
-    receipt: Arc<worth_execution::ExecutionArray<CoupledCompletionCells>>,
+    receipt: Arc<dyn CoupledCompletionBacking>,
 }
 struct CoupledCompletionCells {
     receipt: std::sync::Mutex<Option<WorthQueryApplicationLandedCommit>>,
@@ -19,11 +29,15 @@ struct CoupledCompletionCells {
     lineage: OnceLock<std::sync::Weak<OnceLock<RecordedOutput>>>,
 }
 impl CoupledOutputCompletion {
+    fn cells(&self) -> &worth_execution::ExecutionArray<CoupledCompletionCells> {
+        CoupledCompletionBacking::as_cells(&*self.receipt)
+    }
+
     pub fn same_writer(&self, other: &Self) -> bool {
-        Arc::ptr_eq(&self.receipt, &other.receipt)
+        std::ptr::eq(self.cells(), other.cells())
     }
     pub fn bind_lineage(&self, slot: &PreparedOutputLineageSlot) {
-        assert!(self.receipt[0]
+        assert!(self.cells()[0]
             .lineage
             .set(Arc::downgrade(&slot.record_cell))
             .is_ok());
@@ -35,7 +49,7 @@ impl CoupledOutputCompletion {
         entity: worth_relational::facade::identity::EntityId,
     ) -> crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence
     {
-        let cell = self.receipt[0]
+        let cell = self.cells()[0]
             .lineage
             .get()
             .and_then(std::sync::Weak::upgrade)
@@ -82,7 +96,7 @@ impl CoupledOutputCompletion {
         &self,
         settlement: &Arc<RecordedSettlementIdentity>,
     ) -> Option<WorthQueryApplicationCommitReceipt> {
-        let guard = self.receipt[0]
+        let guard = self.cells()[0]
             .receipt
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
@@ -132,7 +146,7 @@ impl CoupledOutputCompletion {
         &self.source
     }
     pub fn complete(&self, receipt: WorthQueryApplicationLandedCommit) {
-        let mut slot = self.receipt[0]
+        let mut slot = self.cells()[0]
             .receipt
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
@@ -145,14 +159,14 @@ impl CoupledOutputCompletion {
     pub fn detach_receipt_for_home_retirement(
         &self,
     ) -> Result<Option<WorthQueryApplicationLandedCommit>, ()> {
-        let mut slot = self.receipt[0].receipt.try_lock().map_err(|_| ())?;
+        let mut slot = self.cells()[0].receipt.try_lock().map_err(|_| ())?;
         Ok(slot.take())
     }
     pub fn restore_receipt_after_refused_home_retirement(
         &self,
         receipt: WorthQueryApplicationLandedCommit,
     ) {
-        let mut slot = self.receipt[0]
+        let mut slot = self.cells()[0]
             .receipt
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);

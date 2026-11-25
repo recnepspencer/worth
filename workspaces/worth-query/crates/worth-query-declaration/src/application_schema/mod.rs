@@ -95,6 +95,8 @@ pub use projected_member_domain::{
     ErasedApplicationProjectedMemberDomainDefinition, WorthQueryPortableProjectedMemberDomainParts,
 };
 mod query_member_closure;
+#[cfg(test)]
+pub(crate) use query_member_closure::validate_application_query_members;
 mod read_authoring;
 mod references;
 mod relation_aspect;
@@ -130,6 +132,7 @@ pub use signing_supersession::{
     ApplicationSigningSupersessionParts,
 };
 mod value_binding;
+pub use value_binding::UnitApplicationValueBinding;
 mod values;
 
 #[cfg(test)]
@@ -177,6 +180,7 @@ pub use authorization_policy::{
     WorthQueryPortableApplicationAuthorizationPredicateParts,
     WorthQueryPortableApplicationAuthorizationTraversalParts,
 };
+pub use binding_context::ApplicationBindingContext;
 pub use binding_identity::ApplicationSchemaBindingIdentity;
 pub use capabilities::{
     ApplicationFieldUnit, ApplicationUnitMarker, CreatableBy, DeclaredApplicationUnit,
@@ -234,7 +238,7 @@ pub use operation_component_read::{
     WorthQueryPortableOperationComponentReadParts,
 };
 pub use operation_definition::{
-    ApplicationOperationBody, ApplicationOperationBodyAuthoringDenial,
+    ApplicationInputField, ApplicationOperationBody, ApplicationOperationBodyAuthoringDenial,
     ApplicationOperationBodyBuilder, ApplicationOperationBodyCaptureRole,
     ApplicationOperationBodyChildCreation, ApplicationOperationBodyChildCreationBuilder,
     ApplicationOperationBodyCreatedField, ApplicationOperationBodyCreation,
@@ -257,8 +261,9 @@ pub use operation_definition::{
     ApplicationOperationBodySuccession, ApplicationOperationBodySuccessionOutputMatch,
     ApplicationOperationBodyValue, ApplicationOperationBodyValueProgram,
     ApplicationOperationBodyValueSnapshot, ApplicationOperationDefinition,
-    ApplicationOperationDefinitionBuilder, ApplicationSigningEvidenceRef,
-    ApplicationSigningEvidenceSource,
+    ApplicationOperationDefinitionBuilder, ApplicationOptionalInputField,
+    ApplicationSigningEvidenceRef, ApplicationSigningEvidenceSource,
+    TypedApplicationOperationBodyBuilder, TypedApplicationOperationBodyCreationBuilder,
 };
 pub use operation_dependency_locus::ApplicationOperationDependencyLocus;
 pub use operation_marker_identity::ApplicationOperationMarkerIdentity;
@@ -275,7 +280,6 @@ pub use principal_binding_authoring::{
     ApplicationPrincipalMappingIdentityRequirement, ApplicationPrincipalMappingStatusRequirement,
     ApplicationPrincipalTargetRequirement,
 };
-pub use binding_context::ApplicationBindingContext;
 pub use principal_binding_reference::ApplicationPrincipalBindingRef;
 pub use read_authoring::{
     TypedEqualityPredicate, TypedProjection, TypedReadDeclaration, TypedReadDeclarationBuilder,
@@ -307,35 +311,37 @@ pub use value_binding::{
     decode_delegated_canonical_value, decode_delegated_canonical_value_with_admission,
     encode_application_binary_value, encode_application_document, encode_canonical_value,
     encode_delegated_canonical_value, encode_stored_canonical_value, value_decode_error,
-    ApplicationCanonicalValueContract, ApplicationCanonicalValueReference,
-    ApplicationCanonicalValueReferenceParts, ApplicationEncodedScalarValue,
-    ApplicationFieldBindingLocus, ApplicationFieldBindingOwnerKind, ApplicationFieldBindingRecipe,
-    ApplicationFrameIdentity, ApplicationIdentityScalarValueBinding,
-    ApplicationNativeInputAdmissionDenial, ApplicationNativeInputDecodeProfile,
-    ApplicationNativeInputDecodeResources, ApplicationReadableScalarValueBinding,
-    ApplicationScalarValueBinding, ApplicationSignedAggregateValueBinding,
-    ApplicationStructuredValueBinding, ApplicationUnitIdentity, ApplicationValueDecodeAvailable,
-    ApplicationValueDecodeDenial, ApplicationValueDecodePosture, ApplicationValueDecodeUnavailable,
-    ApplicationValueEncodeDenial, ApplicationValueIdentityPosture, ApplicationValueIsIdentity,
-    ApplicationValueIsNotIdentity, ApplicationValueSignedAggregateAvailable,
-    ApplicationValueSignedAggregatePosture, ApplicationValueSignedAggregateUnavailable,
-    ApplicationValueValidationDenial, ArrayDelegate, BinaryValueDelegate, BinaryValueWriter,
-    BoolApplicationValueBinding, BoxDelegate, CanonicalDateApplicationValueBinding,
-    CanonicalDocumentCodec, CanonicalF32ApplicationValueBinding,
-    CanonicalF64ApplicationValueBinding, CanonicalTimeApplicationValueBinding,
-    CanonicalTimestampApplicationValueBinding, CanonicalTimestampTzApplicationValueBinding,
-    CanonicalValue, CanonicalValueSeed, ContentRefApplicationValueBinding, DelegatedValueSeed,
-    EntityRefApplicationValueBinding, ErasedApplicationSignedAggregateDecode,
-    ErasedApplicationValueAdmittedDecode, ErasedApplicationValueDecode,
-    ErasedApplicationValueEncode, ErasedApplicationValueValidation, I16ApplicationValueBinding,
-    I32ApplicationValueBinding, I64ApplicationValueBinding, I8ApplicationValueBinding,
-    InlineBytesApplicationValueBinding, InternedStringApplicationValueBinding, OptionalDelegate,
+    worth_binary_checked_wire_bytes, ApplicationCanonicalValueContract,
+    ApplicationCanonicalValueReference, ApplicationCanonicalValueReferenceParts,
+    ApplicationDeclaredInputMember, ApplicationEncodedScalarValue, ApplicationFieldBindingLocus,
+    ApplicationFieldBindingOwnerKind, ApplicationFieldBindingRecipe, ApplicationFrameIdentity,
+    ApplicationIdentityScalarValueBinding, ApplicationNativeInputAdmissionDenial,
+    ApplicationNativeInputDecodeProfile, ApplicationNativeInputDecodeResources,
+    ApplicationReadableScalarValueBinding, ApplicationScalarValueBinding,
+    ApplicationSignedAggregateValueBinding, ApplicationStructuredValueBinding,
+    ApplicationUnitIdentity, ApplicationValueDecodeAvailable, ApplicationValueDecodeDenial,
+    ApplicationValueDecodePosture, ApplicationValueDecodeUnavailable, ApplicationValueEncodeDenial,
+    ApplicationValueIdentityPosture, ApplicationValueIsIdentity, ApplicationValueIsNotIdentity,
+    ApplicationValueSignedAggregateAvailable, ApplicationValueSignedAggregatePosture,
+    ApplicationValueSignedAggregateUnavailable, ApplicationValueValidationDenial, ArrayDelegate,
+    BinaryValueDelegate, BinaryValueWriter, BoolApplicationValueBinding, BoxDelegate,
+    CanonicalDateApplicationValueBinding, CanonicalDocumentCodec,
+    CanonicalF32ApplicationValueBinding, CanonicalF64ApplicationValueBinding,
+    CanonicalTimeApplicationValueBinding, CanonicalTimestampApplicationValueBinding,
+    CanonicalTimestampTzApplicationValueBinding, CanonicalValue, CanonicalValueSeed,
+    ContentRefApplicationValueBinding, DelegatedValueSeed, EntityRefApplicationValueBinding,
+    ErasedApplicationSignedAggregateDecode, ErasedApplicationValueAdmittedDecode,
+    ErasedApplicationValueDecode, ErasedApplicationValueEncode, ErasedApplicationValueValidation,
+    I16ApplicationValueBinding, I32ApplicationValueBinding, I64ApplicationValueBinding,
+    I8ApplicationValueBinding, InlineBytesApplicationValueBinding,
+    InternedStringApplicationValueBinding, NamedTargetApplicationValueBinding, OptionalDelegate,
     PairDelegate, SequenceDelegate, StringApplicationValueBinding, U16ApplicationValueBinding,
     U32ApplicationValueBinding, U64ApplicationValueBinding, U8ApplicationValueBinding,
     UsizeDelegate, UuidApplicationValueBinding, ValueCodecDenial, ValueDecodeAdmission,
     ValueDecodeBounds, ValueDelegate, ValueFieldDefinition, ValuePrimitive, ValueSeedDelegate,
     ValueShape, ValueShapeBody, ValueShapeDefinition, ValueShapeEdge, ValueTaggedVariantDefinition,
-    ValueVariantDefinition, WorthValue,
+    ValueVariantDefinition, WorthBinaryWireField, WorthQueryDefaultValueBinding,
+    WorthQueryNameApplicationValueBinding, WorthValue,
 };
 pub use values::{
     DeclaredApplicationFieldValue, OptionalApplicationFieldValue, RequiredApplicationFieldValue,

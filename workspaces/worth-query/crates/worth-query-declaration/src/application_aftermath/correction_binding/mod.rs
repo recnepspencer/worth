@@ -1,7 +1,9 @@
 //! Typed inverse meaning, visited by the audience that owns ordinary preparation.
+mod authored_body;
 mod authored_identity;
 mod declaration;
 mod disclosure;
+pub use authored_body::{ApplicationAuthoredBodyCorrection, ApplicationAuthoredBodyReapplication};
 pub use authored_identity::{
     ApplicationAuthoredCorrection, ApplicationAuthoredCorrectionFamily,
     ApplicationAuthoredLogicalKey, DeclaredAuthoredCorrection, DeclaredAuthoredCorrectionParts,
@@ -10,7 +12,9 @@ pub(crate) use declaration::{ComposedCorrectionBinding, CorrectionBindingDeclara
 mod dispatch;
 mod inverse;
 mod preimage;
-pub use preimage::{ApplicationCorrectionFieldPreImage, ApplicationCorrectionPreImage};
+pub use preimage::{
+    decode_preimage_field, ApplicationCorrectionFieldPreImage, ApplicationCorrectionPreImage,
+};
 mod reapplication;
 pub use reapplication::{
     dispatch_application_reapplication, ApplicationReapplicationDispatch,

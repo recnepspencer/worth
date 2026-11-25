@@ -1,0 +1,32 @@
+//! Versioned durable persistence of persistent-name lineage.
+//!
+//! The legacy checkpoint and journal lineage codecs carry neither event
+//! subjects, births, nor kept names; this log carries exactly that naming
+//! payload, one appendable frame per committed naming batch, under an
+//! explicit format version. Reopen rebuilds the derived name index from the
+//! frames alone, readmitting each persisted identity only by re-verifying
+//! its birth against the one canonical persistent-name hash.
+
+pub mod event_shape;
+pub mod format;
+pub mod frame_decoding;
+pub mod frame_encoding;
+pub mod frame_readmission;
+pub mod group_frame_decoding;
+pub mod group_frame_encoding;
+#[cfg(test)]
+mod group_frame_tests;
+pub mod log_rebuild;
+pub mod refusal;
+pub mod wire;
+
+pub use format::FORMAT_VERSION;
+pub use frame_encoding::{
+    encode_commit_frame, encode_durable_persistent_name_log, encode_log_header,
+};
+pub use group_frame_decoding::decode_group_lineage_frame;
+pub use group_frame_encoding::encode_group_lineage_frame;
+pub use log_rebuild::{admit_persisted_name, rebuild_name_index_from_durable_log};
+pub use refusal::{
+    PersistentNameDurabilityError, PersistentNameReferenceRole, PersistentNameWireSection,
+};

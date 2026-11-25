@@ -73,7 +73,7 @@ fn publication_observation_snapshot_tracks_latest_publication_state() {
     assert_eq!(observed.latest_commit_id, Some(created.commit.commit_id));
     assert_eq!(
         observed.publication_snapshot_id,
-        Some(bundle.snapshot.snapshot_id)
+        Some(bundle.snapshot.snapshot_id())
     );
     assert_eq!(observed.publication_status, Some(bundle.status.clone()));
     assert_eq!(observed.latest_patch_position, Some(bundle.patch.position));

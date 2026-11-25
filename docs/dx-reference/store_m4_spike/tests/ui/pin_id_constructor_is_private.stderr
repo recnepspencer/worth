@@ -1,0 +1,12 @@
+error[E0423]: cannot initialize a tuple struct which contains private fields
+ --> tests/ui/pin_id_constructor_is_private.rs:4:16
+  |
+4 |     let _pin = PinId(42);
+  |                ^^^^^
+  |
+  = note: a struct named `PinId` exists in another namespace
+note: constructor is not visible here due to private fields
+ --> src/pin.rs
+  |
+  | pub struct PinId(u64);
+  |                  ^^^ private field

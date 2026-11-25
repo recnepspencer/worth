@@ -1,14 +1,15 @@
+use crate::runtime::state::subsystems::history::history_canonical_routes::canonical_publication_reservation_counters;
 use std::sync::Arc;
+use worth_relational_contracts::internal_port::mvcc::publication::outcome::failure::RelationalPublicationFailureOwnerPort as _;
+
+use super::movement::PreparedCanonicalBranchMovement;
 
 use super::{
     PerformedRelationalCommit, PreparedRelationalCommitCandidate, RelationalPublicationDeferred,
     RelationalPublicationDenial, RelationalPublicationFailure, RelationalPublicationFailureKind,
     RelationalPublicationOutcome, StaleRelationalBranchObservation,
 };
-use crate::branch::{
-    RelationalBranchBasisDescriptor, RelationalBranchPublicationCell,
-    RelationalBranchReferenceCell, RelationalBranchRoot,
-};
+use crate::branch::{RelationalBranchBasisDescriptor, RelationalBranchPublicationCell};
 
 /// Independently borrowable Relational owner publication service.
 #[derive(Debug, Clone)]
@@ -20,15 +21,7 @@ pub struct RelationalPublicationPort {
     branch_head_versions: crate::runtime::BranchHeadVersionIndexAuthority,
     history: crate::runtime::RelationalPreparationHistory,
     index_definitions: crate::runtime::IndexDefinitionReadBinding,
-    medium: Option<Arc<crate::durability::medium::RelationalDurableMediumBinding>>,
-}
-
-pub(crate) struct PreparedCanonicalBranchMovement {
-    record_allocations: Option<crate::runtime::PendingRecordAllocations>,
-    symbol_meanings: Option<crate::runtime::PreparedSymbolPublication>,
-    next_cell: RelationalBranchReferenceCell,
-    root: Arc<RelationalBranchRoot>,
-    canonical_publication_route: crate::runtime::PreparedCanonicalPublicationRoute,
+    medium: Option<Arc<crate::durability::published_medium::RelationalDurableMediumBinding>>,
 }
 
 struct PreparedBranchPublicationPreflight {
@@ -45,7 +38,7 @@ struct PreparedBranchPublicationPreflight {
     candidate_retention: Option<crate::history::retention::RelationalCandidateRetentionObligation>,
     control: crate::mvcc::RelationalOperationControl,
     branch_head_versions: crate::runtime::BranchHeadVersionIndexAuthority,
-    medium: Option<Arc<crate::durability::medium::RelationalDurableMediumBinding>>,
+    medium: Option<Arc<crate::durability::published_medium::RelationalDurableMediumBinding>>,
 }
 
 impl RelationalPublicationPort {
@@ -57,7 +50,7 @@ impl RelationalPublicationPort {
         branch_head_versions: crate::runtime::BranchHeadVersionIndexAuthority,
         history: crate::runtime::RelationalPreparationHistory,
         index_definitions: crate::runtime::IndexDefinitionReadBinding,
-        medium: Option<Arc<crate::durability::medium::RelationalDurableMediumBinding>>,
+        medium: Option<Arc<crate::durability::published_medium::RelationalDurableMediumBinding>>,
     ) -> Self {
         Self {
             runtime_instance_id,
@@ -118,25 +111,6 @@ impl RelationalPublicationPort {
     }
 }
 
-impl PreparedCanonicalBranchMovement {
-    pub(crate) fn new(
-        record_allocations: crate::runtime::PendingRecordAllocations,
-        symbol_meanings: crate::runtime::PreparedSymbolPublication,
-        mut next_cell: RelationalBranchReferenceCell,
-        root: Arc<RelationalBranchRoot>,
-        canonical_publication_route: crate::runtime::PreparedCanonicalPublicationRoute,
-    ) -> Self {
-        next_cell.install_root(Arc::clone(&root));
-        Self {
-            record_allocations: Some(record_allocations),
-            symbol_meanings: Some(symbol_meanings),
-            next_cell,
-            root,
-            canonical_publication_route,
-        }
-    }
-}
-
 impl crate::runtime::RelationalRuntime {
     /// The independently borrowable publication service for this runtime.
     ///
@@ -163,8 +137,8 @@ impl crate::runtime::RelationalRuntime {
             self.owner_binding(),
             self.publication_binding(),
             self.history.branch_head_version_index(),
-            self.history.preparation_binding(),
-            self.indexes.definition_read_binding(),
+            crate::runtime::state::subsystems::history::history_preparation_binding::bind_preparation(&self.history),
+            self.indexes.catalog_binding(),
             self.durability.medium(),
         )
     }
@@ -172,7 +146,7 @@ impl crate::runtime::RelationalRuntime {
     pub fn patch_position_reservation_counters(
         &self,
     ) -> crate::runtime::RelationalPatchPositionReservationCounters {
-        self.history.canonical_publication_reservation_counters()
+        canonical_publication_reservation_counters(&self.history)
     }
 }
 

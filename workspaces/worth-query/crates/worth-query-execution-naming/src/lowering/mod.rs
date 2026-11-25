@@ -98,6 +98,9 @@ impl LoweredExecutionNameSchemeCatalog {
         for group_layout in catalog.group_schemes() {
             let lowered = lower_group_scheme(group_layout)?;
             let scheme_id = lowered.scheme_id().to_owned();
+            // Relational records each group's scheme, so a group read is
+            // kind-verified exactly like an entity or relation read.
+            let group_subject = lower_entity_or_relation_scheme(group_layout.name_scheme())?;
             let group_name = lowered.group_name().to_owned();
             if installed_schemes.contains_key(&scheme_id) || group_schemes.contains_key(&scheme_id)
             {
@@ -106,6 +109,12 @@ impl LoweredExecutionNameSchemeCatalog {
                     detail: "duplicate group scheme identifier".to_owned(),
                 });
             }
+            relational_registry
+                .register(group_subject)
+                .map_err(|detail| ExecutionNamingDenial::SchemeLowering {
+                    scheme_id: scheme_id.clone(),
+                    detail,
+                })?;
             group_by_subject.insert(group_name, scheme_id.clone());
             group_schemes.insert(scheme_id, lowered);
         }

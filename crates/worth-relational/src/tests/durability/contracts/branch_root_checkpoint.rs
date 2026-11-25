@@ -1,4 +1,6 @@
 use super::*;
+use worth_relational_durability::internal_port::durability::data::checkpoint_images::DurableCheckpointFieldsFixturePort as _;
+use worth_relational_durability::internal_port::durability::data::checkpoint_images::DurableCheckpointOwnerPort as _;
 
 #[test]
 fn checkpoint_recovery_rejects_missing_exact_branch_root_artifact() {
@@ -19,7 +21,7 @@ fn checkpoint_recovery_rejects_missing_exact_branch_root_artifact() {
     plan.checkpoint
         .as_mut()
         .expect("checkpoint is selected")
-        .branch_roots
+        .branch_roots_mut_for_test()
         .clear();
 
     let recovered_medium = OwnedTestDurableMedium::new();
@@ -55,7 +57,7 @@ fn checkpoint_recovery_rejects_root_artifact_without_commit_envelope() {
         )
         .unwrap();
     let checkpoint = plan.checkpoint.as_mut().expect("checkpoint is selected");
-    checkpoint.branch_roots[0].commit_id = crate::history::data::CommitId(u64::MAX);
+    checkpoint.branch_roots_mut_for_test()[0].commit_id = crate::history::data::CommitId(u64::MAX);
 
     let recovered_medium = OwnedTestDurableMedium::new();
     let mut recovered = durable_runtime_for_medium(&recovered_medium);
@@ -87,7 +89,8 @@ fn checkpoint_recovery_rejects_duplicate_commit_envelopes_before_root_readmissio
         )
         .unwrap();
     let checkpoint = plan.checkpoint.as_mut().expect("selected checkpoint");
-    checkpoint.envelopes.push(checkpoint.envelopes[0].clone());
+    let duplicate = checkpoint.envelopes()[0].clone();
+    checkpoint.envelopes_mut_for_test().push(duplicate);
 
     let recovered_medium = OwnedTestDurableMedium::new();
     let mut recovered = durable_runtime_for_medium(&recovered_medium);
@@ -160,7 +163,11 @@ fn checkpoint_recovery_rejects_duplicate_branch_root_partition_images() {
             RecoveryVerificationMode::NormalRecoveryVerification,
         )
         .unwrap();
-    let root = &mut plan.checkpoint.as_mut().unwrap().branch_roots[0];
+    let root = &mut plan
+        .checkpoint
+        .as_mut()
+        .unwrap()
+        .branch_roots_mut_for_test()[0];
     root.partition_images.push(root.partition_images[0].clone());
 
     let recovered_medium = OwnedTestDurableMedium::new();
@@ -193,7 +200,11 @@ fn branch_root_image_versions_refuse_before_restoration_and_current_recovers() {
                 RecoveryVerificationMode::NormalRecoveryVerification,
             )
             .unwrap();
-        let roots = &mut plan.checkpoint.as_mut().unwrap().branch_roots;
+        let roots = plan
+            .checkpoint
+            .as_mut()
+            .unwrap()
+            .branch_roots_mut_for_test();
         assert!(
             !roots.is_empty(),
             "the real checkpoint must contain an owner root"

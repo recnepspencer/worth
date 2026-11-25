@@ -78,6 +78,9 @@ pub use worth_query_testkit_document_retention::facade::document_retention_model
     retention_entry::DOCUMENT_IDENTITY,
 };
 
+worth_query_decl::facade::worth_query_authentication_method!(CertificationMethod);
+worth_query_decl::facade::worth_query_authentication_audience!(DocumentRetentionHostAudience);
+
 pub fn invoke<const DESTINATION: u64>(
     app: &WorthQueryProgramApplicationRuntime<
         DocumentRetentionSchema<DESTINATION>,
@@ -135,8 +138,8 @@ pub fn authenticate_operator<Schema: BodySchemaBinding>(
     let adapter = admit_authentication_adapter(
         schema,
         WorthQueryAuthenticationAdapterAdmission::new(
-            WorthQueryAuthenticationAudience::new("document-retention-host").unwrap(),
-            WorthQueryAuthenticationMethod::new("certification").unwrap(),
+            WorthQueryAuthenticationAudience::of(DocumentRetentionHostAudience),
+            WorthQueryAuthenticationMethod::of(CertificationMethod),
             scope.clock().clone(),
         ),
         OperatorAdapter,

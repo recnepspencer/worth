@@ -19,6 +19,10 @@ use super::schema::{
 pub use clock::{ClockController, ClockSource, ExampleClock};
 pub use predicate::Predicate;
 
+worth_query_decl::facade::worth_query_authentication_method!(ExampleMethod);
+worth_query_decl::facade::worth_query_authentication_audience!(HostAudience);
+worth_query_decl::facade::worth_query_principal_issuer!(IssuerExampleIssuer);
+
 pub struct IntentProjector;
 
 impl
@@ -245,14 +249,12 @@ impl admission::authenticated_principal::WorthQueryAuthenticationAdapter for Ide
             let now = SystemTime::now();
             admission::authenticated_principal::WorthQueryValidatedExternalPrincipal::new(
                 worth_query_host::facade::declaration::authentication::WorthQueryExternalPrincipalIdentity::new(
-                    "https://issuer.example",
+                    IssuerExampleIssuer,
                     "product-example",
                 )
                 .expect("the example external identity is valid"),
-                admission::authenticated_principal::WorthQueryAuthenticationAudience::new("host")
-                    .expect("the example audience is valid"),
-                admission::authenticated_principal::WorthQueryAuthenticationMethod::new("example")
-                    .expect("the example method is valid"),
+                admission::authenticated_principal::WorthQueryAuthenticationAudience::of(HostAudience),
+                admission::authenticated_principal::WorthQueryAuthenticationMethod::of(ExampleMethod),
                 now,
                 now + Duration::from_secs(3_600),
                 Vec::new(),

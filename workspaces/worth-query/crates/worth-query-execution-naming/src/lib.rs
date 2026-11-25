@@ -19,5 +19,7 @@ mod birth_plan;
 mod commit_wiring;
 mod denial;
 mod lowering;
+mod operation_outputs;
+mod tracked_resolution;
 
 pub mod facade;

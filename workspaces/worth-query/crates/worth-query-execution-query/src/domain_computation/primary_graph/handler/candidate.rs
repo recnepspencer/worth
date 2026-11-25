@@ -17,9 +17,13 @@ use super::invariant::HandlerInterruption;
 
 mod aspect_removal;
 mod content;
+mod naming_scope;
 mod operation_body;
+mod persistent_names;
 mod relation_initialization;
 mod verbs;
+
+pub use naming_scope::NamingScope;
 
 /// Borrow of the effect builder for one exact binding.
 pub struct CandidateWriter<'borrow, Schema, Binding>

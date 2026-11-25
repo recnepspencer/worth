@@ -105,7 +105,12 @@ fn refused_home_world_attachment_retains_nonempty_provider_instances() {
             .observe_root_product_branch()
             .unwrap();
         let services = super::super::super::super::application_runtime::installation::home_attachment::prepare_home_application_services(
-            &phase, &mut bootstrap, &state.runtime, &state.authority, &state.installed,
+            &phase,
+            &mut bootstrap,
+            &state.runtime,
+            &state.authority,
+            &state.installed,
+            &crate::domain_computation::authorization::WorthQueryRuntimeClock::system(),
         ).unwrap();
         // This fixture configures a real managed provider, with no output producer
         // or conditional declaration. Preserve that distinction explicitly.

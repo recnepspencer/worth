@@ -1,8 +1,12 @@
 //! Real Native deletion and retained cache custody; no projected-row READ claim.
 use super::*;
-use crate::branch::RelationalBranchDeletionOutcome;
+use crate::branch::lifecycle::RelationalBranchDeletionOutcome;
 use crate::history::data::BranchId;
-use crate::mvcc::ManagedIndexSourceForkPreparation;
+use crate::mvcc::publication::companion::managed_fork::ManagedIndexSourceCellPlacement;
+use worth_relational_branch::internal_port::branch::projection_view::managed_source::ManagedIndexSourceObservationFixturePort as _;
+use worth_relational_branch::internal_port::branch::projection_view::managed_source::ManagedSourceRootImageFixturePort as _;
+#[cfg(not(test))]
+use worth_relational_publication::internal_port::mvcc::publication::companion::cell::CompanionBranchCellFixturePort as _;
 
 #[derive(Debug)]
 struct ForkOwner(Owner);
@@ -13,10 +17,10 @@ impl RelationalPublicationCompanion for ForkOwner {
     ) -> Result<PreparedPublicationCompanionEffect, CompanionPreflightStop> {
         self.0.prepare(context)
     }
-    fn prepare_managed_source_fork(
+    fn prepare_managed_source_placement(
         &self,
         execution: &ExecutionRequest<'_, '_>,
-        target: &ManagedIndexSourceForkPreparation<'_>,
+        target: &ManagedIndexSourceCellPlacement<'_>,
     ) -> Result<Box<dyn Any + Send + Sync>, CompanionPreflightStop> {
         crate::authority::commit::pipeline::consult_stage(
             execution,
@@ -59,7 +63,7 @@ fn managed_cache_retained_affinity_survives_deleted_branch_cell_without_currentn
         .unwrap();
     create_entity(&execution, &runtime, "source-publication");
     let main_cell = owner.0.slots.lock().unwrap()[0].admitted().unwrap();
-    *core.lock().unwrap() = Arc::downgrade(&main_cell.core);
+    *core.lock().unwrap() = Arc::downgrade(main_cell.companion_core_for_test());
     let main = runtime.main_branch_identity();
     let main_snapshot = snapshot_for_owner_identity(&runtime, &main);
     let main_observation = runtime
@@ -75,9 +79,9 @@ fn managed_cache_retained_affinity_survives_deleted_branch_cell_without_currentn
     let identity = runtime.branch_identity(&target).unwrap();
     let snapshot = snapshot_for_owner_identity(&runtime, &identity);
     let cell = owner.0.slots.lock().unwrap()[1].admitted().unwrap();
-    let weak = Arc::downgrade(&cell.core);
-    let fork_grant = Arc::downgrade(cell.core._fork_memory.as_ref().unwrap());
-    let generation = cell.core.registration_generation;
+    let weak = Arc::downgrade(cell.companion_core_for_test());
+    let fork_grant = Arc::downgrade(cell.companion_core_for_test().placement_funding().unwrap());
+    let generation = cell.companion_core_for_test().registration_generation();
     let old = runtime
         .read_truth()
         .observe_managed_index_source(&execution, &snapshot, &program, scope)
@@ -86,7 +90,7 @@ fn managed_cache_retained_affinity_survives_deleted_branch_cell_without_currentn
         !old.same_source(&main_observation),
         "fork owns a fresh affinity even when material is shared"
     );
-    let selected = old.selected.clone();
+    let selected = old.selected_position_for_test().clone();
     assert!(ManagedSourceReadConditions::from_observation(
         &old,
         runtime.runtime_instance_id(),
@@ -122,13 +126,14 @@ fn managed_cache_retained_affinity_survives_deleted_branch_cell_without_currentn
         ),
         Err(CompanionPreflightStop::ForeignCell)
     ));
-    let image = crate::visibility::snapshot_states::resolve_snapshot_basis(&runtime, &snapshot)
-        .unwrap()
-        .root()
-        .managed_source_image
-        .get()
-        .unwrap()
-        .clone();
+    let image =
+        crate::visibility::snapshot_states::resolution::resolve_snapshot_basis(&runtime, &snapshot)
+            .unwrap()
+            .root()
+            .managed_source_image
+            .for_branch(&target)
+            .unwrap()
+            .into_owned();
     assert!(matches!(
         image.admit_selected(&selected, generation + 1),
         Err(Denial::Publication(
@@ -136,7 +141,11 @@ fn managed_cache_retained_affinity_survives_deleted_branch_cell_without_currentn
         ))
     ));
     assert!(matches!(
-        image.affinity.admit(&main_observation.selected, generation),
+        crate::branch::projection_view::managed_source::affinity::admit_affinity(
+            image.affinity_for_test(),
+            main_observation.selected_position_for_test(),
+            generation
+        ),
         Err(Denial::ForeignSource)
     ));
     let foreign = crate::tests::support::runtime_with_test_schema();
@@ -146,7 +155,11 @@ fn managed_cache_retained_affinity_survives_deleted_branch_cell_without_currentn
         .positioned_snapshot(&foreign_snapshot)
         .unwrap();
     assert!(matches!(
-        image.affinity.admit(&foreign_selected, generation),
+        crate::branch::projection_view::managed_source::affinity::admit_affinity(
+            image.affinity_for_test(),
+            &foreign_selected,
+            generation
+        ),
         Err(Denial::ForeignSource)
     ));
     drop(foreign);

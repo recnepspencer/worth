@@ -5,10 +5,10 @@ use worth_runtime_world::facade::{
     ProductUnpublishedRecoveryHandle, RuntimeWorldRecoveryDenial, RuntimeWorldRecoveryPort,
 };
 
+use super::SharedUnpublishedIdempotencyStore;
 use super::WorthQueryUnpublishedIdempotencyEntry;
 use super::WorthQueryUnpublishedIdempotencyKey;
 use super::WorthQueryUnpublishedIdempotencyPosture as Posture;
-use super::WorthQueryUnpublishedIdempotencyStore;
 use crate::domain_computation::primary_graph::provider::ManagedUnpublishedAttempt;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -21,7 +21,7 @@ pub enum ManagedUnpublishedRecoveryStop {
 /// Checked-out custody of the exact World partial. Dropping a failed
 /// pre-effect attempt restores the same provider entry without a new lookup.
 pub struct ManagedUnpublishedRecoveryGuard {
-    store: Arc<Mutex<WorthQueryUnpublishedIdempotencyStore>>,
+    store: SharedUnpublishedIdempotencyStore,
     entry: Arc<Mutex<WorthQueryUnpublishedIdempotencyEntry>>,
     key: WorthQueryUnpublishedIdempotencyKey,
     handle: ProductUnpublishedRecoveryHandle,
@@ -33,7 +33,7 @@ pub struct ManagedUnpublishedRecoveryGuard {
 
 impl ManagedUnpublishedRecoveryGuard {
     pub(super) fn begin(
-        store: Arc<Mutex<WorthQueryUnpublishedIdempotencyStore>>,
+        store: SharedUnpublishedIdempotencyStore,
         handle: &ProductUnpublishedRecoveryHandle,
         recovery: RuntimeWorldRecoveryPort,
     ) -> Result<Self, ManagedUnpublishedRecoveryStop> {
@@ -79,7 +79,7 @@ impl ManagedUnpublishedRecoveryGuard {
     /// An unavailable native inspection leaves both pre-reserved mappings intact.
     /// A later admission resolves them from owner evidence before checking out custody.
     fn reconcile_retained_aliases(
-        store: &Arc<Mutex<WorthQueryUnpublishedIdempotencyStore>>,
+        store: &SharedUnpublishedIdempotencyStore,
         requested: &ProductUnpublishedRecoveryHandle,
         recovery: &RuntimeWorldRecoveryPort,
     ) -> Result<(), ManagedUnpublishedRecoveryStop> {

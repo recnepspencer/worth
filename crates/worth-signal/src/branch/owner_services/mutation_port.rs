@@ -1,5 +1,5 @@
 use std::marker::PhantomData;
-use std::sync::{Arc, Weak};
+use std::sync::Arc;
 
 use crate::branch::{
     AdmittedSignalBranchBasis, AdmittedSignalBranchSnapshot, SignalBranchAdvanceDenial,
@@ -10,6 +10,7 @@ use crate::branch::{
 use crate::data::error::SignalError;
 use crate::logic::transaction::SignalTransaction;
 
+use super::owner_backing::WeakSignalOwner;
 use super::{SignalOwner, SignalOwnerCancellationToken, SignalOwnerUnavailable};
 
 #[path = "mutation_port/denials.rs"]
@@ -37,7 +38,7 @@ where
     I: Copy + Ord,
     T: Copy + Ord,
 {
-    owner: Weak<SignalOwner<D, I, T>>,
+    owner: WeakSignalOwner<D, I, T>,
     diagnostic_owner_runtime_instance_id: u64,
     type_contract: PhantomData<fn(E, Ctx)>,
 }
@@ -64,7 +65,7 @@ where
     T: Copy + Ord,
 {
     pub(crate) fn new(
-        owner: Weak<SignalOwner<D, I, T>>,
+        owner: WeakSignalOwner<D, I, T>,
         diagnostic_owner_runtime_instance_id: u64,
     ) -> Self {
         Self {
@@ -79,12 +80,8 @@ where
         self.diagnostic_owner_runtime_instance_id
     }
 
-    #[expect(
-        clippy::disallowed_methods,
-        reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
-    )]
     pub(super) fn matches_owner(&self, owner: &Arc<SignalOwner<D, I, T>>) -> bool {
-        std::ptr::eq(self.owner.as_ptr(), Arc::as_ptr(owner))
+        self.owner.matches_arc(owner)
     }
 
     pub fn fork_exact(

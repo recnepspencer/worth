@@ -118,6 +118,13 @@ fn open_through(
     }
 }
 
+pub fn with_media(
+    request: ApplicationHomeRequest,
+    media: worth_store::physical_runtime::FilesystemMediaAdmission,
+) -> ApplicationHomeRequest {
+    request.with_media_for_test(media)
+}
+
 pub fn open_with_media(
     request: ApplicationHomeRequest,
     media: worth_store::physical_runtime::FilesystemMediaAdmission,

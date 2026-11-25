@@ -1,18 +1,21 @@
 //! Only source-preserving attributes may participate in a source type proof.
+use super::modules::Sources;
 use quote::ToTokens;
 use syn::{Attribute, Item, UseTree};
 
 pub(super) fn check(attributes: &[Attribute], items: &[Item]) -> Result<(), String> {
-    check_with_helpers(attributes, items, &[])
+    check_with_helpers(attributes, items, &[], None)
 }
 
 fn check_with_helpers(
     attributes: &[Attribute],
     items: &[Item],
     inherited: &[String],
+    origin: Option<(&Sources<'_>, &[String])>,
 ) -> Result<(), String> {
     let mut helpers = inherited.to_vec();
-    helpers.extend(helper_names(attributes));
+    helpers.extend(helper_names(attributes, items, origin));
+    let binary_aliases = worth_binary_derive_aliases(items);
     for attribute in attributes {
         let path = attribute
             .path()
@@ -27,6 +30,11 @@ fn check_with_helpers(
                     )
                     .map_err(|error| error.to_string())?;
                 for derive in derives {
+                    if origin.is_some_and(|(sources, context)| {
+                        sources.is_worth_binary_derive(context, &derive)
+                    }) {
+                        continue;
+                    }
                     let full_name = derive.to_token_stream().to_string().replace(' ', "");
                     let name = full_name.trim_start_matches("::");
                     let namespace = derive
@@ -56,13 +64,22 @@ fn check_with_helpers(
                         "serde::Deserialize",
                         "worth_foundational::facade::WorthValue",
                         "worth_query_decl::facade::application_schema::WorthValue",
+                        "worth_query_decl::facade::WorthBinaryValue",
+                        "worth_query_macros::WorthBinaryValue",
                     ];
-                    if !(known.contains(&name) || (builtins.contains(&name) && !items.iter().any(|item| matches!(item, Item::Use(value) if imported(&value.tree, name, false))))) {
+                    let imported_binary_derive = binary_aliases.iter().any(|alias| alias == name);
+                    if !(known.contains(&name)
+                        || imported_binary_derive
+                        || (builtins.contains(&name)
+                            && !items.iter().any(|item| {
+                                matches!(item, Item::Use(value) if imported(&value.tree, name, false))
+                            })))
+                    {
                         return Err(format!("unknown/shadowed derive may change namespace resolution: {name}"));
                     }
                 }
             }
-            "serde" | "worth_value" | "charged_bytes" => {
+            "serde" | "worth_value" | "charged_bytes" | "worth_binary" | "worth_query" => {
                 if !helpers.contains(&path)
                     || items.iter().any(
                         |item| matches!(item, Item::Use(value) if imported(&value.tree, &path, true)),
@@ -110,47 +127,62 @@ fn imported(tree: &UseTree, name: &str, glob: bool) -> bool {
     }
 }
 
-pub(super) fn module(items: &[Item]) -> Result<(), String> {
+pub(super) fn module(
+    sources: &Sources<'_>,
+    context: &[String],
+    items: &[Item],
+) -> Result<(), String> {
+    let origin = Some((sources, context));
     for item in items {
         match item {
             Item::Struct(value) => {
-                check(&value.attrs, items)?;
+                check_with_helpers(&value.attrs, items, &[], origin)?;
+                let inherited = helper_names(&value.attrs, items, origin);
                 for field in &value.fields {
-                    check_with_helpers(&field.attrs, items, &helper_names(&value.attrs))?;
+                    check_with_helpers(&field.attrs, items, &inherited, origin)?;
                 }
             }
             Item::Enum(value) => {
-                check(&value.attrs, items)?;
+                check_with_helpers(&value.attrs, items, &[], origin)?;
+                let inherited = helper_names(&value.attrs, items, origin);
                 for variant in &value.variants {
-                    check_with_helpers(&variant.attrs, items, &helper_names(&value.attrs))?;
+                    check_with_helpers(&variant.attrs, items, &inherited, origin)?;
                     for field in &variant.fields {
-                        check_with_helpers(&field.attrs, items, &helper_names(&value.attrs))?;
+                        check_with_helpers(&field.attrs, items, &inherited, origin)?;
                     }
                 }
             }
-            Item::Type(value) => check(&value.attrs, items)?,
-            Item::Use(value) => check(&value.attrs, items)?,
-            Item::Mod(value) => check(&value.attrs, items)?,
-            Item::Fn(value) => check(&value.attrs, items)?,
+            Item::Type(value) => check_with_helpers(&value.attrs, items, &[], origin)?,
+            Item::Use(value) => check_with_helpers(&value.attrs, items, &[], origin)?,
+            Item::Mod(value) => check_with_helpers(&value.attrs, items, &[], origin)?,
+            Item::Fn(value) => check_with_helpers(&value.attrs, items, &[], origin)?,
             Item::Impl(value) => {
-                check(&value.attrs, items)?;
+                check_with_helpers(&value.attrs, items, &[], origin)?;
                 for member in &value.items {
                     match member {
-                        syn::ImplItem::Type(value) => check(&value.attrs, items)?,
-                        syn::ImplItem::Const(value) => check(&value.attrs, items)?,
-                        syn::ImplItem::Fn(value) => check(&value.attrs, items)?,
-                        syn::ImplItem::Macro(value) => check(&value.attrs, items)?,
+                        syn::ImplItem::Type(value) => {
+                            check_with_helpers(&value.attrs, items, &[], origin)?
+                        }
+                        syn::ImplItem::Const(value) => {
+                            check_with_helpers(&value.attrs, items, &[], origin)?
+                        }
+                        syn::ImplItem::Fn(value) => {
+                            check_with_helpers(&value.attrs, items, &[], origin)?
+                        }
+                        syn::ImplItem::Macro(value) => {
+                            check_with_helpers(&value.attrs, items, &[], origin)?
+                        }
                         _ => {
                             return Err("unknown generated associated item in domain source".into())
                         }
                     }
                 }
             }
-            Item::Const(value) => check(&value.attrs, items)?,
-            Item::Static(value) => check(&value.attrs, items)?,
-            Item::Macro(value) => check(&value.attrs, items)?,
-            Item::ExternCrate(value) => check(&value.attrs, items)?,
-            Item::Trait(value) => check(&value.attrs, items)?,
+            Item::Const(value) => check_with_helpers(&value.attrs, items, &[], origin)?,
+            Item::Static(value) => check_with_helpers(&value.attrs, items, &[], origin)?,
+            Item::Macro(value) => check_with_helpers(&value.attrs, items, &[], origin)?,
+            Item::ExternCrate(value) => check_with_helpers(&value.attrs, items, &[], origin)?,
+            Item::Trait(value) => check_with_helpers(&value.attrs, items, &[], origin)?,
             Item::Union(_) | Item::Verbatim(_) => {
                 return Err("unsupported generated/union namespace in domain source".into())
             }
@@ -160,7 +192,12 @@ pub(super) fn module(items: &[Item]) -> Result<(), String> {
     Ok(())
 }
 
-fn helper_names(attributes: &[Attribute]) -> Vec<String> {
+fn helper_names(
+    attributes: &[Attribute],
+    items: &[Item],
+    origin: Option<(&Sources<'_>, &[String])>,
+) -> Vec<String> {
+    let binary_aliases = worth_binary_derive_aliases(items);
     let mut names = Vec::new();
     for attribute in attributes
         .iter()
@@ -170,13 +207,31 @@ fn helper_names(attributes: &[Attribute]) -> Vec<String> {
             syn::punctuated::Punctuated::<syn::Path, syn::Token![,]>::parse_terminated,
         ) {
             for path in paths {
+                if origin.is_some_and(|(sources, context)| {
+                    sources.is_worth_binary_derive(context, &path)
+                }) {
+                    names.push("worth_binary".into());
+                    names.push("worth_query".into());
+                    continue;
+                }
                 let name = path.to_token_stream().to_string().replace(' ', "");
-                match name.trim_start_matches("::") {
+                let trimmed = name.trim_start_matches("::");
+                match trimmed {
                     "serde::Serialize" | "serde::Deserialize" => names.push("serde".into()),
                     "worth_foundational::facade::WorthValue"
                     | "worth_query_decl::facade::application_schema::WorthValue" => {
                         names.push("serde".into());
                         names.push("worth_value".into());
+                    }
+                    "WorthBinaryValue"
+                    | "worth_query_decl::facade::WorthBinaryValue"
+                    | "worth_query_macros::WorthBinaryValue" => {
+                        names.push("worth_binary".into());
+                        names.push("worth_query".into());
+                    }
+                    other if binary_aliases.iter().any(|alias| alias == other) => {
+                        names.push("worth_binary".into());
+                        names.push("worth_query".into());
                     }
                     _ => (),
                 }
@@ -184,4 +239,57 @@ fn helper_names(attributes: &[Attribute]) -> Vec<String> {
         }
     }
     names
+}
+
+fn worth_binary_derive_aliases(items: &[Item]) -> Vec<String> {
+    let mut out = Vec::new();
+    for item in items {
+        let Item::Use(use_item) = item else {
+            continue;
+        };
+        let mut prefix = Vec::new();
+        collect_approved_binary_imports(&use_item.tree, &mut prefix, &mut out);
+    }
+    out
+}
+
+fn is_approved_binary_prefix(prefix: &[String]) -> bool {
+    matches!(
+        prefix
+            .iter()
+            .map(String::as_str)
+            .collect::<Vec<_>>()
+            .as_slice(),
+        ["worth_query_decl", "facade"] | ["worth_query_macros"]
+    )
+}
+
+fn collect_approved_binary_imports(
+    tree: &UseTree,
+    prefix: &mut Vec<String>,
+    out: &mut Vec<String>,
+) {
+    match tree {
+        UseTree::Path(path) => {
+            prefix.push(path.ident.to_string());
+            collect_approved_binary_imports(&path.tree, prefix, out);
+            prefix.pop();
+        }
+        UseTree::Name(name)
+            if name.ident == "WorthBinaryValue" && is_approved_binary_prefix(prefix) =>
+        {
+            out.push("WorthBinaryValue".into());
+        }
+        UseTree::Rename(rename)
+            if rename.ident == "WorthBinaryValue" && is_approved_binary_prefix(prefix) =>
+        {
+            out.push(rename.rename.to_string());
+        }
+        UseTree::Group(group) => {
+            for item in &group.items {
+                collect_approved_binary_imports(item, prefix, out);
+            }
+        }
+        _ => {}
+    }
 }

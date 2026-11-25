@@ -81,6 +81,28 @@ pub(super) fn advance(
         preparation.query_denial = Some(Cause::CorrectionMaterial(cause));
         return Ok(Some(Progress::Pending(Stage::RecordingCorrectionMaterial)));
     }
+    // Every authored stage of a coupled group is its own correction source (public #368).
+    for owned in preparation.query.members.iter().filter_map(|member| {
+        matches!(
+            member.kind,
+            crate::domain_computation::primary_graph::provider::CoupledApplicationMemberKind::AuthoredStage { .. }
+        )
+            .then_some(member.owned.as_ref())
+            .flatten()
+    }) {
+        if let Err(cause) = provider.capture_correction_material(
+            owned.attempt.original_authority(),
+            owned
+                .commit
+                .as_ref()
+                .and_then(|commit| commit.retained_preimage.as_ref()),
+            opened,
+            &execution,
+        ) {
+            preparation.query_denial = Some(Cause::CorrectionMaterial(cause));
+            return Ok(Some(Progress::Pending(Stage::RecordingCorrectionMaterial)));
+        }
+    }
     preparation.stage = Stage::BindingNativeProposal;
     Ok(None)
 }

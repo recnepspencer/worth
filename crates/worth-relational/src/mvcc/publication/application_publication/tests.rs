@@ -1,9 +1,17 @@
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::group_selection::CanonicalCommitEnvelopeBodyOwnerPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeFixturePort as _;
+use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::basis_reads::VisibilityProjectionViewFixturePort as _;
+#[cfg(test)]
+use crate::durability::canonical_commit_artifact::checkpoint_body::copy_original_for_test;
 use crate::identity::data::{KindId, PartitionId};
 use crate::tests::support::*;
-use crate::transactions::data::{
-    CreatedEntityRef, EntityMutationIntent, MutationIntent, UpdateEntityFieldsIntent,
-    WorkerIntentBatch,
-};
+use crate::transactions::data::intents::mutation_intent::EntityMutationIntent;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::intents::mutation_intent::UpdateEntityFieldsIntent;
+use crate::transactions::data::primitives::CreatedEntityRef;
+use crate::transactions::data::primitives::WorkerIntentBatch;
 use worth_foundational::facade::AspectBinding;
 
 #[test]
@@ -41,7 +49,7 @@ fn native_performed_origin_is_exact_and_an_ordinary_equal_write_revokes_retireme
     let proposal = proposal
         .bind_required_output_publication(
             &installed,
-            crate::mvcc::native_birth_fixture(
+            crate::mvcc::publication::application_publication::native_birth_fixture(
                 owner.admit_required_output("installed-producer", [3; 32]),
                 vec![target.clone()],
             ),
@@ -50,29 +58,26 @@ fn native_performed_origin_is_exact_and_an_ordinary_equal_write_revokes_retireme
     let candidate = runtime
         .prepare_validated_proposal(execution, proposal)
         .unwrap();
-    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) = runtime
-        .publication_port()
-        .compare_and_publish(execution, candidate)
+    let crate::mvcc::publication::outcome::RelationalPublicationOutcome::Performed(performed) =
+        runtime
+            .publication_port()
+            .compare_and_publish(execution, candidate)
     else {
         panic!("genuine native output publication must perform");
     };
-    let origin = performed
-        .canonical_commit()
-        .required_output_origin
+    let origin = (*performed.canonical_commit().owner_required_output_origin())
         .as_ref()
         .unwrap();
     assert_eq!(origin.producer, "installed-producer");
     assert_eq!(*origin.dependency_identity.bytes(), [3; 32]);
     let entity = origin.outputs[0];
-    let mut copied = performed
-        .canonical_commit()
-        .copy_original_for_test(execution);
+    let mut copied = copy_original_for_test(performed.canonical_commit(), execution);
     copied.body_mut_for_test().commit.commit_id.0 += 1;
     let copied_refusal = execution
         .run_native_with_checkpoint(|context| {
             copied.validate_output_origins(context).and_then(|view| {
                 view.materialization_origin_for_record(
-                    &crate::transactions::data::RecordRef::Entity(entity),
+                    &crate::transactions::data::primitives::RecordRef::Entity(entity),
                     context,
                 )
             })
@@ -88,14 +93,14 @@ fn native_performed_origin_is_exact_and_an_ordinary_equal_write_revokes_retireme
         .read_truth()
         .project_snapshot(&result.snapshot)
         .unwrap()
-        .all_authoritative_entity_records(execution)
+        .all_authoritative_entity_records_for_test(execution)
         .unwrap()
         .into_iter()
         .find(|record| record.entity_id == entity)
         .unwrap();
     release_test_commit_snapshot(&runtime, &result);
     assert!(producer_budget.charged_memory_bytes() > 0, "the actual published row retains its original application bill after result snapshot release");
-    let loci = [crate::runtime::CodecFieldLocus {
+    let loci = [crate::schema::codec_field_comparison::CodecFieldLocus {
         kind_id: KindId(1),
         aspect_key: aspect_key("name"),
         field_key: field_key("name"),
@@ -124,7 +129,7 @@ fn native_performed_origin_is_exact_and_an_ordinary_equal_write_revokes_retireme
     );
     let original_basis = basis;
     let original_partition = original_basis
-        .inner
+        .owner_inner()
         .root
         .partition_state(entity.partition_id)
         .unwrap()
@@ -167,7 +172,7 @@ fn native_performed_origin_is_exact_and_an_ordinary_equal_write_revokes_retireme
     release_test_commit_snapshot(&runtime, &changed);
     let current_basis = test_owner_main_basis(&runtime).unwrap();
     let current_partition = current_basis
-        .inner
+        .owner_inner()
         .root
         .partition_state(entity.partition_id)
         .unwrap()
@@ -202,7 +207,7 @@ fn native_performed_origin_is_exact_and_an_ordinary_equal_write_revokes_retireme
 
 #[test]
 fn foreign_owner_and_unclassified_same_kind_rows_cannot_borrow_output_origin() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     let mut runtime = runtime_with_test_schema();
     let receipt = runtime
@@ -225,7 +230,7 @@ fn foreign_owner_and_unclassified_same_kind_rows_cannot_borrow_output_origin() {
     assert!(proposal
         .bind_required_output_publication(
             &installed,
-            crate::mvcc::native_birth_fixture(
+            crate::mvcc::publication::application_publication::native_birth_fixture(
                 foreign.admit_required_output("installed-producer", [3; 32]),
                 Vec::new()
             )
@@ -233,7 +238,7 @@ fn foreign_owner_and_unclassified_same_kind_rows_cannot_borrow_output_origin() {
         .is_err());
     create_entity(execution, &runtime, "authored");
     let basis = test_owner_main_basis(&runtime).unwrap();
-    let loci = [crate::runtime::CodecFieldLocus {
+    let loci = [crate::schema::codec_field_comparison::CodecFieldLocus {
         kind_id: KindId(1),
         aspect_key: aspect_key("name"),
         field_key: field_key("name"),
@@ -249,7 +254,7 @@ fn foreign_owner_and_unclassified_same_kind_rows_cannot_borrow_output_origin() {
 
 #[test]
 fn producer_publication_preserves_unclassified_rows_without_granting_retirement() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     let mut runtime = runtime_with_test_schema();
     let receipt = runtime
@@ -277,7 +282,7 @@ fn producer_publication_preserves_unclassified_rows_without_granting_retirement(
         .unwrap()
         .bind_required_output_publication(
             &installed,
-            crate::mvcc::native_birth_fixture(
+            crate::mvcc::publication::application_publication::native_birth_fixture(
                 owner.admit_required_output("producer", [8; 32]),
                 vec![target],
             ),
@@ -286,16 +291,15 @@ fn producer_publication_preserves_unclassified_rows_without_granting_retirement(
     let candidate = runtime
         .prepare_validated_proposal(execution, proposal)
         .unwrap();
-    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) = runtime
-        .publication_port()
-        .compare_and_publish(execution, candidate)
+    let crate::mvcc::publication::outcome::RelationalPublicationOutcome::Performed(performed) =
+        runtime
+            .publication_port()
+            .compare_and_publish(execution, candidate)
     else {
         panic!("ordinary producer publication must preserve its unclassified system rows");
     };
     assert_eq!(
-        performed
-            .canonical_commit()
-            .required_output_origin
+        (*performed.canonical_commit().owner_required_output_origin())
             .as_ref()
             .unwrap()
             .outputs
@@ -305,7 +309,7 @@ fn producer_publication_preserves_unclassified_rows_without_granting_retirement(
     let committed = runtime.settle_performed_publication(performed).unwrap();
     release_test_commit_snapshot(&runtime, &committed);
     let basis = test_owner_main_basis(&runtime).unwrap();
-    let loci = [crate::runtime::CodecFieldLocus {
+    let loci = [crate::schema::codec_field_comparison::CodecFieldLocus {
         kind_id: KindId(1),
         aspect_key: aspect_key("name"),
         field_key: field_key("name"),

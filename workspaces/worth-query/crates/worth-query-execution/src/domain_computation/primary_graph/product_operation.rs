@@ -28,13 +28,17 @@ pub(crate) mod query;
 mod relational_change_delivery;
 mod transaction;
 
+pub(in crate::domain_computation::primary_graph) use branches::{
+    DetachedExpectedProductBranch, DetachedOwnedProductHead, SharedPrimaryRuntime,
+    WorthQueryRuntimeCustody,
+};
 pub use branches::{
     WorthQueryApplicationProductBranches, WorthQueryExpectedProductBasisSelectionDenial,
     WorthQueryExpectedProductBranch, WorthQueryExpectedProductBranchAdoptionDenial,
     WorthQueryExpectedProductBranchAdoptionFailure, WorthQueryExpectedProductBranchCloseFailure,
-    WorthQueryExpectedProductBranchFork, WorthQueryOwnedProductHead,
-    WorthQueryOwnedProductHeadCloseFailure, WorthQueryProductBranchInventory,
-    WorthQueryProductBranchInventoryDenial,
+    WorthQueryExpectedProductBranchCreationContinuation, WorthQueryExpectedProductBranchFork,
+    WorthQueryOwnedProductHead, WorthQueryOwnedProductHeadCloseFailure,
+    WorthQueryProductBranchInventory, WorthQueryProductBranchInventoryDenial,
 };
 pub use cleanup::{
     WorthQueryApplicationProductBranchCleanup, WorthQueryApplicationProductBranchCleanupDenial,

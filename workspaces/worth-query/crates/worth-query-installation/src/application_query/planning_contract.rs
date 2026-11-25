@@ -63,8 +63,10 @@ pub enum WorthQueryReadGraphPredicateTarget<'a> {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryReadGraphPredicateView<'a> {
     pub target: WorthQueryReadGraphPredicateTarget<'a>,
-    /// None is the declared FieldAbsent operator; Some is scalar equality.
+    /// `Some` when equality compares against a declared runtime parameter.
     pub parameter: Option<&'a str>,
+    /// `Some` when equality compares against an authored scalar constant.
+    pub literal_value: Option<&'a AspectValue>,
     pub scalar_family: ScalarAspectType,
 }
 
@@ -125,6 +127,10 @@ pub trait WorthQueryReadGraphPlanningContract {
     fn where_filter(&self) -> Option<&super::WorthQueryInstalledWhereFilter> {
         None
     }
+    /// Related-record absence/existence predicates narrowing selected roots.
+    fn related_predicates(&self) -> &[super::WorthQueryInstalledRelatedPredicate] {
+        &[]
+    }
     fn guard_count(&self) -> usize {
         0
     }
@@ -169,7 +175,9 @@ impl WorthQueryReadGraphPlanningContract for WorthQueryInstalledGraphPlanningPre
     }
 
     fn relation_count(&self) -> usize {
-        root_relation_count(self.meaning) + self.meaning.relations.len()
+        root_relation_count(self.meaning)
+            + self.meaning.relations.len()
+            + self.meaning.related_predicates.len()
     }
 
     fn relation(&self, index: usize) -> Option<WorthQueryReadGraphRelationView<'_>> {
@@ -194,6 +202,9 @@ impl WorthQueryReadGraphPlanningContract for WorthQueryInstalledGraphPlanningPre
     }
     fn where_filter(&self) -> Option<&super::WorthQueryInstalledWhereFilter> {
         self.meaning.where_filter.as_ref()
+    }
+    fn related_predicates(&self) -> &[super::WorthQueryInstalledRelatedPredicate] {
+        &self.meaning.related_predicates
     }
 
     fn predicate_count(&self) -> usize {
@@ -247,7 +258,9 @@ impl WorthQueryReadGraphPlanningContract for WorthQueryInstalledGraphReadContrac
     }
 
     fn relation_count(&self) -> usize {
-        root_relation_count(self.meaning()) + self.relations().len()
+        root_relation_count(self.meaning())
+            + self.relations().len()
+            + self.related_predicates().len()
     }
 
     fn relation(&self, index: usize) -> Option<WorthQueryReadGraphRelationView<'_>> {
@@ -272,6 +285,9 @@ impl WorthQueryReadGraphPlanningContract for WorthQueryInstalledGraphReadContrac
     }
     fn where_filter(&self) -> Option<&super::WorthQueryInstalledWhereFilter> {
         WorthQueryInstalledGraphReadContract::where_filter(self)
+    }
+    fn related_predicates(&self) -> &[super::WorthQueryInstalledRelatedPredicate] {
+        WorthQueryInstalledGraphReadContract::related_predicates(self)
     }
 
     fn predicate_count(&self) -> usize {

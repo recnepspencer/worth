@@ -10,9 +10,7 @@ use crate::lifecycle::owner::{
 };
 use std::collections::BTreeMap;
 use worth_execution::ExecutionRequest;
-use worth_foundational::facade::{
-    DurableCompositeCommitIdentity, DurableProductBranchIncarnation,
-};
+use worth_foundational::facade::{DurableCompositeCommitIdentity, DurableProductBranchIncarnation};
 use worth_relational::facade::{
     branch::RecordedRelationalComponentReference, durability::RecoveredRelationalRuntimeAuthority,
     runtime::RelationalRuntime,
@@ -27,12 +25,13 @@ pub(crate) use created::require_retained_native_predecessor;
 #[derive(Default)]
 pub(super) struct HorizonContext {
     pub(super) root_incarnation: Option<DurableProductBranchIncarnation>,
-    pub(super) bridges:
-        BTreeMap<DurableProductBranchIncarnation, RecordedRuntimeWorldBaseline>,
+    pub(super) bridges: BTreeMap<DurableProductBranchIncarnation, RecordedRuntimeWorldBaseline>,
     pub(super) native_branches:
         BTreeMap<DurableProductBranchIncarnation, worth_relational::facade::history::BranchId>,
-    pub(super) disposed_native_commits:
-        BTreeMap<DurableCompositeCommitIdentity, (worth_relational::facade::history::BranchId, u64)>,
+    pub(super) disposed_native_commits: BTreeMap<
+        DurableCompositeCommitIdentity,
+        (worth_relational::facade::history::BranchId, u64),
+    >,
     pub(super) creation_boundaries:
         BTreeMap<DurableProductBranchIncarnation, DurableCompositeCommitIdentity>,
     /// Maps each commit (surviving or disposed) to its nearest surviving
@@ -78,10 +77,16 @@ impl HorizonContext {
                 super::insert(points, key, components.signal.point(), execution)?;
             }
             WorldRecord::BranchCreated(created) => {
-                self.bridges.insert(key.0, created.components.bridge.clone());
+                self.bridges
+                    .insert(key.0, created.components.bridge.clone());
                 self.native_branches.insert(
                     key.0,
-                    created.components.relational.descriptor().branch_id().clone(),
+                    created
+                        .components
+                        .relational
+                        .descriptor()
+                        .branch_id()
+                        .clone(),
                 );
                 self.creation_boundaries
                     .insert(key.0, created.intent.source.commit);
@@ -291,10 +296,7 @@ impl HorizonContext {
             .take()
             .expect("actual acquired Native horizon basis")
             .into_basis();
-        let bridge_baseline = self
-            .bridges
-            .get(&key.0)
-            .ok_or(Denial::MissingPredecessor)?;
+        let bridge_baseline = self.bridges.get(&key.0).ok_or(Denial::MissingPredecessor)?;
         let bridge = root
             .state
             .bridge

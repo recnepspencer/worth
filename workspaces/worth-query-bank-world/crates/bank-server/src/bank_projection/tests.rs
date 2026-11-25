@@ -30,6 +30,8 @@ use crate::graph_bootstrap::{
     account_key, bind_bank_world_with_estate, bind_bank_world_with_revision_override, principal_key,
 };
 
+worth_query_decl::facade::worth_query_principal_issuer!(HostileProviderTestInvalidIssuer);
+
 #[test]
 fn bounded_send_projection_rejects_accounting_revision_drift() {
     let snapshot = funded_world();
@@ -225,7 +227,7 @@ impl ProjectionHarness {
                     .unwrap();
                 for principal in snapshot.principals() {
                     let identity = WorthQueryExternalPrincipalIdentity::new(
-                        "https://hostile-provider.test.invalid",
+                        HostileProviderTestInvalidIssuer,
                         format!("principal-{}", principal.get()),
                     )
                     .unwrap();

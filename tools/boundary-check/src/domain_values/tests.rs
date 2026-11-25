@@ -1,4 +1,5 @@
 use super::*;
+mod binary_derive;
 mod consumer;
 mod postures;
 

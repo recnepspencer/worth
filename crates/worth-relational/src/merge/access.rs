@@ -28,6 +28,7 @@ impl<'runtime> MergeAccess<'runtime> {
             .bind_merge_planning_request(request)
             .map_err(RelationalMergeRequestNormalizationDenial::OwnerBinding)?;
         self.normalize_bound_merge_planning_request(bound)
+            .map(|inputs| inputs.request)
     }
 
     #[cfg(not(test))]
@@ -36,6 +37,7 @@ impl<'runtime> MergeAccess<'runtime> {
         request: OwnerBoundMergePlanningRequest,
     ) -> Result<NormalizedRelationalMergeRequest, RelationalMergeRequestNormalizationDenial> {
         self.normalize_bound_merge_planning_request(request)
+            .map(|inputs| inputs.request)
     }
 
     #[cfg(test)]
@@ -108,7 +110,7 @@ impl<'runtime> MergeAccess<'runtime> {
         request: OwnerBoundMergePlanningRequest,
     ) -> Result<MergePlanningArtifactCore, MergePlanningError> {
         let started_at = Instant::now();
-        let normalized_request = self.normalize_merge_planning_request(request)?;
+        let normalized_request = self.normalize_bound_merge_planning_request(request)?;
         self.inspect_bound_planning_scope(execution, normalized_request, started_at)
     }
 
@@ -126,7 +128,7 @@ impl<'runtime> MergeAccess<'runtime> {
     fn inspect_bound_planning_scope(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        normalized_request: NormalizedRelationalMergeRequest,
+        normalized_request: super::request_normalization::BoundMergeInputs,
         started_at: Instant,
     ) -> Result<MergePlanningArtifactCore, MergePlanningError> {
         self.observe_bound_planning_scope(execution, normalized_request, started_at)
@@ -136,11 +138,11 @@ impl<'runtime> MergeAccess<'runtime> {
     fn observe_bound_planning_scope(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        normalized_request: NormalizedRelationalMergeRequest,
+        normalized_request: super::request_normalization::BoundMergeInputs,
         started_at: Instant,
     ) -> Result<super::RelationalMergePlanningObservation, MergePlanningError> {
-        let plan = self.lower_planning_scope(execution, normalized_request)?;
-        let artifact = super::planning_artifact::materialize_planning_observation(
+        let plan = self.lower_planning_scope(execution, &normalized_request)?;
+        let artifact = super::planning_artifact::selected_basis::materialize_planning_observation(
             execution,
             self.runtime,
             plan,
@@ -178,7 +180,10 @@ impl<'runtime> MergeAccess<'runtime> {
     fn normalize_bound_merge_planning_request(
         &self,
         request: OwnerBoundMergePlanningRequest,
-    ) -> Result<NormalizedRelationalMergeRequest, RelationalMergeRequestNormalizationDenial> {
+    ) -> Result<
+        super::request_normalization::BoundMergeInputs,
+        RelationalMergeRequestNormalizationDenial,
+    > {
         super::request_normalization::normalize_bound_merge_planning_request(request)
     }
 
@@ -187,10 +192,11 @@ impl<'runtime> MergeAccess<'runtime> {
         request: crate::merge::data::OwnerBoundMergeExecutionRequest,
     ) -> Result<NormalizedRelationalMergeRequest, RelationalMergeRequestNormalizationDenial> {
         super::request_normalization::normalize_bound_merge_execution_request(request)
+            .map(|inputs| inputs.request)
     }
 
     #[cfg(test)]
-    fn bind_planning_request_for_test(
+    pub(super) fn bind_planning_request_for_test(
         &self,
         request: MergePlanningRequest,
     ) -> Result<OwnerBoundMergePlanningRequest, MergePlanningError> {

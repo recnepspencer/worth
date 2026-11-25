@@ -89,7 +89,7 @@ fn perf_snapshot_materialization_matrix() {
             let started_at = Instant::now();
             let read = runtime
                 .read_truth()
-                .read_version(execution, pinned_snapshot.version_id)
+                .read_version(execution, pinned_snapshot.version_id())
                 .expect("read request remains live");
             let elapsed_micros = started_at.elapsed().as_micros();
             let counters = runtime.performance_access().counters();

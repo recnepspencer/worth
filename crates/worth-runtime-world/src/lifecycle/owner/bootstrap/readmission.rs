@@ -130,14 +130,16 @@ pub(crate) struct ReadmittedHorizonInstall<'a> {
     pub(crate) generation: worth_foundational::facade::DurableProductReferenceGeneration,
     pub(crate) commit: worth_foundational::facade::DurableCompositeCommitIdentity,
     pub(crate) is_root_branch: bool,
-    pub(crate) retirement_boundary: Option<worth_foundational::facade::DurableCompositeCommitIdentity>,
+    pub(crate) retirement_boundary:
+        Option<worth_foundational::facade::DurableCompositeCommitIdentity>,
     pub(crate) branch_previous: Option<&'a ProductBranchReferenceSnapshot>,
     pub(crate) spliced_parent: Option<(crate::identity::CompositeCommitIdentity, usize)>,
     pub(crate) commit_spec: ReadmittedHorizonCommitSpec<'a>,
     pub(crate) native: worth_relational::facade::branch::AdmittedRelationalBranchBasis,
     pub(crate) signal: &'a SignalReadmittedSourcePoint,
     pub(crate) bridge: AdmittedRuntimeWorldCorrespondenceBasis,
-    pub(crate) expected_native: &'a worth_relational::facade::branch::RecordedRelationalComponentReference,
+    pub(crate) expected_native:
+        &'a worth_relational::facade::branch::RecordedRelationalComponentReference,
     pub(crate) expected_signal: &'a worth_signal::facade::durability::SignalRecordedSourcePoint,
 }
 
@@ -238,11 +240,7 @@ where
             let history = self
                 .state
                 .history
-                .install_readmitted_horizon_commit(
-                    commit_arc.clone(),
-                    pins,
-                    install.spliced_parent,
-                )
+                .install_readmitted_horizon_commit(commit_arc.clone(), pins, install.spliced_parent)
                 .map_err(Denial::HistoryAdmission)?;
             let snapshot = ProductBranchReferenceSnapshot::owner_issued(
                 owner,
@@ -254,12 +252,9 @@ where
                 commit_arc.clone(),
             )
             .map_err(|_| Denial::BranchLineage)?;
-            let protection = ProductBranchHeadProtection::bootstrap_issued(
-                snapshot.clone(),
-                head_pin,
-                history,
-            )
-            .map_err(|_| Denial::BranchLineage)?;
+            let protection =
+                ProductBranchHeadProtection::bootstrap_issued(snapshot.clone(), head_pin, history)
+                    .map_err(|_| Denial::BranchLineage)?;
             if let Some(cell) = self.state.branches.branch_cell_by_lifecycle(lifecycle) {
                 let before = install.branch_previous.ok_or(Denial::BranchLineage)?;
                 cell.restore_readmitted_horizon(before, protection)

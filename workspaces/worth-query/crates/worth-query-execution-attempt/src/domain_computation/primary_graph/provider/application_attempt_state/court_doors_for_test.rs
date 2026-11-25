@@ -11,9 +11,7 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
         Self::shared_observed_facts(self, session)
     }
 
-    pub fn reset_idle_replay_ordinals_for_test(
-        &mut self,
-    ) {
+    pub fn reset_idle_replay_ordinals_for_test(&mut self) {
         assert!(
             self.attempts.is_empty(),
             "replay reset requires zero live application attempts"

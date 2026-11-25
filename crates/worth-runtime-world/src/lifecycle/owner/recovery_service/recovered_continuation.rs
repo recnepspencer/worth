@@ -102,12 +102,10 @@ where
             .consult()
             .map_err(|cause| Denial::Durable(WorldDurableMediumDenial::Request(cause)))?;
         let native = match effects.source.as_ref() {
-            Some(crate::recovery::recovered_publication::RecoveredNativeObservation::Original(
-                native,
-            )) => Some(native),
-            Some(crate::recovery::recovered_publication::RecoveredNativeObservation::Prepared(
-                _,
-            )) => return Err(Denial::Admission(RuntimeWorldRecoveryDenial::Busy)),
+            Some(observation) => match observation.original_native() {
+                Some(native) => Some(native),
+                None => return Err(Denial::Admission(RuntimeWorldRecoveryDenial::Busy)),
+            },
             None => None,
         };
         let cell = self

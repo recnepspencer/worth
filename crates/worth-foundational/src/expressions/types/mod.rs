@@ -150,6 +150,31 @@ impl ExpressionType {
     pub(crate) fn is_map_key(&self) -> bool {
         matches!(self, Self::String | Self::Integer(_) | Self::Id(_))
     }
+
+    /// Owned heap bytes allocated when cloning this type description.
+    pub fn clone_allocation_bytes(&self) -> Option<usize> {
+        match self {
+            Self::Bool
+            | Self::Integer(_)
+            | Self::Float32
+            | Self::Float64
+            | Self::Decimal
+            | Self::String
+            | Self::Bytes
+            | Self::Quantity(_)
+            | Self::Bits(_)
+            | Self::Logic4(_)
+            | Self::Date => Some(0),
+            Self::Id(name) | Self::Enum(name) | Self::Record(name) => Some(name.name().len()),
+            Self::Option(inner) | Self::List(inner) => {
+                size_of::<Self>().checked_add(inner.clone_allocation_bytes()?)
+            }
+            Self::Map(key, value) | Self::MapEntry(key, value) => size_of::<Self>()
+                .checked_mul(2)?
+                .checked_add(key.clone_allocation_bytes()?)?
+                .checked_add(value.clone_allocation_bytes()?),
+        }
+    }
 }
 
 impl fmt::Display for ExpressionType {

@@ -8,6 +8,8 @@ use worth_query_declaration::{
     worth_query_application_query, worth_query_portable_type, worth_query_structured_value_binding,
 };
 
+worth_query_declaration::worth_query_disclosure_classification!(ManagedParentPolicyDisclosure);
+
 worth_query_structured_value_binding!(pub ParametersBinding for () { identity: "worth.rust.unit" });
 worth_query_application_query!(pub SourceQuery for Schema: ModelSchema,
     identity "worth.query.tests.managed-parent-source.v1", parameters ParametersBinding,
@@ -103,7 +105,7 @@ pub fn parent<S: ModelSchema>(
         .result_shape(shape())
         .cardinality(ApplicationQueryCardinality::Many)
         .disclosure(if S::MODE == 3 {
-            ApplicationQueryDisclosureContract::installed_policy("ManagedParentPolicy")
+            ApplicationQueryDisclosureContract::installed_policy(ManagedParentPolicyDisclosure)
         } else {
             ApplicationQueryDisclosureContract::public()
         })

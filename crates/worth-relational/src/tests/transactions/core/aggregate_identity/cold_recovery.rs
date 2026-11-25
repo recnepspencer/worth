@@ -1,4 +1,5 @@
 //! Aggregate consequences survive cold recovery and retain typed source failures.
+use worth_relational_storage::internal_port::runtime::state::subsystems::record_identity::recovery::RecordIdentitySubsystemFixturePort as _;
 use super::{cold_recovery_fixture::reopen, fixtures::*};
 use crate::tests::support::*;
 use crate::transactions::data::{
@@ -87,7 +88,7 @@ fn cold_aggregate_source_refusal_publishes_nothing_and_can_retry() {
         "source refusal must keep its typed cause: {error:?}"
     );
     assert_eq!(cold.history().branch_head(&BranchId("main".into())), before);
-    assert!(cold.record_identity.pending_snapshot().is_empty());
+    assert!(cold.record_identity.pending_snapshot_for_test().is_empty());
     source.fail_regions.store(false, Ordering::Relaxed);
     let result = commit(execution, &cold, "main", split(&born));
     assert_eq!(

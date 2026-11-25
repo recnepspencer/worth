@@ -3,17 +3,20 @@ use super::*;
 use crate::execution::request_stage::checkpoint;
 use crate::history::data::{CanonicalRecordAllocation, RecordAllocationOrigin};
 use crate::identity::data::{EntityId, KindId, PartitionId};
-use crate::mvcc::plan_copy_admission::{reserve_copy, slots};
+use crate::mvcc::transaction::normalized_plan::{reserve_copy, slots};
 use crate::runtime::{metered_binary_search, metered_false_mask, metered_heapsort};
 use crate::symbols::data::ClientKey;
-use crate::transactions::data::{
-    BorrowedEntityRef, CommitCreatedEntityBindings, CommitCreatedRelationBindings, CreateIntent,
-    EntityMutationIntent, EntityReference, MutationIntent, RecordRef,
+use crate::transactions::data::intents::mutation_intent::{EntityMutationIntent, MutationIntent};
+use worth_relational_contracts::internal_port::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::created_relation_bindings::{
+    BorrowedEntityRef, CommitCreatedRelationBindings,
 };
+use crate::transactions::data::primitives::{EntityReference, RecordRef};
+use crate::transactions::data::intents::mutation_intent::CreateIntent;
 
 pub(super) fn align_to_canonical_plan(
     execution: &ExecutionRequest<'_, '_>,
-    commands: &crate::transactions::data::MergedCommitPlan,
+    commands: &crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan,
     mutation: &mut AppliedMutationCore,
 ) -> Result<(), TransactionCommitError> {
     let canonical_len = mutation.identities.records.canonical().len();
@@ -57,7 +60,7 @@ pub(super) fn align_to_canonical_plan(
                 .reorder_canonical_for_plan_metered(
                     &ordered,
                     |units| checkpoint(context, units).map_err(custody::execution_stop),
-                    crate::mvcc::origin_denial,
+                    crate::transactions::data::outcomes::transaction_commit_error::origin_denial,
                 )
         })
         .map_err(custody::execution_stop)?
@@ -66,19 +69,19 @@ pub(super) fn align_to_canonical_plan(
 
 fn collect_ordered_records(
     context: &mut worth_execution::MapKernelContext<'_, '_>,
-    commands: &crate::transactions::data::MergedCommitPlan,
+    commands: &crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan,
     mutation: &AppliedMutationCore,
     canonical_len: usize,
     replacement_len: usize,
 ) -> Result<Vec<RecordRef>, TransactionCommitError> {
     let mut ordered: Vec<RecordRef> = Vec::new();
     ordered.try_reserve_exact(canonical_len).map_err(|_| {
-        crate::mvcc::origin_denial("coupled plan ordered scratch reservation failed")
+        crate::transactions::data::outcomes::transaction_commit_error::origin_denial("coupled plan ordered scratch reservation failed")
     })?;
     let mut replacements: Vec<(EntityId, EntityId)> = Vec::new();
     replacements
         .try_reserve_exact(replacement_len)
-        .map_err(|_| crate::mvcc::origin_denial("coupled plan replacement scratch failed"))?;
+        .map_err(|_| crate::transactions::data::outcomes::transaction_commit_error::origin_denial("coupled plan replacement scratch failed"))?;
     for &(old, new) in &mutation.outcome.effect.publication.entity_replacements {
         checkpoint(context, 1).map_err(custody::execution_stop)?;
         replacements.push((old, new));
@@ -88,7 +91,7 @@ fn collect_ordered_records(
     let mut replacement_used = metered_false_mask(
         replacement_len,
         &mut step,
-        crate::mvcc::origin_denial,
+        crate::transactions::data::outcomes::transaction_commit_error::origin_denial,
         "coupled plan replacement mask failed",
     )?;
 
@@ -98,7 +101,7 @@ fn collect_ordered_records(
     let push_record =
         |ordered: &mut Vec<RecordRef>, record: RecordRef| -> Result<(), TransactionCommitError> {
             if ordered.len() >= canonical_len {
-                return Err(crate::mvcc::origin_denial(
+                return Err(crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
                     "coupled canonical plan produced more records than allocated",
                 ));
             }
@@ -215,11 +218,11 @@ fn resolve_entity_metered(
 ) -> Result<EntityId, TransactionCommitError> {
     let work = entities
         .resolve_parts_work_bound(client_key)
-        .ok_or_else(|| crate::mvcc::origin_denial("coupled entity resolve work bound overflow"))?;
+        .ok_or_else(|| crate::transactions::data::outcomes::transaction_commit_error::origin_denial("coupled entity resolve work bound overflow"))?;
     checkpoint(context, work.max(1)).map_err(custody::execution_stop)?;
     entities
         .resolve_parts(partition_id, kind_id, client_key)
-        .ok_or_else(|| crate::mvcc::origin_denial(missing))
+        .ok_or_else(|| crate::transactions::data::outcomes::transaction_commit_error::origin_denial(missing))
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -239,7 +242,7 @@ fn resolve_relation_metered(
     let work = relations
         .resolve_parts_work_bound(client_key, raw_source, raw_target)
         .ok_or_else(|| {
-            crate::mvcc::origin_denial("coupled relation resolve work bound overflow")
+            crate::transactions::data::outcomes::transaction_commit_error::origin_denial("coupled relation resolve work bound overflow")
         })?;
     checkpoint(context, work.max(1)).map_err(custody::execution_stop)?;
     if let Some(id) =
@@ -250,7 +253,7 @@ fn resolve_relation_metered(
     let lowered_source = match raw_source {
         BorrowedEntityRef::Created(p, k, key) => {
             let w = entities.resolve_parts_work_bound(key).ok_or_else(|| {
-                crate::mvcc::origin_denial("coupled source entity work bound overflow")
+                crate::transactions::data::outcomes::transaction_commit_error::origin_denial("coupled source entity work bound overflow")
             })?;
             checkpoint(context, w.max(1)).map_err(custody::execution_stop)?;
             entities
@@ -262,7 +265,7 @@ fn resolve_relation_metered(
     let lowered_target = match raw_target {
         BorrowedEntityRef::Created(p, k, key) => {
             let w = entities.resolve_parts_work_bound(key).ok_or_else(|| {
-                crate::mvcc::origin_denial("coupled target entity work bound overflow")
+                crate::transactions::data::outcomes::transaction_commit_error::origin_denial("coupled target entity work bound overflow")
             })?;
             checkpoint(context, w.max(1)).map_err(custody::execution_stop)?;
             entities
@@ -274,7 +277,7 @@ fn resolve_relation_metered(
     let lowered_work = relations
         .resolve_parts_work_bound(client_key, lowered_source, lowered_target)
         .ok_or_else(|| {
-            crate::mvcc::origin_denial("coupled lowered relation resolve work bound overflow")
+            crate::transactions::data::outcomes::transaction_commit_error::origin_denial("coupled lowered relation resolve work bound overflow")
         })?;
     checkpoint(context, lowered_work.max(1)).map_err(custody::execution_stop)?;
     relations
@@ -286,7 +289,7 @@ fn resolve_relation_metered(
             lowered_target,
         )
         .map(RecordRef::Relation)
-        .ok_or_else(|| crate::mvcc::origin_denial(missing))
+        .ok_or_else(|| crate::transactions::data::outcomes::transaction_commit_error::origin_denial(missing))
 }
 
 fn take_replacement_metered(
@@ -299,7 +302,7 @@ fn take_replacement_metered(
     let Some(mut idx) =
         metered_binary_search(replacements, |entry| entry.0.cmp(&old_id), &mut step)?
     else {
-        return Err(crate::mvcc::origin_denial(
+        return Err(crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
             "coupled canonical plan replacement missing allocated identity",
         ));
     };
@@ -321,7 +324,7 @@ fn take_replacement_metered(
         }
         idx += 1;
     }
-    Err(crate::mvcc::origin_denial(
+    Err(crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
         "coupled canonical plan replacement missing allocated identity",
     ))
 }

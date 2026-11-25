@@ -97,7 +97,28 @@ impl<'a> ValueDecodeSession<'a> {
             self.refuse(Stop::BindingContractMismatch);
             return None;
         }
-        let decoded = Binding::decode_admitted(raw, &mut |work, bytes| self.admit(work, bytes));
+        let decoded = if let Some(profile) = Binding::NATIVE_INPUT_ADMISSION {
+            let Some(resources) = u64::try_from(raw.owned_allocation_capacity_bytes())
+                .ok()
+                .and_then(|bytes| profile.requirements(bytes))
+            else {
+                self.refuse(Stop::AccountingOverflow);
+                return None;
+            };
+            let (Ok(work), Ok(bytes)) = (
+                usize::try_from(resources.work_units()),
+                usize::try_from(resources.peak_memory_bytes()),
+            ) else {
+                self.refuse(Stop::AccountingOverflow);
+                return None;
+            };
+            if self.admit(work, bytes).is_err() {
+                return None;
+            }
+            Binding::decode(raw)
+        } else {
+            Binding::decode_admitted(raw, &mut |work, bytes| self.admit(work, bytes))
+        };
         if self.stopped() {
             return None;
         }

@@ -9,6 +9,9 @@ pub use worth_query_host::facade::application_entry::{
 pub use worth_query_host::facade::primary_graph::{
     WorthQueryPrincipalResolutionDenialKind, WorthQueryPrincipalResolutionRefusalKind,
 };
+
+worth_query_decl::facade::worth_query_authentication_method!(CertificationMethod);
+worth_query_decl::facade::worth_query_authentication_audience!(DocumentRetentionHostAudience);
 pub struct ExpiringOperator;
 impl WorthQueryAuthenticationAdapter for ExpiringOperator {
     type Credential = Duration;
@@ -24,8 +27,8 @@ impl WorthQueryAuthenticationAdapter for ExpiringOperator {
             let now = SystemTime::now();
             WorthQueryValidatedExternalPrincipal::new(
                 worth_query_testkit_document_retention::facade::document_retention_model::operator_identity::operator_identity(),
-                WorthQueryAuthenticationAudience::new("document-retention-host").unwrap(),
-                WorthQueryAuthenticationMethod::new("certification").unwrap(),
+                WorthQueryAuthenticationAudience::of(DocumentRetentionHostAudience),
+                WorthQueryAuthenticationMethod::of(CertificationMethod),
                 now,
                 now + lifetime,
                 Vec::new(),
@@ -48,8 +51,8 @@ pub fn expired_operator(
     let adapter = admit_authentication_adapter(
         host.installed_schema(),
         WorthQueryAuthenticationAdapterAdmission::new(
-            WorthQueryAuthenticationAudience::new("document-retention-host").unwrap(),
-            WorthQueryAuthenticationMethod::new("certification").unwrap(),
+            WorthQueryAuthenticationAudience::of(DocumentRetentionHostAudience),
+            WorthQueryAuthenticationMethod::of(CertificationMethod),
             time.clock(),
         ),
         ExpiringOperator,

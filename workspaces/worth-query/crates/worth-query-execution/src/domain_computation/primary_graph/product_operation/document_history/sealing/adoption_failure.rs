@@ -7,9 +7,12 @@ use crate::domain_computation::primary_graph::WorthQueryExpectedProductBranch;
 
 #[must_use = "retain the original reservation and actual candidate after refusal"]
 pub struct WorthQueryDocumentHistoryAdoptionFailure<'runtime, S> {
-    pub(super) reservation: WorthQueryDocumentHistoryReservation,
-    pub(super) candidate: WorthQueryExpectedProductBranch<'runtime, S>,
-    pub(super) denial: Denial,
+    pub(in crate::domain_computation::primary_graph::product_operation::document_history) reservation:
+        WorthQueryDocumentHistoryReservation,
+    pub(in crate::domain_computation::primary_graph::product_operation::document_history) candidate:
+        WorthQueryExpectedProductBranch<'runtime, S>,
+    pub(in crate::domain_computation::primary_graph::product_operation::document_history) denial:
+        Denial,
 }
 
 impl<'runtime, S> WorthQueryDocumentHistoryAdoptionFailure<'runtime, S> {

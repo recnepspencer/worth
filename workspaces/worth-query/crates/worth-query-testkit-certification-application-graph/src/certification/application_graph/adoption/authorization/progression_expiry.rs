@@ -13,6 +13,9 @@ pub use worth_query_host::facade::primary_graph::{
     WorthQueryOperationAuthorizationRefusalKind, WorthQueryRuntimeTimeSource,
     WorthQueryRuntimeTimeSourceDenial,
 };
+
+worth_query_decl::facade::worth_query_authentication_method!(CertificationMethod);
+worth_query_decl::facade::worth_query_authentication_audience!(DocumentRetentionHostAudience);
 #[derive(Clone)]
 pub struct ExpiryClock {
     scheduled: Arc<Mutex<VecDeque<Option<Instant>>>>,
@@ -57,8 +60,8 @@ pub fn authenticate_live_expiring(
     let adapter = admit_authentication_adapter(
         host.installed_schema(),
         WorthQueryAuthenticationAdapterAdmission::new(
-            WorthQueryAuthenticationAudience::new("document-retention-host").unwrap(),
-            WorthQueryAuthenticationMethod::new("certification").unwrap(),
+            WorthQueryAuthenticationAudience::of(DocumentRetentionHostAudience),
+            WorthQueryAuthenticationMethod::of(CertificationMethod),
             scope.clock().clone(),
         ),
         ExpiringOperator,

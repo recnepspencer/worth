@@ -18,6 +18,13 @@ impl WorthQueryPrimaryGraphProvider {
         execution: &ExecutionRequest<'_, '_>,
         observation: &worth_runtime_world::facade::RuntimeWorldObservationPort,
         inspection: &worth_runtime_world::facade::RuntimeWorldInspectionPort,
+        continuable_native: &std::collections::BTreeMap<
+            worth_relational::facade::history::CommitId,
+            worth_foundational::facade::DurableCompositePublicationAttemptIdentity,
+        >,
+        unpublished_native: &std::collections::BTreeSet<
+            worth_relational::facade::history::CommitId,
+        >,
         metadata_authority: Option<
             &worth_relational::facade::durability::HomeReadmissionMetadataAuthority,
         >,
@@ -75,7 +82,13 @@ impl WorthQueryPrimaryGraphProvider {
             };
             self.readmit_outbox_records(execution, &outboxes, &bindings)
         })?;
-        self.readmit_dispatch_correlation_index(execution, observation, inspection, candidates)?;
+        self.readmit_dispatch_correlation_index(
+            execution,
+            observation,
+            inspection,
+            candidates,
+            (continuable_native, unpublished_native),
+        )?;
         Ok(inbound)
     }
 

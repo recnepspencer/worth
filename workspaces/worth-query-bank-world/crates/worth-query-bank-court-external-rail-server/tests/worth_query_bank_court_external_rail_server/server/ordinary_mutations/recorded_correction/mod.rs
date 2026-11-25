@@ -25,6 +25,7 @@ fn recorded_bank_correction_preserves_intervening_money_after_normal_close() {
         let mixed = WorthQueryRecordedCorrectionSource::from_untrusted_parts(
             intervening.world().clone(),
             original.relational().clone(),
+            original.member(),
         );
         assert!(matches!(
             request.corrections().select_recorded(&mixed, limits()),

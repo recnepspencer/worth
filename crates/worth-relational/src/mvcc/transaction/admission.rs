@@ -1,6 +1,12 @@
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisOwnerPort as _;
+use worth_relational_mutation::internal_port::mvcc::transaction::footprint::RelationalTransactionFootprintOwnerPort as _;
+use worth_relational_mutation::internal_port::mvcc::transaction::intent::RelationalTransactionIntentOwnerPort as _;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RelationalBranchTransactionAdmissionDenial {
-    HomeProgramTransition(crate::durability::medium::RelationalHomeProgramWriteDenial),
+    HomeProgramTransition(
+        crate::durability::medium::home_write_denial::RelationalHomeProgramWriteDenial,
+    ),
     OwnerUnavailable,
     ForeignRuntime {
         expected_runtime_instance_id: u64,
@@ -54,7 +60,43 @@ impl crate::runtime::RelationalRuntime {
         codec: Option<std::sync::Arc<crate::durability::RecoveredCodecPublicationCustody>>,
     ) -> Result<super::BranchBoundRelationalTransaction, RelationalBranchTransactionAdmissionDenial>
     {
-        if let Some(medium) = self.durability.medium() {
+        self.begin_branch_transaction_inner(basis, intent, control, home_step, codec, true, None)
+    }
+
+    /// Read-only in-memory staging transaction used solely by Native's
+    /// pre-intent Home program transition cold-index budget preflight. Uses
+    /// detached services so live transaction IDs and symbols never advance.
+    pub(crate) fn begin_home_preflight_transaction(
+        &self,
+        basis: &crate::branch::AdmittedRelationalBranchBasis,
+        intent: super::RelationalTransactionIntent,
+        detached_services: &crate::runtime::RuntimeServices,
+    ) -> Result<super::BranchBoundRelationalTransaction, RelationalBranchTransactionAdmissionDenial>
+    {
+        self.begin_branch_transaction_inner(
+            basis,
+            intent,
+            crate::mvcc::RelationalOperationControl::uninterrupted(),
+            None,
+            None,
+            false,
+            Some(detached_services),
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn begin_branch_transaction_inner(
+        &self,
+        basis: &crate::branch::AdmittedRelationalBranchBasis,
+        intent: super::RelationalTransactionIntent,
+        control: crate::mvcc::RelationalOperationControl,
+        home_step: Option<std::sync::Arc<crate::runtime::AdmittedRelationalHomeProgramStep>>,
+        codec: Option<std::sync::Arc<crate::durability::RecoveredCodecPublicationCustody>>,
+        require_home_write_admission: bool,
+        preflight_services: Option<&crate::runtime::RuntimeServices>,
+    ) -> Result<super::BranchBoundRelationalTransaction, RelationalBranchTransactionAdmissionDenial>
+    {
+        if require_home_write_admission && let Some(medium) = self.durability.medium() {
             medium
                 .admit_home_program_write(home_step.as_deref(), codec.as_deref())
                 .map_err(RelationalBranchTransactionAdmissionDenial::HomeProgramTransition)?;
@@ -73,7 +115,7 @@ impl crate::runtime::RelationalRuntime {
         }
         if basis.descriptor().runtime_instance_id() != self.runtime_instance_id()
             || basis.descriptor().branch_id() != basis.identity().branch_id()
-            || basis.descriptor().root_identity() != basis.inner.root.id()
+            || basis.descriptor().root_identity() != basis.owner_inner().root.id()
         {
             return Err(RelationalBranchTransactionAdmissionDenial::BasisIdentityMismatch);
         }
@@ -99,7 +141,7 @@ impl crate::runtime::RelationalRuntime {
         if !basis.is_current() {
             return Err(RelationalBranchTransactionAdmissionDenial::StaleBasis);
         }
-        let unavailable = basis.inner.root.has_materialization_unavailable();
+        let unavailable = basis.owner_inner().root.has_materialization_unavailable();
         match intent.materialization_mode() {
             None if unavailable => {
                 return Err(RelationalBranchTransactionAdmissionDenial::MaterializationUnavailable)
@@ -121,20 +163,26 @@ impl crate::runtime::RelationalRuntime {
                 if event.interruption()
                     == crate::mvcc::RelationalOperationInterruption::Cancelled =>
             {
-                basis.inner.retention_binding.record_interruption(event);
+                basis
+                    .owner_inner()
+                    .retention_binding
+                    .record_interruption(event);
                 return Err(RelationalBranchTransactionAdmissionDenial::Cancelled);
             }
             Some(event) => {
-                basis.inner.retention_binding.record_interruption(event);
+                basis
+                    .owner_inner()
+                    .retention_binding
+                    .record_interruption(event);
                 return Err(RelationalBranchTransactionAdmissionDenial::TimedOut);
             }
             None => {}
         }
         let retention =
             crate::history::retention::RelationalTransactionRetentionObligation::acquire(
-                &basis.inner.retention_binding,
+                &basis.owner_inner().retention_binding,
                 basis.identity().clone(),
-                std::sync::Arc::clone(&basis.inner.root),
+                std::sync::Arc::clone(&basis.owner_inner().root),
             )
             .map_err(|denial| {
                 match denial {
@@ -158,12 +206,18 @@ impl crate::runtime::RelationalRuntime {
                 if event.interruption()
                     == crate::mvcc::RelationalOperationInterruption::Cancelled =>
             {
-                basis.inner.retention_binding.record_interruption(event);
+                basis
+                    .owner_inner()
+                    .retention_binding
+                    .record_interruption(event);
                 drop(retention);
                 return Err(RelationalBranchTransactionAdmissionDenial::Cancelled);
             }
             Some(event) => {
-                basis.inner.retention_binding.record_interruption(event);
+                basis
+                    .owner_inner()
+                    .retention_binding
+                    .record_interruption(event);
                 drop(retention);
                 return Err(RelationalBranchTransactionAdmissionDenial::TimedOut);
             }
@@ -176,16 +230,17 @@ impl crate::runtime::RelationalRuntime {
         } else {
             0
         };
+        let services = preflight_services.unwrap_or(&self.services);
         Ok(super::BranchBoundRelationalTransaction {
             appendix_adoption: None,
             authored_coupling: None,
             prepared_coupled_commands: std::sync::Mutex::new(None),
             content: Default::default(),
-            symbols: self.services.symbols.clone(),
+            symbols: services.symbols.clone(),
             read_leases: Default::default(),
             basis: basis.clone(),
             mutation_authority: crate::branch::issue_relational_branch_mutation_authority(),
-            transaction_id: self.services.next_transaction_id(),
+            transaction_id: services.next_transaction_id(),
             intent,
             merge_parent_bases: Vec::new(),
             schema_authority_input: None,
@@ -194,7 +249,7 @@ impl crate::runtime::RelationalRuntime {
             home_target_coverage: None,
             recovered_codec_publication_custody: codec,
             schema_origin: super::TransactionSchemaOrigin::BasisRoot,
-            schema_authority: basis.inner.root.retained_schema_authority(),
+            schema_authority: basis.owner_inner().root.retained_schema_authority(),
             overlay: super::DetachedRelationalTransactionOverlay::default(),
             maximum_savepoints,
             footprint,

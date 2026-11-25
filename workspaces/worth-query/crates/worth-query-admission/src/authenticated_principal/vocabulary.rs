@@ -1,68 +1,65 @@
+//! Accepted authentication audience and method values, built only from
+//! declared vocabulary types.
+use worth_query_declaration::facade::authentication::{
+    is_declared_vocabulary, WorthQueryAuthenticationAudienceIdentity,
+    WorthQueryAuthenticationMethodIdentity,
+};
+
 const MAX_AUDIENCE_BYTES: usize = 1_024;
 const MAX_METHOD_BYTES: usize = 128;
 
-macro_rules! bounded_vocabulary {
-    ($name:ident, $label:literal, $limit:expr) => {
-        #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-        pub struct $name(String);
+/// The audience an adapter accepts and a validated principal was issued for.
+///
+/// ```compile_fail,E0277
+/// use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticationAudience;
+/// let _ = WorthQueryAuthenticationAudience::of("board");
+/// ```
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub struct WorthQueryAuthenticationAudience(&'static str);
 
-        impl $name {
-            pub fn new(
-                value: impl Into<String>,
-            ) -> Result<Self, WorthQueryAuthenticationVocabularyDenial> {
-                let value = value.into();
-                validate($label, &value, $limit)?;
-                Ok(Self(value))
-            }
+impl WorthQueryAuthenticationAudience {
+    /// The declared `Audience` ([`worth_query_authentication_audience!`]).
+    ///
+    /// [`worth_query_authentication_audience!`]: worth_query_declaration::worth_query_authentication_audience
+    pub const fn of<Audience: WorthQueryAuthenticationAudienceIdentity>(_: Audience) -> Self {
+        const {
+            assert!(
+                is_declared_vocabulary(Audience::AUDIENCE, MAX_AUDIENCE_BYTES),
+                "a declared authentication audience names a non-empty bounded identity"
+            )
+        };
+        Self(Audience::AUDIENCE)
+    }
 
-            pub fn as_str(&self) -> &str {
-                &self.0
-            }
-        }
-    };
-}
-
-bounded_vocabulary!(
-    WorthQueryAuthenticationAudience,
-    "authentication audience",
-    MAX_AUDIENCE_BYTES
-);
-bounded_vocabulary!(
-    WorthQueryAuthenticationMethod,
-    "authentication method",
-    MAX_METHOD_BYTES
-);
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryAuthenticationVocabularyDenial {
-    field: &'static str,
-}
-
-impl WorthQueryAuthenticationVocabularyDenial {
-    pub const fn field(&self) -> &'static str {
-        self.field
+    pub const fn as_str(&self) -> &str {
+        self.0
     }
 }
 
-impl std::fmt::Display for WorthQueryAuthenticationVocabularyDenial {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(formatter, "invalid {}", self.field)
-    }
-}
+/// The method an adapter accepts and a validated principal authenticated by.
+///
+/// ```compile_fail,E0277
+/// use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticationMethod;
+/// let _ = WorthQueryAuthenticationMethod::of("local-process");
+/// ```
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub struct WorthQueryAuthenticationMethod(&'static str);
 
-impl std::error::Error for WorthQueryAuthenticationVocabularyDenial {}
-
-fn validate(
-    field: &'static str,
-    value: &str,
-    maximum_bytes: usize,
-) -> Result<(), WorthQueryAuthenticationVocabularyDenial> {
-    if value.is_empty()
-        || value.trim() != value
-        || value.len() > maximum_bytes
-        || value.chars().any(char::is_control)
-    {
-        return Err(WorthQueryAuthenticationVocabularyDenial { field });
+impl WorthQueryAuthenticationMethod {
+    /// The declared `Method` ([`worth_query_authentication_method!`]).
+    ///
+    /// [`worth_query_authentication_method!`]: worth_query_declaration::worth_query_authentication_method
+    pub const fn of<Method: WorthQueryAuthenticationMethodIdentity>(_: Method) -> Self {
+        const {
+            assert!(
+                is_declared_vocabulary(Method::METHOD, MAX_METHOD_BYTES),
+                "a declared authentication method names a non-empty bounded identity"
+            )
+        };
+        Self(Method::METHOD)
     }
-    Ok(())
+
+    pub const fn as_str(&self) -> &str {
+        self.0
+    }
 }

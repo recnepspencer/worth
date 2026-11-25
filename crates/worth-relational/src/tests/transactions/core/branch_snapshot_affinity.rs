@@ -18,17 +18,17 @@ fn current_branch_snapshot_never_substitutes_another_branch_head() {
     let main_snapshot = snapshot_for_owner_branch(&runtime, &main);
     let feature_snapshot = snapshot_for_owner_branch(&runtime, &feature);
 
-    assert_eq!(main_snapshot.branch_id, main);
-    assert_eq!(feature_snapshot.branch_id, feature);
+    assert_eq!(main_snapshot.branch_id(), &main);
+    assert_eq!(feature_snapshot.branch_id(), &feature);
     assert_eq!(
-        main_snapshot.version_id,
+        main_snapshot.version_id(),
         runtime.history().branch_head(&main).unwrap().version_id
     );
     assert_eq!(
-        feature_snapshot.version_id,
+        feature_snapshot.version_id(),
         runtime.history().branch_head(&feature).unwrap().version_id
     );
-    assert_ne!(main_snapshot.snapshot_id, feature_snapshot.snapshot_id);
+    assert_ne!(main_snapshot.snapshot_id(), feature_snapshot.snapshot_id());
     assert!(runtime.snapshots().release_snapshot(&main_snapshot).is_ok());
     assert!(runtime
         .snapshots()

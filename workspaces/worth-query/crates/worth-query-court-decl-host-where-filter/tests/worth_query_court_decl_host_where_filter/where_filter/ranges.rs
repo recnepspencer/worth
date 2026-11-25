@@ -1,24 +1,33 @@
-//! Journeys 2 and 3: parameterized Date and numeric range filters.
+//! Journeys 2 and 3: parameterized Date, optional filters, and numeric ranges.
 use super::*;
 
-fn due(max_due_days: i64) -> Vec<u64> {
-    keys(world::due_by(
-        &install(&board()),
-        DueBy {
-            project: 1,
-            max_due_days,
-        },
-        None,
-    ))
-}
-
 #[test]
-fn date_range_is_inclusive_and_an_absent_due_date_never_matches() {
+fn one_query_combines_independently_optional_date_and_text() {
+    let host = install(&board());
+    let due = |max_due_days, text: Option<&str>| {
+        keys(world::due_by(
+            &host,
+            DueBy {
+                project: 1,
+                max_due_days,
+                text: text.map(str::to_owned),
+            },
+            None,
+        ))
+    };
     // Due days: 1→100, 2→absent, 3→50, 4→200, 5→150.
-    assert_eq!(due(150), [1, 3, 5]);
-    assert_eq!(due(50), [3]);
-    assert!(due(49).is_empty());
-    assert_eq!(due(10_000), [1, 3, 4, 5]);
+    // All four (None/Some) combinations execute on one installed query:
+    assert_eq!(due(None, None), [1, 2, 3, 4, 5]);
+    assert_eq!(due(Some(150), None), [1, 3, 5]);
+    assert_eq!(due(Some(50), None), [3]);
+    assert!(due(Some(49), None).is_empty());
+    assert_eq!(due(Some(10_000), None), [1, 3, 4, 5]);
+    assert_eq!(due(None, Some("fLaNgE")), [1, 2, 5]);
+    assert_eq!(due(Some(150), Some("fLaNgE")), [1, 5]);
+    // Some("") matches every row's title while still distinct from None;
+    // combined with Some(150) it still excludes absent-due task 2.
+    assert_eq!(due(None, Some("")), [1, 2, 3, 4, 5]);
+    assert_eq!(due(Some(150), Some("")), [1, 3, 5]);
 }
 
 #[test]

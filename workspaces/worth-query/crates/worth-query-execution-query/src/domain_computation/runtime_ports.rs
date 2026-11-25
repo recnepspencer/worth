@@ -2,7 +2,6 @@
 //! `worth-query-execution-runtime` lower ports.
 
 use std::any::Any;
-use std::sync::{Arc, Mutex};
 use worth_query_execution_lineage::facade::ports::ApplicationOutputLineageInternalPort as _;
 
 use worth_query_execution_runtime::facade::execution_runtime::product_world::WorthQueryProductRuntime;
@@ -16,7 +15,6 @@ use worth_query_installation::facade::{
 use worth_runtime_world::facade::ProductBranchObservation;
 
 use crate::domain_computation::primary_graph::causal_inspection::application_inspection::WorthQueryApplicationInspectionTarget;
-use crate::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage;
 use crate::domain_computation::primary_graph::{
     WorthQueryHomeRetirementDenial, WorthQueryPrimaryGraphApplicationRuntime,
 };
@@ -47,7 +45,9 @@ impl<Schema: ApplicationSchema> ProductRuntimeRef
     }
 }
 
-pub struct OutputLineageForkAdapter(pub Arc<Mutex<WorthQueryApplicationOutputLineage>>);
+pub struct OutputLineageForkAdapter(
+    pub worth_query_execution_lineage::facade::primary_graph::output_lineage::SharedOutputLineage,
+);
 
 impl ForkLineagePort for OutputLineageForkAdapter {
     fn register_fork(

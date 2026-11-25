@@ -1,30 +1,10 @@
 //! Deterministic distinct-lane membership changes cross one real owner cut.
 use crate::tests::support::*;
-use std::sync::{
-    mpsc::{sync_channel, Receiver, SyncSender},
-    Arc, Mutex,
-};
+use std::sync::{mpsc::sync_channel, Arc};
 
-#[derive(Debug)]
-pub(super) struct CapturePause {
-    entered: SyncSender<()>,
-    resume: Mutex<Receiver<()>>,
-}
-impl CapturePause {
-    pub(super) fn wait(&self) {
-        let _ = self.entered.send(());
-        let _ = self.resume.lock().unwrap_or_else(|p| p.into_inner()).recv();
-    }
-}
-struct ClearOnDrop<'a, T>(&'a Mutex<Option<T>>);
-impl<T> Drop for ClearOnDrop<'_, T> {
-    fn drop(&mut self) {
-        let _ = self.0.lock().unwrap_or_else(|p| p.into_inner()).take();
-    }
-}
 #[test]
 fn native_custody_correction_cross_lane_acquire_release_has_one_actual_capture_cut() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     let runtime = runtime_with_test_schema();
     create_entity(execution, &runtime, "lane-a-original");
@@ -38,13 +18,10 @@ fn native_custody_correction_cross_lane_acquire_release_has_one_actual_capture_c
         .observe_branch(&runtime.branch_identity(&other).unwrap())
         .unwrap();
     create_entity(execution, &runtime, "lane-a-advanced");
-    let owner = runtime.history.retention_binding().owner.upgrade().unwrap();
     let (entered_tx, entered_rx) = sync_channel(0);
     let (resume_tx, resume_rx) = sync_channel(0);
-    *owner.component_capture_pause.lock().unwrap() = Some(Arc::new(CapturePause {
-        entered: entered_tx,
-        resume: Mutex::new(resume_rx),
-    }));
+    let capture_cut =
+        super::arm_component_capture_for_test(&runtime.history, entered_tx, resume_rx);
     let selected = std::thread::scope(|scope| {
         let capture = scope.spawn(|| runtime.history.external_checkpoint_components());
         entered_rx.recv().unwrap();
@@ -52,7 +29,7 @@ fn native_custody_correction_cross_lane_acquire_release_has_one_actual_capture_c
         // current inventory and all lane observations, inside the same cut.
         // It observes the real owner lock, not elapsed time or a synthetic set.
         assert!(
-            owner.external_cut.try_lock().is_err(),
+            capture_cut.external_cut_held_for_test(),
             "the actual capture owns the complete cut while paused between lanes"
         );
         let (started_tx, started_rx) = sync_channel(0);
@@ -69,7 +46,7 @@ fn native_custody_correction_cross_lane_acquire_release_has_one_actual_capture_c
         resume_tx.send(()).unwrap();
         let selected = capture.join().unwrap();
         let lease_b = changed.join().unwrap();
-        *owner.component_capture_pause.lock().unwrap() = None;
+        drop(capture_cut);
         assert!(selected.iter().any(
             |basis| basis.identity().branch_id() == runtime.main_branch_identity().branch_id()
         ));
@@ -102,12 +79,10 @@ fn native_custody_correction_current_lane_inventory_is_collected_inside_actual_c
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();
     let lease = runtime.retain_component_basis(&basis).unwrap();
-    let retention = super::RelationalBranchRetentionOwner {
-        inner: runtime.history.retention_binding().owner.upgrade().unwrap(),
-    };
+    let retention = runtime.history.retention_owner_for_test();
     let selected = retention.checkpoint_components(|| {
         assert!(
-            retention.inner.external_cut.try_lock().is_err(),
+            retention.external_cut_held_for_test(),
             "current lane discovery must share the external retention cut"
         );
         let cell = runtime
@@ -127,82 +102,10 @@ fn native_custody_correction_current_lane_inventory_is_collected_inside_actual_c
     runtime.prepare_close().unwrap().finish();
 }
 
-/// Exact private assertion for the controlled component SDK leaf. No owner or
-/// request is constructed here, and the callback returns descriptive DATA only.
-pub(crate) fn assert_controlled_component_capture_winner(
-    runtime: &crate::runtime::RelationalRuntime,
-    basis_b: &crate::branch::AdmittedRelationalBranchBasis,
-    lease_a: super::RelationalBranchRetentionLease,
-    capture: impl FnOnce() -> Vec<(
-            crate::history::data::BranchId,
-            crate::history::data::CommitId,
-        )> + Send,
-) {
-    let owner = runtime.history.retention_binding().owner.upgrade().unwrap();
-    let first = (
-        lease_a.descriptor().branch_id().clone(),
-        crate::history::data::CommitId(
-            lease_a
-                .descriptor()
-                .reference()
-                .target()
-                .as_basis()
-                .unwrap()
-                .selected_commit_id(),
-        ),
-    );
-    let second = (
-        basis_b.descriptor().branch_id().clone(),
-        crate::history::data::CommitId(
-            basis_b
-                .descriptor()
-                .reference()
-                .target()
-                .as_basis()
-                .unwrap()
-                .selected_commit_id(),
-        ),
-    );
-    let (entered_tx, entered_rx) = sync_channel(0);
-    let (resume_tx, resume_rx) = sync_channel(0);
-    *owner.component_capture_pause.lock().unwrap() = Some(Arc::new(CapturePause {
-        entered: entered_tx,
-        resume: Mutex::new(resume_rx),
-    }));
-    std::thread::scope(|scope| {
-        let selecting = scope.spawn(capture);
-        entered_rx.recv().unwrap();
-        assert!(
-            owner.external_cut.try_lock().is_err(),
-            "actual controlled capture owns the complete external cut"
-        );
-        let (started_tx, started_rx) = sync_channel(0);
-        let changing = scope.spawn(move || {
-            started_tx.send(()).unwrap();
-            runtime.release_component_basis(lease_a).unwrap();
-            runtime.retain_component_basis(basis_b).unwrap()
-        });
-        started_rx.recv().unwrap();
-        resume_tx.send(()).unwrap();
-        let selected = selecting.join().unwrap();
-        let lease_b = changing.join().unwrap();
-        *owner.component_capture_pause.lock().unwrap() = None;
-        assert!(
-            selected.contains(&first),
-            "original A external component is captured"
-        );
-        assert!(
-            !selected.contains(&second),
-            "A-old and B-old never coexist across the actual cut"
-        );
-        runtime.release_component_basis(lease_b).unwrap();
-    });
-}
-
 #[test]
 fn owner_reclamation_overflow_preserves_prior_removals_and_requeues_overflowing_root() {
     use crate::storage::substrate::StorageAllocationOverflow;
-    let host = crate::test_execution_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     let mut config = runtime_with_test_schema().config();
     config.storage.retention.reclaim_batch_size = 0;
@@ -213,12 +116,8 @@ fn owner_reclamation_overflow_preserves_prior_removals_and_requeues_overflowing_
     create_entity(execution, &runtime, "reclaim-overflow-root-2");
     assert_eq!(runtime.retired_branch_root_count(), 2);
 
-    let owner = runtime.history.retention_binding().owner.upgrade().unwrap();
-    let mut queued_bytes: Vec<u64> = owner
-        .read_retired_roots()
-        .values()
-        .map(|entry| entry.root.reclaimable_unique_authoritative_bytes().unwrap())
-        .collect();
+    let owner = runtime.history.retention_owner_for_test();
+    let queued_bytes = owner.retired_root_unique_bytes_for_test();
     assert_eq!(queued_bytes.len(), 2);
     let min_bytes = *queued_bytes.iter().min().unwrap();
     let max_bytes = *queued_bytes.iter().max().unwrap();
@@ -226,15 +125,14 @@ fn owner_reclamation_overflow_preserves_prior_removals_and_requeues_overflowing_
     // Prime maintenance counters so the first retired root fits (regardless of
     // queue pop order) and the second retired root overflows by >= 1 byte.
     let prime_bytes = u64::MAX - max_bytes;
-    {
-        let mut counters = super::owner::lock_maintenance_counters(&owner);
-        counters.reclamation_unique_authoritative_bytes = prime_bytes;
-    }
+    owner.set_reclaimed_unique_bytes_for_test(prime_bytes);
 
     // Strict pass: reclaims root 1, commits root 1 into maintenance counters,
     // refuses root 2 with StorageAllocationOverflow, and restores root 2 to the queue.
-    let err = runtime.history.try_reclaim_retired_branch_roots(4);
-    assert_eq!(err, Err(StorageAllocationOverflow));
+    assert_eq!(
+        runtime.history.try_reclaim_retired_branch_roots(4),
+        Err(StorageAllocationOverflow)
+    );
     assert_eq!(
         runtime.retired_branch_root_count(),
         1,
@@ -260,24 +158,19 @@ fn owner_reclamation_overflow_preserves_prior_removals_and_requeues_overflowing_
     );
     assert_eq!(runtime.retired_branch_root_count(), 1);
 
-    // Clearing the counter ceiling proves root 2 was NOT stranded: the next pass
-    // pops it from retired_root_order and reclaims it cleanly.
-    {
-        let mut counters = super::owner::lock_maintenance_counters(&owner);
-        counters.reclamation_unique_authoritative_bytes = 0;
-    }
+    // Clearing the ceiling proves the second root can still be reclaimed.
+    owner.set_reclaimed_unique_bytes_for_test(0);
     let final_pass = runtime.history.try_reclaim_retired_branch_roots(4).unwrap();
     assert_eq!(final_pass.roots_examined(), 1);
     assert_eq!(final_pass.roots_reclaimed(), 1);
     assert_eq!(final_pass.roots_still_retained(), 0);
     assert!(final_pass.unique_authoritative_bytes_reclaimed() >= min_bytes);
     assert_eq!(runtime.retired_branch_root_count(), 0);
-    queued_bytes.clear();
 }
 
 #[test]
 fn concurrent_reclamation_passes_account_shared_backing_exactly_across_drop_boundary() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = worth_harness::facade::execution_fixture::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     let mut config = runtime_with_test_schema().config();
     config.storage.retention.reclaim_batch_size = 0;
@@ -306,7 +199,7 @@ fn concurrent_reclamation_passes_account_shared_backing_exactly_across_drop_boun
         sibling,
     );
 
-    let owner = runtime.history.retention_binding().owner.upgrade().unwrap();
+    let owner = runtime.history.retention_owner_for_test();
     // Reclaim any initial empty root(s) in one bounded pass so only the two shared-region roots remain.
     let extra = runtime.retired_branch_root_count().saturating_sub(2);
     if extra > 0 {
@@ -324,16 +217,10 @@ fn concurrent_reclamation_passes_account_shared_backing_exactly_across_drop_boun
     assert_eq!(oracle.reclaimable_roots, 2);
     let expected_union_bytes = oracle.reclaimable_only_authoritative_bytes;
     assert!(expected_union_bytes > 0);
-    let (r1_alone, r2_alone) = {
-        let roots = owner.read_retired_roots();
-        let vals: Vec<_> = roots.values().map(|e| Arc::clone(&e.root)).collect();
-        (
-            vals[0].reclaimable_unique_authoritative_bytes().unwrap(),
-            vals[1].reclaimable_unique_authoritative_bytes().unwrap(),
-        )
-    };
+    let shared_region_root_bytes: u64 =
+        owner.retired_root_unique_bytes_for_test().into_iter().sum();
     assert!(
-        expected_union_bytes > r1_alone + r2_alone,
+        expected_union_bytes > shared_region_root_bytes,
         "shared partition-1 region is excluded from each root alone but present in the pair union"
     );
     let baseline_bytes = runtime
@@ -345,44 +232,64 @@ fn concurrent_reclamation_passes_account_shared_backing_exactly_across_drop_boun
     let (resume_tx, resume_rx) = sync_channel(0);
     let (contended_tx, contended_rx) = sync_channel(0);
     let pass_b_done = Arc::new(std::sync::atomic::AtomicBool::new(false));
-    *owner.reclamation_drop_pause.lock().unwrap() = Some(Arc::new(CapturePause {
-        entered: entered_tx,
-        resume: Mutex::new(resume_rx),
-    }));
+    let reclamation = owner.pause_reclamation_drop_for_test(entered_tx, resume_rx);
     let runtime_ref = &runtime;
     let (out_a, out_b) = std::thread::scope(|scope| {
         // Owned inside `scope`: dropping `resume_tx` (normal or panic unwind) is
         // nonblocking and wakes `CapturePause::wait` BEFORE `thread::scope` joins.
         let resume_tx = resume_tx;
-        let owner_for_a = Arc::clone(&owner);
         let pass_a = scope.spawn(move || {
-            let _clear_pause = ClearOnDrop(&owner_for_a.reclamation_drop_pause);
-            runtime_ref.history.try_reclaim_retired_branch_roots(1).unwrap()
+            runtime_ref
+                .history
+                .try_reclaim_retired_branch_roots(1)
+                .unwrap()
         });
         entered_rx
             .recv()
             .expect("Pass A must reach reclamation_drop_pause before exiting");
-        assert!(owner.reclamation_gate.try_lock().is_err(), "Pass A holds gate across drop(root)");
-        *owner.reclamation_gate_contended.lock().unwrap() = Some(contended_tx);
+        assert!(
+            reclamation.reclamation_gate_held_for_test(),
+            "Pass A holds gate across drop(root)"
+        );
+        reclamation.observe_contention_for_test(contended_tx);
         let done_flag = Arc::clone(&pass_b_done);
-        let owner_for_b = Arc::clone(&owner);
         let pass_b = scope.spawn(move || {
-            let _clear_contended = ClearOnDrop(&owner_for_b.reclamation_gate_contended);
-            let out = runtime_ref.history.try_reclaim_retired_branch_roots(1).unwrap();
+            let out = runtime_ref
+                .history
+                .try_reclaim_retired_branch_roots(1)
+                .unwrap();
             done_flag.store(true, std::sync::atomic::Ordering::Release);
             out
         });
         // Deterministic receiver-local contention observation: Pass B actually hit WouldBlock.
-        contended_rx.recv().expect("Pass B must contend on reclamation_gate while Pass A holds it");
-        assert!(!pass_b_done.load(std::sync::atomic::Ordering::Acquire), "Pass B remains blocked");
+        contended_rx
+            .recv()
+            .expect("Pass B must contend on reclamation_gate while Pass A holds it");
+        assert!(
+            !pass_b_done.load(std::sync::atomic::Ordering::Acquire),
+            "Pass B remains blocked"
+        );
         drop(resume_tx);
         (pass_a.join().unwrap(), pass_b.join().unwrap())
     });
 
-    assert_eq!((out_a.roots_reclaimed(), out_b.roots_reclaimed(), runtime.retired_branch_root_count()), (1, 1, 0));
-    let combined = out_a.unique_authoritative_bytes_reclaimed()
-        + out_b.unique_authoritative_bytes_reclaimed();
-    assert_eq!(combined, expected_union_bytes, "concurrent passes must match live-inspection union");
-    let delta = runtime.retention_cost_counters().reclamation_unique_authoritative_bytes - baseline_bytes;
+    assert_eq!(
+        (
+            out_a.roots_reclaimed(),
+            out_b.roots_reclaimed(),
+            runtime.retired_branch_root_count()
+        ),
+        (1, 1, 0)
+    );
+    let combined =
+        out_a.unique_authoritative_bytes_reclaimed() + out_b.unique_authoritative_bytes_reclaimed();
+    assert_eq!(
+        combined, expected_union_bytes,
+        "concurrent passes must match live-inspection union"
+    );
+    let delta = runtime
+        .retention_cost_counters()
+        .reclamation_unique_authoritative_bytes
+        - baseline_bytes;
     assert_eq!(delta, expected_union_bytes);
 }

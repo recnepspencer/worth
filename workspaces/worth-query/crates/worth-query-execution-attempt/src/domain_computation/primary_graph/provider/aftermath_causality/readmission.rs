@@ -65,13 +65,20 @@ pub enum QueryHomeCorrectionLineageDenial {
 }
 use QueryHomeCorrectionLineageDenial as Denial;
 enum JoinScope<'a> {
-    CurrentNativeHead(&'a CompositeCommitIdentity),
+    CurrentNativeHead(
+        &'a CompositeCommitIdentity,
+        &'a std::collections::BTreeMap<
+            CommitId,
+            worth_foundational::facade::DurableCompositePublicationAttemptIdentity,
+        >,
+        &'a std::collections::BTreeSet<CommitId>,
+    ),
     SelectedWorldBranch(&'a ProductBranchObservation),
 }
 impl JoinScope<'_> {
     fn selected(&self) -> &CompositeCommitIdentity {
         match self {
-            Self::CurrentNativeHead(selected) => selected,
+            Self::CurrentNativeHead(selected, _, _) => selected,
             Self::SelectedWorldBranch(branch) => branch.selected_commit(),
         }
     }
@@ -85,6 +92,35 @@ pub fn readmit_latest(
     material: Option<&super::super::WorthQueryPrimaryGraphProvider>,
     metadata_authority: Option<&worth_relational::facade::durability::HomeReadmissionMetadataAuthority>,
 ) -> Result<Option<RecordRef>, Denial> {
+    let empty_map = std::collections::BTreeMap::new();
+    let empty_set = std::collections::BTreeSet::new();
+    readmit_latest_with_unpublished(
+        execution,
+        native,
+        layout,
+        originals,
+        selected,
+        material,
+        (&empty_map, &empty_set),
+        metadata_authority,
+    )
+}
+pub fn readmit_latest_with_unpublished(
+    execution: &ExecutionRequest<'_, '_>,
+    native: &RelationalRuntime,
+    layout: &WorthQueryAftermathCausalityLayout,
+    originals: &WorldProgramActivationHistory,
+    selected: &CompositeCommitIdentity,
+    material: Option<&super::super::WorthQueryPrimaryGraphProvider>,
+    unpublished: (
+        &std::collections::BTreeMap<
+            CommitId,
+            worth_foundational::facade::DurableCompositePublicationAttemptIdentity,
+        >,
+        &std::collections::BTreeSet<CommitId>,
+    ),
+    metadata_authority: Option<&worth_relational::facade::durability::HomeReadmissionMetadataAuthority>,
+) -> Result<Option<RecordRef>, Denial> {
     let (_, basis) = native
         .observe_branch(&native.main_branch_identity())
         .map_err(|cause| source_denial(format!("correction current Native source: {cause:?}")))?;
@@ -93,7 +129,7 @@ pub fn readmit_latest(
         native,
         layout,
         originals,
-        JoinScope::CurrentNativeHead(selected),
+        JoinScope::CurrentNativeHead(selected, unpublished.0, unpublished.1),
         &basis,
         material,
         metadata_authority,
@@ -134,7 +170,7 @@ fn readmit(
         .owner_identity()
         .durable()
         .ok_or(Denial::ForeignWorldInventory)?;
-    let facts = native_records::read(
+    let mut facts = native_records::read(
         execution,
         native,
         layout,
@@ -142,15 +178,50 @@ fn readmit(
         WorldOwnerCoordinate::Home { owner },
         metadata_authority,
     )?;
+    if let JoinScope::CurrentNativeHead(_, continuable, all_unpublished) = scope {
+        // Released-only unpublished Native rows cannot continue; continuable rows
+        // remain in `facts` so full coordinate, relationship, and capture checks run.
+        facts.retain(|fact| {
+            !all_unpublished.contains(&fact.child.commit_id)
+                || continuable.contains_key(&fact.child.commit_id)
+        });
+    }
     let facts = original_join::readmit(execution, originals, facts, &scope)?;
     relationships::readmit(&facts)?;
     if let Some(provider) = material {
         for fact in facts.values() {
-            provider
-                .admit_correction_lineage_material(&fact.child)
-                .map_err(|_| Denial::RetainedMaterialRequired {
-                    record: fact.record.clone(),
-                })?;
+            match provider.admit_correction_lineage_material(&fact.child) {
+                Ok(()) => continue,
+                Err(crate::domain_computation::application_aftermath::correction_material::QueryCorrectionMaterialDenial::Unavailable) => {
+                    let continuable_attempt = match scope {
+                        JoinScope::CurrentNativeHead(_, continuable, _) => {
+                            continuable.get(&fact.child.commit_id).copied()
+                        }
+                        JoinScope::SelectedWorldBranch(_) => None,
+                    };
+                    let attempt = continuable_attempt.or_else(|| {
+                        originals
+                            .original_observations()
+                            .find(|obs| obs.relational_commit() == Some(fact.child.commit_id))
+                            .and_then(|obs| {
+                                originals
+                                    .original_states()
+                                    .find(|state| state.reserved_commit() == obs.identity())
+                            })
+                            .map(|state| state.association().attempt())
+                    });
+                    if !attempt.is_some_and(|a| provider.has_captured_correction_material(a)) {
+                        return Err(Denial::RetainedMaterialRequired {
+                            record: fact.record.clone(),
+                        });
+                    }
+                }
+                Err(_) => {
+                    return Err(Denial::RetainedMaterialRequired {
+                        record: fact.record.clone(),
+                    });
+                }
+            }
         }
     }
     Ok(facts.values().next().map(|fact| fact.record.clone()))

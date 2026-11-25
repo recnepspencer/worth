@@ -1,7 +1,14 @@
 //! Real Native installation, authored carriers and atomic producer participants.
 use super::*;
+use worth_relational::facade::config::CascadeDeletePolicy;
 use worth_relational::facade::schema::*;
 use worth_testkit_relational::aspect_storage::AspectSchemaFixture;
+
+mod optional_struct;
+use optional_struct::*;
+
+const RETAIN: CascadeDeletePolicy = CascadeDeletePolicy::RetainDanglingForAudit;
+const CASCADE: CascadeDeletePolicy = CascadeDeletePolicy::CascadeDeleteRelations;
 
 pub struct World {
     pub runtime: RelationalRuntime,
@@ -16,21 +23,34 @@ pub struct World {
 }
 impl World {
     pub fn new(execution: &ExecutionRequest<'_, '_>, storage: bool, owns_source: bool) -> Self {
-        Self::with_aspects(execution, storage, owns_source, false, false, false, None)
+        Self::with_aspects(
+            execution,
+            storage,
+            owns_source,
+            false,
+            false,
+            false,
+            None,
+            RETAIN,
+        )
     }
     pub fn new_with_status(execution: &ExecutionRequest<'_, '_>) -> Self {
-        Self::with_aspects(execution, true, true, true, false, false, None)
+        Self::with_aspects(execution, true, true, true, false, false, None, RETAIN)
+    }
+    /// An owned-source world whose relation kind is deleted with an endpoint.
+    pub fn new_cascading(execution: &ExecutionRequest<'_, '_>) -> Self {
+        Self::with_aspects(execution, true, true, false, false, false, None, CASCADE)
     }
     /// An owned-source world whose kind also declares the Struct aspect `summary`.
     pub fn new_with_summary(execution: &ExecutionRequest<'_, '_>) -> Self {
-        let mut world = Self::with_aspects(execution, true, true, false, true, false, None);
+        let mut world = Self::with_aspects(execution, true, true, false, true, false, None, RETAIN);
         world.summary = true;
         world
     }
     /// An owned-source world without `LifecycleTransition`, declaring only the
     /// Optional Struct aspect `summary`, matching Query-compiled fieldless kinds.
     pub fn new_optional_struct_only(execution: &ExecutionRequest<'_, '_>) -> Self {
-        let mut world = Self::with_aspects(execution, true, true, false, true, true, None);
+        let mut world = Self::with_aspects(execution, true, true, false, true, true, None, RETAIN);
         world.summary = true;
         world.optional_struct_only = true;
         world
@@ -39,7 +59,16 @@ impl World {
         execution: &ExecutionRequest<'_, '_>,
         rule: CustomInvariantRegistration,
     ) -> Self {
-        Self::with_aspects(execution, true, true, false, false, false, Some(rule))
+        Self::with_aspects(
+            execution,
+            true,
+            true,
+            false,
+            false,
+            false,
+            Some(rule),
+            RETAIN,
+        )
     }
     fn with_aspects(
         execution: &ExecutionRequest<'_, '_>,
@@ -49,13 +78,12 @@ impl World {
         with_summary: bool,
         optional_struct_only: bool,
         rule: Option<CustomInvariantRegistration>,
+        cascade: CascadeDeletePolicy,
     ) -> Self {
         let mut fixture = if optional_struct_only {
             AspectSchemaFixture::default()
         } else {
-            AspectSchemaFixture::with_default_declared_aspects(
-                worth_relational::facade::config::CascadeDeletePolicy::RetainDanglingForAudit,
-            )
+            AspectSchemaFixture::with_default_declared_aspects(cascade)
         };
         if with_status {
             let (binding, contract) =
@@ -339,43 +367,6 @@ pub fn created(key: &str) -> RequiredOutputRoleTarget {
         posture: RequiredOutputRolePosture::Create,
         target: EntityReference::Created(target(key)),
     }
-}
-
-fn optional_summary_struct_aspect() -> (
-    worth_foundational::facade::AspectBinding,
-    worth_foundational::facade::AspectContract,
-) {
-    use worth_foundational::facade::*;
-    let (binding, base) =
-        worth_testkit_relational::aspect_storage::definition::entity_summary_struct_aspect(
-            aspect_key("summary"),
-            field_key("summary"),
-        );
-    let AspectShape::Struct(shape) = base.shape().clone() else {
-        unreachable!("summary aspect is a struct");
-    };
-    let contract = aspects()
-        .contract()
-        .for_key(base.key().clone())
-        .identified_by(base.identity())
-        .at_revision(base.revision())
-        .struct_with(
-            shape,
-            base.masks().clone(),
-            AbsenceLaw::Optional,
-            base.equivalence(),
-            base.evolution(),
-        );
-    (binding, contract)
-}
-
-fn optional_struct_create_intent(key: &str, title: &str) -> MutationIntent {
-    MutationIntent::Create(CreateIntent::Entity(EntitySpec {
-        partition_id: PartitionId::main(),
-        kind_id: KindId(1),
-        client_key: ClientKey::raw(key),
-        fields: string_aspect_field_patch([(aspect_key("summary"), field_key("title"), title)]),
-    }))
 }
 
 fn create_with_status(key: &str) -> MutationIntent {

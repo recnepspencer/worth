@@ -11,11 +11,11 @@ pub use worth_query_host::facade::admission::authenticated_principal::{
 };
 pub use worth_query_host::facade::declaration::authentication::WorthQueryExternalPrincipalIdentity;
 
-pub const TEST_AUDIENCE: &str = "bank-server-identity-test";
-pub const TEST_METHOD: &str = "causal-bank-server-test";
+worth_query_host::facade::worth_query_authentication_audience!(pub BankServerIdentityTestAudience);
+worth_query_host::facade::worth_query_authentication_method!(pub CausalBankServerTestMethod);
+worth_query_host::facade::worth_query_principal_issuer!(pub BankServerTestIssuer);
 
 pub struct DynamicIdentity {
-    pub issuer: String,
     pub subject: String,
 }
 
@@ -24,8 +24,7 @@ impl DynamicIdentity {
     /// Each installed runtime still admits its own real authentication owner.
     pub fn from_recipe(scenario: &str) -> Self {
         Self {
-            issuer: "https://issuer.test.invalid/bank-recipe".to_owned(),
-            subject: scenario.to_owned(),
+            subject: format!("bank-recipe:{scenario}"),
         }
     }
 
@@ -39,13 +38,12 @@ impl DynamicIdentity {
                 .as_nanos()
         );
         Self {
-            issuer: format!("https://issuer.test.invalid/{unique}"),
             subject: format!("{scenario}-{unique}"),
         }
     }
 
     pub fn external(&self) -> WorthQueryExternalPrincipalIdentity {
-        WorthQueryExternalPrincipalIdentity::new(&self.issuer, &self.subject)
+        WorthQueryExternalPrincipalIdentity::new(BankServerTestIssuer, &self.subject)
             .expect("dynamic external identity should admit")
     }
 }
@@ -113,8 +111,8 @@ pub fn test_world(runtime: BankIdentityRuntime) -> TestIdentityWorld {
 
 pub fn authentication_configuration() -> BankAuthenticationConfiguration {
     BankAuthenticationConfiguration::new(
-        WorthQueryAuthenticationAudience::new(TEST_AUDIENCE).expect("test audience should admit"),
-        WorthQueryAuthenticationMethod::new(TEST_METHOD).expect("test method should admit"),
+        WorthQueryAuthenticationAudience::of(BankServerIdentityTestAudience),
+        WorthQueryAuthenticationMethod::of(CausalBankServerTestMethod),
     )
 }
 
@@ -131,10 +129,9 @@ pub fn request_scope() -> WorthQueryRequestScope {
 /// test audience and method.
 pub fn local_principal(identity: &DynamicIdentity) -> WorthQueryLocalProcessPrincipal {
     WorthQueryLocalProcessPrincipal::new(
-        "bank-server-local-test-principal-v1",
         identity.external(),
-        WorthQueryAuthenticationAudience::new(TEST_AUDIENCE).expect("test audience should admit"),
-        WorthQueryAuthenticationMethod::new(TEST_METHOD).expect("test method should admit"),
+        BankServerIdentityTestAudience,
+        CausalBankServerTestMethod,
         Duration::from_secs(60),
     )
     .expect("a finite local principal lifetime should admit")

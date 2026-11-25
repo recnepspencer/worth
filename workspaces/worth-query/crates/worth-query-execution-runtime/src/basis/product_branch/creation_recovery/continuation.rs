@@ -25,7 +25,7 @@ impl WorthQueryProductBranchCreationRecovery {
         };
         drop(self.effects.take()); // Exclusive World seat refuses any other live inspection.
         let cancellation = worth_runtime_world::facade::RuntimeWorldCancellationSource::new();
-        let answer = self.runtime.owner.branch_port().resume_creation(
+        let answer = self.runtime.fields().owner.branch_port().resume_creation(
             &execution,
             &self.handle,
             &cancellation.token(),
@@ -44,9 +44,16 @@ impl WorthQueryProductBranchCreationRecovery {
                     effects,
                 ),
             ) => {
+                let denial = if effects.next_actions().contains(
+                    &worth_runtime_world::facade::ProductUnpublishedNextAction::ReopenRequired,
+                ) {
+                    WorthQueryProductBranchRecoveryDenial::ReopenRequired
+                } else {
+                    WorthQueryProductBranchRecoveryDenial::Busy
+                };
                 self.effects = Some(effects);
                 Err(WorthQueryProductBranchCreationRecoveryFailure {
-                    denial: WorthQueryProductBranchRecoveryDenial::Busy,
+                    denial,
                     recovery: self,
                 })
             }

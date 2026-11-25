@@ -1,6 +1,6 @@
 //! Same-runtime installation validation consumes no reconstruction authority.
 use super::*;
-use crate::durability::authority::FreshRelationalSourceAdmission;
+use crate::durability::authority::fresh_source::FreshRelationalSourceAdmission;
 use worth_execution::ExecutionRequest;
 impl RelationalRuntime {
     pub fn validate_fresh_initial_schema_installation(

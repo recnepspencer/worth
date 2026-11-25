@@ -59,6 +59,8 @@ pub struct RecordedPreImageField {
 #[serde(deny_unknown_fields)]
 pub struct MaterialCapture {
     pub original: DurableCompositePublicationAttemptIdentity,
+    /// The writer of the attempt's coupled group this material belongs to (public #368).
+    pub member: crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceMember,
     pub program: [u8; 32],
     pub mutation: String,
     pub key: [u8; 32],
@@ -95,6 +97,7 @@ pub struct RecordedOutputField {
 #[serde(deny_unknown_fields)]
 pub struct MaterialReady {
     pub original: DurableCompositePublicationAttemptIdentity,
+    pub member: crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceMember,
     pub commit: RelationalCommitReceipt,
     pub roles: Vec<RecordedOutputRole>,
     pub output_fields: Vec<RecordedOutputField>,
@@ -154,14 +157,18 @@ pub enum MaterialRecord {
 #[serde(deny_unknown_fields)]
 struct MaterialEnvelope {
     version: u16,
-    body: MaterialRecord,
+    /// Interpreted only after the version is known to be current, so a record
+    /// of another version refuses by its version, never as a malformed body.
+    body: serde_json::Value,
 }
 #[derive(Serialize)]
 struct EncodedMaterialEnvelope<'a> {
     version: u16,
     body: &'a MaterialRecord,
 }
-const MATERIAL_RECORD_VERSION: u16 = 3;
+/// Version 4 keys capture and ready material by coupled-group member (public #368);
+/// earlier versions are refused, never reinterpreted (arch law 21).
+pub(super) const MATERIAL_RECORD_VERSION: u16 = 4;
 impl MaterialRecord {
     pub fn encode(&self) -> Result<Vec<u8>, Denial> {
         scalar::validate(self)?;
@@ -177,11 +184,13 @@ impl MaterialRecord {
         if envelope.version != MATERIAL_RECORD_VERSION {
             return Err(Denial::UnsupportedVersion(u32::from(envelope.version)));
         }
-        scalar::validate(&envelope.body)?;
-        if envelope.body.class() != frame.body_retention_class() {
+        let body: MaterialRecord =
+            serde_json::from_value(envelope.body).map_err(|_| Denial::MalformedFrame)?;
+        scalar::validate(&body)?;
+        if body.class() != frame.body_retention_class() {
             return Err(Denial::RetentionClassMismatch);
         }
-        Ok(envelope.body)
+        Ok(body)
     }
     pub fn class(&self) -> RetentionClass {
         match self {

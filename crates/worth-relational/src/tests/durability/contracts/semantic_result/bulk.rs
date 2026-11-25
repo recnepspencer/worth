@@ -4,6 +4,7 @@ use crate::symbols::data::ClientKey;
 use crate::transactions::data::{
     BulkRelationCreateIntent, RelationalCommitSemanticResultRefusal as SemanticRefusal,
 };
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 
 fn publication(
     execution: &ExecutionRequest<'_, '_>,
@@ -101,7 +102,7 @@ fn semantic_result_bulk_entities_and_relations_seal_and_readmit_original_binding
     assert!(
         admitted
             .envelope()
-            .symbol_texts
+            .owner_symbol_texts()
             .entries
             .iter()
             .any(|(_, text)| text.as_str() == "bulk-input-00"),

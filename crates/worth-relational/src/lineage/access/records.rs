@@ -9,6 +9,7 @@ use crate::lineage::data::LineageNode;
 use crate::visibility::cache_state::cached_historical_state_for_version;
 #[cfg(test)]
 use std::collections::BTreeSet;
+use worth_relational_branch::internal_port::mvcc::observation::RelationalBranchObservationOwnerPort as _;
 
 impl LineageAccess<'_> {
     pub fn for_record(
@@ -46,7 +47,9 @@ impl LineageAccess<'_> {
 
     #[cfg(test)]
     pub(crate) fn branch_events_snapshot(&self, branch_id: &BranchId) -> Vec<LineageEventRecord> {
-        self.runtime.lineage.branch_events_snapshot(branch_id)
+        self.runtime
+            .lineage
+            .branch_events_snapshot_for_test(branch_id)
     }
 
     #[cfg(test)]

@@ -82,3 +82,64 @@ fn retained_endpoint_capture_and_union_keep_full_exact_ids_and_charge_coexistenc
     drop(held);
     assert_eq!(short.reserve_memory(quote).unwrap().bytes(), quote);
 }
+
+#[test]
+fn preserve_and_union_charge_work_proportional_to_endpoint_counts() {
+    let funded = |work: u64| {
+        worth_execution::ExecutionResourceLease::serial(worth_execution::LeaseRequest {
+            policy: worth_foundational::ExecutionRequestPolicy::new(
+                worth_foundational::ExecutionPosture::Serial,
+                worth_foundational::DeterminismContract::CanonicalBitwise,
+                worth_foundational::ExecutionBudget::new(
+                    std::num::NonZeroUsize::MIN,
+                    Some(1024 * 1024),
+                    Some(work),
+                ),
+            ),
+            cancellation: worth_execution::CancellationToken::new(),
+            deadline: None,
+        })
+        .expect("lease admits")
+    };
+
+    let ids: Vec<EntityId> = (1..=16).map(id).collect();
+    let tight = funded(15);
+    let tight_ctrl = control(Policy::Execution(&tight))
+        .with_execution(worth_execution::ExecutionRequest::leased(&tight));
+    assert_eq!(
+        AdmittedAdjacencyEndpoints::preserve(&ids, tight_ctrl),
+        Err(StoreDenial::ExecutionRequest(
+            worth_execution::WorkCeilingDenial::Stopped(
+                worth_execution::MapKernelStop::WorkCeiling
+            )
+        ))
+    );
+
+    let exact = funded(16);
+    let exact_ctrl = control(Policy::Execution(&exact))
+        .with_execution(worth_execution::ExecutionRequest::leased(&exact));
+    let left =
+        AdmittedAdjacencyEndpoints::preserve(&ids, exact_ctrl).expect("exact preserve succeeds");
+    let right = AdmittedAdjacencyEndpoints::preserve(&ids, control(Policy::SystemAllocation))
+        .expect("system preserve succeeds");
+
+    // `union` over two sorted 16-element sets charges 2 * (16 + 16) = 64 work units.
+    let tight_union = funded(63);
+    let tight_union_ctrl = control(Policy::Execution(&tight_union))
+        .with_execution(worth_execution::ExecutionRequest::leased(&tight_union));
+    assert_eq!(
+        left.union_for_test(&right, tight_union_ctrl),
+        Err(StoreDenial::ExecutionRequest(
+            worth_execution::WorkCeilingDenial::Stopped(
+                worth_execution::MapKernelStop::WorkCeiling
+            )
+        ))
+    );
+    let exact_union = funded(64);
+    let exact_union_ctrl = control(Policy::Execution(&exact_union))
+        .with_execution(worth_execution::ExecutionRequest::leased(&exact_union));
+    let merged = left
+        .union_for_test(&right, exact_union_ctrl)
+        .expect("exact union succeeds");
+    assert_eq!(&*merged, ids.as_slice());
+}

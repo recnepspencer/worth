@@ -54,8 +54,8 @@ pub(super) fn certify_flat_entity_step_batch_compile_window(
             let mut batch = WorkerIntentBatch::new("chip-flat-entity-step-batch");
             for (partition_id, targets) in &partition_targets {
                 for (index, entity) in targets.iter().enumerate().take(4) {
-                    batch = batch.push(MutationIntent::Entity(
-                        EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
+                    batch = batch.push(MutationIntent::Entity(EntityMutationIntent::UpdateFields(
+                        UpdateEntityFieldsIntent {
                             entity_id: *entity,
                             fields: crate::tests::support::aspect_field_patch_from_values([
                                 (
@@ -74,8 +74,8 @@ pub(super) fn certify_flat_entity_step_batch_compile_window(
                                     crate::tests::support::usize_aspect_value(index),
                                 ),
                             ]),
-                        }),
-                    ));
+                        },
+                    )));
                 }
             }
             txn.push_batch(

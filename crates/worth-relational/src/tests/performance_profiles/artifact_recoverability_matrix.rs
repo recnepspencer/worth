@@ -151,17 +151,10 @@ fn perf_artifact_recoverability_matrix() {
         let medium = OwnedTestDurableMedium::new();
         let mut runtime =
             durable_runtime_profile_for_medium(RelationalRuntimeProfile::ChipSimulation, &medium);
-        apply_perf_diagnostics_policy(
-            &mut runtime,
-            PerfDiagnosticsPolicy::ChipOperationalHotPath,
-        );
+        apply_perf_diagnostics_policy(&mut runtime, PerfDiagnosticsPolicy::ChipOperationalHotPath);
 
-        let source = create_entity_in_partition(
-            execution,
-            &runtime,
-            "recover-chip-source",
-            PartitionId(7),
-        );
+        let source =
+            create_entity_in_partition(execution, &runtime, "recover-chip-source", PartitionId(7));
         let sinks = (0..8)
             .map(|index| {
                 create_entity_in_partition(

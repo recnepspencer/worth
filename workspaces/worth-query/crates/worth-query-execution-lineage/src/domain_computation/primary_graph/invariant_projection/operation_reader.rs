@@ -35,12 +35,20 @@ pub use derived_relation::{
     WorthQueryInvariantDerivedWalk, WorthQueryInvariantDerivedWalkStep,
     WorthQueryInvariantGraphComponent, WorthQueryInvariantGraphMember,
 };
+pub mod birth_naming;
+mod candidate_naming;
+pub mod group_naming;
 pub mod managed_index;
+pub mod name_owner;
+pub mod naming;
+pub mod relation_naming;
 pub use managed_index::{
     native_index_decision_cause, WorthQueryComputationManagedIndexDenial,
     WorthQueryComputationManagedIndexDenialKind,
 };
 pub mod output_availability;
+pub mod shared_owner_scope;
+pub use shared_owner_scope::SharedOwnerRelation;
 pub use output_availability::{
     WorthQueryObservedOutputAvailability, WorthQueryOutputAvailabilityDenial,
     WorthQueryOutputAvailabilityState,

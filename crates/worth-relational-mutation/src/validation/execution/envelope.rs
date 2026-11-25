@@ -1,0 +1,138 @@
+use crate::authority::commit::preparation::diagnostics::counters::ValidationPreparationCounters;
+use crate::authority::commit::preparation::diagnostics::observations::ValidationDiagnosticObservation;
+use crate::authority::commit::preparation::reduction::identity::ValidationResultIdentity;
+use crate::authority::commit::preparation::reduction::keys::ValidationReductionKey;
+use crate::contracts::authority::commit::preparation::diagnostics::failures::PreparationFailureClass;
+use crate::contracts::validation::data::execution::{
+    InvariantDecisionRecord, InvariantReportedRule, InvariantVerdict,
+};
+use crate::contracts::validation::data::results::InvariantViolationFieldsOwnerPort as _;
+use crate::validation::engine::result::InvariantCheckResult;
+
+pub(crate) struct InvariantStageOutput {
+    pub(crate) strategy:
+        crate::contracts::transactions::data::preparation_strategy::PreparationStrategy,
+    pub(crate) proof_boundary: crate::validation::engine::InvariantProofBoundarySummary,
+    pub(crate) envelopes: Vec<InvariantWorkerEnvelope>,
+}
+
+impl InvariantStageOutput {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        (self.envelopes.capacity() as u64)
+            .saturating_mul(std::mem::size_of::<InvariantWorkerEnvelope>() as u64)
+            .saturating_add(self.envelopes.iter().fold(0_u64, |total, envelope| {
+                total.saturating_add(envelope.owned_allocation_capacity_bytes())
+            }))
+            .saturating_add(self.proof_boundary.owned_allocation_capacity_bytes())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct InvariantWorkerResult {
+    pub(crate) result_identity: ValidationResultIdentity,
+    pub(crate) result: InvariantCheckResult,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct InvariantWorkerEnvelope {
+    pub(crate) packet_index: usize,
+    pub(crate) reduction_key: ValidationReductionKey,
+    pub(crate) results: Vec<InvariantWorkerResult>,
+    pub(crate) diagnostic_observations: Vec<ValidationDiagnosticObservation>,
+    pub(crate) preparation_failures: Vec<PreparationFailureClass>,
+    pub(crate) counters: ValidationPreparationCounters,
+}
+
+impl InvariantWorkerEnvelope {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        // Read owned capacities directly: encoding just to measure them would
+        // allocate outside the packet's admitted scratch allowance.
+        let vector_bytes = (self.results.capacity() as u64)
+            .saturating_mul(std::mem::size_of::<InvariantWorkerResult>() as u64)
+            .saturating_add(
+                (self.diagnostic_observations.capacity() as u64)
+                    .saturating_mul(std::mem::size_of::<ValidationDiagnosticObservation>() as u64),
+            )
+            .saturating_add(
+                (self.preparation_failures.capacity() as u64)
+                    .saturating_mul(std::mem::size_of::<PreparationFailureClass>() as u64),
+            );
+        let result_bytes = self.results.iter().fold(0_u64, |total, worker| {
+            total
+                .saturating_add(check_result_bytes(&worker.result))
+                .saturating_add(identity_bytes(&worker.result_identity))
+        });
+        let diagnostics_bytes = self
+            .diagnostic_observations
+            .iter()
+            .fold(0_u64, |total, observation| {
+                total.saturating_add(identity_bytes(&observation.result_identity))
+            });
+        vector_bytes
+            .saturating_add(result_bytes)
+            .saturating_add(diagnostics_bytes)
+            .saturating_add(
+                (self.reduction_key.partition_scope.len() as u64)
+                    .saturating_mul(std::mem::size_of::<
+                        crate::contracts::identity::data::primitives::PartitionId,
+                    >() as u64),
+            )
+    }
+}
+
+pub(crate) fn identity_bytes(identity: &ValidationResultIdentity) -> u64 {
+    rule_bytes(&identity.rule).saturating_add(identity.witness.owned_allocation_capacity_bytes())
+}
+
+fn rule_bytes(rule: &InvariantReportedRule) -> u64 {
+    match rule {
+        InvariantReportedRule::Native(rule) => rule.owned_allocation_capacity_bytes(),
+        InvariantReportedRule::Custom(identity) => identity.rule_id.as_str().len() as u64,
+    }
+}
+
+pub(crate) fn decision_record_bytes(record: &InvariantDecisionRecord) -> u64 {
+    rule_bytes(&record.rule).saturating_add(record.witness.owned_allocation_capacity_bytes())
+}
+
+pub(crate) fn decision_clone_bytes(result: &InvariantCheckResult) -> u64 {
+    rule_bytes(&result.rule).saturating_add(result.witness.owned_allocation_capacity_bytes())
+}
+
+pub(crate) fn check_result_bytes(result: &InvariantCheckResult) -> u64 {
+    let provenance_bytes = result.custom_provenance.as_ref().map_or(0, |provenance| {
+        (provenance.touched.visible_entity_ids.len() as u64)
+            .saturating_mul(std::mem::size_of::<
+                crate::contracts::identity::data::record_ids::EntityId,
+            >() as u64)
+            .saturating_add(
+                (provenance.touched.visible_relation_ids.len() as u64)
+                    .saturating_mul(std::mem::size_of::<
+                        crate::contracts::identity::data::record_ids::RelationId,
+                    >() as u64),
+            )
+            .saturating_add(
+                (provenance.touched.touched_partition_ids.len() as u64)
+                    .saturating_mul(std::mem::size_of::<
+                        crate::contracts::identity::data::primitives::PartitionId,
+                    >() as u64),
+            )
+    });
+    let verdict_bytes = match &result.verdict {
+        InvariantVerdict::Pass | InvariantVerdict::NotApplicable => 0,
+        InvariantVerdict::Violation(violation) | InvariantVerdict::Advisory { violation, .. } => {
+            (violation.detail.capacity() as u64)
+                .saturating_add(violation.fields.owned_allocation_capacity_bytes())
+        }
+        &_ => unreachable!("unhandled Relational contract variant"),
+    };
+    rule_bytes(&result.rule)
+        .saturating_add(result.witness.owned_allocation_capacity_bytes())
+        .saturating_add(provenance_bytes)
+        .saturating_add(verdict_bytes)
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct ValidationReducerConflict {
+    pub(crate) identity: ValidationResultIdentity,
+}

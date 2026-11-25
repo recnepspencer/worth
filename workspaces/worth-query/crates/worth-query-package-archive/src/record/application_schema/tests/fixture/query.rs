@@ -79,6 +79,7 @@ pub(super) fn application_query() -> ErasedApplicationQueryDefinition {
                 ScalarAspectType::UInt64,
             )],
             where_filter: None,
+            related_predicates: Vec::new(),
             ordering: vec![ApplicationQueryOrderingTerm::from_untrusted_parts(
                 WorthQueryPortableApplicationQueryOrderingParts {
                     query_type: query_type.clone(),
@@ -103,6 +104,7 @@ pub(super) fn application_query() -> ErasedApplicationQueryDefinition {
                 },
             )),
             live_cause: Some(live_cause()),
+            live_whole_result: false,
             disclosure: disclosure(),
             authorization: ApplicationQueryAuthorizationRequirement::Ability {
                 ability: text("Read"),

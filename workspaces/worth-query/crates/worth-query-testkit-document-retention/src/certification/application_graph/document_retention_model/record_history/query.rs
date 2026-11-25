@@ -8,6 +8,8 @@ pub use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationProjectionRow,
 };
 
+worth_query_decl::facade::worth_query_disclosure_classification!(RecordHistorySubjectDisclosure);
+
 #[derive(Clone, Debug)]
 pub struct Input {
     pub identity: String,
@@ -117,7 +119,7 @@ pub fn definition(
 ) -> ApplicationQueryDefinitionBuilder<DocumentRetentionSchema, Query, Parameters, Row, Document> {
     let influence = ApplicationQueryInfluenceContract::permit_all();
     let disclosure = ApplicationQueryDisclosureContract::governed_by(
-        "record-history-subject",
+        RecordHistorySubjectDisclosure,
         super::capability::PayloadCapability::reference(),
     )
     .use_field_by(

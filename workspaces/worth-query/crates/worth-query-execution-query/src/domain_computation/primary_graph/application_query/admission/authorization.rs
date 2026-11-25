@@ -3,7 +3,7 @@ use crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDec
 use crate::domain_computation::primary_graph::{
     application_query::{
         disclosure::{
-            admit_application_query_governance, WorthQueryAdmittedApplicationDisclosureContract,
+            admit_application_query_governance, FundedDisclosureContract,
             WorthQueryApplicationGovernanceBinding, WorthQueryApplicationQueryGovernance,
             WorthQueryPendingApplicationQueryGovernance,
         },
@@ -50,7 +50,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         >,
         parameters: &WorthQueryAdmittedApplicationQueryParameters,
         mut pending_governance: Option<WorthQueryPendingApplicationQueryGovernance>,
-        disclosure: WorthQueryAdmittedApplicationDisclosureContract,
+        disclosure: FundedDisclosureContract,
     ) -> Result<AdmittedApplicationQueryAuthorities, WorthQueryApplicationQueryAdmissionDenial>
     {
         if let Some(pending) = pending_governance.as_mut() {
@@ -61,8 +61,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             )
             .map_err(WorthQueryApplicationQueryAdmissionDenial::from_authorization)?;
         }
-        let governance = admit_application_query_governance(
-            disclosure,
+        // Declare the reservation before the contract so that if governance
+        // admission fails, `contract` drops strictly before `disclosure_memory`.
+        let disclosure_memory;
+        let contract;
+        (contract, disclosure_memory) = disclosure.into_parts();
+        let mut governance = admit_application_query_governance(
+            contract,
             pending_governance,
             WorthQueryApplicationGovernanceBinding::from_session(
                 graph_work,
@@ -73,6 +78,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             ),
         )
         .map_err(|kind| governance_denial(kind, query.name()))?;
+        governance.attach_disclosure_memory(disclosure_memory);
         let security = match index_posture {
             WorthQueryQueryIndexPosture::HistoricalAllPrimary => {
                 self.admit_query_product_security_basis(execution, security_product, basis)

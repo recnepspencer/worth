@@ -1,0 +1,107 @@
+use std::collections::BTreeSet;
+
+use worth_relational_contracts::internal_port::identity::data::record_ids::{EntityId, RelationId};
+
+use super::InvariantStateView;
+
+impl<'state> InvariantStateView<'state> {
+    pub fn outgoing_relations_for_entity(&self, entity_id: EntityId) -> Vec<RelationId> {
+        match self.outgoing_relations_for_entity_observed(entity_id, || {
+            Ok::<_, std::convert::Infallible>(())
+        }) {
+            Ok(ids) => ids,
+            Err(never) => match never {},
+        }
+    }
+
+    pub(crate) fn incoming_relations_for_entity(&self, entity_id: EntityId) -> Vec<RelationId> {
+        match self.incoming_relations_for_entity_observed(entity_id, || {
+            Ok::<_, std::convert::Infallible>(())
+        }) {
+            Ok(ids) => ids,
+            Err(never) => match never {},
+        }
+    }
+
+    pub(crate) fn outgoing_relations_for_entity_observed<E>(
+        &self,
+        entity: EntityId,
+        acquired: impl FnMut() -> Result<(), E>,
+    ) -> Result<Vec<RelationId>, E> {
+        self.relations_for_entity_observed(entity, true, acquired)
+    }
+
+    pub(crate) fn incoming_relations_for_entity_observed<E>(
+        &self,
+        entity: EntityId,
+        acquired: impl FnMut() -> Result<(), E>,
+    ) -> Result<Vec<RelationId>, E> {
+        self.relations_for_entity_observed(entity, false, acquired)
+    }
+
+    fn relations_for_entity_observed<E>(
+        &self,
+        entity: EntityId,
+        outgoing: bool,
+        mut acquired: impl FnMut() -> Result<(), E>,
+    ) -> Result<Vec<RelationId>, E> {
+        let mut ids = Vec::new();
+        for &id in self.relation_candidates(entity, outgoing).iter() {
+            let Some(metadata) = self.relation_metadata(id) else {
+                continue;
+            };
+            acquired()?;
+            if if outgoing {
+                metadata.source == entity
+            } else {
+                metadata.target == entity
+            } {
+                ids.push(id);
+            }
+        }
+        Ok(ids)
+    }
+
+    pub(crate) fn all_relations_for_entity(&self, entity_id: EntityId) -> Vec<RelationId> {
+        let mut relation_ids = BTreeSet::new();
+        for relation_id in self
+            .relation_candidates(entity_id, true)
+            .iter()
+            .copied()
+            .chain(self.relation_candidates(entity_id, false).iter().copied())
+        {
+            let Some(metadata) = self.relation_metadata(relation_id) else {
+                continue;
+            };
+            if metadata.source == entity_id || metadata.target == entity_id {
+                relation_ids.insert(relation_id);
+            }
+        }
+        relation_ids.into_iter().collect()
+    }
+
+    pub fn relation_candidates(
+        &self,
+        entity_id: EntityId,
+        outgoing: bool,
+    ) -> std::sync::Arc<[RelationId]> {
+        if let Some((inputs, basis)) = self.candidate_inputs() {
+            return inputs.adjacency(*basis, self.version_id(), entity_id, outgoing, || {
+                self.selected
+                    .gather_relation_candidates(entity_id, outgoing)
+            });
+        }
+        self.selected
+            .gather_relation_candidates(entity_id, outgoing)
+            .into()
+    }
+
+    pub(crate) fn relation_candidate_count(&self, entity_id: EntityId, outgoing: bool) -> usize {
+        if let Some((inputs, basis)) = self.candidate_inputs() {
+            return inputs.adjacency_count(*basis, self.version_id(), entity_id, outgoing, || {
+                self.selected.relation_candidate_count(entity_id, outgoing)
+            });
+        }
+        self.selected.relation_candidate_count(entity_id, outgoing)
+    }
+}

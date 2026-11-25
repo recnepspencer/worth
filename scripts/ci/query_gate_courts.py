@@ -15,7 +15,19 @@ def packages(*names):
     return [part for name in names for part in ("-p", name)]
 
 
-LOWER = ("worth-relational", "worth-execution", "worth-signal",
+RELATIONAL = (
+    "worth-relational",
+    "worth-relational-contracts",
+    "worth-relational-durability",
+    "worth-relational-publication",
+    "worth-relational-storage",
+    "worth-relational-branch",
+    "worth-relational-indexes",
+    "worth-relational-lineage",
+    "worth-relational-merge",
+    "worth-relational-mutation",
+)
+LOWER = (*RELATIONAL, "worth-execution", "worth-signal",
          "worth-runtime-bridge", "worth-runtime-world")
 FIXTURE_PACKAGES = ("worth-query-topology-entry", "worth-query-parameter-entry",
                     "worth-query-consumer-root")
@@ -23,7 +35,7 @@ FIXTURE_PACKAGES = ("worth-query-topology-entry", "worth-query-parameter-entry",
 # One test build per group. Every suite of a group takes its binaries from
 # the same cargo selection, so the first-party chain is compiled once.
 ROOT_TESTS = ["--workspace", "--lib", "--tests"]
-COURT_OWNERS = {'worth-court-execution': ['worth-execution'], 'worth-court-foundational-certification-boundary-artifacts': ['worth-foundational'], 'worth-court-foundational-expressions': ['worth-foundational'], 'worth-court-foundational-certification-boundary-evidence': ['worth-foundational'], 'worth-court-proof': ['worth-proof'], 'worth-court-relational-certification': ['worth-relational'], 'worth-court-relational-branch-reference-compile-time': ['worth-relational'], 'worth-court-runtime-bridge': ['worth-runtime-bridge'], 'worth-court-runtime-world': ['worth-runtime-world'], 'worth-court-signal-owner-services': ['worth-signal'], 'worth-court-signal-branch-retention-contract': ['worth-signal'], 'worth-court-signal-wasm': ['worth-signal-wasm']}
+COURT_OWNERS = {'worth-court-execution': ['worth-execution'], 'worth-court-foundational-certification-boundary-artifacts': ['worth-foundational'], 'worth-court-foundational-expressions': ['worth-foundational'], 'worth-court-foundational-certification-boundary-evidence': ['worth-foundational'], 'worth-court-proof': ['worth-proof'], 'worth-court-relational-certification': ['worth-relational'], 'worth-court-relational-branch-reference-compile-time': ['worth-relational'], 'worth-court-relational-cold-residency': ['worth-relational'], 'worth-court-runtime-bridge': ['worth-runtime-bridge'], 'worth-court-runtime-world': ['worth-runtime-world'], 'worth-court-signal-owner-services': ['worth-signal'], 'worth-court-signal-branch-retention-contract': ['worth-signal'], 'worth-court-signal-wasm': ['worth-signal-wasm']}
 
 GROUPS = {
     "root": ROOT_TESTS,
@@ -71,13 +83,13 @@ def courts_only(binary):
 
 
 def root_rest(binary):
-    return not package_of("worth-relational", "worth-signal", "worth-signal-wasm",
+    return not package_of(*RELATIONAL, "worth-signal", "worth-signal-wasm",
                           "worth-execution")(binary)
 
 
 # suite -> (group, which binaries, tests per process, processes at once)
 TEST_SUITES = {
-    "relational": ("root", package_of("worth-relational"), 150, 4),
+    "relational": ("root", package_of(*RELATIONAL), 150, 4),
     "signal": ("root", package_of("worth-signal", "worth-signal-wasm"), 150, 4),
     "execution": ("root", package_of("worth-execution"), 150, 2),
     "root-rest": ("root", root_rest, 150, 4),

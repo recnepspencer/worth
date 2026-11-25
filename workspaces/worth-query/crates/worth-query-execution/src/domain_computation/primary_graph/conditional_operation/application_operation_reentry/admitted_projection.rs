@@ -8,8 +8,8 @@ use super::WorthQueryTemporalReentryDenial;
 use crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation;
 use crate::domain_computation::primary_graph::conditional_operation::{
     operation_invocation::{
-        WorthQueryCurrentTemporalIntent, WorthQueryTemporalOperationExecution,
-        WorthQueryTemporalOperationInvoker,
+        WorthQueryCurrentTemporalIntent, WorthQueryTemporalDueFieldWriter,
+        WorthQueryTemporalOperationExecution, WorthQueryTemporalOperationInvoker,
     },
     reconstruction_authority::WorthQueryFreshTemporalOperationAccess,
     WorthQueryTemporalOperationAuthorization,
@@ -32,8 +32,8 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) struct W
 }
 
 #[rustfmt::skip]
-impl<Schema, Operation, Input, Scope, Invoker, IntentEntity, IdentityField, IdentityValue, RevisionField, RevisionValue, LifecycleField, LifecycleValue, Authorization>
-    WorthQueryTemporalOperationExecution<Schema, Operation, Input, Scope, Invoker, IntentEntity, IdentityField, IdentityValue, RevisionField, RevisionValue, LifecycleField, LifecycleValue, Authorization>
+impl<Schema, Operation, Input, Scope, Invoker, IntentEntity, IdentityField, IdentityValue, RevisionField, RevisionValue, LifecycleField, LifecycleValue, Authorization, DueField>
+    WorthQueryTemporalOperationExecution<Schema, Operation, Input, Scope, Invoker, IntentEntity, IdentityField, IdentityValue, RevisionField, RevisionValue, LifecycleField, LifecycleValue, Authorization, DueField>
 where
     Schema: ApplicationSchema,
     Input: Clone + Send + Sync + 'static,
@@ -48,6 +48,7 @@ where
     LifecycleField::Binding: ApplicationReadableScalarValueBinding<Value = LifecycleValue>,
     LifecycleValue: Clone,
     Authorization: WorthQueryTemporalOperationAuthorization<Schema, Operation, Input, Scope>,
+    DueField: WorthQueryTemporalDueFieldWriter<Schema, IntentEntity>,
 {
     pub(in crate::domain_computation::primary_graph::conditional_operation) fn admit_current_projection<Principal, PrincipalIdentity, Clock>(
         &self,
@@ -81,13 +82,14 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
                         reader,
                         current.identity_value.clone(),
                         &current.expected_revision,
+                        current.expected_due_nanoseconds,
                     );
                     let host_projection = matches!(current_intent, Ok(true)).then(|| {
                         self.invoker
                             .project(candidate.input(), reader, projected_scope)
                     });
                     (host_projection, current_intent)
-                }, worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+                }, execution.allocation_policy())
         })
         .map_err(|super::invoker_isolation::TemporalInvokerPanicked| super::super::WorthQueryConditionalReentryFailure::ProjectionInvokerPanicked)?
         .map_err(WorthQueryTemporalReentryDenial::from_projection)?;

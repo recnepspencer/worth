@@ -7,9 +7,10 @@ pub use crate::derived_relation::{
 pub use crate::graph_member::{
     NativeMemberDomain, NativeMemberKey, ProjectedMemberCoordinate, ProjectedMemberStorage,
 };
+pub use crate::projected_member_domain::projection::ObservedProjectedMember;
 pub use crate::projected_member_domain::{
-    ObservedProjectedMember, ProjectedMemberCaseHandle, ProjectedMemberDomainDenial,
-    ProjectedMemberDomainHandle, ProjectedMemberDomainIdentity, ProjectedMemberDomainParts,
+    ProjectedMemberCaseHandle, ProjectedMemberDomainDenial, ProjectedMemberDomainHandle,
+    ProjectedMemberDomainIdentity, ProjectedMemberDomainParts,
 };
 pub use crate::schema::aggregate_identity::{
     register_aggregate_identity_storage, register_aggregate_membership,

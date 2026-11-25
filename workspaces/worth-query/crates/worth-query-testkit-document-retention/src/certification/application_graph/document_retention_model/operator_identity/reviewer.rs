@@ -2,12 +2,11 @@
 pub use super::*;
 
 pub fn reviewer_identity() -> WorthQueryExternalPrincipalIdentity {
-    WorthQueryExternalPrincipalIdentity::new(OPERATOR_ISSUER, "document-retention-reviewer")
-        .unwrap()
+    WorthQueryExternalPrincipalIdentity::new(OperatorIssuer, "document-retention-reviewer").unwrap()
 }
 pub fn ungranted_reviewer_identity() -> WorthQueryExternalPrincipalIdentity {
     WorthQueryExternalPrincipalIdentity::new(
-        OPERATOR_ISSUER,
+        OperatorIssuer,
         "document-retention-ungranted-reviewer",
     )
     .unwrap()

@@ -1,3 +1,5 @@
+use worth_relational_publication::internal_port::publication::cdc::data::subscriber_checkpoint::SubscriberCheckpointOwnerPort as _;
+use worth_relational_publication::internal_port::publication::cdc::data::subscriber_recovery_plan::continuation_assessment::SubscriberContinuationAssessmentOwnerPort as _;
 use crate::capabilities::{PatchStreamSource, RuntimeConfigSource};
 use crate::history::data::PositionedCanonicalCommit;
 use crate::publication::cdc::data::{
@@ -42,7 +44,7 @@ pub(crate) fn latest_available_checkpoint_basis(
         return Some(basis);
     }
 
-    durable_canonical_envelopes(runtime)
+    durable_canonical_envelopes(runtime.durability.canonical_coverage())
         .last()
         .map(checkpoint_basis_from_envelope)
 }

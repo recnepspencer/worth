@@ -3,12 +3,12 @@ use super::proposal_source::RelationalProposalSource;
 use crate::authority::commit::phases::applied_mutation::AppliedDraftCustody;
 use crate::authority::commit::phases::prepare::PreparedWorkingStateScope;
 use crate::authority::commit::pipeline::{CommitPhaseBacking, CommitPhaseReservation};
-use crate::mvcc::{
-    BranchBoundRelationalTransaction, RelationalMutationProposalIdentity,
-    RelationalTransactionValidationInput,
-};
+use crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity;
+use crate::mvcc::BranchBoundRelationalTransaction;
+use crate::mvcc::RelationalTransactionValidationInput;
 use crate::runtime::RelationalPreparationRuntime;
-use crate::transactions::data::TransactionCommitError;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use worth_relational_publication::internal_port::authority::commit::structural_summary::CommitStructuralSummaryFieldsPort as _;
 
 pub(super) struct PreparedProposalRound {
     pub(super) prepared: PreparedWorkingStateScope,
@@ -19,6 +19,84 @@ pub(super) struct PreparedProposalRound {
 }
 
 impl RelationalPreparationRuntime {
+    pub(crate) fn stage_home_target_preflight_partitions(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        transaction: &mut BranchBoundRelationalTransaction,
+        prior_staged_partitions: &std::collections::BTreeMap<
+            crate::identity::data::PartitionId,
+            crate::storage::overlay::PartitionState,
+        >,
+    ) -> Result<
+        (
+            crate::identity::data::VersionId,
+            crate::runtime::RuntimeSymbolTable,
+            std::collections::BTreeMap<
+                crate::identity::data::PartitionId,
+                (
+                    crate::storage::overlay::PartitionState,
+                    crate::storage::overlay::PartitionMutationJournal,
+                ),
+            >,
+        ),
+        TransactionCommitError,
+    > {
+        let basis = transaction.basis.clone();
+        let selected =
+            crate::branch::root_selection::SelectedRelationalBranchState::from_admitted_basis(
+                &basis,
+            );
+        let source = RelationalProposalSource::Transaction {
+            lowered: None,
+            strategy: None,
+        };
+        crate::storage::residency::probe_head(
+            execution,
+            &selected.with_symbol_admission(&self.services.symbols),
+            |partitions| {
+                let overlay_view =
+                    worth_relational_storage::internal_port::storage::overlay::access::OverlayStateView::new(
+                        partitions,
+                        prior_staged_partitions,
+                    );
+                let round = self.preparation_round();
+                let read = crate::branch::selected_read::SelectedRelationalBranchRead::in_round(
+                    &selected,
+                    if prior_staged_partitions.is_empty() {
+                        partitions
+                    } else {
+                        &overlay_view
+                    },
+                );
+                crate::authority::commit::preparation::probe_symbol_rounds(
+                    execution,
+                    &round,
+                    &basis,
+                    |symbols, round| {
+                        transaction.with_funded_preparation_overlay(execution, |transaction| {
+                            super::proposal_candidate::prepare(
+                                round,
+                                execution,
+                                transaction,
+                                &source,
+                                read,
+                                None,
+                                symbols,
+                                round,
+                            )
+                            .map(|candidate| candidate.into_inner().into_staged_partitions())
+                        })
+                    },
+                )
+            },
+        )
+        .map_err(|failure| {
+            crate::authority::commit::preparation::storage_denial::storage_read_denial(
+                &basis, failure,
+            )
+        })?
+    }
+
     pub(super) fn prepare_proposal_round(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -31,7 +109,10 @@ impl RelationalPreparationRuntime {
                 transaction.authored_coupling.as_ref(),
             );
         let basis = transaction.basis.clone();
-        let selected = crate::branch::SelectedRelationalBranchState::from_admitted_basis(&basis);
+        let selected =
+            crate::branch::root_selection::SelectedRelationalBranchState::from_admitted_basis(
+                &basis,
+            );
         let (mut answer, round) = crate::storage::residency::probe_head(
             execution,
             &selected.with_symbol_admission(&self.services.symbols),
@@ -39,8 +120,9 @@ impl RelationalPreparationRuntime {
                 let round = self
                     .preparation_round()
                     .with_authored_coupling(transaction.authored_coupling.clone());
-                let read =
-                    crate::branch::SelectedRelationalBranchRead::in_round(&selected, partitions);
+                let read = crate::branch::selected_read::SelectedRelationalBranchRead::in_round(
+                    &selected, partitions,
+                );
                 let answer = round.prepare_proposal_symbol_round(
                     execution,
                     transaction,
@@ -52,7 +134,9 @@ impl RelationalPreparationRuntime {
             },
         )
         .map_err(|failure| {
-            crate::authority::commit::preparation::storage_read_denial(&basis, failure)
+            crate::authority::commit::preparation::storage_denial::storage_read_denial(
+                &basis, failure,
+            )
         })?;
         if let Ok(prepared) = &answer {
             crate::execution::transaction_stage(
@@ -68,12 +152,12 @@ impl RelationalPreparationRuntime {
                                 .value()
                                 .prepared
                                 .structural_summary
-                                .touched_partitions
+                                .touched_partitions()
                                 .iter()
                                 .copied(),
                         )
                         .map_err(|failure| {
-                            crate::authority::commit::preparation::storage_read_denial(
+                            crate::authority::commit::preparation::storage_denial::storage_read_denial(
                                 &basis, failure,
                             )
                         })

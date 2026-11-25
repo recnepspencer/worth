@@ -51,6 +51,13 @@ explicitly requests it.
   formats remain valid subjects when contractual.
 - Ensure setup reaches the intended action and observation. Consider affected
   error paths.
+- Formal verification when relevant (**Verus** / **Lean 4** / TLA+): do not
+  substitute spot unit tests where the specification or surface calls for a
+  machine-checked Verus proof (pure Rust graph/index/codec/storage transitions)
+  or Lean 4 proof (unbounded history, merge, authorization, or invalidation
+  invariants). Reject proofs relying on `admit()`, `sorry`, or unjustified
+  `#[verifier::external_body]` escapes, and keep proof harnesses isolated from
+  normal edit compile closure.
 
 ## Cost
 
@@ -66,6 +73,23 @@ explicitly requests it.
 - Stop when affected behavior is protected and required checks pass, with no
   known material in-scope defect remaining. Do not tidy unrelated tests or add
   certification machinery to certify the tests themselves.
+
+## Blocker allowlist and review-round freeze
+
+- **Blocker allowlist:** Landing blockers are strictly production defects
+  (correctness, soundness, authority, concurrency/deadlock, durability/data
+  loss, resource bounds, public contract), architectural ownership violations
+  (`GAP`, forbidden tokens/paths), or tests that genuinely cannot fail if the
+  defect returns or fail flakily under ordinary repo/CI runs. Toolchain
+  limitations (`rustdoc` ignoring `compile_fail,EXXXX` when a positive control
+  and `compile_fail` share a fixture), synthetic test-env nits (e.g.,
+  punctuation in `CARGO_TARGET_DIR`, hand-mutated `.rlib` mtimes), and requests
+  requiring custom compiler drivers, parsers, allocator models, or >50-line
+  bespoke test harnesses belong in non-blocking `Notes / Advisories`.
+- **Round 3+ production-freeze rule:** Rounds 1–2 perform full adversarial
+  review. Round 3+ re-checks verify prior production blockers and production
+  regression safety only — do not introduce new test-harness or
+  coverage-expansion blockers.
 
 ## Report
 

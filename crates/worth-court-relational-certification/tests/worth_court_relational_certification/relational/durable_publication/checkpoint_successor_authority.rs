@@ -209,3 +209,5 @@ fn moved_source_and_stale_candidate_cannot_extend_recovery_lineage() {
         assert!(refusal.into_authority().admit_basis(predecessor).is_ok());
     }
 }
+
+mod durability_refusals;

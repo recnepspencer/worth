@@ -20,6 +20,10 @@ pub struct WorthQueryCompletedCommitEvidenceStore {
         crate::domain_computation::application_aftermath::ExternalEffectCorrelationIdentity,
         super::super::committed_dispatch_outbox::recovered::RecoveredDispatchSelector,
     >,
+    pending_recovered_dispatch: BTreeMap<
+        crate::domain_computation::application_aftermath::ExternalEffectCorrelationIdentity,
+        super::super::committed_dispatch_outbox::recovered::PendingRecoveredDispatch,
+    >,
     by_dispatch_correlation: BTreeMap<
         crate::domain_computation::application_aftermath::ExternalEffectCorrelationIdentity,
         BTreeSet<CommitId>,

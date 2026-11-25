@@ -1,21 +1,24 @@
 mod access;
-mod authority;
-pub mod bundle;
-mod canonical_history;
+pub use worth_relational_publication::internal_port::publication::bundle;
+pub(crate) use worth_relational_publication::internal_port::publication::{
+    authority, canonical_history, diagnostic_store,
+};
 pub mod cdc;
-pub mod data;
-pub(crate) mod ownership;
-pub mod patch;
+pub(crate) mod ownership {
+    pub use worth_relational_publication::internal_port::publication::ownership::*;
+    // Runtime owns the certification name used by its existing Query callers.
+    pub use worth_relational_publication::internal_port::publication::ownership::CurrentOwnershipLocalityObservation as CurrentOwnershipLocalityForTest;
+}
+pub(crate) use worth_relational_branch::internal_port::publication::{data, patch};
+pub(crate) use worth_relational_contracts::internal_port::publication::close_custody;
 
 pub(crate) use access::invariant_failure_diagnostic;
 pub use access::{
     PublicationArtifactsAccess, PublicationDiagnosticsAccess, PublicationPatchStreamAccess,
     PublicationSubscriberStreamAccess, PublicationSurface,
 };
-pub(crate) use authority::production_post_commit_consumer;
 pub use authority::PublicationAuthority;
 pub(crate) use authority::PublicationPreparationAuthority;
-pub use authority::RelationalSettlementPort;
 pub use authority::{
     PostCommitConsumer, PostCommitConsumptionContext, PostCommitConsumptionFailure,
 };

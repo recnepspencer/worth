@@ -1,4 +1,6 @@
 //! Actual validated proposal bindings retain their allocation and occurrence owners.
+use worth_relational_mutation::internal_port::mvcc::validation::proposal_identity::RelationalMutationProposalIdentityOwnerPort as _;
+use worth_relational_storage::internal_port::runtime::state::subsystems::record_identity::recovery::RecordIdentitySubsystemFixturePort as _;
 use crate::identity::data::EntityId;
 use crate::mvcc::ValidatedRelationalProposal;
 use crate::tests::support::*;
@@ -23,7 +25,7 @@ fn validated_sibling_proposals_keep_their_observed_identity_through_reverse_comm
     let b_occurrence = b.state.proposal_identity.commit_id();
     assert_ne!(a_id, b_id, "live proposals own different real slots");
     assert!(a_occurrence < b_occurrence);
-    assert_eq!(runtime.record_identity.pending_snapshot().len(), 2);
+    assert_eq!(runtime.record_identity.pending_snapshot_for_test().len(), 2);
 
     let b = publish(execution, &runtime, b);
     assert_eq!(b.created_entity(&reference("b-record")), Some(b_id));
@@ -33,7 +35,10 @@ fn validated_sibling_proposals_keep_their_observed_identity_through_reverse_comm
     assert_eq!(a.commit.commit_id, a_occurrence);
     assert_eq!(a.version_id, a_version);
     assert!(b.patch_position() < a.patch_position());
-    assert!(runtime.record_identity.pending_snapshot().is_empty());
+    assert!(runtime
+        .record_identity
+        .pending_snapshot_for_test()
+        .is_empty());
     for (outcome, id, name) in [(&a, a_id, "a-record"), (&b, b_id, "b-record")] {
         let records = runtime
             .read_truth()
@@ -59,10 +64,13 @@ fn discarded_and_stale_validated_proposals_release_custody_and_burn_append_gaps(
     let discarded = propose(execution, &runtime, "main", "discarded-record");
     let discarded_id = proposed_record(&discarded, "discarded-record");
     let discarded_occurrence = discarded.state.proposal_identity.commit_id();
-    assert_eq!(runtime.record_identity.pending_snapshot().len(), 1);
+    assert_eq!(runtime.record_identity.pending_snapshot_for_test().len(), 1);
     assert_eq!(runtime.history().immutable_commit_count(), before);
     drop(discarded);
-    assert!(runtime.record_identity.pending_snapshot().is_empty());
+    assert!(runtime
+        .record_identity
+        .pending_snapshot_for_test()
+        .is_empty());
 
     let stale = propose(execution, &runtime, "main", "stale-record");
     let stale_id = proposed_record(&stale, "stale-record");
@@ -84,7 +92,10 @@ fn discarded_and_stale_validated_proposals_release_custody_and_burn_append_gaps(
             ..
         }
     ));
-    assert!(runtime.record_identity.pending_snapshot().is_empty());
+    assert!(runtime
+        .record_identity
+        .pending_snapshot_for_test()
+        .is_empty());
     let continued = create_entity_outcome(execution, &runtime, "continued-record");
     let continued_id = continued
         .created_entity(&reference("continued-record"))
@@ -113,11 +124,14 @@ fn runtime_fork_releases_only_its_copied_pending_entries_while_source_keeps_cust
     create_entity(execution, &runtime, "fork-custody-basis");
     let proposal = propose(execution, &runtime, "main", "source-only-record");
     let source_id = proposed_record(&proposal, "source-only-record");
-    let pending = runtime.record_identity.pending_snapshot();
+    let pending = runtime.record_identity.pending_snapshot_for_test();
     assert_eq!(pending.len(), 1);
     let detached = runtime.fork().unwrap();
-    assert!(detached.record_identity.pending_snapshot().is_empty());
-    assert_eq!(runtime.record_identity.pending_snapshot(), pending);
+    assert!(detached
+        .record_identity
+        .pending_snapshot_for_test()
+        .is_empty());
+    assert_eq!(runtime.record_identity.pending_snapshot_for_test(), pending);
     let detached_commit = create_entity_outcome(execution, &detached, "detached-only-record");
     let detached_id = detached_commit
         .created_entity(&reference("detached-only-record"))
@@ -126,13 +140,16 @@ fn runtime_fork_releases_only_its_copied_pending_entries_while_source_keeps_cust
         detached_id.slot_index() > source_id.slot_index(),
         "copied append gap stays burned"
     );
-    assert_eq!(runtime.record_identity.pending_snapshot(), pending);
+    assert_eq!(runtime.record_identity.pending_snapshot_for_test(), pending);
     let source = publish(execution, &runtime, proposal);
     assert_eq!(
         source.created_entity(&reference("source-only-record")),
         Some(source_id)
     );
-    assert!(runtime.record_identity.pending_snapshot().is_empty());
+    assert!(runtime
+        .record_identity
+        .pending_snapshot_for_test()
+        .is_empty());
     let detached_records = detached
         .read_truth()
         .read_version(execution, detached_commit.version_id)

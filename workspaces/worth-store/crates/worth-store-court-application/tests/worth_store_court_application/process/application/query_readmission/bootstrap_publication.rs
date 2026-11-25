@@ -24,6 +24,8 @@ use worth_query_testkit_host::facade::host::{
     application_home as fixture, application_runtime_surface as identity, checkpoint_capture,
 };
 use worth_store_application::*;
+
+worth_query_decl::facade::worth_query_principal_issuer!(IssuerExampleIssuer);
 mod inspection;
 mod retired_format;
 pub(super) type DirectoryHome = WorldReadmittedApplicationHome<(), (), (), (), ()>;
@@ -57,7 +59,7 @@ fn seed_batches(
             WorthQueryApplicationPrincipalKey::new(format!("host-principal-{ordinal}")).unwrap(),
             ordinal,
             worth_query_host::facade::declaration::authentication::WorthQueryExternalPrincipalIdentity::new(
-                "https://issuer.example",
+                IssuerExampleIssuer,
                 if ordinal == 1 { "subject" } else { "subject-2" },
             )
             .unwrap(),

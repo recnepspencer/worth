@@ -38,6 +38,8 @@ use worth_query_execution::facade::domain_computation::WorthQueryApplicationProj
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationProjectionDenial;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationProjectionRow;
 
+worth_query_declaration::worth_query_disclosure_classification!(AccountActivityDisclosure);
+
 worth_query_declaration::worth_query_structured_value_binding!(NestedUnitResultBinding for () { identity: "worth.rust.unit" });
 
 pub struct AccountIdentitySlot;
@@ -122,7 +124,7 @@ pub fn governed_live_account_definition() -> ApplicationQueryDefinitionBuilder<
     .build();
     let influence = ApplicationQueryInfluenceContract::permit_all();
     let disclosure = ApplicationQueryDisclosureContract::governed_by(
-        "account-activity",
+        AccountActivityDisclosure,
         TouchAccountCapability::reference(),
     )
     .use_field_by(

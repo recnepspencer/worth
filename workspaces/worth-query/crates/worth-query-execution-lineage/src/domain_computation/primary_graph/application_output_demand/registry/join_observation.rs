@@ -1,6 +1,6 @@
 //! Observer-only scheduling and identity evidence at the Stable join boundary.
 use super::*;
-use std::sync::{Arc, Condvar, Mutex, Weak};
+use std::sync::{Arc, Condvar, Mutex};
 type Root = worth_relational::facade::identity::EntityId;
 type Commit = worth_runtime_world::facade::CompositeCommitIdentity;
 thread_local! {
@@ -17,7 +17,7 @@ pub struct PauseState {
 #[doc(hidden)]
 pub struct StableJoinPauseForTest {
     latch: Arc<(Mutex<PauseState>, Condvar)>,
-    receiver: Weak<Mutex<DemandRegistryState>>,
+    receiver: WeakDemandRegistryState,
 }
 // Law 2, scope: pending control is stored in the registry it pauses.
 // Law 3: admission returns its latch beside the charged interest; the caller
@@ -48,7 +48,7 @@ impl WorthQueryOutputDemandRegistry {
         state.join_pause = Some((root, Arc::clone(&latch)));
         StableJoinPauseForTest {
             latch,
-            receiver: Arc::downgrade(&self.state),
+            receiver: self.state.downgrade(),
         }
     }
 }

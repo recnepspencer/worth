@@ -16,10 +16,12 @@ use worth_query_execution_lineage::facade::ports::OperationInvariantProjectionRe
 use worth_query_execution_lineage::facade::primary_graph::invariant_projection::operation_reader::managed_index::{
     IndexDecisionFailure as Failure, WorthQueryComputationManagedIndexDenial,
 };
-use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 type Value<S, B> =
     <<B as ApplicationQueryBinding<S>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
+
+mod basis;
+mod scope_authority;
 
 const fn unavailable() -> Failure {
     Failure::ContextUnavailable
@@ -76,6 +78,11 @@ where
         .map_err(Failure::into_computation)
 }
 
+/// The issued decision read: declared Parent and projected fields first, then
+/// the read basis (the committed admitted basis, or an applied candidate's
+/// issuing assembly), then the resolved scope's declared authority, all
+/// before any provider call. The complete managed Source fact of every read,
+/// per scope, is recorded with the owning decision or computation call.
 fn decision_index_query<Schema: ApplicationSchema, Operation, B>(
     reader_self: &mut WorthQueryApplicationOperationInvariantProjectionReader<
         '_,
@@ -100,18 +107,10 @@ where
             .admitted_contracts()
             .cloned()
             .ok_or_else(unavailable)?;
-        reader_self
-            .admit_decision_target(
-                &worth_query_installation::facade::ApplicationOperationDecisionReadTarget::ManagedIndex {
-                    parent: worth_query_declaration::facade::application_query::ApplicationQueryBindingReference::of::<Schema, B>(),
-                },
-            )
-            .map_err(Failure::Undeclared)?;
-        let scope = reader_self
-            .operation_scope()
-            .as_ref()
-            .ok_or_else(unavailable)?
-            .clone();
+        let authority = scope_authority::DeclaredScopeAuthority::admit::<Schema, Operation, B>(
+            reader_self,
+            &contracts,
+        )?;
         let installed = access
             .application
             .installed_schema()
@@ -128,66 +127,36 @@ where
                 )
                 .map_err(Failure::Undeclared)?;
         }
-        let selected = access.shared.selected();
-        let original = reader_self
-            .reader()
-            .native()
-            .committed_runtime()
-            .ok_or_else(unavailable)?
-            .read_truth()
-            .positioned_snapshot(reader_self.reader().snapshot())
-            .map_err(|_| Failure::ForeignProjection)?;
-        let borrowed = reader_self
-            .reader()
-            .native()
-            .committed_runtime()
-            .ok_or_else(unavailable)?
-            .read_truth()
-            .positioned_snapshot(selected.application_basis().snapshot_handle())
-            .map_err(|_| Failure::ForeignProjection)?;
-        if original != borrowed
-            || reader_self.reader().selected_product_occurrence()
-                != Some(selected.product().observation().lifecycle_incarnation())
-            || reader_self.reader().selected_product_generation()
-                != Some(
-                    selected
-                        .product()
-                        .observation()
-                        .reference_generation()
-                        .get(),
-                )
-        {
-            return Err(Failure::ForeignProjection);
-        }
+        let basis = basis::DecisionReadBasis::admit(reader_self, access)?;
         let execution = reader_self.reader().execution();
-        let graph = access
-            .application
-            .runtime
-            .primary_graph()
-            .ok_or_else(unavailable)?;
-        let mut native = ApplicationQueryNativeAccess::borrowed(
-            graph,
-            reader_self
-                .reader()
-                .native()
-                .committed_runtime()
-                .ok_or_else(unavailable)?,
-        )
-        .map_err(Failure::NativeAccess)?;
+        let mut native = basis.native_access(access)?;
         let (rows, observation) = application_query::managed_index::read_decision::<Schema, B>(
             execution,
             access,
             intent,
             context,
-            &scope,
+            &mut |scope, principal| authority.admit_scope(reader_self, scope, principal),
             &mut native,
+            basis.applied(),
         )
-        .map_err(Failure::ManagedIndex)?;
+        .map_err(|cause| match authority.take_stop() {
+            Some(stop) => Failure::ScopeTraversal(stop),
+            None => Failure::ManagedIndex(cause),
+        })?;
         let snapshot = reader_self.reader().snapshot();
-        reader_self
-            .decision_facts_mut()
-            .record_managed_source(&observation, admission, contracts, snapshot, execution)
-            .map_err(Failure::Native)?;
+        let storage = reader_self.reader().retention_control();
+        let facts = reader_self.decision_facts_mut();
+        use application_query::managed_index::DecisionSource;
+        match observation {
+            DecisionSource::Committed(observation) => facts.record_managed_source(
+                &observation, admission, contracts, snapshot, execution,
+            ),
+            DecisionSource::Applied { facts: observed, authorization, allocation: _allocation } => {
+                facts.record_applied_managed_source(
+                    observed, &authorization, admission, contracts, snapshot, storage,
+                )
+            }
+        }.map_err(Failure::Native)?;
         Ok(rows)
     })();
     if result.is_err() {

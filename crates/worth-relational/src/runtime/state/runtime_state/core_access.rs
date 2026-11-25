@@ -254,6 +254,21 @@ impl RelationalRuntime {
             .map(|scheme| (scheme.subject_kind(), scheme.subject_name().to_owned()))
     }
 
+    /// The installed scheme governing `subject_name` of class `subject_kind`.
+    pub fn persistent_name_scheme_id(
+        &self,
+        subject_kind: crate::lineage::data::PersistentNameSubjectKind,
+        subject_name: &str,
+    ) -> Option<String> {
+        let schemes = self.config.schema.registry.persistent_name_schemes();
+        schemes
+            .iter()
+            .find(|scheme| {
+                scheme.subject_kind() == subject_kind && scheme.subject_name() == subject_name
+            })
+            .map(|scheme| scheme.scheme_id().to_owned())
+    }
+
     /// Read-only view of every currently live persistent-name holder derived
     /// from Relational's committed lineage events on `branch_id`.
     pub fn branch_live_persistent_names(

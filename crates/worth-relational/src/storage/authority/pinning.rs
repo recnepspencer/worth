@@ -9,8 +9,8 @@ impl StorageAuthority<'_> {
     pub(crate) fn clear_named_pins(&self, class: PinClass) {
         let mut writer = self.runtime.edit_partitions();
         for partition in writer.resident_partitions_mut() {
-            partition.entity_arena.clear_named_pins(class);
-            partition.relation_arena.clear_named_pins(class);
+            partition.entity_arena.clear_named_pins_for_test(class);
+            partition.relation_arena.clear_named_pins_for_test(class);
         }
     }
 
@@ -36,3 +36,6 @@ impl StorageAuthority<'_> {
         self.refresh_retention_state::<K>(partition, slot, retired_at, retention_fence);
     }
 }
+
+#[cfg(test)]
+use worth_relational_storage::internal_port::storage::substrate::record_arena::arena::pinning::RecordArenaFixturePort as _;

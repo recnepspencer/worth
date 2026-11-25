@@ -86,11 +86,11 @@
 //! # fn _open_refused_payloads<S: worth_query_host::facade::declaration::application_schema::ApplicationSchemaComposition, P>(
 //! #     refused: worth_query_host::facade::WorthQueryApplicationHomeOpenRefused<S, P>,
 //! # ) {
-//! #     match refused {
-//! #         worth_query_host::facade::WorthQueryApplicationHomeOpenRefused::Binding {
+//! #     match *refused.into_phase() {
+//! #         worth_query_host::facade::WorthQueryApplicationHomeOpenRefusedPhase::Binding {
 //! #             cause, ..
 //! #         } => { let _: domain::WorthQueryHomeBindingDenial = cause; }
-//! #         other => { let _: Option<&worth_query_host::facade::ApplicationHomePhysicalRefusal> = other.physical_refusal(); }
+//! #         _ => {}
 //! #     }
 //! # }
 //! ```
@@ -357,6 +357,7 @@
 mod application_home;
 pub mod facade;
 mod ordinary_contract;
+mod program_transition;
 mod workflow_owner_contract;
 
 mod discovered_currentness_contract;
@@ -374,14 +375,21 @@ mod closed_delivery_contract;
 mod collection_contract;
 
 mod logical_member_contract;
+mod ordered_index;
 
 mod storage_retention_contract;
 
 mod causal_inspection_contract;
+mod correction_facade_contract;
 mod disclosure_and_program_fences_contract;
 mod projection_derive_contract;
+mod projection_name_derive_contract;
 mod projection_relation_derive_contract;
 mod runtime_and_handler_fences_contract;
 mod semantic_refusal_contract;
+mod session;
+mod session_contract;
+mod shared_access;
 mod source_custody;
 mod source_custody_contract;
+mod temporal_contribution;

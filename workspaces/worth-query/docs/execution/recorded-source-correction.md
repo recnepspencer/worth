@@ -175,6 +175,18 @@ a receipt retained from the previous open refuses with `StaleIncarnation`.
 Selection still requires the original program to be rostered, current disclosure
 and retained ancestry. Recorded bytes grant no mutation authority.
 
+A reopened Home holds no authored-write history accelerator: the checkpoint
+and the replayed journal carry none, and later commits inherit that absence.
+Reversing the head needs no history. Reversing an older source seeds the
+accelerator from the original through the target only, charged to the
+correction request and bounded by `maximum_ancestors` parent links (public
+#382). The first such correction pays for that span, never for the history
+before the original; later corrections in the span reuse it. A diverged
+original, a merge or a span past the bound still refuses typed. History keyed
+by a managed entity-field index, which every root-locating decision read
+records, cannot yet cross commits restored from a checkpoint: such a span
+refuses `IncompleteIndexHistory` until public #384.
+
 The acknowledged World open transfers its existing `OriginalProgramMeaning`
 interpretation into `primary_graph/query_obligations`. It replaces the local count; reopening
 retains the durable count. The original Native key and complete intent remain the
@@ -326,11 +338,23 @@ full Relational receipt. Its `coordinates()` method returns the serializable
 application's history entry. A transport can define its own scalar wire type
 and construct native coordinates with
 `WorthQueryCorrectionSourceCoordinates::from_untrusted_fields`, supplying the
-World owner and commit, Relational branch and commit, version, and parent list.
-Then call `request.corrections().select_coordinates(&coordinates, limits)`.
+World owner and commit, Relational branch and commit, version, parent list and
+source member. Then call
+`request.corrections().select_coordinates(&coordinates, limits)`.
 Selection resolves the actual retained completed evidence, compares its World
 identity and checks ancestry and current disclosure on the target branch. Keep
 the complete coordinates together when serializing them.
+
+A multi-stage edit envelope commits every stage in one Relational commit, so the
+commit alone does not name a source. The `member` coordinate does:
+`WorthQueryCorrectionSourceMember::Primary` is the envelope's root stage and
+`AuthoredStage { ordinal, identity }` a later authored stage. Each stage's
+receipt fills it, and each stage is corrected, replayed and reversed on its own.
+Its canonical scalar text is `primary` or `stage:{ordinal}:{identity hex}`
+(`text` and `parse`). A member that names no writer of the commit refuses
+`SourceMemberUnavailable` on memory and Directory Homes. A reversal's command
+key also binds the member, so reusing it for another stage refuses as intent
+drift.
 
 Normal operation close releases its custody while the native history owner
 governs source retention. Selection returns a typed refusal when that evidence

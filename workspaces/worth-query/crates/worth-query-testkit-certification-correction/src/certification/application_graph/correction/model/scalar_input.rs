@@ -18,15 +18,22 @@ pub fn declare(
         .application_query_binding::<output::query::Binding>()
         .application_query_inspection(super::causal_inspection::independent::metadata::<
             output::query::Binding,
-        >("numeric-scalar-output-metadata"))
+        >(NumericScalarOutputMetadataDisclosure))
         .application_query(queries::data::definition())
         .application_query_binding::<queries::data::Binding>()
         .application_query(queries::inspection::definition())
         .application_query_binding::<queries::inspection::Binding>()
         .application_query_inspection(super::causal_inspection::independent::metadata::<
             queries::inspection::Binding,
-        >("numeric-scalar-source-metadata"));
+        >(NumericScalarSourceMetadataDisclosure));
     calculation::declare(authoring::declare(schema))
 }
 
 pub use crate::facade::certification::application_graph::correction::model::schema::storage_model::{ScalarFacts, Value, ScalarResult, Total};
+
+worth_query_decl::facade::worth_query_disclosure_classification!(
+    NumericScalarOutputMetadataDisclosure
+);
+worth_query_decl::facade::worth_query_disclosure_classification!(
+    NumericScalarSourceMetadataDisclosure
+);

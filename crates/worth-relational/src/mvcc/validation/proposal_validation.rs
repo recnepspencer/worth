@@ -1,9 +1,15 @@
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisOwnerPort as _;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::transaction_commit_error::TransactionCommitErrorOwnerPort as _;
 use crate::runtime::{RelationalPreparationRuntime, RelationalRuntime};
-use crate::transactions::data::{CommitConflict, ConflictClass, TransactionCommitError};
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 
 use super::proposal_invariants::stale_validated_proposal;
-use super::proposal_source::RelationalProposalSource;
-use super::validated_proposal::{StrategyProposalDecoration, ValidatedRelationalProposal};
+use super::proposal_source::{RelationalProposalSource, StrategyProposalDecoration};
+use super::validated_proposal::ValidatedRelationalProposal;
 
 impl RelationalPreparationRuntime {
     pub(crate) fn validate_consulted_branch_transaction(
@@ -129,7 +135,7 @@ impl RelationalPreparationRuntime {
             )
             .map_err(|cause| {
                 TransactionCommitError::publication_denied(
-                    crate::mvcc::RelationalPublicationDenial::HomeProgramTransition(cause),
+                    crate::mvcc::publication::outcome::refusals::RelationalPublicationDenial::HomeProgramTransition(cause),
                 )
             })?;
         crate::execution::transaction_stage(execution, self.commit_work_budget.as_ref(), || {
@@ -137,8 +143,8 @@ impl RelationalPreparationRuntime {
         })?;
         require_not_interrupted(
             &transaction.control,
-            &transaction.basis.inner.retention_binding,
-            crate::mvcc::RelationalInterruptionBoundary::ProposalValidation,
+            &transaction.basis.owner_inner().retention_binding,
+            crate::runtime::operation_control::interruption_event::RelationalInterruptionBoundary::ProposalValidation,
         )?;
         let complexity_before = self.performance_access().complexity_counters_snapshot();
         let batch_count = transaction.batches().len();
@@ -279,7 +285,7 @@ impl RelationalRuntime {
 }
 
 pub(in crate::mvcc) fn require_not_interrupted(
-    control: &crate::mvcc::RelationalOperationControl,
+    control: &crate::runtime::operation_control::RelationalOperationControl,
     retention_binding: &crate::history::retention::RelationalBranchRetentionBinding,
     boundary: crate::mvcc::RelationalInterruptionBoundary,
 ) -> Result<(), TransactionCommitError> {
@@ -291,3 +297,7 @@ pub(in crate::mvcc) fn require_not_interrupted(
         None => Ok(()),
     }
 }
+
+#[cfg(test)]
+#[path = "proposal_validation/native_report_tests.rs"]
+mod native_report_tests;

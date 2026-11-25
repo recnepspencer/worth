@@ -8,7 +8,7 @@ error[E0624]: associated function `from_commit_receipt` is private
   |
   | /     pub(crate) fn from_commit_receipt(
   | |         runtime_instance_id: u64,
-  | |         reference: &crate::history::data::RelationalCommitReceipt,
+  | |         reference: &crate::history::data::commit_receipt::RelationalCommitReceipt,
   | |         roots: RelationalBranchRootDescriptor,
   | |     ) -> Self {
   | |_____________- private associated function defined here

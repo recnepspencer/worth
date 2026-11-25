@@ -2,6 +2,7 @@ use crate::facade::identity::EntityId;
 use crate::facade::transactions::{MutationIntent, TransactionCommitError};
 use crate::tests::support::*;
 use worth_foundational::facade::{AspectKey, AspectValue, FieldKey, InternedString};
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 
 #[test]
 fn update_entity_fields_rejects_undeclared_aspect_targets() {

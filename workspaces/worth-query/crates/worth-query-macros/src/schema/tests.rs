@@ -24,6 +24,18 @@ fn a_marker_without_exactly_one_role_or_with_a_foreign_key_is_refused() {
             "`owner` does not apply to an `entity`",
         ),
         (
+            "#[worth_query(entity, aspects(A), acyclic)] struct Task;",
+            "`acyclic` does not apply to an `entity`",
+        ),
+        (
+            "#[worth_query(entity, aspects(A), self_edges = false)] struct Task;",
+            "`self_edges` does not apply to an `entity`",
+        ),
+        (
+            "#[worth_query(entity, aspects(A), symmetric)] struct Task;",
+            "`symmetric` does not apply to an `entity`",
+        ),
+        (
             "#[worth_query(fragment)] struct Board;",
             "requires `#[worth_query(members = ..)]`",
         ),
@@ -56,4 +68,18 @@ fn a_marker_without_exactly_one_role_or_with_a_foreign_key_is_refused() {
         let message = refusal(source);
         assert!(message.contains(expected), "{source}: {message}");
     }
+}
+
+#[test]
+fn a_derived_schema_root_dispatches_declared_correction_members() {
+    let input = syn::parse_str(
+        "#[worth_query(schema, owner = \"macros\", members(Contribution))] struct BoardSchema;",
+    )
+    .expect("the schema root parses");
+    let expansion = expand(&input).expect("the schema root expands").to_string();
+    assert!(
+        expansion.contains("fn visit_correction")
+            && expansion.contains("visit_correction (Self , source_binding , visitor)"),
+        "{expansion}"
+    );
 }

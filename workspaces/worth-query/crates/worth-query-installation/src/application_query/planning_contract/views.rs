@@ -37,10 +37,14 @@ pub(super) fn relation(
     if index < root_count {
         return root_relation(meaning, index);
     }
+    let result_index = index - root_count;
+    if let Some(relation) = meaning.relations.get(result_index) {
+        return Some(result_relation_view(relation));
+    }
     meaning
-        .relations
-        .get(index - root_count)
-        .map(result_relation_view)
+        .related_predicates
+        .get(result_index.saturating_sub(meaning.relations.len()))
+        .map(related_predicate_relation_view)
 }
 
 pub(super) fn root_relation_count(meaning: &WorthQueryInstalledGraphReadMeaning) -> usize {
@@ -177,6 +181,23 @@ pub(super) fn result_relation_view(
     }
 }
 
+pub(super) fn related_predicate_relation_view(
+    predicate: &crate::application_query::WorthQueryInstalledRelatedPredicate,
+) -> WorthQueryReadGraphRelationView<'_> {
+    WorthQueryReadGraphRelationView {
+        source_kind: worth_query_declaration::facade::application_query::ApplicationQueryRootPathSourceKind::Stored,
+        relation: predicate.relation(),
+        complete_closure: false,
+        aggregate_selection: false,
+        direction: match predicate.direction() {
+            RelationDirection::Forward => WorthQueryReadGraphRelationDirection::Forward,
+            RelationDirection::Reverse => WorthQueryReadGraphRelationDirection::Reverse,
+        },
+        cardinality: ApplicationQueryCardinality::Many,
+        depth: 1,
+    }
+}
+
 pub(super) fn guard_view(
     guard: &WorthQueryInstalledRootPathGuard,
 ) -> WorthQueryReadGraphGuardView<'_> {
@@ -199,7 +220,8 @@ pub(super) fn predicate_view(
             aspect: predicate.aspect_key(),
             field: predicate.field_key(),
         },
-        parameter: Some(predicate.parameter()),
+        parameter: predicate.parameter(),
+        literal_value: predicate.literal_value(),
         scalar_family: predicate.scalar_family(),
     }
 }
@@ -213,6 +235,7 @@ pub(super) fn relation_predicate_view(
             |(aspect, field)| WorthQueryReadGraphPredicateTarget::Field { aspect, field },
         ),
         parameter: predicate.parameter(),
+        literal_value: None,
         scalar_family: predicate.scalar_family(),
     }
 }

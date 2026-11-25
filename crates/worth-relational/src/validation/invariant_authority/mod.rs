@@ -1,8 +1,6 @@
-mod custom_invariant_provenance_diagnostic_projection;
 mod diagnostic_projection;
 pub(crate) mod failure_diagnostics;
-mod invariant_violation_diagnostic_projection;
-pub(crate) mod preparation_diagnostics;
+pub(crate) use worth_relational_publication::internal_port::validation::invariant_authority::preparation_diagnostics;
 
 use crate::publication::bundle::PublicationStage;
 use crate::runtime::RelationalRuntime;
@@ -24,15 +22,6 @@ impl RelationalRuntime {
         self.certification_invariant_authority()
             .enforce_certification_boundary(execution)
     }
-
-    pub(crate) fn publish_invariant_preparation_diagnostics(
-        &self,
-        results: &[InvariantExecutionResult],
-    ) {
-        for result in results {
-            emit_preparation_diagnostics(self, result);
-        }
-    }
 }
 
 /// Runtime authority for the explicit certification boundary.
@@ -52,7 +41,12 @@ impl<'runtime> CertificationInvariantAuthority<'runtime> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<InvariantExecutionResult, TransactionCommitError> {
         let result = self.runtime.validation().certification_state(execution)?;
-        emit_preparation_diagnostics(self.runtime, &result);
+        emit_preparation_diagnostics(
+            self.runtime
+                .publication_authority()
+                .preparation_diagnostics(),
+            &result,
+        );
         let collect_all = emit_collect_all_failure_diagnostics(self.runtime, &result);
         if let Some(failure) = result.summary().publication_failure() {
             if !collect_all {

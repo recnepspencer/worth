@@ -49,4 +49,41 @@ where
                 |request, identities, staged, selected| super::super::authorization::prepare_capability_selected(&phase, request, identities, staged, selected))
         }).map_err(WorthQueryApplicationRequestMutationDenial::ExecutionRequest)?
     }
+
+    /// Borrowed-phase counterpart to [`Self::prepare_capability_in_program`],
+    /// metering preparation and idempotency checks within the caller's phase.
+    pub fn prepare_capability_in_program_in_advancement<'request, Program>(
+        &'request mut self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
+        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<
+        WorthQueryApplicationProgramMutationPreparation<
+            'request,
+            'application,
+            Schema,
+            Intent::Binding,
+            Program,
+        >,
+        WorthQueryApplicationRequestMutationDenial,
+    >
+    where
+        Program: ApplicationProgramDefinition<Schema>,
+    {
+        phase
+            .checked_execution_request_for(self.request.application.product_runtime())
+            .map_err(WorthQueryApplicationRequestMutationDenial::ExecutionRequest)?;
+        let mut work = worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork::NotStarted;
+        self.prepare_in_program_using(
+            phase,
+            application,
+            &mut work,
+            allocation_policy,
+            |request, identities, staged, selected| {
+                super::super::authorization::prepare_capability_selected(
+                    phase, request, identities, staged, selected,
+                )
+            },
+        )
+    }
 }

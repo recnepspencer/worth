@@ -1,7 +1,8 @@
 //! Only the closed physical-fresh recipe can issue original initialization.
 use super::RelationalInitialInputsRefusal as Refusal;
-use crate::branch::RelationalBranchRootSchemaAuthority;
+use crate::branch::root::schema::RelationalBranchRootSchemaAuthority;
 use crate::durability::medium::{RelationalDurableColdSource, RelationalDurableReadProtection};
+use crate::runtime::state::runtime_state::WeakRelationalRuntimeState;
 use crate::runtime::RelationalRuntime;
 use std::sync::{Arc, Weak};
 use worth_execution::ExecutionRequest;
@@ -9,7 +10,7 @@ use worth_proof::{AuthorityMarker, FreshNativeInitialization};
 
 #[derive(Debug)]
 pub struct RelationalFreshInitialization {
-    runtime: Weak<crate::runtime::RelationalRuntimeState>,
+    runtime: WeakRelationalRuntimeState,
     source: Weak<dyn RelationalDurableColdSource>,
     birth: Arc<RelationalBranchRootSchemaAuthority>,
 }
@@ -77,7 +78,7 @@ impl RelationalFreshInitialization {
             .check_live()
             .map_err(|cause| Refusal::Request(cause.into()))?;
         let source = runtime.durability.cold_source().ok_or(Refusal::Missing)?;
-        if self.runtime.as_ptr() != runtime.state_binding().as_ptr()
+        if !self.runtime.ptr_eq(&runtime.state_binding())
             || !std::sync::Weak::ptr_eq(&self.source, &Arc::downgrade(&source))
             || runtime.history().latest_commit().is_some()
         {

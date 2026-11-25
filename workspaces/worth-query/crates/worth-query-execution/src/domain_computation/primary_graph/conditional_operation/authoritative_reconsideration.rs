@@ -87,7 +87,7 @@ pub(super) fn deliver_authoritative_commits(
     for touched in &commits {
         // Bridge deliveries only feed Signal-hosted nodes. Which wakes are
         // reconsidered is decided by the owner's retained touches.
-        let delivered = match deliver_commit_dependencies(
+        let mut delivered = match deliver_commit_dependencies(
             phase
                 .request_for_owner(truth.owner_identity())
                 .expect("private conditional progression uses its admitted runtime"),
@@ -106,6 +106,8 @@ pub(super) fn deliver_authoritative_commits(
                 return Err(failure.cause);
             }
         };
+        let mut direct_for_commit = pending.take_direct_for_commit(touched.commit);
+        delivered.append(&mut direct_for_commit);
         for wake in wakes.iter_mut().filter(|wake| {
             touched.touches(&super::lifecycle::source_entity(
                 wake.due.source_record_identity(),

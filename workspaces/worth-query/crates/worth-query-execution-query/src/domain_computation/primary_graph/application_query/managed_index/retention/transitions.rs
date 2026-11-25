@@ -6,7 +6,47 @@ use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort
 use WorthQueryManagedIndexLifecycle as Status;
 use WorthQueryManagedIndexLifecycleDenial as Denial;
 
+/// Atomic outcome of `ensure_index_ready` claiming a registration under its lock.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum EnsureReadyClaim {
+    AlreadyReady,
+    BuildClaimed(u64),
+}
+
+fn decide_ensure_ready_claim(status: Status, epoch: u64) -> Result<EnsureReadyClaim, Denial> {
+    match status {
+        Status::Ready => Ok(EnsureReadyClaim::AlreadyReady),
+        Status::Created => epoch
+            .checked_add(1)
+            .map(EnsureReadyClaim::BuildClaimed)
+            .ok_or(Denial::EpochExhausted),
+        Status::Rebuilding => Err(Denial::BuildInProgress),
+        Status::Disposed => Err(Denial::Disposed),
+        Status::Evicted | Status::Failed => Err(Denial::NotReady),
+    }
+}
+
 impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> ManagedIndexState<S, I> {
+    fn check_build_context(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        selected: &WorthQuerySelectedProductOperation<'_, S>,
+    ) -> Result<(), Denial> {
+        execution
+            .consult()
+            .map_err(|cause| Denial::Execution(cause.into()))?;
+        if selected.application().runtime.authority_identity() != self.runtime
+            || selected.product().observation().lifecycle_incarnation() != self.incarnation
+            || !self
+                .adapter
+                .installed()
+                .is_installed_in(selected.application().installed_schema())
+        {
+            return Err(Denial::ForeignAssociation);
+        }
+        Ok(())
+    }
+
     pub fn holds_ready(&self, epoch: u64, root: &Arc<ReadyIndex<S, I>>) -> bool {
         let matches = {
             let state = self
@@ -23,23 +63,42 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> ManagedIndexSta
         matches && root.cache.payload().is_some()
     }
 
+    /// Atomically checks readiness under the retention lock and claims a cold
+    /// build ONLY from `Created`. Returns `AlreadyReady` for `Ready`, refuses
+    /// `Evicted`/`Failed` with `NotReady`, `Rebuilding` with `BuildInProgress`,
+    /// and `Disposed` with `Disposed`.
+    pub fn claim_ready_or_begin_created_build(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        selected: &WorthQuerySelectedProductOperation<'_, S>,
+    ) -> Result<EnsureReadyClaim, Denial> {
+        self.check_build_context(execution, selected)?;
+        let mut state = self
+            .retained
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        match decide_ensure_ready_claim(state.status, state.epoch)? {
+            EnsureReadyClaim::AlreadyReady => Ok(EnsureReadyClaim::AlreadyReady),
+            EnsureReadyClaim::BuildClaimed(epoch) => {
+                state.epoch = epoch;
+                state.current = selected.product().selected_commit().clone();
+                state.status = Status::Rebuilding;
+                let old = state.root.take();
+                drop(state);
+                if let Some(old) = old {
+                    old.retire();
+                }
+                Ok(EnsureReadyClaim::BuildClaimed(epoch))
+            }
+        }
+    }
+
     pub fn begin_build(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         selected: &WorthQuerySelectedProductOperation<'_, S>,
     ) -> Result<u64, Denial> {
-        execution
-            .consult()
-            .map_err(|cause| Denial::Execution(cause.into()))?;
-        if selected.application().runtime.authority_identity() != self.runtime
-            || selected.product().observation().lifecycle_incarnation() != self.incarnation
-            || !self
-                .adapter
-                .installed()
-                .is_installed_in(selected.application().installed_schema())
-        {
-            return Err(Denial::ForeignAssociation);
-        }
+        self.check_build_context(execution, selected)?;
         let mut state = self
             .retained
             .lock()
@@ -182,5 +241,42 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> ManagedIndexSta
         if let Some(old) = old {
             old.retire();
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn ensure_ready_claim_only_builds_from_created_and_refuses_other_non_ready_states() {
+        assert_eq!(
+            decide_ensure_ready_claim(Status::Created, 0).unwrap(),
+            EnsureReadyClaim::BuildClaimed(1)
+        );
+        assert_eq!(
+            decide_ensure_ready_claim(Status::Ready, 4).unwrap(),
+            EnsureReadyClaim::AlreadyReady
+        );
+        assert!(matches!(
+            decide_ensure_ready_claim(Status::Evicted, 4),
+            Err(Denial::NotReady)
+        ));
+        assert!(matches!(
+            decide_ensure_ready_claim(Status::Failed, 4),
+            Err(Denial::NotReady)
+        ));
+        assert!(matches!(
+            decide_ensure_ready_claim(Status::Rebuilding, 4),
+            Err(Denial::BuildInProgress)
+        ));
+        assert!(matches!(
+            decide_ensure_ready_claim(Status::Disposed, 4),
+            Err(Denial::Disposed)
+        ));
+        assert!(matches!(
+            decide_ensure_ready_claim(Status::Created, u64::MAX),
+            Err(Denial::EpochExhausted)
+        ));
     }
 }

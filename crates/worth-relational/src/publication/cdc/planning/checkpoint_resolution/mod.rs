@@ -1,7 +1,7 @@
 mod basis;
 mod durable;
 mod resolution;
-mod validation;
+pub(crate) use worth_relational_publication::internal_port::publication::cdc::planning::checkpoint_resolution::validation;
 
 #[cfg(test)]
 mod tests;

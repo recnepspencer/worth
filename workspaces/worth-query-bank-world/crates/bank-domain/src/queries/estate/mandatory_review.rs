@@ -16,6 +16,8 @@ use super::{
     mandatory_review_rows::{EstateRow, ReviewRow, ReviewerRow},
 };
 
+worth_query_decl::facade::worth_query_disclosure_classification!(EstateMandatoryReviewDisclosure);
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct EstateMandatoryReviewQueryParameters;
 
@@ -99,7 +101,7 @@ fn disclosure_contract() -> ApplicationQueryDisclosureContract {
     type Q = EstateMandatoryReviewQuery;
     let influence = ApplicationQueryInfluenceContract::forbid_all();
     ApplicationQueryDisclosureContract::governed_by(
-        "estate-mandatory-review",
+        EstateMandatoryReviewDisclosure,
         ViewEstateMandatoryReviewCapability::reference(),
     )
     .disclose_field_by(EstateRow::estate::<Q>(), field(), influence.clone())

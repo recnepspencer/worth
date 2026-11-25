@@ -1,6 +1,8 @@
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
+pub(crate) use worth_relational_branch::internal_port::runtime::state::subsystems::services::sequence::origin;
+
 /// Ten decimal digits; changing text width requires another nine billion
 /// instances. The first ten-digit id is the canonical artifact frame, which no
 /// live runtime is issued.
@@ -53,8 +55,24 @@ impl RuntimeSequenceState {
         .ok()
     }
 
+    pub(super) fn origin(&self) -> origin::RelationalRuntimeOrigin {
+        origin::RelationalRuntimeOrigin::of(&self.next_transaction_id)
+    }
+
     pub(super) fn runtime_instance_id(&self) -> u64 {
         self.runtime_instance_id
+    }
+
+    pub(super) fn detached_preserving_runtime_id(&self) -> Self {
+        Self {
+            runtime_instance_id: self.runtime_instance_id,
+            next_transaction_id: Arc::new(AtomicU64::new(
+                self.next_transaction_id.load(Ordering::Relaxed),
+            )),
+            next_proposal_ordinal: Arc::new(AtomicU64::new(
+                self.next_proposal_ordinal.load(Ordering::Relaxed),
+            )),
+        }
     }
 }
 

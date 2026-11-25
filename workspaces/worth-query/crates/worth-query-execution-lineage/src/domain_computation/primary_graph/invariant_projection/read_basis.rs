@@ -29,7 +29,7 @@ pub struct ProjectionResolvedEntity {
     pub phase: Option<RelationalAppliedCandidateReadQualification>,
 }
 
-impl NativeProjectionRead<'_> {
+impl<'r> NativeProjectionRead<'r> {
     pub fn origin<'a>(
         &self,
         snapshot: &'a SnapshotHandle,
@@ -69,6 +69,15 @@ impl NativeProjectionRead<'_> {
                 .proposed_version_id(),
         }
     }
+    /// The applied candidate this read borrows, for the read's whole life.
+    pub fn applied_pin_lent(
+        &self,
+    ) -> Option<&'r RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>> {
+        match self {
+            Self::Applied { candidate, .. } => Some(candidate),
+            Self::Committed(_) => None,
+        }
+    }
     pub fn applied_pin(
         &self,
     ) -> Option<&RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>> {
@@ -78,10 +87,18 @@ impl NativeProjectionRead<'_> {
         }
     }
     /// A successor round's own-output view, when this read serves one.
-    pub fn own_outputs(&self) -> Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>{
+    pub fn own_outputs(&self) -> Option<&'r OwnOutputOverlay> {
         match self {
             Self::Applied { own_outputs, .. } => *own_outputs,
             Self::Committed(_) => None,
+        }
+    }
+    /// The committed runtime this read borrows, for the read's whole life:
+    /// a nested committed read lends it without holding the reader.
+    pub fn committed_runtime_lent(&self) -> Option<&'r RelationalRuntime> {
+        match self {
+            Self::Committed(runtime) => Some(runtime),
+            Self::Applied { .. } => None,
         }
     }
     pub fn committed_runtime(&self) -> Option<&RelationalRuntime> {
@@ -124,6 +141,23 @@ impl NativeProjectionRead<'_> {
                 own_outputs: Some(own),
                 ..
             } => own.head_for(entity).map(|head| head.project_candidate()),
+            _ => None,
+        };
+        own.or_else(|| self.projection(snapshot))
+    }
+    /// The projection one relation is read at: for a successor round, a
+    /// relation its own chain linked or unlinked is read as it was at the
+    /// chain head (#277), as its adjacency is served.
+    pub fn projection_of_relation(
+        &self,
+        snapshot: &SnapshotHandle,
+        relation: worth_relational::facade::identity::RelationId,
+    ) -> Option<VisibilityProjectionView> {
+        let own = match self {
+            Self::Applied {
+                own_outputs: Some(own),
+                ..
+            } if own.relations().covers(relation) => Some(own.head().project_candidate()),
             _ => None,
         };
         own.or_else(|| self.projection(snapshot))

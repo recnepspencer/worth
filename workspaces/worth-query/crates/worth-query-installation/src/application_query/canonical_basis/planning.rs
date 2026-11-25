@@ -42,6 +42,11 @@ pub(in crate::application_query) fn prepare_planning_basis(
         &mut entries,
         |locus, value| text(locus, value),
     );
+    crate::application_query::WorthQueryInstalledRelatedPredicate::append_canonical(
+        graph.related_predicates(),
+        &mut entries,
+        |locus, value| text(locus, value),
+    );
     append_guards(&mut entries, graph);
     append_ordering(&mut entries, graph);
     entries.push(unsigned(
@@ -148,6 +153,7 @@ fn append_predicates(
         (
             predicate.target,
             predicate.parameter,
+            predicate.literal_value,
             predicate.scalar_family.canonical_name(),
         )
     });
@@ -159,6 +165,7 @@ fn append_predicates(
                 match predicate.target {
                     crate::application_query::WorthQueryReadGraphPredicateTarget::EntityIdentity => "entity-equal-parameter",
                     crate::application_query::WorthQueryReadGraphPredicateTarget::Field { .. } if predicate.parameter.is_some() => "equal-parameter",
+                    crate::application_query::WorthQueryReadGraphPredicateTarget::Field { .. } if predicate.literal_value.is_some() => "equal-literal",
                     crate::application_query::WorthQueryReadGraphPredicateTarget::Field { .. } => "field-absent",
                 },
             ),
@@ -179,6 +186,12 @@ fn append_predicates(
         }
         if let Some(parameter) = predicate.parameter {
             entries.push(text(format!("{path}.parameter"), parameter));
+        }
+        if let Some(expected) = predicate.literal_value {
+            entries.push(text(
+                format!("{path}.expected"),
+                worth_foundational::facade::prepare_aspect_value_identity_basis(expected).as_str(),
+            ));
         }
     }
 }

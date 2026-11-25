@@ -60,8 +60,9 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             before_pin,
             &pin,
             self,
+            candidate,
         )?;
-        let crate::domain_computation::primary_graph::application_attempt::InspectedAuthoredApplication { writer, batch, content, roles, demands } = prepared;
+        let crate::domain_computation::primary_graph::application_attempt::InspectedAuthoredApplication { writer, batch, content, roles, naming, demands } = prepared;
         // Retain custody before append: a cold-symbol retry must abort this
         // exact real session even when Native rejects the current suffix.
         let position = self.applied_position() + 1;
@@ -77,6 +78,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             &content,
             vec![batch],
             roles,
+            naming,
         ) {
             if let Some((target, earlier, later)) = cause.authored_stage_conflict() {
                 let ordinal = |position: usize| {

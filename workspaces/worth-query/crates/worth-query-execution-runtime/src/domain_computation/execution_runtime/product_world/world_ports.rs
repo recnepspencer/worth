@@ -83,7 +83,7 @@ impl super::WorthQueryProductRuntime {
         &self,
         body: impl for<'owner> FnOnce(RuntimeWorldExecutionPlacement<'owner>) -> R,
     ) -> Result<R, crate::domain_computation::primary_graph::WorthQueryAdvancementDenial> {
-        self.owner.publication_port().with_execution_placement(body).map_err(|_| {
+        self.fields().owner.publication_port().with_execution_placement(body).map_err(|_| {
             crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(
                 crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::NoActiveExecutionScope,
             )

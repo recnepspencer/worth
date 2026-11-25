@@ -61,6 +61,23 @@ and iteration cost through a concrete need. Judge the actual consumer and
 tradeoff, not a company's reputation or an "enterprise grade" label. Unfamiliar
 or complex code is not itself a defect; explain what is unnecessary and why.
 
+## Blocker allowlist and review-round freeze
+
+- **Blocker allowlist:** Landing blockers are strictly production defects
+  (correctness, soundness, authority, concurrency/deadlock, durability/data
+  loss, resource bounds, public contract), architectural ownership violations
+  (`GAP`, forbidden tokens/paths), or tests that genuinely cannot fail if the
+  defect returns or fail flakily under ordinary repo/CI runs. Toolchain
+  limitations (`rustdoc` ignoring `compile_fail,EXXXX` when a positive control
+  and `compile_fail` share a fixture), synthetic test-env nits (e.g.,
+  punctuation in `CARGO_TARGET_DIR`, hand-mutated `.rlib` mtimes), and requests
+  requiring custom compiler drivers, parsers, allocator models, or >50-line
+  bespoke test harnesses belong in non-blocking `Notes / Advisories`.
+- **Round 3+ production-freeze rule:** Rounds 1–2 perform full adversarial
+  review. Round 3+ re-checks verify prior production blockers and production
+  regression safety only — do not introduce new test-harness or
+  coverage-expansion blockers.
+
 ## Required platform review skills
 
 Read skills/qa-loop/SKILL.md, skills/qa-tests/SKILL.md and
@@ -103,6 +120,15 @@ certification paths in performance findings.
 
 Mandatory resource accounting needs an explicit product requirement or a
 measured failure requiring that remedy; hypothetical exhaustion is insufficient.
+
+Formal verification (**Verus** and **Lean 4**, alongside TLA+/DST) is required
+when relevant: whenever the governing spec names a formal contract, or when the
+diff implements or alters pure graph/database state transitions, storage/codec
+invariants, managed indexes, authorization rule IR, invalidation soundness, or
+unbounded history/merge/naming invariants. Verify `tools/verus/run_verus.py`
+(zero `admit()` or unjustified `#[verifier::external_body]`) and/or
+`tools/lean/run_lean.py` (zero `sorry` or unreviewed custom `axiom`), keeping
+formal targets isolated from normal `./loop edit` compile closure.
 
 ## Compile time is sacred
 

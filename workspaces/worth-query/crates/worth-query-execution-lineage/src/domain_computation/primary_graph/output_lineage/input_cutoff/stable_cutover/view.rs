@@ -1,6 +1,6 @@
 //! Read-only views of one owner-published stable lineage row.
 
-use super::{PublishedStableLineage, RecordedOutput};
+use super::{PublishedStableLineage, RecordedOutput, SharedRecordedOutputCell};
 use std::sync::Arc;
 use worth_runtime_world::facade::ProductBranchObservation;
 
@@ -15,7 +15,7 @@ impl PublishedStableLineage {
         observation: &ProductBranchObservation,
     ) -> Self {
         Self {
-            cell: Arc::clone(cell),
+            cell: SharedRecordedOutputCell::from_arc(Arc::clone(cell)),
             observation: observation.clone(),
         }
     }
@@ -25,7 +25,7 @@ impl PublishedStableLineage {
             .expect("stable publication filled its immutable row")
     }
     pub fn same_publication(&self, other: &Self) -> bool {
-        Arc::ptr_eq(&self.cell, &other.cell) && self.observation == other.observation
+        self.cell.ptr_eq(&other.cell) && self.observation == other.observation
     }
     pub fn exact_settlement(&self) -> &Arc<super::super::super::RecordedSettlementIdentity> {
         &self.recorded().settlement_identity

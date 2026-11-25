@@ -10,17 +10,7 @@ pub(crate) trait SchemaSource {
     fn schema_registry(&self) -> &RelationalSchemaRegistry;
 }
 
-pub(crate) trait AspectPlanSource {
-    fn aspect_plan_catalog(&self) -> &AspectContractPlanCatalog;
-    fn entity_aspect_plan(
-        &self,
-        kind_id: crate::identity::data::KindId,
-    ) -> Option<&LoweredAspectContractPlan>;
-    fn relation_aspect_plan(
-        &self,
-        kind_id: crate::identity::data::KindId,
-    ) -> Option<&LoweredAspectContractPlan>;
-}
+pub(crate) use crate::schema::aspect_plan_source::AspectPlanSource;
 
 /// Schema truth is read from the configuration this handle holds in force, so
 /// registry and contract runtime answers always come from the same installed
@@ -69,26 +59,6 @@ impl SchemaSource for crate::branch::RelationalBranchRootSchemaAuthority {
     }
 }
 
-impl AspectPlanSource for crate::branch::RelationalBranchRootSchemaAuthority {
-    fn aspect_plan_catalog(&self) -> &AspectContractPlanCatalog {
-        self.aspect_plans()
-    }
-
-    fn entity_aspect_plan(
-        &self,
-        kind_id: crate::identity::data::KindId,
-    ) -> Option<&LoweredAspectContractPlan> {
-        crate::branch::RelationalBranchRootSchemaAuthority::entity_aspect_plan(self, kind_id)
-    }
-
-    fn relation_aspect_plan(
-        &self,
-        kind_id: crate::identity::data::KindId,
-    ) -> Option<&LoweredAspectContractPlan> {
-        crate::branch::RelationalBranchRootSchemaAuthority::relation_aspect_plan(self, kind_id)
-    }
-}
-
 impl SchemaSource for RelationalRuntimeConfig {
     fn schema_registry(&self) -> &RelationalSchemaRegistry {
         &self.schema.registry
@@ -124,27 +94,25 @@ impl RelationalRuntime {
     pub(crate) fn relation_integrity_plan(
         &self,
         kind_id: crate::identity::data::KindId,
-    ) -> Option<&LoweredRelationIntegrityPlan> {
-        self.schema_contract_runtime
-            .relation_integrity_registrations
-            .plan(&kind_id)
-    }
-}
+    ) -> Option<LoweredRelationIntegrityPlan> {
+        use worth_relational_contracts::internal_port::schema::{
+            aspect_plans::lower_relation_integrity_plans_for_compilation,
+            compilation_control::SchemaCompilationControl,
+        };
+        use worth_relational_contracts::internal_port::validation::data::catalog::append_relation_integrity_registrations;
 
-impl AspectPlanSource for AspectContractPlanCatalog {
-    fn aspect_plan_catalog(&self) -> &AspectContractPlanCatalog {
-        self
-    }
-    fn entity_aspect_plan(
-        &self,
-        kind_id: crate::identity::data::KindId,
-    ) -> Option<&LoweredAspectContractPlan> {
-        self.entity_plans.get(&kind_id)
-    }
-    fn relation_aspect_plan(
-        &self,
-        kind_id: crate::identity::data::KindId,
-    ) -> Option<&LoweredAspectContractPlan> {
-        self.relation_plans.get(&kind_id)
+        let control = SchemaCompilationControl::Configuration;
+        let plan = lower_relation_integrity_plans_for_compilation(self.schema_registry(), control)
+            .expect("installed schema lowers")
+            .relation_plans
+            .remove(&kind_id)?;
+        let mut expected = Vec::new();
+        append_relation_integrity_registrations(&plan, &mut expected, control)
+            .expect("installed native rules lower");
+        let installed = &self
+            .schema_contract_runtime
+            .relation_integrity_registrations;
+        assert!(expected.iter().all(|rule| installed.contains(rule)));
+        Some(plan)
     }
 }

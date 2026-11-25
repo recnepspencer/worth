@@ -289,8 +289,8 @@ impl super::super::WorthQueryPrimaryGraphProvider {
         ))
     }
 }
-pub fn finish_recovered(
-    store: &Arc<Mutex<WorthQueryUnpublishedIdempotencyStore>>,
+pub(in crate::domain_computation::primary_graph::provider) fn finish_recovered(
+    store: &SharedUnpublishedIdempotencyStore,
     handle: &ProductUnpublishedRecoveryHandle,
 ) {
     store
@@ -304,7 +304,7 @@ pub fn finish_recovered(
 }
 
 pub(super) fn finish_recovered_release(
-    store: &Arc<Mutex<WorthQueryUnpublishedIdempotencyStore>>,
+    store: &SharedUnpublishedIdempotencyStore,
     handle: &ProductUnpublishedRecoveryHandle,
     original: WorldReleasedOriginal,
 ) {

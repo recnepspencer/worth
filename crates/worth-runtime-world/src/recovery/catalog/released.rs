@@ -4,7 +4,7 @@ use crate::durability::WorldDurableMediumDenial as Denial;
 use crate::recovery::released_original::{
     ReleasedOriginalSlot, ReleasedOriginalSource, WorldReleasedOriginal, WorldReleasedOriginalPage,
 };
-use std::sync::{OnceLock, Weak};
+use std::sync::OnceLock;
 use worth_execution::{ExecutionMemoryReservation, ExecutionOrderedMapCell, ExecutionRequest};
 use worth_foundational::facade::{
     DurableProductBranchReference, MemoryProductBranchReference, RecordedProductBranchReference,
@@ -12,7 +12,7 @@ use worth_foundational::facade::{
 
 #[derive(Debug)]
 pub(crate) struct PreparedReleasedOriginal {
-    owner: Weak<Mutex<RecoveryCatalogState>>,
+    owner: WeakRecoveryCatalogState,
     slot: Arc<ReleasedOriginalSlot>,
     armed: bool,
 }
@@ -189,7 +189,7 @@ impl ProductUnpublishedRecoveryCatalog {
             .insert_owned_vacant_prepared(cell)
             .map_err(|_| Denial::Unavailable)?;
         Ok(PreparedReleasedOriginal {
-            owner: Arc::downgrade(&self.state),
+            owner: self.state.downgrade(),
             slot,
             armed: true,
         })

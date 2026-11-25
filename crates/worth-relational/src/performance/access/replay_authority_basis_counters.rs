@@ -1,5 +1,6 @@
 use super::PerformanceAccess;
 use crate::replay::data::{ReplayAuthorityBasisKind, ReplayVerificationLayer};
+use worth_relational_contracts::internal_port::performance::data::runtime_complexity_counters::RuntimeComplexityCountersOwnerPort as _;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ReplayLineageAuthorityIndexedSource {
@@ -10,7 +11,7 @@ pub(crate) enum ReplayLineageAuthorityIndexedSource {
 impl PerformanceAccess<'_> {
     pub(crate) fn count_replay_verification_layer(&self, layer: ReplayVerificationLayer) {
         self.counters.count(|counters| match layer {
-            ReplayVerificationLayer::DigestParity => counters.replay_digest_parity_checks += 1,
+            ReplayVerificationLayer::DigestParity => counters.count_replay_digest_parity(),
             ReplayVerificationLayer::SummaryParity => counters.replay_summary_parity_checks += 1,
             ReplayVerificationLayer::DeepArtifactParity => {
                 counters.replay_deep_artifact_parity_checks += 1

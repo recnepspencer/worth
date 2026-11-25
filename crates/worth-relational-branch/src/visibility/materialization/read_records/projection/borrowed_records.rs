@@ -1,0 +1,205 @@
+use super::VisibilityProjectionView;
+use crate::identity::data::{EntityId, KindId, RelationId};
+use crate::storage::data::RecordLifecycleState;
+use crate::visibility::snapshot_states::SnapshotStateBasis;
+use worth_foundational::facade::AuthoritativeRecordAspectState;
+use worth_relational_contracts::internal_port::schema::data::RelationalSchemaRegistryFieldsPort as _;
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum RelationalBorrowedRecordReadDenial {
+    ExactBasisRequired,
+    Execution(crate::execution::denial_cause::RelationalExecutionDenialCause),
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct RelationalEntityMetadata {
+    pub entity_id: EntityId,
+    pub kind_id: KindId,
+    pub lifecycle: RecordLifecycleState,
+}
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct RelationalRelationMetadata {
+    pub relation_id: RelationId,
+    pub kind_id: KindId,
+    pub lifecycle: RecordLifecycleState,
+    pub source: EntityId,
+    pub target: EntityId,
+}
+
+impl VisibilityProjectionView {
+    /// One owner-issued Work bound for the exact borrowed entity probe below.
+    /// The selected schema count is read from the pinned root without a walk.
+    pub fn exact_entity_state_read_work_bound(&self) -> Option<u64> {
+        let SnapshotStateBasis::Exact(basis) = &self.basis else {
+            return None;
+        };
+        Some(
+            38_u64.saturating_add(kind_lookup_work(
+                (*basis
+                    .projection_root()
+                    .schema_authority()
+                    .registry()
+                    .owner_entity_kinds())
+                .len(),
+            )),
+        )
+    }
+
+    /// Height of the schema-kind descent within the exact entity probe.
+    /// The probe's remaining 38 units validate/read the entity and are logical work.
+    pub fn exact_entity_state_read_navigation_work_bound(&self) -> Option<u64> {
+        let SnapshotStateBasis::Exact(basis) = &self.basis else {
+            return None;
+        };
+        Some(kind_lookup_work(
+            (*basis
+                .projection_root()
+                .schema_authority()
+                .registry()
+                .owner_entity_kinds())
+            .len(),
+        ))
+    }
+
+    /// One owner-issued Work bound for the exact borrowed relation probe.
+    pub fn exact_relation_metadata_read_work_bound(&self) -> Option<u64> {
+        let SnapshotStateBasis::Exact(basis) = &self.basis else {
+            return None;
+        };
+        Some(
+            39_u64.saturating_add(kind_lookup_work(
+                (*basis
+                    .projection_root()
+                    .schema_authority()
+                    .registry()
+                    .owner_relation_kinds())
+                .len(),
+            )),
+        )
+    }
+
+    /// The state borrow uses the same exact slot/kind descent as metadata.
+    /// The callback funds its own selected-field lookup and returned values.
+    pub fn exact_relation_state_read_work_bound(&self) -> Option<u64> {
+        self.exact_relation_metadata_read_work_bound()
+    }
+
+    /// Borrow the exact selected root's state without resolving owned kind names
+    /// or materializing a read record. A pinned old exact root remains eligible.
+    pub fn read_exact_entity_state<T>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        entity: EntityId,
+        project: impl FnOnce(RelationalEntityMetadata, Option<&AuthoritativeRecordAspectState>) -> T,
+    ) -> Result<Option<T>, RelationalBorrowedRecordReadDenial> {
+        let SnapshotStateBasis::Exact(basis) = &self.basis else {
+            return Err(RelationalBorrowedRecordReadDenial::ExactBasisRequired);
+        };
+        self.demand_regions_head(execution, [entity.partition_id])
+            .map_err(RelationalBorrowedRecordReadDenial::Execution)?;
+        let root = basis.projection_root();
+        let Some(partition) = self.admitted_head_region(entity.partition_id) else {
+            return Ok(None);
+        };
+        let Some(slot) = partition.entity_arena().get_slot(entity.slot_index()) else {
+            return Ok(None);
+        };
+        if !slot.is_live()
+            || (!entity.generation.is_zero() && slot.generation() != entity.generation_value())
+        {
+            return Ok(None);
+        }
+        let Some(kind_id) = slot.kind_id() else {
+            return Ok(None);
+        };
+        if !(*root.schema_authority().registry().owner_entity_kinds()).contains_key(&kind_id) {
+            return Ok(None);
+        }
+        let metadata = RelationalEntityMetadata {
+            entity_id: EntityId::new(
+                entity.partition_id,
+                entity.local_slot_value(),
+                slot.generation(),
+            ),
+            kind_id,
+            lifecycle: slot.lifecycle(),
+        };
+        Ok(Some(project(
+            metadata,
+            slot.extra().authoritative_aspect_state(),
+        )))
+    }
+
+    /// Exact metadata only; names and aspect values stay in the pinned root.
+    pub fn read_exact_relation_metadata(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        relation: RelationId,
+    ) -> Result<Option<RelationalRelationMetadata>, RelationalBorrowedRecordReadDenial> {
+        self.read_exact_relation_state(execution, relation, |metadata, _| metadata)
+    }
+
+    /// Borrow one exact-root physical relation without materializing a read
+    /// record, copying aspect payloads, or resolving owned kind names.
+    pub fn read_exact_relation_state<T>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        relation: RelationId,
+        project: impl FnOnce(RelationalRelationMetadata, Option<&AuthoritativeRecordAspectState>) -> T,
+    ) -> Result<Option<T>, RelationalBorrowedRecordReadDenial> {
+        let SnapshotStateBasis::Exact(basis) = &self.basis else {
+            return Err(RelationalBorrowedRecordReadDenial::ExactBasisRequired);
+        };
+        self.demand_regions_head(execution, [relation.partition_id])
+            .map_err(RelationalBorrowedRecordReadDenial::Execution)?;
+        let root = basis.projection_root();
+        let Some(partition) = self.admitted_head_region(relation.partition_id) else {
+            return Ok(None);
+        };
+        let Some(slot) = partition.relation_arena().get_slot(relation.slot_index()) else {
+            return Ok(None);
+        };
+        if !slot.is_live()
+            || (!relation.generation.is_zero() && slot.generation() != relation.generation_value())
+        {
+            return Ok(None);
+        }
+        let Some(kind_id) = slot.kind_id() else {
+            return Ok(None);
+        };
+        if !(*root.schema_authority().registry().owner_relation_kinds()).contains_key(&kind_id) {
+            return Ok(None);
+        }
+        let Some(endpoints) = &slot.extra().endpoints else {
+            return Ok(None);
+        };
+        let metadata = RelationalRelationMetadata {
+            relation_id: RelationId::new(
+                relation.partition_id,
+                relation.local_slot_value(),
+                slot.generation(),
+            ),
+            kind_id,
+            lifecycle: slot.lifecycle(),
+            source: endpoints.source,
+            target: endpoints.target,
+        };
+        Ok(Some(project(
+            metadata,
+            slot.extra().authoritative_aspect_state(),
+        )))
+    }
+}
+
+fn kind_lookup_work(entries: usize) -> u64 {
+    let mut levels = 1_u64;
+    let mut minimum = 1_usize;
+    while entries > minimum {
+        minimum = minimum.saturating_mul(6).saturating_add(5);
+        levels = levels.saturating_add(1);
+        if minimum == usize::MAX {
+            break;
+        }
+    }
+    levels.saturating_mul(11)
+}

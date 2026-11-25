@@ -10,10 +10,14 @@ use crate::domain_computation::primary_graph::WorthQueryApplicationInvariantProj
 
 mod current_intent;
 pub(in crate::domain_computation::primary_graph::conditional_operation) use current_intent::WorthQueryCurrentTemporalIntent;
+mod due_field;
+pub use due_field::{
+    WorthQueryNoTemporalDueField, WorthQueryTemporalDueField, WorthQueryTemporalDueFieldWriter,
+};
 mod invoker_contract;
 pub use invoker_contract::{
     WorthQueryTemporalInvocationFailure, WorthQueryTemporalInvocationFailureKind,
-    WorthQueryTemporalOperationInvoker,
+    WorthQueryTemporalOccurrenceOutcome, WorthQueryTemporalOperationInvoker,
 };
 
 /// Exact invariant and temporal-record mutation contract for wake re-entry.
@@ -31,6 +35,7 @@ pub struct WorthQueryTemporalOperationExecution<
     LifecycleField,
     LifecycleValue,
     Authorization = super::WorthQueryPublicTemporalOperationAuthorization,
+    DueField = WorthQueryNoTemporalDueField,
 > {
     pub(super) invariant: Arc<WorthQueryApplicationInvariantProjectionAuthority<Schema>>,
     pub(super) invoker: Arc<Invoker>,
@@ -40,6 +45,7 @@ pub struct WorthQueryTemporalOperationExecution<
     pub(super) active_lifecycle: LifecycleValue,
     pub(super) completed_lifecycle: LifecycleValue,
     pub(super) authorization: Authorization,
+    pub(super) due_field: DueField,
     marker: std::marker::PhantomData<
         fn(Input) -> (Operation, Scope, IntentEntity, IdentityValue, RevisionValue),
     >,
@@ -146,12 +152,144 @@ where
             active_lifecycle,
             completed_lifecycle,
             authorization,
+            due_field: WorthQueryNoTemporalDueField,
             marker: std::marker::PhantomData,
         })
     }
 
+    /// Configures the authoritative due-coordinate field written atomically
+    /// when [`WorthQueryTemporalOperationInvoker::next_occurrence`] reschedules
+    /// a recurring timed intent.
+    pub fn with_due_field<Field>(
+        self,
+        due_field: Field,
+    ) -> WorthQueryTemporalOperationExecution<
+        Schema,
+        Operation,
+        Input,
+        Scope,
+        Invoker,
+        IntentEntity,
+        IdentityField,
+        IdentityValue,
+        RevisionField,
+        RevisionValue,
+        LifecycleField,
+        LifecycleValue,
+        Authorization,
+        WorthQueryTemporalDueField<Field>,
+    >
+    where
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+                Entity = IntentEntity,
+            > + Copy
+            + Send
+            + Sync
+            + 'static,
+        Field::Binding: ApplicationScalarValueBinding<Value = Field::Value>
+            + worth_query_installation::facade::WorthQueryTemporalIntentDueValue,
+    {
+        WorthQueryTemporalOperationExecution {
+            invariant: self.invariant,
+            invoker: self.invoker,
+            identity_field: self.identity_field,
+            revision_field: self.revision_field,
+            lifecycle_field: self.lifecycle_field,
+            active_lifecycle: self.active_lifecycle,
+            completed_lifecycle: self.completed_lifecycle,
+            authorization: self.authorization,
+            due_field: WorthQueryTemporalDueField(due_field),
+            marker: std::marker::PhantomData,
+        }
+    }
+}
+
+impl<
+        Schema,
+        Operation,
+        Input,
+        Scope,
+        Invoker,
+        IntentEntity,
+        IdentityField,
+        IdentityValue,
+        RevisionField,
+        RevisionValue,
+        LifecycleField,
+        LifecycleValue,
+        Authorization,
+        DueField,
+    >
+    WorthQueryTemporalOperationExecution<
+        Schema,
+        Operation,
+        Input,
+        Scope,
+        Invoker,
+        IntentEntity,
+        IdentityField,
+        IdentityValue,
+        RevisionField,
+        RevisionValue,
+        LifecycleField,
+        LifecycleValue,
+        Authorization,
+        DueField,
+    >
+where
+    Invoker: WorthQueryTemporalOperationInvoker<Schema, Operation, Input, Scope>,
+    IdentityField: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+        Entity = IntentEntity,
+        Value = IdentityValue,
+    >,
+    IdentityField::Binding: ApplicationReadableScalarValueBinding<Value = IdentityValue>,
+    RevisionField: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+        Entity = IntentEntity,
+        Value = RevisionValue,
+    >,
+    RevisionField::Binding: ApplicationReadableScalarValueBinding<Value = RevisionValue>
+        + WorthQueryTemporalIntentRevisionValue,
+    LifecycleField: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+        Entity = IntentEntity,
+        Value = LifecycleValue,
+    >,
+    LifecycleField::Binding: ApplicationScalarValueBinding<Value = LifecycleValue>,
+{
     pub fn invoker_identity(&self) -> &'static str {
         Invoker::SEMANTIC_IDENTITY
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn with_authorization_and_due_field(
+        invariant: Arc<WorthQueryApplicationInvariantProjectionAuthority<Schema>>,
+        invoker: Invoker,
+        identity_field: IdentityField,
+        revision_field: RevisionField,
+        lifecycle_field: LifecycleField,
+        active_lifecycle: LifecycleValue,
+        completed_lifecycle: LifecycleValue,
+        authorization: Authorization,
+        due_field: DueField,
+    ) -> Result<Self, &'static str> {
+        let identity = Invoker::SEMANTIC_IDENTITY;
+        if identity.is_empty()
+            || identity.trim() != identity
+            || identity.chars().any(char::is_whitespace)
+        {
+            return Err("invalid-temporal-operation-invoker-identity");
+        }
+        Ok(Self {
+            invariant,
+            invoker: Arc::new(invoker),
+            identity_field,
+            revision_field,
+            lifecycle_field,
+            active_lifecycle,
+            completed_lifecycle,
+            authorization,
+            due_field,
+            marker: std::marker::PhantomData,
+        })
     }
 
     pub(super) fn validate_publication(
@@ -160,6 +298,7 @@ where
     ) -> Result<(), String>
     where
         Schema: ApplicationSchema,
+        DueField: WorthQueryTemporalDueFieldWriter<Schema, IntentEntity>,
     {
         if !self.invariant.belongs_to_installation(
             publication.bootstrap.runtime_authority,
@@ -167,24 +306,23 @@ where
         ) {
             return Err("temporal invariant authority belongs to another installation".into());
         }
+        let members = publication
+            .installed_schema
+            .installed_declaration()
+            .members();
         for field in [
             field_coordinates(&self.identity_field),
             field_coordinates(&self.revision_field),
             field_coordinates(&self.lifecycle_field),
         ] {
-            if !publication
-                .installed_schema
-                .installed_declaration()
-                .members()
-                .iter()
-                .any(|member| field.matches(member))
-            {
+            if !members.iter().any(|member| field.matches(member)) {
                 return Err(format!(
                     "temporal operation field `{}` is not installed",
                     field.field
                 ));
             }
         }
+        self.due_field.validate_installed(members)?;
         Ok(())
     }
 }

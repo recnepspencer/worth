@@ -3,14 +3,17 @@
 //! and every persisted reference must name such a birth.
 
 use std::collections::BTreeMap;
+use worth_relational_contracts::internal_port::lineage::data::events::LineageEventRecordFieldsPort as _;
+use worth_relational_contracts::internal_port::lineage::data::naming::PersistentNameIdentityOwnerPort as _;
+use worth_relational_lineage::internal_port::lineage::index::batch::PersistentNameCommittedBatchFixturePort as _;
 
 use crate::facade::lineage::{
     admit_persisted_name, rebuild_name_index_from_durable_log, LineageEventKind,
     PersistentNameDurabilityError, PersistentNameHolder, PersistentNameIdentity, PersistentNameKey,
     PersistentNameReferenceRole, PersistentNameSubjectKind,
 };
-use crate::lineage::authority::PersistentNameMintingAuthority;
 use crate::identity::data::{EntityId, PartitionId};
+use crate::lineage::authority::PersistentNameMintingAuthority;
 
 use super::name_durable_world::durable_naming_history;
 use super::posture_fixtures::{cad_scheme_registry, face_birth};
@@ -83,10 +86,10 @@ fn bare_kept_names_and_carriers_without_verified_births_refuse_typed() {
     let refused = history.rebuild_mutated(|commits| {
         let restore = commits
             .iter_mut()
-            .flat_map(|(batch, _)| batch.lineage_events.iter_mut())
+            .flat_map(|(batch, _)| batch.lineage_events_mut_for_test().iter_mut())
             .find(|event| event.kind() == LineageEventKind::Restore)
             .expect("the history restores a name");
-        restore.kept_name = Some(fabricated());
+        (*restore.owner_kept_name_mut()) = Some(fabricated());
     });
     assert_eq!(
         refused,
@@ -101,12 +104,12 @@ fn bare_kept_names_and_carriers_without_verified_births_refuse_typed() {
             .iter_mut()
             .find(|(batch, _)| {
                 batch
-                    .carriers
+                    .carriers_for_test()
                     .contains_key(&PersistentNameKey::Entity(history.split_child))
             })
             .unwrap();
         batch
-            .carriers
+            .carriers_mut_for_test()
             .get_mut(&PersistentNameKey::Entity(history.split_child))
             .unwrap()
             .insert(fabricated());
@@ -122,7 +125,7 @@ fn bare_kept_names_and_carriers_without_verified_births_refuse_typed() {
     let refused = history.rebuild_mutated(|commits| {
         let (batch, _) = &mut commits[2];
         batch
-            .carriers
+            .carriers_mut_for_test()
             .insert(PersistentNameKey::Entity(fabricated()), Default::default());
     });
     assert_eq!(
@@ -148,7 +151,7 @@ fn a_digest_consistent_birth_with_an_unborn_parent_refuses_typed() {
             _ => unreachable!(),
         },
     );
-    let minted = PersistentNameMintingAuthority::mint_commit_births(
+    let minted = PersistentNameMintingAuthority::mint_commit_births_for_test(
         &cad_scheme_registry(),
         &BTreeMap::from([(fabricated(), holder)]),
         &Default::default(),
@@ -159,11 +162,11 @@ fn a_digest_consistent_birth_with_an_unborn_parent_refuses_typed() {
     let refused = history.rebuild_mutated(|commits| {
         let birth = commits[1]
             .0
-            .lineage_events
+            .lineage_events_mut_for_test()
             .iter_mut()
             .find(|event| event.name_birth().is_some())
             .unwrap();
-        birth.name_birth = Some(minted);
+        (*birth.owner_name_birth_mut()) = Some(minted);
     });
     assert_eq!(
         refused,

@@ -39,13 +39,14 @@ impl WorthQueryProductRuntime {
         cancellation: &RuntimeWorldCancellationToken,
         mut output_lineage: Option<std::sync::Arc<dyn crate::ports::ForkLineagePort>>,
     ) -> Result<WorthQueryProductBranchCreationOutcome, WorthQueryProductBranchCreationDenial> {
-        if source.observation().owner_identity() != self.owner.owner_identity() {
+        if source.observation().owner_identity() != self.fields().owner.owner_identity() {
             return Err(WorthQueryProductBranchCreationDenial::World(
                 RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchAdmissionDenial::ForeignOwner),
             ));
         }
         let mut reservation = Some(
-            self.activations
+            self.fields()
+                .activations
                 .reserve_for_source_program(source_program)
                 .map_err(|denial| match denial {
                     WorthQueryProductActivationDenial::CapacityExhausted => {
@@ -57,7 +58,7 @@ impl WorthQueryProductRuntime {
                     _ => WorthQueryProductBranchCreationDenial::CoordinationUnavailable,
                 })?,
         );
-        let outcome = match &self.branch_program_source_owner {
+        let outcome = match &self.fields().branch_program_source_owner {
             Some(owner) => {
                 let revision = source_program
                     .ok_or(WorthQueryProductBranchCreationDenial::ProgramSupportUnavailable)?;
@@ -81,13 +82,16 @@ impl WorthQueryProductRuntime {
                     reservation.take().expect("original coordination"),
                     output_lineage.take(),
                 )?;
-                self.owner.branch_port().create_home_product_branch(
-                    execution,
-                    request.with_completion(Box::new(completion)),
-                    cancellation,
-                )
+                self.fields()
+                    .owner
+                    .branch_port()
+                    .create_home_product_branch(
+                        execution,
+                        request.with_completion(Box::new(completion)),
+                        cancellation,
+                    )
             }
-            None => self.owner.branch_port().create_product_branch(
+            None => self.fields().owner.branch_port().create_product_branch(
                 execution,
                 source.observation().clone(),
                 intent,
@@ -125,7 +129,7 @@ impl WorthQueryProductRuntime {
             RuntimeWorldBranchCreationOutcome::ProductUnpublished(effects) => {
                 let recovery = crate::basis::WorthQueryProductBranchCreationRecovery::new(
                     effects,
-                    self.owner.recovery_port(),
+                    self.fields().owner.recovery_port(),
                     self.clone(),
                 );
                 WorthQueryProductBranchCreationOutcome::ProductUnpublished(recovery)

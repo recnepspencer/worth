@@ -24,18 +24,24 @@ impl<Schema: ApplicationSchema, Program: 'static>
                 query,
                 home,
                 checkpoint_limits,
+                open_disposition,
+                active_head,
                 cause: _,
             }
             | CloseCustody::QueryAdmission {
                 query,
                 home,
                 checkpoint_limits,
+                open_disposition,
+                active_head,
                 cause: _,
             } => Self::retry_home_close(
                 WorthQueryApplicationHome {
                     query,
-                    directory: Some(home),
+                    directory: Some(ErasedDirectoryHome::new(home)),
                     checkpoint_limits,
+                    open_disposition,
+                    active_head: std::sync::Mutex::new(active_head),
                 },
                 request,
             ),
@@ -43,7 +49,16 @@ impl<Schema: ApplicationSchema, Program: 'static>
                 query,
                 home,
                 checkpoint_limits,
-            } => Self::retry_world_close(query, home, checkpoint_limits, request),
+                open_disposition,
+                active_head,
+            } => Self::retry_world_close(
+                query,
+                home,
+                checkpoint_limits,
+                open_disposition,
+                active_head,
+                request,
+            ),
             CloseCustody::QueryRetirement {
                 query,
                 home,
@@ -75,6 +90,8 @@ impl<Schema: ApplicationSchema, Program: 'static>
         query: WorthQueryPreparedHomeQuery<Schema, Program>,
         home: WorldHomeCloseRefused<(), (), (), (), ()>,
         checkpoint_limits: ApplicationHomeCheckpointLimits,
+        open_disposition: WorthQueryHomeOpenDisposition,
+        active_head: worth_query_execution::facade::product::WorthQueryProductBranch,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<WorthQueryApplicationHomeClosed, Self> {
         match home.try_seal_world(request) {
@@ -83,6 +100,8 @@ impl<Schema: ApplicationSchema, Program: 'static>
                 query,
                 home,
                 checkpoint_limits,
+                open_disposition,
+                active_head,
             })),
         }
     }

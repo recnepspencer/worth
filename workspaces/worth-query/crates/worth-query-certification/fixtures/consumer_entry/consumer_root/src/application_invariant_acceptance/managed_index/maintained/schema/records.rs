@@ -74,7 +74,11 @@ pub struct Directory;
 impl fragment::Entity for Directory {
     const NAME: &'static str = "Directory";
     type Aspects = (DirectoryFacts,);
-    type Relations = (Contains, super::geometry::schema::ContainsEdge);
+    type Relations = (
+        Contains, super::geometry::schema::ContainsEdge, Shelves,
+        super::super::ordered_decision::Previous, super::super::ordered_decision::Retires,
+        super::super::ordered_decision::Entries,
+    );
 }
 impl Directory {
     pub fn reference() -> ApplicationEntityRef<Catalog, Self> {
@@ -245,6 +249,17 @@ impl fragment::Relation for MappingTarget {
 impl MappingTarget {
     pub fn reference() -> ApplicationRelationRef<Catalog, Self, ExternalMapping, Principal> {
         relation(CatalogRecords, ExternalMapping, Self)
+    }
+}
+/// A shelf Directory groups Directories: a second shared-owner relation.
+pub struct Shelves;
+impl fragment::Relation for Shelves {
+    const NAME: &'static str = "Shelves";
+    type To = Directory;
+}
+impl Shelves {
+    pub fn reference() -> ApplicationRelationRef<Catalog, Self, Directory, Directory> {
+        relation(CatalogRecords, Directory, Self)
     }
 }
 pub struct Contains;

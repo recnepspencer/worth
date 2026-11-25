@@ -3,16 +3,28 @@ use super::{
     RecordedRelationalComponentReference, RecordedRelationalComponentTarget,
     RelationalRecordedComponentRefusal as Refusal,
 };
-use crate::branch::basis::RelationalLiveBranchBasisDescriptorAxes;
-use crate::branch::canonical_runtime_frame::CANONICAL_RUNTIME_INSTANCE_ID;
-use crate::branch::{
-    relational_branch_observation, RelationalBranchBasisDenial, RelationalBranchBasisDescriptor,
-    RelationalBranchBasisPosture, RelationalBranchRootCaptureDenial, RelationalBranchTarget,
-};
-use crate::durability::authority::{
-    ReadmittedEffectOrigin, ReadmittedRelationalAssociatedEffect,
-};
+use crate::branch::basis_denial::RelationalBranchBasisDenial;
+use crate::durability::authority::associated_effects::ReadmittedEffectOrigin;
+use crate::durability::authority::ReadmittedRelationalAssociatedEffect;
 use crate::history::data::CommitId;
+use branch::branch::basis_descriptor::{
+    RelationalBranchBasisDescriptor, RelationalBranchBasisDescriptorOwnerPort as _,
+    RelationalBranchBasisPosture, RelationalLiveBranchBasisDescriptorAxes,
+};
+use branch::branch::recorded_basis::copying::RecordedRelationalComponentReferenceOwnerPort as _;
+use branch::branch::recorded_basis::RecordedRelationalComponentReferenceOwnerPort as _;
+use branch::branch::reference::observation::relational_branch_observation;
+use contracts::branch::reference_checkpoint_data::CANONICAL_RUNTIME_INSTANCE_ID;
+use contracts::branch::root_capture_denial::RelationalBranchRootCaptureDenial;
+use contracts::branch::target::{RelationalBranchTarget, RelationalBranchTargetOwnerPort as _};
+use worth_relational_branch::internal_port as branch;
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
+use worth_relational_contracts::internal_port as contracts;
+use contracts::branch::version::RelationalBranchVersionOwnerPort as _;
+use worth_relational_durability::internal_port::durability::authority::associated_effects::{
+    ReadmittedRelationalAssociatedEffectOwnerPort as _,
+    RelationalAssociatedEffectSubjectOwnerPort as _,
+};
 use crate::runtime::RelationalRuntime;
 use worth_execution::ExecutionRequest;
 use worth_foundational::FoundationalBranchTarget;
@@ -33,7 +45,7 @@ impl RelationalRuntime {
         Refusal,
     > {
         crate::execution::check_request(execution).map_err(Refusal::Request)?;
-        if !effect.subject().belongs_to_runtime(self) {
+        if !effect.subject().belongs_to_runtime(self.runtime_instance_id()) {
             return Err(Refusal::Basis(RelationalBranchBasisDenial::OwnerUnavailable));
         }
         let _operation = self
@@ -42,7 +54,12 @@ impl RelationalRuntime {
             .ok_or(Refusal::Basis(RelationalBranchBasisDenial::OwnerUnavailable))?;
         let after_entry = effect.subject().source_entry();
         let after_commit_id = after_entry.commit.commit_id;
-        if effect.subject().current_settlement(self).is_none() {
+        if crate::durability::authority::associated_effects::discovery::current_settlement(
+            effect.subject(),
+            self,
+        )
+        .is_none()
+        {
             return Err(Refusal::CanonicalMismatch {
                 commit_id: after_commit_id,
             });
@@ -57,11 +74,11 @@ impl RelationalRuntime {
             after_posture,
             after_schema,
             after_visibility,
-        ) = match effect.origin() {
-            ReadmittedEffectOrigin::Original(positioned) => {
-                let envelope = positioned.envelope();
+        ) = match effect.readmitted_origin() {
+            ReadmittedEffectOrigin::Original(original) => {
+                let envelope: &crate::history::data::CanonicalCommitEnvelope = original.as_ref();
                 let predecessor = envelope
-                    .branch_cell_checkpoint
+                    .owner_branch_cell_checkpoint()
                     .as_ref()
                     .ok_or(Refusal::CanonicalMismatch {
                         commit_id: after_commit_id,
@@ -80,7 +97,7 @@ impl RelationalRuntime {
                         commit_id: after_commit_id,
                     },
                 )?;
-                let visibility = crate::branch::checkpoint_visibility::from_original_commit_data(
+                let visibility = branch::branch::checkpoint_visibility::from_original_commit_data(
                     envelope,
                     &after_entry.root,
                     execution,
@@ -140,7 +157,7 @@ impl RelationalRuntime {
             after_generation,
         )
         .map_err(Refusal::Frame)?;
-        let after_descriptor = RelationalBranchBasisDescriptor::with_posture(
+        let after_descriptor = RelationalBranchBasisDescriptor::with_recorded_posture(
             RelationalLiveBranchBasisDescriptorAxes {
                 runtime_instance_id: CANONICAL_RUNTIME_INSTANCE_ID,
                 branch_id: after_branch,
@@ -230,11 +247,14 @@ impl RelationalRuntime {
                         )
                     }
                     None => {
-                        let positioned = prior_cell
-                            .readmit_original_positioned(execution)
+                        let positioned =
+                            crate::durability::history_source_readmission::readmit_original_positioned(
+                                &prior_cell,
+                                execution,
+                            )
                             .map_err(Refusal::Source)?;
                         let visibility =
-                            crate::branch::checkpoint_visibility::from_original_commit_data(
+                            branch::branch::checkpoint_visibility::from_original_commit_data(
                                 positioned.envelope(),
                                 &prior_entry.root,
                                 execution,
@@ -244,7 +264,7 @@ impl RelationalRuntime {
                         (*prior_entry.root.schema_root(), visibility)
                     }
                 };
-                let before_descriptor = RelationalBranchBasisDescriptor::with_posture(
+                let before_descriptor = RelationalBranchBasisDescriptor::with_recorded_posture(
                     RelationalLiveBranchBasisDescriptorAxes {
                         runtime_instance_id: CANONICAL_RUNTIME_INSTANCE_ID,
                         branch_id: before_branch,
@@ -276,14 +296,15 @@ fn map_capture_denial(cause: RelationalBranchRootCaptureDenial, commit_id: Commi
 }
 
 fn map_admission_refusal(
-    cause: crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal,
+    cause: contracts::durability::checkpoint_admission::refusal::RelationalCheckpointAdmissionRefusal,
 ) -> Refusal {
+    use contracts::durability::checkpoint_admission::refusal::RelationalCheckpointAdmissionRefusal as Admission;
     match cause {
-        crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal::Request(
-            stop,
-        ) => Refusal::Request(stop),
+        Admission::Request(stop) => Refusal::Request(stop),
         other => Refusal::Source(
-            crate::durability::data::RelationalRecoveryStop::AdmissionImage(other),
+            contracts::durability::data::recovery_stop::RelationalRecoveryStop::AdmissionImage(
+                other,
+            ),
         ),
     }
 }

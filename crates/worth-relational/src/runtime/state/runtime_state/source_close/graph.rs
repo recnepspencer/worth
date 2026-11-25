@@ -47,7 +47,7 @@ impl NativeSourceGraphRetirement {
             pass,
             stage: Stage::History,
             history: Some(NativeHistorySourceRetirement::new(
-                runtime.history.source_retirement_binding(),
+                crate::runtime::state::subsystems::history::history_source_retirement::bind_source_retirement(&runtime.history),
                 pass,
                 recovered,
             )),

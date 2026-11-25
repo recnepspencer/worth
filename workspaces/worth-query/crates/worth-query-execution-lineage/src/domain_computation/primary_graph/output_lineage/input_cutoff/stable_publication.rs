@@ -27,7 +27,7 @@ use crate::domain_computation::primary_graph::output_lineage::ProductCoordinate;
 use crate::domain_computation::primary_graph::output_lineage::RecordedOutput;
 use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
 use crate::domain_computation::primary_graph::output_lineage::SemanticSource;
-use crate::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage;
+use crate::domain_computation::primary_graph::output_lineage::SharedOutputLineage;
 use crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind as Kind;
@@ -36,7 +36,7 @@ use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind a
 /// settlement. Borrowing the coordination proof keeps the exact occurrence
 /// lane held while the registry prepares its own prerequisite vacancy.
 pub struct PreparedStableLineageAddress<'lane, 'selected> {
-    pub owner: Arc<Mutex<WorthQueryApplicationOutputLineage>>,
+    pub owner: SharedOutputLineage,
     pub source: SemanticSource,
     pub coordinate: ProductCoordinate,
     pub partition: [u8; 32],
@@ -79,7 +79,7 @@ impl PreparedStableLineagePublication<'_, '_> {
 }
 
 pub fn prepare_stable_address<'lane, 'selected, Binding: 'static>(
-    owner: &Arc<Mutex<WorthQueryApplicationOutputLineage>>,
+    owner: &SharedOutputLineage,
     verified: VerifiedInputCutoff<'selected>,
     scope: &WorthQueryOperationScopeBinding,
     observation: &ProductBranchObservation,
@@ -101,7 +101,7 @@ pub fn prepare_stable_address<'lane, 'selected, Binding: 'static>(
 }
 
 pub fn prepare_address<'lane, 'selected>(
-    owner: &Arc<Mutex<WorthQueryApplicationOutputLineage>>,
+    owner: &SharedOutputLineage,
     candidate: RetainedInputCutoffCandidate,
     selected: &'selected worth_relational::facade::runtime::PositionedRelationalSnapshot,
     scope: &WorthQueryOperationScopeBinding,
@@ -163,7 +163,7 @@ pub fn prepare_address<'lane, 'selected>(
     let record_cell = Arc::new(OnceLock::new());
     drop(lineage);
     Ok(PreparedStableLineageAddress {
-        owner: Arc::clone(owner),
+        owner: owner.clone(),
         source,
         coordinate,
         partition,

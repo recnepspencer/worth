@@ -1,5 +1,6 @@
 use super::native_strategy_fixtures::*;
 use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
+use worth_relational_durability::internal_port::durability::data::recovery_plan::RecoveryPlanOwnerPort as _;
 
 #[test]
 fn replay_commit_reports_strategy_executor_unavailable_when_recovered_runtime_lacks_executor() {
@@ -12,10 +13,14 @@ fn replay_commit_reports_strategy_executor_unavailable_when_recovered_runtime_la
     let commit = execute_persisted_intent_strategy_commit(execution, &mut runtime, entity);
     let branch_head_before = runtime.history().branch_head(&BranchId("main".to_string()));
     let mut recovered = persisted_intent_runtime(&medium, false);
-    let mut recovery_plan = medium
-        .recovery_plan(execution, &recovered, RecoveryMode::AuditRecoveryVerification)
-        .unwrap();
-    recovery_plan.commit_strategy_executors = Default::default();
+    let recovery_plan = medium
+        .recovery_plan(
+            execution,
+            &recovered,
+            RecoveryMode::AuditRecoveryVerification,
+        )
+        .unwrap()
+        .with_commit_strategy_executors(Default::default());
 
     recovered
         .durability_recovery()
@@ -66,10 +71,14 @@ fn replay_commit_reports_strategy_execution_failure_when_recovered_executor_reje
     let commit = execute_persisted_intent_strategy_commit(execution, &mut runtime, entity);
 
     let mut recovered = persisted_intent_runtime_with_failing_executor(&medium);
-    let mut recovery_plan = medium
-        .recovery_plan(execution, &recovered, RecoveryMode::AuditRecoveryVerification)
-        .unwrap();
-    recovery_plan.commit_strategy_executors = recovered.commit_strategy_executor_registry().clone();
+    let recovery_plan = medium
+        .recovery_plan(
+            execution,
+            &recovered,
+            RecoveryMode::AuditRecoveryVerification,
+        )
+        .unwrap()
+        .with_commit_strategy_executors(recovered.commit_strategy_executor_registry().clone());
     recovered
         .durability_recovery()
         .recover(execution, recovery_plan)

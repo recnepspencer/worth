@@ -14,9 +14,19 @@ pub(in super::super) mod retained_query;
 pub use lifecycle::current_admission_cancellation_and_expiry_precede_connection_discovery;
 pub use parameters::no_match_parameters_keep_original_output_evidence_unavailable;
 
-pub(in super::super) fn metadata<Binding: ApplicationQueryBinding<NumericSchema>>(
-    name: &'static str,
-) -> ApplicationQueryInspectionDefinition<NumericSchema, Binding> {
+worth_query_decl::facade::worth_query_disclosure_classification!(
+    NumericObservedOutputMetadataDisclosure
+);
+worth_query_decl::facade::worth_query_disclosure_classification!(
+    NumericOriginalSourceMetadataDisclosure
+);
+
+pub(in super::super) fn metadata<Binding>(
+    name: impl worth_query_decl::facade::application_query::ApplicationDisclosureClassification,
+) -> ApplicationQueryInspectionDefinition<NumericSchema, Binding>
+where
+    Binding: ApplicationQueryBinding<NumericSchema>,
+{
     let contract = ApplicationQueryInspectionMetadataFacet::ALL
         .into_iter()
         .fold(
@@ -33,11 +43,11 @@ pub(in super::super) fn metadata<Binding: ApplicationQueryBinding<NumericSchema>
 }
 pub(super) fn source_metadata(
 ) -> ApplicationQueryInspectionDefinition<NumericSchema, query::Binding> {
-    metadata::<query::Binding>("numeric-original-source-metadata")
+    metadata::<query::Binding>(NumericOriginalSourceMetadataDisclosure)
 }
 pub(super) fn output_metadata(
 ) -> ApplicationQueryInspectionDefinition<NumericSchema, output_query::Binding> {
-    metadata::<output_query::Binding>("numeric-observed-output-metadata")
+    metadata::<output_query::Binding>(NumericObservedOutputMetadataDisclosure)
 }
 
 pub fn calculated_only_connects_original_source_under_independent_governance() {

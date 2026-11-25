@@ -132,7 +132,7 @@ impl ExecutionPendingRelationBirth {
 /// Relational transaction.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ExecutionNameBirthPlan {
-    commit_plan: CommitNamingPlan,
+    pub(super) commit_plan: CommitNamingPlan,
 }
 
 impl ExecutionNameBirthPlan {
@@ -256,6 +256,7 @@ impl<'a> ExecutionNameBirthPlanBuilder<'a> {
                 pending_splits: self.pending_splits,
                 pending_merges: self.pending_merges,
                 postures: self.postures,
+                groups: Vec::new(),
             },
         }
     }

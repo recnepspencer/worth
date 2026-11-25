@@ -159,6 +159,11 @@ impl<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaComposition, BP>
                     .bind_home_program_transition_activation(before, &lens)
                     .map_err(Denial::Author)?,
             );
+            if catalogs.is_none() {
+                super::budget_preflight::preflight_fresh_target_budget(
+                    native, source, &plan, target, resources, &request,
+                )?;
+            }
             let bodies = plan
                 .steps
                 .iter()

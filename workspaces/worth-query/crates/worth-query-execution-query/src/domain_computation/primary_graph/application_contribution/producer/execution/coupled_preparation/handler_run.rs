@@ -16,6 +16,7 @@ pub(super) fn run_coupled_producer_handler<Schema, Binding>(
     candidate: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
     own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
     participants: &dyn crate::domain_computation::primary_graph::provider::AppliedOutputParticipants,
+    assembly: &worth_relational::facade::mvcc::RelationalAuthoredCoupledCandidate<'_>,
     source: &AppliedQuerySource<SourceQuery<Schema, Binding>, SourceValue<Schema, Binding>>,
     qualified: crate::domain_computation::primary_graph::application_contribution::QualifiedOutputSource,
     selected_publication: worth_relational::facade::runtime::PositionedRelationalSnapshot,
@@ -140,6 +141,7 @@ where
     ).map_err(super::super::denial::request_admission_rejected)?
         .with_producer_reads::<Binding>(read_admission, predecessor_reads)
         .with_applied_participants(participants)
+        .with_applied_managed_sources(assembly)
         .with_applied_source_publication(qualified, selected_publication);
     let prepared_inputs = match captured {
         Some((inputs, component)) => Some(inputs.into_mutation_inputs(

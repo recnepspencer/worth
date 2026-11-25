@@ -80,6 +80,8 @@ pub enum WorthQueryCorrectionSelectionDenial {
     SourceUnavailable,
     SourceNotCorrectable,
     SourcePublicationMismatch,
+    /// The commit has no writer with the named coupled-group member.
+    SourceMemberUnavailable,
     Disclosure(WorthQueryCorrectionDerivationDenial),
     Ancestry(RuntimeWorldServiceDenial<ProductBranchAncestorSelectionDenial>),
 }

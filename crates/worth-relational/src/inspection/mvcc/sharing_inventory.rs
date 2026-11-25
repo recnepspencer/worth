@@ -1,4 +1,6 @@
 use std::collections::BTreeSet;
+use worth_relational_branch::internal_port::indexes::data::DerivedIndexArtifactsOwnerPort as _;
+use worth_relational_branch::internal_port::inspection::mvcc::sharing::root_commitment::RelationalVisibilityCommitmentObservationOwnerPort as _;
 
 use crate::branch::RelationalRootCorrectnessIndex;
 use crate::history::data::CommitId;

@@ -1,13 +1,14 @@
 //! Full Query Host + Signal mixed-branch D14 derived-cache discard across close and kill.
 use super::super::{opening, operations, session::Session, FIRST, SECOND};
-use std::collections::BTreeMap;
+use super::host_wire::{
+    inspect_cadence, snapshot_recovered, Command, Reply, EXPECTED_CADENCE_KEYS,
+};
 use std::path::PathBuf;
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
 };
 use std::time::Duration;
-use worth_foundational::facade::RecordedProductBranchReference;
 use worth_query_host::facade::{
     primary_graph::WorthQueryApplicationCommitOutcome, WorthQueryApplicationHomeCheckpointDenial,
     WorthQueryApplicationHomeCloseOutcome, WorthQueryApplicationHomeLocation,
@@ -19,63 +20,18 @@ use worth_store_application::ApplicationHomeCheckpointDenial;
 
 const CHILD: &str =
     "process::application::host_oracle::graceful::signal::derived_discard::host::derived_discard_host_child";
-const EXPECTED_CADENCE_KEYS: [&str; 5] = [
-    "relational.branch-transitions",
-    "relational.canonical-commits",
-    "world.branches",
-    "world.custody",
-    "world.occurrences",
-];
-
-#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-struct ReceiptSnapshot {
-    ordinal: u8,
-    commit_id: u64,
-    version_id: u64,
-    truth_version: u64,
-    outcome_identity: Option<u64>,
-    changed_record_count: usize,
-    emitted_effect_count: usize,
-    idempotency_key: [u8; 32],
-    product_incarnation: u64,
-    product_generation: u64,
-    composite_commit: u64,
-    attempt_ordinal: u64,
-    native_journal_position: u64,
-    world_journal_position: Option<u64>,
-    native_artifact_digest: [u8; 32],
-    world_artifact_digest: Option<[u8; 32]>,
-}
-
-#[derive(serde::Serialize, serde::Deserialize)]
-enum Command {
-    PrepareCheckpointDiscard,
-    ReplayCommitted,
-    Continue,
-    Close { expect_discarded: bool },
-}
-
-#[derive(serde::Serialize, serde::Deserialize)]
-struct Reply {
-    states: Vec<operations::State>,
-    frontiers: Vec<(u64, u64, u64)>,
-    initialized: usize,
-    contacts: (usize, usize, usize, usize),
-    cadence: BTreeMap<String, (u64, u64)>,
-    discard_generation: Option<u64>,
-    close_checkpoint_generation: Option<u64>,
-    original_receipts: Vec<ReceiptSnapshot>,
-    replayed_receipts: Vec<ReceiptSnapshot>,
-    closed: bool,
-}
 
 #[test]
 fn discard_derived_graceful_close_preserves_host_truth_custody_and_idempotency() {
-    for build in [FIRST, SECOND] { run_host_discard(false, build); }
+    for build in [FIRST, SECOND] {
+        run_host_discard(false, build);
+    }
 }
 #[test]
 fn discard_derived_process_kill_preserves_host_truth_custody_and_idempotency() {
-    for build in [FIRST, SECOND] { run_host_discard(true, build); }
+    for build in [FIRST, SECOND] {
+        run_host_discard(true, build);
+    }
 }
 
 fn run_host_discard(kill: bool, reopen_build: &str) {
@@ -122,7 +78,9 @@ fn run_host_discard(kill: bool, reopen_build: &str) {
     if kill {
         session.kill();
     } else {
-        let closed: Reply = session.exchange(&Command::Close { expect_discarded: true });
+        let closed: Reply = session.exchange(&Command::Close {
+            expect_discarded: true,
+        });
         assert!(closed.closed);
         assert_eq!(closed.close_checkpoint_generation, None);
         session.finish();
@@ -157,13 +115,21 @@ fn run_host_discard(kill: bool, reopen_build: &str) {
 
     operations::mixed(&reference, reference_branches[1], 3);
     let continued: Reply = session.exchange(&Command::Continue);
-    assert_eq!(continued.states, operations::observe(&reference, &reference_branches));
+    assert_eq!(
+        continued.states,
+        operations::observe(&reference, &reference_branches)
+    );
     assert_eq!(continued.initialized, 0);
     assert_eq!(initialized.load(Ordering::SeqCst), 1);
 
-    let final_close: Reply = session.exchange(&Command::Close { expect_discarded: false });
+    let final_close: Reply = session.exchange(&Command::Close {
+        expect_discarded: false,
+    });
     assert!(final_close.closed);
-    assert_eq!(final_close.close_checkpoint_generation, Some(discard_generation + 1));
+    assert_eq!(
+        final_close.close_checkpoint_generation,
+        Some(discard_generation + 1)
+    );
     session.finish();
 
     assert!(matches!(
@@ -177,56 +143,14 @@ fn run_host_discard(kill: bool, reopen_build: &str) {
     drop(refused.resume().unwrap());
 }
 
-fn inspect_cadence(
-    home: &opening::Home,
+pub(in super::super::super::super) fn checkpoint_and_discard_signal<S, P>(
+    home: &worth_query_host::facade::WorthQueryApplicationHome<S, P>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> BTreeMap<String, (u64, u64)> {
-    home.inspect_checkpoint(execution)
-        .unwrap()
-        .journals
-        .into_iter()
-        .map(|j| (j.name.to_owned(), (j.covered, j.head)))
-        .collect()
-}
-
-fn recorded_head_coords(head: &RecordedProductBranchReference) -> (u64, u64, u64) {
-    match head {
-        RecordedProductBranchReference::Home(h) => {
-            (h.incarnation().ordinal(), h.generation().get(), h.selected_commit().ordinal())
-        }
-        RecordedProductBranchReference::Memory(h) => {
-            (h.incarnation(), h.generation(), h.selected_commit())
-        }
-    }
-}
-
-fn snapshot_recovered(
-    ordinal: u8,
-    receipt: &worth_query_host::facade::primary_graph::WorthQueryRecoveredApplicationCommitReceipt,
-) -> ReceiptSnapshot {
-    let (inc, generation, commit) = recorded_head_coords(receipt.new_product_head());
-    let native_artifact_digest = *receipt.native_artifact_digest();
-    let world_artifact_digest = receipt.world_artifact_digest().copied();
-    assert_ne!(native_artifact_digest, [0_u8; 32]);
-    assert!(world_artifact_digest.is_some_and(|d| d != [0_u8; 32]));
-    ReceiptSnapshot {
-        ordinal,
-        commit_id: receipt.commit_reference().commit_id.0,
-        version_id: receipt.commit_reference().version_id.as_u64(),
-        truth_version: receipt.basis_descriptor().truth_version().as_u64(),
-        outcome_identity: Some(receipt.outcome_identity().get()),
-        changed_record_count: receipt.changed_record_count(),
-        emitted_effect_count: receipt.emitted_effect_count(),
-        idempotency_key: *receipt.idempotency_key_identity(),
-        product_incarnation: inc,
-        product_generation: generation,
-        composite_commit: commit,
-        attempt_ordinal: receipt.attempt_identity().ordinal(),
-        native_journal_position: receipt.native_journal_position().0,
-        world_journal_position: receipt.world_journal_position(),
-        native_artifact_digest,
-        world_artifact_digest,
-    }
+) -> (u64, u64) {
+    let cp = home.checkpoint(execution).unwrap().generation();
+    let discard = home.discard_derived_for_test(execution).unwrap();
+    assert_eq!(discard, cp + 1);
+    (cp, discard)
 }
 
 #[test]
@@ -235,8 +159,8 @@ fn derived_discard_host_child() {
         return;
     };
     let path = PathBuf::from(std::env::var_os("WORTH_SIGNAL_HOME_PATH").unwrap());
-    let build =
-        ApplicationBuildIdentity::parse(&std::env::var("WORTH_SIGNAL_HOME_BUILD").unwrap()).unwrap();
+    let build = ApplicationBuildIdentity::parse(&std::env::var("WORTH_SIGNAL_HOME_BUILD").unwrap())
+        .unwrap();
     let request = super::super::super::super::opening::serial();
     let execution = worth_execution::ExecutionRequest::serial(&request);
     let initialized = Arc::new(AtomicUsize::new(0));
@@ -257,16 +181,40 @@ fn derived_discard_host_child() {
                  replayed_receipts,
                  closed| {
         let (states, frontiers, cadence) = home
-            .map(|h| (operations::observe(h, branches), operations::frontiers(h, branches), inspect_cadence(h, &execution)))
+            .map(|h| {
+                (
+                    operations::observe(h, branches),
+                    operations::frontiers(h, branches),
+                    inspect_cadence(h, &execution),
+                )
+            })
             .unwrap_or_default();
         let body = Reply {
-            states, frontiers, initialized: initialized.load(Ordering::SeqCst),
-            contacts: contacts.snapshot(), cadence, discard_generation,
-            close_checkpoint_generation, original_receipts, replayed_receipts, closed,
+            states,
+            frontiers,
+            initialized: initialized.load(Ordering::SeqCst),
+            contacts: contacts.snapshot(),
+            cadence,
+            discard_generation,
+            close_checkpoint_generation,
+            original_receipts,
+            replayed_receipts,
+            closed,
         };
-        crate::killed_child::announce(&channel.join("response"), &serde_json::to_vec(&body).unwrap());
+        crate::killed_child::announce(
+            &channel.join("response"),
+            &serde_json::to_vec(&body).unwrap(),
+        );
     };
-    reply(home.as_ref(), &branches, None, None, Vec::new(), Vec::new(), false);
+    reply(
+        home.as_ref(),
+        &branches,
+        None,
+        None,
+        Vec::new(),
+        Vec::new(),
+        false,
+    );
     loop {
         let req_path = channel.join("request");
         if !req_path.is_file() {
@@ -303,18 +251,48 @@ fn derived_discard_host_child() {
                     };
                     assert_eq!(contacts.snapshot(), before_resolve);
                     assert_eq!(source.commit_id, receipt.commit_reference().commit_id.0);
-                    assert_eq!(source.version_id, receipt.commit_reference().version_id.as_u64());
-                    assert_eq!(source.truth_version, receipt.basis_descriptor().truth_version().as_u64());
-                    assert_eq!(source.outcome_identity, receipt.outcome_identity().map(|id| id.get()));
+                    assert_eq!(
+                        source.version_id,
+                        receipt.commit_reference().version_id.as_u64()
+                    );
+                    assert_eq!(
+                        source.truth_version,
+                        receipt.basis_descriptor().truth_version().as_u64()
+                    );
+                    assert_eq!(
+                        source.outcome_identity,
+                        receipt.outcome_identity().map(|id| id.get())
+                    );
                     assert_eq!(source.changed_record_count, receipt.changed_record_count());
                     assert_eq!(source.emitted_effect_count, receipt.emitted_effect_count());
-                    assert_eq!(source.idempotency_key, *receipt.idempotency_binding().key_identity());
-                    assert_eq!(source.product_incarnation, pub_ref.product_incarnation().ordinal());
-                    assert_eq!(source.product_generation, pub_ref.product_generation().get());
-                    assert_eq!(source.composite_commit, pub_ref.composite_commit().ordinal());
-                    assert_eq!(source.attempt_ordinal, pub_ref.publication_attempt().ordinal());
-                    assert_eq!(source.native_journal_position, after_commit["relational.canonical-commits"].1);
-                    assert_eq!(source.world_journal_position, Some(after_commit["world.occurrences"].1));
+                    assert_eq!(
+                        source.idempotency_key,
+                        *receipt.idempotency_binding().key_identity()
+                    );
+                    assert_eq!(
+                        source.product_incarnation,
+                        pub_ref.product_incarnation().ordinal()
+                    );
+                    assert_eq!(
+                        source.product_generation,
+                        pub_ref.product_generation().get()
+                    );
+                    assert_eq!(
+                        source.composite_commit,
+                        pub_ref.composite_commit().ordinal()
+                    );
+                    assert_eq!(
+                        source.attempt_ordinal,
+                        pub_ref.publication_attempt().ordinal()
+                    );
+                    assert_eq!(
+                        source.native_journal_position,
+                        after_commit["relational.canonical-commits"].1
+                    );
+                    assert_eq!(
+                        source.world_journal_position,
+                        Some(after_commit["world.occurrences"].1)
+                    );
                     original_receipts.push(source);
                 }
                 let checkpoint = home.checkpoint(&execution).unwrap();
@@ -367,7 +345,15 @@ fn derived_discard_host_child() {
                     }
                 };
                 closed.reclaim();
-                reply(None, &branches, None, close_checkpoint_generation, Vec::new(), Vec::new(), true);
+                reply(
+                    None,
+                    &branches,
+                    None,
+                    close_checkpoint_generation,
+                    Vec::new(),
+                    Vec::new(),
+                    true,
+                );
                 return;
             }
         }

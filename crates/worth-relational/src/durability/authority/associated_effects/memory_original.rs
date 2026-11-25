@@ -1,54 +1,9 @@
 //! Read owner-resident original meaning without claiming durable source custody.
-use super::{DurabilityAuthority, RelationalAssociatedEffectRefusal as Refusal};
-use crate::history::data::{PositionedCanonicalCommit, RelationalCommitReceipt};
-use crate::transactions::data::RecoveredRelationalSemanticResult;
-
-/// The actual resident Native owner artifact. This cannot qualify a directory
-/// Home, mint a performed effect, or reconstruct a live CommitResult.
-#[derive(Debug)]
-pub struct ObservedRelationalMemoryCommit {
-    origin: PositionedCanonicalCommit,
-    semantic: RecoveredRelationalSemanticResult,
-    digest: [u8; 32],
-}
-
-impl ObservedRelationalMemoryCommit {
-    pub fn receipt(&self) -> &RelationalCommitReceipt {
-        self.semantic.semantic().receipt()
-    }
-    pub fn semantic_result(&self) -> &RecoveredRelationalSemanticResult {
-        &self.semantic
-    }
-    pub fn position(&self) -> crate::publication::patch::data::PatchStreamPosition {
-        self.origin.position()
-    }
-    pub fn artifact_digest(&self) -> &[u8; 32] {
-        &self.digest
-    }
-
-    pub(crate) fn matches_original_envelope(
-        &self,
-        expected: &std::sync::Weak<crate::history::data::CanonicalCommitEnvelope>,
-    ) -> bool {
-        std::sync::Weak::ptr_eq(
-            expected,
-            &std::sync::Arc::downgrade(self.origin.canonical_arc()),
-        )
-    }
-
-    pub fn created_entity(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        entity: crate::identity::data::EntityId,
-    ) -> Result<Option<super::ReadmittedRelationalCreatedEntity<'_>>, Refusal> {
-        super::created_row::read_created_entity(
-            execution,
-            self.semantic.semantic(),
-            &self.origin.envelope().patch.authoritative_record_patches,
-            entity,
-        )
-    }
-}
+use worth_relational_branch::internal_port::durability::authority::associated_effects::observed_memory_commit::ObservedRelationalMemoryCommitOwnerPort as _;
+use super::observed_memory_commit::ObservedRelationalMemoryCommit;
+use super::RelationalAssociatedEffectRefusal as Refusal;
+use crate::durability::authority::runtime_access::DurabilityAuthority;
+use crate::history::data::RelationalCommitReceipt;
 
 impl DurabilityAuthority<'_> {
     /// Observe a resident artifact explicitly. A source-backed artifact must
@@ -86,16 +41,14 @@ impl DurabilityAuthority<'_> {
         if &positioned.envelope().commit != receipt {
             return Err(Refusal::SubjectMismatch);
         }
-        let digest = crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::envelope_payload_digest_for_request(
-            positioned.position(), positioned.canonical_arc(), execution,
-        ).map_err(Refusal::Recovery)?;
-        let semantic = RecoveredRelationalSemanticResult {
-            semantic: positioned.envelope().semantic_result_arc(),
-        };
-        Ok(ObservedRelationalMemoryCommit {
-            origin: positioned,
-            semantic,
-            digest,
-        })
+        let digest = crate::history::commit::payload_commitment::digest_envelope_for_request(
+            positioned.position(),
+            positioned.canonical_arc(),
+            execution,
+        )
+        .map_err(Refusal::Recovery)?;
+        Ok(ObservedRelationalMemoryCommit::from_live(
+            positioned, digest,
+        ))
     }
 }

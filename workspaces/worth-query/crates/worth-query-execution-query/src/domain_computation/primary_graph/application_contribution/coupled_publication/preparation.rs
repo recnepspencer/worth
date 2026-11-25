@@ -276,27 +276,31 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             &source.partition,
         )?;
         let pin = candidate.pin_source(execution)?;
-        let prepared = producer.coupled_executor().prepare_coupled_writer(
-            self.phase,
-            self.coordination,
-            self.application,
-            principal,
-            self.request,
-            self.before,
-            before_pin,
-            &pin,
-            chain.as_ref().map(|chain| &chain.own),
-            self,
-            source,
-            producer.edition,
-            captured,
-        )
-        .map_err(|stop| self.successor_prepare_stop(candidate, chain.as_ref(), stop))?;
+        let prepared = producer
+            .coupled_executor()
+            .prepare_coupled_writer(
+                self.phase,
+                self.coordination,
+                self.application,
+                principal,
+                self.request,
+                self.before,
+                before_pin,
+                &pin,
+                chain.as_ref().map(|chain| &chain.own),
+                self,
+                &*candidate,
+                source,
+                producer.edition,
+                captured,
+            )
+            .map_err(|stop| self.successor_prepare_stop(candidate, chain.as_ref(), stop))?;
         let PreparedCoupledWriter {
             writer,
             publication,
             mut batch,
             content,
+            mut naming,
         } = prepared;
         // Keep the session even when Native requests an ordinary symbol retry;
         // the next actual assembly round closes it before rerunning the handler.
@@ -310,7 +314,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
         self.record_consumption(execution, &self.consuming(), produces)?;
         if let Some(chain) = &chain {
             self.require_independent(execution, candidate, chain, writer.session(), &pin)?;
-            self.rekey_original(chain.index, writer.session(), &mut batch);
+            self.rekey_original(chain.index, writer.session(), &mut batch, naming.as_mut());
         }
         let next = CoupledWriter {
             position,
@@ -328,7 +332,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             candidate,
             chain,
             next,
-            (publication, content, batch),
+            (publication, content, batch, naming),
         )?;
         let owed = self.writers.borrow()[index].owed.position();
         // Only an owned route can derive its chain's next round: Native's own

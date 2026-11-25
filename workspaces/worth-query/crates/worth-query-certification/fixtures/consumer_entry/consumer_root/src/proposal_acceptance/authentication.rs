@@ -11,6 +11,10 @@ use std::future::Future;
 use std::pin::pin;
 use std::task::{Context, Poll, Waker};
 
+worth_query_decl::facade::worth_query_authentication_method!(LocalCredentialMethod);
+worth_query_decl::facade::worth_query_authentication_audience!(ProposalsAudience);
+worth_query_decl::facade::worth_query_principal_issuer!(ProposalsInvalidIssuer);
+
 pub fn request_scope() -> WorthQueryRequestScope {
     let cancellation = WorthQueryCancellationSource::new();
     WorthQueryRequestScope::new(
@@ -42,8 +46,7 @@ impl Actor {
         }
     }
     pub fn identity(self) -> WorthQueryExternalPrincipalIdentity {
-        WorthQueryExternalPrincipalIdentity::new("https://proposals.invalid", self.subject())
-            .unwrap()
+        WorthQueryExternalPrincipalIdentity::new(ProposalsInvalidIssuer, self.subject()).unwrap()
     }
 }
 
@@ -62,8 +65,8 @@ impl WorthQueryAuthenticationAdapter for Adapter {
             let now = SystemTime::now();
             WorthQueryValidatedExternalPrincipal::new(
                 actor.identity(),
-                WorthQueryAuthenticationAudience::new("proposals").unwrap(),
-                WorthQueryAuthenticationMethod::new("local-credential").unwrap(),
+                WorthQueryAuthenticationAudience::of(ProposalsAudience),
+                WorthQueryAuthenticationMethod::of(LocalCredentialMethod),
                 now,
                 now + Duration::from_secs(600),
                 Vec::new(),
@@ -90,8 +93,8 @@ pub fn authenticate<'scope>(
     let adapter = admit_authentication_adapter(
         installed,
         WorthQueryAuthenticationAdapterAdmission::new(
-            WorthQueryAuthenticationAudience::new("proposals").unwrap(),
-            WorthQueryAuthenticationMethod::new("local-credential").unwrap(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
+            WorthQueryAuthenticationAudience::of(ProposalsAudience),
+            WorthQueryAuthenticationMethod::of(LocalCredentialMethod), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         Adapter,
     )
     .unwrap();

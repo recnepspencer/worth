@@ -1,3 +1,4 @@
+//! Phase-bound Home readmission metadata projection over a recovered branch.
 use crate::durability::HomeReadmissionMetadataAuthority;
 use crate::identity::data::KindId;
 use crate::visibility::materialization::read_records::reader::{
@@ -5,8 +6,10 @@ use crate::visibility::materialization::read_records::reader::{
     RelationKindTruthReadDenial,
 };
 
-use super::super::reader::VisibilityReadContext;
 use super::VisibilityProjectionView;
+use crate::visibility::materialization::read_records::reader::context::VisibilityReadContext;
+use worth_relational_branch::internal_port::mvcc::observation::RelationalBranchObservationOwnerPort as _;
+use worth_relational_branch::internal_port::visibility::materialization::read_records::projection::creation::VisibilityProjectionViewOwnerPort as _;
 
 /// Typed denial for scans through [`HomeReadmissionMetadataView`].
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -123,47 +126,7 @@ impl HomeReadmissionMetadataView<'_> {
     }
 }
 
-impl VisibilityProjectionView {
-    pub(crate) fn retain_exact_basis(
-        &self,
-    ) -> Option<crate::visibility::snapshot_states::VisibilitySnapshotBasis> {
-        match &self.basis {
-            crate::visibility::snapshot_states::SnapshotStateBasis::Exact(basis) => {
-                Some(basis.clone())
-            }
-            crate::visibility::snapshot_states::SnapshotStateBasis::Historical(_) => None,
-        }
-    }
-}
-
 impl<'runtime> VisibilityReadContext<'runtime> {
-    /// Project through an owner-issued exact branch observation without
-    /// allocating a tracked snapshot handle.
-    pub fn project_observation(
-        &self,
-        observation: &crate::mvcc::RelationalBranchObservation,
-    ) -> Result<VisibilityProjectionView, crate::branch::RelationalBranchBasisDenial> {
-        if observation.identity().runtime_instance_id() != self.runtime().runtime_instance_id() {
-            return Err(crate::branch::RelationalBranchBasisDenial::ForeignRuntime {
-                expected_runtime_instance_id: self.runtime().runtime_instance_id(),
-                actual_runtime_instance_id: observation.identity().runtime_instance_id(),
-            });
-        }
-        if observation
-            .selected_root()
-            .has_materialization_unavailable()
-        {
-            return Err(crate::branch::RelationalBranchBasisDenial::MaterializationUnavailable);
-        }
-        let basis = crate::visibility::snapshot_states::VisibilitySnapshotBasis::from_observation(
-            observation,
-        );
-        Ok(VisibilityProjectionView::new(
-            self.runtime(),
-            crate::visibility::snapshot_states::SnapshotStateBasis::Exact(basis),
-        ))
-    }
-
     /// Project owner-admitted internal metadata records during the active Home
     /// readmission phase using linear authority from
     /// [`crate::durability::RecoveredRelationalRuntimeAuthority::begin_home_readmission_metadata`].
@@ -174,21 +137,21 @@ impl<'runtime> VisibilityReadContext<'runtime> {
     pub fn project_home_readmission_metadata<'authority>(
         &self,
         authority: &'authority HomeReadmissionMetadataAuthority,
-        observation: &crate::mvcc::RelationalBranchObservation,
-    ) -> Result<HomeReadmissionMetadataView<'authority>, crate::branch::RelationalBranchBasisDenial>
+        observation: &crate::mvcc::observation::RelationalBranchObservation,
+    ) -> Result<HomeReadmissionMetadataView<'authority>, crate::branch::basis_denial::RelationalBranchBasisDenial>
     {
         if !authority.is_active() {
-            return Err(crate::branch::RelationalBranchBasisDenial::OwnerUnavailable);
+            return Err(crate::branch::basis_denial::RelationalBranchBasisDenial::OwnerUnavailable);
         }
         let expected = self.runtime().runtime_instance_id();
         if authority.runtime_instance_id() != expected {
-            return Err(crate::branch::RelationalBranchBasisDenial::ForeignRuntime {
+            return Err(crate::branch::basis_denial::RelationalBranchBasisDenial::ForeignRuntime {
                 expected_runtime_instance_id: expected,
                 actual_runtime_instance_id: authority.runtime_instance_id(),
             });
         }
         if observation.identity().runtime_instance_id() != expected {
-            return Err(crate::branch::RelationalBranchBasisDenial::ForeignRuntime {
+            return Err(crate::branch::basis_denial::RelationalBranchBasisDenial::ForeignRuntime {
                 expected_runtime_instance_id: expected,
                 actual_runtime_instance_id: observation.identity().runtime_instance_id(),
             });
@@ -198,11 +161,9 @@ impl<'runtime> VisibilityReadContext<'runtime> {
                 .recovered_latest_commit()
                 .is_none_or(|latest| commit_id > latest)
         {
-            return Err(crate::branch::RelationalBranchBasisDenial::OwnerUnavailable);
+            return Err(crate::branch::basis_denial::RelationalBranchBasisDenial::OwnerUnavailable);
         }
-        let basis = crate::visibility::snapshot_states::VisibilitySnapshotBasis::from_observation(
-            observation,
-        );
+        let basis = crate::history::retention::VisibilitySnapshotBasis::from_observation(observation);
         Ok(HomeReadmissionMetadataView {
             inner: VisibilityProjectionView::new(
                 self.runtime(),

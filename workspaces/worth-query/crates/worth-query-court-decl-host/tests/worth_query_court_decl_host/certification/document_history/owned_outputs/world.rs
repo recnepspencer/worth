@@ -8,6 +8,7 @@ pub use directory::{
     open_directory_program_with_other_model, open_directory_program_with_value,
     reopen_program_directory, reopen_same_build, DirHost,
 };
+mod sibling_members;
 use worth_query_host::facade::product::WorthQueryProductBranch;
 pub type Host = WorthQueryProgramApplicationRuntime<Schema, program::Program>;
 pub type Document<'a> = WorthQueryApplicationHistoryDocument<'a, Schema, History>;
@@ -30,6 +31,8 @@ pub struct Configuration {
     /// Member `n` (this value) of model `a` and model `c` (9) (PR C C4 r2
     /// blocker 1, r3).
     pub second_member: Option<u64>,
+    /// Members of a further model `z`; no court edits them.
+    pub sibling_members: usize,
 }
 impl WorthQueryApplicationContribution<Schema> for Contribution {
     type Configuration = Configuration;
@@ -257,6 +260,7 @@ pub(super) fn seed_configured(
     if let Some(value) = configuration.second_member {
         second_member::seed(graph, value)?;
     }
+    sibling_members::seed(graph, configuration.sibling_members)?;
     Ok(())
 }
 /// Attach the model history on a fresh owned head forked from the current world.

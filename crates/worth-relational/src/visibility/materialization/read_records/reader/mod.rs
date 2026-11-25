@@ -1,83 +1,7 @@
-mod pinned_entity_metadata;
 pub use pinned_entity_metadata::{
     RelationalEntityMetadataPinDenial, RelationalPinnedEntityMetadata,
 };
-pub(crate) mod adjacency_work_ledger;
-mod aspect_catalog;
-#[cfg(test)]
-mod aspect_version_read;
-#[cfg(test)]
-mod aspect_versions;
-mod context;
-mod diagnostics;
-mod frontier_admission;
-mod kind_scan_visibility;
-mod managed_source;
-mod native_output_probe;
-mod paid_current_record_walk;
-mod paid_record_walk;
-mod pinned_read;
-mod positioned_snapshot;
-mod projection_record_reader;
-mod public_managed_cache;
-mod query_execution;
-mod query_packetization;
-mod query_plan_execution;
-mod query_planning;
-mod query_preparation;
-mod query_preparation_extent;
-mod query_preparation_packetization;
-pub(crate) mod record_identity_materialization;
-mod snapshot_reads;
-mod truth_access;
-mod truth_adjacency;
-mod truth_frontier_adjacency;
-mod truth_frontier_field_equality;
-mod truth_kind_scan;
-mod truth_record_access;
-mod truth_relation_kind_scan;
-
-use crate::authority::commit::preparation::planning::strategy::TARGET_PREPARATION_ITEMS_PER_PACKET;
-use crate::capabilities::{SnapshotSource, VersionSource, VisibilityPolicySource};
-use crate::diagnostics::data::{
-    DeterminismExpectation, DiagnosticCode, DiagnosticsArtifactKind, DiagnosticsScope,
-    RelationalDiagnosticArtifact, RelationalDiagnosticsEntry,
-};
-use crate::query::data::{
-    PlannedQueryPacket, QueryExecutionOutcome, QueryParallelLegality, QueryParallelProfitability,
-    QueryPlanContextId, QueryPlanEvidenceBasis, QueryScope, QuerySerialReason,
-    SnapshotPinnedQueryPlan,
-};
-use crate::runtime::{RelationalRuntime, VisibilityResidency};
-use crate::snapshots::data::{SnapshotHandle, SnapshotInspectionSummary, SnapshotReadPolicy};
-use crate::storage::data::{EntityReadRecord, RelationReadRecord, RelationalReadView};
-use crate::storage::overlay::PartitionAccess;
-use crate::storage::partition::DenseSlotBitSet;
-use crate::visibility::cache_state::{
-    cached_historical_state_for_version, cached_state, materialize_historical_visibility,
-    residency, residency_for_version,
-};
-use crate::visibility::snapshot_states::{
-    read_view_from_snapshot_state, resolve_snapshot_basis, resolve_snapshot_handle,
-    resolve_snapshot_inspection, resolve_snapshot_state,
-};
-use worth_foundational::facade::AspectKey;
-
-use super::materialization::{
-    materialize_authoritative_entity_record_at_version,
-    materialize_authoritative_relation_record_at_version,
-    materialize_current_authoritative_entity_record,
-    materialize_current_authoritative_relation_record,
-};
-use super::visibility::{
-    entity_slot_matches_kind_at_version, relation_slot_matches_kind_at_version,
-    visible_relation_slots_in_partition_from_state, visible_slots_in_partition_from_state,
-};
-use super::ProjectionAspectFilter;
-
-const TARGET_TRAVERSAL_SEEDS_PER_PACKET: usize = 4;
-pub use context::VisibilityReadContext;
-pub(crate) use kind_scan_visibility::KindScanVisibility;
+pub(crate) use worth_relational_branch::internal_port::visibility::materialization::read_records::reader::{adjacency_work_ledger, aspect_catalog, frontier_admission, kind_scan_visibility, pin_denial, projection_record_reader, query_preparation};
 pub use pinned_read::{
     RelationalAppliedCandidateReadIdentity, RelationalAppliedCandidateReadQualification,
     RelationalPinnedRead, RelationalPinnedReadAdmissionDenial,
@@ -101,9 +25,29 @@ pub use truth_kind_scan::{BoundedEntityKindTruthRead, EntityKindTruthReadLimitEx
 pub use truth_relation_kind_scan::{
     BoundedRelationKindTruthRead, RelationKindTruthReadDenial, RelationKindTruthReadLimitExceeded,
 };
-
+pub use frontier_admission::BoundedFrontierReadStop;
+#[cfg(test)]
+pub(crate) use worth_relational_branch::internal_port::visibility::materialization::read_records::reader::aspect_version_access;
+pub(crate) mod context;
+mod diagnostics;
+mod managed_source;
+mod native_output_probe;
+mod paid_record_walk;
+mod pinned_entity_metadata;
+pub(crate) mod pinned_read;
+pub(crate) mod positioned_snapshot;
+mod public_managed_cache;
+pub(crate) mod query_execution;
+mod query_plan_live;
+mod query_planning;
 #[cfg(test)]
 mod request_paid_truth;
-pub(crate) use projection_record_reader::ProjectionRecordReader;
-
-pub use frontier_admission::BoundedFrontierReadStop;
+mod snapshot_reads;
+mod truth_access;
+pub(crate) mod truth_adjacency;
+mod truth_aspect_versions;
+pub(crate) mod truth_frontier_adjacency;
+mod truth_frontier_field_equality;
+pub(crate) mod truth_kind_scan;
+mod truth_record_access;
+pub(crate) mod truth_relation_kind_scan;

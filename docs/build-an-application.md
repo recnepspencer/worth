@@ -11,10 +11,95 @@ explain *why* the platform works the way it does
 ([How WORTH Works](how-it-works.md)). This one shows *which names you call, in
 which order*.
 
-For a new feature, use the complete feature definition below. It keeps the
-feature's schema members, actions, required lifecycle roles and runtime slots
-together; the SDK derives their projections. The lower-level builders later in
-this guide explain the underlying contracts and support specialized composition.
+For a new feature, start with the **unified Target DX** (`worth_query_application_program!`,
+`#[derive(WorthQueryRow)]`, unified `#[derive(WorthQuery)]` with predicates and
+`live = whole_result`, `#[derive(WorthQueryCorrection)]`, `WorthQueryApplicationHome::open_directory`,
+`home.session(me)`, `fork_preview` / `adopt_preview`, `owned_history`, and
+`home.undo` / `home.undo_authored`). The lower-level builders later in this guide
+explain the underlying contracts and support specialized composition.
+
+### Unified Application Quickstart (Target DX #1–#8)
+
+The runnable end-to-end court in
+[`unified_hard_dx`](../workspaces/worth-query/crates/worth-query-court-decl-host-macros/tests/worth_query_court_decl_host_macros/unified_hard_dx/courts.rs)
+exercises the complete desktop application flow on a real Directory Home:
+
+<!-- illustrative -->
+```rust,ignore
+use worth_query_decl::facade::application_schema::CanonicalDate;
+use worth_query_decl::facade::{WorthQuery, WorthQueryRow, WorthQueryCorrection};
+use worth_query_host::facade::{
+    worth_query_application_program, WorthQueryApplicationHome, WorthQueryHomeConfig,
+};
+
+// 1. Projected row directly usable as `result = TaskRow` on queries.
+#[derive(Clone, Debug, Eq, PartialEq, WorthQueryRow)]
+#[worth_query(schema = DaymarkSchema, root = Task, namespace = ROW_NS)]
+pub struct TaskRow {
+    #[worth_query(field = TaskKey)] pub task_key: u64,
+    #[worth_query(field = Title)]   pub title: String,
+    #[worth_query(field = State)]   pub state: String,
+    #[worth_query(field = Priority)] pub priority: u64,
+    #[worth_query(field = DueDate)] pub due_date: Option<CanonicalDate>,
+}
+
+// 2. Unified query derive: literal equality, Option<T> predicates, related-record
+//    absence (`NOT EXISTS`), ordering, and whole-result live subscriptions.
+#[derive(Clone, Debug, WorthQuery)]
+#[worth_query(
+    schema = DaymarkSchema, context = DaymarkContext, namespace = READY_NS,
+    result = TaskRow, root = Task, scope = ProjectKey, fields = TaskFacts,
+    root_path(Contains),
+    where_equal(state = "OPEN"),
+    where_optional(priority = priority),
+    where_lte_optional(due_date = due_before),
+    where_no_related(BlockedBy, state = "OPEN"),
+    order_by(TaskRow::task_key(), Ascending),
+    live = whole_result,
+    limits = 64,
+)]
+pub struct ReadyTasks {
+    #[worth_query(scope)] pub project: u64,
+    pub priority: Option<u64>,
+    pub due_before: Option<CanonicalDate>,
+}
+
+// 3. One-line persistent Directory Home open, reusable session, live refresh,
+//    preview forks, 'static owned history, and restart-safe authored-body undo.
+let home = WorthQueryApplicationHome::<DaymarkSchema, DaymarkProgram>::open_directory(
+    &path,
+    WorthQueryHomeConfig::new(build_id, (DaymarkRuntime::new(),))
+        .with_initial_state(|_, graph, installed| seed(graph, installed)),
+)?;
+let session = home.session(&me);
+let cutoff = CanonicalDate::parse_iso("2026-11-24")?.add_days(7)?;
+let rows: Vec<TaskRow> = session.query(ReadyTasks {
+    project: 1,
+    priority: Some(1),
+    due_before: Some(cutoff),
+})?;
+let mut live = session.subscribe(ReadyTasks {
+    project: 1, priority: None, due_before: Some(cutoff),
+})?;
+let commit = session.run(SetTaskState { task: 1, state: "DONE".into() })?;
+let updated = live.refresh(&session)?; // re-admits principal & grants fresh every call
+live.close()?;
+
+// What-if preview fork + atomic adoption:
+let preview = home.fork_preview("What-If")?;
+home.session(&me).on_branch(preview.branch()).run(RescheduleTask { task: 3, due_date: Some(cutoff) })?;
+let previous = home.adopt_preview(preview)?;
+home.close_branch(previous)?;
+
+// 'static owned history + restart-safe authored-body undo/redo:
+let doc = home.owned_history::<DaymarkHistory>(&me, ReadProjectTasks { project: 1 })?;
+// Hold `doc` in UI state as long as needed, then release/close it before closing the Home.
+drop(doc);
+let entry = commit.correction_entry();
+home.undo_authored::<CorrectTaskState>(&entry, &me)?;
+home.redo_authored::<CorrectTaskState>(&entry, &me)?;
+home.close_clean()?;
+```
 
 Directory Homes support the declared track-H families through the real installed
 owners in [§4](#4-install-or-reopen). Use graceful close and fresh-process reopen
@@ -105,11 +190,11 @@ some declaration macros. `worth_query_mutation_binding!`,
 
 | Step | What you do | The call | Section |
 |---|---|---|---|
-| 1 | Declare the schema and its contributions | `worth_query_application!`, `worth_query_application_contribution!`, `impl WorthQueryApplicationContribution` | [§2](#2-declare-the-schema-and-its-contributions) |
-| 2 | Declare features and the program | `worth_query_application_contribution! { pub feature ... }`, its `ApplicationFeatureDefinition` projections, `impl ApplicationProgramDefinition` | [Complete definitions](#complete-feature-definitions), [§3](#3-declare-features-and-the-program) |
-| 3 | Validate the program | `ApplicationProgramAuthoring::<S, P>::begin().validated_program()` | [§3.5](#35-validate) |
-| 4 | Install or reopen | `WorthQueryApplicationHomeRequest::open_in_advancement(&phase)` | [§4](#4-install-or-reopen) |
-| 5 | Run program-owned actions | `request.mutate(intent)…idempotency_owned(key)?.retain_operation::<Program, Action>(&runtime)`, then `operation.advance(&fresh_request)` | [§5](#5-run-the-program) |
+| 1 | Declare schema, rows, actions, corrections & unified queries | `#[derive(WorthQuerySchema)]`, `#[derive(WorthQueryRecord)]`, `#[derive(WorthQueryRow)]`, `#[derive(WorthQueryAction)]`, `#[derive(WorthQueryCorrection)]`, `#[derive(WorthQuery)]` | [Quickstart](#unified-application-quickstart-target-dx-18), [§2](#2-declare-the-schema-and-its-contributions) |
+| 2 | Declare features, managed indexes & the program in one block | `worth_query_application_program!` | [Complete definitions](#complete-feature-definitions), [§3](#3-declare-features-and-the-program) |
+| 3 | Open or reopen a persistent Directory Home | `WorthQueryApplicationHome::open_directory(&path, WorthQueryHomeConfig::desktop_default(build))` / `home.open_disposition()` / `home.close_clean()` | [§4](#4-install-or-reopen) |
+| 4 | Run actions, typed queries, whole-result live subscriptions & managed-index watches | `let session = home.session(&me);` → `session.run(...)`, `session.query(...) -> Vec<Row>`, `session.subscribe(...)`, `session.watch(...)`, `session.ensure_index_ready(intent)` / `session.ensure_default_index_ready::<Query>()` | [§5](#5-run-the-program) |
+| 5 | Fork "what-if" previews, attach `'static` history & undo/redo | `home.fork_preview(...)` / `home.adopt_preview(...)`, `home.owned_history::<H>(...)`, `home.undo(...)` / `home.undo_authored::<C>(...)` / `home.redo_authored::<C>(...)` | [§5](#5-run-the-program) |
 | 6 | Install the workflow vocabulary | `WorthQueryApplicationWorkflowSpecInstallation::begin(..)…finish()`, then `retain_workflow_spec(..)` | [§6.2](#62-install-the-workflow-vocabulary-once) |
 | 7 | Author and validate a workflow | `ApplicationWorkflowDefinitionBuilder::<Spec>::new(..)`, nodes, connections, `finish()?.validate()?` | [§6.3](#63-author-a-definition) |
 | 8 | Publish, start, and advance it | `bind_definition`, `prepare_workflow_publication`, `prepare_workflow_instance_start`, `prepare_workflow_advance` | [§6.6](#66-publish-discover-start-advance) |
@@ -294,10 +379,47 @@ schema using `worth_query_decl::facade::application_naming`:
   `worth_query_decl::facade::worth_query_name_discriminator!`, encoding typed
   discriminator variants and any embedded `WorthQueryName<K>` references without
   raw floats or host-order maps.
-- **Group schemes** use `ApplicationGroupNameSchemeBuilder::<Schema, Group>::new(scheme_id, subject_name, rule)`
-  binding one closed `ApplicationGroupContinuityRule` (`Anchor`, `Boundary`, or
-  `ProducerRole`) to declared member roles, attached with
+- **Group schemes** bind one group kind (a type implementing
+  `ApplicationGroupKind`, whose `NAME` is the group name) to one closed
+  `ApplicationGroupContinuityRule` (`Anchor`, `Boundary`, or `ProducerRole`)
+  and typed member roles: `ApplicationGroupNameSchemeBuilder::<Schema, Group>::from_roles::<Role>(scheme_id, rule)`
+  with `.anchor(Role::Host)` / `.boundary(Role::Wall)`, attached with
   `ApplicationSchemaDeclarationBuilder::application_group_name_scheme::<Group>(scheme)`.
+  An operation never mints a group name. Its candidate writer (or a naming
+  scope's `declare_groups`) declares a `WorthQueryGroupPartition<Group>`:
+  which members belong together, each by `WorthQueryName`, `NameRef` or the
+  same-commit name of an output it just named, under a typed role, and which
+  held groups it `dissolve`s. Prior groups sharing a member, or losing a
+  member the commit retires, join the changed scope; their undeclared live
+  members stay grouped together unless dissolved. Relational's group naming
+  authority names the scope's next partition at commit finalization by the
+  declared rule (a keeper keeps its name; a successor is named from its
+  anchor and the groups it came from; re-forming a retired name revives it)
+  and refuses the whole commit typed (`LineageNameDenial::GroupNaming`:
+  `MemberNotLive`, `OverlappingMember`, `DuplicateMemberName`,
+  `MissingAnchorMember`, `UnknownGroup`, `LiveNameCollision`) with zero
+  effects. Edit-envelope stages and coupled producers compose their
+  partitions into the envelope's one plan. History navigation restores the
+  selected node's groups under their exact names. Each commit's group lineage
+  is one canonical frame in its envelope, so checkpoint restore, cold open
+  and journal replay rebuild every branch's groups byte for byte.
+  Decisions read groups with tracked `group_name_of::<Group, Member>` and
+  `resolve_group::<Group, Member>`, with `Exact` / `Plural` / `Retired` /
+  `Ambiguous` parity: each read is a decision fact re-observed at seal, so a
+  commit that splits, merges, dissolves or re-members the group stales the
+  decision and an unrelated commit does not. A coupled producer or a later
+  edit-envelope stage reads groups on the envelope's unpublished candidate
+  the same way, answered from the commit basis only where that is the
+  candidate's answer; otherwise the read refuses typed and the envelope
+  commits nothing: an earlier member's partition or dissolve of the scheme
+  refuses `CandidateGroupState`, an ended member name or a held group that is
+  not itself live (retired, split, merged, unborn) refuses
+  `CandidateNameHistory`, and a member the candidate ended (the one read, or
+  any member of a group the answer rests on) refuses `EndedInCandidate`. A
+  member that claims the scheme after a candidate read of it refuses the
+  envelope, so read and regroup one scheme in separate commits. `#[worth_query(group_name)]` on
+  a `WorthQueryProjection` field (`WorthQueryName<Group>` or `Option<..>`)
+  projects the group a row's own name belongs to in the same read.
 - **Commit-time birth minting** lowers installed schemes via
   `LoweredExecutionNameSchemeCatalog` and binds them into Relational's schema
   authority (`RelationalSchemaRegistry::install_persistent_name_schemes`).
@@ -312,8 +434,510 @@ schema using `worth_query_decl::facade::application_naming`:
   Creating a schemed kind without a birth plan (`MissingBirth`), live-holder
   collisions (`DuplicateBirth`), and invalid or undeclared discriminator
   references (`InvalidDiscriminatorBasis`) refuse fail-closed with zero committed
-  effects. Automatic Query handler/producer lowering builds on this foundation
-  in subsequent slices.
+  effects.
+- **Installed worlds install their schemes.** Installing a schema that declares
+  entity or relation schemes binds each scheme to the exact kind identity the
+  installation lowered, inside the Native schema authority; a schemaless
+  schema installs bit-identically (its schema-authority digest is unchanged).
+  Readmitting an original installation whose recorded schemes differ from the
+  declaration refuses.
+- **Seeds are born named.** A bootstrap seed of a schemed kind declares its
+  role with `WorthQueryApplicationEntitySeed::persistent_name(role)` (or
+  `persistent_name_with_discriminator(role, &discriminator)`; relation seeds
+  use `WorthQueryApplicationRelationSeed::persistent_name(role)`). The seed's
+  application key is its authored occurrence. Relation seeds also offer
+  `persistent_name_with_discriminator`. A schemed seed without a name, or a
+  named seed of an unschemed kind, refuses installation.
+- **Installed operations name their outputs.** See
+  [operation output names](#operation-output-names). A schemed record an
+  operation creates without a declared birth still refuses `MissingBirth`
+  with zero effects, and a plain deletion of a named record retires its name.
+  A named relation that retires with a deleted or replaced endpoint (retained
+  dangling for audit or cascade-deleted) retires its name the same way.
+
+#### Naming declared as Rust types
+
+Roles, discriminators and occurrences are ordinary Rust types. Import the
+traits and their derives together from
+`worth_query_decl::facade::application_naming` (also re-exported by
+`worth_query_host::facade::application_naming`).
+
+```rust
+#[derive(Clone, Copy, Debug, Eq, PartialEq, WorthQueryNameRole)]
+pub enum FaceRole {
+    Authored,
+    #[depends_on(Authored)]
+    CutPiece,
+    #[depends_on(Authored, CutPiece)]
+    Instance(u32),
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, ApplicationNameDiscriminator)]
+#[worth_query(identity = "app.face.split.v1")]
+pub enum FaceSplit {
+    SidedCut { cutter: NameRef<Face>, side: CutSide, boundary: Option<NameRef<Edge>> },
+}
+
+let scheme = ApplicationNameSchemeBuilder::<Schema, Face>::from_roles::<FaceRole>("app.face.v1")
+    .split_discriminator::<FaceSplit>()
+    .require_authored_occurrence()
+    .build()?;
+let occurrence = OccurrencePath::root(feature_key)?.index("instance", 2)?.child("hole")?;
+writer.name_created_entity(&face, WorthQueryOutputBirth::of_role(&occurrence, FaceRole::CutPiece))?;
+```
+
+- **`#[derive(WorthQueryNameRole)]`** makes an enum a scheme's roles. A unit
+  variant is one role; a variant carrying one `u32` is one role repeated by a
+  numeric index. `#[depends_on(Variant, ..)]` declares the roles whose
+  same-occurrence names a role's births may reference; an unknown, repeated
+  or self dependency and any cycle fail to compile at the offending name.
+  `from_roles::<R>(scheme_id)` (relations:
+  `for_relation_from_roles::<R, _, _>(scheme_id, relation)`) registers the
+  role order and the dependencies. A role's persisted name is its variant
+  name unless `#[worth_query(name = "..")]` keeps an earlier one. The derive
+  also orders the enum by role order and then by index as a number
+  (`Instance(10) > Instance(9)`), so the enum does not derive `Ord` itself.
+- **An indexed role is born under its declared name.** Relational accepts
+  only a scheme's declared roles, so `Instance(2)` and `Instance(10)` are
+  both born under `Instance`; `WorthQueryOutputBirth::of_role` writes the
+  index as the leading field of the birth's canonical discriminator, ahead of
+  any `.with_discriminator(&d)`. Sibling repetitions therefore mint distinct
+  names with no discriminator of their own. That discriminator is an
+  `IndexedRoleDiscriminator`: select such a split piece afterwards with
+  `NameSelection::keep_side(&IndexedRoleDiscriminator::new(index, d))` (or
+  `::index_alone(index)`); `keep_side(&d)` alone matches no indexed piece
+  and refuses `NoMatchingCandidate`.
+- **`#[derive(ApplicationNameDiscriminator)]`** writes a struct's or enum's
+  canonical encoding, the same bytes `worth_query_name_discriminator!` and a
+  hand-written `encode_canonical` write. `identity = ".."` is required;
+  `referenced_roles = ["..", ..]` and a variant's or named field's
+  `name = ".."` are optional. Each field is a closed value (integers,
+  `bool`, text, `[u8; 16]`, `Option`, a pair), a `WorthQueryName<K>`, a
+  `NameRef<K>`, or another `ApplicationNameDiscriminator`, which nests under
+  its own identity. A float, a record id or a raw payload fails to compile at
+  the field. Inside an `Option` or a pair, wrap a nested discriminator in
+  `NestedDiscriminator`.
+- **`NameRef<K>`** is `Committed(WorthQueryName<K>)` or
+  `InCommit(WorthQuerySameCommitName<K>)`, built from either with `.into()`.
+  A discriminator declared over it serves a referenced record born by an
+  earlier commit and one born by the same commit, and mints the same name.
+- **`OccurrencePath`** composes an occurrence from segments:
+  `root(key)`, `child(segment)`, `index(name, n)` and `anchored(name,
+  &anchor)`, a segment placed relative to another occurrence
+  (`generator/placement(base/instance[2])`; `segment.anchor()` reads it
+  back). Paths order by segment: a plain segment before the indexed ones of
+  its name, indexes by number, anchored segments last by anchor path. Each
+  path renders one canonical key (`pattern_1/instance[2]/hole`), `parse`
+  reads only that spelling back, and a segment holding whitespace or `/`,
+  `[`, `]`, `(` or `)` refuses `OccurrencePathDenial`; an empty, unbalanced
+  or non-closing anchor refuses `InvalidAnchor`. A naming scope descends
+  with `sub_scope`, `index` and `anchored`.
+- **Decoding a recorded birth.** Both derives also read their values back:
+  `#[derive(ApplicationNameDiscriminator)]` implements
+  `ApplicationNameDiscriminatorDecode` (`worth_query_name_discriminator!`
+  encodes only; implement the trait by hand beside it), and
+  `#[derive(WorthQueryNameRole)]` implements `from_role_parts`. A
+  `WorthQueryName<K>` or `NameRef<K>` field decodes only when `K` declares
+  `WorthQueryNamedKind`, and only as a name the read admitted under exactly
+  `K`'s subject class and declared subject: a recorded `Face` reference
+  never decodes as an `Edge` (`NameKindMismatch`). The field name
+  `worth.role.index` and the identity `worth.query.name-role-index.v1` are
+  reserved for indexed roles. A `RecordedNameBirth<K>` (from `birth_of`
+  below) decodes with `decode_role::<R>()`, `decode_discriminator::<D>()`
+  (after an indexed role's index; `None` when the birth carries no typed
+  discriminator) or `decode::<R, D>()` into a `NameBirth { name, occurrence,
+  role, parents, discriminator }`. A recorded `NameRef` reads back as
+  `Committed`, and every referenced name is one the read admitted at its
+  basis. Another identity (including a typed discriminator requested of a
+  birth told apart by its index alone), an unknown variant or field, an
+  index-only discriminator missing its index, truncated or trailing bytes,
+  and an unadmitted or wrong-kind name refuse typed
+  (`ApplicationNameDiscriminatorDecodeDenial`, inside
+  `NameBirthDecodeDenial`).
+- **`NamedTarget<K>`** pairs a held `WorthQueryName<K>` with the
+  `NameSelection` it resolves through (`exact`, `all_descendants`, `new`).
+
+#### Operation output names
+
+An installed operation's handler declares what each output means through its
+`CandidateWriter` (`worth_query_host::facade::application_naming` holds the
+vocabulary). Nothing here mints, reads or forges a name: the declarations ride
+the effect program to its commit, are lowered against the attempt's own
+commit basis into one Relational naming plan, and Relational's commit
+finalization validates every one against the performed effects and mints.
+An unnamed program carries no naming plan at all.
+
+- **Naming scope (recommended).** `let mut names = writer.naming_scope(occurrence)`
+  binds one `OccurrencePath` for every declaration under it;
+  `names.sub_scope("hole")?` and `names.index("instance", 2)?` open child
+  occurrences on the same writer. `names.birth(Role::Piece)` is a birth under
+  a typed role in that occurrence (chain `.with_discriminator(&d)`), and the
+  scope declares through the writer exactly what the manual calls below
+  declare, so both mint byte-identical names: `create_entity` /
+  `create_entity_in_context` and `link_named` create and name in one call;
+  `name_entity` / `name_relation`, `preserve_entity` / `preserve_relation`,
+  `split_entity` / `split_relation`, `retire_entity` / `retire_relation`,
+  `merge_entity` / `merge_relation`, and `same_commit_entity_name` /
+  `same_commit_relation_name` (a `NameRef<K>` via `.into()`) forward to them.
+  `names.writer()` reaches the writer for other effects.
+- **Least-member merge.** `names.merge_least_entity(&parents, keeper)` (or
+  `merge_least_relation`) keeps the parent whose name sorts least
+  (`WorthQueryName`'s order), in place (`WorthQueryLeastMergeKeeper::InPlace`)
+  or carried onto a created record (`Onto(&target)`), whatever order
+  `parents` lists them in. No parents refuses
+  `WorthQueryOutputNameDenial::EmptyMergeParents` while authoring; one parent
+  refuses at commit like any merge of fewer than two (`LineagePostureMismatch`).
+- **Completeness.** Every installed scheme requires all births named
+  (`require_all_births_named` is the fixed posture, not an option): a commit
+  creating any record of a schemed entity or relation kind without a birth or
+  posture covering it, even beside named siblings, refuses `MissingBirth`
+  naming that record and scheme, with zero effects.
+- **Birth.** `writer.name_created_entity(&created, WorthQueryOutputBirth::new(occurrence, role))`
+  names an entity the candidate created; `name_created_relation` names a
+  relation linked with `link_for_initialization`. The occurrence key comes
+  from the application's authored identity family (a feature's own identity,
+  never the operation's name), so two independently authored occurrences with
+  identical payloads keep distinct names. `.with_discriminator(&d)` tells
+  siblings of one occurrence and role apart, and may embed `WorthQueryName`s
+  live at the basis and not retired by the same operation (`AbsentBasisName`
+  otherwise). A relation's name never includes its endpoints: two
+  same-role relations of one occurrence collide (`DuplicateBirth`) unless
+  their discriminators differ.
+- **References to names born by the same commit.** An output of a later
+  role may tell itself apart by an output the same candidate named earlier
+  in the same occurrence. `writer.same_commit_entity_name(&created)` (or
+  `same_commit_relation_name`) returns a `WorthQuerySameCommitName<K>` for
+  an output the candidate created and has already named, whatever its
+  posture (a plain birth, a split piece or a minted merge survivor). It is
+  only a discriminator value (a field of that type in a
+  `worth_query_name_discriminator!` type): it is not a name, resolves
+  nothing and reveals no digest. At commit the referenced name is written
+  into the discriminator, in the same wire form a committed
+  `WorthQueryName<K>` takes, so the resulting name is the one the output
+  would have if the referenced record had been born by an earlier commit.
+  The scheme of the referencing output must list the referenced role
+  earlier in its `role_order` and declare
+  `role_depends_on(role, referenced_role)`; a reference across schemes (a
+  seam told apart by a member, or a member told apart by a seam) declares
+  the referenced role in the referencing output's scheme. References may
+  chain (a member, a seam told apart by it, a piece told apart by the
+  seam): Relational mints each birth after the births it references,
+  whatever their schemes. Pieces of one split cannot reference each other:
+  a reference designates an output named by an earlier call.
+- **Regeneration (`Preserve`).** `writer.retire_entity_name(held)` (or
+  `retire_relation_name`) beside the deletion of the holder, plus a birth of
+  the same occurrence and role, keeps the exact name on the regenerated
+  record. Re-minting a name whose holder stays live refuses `DuplicateBirth`.
+- **Split.** `writer.split_entity_name(parent, vec![(&piece, birth), ...])`
+  (or `split_relation_name`) splits the held `parent`, whose record the
+  candidate deletes, into created pieces; every piece carries a
+  discriminator. Afterwards `NameSelection::Exact` on the parent refuses
+  `Ambiguous { candidates }` with every piece and `AllDescendants` returns
+  them all.
+- **Merge.** `writer.merge_entity_names(&parents, keeper)` (or
+  `merge_relation_names`) with `WorthQueryOutputMergeKeeper::KeepParentInPlace(name)`,
+  `KeepParentOnto { keeper, target }` or `MintNew { target, birth }` (a
+  split-capable scheme requires the new birth's discriminator). Every held
+  parent name then resolves to the survivor. `KeepParentInPlace` leaves the
+  keeper's record untouched, so the keeper may live in a partition the
+  candidate never writes; Relational checks it against the commit basis.
+- **Kind safety.** A split parent, merge parent or keeper of another kind
+  than the output handle does not compile.
+- **Refusals, all with zero effects.** Naming an output whose kind has no
+  scheme, or a record the candidate did not create, refuses while authoring
+  (`WorthQueryApplicationAttemptDenial::persistent_name_denial()` returns the
+  typed `WorthQueryOutputNameDenial`; a split piece or minted merge survivor
+  without its discriminator is its
+  `Assembly(ExecutionNamingDenial::MissingSplitDiscriminator)`). A
+  same-commit reference refuses the same way: to an output the candidate
+  has not named (`UnnamedOutputReference`), from another candidate
+  (`ForeignOutputReference`), into another occurrence
+  (`CrossOccurrenceReference`), to a role that is not strictly earlier
+  (`Assembly(NonPrecedingSameOccurrenceRole)`) or to an earlier role the
+  scheme declares no dependency on
+  (`Assembly(UndeclaredSameOccurrenceDependency)`). A held name
+  that no longer designates one live record at the commit basis refuses
+  before staging
+  (`WorthQueryApplicationCommitDenial::persistent_name_output_denial()`).
+  Relational's own laws arrive as `persistent_name_refusal()` on the commit
+  denial: a split whose parent survives or a merge with an unretired
+  non-keeper (`LineagePostureMismatch`), a keeper outside its parents
+  (`InvalidMergeKeeper`), colliding sibling discriminators or a live re-mint
+  (`DuplicateBirth`), and a schemed output without a birth (`MissingBirth`).
+- **Invalidation.** A decision that resolved a name keys the live record it
+  rested on, so a later operation splitting, merging or retiring it makes the
+  earlier attempt's commit stale.
+- **History.** `HistoryDocument`-recorded operations name their outputs the
+  same way; undo, redo and checkout then keep held names on each navigated
+  node ([names across undo, redo and checkout](#names-across-undo-redo-checkout-and-rebuild)).
+
+- **Coupled producers and edit-envelope stages.** Every member of one
+  envelope names its outputs exactly as a direct operation does: each later
+  authored stage of `request.edit_envelope()` (or a `HistoryDocument`
+  envelope) and each coupled producer the edit runs (`coupled_outputs`)
+  declares through its own candidate writer or `writer.naming_scope(..)`,
+  and its declarations lower against the envelope's commit basis. Relational's
+  coupled assembly gives each member's plan the same create coordinates its
+  commands take (scoped local keys, prefix-created endpoints, a successor
+  round's chain keys and partitions; a successor round's plan replaces the
+  round it supersedes) and composes the authored prefix's plan and every
+  member's into the envelope's one plan, which commit finalization judges
+  whole. Names are byte-identical to the direct route; a name two members
+  both mint refuses `DuplicateBirth`, a schemed record any member leaves
+  unnamed refuses `MissingBirth`, and a later stage deleting a record an
+  earlier stage created refuses as a stage conflict (`ConflictingIntent`),
+  each with zero effects from every member.
+  A coupled member's decision reads the envelope's unpublished candidate
+  and reads names there too ([holding and resolving
+  names](#holding-and-resolving-names)), so it splits, merges and retires
+  names it read as well as names it holds as values.
+
+Limits: an installed operation splits, merges and
+retires a relation by the name its decision reader read
+([holding and resolving names](#holding-and-resolving-names)); unlinking a
+named relation with no declared posture still retires its name. Courts:
+[installed operation output names](../workspaces/worth-query/crates/worth-query-court-decl-host-persistent-naming/tests/worth_query_court_decl_host_persistent_naming/persistent_naming/outputs/mod.rs),
+[naming scopes and least-member merges](../workspaces/worth-query/crates/worth-query-court-decl-host-persistent-naming/tests/worth_query_court_decl_host_persistent_naming/persistent_naming/scope.rs),
+[completeness](../workspaces/worth-query/crates/worth-query-court-decl-host-persistent-naming/tests/worth_query_court_decl_host_persistent_naming/persistent_naming/completeness.rs),
+[coupled stages and producers](../workspaces/worth-query/crates/worth-query-court-decl-host-persistent-naming/tests/worth_query_court_decl_host_persistent_naming/persistent_naming/coupled/mod.rs),
+[relation output postures](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_operation_outputs.rs)
+and [same-commit references](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_same_commit_names.rs).
+
+#### Holding and resolving names
+
+A reader holds a name and later asks where its meaning lives now, at its
+own pinned basis, through `worth_query_host::facade::application_naming`.
+`ExecutionNameReader::at_observation(runtime, execution, observation)` reads
+the branch-local derived name index that Relational keeps current at every
+commit and rebuilds from canonical lineage events on fork, cold open, and
+replay:
+
+- `entity_name_of::<Schema, Entity>(id, &mut deps)` /
+  `relation_name_of::<Relation>(id, &mut deps)` return the admitted
+  `WorthQueryName<K>` a live record carries. A name whose installed scheme
+  governs another subject refuses `KindIdentityMismatch`; a record whose
+  name has moved on refuses `RecordNoLongerNamed`.
+- `resolve_entity::<Schema, Entity>(&held, &selection, &mut deps)` /
+  `resolve_relation` return `ResolvedName::{Exact, Plural, Retired { at_commit }}`
+  or `NameResolutionDenial::{Ambiguous { candidates }, NoCandidateInOwner,
+  NoMatchingCandidate, UnknownName, BasisPruned}`. `NameSelection::Exact` on
+  two or more live successors refuses with every candidate (a
+  `NameCandidate`, read with `name()`); it never picks a least member.
+  Cost is O(lineage path), flat in unrelated records and commits.
+- `entity_birth_of::<Schema, Entity>(&held, &mut deps)` /
+  `relation_birth_of::<Relation>(&held, &mut deps)` return the
+  `RecordedNameBirth` the held name was minted from, for any name born at or
+  before the basis (a split, merged or retired name keeps its birth), with
+  its parents and referenced names admitted at the same basis. A name not
+  recorded there refuses `UnknownName`.
+- `entity_name_for_birth::<Schema, Entity>(&birth, &parents, &mut deps)` /
+  `relation_name_for_birth` take a `WorthQueryOutputBirth` and the parent
+  names, compute the installed scheme's identity with Relational's one
+  minting function, and answer `Some(name)` only when that birth is recorded
+  and visible at the basis, `None` otherwise. A birth referencing a
+  same-commit name refuses `SameCommitBirthReference`, and a recorded parent
+  of another kind refuses as every held-name read does. Resolve the answer to
+  find where that name's meaning lives now.
+- Every read records what it rested on into `NameReadDependencies`;
+  `currentness_after_commit(&commit)` reports `Stale` exactly when that
+  commit split, merged, replaced, retired or restored a lineage the read
+  rested on, or birthed a name it found unknown, and `Clean` otherwise.
+- Inside an operation's decision reader, `reader.name_of(&identity)` and
+  `reader.resolve(&held, &selection)` require the entity kind to be a
+  declared decision read (`Entity: OperationReads<Operation>`); `resolve`
+  also requires the kind's `WorthQueryNamedKind` declaration. Every live
+  record the answer rested on is admitted into the read scope, returned as a
+  local identity, and keyed as that entity's decision fact, so a split,
+  merge, replacement or retirement ending it invalidates the decision. Any
+  name-read refusal other than the stable `RecordNotNamed` (including a
+  pruned basis and a resolved record that cannot be admitted as a local
+  identity), and any answer that also rested on ended names (which a later
+  `Restore` revives) or on a held name not yet born, has no decision fact
+  key: the projection refuses to seal with
+  `FailedDecisionRead::PersistentName` instead, even when the handler
+  swallowed the result (`PersistentNameReadVeto::for_name_of` and
+  `for_resolve` state the classification). A handler reaches these reads
+  through `DecisionReader::reader()`. `reader.birth_of(&held)`,
+  `reader.relation_birth_of(Relation::reference(), &held)`,
+  `reader.name_for_birth(&birth, &parents)` and
+  `reader.relation_name_for_birth(..)` read births the same way: a visible
+  birth is immutable and rests on no fact, while an answer that found no
+  birth vetoes sealing and, on an applied candidate, refuses
+  `CandidateNameHistory`, since the unpublished candidate may bear it.
+- Relations are read the same way. `reader.relation_name_of(&relation)`
+  takes the handle the decision reader's own traversal returned
+  (`relations_from` / `relations_to`), never a raw relation identity, and
+  `reader.resolve_relation(Relation::reference(), &held, &selection)`
+  returns the resolved relations as such handles with their endpoints.
+  Both require the relation kind to be a declared decision read
+  (`Relation: OperationReads<Operation>`). Every live relation the answer
+  rested on is admitted with its endpoints into the read scope and keyed as
+  the relation between that endpoint pair, so a later operation unlinking,
+  retiring, splitting or merging it (or deleting an endpoint) invalidates
+  the decision. The same veto applies: a refused read other than
+  `RecordNotNamed`, an ended name on the walked path or an unborn held name
+  never seals. The handler then passes the names it read to
+  `retire_relation_name`, `split_relation_name` and `merge_relation_names`.
+- A coupled member (a later edit-envelope stage or a coupled producer)
+  makes these reads against the envelope's unpublished candidate. The
+  candidate has no name index until the envelope commits, so a read answers
+  from the committed index at the envelope's commit basis, on the runtime
+  and branch observation the candidate was proposed on
+  (`WorthQueryDecisionNameDenial::CandidateBasis` when the reader cannot be
+  aligned with it). Relational's posture law makes that the candidate's
+  answer exactly while every record it rests on is live at the same
+  identity in both: a field edit, a re-owning or an in-place merge keeper
+  keeps the answer, and owner chains are read on the candidate itself, so
+  `resolve_in` sees a same-envelope re-owning. Otherwise the read refuses
+  typed and vetoes the envelope with zero effects: a record an earlier
+  member created has no published name (`UnpublishedCandidateRecord`); a
+  record it deleted, retired, split or merged away (any one of a resolved
+  name's live records, never silently dropped) refuses `EndedInCandidate`;
+  and an answer resting on an ended or unborn name refuses
+  `CandidateNameHistory`, because the candidate may restore, regenerate or
+  bear it. A coupled producer's successor round reads a record or relation
+  its own chain wrote as it was at the chain head, as all its other reads
+  of it are served, so it can read and act again on a name its earlier
+  round retired. Every admitted read records the same decision facts as a
+  committed read
+  ([candidate-basis courts](../workspaces/worth-query/crates/worth-query-court-decl-host-persistent-naming/tests/worth_query_court_decl_host_persistent_naming/persistent_naming/coupled/candidate/mod.rs)).
+- Group reads answer at a committed basis: a candidate's own group
+  partitions publish only with its envelope.
+- Name reads refuse `SettlementInFlight` while any commit at or before the
+  reader's basis is published but not yet settled, and read a runtime with
+  no installed name schemes, including a cold-restored one, as having no
+  names.
+
+Bridge continuity of a named record (`ContinuityLineageSource` on the
+Relational source) resolves the record's name over all live descendants:
+two or more live descendants report `SplitSuccessors` with exactly the
+resolved candidates, one live descendant (regeneration, restoration, a
+one-child split, a split whose siblings retired, or a merge's keeper)
+reports `SingleSuccessor`, and none reports `NoAuthoritativeSuccessor`;
+only live lineages are reported as resolved. Records born without a name keep record-history
+continuity. Courts:
+[tracked resolution](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_tracked_resolution.rs),
+[invalidation](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_tracked_invalidation.rs),
+[rebuild equivalence](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_tracked_rebuild.rs),
+[cost](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_tracked_cost.rs),
+[cold-directory restore](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_tracked_cold_directory.rs),
+[decision reader](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_decision_reader.rs), and
+[Bridge continuity](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_bridge_continuity.rs).
+
+#### Names as values, in rows and within an owner
+
+A kind whose names an application stores or resolves declares itself once,
+on its marker, with `decl::application_naming::WorthQueryNamedKind`:
+
+```rust
+impl WorthQueryNamedKind for Face {
+    type Subject = EntityNameSubject;               // or RelationNameSubject
+    type OwnerScope = OwnedThrough<(               // or Unowned
+        OwnerVia<IntroducedBy>,                     // face -> introducing feature
+        OwnerViaReverse<Features, Body>,            // feature <- the body listing it
+    )>;
+}
+```
+
+`Subject` takes the subject name from the marker's own declared `NAME`.
+`OwnerScope` is the chain of declared relations from a named record to the
+entity that owns it: `OwnerVia<R>` follows `R` from its declaring entity to
+`R::To`, `OwnerViaReverse<R, Source>` follows it back to `Source`, and a
+tuple chains up to four hops. A hop that does not start where the previous
+one arrived does not compile. Nothing is ever inferred from a name's text.
+
+- **Stored names.** `WorthQueryName<K>` and `NamedTarget<K>` are ordinary
+  column and input types. Every binding set declared with
+  `worth_query_native_scalar_bindings!` (and `fragment::NativeScalars`)
+  stores them, so `#[derive(WorthQueryRecord)]` takes them as fields with no
+  attribute, as `Option<..>` too; a hand-written set adds
+  `impl<K: WorthQueryNamedKind> Scalar<WorthQueryName<K>>` with
+  `WorthQueryNameApplicationValueBinding<K>` (and
+  `NamedTargetApplicationValueBinding<K>`). `#[derive(WorthQueryAction)]`
+  with `serde::Serialize` carries them as input fields directly. A struct
+  that derives `WorthValue` names the admitted delegate on such a field,
+  because that derive refuses generic owner types:
+  `#[worth_value(delegate = NamedTargetDelegate<Edge>)]` (or
+  `WorthQueryNameDelegate<Edge>`, inside `OptionalDelegate<..>` for an
+  `Option`). The stored form is one versioned, kind-tagged text. Text stored
+  as another kind, subject class or version, and any malformed value,
+  refuses typed (`StoredNameDenial`) and is never reinterpreted. A decoded
+  name is a held reference, not authority: `resolve`, carrier selections and
+  discriminators each admit it only against a recorded birth of that kind,
+  so a value that was never born resolves `UnknownName`.
+- **Projected names.** On `#[derive(WorthQueryProjection)]`, a field marked
+  `#[worth_query(name)]` of type `WorthQueryName<Root>` projects the name
+  the row's root entity carries; `Option<WorthQueryName<Root>>` projects
+  `None` for a record that carries no name. The read observes its rows'
+  names in the same kernel pass, only for a projection that declares a name
+  slot (`PROJECTS_PERSISTENT_NAMES`), and a nested row projects its own. A
+  required name on an unnamed record refuses `PersistentNameMissing`, a name
+  of another kind `PersistentNameKindMismatch`, and a read lane that does
+  not observe names `PersistentNamesUnavailable`: one-shot reads and
+  continuation pages observe them; live, managed-index and applied-candidate
+  reads do not yet. A projected name adds no dependency: a record's name
+  changes only when its lineage ends, which ends the record the row's
+  footprint already tracks. A hand-written projection declares
+  `const PROJECTS_PERSISTENT_NAMES: bool = true` on its
+  `WorthQueryApplicationProjection` impl and reads the same value with
+  `row.name::<Entity>()` / `row.optional_name::<Entity>()`.
+- **Owner-scoped resolution.** `reader.resolve_in(&owner, &held, &selection)`
+  on the decision reader resolves `held` among the live records `owner`
+  holds through the kind's declared owner chain. One resolves `Exact`,
+  several resolve `Plural` under `AllDescendants` and refuse `Ambiguous`
+  otherwise; an owner holding none refuses
+  `NameResolutionDenial::NoCandidateInOwner` with every candidate and the
+  owners that do hold it, and never falls back to another owner. Unscoped
+  `reader.resolve` now reports each `Ambiguous` candidate as a
+  `NameCandidate` carrying `name()` and `owners()` (local identities of the
+  owning entities; empty for an `Unowned` kind), so a caller can pick an
+  owner and call `resolve_in`. The operation declares a read of each
+  relation on the chain; each hop is a tracked adjacency fact of the
+  candidate, so re-owning a candidate invalidates the decision exactly as
+  splitting or retiring it does, and re-owning another record does not.
+  `ExecutionNameReader::resolve_entity_in` takes the owner read as a
+  closure for callers outside a decision reader, and
+  `entity_candidates` returns the matched records for a caller whose owner
+  read can fail.
+
+Courts:
+[stored and projected names](../workspaces/worth-query/crates/worth-query-court-decl-host-persistent-naming/tests/worth_query_court_decl_host_persistent_naming/persistent_naming/ergonomics.rs),
+[owner-scoped resolution](../workspaces/worth-query/crates/worth-query-court-decl-host-persistent-naming/tests/worth_query_court_decl_host_persistent_naming/persistent_naming/scoped.rs).
+
+#### Names across undo, redo, checkout and rebuild
+
+`HistoryDocument` navigation needs no naming ceremony. `undo_step`,
+`redo_to` and `checkout` select a recorded graph through Native, and Native
+derives the name continuity of that selection itself: a selected-away record
+holding a live name appends `Retire`; a restored record, which comes back at
+its exact original full-generation identity, appends `Restore` from its
+name's last retired lineage onto a fresh lineage; and a restored name still
+live on a record the selection retires continues in place (a kept-name
+`Create` plus `Replace`). A restored name still live on a record the
+selection keeps refuses `DuplicateBirth` before any effect, a selected record
+this branch never named whose kind has an installed scheme (selected from a
+sibling branch) refuses `MissingBirth`, and a selection carrying any caller
+naming plan refuses admission (`TargetNotPristine`). A record keeps every
+lineage it was bound to, so a read pinned before the restore still sees the
+lineage live (or ended) at its basis, and checkpoint capture, validation,
+expanded restore and cold-directory restore bind each restore epoch to its
+exact entity (the event names it, since no `Created` patch does). No earlier
+lineage event is edited, so a held name resolves to the member live at the
+checked-out node, `Retired` where the node deleted it, and a handle to a
+record the node does not hold stays refused. Unnamed records emit exactly the
+events they did before. Names are derived from the committed events alone, so
+an in-process rebuild of the lineage indexes reproduces them; durable journal
+replay of an owned-graph selection remains refused
+(`UnsupportedOwnedGraphSelectionReplay`). A selection derives only `Retire`,
+`Restore` and in-place continuity, never a split or merge edge: navigating
+forward again across a recorded split or merge after navigating back across
+it (undo a merge, then redo it) retires the revived source names, so their
+held names resolve `Retired` there rather than following to the pieces or
+the survivor; held names resolve as recorded wherever the original lineage
+stands (the recording node, undo back to it, and checkout). Courts:
+[installed history continuity](../workspaces/worth-query/crates/worth-query-court-decl-host-persistent-naming/tests/worth_query_court_decl_host_persistent_naming/persistent_naming/history.rs),
+[Native selection naming](../crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/relational_certification/history_ownership/named_selection/mod.rs), and
+[pinned restore epochs](../crates/worth-relational/src/tests/lineage/name_epoch_restore.rs).
 
 The runnable Slice 1B counterparts are the
 [end-to-end birth-wiring court](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_execution_birth_wiring.rs),
@@ -323,8 +947,11 @@ The runnable Slice 1B counterparts are the
 [fork-ancestry naming court](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_fork_ancestry.rs),
 [durable recovery court](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_durable_recovery.rs),
 [cold-directory checkpoint recovery court](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_cold_directory_recovery.rs),
-[durable naming schema-authority reopen court](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_schema_authority_reopen.rs), and
-[group-scheme installation court](../workspaces/worth-query/crates/worth-query-court-installation/tests/worth_query_court_installation/installation/naming_groups.rs).
+[durable naming schema-authority reopen court](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_schema_authority_reopen.rs),
+[group-scheme installation court](../workspaces/worth-query/crates/worth-query-court-installation/tests/worth_query_court_installation/installation/naming_groups.rs),
+[runtime group courts](../workspaces/worth-query/crates/worth-query-court-decl-host-persistent-naming/tests/worth_query_court_decl_host_persistent_naming/persistent_naming/groups/mod.rs),
+[durable group recovery court](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_group_durable_recovery.rs), and the
+[cell-complex consumer court](../workspaces/worth-query/crates/worth-query-court-decl-host-persistent-naming/tests/worth_query_court_decl_host_persistent_naming/persistent_naming/cell_complex.rs).
 
 ### 2.1 Declare operation access once
 
@@ -708,7 +1335,7 @@ Ordinary deletion and producer Retire alone do not authorize a fresh Birth. Nati
 recovery preserves the same physical carrier and unchanged authored records,
 retires the old output before adopting target contracts and indexes, and leaves
 reconstruction to the installed target producer. The
-[native codec journey](../crates/worth-relational/src/durability/authority/recovery/codec_transition/tests.rs)
+[native codec journey](../crates/worth-court-relational-cold-residency/tests/worth_court_relational_cold_residency/relational/relational_certification/cold_residency/codec_neutrality.rs)
 uses nonempty authored source, incompatible V1/V2 output codecs, real producer
 publication, a source edit through Preserve, and current-format reopen.
 
@@ -975,25 +1602,34 @@ namespaces, a `worth_query_native_scalar_bindings!` set and inline `reads`.
 
 #### Derive declarations
 
-Four derives, re-exported by `worth_query_decl::facade` and
+Seven derives, re-exported by `worth_query_decl::facade` and
 `worth_query_host::facade`, write the same declarations from one Rust item.
 Each expands only into the public traits and macros above, so derived and
 hand-written members mix in one schema, and a derived declaration with the
 same names and identities installs a byte-identical canonical schema.
-Expansions name `::worth_query_decl`, and `WorthQueryProjection` also names
-`::worth_query_host`: a crate deriving `WorthQuerySchema`, `WorthQueryRecord`
-or `WorthQueryAction` depends on `worth-query-decl`, and one deriving
-`WorthQueryProjection` depends on both.
+Expansions name `::worth_query_decl`, and `WorthQueryProjection` (plus
+`WorthQueryAction` when `body` uses its default `WorthQueryOperationBodyDecision`)
+also names `::worth_query_host`.
 
 - `WorthQuerySchema` on a unit struct declares its role: `schema` (a root:
   `Fragment`, `ApplicationSchema`, `ApplicationSchemaComposition`),
   `fragment`, `entity` or `relation`. `reference(Schema, Fragment)` adds the
-  usual `reference()`; `name = ".."` keeps a persisted name.
+  usual `reference()`; `name = ".."` keeps a persisted name. The schema role
+  dispatches typed correction members through the declared membership. The
+  `relation` role also accepts native integrity keys (`cardinality`, `acyclic`,
+  `self_edges`, `unique`, `deletion`, `cross_context`, `symmetric`, `orbit`,
+  `same_partition_endpoints`, `reaches_at_least`).
+- `WorthQueryRelation` on a unit struct declares a standalone `Relation`, its
+  integrity constants, and optional `reference(Schema, Fragment)` (with
+  `from = Entity`) without repeating the `relation` role flag.
 - `WorthQueryRecord` on a row declares its `aspect = Marker` and its `Record`
   for `bindings = Codecs`. With `fragment = F, entity = E` it also declares one
-  `FieldSelection` alias per column, named after the column. Columns default
-  to the field name in PascalCase; `column = ".."`, `equality`, `read_only`
-  and `unique` are per field, and `Option<T>` is an optional column.
+  `FieldSelection` alias per column, named after the column, plus zero-string
+  const selectors on the row (`Row::select_<field>()`, `Row::<FIELD>`) and its
+  aspect (`Aspect::<field>()`, `Aspect::<FIELD>`) while keeping `Alias::at(..)`
+  working. Columns default to the field name in PascalCase; `column = ".."`,
+  `equality`, `read_only` and `unique` are per field, and `Option<T>` is an
+  optional column.
 - `WorthQueryProjection` on a result row declares a `<row>_slots` module of
   slot markers, their portable identities (`namespace = NS` gives
   `NS.slot.<name>`; `slot = ".."` keeps an existing one), a selector per
@@ -1010,15 +1646,61 @@ or `WorthQueryAction` depends on `worth-query-decl`, and one deriving
   `project_row::<Query>(row)`, so a row can feed a domain result type that
   converts from it. `selector = name` renames a slot's generated selector
   function when the row already has a method of the field's name.
-- `WorthQueryAction` on an input declares its input binding, operation (with
-  forwarded `access(..)` and inline capabilities such as `reads(Task)`),
+- `WorthQuery` on a request struct (or unit struct with `principal_scope` or
+  `scope = Alias, scope_value = fn`) declares the query marker
+  (`worth_query_application_query!` with `UnitApplicationValueBinding` by
+  default, omitting `parameters NoParameters` unless overridden via
+  `parameters = Binding`), request input binding, named parameter refs on the
+  query marker, scope extractor, contextual query binding, and—when
+  `root = Entity` is present—`Query::definition()` / `definition_with(shape)`
+  with defaults `Many`, `Public` disclosure, `CurrentAndPinned` basis,
+  `OneShot` lanes, and `Public` authorization (overridable via `cardinality`,
+  `disclosure`, `basis_support`, `lanes`, and `ability`).
+- `WorthQueryAction` on an input declares its input binding, compile-time-typed
+  `<field>_input()` accessors (`ApplicationInputField` /
+  `ApplicationOptionalInputField`) for `OperationRef::typed_body()`, operation
+  (with forwarded `access(..)` and inline capabilities such as `reads(Task)`),
   contextual mutation binding and optional source-completion `delivery`, with
-  identities from `namespace`. Exactly one field carries `scope = Alias`, or
-  the struct declares `principal_scope = Alias`. `validate = path::to::check`
+  identities from `namespace`. Exactly one scope is declared: a field marked
+  `scope = Alias`, struct-level `principal_scope = Alias`, or struct-level
+  `scope = Alias, scope_value = path::to::fn`. With `body`, `result` defaults
+  to `UnitApplicationValueBinding`, `decision` defaults to
+  `WorthQueryOperationBodyDecision<Schema, ScopeEntity>`, and `access` defaults
+  to reading the selected scope field (all overridable). `validate = path::to::check`
   forwards a `fn(&Input) -> Result<(), &'static str>` as the input binding's
   `validate:`: an invalid input is refused at capture
   (`WorthQueryOperationInputCaptureDenial::Encoding(Validation(..))`) with its
   key returned, before any effect.
+- `WorthQueryCorrection` on a unit marker declares a standard recorded-inverse
+  `ApplicationCorrectionBinding<Schema>` (`source`, `inverse`, `disclosure`,
+  optional `source_body`, `preimage_fields(..)` + `preimage_bytes` or `demand`,
+  and `derive = fn`, using `decode_preimage_field` for typed pre-image reads).
+- `WorthBinaryValue` (`#[worth_binary(namespace = "...", version = 1)]` or
+  `#[worth_query(identity = "...")]`) on a fixed-width struct declares a
+  versioned, metered `BinaryValueDelegate`, `ApplicationScalarValueBinding`,
+  `ApplicationReadableScalarValueBinding`, `WorthQueryDefaultValueBinding`, and
+  `WorthBinaryWireField` (`worth.domain-binary.v1`), rejecting raw `f32`/`f64`,
+  unbounded fields, non-canonical field bits, version mismatches, and sizes
+  exceeding `InlineBytes::MAXIMUM_LENGTH` at compile time, with optional
+  `validate = fn_path`.
+- `WorthManagedIndex` (`#[worth_index(schema = ..., record = ..., source = ..., probe = ..., kind = ..., namespace = "...", version = 1)]`
+  or `#[worth_query(...)]`) on a unit marker declares
+  `ApplicationManagedIndexBinding<Schema>` with checked `BinarySourceTree`,
+  `CheckedSummarySourceTree`, and `Native { cold: AdmitRebuild }` defaults and
+  optional stock/custom provider registration (`text_prefix`, `interval_1d`,
+  `box_2d`, `box_3d`, `custom`) consumed directly by `managed_indexes: [...]`
+  in `worth_query_application_program!`. `WorthQuery` accepts `managed_index = Index` and
+  `#[worth_query(probe)]` (plus struct-level `scope = Selection` paired with
+  field-level `#[worth_query(scope)]`) to wire the probe parameter, fallible
+  `prepare_parameters`, and `.managed_index(..)` in one derive.
+- On the host side, `worth_query_application_contribution!` accepts
+  `query(Binding) { definition: expr; };` to register a query and its binding
+  together, optional `as ActionAlias` on action entries to declare typed
+  `ApplicationActionReference` aliases, and implements `Registration<Schema>`
+  on the generated definition. `worth_query_application_program!` collapses a
+  single-contribution `ApplicationFeature`, `ApplicationSchemaContribution`,
+  `WorthQueryApplicationContribution`, and `ApplicationProgramDefinition` into
+  one declaration.
 
 <!-- illustrative -->
 ```rust,ignore
@@ -1062,13 +1744,18 @@ installs a derived board beside hand-written members under
 searches with a case-insensitive `where_filter`, filters an
 `Option<CanonicalDate>` column and commits derived and written actions through
 `WorthQuerySourceCustody`; its parity courts compare derived and hand-written
-declarations, wire-identity overrides included. `CanonicalDate` and the other
-native scalar carriers (`CanonicalTime`, `CanonicalTimestamp`,
-`CanonicalTimestampTz`, `CanonicalF32`, `CanonicalF64`, `InlineBytes`,
-`InternedString`) are named from `decl::application_schema` (in Host,
+declarations, wire-identity overrides included. `CanonicalDate` and the other native scalar carriers (`CanonicalTime`,
+`CanonicalTimestamp`, `CanonicalTimestampTz`, `CanonicalF32`, `CanonicalF64`,
+`InlineBytes`, `InternedString`) plus `CanonicalTemporalTextDenial` are named
+from `decl::application_schema` (in Host,
 `host::declaration::application_schema`), so an application needs no
-`worth-foundational` dependency. A `CanonicalDate` input member is captured
-through `serde::Serialize`; it is not a `WorthValue`.
+`worth-foundational` dependency. `CanonicalDate` provides proleptic Gregorian
+`from_ymd`/`to_ymd` and ISO-8601 `Display`/`FromStr` (supporting 4-digit years
+and signed expanded years beyond `0000..=9999`); `CanonicalTimestamp` provides
+`from_ymd_hms_micros`/`to_ymd_hms_micros`/`utc_date`, expanded-year ISO-8601
+`Display`/`FromStr`, and strict 4-digit-year RFC 3339
+`from_rfc3339`/`to_rfc3339`. A `CanonicalDate` input member
+is captured through `serde::Serialize`; it is not a `WorthValue`.
 
 Declare operation access once with `worth_query_operation!(... for Schema:
 SchemaBinding, input Input; access { ... })`. Both Rust capabilities and schema
@@ -3237,11 +3924,16 @@ use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryAuthenticationAudience, WorthQueryAuthenticationMethod,
 };
 
+// Audiences, methods and issuers are declared types, never strings.
+worth_query_authentication_audience!(pub HostAudience);
+worth_query_authentication_method!(pub ExampleMethod);
+worth_query_principal_issuer!(pub ExampleIssuer);
+
 let adapter = admit_authentication_adapter(
     application.runtime.installed_schema(),
     WorthQueryAuthenticationAdapterAdmission::new(
-        WorthQueryAuthenticationAudience::new("host")?,
-        WorthQueryAuthenticationMethod::new("example")?,
+        WorthQueryAuthenticationAudience::of(HostAudience),
+        WorthQueryAuthenticationMethod::of(ExampleMethod),
         admission_clock.clone(), // the observer installed with the runtime time source
     ),
     IdentityAdapter,          // your impl of WorthQueryAuthenticationAdapter
@@ -3259,15 +3951,16 @@ executor:
 ```rust,ignore
 // Illustrative: not compiled. The compiled court is
 // worth-query-court-decl-host-integration/.../host/application_startup/local_principal.rs.
+worth_query_principal_issuer!(pub BoardLocal);
+worth_query_authentication_method!(pub LocalProcess);
+
 let local = WorthQueryLocalProcessPrincipal::new(
-    "board.local-owner.v1",                 // configuration identity
-    WorthQueryExternalPrincipalIdentity::new("local://board", "owner")?,
-    WorthQueryAuthenticationAudience::new("host")?,
-    WorthQueryAuthenticationMethod::new("local-process")?,
+    WorthQueryExternalPrincipalIdentity::new(BoardLocal, "owner")?,
+    HostAudience,
+    LocalProcess,
     Duration::from_secs(600),               // finite; zero is refused
 )?;
-let principal = admit_authentication_adapter(schema, admission, local)?
-    .authenticate_local(&scope)?;
+let principal = local.admit(schema, clock)?.authenticate_local(&scope)?;
 ```
 
 The admission's audience, method and clock are checked exactly as for a remote
@@ -3276,7 +3969,10 @@ expired identity is refused at request admission like any other credential.
 
 `IdentityAdapter` implements `WorthQueryAuthenticationAdapter`: it names its
 `Credential` type and returns a `WorthQueryValidatedExternalPrincipal` from
-`validate` (see `.../product_workflow_support/adapters.rs`). The external
+`validate` (see `.../product_workflow_support/adapters.rs`). A verifier maps
+each credential issuer it trusts onto a declared issuer type
+(`WorthQueryExternalPrincipalIdentity::new(ExampleIssuer, subject)`); an
+undeclared issuer cannot form an identity at all. The external
 identity must already be bound to a principal in the graph. The example does
 that while seeding, in the `initial_state` closure from §4.1:
 
@@ -3289,7 +3985,7 @@ graph.bind_principal(
     primary_graph::WorthQueryApplicationPrincipalKey::new("product-example")?,
     1_u64,                    // the application's own principal id
     declaration::authentication::WorthQueryExternalPrincipalIdentity::new(
-        "https://issuer.example",
+        ExampleIssuer,
         "product-example",
     )?,
     declaration::authentication::WorthQueryPrincipalMappingStatus::Enabled,
@@ -3743,7 +4439,20 @@ or phase is retained; matching a variant lends or returns the exact owner. Match
 command. Report `Declined` evidence and drop it; do not keep the native carrier
 across frames. `WorthQueryTerminalSourceEvidence<S, I>` is `Debug` whenever the
 binding's `Denial` and `Result` are, so a generic helper reports it with that one
-bound (`where WorthQueryTerminalSourceEvidence<S, I>: Debug`).
+bound (`where WorthQueryTerminalSourceEvidence<S, I>: Debug`). Call `.erase()`
+on `WorthQuerySourceCustody` or `WorthQuerySourceCustodyStep` to store
+heterogeneous actions in one `WorthQueryAnySourceCustody<S, P>` slot; use
+`close_unexecuted(&fresh_request)` to discharge an unexecuted command without
+running its handler (post-execution phases refuse with
+`NativeObligationRetained` and return custody intact), or `try_into_typed` to
+recover the exact typed owner (`Err(self)` on mismatch). Feed prepared
+reversals or reapplications (`WorthQueryOperationCorrectionPreparation`) into
+`WorthQuerySourceCustody::accept_correction` or
+`WorthQueryAnySourceCustody::accept_correction` so corrections share the same
+Host custody spine: `Prepared` candidates publish under the prepared
+candidate's scope and use the supplied `request` first for cleanup close (so a
+foreign or stopped close request can yield `Pending` after commit, preserving
+the committed owner for a fresh retry).
 
 <!-- illustrative -->
 ```rust,ignore
@@ -8164,6 +8873,66 @@ maintained prefix/geometry compositions use this same strategy. Prefix summaries
 keep exact UTF-8 extrema; geometry summaries use the numerical owner's closed
 bounds and union, without Query-specific tolerances or field policy.
 
+For standard ordered point/prefix, 1D interval-overlap, and 2D/3D bounding-box
+overlap indexes, you do not need to author a balanced binary source tree, byte
+codec, or 10-constant index trait by hand. Combine `#[derive(WorthBinaryValue)]`,
+`#[derive(WorthManagedIndex)]`, `#[derive(WorthQuery)]` (`managed_index` +
+`#[worth_query(probe)]`), and the four stock checked adapters in
+`host::ordered_index` (`WorthQueryTextPrefixIndex`, `WorthQueryInterval1DIndex`,
+`WorthQueryBox2DIndex`, `WorthQueryBox3DIndex`), then use
+`request.query(q).ensure_index_ready::<Index>()` on startup or cold reopen (which
+opens the index and rebuilds ONLY when status is `Created`, returning warm
+`Ready` indexes without reading Source and refusing `Evicted`/budget/authority
+denials honestly):
+
+<!-- illustrative -->
+```rust,ignore
+// Shop Floor 2D equipment bounding-box overlap (~15 lines total, zero JSON):
+#[derive(Copy, Clone, Eq, PartialEq, WorthBinaryValue)]
+#[worth_binary(namespace = "shopfloor.query_box", version = 1, validate = check_box2d)]
+pub struct QueryBox2D { pub min_x: i64, pub min_y: i64, pub max_x: i64, pub max_y: i64 }
+impl WorthQueryBox2DProbe<i64> for QueryBox2D {
+    fn box_2d_bounds(&self) -> ([i64; 2], [i64; 2]) { ([self.min_x, self.min_y], [self.max_x, self.max_y]) }
+}
+
+#[derive(WorthManagedIndex)]
+#[worth_index(
+    schema = Schema, record = Equipment, source = EquipmentSourceBinding, probe = QueryBox2D,
+    kind = box_2d(EquipmentRow::min_x(), EquipmentRow::min_y(), EquipmentRow::max_x(), EquipmentRow::max_y()),
+    namespace = "shopfloor.equipment_box", version = 1,
+)]
+pub struct EquipmentBoxIndex;
+
+#[derive(Clone, WorthQuery)]
+#[worth_query(schema = Schema, context = ShopContext, namespace = FIND_EQ,
+    scope = FloorId, managed_index = EquipmentBoxIndex, lanes = OneShotAndLive, limits = 64)]
+pub struct FindEquipmentInBox {
+    #[worth_query(scope)] pub floor: String,
+    #[worth_query(probe)] pub region: QueryBox2D,
+}
+
+// Wire into `worth_query_application_program!` with one line (registers schema + checked provider + watches):
+//   managed_indexes: [EquipmentBoxIndex],
+// Or wire a custom provider inside a feature block:
+//   managed_index(MyCustomIndex) { provider: my_provider; watches: true; };
+// Daymark title-prefix & calendar interval use `kind = text_prefix(TaskRow::title())`
+// and `kind = interval_1d(TaskRow::start_min(), TaskRow::end_min())`.
+// Cold reopen / startup:
+let index = request.query(q).ensure_index_ready::<EquipmentBoxIndex>()?;
+```
+
+For custom ordered domains beyond the four stock families, wrap a pure
+`WorthQueryOrderedIndexDomain` (plus `WorthQueryOrderedIndexPredicateDomain`
+when live watches are needed) in `host::ordered_index::WorthQueryOrderedIndexAdapter`.
+Your domain supplies only metered row ordering, a bounded `Copy + Eq` source summary
+with associative summary combination, and the exact metered probe predicate
+(with `WorthQueryOrderedSlotBounds`, `read_ordered_field`, and the metered
+text/prefix helpers in `host::ordered_index` for string keys). The adapter owns
+the height-balanced binary source tree, incremental insert/update/delete,
+deterministic slot tie-breaking, bottom-up summary propagation, and checked
+`WorthQueryManagedIndexProvider` / `WorthQueryManagedIndexPredicateProvider`
+wiring.
+
 Both complete strategies record the actual visited regions and checked prunes.
 Before releasing slots, Query verifies that this cut covers the checked tree and
 that matched Source occurrences correspond exactly to those slots. The receiver
@@ -8629,7 +9398,7 @@ Inside a mutation handler, read a managed Parent through
 operation's reads and register its exact binding with
 `schema.operation_managed_index_read::<PrefixBinding, _, _>(RenameItem::reference())`.
 Installation rejects a Parent whose scope mapping differs from that mutation;
-execution requires the resolved scope to equal the operation's admitted scope.
+the intent resolves to the operation's admitted scope or a declared shared-owner peer.
 Parent admission and the Source's own fresh principal, scope
 and READ checks still run. The decision retains the same qualified candidate
 influence or conservative whole-Source expectation described above, including
@@ -8642,6 +9411,60 @@ Ordinary row/result-set expectations use `expect_source` and `expect_result_set`
                     directory: input.directory.clone(),
                     prefix: input.prefix.clone(),
                 });
+```
+
+A coupled producer decision, the partitioned computations it prepares, and a
+later authored decision with an applied candidate can make the same
+`index_query` read. When the live assembly proves that the probed scope, the
+Parent's Source, and the Parent's other reads are unchanged, the read reuses
+the admitted before-basis index. Otherwise it probes a temporary managed index
+from the exact applied candidate. A newly created scope can contribute its own
+rows and inherit rows from its ordered-events predecessor. A declared peer
+read sees Source writes already applied by earlier stages of the envelope.
+The scope key resolves on the applied candidate: a scope an earlier stage
+retired refuses as an unknown scope, and a key an earlier stage gave to a new
+record names that record.
+
+A read that reused the before-basis index keeps candidate support. When a
+later member of the same envelope changes a record or adjacency list the
+probed scope's Source read, or one of the Parent's other reads, an owned route
+derives again; any other reader's edit refuses (`CoupledReadSupportChanged`)
+and publishes nothing. A later member that writes the same kinds under
+another scope does not disturb the read. A derived-again round whose probe would read a record its own
+earlier round wrote refuses the probe (`PriorEffectRead`) and the round stops
+with that cause.
+
+The temporary index is local to the read. Only successful commit publication
+can advance the published index. Parent and Source READ permissions still run
+under the original admitted request, and the operation must declare the
+managed Parent and its projected fields. The Source and projection dependencies
+are recorded with the decision or computation call and participate in coupled
+read-support validation. Cancellation, deadlines, and work exhaustion retain
+their typed causes. Input capture readers have no managed index read.
+
+To read the Parent at a peer scope, declare the governing relation:
+`schema.operation_shared_owner_managed_index_read::<PrefixBinding, _, _, _, _, _>(op, ModelFeature::reference())`.
+A peer is any scope that shares an owner with the operation's own scope through
+that relation (`owner -relation-> own scope` and `owner -relation-> peer`);
+declare several governing relations and any of them may admit a peer; the
+relation's `to` endpoint must be the Parent's input-named scope entity, and the
+operation's own scope still needs `operation_managed_index_read`. Both owner
+sets are read as recorded decision facts, and each probed scope records its own
+managed Source fact, so an edit to the relation or to any probed peer's Source
+invalidates the decision. Any other scope, a foreign principal, or a peer with
+no such declaration refuses as `ForeignAssociation` before any provider call.
+A work, cancellation or deadline stop while reaching an owner keeps its own
+typed cause (`WorthQueryComputationManagedIndexDenialKind::ScopeTraversal`).
+A shared decision-read scope cannot lend a peer read: its declaration and its
+archive record are refused.
+
+<!-- compiled: managed_peer_decision.rs -->
+```rust
+        .operation_managed_index_read::<query::PrefixBinding, _, _>(op)
+        .operation_shared_owner_managed_index_read::<query::PrefixBinding, _, _, _, _, _>(
+            op,
+            GrantResource::reference(),
+        )
 ```
 
 Resolve the index with `resolver.typed_managed_index(Index::reference())` in its
@@ -9083,6 +9906,70 @@ is process-local and reports loss across reopen; diagnostic entries never
 authorize effect replay. Applications continue through the Query declaration
 and Host facades. See the [Signal owner contract](../crates/worth-signal/README.md#standalone-authored-owner-readmission)
 and [Bridge authored recovery](../crates/worth-runtime-bridge/README.md#authored-conditional-definition-recovery).
+
+#### Desktop temporal contribution and reopen catch-up
+
+Desktop applications that schedule one-shot or recurring timed intents do not
+need to hand-assemble domain operation definitions, canonical queries, resource
+envelopes, named-clock plumbing, and reconstruction bindings separately. Use
+`worth_query_host::facade::temporal_contribution`:
+
+1. **Derive the conditional package contract once** from typed schema field
+   selections with `WorthQueryDesktopTemporalNodeSpec::from_fields(..)`, then
+   call `.package_contract(..)` inside `WorthQueryApplicationConditionalBinding::package_contract`
+   and `.conditional_binding(..)` inside `install`.
+2. **Pair a caller-pumped monotonic clock** with `WorthQueryDesktopClockSource::new(..)`,
+   returning `(source, handle)`. It spawns zero background threads and reads no
+   ambient OS clock; the caller advances `WorthQueryDesktopClockHandle::advance_to`
+   explicitly on reopen or foreground ticks.
+3. **Install in one call** via `install_desktop_temporal_clock_operation(installation, WorthQueryDesktopTemporalBindingSpec { .. })`,
+   which derives the paired `WorthQueryDesktopClockHandle` directly from the
+   installed `WorthQueryDesktopClockSource` (preventing foreign clock handle
+   pairing; low-level `pump_temporal_catch_up_until` / `pump_temporal_catch_up_until_observing`
+   also reject foreign handles with `ForeignClockHandle`). Use
+   `WorthQueryAlwaysReadyTemporalPredicate` when authoritative `active`
+   lifecycle and due coordinate alone govern execution. Returning
+   `WorthQueryInstalledDesktopTemporalClock` (the sole implementor of sealed
+   `WorthQueryDesktopTemporalHomeBinding`) registers the temporal rule cleanly
+   with `WorthQueryApplicationHome`. Authoritative intent lifecycle, bounded
+   projection (`WorthQueryTemporalIntentBounds`), operation effects, and fresh
+   principal admission remain strictly caller-owned.
+4. **Support recurring schedules atomically** by implementing
+   `WorthQueryTemporalOperationInvoker::next_occurrence` to return
+   `WorthQueryTemporalOccurrenceOutcome::Reschedule { next_due_nanoseconds, next_input, next_input_identity, next_idempotency }`
+   (strictly increasing due coordinate) and passing `WorthQueryTemporalDueField::new(due_field)`
+   in the binding spec so Query observes, verifies against the projected due
+   coordinate, and writes `revision`, `lifecycle`, and `due` atomically in the
+   same commit as `apply`.
+   For the common recurring rule (an entity with `rule_id`, `revision`,
+   `due_ns`, `interval_ns`, `max_fires`, `fired_count`, `lifecycle` and `gate`
+   fields under one hub row), `worth_query_recurring_rule!` declares the whole
+   binding (node, clock, projector, invoker, fresh owner admission, fire
+   operation and schedule upsert handler) in one block; install it with
+   `conditionals: Config { recurrence: Rule }` in `worth_query_application_program!`
+   and seed its hub with `Rule::seed_hub(bootstrap)`.
+5. **Pump missed occurrences on reopen in one Home call** via
+   `session.catch_up_temporal::<MyTemporalBinding>(now, WorthQueryTemporalCatchUpPolicy::bounded(64)?)?`
+   (funded by the session's execution policy) or
+   `home.catch_up_temporal::<MyTemporalBinding>(now, execution, WorthQueryTemporalCatchUpPolicy::bounded(64)?)?`
+   (or `home.catch_up_temporal_observing::<MyTemporalBinding>(now, execution, policy, |batch| ..)`,
+   `home.pump_temporal::<MyTemporalBinding>(execution, policy)`, or
+   `home.pump_temporal_observing::<MyTemporalBinding>(execution, policy, |batch| ..)`,
+   bounded by `1..=MAX_TEMPORAL_CATCH_UP_STEPS`). Every step runs under the
+   caller's original leased or lease-free `ExecutionRequest::serial` budget,
+   deadline, and cancellation end-to-end, retains owed granular invalidation
+   batches on the returned `WorthQueryTemporalCatchUpReport`
+   (`take_granular_invalidation_batches()`) or streams them directly to the
+   callback, and exposes `fired()`, `skipped()`, `remaining()`, and typed
+   `status()` (`CaughtUp`, `StepLimitReached`, `BudgetExhausted`, `Cancelled`,
+   `AuthorizationRefused`, `OperationRefused`, `Backpressured`, `ClockStopped`,
+   `BlockedByRetainedDecision`, `ObservationFailed`, or post-progress
+   `StepRefused`, which preserves earlier progress and owed granular
+   invalidation batches instead of dropping them in a raw `Err`). Partial-batch
+   stops leave durable state consistent for resumption on the next pump without
+   duplicating or skipping any occurrence. **OS background wakes while the
+   desktop application is closed remain outside WORTH**; callers advance missed
+   recurrences explicitly when the app reopens.
 
 The fresh Native-only Directory Host journey now opens the actual Home,
 initializes once, reads seeded data, publishes an ordinary mutation through the

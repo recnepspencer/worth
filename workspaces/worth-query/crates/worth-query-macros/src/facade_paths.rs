@@ -13,6 +13,12 @@ pub(crate) fn fragment() -> TokenStream {
     quote!(::worth_query_decl::facade::application_schema::fragment)
 }
 
+/// `worth_query_decl::facade::application_naming`: persistent-name roles
+/// and discriminators.
+pub(crate) fn naming() -> TokenStream {
+    quote!(::worth_query_decl::facade::application_naming)
+}
+
 /// `worth_query_host::facade`: the projection trait and its row.
 pub(crate) fn host() -> TokenStream {
     quote!(::worth_query_host::facade)

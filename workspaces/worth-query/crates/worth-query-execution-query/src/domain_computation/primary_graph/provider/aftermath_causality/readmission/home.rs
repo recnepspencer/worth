@@ -4,15 +4,34 @@ use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleI
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::runtime::RelationalRuntime;
-use worth_query_execution_attempt::facade::domain_computation::primary_graph::provider::aftermath_causality::readmission::{readmit_branch, readmit_latest, QueryHomeCorrectionLineageDenial as Denial};
+use worth_foundational::facade::DurableCompositePublicationAttemptIdentity;
+use worth_query_execution_attempt::facade::domain_computation::primary_graph::provider::aftermath_causality::readmission::{readmit_branch, readmit_latest_with_unpublished, QueryHomeCorrectionLineageDenial as Denial};
 use crate::domain_computation::primary_graph::{
     schema_layout::WorthQueryPrimaryGraphLayout, WorthQueryPrimaryGraphApplicationRuntime,
 };
 use worth_query_installation::facade::ApplicationSchema;
+use worth_relational::facade::history::CommitId;
 use worth_runtime_world::facade::{RuntimeWorldInspectionPort, RuntimeWorldObservationPort};
 pub fn verify<Schema: ApplicationSchema>(
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     execution: &ExecutionRequest<'_, '_>,
+    metadata_authority: Option<
+        &worth_relational::facade::durability::HomeReadmissionMetadataAuthority,
+    >,
+) -> Result<(), Denial> {
+    verify_with_unpublished(
+        application,
+        execution,
+        &std::collections::BTreeMap::new(),
+        &std::collections::BTreeSet::new(),
+        metadata_authority,
+    )
+}
+pub fn verify_with_unpublished<Schema: ApplicationSchema>(
+    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    execution: &ExecutionRequest<'_, '_>,
+    continuable: &std::collections::BTreeMap<CommitId, DurableCompositePublicationAttemptIdentity>,
+    all_unpublished: &std::collections::BTreeSet<CommitId>,
     metadata_authority: Option<
         &worth_relational::facade::durability::HomeReadmissionMetadataAuthority,
     >,
@@ -27,6 +46,7 @@ pub fn verify<Schema: ApplicationSchema>(
             &owner.inspection_port(),
             &owner.observation_port(),
             Some(&application.runtime.primary_provider),
+            (continuable, all_unpublished),
             metadata_authority,
         )
     })
@@ -38,7 +58,18 @@ pub fn verify_source(
     inspection: &RuntimeWorldInspectionPort,
     observation: &RuntimeWorldObservationPort,
 ) -> Result<(), Denial> {
-    verify_with_material(execution, native, layout, inspection, observation, None, None)
+    let empty_map = std::collections::BTreeMap::new();
+    let empty_set = std::collections::BTreeSet::new();
+    verify_with_material(
+        execution,
+        native,
+        layout,
+        inspection,
+        observation,
+        None,
+        (&empty_map, &empty_set),
+        None,
+    )
 }
 fn verify_with_material(
     execution: &ExecutionRequest<'_, '_>,
@@ -49,6 +80,10 @@ fn verify_with_material(
     material_owner: Option<
         &crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,
     >,
+    unpublished: (
+        &std::collections::BTreeMap<CommitId, DurableCompositePublicationAttemptIdentity>,
+        &std::collections::BTreeSet<CommitId>,
+    ),
     metadata_authority: Option<
         &worth_relational::facade::durability::HomeReadmissionMetadataAuthority,
     >,
@@ -71,13 +106,14 @@ fn verify_with_material(
         .observe_program_activation_history(execution)
         .map_err(Denial::WorldSource)?;
     let layout = layout.provider_aftermath_causality();
-    let mut material = readmit_latest(
+    let mut material = readmit_latest_with_unpublished(
         execution,
         native,
         layout,
         &originals,
         selected.selected_commit(),
         material_owner,
+        unpublished,
         metadata_authority,
     )?;
     for branch in inventory.branches() {

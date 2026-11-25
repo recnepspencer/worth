@@ -2,7 +2,8 @@
 use super::*;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryPreparedProductPublication;
 use crate::domain_computation::primary_graph::{
-    WorthQueryAdvancementPhase, WorthQueryExpectedProductBranch,
+    product_operation::{DetachedExpectedProductBranch, WorthQueryRuntimeCustody},
+    WorthQueryAdvancementPhase, WorthQueryPrimaryGraphApplicationRuntime,
 };
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
@@ -18,9 +19,10 @@ use worth_relational::facade::mvcc::{
     RelationalRetainedEntitySelectionPreparationError as Preparation, RelationalTransactionIntent,
 };
 
-impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
-    pub(super) fn progress(
+impl NavigationProgress {
+    pub(super) fn progress<S: ApplicationSchema>(
         &mut self,
+        application: &WorthQueryRuntimeCustody<'_, S>,
         phase: &WorthQueryAdvancementPhase<'_>,
         request: &WorthQueryRequestScope,
     ) -> Result<(), WorthQueryHistoryNavigationDenial> {
@@ -35,7 +37,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                 .source
                 .as_ref()
                 .expect("new historical work retains its original source");
-            self.application
+            application
                 .inner
                 .runtime
                 .product_runtime_ref()
@@ -51,7 +53,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         // retirement must not disable original effect repair or cleanup.
         let state = std::mem::replace(&mut self.phase, NavigationPhase::Discarded);
         match state {
-            NavigationPhase::Prepared => self.fork(phase),
+            NavigationPhase::Prepared => self.fork(application, phase),
             NavigationPhase::ForkRecovery(recovery) => match recovery.release(phase) {
                 Ok(()) => {
                     self.phase = NavigationPhase::Prepared;
@@ -63,7 +65,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                 }
             },
             NavigationPhase::Candidate(candidate) => {
-                match self.prepare_candidate(phase, request, &candidate) {
+                match self.prepare_candidate(application, phase, request, &candidate) {
                     Ok((publication, transport)) => {
                         self.output_transport = transport;
                         self.phase = NavigationPhase::Publication {
@@ -81,11 +83,11 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
             NavigationPhase::Publication {
                 candidate,
                 publication,
-            } => self.publish(phase, candidate, publication),
+            } => self.publish(application, phase, candidate, publication),
             NavigationPhase::Unpublished {
                 candidate,
                 recovery,
-            } => self.recover(phase, request, candidate, recovery),
+            } => self.recover(application, phase, request, candidate, recovery),
             state => {
                 self.phase = state;
                 Ok(())
@@ -93,14 +95,14 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         }
     }
 
-    fn fork(
+    fn fork<S: ApplicationSchema>(
         &mut self,
+        application: &WorthQueryRuntimeCustody<'_, S>,
         phase: &WorthQueryAdvancementPhase<'_>,
     ) -> Result<(), WorthQueryHistoryNavigationDenial> {
         use WorthQueryHistoryNavigationDenial as Denial;
         let result = (|| {
-            let selected = self
-                .application
+            let selected = application
                 .on_branch(self.expected.physical.product_branch())
                 .select(phase)
                 .map_err(Denial::ProductAdmission)?;
@@ -111,17 +113,17 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
             {
                 return Err(Denial::HeadChanged);
             }
-            self.application
+            application
                 .branches()
                 .fork_expected(selected)
                 .map_err(Denial::ProductAdmission)?
                 .components(|parts| parts.fork_relational().reuse_exact_signal_basis())
-                .create(phase)
+                .create_in(application.clone(), phase)
                 .map_err(Denial::CandidateCreation)
         })();
         match result {
             Ok(candidate) => {
-                self.phase = NavigationPhase::Candidate(candidate);
+                self.phase = NavigationPhase::Candidate(candidate.into_detached());
                 Ok(())
             }
             Err(Denial::CandidateCreation(
@@ -138,11 +140,12 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         }
     }
 
-    fn prepare_candidate(
+    fn prepare_candidate<S: ApplicationSchema>(
         &self,
+        application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
         phase: &WorthQueryAdvancementPhase<'_>,
         request: &WorthQueryRequestScope,
-        candidate: &WorthQueryExpectedProductBranch<'runtime, S>,
+        candidate: &DetachedExpectedProductBranch,
     ) -> Result<
         (
             WorthQueryPreparedProductPublication,
@@ -152,10 +155,9 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
     > {
         use WorthQueryHistoryNavigationDenial as Denial;
         let execution = phase
-            .checked_execution_request_for(self.application.inner.runtime.product_runtime_ref())
+            .checked_execution_request_for(application.inner.runtime.product_runtime_ref())
             .map_err(Denial::Stopped)?;
-        let current = self
-            .application
+        let current = application
             .on_branch(candidate.branch())
             .select(phase)
             .map_err(Denial::ProductAdmission)?;
@@ -163,16 +165,10 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
             .source
             .as_ref()
             .expect("pending selection owns the original retained source");
-        let historical = self
-            .application
+        let historical = application
             .select_application_read_observation(phase, &source.source())
             .map_err(Denial::ProductAdmission)?;
-        let graph = &self
-            .application
-            .inner
-            .runtime
-            .primary_provider_ref()
-            .graph_ref();
+        let graph = &application.inner.runtime.primary_provider_ref().graph_ref();
         let publisher = graph
             .application_publication_ref()
             .map(std::sync::Arc::as_ref);
@@ -184,14 +180,18 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                 )
                 .map_err(Denial::Transaction)?;
             let port = native.preparation_port();
-            if let Some(ownership) = self.ownership {
+            if let Some(recipe) = self.ownership {
+                let layout = graph.layout_ref();
+                let ownership = layout
+                    .history_ownership(recipe)
+                    .expect("eligibility admitted the installed recipe");
                 let selected = native
                     .prepare_owned_model_graph_selection(
                         &execution,
                         current.product().relational_basis(),
                         historical.product().relational_basis(),
                         ownership,
-                        graph.layout_ref().installed_history_ownership(),
+                        layout.installed_history_ownership(),
                         self.model.entity(),
                     )
                     .map_err(Denial::OwnedGraph)?;
@@ -229,8 +229,8 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                     .unwrap_or_else(std::sync::PoisonError::into_inner)
                     .prepare_historical_transport(
                         &execution,
-                        self.application.inner.runtime.authority_identity().as_u64(),
-                        &self.application.inner.installed_schema.binding_identity(),
+                        application.inner.runtime.authority_identity().as_u64(),
+                        &application.inner.installed_schema.binding_identity(),
                         &graph.layout_ref(),
                         historical.product().observation(),
                         custody.routes.iter(),

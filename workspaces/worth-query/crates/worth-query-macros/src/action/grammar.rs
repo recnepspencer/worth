@@ -1,11 +1,15 @@
 //! Action keys, capability lists and the one scope every action declares.
+use super::serde_names::{container_rename_rule, field_wire_name};
 use super::DERIVE;
+use crate::facade_paths::{declaration, fragment, host};
 use crate::grammar::{
-    flag, selection_column, token_group, type_list, unknown_key, value, visit_keys, Once,
+    flag, option_inner, selection_column, token_group, type_list, unknown_key, value, visit_keys,
+    Once,
 };
-use proc_macro2::{Span, TokenStream};
+use proc_macro2::TokenStream;
+use std::collections::BTreeSet;
 use syn::meta::ParseNestedMeta;
-use syn::{DeriveInput, FieldsNamed, Ident, LitStr, Path, Type};
+use syn::{DeriveInput, FieldsNamed, Ident, LitStr, Path, Type, Visibility};
 
 /// Inline capability families `worth_query_operation!` accepts.
 const CAPABILITIES: &[&str] = &[
@@ -34,6 +38,9 @@ const STRUCT_KEYS: &[&str] = &[
     "program",
     "access",
     "principal_scope",
+    "scope",
+    "scope_value",
+    "scope_column",
     "validate",
     "reads, writes, creates, deletes, links, unlinks, emits, expects_version, expects_fact",
 ];
@@ -57,6 +64,17 @@ pub(super) struct ActionDeclaration {
     pub(super) access: Option<TokenStream>,
     pub(super) capabilities: Vec<(Ident, Vec<Type>)>,
     pub(super) scope: Scope,
+    /// Named fields of the input struct, each receiving a typed `<field>_input()`.
+    pub(super) input_fields: Vec<InputField>,
+}
+
+pub(super) struct InputField {
+    pub(super) vis: Visibility,
+    pub(super) member: Ident,
+    pub(super) wire_name: LitStr,
+    /// The scalar value type (`T` for both `T` and `Option<T>`).
+    pub(super) value_ty: Type,
+    pub(super) optional: bool,
 }
 
 pub(super) enum Scope {
@@ -69,6 +87,26 @@ pub(super) enum Scope {
     },
     /// The authenticated principal's own field.
     Principal { selection: Type, column: LitStr },
+    /// Scope selected by the supplied typed value function.
+    Value {
+        selection: Type,
+        column: LitStr,
+        function: Path,
+    },
+}
+
+impl Scope {
+    pub(super) fn selected_column(&self) -> (&Type, &LitStr) {
+        match self {
+            Self::Field {
+                selection, column, ..
+            }
+            | Self::Principal { selection, column }
+            | Self::Value {
+                selection, column, ..
+            } => (selection, column),
+        }
+    }
 }
 
 /// Every struct-level key, each written at most once.
@@ -85,6 +123,9 @@ struct Keys {
     outputs: Once<Type>,
     access: Once<TokenStream>,
     principal_scope: Once<Type>,
+    scope: Once<Type>,
+    scope_value: Once<Path>,
+    scope_column: Once<LitStr>,
     validate: Once<Path>,
     body: bool,
     program: bool,
@@ -92,29 +133,86 @@ struct Keys {
 }
 
 impl ActionDeclaration {
-    pub(super) fn parse(input: &DeriveInput, fields: &FieldsNamed) -> syn::Result<Self> {
+    pub(super) fn parse(input: &DeriveInput, fields: Option<&FieldsNamed>) -> syn::Result<Self> {
         let mut keys = Keys::new();
         visit_keys(&input.attrs, |key, meta| keys.read(key, meta))?;
         let missing = input.ident.span();
-        let principal_span = keys.principal_scope.span();
-        let principal = keys.principal_scope.optional().zip(principal_span);
+        let declared_scope = struct_scope(
+            keys.principal_scope,
+            keys.scope,
+            keys.scope_value,
+            keys.scope_column,
+        )?;
+        let scope = scope(input, fields, declared_scope)?;
+        let schema = keys.schema.required(missing, DERIVE)?;
+        let (result, decision) = if keys.body {
+            let (selection, _) = scope.selected_column();
+            let (decl, host, frag) = (declaration(), host(), fragment());
+            (
+                keys.result.optional().unwrap_or_else(
+                    || syn::parse_quote!(#decl::application_schema::UnitApplicationValueBinding),
+                ),
+                keys.decision.optional().unwrap_or_else(|| {
+                    syn::parse_quote!(#host::primary_graph::WorthQueryOperationBodyDecision<
+                        #schema, <#selection as #frag::RecordSelection>::Entity
+                    >)
+                }),
+            )
+        } else {
+            (
+                keys.result.required(missing, DERIVE)?,
+                keys.decision.required(missing, DERIVE)?,
+            )
+        };
+        let rename_rule = container_rename_rule(&input.attrs)?;
+        let mut input_fields = Vec::new();
+        let mut seen_wires = BTreeSet::new();
+        if let Some(named) = fields {
+            for field in &named.named {
+                let Some(wire_name) = field_wire_name(field, rename_rule)? else {
+                    continue;
+                };
+                if !seen_wires.insert(wire_name.value()) {
+                    return Err(syn::Error::new(
+                        wire_name.span(),
+                        format!(
+                            "duplicate serialized input member name `{}`",
+                            wire_name.value()
+                        ),
+                    ));
+                }
+                let member = field.ident.clone().expect("named fields carry identifiers");
+                let (optional, value_ty) = match option_inner(&field.ty) {
+                    Some(inner) => (true, inner.clone()),
+                    None => (false, field.ty.clone()),
+                };
+                input_fields.push(InputField {
+                    vis: field.vis.clone(),
+                    member,
+                    wire_name,
+                    value_ty,
+                    optional,
+                });
+            }
+        }
         Ok(Self {
-            scope: scope(input, fields, principal)?,
-            schema: keys.schema.required(missing, DERIVE)?,
+            scope,
+            schema,
             context: keys.context.required(missing, DERIVE)?,
             namespace: keys.namespace.required(missing, DERIVE)?,
             input: keys.input.required(missing, DERIVE)?,
             operation: keys.operation.required(missing, DERIVE)?,
             binding: keys.binding.required(missing, DERIVE)?,
             delivery: keys.delivery.optional(),
-            result: keys.result.required(missing, DERIVE)?,
-            decision: keys.decision.required(missing, DERIVE)?,
+            result,
+            decision,
             outputs: keys.outputs.optional(),
             validate: keys.validate.optional(),
             body: keys.body,
             program: keys.program,
             access: keys.access.optional(),
             capabilities: keys.capabilities,
+            input_fields,
         })
     }
 }
@@ -134,6 +232,9 @@ impl Keys {
             outputs: Once::new("outputs"),
             access: Once::new("access"),
             principal_scope: Once::new("principal_scope"),
+            scope: Once::new("scope"),
+            scope_value: Once::new("scope_value"),
+            scope_column: Once::new("scope_column"),
             validate: Once::new("validate"),
             body: false,
             program: false,
@@ -155,6 +256,9 @@ impl Keys {
             "outputs" => self.outputs.set(meta, value(meta)?),
             "access" => self.access.set(meta, token_group(meta)?),
             "principal_scope" => self.principal_scope.set(meta, value(meta)?),
+            "scope" => self.scope.set(meta, value(meta)?),
+            "scope_value" => self.scope_value.set(meta, value(meta)?),
+            "scope_column" => self.scope_column.set(meta, value(meta)?),
             "validate" => self.validate.set(meta, validator(meta)?),
             "body" => flag(meta).map(|body| self.body = body),
             "program" => flag(meta).map(|program| self.program = program),
@@ -188,56 +292,86 @@ fn validator(meta: &ParseNestedMeta<'_>) -> syn::Result<Path> {
     })
 }
 
-/// The action's one scope: a marked field or the principal's own field.
-fn scope(
-    input: &DeriveInput,
-    fields: &FieldsNamed,
-    principal: Option<(Type, Span)>,
-) -> syn::Result<Scope> {
-    let mut scope = match principal {
-        Some((selection, span)) => {
-            let column = selection_column(&selection, None, span)?;
-            Some((Scope::Principal { selection, column }, span))
+fn struct_scope(
+    principal: Once<Type>,
+    selection: Once<Type>,
+    function: Once<Path>,
+    column: Once<LitStr>,
+) -> syn::Result<Option<Scope>> {
+    let value_span = selection.span().or(function.span());
+    if let Some(span) = principal.span() {
+        if let Some(conflict) = value_span {
+            return Err(syn::Error::new(conflict, "an action has exactly one scope"));
         }
-        None => None,
-    };
-    for field in &fields.named {
-        let member = field.ident.clone().expect("named fields carry identifiers");
-        let mut selection = Once::<Type>::new("scope");
-        let mut column = Once::<LitStr>::new("column");
-        visit_keys(&field.attrs, |key, meta| match key {
-            "scope" => selection.set(meta, value(meta)?),
-            "column" => column.set(meta, value(meta)?),
-            _ => Err(unknown_key(meta, DERIVE, FIELD_KEYS)),
-        })?;
-        let marked = selection.span();
-        if let (None, Some(span)) = (marked, column.span()) {
+        let selection = principal.required(span, DERIVE)?;
+        let column = selection_column(&selection, column.optional(), span)?;
+        return Ok(Some(Scope::Principal { selection, column }));
+    }
+    let Some(span) = value_span else {
+        if let Some(col_span) = column.span() {
             return Err(syn::Error::new(
-                span,
-                "`column` names the column of a `scope` field",
+                col_span,
+                "`scope_column` requires struct-level `principal_scope` or `scope`",
             ));
         }
-        let (Some(span), Some(selection)) = (marked, selection.optional()) else {
-            continue;
-        };
-        if scope.is_some() {
-            return Err(syn::Error::new(span, "an action has exactly one scope"));
+        return Ok(None);
+    };
+    let selection = selection.required(span, DERIVE)?;
+    let function = function.required(span, DERIVE)?;
+    let column = selection_column(&selection, column.optional(), span)?;
+    Ok(Some(Scope::Value {
+        selection,
+        column,
+        function,
+    }))
+}
+
+/// The action's one scope, supplied by its declaration or a marked field.
+fn scope(
+    input: &DeriveInput,
+    fields: Option<&FieldsNamed>,
+    mut scope: Option<Scope>,
+) -> syn::Result<Scope> {
+    if let Some(fields) = fields {
+        for field in &fields.named {
+            let member = field.ident.clone().expect("named fields carry identifiers");
+            let mut selection = Once::<Type>::new("scope");
+            let mut column = Once::<LitStr>::new("column");
+            visit_keys(&field.attrs, |key, meta| match key {
+                "scope" => selection.set(meta, value(meta)?),
+                "column" => column.set(meta, value(meta)?),
+                _ => Err(unknown_key(meta, DERIVE, FIELD_KEYS)),
+            })?;
+            let marked = selection.span();
+            if let (None, Some(span)) = (marked, column.span()) {
+                return Err(syn::Error::new(
+                    span,
+                    "`column` names the column of a `scope` field",
+                ));
+            }
+            let (Some(span), Some(selection)) = (marked, selection.optional()) else {
+                continue;
+            };
+            if scope.is_some() {
+                return Err(syn::Error::new(span, "an action has exactly one scope"));
+            }
+            let column = selection_column(&selection, column.optional(), member.span())?;
+            let value = field.ty.clone();
+            let declared = Scope::Field {
+                member,
+                value,
+                selection,
+                column,
+            };
+            scope = Some(declared);
         }
-        let column = selection_column(&selection, column.optional(), member.span())?;
-        let value = field.ty.clone();
-        let declared = Scope::Field {
-            member,
-            value,
-            selection,
-            column,
-        };
-        scope = Some((declared, span));
     }
-    scope.map(|(scope, _)| scope).ok_or_else(|| {
+    scope.ok_or_else(|| {
         syn::Error::new(
             input.ident.span(),
             "missing action scope: mark the field carrying it \
-             `#[worth_query(scope = Selection)]` or declare `principal_scope = Selection`",
+             `#[worth_query(scope = Selection)]`, declare `principal_scope = Selection`, \
+             or declare `scope = Selection, scope_value = function`",
         )
     })
 }

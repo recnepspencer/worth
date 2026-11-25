@@ -1,4 +1,8 @@
+pub(crate) use super::ancestry_walk::CommitAncestryInspection;
 use std::collections::BTreeSet;
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisOwnerPort as _;
+#[cfg(test)]
+use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyOwnerPort as _;
 
 use crate::branch::AdmittedRelationalBranchBasis;
 #[cfg(test)]
@@ -8,15 +12,6 @@ use crate::history::data::CommitId;
 use crate::history::data::{MergeConflictRecord, MergeInspection};
 
 use super::HistoryAccess;
-
-pub(crate) struct CommitAncestryInspection {
-    reachable_commits: BTreeSet<CommitId>,
-    authoring_branches: BTreeSet<crate::history::data::BranchId>,
-    selected_commit_available: bool,
-    node_visits: usize,
-    catalog_probes: usize,
-    parent_edge_visits: usize,
-}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum CommitAncestryPosture {
@@ -41,33 +36,6 @@ impl CommitAncestryClassification {
     }
 }
 
-impl CommitAncestryInspection {
-    pub(crate) fn commit_ids(&self) -> &BTreeSet<CommitId> {
-        &self.reachable_commits
-    }
-    pub(crate) fn authoring_branches(&self) -> &BTreeSet<crate::history::data::BranchId> {
-        &self.authoring_branches
-    }
-
-    pub(crate) fn node_visits(&self) -> usize {
-        self.node_visits
-    }
-
-    pub(crate) fn catalog_probes(&self) -> usize {
-        self.catalog_probes
-    }
-
-    pub(crate) fn parent_edge_visits(&self) -> usize {
-        self.parent_edge_visits
-    }
-
-    pub(crate) fn total_work(&self) -> usize {
-        self.node_visits
-            .saturating_add(self.catalog_probes)
-            .saturating_add(self.parent_edge_visits)
-    }
-}
-
 impl<'runtime> HistoryAccess<'runtime> {
     /// Returns the ancestor closure for `commit_id`, ordered by ascending
     /// `CommitId`.
@@ -78,36 +46,9 @@ impl<'runtime> HistoryAccess<'runtime> {
     }
 
     pub(crate) fn inspect_commit_ancestry(&self, start: CommitId) -> CommitAncestryInspection {
-        let mut visited_commits = BTreeSet::new();
-        let mut reachable_commits = BTreeSet::new();
-        let mut authoring_branches = BTreeSet::new();
-        let mut selected_commit_available = false;
-        let mut stack = vec![start];
-        let mut node_visits = 0;
-        let mut catalog_probes = 0;
-        let mut parent_edge_visits = 0;
-        while let Some(commit_id) = stack.pop() {
-            node_visits += 1;
-            if !visited_commits.insert(commit_id) {
-                continue;
-            }
-            catalog_probes += 1;
-            if let Some(receipt) = self.immutable_commit_receipt(commit_id) {
-                reachable_commits.insert(commit_id);
-                selected_commit_available |= commit_id == start;
-                authoring_branches.insert(receipt.branch_id.clone());
-                parent_edge_visits += receipt.parents.len();
-                stack.extend(receipt.parents.iter().copied());
-            }
-        }
-        CommitAncestryInspection {
-            reachable_commits,
-            authoring_branches,
-            selected_commit_available,
-            node_visits,
-            catalog_probes,
-            parent_edge_visits,
-        }
+        super::ancestry_walk::inspect_commit_ancestry(start, |commit| {
+            self.immutable_commit_receipt(commit)
+        })
     }
 
     pub(crate) fn classify_commit_in_ancestry(
@@ -240,10 +181,7 @@ impl<'runtime> HistoryAccess<'runtime> {
     ) -> Option<CommitId> {
         let left_ancestors = self.ancestor_set(left);
         let right_ancestors = self.ancestor_set(right);
-        left_ancestors
-            .intersection(&right_ancestors)
-            .copied()
-            .max_by_key(|commit_id| commit_id.0)
+        super::ancestry_walk::common_ancestor(&left_ancestors, &right_ancestors)
     }
 
     pub(super) fn ancestor_set(&self, start: CommitId) -> BTreeSet<CommitId> {

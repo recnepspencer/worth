@@ -32,6 +32,10 @@ use crate::authenticated_principal::{
 
 use super::*;
 
+worth_query_declaration::worth_query_authentication_audience!(ApprovalAudience);
+worth_query_declaration::worth_query_principal_issuer!(Issuer);
+worth_query_declaration::worth_query_authentication_method!(TestFactorMethod);
+
 mod lifecycle;
 
 struct TestSchema;
@@ -74,9 +78,9 @@ impl WorthQueryAuthenticationAdapter for PrincipalAdapter {
         Box::pin(async move {
             let now = SystemTime::now();
             Ok(WorthQueryValidatedExternalPrincipal::new(
-                WorthQueryExternalPrincipalIdentity::new("issuer", credential).unwrap(),
-                WorthQueryAuthenticationAudience::new("approval").unwrap(),
-                WorthQueryAuthenticationMethod::new("test-factor").unwrap(),
+                WorthQueryExternalPrincipalIdentity::new(Issuer, credential).unwrap(),
+                WorthQueryAuthenticationAudience::of(ApprovalAudience),
+                WorthQueryAuthenticationMethod::of(TestFactorMethod),
                 now - Duration::from_secs(1),
                 now + Duration::from_secs(60),
                 vec![],
@@ -242,8 +246,8 @@ fn principal_named(
     let adapter = admit_authentication_adapter(
         schema,
         WorthQueryAuthenticationAdapterAdmission::new(
-            WorthQueryAuthenticationAudience::new("approval").unwrap(),
-            WorthQueryAuthenticationMethod::new("test-factor").unwrap(),
+            WorthQueryAuthenticationAudience::of(ApprovalAudience),
+            WorthQueryAuthenticationMethod::of(TestFactorMethod),
             crate::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
         ),
         PrincipalAdapter,

@@ -1,12 +1,12 @@
 //! Complete original native output association before disposition or performance.
-use crate::branch::AdmittedRelationalBranchBasis;
-use crate::durability::authority::{
-    DurabilityRecoveryAuthority, RecoveredRelationalRuntimeAuthority,
-};
-use crate::runtime::{
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::durability::authority::recovered_runtime::DurabilityRecoveryAuthority;
+use crate::durability::authority::recovered_runtime::RecoveredRelationalRuntimeAuthority;
+use crate::durability::transition_admission_denial::{
     RelationalSchemaTransitionAdmissionDenial as Denial,
     RelationalSchemaTransitionAdmissionDenialKind as Kind,
 };
+use worth_relational_durability::internal_port::durability::transition_admission_denial::RelationalSchemaTransitionAdmissionDenialOwnerPort as _;
 
 impl DurabilityRecoveryAuthority<'_> {
     /// Re-admit the COMPLETE original native publication on the recovered SOURCE
@@ -21,8 +21,8 @@ impl DurabilityRecoveryAuthority<'_> {
         basis: &AdmittedRelationalBranchBasis,
         producer: &str,
         dependency: &[u8; 32],
-        meaning: &crate::mvcc::RequiredOutputPublicationMeaning,
-        roles: &[crate::mvcc::RequiredOutputRoleTarget],
+        meaning: &crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning,
+        roles: &[crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRoleTarget],
     ) -> Result<(), Denial> {
         crate::execution::check_request(execution).map_err(Denial::request)?;
         let state = recovered.codec_transition.as_ref().ok_or_else(|| {
@@ -41,7 +41,7 @@ impl DurabilityRecoveryAuthority<'_> {
         }
         let result = crate::history::data::validate_codec_output_correspondence(
             execution,
-            self.runtime,
+            &*self.runtime,
             basis,
             producer,
             dependency,

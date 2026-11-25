@@ -1,4 +1,5 @@
 //! Installed entry pins its exact ordering generation, then delegates.
+use worth_relational_publication::internal_port::visibility::materialization::read_records::reader::pinned_read::index_lookups::RelationalPinnedReadOwnerPort as _;
 use super::super::bounded_related_entity_ordered_lookup::denial;
 use super::IndexAccess;
 use crate::indexes::data::{
@@ -6,7 +7,7 @@ use crate::indexes::data::{
     BoundedRelatedEntityOrderedLookupDenialKind, BoundedRelatedEntityOrderedLookupOutcome,
     BoundedRelatedEntityOrderedLookupRequest,
 };
-use crate::visibility::snapshot_states::resolve_snapshot_handle;
+use crate::visibility::snapshot_states::resolution::resolve_snapshot_handle;
 impl IndexAccess<'_> {
     pub fn execute_bounded_related_entity_ordered_lookup(
         &self,

@@ -28,7 +28,9 @@ pub(super) fn index_preparation_stop(
     use worth_relational::facade::indexes::DerivedIndexMaintenanceDenialKind as Kind;
     let kind = match denial.kind {
         Kind::Execution(cause) => return relational_execution_stop(cause, None),
-        Kind::WorkBudgetExceeded | Kind::ColdReconstructionRequired => {
+        Kind::WorkBudgetExceeded
+        | Kind::ColdRecordSlotBudgetExceeded
+        | Kind::ColdReconstructionRequired => {
             crate::domain_computation::WorthQueryProviderSessionDenialKind::IndexMaintenanceBudgetExceeded
         }
         Kind::GenerationIdentityExhausted => {

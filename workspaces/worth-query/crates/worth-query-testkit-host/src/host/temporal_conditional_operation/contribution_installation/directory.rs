@@ -4,10 +4,15 @@ use worth_query_host::facade::{
     WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeRequest,
 };
 
+worth_query_decl::facade::worth_query_principal_issuer!(IssuerExampleIssuer);
+
 pub fn request(
     location: std::path::PathBuf,
 ) -> WorthQueryApplicationHomeRequest<'static, TemporalHostSchema, TemporalInstallationProgram> {
-    request_at(WorthQueryApplicationHomeLocation::Directory(location), false)
+    request_at(
+        WorthQueryApplicationHomeLocation::Directory(location),
+        false,
+    )
 }
 
 pub fn memory_request(
@@ -75,7 +80,7 @@ fn seed_colliding_intents(
             primary_graph::WorthQueryApplicationPrincipalKey::new("temporal-host").unwrap(),
             1_u64,
             declaration::authentication::WorthQueryExternalPrincipalIdentity::new(
-                "https://issuer.example",
+                IssuerExampleIssuer,
                 "temporal-host",
             )
             .unwrap(),

@@ -7,8 +7,8 @@ use worth_harness::facade::{
 
 use crate::facade::harness::RelationalHarnessError;
 use crate::facade::runtime::RelationalRuntime;
-use crate::storage::data::RelationalReadView;
 use crate::transactions::data::RecordRef;
+use crate::visibility::snapshot_read_view::RelationalReadView;
 
 use super::super::data::{RelationalFixture, RelationalHarnessAdapter};
 use super::super::targets::{parse_target, resolve_targets};
@@ -37,7 +37,7 @@ pub(super) fn capture_snapshot(
         .read_truth()
         .query_plan_context(&snapshot)
         .map(|context| context.version_id)
-        .unwrap_or(snapshot.version_id);
+        .unwrap_or(snapshot.version_id());
     let read_view = clone
         .read_truth()
         .read_version(execution, resolved_version_id)

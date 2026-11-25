@@ -3,10 +3,14 @@
 //! members, installed under bounded serial limits and driven by a
 //! local-process principal through source custody.
 mod actions;
+mod completion_correction;
+mod correction_home;
 mod program;
 mod reads;
 mod relations;
 mod schema;
 
 mod journey;
+mod managed_index_hard_dx;
+mod managed_index_hard_dx_probes;
 mod parity;

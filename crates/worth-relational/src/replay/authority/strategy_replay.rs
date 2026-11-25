@@ -8,7 +8,7 @@ use crate::replay::data::{
 };
 use crate::runtime::RelationalRuntime;
 
-use super::super::planning::replay_commit_closure_by_commit_id_order;
+use super::commit_closure::replay_commit_closure_by_commit_id_order;
 
 mod basis_admission;
 mod lowering;
@@ -148,7 +148,7 @@ fn select_strategy_basis_commits(
         }
         _ => return Some(commit_closure[..commit_closure.len().saturating_sub(1)].to_vec()),
     };
-    match replay_commit_closure_by_commit_id_order(runtime, runtime, basis_commit?) {
+    match replay_commit_closure_by_commit_id_order(runtime, basis_commit?) {
         Ok(chain) => Some(chain),
         Err(failure) => {
             mismatches.push(strategy_mismatch(
@@ -171,7 +171,7 @@ fn rebuild_strategy_basis_runtime(
     verification_mode: ReplayVerificationMode,
     mismatches: &mut Vec<ReplayMismatch>,
 ) -> Result<Option<RelationalRuntime>, RelationalRecoveryStop> {
-    let basis_plan = super::super::planning::replay_recovery_plan_for_chain(
+    let basis_plan = super::recovery_plan::replay_recovery_plan_for_chain(
         execution,
         runtime,
         basis_commits,

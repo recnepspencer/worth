@@ -13,10 +13,7 @@ fn drifted_schema_registry() -> crate::facade::schema::RelationalSchemaRegistry 
             schema_id: SchemaId("test".to_string()),
             schema_version_id: SchemaVersionId(2),
             aspect_contract_declarations: KindAspectContractDeclarations::new(vec![
-                entity_field_aspect(
-                    crate::tests::support::aspect_key("name"),
-                    field_key("name"),
-                ),
+                entity_field_aspect(crate::tests::support::aspect_key("name"), field_key("name")),
                 entity_field_aspect(
                     crate::tests::support::aspect_key("status"),
                     field_key("status"),
@@ -53,11 +50,11 @@ fn deleted_on_both_sides_prepared_merge_rejects_schema_semantic_drift() {
     let prepared = runtime
         .prepare_merge_execution(
             execution,
-            MergeExecutionRequest {
-                target_branch: BranchId("main".to_string()),
-                source_branch: BranchId("feature".to_string()),
-                merge_intent: MergeIntent::ReconcileIntoTarget,
-            },
+            MergeExecutionRequest::new(
+                BranchId("main".to_string()),
+                BranchId("feature".to_string()),
+                MergeIntent::ReconcileIntoTarget,
+            ),
         )
         .expect("prepared merge");
     runtime.set_schema_registry_for_test(drifted_schema_registry());

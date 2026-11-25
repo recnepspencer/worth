@@ -122,17 +122,27 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
                 )
             }
         };
-        drop(bridge);
+        // Keep the already-held Bridge read guard across delivery so the strict
+        // `bridge -> operation` lock hierarchy is never violated by dropping
+        // and reacquiring `bridge.read()` while holding `installed`.
         let outcome = self
             .application()
             .granular_invalidation_installation()
             .retain_product_shared_root()
-            .deliver_performed_relational_change(phase, &binding, dependency_ordinal, change)?;
+            .deliver_performed_relational_change_with_bridge(
+                phase,
+                &bridge,
+                &binding,
+                dependency_ordinal,
+                change,
+            )?;
         if let WorthQueryPerformedRelationalProductChangeDeliveryOutcome::Success(receipt) =
             &outcome
         {
             installed.retain_direct_delivery(receipt);
         }
+        drop(installed);
+        drop(bridge);
         Ok(outcome)
     }
 }

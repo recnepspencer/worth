@@ -7,6 +7,7 @@ use crate::tests::support::{
     create_branch_from_main, create_entity, create_entity_outcome_on_branch,
     durable_runtime_for_medium, OwnedTestDurableMedium,
 };
+use worth_relational_merge::internal_port::merge::data::prepared_execution::test_support::PreparedMergeExecutionFixturePort as _;
 
 #[test]
 fn compile_rejects_corrupted_non_executable_resolution_class() {
@@ -27,11 +28,11 @@ fn compile_rejects_corrupted_non_executable_resolution_class() {
     let mut prepared = runtime
         .prepare_merge_execution(
             execution,
-            MergeExecutionRequest {
-                target_branch: BranchId("main".to_string()),
-                source_branch: BranchId("feature".to_string()),
-                merge_intent: MergeIntent::ReconcileIntoTarget,
-            },
+            MergeExecutionRequest::new(
+                BranchId("main".to_string()),
+                BranchId("feature".to_string()),
+                MergeIntent::ReconcileIntoTarget,
+            ),
         )
         .expect("prepared merge");
 

@@ -1,5 +1,6 @@
 use crate::tests::support::*;
 use std::sync::Arc;
+use worth_relational_publication::internal_port::mvcc::publication::candidate::PreparedRelationalCommitCandidateFixturePort as _;
 
 #[test]
 fn paused_storm_publication_does_not_contact_or_wait_on_maintenance() {

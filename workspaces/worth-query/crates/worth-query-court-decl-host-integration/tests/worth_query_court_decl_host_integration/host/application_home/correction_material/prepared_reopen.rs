@@ -12,8 +12,7 @@ fn owning_close_discharges_the_unperformed_home_correction_without_rederiving() 
     let execution = worth_execution::ExecutionRequest::leased(&lease);
     let home = open(location.clone(), execution);
     let receipt = edit(&home);
-    let coordinates = worth_query_host::facade::primary_graph::WorthQueryRecordedCorrectionSource::from_untrusted_parts(
-        receipt.committed_product_publication().composite_commit().clone(), receipt.commit_reference().clone()).coordinates();
+    let coordinates = receipt.correction_source().coordinates();
     drop(receipt);
     let (input, earlier) = label::correction_source::preparation::retain_home_label_input(
         home.runtime().runtime(),

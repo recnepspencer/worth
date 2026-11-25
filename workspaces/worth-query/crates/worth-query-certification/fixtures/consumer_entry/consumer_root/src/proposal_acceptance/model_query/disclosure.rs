@@ -2,10 +2,13 @@
 use super::super::access;
 use super::*;
 
+worth_query_decl::facade::worth_query_disclosure_classification!(ProposalModelDisclosure);
+worth_query_decl::facade::worth_query_disclosure_classification!(ProposalTargetDisclosure);
+
 pub(super) fn model() -> ApplicationQueryDisclosureContract {
     let influence = ApplicationQueryInfluenceContract::permit_all();
     ApplicationQueryDisclosureContract::governed_by(
-        "proposal-model",
+        ProposalModelDisclosure,
         access::ReadDomain::reference(),
     )
     .use_field_by(
@@ -19,7 +22,7 @@ pub(super) fn model() -> ApplicationQueryDisclosureContract {
 pub(super) fn target() -> ApplicationQueryDisclosureContract {
     let influence = ApplicationQueryInfluenceContract::permit_all();
     ApplicationQueryDisclosureContract::governed_by(
-        "proposal-target",
+        ProposalTargetDisclosure,
         access::ReadDomain::reference(),
     )
     .use_field_by(

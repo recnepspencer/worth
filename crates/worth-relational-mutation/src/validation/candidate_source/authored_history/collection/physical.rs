@@ -1,0 +1,36 @@
+//! Actual publication changes join authored commands, including owner-induced edits.
+use super::*;
+use worth_relational_contracts::internal_port::publication::patch::data::record_structural_change::RecordStructuralChange as Change;
+impl AuthoredSourceInputs {
+    pub(super) fn physical(
+        &mut self,
+        execution: ExecutionRequest<'_, '_>,
+        budget: &CustomPreparationBudget,
+        effect: &MutationEffect,
+        before: &InvariantStateView<'_>,
+        after: &InvariantStateView<'_>,
+    ) -> Result<bool, Denial> {
+        // effect_publication emits one canonical delta for each changed record
+        // fragment. Use that actual structural classification, not a command guess.
+        for delta in &effect.publication.canonical_deltas {
+            admission::work(budget, 1)?;
+            let usage = match delta.structural_change {
+                Change::Updated => Use::FIELDS,
+                Change::Created | Change::Deleted | Change::RetainedForAudit => Use::LIFECYCLE,
+                Change::MaterializationSuspended | Change::Rematerialized => return Ok(false),
+                _ => unreachable!("unhandled Relational contract variant"),
+            };
+            match delta.target {
+                RecordRef::Entity(_) => self.record(execution, budget, &delta.target, usage)?,
+                // Audit retention has no adjacency delta. Its before/after
+                // incidence must still enter the existing complete pullback.
+                RecordRef::Relation(id) => self.relation(execution, budget, id, before, after)?,
+            }
+        }
+        for delta in &effect.adjacency.deltas {
+            admission::work(budget, 1)?;
+            self.relation(execution, budget, delta.relation_id, before, after)?;
+        }
+        Ok(true)
+    }
+}

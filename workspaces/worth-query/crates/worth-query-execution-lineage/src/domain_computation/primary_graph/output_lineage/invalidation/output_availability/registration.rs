@@ -131,7 +131,7 @@ impl SourceInvalidationOwner {
             address,
             state: source_state,
             source_epoch: source.source().source_epoch(),
-            candidate,
+            candidate: candidate.map(|c| c as Arc<dyn super::ObservedOutputCandidateBacking>),
             read_closure: Arc::clone(source.source().read_closure()),
             selected: selected.clone(),
             owner: observation::bind_owner(self),

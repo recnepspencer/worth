@@ -9,28 +9,24 @@ use crate::domain_computation::primary_graph::{
 };
 use std::{collections::BTreeMap, sync::Mutex};
 use worth_query_declaration::facade::application_history::ApplicationHistoryBinding;
-use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
-use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_query::facade::ports::HistoryPreviewInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledDocumentHistory};
 
-pub(in crate::domain_computation::primary_graph::product_operation::document_history) struct NavigationJournal<
-    'runtime,
-    S,
-> {
-    pub(super) attempts: BTreeMap<[u8; 32], RegisteredAttempt<'runtime, S>>,
+pub(in crate::domain_computation::primary_graph::product_operation::document_history) struct NavigationJournal
+{
+    pub(super) attempts: BTreeMap<[u8; 32], RegisteredAttempt>,
     pub(in crate::domain_computation::primary_graph::product_operation::document_history) capacity:
         Arc<super::pending_capacity::PendingNavigationCapacity>,
 }
 
-pub(super) struct RegisteredAttempt<'runtime, S> {
-    pub(super) attempt: Arc<NavigationAttempt<'runtime, S>>,
+pub(super) struct RegisteredAttempt {
+    pub(super) attempt: SharedNavigationAttempt,
     _allocation: HistoryInsertionAllocation,
 }
 
-impl<S> NavigationJournal<'_, S> {
+impl NavigationJournal {
     pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn new(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         resources: worth_query_declaration::facade::application_history::ApplicationHistoryNavigationResources,
@@ -70,7 +66,7 @@ where
             .navigation
             .attempts
             .get(&key)
-            .map(|entry| Arc::clone(&entry.attempt))
+            .map(|entry| entry.attempt.clone())
         {
             drop(selected);
             return bind(
@@ -123,12 +119,11 @@ where
     let execution = phase
         .checked_execution_request_for(application.inner.runtime.product_runtime_ref())
         .map_err(Denial::Stopped)?;
-    let allocation =
-        reserve_arc::<NavigationAttempt<'runtime, S>>(&execution).map_err(|cause| {
-            Denial::Document(super::super::WorthQueryDocumentHistoryDenial::Recording(
-                cause,
-            ))
-        })?;
+    let allocation = reserve_arc::<NavigationAttempt>(&execution).map_err(|cause| {
+        Denial::Document(super::super::WorthQueryDocumentHistoryDenial::Recording(
+            cause,
+        ))
+    })?;
     let output_source_memory = if output_profile.is_some() || installed.definition().parts().model_domain == worth_query_declaration::facade::application_history::ApplicationHistoryModelDomain::OwnedModelGraph {
         reserve_arc::<crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation>(&execution)
             .map_err(|cause| Denial::Document(super::super::WorthQueryDocumentHistoryDenial::Recording(cause)))?
@@ -144,7 +139,7 @@ where
         .navigation
         .attempts
         .get(&key)
-        .map(|entry| Arc::clone(&entry.attempt))
+        .map(|entry| entry.attempt.clone())
     {
         drop(selected);
         return bind(
@@ -170,7 +165,7 @@ where
         .map_err(Denial::Document)?;
     let (registration_allocation, _) = HistoryInsertionAllocation::reserve::<(
         [u8; 32],
-        RegisteredAttempt<'runtime, S>,
+        RegisteredAttempt,
     )>(&execution, selected.navigation.attempts.len(), 0)
     .map_err(|cause| {
         Denial::Document(super::super::WorthQueryDocumentHistoryDenial::Recording(
@@ -181,10 +176,9 @@ where
         .journal
         .reserve_head(&execution)
         .map_err(Denial::Document)?;
-    let attempt = Arc::new(NavigationAttempt {
+    let attempt = SharedNavigationAttempt::from_arc(Arc::new(NavigationAttempt {
         progress: Mutex::new(NavigationProgress {
             pending_slot: Some(pending_slot),
-            application,
             meaning,
             output_profile,
             output_source: None,
@@ -194,8 +188,7 @@ where
             model: document.model.clone(),
             ownership: (installed.definition().parts().model_domain
                 == worth_query_declaration::facade::application_history::ApplicationHistoryModelDomain::OwnedModelGraph)
-                .then(|| application.inner.runtime.primary_provider_ref().graph_ref().layout_ref().history_ownership(
-                    &installed.definition().parts().identity).expect("eligibility admitted the installed recipe")),
+                .then_some(H::IDENTITY),
             source: Some(source),
             requested,
             intent,
@@ -207,17 +200,18 @@ where
             delivery_pause: None,
         }),
         _allocation: allocation,
-    });
+    }));
     selected.navigation.attempts.insert(
         key,
         RegisteredAttempt {
-            attempt: Arc::clone(&attempt),
+            attempt: attempt.clone(),
             _allocation: registration_allocation,
         },
     );
     drop(selected);
     Ok(WorthQueryDocumentHistoryNavigation {
-        cell: Arc::downgrade(&document.selection),
+        application: document.custody(),
+        cell: document.selection.downgrade(),
         attempt,
     })
 }
@@ -225,13 +219,13 @@ where
 fn bind<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
     phase: &WorthQueryAdvancementPhase<'_>,
     document: &WorthQueryDocumentHistory<'runtime, S, H>,
-    attempt: Arc<NavigationAttempt<'runtime, S>>,
+    attempt: SharedNavigationAttempt,
     expected: &WorthQueryHistorySelection,
     intent: WorthQueryHistoryNavigationIntent,
     meaning: WorthQueryApplicationIdempotencyBinding,
     output_profile: Option<&WorthQueryHistoryOutputProfile>,
 ) -> Result<WorthQueryDocumentHistoryNavigation<'runtime, S>, WorthQueryHistoryNavigationDenial> {
-    let compared = attempt.readmit_output_profile(phase, output_profile)?;
+    let compared = attempt.readmit_output_profile(document.application(), phase, output_profile)?;
     let progress = match attempt.progress.try_lock() {
         Ok(progress) => progress,
         Err(std::sync::TryLockError::WouldBlock) => {
@@ -249,7 +243,8 @@ fn bind<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
     progress.require_resolvable()?;
     drop(progress);
     Ok(WorthQueryDocumentHistoryNavigation {
-        cell: Arc::downgrade(&document.selection),
+        application: document.custody(),
+        cell: document.selection.downgrade(),
         attempt,
     })
 }

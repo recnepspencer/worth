@@ -9,6 +9,8 @@ use super::{
 use worth_query_decl::facade::{application_query::*, application_schema::*, *};
 use worth_query_host::facade::primary_graph::*;
 
+worth_query_decl::facade::worth_query_disclosure_classification!(StoredProposalsDisclosure);
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ProposalRow {
     pub key: String,
@@ -65,7 +67,7 @@ pub fn declare(
     use super::access;
     let influence = ApplicationQueryInfluenceContract::permit_all();
     let disclosure = ApplicationQueryDisclosureContract::governed_by(
-        "stored-proposals",
+        StoredProposalsDisclosure,
         access::ReadDomain::reference(),
     )
     .use_field_by(

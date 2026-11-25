@@ -3,9 +3,10 @@ use std::collections::BTreeSet;
 use worth_foundational::facade::AspectFieldLocator;
 
 use crate::indexes::data::{DerivedIndexEntries, DerivedIndexGenerationId};
+use crate::query::data::query_outcome::QueryExecutionOutcome;
+use crate::query::data::snapshot_pinned_plan::SnapshotPinnedQueryPlan;
 use crate::query::data::{
-    reduce_query_fragments, QueryExecutionOutcome, QueryFragmentCounters, QueryScope,
-    QueryWorkerFragment, SnapshotPinnedQueryPlan,
+    reduce_query_fragments_for_test, QueryFragmentCounters, QueryScope, QueryWorkerFragment,
 };
 use crate::runtime::RelationalRuntime;
 use crate::storage::data::AuthoritativeFieldComparisonKey;
@@ -13,8 +14,8 @@ use crate::visibility::materialization::read_records::{
     entity_query_locus_comparison_key, relation_query_locus_comparison_key,
 };
 
-use super::super::projected_field_values::IndexProjectionSource;
-use super::scratch::{index_query_scratch_for_runtime, retain_index_query_scratch};
+use super::index_parity_scratch::{index_query_scratch_for_runtime, retain_index_query_scratch};
+use crate::indexes::projected_field_values::IndexProjectionSource;
 
 pub(crate) fn execute_index_backed_query_from_generation(
     runtime: &RelationalRuntime,
@@ -297,7 +298,7 @@ fn build_index_query_execution(
     authoritative_relation_records_emitted: usize,
     touched_partitions: usize,
 ) -> QueryExecutionOutcome {
-    let result = reduce_query_fragments(
+    let result = reduce_query_fragments_for_test(
         plan.packet.execution_shape,
         plan.packet.ordering,
         vec![QueryWorkerFragment {
@@ -330,4 +331,30 @@ fn build_index_query_execution(
         },
         result,
     }
+}
+
+pub(super) fn record_index_execution_shape(
+    runtime: &RelationalRuntime,
+    execution: &crate::query::data::query_outcome::QueryExecutionOutcome,
+) {
+    let target_count = execution.complexity.target_count.max(1);
+    let scope_units = execution.complexity.touched_partitions.max(1);
+    runtime.services.instrumentation.count_query_packet_shape(
+        execution.complexity.packet_count.max(1),
+        target_count,
+        target_count,
+        scope_units,
+    );
+    runtime.performance_access().count_query_serial_strategy();
+}
+
+pub(super) fn record_index_execution_counters(
+    runtime: &RelationalRuntime,
+    execution: &crate::query::data::query_outcome::QueryExecutionOutcome,
+) {
+    record_index_execution_shape(runtime, execution);
+    runtime.services.instrumentation.count_query_emissions(
+        execution.result.entities.len(),
+        execution.result.relations.len(),
+    );
 }
