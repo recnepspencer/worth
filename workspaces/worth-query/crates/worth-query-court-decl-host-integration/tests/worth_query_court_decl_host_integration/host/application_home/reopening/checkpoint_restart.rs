@@ -144,11 +144,11 @@ fn restart(case: Case, test: &str) {
     })
     .unwrap()
     .unwrap_or_else(|refused| {
-        use worth_query_host::facade::WorthQueryApplicationHomeOpenRefused as Refused;
-        if let Refused::ExistingNativeFinalization { .. } = &refused {
+        use worth_query_host::facade::WorthQueryApplicationHomeOpenRefusedPhase as Phase;
+        if let Phase::ExistingNativeFinalization { .. } = refused.phase() {
             opening_failed("restart latest-Native family readmission", &refused);
         }
-        if let Refused::ExistingQueryAttachment { .. } = &refused {
+        if let Phase::ExistingQueryAttachment { .. } = refused.phase() {
             opening_failed("restart selected-World Query attachment", &refused);
         }
         opening_failed("selected Complete restart", &refused)

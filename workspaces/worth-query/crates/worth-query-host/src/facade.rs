@@ -328,13 +328,10 @@ pub use worth_query_declaration::{
 pub use worth_query_execution::facade::application_contribution;
 pub use worth_query_execution::facade::application_discovery;
 /// Explain saved query results and authored source operations for audit or debugging.
-///
-/// Start with [`application_entry::WorthQueryApplicationRequest::inspect`] for an
-/// original query observation, or
-/// [`application_entry::WorthQueryApplicationRequest::inspect_source`] for an
-/// authored source receipt. Choose a reference report, comparison, producer
-/// explanation or materialized original values. Each execution checks current
-/// inspection permission; saving an original does not preserve an access grant.
+/// Start with [`application_entry::WorthQueryApplicationRequest::inspect`] or
+/// [`application_entry::WorthQueryApplicationRequest::inspect_source`]. Each
+/// execution checks current inspection permission; saving an original does not
+/// preserve an access grant.
 pub use worth_query_execution::facade::application_inspection as causal_inspection;
 pub use worth_query_execution::facade::{application_installation, application_invariants};
 pub mod application_naming;
@@ -364,30 +361,32 @@ pub use crate::application_home::{
     WorthQueryApplicationHomeCheckpointLimits, WorthQueryApplicationHomeCloseOutcome,
     WorthQueryApplicationHomeCloseRefused, WorthQueryApplicationHomeClosed,
     WorthQueryApplicationHomeDiscardDenial, WorthQueryApplicationHomeLocation,
-    WorthQueryApplicationHomeOpenRefused, WorthQueryApplicationHomeOpeningCloseRefused,
-    WorthQueryApplicationHomeOpeningClosed, WorthQueryApplicationHomeRequest,
-    WorthQueryApplicationHomeTransitionRequired, WorthQueryHomeProgramTransition,
+    WorthQueryApplicationHomeOpenRefused, WorthQueryApplicationHomeOpenRefusedPhase,
+    WorthQueryApplicationHomeOpeningCloseRefused, WorthQueryApplicationHomeOpeningClosed,
+    WorthQueryApplicationHomeRequest, WorthQueryApplicationHomeTransitionRequired,
+    WorthQueryHomeClosePolicyRefused, WorthQueryHomeProgramTransition,
     WorthQueryHomeProgramTransitionDenial, WorthQueryHomeProgramTransitionOpenPhase,
     WorthQueryHomeProgramTransitionOpenRefused, WorthQueryHomeProgramTransitionPlan,
     WorthQueryHomeProgramTransitionStep, WorthQueryWorkflowApplicationHome,
     WorthQueryWorkflowHomeBindingRefused, WorthQueryWorkflowHomeCloseRefused,
     WorthQueryWorkflowHomeClosed,
 };
-/// Relational DATA for a Home transition author. These values grant no step,
-/// initialization, publication or Native owner access.
+/// Relational data for a Home transition author, without owner authority.
 pub mod home_program_transition;
 /// Existing owner refusal vocabulary for retained Home custody and Directory checkpoints.
 pub use crate::application_home::{ApplicationHomeCheckpointDenial, ApplicationHomeCloseDenial};
-/// Store's physical open refusal from `WorthQueryApplicationHomeOpenRefused::
-/// physical_refusal`: an application matches a contended or discard-pending
-/// open by kind. Store owns this vocabulary; Host does not copy it.
+/// The typed physical causes returned by a Home's `physical_refusal`.
 pub use crate::application_home::{
     ApplicationHomePhysicalRefusal, ApplicationHomePhysicalRefusalKind,
     ApplicationHomePhysicalStage,
 };
-/// Interactive custody of one source-only command across frames.
+/// Interactive custody of one source-only command or correction across frames.
 pub use crate::source_custody::{
-    WorthQuerySourceCustody, WorthQuerySourceCustodyPending, WorthQuerySourceCustodyStep,
+    WorthQueryAnyCorrectionCustodyOutcome, WorthQueryAnySourceCompletion,
+    WorthQueryAnySourceCustody, WorthQueryAnySourceCustodyStep,
+    WorthQueryAnyTerminalSourceEvidence, WorthQueryCorrectionCustodyOutcome,
+    WorthQuerySourceCustody, WorthQuerySourceCustodyPending, WorthQuerySourceCustodyPhase,
+    WorthQuerySourceCustodyStep, WorthQuerySourceCustodyWithdrawal,
 };
 pub use worth_foundational::facade::{
     CanonicalDigestId, DurableOwnerFamily, UncleanRecoveryUnsupported,

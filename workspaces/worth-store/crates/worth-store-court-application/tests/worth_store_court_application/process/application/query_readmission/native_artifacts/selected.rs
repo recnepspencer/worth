@@ -117,9 +117,9 @@ fn selected_completion_and_activation_failures_keep_owned_home_without_initializ
         let refused = reopen_refusal(path.path(), execution);
         match owner {
             RecordAdmissionOwner::NativeFinalization => {
-                let WorthQueryApplicationHomeOpenRefused::ExistingNativeFinalization {
+                let worth_query_host::facade::WorthQueryApplicationHomeOpenRefusedPhase::ExistingNativeFinalization {
                     query, ..
-                } = &refused
+                } = refused.phase()
                 else {
                     panic!("{case} must reach Native completion admission: {refused:?}");
                 };
@@ -131,8 +131,8 @@ fn selected_completion_and_activation_failures_keep_owned_home_without_initializ
                 );
             }
             RecordAdmissionOwner::QueryAttachment => {
-                let WorthQueryApplicationHomeOpenRefused::ExistingQueryAttachment { query, .. } =
-                    &refused
+                let worth_query_host::facade::WorthQueryApplicationHomeOpenRefusedPhase::ExistingQueryAttachment { query, .. } =
+                    refused.phase()
                 else {
                     panic!("{case} must reach selected Query record admission: {refused:?}");
                 };

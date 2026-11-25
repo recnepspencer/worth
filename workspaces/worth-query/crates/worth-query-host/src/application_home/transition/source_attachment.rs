@@ -1,6 +1,11 @@
 //! Attach B to the original Source and World after its real binding.
 use super::super::{
-    opening, refusal::WorthQueryApplicationHomeOpenRefused as OldRefused, runtime::*,
+    opening,
+    refusal::{
+        WorthQueryApplicationHomeOpenRefused as OldRefused,
+        WorthQueryApplicationHomeOpenRefusedPhase as OldPhase,
+    },
+    runtime::*,
 };
 use worth_query_declaration::facade::{application_program::*, application_schema::*};
 use worth_query_execution::facade::{
@@ -35,37 +40,46 @@ where
         let (source, _, _) = match home.query_composition_parts() {
             Ok(parts) => parts,
             Err(cause) => {
-                return Err(OldRefused::TransitionComposition {
+                return Err(OldRefused::from_phase(OldPhase::TransitionComposition {
                     query: after,
                     home,
                     cause,
-                })
+                }))
             }
         };
         let (after, builder, bindings) =
             match after.prepare_existing_home_signal_program(phase, source, bridge) {
                 Ok(parts) => parts,
                 Err(query) => {
-                    return Err(OldRefused::TransitionSignalProgramPreparation {
-                        home,
-                        query: Box::new(query),
-                    })
+                    return Err(OldRefused::from_phase(
+                        OldPhase::TransitionSignalProgramPreparation {
+                            home,
+                            query: Box::new(query),
+                        },
+                    ))
                 }
             };
         let conditional = match home.handoff_query_programme(builder, &phase.execution_request()) {
             Ok(conditional) => conditional,
             Err(handoff) => {
-                return Err(OldRefused::TransitionProgrammeHandoff {
-                    query: after,
-                    home,
-                    handoff,
-                    _bindings: bindings,
-                })
+                return Err(OldRefused::from_phase(
+                    OldPhase::TransitionProgrammeHandoff {
+                        query: after,
+                        home,
+                        handoff,
+                        _bindings: bindings,
+                    },
+                ))
             }
         };
         let after = match after.attach_existing_home_authored_signal(conditional) {
             Ok(after) => after,
-            Err(query) => return Err(OldRefused::ExistingSourceAttachment { query, home }),
+            Err(query) => {
+                return Err(OldRefused::from_phase(OldPhase::ExistingSourceAttachment {
+                    query,
+                    home,
+                }))
+            }
         };
         drop(bindings);
         let (query, home) = opening::existing::attach_world(phase, home, after, checkpoint_limits)?;

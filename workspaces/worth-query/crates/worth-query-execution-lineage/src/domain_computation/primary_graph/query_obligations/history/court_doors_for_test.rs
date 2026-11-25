@@ -10,6 +10,29 @@ impl QueryObligationHistory {
     {
         Self::begin_retirement(self, revision)
     }
+
+    /// Passively inspects the already-acknowledged folded ledger for `identity` without
+    /// calling `finish_pending` or mutating any staged publication.
+    #[doc(hidden)]
+    pub fn acknowledged_original_operation_for_test(
+        &self,
+        identity: worth_foundational::facade::ProgramSupportObligationIdentity,
+    ) -> Option<journal::QueryOriginalOperationObligation> {
+        let medium = self.medium.get()?;
+        if identity.home() != medium.home() {
+            return None;
+        }
+        self.state()
+            .journal
+            .as_ref()
+            .and_then(|journal| {
+                worth_query_execution_obligations::facade::ledger_inspect::original_operations(
+                    &journal.ledger,
+                )
+                .get(&identity)
+            })
+            .cloned()
+    }
 }
 
 impl WorthQueryProgramSupportRetirementAttempt {

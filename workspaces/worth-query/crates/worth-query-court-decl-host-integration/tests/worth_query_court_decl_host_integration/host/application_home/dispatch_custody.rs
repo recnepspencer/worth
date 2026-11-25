@@ -3,6 +3,7 @@
 //! returns. Every recorded fate here is issued by the actual Home.
 mod compensation_original;
 mod inbound_custody;
+mod omitted_capabilities;
 mod portable_causality;
 mod recovered_correlation;
 mod recovery_admission;

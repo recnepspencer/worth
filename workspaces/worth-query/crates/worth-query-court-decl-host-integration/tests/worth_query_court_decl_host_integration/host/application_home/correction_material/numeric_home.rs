@@ -1,6 +1,6 @@
 //! Shared Directory Home builders for NumericSchema correction kill courts.
 //! Uses a Directory-admissible contribution without the testkit's MemoryOnly wake rules.
-mod contribution;
+pub(in crate::host) mod contribution;
 use self::contribution::DirectoryNumericContribution;
 use super::*;
 use std::num::NonZeroUsize;
@@ -13,7 +13,7 @@ use worth_query_host::facade::{
     runtime::WorthQueryApplicationQueryResourceProfile,
     WorthQueryApplicationHome, WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeRequest,
 };
-pub(super) use worth_query_testkit_certification_correction::facade::certification::application_graph::correction::model;
+pub(in crate::host) use worth_query_testkit_certification_correction::facade::certification::application_graph::correction::model;
 use model::{
     authentication::*,
     calculation_query,
@@ -23,7 +23,7 @@ use model::{
     schema::*,
 };
 
-pub(super) struct DirectoryProgram;
+pub(in crate::host) struct DirectoryProgram;
 impl ApplicationProgramDefinition<NumericSchema> for DirectoryProgram {
     type Contributions = (DirectoryNumericContribution,);
     type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
@@ -40,7 +40,7 @@ impl ApplicationProgramDefinition<NumericSchema> for DirectoryProgram {
     }
 }
 
-pub(super) struct DirectoryOutputProgram;
+pub(in crate::host) struct DirectoryOutputProgram;
 impl ApplicationProgramDefinition<NumericSchema> for DirectoryOutputProgram {
     type Contributions = (DirectoryNumericContribution,);
     type Outputs = <OutputProgram as ApplicationProgramDefinition<NumericSchema>>::Outputs;
@@ -57,14 +57,15 @@ impl ApplicationProgramDefinition<NumericSchema> for DirectoryOutputProgram {
     }
 }
 
-pub(super) type NumericHome = WorthQueryApplicationHome<NumericSchema, DirectoryProgram>;
-pub(super) type OutputNumericHome = WorthQueryApplicationHome<NumericSchema, DirectoryOutputProgram>;
+pub(in crate::host) type NumericHome = WorthQueryApplicationHome<NumericSchema, DirectoryProgram>;
+pub(super) type OutputNumericHome =
+    WorthQueryApplicationHome<NumericSchema, DirectoryOutputProgram>;
 
-pub(super) fn limits() -> WorthQueryCorrectionHistoryLimits {
+pub(in crate::host) fn limits() -> WorthQueryCorrectionHistoryLimits {
     WorthQueryCorrectionHistoryLimits::new(None, NonZeroUsize::new(8).unwrap())
 }
 
-fn app_limits() -> WorthQueryApplicationLimits {
+pub(in crate::host) fn app_limits() -> WorthQueryApplicationLimits {
     WorthQueryApplicationLimits::new(
         identity::world_resources(),
         WorthQueryApplicationQueryResourceProfile::default(),
@@ -72,7 +73,7 @@ fn app_limits() -> WorthQueryApplicationLimits {
     )
 }
 
-fn seed_numeric(
+pub(in crate::host) fn seed_numeric(
     graph: &mut WorthQueryPrimaryGraphBootstrap<NumericSchema>,
     installed: &WorthQueryInstalledApplicationSchema<NumericSchema>,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
@@ -149,18 +150,22 @@ pub(super) fn open_output_home(
         ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap(),
         app_limits(),
         move |_, graph, installed| {
-            assert!(seed, "reopened OutputNumericHome ({label}) must not re-initialize");
+            assert!(
+                seed,
+                "reopened OutputNumericHome ({label}) must not re-initialize"
+            );
             seed_numeric(graph, installed)
         },
     );
-    with_bootstrap_advancement_from_request(execution, |phase| {
-        request.open_in_advancement(&phase)
-    })
-    .unwrap()
-    .unwrap_or_else(|refused| panic!("OutputNumericHome open ({label}): {refused:?}"))
+    with_bootstrap_advancement_from_request(execution, |phase| request.open_in_advancement(&phase))
+        .unwrap()
+        .unwrap_or_else(|refused| panic!("OutputNumericHome open ({label}): {refused:?}"))
 }
 
-pub(super) fn open_program_home(
+pub(in crate::host) type MemoryNumericHome =
+    WorthQueryApplicationHome<NumericSchema, model::program::Program>;
+
+pub(in crate::host) fn open_program_home(
     location: std::path::PathBuf,
     execution: worth_execution::ExecutionRequest<'_, '_>,
     seed: bool,
@@ -179,14 +184,31 @@ pub(super) fn open_program_home(
             seed_numeric(graph, installed)
         },
     );
-    with_bootstrap_advancement_from_request(execution, |phase| {
-        request.open_in_advancement(&phase)
-    })
-    .unwrap()
-    .unwrap_or_else(|refused| panic!("NumericHome open: {refused:?}"))
+    with_bootstrap_advancement_from_request(execution, |phase| request.open_in_advancement(&phase))
+        .unwrap()
+        .unwrap_or_else(|refused| panic!("NumericHome open: {refused:?}"))
 }
 
-pub(super) fn read_rows<P: ApplicationProgramDefinition<NumericSchema>>(
+pub(in crate::host) fn open_memory_program_home(
+    execution: worth_execution::ExecutionRequest<'_, '_>,
+) -> MemoryNumericHome {
+    let declaration = NumericSchema::declaration().unwrap();
+    let request = WorthQueryApplicationHomeRequest::new(
+        WorthQueryApplicationHomeLocation::MemoryOnly,
+        validated::<model::program::Program>(),
+        WorthQueryApplicationProgramRoster::new().support(validated::<OutputProgram>()),
+        declaration,
+        ((),),
+        ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap(),
+        app_limits(),
+        |_, graph, installed| seed_numeric(graph, installed),
+    );
+    with_bootstrap_advancement_from_request(execution, |phase| request.open_in_advancement(&phase))
+        .unwrap()
+        .unwrap_or_else(|refused| panic!("MemoryNumericHome open: {refused:?}"))
+}
+
+pub(in crate::host) fn read_rows<P: ApplicationProgramDefinition<NumericSchema>>(
     runtime: &WorthQueryProgramApplicationRuntime<NumericSchema, P>,
     branch: WorthQueryProductBranch,
 ) -> Vec<Row> {
@@ -222,7 +244,7 @@ pub(super) fn read_calc(
         .value
 }
 
-pub(super) fn head_ordinal<P: ApplicationProgramDefinition<NumericSchema>>(
+pub(in crate::host) fn head_ordinal<P: ApplicationProgramDefinition<NumericSchema>>(
     runtime: &WorthQueryProgramApplicationRuntime<NumericSchema, P>,
     branch: WorthQueryProductBranch,
 ) -> u64 {

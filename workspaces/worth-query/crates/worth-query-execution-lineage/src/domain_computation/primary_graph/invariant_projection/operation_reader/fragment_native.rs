@@ -179,7 +179,7 @@ impl NativeFragmentRead<'_, '_> {
                                     ),
                                 )
                             })?;
-                            Ok(raw.clone())
+                            Ok::<_, HandlerExecutionDenial>(raw.clone())
                         })
                         .transpose()?;
                     Ok(())

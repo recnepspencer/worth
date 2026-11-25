@@ -114,8 +114,8 @@ fn actual_binding_rows_refuse_malformed_keys_intents_duplicate_keys_and_outcomes
         })
         .unwrap();
         let refused = reopen_refusal(path.path(), execution);
-        match &refused {
-            WorthQueryApplicationHomeOpenRefused::ExistingNativeFinalization { query, .. } => {
+        match refused.phase() {
+            worth_query_host::facade::WorthQueryApplicationHomeOpenRefusedPhase::ExistingNativeFinalization { query, .. } => {
                 assert_eq!(query.reason().kind(), Kind::CheckpointRecoveryRejected);
                 assert_eq!(query.reason().subject(), expected, "{case}");
             }

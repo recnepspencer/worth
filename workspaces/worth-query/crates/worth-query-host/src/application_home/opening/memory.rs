@@ -16,6 +16,7 @@ where
     Program::Contributions: WorthQueryApplicationContributionTuple<Schema>,
 {
     use WorthQueryApplicationHomeOpenRefused as Refused;
+    use WorthQueryApplicationHomeOpenRefusedPhase as Phase;
     let query = match request.authorization_time_source {
         Some(source) => in_memory_rostered_program_with_authorization_time_source_in_advancement(
             phase,
@@ -45,5 +46,5 @@ where
             directory: None,
             checkpoint_limits: request.checkpoint_limits,
         })
-        .map_err(Refused::Preparation)
+        .map_err(|cause| Refused::from_phase(Phase::Preparation(cause)))
 }

@@ -114,6 +114,33 @@ pub(super) mod sealed {
             A: ApplicationAction<S, Self>,
             M: WorthQuerySourceDeliveryMode,
             Self: Sized;
+
+        fn publish_correction<P, A>(
+            prepared: crate::application_entry::WorthQueryPreparedOperationCorrection<
+                '_,
+                S,
+                Self,
+                P,
+                A,
+            >,
+        ) -> Result<
+            super::super::advancement::Advance<
+                S,
+                crate::application_entry::WorthQueryCapturedMutationInput<S, Self>,
+                P,
+                A,
+                <<A as ApplicationAction<S, Self>>::Delivery as worth_query_declaration::facade::application_program::ApplicationActionDelivery<S, Self>>::Mode,
+            >,
+            crate::application_entry::WorthQueryApplicationCorrectionDenial,
+        >
+        where
+            S: 'static,
+            Self: Sized,
+            Self::Input: worth_query_declaration::facade::application_operation::ApplicationMutationInputScope<S, Self>,
+            P: ApplicationProgramDefinition<S>,
+            A: ApplicationAction<S, Self>,
+            <<A as ApplicationAction<S, Self>>::Delivery as worth_query_declaration::facade::application_program::ApplicationActionDelivery<S, Self>>::Mode:
+                WorthQuerySourceDeliveryMode;
     }
     impl<S, B> Driver<S> for B
     where
@@ -224,6 +251,35 @@ pub(super) mod sealed {
             M: WorthQuerySourceDeliveryMode,
         {
             owner.admission.assess_current_authorization(request)
+        }
+
+        fn publish_correction<P, A>(
+            prepared: crate::application_entry::WorthQueryPreparedOperationCorrection<
+                '_,
+                S,
+                Self,
+                P,
+                A,
+            >,
+        ) -> Result<
+            super::super::advancement::Advance<
+                S,
+                crate::application_entry::WorthQueryCapturedMutationInput<S, Self>,
+                P,
+                A,
+                <<A as ApplicationAction<S, Self>>::Delivery as worth_query_declaration::facade::application_program::ApplicationActionDelivery<S, Self>>::Mode,
+            >,
+            crate::application_entry::WorthQueryApplicationCorrectionDenial,
+        >
+        where
+            S: 'static,
+            Self::Input: worth_query_declaration::facade::application_operation::ApplicationMutationInputScope<S, Self>,
+            P: ApplicationProgramDefinition<S>,
+            A: ApplicationAction<S, Self>,
+            <<A as ApplicationAction<S, Self>>::Delivery as worth_query_declaration::facade::application_program::ApplicationActionDelivery<S, Self>>::Mode:
+                WorthQuerySourceDeliveryMode,
+{
+            prepared.publish_admitted()
         }
     }
 }

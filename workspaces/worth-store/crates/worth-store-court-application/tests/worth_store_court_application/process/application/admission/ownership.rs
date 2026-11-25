@@ -1,4 +1,5 @@
 use super::*;
+use worth_query_host::facade::WorthQueryApplicationHomeOpenRefusedPhase as RefusedPhase;
 use worth_store_application::{ApplicationHomeOpenRefusal, ApplicationHomePhysicalRefusalKind};
 
 #[test]
@@ -22,8 +23,8 @@ fn competing_host_processes_admit_exactly_one_writer_until_process_death() {
                 &location,
                 build(),
                 initialized.clone(),
-                |opened, _contacts| match opened {
-                    Err(Refused::Physical {
+                |opened, _contacts| match opened.as_ref().map_err(|refused| refused.phase()) {
+                    Err(RefusedPhase::Physical {
                         cause: ApplicationHomeOpenRefusal::Physical(cause),
                         ..
                     }) => {

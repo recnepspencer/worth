@@ -4,6 +4,7 @@
 //! performs at most one native retention, one advance and one close. It returns
 //! the command committed, declined, or pending with the exact owner it must be
 //! resumed from. No request, principal or advancement phase is retained.
+use worth_foundational::facade::ProgramSupportObligationIdentity;
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationIntent,
 };
@@ -17,12 +18,20 @@ use worth_query_publication::facade::application_entry::{
     WorthQueryOperationCloseDenial, WorthQueryOperationConstructionDenial,
     WorthQueryOperationDescription, WorthQuerySourceCompletion, WorthQuerySourceCompletionAction,
     WorthQuerySourceMutation, WorthQuerySourceOnlyAdvance, WorthQuerySourceOnlyDenial,
-    WorthQuerySourceOnlyOperation, WorthQueryTerminalSourceEvidence,
+    WorthQuerySourceOnlyOperation, WorthQuerySourceOnlyPosture, WorthQueryTerminalSourceEvidence,
     WorthQueryTerminalSourceOperation,
 };
 
 type Result<S, I> =
     <<I as ApplicationMutationIntent<S>>::Binding as ApplicationMutationBinding<S>>::Result;
+
+mod correction;
+mod erasure;
+pub use correction::{WorthQueryAnyCorrectionCustodyOutcome, WorthQueryCorrectionCustodyOutcome};
+pub use erasure::{
+    WorthQueryAnySourceCompletion, WorthQueryAnySourceCustody, WorthQueryAnySourceCustodyStep,
+    WorthQueryAnyTerminalSourceEvidence,
+};
 
 /// The native owner of one source-completion command, in its current phase.
 /// Every variant holds a genuine Publication owner; matching on it lends that
@@ -86,6 +95,138 @@ pub enum WorthQuerySourceCustodyPending {
     Refused(WorthQuerySourceOnlyDenial),
     /// Close of completed or terminal custody refused; the owner is retained.
     Close(WorthQueryOperationCloseDenial),
+}
+
+/// How an unexecuted command was lawfully withdrawn from Host custody without executing.
+pub enum WorthQuerySourceCustodyWithdrawal {
+    /// The command had not constructed a retained operation yet (and any durable original on its
+    /// description was discharged).
+    BeforeConstruction,
+    /// A retained unexecuted operation closed its cleanup and discharged its durable original.
+    Closed(WorthQueryClosedOperation),
+}
+
+impl std::fmt::Debug for WorthQuerySourceCustodyWithdrawal {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::BeforeConstruction => f.write_str("BeforeConstruction"),
+            Self::Closed(_) => f.write_str("Closed(..)"),
+        }
+    }
+}
+
+/// Descriptive lifecycle phase of a pending Host source-custody owner.
+/// Read-only inspection; grants no admission, execution, or discharge authority.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQuerySourceCustodyPhase {
+    /// Captured input awaiting durable retention.
+    Described,
+    /// Retained unexecuted operation (`Initial` posture) awaiting its next advance.
+    RetainedInitial,
+    /// Retained operation holding a post-handler or native recovery obligation.
+    RetainedObligation,
+    /// Committed evidence awaiting cleanup close.
+    Completed,
+    /// Stopped terminal evidence awaiting cleanup close.
+    Terminal,
+}
+
+impl<S, I, P, A> WorthQuerySourceCustody<S, I, P, A>
+where
+    S: ApplicationSchema + 'static,
+    I: ApplicationMutationIntent<S>,
+    P: ApplicationProgramDefinition<S>,
+{
+    /// Descriptive lifecycle phase of the retained Publication owner.
+    /// Grants no admission, execution, or discharge authority.
+    pub fn phase(&self) -> WorthQuerySourceCustodyPhase {
+        match self {
+            Self::Described(_) => WorthQuerySourceCustodyPhase::Described,
+            Self::Retained(operation) => match operation.posture() {
+                WorthQuerySourceOnlyPosture::Initial => {
+                    WorthQuerySourceCustodyPhase::RetainedInitial
+                }
+                _ => WorthQuerySourceCustodyPhase::RetainedObligation,
+            },
+            Self::Completed(_) => WorthQuerySourceCustodyPhase::Completed,
+            Self::Terminal(_) => WorthQuerySourceCustodyPhase::Terminal,
+        }
+    }
+
+    /// Descriptive identity of the retained durable original, if one is currently held.
+    /// Grants no admission or discharge authority.
+    pub fn durable_original_identity(&self) -> Option<ProgramSupportObligationIdentity> {
+        match self {
+            Self::Described(description) => description.original_identity(),
+            Self::Retained(operation) => operation.original_identity(),
+            Self::Completed(completed) => completed.original_identity(),
+            Self::Terminal(terminal) => terminal.original_identity(),
+        }
+    }
+
+    /// Descriptive check for whether the retained Publication owner currently holds an
+    /// undischarged durable original (true on Directory Homes once retained, false on MemoryOnly).
+    /// Grants no admission or discharge authority.
+    pub fn has_durable_original(&self) -> bool {
+        self.durable_original_identity().is_some()
+    }
+
+    /// Lawfully withdraws an unexecuted command without running its handler, discharging any
+    /// retained durable original. Post-handler states (including `RetryableNoEffect`),
+    /// post-execution phases (`Completed`, `Terminal`), and retained native recovery obligations
+    /// refuse with `NativeObligationRetained` and return `self` intact.
+    pub fn close_unexecuted(
+        self,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+    ) -> std::result::Result<
+        WorthQuerySourceCustodyWithdrawal,
+        (Self, WorthQueryOperationCloseDenial),
+    > {
+        match self {
+            Self::Described(description) => description
+                .close_unexecuted(request)
+                .map(|()| WorthQuerySourceCustodyWithdrawal::BeforeConstruction)
+                .map_err(|(description, denial)| (Self::Described(description), denial)),
+            Self::Retained(operation) => operation
+                .close_unexecuted(request)
+                .map(WorthQuerySourceCustodyWithdrawal::Closed)
+                .map_err(|(operation, denial)| (Self::Retained(operation), denial)),
+            Self::Completed(completed) => Err((
+                Self::Completed(completed),
+                WorthQueryOperationCloseDenial::NativeObligationRetained,
+            )),
+            Self::Terminal(terminal) => Err((
+                Self::Terminal(terminal),
+                WorthQueryOperationCloseDenial::NativeObligationRetained,
+            )),
+        }
+    }
+
+    /// Transfers one native source-only advance into Host custody, closing completed or terminal
+    /// owners immediately under `request` and retaining pending custody otherwise.
+    pub fn accept_advance(
+        advance: WorthQuerySourceOnlyAdvance<
+            WorthQuerySourceOnlyOperation<S, I, P, A, ApplicationSourceCompletion>,
+            WorthQueryCompletedSourceOperation<S, I, P, A, ApplicationSourceCompletion>,
+            WorthQueryTerminalSourceOperation<S, I, P, A, ApplicationSourceCompletion>,
+        >,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+    ) -> WorthQuerySourceCustodyStep<S, I, P, A> {
+        match advance {
+            WorthQuerySourceOnlyAdvance::Completed(completed) => {
+                close_completed(completed, request)
+            }
+            WorthQuerySourceOnlyAdvance::Terminal(terminal) => close_terminal(terminal, request),
+            WorthQuerySourceOnlyAdvance::Progress(operation) => pending(
+                WorthQuerySourceCustody::Retained(operation),
+                WorthQuerySourceCustodyPending::Progress,
+            ),
+            WorthQuerySourceOnlyAdvance::Refused { operation, denial } => pending(
+                WorthQuerySourceCustody::Retained(operation),
+                WorthQuerySourceCustodyPending::Refused(denial),
+            ),
+        }
+    }
 }
 
 impl<S, I, P, A> WorthQuerySourceCustody<S, I, P, A>
@@ -152,18 +293,7 @@ where
     P: ApplicationProgramDefinition<S>,
     A: WorthQuerySourceCompletionAction<S, I::Binding>,
 {
-    match operation.advance(request) {
-        WorthQuerySourceOnlyAdvance::Completed(completed) => close_completed(completed, request),
-        WorthQuerySourceOnlyAdvance::Terminal(terminal) => close_terminal(terminal, request),
-        WorthQuerySourceOnlyAdvance::Progress(operation) => pending(
-            WorthQuerySourceCustody::Retained(operation),
-            WorthQuerySourceCustodyPending::Progress,
-        ),
-        WorthQuerySourceOnlyAdvance::Refused { operation, denial } => pending(
-            WorthQuerySourceCustody::Retained(operation),
-            WorthQuerySourceCustodyPending::Refused(denial),
-        ),
-    }
+    WorthQuerySourceCustody::accept_advance(operation.advance(request), request)
 }
 
 fn close_completed<S, I, P, A>(

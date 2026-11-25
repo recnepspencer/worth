@@ -14,10 +14,11 @@ use worth_query_execution::facade::query_obligations::QueryObligationsMedium;
 ///
 /// ```compile_fail,E0599
 /// use worth_query_host::facade::{domain::ApplicationSchemaComposition,
-///     WorthQueryApplicationHomeOpenRefused as Refused};
+///     WorthQueryApplicationHomeOpenRefused as Refused,
+///     WorthQueryApplicationHomeOpenRefusedPhase as Phase};
 /// fn escape<S: ApplicationSchemaComposition, P>(refused: Refused<S, P>) {
-///     if let Refused::CustodyReadmission { query, .. }
-///         | Refused::OwnerAdmission { query, .. } = refused {
+///     if let Phase::CustodyReadmission { query, .. }
+///         | Phase::OwnerAdmission { query, .. } = *refused.into_phase() {
 ///         let _runtime = query.into_home_program_runtime();
 ///     }
 /// }

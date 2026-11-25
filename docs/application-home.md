@@ -104,9 +104,11 @@ descriptors are data, not authority. See
 [Reacquire authority after reopen](build-an-application.md#reacquire-authority-after-reopen).
 
 Only one process can own a Directory. A second opener is refused with
-`WorthQueryApplicationHomeOpenRefused::Physical`; its `detail()` names
-`MutationOwnerContended`. If the owner process dies, the OS releases the lease and
-another process can open the Home.
+`WorthQueryApplicationHomeOpenRefused` (phase
+`WorthQueryApplicationHomeOpenRefusedPhase::Physical`); its `physical_refusal()`
+returns the typed Store refusal and `detail()` names `MutationOwnerContended`.
+If the owner process dies, the OS releases the lease and another process can
+open the Home.
 
 ## Write, with idempotency keys and retries
 
@@ -169,19 +171,28 @@ match home.close(&request) {
 - Dropping a Home is not a successful close.
 - `close` is the Directory lifecycle. On a MemoryOnly Home it refuses, and
   `resume()` returns the Home; a MemoryOnly Home ends when it is dropped.
-- The `ExecutionRequest` comes from a lease built with
+- `close_with_policy(policy)` (and `try_close_with_policy(policy)` on refusal)
+  acquires an owned serial `ExecutionResourceLease` from an
+  `ExecutionRequestPolicy`, removing manual lease setup while preserving the
+  exact owner on `WorthQueryHomeClosePolicyRefused::Admission`.
+- `home.primary_graph()` lends the installed primary graph directly without
+  calling `home.runtime().runtime()`.
+- The `ExecutionRequest` for direct `close(&request)` comes from a lease built with
   `host::runtime::{ExecutionResourceLease, LeaseRequest, CancellationToken}`; the
   [shared-execution example's `home.rs`](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/examples/shared_execution/home.rs)
   shows one.
 
 ## If opening is refused
 
-`host::WorthQueryApplicationHomeOpenRefused` is an owning refusal: it can hold
-the partly opened Home and its mutation lease. Do not treat it as permission to
-initialize or delete the directory. Release it with `refused.close(&request)`,
-which returns `WorthQueryApplicationHomeOpeningClosed` or
-`WorthQueryApplicationHomeOpeningCloseRefused` (retry with `try_close`). Its
-`detail()` (also its `Debug` output) describes the cause.
+`host::WorthQueryApplicationHomeOpenRefused` is a pointer-sized owning refusal:
+it can hold the partly opened Home and its mutation lease (inspectable via
+`phase()` / `into_phase()`). Do not treat it as permission to initialize or
+delete the directory. Release it with `refused.close(&request)` or
+`refused.close_with_policy(policy)`, which returns
+`WorthQueryApplicationHomeOpeningClosed` or
+`WorthQueryApplicationHomeOpeningCloseRefused` (retry with `try_close` /
+`try_close_with_policy`). Its `detail()` (also its `Display` and `Debug`
+output) describes the cause.
 
 If the recorded program or schema differs from the request, opening refuses and
 `refused.transition_required()` describes both bindings; reopen with

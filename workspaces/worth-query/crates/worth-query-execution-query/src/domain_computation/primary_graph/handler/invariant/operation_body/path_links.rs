@@ -55,7 +55,7 @@ impl<S: ApplicationSchema, B: ApplicationMutationBinding<S>> DecisionReader<'_, 
                         })?;
                     targets.push(selected.target);
                 }
-                Ok(targets)
+                Ok::<_, HandlerExecutionDenial>(targets)
             })
             .map_err(HandlerExecutionDenial::new)??;
         Ok(PreparedBodyPathLinks {
