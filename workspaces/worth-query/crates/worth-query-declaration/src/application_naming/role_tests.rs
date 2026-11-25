@@ -69,6 +69,15 @@ impl WorthQueryNameRole for FaceRole {
             _ => None,
         }
     }
+
+    fn from_role_parts(role: &str, index: Option<u32>) -> Option<Self> {
+        match (role, index) {
+            ("Authored", None) => Some(Self::Authored),
+            ("CutPiece", None) => Some(Self::CutPiece),
+            ("Instance", Some(index)) => Some(Self::Instance(index)),
+            _ => None,
+        }
+    }
 }
 
 #[test]

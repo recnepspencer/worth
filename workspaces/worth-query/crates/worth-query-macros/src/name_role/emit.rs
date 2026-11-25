@@ -33,6 +33,19 @@ pub(super) fn roles(input: &DeriveInput, declaration: &RoleDeclaration) -> Token
         };
         quote!(Self::#pattern => #index)
     });
+    let parts = roles.iter().map(|declared| {
+        let (variant, name) = (&declared.variant, &declared.name);
+        match declared.indexed {
+            true => quote! {
+                (#name, ::core::option::Option::Some(index)) =>
+                    ::core::option::Option::Some(Self::#variant(index))
+            },
+            false => quote! {
+                (#name, ::core::option::Option::None) =>
+                    ::core::option::Option::Some(Self::#variant)
+            },
+        }
+    });
     let ranks = roles.iter().enumerate().map(|(position, declared)| {
         let rank = canonical_order
             .iter()
@@ -55,6 +68,15 @@ pub(super) fn roles(input: &DeriveInput, declaration: &RoleDeclaration) -> Token
             }
             fn role_index(&self) -> ::core::option::Option<u32> {
                 match self { #(#indexes,)* }
+            }
+            fn from_role_parts(
+                role: &str,
+                index: ::core::option::Option<u32>,
+            ) -> ::core::option::Option<Self> {
+                match (role, index) {
+                    #(#parts,)*
+                    _ => ::core::option::Option::None,
+                }
             }
         }
         impl ::core::cmp::Ord for #role {

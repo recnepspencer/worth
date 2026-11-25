@@ -14,6 +14,7 @@ use worth_query_decl::facade::application_naming::{
 };
 use worth_query_host::facade::application_naming::ExecutionNameResolveDenial;
 
+pub mod births;
 pub mod seams;
 
 /// What one probe run observed.
@@ -333,6 +334,7 @@ impl OperationHandler<Schema, Binding> for Handler {
                 .or_default()
                 .observed = observed;
             seams::observe(reader, &input.token, &live)?;
+            births::observe(reader, &input.token);
             if let Some(refused) = refused {
                 return Err(refused);
             }

@@ -26,7 +26,35 @@ pub(super) fn discriminator(
             quote!(match self { #(#arms)* })
         }
     };
+    let decode = match &declaration.shape {
+        Shape::Struct(members) => {
+            let construct = construct(quote!(Self), members);
+            quote!(::core::result::Result::Ok(#construct))
+        }
+        Shape::Enum(variants) => {
+            let arms = variants.iter().map(|declaration| {
+                let (variant, name) = (&declaration.variant, &declaration.name);
+                let construct = construct(quote!(Self::#variant), &declaration.members);
+                quote!(#name => ::core::result::Result::Ok(#construct),)
+            });
+            quote! {
+                match decoder.variant()? {
+                    #(#arms)*
+                    other => ::core::result::Result::Err(decoder.unknown_variant(other)),
+                }
+            }
+        }
+    };
     quote! {
+        impl #naming::ApplicationNameDiscriminatorDecode for #discriminator {
+            // A unit struct reads nothing after its identity.
+            #[allow(unused_variables)]
+            fn decode_canonical(
+                decoder: &mut #naming::ApplicationNameDiscriminatorDecoder<'_>,
+            ) -> ::core::result::Result<Self, #naming::ApplicationNameDiscriminatorDecodeDenial> {
+                #decode
+            }
+        }
         impl #naming::ApplicationNameDiscriminator for #discriminator {
             const DISCRIMINATOR_IDENTITY: &'static str = #identity;
             #referenced_roles
@@ -38,6 +66,26 @@ pub(super) fn discriminator(
             ) {
                 #encode
             }
+        }
+    }
+}
+
+/// `path { field: read, .. }` or `path(read, ..)`: one read per field, in
+/// the order the encoding writes them.
+fn construct(path: TokenStream, members: &Members) -> TokenStream {
+    match members {
+        Members::Unit => path,
+        Members::Named(fields) => {
+            let reads = fields.iter().map(
+                |(member, name, ty)| quote_spanned!(ty.span()=> #member: decoder.field(#name)?),
+            );
+            quote!(#path { #(#reads,)* })
+        }
+        Members::Positional(types) => {
+            let reads = types
+                .iter()
+                .map(|ty| quote_spanned!(ty.span()=> decoder.value()?));
+            quote!(#path(#(#reads,)*))
         }
     }
 }

@@ -42,7 +42,7 @@ impl PersistentGroupRead {
         snapshot: &SnapshotHandle,
     ) -> Result<CandidateGroupSupport, PersistentGroupUnobservable> {
         let scheme = runtime
-            .persistent_group_scheme_id(&self.group_kind)
+            .persistent_name_scheme_id(PersistentNameSubjectKind::Group, &self.group_kind)
             .ok_or(PersistentGroupUnobservable)?;
         let members = runtime
             .with_persistent_names_at_snapshot(snapshot, |view| {

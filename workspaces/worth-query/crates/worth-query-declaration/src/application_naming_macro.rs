@@ -6,6 +6,11 @@
 /// Attempting to include a float (`f32`/`f64`) or non-admitted type fails at
 /// compile time because only sealed [`ApplicationNameDiscriminatorValue`](crate::facade::application_naming::ApplicationNameDiscriminatorValue)
 /// types compile against `encoder.field(...)`.
+///
+/// It writes the encoding only. To read a recorded birth's discriminator
+/// back, use `#[derive(ApplicationNameDiscriminator)]`, which writes the same
+/// bytes and also decodes, or implement `ApplicationNameDiscriminatorDecode`
+/// by hand.
 #[macro_export]
 macro_rules! worth_query_name_discriminator {
     (

@@ -5,11 +5,21 @@ use super::{WorthQueryName, WorthQuerySameCommitName};
 /// other canonical byte streams.
 pub const NAME_DISCRIMINATOR_DOMAIN_TAG: &[u8] = b"worth.query.name-discriminator.v1\0";
 
+mod decode_values;
+mod decoder;
 mod field;
 mod nested;
+mod references;
 
+pub use decode_values::ApplicationNameDiscriminatorValueDecode;
+pub use decoder::{
+    AdmittedNameReferences, ApplicationNameDiscriminatorDecode,
+    ApplicationNameDiscriminatorDecodeDenial, ApplicationNameDiscriminatorDecoder,
+    ApplicationNameDiscriminatorFieldDecode,
+};
 pub use field::ApplicationNameDiscriminatorField;
 pub use nested::NestedDiscriminator;
+pub(crate) use references::recorded_name_references;
 
 /// Unnameable outside this crate, so no caller can add a value type or a
 /// field form of its own.

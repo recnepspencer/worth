@@ -42,6 +42,9 @@
 //!     fn role_index(&self) -> Option<u32> {
 //!         Some(self.0)
 //!     }
+//!     fn from_role_parts(role: &str, index: Option<u32>) -> Option<Self> {
+//!         (role == "Instance").then_some(Self(index?))
+//!     }
 //! }
 //!
 //! let occurrence = OccurrencePath::root("pattern_1")?.index("instance", 10)?;

@@ -7,6 +7,12 @@ use syn::punctuated::Punctuated;
 use syn::{Attribute, Data, DeriveInput, Fields, Ident, LitStr, Token, Type};
 
 const TYPE_KEYS: &[&str] = &["identity", "referenced_roles"];
+/// The identity of a birth told apart by its role index alone; no declared
+/// discriminator may claim it.
+const RESERVED_IDENTITY: &str = "worth.query.name-role-index.v1";
+/// The field an indexed role's index is written under; no declared field may
+/// claim it, so a recorded birth's leading index is never a declared field.
+const RESERVED_FIELD: &str = "worth.role.index";
 const MEMBER_KEYS: &[&str] = &["name"];
 
 pub(super) struct DiscriminatorDeclaration {
@@ -93,6 +99,14 @@ fn refuse_malformed_identity(identity: &LitStr) -> syn::Result<()> {
         || text.ends_with('.')
         || text.contains("..")
         || text.chars().any(|ch| ch.is_whitespace() || ch.is_control());
+    if text == RESERVED_IDENTITY {
+        return Err(syn::Error::new(
+            identity.span(),
+            format!(
+                "`{RESERVED_IDENTITY}` is reserved for a birth told apart by its role index alone"
+            ),
+        ));
+    }
     match malformed {
         true => Err(syn::Error::new(
             identity.span(),
@@ -132,6 +146,12 @@ fn members(fields: &Fields) -> syn::Result<Members> {
             let named = fields.named.iter().map(|field| {
                 let member = field.ident.clone().expect("named fields carry identifiers");
                 let name = wire_name(name_key(&field.attrs)?, &member, "field")?;
+                if name.value() == RESERVED_FIELD {
+                    return Err(syn::Error::new(
+                        name.span(),
+                        format!("`{RESERVED_FIELD}` is reserved for an indexed role's index"),
+                    ));
+                }
                 if !written.insert(name.value()) {
                     return Err(syn::Error::new(
                         name.span(),

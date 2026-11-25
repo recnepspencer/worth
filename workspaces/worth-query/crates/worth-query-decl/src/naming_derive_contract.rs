@@ -7,20 +7,31 @@
 //! ```
 //! use worth_query_decl::facade::application_naming::{
 //!     ApplicationNameDiscriminator, ApplicationNameDiscriminatorEncoder,
-//!     ApplicationNameSchemeBuilder, NameRef, NestedDiscriminator, WorthQueryName,
-//!     WorthQueryNameRole, WorthQuerySameCommitName,
+//!     ApplicationNameSchemeBuilder, EntityNameSubject, NameRef, NestedDiscriminator, Unowned,
+//!     WorthQueryName, WorthQueryNameRole, WorthQueryNamedKind, WorthQuerySameCommitName,
 //! };
 //! use worth_query_decl::facade::application_schema::fragment::Entity;
 //! use worth_query_decl::facade::worth_query_name_discriminator;
 //!
-//! struct Cad;
-//! struct Face;
-//! impl Entity for Face {
-//!     const NAME: &'static str = "Face";
-//!     type Aspects = ();
-//!     type Relations = ();
+//! // A derived discriminator also decodes a recorded birth, and a decoded
+//! // name reference is verified to be of its field's declared named kind.
+//! macro_rules! named_entity {
+//!     ($kind:ident) => {
+//!         struct $kind;
+//!         impl Entity for $kind {
+//!             const NAME: &'static str = stringify!($kind);
+//!             type Aspects = ();
+//!             type Relations = ();
+//!         }
+//!         impl WorthQueryNamedKind for $kind {
+//!             type Subject = EntityNameSubject;
+//!             type OwnerScope = Unowned;
+//!         }
+//!     };
 //! }
-//! struct Edge;
+//! struct Cad;
+//! named_entity!(Face);
+//! named_entity!(Edge);
 //!
 //! #[derive(Clone, Copy, Debug, Eq, PartialEq, WorthQueryNameRole)]
 //! pub enum FaceRole {

@@ -15,6 +15,7 @@ use worth_query_host::facade::application_naming::{
 pub mod sculpt;
 use sculpt::{Held, HeldSeam, Keeper, Plan, SeamKeeper, Step};
 
+mod births;
 mod ergonomics;
 mod history;
 mod invalidation;
@@ -27,18 +28,14 @@ mod seam_invalidation;
 pub(crate) mod seam_names;
 
 /// A member piece's side of a cut, optionally naming the cutting member.
-#[derive(Clone, Debug, Eq, PartialEq)]
+/// Derived, so a recorded piece's discriminator also reads back.
+#[derive(Clone, Debug, Eq, PartialEq, ApplicationNameDiscriminator)]
+#[worth_query(identity = "worth.tests.persistent-naming.member-cut.v1")]
 pub enum MemberCut {
     Side {
         side: u64,
         cutter: Option<WorthQueryName<Member>>,
     },
-}
-worth_query_name_discriminator! {
-    enum MemberCut {
-        identity: "worth.tests.persistent-naming.member-cut.v1",
-        variants: { Side { side, cutter } }
-    }
 }
 
 /// The same cut as [`MemberCut`], by a member born in the same commit. The
@@ -85,15 +82,10 @@ worth_query_name_discriminator! {
 }
 
 /// Which of several parallel seams between one pair of members this is.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, ApplicationNameDiscriminator)]
+#[worth_query(identity = "worth.tests.persistent-naming.seam-side.v1")]
 pub struct SeamSide {
     pub index: u64,
-}
-worth_query_name_discriminator! {
-    struct SeamSide {
-        identity: "worth.tests.persistent-naming.seam-side.v1",
-        fields: [index]
-    }
 }
 
 /// Which side of a cut a piece lies on.

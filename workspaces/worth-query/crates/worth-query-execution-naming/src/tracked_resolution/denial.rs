@@ -34,6 +34,14 @@ pub enum ExecutionNameReadDenial {
         expected_subject: String,
         requested_subject: String,
     },
+    /// The held name has no birth recorded and visible at the reader's
+    /// basis: it is born later, on another branch, or never.
+    UnknownName,
+    /// A recorded birth's parent is not recorded at the reader's basis.
+    UnrecordedBirthReference { digest: [u8; 32] },
+    /// A birth looked up by its parts references a name only its own
+    /// commit mints; only committed references can match a recorded birth.
+    SameCommitBirthReference,
     /// A carrier or side filter lowered to an empty payload; the typed
     /// [`NameSelection`](worth_query_declaration::facade::application_naming::NameSelection)
     /// constructors never build one.
@@ -69,6 +77,15 @@ impl fmt::Display for ExecutionNameReadDenial {
                 formatter,
                 "name under scheme `{scheme_id}` belongs to subject `{expected_subject}`, not `{requested_subject}`"
             ),
+            Self::UnknownName => {
+                formatter.write_str("no birth of this name is recorded at this basis")
+            }
+            Self::UnrecordedBirthReference { .. } => {
+                formatter.write_str("a recorded birth's parent is not recorded at this basis")
+            }
+            Self::SameCommitBirthReference => {
+                formatter.write_str("a birth lookup cannot reference a same-commit name")
+            }
             Self::EmptySelectionFilter => formatter.write_str("selection filter is empty"),
         }
     }

@@ -10,6 +10,7 @@
 use super::super::outputs::seam_names::{link, seam};
 use super::*;
 
+mod births;
 mod groups;
 mod reads;
 mod refusals;

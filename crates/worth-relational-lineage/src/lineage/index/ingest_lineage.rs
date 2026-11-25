@@ -22,7 +22,7 @@ use crate::contracts::lineage::data::name_resolution::{PersistentNameKey, Persis
 
 use super::journal::IngestionJournal;
 use super::{
-    LineageHolder, LiveName, NameEntry, NameState, PersistentNameBranchIndex,
+    LineageHolder, LiveName, NameEntry, NameOrigin, NameState, PersistentNameBranchIndex,
     PersistentNameCommittedBatch, PersistentNameIndexDenial,
 };
 
@@ -237,11 +237,8 @@ impl PersistentNameBranchIndex {
                 target: target_for(key, birth.identity(), holder, lineage)?,
                 carriers: BTreeSet::new(),
             };
-            // A name born without a discriminator has no side, exactly like a group.
-            let canonical = birth.parts().canonical_discriminator();
-            let side = (!canonical.is_empty()).then(|| canonical.to_vec());
-            let scheme = Some(birth.parts().scheme_id().to_owned());
-            let entry = NameEntry::born(commit, side, scheme, live);
+            let origin = NameOrigin::Birth(birth.parts().clone());
+            let entry = NameEntry::born(commit, origin, live);
             self.insert_entry(key, entry, journal)?;
             self.bind_lineage_name(lineage, key, journal)?;
         }

@@ -115,6 +115,13 @@ impl WorthQueryOutputBirth {
     pub fn has_discriminator(&self) -> bool {
         !self.canonical_discriminator.is_empty()
     }
+
+    /// The canonical discriminator, unless it still waits on a same-commit
+    /// name that only its commit mints.
+    pub(crate) fn committed_discriminator(&self) -> Option<&[u8]> {
+        let committed = self.same_commit_names.is_empty();
+        committed.then_some(self.canonical_discriminator.as_slice())
+    }
 }
 
 /// Keeper of a merge an operation declares over held names of kind `K`;

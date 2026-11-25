@@ -6,7 +6,9 @@ use crate::contracts::lineage::data::name_resolution::{
     PersistentNameKey, PersistentNameOfRecord, PersistentNameResolutionDenial,
     PersistentNameResolutionOutcome, PersistentNameSelection,
 };
-use crate::contracts::lineage::data::naming::{PersistentNameIdentity, PersistentNameSubjectKind};
+use crate::contracts::lineage::data::naming::{
+    PersistentNameBirthParts, PersistentNameIdentity, PersistentNameSubjectKind,
+};
 use crate::contracts::lineage::data::postures::LineageRecordTarget;
 use crate::lineage::index::PersistentNameBranchIndex;
 
@@ -78,6 +80,19 @@ impl<'index> PersistentNameObservationView<'index> {
         let key = index.recorded_name(subject, digest)?;
         let born_at = index.names.get(&key)?.born_at();
         (born_at <= self.basis).then_some(key)
+    }
+
+    /// The canonical parts `name` was born from, only when its birth is
+    /// visible at the basis. A birth recorded after the basis, a group, and
+    /// a name the index never recorded all answer `None`. Births are
+    /// immutable: a later retire, split, merge or restore never changes one.
+    ///
+    /// Complexity: O(1) expected.
+    pub fn birth_of(&self, name: PersistentNameKey) -> Option<&'index PersistentNameBirthParts> {
+        let entry = self.index?.names.get(&name)?;
+        (entry.born_at() <= self.basis)
+            .then(|| entry.birth())
+            .flatten()
     }
 
     /// The live group of installed group scheme `scheme_id` holding `member`

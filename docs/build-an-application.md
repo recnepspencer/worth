@@ -435,11 +435,38 @@ writer.name_created_entity(&face, WorthQueryOutputBirth::of_role(&occurrence, Fa
   A discriminator declared over it serves a referenced record born by an
   earlier commit and one born by the same commit, and mints the same name.
 - **`OccurrencePath`** composes an occurrence from segments:
-  `root(key)`, `child(segment)` and `index(name, n)`. Paths order by segment
-  and indexes by number. Each path renders one canonical key
-  (`pattern_1/instance[2]/hole`), `parse` reads only that spelling back, and
-  a segment holding whitespace or `/`, `[` or `]` refuses
-  `OccurrencePathDenial`.
+  `root(key)`, `child(segment)`, `index(name, n)` and `anchored(name,
+  &anchor)`, a segment placed relative to another occurrence
+  (`generator/placement(base/instance[2])`; `segment.anchor()` reads it
+  back). Paths order by segment: a plain segment before the indexed ones of
+  its name, indexes by number, anchored segments last by anchor path. Each
+  path renders one canonical key (`pattern_1/instance[2]/hole`), `parse`
+  reads only that spelling back, and a segment holding whitespace or `/`,
+  `[`, `]`, `(` or `)` refuses `OccurrencePathDenial`; an empty, unbalanced
+  or non-closing anchor refuses `InvalidAnchor`. A naming scope descends
+  with `sub_scope`, `index` and `anchored`.
+- **Decoding a recorded birth.** Both derives also read their values back:
+  `#[derive(ApplicationNameDiscriminator)]` implements
+  `ApplicationNameDiscriminatorDecode` (`worth_query_name_discriminator!`
+  encodes only; implement the trait by hand beside it), and
+  `#[derive(WorthQueryNameRole)]` implements `from_role_parts`. A
+  `WorthQueryName<K>` or `NameRef<K>` field decodes only when `K` declares
+  `WorthQueryNamedKind`, and only as a name the read admitted under exactly
+  `K`'s subject class and declared subject: a recorded `Face` reference
+  never decodes as an `Edge` (`NameKindMismatch`). The field name
+  `worth.role.index` and the identity `worth.query.name-role-index.v1` are
+  reserved for indexed roles. A `RecordedNameBirth<K>` (from `birth_of`
+  below) decodes with `decode_role::<R>()`, `decode_discriminator::<D>()`
+  (after an indexed role's index; `None` when the birth carries no typed
+  discriminator) or `decode::<R, D>()` into a `NameBirth { name, occurrence,
+  role, parents, discriminator }`. A recorded `NameRef` reads back as
+  `Committed`, and every referenced name is one the read admitted at its
+  basis. Another identity (including a typed discriminator requested of a
+  birth told apart by its index alone), an unknown variant or field, an
+  index-only discriminator missing its index, truncated or trailing bytes,
+  and an unadmitted or wrong-kind name refuse typed
+  (`ApplicationNameDiscriminatorDecodeDenial`, inside
+  `NameBirthDecodeDenial`).
 - **`NamedTarget<K>`** pairs a held `WorthQueryName<K>` with the
   `NameSelection` it resolves through (`exact`, `all_descendants`, `new`).
 
@@ -610,6 +637,20 @@ replay:
   two or more live successors refuses with every candidate (a
   `NameCandidate`, read with `name()`); it never picks a least member.
   Cost is O(lineage path), flat in unrelated records and commits.
+- `entity_birth_of::<Schema, Entity>(&held, &mut deps)` /
+  `relation_birth_of::<Relation>(&held, &mut deps)` return the
+  `RecordedNameBirth` the held name was minted from, for any name born at or
+  before the basis (a split, merged or retired name keeps its birth), with
+  its parents and referenced names admitted at the same basis. A name not
+  recorded there refuses `UnknownName`.
+- `entity_name_for_birth::<Schema, Entity>(&birth, &parents, &mut deps)` /
+  `relation_name_for_birth` take a `WorthQueryOutputBirth` and the parent
+  names, compute the installed scheme's identity with Relational's one
+  minting function, and answer `Some(name)` only when that birth is recorded
+  and visible at the basis, `None` otherwise. A birth referencing a
+  same-commit name refuses `SameCommitBirthReference`, and a recorded parent
+  of another kind refuses as every held-name read does. Resolve the answer to
+  find where that name's meaning lives now.
 - Every read records what it rested on into `NameReadDependencies`;
   `currentness_after_commit(&commit)` reports `Stale` exactly when that
   commit split, merged, replaced, retired or restored a lineage the read
@@ -629,7 +670,13 @@ replay:
   `FailedDecisionRead::PersistentName` instead, even when the handler
   swallowed the result (`PersistentNameReadVeto::for_name_of` and
   `for_resolve` state the classification). A handler reaches these reads
-  through `DecisionReader::reader()`.
+  through `DecisionReader::reader()`. `reader.birth_of(&held)`,
+  `reader.relation_birth_of(Relation::reference(), &held)`,
+  `reader.name_for_birth(&birth, &parents)` and
+  `reader.relation_name_for_birth(..)` read births the same way: a visible
+  birth is immutable and rests on no fact, while an answer that found no
+  birth vetoes sealing and, on an applied candidate, refuses
+  `CandidateNameHistory`, since the unpublished candidate may bear it.
 - Relations are read the same way. `reader.relation_name_of(&relation)`
   takes the handle the decision reader's own traversal returned
   (`relations_from` / `relations_to`), never a raw relation identity, and
