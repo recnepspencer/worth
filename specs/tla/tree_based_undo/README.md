@@ -80,12 +80,14 @@ ignored; only `hand-*.ndjson` is versioned.
 | `hand-branch-redelete` | exit 0 | Create, delete by correction, undo, sibling edit, delete on the sibling, then a checkout back to the first delete. There a fresh-key delete on the same source is refused, because the reversal fact follows the selected line. |
 | `hand-replay-other-source` | exit 0 | A correction key reused on another source step with the same derived input drifts; an edit under that key drifts; the key on its own source replays; a fresh key on the other source records. |
 | `hand-writer-key-envelope` | exit 0 | A writer commits under `k2`. An envelope under `k2` then records a new step, because the namespaces are separate (refinement (v)). Its replay answers `AlreadyRecorded` with the envelope's own step. The flat pre-(v) journal rejects this trace (exit 11, pc = 4). |
+| `hand-stage-distinct-corrections` | exit 0 | One step creates `e1` and `e2`. Key `k2` reverses `e2`'s creation, `k2` on `e1`'s creation of the same step drifts, and `k2` on `e2` again replays step 2. The model's `CorrectionIntent` already names the entity (the stage); the platform's meaning names the commit member (public #368). |
 | `hand-rejected-fresh-generation` | exit 11, pc = 5 | `hand-accepted`, but the undo across the retirement reports a fresh generation. That is what re-running `restore_retired` instead of navigating would do. |
 | `hand-rejected-writer-hides-divergence` | exit 11, pc = 7 | `hand-writer-out-of-band`, claiming the head is current after the discard. |
 | `hand-rejected-readable-omits-divergence` | exit 11, pc = 2 | `hand-accepted` with `postHeadDiverged` left out of a record where the document is readable. |
 | `hand-rejected-restore-loses-fact` | exit 11, pc = 6 | `hand-branch-redelete`, but the checkout back to the first delete reports no active reversal fact. |
 | `hand-rejected-other-source-replays` | exit 11, pc = 5 | `hand-replay-other-source` with today's defect: the reused key on the other source answers `AlreadyRecorded`. |
 | `hand-rejected-envelope-replays-writer-key` | exit 11, pc = 4 | `hand-writer-key-envelope`, but the envelope under the writer's key replays the writer's step, as the flat pre-(v) journal said (DST seeds 0x7b020035 and 0x7b020108). |
+| `hand-rejected-stage-correction-replays-other-stage` | exit 11, pc = 3 | `hand-stage-distinct-corrections`, but `k2` on `e1`'s creation replays step 2: one meaning for two stages of one step. |
 
 ## Proofs of the implementation kernels
 

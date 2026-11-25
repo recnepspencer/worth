@@ -23,7 +23,7 @@ impl LinePosition {
     };
 }
 
-impl<S> HistoryJournal<'_, S> {
+impl HistoryJournal {
     /// The position of a new child of `parent`: one deeper, and a jump that
     /// keeps every level-ancestor query logarithmic.
     pub(super) fn child_position(&self, parent: u64) -> LinePosition {

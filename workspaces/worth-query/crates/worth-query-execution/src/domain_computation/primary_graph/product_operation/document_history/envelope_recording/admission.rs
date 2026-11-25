@@ -42,12 +42,14 @@ pub struct WorthQueryDocumentHistoryEnvelopeIntent<'a> {
 }
 
 /// What a correction envelope's meaning adds to its stages (plan §11.1): the
-/// correction binding, and the recorded step it reverses. Two sources whose
-/// derived inverse inputs are equal are two meanings, as in the model.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+/// correction binding, the recorded step it reverses, and which of that
+/// step's stages (its commit member, public #368). Two sources whose derived
+/// inverse inputs are equal are two meanings, as in the model.
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryDocumentHistoryCorrectionMeaning {
     pub binding: &'static str,
     pub source: WorthQueryHistoryNodeId,
+    pub member: String,
 }
 
 impl<'a> WorthQueryDocumentHistoryEnvelopeIntent<'a> {
@@ -93,7 +95,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         &self,
     ) -> std::sync::Arc<dyn crate::domain_computation::primary_graph::product_operation::WorthQueryCorrectionNavigationLineage + 'runtime> {
         std::sync::Arc::new(DocumentNavigationLineage {
-            selection: std::sync::Arc::clone(&self.selection),
+            selection: self.selection.downgrade(),
         })
     }
 
@@ -131,7 +133,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         key_hash.update(H::IDENTITY.as_bytes());
         key_hash.update(envelope.key);
         let mut intent_hash = Sha256::new();
-        match envelope.correction {
+        match &envelope.correction {
             // An edit keeps Phase 1's meaning byte for byte.
             None => {
                 intent_hash.update(b"worth.query.document-history.envelope.intent.v1");
@@ -143,6 +145,8 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
                 intent_hash.update((correction.binding.len() as u64).to_be_bytes());
                 intent_hash.update(correction.binding.as_bytes());
                 intent_hash.update(correction.source.ordinal().to_be_bytes());
+                intent_hash.update((correction.member.len() as u64).to_be_bytes());
+                intent_hash.update(correction.member.as_bytes());
             }
         }
         let meaning = <WorthQueryApplicationIdempotencyBinding as IdempotencyBindingInternalPort>::from_identities(
@@ -193,18 +197,21 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
 
 /// A document's navigation lineage: the journal's O(log) source and basis
 /// indexes, read under the document's selection lock.
-struct DocumentNavigationLineage<'runtime, S> {
-    selection: std::sync::Arc<super::super::HistorySelectionCell<'runtime, S>>,
+struct DocumentNavigationLineage {
+    selection: super::super::selection::WeakHistorySelectionCell,
 }
 
-impl<S: ApplicationSchema> crate::domain_computation::primary_graph::product_operation::WorthQueryCorrectionNavigationLineage
-    for DocumentNavigationLineage<'_, S>
+impl crate::domain_computation::primary_graph::product_operation::WorthQueryCorrectionNavigationLineage
+    for DocumentNavigationLineage
 {
     fn restores_descendant_of(
         &self,
         selected: worth_relational::facade::history::CommitId,
         source: &worth_runtime_world::facade::CompositeCommitIdentity,
     ) -> bool {
-        self.selection.lock().journal.restores_descendant_of(selected, source)
+        // A closed document vouches for nothing.
+        self.selection
+            .upgrade()
+            .is_some_and(|selection| selection.lock().journal.restores_descendant_of(selected, source))
     }
 }

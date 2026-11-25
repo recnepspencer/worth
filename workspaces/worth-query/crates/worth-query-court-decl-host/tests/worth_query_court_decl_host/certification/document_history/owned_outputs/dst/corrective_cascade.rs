@@ -67,13 +67,10 @@ fn a_retirement_after_the_corrective_prefix_refuses_typed_on_369() {
     );
 }
 
-/// Public #368, memory path: correction evidence is commit-granular, so a
-/// later stage of a multi-stage step selects the first stage's meaning, and
-/// reversing `e2`'s creation from `[create e1, create e2]` refuses
-/// `Derivation(UnsupportedSourceMeaning)` before any commit. (The durable
-/// path refuses too: Home keeps one correction material per commit.)
+/// Released by public #368 (PR #380): correction evidence is stage-granular,
+/// so reversing `e2`'s creation, the second stage of `[create e1, create
+/// e2]`, commits outside the document.
 #[test]
-#[ignore = "held on public #368: correction evidence is commit-granular, so a later stage of a multi-stage step cannot be corrected"]
 fn a_later_stage_of_a_multi_stage_step_can_be_corrected() {
     let _observation = WorthQueryExecutionObservation::install_on_this_thread();
     let host = world::install();

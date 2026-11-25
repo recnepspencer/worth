@@ -177,3 +177,36 @@ fn a_member_of_a_step_a_gesture_recorded_is_corrected() {
     assert_eq!(document.observe(4).branch.as_ref().map(|branch| branch.live), Some([true, false]));
     document.release();
 }
+
+/// Public #368 released: the second stage of a multi-stage step is a
+/// correction source through the document too.
+#[test]
+fn a_later_stage_of_a_step_is_corrected_through_the_document() {
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+    let host = world::install();
+    let mut document = world::Document::attach(&host);
+    let both = Action::Envelope { key: 1, intent: Intent::Edit([Stage::Set(1), Stage::Set(1)]), stop: None };
+    assert_eq!(document.act(&both), Outcome::Recorded { node: 1 });
+    let corrected = document.correct_recorded(2, 1, E2, &SKIP);
+    assert!(matches!(corrected, Corrected::Recorded(2)), "{corrected:?}");
+    assert_eq!(document.observe(4).branch.as_ref().map(|branch| branch.live), Some([true, false]));
+    document.release();
+}
+
+/// A correction's meaning names the stage it reverses (its commit member):
+/// one key on the second stage of a step records, the same key on the first
+/// stage drifts, and the same key on the second stage again replays.
+#[test]
+fn one_key_on_another_stage_of_the_same_step_drifts() {
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+    let host = world::install();
+    let mut document = world::Document::attach(&host);
+    let both = Action::Envelope { key: 1, intent: Intent::Edit([Stage::Set(1), Stage::Set(1)]), stop: None };
+    assert_eq!(document.act(&both), Outcome::Recorded { node: 1 });
+    assert!(matches!(document.correct_recorded(2, 1, E2, &SKIP), Corrected::Recorded(2)));
+    let other = document.correct_recorded(2, 1, E1, &SKIP);
+    assert!(matches!(&other, Corrected::Refused(denial) if denial.contains("IntentDrift")), "{other:?}");
+    let replay = document.correct_recorded(2, 1, E2, &SKIP);
+    assert!(matches!(replay, Corrected::AlreadyRecorded(2)), "{replay:?}");
+    document.release();
+}

@@ -39,6 +39,8 @@ pub(in crate::application_entry) struct CorrectionHead {
 pub(in crate::application_entry) struct CorrectionSource {
     pub(in crate::application_entry) binding: &'static str,
     pub(in crate::application_entry) commit: worth_runtime_world::facade::CompositeCommitIdentity,
+    /// The commit member (stage) the source names, public #368.
+    pub(in crate::application_entry) member: String,
 }
 
 pub(in crate::application_entry) type CorrectionEnvelopeHead<'a, S> = Box<

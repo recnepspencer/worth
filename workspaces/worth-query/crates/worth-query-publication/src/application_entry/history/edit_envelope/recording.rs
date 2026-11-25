@@ -191,9 +191,9 @@ where
     let correction = match correction {
         None => None,
         Some(Err(denial)) => return Admission::Refused(Denial::Correction(denial)),
-        Some(Ok(CorrectionSource { binding, commit })) => {
+        Some(Ok(CorrectionSource { binding, commit, member })) => {
             match document.owner.selected_line_correction_source(&commit) {
-                Ok(source) => Some(WorthQueryDocumentHistoryCorrectionMeaning { binding, source }),
+                Ok(source) => Some(WorthQueryDocumentHistoryCorrectionMeaning { binding, source, member }),
                 Err(denial) => {
                     return Admission::Refused(Denial::History(
                         WorthQueryApplicationHistoryDenial::Document(denial),

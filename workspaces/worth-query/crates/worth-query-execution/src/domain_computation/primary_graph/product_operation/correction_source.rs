@@ -263,6 +263,13 @@ impl<Schema> WorthQuerySelectedCorrectionSource<'_, Schema> {
         self.ancestry.source().identity()
     }
 
+    /// The canonical text of the commit member this source names (`primary`,
+    /// or `stage:{ordinal}:{identity}`): two stages of one step are two
+    /// correction sources, and a history correction's meaning names it.
+    pub fn source_member_text(&self) -> String {
+        self.occurrence.member().text()
+    }
+
     /// This source's recorded coordinates, to select it again on another
     /// target (a history correction's private candidate).
     pub fn recorded_source(
@@ -271,6 +278,7 @@ impl<Schema> WorthQuerySelectedCorrectionSource<'_, Schema> {
         crate::domain_computation::application_aftermath::WorthQueryRecordedCorrectionSource::from_untrusted_parts(
             self.source_commit().clone(),
             self.occurrence.commit_reference().clone(),
+            self.occurrence.member(),
         )
     }
 

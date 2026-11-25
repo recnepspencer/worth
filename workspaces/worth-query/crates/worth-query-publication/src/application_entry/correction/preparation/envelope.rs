@@ -77,7 +77,11 @@ impl<'a, 'p, 's, 'h, S: ApplicationSchema>
             Ok(CorrectionHead {
                 intent: ApplicationEditStageIntent::new::<S, ApplicationInverseBinding<S, C>, R>(&input),
                 operation: <ApplicationInverseBinding<S, C> as ApplicationMutationBinding<S>>::descriptor(),
-                source: CorrectionSource { binding: C::IDENTITY, commit: source.source_commit().clone() },
+                source: CorrectionSource {
+                    binding: C::IDENTITY,
+                    commit: source.source_commit().clone(),
+                    member: source.source_member_text(),
+                },
             })
         })))
     }
