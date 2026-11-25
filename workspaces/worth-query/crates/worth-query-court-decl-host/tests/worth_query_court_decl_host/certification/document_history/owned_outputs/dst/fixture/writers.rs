@@ -34,7 +34,7 @@ macro_rules! edit {
                 let document = edit
                     .discard(request)
                     .unwrap_or_else(|(_, cause)| panic!("{key}: the edit must discard: {cause:?}"));
-                ended = Some((document, None));
+                ended = Some((document, None, None));
                 break;
             }
             edit = match edit.advance(request) {
@@ -44,11 +44,11 @@ macro_rules! edit {
                     let WorthQueryHistoryEditFinish { document, outcome } = next
                         .finish(request)
                         .unwrap_or_else(|(_, cause)| panic!("{key}: the edit must finish: {cause:?}"));
-                    let WorthQueryHistoryEditOutcome::Recorded { step, .. } = &outcome else {
+                    let WorthQueryHistoryEditOutcome::Recorded { step, completion, .. } = &outcome else {
                         panic!("{key}: the edit must record")
                     };
                     let step = step.clone();
-                    ended = Some((document, Some(step)));
+                    ended = Some((document, Some(step), completion.live_receipt().cloned()));
                     break;
                 }
                 // The held writer starts here, after any write outside since
@@ -64,7 +64,7 @@ macro_rules! edit {
                     let document = edit
                         .discard(request)
                         .unwrap_or_else(|(_, cause)| panic!("{key}: the refused edit must discard: {cause:?}"));
-                    ended = Some((document, None));
+                    ended = Some((document, None, None));
                     break;
                 }
                 WorthQueryHistoryEditAdvance::Refused { denial, .. } => {
@@ -74,6 +74,20 @@ macro_rules! edit {
         }
         ended.unwrap_or_else(|| panic!("{key}: the edit must end within {ADVANCES} advances"))
     }};
+}
+
+/// A gesture member's commit receipt, from its typed completion.
+macro_rules! member_receipt {
+    ($completion:expr, $call:expr) => {
+        match $call {
+            Call::Create(E1, _) => $completion.original::<create_e1::Intent, Action<create_e1::Binding>>().and_then(|(_, done)| done.live_receipt().cloned()),
+            Call::Create(_, _) => $completion.original::<create_e2::Intent, Action<create_e2::Binding>>().and_then(|(_, done)| done.live_receipt().cloned()),
+            Call::Set(E1, _) => $completion.original::<set_e1::Intent, Action<set_e1::Binding>>().and_then(|(_, done)| done.live_receipt().cloned()),
+            Call::Set(_, _) => $completion.original::<set_e2::Intent, Action<set_e2::Binding>>().and_then(|(_, done)| done.live_receipt().cloned()),
+            Call::Retire(E1) => $completion.original::<retire_e1::Intent, Action<retire_e1::Binding>>().and_then(|(_, done)| done.live_receipt().cloned()),
+            Call::Retire(_) => $completion.original::<retire_e2::Intent, Action<retire_e2::Binding>>().and_then(|(_, done)| done.live_receipt().cloned()),
+        }
+    };
 }
 
 /// The writer's posture at which a gesture is given up.
@@ -92,14 +106,14 @@ pub fn commit<'h>(
     key: String,
     gesture: u128,
     calls: &[Call],
-) -> (Forest<'h>, WorthQueryHistoryStep) {
+) -> (Forest<'h>, WorthQueryHistoryStep, Vec<Option<super::envelope::Receipt>>) {
     let Held { class, document } = held;
     with_request(host, |request| match class {
         Writer::Edit => {
             let [call] = calls else { panic!("{key}: an edit commits one call: {calls:?}") };
-            let (document, step) =
+            let (document, step, receipt) =
                 dispatch!(*call, intent, Act => edit!(host, document, request, key.clone(), intent, Act, false));
-            (document, step.expect("a recording edit has its step"))
+            (document, step.expect("a recording edit has its step"), vec![receipt])
         }
         Writer::Gesture => {
             let mut group = document
@@ -122,7 +136,13 @@ pub fn commit<'h>(
                     let finished = group
                         .finish(request)
                         .unwrap_or_else(|(_, cause)| panic!("{key}: the gesture must finish: {cause:?}"));
-                    return (finished.document, step);
+                    let receipts = finished
+                        .completions
+                        .iter()
+                        .zip(calls)
+                        .map(|(completion, call)| member_receipt!(completion, *call))
+                        .collect();
+                    return (finished.document, step, receipts);
                 }
             }
             panic!("{key}: the gesture must end within {ADVANCES} advances")
@@ -138,7 +158,7 @@ pub fn discard<'h>(host: &'h Host, held: Held<'h>, gesture: u128) -> Forest<'h> 
     let key = format!("discard:{gesture:#x}");
     with_request(host, |request| match class {
         Writer::Edit => {
-            let (document, step) =
+            let (document, step, _) =
                 edit!(host, document, request, key.clone(), intent(), super::super::super::program::EditAction, true);
             assert!(step.is_none(), "{key}: a discarded edit records nothing");
             document

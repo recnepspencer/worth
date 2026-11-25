@@ -54,21 +54,25 @@ impl<S> HistoryJournal<'_, S> {
     /// kept, never overwritten: each step's commits are its own fresh ones,
     /// so a collision should not happen, and if one did, keeping the earliest
     /// means a release removes only what this record inserted.
-    pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn index_source(
+    pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn index_source<'c>(
         &mut self,
         execution: &ExecutionRequest<'_, '_>,
-        commit: Option<&worth_runtime_world::facade::CompositeCommitIdentity>,
+        commits: impl IntoIterator<Item = &'c worth_runtime_world::facade::CompositeCommitIdentity>,
         endpoint: Option<worth_relational::facade::history::CommitId>,
         node: WorthQueryHistoryNodeId,
     ) -> Result<(), worth_relational::facade::transactions::RelationalExecutionDenialCause> {
-        if let Some(commit) = commit.filter(|commit| !self.sources.contains_key(*commit)) {
+        // A gesture's step names each member's commit.
+        for commit in commits {
+            if self.sources.contains_key(commit) {
+                continue;
+            }
             let allocation = self.allocate::<(
                 worth_runtime_world::facade::CompositeCommitIdentity,
                 (u64, HistoryInsertionAllocation),
             )>(execution, self.sources.len(), 0)?;
             self.access(Access::Node);
             self.sources.insert(commit.clone(), (node.ordinal(), allocation));
-            self.pending_source = Some(commit.clone());
+            self.pending_sources.push(commit.clone());
         }
         if let Some(endpoint) = endpoint.filter(|endpoint| !self.endpoints.contains_key(endpoint)) {
             let allocation = self.allocate::<(
@@ -84,10 +88,10 @@ impl<S> HistoryJournal<'_, S> {
 
     /// A cancelled record's indexed source and basis go with it.
     pub(super) fn release_pending_source(&mut self, node: u64) {
-        if let Some(commit) = self.pending_source.take()
-            && self.sources.get(&commit).is_some_and(|(indexed, _)| *indexed == node)
-        {
-            self.sources.remove(&commit);
+        for commit in std::mem::take(&mut self.pending_sources) {
+            if self.sources.get(&commit).is_some_and(|(indexed, _)| *indexed == node) {
+                self.sources.remove(&commit);
+            }
         }
         if let Some(endpoint) = self.pending_endpoint.take()
             && self.endpoints.get(&endpoint).is_some_and(|(indexed, _)| *indexed == node)

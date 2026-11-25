@@ -4,8 +4,8 @@
 -- proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/correction_source/restored_support/navigation.rs:82-84 sha256:794dbca66c30761d3a26d0e79e6130296bbce91ba4c391dd4483f05102f15d4e
 -- proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/correction_source/restored_support/navigation.rs:87-132 sha256:d8596eb9b1fb3b3c5aff9b2d7dfb42d1aecbd08992afc715d9a808ec02a10df5
 -- proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/correction_source/restored_support/navigation.rs:123-130 sha256:9359ccd83ca36821385a7fde3bb9cf218f8fd28ba12992219eeed9242b8f4284
--- proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal/sources.rs:102-118 sha256:442f324ccf378179f6b9e5985947d7d2f51891afff42e73c1d9971cec23a8ca4
--- proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal/sources.rs:133-134 sha256:7b79964869e5420cbe9abcdbd143672cef4d2e9d5aede269939aafad911b22ee
+-- proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal/sources.rs:106-122 sha256:442f324ccf378179f6b9e5985947d7d2f51891afff42e73c1d9971cec23a8ca4
+-- proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal/sources.rs:137-138 sha256:7b79964869e5420cbe9abcdbd143672cef4d2e9d5aede269939aafad911b22ee
 /-
 The navigation supersession rule for a correction's restored support, unbounded.
 
@@ -20,7 +20,7 @@ Mirrors (TBU Phase 2, `6a420909dc`)
     * `without_vouched_navigation`   navigation.rs:87-132 -> `kept` (the filter
       loop at navigation.rs:123-130; envelope reading is abstracted into `Occ`)
   and the vouch the journal answers,
-  document_history/journal/sources.rs:102-118 (`restores_descendant_of`)
+  document_history/journal/sources.rs:106-122 (`restores_descendant_of`)
     -> `vouch` (abstraction: the two index lookups are given as the source step
        `S` and the basis's step `b`; the lift is parent-chain ancestry, proved
        equal to the code's loop in JumpLift.lean / jump_pointer_lift.rs).
@@ -75,7 +75,7 @@ def up : Nat → Nat → Nat
   | 0, n => n
   | k + 1, n => up k (T.par n)
 
-/-- `a` is `n` or one of its ancestors (sources.rs:133-134). -/
+/-- `a` is `n` or one of its ancestors (sources.rs:137-138). -/
 def AncOrSelf (a n : Nat) : Prop := ∃ k, up T k n = a
 
 theorem anc_refl (n : Nat) : AncOrSelf T n n := ⟨0, rfl⟩
@@ -164,7 +164,7 @@ def needsWitness (commit : Nat) (superseded : Option Nat) : Bool :=
 def kept (l : List (Nat × Occ)) (vouch : Nat → Bool) : List (Nat × Occ) :=
   l.filter (fun x => needsWitness x.1 (supersededThrough l vouch))
 
-/-- The journal's vouch (sources.rs:102-118), over the index lookups' answers:
+/-- The journal's vouch (sources.rs:106-122), over the index lookups' answers:
 the source step `S` (never the root) is an ancestor-or-self of the selected
 basis's step `b`, which is on the selected line (an ancestor-or-self of
 `current`). -/

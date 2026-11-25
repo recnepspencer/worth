@@ -353,18 +353,37 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         let endpoint =
             WorthQueryProductBranchReadIdentity::from_observation(selected.product().observation());
         let exact = selected.product().read_lease();
-        let step = self
-            .selection
-            .lock()
-            .journal
-            .prepared_step(&reserved.record, endpoint.clone());
+        // A writer's step is a correction source as an envelope's is: its
+        // source commit (a recovered receipt behind a recorded forest names
+        // none) and the basis a later navigation to it selects.
+        let source_commit = match (&completion, completion.source()) {
+            (_, WorthQueryHistorySourceEvidence::Live(receipt)) => {
+                Some(receipt.committed_product_publication().composite_commit().clone())
+            }
+            (RecordingCompletion::RecordedSource(_), WorthQueryHistorySourceEvidence::Recorded(_)) => {
+                Some(endpoint.selected_commit().clone())
+            }
+            _ => None,
+        };
+        let basis_commit = selected.product().relational_basis().observation().commit_id();
+        let execution = phase
+            .checked_execution_request_for(runtime.inner.runtime.product_runtime_ref())
+            .map_err(Denial::Stopped)?;
+        let step = {
+            let mut selection = self.selection.lock();
+            selection
+                .journal
+                .index_source(&execution, source_commit.as_ref(), basis_commit, reserved.record.node)
+                .map_err(Denial::Recording)?;
+            selection.journal.prepared_step(&reserved.record, endpoint.clone())
+        };
         let discovery_recipes = match &completion {
             RecordingCompletion::Forest { completed, .. } => {
                 Some(completed.discovery_recipes.clone())
             }
             _ => None,
         };
-        let node = RecordedNode { step, source_commit: None, root_posture };
+        let node = RecordedNode { step, source_commit, root_posture };
         Ok(PreparedBinding {
             discovery_recipes,
             returned: node.step.clone(),

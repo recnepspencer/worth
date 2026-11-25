@@ -144,3 +144,36 @@ fn a_step_still_on_the_line_is_corrected_after_an_undo() {
     assert_eq!(observed.branch.as_ref().map(|branch| branch.live), Some([false, false]));
     document.release();
 }
+
+/// A step an `.edit` writer recorded is a correction source, as an
+/// envelope's step is: its commit is indexed at the writer's adoption.
+#[test]
+fn a_step_an_edit_writer_recorded_is_corrected() {
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+    let host = world::install();
+    let mut document = world::Document::attach(&host);
+    assert_eq!(document.act(&Action::Begin(super::reference::Writer::Edit)), Outcome::Begun);
+    let commit = Action::Commit { key: 1, stages: [Stage::Set(1), Stage::Skip] };
+    assert_eq!(document.act(&commit), Outcome::Recorded { node: 1 });
+    let corrected = document.correct_recorded(2, 1, E1, &SKIP);
+    assert!(matches!(corrected, Corrected::Recorded(2)), "{corrected:?}");
+    assert_eq!(document.observe(4).branch.as_ref().map(|branch| branch.live), Some([false, false]));
+    document.release();
+}
+
+/// Each member of a step a gesture recorded is a correction source: every
+/// member's commit is indexed at the group's adoption. The gesture creates
+/// `e1` then `e2`; reversing `e2`'s creation (the second member) records.
+#[test]
+fn a_member_of_a_step_a_gesture_recorded_is_corrected() {
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+    let host = world::install();
+    let mut document = world::Document::attach(&host);
+    assert_eq!(document.act(&Action::Begin(super::reference::Writer::Gesture)), Outcome::Begun);
+    let commit = Action::Commit { key: 1, stages: [Stage::Set(1), Stage::Set(1)] };
+    assert_eq!(document.act(&commit), Outcome::Recorded { node: 1 });
+    let corrected = document.correct_recorded(2, 1, E2, &SKIP);
+    assert!(matches!(corrected, Corrected::Recorded(2)), "{corrected:?}");
+    assert_eq!(document.observe(4).branch.as_ref().map(|branch| branch.live), Some([true, false]));
+    document.release();
+}

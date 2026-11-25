@@ -61,6 +61,8 @@ pub struct WorthQueryDocumentHistoryGroupAborting {
 
 struct CapturedMember {
     endpoint: Arc<WorthQueryApplicationReadObservation>,
+    /// The member's own commit, which a correction names as its source.
+    commit: worth_runtime_world::facade::CompositeCommitIdentity,
     root_posture:
         Option<crate::domain_computation::primary_graph::WorthQueryOutputSettlementPosture>,
 }

@@ -1,8 +1,8 @@
 -- proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal/recording.rs:34-38 sha256:270717f3ae9c010eee32fa6619501a380ed4dde030149178e33e5a26d58e5645
 -- proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal/sources.rs:29-49 sha256:109e3c8b3c8b373c2f9052841ea5efb632394bb92b6831e447e7e227b71aef1e
 -- proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal/sources.rs:37-43 sha256:ba587940a6ee28d4fd7c4e9f4f3bbc88d5c22d1185535bc7e3441311a47009b2
--- proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal/sources.rs:135-158 sha256:29032e5260a39f9647d18cd17e63b31019a7139e39f852c828a21b689217fc0f
--- proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal/sources.rs:150-156 sha256:e1d85393d7dd13cedba09b046ea2921872307e1ccea67b64f65c4b6eeb1ed10b
+-- proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal/sources.rs:139-162 sha256:29032e5260a39f9647d18cd17e63b31019a7139e39f852c828a21b689217fc0f
+-- proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal/sources.rs:154-160 sha256:e1d85393d7dd13cedba09b046ea2921872307e1ccea67b64f65c4b6eeb1ed10b
 /-
 Skew-binary jump pointers and the level-ancestor lift, unbounded.
 
@@ -11,7 +11,7 @@ Mirrors (TBU Phase 2, `54a0be61a1`, unchanged at `6a420909dc`)
   primary_graph/product_operation/document_history/journal/sources.rs
     * `child_position`        sources.rs:29-49   -> `jumpOf` (transliteration of
       the rule; the node map is abstracted to a parent function on Nat)
-    * `is_ancestor_or_self`   sources.rs:135-158 -> `lift` / `isAncestorOrSelf`
+    * `is_ancestor_or_self`   sources.rs:139-162 -> `lift` / `isAncestorOrSelf`
       (transliteration of the loop as structural recursion on depth; the
       `None` arms are dropped because every Nat is a node here)
 
@@ -173,7 +173,7 @@ theorem J_lt {x : Nat} (h : 0 < x) : J x < x := (good x).lt h
 
 /-! ## The depth-only query: how far one lift iteration moves -/
 
-/-- One iteration of the lift toward depth `t`, on depths (sources.rs:150-156). -/
+/-- One iteration of the lift toward depth `t`, on depths (sources.rs:154-160). -/
 def qnext (x t : Nat) : Nat := if t ≤ J x then J x else x - 1
 
 /-- Iterations of the lift from depth `x` to depth `t`. -/
@@ -453,7 +453,7 @@ theorem jump_is_level_ancestor : ∀ n,
     rw [hrec, hdn, Nat.add_sub_cancel_left]
     rfl
 
-/-! ## The lift (`is_ancestor_or_self`, sources.rs:135-158) -/
+/-! ## The lift (`is_ancestor_or_self`, sources.rs:139-162) -/
 
 /-- The loop of `is_ancestor_or_self`, lifting `at` to depth `d`: returns the
 node it stops at and the number of iterations. -/

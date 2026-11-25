@@ -208,7 +208,7 @@ impl HistoryJournal {
         self.completed_end = reserved.node.ordinal() + 1; // Successor was admitted by reserve.
         self.view_generation = reserved.view_after;
         self.pending = None;
-        self.pending_source = None;
+        self.pending_sources.clear();
         self.pending_endpoint = None;
         self.trim_one()
     }

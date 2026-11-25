@@ -20,9 +20,23 @@ impl Document<'_> {
         // (refinement (v); traced, seed 0x7b020035).
         let calls = calls(stages, read_entities(self.host, self.branch).map(|entity| entity.is_some()));
         let gesture = (u128::from(self.id) << 64) | u128::from(key);
-        let (document, step) = commit(self.host, held, self.key(key), gesture, &calls);
+        let (document, step, receipt) = commit(self.host, held, self.key(key), gesture, &calls);
         self.document = Some(document);
-        Outcome::Recorded { node: self.number(&step.id()) }
+        let node = self.number(&step.id());
+        // A writer's stages are correction sources, as an envelope's are:
+        // an `.edit`'s one stage, and each gesture member (each receipt names
+        // that stage's commit).
+        for (call, receipt) in calls.iter().zip(receipt) {
+            let undo = match call {
+                Call::Create(entity, _) => Some(super::super::fixture::envelope::Undo::Create(*entity)),
+                Call::Retire(entity) => Some(super::super::fixture::envelope::Undo::Retire(*entity)),
+                Call::Set(..) => None,
+            };
+            if let (Some(receipt), Some(undo)) = (receipt, undo) {
+                self.sources.insert((node, call.entity()), (receipt, undo));
+            }
+        }
+        Outcome::Recorded { node }
     }
 
     /// Give the writer up: the document comes back unchanged.
