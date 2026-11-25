@@ -127,6 +127,7 @@ fn policy_omits(refusal: Policy) -> bool {
             | Policy::ElevationRequired
             | Policy::MandatoryReviewRejected
             | Policy::DelegationRejected
+            | Policy::PermissionDenied
     )
 }
 
@@ -193,5 +194,8 @@ mod tests {
             Authorization::Refused(Policy::CapabilityGrantMissing)
         )));
         assert!(read_omits(Read::Projection(Projection::FieldOmitted)));
+        assert!(admission_omits(Admit::Authorization(
+            Authorization::Refused(Policy::PermissionDenied)
+        )));
     }
 }

@@ -12,6 +12,7 @@ use worth_query_publication::facade::application_entry::{
     WorthQueryApplicationRequestMutationDenial, WorthQueryApplicationRequestQueryDenial,
 };
 
+use super::stops::authorization;
 use super::summary::{
     WorthQueryRefusalCategory as Category, WorthQueryRefusalSummary as Summary,
     WorthQueryUserFacingRefusal,
@@ -80,9 +81,8 @@ impl WorthQueryUserFacingRefusal for WorthQueryApplicationRequestMutationDenial 
     fn user_summary(&self) -> Summary {
         match self {
             Self::ExecutionRequest(cause) => cause.user_summary(),
-            Self::Authorization(_)
-            | Self::PrincipalResolution(_)
-            | Self::WorkflowAuthoritySpent => PERMISSION,
+            Self::Authorization(denial) => authorization(&denial.kind()),
+            Self::PrincipalResolution(_) | Self::WorkflowAuthoritySpent => PERMISSION,
             Self::ScopeResolution(cause) => cause.user_summary(),
             Self::Identity(_) | Self::InputCapture(_) | Self::WorkflowCapturedInput(_) => BAD_INPUT,
             Self::Handler(cause) => cause.user_summary(),

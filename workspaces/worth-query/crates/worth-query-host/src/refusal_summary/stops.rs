@@ -12,6 +12,7 @@ use worth_query_execution::facade::primary_graph::{
     WorthQueryProviderSessionControlStopKind as Control,
     WorthQueryProviderSessionDenialKind as Session, WorthQueryValueDecodeDenial as Decode,
 };
+use worth_relational::facade::content::RelationalContentDenial;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Native;
 use worth_runtime_world::facade::CompositeHistoryCatalogDenial as Catalog;
 
@@ -160,6 +161,7 @@ fn decode(cause: &Decode) -> Summary {
         | Decode::AccountingOverflow
         | Decode::ContentProjectionWorkExceeded { .. }
         | Decode::ContentProjectionWorkOverflow { .. } => CAPACITY,
+        Decode::Content(RelationalContentDenial::Execution(cause)) => native(cause),
         Decode::CodecRejected
         | Decode::Content(_)
         | Decode::RequiredContentFieldAbsent

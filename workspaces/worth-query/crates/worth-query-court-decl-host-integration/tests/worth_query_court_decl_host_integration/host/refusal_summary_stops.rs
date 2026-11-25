@@ -2,15 +2,20 @@
 //! cancellation or deadline reads as interrupted, a storage fault as storage,
 //! never as a permission or capacity problem.
 use worth_execution::{MapKernelStop, WorkCeilingDenial};
+use worth_query_execution::facade::correction_material::QueryCorrectionMaterialDenial;
 use worth_query_host::facade::primary_graph::{
-    WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
-    WorthQueryEntityResolutionDenial, WorthQueryEntityResolutionDenialKind,
+    WorthQueryApplicationProjectionDenialKind, WorthQueryApplicationQueryAdmissionDenial,
+    WorthQueryApplicationQueryAdmissionDenialKind, WorthQueryEntityResolutionDenial,
+    WorthQueryEntityResolutionDenialKind, WorthQueryOperationAuthorizationDenial,
     WorthQueryOperationAuthorizationDenialKind, WorthQueryProviderSessionControlStopKind,
+    WorthQueryValueDecodeDenial,
 };
 use worth_query_host::facade::{
     application_entry::WorthQueryApplicationRequestQueryDenial, WorthQueryCorrectionHistoryDenial,
-    WorthQueryRefusalCategory as Category, WorthQueryUserFacingRefusal,
+    WorthQueryRefusalCategory as Category, WorthQueryTypedLiveRefreshDenial,
+    WorthQueryUserFacingRefusal,
 };
+use worth_relational::facade::content::RelationalContentDenial;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause;
 use worth_runtime_world::facade::{
     CompositeAncestorSelectionDenial, CompositeHistoryCatalogDenial, ProductExactHistoryDenial,
@@ -79,4 +84,27 @@ fn nested_cancellation_deadline_and_storage_stops_keep_their_category() {
     );
     assert_category(&stopped_authorization, Category::Interrupted);
     assert!(stopped_authorization.retryable());
+
+    let material_stop =
+        WorthQueryCorrectionHistoryDenial::Material(QueryCorrectionMaterialDenial::Execution(
+            WorkCeilingDenial::Stopped(MapKernelStop::Cancelled),
+        ));
+    assert_category(&material_stop, Category::Interrupted);
+    let live_authorization = WorthQueryTypedLiveRefreshDenial::AuthorizationDenied(Box::new(
+        WorthQueryOperationAuthorizationDenial::new(
+            WorthQueryOperationAuthorizationDenialKind::Stopped(Err(
+                WorthQueryProviderSessionControlStopKind::TimedOut,
+            )),
+            "ReadTaskDetails",
+        ),
+    ));
+    assert_category(&live_authorization, Category::Interrupted);
+    let decode_stop = WorthQueryTypedLiveRefreshDenial::ProjectionDenied(
+        WorthQueryApplicationProjectionDenialKind::ValueDecode(
+            WorthQueryValueDecodeDenial::Content(RelationalContentDenial::Execution(
+                RelationalExecutionDenialCause::Cancelled,
+            )),
+        ),
+    );
+    assert_category(&decode_stop, Category::Interrupted);
 }

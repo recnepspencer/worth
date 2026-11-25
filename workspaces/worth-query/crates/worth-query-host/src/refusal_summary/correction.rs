@@ -13,7 +13,7 @@ use worth_query_publication::facade::application_entry::{
 
 use crate::application_home::WorthQueryHomeUndoDenial;
 
-use super::stops::stopped;
+use super::stops::{stopped, work};
 use super::world_history::{ancestry, exact_history};
 
 use super::request::{
@@ -163,9 +163,8 @@ fn material(cause: &Material) -> Summary {
         | Material::Checksum { .. }
         | Material::PrefixMismatch
         | Material::Storage { .. } => STORAGE,
-        Material::Allocation { .. } | Material::Execution { .. } | Material::IdentityExhausted => {
-            CAPACITY
-        }
+        Material::Execution(cause) => work(cause),
+        Material::Allocation { .. } | Material::IdentityExhausted => CAPACITY,
         Material::ForeignHome
         | Material::StaleIncarnation
         | Material::OwnerUnavailable

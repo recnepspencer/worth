@@ -13,7 +13,7 @@ use super::request::{
     ALREADY_DONE, BUSY, CANCELLED, CAPACITY, INTERNAL, MISSING_ITEM, PERMISSION, TIMED_OUT,
     UNSUPPORTED,
 };
-use super::stops::{projection, session};
+use super::stops::{authorization, projection, session};
 use super::summary::{
     WorthQueryRefusalCategory as Category, WorthQueryRefusalSummary as Summary,
     WorthQueryUserFacingRefusal,
@@ -69,7 +69,8 @@ impl WorthQueryUserFacingRefusal for std::convert::Infallible {
 impl WorthQueryUserFacingRefusal for WorthQueryTypedLiveRefreshDenial {
     fn user_summary(&self) -> Summary {
         match self {
-            Self::AuthorizationDenied(_) | Self::StalePrincipal => PERMISSION,
+            Self::AuthorizationDenied(denial) => authorization(&denial.kind()),
+            Self::StalePrincipal => PERMISSION,
             Self::ProjectionDenied(kind) => projection(kind),
             Self::StaleScope => MISSING_ITEM,
             Self::Overflow(_) => LIVE_BEHIND,
