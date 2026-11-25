@@ -99,6 +99,62 @@ impl RuntimeSymbolTable {
             _memory: None,
         }
     }
+
+    pub fn detached_owner_snapshot_for_request(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self, crate::execution::denial_cause::RelationalExecutionDenialCause> {
+        use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
+        crate::execution::request_custody::check_request(request)?;
+        let arc_size = |layout: std::alloc::Layout| {
+            std::alloc::Layout::new::<[usize; 2]>()
+                .extend(layout)
+                .ok()
+                .map(|(combined, _)| combined.pad_to_align().size())
+        };
+        let bytes = arc_size(std::alloc::Layout::new::<RwLock<RuntimeSymbolState>>())
+            .and_then(|n| {
+                n.checked_add(arc_size(std::alloc::Layout::new::<
+                    RwLock<
+                        Option<Arc<crate::storage::data::symbol_residency::RuntimeSymbolResidency>>,
+                    >,
+                >())?)
+            })
+            .and_then(|n| {
+                n.checked_add(arc_size(std::alloc::Layout::new::<
+                    std::sync::Mutex<reservations::SymbolReservationDirectory>,
+                >())?)
+            })
+            .and_then(|n| {
+                n.checked_add(arc_size(std::alloc::Layout::new::<
+                    worth_execution::ExecutionMemoryReservation,
+                >())?)
+            })
+            .ok_or(Cause::MemoryOverflow)?;
+        let memory = request
+            .reserve_retained_memory(bytes as u64)
+            .map_err(Cause::from)?
+            .map(Arc::new);
+        let cold = self
+            .cold
+            .read()
+            .unwrap_or_else(|error| error.into_inner())
+            .clone();
+        let snapshot = || self.read_state(Clone::clone);
+        let (cold, state) = match cold {
+            Some(pages) => {
+                let (pages, snapshot) = pages.detached_with_owner_for_request(request, snapshot)?;
+                (Some(pages), snapshot)
+            }
+            None => (None, snapshot()),
+        };
+        Ok(Self {
+            state: Arc::new(RwLock::new(state)),
+            reservations: Arc::default(),
+            cold: Arc::new(RwLock::new(cold)),
+            _memory: memory,
+        })
+    }
     pub fn normalize_client_keys(
         &self,
         normalize: impl FnOnce(&mut StringInterner) -> Vec<(Symbol, String)>,

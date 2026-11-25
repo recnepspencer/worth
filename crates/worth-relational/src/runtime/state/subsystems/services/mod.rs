@@ -27,13 +27,16 @@ impl RuntimeServices {
         self.clone()
     }
 
-    pub(crate) fn detached_for_preflight(&self) -> Self {
-        Self {
+    pub(crate) fn detached_for_preflight(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self, crate::execution::RelationalExecutionDenialCause> {
+        Ok(Self {
             sequence: self.sequence.detached_preserving_runtime_id(),
             instrumentation: self.instrumentation.fork(),
-            simulation: self.simulation.detached(),
-            symbols: self.symbols.detached_owner_snapshot(),
-        }
+            simulation: CompiledArtifactStore::new(),
+            symbols: self.symbols.detached_owner_snapshot_for_request(request)?,
+        })
     }
     fn empty() -> Self {
         Self {

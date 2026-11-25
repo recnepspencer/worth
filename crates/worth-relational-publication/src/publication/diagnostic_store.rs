@@ -25,7 +25,7 @@ pub(crate) struct RelationalDiagnosticOperationCapture {
 }
 
 impl RelationalDiagnosticArtifactStore {
-    pub fn detached_owner_snapshot(&self) -> Self {
+    pub(crate) fn detached_owner_snapshot(&self) -> Self {
         let state = DiagnosticArtifactState {
             artifacts: self.snapshot(),
             ..DiagnosticArtifactState::default()

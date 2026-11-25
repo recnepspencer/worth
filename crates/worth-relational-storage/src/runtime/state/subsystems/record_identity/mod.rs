@@ -165,4 +165,76 @@ impl RecordIdentitySubsystem {
         fork.release_unowned_reservations();
         fork
     }
+
+    /// Detach a snapshot funded by `request` before cloning any owned maps.
+    /// Reclaimed pending slots are returned directly to `reusable` without
+    /// cloning `pending` or `staged_replay_allocations`.
+    pub fn detached_for_request(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        (Self, Option<worth_execution::ExecutionMemoryReservation>),
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
+        use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
+        crate::execution::request_custody::check_request(request)?;
+        let state = self.lock();
+        let reclaimed_pending = state
+            .pending
+            .values()
+            .filter(|pending| matches!(pending.origin, RecordAllocationOrigin::Reclaimed { .. }))
+            .count();
+        let bytes = arc_layout_size::<Mutex<RecordIdentityState>>()
+            .and_then(|n| {
+                n.checked_add(btree_map_bytes::<RecordSlotKey, u32>(
+                    state.generation_high_water.len(),
+                )?)
+            })
+            .and_then(|n| {
+                n.checked_add(reclaimed_pending.checked_mul(std::mem::size_of::<RecordSlotKey>())?)
+            })
+            .ok_or(Cause::MemoryOverflow)?;
+        let reservation = request
+            .reserve_retained_memory(u64::try_from(bytes).map_err(|_| Cause::MemoryOverflow)?)
+            .map_err(Cause::from)?;
+        let mut reusable = state.reusable.clone();
+        for (&key, pending) in &state.pending {
+            if matches!(pending.origin, RecordAllocationOrigin::Reclaimed { .. }) {
+                reusable.insert(key, ());
+            }
+        }
+        let next_slots = state.next_slots.clone();
+        let generation_high_water = state.generation_high_water.clone();
+        drop(state);
+        Ok((
+            Self {
+                state: Arc::new(Mutex::new(RecordIdentityState {
+                    reusable,
+                    next_slots,
+                    generation_high_water,
+                    pending: BTreeMap::new(),
+                    staged_replay_allocations: None,
+                })),
+            },
+            reservation,
+        ))
+    }
+}
+
+fn arc_layout_size<T>() -> Option<usize> {
+    std::alloc::Layout::new::<[usize; 2]>()
+        .extend(std::alloc::Layout::new::<T>())
+        .ok()
+        .map(|(layout, _)| layout.pad_to_align().size())
+}
+
+fn btree_map_bytes<K, V>(len: usize) -> Option<usize> {
+    if len == 0 {
+        return Some(0);
+    }
+    let entry = std::mem::size_of::<K>().checked_add(std::mem::size_of::<V>())?;
+    let node = entry
+        .checked_mul(11)?
+        .checked_add(std::mem::size_of::<usize>().checked_mul(12)?)?;
+    len.div_ceil(6).checked_mul(node)
 }

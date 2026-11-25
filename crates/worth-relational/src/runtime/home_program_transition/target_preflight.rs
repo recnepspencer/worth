@@ -131,7 +131,13 @@ impl RelationalRuntime {
             });
         }
 
-        let mut detached_prep = self.preparation_runtime_snapshot().detached_for_preflight();
+        let (mut detached_prep, _detached_identity_memory) = self
+            .preparation_runtime_snapshot()
+            .detached_for_preflight(request)
+            .map_err(|cause| DerivedIndexMaintenanceDenial {
+                kind: Denial::Execution(cause),
+                work: DerivedIndexMaintenanceWork::default(),
+            })?;
         let mut accumulator = PreflightOverlayAccumulator::from_predecessor(predecessor_root);
 
         if !before_target_steps.is_empty() && !accumulator.all_partitions.is_empty() {
@@ -243,9 +249,21 @@ impl RelationalRuntime {
     > {
         let mut transaction = self
             .begin_home_preflight_transaction(predecessor, intent, &detached_prep.services)
-            .map_err(|_| DerivedIndexMaintenanceDenial {
-                kind: Denial::BeforeRootMismatch,
-                work: DerivedIndexMaintenanceWork::default(),
+            .map_err(|denial| {
+                use crate::mvcc::RelationalBranchTransactionAdmissionDenial as Admission;
+                let kind = match denial {
+                    Admission::Cancelled => Denial::Execution(
+                        crate::execution::RelationalExecutionDenialCause::Cancelled,
+                    ),
+                    Admission::TimedOut => Denial::Execution(
+                        crate::execution::RelationalExecutionDenialCause::DeadlineElapsed,
+                    ),
+                    _ => Denial::BeforeRootMismatch,
+                };
+                DerivedIndexMaintenanceDenial {
+                    kind,
+                    work: DerivedIndexMaintenanceWork::default(),
+                }
             })?;
         transaction.schema_authority_input = schema_authority_input;
         transaction.home_target = home_target;
@@ -307,26 +325,14 @@ fn map_staging_denial(
     denial: crate::mvcc::RelationalTransactionStagingDenial,
 ) -> DerivedIndexMaintenanceDenial {
     use worth_relational_contracts::internal_port::mvcc::transaction::staging::RelationalTransactionStagingDenialOwnerPort as _;
-    let is_physical_alloc = matches!(
-        denial.allocation_denial().map(|d| d.classify()),
-        Some(worth_execution::ExecutionAllocationDenialClass::Physical(_))
-    );
-    if is_physical_alloc {
-        return DerivedIndexMaintenanceDenial {
-            kind: Denial::Execution(
-                crate::execution::RelationalExecutionDenialCause::AllocationFailed,
-            ),
-            work: DerivedIndexMaintenanceWork::default(),
-        };
-    }
-    let error = crate::execution::allocation_commit_error(TransactionCommitError::conflict(
-        denial.into_conflict(),
-    ));
-    map_staging_error(error)
+    map_staging_error(TransactionCommitError::conflict(denial.into_conflict()))
 }
 
 fn map_staging_error(error: TransactionCommitError) -> DerivedIndexMaintenanceDenial {
-    use crate::transactions::data::{CommitExecutionDenial, CommitExecutionDenialKind};
+    use crate::transactions::data::{
+        CommitExecutionDenial, CommitExecutionDenialKind, ConflictClass,
+    };
+    let error = crate::execution::allocation_commit_error(error);
     let kind = match error {
         TransactionCommitError::Execution {
             denial:
@@ -336,6 +342,15 @@ fn map_staging_error(error: TransactionCommitError) -> DerivedIndexMaintenanceDe
                 },
             ..
         } => Denial::Execution(cause),
+        TransactionCommitError::Conflict { error, .. }
+            if error.allocation_denial().is_some()
+                || matches!(
+                    error.class,
+                    ConflictClass::TransactionInputDirectoryAllocationDenied { .. }
+                ) =>
+        {
+            Denial::Execution(crate::execution::RelationalExecutionDenialCause::AllocationFailed)
+        }
         TransactionCommitError::Publication { error, .. } => {
             if let Some(indexes) = error.index_maintenance_denial() {
                 return indexes.clone();
