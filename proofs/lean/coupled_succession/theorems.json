@@ -1,0 +1,104 @@
+{
+  "imports": [
+    "CoupledSuccession",
+    "CoupledSuccession.Model",
+    "CoupledSuccession.Retraction",
+    "CoupledSuccession.Run",
+    "CoupledSuccession.RunLemmas",
+    "CoupledSuccession.Structure",
+    "CoupledSuccession.MultiChainInv",
+    "CoupledSuccession.MultiChainSucc",
+    "CoupledSuccession.MultiChain",
+    "CoupledSuccession.MultiChainGap",
+    "CoupledSuccession.Elision",
+    "CoupledSuccession.Rounds",
+    "CoupledSuccession.Ledger",
+    "CoupledSuccession.LedgerInjective",
+    "CoupledSuccession.Guards",
+    "CoupledSuccession.Adjacency",
+    "CoupledSuccession.Replay"
+  ],
+  "allowed_axioms": [],
+  "theorems": [
+    {
+      "name": "CoupledSuccession.Retraction.retract_cancels_chain_beside_foreign",
+      "type": "∀ (b : CoupledSuccession.Store) (w : CoupledSuccession.Dom) (e f : CoupledSuccession.Eff), CoupledSuccession.Sub e.dom w → CoupledSuccession.Disj f.dom w → CoupledSuccession.retract b w (CoupledSuccession.apply f (CoupledSuccession.apply e b)) = CoupledSuccession.apply f b"
+    },
+    {
+      "name": "CoupledSuccession.Retraction.successor_eq_single_shot",
+      "type": "∀ (b : CoupledSuccession.Store) (w : CoupledSuccession.Dom) (e ek f : CoupledSuccession.Eff), CoupledSuccession.Sub e.dom w → CoupledSuccession.Disj f.dom w → CoupledSuccession.Disj ek.dom f.dom → CoupledSuccession.apply ek (CoupledSuccession.retract b w (CoupledSuccession.apply f (CoupledSuccession.apply e b))) = CoupledSuccession.apply f (CoupledSuccession.apply ek b)"
+    },
+    {
+      "name": "CoupledSuccession.Retraction.view_eq_retracted",
+      "type": "∀ (b : CoupledSuccession.Store) (w : CoupledSuccession.Dom) (e f : CoupledSuccession.Eff), CoupledSuccession.Sub e.dom w → CoupledSuccession.Disj f.dom w → CoupledSuccession.overlay b w (CoupledSuccession.apply f (CoupledSuccession.apply e b)) = CoupledSuccession.apply f b"
+    },
+    {
+      "name": "CoupledSuccession.Rounds.live_eq_single_shot",
+      "type": "∀ (b : CoupledSuccession.Store) (c : Nat) (steps : List CoupledSuccession.Step), CoupledSuccession.SingleChain c steps → CoupledSuccession.WellGuarded b steps → (CoupledSuccession.liveRun b steps).store = CoupledSuccession.applyForeign steps (CoupledSuccession.applyLast c steps b)"
+    },
+    {
+      "name": "CoupledSuccession.MultiChain.live_eq_compose_live_segments",
+      "type": "∀ (b : CoupledSuccession.Store) (steps : List CoupledSuccession.Step), CoupledSuccession.WellGuarded b steps → (CoupledSuccession.liveRun b steps).store = CoupledSuccession.foldSegments (CoupledSuccession.liveSegments (CoupledSuccession.liveRun b steps)) b"
+    },
+    {
+      "name": "CoupledSuccession.Elision.compactAll_eq_reference_log",
+      "type": "∀ (b : CoupledSuccession.Store) (steps : List CoupledSuccession.Step), CoupledSuccession.WellGuarded b steps → CoupledSuccession.foldSegments (CoupledSuccession.compactAll (CoupledSuccession.liveRun b steps).log) b = CoupledSuccession.foldSegments (CoupledSuccession.refLog steps) b ∧ CoupledSuccession.Perm (CoupledSuccession.entries (CoupledSuccession.compactAll (CoupledSuccession.liveRun b steps).log)) (CoupledSuccession.entries (CoupledSuccession.refLog steps))"
+    },
+    {
+      "name": "CoupledSuccession.Elision.no_phantom_entry",
+      "type": "∀ (b : CoupledSuccession.Store) (steps : List CoupledSuccession.Step) (r : CoupledSuccession.Rec), CoupledSuccession.WellGuarded b steps → CoupledSuccession.InEntries r (CoupledSuccession.compactAll (CoupledSuccession.liveRun b steps).log) → ∃ o e, CoupledSuccession.LiveSeg o (CoupledSuccession.liveRun b steps) = some e ∧ e.dom r = true"
+    },
+    {
+      "name": "CoupledSuccession.Ledger.kept_key_keeps_id",
+      "type": "∀ (l : CoupledSuccession.Ledger) (k : CoupledSuccession.Key) (id : Nat), l.lookup k = some id → (l.recreate k).1 = id"
+    },
+    {
+      "name": "CoupledSuccession.Ledger.dormant_recreate_keeps_id",
+      "type": "∀ (l : CoupledSuccession.Ledger) (k : CoupledSuccession.Key) (id : Nat), l.lookup k = some id → ((l.withdraw k).recreate k).1 = id"
+    },
+    {
+      "name": "CoupledSuccession.Ledger.fresh_id_distinct",
+      "type": "∀ (l : CoupledSuccession.Ledger) (used : Nat → Bool) (k : CoupledSuccession.Key), l.lookup k = none → (∀ n, used n = true → n < l.frontier) → used (l.fresh used k).1 = false"
+    },
+    {
+      "name": "CoupledSuccession.Ledger.ledger_injective",
+      "type": "∀ (ops : List CoupledSuccession.LedgerOp) (k1 k2 : CoupledSuccession.Key) (id : Nat), (CoupledSuccession.Ledger.run ops).lookup k1 = some id → (CoupledSuccession.Ledger.run ops).lookup k2 = some id → k1 = k2"
+    },
+    {
+      "name": "CoupledSuccession.Ledger.cancelled_unbound",
+      "type": "∀ (l : CoupledSuccession.Ledger) (keep : CoupledSuccession.Key → Bool) (k : CoupledSuccession.Key), keep k = false → (l.complete keep).bound k = false"
+    },
+    {
+      "name": "CoupledSuccession.Guards.prior_effect_guard_sound",
+      "type": "∀ (b : CoupledSuccession.Store) (w t supp : CoupledSuccession.Dom) (e f : CoupledSuccession.Eff) (q : CoupledSuccession.Store → Nat), CoupledSuccession.Sub e.dom w → CoupledSuccession.Sub w t → CoupledSuccession.Disj f.dom w → CoupledSuccession.Disj supp t → CoupledSuccession.DependsOnly q supp → q (CoupledSuccession.apply f (CoupledSuccession.apply e b)) = q (CoupledSuccession.apply f b)"
+    },
+    {
+      "name": "CoupledSuccession.Guards.intervened_necessary",
+      "type": "∃ (b : CoupledSuccession.Store) (w : CoupledSuccession.Dom) (e f : CoupledSuccession.Eff), CoupledSuccession.Sub e.dom w ∧ ¬ CoupledSuccession.Disj f.dom w ∧ CoupledSuccession.retract b w (CoupledSuccession.apply f (CoupledSuccession.apply e b)) ≠ CoupledSuccession.apply f b"
+    },
+    {
+      "name": "CoupledSuccession.Guards.forward_guard_necessary",
+      "type": "∃ (b : CoupledSuccession.Store) (w : CoupledSuccession.Dom) (e ek f : CoupledSuccession.Eff), CoupledSuccession.Sub e.dom w ∧ CoupledSuccession.Disj f.dom w ∧ ¬ CoupledSuccession.Disj ek.dom f.dom ∧ CoupledSuccession.apply ek (CoupledSuccession.retract b w (CoupledSuccession.apply f (CoupledSuccession.apply e b))) ≠ CoupledSuccession.apply f (CoupledSuccession.apply ek b)"
+    },
+    {
+      "name": "CoupledSuccession.Guards.retired_reference_guard_sound",
+      "type": "∀ (s : CoupledSuccession.Store) (links : CoupledSuccession.Rec → CoupledSuccession.Rec → Bool) (cancelled : CoupledSuccession.Dom), (∀ src tgt, links src tgt = true → cancelled src = false ∧ cancelled tgt = false) → CoupledSuccession.Integrity s links → CoupledSuccession.Integrity (CoupledSuccession.retract CoupledSuccession.noneStore cancelled s) links"
+    },
+    {
+      "name": "CoupledSuccession.Adjacency.invert_adjacency_exact",
+      "type": "∀ (a : CoupledSuccession.AdjState) (d : CoupledSuccession.AdjDelta) (rev0 : Option Nat), rev0 = a.revision → CoupledSuccession.StrictSorted a.current → d.Fits a → (a.apply d).retract d rev0 (otherTouch := false) = a ∧ ((a.apply d).retract d rev0 (otherTouch := true)).revision = (a.apply d).revision"
+    },
+    {
+      "name": "CoupledSuccession.Ledger.evidence_block_contiguous",
+      "type": "∀ (live cancelled : List Nat) (f0 : Nat), CoupledSuccession.Block f0 (live ++ cancelled) → CoupledSuccession.NoDup (live ++ cancelled) → ∀ perm, CoupledSuccession.Perm perm live → CoupledSuccession.ReplayAccepts f0 perm cancelled"
+    },
+    {
+      "name": "CoupledSuccession.MultiChainGap.two_guards_insufficient",
+      "type": "∃ (b : CoupledSuccession.Store) (steps : List CoupledSuccession.Step), CoupledSuccession.WellGuarded2 b steps ∧ (CoupledSuccession.liveRun b steps).store ≠ CoupledSuccession.foldSegments (CoupledSuccession.liveSegments (CoupledSuccession.liveRun b steps)) b"
+    },
+    {
+      "name": "CoupledSuccession.MultiChainGap.stale_guard_refuses",
+      "type": "¬ CoupledSuccession.WellGuarded CoupledSuccession.noneStore CoupledSuccession.MultiChainGap.steps"
+    }
+  ]
+}
