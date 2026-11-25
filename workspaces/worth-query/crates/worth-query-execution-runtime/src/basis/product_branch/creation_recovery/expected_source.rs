@@ -32,7 +32,7 @@ impl ProductBranchCreationRecoveryInternalPort for WorthQueryProductBranchCreati
         ),
         WorthQueryProductBranchCreationRecoveryFailure,
     > {
-        if self.runtime.owner.owner_identity() != runtime.owner.owner_identity() {
+        if self.runtime.fields().owner.owner_identity() != runtime.fields().owner.owner_identity() {
             return Err(WorthQueryProductBranchCreationRecoveryFailure {
                 denial: WorthQueryProductBranchRecoveryDenial::ForeignRecovery,
                 recovery: self,

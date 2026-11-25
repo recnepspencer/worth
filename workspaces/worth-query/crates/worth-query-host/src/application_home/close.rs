@@ -148,7 +148,7 @@ impl<Schema: ApplicationSchema, Program: 'static> WorthQueryApplicationHome<Sche
         let active_head = active_head
             .into_inner()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        let Some(home) = directory else {
+        let Some(home) = directory.map(ErasedDirectoryHome::into_inner) else {
             return Err(WorthQueryApplicationHomeCloseRefused::from_custody(
                 CloseCustody::MemoryLifecycleRequired(Self {
                     query,
@@ -246,7 +246,7 @@ impl<Schema: ApplicationSchema, Program> WorthQueryApplicationHomeCloseRefused<S
                 cause: _,
             } => Ok(WorthQueryApplicationHome {
                 query,
-                directory: Some(home),
+                directory: Some(ErasedDirectoryHome::new(home)),
                 checkpoint_limits,
                 open_disposition,
                 active_head: std::sync::Mutex::new(active_head),
@@ -260,7 +260,7 @@ impl<Schema: ApplicationSchema, Program> WorthQueryApplicationHomeCloseRefused<S
                 cause: _,
             } => Ok(WorthQueryApplicationHome {
                 query,
-                directory: Some(home),
+                directory: Some(ErasedDirectoryHome::new(home)),
                 checkpoint_limits,
                 open_disposition,
                 active_head: std::sync::Mutex::new(active_head),
@@ -274,7 +274,7 @@ impl<Schema: ApplicationSchema, Program> WorthQueryApplicationHomeCloseRefused<S
             } => match home.resume() {
                 Ok(home) => Ok(WorthQueryApplicationHome {
                     query: query.resume(),
-                    directory: Some(home),
+                    directory: Some(ErasedDirectoryHome::new(home)),
                     checkpoint_limits,
                     open_disposition,
                     active_head: std::sync::Mutex::new(active_head),

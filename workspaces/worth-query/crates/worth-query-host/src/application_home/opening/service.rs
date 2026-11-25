@@ -79,7 +79,9 @@ pub(in crate::application_home) fn finish_service<
         let active_head = std::sync::Mutex::new(query.runtime().current_world());
         WorthQueryApplicationHome {
             query,
-            directory: Some(home.into_no_pending_home()),
+            directory: Some(super::super::runtime::ErasedDirectoryHome::new(
+                home.into_no_pending_home(),
+            )),
             checkpoint_limits,
             open_disposition,
             active_head,

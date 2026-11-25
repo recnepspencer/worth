@@ -38,7 +38,7 @@ impl<Schema: ApplicationSchema, Program: 'static>
             } => Self::retry_home_close(
                 WorthQueryApplicationHome {
                     query,
-                    directory: Some(home),
+                    directory: Some(ErasedDirectoryHome::new(home)),
                     checkpoint_limits,
                     open_disposition,
                     active_head: std::sync::Mutex::new(active_head),

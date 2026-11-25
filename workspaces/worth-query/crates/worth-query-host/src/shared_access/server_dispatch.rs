@@ -360,6 +360,9 @@ pub(super) fn map_query_denial(
         WorthQueryApplicationRequestQueryDenialKind::ExecutionRequest(_) => {
             SharedAccessDenial::BudgetRefused(BudgetRefusalReason::ExecutionResourceDenied)
         }
+        WorthQueryApplicationRequestQueryDenialKind::InputPreparation => {
+            SharedAccessDenial::ProtocolRefused(ProtocolRefusalReason::MalformedPayload)
+        }
         WorthQueryApplicationRequestQueryDenialKind::Admission
         | WorthQueryApplicationRequestQueryDenialKind::Execution
         | WorthQueryApplicationRequestQueryDenialKind::HistoryOutput

@@ -1,4 +1,5 @@
 //! One non-cloneable Home wrapper owns the concrete lifecycle and Query service.
+use std::ops::Deref;
 use std::sync::Mutex;
 use worth_query_execution::facade::{
     application_installation::WorthQueryProgramApplicationRuntime,
@@ -7,6 +8,51 @@ use worth_query_execution::facade::{
 
 pub(super) type DirectoryHome =
     worth_store_application::WorldReadmittedApplicationHome<(), (), (), (), ()>;
+
+/// Startup-only trait-object boundary keeping rustdoc auto-trait synthesis on
+/// `&WorthQueryApplicationHome` (e.g. `WorthQueryHostSession`) from walking
+/// `worth-store-application`'s internal `im::Vector` index types past recursion
+/// limit 128, while preserving the exact `Send + Sync + Unpin` contract and
+/// drop order of `DirectoryHome`.
+trait DirectoryHomeBacking: Send + Sync {
+    fn as_home(&self) -> &DirectoryHome;
+    fn into_home(self: Box<Self>) -> DirectoryHome;
+}
+
+impl DirectoryHomeBacking for DirectoryHome {
+    fn as_home(&self) -> &DirectoryHome {
+        self
+    }
+
+    fn into_home(self: Box<Self>) -> DirectoryHome {
+        *self
+    }
+}
+
+pub(super) struct ErasedDirectoryHome(Box<dyn DirectoryHomeBacking>);
+
+impl ErasedDirectoryHome {
+    pub(super) fn new(home: DirectoryHome) -> Self {
+        Self(Box::new(home))
+    }
+
+    pub(super) fn into_inner(self) -> DirectoryHome {
+        self.0.into_home()
+    }
+}
+
+impl Deref for ErasedDirectoryHome {
+    type Target = DirectoryHome;
+
+    fn deref(&self) -> &Self::Target {
+        self.0.as_home()
+    }
+}
+
+const _: fn() = || {
+    fn assert_auto_traits<T: Send + Sync + Unpin>() {}
+    assert_auto_traits::<ErasedDirectoryHome>();
+};
 
 /// Whether opening this Home initialized a brand-new Home or readmitted an
 /// existing one.
@@ -18,7 +64,7 @@ pub enum WorthQueryHomeOpenDisposition {
 
 pub struct WorthQueryApplicationHome<Schema, Program> {
     pub(super) query: WorthQueryProgramApplicationRuntime<Schema, Program>,
-    pub(super) directory: Option<DirectoryHome>,
+    pub(super) directory: Option<ErasedDirectoryHome>,
     pub(super) checkpoint_limits: worth_store_application::ApplicationHomeCheckpointLimits,
     pub(super) open_disposition: WorthQueryHomeOpenDisposition,
     pub(super) active_head: Mutex<WorthQueryProductBranch>,
@@ -60,9 +106,9 @@ impl<Schema, Program> WorthQueryApplicationHome<Schema, Program> {
             .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
     pub fn home_identity(&self) -> Option<worth_foundational::facade::HomeIdentity> {
-        self.directory.as_ref().map(DirectoryHome::home_identity)
+        self.directory.as_deref().map(DirectoryHome::home_identity)
     }
     pub fn home_incarnation(&self) -> Option<worth_foundational::facade::HomeIncarnation> {
-        self.directory.as_ref().map(DirectoryHome::incarnation)
+        self.directory.as_deref().map(DirectoryHome::incarnation)
     }
 }
