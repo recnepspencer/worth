@@ -1,5 +1,6 @@
 //! Recorded correction selection through the ordinary fresh request.
 mod alternatives;
+mod history;
 mod inspection;
 mod outcome;
 mod preparation;
@@ -9,6 +10,10 @@ pub use alternatives::{
     WorthQueryApplicationCorrectionAlternatives, WorthQueryCorrectionAlternativeRef,
     WorthQueryCorrectionAlternativesContinuation, WorthQueryCorrectionAlternativesPage,
     WorthQuerySelectedCorrectionAlternative,
+};
+pub use history::{
+    WorthQueryApplicationCorrectionHistoryDenial, WorthQueryCorrectionHistoryDenial,
+    WorthQueryCorrectionHistoryRecord, WorthQueryCorrectionHistoryState,
 };
 pub use inspection::{WorthQueryApplicationCorrection, WorthQueryCorrectionApplicability};
 pub use outcome::{WorthQueryApplicationCorrectionOutcome, WorthQueryCorrectionValue};

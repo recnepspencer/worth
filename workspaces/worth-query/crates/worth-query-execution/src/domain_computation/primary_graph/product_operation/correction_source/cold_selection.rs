@@ -13,6 +13,15 @@ use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_runtime_world::facade::WorldProgramActivationHistory;
 
+/// An original already resolved by a walk of this target's exact history.
+///
+/// Only the in-crate history listing constructs it, from the very page whose
+/// coordinates it accompanies, so selection need not walk the history again.
+pub(super) struct WalkedOriginal {
+    pub(super) identity: worth_runtime_world::facade::CompositeCommitIdentity,
+    pub(super) parent_links_bound: NonZeroUsize,
+}
+
 impl<'runtime, S: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime, S> {
     pub(super) fn select_home_correction_source(
         &self,
@@ -22,6 +31,7 @@ impl<'runtime, S: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime
         coordinates: &WorthQueryCorrectionSourceCoordinates,
         maximum: Option<NonZeroUsize>,
         maximum_results: NonZeroUsize,
+        walked: Option<WalkedOriginal>,
     ) -> Result<WorthQuerySelectedCorrectionSource<'runtime, S>, WorthQueryCorrectionSelectionDenial>
     {
         use WorthQueryCorrectionSelectionDenial as D;
@@ -61,20 +71,26 @@ impl<'runtime, S: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime
         {
             return Err(D::SourcePublicationMismatch);
         }
-        let observed = exact_original::resolve(
-            execution,
-            &owner.observation_port(),
-            self.product().observation(),
-            coordinates,
-            maximum,
-        )?;
+        let (observed, ancestor_bound) = match walked {
+            Some(walked) => (walked.identity, Some(walked.parent_links_bound)),
+            None => (
+                exact_original::resolve(
+                    execution,
+                    &owner.observation_port(),
+                    self.product().observation(),
+                    coordinates,
+                    maximum,
+                )?,
+                maximum,
+            ),
+        };
         let ancestry = owner
             .observation_port()
             .select_retained_product_branch_ancestor(
                 &execution,
                 self.product().observation(),
                 &observed,
-                maximum,
+                ancestor_bound,
             )
             .map_err(D::Ancestry)?;
         let source_type = application

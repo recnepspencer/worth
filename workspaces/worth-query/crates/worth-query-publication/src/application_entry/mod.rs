@@ -30,17 +30,19 @@ mod capability_revocation;
 mod correction;
 pub use correction::{
     WorthQueryApplicationCorrection, WorthQueryApplicationCorrectionAlternatives,
-    WorthQueryApplicationCorrectionDenial, WorthQueryApplicationCorrectionOutcome,
-    WorthQueryApplicationCorrectionPreparation, WorthQueryApplicationCorrectionRequest,
-    WorthQueryApplicationCorrections, WorthQueryApplicationReapplication,
-    WorthQueryApplicationReapplicationRequest, WorthQueryCorrectionAlternativeRef,
-    WorthQueryCorrectionAlternativesContinuation, WorthQueryCorrectionAlternativesPage,
-    WorthQueryCorrectionApplicability, WorthQueryCorrectionHistoryLimits,
-    WorthQueryCorrectionValue, WorthQueryKeyedApplicationCorrection,
-    WorthQueryKeyedApplicationReapplication, WorthQueryOperationCorrectionPreparation,
-    WorthQueryPreparedApplicationCorrection, WorthQueryPreparedOperationCorrection,
-    WorthQueryPreparedRequiredCorrection, WorthQueryRequiredCorrectionPreparation,
-    WorthQuerySelectedCorrectionAlternative, WorthQuerySelectedCorrectionSource,
+    WorthQueryApplicationCorrectionDenial, WorthQueryApplicationCorrectionHistoryDenial,
+    WorthQueryApplicationCorrectionOutcome, WorthQueryApplicationCorrectionPreparation,
+    WorthQueryApplicationCorrectionRequest, WorthQueryApplicationCorrections,
+    WorthQueryApplicationReapplication, WorthQueryApplicationReapplicationRequest,
+    WorthQueryCorrectionAlternativeRef, WorthQueryCorrectionAlternativesContinuation,
+    WorthQueryCorrectionAlternativesPage, WorthQueryCorrectionApplicability,
+    WorthQueryCorrectionHistoryDenial, WorthQueryCorrectionHistoryLimits,
+    WorthQueryCorrectionHistoryRecord, WorthQueryCorrectionHistoryState, WorthQueryCorrectionValue,
+    WorthQueryKeyedApplicationCorrection, WorthQueryKeyedApplicationReapplication,
+    WorthQueryOperationCorrectionPreparation, WorthQueryPreparedApplicationCorrection,
+    WorthQueryPreparedOperationCorrection, WorthQueryPreparedRequiredCorrection,
+    WorthQueryRequiredCorrectionPreparation, WorthQuerySelectedCorrectionAlternative,
+    WorthQuerySelectedCorrectionSource,
 };
 mod demand;
 pub use worth_query_execution::facade::primary_graph::WorthQueryCompletedOriginalReadOutputs;
