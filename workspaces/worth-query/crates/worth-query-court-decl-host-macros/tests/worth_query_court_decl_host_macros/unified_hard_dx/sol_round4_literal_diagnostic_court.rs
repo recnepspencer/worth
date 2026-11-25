@@ -7,6 +7,8 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
+use super::cargo_artifact_json::extract_worth_query_decl_rlib;
+
 fn static_str_query_fixture(where_rhs: &str) -> String {
     format!(
         r#"
@@ -172,54 +174,25 @@ impl Drop for TempDirGuard {
     }
 }
 
-fn extract_rlib_from_cargo_artifact_line(line: &str) -> Option<PathBuf> {
-    if !line.contains("\"reason\":\"compiler-artifact\"")
-        || !line.contains("\"name\":\"worth_query_decl\"")
-    {
-        return None;
+/// Maps the running test binary's Cargo profile output directory back to the
+/// invoking Cargo profile (`debug` -> `test`, `release` -> `release`, custom
+/// profile dir `<name>` -> `<name>`) so nested Cargo hits `"fresh": true` with
+/// zero extra compilation.
+fn cargo_profile_for_dir(profile_dir: &Path) -> &str {
+    match profile_dir.file_name().and_then(|name| name.to_str()) {
+        Some("debug") | None => "test",
+        Some(other) => other,
     }
-    let after = line.split_once("\"filenames\":[")?.1;
-    let list_end = after.find(']')?;
-    let mut rest = &after[..list_end];
-    while let Some(start) = rest.find('"') {
-        rest = &rest[start + 1..];
-        let mut parsed = String::new();
-        let mut chars = rest.chars();
-        let mut consumed = 0;
-        let mut closed = false;
-        while let Some(ch) = chars.next() {
-            consumed += ch.len_utf8();
-            if ch == '\\' {
-                if let Some(escaped) = chars.next() {
-                    consumed += escaped.len_utf8();
-                    parsed.push(escaped);
-                }
-            } else if ch == '"' {
-                closed = true;
-                break;
-            } else {
-                parsed.push(ch);
-            }
-        }
-        if !closed {
-            break;
-        }
-        rest = &rest[consumed..];
-        if parsed.ends_with(".rlib") {
-            return Some(PathBuf::from(parsed));
-        }
-    }
-    None
 }
 
 /// Resolves the exact `worth-query-decl` `.rlib` artifact and its `deps`
-/// directory directly from Cargo's own offline build metadata (never via
-/// mtime heuristics across stale `.rlib` files in a warm cache).
+/// directory directly from Cargo's own offline build metadata under the exact
+/// invoking profile (never via mtime heuristics across stale `.rlib` files).
 fn resolve_worth_query_decl_artifact() -> (PathBuf, PathBuf, PathBuf) {
     let exe = std::env::current_exe().expect("current_exe");
     let deps_dir = exe.parent().expect("test binary lives in deps dir");
     let profile_dir = deps_dir.parent().expect("deps dir lives under profile dir");
-    let is_release = profile_dir.file_name().is_some_and(|n| n == "release");
+    let cargo_profile = cargo_profile_for_dir(profile_dir);
     let target_dir = std::env::var_os("CARGO_TARGET_DIR")
         .map(PathBuf::from)
         .unwrap_or_else(|| {
@@ -235,30 +208,30 @@ fn resolve_worth_query_decl_artifact() -> (PathBuf, PathBuf, PathBuf) {
         .join("Cargo.toml");
 
     let cargo = std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
-    let mut cmd = Command::new(cargo);
-    cmd.arg("build")
+    let output = Command::new(cargo)
+        .arg("build")
         .arg("--lib")
         .arg("--offline")
         .arg("--manifest-path")
         .arg(&workspace_manifest)
         .arg("-p")
         .arg("worth-query-decl")
+        .arg("--profile")
+        .arg(cargo_profile)
         .arg("--target-dir")
         .arg(&target_dir)
-        .arg("--message-format=json");
-    if is_release {
-        cmd.arg("--release");
-    }
-    let output = cmd.output().expect("resolve worth-query-decl via cargo");
+        .arg("--message-format=json")
+        .output()
+        .expect("resolve worth-query-decl via cargo");
     assert!(
         output.status.success(),
-        "cargo build --lib -p worth-query-decl --offline failed:\n{}",
+        "cargo build --lib -p worth-query-decl --profile {cargo_profile} --offline failed:\n{}",
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
     let decl_rlib = stdout
         .lines()
-        .find_map(extract_rlib_from_cargo_artifact_line)
+        .find_map(extract_worth_query_decl_rlib)
         .expect("cargo JSON output reported worth_query_decl .rlib artifact");
     let artifact_profile_dir = decl_rlib
         .parent()
