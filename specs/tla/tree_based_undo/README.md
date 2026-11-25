@@ -87,11 +87,14 @@ TLC's exit codes are:
   which is not a CAD Phase 3 prerequisite. The change only turns that
   recording into a refusal, so it removes behaviours, and the earlier full
   check's result carries over (corrections sweep, seed `0x7b020010`).
-- Refinement (w), approved 2026-11-25: a correction's head pass reads no head. On a diverged
-  head, a source with no derivable meaning refuses `SourceRefused` (selection
-  or head pass), and a derivable source refuses `HeadDiverged`.
-  `RefuseCorrectionSource`'s underivable branch needs only `Held`. It adds a
-  refusal and no state (corrections sweep, after ruling (1)).
+- Refinement (w), approved 2026-11-25 and narrowed by the 128-seed sweep
+  (seed `0x7b02007f`): selecting an uncorrectable source refuses before any
+  document call, so even on a diverged head. `Correctable(src, e)` is the
+  part of `MeaningDerivable` that selection decides: the source stage
+  created or retired `e`, and its step is not a correction. The document's
+  head read comes next (`HeadDiverged`), and only then the derivation and the
+  selected-line check, so a correctable source off the selected line refuses
+  `HeadDiverged` on a diverged head. Refusal-only; no state.
 
 ## Hand traces
 
@@ -110,6 +113,8 @@ ignored; only `hand-*.ndjson` is versioned.
 | `hand-stage-distinct-corrections` | exit 0 | One step creates `e1` and `e2`. Key `k2` reverses `e2`'s creation, `k2` on `e1`'s creation of the same step drifts, and `k2` on `e2` again replays step 2. The model's `CorrectionIntent` already names the entity (the stage); the platform's meaning names the commit member (public #368). |
 | `hand-correction-step-not-a-source` | exit 0 | Create `e1`, delete it by correction, then a fresh-key correction of that correction step refuses `SourceRefused` and changes nothing: a correction step is not a correction source. |
 | `hand-diverged-head-underivable-source` | exit 0 | Create `e1`, write `e2` outside the document (the head diverges), then a correction of step 1's `e2` stage, which has no corrective binding: the head pass refuses `SourceRefused` before any head read (refinement (w)). The model without (w) rejects it (exit 11, pc = 3). |
+| `hand-diverged-head-off-line-source` | exit 0 | Create `e1`, undo (step 1 leaves the line), write outside the document (the head diverges), then correct step 1's creation: `HeadDiverged`, because the selected-line check follows the head read. |
+| `hand-rejected-off-line-source-before-head-read` | exit 11, pc = 4 | The same, answering `SourceRefused`, as (w) before its narrowing allowed. |
 | `hand-rejected-correction-step-corrected` | exit 11, pc = 3 | `hand-correction-step-not-a-source`, but the correction of the correction records and restores `e1`, as the r2 model allowed. |
 | `hand-rejected-fresh-generation` | exit 11, pc = 5 | `hand-accepted`, but the undo across the retirement reports a fresh generation. That is what re-running `restore_retired` instead of navigating would do. |
 | `hand-rejected-writer-hides-divergence` | exit 11, pc = 7 | `hand-writer-out-of-band`, claiming the head is current after the discard. |

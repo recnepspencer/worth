@@ -26,12 +26,12 @@ impl State {
         match action {
             Action::Empty { .. } => self.unchanged(Outcome::Empty),
             _ if self.head_diverged && self.is_document_entry(action) => {
-                // The correction's head pass reads no head (refinement (w)):
-                // a source with no derivable meaning refuses there first.
-                let underivable = matches!(action, Action::Envelope { intent: Intent::Correction { source, entity, .. }, .. }
-                    if !self.meaning_derivable(*source, *entity));
+                // Selecting an uncorrectable source refuses before any
+                // document call (refinement (w), narrowed by seed 0x7b02007f).
+                let uncorrectable = matches!(action, Action::Envelope { intent: Intent::Correction { source, entity, .. }, .. }
+                    if !self.correctable(*source, *entity));
                 let mut successors =
-                    self.unchanged(if underivable { Outcome::SourceRefused } else { Outcome::HeadDiverged });
+                    self.unchanged(if uncorrectable { Outcome::SourceRefused } else { Outcome::HeadDiverged });
                 // A request that stops before its history read learns
                 // nothing: the `Admission` stop needs only a held document
                 // (TLA+ `WriterStopped`; traced, seed 0x7b020000 k7).
@@ -239,9 +239,14 @@ impl State {
     /// `SourceNotCorrectable`; reapply is out of Phase 2), and its stage on
     /// `entity` has a corrective binding.
     pub(super) fn meaning_derivable(&self, source: u32, entity: usize) -> bool {
-        source != 0
-            && source < self.nodes()
-            && self.line(self.current).contains(&source)
+        source != 0 && self.line(self.current).contains(&source) && self.correctable(source, entity)
+    }
+
+    /// `Correctable`: the source stage has a corrective binding (it created
+    /// or retired `entity`) and its step is not a correction. Otherwise
+    /// selecting it refuses before any document call.
+    fn correctable(&self, source: u32, entity: usize) -> bool {
+        source < self.nodes()
             && !self.is_correction_step(source)
             && matches!(self.ops[source as usize][entity], StepOp::Born | StepOp::Retired)
     }
@@ -286,9 +291,6 @@ impl State {
         })
     }
 
-    /// The owned child the source created with `E1`, while that occurrence is
-    /// still live: `co_retire_created` retires it with its owner (refinement
-    /// (p)).
     /// `CoRetired`: what the same source stage created. Each stage creates
     /// one entity, so nothing is co-retired across stages (refinement (p),
     /// narrowed to `co_retire_created`'s declared contract, ruling

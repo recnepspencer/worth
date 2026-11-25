@@ -310,15 +310,21 @@ CorrectionSteps ==
     {idem[j].node : j \in {x \in JournalKeys : idem[x].status = "recorded"
                                          /\ idem[x].intent.kind = "correction"}}
 
-\* The head pass (plan r2, 2.3): the source is a step this document recorded
-\* on its selected line, it is not itself a correction, and its stage on `e`
-\* has a corrective binding. Only then can the document derive the
-\* correction's meaning and consult its journal. It reads nothing else of
-\* the branch.
-MeaningDerivable(src, e) ==
-    /\ src \in Line(current) \ {0}
+\* The source stage has a corrective binding: it created or retired `e`,
+\* and its step is not itself a correction. Otherwise selecting the source
+\* refuses before any document call (SourceNotCorrectable, or no stage on
+\* `e` to name at all).
+Correctable(src, e) ==
     /\ src \notin CorrectionSteps
     /\ ops[src][e] \in {"born", "retired"}
+
+\* The head pass (plan r2, 2.3): the source is a correctable step this
+\* document recorded on its selected line. Only then can the document
+\* derive the correction's meaning and consult its journal. It reads
+\* nothing else of the branch.
+MeaningDerivable(src, e) ==
+    /\ src \in Line(current) \ {0}
+    /\ Correctable(src, e)
 
 \* The candidate pass, after the journal found the key unseen.
 SourceReversible(src, e) ==
@@ -399,12 +405,14 @@ RefuseStages(st, k) ==
 \* corrective binding, whatever the key. With an unseen key, the candidate
 \* pass refuses a source that is no longer current, or one an active reversal
 \* fact says is already reversed (SourceAlreadyReversed).
-\* The head pass reads no head (refinement (w)): a source with no derivable
-\* meaning refuses there even on a diverged head, before the head read that
-\* would refuse HeadDiverged. Only the candidate pass needs a writable head.
+\* Refinement (w), as narrowed by DST seed 0x7b02007f: selecting an
+\* uncorrectable source refuses before any document call, so even on a
+\* diverged head. The document's head read comes next (HeadDiverged), then
+\* the derivation and the selected-line check, then the candidate pass.
 RefuseCorrectionSource(src, e, k) ==
     /\ k \in Keys
-    /\ \/ Held /\ ~MeaningDerivable(src, e)
+    /\ \/ Held /\ ~Correctable(src, e)
+       \/ Writable /\ ~MeaningDerivable(src, e)
        \/ /\ Writable
           /\ idem[Env(k)].status = "unseen"
           /\ \/ ~SourceReversible(src, e)

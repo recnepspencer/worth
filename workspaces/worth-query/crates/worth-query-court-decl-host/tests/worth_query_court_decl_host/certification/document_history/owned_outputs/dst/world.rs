@@ -96,9 +96,9 @@ pub struct Document<'h> {
     keyed: BTreeMap<u32, (Stages, Vec<Call>)>,
     /// Each recorded creation or retirement, for today's correction route.
     sources: BTreeMap<(u32, usize), (Receipt, Undo)>,
-    /// One stage receipt of each recorded step, for a correction the model
-    /// refuses because that step created or retired nothing on the entity.
-    step_receipts: BTreeMap<u32, Receipt>,
+    /// Each recorded `set` stage: a correction naming it refuses at
+    /// selection (a `set` binding declares no correction).
+    set_receipts: BTreeMap<(u32, usize), Receipt>,
     /// This document's number on the host: every key it uses carries it, so
     /// the seeds sharing one host never meet each other's keys.
     id: u64,
@@ -150,7 +150,7 @@ impl<'h> Document<'h> {
             nodes: vec![root],
             generations: BTreeMap::new(),
             reversed: BTreeMap::new(),
-            step_receipts: BTreeMap::new(),
+            set_receipts: BTreeMap::new(),
             reversals: Default::default(),
             keyed: BTreeMap::new(),
             sources: BTreeMap::new(),
@@ -267,14 +267,14 @@ impl Document<'_> {
                 self.document = Some(document);
                 self.keyed.entry(key).or_insert_with(|| (*stages, calls.clone()));
                 let node = self.number(&step.id());
-                if let Some((_, receipt)) = receipts.first() {
-                    self.step_receipts.insert(node, receipt.clone());
-                }
                 for ((entity, receipt), call) in receipts.into_iter().zip(&calls) {
                     let undo = match call {
                         Call::Create(..) => Undo::Create(entity),
                         Call::Retire(_) => Undo::Retire(entity),
-                        Call::Set(..) => continue,
+                        Call::Set(..) => {
+                            self.set_receipts.insert((node, entity), receipt);
+                            continue;
+                        }
                     };
                     self.sources.insert((node, entity), (receipt, undo));
                 }
@@ -356,7 +356,7 @@ impl Document<'_> {
         // A kept commit receipt holds the history it committed on: across
         // close it defers the branch's release (traced, S1 probe).
         self.sources.clear();
-        self.step_receipts.clear();
+        self.set_receipts.clear();
         self.host.with_host_advancement(|phase| document.close(&phase).unwrap()).unwrap();
         assert!(self.host.runtime().branches().pending_cleanup().is_empty());
         self.closed = true;

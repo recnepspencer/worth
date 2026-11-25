@@ -79,15 +79,18 @@ impl Document<'_> {
     /// document's next step, with the coupled stages after it, through
     /// `document.correction_envelope`.
     pub(super) fn correct(&mut self, key: u32, source: u32, entity: usize, coupled: &Stages) -> Outcome {
-        // A step that created or retired nothing on `entity` has no
-        // corrective binding there: name one of its stages and ask to restore
-        // a retirement it never made, which the derivation refuses.
-        let (receipt, undo) = self
+        // A source stage with no corrective binding (model `Correctable`):
+        // a `set` stage is named and refuses at selection; a step with no
+        // stage on `entity` has no source member a caller could name, so
+        // the request cannot be made and refuses as the model's does.
+        let Some((receipt, undo)) = self
             .sources
             .get(&(source, entity))
             .cloned()
-            .or_else(|| self.step_receipts.get(&source).map(|receipt| (receipt.clone(), Undo::Retire(entity))))
-            .unwrap_or_else(|| panic!("k{key}: step {source} has no envelope receipt for entity {entity}"));
+            .or_else(|| self.set_receipts.get(&(source, entity)).map(|receipt| (receipt.clone(), Undo::Retire(entity))))
+        else {
+            return Outcome::SourceRefused;
+        };
         let before = read_entities(self.host, self.branch).map(|entity| entity.is_some());
         let calls = calls(coupled, before);
         let document = self.take();
@@ -142,7 +145,6 @@ impl Document<'_> {
     ) {
         let mut receipts = receipts.into_iter();
         let (_, primary) = receipts.next().expect("a recorded correction has its corrective receipt");
-        self.step_receipts.insert(node, primary.clone());
         if let Undo::Create(entity) = undo {
             self.sources.insert((node, entity), (primary.clone(), Undo::Retire(entity)));
             let after = read_entities(self.host, self.branch).map(|entity| entity.is_some());
@@ -156,7 +158,10 @@ impl Document<'_> {
             let undo = match call {
                 Call::Create(..) => Undo::Create(entity),
                 Call::Retire(_) => Undo::Retire(entity),
-                Call::Set(..) => continue,
+                Call::Set(..) => {
+                    self.set_receipts.insert((node, entity), receipt);
+                    continue;
+                }
             };
             self.sources.insert((node, entity), (receipt, undo));
         }
