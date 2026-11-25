@@ -145,6 +145,7 @@ fn document(cause: WorthQueryDocumentHistoryDenial) -> BankHttpDenial {
         | D::AttemptInFlight
         | D::IntentDrift
         | D::SourceNotOnSelectedLine { .. }
+        | D::CorrectionRequiresOwnedModelGraph
         | D::ForeignRecording
         | D::UnsupportedOperation
         | D::EmptyGroup

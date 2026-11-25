@@ -72,6 +72,12 @@ pub enum WorthQueryDocumentHistoryDenial {
     SourceNotOnSelectedLine {
         source: worth_runtime_world::facade::CompositeCommitIdentity,
     },
+    /// A correction envelope needs a history whose model domain is an owned
+    /// model graph (tree-based undo Phase 2): navigation restores what a
+    /// correction retired, and its reversal fact, through the owned graph.
+    /// Refused when the envelope opens, before anything else; the document
+    /// is returned unchanged.
+    CorrectionRequiresOwnedModelGraph,
     /// The step metadata exceeds the installed `maximum_step_metadata_bytes`.
     StepMetadataTooLarge {
         length: usize,

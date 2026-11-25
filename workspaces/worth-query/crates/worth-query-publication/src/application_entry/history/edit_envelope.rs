@@ -14,6 +14,7 @@ use worth_query_declaration::facade::{
         ApplicationMutationAdmissionBinding, ApplicationMutationBinding, ApplicationMutationInputScope,
         ApplicationMutationIntent, ApplicationMutationScopeResolution,
     },
+    application_history::ApplicationHistoryModelDomain,
     application_program::ApplicationProgramDefinition,
 };
 use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
@@ -118,7 +119,10 @@ where
     /// correction, so selecting it refuses `SourceNotCorrectable`; reapply is
     /// future work. The step's reversal fact follows navigation: a move
     /// retires the facts of the steps it leaves and restores those of the
-    /// steps it enters.
+    /// steps it enters. A correction needs an owned-model-graph history: any
+    /// other model domain refuses `CorrectionRequiresOwnedModelGraph` before
+    /// anything else, and navigation refuses again across a recorded
+    /// correction (defense in depth).
     pub fn correction_envelope<'request, 'program, C, P, R>(
         self,
         program: &'program WorthQueryProgramApplicationRuntime<S, P>,
@@ -158,7 +162,17 @@ where
         let runtime = self.owner.application();
         let corrections = correction.corrections();
         let (principal, scope) = (corrections.principal, corrections.scope);
-        let refusal = if !std::ptr::eq(runtime, corrections.application)
+        let domain = runtime
+            .installed_schema()
+            .installed_history::<H>()
+            .map(|installed| installed.definition().parts().model_domain);
+        let refusal = if let Err(cause) = domain {
+            Some(WorthQueryApplicationHistoryDenial::Installation(cause))
+        } else if domain != Ok(ApplicationHistoryModelDomain::OwnedModelGraph) {
+            Some(WorthQueryApplicationHistoryDenial::Document(
+                WorthQueryDocumentHistoryDenial::CorrectionRequiresOwnedModelGraph,
+            ))
+        } else if !std::ptr::eq(runtime, corrections.application)
             || !std::ptr::eq(runtime, program.runtime())
         {
             Some(WorthQueryApplicationHistoryDenial::ForeignRuntime)

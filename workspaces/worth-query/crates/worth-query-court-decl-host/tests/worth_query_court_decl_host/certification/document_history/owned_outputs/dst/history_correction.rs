@@ -210,3 +210,30 @@ fn one_key_on_another_stage_of_the_same_step_drifts() {
     assert!(matches!(replay, Corrected::AlreadyRecorded(2)), "{replay:?}");
     document.release();
 }
+
+/// Phase 2 confines corrections to an owned-model-graph history. A
+/// correction envelope on a scope-record history refuses
+/// `CorrectionRequiresOwnedModelGraph` when it opens, before anything else,
+/// and returns the document unchanged: it records no step and closes
+/// cleanly. (Navigation across a recorded correction refuses again, defense
+/// in depth.)
+#[test]
+fn a_correction_envelope_on_a_scope_record_history_refuses_at_open() {
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+    let host = world::install();
+    let mut owned = created(&host, &[E1]);
+    let (source, _) = owned.recorded_source(1, E1);
+    let scope = fixture::history_correction::attach_scope_history(&host);
+    let (scope, opened) =
+        fixture::history_correction::open_on_scope_history(&host, scope, owned.branch(), "scope-k1".into(), &source);
+    assert_eq!(opened, Err("History(Document(CorrectionRequiresOwnedModelGraph))".to_owned()));
+    let page = fixture::reads::with_request(&host, |request| {
+        let current = scope.current_step(request).unwrap();
+        (current.parent().is_none(), current.id())
+    });
+    assert!(page.0, "the refused open recorded no step: the document is still at its root");
+    host.with_host_advancement(|phase| scope.close(&phase).unwrap()).unwrap();
+    // A kept commit receipt retains its history: let it go before close.
+    drop(source);
+    owned.release();
+}

@@ -32,7 +32,7 @@ pub(in crate::application_entry::mutation) fn request_stop(denial: &Request) -> 
                 | History::UnownedOperationScope { .. }
                 | History::UnsupportedReadMode | History::ForeignModel | History::ForeignHistoryNode | History::HistoryNodeUnavailable | History::OperationNotDeclared
                 | History::HeadDiverged | History::RecordingIdentityExhausted | History::AttemptInFlight
-                | History::IntentDrift | History::SourceNotOnSelectedLine { .. } | History::ForeignRecording | History::UnsupportedOperation
+                | History::IntentDrift | History::SourceNotOnSelectedLine { .. } | History::CorrectionRequiresOwnedModelGraph | History::ForeignRecording | History::UnsupportedOperation
                 | History::WorkflowProducer { .. } | History::ExternalEffectProducer { .. }
                 | History::ReceiptMismatch | History::CandidateSelection(_) | History::Adoption(_)
                 | History::HeadAdmission(_) | History::Read(_) | History::MetadataCapabilityInstallation(_) | History::Paging(_)

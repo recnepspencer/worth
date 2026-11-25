@@ -88,3 +88,57 @@ pub fn correction_envelope<'h>(
         }
     }
 }
+
+/// A scope-record history document on a fresh fork of the host's world.
+pub type ScopeDocument<'h> = WorthQueryApplicationHistoryDocument<'h, Schema, ScopeHistory>;
+
+/// Fork a fresh owned head and attach the scope-record history to it.
+pub fn attach_scope_history(host: &Host) -> ScopeDocument<'_> {
+    let scope = WorthQueryRequestScope::new(None, WorthQueryCancellationSource::new().token(), WorthQueryAdmissionClock::system());
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    host.with_host_advancement(|phase| {
+        let selected = host.on_branch(host.current_world()).select(&phase).unwrap();
+        let head = host
+            .branches()
+            .fork_expected(selected)
+            .unwrap()
+            .components(|parts| parts.fork_relational().reuse_exact_signal_basis())
+            .create(&phase)
+            .unwrap()
+            .into_owned_head();
+        host.request(&principal, &scope)
+            .on_branch(head.branch())
+            .attach_history::<ScopeHistory>(&phase, head, query::model::Read("a".into()))
+            .unwrap_or_else(|failure| panic!("the scope history must attach: {:?}", failure.denial()))
+    })
+    .unwrap()
+}
+
+/// Open a correction envelope of `source` (selected on `branch`) on a
+/// scope-record history document: the refusal's text, with the document
+/// returned, or `Ok` if it opened (the envelope is cancelled).
+pub fn open_on_scope_history<'h>(
+    host: &'h Host,
+    document: ScopeDocument<'h>,
+    branch: WorthQueryProductBranch,
+    key: String,
+    source: &Receipt,
+) -> (ScopeDocument<'h>, Result<(), String>) {
+    let cancellation = WorthQueryCancellationSource::new();
+    let scope = WorthQueryRequestScope::new(None, cancellation.token(), WorthQueryAdmissionClock::system());
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.request(&principal, &scope).on_branch(branch);
+    let limits = WorthQueryCorrectionHistoryLimits::new(None, NonZeroUsize::MIN);
+    let selected = request
+        .corrections()
+        .select(source, limits)
+        .unwrap_or_else(|denial| panic!("{key}: the source must select: {denial:?}"));
+    let reverse = request.corrections().reverse(&selected).idempotency(key.as_str()).limits(limits);
+    match document.correction_envelope::<UndoCreateE1, program::Program, ApplicationNoOutputGraph>(host, reverse) {
+        Ok(envelope) => (envelope.cancel(), Ok(())),
+        Err(failure) => {
+            let (document, denial) = failure.into_parts();
+            (document, Err(format!("{denial:?}")))
+        }
+    }
+}

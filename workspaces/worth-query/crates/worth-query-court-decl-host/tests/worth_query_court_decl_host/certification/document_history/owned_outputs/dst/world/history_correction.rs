@@ -23,6 +23,17 @@ impl Document<'_> {
             .expect("the host advances")
     }
 
+    /// The commit receipt and corrective binding of `entity`'s creation or
+    /// retirement in model step `node`.
+    pub fn recorded_source(&self, node: u32, entity: usize) -> (Receipt, Undo) {
+        self.sources.get(&(node, entity)).cloned().expect("a recorded creation or retirement")
+    }
+
+    /// The document's physical branch as of its last readable selection.
+    pub fn branch(&self) -> WorthQueryProductBranch {
+        self.branch
+    }
+
     /// `run`'s result, and the history journal's node probes while it ran.
     pub fn node_probes_during<T>(&mut self, run: impl FnOnce(&mut Self) -> T) -> (T, u64) {
         let journal = self

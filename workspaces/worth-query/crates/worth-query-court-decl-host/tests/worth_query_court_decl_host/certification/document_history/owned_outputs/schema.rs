@@ -180,4 +180,11 @@ fn declare(
         .operation::<authored_member::retire::Binding>("Retire authored member")
         .operation::<authored_member::restore::Binding>("Restore authored member"),
     ))
+    .application_history(
+        ApplicationHistoryDefinition::<Schema, ScopeHistory>::for_binding(
+            ApplicationQueryDisclosureContract::public(),
+        )
+        .model_domain(ApplicationHistoryModelDomain::ScopeEntityRecord)
+        .operation::<dst::fixture::create_e1::Binding>("dst set e1"),
+    )
 }
