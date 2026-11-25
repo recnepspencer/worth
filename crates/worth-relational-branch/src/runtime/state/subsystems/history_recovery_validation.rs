@@ -69,12 +69,19 @@ pub(super) fn validate_recovered_branch_cell(
     )?;
     match (fork_source_branch_id, fork_provenance) {
         (Some(source_branch_id), Some(provenance)) => {
-            let source_cell = history.branch_cell(&source_branch_id).ok_or_else(|| {
-                format!(
-                    "branch cell `{}` names missing fork source `{}`",
-                    branch_id.0, source_branch_id.0
-                )
-            })?;
+            let Some(source_cell) = history.branch_cell(&source_branch_id) else {
+                // Deleting a fork source retires only its own name and root;
+                // the sibling keeps its immutable provenance evidence.
+                if !history.retired_branch_names().contains(&source_branch_id) {
+                    return Err(format!(
+                        "branch cell `{}` names missing fork source `{}`",
+                        branch_id.0, source_branch_id.0
+                    ));
+                }
+                validate_branch_target_artifact(history, branch_id, provenance.target())?;
+                validate_target_authoring_lineage(history, &source_branch_id, provenance.target())?;
+                return Ok(());
+            };
             if provenance.branch_id() != source_cell.observation().branch_id()
                 || provenance.generation().get() > source_cell.observation().generation().get()
             {

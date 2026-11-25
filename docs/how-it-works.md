@@ -506,6 +506,21 @@ their own mutation, settlement, and basis authority.
 - **Recovery** continues an already-performed settlement or exposes cleanup.
   It never calls an unperformed sibling and never performs a product
   compare-and-swap.
+- **Whole-Home frontier pins.** `RuntimeWorldRetentionPort` pins one sealed
+  `HomeRootManifest` (Native, World, Signal, the persistent product-name map
+  and the installed program digest, under one SHA-256 seal) in O(1). World
+  owns only the port and the manifest; the Home's Store owner implements it.
+  Store selects the current physical root under its current-root lock and
+  reclaim fence, appends one constant-size entry to its own `store.root-pins`
+  journal, and replays that journal on open before any retirement can run.
+  A pin protects exactly what a live reader of its root protects, so unrelated
+  displaced segments keep retiring. Leases move `Active -> Expiring -> Expired`:
+  `Expiring` refuses new reader loans, and a pin reaches `Expired` only when no
+  loan and no live child pin remain, so a grandchild overlay keeps every
+  ancestor root until it drains. Every transition runs the Verus-verified
+  `PinTableKernel`; Lean's `StoreGCPinSafety` and `LeaseExpiryNoReaderLoss`
+  prove the direct protection check covers transitive overlays. A memory Home
+  runs the same kernel for its lifetime.
 
 ---
 

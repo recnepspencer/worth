@@ -57,9 +57,6 @@ fn map_retained_native_denial(
 ) -> RuntimeWorldBranchAdmissionDenial {
     use worth_relational::facade::branch::RelationalForkDenial as Native;
     match cause {
-        Native::RetainedSourceDurabilityUnsupported => {
-            RuntimeWorldBranchAdmissionDenial::RetainedSourceDurabilityUnsupported
-        }
         Native::ForeignRuntime => RuntimeWorldBranchAdmissionDenial::ForeignOwner,
         Native::SourceBranchMissing | Native::SourceArchived | Native::SourceDeleting => {
             RuntimeWorldBranchAdmissionDenial::RetiredBranch

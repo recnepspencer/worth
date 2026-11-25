@@ -147,8 +147,7 @@ fn branch(cause: RuntimeWorldBranchAdmissionDenial) -> BankHttpDenial {
         | D::DuplicateName
         | D::IdentityExhausted
         | D::PlansOmitted
-        | D::UnsupportedRetainedSourcePlan
-        | D::RetainedSourceDurabilityUnsupported => operator(),
+        | D::UnsupportedRetainedSourcePlan => operator(),
     }
 }
 

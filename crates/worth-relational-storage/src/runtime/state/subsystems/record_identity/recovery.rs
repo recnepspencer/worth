@@ -20,7 +20,8 @@ impl RecordIdentitySubsystem {
     /// RAII returns reclaimed slots while append-frontier gaps stay burned.
     pub fn release_unowned_reservations(&self) {
         let reservations = {
-            let state = self.lock();
+            let mut state = self.lock();
+            state.replay_gaps.clear();
             state
                 .pending
                 .iter()
@@ -65,8 +66,10 @@ impl RecordIdentitySubsystem {
         let mut state = self.lock();
         for (key, first_slot) in first_append_slots {
             let frontier = state.next_slots.entry(key).or_default();
-            if *frontier < first_slot {
+            let skipped = *frontier;
+            if skipped < first_slot {
                 *frontier = first_slot;
+                state.replay_gaps.skip(key, skipped, first_slot);
             }
         }
         state.staged_replay_allocations = Some(allocations);
@@ -271,22 +274,32 @@ impl RecordIdentitySubsystem {
                     .get(&(class, partition_id))
                     .copied()
                     .unwrap_or(0);
-                if slot != expected_slot {
-                    return Err(RecordAllocationDenial::ReplayAppendFrontierMismatch {
-                        ordinal,
-                        class,
-                        partition_id,
-                        expected_slot,
-                        observed_slot: slot,
-                    });
-                }
-                let next =
-                    slot.checked_add(1)
-                        .ok_or(RecordAllocationDenial::SlotFrontierExhausted {
+                if slot < expected_slot {
+                    if !state.replay_gaps.take((class, partition_id), slot) {
+                        return Err(RecordAllocationDenial::ReplayAppendFrontierMismatch {
+                            ordinal,
                             class,
                             partition_id,
-                        })?;
-                state.next_slots.insert((class, partition_id), next);
+                            expected_slot,
+                            observed_slot: slot,
+                        });
+                    }
+                } else {
+                    if slot > expected_slot {
+                        // A concurrent branch preparation reserved the intermediate
+                        // append slot(s) before this candidate published.
+                        state
+                            .replay_gaps
+                            .skip((class, partition_id), expected_slot, slot);
+                    }
+                    let next = slot.checked_add(1).ok_or(
+                        RecordAllocationDenial::SlotFrontierExhausted {
+                            class,
+                            partition_id,
+                        },
+                    )?;
+                    state.next_slots.insert((class, partition_id), next);
+                }
                 ReservationOrigin::AppendFrontier
             }
         };

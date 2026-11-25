@@ -120,6 +120,10 @@ impl PhysicalRecordServingAssembly {
             Arc::clone(&work.record_work),
             durability.wal.clone(),
         ));
+        // Durable pins restore against the prior roots open already loaded.
+        read_protection
+            .pins()
+            .stage_prior_roots(self.state.prior_roots);
         let publication = RecordPublicationDirector::new(
             &work.runtime,
             read,

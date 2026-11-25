@@ -334,6 +334,7 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "branch/fork_live_source_admission.rs" = "runtime"
 "branch/fork_port" = "runtime"
 "branch/fork_publication.rs" = "runtime"
+"branch/fork_recovered_retained.rs" = "runtime"
 "branch/fork_target_installation.rs" = "runtime"
 "branch/fork_target_preparation.rs" = "runtime"
 "branch/fork_port_operations" = "runtime"

@@ -355,6 +355,23 @@ The existing owner funds Full materialization from that request; an unavailable
 retained basis returns `HistoricalVisibilityDenial` rather than inferred absence.
 Exact owner-issued observations remain readable through `read_observation`.
 
+Native branch lifecycle is durable end to end. `fork_port().admit_retained_fork_source(&basis)`
+plus `fork_retained_branch` forks from an exact historical root with or without a
+medium; recovery rebuilds that root (from the replayed tail or the checkpoint image a
+retained component recorded) and replays the fork without copying base chunks.
+`archive_branch` keeps the root readable and refuses writes (`Archived`); `delete_branch`
+retires the name permanently (`RetiredTarget` on recreate, across crashes). Candidates
+prepared concurrently on independent branches publish in FIFO reservation order and both
+survive reopen, whatever order their record slots were reserved in.
+
+Whole-Home frontier pins: a Home's `frontier_retention()` (Store Application) implements
+World's `RuntimeWorldRetentionPort`: `capture_and_pin_frontier(PinSpec)` returns a
+`PinnedFrontierLease` holding a sealed `HomeRootManifest`; `expire_lease`,
+`lease_state`, `pinned_manifest` and `settle_drained` drive `Active -> Expiring -> Expired`
+with `NestedDropPolicy`. `into_catalog_pin` keeps a pin for a durable catalog entry. Memory
+Homes use `VolatileHomeRetention` with the same verified state machine. Store-level owners
+use `ServingPhysicalRuntime::root_pins()` (`physical_runtime::stability::durable_pins`) directly.
+
 Native platform diagnostics inspect publication-medium ownership through
 `runtime.durability().has_bound_durable_medium()`. A fork can return false while
 retaining its original cold readers and transition history. This immutable

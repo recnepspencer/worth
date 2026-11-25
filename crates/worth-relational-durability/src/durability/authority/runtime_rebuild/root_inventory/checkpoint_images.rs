@@ -96,15 +96,8 @@ impl RecoveredRootInventory {
                             && header.recorded_components.contains(recorded.descriptor())
                     })
                     .ok_or_else(|| corrupt("recorded canonical header unavailable"))?;
-                let artifact = history
-                    .commit_artifact(header.commit_id)
-                    .ok_or_else(|| corrupt("recorded component has no actual catalog source"))?;
-                let (entry, source) = artifact
-                    .envelope_residency()
-                    .source_placement()
-                    .ok_or_else(|| corrupt("recorded component has no durable source"))?;
-                if !Arc::ptr_eq(&source, &directory.source)
-                    || entry.commit != *target.receipt()
+                let entry = durable_source_entry(history, &directory, header.commit_id)?;
+                if entry.commit != *target.receipt()
                     || entry.position != target.position()
                     || &entry.payload_digest != target.artifact_digest()
                     || &entry.root != target.roots()
@@ -114,17 +107,84 @@ impl RecoveredRootInventory {
                 regions.readmit_root(history, header, execution)?
             }
         };
-        if let RecoveredRootHold::Checkpoint(materialized) = &image.root {
-            let mut retained = materialized
-                .lock()
-                .unwrap_or_else(|poisoned| poisoned.into_inner());
-            if let Some(existing) = retained.upgrade() {
-                return Ok(existing);
-            }
-            *retained = Arc::downgrade(&root);
-        }
-        Ok(root)
+        Ok(retain_materialized(image, root))
     }
+
+    /// Rebuild the exact checkpoint root image of `commit_id`, whichever
+    /// retained component recorded it.
+    pub(super) fn materialize_commit_image(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        history: &HistorySubsystem,
+        schema: &RelationalSchemaRegistry,
+        symbols: &RuntimeSymbolTable,
+        commit_id: CommitId,
+        image: &RecoveredRootImage,
+    ) -> Result<Arc<RelationalBranchRoot>, RelationalRecoveryStop> {
+        let directory = self
+            .directory
+            .as_ref()
+            .and_then(Weak::upgrade)
+            .ok_or_else(|| corrupt("recorded checkpoint directory unavailable"))?;
+        let header = directory
+            .manifest
+            .roots
+            .iter()
+            .find(|header| header.commit_id == commit_id)
+            .ok_or_else(|| corrupt("retained fork source header unavailable"))?;
+        let entry = durable_source_entry(history, &directory, commit_id)?;
+        if entry.commit.commit_id != commit_id {
+            return Err(corrupt("retained fork source mismatch").into());
+        }
+        let mut regions =
+            crate::durability::checkpoints::region_directory::ReadmittedRegionDirectory::new(
+                directory.clone(),
+                symbols.clone(),
+                execution,
+                schema,
+            )?;
+        let root = regions.readmit_root(history, header, execution)?;
+        Ok(retain_materialized(image, root))
+    }
+}
+
+/// The commit's durable journal entry, which must come from this directory.
+fn durable_source_entry(
+    history: &HistorySubsystem,
+    directory: &Arc<crate::durability::data::RelationalCheckpointDirectory>,
+    commit_id: CommitId,
+) -> Result<
+    worth_relational_branch::internal_port::history::commit::index_entry::RelationalCommitIndexEntry,
+    RelationalRecoveryStop,
+>{
+    let artifact = history
+        .commit_artifact(commit_id)
+        .ok_or_else(|| corrupt("recorded component has no actual catalog source"))?;
+    let (entry, source) = artifact
+        .envelope_residency()
+        .source_placement()
+        .ok_or_else(|| corrupt("recorded component has no durable source"))?;
+    if !Arc::ptr_eq(&source, &directory.source) {
+        return Err(corrupt("recorded component source mismatch").into());
+    }
+    Ok(entry.as_ref().clone())
+}
+
+/// One materialized image row keeps a weak share; a concurrent winner is reused.
+fn retain_materialized(
+    image: &RecoveredRootImage,
+    root: Arc<RelationalBranchRoot>,
+) -> Arc<RelationalBranchRoot> {
+    if let RecoveredRootHold::Checkpoint(materialized) = &image.root {
+        let mut retained = materialized
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        if let Some(existing) = retained.upgrade() {
+            return existing;
+        }
+        *retained = Arc::downgrade(&root);
+    }
+    root
 }
 
 /// Only the owner rebinds an exact admitted header after verifying its root.
