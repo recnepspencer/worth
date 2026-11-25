@@ -22,6 +22,8 @@ pub(super) struct NativeProgramInput<S: ApplicationSchemaComposition, P> {
     pub(super) source: RuntimeBridgeRelationalSource,
     pub(super) ordinary: RuntimeBridge,
     pub(super) seed: Option<super::super::super::super::bootstrap::WorthQueryProgramActivationSeed>,
+    pub(super) metadata_readmission_authority:
+        Option<worth_relational::facade::durability::HomeReadmissionMetadataAuthority>,
 }
 struct RuntimeMeaning<S: ApplicationSchemaComposition> {
     runtime: WorthQueryExecutionRuntime,
@@ -67,6 +69,7 @@ pub(super) struct HomeProgramInstallationCustody<S:ApplicationSchemaComposition,
     pub(super) bindings:Option<QueryHomeAuthoredBindings>,
     _source:RuntimeBridgeRelationalSource,
     pub(super) ordinary:RuntimeBridge,
+    metadata_readmission_authority:Option<worth_relational::facade::durability::HomeReadmissionMetadataAuthority>,
 }
 pub struct QueryHomeSignalProgramPreparationRefused<S: ApplicationSchemaComposition, P> {
     _custody: RefusalCustody<S, P>,
@@ -100,6 +103,9 @@ impl<S: ApplicationSchemaComposition, P> HomeProgramInstallationCustody<S, P> {
         bootstrap: super::super::super::super::WorthQueryPrimaryGraphBootstrap<S>,
         source: RuntimeBridgeRelationalSource,
         ordinary: RuntimeBridge,
+        metadata_readmission_authority: Option<
+            worth_relational::facade::durability::HomeReadmissionMetadataAuthority,
+        >,
     ) -> Box<Self> {
         let HomeApplicationState {
             runtime,
@@ -170,6 +176,7 @@ impl<S: ApplicationSchemaComposition, P> HomeProgramInstallationCustody<S, P> {
             bindings: None,
             _source: source,
             ordinary,
+            metadata_readmission_authority,
         })
     }
     pub(super) fn refuse(
@@ -246,6 +253,7 @@ impl<S: ApplicationSchemaComposition, P> HomeProgramInstallationCustody<S, P> {
                 .readiness_routes
                 .take()
                 .expect("original readiness routes"),
+            metadata_readmission_authority: self.metadata_readmission_authority.take(),
         };
         super::program_installation::HomeSignalProgramParts {
             prepared,

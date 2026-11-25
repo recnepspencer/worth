@@ -81,6 +81,7 @@ pub struct SetPlanarHistoryStatusHandler;
 impl<S: TopologySchemaBinding> OperationHandler<S, SetPlanarHistoryStatusBinding<S>>
     for SetPlanarHistoryStatusHandler
 {
+    fn declared_durable_capabilities() -> Option<&'static [worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability]> { Some(&[worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability::RelationalMutation]) }
     fn decide(
         &self,
         input: &SetPlanarHistoryStatus,

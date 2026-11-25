@@ -13,6 +13,13 @@ pub enum WorthQueryGeneratedOutputSuspensionRecoveryStage {
     OwnerSettlement,
     /// Adopting the settled effects could not be prepared.
     AdoptionPreparation,
+    /// World retained an early durable open before Native preparation completed
+    /// and requires Home reopen before the original occurrence can be resolved.
+    ReopenRequired,
+    /// World retained an early attempt before Native preparation completed and
+    /// allows releasing the World recovery record directly via
+    /// `into_world_recovery()`.
+    ReleaseRequired,
     /// The adoption is not published yet; continue again.
     AdoptionPublication,
     /// Releasing an earlier recovery authority did not finish.

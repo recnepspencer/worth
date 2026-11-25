@@ -1,7 +1,7 @@
 //! Canonical completion protection retains its actual live or readmitted source.
 use super::*;
 use std::sync::Arc;
-use worth_runtime_world::facade::WorldReadmittedPublication;
+use worth_runtime_world::facade::WorldObservedHomePublication;
 
 pub enum InboundTerminalSource {
     Performed {
@@ -9,7 +9,7 @@ pub enum InboundTerminalSource {
         incarnation: ProductBranchIncarnation,
     },
     Readmitted {
-        world: WorldReadmittedPublication,
+        world: WorldObservedHomePublication,
         entity: worth_relational::facade::identity::EntityId,
     },
 }
@@ -17,13 +17,13 @@ impl InboundTerminalSource {
     pub fn incarnation(&self) -> ProductBranchIncarnation {
         match self {
             Self::Performed { incarnation, .. } => *incarnation,
-            Self::Readmitted { world, .. } => world.after().lifecycle_incarnation(),
+            Self::Readmitted { world, .. } => world.product_incarnation(),
         }
     }
     pub fn commit_identity(&self) -> &CompositeCommitIdentity {
         match self {
             Self::Performed { protection, .. } => protection.commit_identity(),
-            Self::Readmitted { world, .. } => world.after().selected_commit(),
+            Self::Readmitted { world, .. } => world.composite_commit(),
         }
     }
 }
@@ -51,12 +51,12 @@ impl WorthQueryInboundTerminalIndex {
     pub(super) fn retain_readmitted(
         &self,
         sealed: WorthQueryCanonicalInboundCompletion,
-        world: WorldReadmittedPublication,
+        world: WorldObservedHomePublication,
         entity: worth_relational::facade::identity::EntityId,
     ) -> Result<(), WorthQueryInboundTerminalIndexDenial> {
         use WorthQueryInboundTerminalIndexDenial as Denial;
-        if world.after().selected_commit() != sealed.completion_world_commit()
-            || world.attempt_identity() != sealed.completion_attempt()
+        if world.composite_commit() != sealed.completion_world_commit()
+            || world.publication_attempt() != sealed.completion_attempt()
             || world.native_receipt() != &sealed.completion_relational_commit
         {
             return Err(Denial::WorldPairMismatch);

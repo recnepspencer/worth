@@ -121,6 +121,7 @@ fn finish_application_commit_with_delivery<Schema: ApplicationSchema>(
     if let WorthQueryApplicationCommitOutcome::Committed(receipt) = &committed {
         if delivers_product {
             crate::domain_computation::primary_graph::application_contribution::record_advancement_commit(receipt);
+            let _ = application.flush_pending_coupled_outputs(execution);
         }
         if let Some(publication) = workflow_settlement_publication {
             publication.maintain(application, receipt);

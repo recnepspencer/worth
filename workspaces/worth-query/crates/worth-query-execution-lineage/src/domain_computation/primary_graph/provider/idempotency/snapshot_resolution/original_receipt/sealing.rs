@@ -1,9 +1,7 @@
 //! Only the two concrete owner input classes can mint original receipt data.
 use super::*;
 use worth_proof::QueryReadmitted;
-use worth_runtime_world::facade::{
-    ProductBranchReferenceSnapshot, WorldObservedMemoryPublication, WorldReadmittedPublication,
-};
+use worth_runtime_world::facade::{WorldObservedHomePublication, WorldObservedMemoryPublication};
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum PublicationOrigin {
@@ -27,7 +25,7 @@ pub struct OriginalReceiptRows {
 
 #[derive(Debug)]
 pub struct OriginalReceiptInputs {
-    pub publication: WorldReadmittedPublication,
+    pub publication: WorldObservedHomePublication,
     pub rows: OriginalReceiptRows,
 }
 impl worth_proof::AuthorityMarker for OriginalReceiptInputs {}
@@ -44,19 +42,30 @@ impl WorthQueryRecoveredApplicationCommitReceipt {
         original: QueryReadmitted<OriginalReceiptInputs>,
     ) -> Result<Self, super::super::WorthQueryProviderIdempotencyResolutionDenial> {
         original.consume(|original| {
-            let old_head = recorded_head(original.publication.before())?;
-            let new_head = recorded_head(original.publication.after())?;
-            let owner = new_head.durable().ok_or(super::super::WorthQueryProviderIdempotencyResolutionDenial::Unavailable)?.branch().owner();
-            let recorded = from_rows(original.rows, RecordedPublication {
-                old_head, new_head,
-                attempt: RecordedCompositePublicationAttemptIdentity::Home(worth_foundational::facade::DurableCompositePublicationAttemptIdentity::from_recorded(owner, original.publication.attempt_identity().ordinal())),
-                origin: PublicationOrigin::Home { position: original.publication.journal_position(), digest: *original.publication.artifact_digest(), publisher: original.publication.admitted_incarnation() },
-                semantic: original.publication.recovered_semantic_result().clone(),
-                native_position: original.publication.native_patch_position(),
-                native_digest: *original.publication.native_artifact_digest(),
-            });
+            let old_head = RecordedProductBranchReference::Home(original.publication.before().clone());
+            let new_head = RecordedProductBranchReference::Home(original.publication.after().clone());
+            let recorded = from_rows(
+                original.rows,
+                RecordedPublication {
+                    old_head,
+                    new_head,
+                    attempt: RecordedCompositePublicationAttemptIdentity::Home(
+                        original.publication.attempt_identity(),
+                    ),
+                    origin: PublicationOrigin::Home {
+                        position: original.publication.journal_position(),
+                        digest: *original.publication.artifact_digest(),
+                        publisher: original.publication.admitted_incarnation(),
+                    },
+                    semantic: original.publication.recovered_semantic_result().clone(),
+                    native_position: original.publication.native_patch_position(),
+                    native_digest: *original.publication.native_artifact_digest(),
+                },
+            );
             drop(original.publication);
-            Ok(Self { original: Arc::new(recorded) })
+            Ok(Self {
+                original: Arc::new(recorded),
+            })
         })
     }
 
@@ -121,46 +130,5 @@ fn from_rows(rows: OriginalReceiptRows, publication: RecordedPublication) -> Rec
         semantic: publication.semantic,
         native_position: publication.native_position,
         native_digest: publication.native_digest,
-    }
-}
-
-fn recorded_head(
-    value: &ProductBranchReferenceSnapshot,
-) -> Result<
-    RecordedProductBranchReference,
-    super::super::WorthQueryProviderIdempotencyResolutionDenial,
-> {
-    use super::super::WorthQueryProviderIdempotencyResolutionDenial::Unavailable;
-    use worth_foundational::facade::{
-        DurableCompositeCommitIdentity, DurableProductBranchIdentity,
-        DurableProductBranchIncarnation, DurableProductBranchReference,
-        DurableProductReferenceGeneration, MemoryProductBranchReference,
-    };
-    let owner = value.branch_identity().owner_identity();
-    match owner.durable() {
-        Some(owner) => DurableProductBranchReference::from_recorded(
-            DurableProductBranchIdentity::from_recorded(
-                owner,
-                value.branch_identity().name().as_str().to_owned(),
-            )
-            .map_err(|_| Unavailable)?,
-            DurableProductBranchIncarnation::from_recorded(
-                owner,
-                value.lifecycle_incarnation().ordinal(),
-            ),
-            DurableProductReferenceGeneration::from_recorded(value.reference_generation().get()),
-            DurableCompositeCommitIdentity::from_recorded(owner, value.selected_commit().ordinal()),
-        )
-        .map(RecordedProductBranchReference::Home)
-        .map_err(|_| Unavailable),
-        None => MemoryProductBranchReference::from_observed(
-            owner.get(),
-            value.branch_identity().name().as_str().to_owned(),
-            value.lifecycle_incarnation().ordinal(),
-            value.reference_generation().get(),
-            value.selected_commit().ordinal(),
-        )
-        .map(RecordedProductBranchReference::Memory)
-        .map_err(|_| Unavailable),
     }
 }

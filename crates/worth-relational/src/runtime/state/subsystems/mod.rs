@@ -52,6 +52,7 @@ pub(crate) use lineage::{LineageState, ValidatedLineageEventBatch};
 pub(crate) use lineage_identity::LineageIdentityAllocator;
 pub(crate) use publication::PublicationSubsystem;
 pub(crate) use record_identity::{ReclaimedRecordSlot, RecordIdentitySubsystem};
+pub use schema_contract_runtime::HomeReadmissionMetadataKinds;
 pub(crate) use schema_contract_runtime::SchemaContractRuntimeSubsystem;
 #[cfg(test)]
 pub(crate) use services::SymbolReservationDenial;

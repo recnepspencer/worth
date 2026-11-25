@@ -13,29 +13,6 @@ pub enum WorthQueryApplicationPreparationDenial {
     Schema(WorthQueryInstalledApplicationSchemaDenial),
     Contributions(WorthQueryPrimaryGraphInstallationDenial),
     Graph(WorthQueryPrimaryGraphInstallationDenial),
-    /// Native target publication settled; a later installation phase refused.
-    /// The checkpoint preserves that actual successor for ordinary target restore.
-    CheckpointTransitionAcknowledged {
-        checkpoint: super::super::WorthQueryApplicationCheckpoint,
-        cause: Box<WorthQueryApplicationPreparationDenial>,
-    },
-    /// Native publication performed, but settlement refused its performed
-    /// witness. No World or acknowledged successor was issued.
-    CheckpointTransitionSettlementFailed(
-        Box<worth_relational::facade::transactions::TransactionCommitError>,
-    ),
-    /// Native publication settled, but closing its temporary snapshot refused.
-    CheckpointTransitionSnapshotCloseoutFailed {
-        commit_id: worth_relational::facade::history::CommitId,
-        denial: worth_relational::facade::snapshots::RelationalSnapshotReleaseDenial,
-    },
-    /// Native target settlement acknowledged, but checkpoint capture stopped.
-    CheckpointTransitionCaptureStopped(Box<super::WorthQueryCheckpointTransitionRecovery>),
-    /// Native settlement acknowledged; final installation refused with its
-    /// original cause and exact successor retained for checkpoint recovery.
-    CheckpointTransitionFinalizationStopped(Box<super::WorthQueryCheckpointTransitionRecovery>),
-    /// Caller stop policy refused before native transition performance.
-    CheckpointTransitionPolicyStopped(super::super::WorthQueryCheckpointCaptureDenial),
     InitialState(WorthQueryPrimaryGraphInstallationDenial),
     Publication(WorthQueryPrimaryGraphInstallationDenial),
     ConditionalPublication(
@@ -64,12 +41,6 @@ impl std::error::Error for WorthQueryApplicationPreparationDenial {
             | Self::ConditionalProgramMismatch
             | Self::ProgramAdmissionIncomplete => None,
             Self::WorkflowAuthorityRequiresProgram => None,
-            Self::CheckpointTransitionCaptureStopped(_)
-            | Self::CheckpointTransitionFinalizationStopped(_)
-            | Self::CheckpointTransitionSettlementFailed(_)
-            | Self::CheckpointTransitionSnapshotCloseoutFailed { .. } => None,
-            Self::CheckpointTransitionAcknowledged { cause, .. } => Some(cause.as_ref()),
-            Self::CheckpointTransitionPolicyStopped(error) => Some(error),
             Self::Schema(error) => Some(error),
             Self::Contributions(error)
             | Self::Graph(error)

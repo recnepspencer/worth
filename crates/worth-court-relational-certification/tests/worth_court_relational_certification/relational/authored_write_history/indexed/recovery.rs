@@ -116,12 +116,16 @@ fn index_rebuild_requires_owner_certified_canonical_evidence() {
         .unwrap();
     let checkpoint = runtime
         .durability_authority()
-        .native_checkpoint(&execution, execution.allocation_policy())
+        .native_checkpoint_with_policy(
+&execution,
+execution.allocation_policy(),
+worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None },
+)
         .unwrap();
     let mut recovered = runtime_with_test_schema();
     recovered
         .durability_recovery()
-        .restore_native_checkpoint(&execution, &checkpoint)
+        .restore_native_checkpoint(&execution, &checkpoint, worth_testkit_relational::cold_recovery::members_source(&checkpoint))
         .unwrap();
     let recovered_source = recovered
         .admit_branch_basis(

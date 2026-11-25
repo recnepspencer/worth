@@ -19,7 +19,7 @@ fn run(worker: bool) {
         .unwrap()
         .rows()[0]
         .native_id;
-    let before = super::failure::checkpoint(&host);
+    let before = super::failure::memory_basis_state(&host);
     let contacts = host.producer_contacts_on_this_thread_for_test();
     let outcome = request
         .advanced()
@@ -65,7 +65,7 @@ fn run(worker: bool) {
         2,
         "both real producers ran before final support refusal"
     );
-    super::failure::assert_model_unchanged(&host, &before);
+    super::failure::assert_memory_basis_unchanged(&host, &before);
     assert!(request
         .query(query::first_output::Read("first:a".into()))
         .execute()

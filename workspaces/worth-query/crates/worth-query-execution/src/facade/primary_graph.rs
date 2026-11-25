@@ -65,9 +65,8 @@ pub use worth_relational::facade::{
 };
 
 pub use crate::domain_computation::primary_graph::{
-    CheckpointAllocatorInspection, CheckpointRecordFrontier, CheckpointRecordIdentity,
-    CheckpointReservationAdvanceDenial, ExecutionRequest, VerificationCapacityStop,
-    WholeResultLiveStageForTest, WorthQueryAdmittedApplicationCapabilityAccess,
+    ExecutionRequest, VerificationCapacityStop, WholeResultLiveStageForTest,
+    WorthQueryAdmittedApplicationCapabilityAccess,
     WorthQueryAdmittedApplicationConditionalDefinition,
     WorthQueryAdmittedApplicationHistoryCapture, WorthQueryAdmittedApplicationOperation,
     WorthQueryAdmittedApplicationQueryControls, WorthQueryAdmittedApplicationQueryPlan,
@@ -80,7 +79,7 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryApplicationAuthorizationWorkEvidence, WorthQueryApplicationBasisObservation,
     WorthQueryApplicationBasisObserver, WorthQueryApplicationBasisReleaseOutcome,
     WorthQueryApplicationBasisSelectionIdentity, WorthQueryApplicationBatchReadDenial,
-    WorthQueryApplicationBatchResult, WorthQueryApplicationCheckpointInspection,
+    WorthQueryApplicationBatchResult,
     WorthQueryApplicationClosureEvidenceEntry, WorthQueryApplicationCommitAuthorityBinding,
     WorthQueryApplicationCommitDeferred, WorthQueryApplicationCommitDeferredKind,
     WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitDenialKind,
@@ -158,8 +157,7 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryBranchSetAdoptionRecoveryOutcome, WorthQueryBranchSetAdoptionRecoveryReleaseFailure,
     WorthQueryBranchSetAdoptionResumeDenial, WorthQueryBranchSetAdoptionResumeFailure,
     WorthQueryBridgeGranularDeliveryCounters, WorthQueryCapabilityRevocationProgram,
-    WorthQueryCapturedApplicationHistorySubjects, WorthQueryCheckpointInspectionDenial,
-    WorthQueryCheckpointModelBytes, WorthQueryCheckpointRecordClass,
+    WorthQueryCapturedApplicationHistorySubjects,
     WorthQueryClosedBranchSetAdoption, WorthQueryCommittedDispatchOutboxObservation,
     WorthQueryCommittedDispatchOutboxReadDenial, WorthQueryCommittedDispatchOutboxReadWork,
     WorthQueryCommittedProductPublication, WorthQueryCompleteApplicationReadSet,

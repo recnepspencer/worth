@@ -132,7 +132,7 @@ impl DurabilityAuthority<'_> {
     }
 }
 
-pub(in crate::durability::authority) fn current_settlement(
+pub(crate) fn current_settlement(
     subject: &RelationalAssociatedEffectSubject,
     runtime: &crate::runtime::RelationalRuntime,
 ) -> Option<RelationalAssociatedEffectSettlement> {

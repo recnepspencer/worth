@@ -2,18 +2,233 @@
 use super::WorthQueryReadmittedAcceptedOutput;
 use crate::domain_computation::{
     authorization::WorthQueryOperationScopeEntityBinding,
-    primary_graph::{
-        application_checkpoint::{
-            CheckpointDecodeDenial, CheckpointMetadataFunding, DecodedApplicationCheckpoint,
-        },
-        WorthQueryPrimaryGraphInstallationDenial as Denial,
-    },
+    primary_graph::application_checkpoint::{CheckpointDecodeDenial, CheckpointMetadataFunding},
 };
+
+struct ObligationBasisPinSlot<O> {
+    _observation: O,
+    in_flight: usize,
+}
+
+pub(crate) struct PinTable<O> {
+    slots: std::sync::Arc<
+        std::sync::Mutex<
+            std::collections::BTreeMap<
+                worth_foundational::facade::DurableCompositeCommitIdentity,
+                ObligationBasisPinSlot<O>,
+            >,
+        >,
+    >,
+}
+
+impl<O> Clone for PinTable<O> {
+    fn clone(&self) -> Self {
+        Self {
+            slots: std::sync::Arc::clone(&self.slots),
+        }
+    }
+}
+
+impl<O> Default for PinTable<O> {
+    fn default() -> Self {
+        Self {
+            slots: std::sync::Arc::new(std::sync::Mutex::new(std::collections::BTreeMap::new())),
+        }
+    }
+}
+
+impl<O> PinTable<O> {
+    pub(crate) fn has_pin(
+        &self,
+        commit: worth_foundational::facade::DurableCompositeCommitIdentity,
+    ) -> bool {
+        self.slots
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .contains_key(&commit)
+    }
+
+    pub(crate) fn pin_durable(
+        &self,
+        commit: worth_foundational::facade::DurableCompositeCommitIdentity,
+        observation: O,
+    ) {
+        self.slots
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .entry(commit)
+            .or_insert(ObligationBasisPinSlot {
+                _observation: observation,
+                in_flight: 0,
+            });
+    }
+
+    pub(crate) fn try_increment_in_flight(
+        &self,
+        commit: worth_foundational::facade::DurableCompositeCommitIdentity,
+    ) -> bool {
+        let mut slots = self
+            .slots
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let Some(slot) = slots.get_mut(&commit) else {
+            return false;
+        };
+        slot.in_flight += 1;
+        true
+    }
+
+    pub(crate) fn insert_and_increment_in_flight(
+        &self,
+        commit: worth_foundational::facade::DurableCompositeCommitIdentity,
+        observation: O,
+    ) {
+        let mut slots = self
+            .slots
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let slot = slots.entry(commit).or_insert(ObligationBasisPinSlot {
+            _observation: observation,
+            in_flight: 0,
+        });
+        slot.in_flight += 1;
+    }
+
+    pub(crate) fn release_in_flight(
+        &self,
+        commit: worth_foundational::facade::DurableCompositeCommitIdentity,
+        mut still_active: impl FnMut(worth_foundational::facade::DurableCompositeCommitIdentity) -> bool,
+    ) {
+        let mut slots = self
+            .slots
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if let Some(slot) = slots.get_mut(&commit) {
+            slot.in_flight = slot.in_flight.saturating_sub(1);
+            if slot.in_flight == 0 && !still_active(commit) {
+                slots.remove(&commit);
+            }
+        }
+    }
+
+    pub(crate) fn prune(
+        &self,
+        mut still_active: impl FnMut(worth_foundational::facade::DurableCompositeCommitIdentity) -> bool,
+    ) {
+        self.slots
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .retain(|commit, slot| slot.in_flight > 0 || still_active(*commit));
+    }
+
+    pub(crate) fn clear(&self) {
+        self.slots
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .clear();
+    }
+}
+
+/// Shared pin custody for durably retained output demands and sources.
+/// In-flight guards prevent concurrent pruners from dropping a pin before its
+/// journal frame is staged or committed.
+#[derive(Clone, Default)]
+pub struct ObligationBasisPins {
+    table: PinTable<worth_runtime_world::facade::ProductBranchObservation>,
+}
+
+impl ObligationBasisPins {
+    pub fn has_pin(
+        &self,
+        commit: worth_foundational::facade::DurableCompositeCommitIdentity,
+    ) -> bool {
+        self.table.has_pin(commit)
+    }
+
+    pub fn pin_durable(
+        &self,
+        commit: worth_foundational::facade::DurableCompositeCommitIdentity,
+        observation: worth_runtime_world::facade::ProductBranchObservation,
+    ) {
+        self.table.pin_durable(commit, observation);
+    }
+
+    pub fn try_retain_in_flight(
+        &self,
+        commit: worth_foundational::facade::DurableCompositeCommitIdentity,
+        history: std::sync::Arc<
+            crate::domain_computation::primary_graph::query_obligations::history::QueryObligationHistory,
+        >,
+    ) -> Option<ObligationBasisPinGuard> {
+        self.table
+            .try_increment_in_flight(commit)
+            .then(|| ObligationBasisPinGuard {
+                pins: self.clone(),
+                history,
+                commit,
+            })
+    }
+
+    pub fn pin_in_flight(
+        &self,
+        commit: worth_foundational::facade::DurableCompositeCommitIdentity,
+        observation: worth_runtime_world::facade::ProductBranchObservation,
+        history: std::sync::Arc<
+            crate::domain_computation::primary_graph::query_obligations::history::QueryObligationHistory,
+        >,
+    ) -> ObligationBasisPinGuard {
+        self.table
+            .insert_and_increment_in_flight(commit, observation);
+        ObligationBasisPinGuard {
+            pins: self.clone(),
+            history,
+            commit,
+        }
+    }
+
+    fn release_in_flight(
+        &self,
+        commit: worth_foundational::facade::DurableCompositeCommitIdentity,
+        still_active: impl FnMut(worth_foundational::facade::DurableCompositeCommitIdentity) -> bool,
+    ) {
+        self.table.release_in_flight(commit, still_active);
+    }
+
+    pub fn prune(
+        &self,
+        still_active: impl FnMut(worth_foundational::facade::DurableCompositeCommitIdentity) -> bool,
+    ) {
+        self.table.prune(still_active);
+    }
+
+    pub fn clear(&self) {
+        self.table.clear();
+    }
+}
+
+/// RAII custody keeping a basis pin resident across an in-flight obligation
+/// publication until the frame is staged/acknowledged or proven no-effect.
+pub struct ObligationBasisPinGuard {
+    pins: ObligationBasisPins,
+    history: std::sync::Arc<
+        crate::domain_computation::primary_graph::query_obligations::history::QueryObligationHistory,
+    >,
+    commit: worth_foundational::facade::DurableCompositeCommitIdentity,
+}
+
+impl Drop for ObligationBasisPinGuard {
+    fn drop(&mut self) {
+        self.pins.release_in_flight(self.commit, |commit| {
+            self.history.has_active_output_basis(commit)
+        });
+    }
+}
 
 #[derive(Default)]
 pub struct WorthQueryRecoveredOutputs {
     checkpoint: RecoveredOutputRecords,
     journal: std::sync::OnceLock<RecoveredOutputRecords>,
+    obligation_basis_pins: ObligationBasisPins,
 }
 #[derive(Default)]
 struct RecoveredOutputRecords {
@@ -40,51 +255,54 @@ impl WorthQueryRecoveredOutputs {
                 .map_err(super::super::WorthQueryHomeRetirementDenial::Execution)?;
             record.observation = None;
         }
+        self.obligation_basis_pins.clear();
         Ok(())
     }
-    pub fn from_checkpoint(
-        checkpoint: DecodedApplicationCheckpoint,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        mut readmit: impl FnMut(
-            &super::WorthQueryAcceptedOutputCheckpointIdentity,
-        ) -> Result<
-            std::sync::Arc<
-                crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
-            >,
-            CheckpointDecodeDenial,
+    pub fn basis_pins_handle(&self) -> ObligationBasisPins {
+        self.obligation_basis_pins.clone()
+    }
+    /// Pin the World basis commit for a durably retained output demand or source
+    /// obligation so automatic history retirement does not dispose it before
+    /// readmission or discharge. Released on discharge and on Home close.
+    pub fn has_obligation_basis_pin(
+        &self,
+        commit: worth_foundational::facade::DurableCompositeCommitIdentity,
+    ) -> bool {
+        self.obligation_basis_pins.has_pin(commit)
+    }
+    pub fn pin_obligation_basis(
+        &self,
+        commit: worth_foundational::facade::DurableCompositeCommitIdentity,
+        observation: worth_runtime_world::facade::ProductBranchObservation,
+    ) {
+        self.obligation_basis_pins.pin_durable(commit, observation);
+    }
+    pub fn try_retain_obligation_basis_in_flight(
+        &self,
+        commit: worth_foundational::facade::DurableCompositeCommitIdentity,
+        history: std::sync::Arc<
+            crate::domain_computation::primary_graph::query_obligations::history::QueryObligationHistory,
         >,
-    ) -> Result<Self, Denial> {
-        let DecodedApplicationCheckpoint {
-            accepted_outputs,
-            mut metadata,
-            ..
-        } = checkpoint;
-        let count = accepted_outputs.len();
-        let old_capacity = accepted_outputs.capacity();
-        let mut records = metadata
-            .vec::<WorthQueryReadmittedAcceptedOutput>(count, execution)
-            .map_err(CheckpointDecodeDenial::into_installation_denial)?;
-        for accepted in accepted_outputs {
-            metadata
-                .check_live(execution)
-                .map_err(CheckpointDecodeDenial::into_installation_denial)?;
-            let correspondence =
-                readmit(&accepted).map_err(CheckpointDecodeDenial::into_installation_denial)?;
-            records.push(WorthQueryReadmittedAcceptedOutput {
-                observation: None,
-                checkpoint: accepted,
-                correspondence,
-            });
-        }
-        // The consumed Vec allocation is gone; only its moved nested heaps remain.
-        metadata
-            .release_slots::<super::WorthQueryAcceptedOutputCheckpointIdentity>(old_capacity)
-            .map_err(CheckpointDecodeDenial::into_installation_denial)?;
-        Ok(Self {
-            checkpoint: RecoveredOutputRecords::from_records(records, metadata, execution)
-                .map_err(CheckpointDecodeDenial::into_installation_denial)?,
-            journal: std::sync::OnceLock::new(),
-        })
+    ) -> Option<ObligationBasisPinGuard> {
+        self.obligation_basis_pins
+            .try_retain_in_flight(commit, history)
+    }
+    pub fn pin_obligation_basis_in_flight(
+        &self,
+        commit: worth_foundational::facade::DurableCompositeCommitIdentity,
+        observation: worth_runtime_world::facade::ProductBranchObservation,
+        history: std::sync::Arc<
+            crate::domain_computation::primary_graph::query_obligations::history::QueryObligationHistory,
+        >,
+    ) -> ObligationBasisPinGuard {
+        self.obligation_basis_pins
+            .pin_in_flight(commit, observation, history)
+    }
+    pub fn prune_obligation_basis_pins(
+        &self,
+        still_active: impl FnMut(worth_foundational::facade::DurableCompositeCommitIdentity) -> bool,
+    ) {
+        self.obligation_basis_pins.prune(still_active);
     }
     pub fn readmit_journal(
         &self,
@@ -165,4 +383,5 @@ impl RecoveredOutputRecords {
     }
 }
 
-mod court_doors_for_test;
+#[cfg(test)]
+mod tests;

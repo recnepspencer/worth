@@ -195,6 +195,12 @@ pub(super) type Application<
     CheckpointSchema,
     OracleProgram<REUSE, WORK, RUNS, MODE>,
 >;
+pub(super) type DirApplication<
+    const REUSE: bool = false,
+    const WORK: usize = TOTALS_WORK,
+    const RUNS: usize = 1,
+    const MODE: u8 = 0,
+> = support::DirectoryApp<CheckpointSchema, OracleProgram<REUSE, WORK, RUNS, MODE>>;
 pub(super) type Request<'application, 'principal, 'scope> =
     WorthQueryApplicationRequest<'application, 'principal, 'scope, CheckpointSchema>;
 
@@ -223,12 +229,12 @@ pub(super) fn install_variant<
     const RUNS: usize,
     const MODE: u8,
 >(
-    checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
+    _: Option<()>,
     profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
     seed: impl FnOnce(&mut Graph),
 ) -> Application<REUSE, WORK, RUNS, MODE> {
     install_variant_with_observations::<REUSE, WORK, RUNS, MODE>(
-        checkpoint,
+        None,
         profile,
         0,
         support::observation::CHECKPOINT_EXECUTION_POLICY,
@@ -242,7 +248,7 @@ pub(super) fn install_variant_with_observations<
     const RUNS: usize,
     const MODE: u8,
 >(
-    checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
+    _: Option<()>,
     profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
     additional_observations: u64,
     execution_policy: worth_foundational::ExecutionRequestPolicy,
@@ -263,27 +269,77 @@ pub(super) fn install_variant_with_observations<
         support::seed_cycle(graph);
         seed(graph);
     };
-    match checkpoint {
-        Some(checkpoint) => support::install_program_with_limits::<
-            OracleProgram<REUSE, WORK, RUNS, MODE>,
-        >(Some(checkpoint), profile, limits, seed),
-        None => worth_query_host::facade::application_contribution::with_bootstrap_advancement(
-            support::observation::POPULATION_BOOTSTRAP_POLICY,
-            |phase| {
-                support::install_program_in_bootstrap::<OracleProgram<REUSE, WORK, RUNS, MODE>>(
-                    &phase, profile, limits, seed,
-                )
-            },
+    support::install_program_with_limits::<OracleProgram<REUSE, WORK, RUNS, MODE>>(
+        None, profile, limits, seed,
+    )
+}
+
+pub(super) fn open_directory_variant_with_observations<
+    const REUSE: bool,
+    const WORK: usize,
+    const RUNS: usize,
+    const MODE: u8,
+>(
+    directory: Option<std::path::PathBuf>,
+    profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
+    additional_observations: u64,
+    execution_policy: worth_foundational::ExecutionRequestPolicy,
+    seed: impl FnOnce(&mut Graph),
+) -> DirApplication<REUSE, WORK, RUNS, MODE> {
+    open_directory_variant_with_build::<REUSE, WORK, RUNS, MODE>(
+        directory,
+        profile,
+        additional_observations,
+        execution_policy,
+        seed,
+        application_installation::ApplicationBuildIdentity::parse(
+            "11111111-1111-1111-1111-111111111111",
         )
-        .expect("the original fixture setup request opens")
-        .expect("the seed installs under its own request, keeping World policy"),
-    }
+        .unwrap(),
+    )
+}
+
+pub(super) fn open_directory_variant_with_build<
+    const REUSE: bool,
+    const WORK: usize,
+    const RUNS: usize,
+    const MODE: u8,
+>(
+    directory: Option<std::path::PathBuf>,
+    profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
+    additional_observations: u64,
+    execution_policy: worth_foundational::ExecutionRequestPolicy,
+    seed: impl FnOnce(&mut Graph),
+    build_identity: application_installation::ApplicationBuildIdentity,
+) -> DirApplication<REUSE, WORK, RUNS, MODE> {
+    const RETAINED_COMMITS: u64 = 32;
+    let invalidation = worth_query_host::facade::runtime::WorthQueryInvalidationResources::new();
+    let limits = support::limits_with_history_and_policy(
+        RETAINED_COMMITS + additional_observations,
+        16 + additional_observations,
+        64 + 3 * additional_observations,
+        invalidation,
+        524_288 + 4_096 * additional_observations,
+        execution_policy,
+        authentication::WorthQueryAdmissionClock::system(),
+    );
+    let seed = |graph: &mut Graph| {
+        support::seed_cycle(graph);
+        seed(graph);
+    };
+    support::open_directory_program_with_limits_and_build::<OracleProgram<REUSE, WORK, RUNS, MODE>>(
+        directory,
+        profile,
+        limits,
+        seed,
+        build_identity,
+    )
 }
 
 pub(super) fn install_configured<const REUSE: bool, const WORK: usize, const RUNS: usize>(
-    checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
+    _: Option<()>,
     profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
     seed: impl FnOnce(&mut Graph),
 ) -> Application<REUSE, WORK, RUNS> {
-    install_variant::<REUSE, WORK, RUNS, 0>(checkpoint, profile, seed)
+    install_variant::<REUSE, WORK, RUNS, 0>(None, profile, seed)
 }

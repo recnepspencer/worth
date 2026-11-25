@@ -64,7 +64,7 @@ fn record_pre_historical_selection_chk20_store() {
     release_test_commit_snapshot(&runtime, &publication);
     let checkpoint = runtime
         .durability_authority()
-        .native_checkpoint(execution, execution.allocation_policy())
+        .native_checkpoint_with_policy(execution, execution.allocation_policy(), worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
         .unwrap();
     let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../worth-testkit-relational/assets/fixtures/history_pre_historical_selection_chk20");

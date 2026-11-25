@@ -1,5 +1,5 @@
 use super::super::ports::RuntimeWorldObservationService;
-use super::super::RuntimeWorldOwnerUnavailable;
+use super::super::{RuntimeWorldOwnerUnavailable, RuntimeWorldServiceDenial as ServiceDenial};
 use std::sync::{Arc, Weak};
 
 /// Weak access to the owning World's observation service.
@@ -16,11 +16,40 @@ impl RuntimeWorldObservationPort {
         effect: worth_relational::facade::durability::ObservedRelationalMemoryCommit,
     ) -> Result<
         crate::history::WorldObservedMemoryPublication,
-        super::super::RuntimeWorldServiceDenial<crate::history::WorldReadmittedPublicationDenial>,
+        ServiceDenial<crate::history::WorldReadmittedPublicationDenial>,
     > {
         self.service()?
             .observe_memory_original_publication(execution, effect)
-            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+            .map_err(ServiceDenial::Denied)
+    }
+    /// Observe one durable Home's original World occurrence and Native effect
+    /// without pinning live history, so retired commits remain replayable.
+    pub fn observe_home_original_publication(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        effect: worth_relational::facade::durability::ReadmittedRelationalAssociatedEffect,
+    ) -> Result<
+        crate::history::WorldObservedHomePublication,
+        ServiceDenial<crate::history::WorldReadmittedPublicationDenial>,
+    > {
+        self.service()?
+            .observe_home_original_publication(execution, effect)
+            .map_err(ServiceDenial::Denied)
+    }
+    /// Observe one durable Home's original World occurrence and Native effect,
+    /// also resolving the recorded empty-branch before component when needed
+    /// for first-generation component export.
+    pub fn observe_home_original_publication_with_before_component(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        effect: worth_relational::facade::durability::ReadmittedRelationalAssociatedEffect,
+    ) -> Result<
+        crate::history::WorldObservedHomePublication,
+        ServiceDenial<crate::history::WorldReadmittedPublicationDenial>,
+    > {
+        self.service()?
+            .observe_home_original_publication_with_before_component(execution, effect)
+            .map_err(ServiceDenial::Denied)
     }
     /// Read the original durable occurrence for this exact Native owner-admitted
     /// effect. Reconstruction reads the selected World image and bounded tails;
@@ -31,11 +60,11 @@ impl RuntimeWorldObservationPort {
         effect: worth_relational::facade::durability::ReadmittedRelationalAssociatedEffect,
     ) -> Result<
         crate::history::WorldReadmittedPublication,
-        super::super::RuntimeWorldServiceDenial<crate::history::WorldReadmittedPublicationDenial>,
+        ServiceDenial<crate::history::WorldReadmittedPublicationDenial>,
     > {
         self.service()?
             .readmitted_native_publication(execution, effect)
-            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+            .map_err(ServiceDenial::Denied)
     }
     /// Lookup coordinates are durable data; an old process-issued identity is
     /// not a current-owner capability and cannot cross this boundary.
@@ -197,31 +226,41 @@ impl RuntimeWorldObservationPort {
         }
         Ok(service)
     }
+    /// Enumerate installed branch metadata without charging observation slots.
+    pub fn installed_product_branches(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        crate::branch::InstalledProductBranches,
+        ServiceDenial<crate::branch::ProductBranchInventoryDenial>,
+    > {
+        self.service()?
+            .installed_product_branches(execution)
+            .map_err(ServiceDenial::Denied)
+    }
     /// Enumerate actual installed World branches, never a consumer coordination map.
     pub fn observe_installed_product_branches(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
         crate::branch::ObservedProductBranches,
-        super::super::RuntimeWorldServiceDenial<crate::branch::ProductBranchInventoryDenial>,
+        ServiceDenial<crate::branch::ProductBranchInventoryDenial>,
     > {
         self.service()?
             .observe_installed_product_branches(execution)
-            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+            .map_err(ServiceDenial::Denied)
     }
-
     pub fn observe_product_branch(
         &self,
         branch: &crate::identity::ProductBranchIdentity,
     ) -> Result<
         crate::branch::ProductBranchObservation,
-        super::super::RuntimeWorldServiceDenial<crate::branch::RuntimeWorldBranchAdmissionDenial>,
+        ServiceDenial<crate::branch::RuntimeWorldBranchAdmissionDenial>,
     > {
         self.service()?
             .observe_product_branch(branch)
-            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+            .map_err(ServiceDenial::Denied)
     }
-
     /// Resolves one owner-issued live occurrence without exposing or
     /// reconstructing its name-keyed product identity.
     pub fn observe_product_branch_occurrence(
@@ -229,11 +268,11 @@ impl RuntimeWorldObservationPort {
         occurrence: crate::identity::ProductBranchIncarnation,
     ) -> Result<
         crate::branch::ProductBranchObservation,
-        super::super::RuntimeWorldServiceDenial<crate::branch::RuntimeWorldBranchAdmissionDenial>,
+        ServiceDenial<crate::branch::RuntimeWorldBranchAdmissionDenial>,
     > {
         self.service()?
             .observe_product_branch_occurrence(occurrence)
-            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+            .map_err(ServiceDenial::Denied)
     }
 
     /// Selects one retained source on this exact target's inherited ancestry.
@@ -247,13 +286,11 @@ impl RuntimeWorldObservationPort {
         maximum: Option<std::num::NonZeroUsize>,
     ) -> Result<
         crate::branch::ProductBranchAncestorSelection,
-        super::super::RuntimeWorldServiceDenial<
-            crate::branch::ProductBranchAncestorSelectionDenial,
-        >,
+        ServiceDenial<crate::branch::ProductBranchAncestorSelectionDenial>,
     > {
         self.service()?
             .select_product_branch_ancestor(execution, target, source, maximum)
-            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+            .map_err(ServiceDenial::Denied)
     }
 
     /// Proves ancestry between retained endpoints using owner-recorded retirement
@@ -267,13 +304,11 @@ impl RuntimeWorldObservationPort {
         maximum: Option<std::num::NonZeroUsize>,
     ) -> Result<
         crate::branch::ProductBranchAncestorSelection,
-        super::super::RuntimeWorldServiceDenial<
-            crate::branch::ProductBranchAncestorSelectionDenial,
-        >,
+        ServiceDenial<crate::branch::ProductBranchAncestorSelectionDenial>,
     > {
         self.service()?
             .select_retained_product_branch_ancestor(execution, target, source, maximum)
-            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+            .map_err(ServiceDenial::Denied)
     }
 
     /// Open at exactly the retained observation, with one catalog admission
@@ -284,11 +319,11 @@ impl RuntimeWorldObservationPort {
         target: &crate::branch::ProductBranchObservation,
     ) -> Result<
         crate::branch::ProductExactHistoryCursor,
-        super::super::RuntimeWorldServiceDenial<crate::branch::ProductExactHistoryDenial>,
+        ServiceDenial<crate::branch::ProductExactHistoryDenial>,
     > {
         self.service()?
             .open_exact_product_history(execution, target)
-            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+            .map_err(ServiceDenial::Denied)
     }
 
     /// Prepare one genuine product-parent step. Its sealed result retains the
@@ -299,11 +334,26 @@ impl RuntimeWorldObservationPort {
         cursor: &crate::branch::ProductExactHistoryCursor,
     ) -> Result<
         crate::branch::PreparedProductExactHistoryPage<'request, 'authority>,
-        super::super::RuntimeWorldServiceDenial<crate::branch::ProductExactHistoryDenial>,
+        ServiceDenial<crate::branch::ProductExactHistoryDenial>,
     > {
         self.service()?
             .prepare_exact_product_history_page(execution, cursor)
-            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+            .map_err(ServiceDenial::Denied)
+    }
+
+    /// Prepare one retained product-parent step, following owner-recorded
+    /// retirement splices across retired interior commits.
+    pub fn prepare_retained_product_history_page<'request, 'authority>(
+        &self,
+        execution: worth_execution::ExecutionRequest<'request, 'authority>,
+        cursor: &crate::branch::ProductExactHistoryCursor,
+    ) -> Result<
+        crate::branch::PreparedProductExactHistoryPage<'request, 'authority>,
+        ServiceDenial<crate::branch::ProductExactHistoryDenial>,
+    > {
+        self.service()?
+            .prepare_retained_product_history_page(execution, cursor)
+            .map_err(ServiceDenial::Denied)
     }
 
     pub fn trace_product_branch_ancestry(
@@ -313,11 +363,11 @@ impl RuntimeWorldObservationPort {
         maximum: Option<std::num::NonZeroUsize>,
     ) -> Result<
         crate::branch::ProductBranchHistoryTraversal,
-        super::super::RuntimeWorldServiceDenial<crate::branch::RuntimeWorldBranchAdmissionDenial>,
+        ServiceDenial<crate::branch::RuntimeWorldBranchAdmissionDenial>,
     > {
         self.service()?
             .trace_product_branch_ancestry(execution, occurrence, maximum)
-            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+            .map_err(ServiceDenial::Denied)
     }
 
     pub fn continue_product_branch_ancestry(
@@ -327,11 +377,11 @@ impl RuntimeWorldObservationPort {
         maximum: Option<std::num::NonZeroUsize>,
     ) -> Result<
         crate::branch::ProductBranchHistoryTraversal,
-        super::super::RuntimeWorldServiceDenial<crate::branch::RuntimeWorldBranchAdmissionDenial>,
+        ServiceDenial<crate::branch::RuntimeWorldBranchAdmissionDenial>,
     > {
         self.service()?
             .continue_product_branch_ancestry(execution, previous, maximum)
-            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+            .map_err(ServiceDenial::Denied)
     }
 
     pub fn observe_product_branch_history_entry(
@@ -340,10 +390,10 @@ impl RuntimeWorldObservationPort {
         index: usize,
     ) -> Result<
         crate::branch::ProductBranchObservation,
-        super::super::RuntimeWorldServiceDenial<crate::branch::RuntimeWorldBranchAdmissionDenial>,
+        ServiceDenial<crate::branch::RuntimeWorldBranchAdmissionDenial>,
     > {
         self.service()?
             .observe_product_branch_history_entry(history, index)
-            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+            .map_err(ServiceDenial::Denied)
     }
 }

@@ -28,10 +28,11 @@ fn capture(
 ) -> RelationalNativeCheckpoint {
     runtime
         .durability_authority()
-        .native_checkpoint(
-            execution,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .native_checkpoint_with_policy(
+execution,
+worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None },
+)
         .unwrap()
 }
 
@@ -60,7 +61,7 @@ fn restore(
     let mut recovered = memory_runtime();
     recovered
         .durability_recovery()
-        .restore_native_checkpoint(execution, native)
+        .restore_native_checkpoint(execution, native, worth_testkit_relational::cold_recovery::members_source(native))
         .unwrap();
     recovered
 }

@@ -1,4 +1,3 @@
-use worth_relational_durability::internal_port::durability::authority::checkpoint_complete::interim::component::CapturedNativeInterimAdmissionOwnerPort as _;
 use super::owner_binding::RelationalOwnerServiceBinding;
 use crate::branch::{
     AdmittedRelationalBranchBasis, RelationalBranchBasisDenial, RelationalBranchBasisDescriptor,
@@ -17,80 +16,6 @@ pub struct RelationalBranchBasisPort {
 }
 
 impl RelationalBranchBasisPort {
-    pub fn capture_interim_bootstrap_component(
-        &self,
-        request: &worth_execution::ExecutionRequest<'_, '_>,
-        continuation: &crate::durability::authority::checkpoint_complete::interim::bootstrap::NativeInterimBootstrapContinuation,
-        capture: &crate::durability::authority::CapturedNativeInterimAdmission,
-    ) -> Result<
-        crate::durability::authority::CapturedNativeInterimComponent,
-        crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal,
-    > {
-        let runtime = self.admitted_runtime().map_err(|_| crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal::OwnerUnavailable)?;
-        continuation.capture_current(&runtime, capture, request)
-    }
-    pub fn install_interim_bootstrap_receiver(
-        &self,
-        request: &worth_execution::ExecutionRequest<'_, '_>,
-        continuation: &crate::durability::authority::checkpoint_complete::interim::bootstrap::NativeInterimBootstrapContinuation,
-        receiver: &crate::durability::authority::checkpoint_complete::interim::receiver::AdmittedNativeInterimReceiver,
-        basis: &AdmittedRelationalBranchBasis,
-    ) -> Result<(), crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal>
-    {
-        let runtime = self.admitted_runtime().map_err(|_| crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal::OwnerUnavailable)?;
-        continuation.install_receiver(&runtime, receiver, basis, request)
-    }
-    pub fn capture_interim_current_memory_component(
-        &self,
-        request: &worth_execution::ExecutionRequest<'_, '_>,
-        capture: &crate::durability::authority::CapturedNativeInterimAdmission,
-        component: &crate::branch::ObservedRelationalMemoryComponent,
-    ) -> Result<
-        crate::durability::authority::CapturedNativeInterimComponent,
-        crate::branch::RelationalRecordedComponentRefusal,
-    > {
-        let runtime = self
-            .admitted_runtime()
-            .map_err(crate::branch::RelationalRecordedComponentRefusal::Basis)?;
-        capture.capture_current_component(
-            &runtime.services.origin_identity(),
-            &runtime.history,
-            component,
-            request,
-        )
-    }
-    pub fn capture_interim_memory_component(
-        &self,
-        request: &worth_execution::ExecutionRequest<'_, '_>,
-        capture: &crate::durability::authority::CapturedNativeInterimAdmission,
-        component: &crate::branch::ObservedRelationalMemoryComponent,
-    ) -> Result<
-        crate::durability::authority::CapturedNativeInterimComponent,
-        crate::branch::RelationalRecordedComponentRefusal,
-    > {
-        let runtime = self
-            .admitted_runtime()
-            .map_err(crate::branch::RelationalRecordedComponentRefusal::Basis)?;
-        capture.capture_component(
-            &runtime.services.origin_identity(),
-            &runtime.history,
-            component,
-            request,
-        )
-    }
-
-    pub fn readmit_interim_memory_component(
-        &self,
-        request: &worth_execution::ExecutionRequest<'_, '_>,
-        receiver: &crate::durability::authority::checkpoint_complete::interim::receiver::AdmittedNativeInterimReceiver,
-        component: &crate::durability::authority::CapturedNativeInterimComponent,
-    ) -> Result<
-        crate::branch::ObservedRelationalMemoryComponent,
-        crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal,
-    > {
-        let runtime = self.admitted_runtime().map_err(|_| crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal::OwnerUnavailable)?;
-        receiver.readmit_component(&runtime, component, request)
-    }
     pub(super) fn matches_home_retirement_owner(
         &self,
         owner: &crate::runtime::RelationalRuntime,
@@ -169,6 +94,25 @@ impl RelationalBranchBasisPort {
         self.admitted_runtime()
             .map_err(crate::branch::RelationalRecordedComponentRefusal::Basis)?
             .export_memory_component(execution, component)
+    }
+
+    /// Describe the original predecessor and successor components directly from
+    /// a readmitted durable Native effect without requiring live branch history.
+    pub fn export_recorded_effect_components(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        effect: &crate::durability::authority::ReadmittedRelationalAssociatedEffect,
+        recorded_empty_before: Option<&crate::branch::RecordedRelationalComponentReference>,
+    ) -> Result<
+        (
+            crate::branch::RecordedRelationalComponentReference,
+            crate::branch::RecordedRelationalComponentReference,
+        ),
+        crate::branch::RelationalRecordedComponentRefusal,
+    > {
+        self.admitted_runtime()
+            .map_err(crate::branch::RelationalRecordedComponentRefusal::Basis)?
+            .export_recorded_effect_components(execution, effect, recorded_empty_before)
     }
 
     /// Describe the original owner-admitted pinned subject independently of

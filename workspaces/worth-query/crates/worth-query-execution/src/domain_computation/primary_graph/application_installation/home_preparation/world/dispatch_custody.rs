@@ -42,6 +42,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
                     .inspection_port(),
                 continuable_native,
                 unpublished_native,
+                self.metadata_readmission_authority.as_ref(),
             )
             .map_err(Denial::DispatchOutbox)?
         {

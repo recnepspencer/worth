@@ -13,7 +13,9 @@ pub use worth_query_decl::facade::{
 pub mod contract;
 #[path = "governed_read/runtime.rs"]
 pub mod runtime;
-pub use runtime::{install, GovernedRuntime};
+pub use runtime::{
+    install, open_directory, GovernedDirectoryHome, GovernedRuntime, GovernedWorkflowOwner,
+};
 #[path = "governed_read/court.rs"]
 pub mod court;
 #[path = "governed_read/grants.rs"]

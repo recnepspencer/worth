@@ -55,9 +55,10 @@ mod recovered_retirement_trials;
 mod schema_transition_admission;
 pub(crate) mod state;
 pub use state::{
-    PreparedRelationalRuntimeClose, RelationalPublicationCompanionCustody,
-    RelationalPublicationCustodyHolders, RelationalPublicationRegistryCustody,
-    RelationalRuntimeCloseDenial, RelationalRuntimeCloseRefused,
+    HomeReadmissionMetadataKinds, PreparedRelationalRuntimeClose,
+    RelationalPublicationCompanionCustody, RelationalPublicationCustodyHolders,
+    RelationalPublicationRegistryCustody, RelationalRuntimeCloseDenial,
+    RelationalRuntimeCloseRefused,
 };
 
 pub use crate::config::data::RelationalRuntimeConfig;
@@ -77,7 +78,8 @@ pub use crate::validation::engine::HarnessAuditMode;
 pub use crate::validation::InvariantAccess;
 pub use crate::visibility::materialization::read_records::{
     AdjacencyStructuralRevision, AdjacencyStructuralRevisionDenial, EntityProjectionRecord,
-    EntityRecordProjection, PinnedStructuralWalk, PinnedStructuralWalkDenial,
+    EntityRecordProjection, HomeReadmissionMetadataReadDenial, HomeReadmissionMetadataView,
+    PinnedStructuralWalk, PinnedStructuralWalkDenial,
     PinnedStructuralWalkDenialKind, PinnedStructuralWalkReads, PinnedStructuralWalkScope,
     PinnedStructuralWalkVisit, PositionedRelationalSnapshot, QueryLeasedReadOutcome,
     QueryReadExecutionStop, QueryReadPacketDenial, RelationProjectionRecord,

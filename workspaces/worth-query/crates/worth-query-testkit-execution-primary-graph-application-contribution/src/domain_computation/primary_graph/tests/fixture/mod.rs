@@ -182,7 +182,6 @@ pub use crate::domain_computation::primary_graph::tests::fixture::world_installa
 pub use crate::domain_computation::primary_graph::tests::fixture::world_installation::installed_two_principal_authorization_world;
 pub use crate::domain_computation::primary_graph::tests::fixture::world_installation::installed_world;
 pub use crate::domain_computation::primary_graph::tests::fixture::world_installation::installed_world_with_policy_fact;
-pub use crate::domain_computation::primary_graph::tests::fixture::world_installation::restored_world;
 
 use worth_query_admission::facade::authenticated_principal::*;
 use worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentity;

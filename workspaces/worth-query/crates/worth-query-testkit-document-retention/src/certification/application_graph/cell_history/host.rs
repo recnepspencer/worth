@@ -57,46 +57,52 @@ pub fn install_cells(cells: &[(u64, u64, u64)], retained_steps: u64) -> Host {
         ((),),
         ApplicationBuildIdentity::parse("16161616-1616-1616-1616-161616161616").unwrap(),
         limits(retained_steps),
-        |_, graph, installed| {
-            graph.bind_principal(
-                &installed
-                    .principal_binding(PrincipalBinding::reference())
-                    .unwrap(),
-                WorthQueryApplicationPrincipalKey::new("cell-author").unwrap(),
-                1_u64,
-                operator_identity(),
-                WorthQueryPrincipalMappingStatus::Enabled,
-            )?;
-            for feature in [1_u64, 2] {
-                graph.bind_entity(
-                    WorthQueryApplicationEntitySeed::new(
-                        Feature::reference(),
-                        WorthQueryApplicationEntityKey::new(format!("feature-{feature}")).unwrap(),
-                    )
-                    .field(FeatureKey::at("FeatureKey"), feature),
-                )?;
-            }
-            for &(cell, feature, value) in cells {
-                let cell_key = WorthQueryApplicationEntityKey::new(format!("cell-{cell}")).unwrap();
-                graph.bind_entity(
-                    WorthQueryApplicationEntitySeed::new(
-                        Cell::reference(),
-                        WorthQueryApplicationEntityKey::new(format!("cell-{cell}")).unwrap(),
-                    )
-                    .field(CellKey::at("CellKey"), cell)
-                    .field(CellValue::at("CellValue"), value),
-                )?;
-                graph.bind_relation(WorthQueryApplicationRelationSeed::new(
-                    OwnsCell::reference(),
-                    format!("owns-{cell}"),
-                    WorthQueryApplicationEntityKey::new(format!("feature-{feature}")).unwrap(),
-                    cell_key,
-                ))?;
-            }
-            Ok(())
-        },
+        |_, graph, installed| seed_cells(graph, installed, cells),
     )
     .expect("the ordinary cell-bearing application installs")
+}
+
+pub(super) fn seed_cells(
+    graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>,
+    installed: &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<Schema>,
+    cells: &[(u64, u64, u64)],
+) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+    graph.bind_principal(
+        &installed
+            .principal_binding(PrincipalBinding::reference())
+            .unwrap(),
+        WorthQueryApplicationPrincipalKey::new("cell-author").unwrap(),
+        1_u64,
+        operator_identity(),
+        WorthQueryPrincipalMappingStatus::Enabled,
+    )?;
+    for feature in [1_u64, 2] {
+        graph.bind_entity(
+            WorthQueryApplicationEntitySeed::new(
+                Feature::reference(),
+                WorthQueryApplicationEntityKey::new(format!("feature-{feature}")).unwrap(),
+            )
+            .field(FeatureKey::at("FeatureKey"), feature),
+        )?;
+    }
+    for &(cell, feature, value) in cells {
+        let cell_key = WorthQueryApplicationEntityKey::new(format!("cell-{cell}")).unwrap();
+        graph.bind_entity(
+            WorthQueryApplicationEntitySeed::new(
+                Cell::reference(),
+                WorthQueryApplicationEntityKey::new(format!("cell-{cell}")).unwrap(),
+            )
+            .field(CellKey::at("CellKey"), cell)
+            .field(CellValue::at("CellValue"), value),
+        )?;
+        graph.bind_relation(WorthQueryApplicationRelationSeed::new(
+            OwnsCell::reference(),
+            format!("owns-{cell}"),
+            WorthQueryApplicationEntityKey::new(format!("feature-{feature}")).unwrap(),
+            cell_key,
+        ))?;
+    }
+    Ok(())
 }
 
 pub(super) fn limits(retained_steps: u64) -> WorthQueryApplicationLimits {

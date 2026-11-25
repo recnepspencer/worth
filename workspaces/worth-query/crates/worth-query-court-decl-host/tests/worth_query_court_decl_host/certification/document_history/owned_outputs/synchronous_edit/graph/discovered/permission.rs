@@ -9,7 +9,7 @@ fn exercise(worker: bool, allowed: bool) {
     } else {
         host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
     };
-    let host = world::install_program_with_value::<permission_program::Program>(
+    let host = world::open_directory_program_with_value::<permission_program::Program>(
         limits,
         if allowed { 1 } else { 2 },
     );

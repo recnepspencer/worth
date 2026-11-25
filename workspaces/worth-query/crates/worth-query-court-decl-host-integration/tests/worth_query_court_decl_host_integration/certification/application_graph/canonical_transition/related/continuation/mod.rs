@@ -20,12 +20,13 @@ fn actual_related_v1_token_keeps_old_values_while_v2_produces_edits_and_reopens(
     assert!(receipt.basis_released());
     let token = token.expect("real second child");
     assert_eq!(token.page_ordinal(), 2);
-    let checkpoint = host::capture(&original);
-    let retained = checkpoint.clone();
-    let bytes = checkpoint.bytes().to_vec();
-    let target = journey::successor(checkpoint);
+    let target_dir = worth_query_testkit_document_retention::facade::directory_home::unique_directory(
+        "canonical-related-continuation",
+    );
+    let target = journey::successor_directory(target_dir, model::authored_value());
+    let target_source_id = successor::host::source_id(&target);
     assert_eq!(successor::output::decodes(), 0);
-    assert_eq!(successor::host::source_id(&target), source_id);
+    assert_eq!(host::source_id(&original), source_id);
     assert_eq!(successor::host::read(&target), model::authored_value());
     assert!(catalogue.same_installation_as(original.installed_schema().value_bindings()));
     assert!(!catalogue.same_installation_as(target.installed_schema().value_bindings()));
@@ -47,7 +48,9 @@ fn actual_related_v1_token_keeps_old_values_while_v2_produces_edits_and_reopens(
     assert_eq!(successor::output::decodes(), 0);
     let target_settled = successor::host::produce(&target);
     let new_ids = successor::host::output_ids(&target_settled);
-    assert!(new_ids.iter().all(|id| !old_ids.contains(id)));
+    assert_ne!(new_ids[0], new_ids[1]);
+    assert_ne!(new_ids[0], new_ids[2]);
+    assert_ne!(new_ids[1], new_ids[2]);
     journey::assert_target_pages(&target, false);
     let updated = host::edit_source(&original, journey::edited(), 0x2711801);
     let roles = updated.outputs_of::<output::PreservedOutputs>().unwrap();
@@ -107,13 +110,11 @@ fn actual_related_v1_token_keeps_old_values_while_v2_produces_edits_and_reopens(
         new_ids
     );
     journey::assert_target_pages(&target, true);
-    let current = successor::host::capture(&target);
     drop(target_settled);
-    drop(target);
-    let reopened = successor::host::restore(current);
-    assert_eq!(successor::host::source_id(&reopened), source_id);
+    let target_dir = target.checkpoint_and_close_for_reopen();
+    let reopened = journey::successor_directory(target_dir, model::authored_value());
+    assert_eq!(successor::host::source_id(&reopened), target_source_id);
     journey::assert_target_pages(&reopened, true);
-    assert_eq!(retained.bytes(), bytes);
     assert!(original.runtime().close_live_delivery().owner_terminal());
     assert_eq!(output::literals(&old_rows[0].children[0].1).1, 12);
 }

@@ -49,7 +49,7 @@ impl ApplicationProgramDefinition<CheckpointSchema> for Unowned {
     }
 }
 
-pub(super) fn install_rostered(model: &Model) -> Application {
+pub(super) fn install_rostered(model: &Model) -> installation::DirApplication<false, 86016> {
     let initial = ApplicationProgramAuthoring::<CheckpointSchema, OracleProgram>::begin()
         .with_schema(&<CheckpointSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().expect("the completed schema is valid"))
         .validated_program()
@@ -80,12 +80,27 @@ pub(super) fn install_rostered(model: &Model) -> Application {
     };
 
     let limits = support::limits_with_room(32, 16, 64, support::invalidation());
-    application_installation::in_memory_rostered_program(initial, roster, <CheckpointSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().unwrap(), (configuration,), ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(), limits, |_bootstrap_phase, graph, installed| {
-        let binding = installed.principal_binding(ConsumerPrincipalBinding::reference::<CheckpointSchema>()).unwrap();
-        let external = worth_query_host::facade::declaration::authentication::WorthQueryExternalPrincipalIdentity::new(CheckpointInvalidLocalIssuer, "model-owner").unwrap();
-        graph.bind_principal(&binding, primary_graph::WorthQueryApplicationPrincipalKey::new("model-owner").unwrap(), 1_u64, external, worth_query_host::facade::declaration::authentication::WorthQueryPrincipalMappingStatus::Enabled)?;
-        support::seed_cycle(graph); model.seed(graph); crate::checkpoint_recovery::computation_partition::oracle::courtroom::correction_grant::seed(graph, SCOPE); Ok(())
-    }).unwrap()
+    let directory = support::directory::unique_directory("oracle-courtroom-adoption");
+    let home = support::directory::with_directory_bootstrap(|phase| {
+        worth_query_host::facade::WorthQueryApplicationHomeRequest::new(
+            worth_query_host::facade::WorthQueryApplicationHomeLocation::Directory(directory.clone()),
+            initial,
+            roster,
+            <CheckpointSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().unwrap(),
+            (configuration,),
+            ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
+            limits,
+            |_bootstrap_phase, graph, installed| {
+                let binding = installed.principal_binding(ConsumerPrincipalBinding::reference::<CheckpointSchema>()).unwrap();
+                let external = worth_query_host::facade::declaration::authentication::WorthQueryExternalPrincipalIdentity::new(CheckpointInvalidLocalIssuer, "model-owner").unwrap();
+                graph.bind_principal(&binding, primary_graph::WorthQueryApplicationPrincipalKey::new("model-owner").unwrap(), 1_u64, external, worth_query_host::facade::declaration::authentication::WorthQueryPrincipalMappingStatus::Enabled)?;
+                support::seed_cycle(graph); model.seed(graph); crate::checkpoint_recovery::computation_partition::oracle::courtroom::correction_grant::seed(graph, SCOPE); Ok(())
+            },
+        )
+        .open_in_advancement(phase)
+    })
+    .unwrap_or_else(|refused| panic!("directory adoption open refused: {refused:?}"));
+    support::DirectoryApp::wrap(home, directory)
 }
 
 fn active(app: &Application) -> (usize, Vec<OracleRun>) {

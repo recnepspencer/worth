@@ -92,10 +92,7 @@ fn checkpoint_image_seal_work_is_independent_of_digest_octet_values() {
         let mut scope = *original.scope();
         let CheckpointAdmissionScope::Home {
             world_image_digest, ..
-        } = &mut scope
-        else {
-            unreachable!()
-        };
+        } = &mut scope;
         *world_image_digest = [value; 32];
         let cut = CheckpointAdmissionCut::new(
             scope,

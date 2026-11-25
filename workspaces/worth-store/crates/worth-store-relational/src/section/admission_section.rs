@@ -39,12 +39,7 @@ pub(super) fn encode(
         world_through,
         world_image_digest,
         ..
-    } = scope
-    else {
-        return Err(Capture::AdmissionImage(Refusal::BindingMismatch(
-            Binding::Scope,
-        )));
-    };
+    } = scope;
     RelationalDurableCheckpointSource::from_checkpoint_admission_image(
         source.clone(),
         image.clone(),

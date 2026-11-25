@@ -29,7 +29,14 @@ pub fn capture(
         .unwrap();
     let native = runtime
         .durability_authority()
-        .native_checkpoint(execution, execution.allocation_policy())
+        .native_checkpoint_with_policy(
+            execution,
+            execution.allocation_policy(),
+            worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
+        )
         .unwrap();
     // Retain the owner's capture, before transport decoding discards its
     // member handles. Compare every member's locator AND bytes, never an empty

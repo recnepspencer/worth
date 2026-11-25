@@ -65,6 +65,8 @@ pub struct SupportEntryState {
 
 pub struct QueryObligationState {
     pending_output_discharges: std::collections::BTreeSet<std::num::NonZeroU64>,
+    retired_branches: std::collections::BTreeSet<(String, u64)>,
+    demand_lifecycles: BTreeMap<std::num::NonZeroU64, u64>,
     pub entries: BTreeMap<ApplicationProgramRevision, SupportEntryState>,
     pub journal: Option<QueryObligationJournalState>,
     pub cold_adoption_summary: QueryColdAdoptionReadmissionSummary,
@@ -73,6 +75,9 @@ pub struct QueryObligationState {
 pub struct QueryObligationHistory {
     pub state: Arc<Mutex<QueryObligationState>>,
     pub medium: std::sync::OnceLock<Arc<dyn journal::QueryObligationsMedium>>,
+    pub basis_pins: std::sync::OnceLock<
+        crate::domain_computation::primary_graph::application_output_demand::recovered_outputs::ObligationBasisPins,
+    >,
     pub publication_driver: Mutex<()>,
 }
 
@@ -96,13 +101,51 @@ impl QueryObligationHistory {
         Self {
             state: Arc::new(Mutex::new(QueryObligationState {
                 pending_output_discharges: Default::default(),
+                retired_branches: Default::default(),
+                demand_lifecycles: Default::default(),
                 entries,
                 journal: None,
                 cold_adoption_summary: QueryColdAdoptionReadmissionSummary::default(),
             })),
             medium: std::sync::OnceLock::new(),
+            basis_pins: std::sync::OnceLock::new(),
             publication_driver: Mutex::new(()),
         }
+    }
+
+    pub fn attach_obligation_basis_pins(
+        &self,
+        pins: crate::domain_computation::primary_graph::application_output_demand::recovered_outputs::ObligationBasisPins,
+    ) {
+        let _ = self.basis_pins.set(pins);
+    }
+
+    pub(super) fn prune_attached_obligation_basis_pins(&self) {
+        if let Some(pins) = self.basis_pins.get() {
+            pins.prune(|commit| self.has_active_output_basis(commit));
+        }
+    }
+
+    /// Serialize with active obligation publications and reject any future
+    /// durable output retention targeting this retired `(branch, lifecycle)`.
+    pub fn mark_branch_retired(&self, branch: &str, lifecycle: u64) {
+        let _driver = self
+            .publication_driver
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        self.state()
+            .retired_branches
+            .insert((branch.to_owned(), lifecycle));
+    }
+
+    pub fn is_branch_retired(&self, branch: &str, lifecycle: u64) -> bool {
+        self.state()
+            .retired_branches
+            .contains(&(branch.to_owned(), lifecycle))
+    }
+
+    pub fn record_output_demand_lifecycle(&self, position: std::num::NonZeroU64, lifecycle: u64) {
+        self.state().demand_lifecycles.insert(position, lifecycle);
     }
 
     pub fn record_cold_adoption_original(&self, native_present: bool) {

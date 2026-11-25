@@ -43,20 +43,20 @@ pub fn approval_journey(
 
 /// Proposes, collects both assessments and joins them, leaving `instance`
 /// awaiting its approval on its own branch. Uses keys `key + 2..=key + 8`.
-pub fn approval_requirement(
-    application: &DocumentWorkflowRuntime<
-        worth_query_testkit_document_retention::facade::document_retention_model::programs::RetentionProgramP0,
-        impl worth_query_host::facade::declaration::application_program::ApplicationWorkflowSpec<
-            Schema = worth_query_testkit_document_retention::facade::document_retention_model::schema::DocumentRetentionSchema,
-        >,
-    >,
+pub fn approval_requirement<A>(
+    application: &A,
     instance: PublishedWorkflowInstanceRef,
     key: u64,
 ) -> (
     PublishedWorkflowProposalRef,
     RequiredWorkflowApproval,
     Vec<worth_relational::facade::identity::EntityId>,
-) {
+)
+where
+    A: worth_query_testkit_document_retention::facade::document_retention_model::host::DocumentWorkflowApplication<
+        Program = worth_query_testkit_document_retention::facade::document_retention_model::programs::RetentionProgramP0,
+    >,
+{
     let proposal = proposal::published_proposal(application, instance.clone(), key + 2);
     let (required, evidence, _join) =
         approval_requirement_after_proposal(application, instance, key);
@@ -64,20 +64,20 @@ pub fn approval_requirement(
 }
 
 /// Advances an actually proposed instance through its real assessments and approval wait.
-pub fn approval_requirement_after_proposal(
-    application: &DocumentWorkflowRuntime<
-        worth_query_testkit_document_retention::facade::document_retention_model::programs::RetentionProgramP0,
-        impl worth_query_host::facade::declaration::application_program::ApplicationWorkflowSpec<
-            Schema = worth_query_testkit_document_retention::facade::document_retention_model::schema::DocumentRetentionSchema,
-        >,
-    >,
+pub fn approval_requirement_after_proposal<A>(
+    application: &A,
     instance: PublishedWorkflowInstanceRef,
     key: u64,
 ) -> (
     RequiredWorkflowApproval,
     Vec<worth_relational::facade::identity::EntityId>,
     worth_query_host::facade::application_entry::PerformedWorkflowTransition,
-) {
+)
+where
+    A: worth_query_testkit_document_retention::facade::document_retention_model::host::DocumentWorkflowApplication<
+        Program = worth_query_testkit_document_retention::facade::document_retention_model::programs::RetentionProgramP0,
+    >,
+{
     let mut evidence = Vec::new();
     for offset in [3, 5] {
         let settlement = settle_assessment(application, instance.clone(), key + offset);

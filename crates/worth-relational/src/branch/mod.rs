@@ -112,7 +112,9 @@ pub use lifecycle::{
     RelationalBranchLifecyclePosture,
 };
 pub use materialization::completion::{
-    PreparedRelationalMaterializationSuspension, PreparedRelationalRematerialization,
+    PendingRelationalMaterializationSuspension,
+    PendingRelationalMaterializationSuspensionCompletion, PendingRelationalRematerialization,
+    PendingRelationalRematerializationCompletion, PreparedRelationalMaterializationSuspension, PreparedRelationalRematerialization,
     RelationalMaterializationError, RelationalMaterializationSuspension,
     RelationalMaterializationSuspensionCompletion, RelationalRematerializationCompletion,
     RelationalRematerializationFailure,

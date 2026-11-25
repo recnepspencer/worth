@@ -15,12 +15,16 @@ use worth_runtime_world::facade::{RuntimeWorldInspectionPort, RuntimeWorldObserv
 pub fn verify<Schema: ApplicationSchema>(
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     execution: &ExecutionRequest<'_, '_>,
+    metadata_authority: Option<
+        &worth_relational::facade::durability::HomeReadmissionMetadataAuthority,
+    >,
 ) -> Result<(), Denial> {
     verify_with_unpublished(
         application,
         execution,
         &std::collections::BTreeMap::new(),
         &std::collections::BTreeSet::new(),
+        metadata_authority,
     )
 }
 pub fn verify_with_unpublished<Schema: ApplicationSchema>(
@@ -28,6 +32,9 @@ pub fn verify_with_unpublished<Schema: ApplicationSchema>(
     execution: &ExecutionRequest<'_, '_>,
     continuable: &std::collections::BTreeMap<CommitId, DurableCompositePublicationAttemptIdentity>,
     all_unpublished: &std::collections::BTreeSet<CommitId>,
+    metadata_authority: Option<
+        &worth_relational::facade::durability::HomeReadmissionMetadataAuthority,
+    >,
 ) -> Result<(), Denial> {
     let owner = &application.runtime.product_runtime.owner_ref();
     let graph = &application.runtime.primary_provider.graph_ref();
@@ -40,6 +47,7 @@ pub fn verify_with_unpublished<Schema: ApplicationSchema>(
             &owner.observation_port(),
             Some(&application.runtime.primary_provider),
             (continuable, all_unpublished),
+            metadata_authority,
         )
     })
 }
@@ -60,6 +68,7 @@ pub fn verify_source(
         observation,
         None,
         (&empty_map, &empty_set),
+        None,
     )
 }
 fn verify_with_material(
@@ -75,6 +84,9 @@ fn verify_with_material(
         &std::collections::BTreeMap<CommitId, DurableCompositePublicationAttemptIdentity>,
         &std::collections::BTreeSet<CommitId>,
     ),
+    metadata_authority: Option<
+        &worth_relational::facade::durability::HomeReadmissionMetadataAuthority,
+    >,
 ) -> Result<(), Denial> {
     let inventory = observation
         .observe_installed_product_branches(execution)
@@ -102,6 +114,7 @@ fn verify_with_material(
         selected.selected_commit(),
         material_owner,
         unpublished,
+        metadata_authority,
     )?;
     for branch in inventory.branches() {
         let first = readmit_branch(
@@ -111,6 +124,7 @@ fn verify_with_material(
             &originals,
             branch,
             material_owner,
+            metadata_authority,
         )?;
         material = material.or(first);
     }

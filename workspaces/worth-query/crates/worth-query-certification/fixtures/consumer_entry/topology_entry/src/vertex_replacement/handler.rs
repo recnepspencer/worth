@@ -11,6 +11,7 @@ pub struct VertexReplacementHandler;
 impl<Schema: TopologySchemaBinding> OperationHandler<Schema, VertexReplacementBinding<Schema>>
     for VertexReplacementHandler
 {
+    fn declared_durable_capabilities() -> Option<&'static [worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability]> { Some(&[worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability::RelationalMutation]) }
     fn decide(
         &self,
         input: &VertexReplacement,

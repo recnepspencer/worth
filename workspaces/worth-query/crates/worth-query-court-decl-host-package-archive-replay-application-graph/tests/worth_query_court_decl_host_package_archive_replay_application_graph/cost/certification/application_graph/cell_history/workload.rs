@@ -46,8 +46,12 @@ pub fn assert_census_walk(
 }
 
 pub struct CellHistory {
-    host: Host,
+    host: worth_query_testkit_document_retention::facade::directory_home::DirectoryHomeGuard<
+        super::model::schema::Schema,
+        host::Program,
+    >,
     live: u64,
+    seeds: Vec<(u64, u64, u64)>,
     receipts: Vec<WorthQueryApplicationCommitReceipt>,
     initial: Vec<(u64, u64)>,
 }
@@ -63,7 +67,11 @@ impl CellHistory {
                 .map(|&(key, value)| (key, 1, value))
                 .collect();
             seeds.push((30_000, 2, 29));
-            let host = host::install_cells(&seeds, history + SAMPLES);
+            let host = super::model::checkpoint::open_directory_cells(
+                super::model::checkpoint::new_directory(),
+                &seeds,
+                history + SAMPLES,
+            );
             let mut receipts = Vec::new();
             for step in 1..=history {
                 receipts.push(committed(&host, live, 1_000 + step, 10_000 + step));
@@ -71,6 +79,7 @@ impl CellHistory {
             Self {
                 host,
                 live,
+                seeds,
                 receipts,
                 initial,
             }
@@ -155,17 +164,25 @@ impl CellHistory {
             &super::storage::observe(&self.host),
             self.receipts.len() as u64 + SAMPLES,
         );
+        let history = self.receipts.len() as u64;
+        let Self {
+            host,
+            live,
+            seeds,
+            receipts,
+            ..
+        } = self;
+        drop(receipts);
         let start = Instant::now();
-        let (bytes, allocation) = peak::measure(|| super::model::checkpoint::capture(&self.host));
+        let (directory, allocation) = peak::measure(|| host.checkpoint_and_close_for_reopen());
         let capture_elapsed = start.elapsed().as_micros();
         peak::report("checkpoint-capture-and-transport", allocation);
-        println!("cell cold capture_transport_samples=1 capture_transport_us={} live={} retained_steps={} checkpoint_payload_bytes={}",
-            capture_elapsed, self.live, self.receipts.len(), bytes.bytes().len());
-        let history = self.receipts.len() as u64;
-        let Self { host, receipts, .. } = self;
-        drop(receipts);
-        drop(host);
-        reconstruction::measure(bytes, history + SAMPLES, &current_rows, &untouched_rows);
+        println!(
+            "cell cold capture_transport_samples=1 capture_transport_us={} live={} retained_steps={}",
+            capture_elapsed, live, history
+        );
+        reconstruction::measure(&directory, &seeds, history + SAMPLES, &current_rows, &untouched_rows);
+        let _ = std::fs::remove_dir_all(&directory);
         warm
     }
 }

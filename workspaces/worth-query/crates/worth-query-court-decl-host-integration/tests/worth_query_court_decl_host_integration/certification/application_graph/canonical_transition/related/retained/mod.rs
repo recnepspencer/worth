@@ -27,7 +27,7 @@ fn changed_codec_retained_snapshot_keeps_original_pin_and_latched_completion() {
         .unwrap();
     let (identities, snapshot, _) = projected.into_parts();
     let version = snapshot.version();
-    let target = journey::successor(host::capture(&original));
+    let target = journey::successor_install(journey::heavy());
     assert_eq!(successor::output::decodes(), 0);
     host::edit_source(&original, journey::edited(), 180501);
     assert_eq!(output::literals(&host::read_derived(&original)).1, 37);

@@ -40,7 +40,7 @@ fn checkpoint_transition_sequence_resumes_after_archived_and_deleted_history() {
         assert_eq!(runtime.retained_branch_transition_count(), count);
         let checkpoint = runtime
             .durability_authority()
-            .native_checkpoint(execution, execution.allocation_policy())
+            .native_checkpoint_with_policy(execution, execution.allocation_policy(), worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
             .unwrap();
         assert_eq!(
             checkpoint.covered_branch_transitions(),

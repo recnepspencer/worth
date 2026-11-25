@@ -18,7 +18,7 @@ fn content_inline_checkpoint_insufficient_original_memory_never_selects_a_root()
     publish_grid(&runtime, &execution, &contract, &grid);
     let checkpoint = runtime
         .durability_authority()
-        .native_checkpoint(&execution, execution.allocation_policy())
+        .native_checkpoint_with_policy(&execution, execution.allocation_policy(), worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
         .unwrap();
     let budget = SerialMemoryBudget::new(Some(524_330));
     let limited = SerialRequest::from_memory(budget.clone(), cancel.token(), None);
@@ -30,7 +30,11 @@ fn content_inline_checkpoint_insufficient_original_memory_never_selects_a_root()
         .1;
     let refusal = target
         .durability_recovery()
-        .restore_native_checkpoint(&limited, &checkpoint)
+        .restore_native_checkpoint(
+            &limited,
+            &checkpoint,
+            worth_testkit_relational::cold_recovery::members_source(&checkpoint),
+        )
         .unwrap_err();
     assert!(
         matches!(
@@ -67,7 +71,7 @@ fn content_inline_checkpoint_cancellation_after_backing_admission_releases_origi
     publish_grid(&runtime, &execution, &contract, &grid);
     let checkpoint = runtime
         .durability_authority()
-        .native_checkpoint(&execution, execution.allocation_policy())
+        .native_checkpoint_with_policy(&execution, execution.allocation_policy(), worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
         .unwrap();
     let cancel = CancellationSource::new();
     let budget = SerialMemoryBudget::new(Some(64 * 1024 * 1024));
@@ -95,9 +99,11 @@ fn content_inline_checkpoint_cancellation_after_backing_admission_releases_origi
             false
         });
         ready.wait();
-        let result = target
-            .durability_recovery()
-            .restore_native_checkpoint(&receiving, &checkpoint);
+        let result = target.durability_recovery().restore_native_checkpoint(
+            &receiving,
+            &checkpoint,
+            worth_testkit_relational::cold_recovery::members_source(&checkpoint),
+        );
         done.store(true, Ordering::Release);
         (result.unwrap_err(), observer.join().unwrap())
     });

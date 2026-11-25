@@ -51,19 +51,26 @@ fn complete(
 
 #[test]
 fn a_new_performed_source_is_fulfilled_by_restored_outputs_without_reexecution() {
-    let world = installation::install(&crate::installed_schema());
+    let dir = installation::unique_directory("fixed-restored-fulfillment");
+    let foreign = crate::installed_schema();
+    let program = ApplicationProgramAuthoring::<ConsumerSchema, crate::ConsumerProgram>::begin()
+        .with_schema(&<ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().unwrap())
+        .validated_program()
+        .unwrap();
+    let home = installation::open_directory_selected_program(&dir, &foreign, program);
+    let application = home.runtime();
     let input = PlanarSourceAdjustment {
         scope_key: "anchor-a".to_owned(),
         replacement_y: length(2),
     };
     let scope = authentication::request_scope();
-    let adapter = authentication::admit(world.application.installed_schema());
+    let adapter = authentication::admit(application.installed_schema());
     let principal = authentication::block_on(adapter.authenticate(
         authentication::LocalCredential::issued_for_model_owner(),
         &scope,
     ))
     .unwrap();
-    let request = world.application.request(&principal, &scope);
+    let request = application.request(&principal, &scope);
     let original = request
         .query(PlanarRead {
             body_key: input.scope_key.clone(),
@@ -77,9 +84,9 @@ fn a_new_performed_source_is_fulfilled_by_restored_outputs_without_reexecution()
         .expect_source(original)
         .idempotency_owned(0x9182_c100)
         .unwrap_or_else(|(_, _, cause)| panic!("capture: {cause:?}"))
-        .retain_operation::<crate::ConsumerProgram, ConsumerFixedAction>(&world.application)
+        .retain_durable_operation::<crate::ConsumerProgram, ConsumerFixedAction>(&request, application)
         .unwrap_or_else(|(_, cause)| panic!("retain: {cause:?}"));
-    let settled = complete(Some(operation), &world.application);
+    let settled = complete(Some(operation), application);
     assert_eq!(
         settled.read_current(&request).unwrap().rows()[0].value,
         length(3)
@@ -95,17 +102,16 @@ fn a_new_performed_source_is_fulfilled_by_restored_outputs_without_reexecution()
     settled
         .close(&request)
         .unwrap_or_else(|(_, cause)| panic!("original close: {cause:?}"));
-    let capture = crate::application_invariant_acceptance::resources::checkpoint_capture_request();
-    let checkpoint = world.application.with_funded_host_advancement(
-        worth_query_host::facade::runtime::ExecutionAllocationPolicy::Execution(&capture),
-        |phase| world.application.runtime()
-            .capture_application_checkpoint(&phase, worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy::SystemAllocation).unwrap()
-    ).unwrap();
+    drop(request);
+    drop(principal);
+    drop(adapter);
+    installation::close_directory_program(home);
     let program = ApplicationProgramAuthoring::<ConsumerSchema, crate::ConsumerProgram>::begin()
         .with_schema(&<ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().unwrap())
         .validated_program()
         .unwrap();
-    let restored = installation::restore_selected_program(&world, program, checkpoint);
+    let reopened = installation::open_directory_selected_program(&dir, &foreign, program);
+    let restored = reopened.runtime();
     let scope = authentication::request_scope();
     let adapter = authentication::admit(restored.installed_schema());
     let principal = authentication::block_on(adapter.authenticate(
@@ -127,7 +133,7 @@ fn a_new_performed_source_is_fulfilled_by_restored_outputs_without_reexecution()
         .expect_source(current)
         .idempotency_owned(0x9182_c101)
         .unwrap_or_else(|(_, _, cause)| panic!("restored capture: {cause:?}"))
-        .retain_operation::<crate::ConsumerProgram, ConsumerFixedAction>(&restored)
+        .retain_durable_operation::<crate::ConsumerProgram, ConsumerFixedAction>(&request, &restored)
         .unwrap_or_else(|(_, cause)| panic!("restored retain: {cause:?}"));
     let operation = match operation.advance(&request) {
         Advance::Progress {
@@ -180,4 +186,10 @@ fn a_new_performed_source_is_fulfilled_by_restored_outputs_without_reexecution()
     settled
         .close(&request)
         .unwrap_or_else(|(_, cause)| panic!("restored close: {cause:?}"));
+    drop(source_receipt);
+    drop(request);
+    drop(principal);
+    drop(adapter);
+    installation::close_directory_program(reopened);
+    let _ = std::fs::remove_dir_all(&dir);
 }

@@ -10,9 +10,9 @@ fn checkpoint_recovery_rejects_missing_exact_branch_root_artifact() {
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);
     create_entity_outcome(execution, &runtime, "root-artifact-required");
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     let mut plan = medium
-        .recovery_plan(
+        .expanded_recovery_plan(
             execution,
             &runtime,
             RecoveryVerificationMode::NormalRecoveryVerification,
@@ -48,9 +48,9 @@ fn checkpoint_recovery_rejects_root_artifact_without_commit_envelope() {
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);
     create_entity_outcome(execution, &runtime, "root-envelope-binding");
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     let mut plan = medium
-        .recovery_plan(
+        .expanded_recovery_plan(
             execution,
             &runtime,
             RecoveryVerificationMode::NormalRecoveryVerification,
@@ -80,9 +80,9 @@ fn checkpoint_recovery_rejects_duplicate_commit_envelopes_before_root_readmissio
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);
     create_entity_outcome(execution, &runtime, "duplicate-envelope-root");
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     let mut plan = medium
-        .recovery_plan(
+        .expanded_recovery_plan(
             execution,
             &runtime,
             RecoveryVerificationMode::NormalRecoveryVerification,
@@ -121,9 +121,9 @@ fn checkpoint_recovery_rejects_duplicate_global_partition_images() {
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);
     create_entity_outcome(execution, &runtime, "duplicate-global-partition");
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     let mut plan = medium
-        .recovery_plan(
+        .expanded_recovery_plan(
             execution,
             &runtime,
             RecoveryVerificationMode::NormalRecoveryVerification,
@@ -155,9 +155,9 @@ fn checkpoint_recovery_rejects_duplicate_branch_root_partition_images() {
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);
     create_entity_outcome(execution, &runtime, "duplicate-root-partition");
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     let mut plan = medium
-        .recovery_plan(
+        .expanded_recovery_plan(
             execution,
             &runtime,
             RecoveryVerificationMode::NormalRecoveryVerification,
@@ -190,11 +190,11 @@ fn branch_root_image_versions_refuse_before_restoration_and_current_recovers() {
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);
     create_entity_outcome(execution, &runtime, "current-root-format");
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
 
     for found in [4, 5, 7] {
         let mut plan = medium
-            .recovery_plan(
+            .expanded_recovery_plan(
                 execution,
                 &runtime,
                 RecoveryVerificationMode::NormalRecoveryVerification,
@@ -230,7 +230,7 @@ fn branch_root_image_versions_refuse_before_restoration_and_current_recovers() {
     }
 
     let plan = medium
-        .recovery_plan(
+        .expanded_recovery_plan(
             execution,
             &runtime,
             RecoveryVerificationMode::NormalRecoveryVerification,

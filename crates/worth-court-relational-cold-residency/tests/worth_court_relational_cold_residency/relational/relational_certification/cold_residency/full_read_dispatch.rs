@@ -47,13 +47,6 @@ impl FullReadDoor {
                     assert!(!image.partition_images.is_empty());
                 })
                 .map_err(super::checkpoint_read_refusal::memory_stop),
-            Self::EmbeddedCheckpoint => runtime
-                .durability_authority()
-                .native_checkpoint(execution, execution.allocation_policy())
-                .map(|image| {
-                    assert!(!image.bytes().is_empty());
-                })
-                .map_err(super::checkpoint_read_refusal::native_stop),
             Self::SnapshotRead => super::full_snapshot_reads::read(
                 execution,
                 runtime,

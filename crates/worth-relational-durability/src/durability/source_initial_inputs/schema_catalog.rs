@@ -4,7 +4,7 @@ use worth_relational_branch::internal_port::branch::root::schema::RelationalBran
 use crate::durability::checkpoints::region_directory::corrupt;
 use contracts::durability::data::recovery_stop::RelationalRecoveryStop;
 use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::schema_carrier::RecordedBranchSchemaImage;
-use contracts::schema::data::{RelationalSchemaRegistry, RelationalSchemaRegistryFieldsPort as _};
+use contracts::schema::data::RelationalSchemaRegistry;
 use contracts::schema::data::authority_snapshot::carried_projection::SchemaAuthoritySnapshot;
 use std::sync::Arc;
 use worth_execution::{ExecutionMemoryReservation, ExecutionOrderedMap, ExecutionRequest};
@@ -72,23 +72,6 @@ impl ReadmittedSourceSchemaCatalog {
         else {
             return Ok(());
         };
-        Self::retain_image(catalog, image, registry, contracts, &expected, request)
-    }
-
-    /// Immediate executable admission for callers with installed receiver codecs.
-    pub(crate) fn insert_image(
-        catalog: &mut Arc<Self>,
-        image: &RecordedBranchSchemaImage,
-        configured: &RelationalSchemaRegistry,
-        request: &ExecutionRequest<'_, '_>,
-    ) -> Result<(), RelationalRecoveryStop> {
-        let Some((mut registry, contracts, expected)) =
-            Self::read_unseen_image(catalog, image, configured, request)?
-        else {
-            return Ok(());
-        };
-        (*registry.owner_content_formats_mut()) = (*registry.owner_content_formats())
-            .bind_recorded(configured.owner_content_formats())?;
         Self::retain_image(catalog, image, registry, contracts, &expected, request)
     }
 

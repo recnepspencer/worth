@@ -51,8 +51,6 @@ where
         limits,
         initial_state,
         None,
-        None,
-        None,
     )
 }
 
@@ -90,8 +88,6 @@ where
         limits,
         initial_state,
         Some(Box::new(source)),
-        None,
-        None,
     )
 }
 
@@ -135,8 +131,6 @@ where
         limits,
         initial_state,
         None,
-        None,
-        None,
     )
 }
 
@@ -175,8 +169,6 @@ where
         limits,
         initial_state,
         Some(Box::new(source)),
-        None,
-        None,
     )
 }
 
@@ -195,8 +187,6 @@ pub(super) fn construct_program_with_optional_authorization_time_source<Schema, 
     authorization_time_source: Option<
         Box<dyn crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource>,
     >,
-    checkpoint: Option<crate::domain_computation::primary_graph::WorthQueryApplicationCheckpoint>,
-    checkpoint_transition: Option<crate::domain_computation::primary_graph::bootstrap::checkpoint_transition::CheckpointTransition<'_, '_, Schema>>,
 ) -> Result<
     WorthQueryProgramApplicationRuntime<Schema, Program>,
     WorthQueryApplicationPreparationDenial,
@@ -221,8 +211,6 @@ where
                 limits,
                 initial_state,
                 authorization_time_source,
-                checkpoint,
-                checkpoint_transition,
             )
         },
     )
@@ -249,8 +237,6 @@ pub(super) fn construct_program_in_advancement<Schema, Program>(
     authorization_time_source: Option<
         Box<dyn crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource>,
     >,
-    checkpoint: Option<crate::domain_computation::primary_graph::WorthQueryApplicationCheckpoint>,
-    checkpoint_transition: Option<crate::domain_computation::primary_graph::bootstrap::checkpoint_transition::CheckpointTransition<'_, '_, Schema>>,
 ) -> Result<
     WorthQueryProgramApplicationRuntime<Schema, Program>,
     WorthQueryApplicationPreparationDenial,
@@ -283,8 +269,6 @@ where
             admitted = Some((installed, supported));
             Ok(support)
         })),
-        checkpoint,
-        checkpoint_transition,
     )?;
     super::assembly::assemble(runtime, admitted)
 }

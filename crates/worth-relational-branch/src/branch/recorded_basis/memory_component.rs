@@ -1,9 +1,7 @@
 //! Root-free original Native coordinates captured from an actual admitted basis.
 pub mod capture;
 pub mod successor;
-use super::{
-    copying, RecordedRelationalComponentReference, RelationalRecordedComponentRefusal as Refusal,
-};
+use super::{copying, RelationalRecordedComponentRefusal as Refusal};
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::branch::basis::RelationalBranchBasisDescriptor;
 use crate::history::data::CanonicalCommitEnvelope;
@@ -31,15 +29,6 @@ pub struct ObservedRelationalMemoryComponent {
 #[derive(Debug)]
 pub enum MemoryComponentOrigin {
     Live(MemoryComponentMeaning),
-    Interim(InterimComponentMeaning),
-}
-#[derive(Debug)]
-pub struct InterimComponentMeaning {
-    owner: RelationalRuntimeOrigin,
-    description: RecordedRelationalComponentReference,
-    canonical:
-        Option<crate::durability::checkpoint_admission::admitted_commit::CheckpointAdmittedCommit>,
-    _funding: Option<worth_execution::ExecutionMemoryReservation>,
 }
 #[derive(Debug)]
 pub struct MemoryComponentMeaning {
@@ -53,78 +42,13 @@ impl ObservedRelationalMemoryComponent {
         &self,
         original: &crate::durability::authority::associated_effects::observed_memory_commit::ObservedRelationalMemoryCommit,
     ) -> bool {
-        match self.original.as_origin() {
-            MemoryComponentOrigin::Live(meaning) => meaning
-                .canonical
-                .as_ref()
-                .is_some_and(|canonical| original.matches_original_envelope(canonical)),
-            MemoryComponentOrigin::Interim(meaning) => meaning
-                .canonical
-                .as_ref()
-                .is_some_and(|canonical| original.matches_interim(&meaning.owner, canonical)),
-        }
+        let MemoryComponentOrigin::Live(meaning) = self.original.as_origin();
+        meaning
+            .canonical
+            .as_ref()
+            .is_some_and(|canonical| original.matches_original_envelope(canonical))
     }
 }
-pub fn map_interim_admission_refusal(
-    cause: crate::durability::checkpoint_admission::refusal::RelationalCheckpointAdmissionRefusal,
-) -> Refusal {
-    match cause {
-        crate::durability::checkpoint_admission::refusal::RelationalCheckpointAdmissionRefusal::Request(
-            stop,
-        ) => Refusal::Request(stop),
-        other => Refusal::Source(
-            crate::durability::data::recovery_stop::RelationalRecoveryStop::AdmissionImage(other),
-        ),
-    }
-}
-
-/// Operations used by the Relational owners.
-pub trait ObservedRelationalMemoryComponentOwnerPort: Sized {
-    fn from_interim(
-        request: &ExecutionRequest<'_, '_>,
-        owner: RelationalRuntimeOrigin,
-        description: RecordedRelationalComponentReference,
-        canonical: Option<
-            crate::durability::checkpoint_admission::admitted_commit::CheckpointAdmittedCommit,
-        >,
-    ) -> Result<
-        Self,
-        crate::durability::checkpoint_admission::refusal::RelationalCheckpointAdmissionRefusal,
-    >;
-}
-
-impl ObservedRelationalMemoryComponentOwnerPort for ObservedRelationalMemoryComponent {
-    fn from_interim(
-        request: &ExecutionRequest<'_, '_>,
-        owner: RelationalRuntimeOrigin,
-        description: RecordedRelationalComponentReference,
-        canonical: Option<
-            crate::durability::checkpoint_admission::admitted_commit::CheckpointAdmittedCommit,
-        >,
-    ) -> Result<
-        Self,
-        crate::durability::checkpoint_admission::refusal::RelationalCheckpointAdmissionRefusal,
-    > {
-        use crate::durability::checkpoint_admission::refusal::RelationalCheckpointAdmissionRefusal as Stop;
-        let layout = std::alloc::Layout::new::<[usize; 2]>()
-            .extend(std::alloc::Layout::new::<MemoryComponentOrigin>())
-            .map_err(|_| Stop::CapacityOverflow)?
-            .0
-            .pad_to_align();
-        let funding = request
-            .reserve_retained_memory(layout.size() as u64)
-            .map_err(|cause| Stop::Request(cause.into()))?;
-        let original: Arc<MemoryComponentOrigin> =
-            Arc::new(MemoryComponentOrigin::Interim(InterimComponentMeaning {
-                owner,
-                description,
-                canonical,
-                _funding: funding,
-            }));
-        Ok(Self { original })
-    }
-}
-
 pub trait ObservedRelationalMemoryComponentFieldsPort {
     fn owner_original(&self) -> &MemoryComponentOrigin;
 }

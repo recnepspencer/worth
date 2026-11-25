@@ -1,7 +1,7 @@
 //! Original dispatch source protection is independent of disposable correlation indexes.
 use crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication;
 use worth_runtime_world::facade::{
-    RuntimeWorldPerformedPublicationProtection, WorldReadmittedPublication,
+    RuntimeWorldPerformedPublicationProtection, WorldObservedHomePublication,
 };
 
 pub(super) enum OutstandingDispatchOriginal {
@@ -10,7 +10,7 @@ pub(super) enum OutstandingDispatchOriginal {
         description: WorthQueryCommittedProductPublication,
         _protection: RuntimeWorldPerformedPublicationProtection,
     },
-    Readmitted(WorldReadmittedPublication),
+    Readmitted(WorldObservedHomePublication),
 }
 
 impl OutstandingDispatchOriginal {
@@ -22,11 +22,11 @@ impl OutstandingDispatchOriginal {
                 ..
             } => performed == original,
             Self::Readmitted(world) => {
-                world.after().selected_commit() == original.composite_commit()
-                    && world.attempt_identity() == original.publication_attempt()
+                world.composite_commit() == original.composite_commit()
+                    && world.publication_attempt() == original.publication_attempt()
                     && world.native_receipt() == original.relational_commit()
-                    && world.after().branch_identity() == original.product_branch()
-                    && world.after().lifecycle_incarnation() == original.product_incarnation()
+                    && world.product_branch() == original.product_branch()
+                    && world.product_incarnation() == original.product_incarnation()
             }
         }
     }

@@ -4,7 +4,6 @@ pub use associated_effects::{
     RelationalAssociatedEffectSettlement, RelationalAssociatedEffectSubject,
 };
 pub use checkpoint_complete::{
-    CapturedNativeInterimAdmission, CapturedNativeInterimComponent, CapturedNativeInterimOrigin,
     CapturedRelationalCheckpointAdmissionImage,
 };
 #[cfg(test)]
@@ -52,3 +51,5 @@ pub(crate) mod recovered_runtime;
 pub(crate) mod recovery;
 pub(crate) mod runtime_access;
 mod runtime_rebuild;
+pub use recovered_runtime::HomeReadmissionMetadataAuthority;
+pub(crate) use worth_relational_durability::internal_port::durability::authority::home_readmission_phase::HomeReadmissionMetadataPhase;

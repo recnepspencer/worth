@@ -9,7 +9,6 @@ pub mod covered_prefix;
 pub mod current_metadata;
 pub mod destination_members;
 pub mod draft;
-pub mod interim;
 pub mod metadata;
 pub mod original_image;
 pub mod prepare;
@@ -20,9 +19,6 @@ pub mod source;
 pub mod symbols;
 pub mod verified_originals;
 use crate::durability::data::RelationalNativeCheckpoint;
-pub use interim::{
-    CapturedNativeInterimAdmission, CapturedNativeInterimComponent, CapturedNativeInterimOrigin,
-};
 use worth_relational_contracts::internal_port::durability::data::native_checkpoint_capture_denial::RelationalNativeCheckpointCaptureDenial as Denial;
 
 /// The all-root producer's strong result, retaining its original read and ACK custody.

@@ -11,26 +11,33 @@ use worth_query_host::facade::application_entry::WorthQueryApplicationRequestExt
 const REPETITIONS: usize = 3;
 
 pub fn measure(
-    bytes: worth_query_host::facade::application_installation::WorthQueryApplicationCheckpoint,
+    directory: &std::path::Path,
+    seeds: &[(u64, u64, u64)],
     retained_steps: u64,
     current: &[CellRow],
     untouched: &[CellRow],
 ) {
     // Expected rows contain only issued weak identities and values already
     // checked against independent authored inputs. No old basis or host enters.
+    let snapshot =
+        worth_query_testkit_document_retention::facade::directory_home::ClosedDirectorySnapshot::capture(
+            directory,
+            "cell-history-cost",
+        );
     let mut copies = Vec::with_capacity(REPETITIONS);
     let mut readmissions = Vec::with_capacity(REPETITIONS);
     let mut materializations = Vec::with_capacity(REPETITIONS);
-    // The current transport value carries the capture origin and shares its
-    // immutable bytes. This metric measures that actual public Clone contract.
     for sample in 0..REPETITIONS {
         let copy_start = Instant::now();
-        let (transport, allocation) = super::peak::measure(|| bytes.clone());
+        let ((), allocation) = super::peak::measure(|| {
+            snapshot.restore_into(directory);
+        });
         copies.push(copy_start.elapsed().as_micros());
         super::peak::report("checkpoint-transport-copy", allocation);
         let start = Instant::now();
-        let (host, allocation) =
-            super::peak::measure(|| checkpoint::restore(transport, retained_steps));
+        let (host, allocation) = super::peak::measure(|| {
+            checkpoint::open_directory_cells(directory.to_path_buf(), seeds, retained_steps)
+        });
         readmissions.push(start.elapsed().as_micros());
         super::peak::report("checkpoint-readmission-constructor", allocation);
         materializations.push(first_answer(&host, sample, current));
@@ -39,7 +46,7 @@ pub fn measure(
             untouched,
             "the other feature also survives complete public readmission"
         );
-        drop(host);
+        let _ = host.close_for_reopen();
     }
     report("transport_copy", copies);
     report("readmission_constructor", readmissions);

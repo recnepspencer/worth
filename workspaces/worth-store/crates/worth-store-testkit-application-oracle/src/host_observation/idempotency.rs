@@ -12,7 +12,7 @@ use worth_relational::facade::{
     runtime::EntityReadRecord,
 };
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct IdempotencyProjection {
     pub entity: EntityId,
     pub created: VersionId,

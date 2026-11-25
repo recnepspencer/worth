@@ -12,25 +12,17 @@ fn nondefault_nested_value_uses_derived_binding_catalog_and_native_checkpoint() 
         authored
     );
 
-    let application =
-        host::install(authored.clone()).expect("typed source seed encodes through its binding");
+    let dir = worth_query_testkit_document_retention::facade::directory_home::unique_directory(
+        "canonical-value",
+    );
+    let application = host::open_directory(dir, authored.clone())
+        .expect("typed source seed encodes through its binding");
     assert_installed_contract(&application);
     assert_eq!(host::read(&application), authored);
-    let checkpoint = application
-        .runtime()
-        .with_host_advancement(|phase| {
-            application
-                .runtime()
-                .capture_application_checkpoint(
-                    &phase,
-                    WorthQueryCheckpointCapturePolicy::SystemAllocation,
-                )
-                .expect("native source checkpoint captures")
-        })
-        .expect("host capture phase opens");
-    drop(application);
+    let dir = application.checkpoint_and_close_for_reopen();
 
-    let restored = host::restore(checkpoint);
+    let restored = host::open_directory(dir, authored.clone())
+        .expect("Directory Home reopens with current-format native checkpoint");
     assert_installed_contract(&restored);
     assert_eq!(host::read(&restored), authored);
 }

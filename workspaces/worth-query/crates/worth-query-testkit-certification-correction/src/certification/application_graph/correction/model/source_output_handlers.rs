@@ -7,6 +7,11 @@ use super::{
 use worth_query_host::facade::primary_graph::*;
 pub struct IssueHandler;
 impl OperationHandler<NumericSchema, IssueBinding> for IssueHandler {
+    fn declared_durable_capabilities(
+    ) -> Option<&'static [worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability]> {
+        Some(&[worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability::RelationalMutation])
+    }
+
     fn decide(
         &self,
         input: &Issue,
@@ -103,6 +108,11 @@ pub fn record_contacts() -> usize {
     RECORDS.load(std::sync::atomic::Ordering::Relaxed)
 }
 impl OperationHandler<NumericSchema, RecordBinding> for RecordHandler {
+    fn declared_durable_capabilities(
+    ) -> Option<&'static [worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability]> {
+        Some(&[worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability::RelationalMutation])
+    }
+
     fn decide(
         &self,
         input: &Record,
@@ -144,6 +154,11 @@ impl OperationHandler<NumericSchema, RecordBinding> for RecordHandler {
 }
 pub struct RetireHandler;
 impl OperationHandler<NumericSchema, RetireBinding> for RetireHandler {
+    fn declared_durable_capabilities(
+    ) -> Option<&'static [worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability]> {
+        Some(&[worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability::RelationalMutation])
+    }
+
     fn decide(
         &self,
         input: &Retire,

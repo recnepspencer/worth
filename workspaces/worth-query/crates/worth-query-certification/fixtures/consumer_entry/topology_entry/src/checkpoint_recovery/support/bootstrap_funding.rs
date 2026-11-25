@@ -141,24 +141,15 @@ fn zero_memory_bootstrap_refuses_without_borrowing_the_worlds_resources() {
     assert_eq!(setup.memory().unwrap().charged_memory_bytes(), 0);
 }
 
-fn original_checkpoint() -> application_installation::WorthQueryApplicationCheckpoint {
-    let application = install(None);
-    application
-        .runtime()
-        .with_host_advancement(|phase| {
-            application.runtime().capture_application_checkpoint(
-                &phase,
-                application_installation::WorthQueryCheckpointCapturePolicy::SystemAllocation,
-            )
-        })
-        .unwrap()
-        .unwrap()
+fn original_directory() -> std::path::PathBuf {
+    let application = open_directory(None);
+    application.checkpoint_and_close_for_reopen()
 }
 
 #[test]
-fn funded_checkpoint_restore_keeps_the_worlds_zero_work_query_refusal() {
+fn funded_directory_reopen_keeps_the_worlds_zero_work_query_refusal() {
     let _guard = checkpoint_recovery_test_guard();
-    let checkpoint = original_checkpoint();
+    let directory = original_directory();
     let setup = SerialRequest::from_policy(
         &execution_policy::POPULATION_BOOTSTRAP_POLICY,
         CancellationSource::new().token(),
@@ -166,11 +157,12 @@ fn funded_checkpoint_restore_keeps_the_worlds_zero_work_query_refusal() {
     );
     let application =
         with_bootstrap_advancement_from_request(ExecutionRequest::serial(&setup), |phase| {
-            installation::install_checkpoint_in_bootstrap::<CheckpointProgram>(
+            installation::open_directory_in_bootstrap::<CheckpointProgram>(
                 &phase,
-                checkpoint,
+                directory,
                 Default::default(),
                 runtime_limits(),
+                |_| {},
                 installation::configuration(Arc::new(AtomicBool::new(false)), None),
             )
         })
@@ -178,7 +170,7 @@ fn funded_checkpoint_restore_keeps_the_worlds_zero_work_query_refusal() {
         .unwrap();
     assert!(
         setup.memory().unwrap().charged_memory_bytes() > 0,
-        "restoration retains its actual opening payer"
+        "reopen retains its actual opening payer"
     );
     {
         let (scope, principal) = authenticate(&application);
@@ -203,9 +195,9 @@ fn funded_checkpoint_restore_keeps_the_worlds_zero_work_query_refusal() {
 }
 
 #[test]
-fn checkpoint_restore_refuses_the_original_cancelled_phase() {
+fn directory_reopen_refuses_the_original_cancelled_phase() {
     let _guard = checkpoint_recovery_test_guard();
-    let checkpoint = original_checkpoint();
+    let directory = original_directory();
     let cancellation = CancellationSource::new();
     let setup = SerialRequest::from_policy(
         &execution_policy::POPULATION_BOOTSTRAP_POLICY,
@@ -215,27 +207,33 @@ fn checkpoint_restore_refuses_the_original_cancelled_phase() {
     let result =
         with_bootstrap_advancement_from_request(ExecutionRequest::serial(&setup), |phase| {
             cancellation.cancel();
-            installation::install_checkpoint_in_bootstrap::<CheckpointProgram>(
+            installation::open_directory_in_bootstrap::<CheckpointProgram>(
                 &phase,
-                checkpoint,
+                directory.clone(),
                 Default::default(),
                 runtime_limits(),
+                |_| {},
                 installation::configuration(Arc::new(AtomicBool::new(false)), None),
             )
         })
         .unwrap();
-    let Err(denial) = result else {
-        panic!("the original cancellation refuses reconstruction");
+    let Err(refused) = result else {
+        panic!("the original cancellation refuses reopen");
     };
-    let application_installation::WorthQueryApplicationPreparationDenial::Graph(cause) = *denial
-    else {
-        panic!("restore preserves the original request refusal");
-    };
-    assert!(matches!(
-        cause.kind(),
-        primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::ExecutionControlStopped {
-            kind: primary_graph::WorthQueryProviderSessionControlStopKind::Cancelled
-        }
-    ));
+    let detail = refused.detail();
+    assert!(
+        detail.contains("Cancelled") || detail.contains("Cancel"),
+        "reopen preserves the original cancellation refusal: {detail}"
+    );
+    let cleanup_cancel = CancellationSource::new();
+    let cleanup = SerialRequest::from_policy(
+        &directory::directory_policy(),
+        cleanup_cancel.token(),
+        None,
+    );
+    if let Ok(closed) = refused.close(&ExecutionRequest::serial(&cleanup)) {
+        closed.reclaim();
+    }
+    let _ = std::fs::remove_dir_all(&directory);
     assert_eq!(setup.memory().unwrap().charged_memory_bytes(), 0);
 }

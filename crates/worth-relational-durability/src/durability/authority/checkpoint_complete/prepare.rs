@@ -109,7 +109,6 @@ pub fn prepare(
     let region_custody = region_output.install_into(&mut draft);
     super::destination_members::require(&placement, &member_map, execution)?;
     let canonical_publication = canonical.publication(&draft, execution)?;
-    let inline_bytes = canonical.inline_bytes;
     let coverage = draft.covered_position;
     let through = draft.coverage.up_to_branch_transition;
     let manifest = draft.seal_for_request(execution)?;
@@ -119,25 +118,16 @@ pub fn prepare(
         member_map.values().cloned(),
     )?;
     drop(member_map);
-    let (bytes, sections) = crate::durability::log::native_checkpoint_codec::encode_complete(
-        &manifest,
-        &members,
-        execution,
-        placement.is_embedded(),
-        inline_bytes,
-    )?;
-    let publication = if placement.is_embedded() {
-        None
-    } else {
-        placement
-            .publication_source()
-            .map(|source| {
-                RelationalHistoryMemberDirectory::empty_for_request(execution)
-                    .map(|history| selection.prepare(manifest.clone(), source, history))
-            })
-            .transpose()
-            .map_err(stop)?
-    };
+    let (bytes, sections) =
+        crate::durability::log::native_checkpoint_codec::encode_complete(&manifest, execution)?;
+    let publication = placement
+        .publication_source()
+        .map(|source| {
+            RelationalHistoryMemberDirectory::empty_for_request(execution)
+                .map(|history| selection.prepare(manifest.clone(), source, history))
+        })
+        .transpose()
+        .map_err(stop)?;
     // Borrowed lookup scratch ends before the verified originals move into
     // their thin owning phase. The image consumes the same protected prefix.
     drop(lineage);

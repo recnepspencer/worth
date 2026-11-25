@@ -103,7 +103,11 @@ impl<Schema: ApplicationSchema> WorthQueryProductEntry<'_, Schema> {
             .inner
             .runtime
             .product_runtime_ref()
-            .begin_product_branch_close(self.branch, WorthQueryProductBranchCloseScope::Application)
+            .begin_product_branch_close_with_request(
+                self.branch,
+                WorthQueryProductBranchCloseScope::Application,
+                &execution,
+            )
             .map_err(WorthQueryApplicationProductBranchCloseDenial::Product)?;
         self.application
             .inner
@@ -118,6 +122,14 @@ impl<Schema: ApplicationSchema> WorthQueryProductEntry<'_, Schema> {
                 pending.occurrence().branch(),
                 pending.occurrence().incarnation(),
             );
+        let obligations = self.application.installed_program_support().map(|support| {
+            let history = support.obligation_history();
+            history.mark_branch_retired(
+                pending.occurrence().branch().name().as_str(),
+                pending.occurrence().incarnation().ordinal(),
+            );
+            history
+        });
         let (branch, cleanup) = pending.into_cleanup();
         WorthQueryApplicationProductBranchCleanup::new(
             cleanup,
@@ -126,6 +138,7 @@ impl<Schema: ApplicationSchema> WorthQueryProductEntry<'_, Schema> {
                 .runtime
                 .bridge_ref()
                 .conditional_operations(),
+            obligations,
         )
         .retry_with_retirements(&execution, &mut retirements)
         .map(|receipt| WorthQueryProductBranchCloseReceipt::from_owner_cleanup(branch, receipt))

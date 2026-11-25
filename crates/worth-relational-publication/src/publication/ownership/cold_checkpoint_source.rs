@@ -15,6 +15,21 @@ pub struct Source {
     commits: BTreeMap<PatchStreamPosition, Vec<u8>>,
 }
 impl Source {
+    /// The capture's own external members, without its canonical commits.
+    pub fn members_of(native: &RelationalNativeCheckpoint) -> Arc<dyn RelationalDurableColdSource> {
+        let members = native
+            .members()
+            .iter()
+            .map(|member| match member {
+                RelationalCheckpointMember::New { locator, bytes } => (*locator, bytes.to_vec()),
+                _ => panic!("first external capture owns its actual members"),
+            })
+            .collect();
+        Arc::new(Self {
+            members,
+            commits: BTreeMap::new(),
+        })
+    }
     pub fn archive<I>(
         native: RelationalNativeCheckpoint,
         artifacts: impl FnOnce() -> I,

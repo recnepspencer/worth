@@ -86,7 +86,7 @@ impl RecoveryState {
 }
 
 struct SuspensionRetry {
-    completion: RelationalMaterializationSuspensionCompletion,
+    completion: Option<RelationalMaterializationSuspensionCompletion>,
     branch: crate::basis::WorthQueryProductBranch,
     correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
     producer: ProducerQualification,
@@ -95,7 +95,7 @@ struct SuspensionRetry {
 impl WorthQueryGeneratedOutputSuspensionRecovery {
     pub(in crate::domain_computation::primary_graph::product_operation::generated_materialization) fn new(
         product: crate::domain_computation::WorthQueryProductUnpublishedApplication,
-        completion: RelationalMaterializationSuspensionCompletion,
+        completion: Option<RelationalMaterializationSuspensionCompletion>,
         branch: crate::basis::WorthQueryProductBranch,
         correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
         producer: ProducerQualification,
@@ -121,6 +121,40 @@ impl WorthQueryGeneratedOutputSuspensionRecovery {
             | RecoveryState::HandoffCleanup { retry, .. } => retry.branch,
             RecoveryState::PublishedWorld { settlement, .. }
             | RecoveryState::PublishedCleanup { settlement, .. } => settlement.retry.branch,
+        }
+    }
+
+    pub fn next_actions(
+        &self,
+    ) -> Result<
+        Vec<worth_runtime_world::facade::ProductUnpublishedNextAction>,
+        worth_runtime_world::facade::RuntimeWorldRecoveryDenial,
+    > {
+        match &self.state {
+            RecoveryState::Unpublished { product, .. } => Ok(product.next_actions().to_vec()),
+            RecoveryState::World { recovery, .. }
+            | RecoveryState::HandoffWorld { next: recovery, .. }
+            | RecoveryState::HandoffCleanup { next: recovery, .. }
+            | RecoveryState::PublishedWorld { recovery, .. } => {
+                Ok(recovery.inspect()?.next_actions().to_vec())
+            }
+            RecoveryState::PublishedCleanup { .. } => Ok(Vec::new()),
+        }
+    }
+
+    /// Hand back World's unpublished recovery handle when this recovery holds a
+    /// single unpublished World record (`Unpublished` or `World`). States with
+    /// handoff or pending cleanup custody return `Err(self)` intact.
+    pub fn into_world_recovery(
+        self,
+    ) -> Result<WorthQueryProductUnpublishedRecovery, Self> {
+        match self.state {
+            RecoveryState::Unpublished { product, .. } => Ok(product.into_recovery()),
+            RecoveryState::World { recovery, .. } => Ok(recovery),
+            state @ (RecoveryState::HandoffWorld { .. }
+            | RecoveryState::HandoffCleanup { .. }
+            | RecoveryState::PublishedWorld { .. }
+            | RecoveryState::PublishedCleanup { .. }) => Err(Self { state }),
         }
     }
 }
@@ -218,6 +252,18 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 ));
             }
         };
+        if unpublished.next_actions().contains(
+            &worth_runtime_world::facade::ProductUnpublishedNextAction::ReopenRequired,
+        ) {
+            return Err(failure(
+                WorthQueryGeneratedOutputSuspensionRecoveryStage::ReopenRequired,
+                RecoveryState::World { recovery, retry },
+            ));
+        }
+        if retry.completion.is_none() {
+            let stage = early_recovery_stage(&unpublished);
+            return Err(failure(stage, RecoveryState::World { recovery, retry }));
+        }
         let binding = selected.product().publication_binding();
         let prepared = match binding.prepare_settled_relational_adoption(&unpublished, request) {
             Ok(prepared) => prepared,
@@ -290,6 +336,20 @@ Err(PublicationDenial::Stopped(stop)) => Err(failure(
                 self.finish_handoff(execution, recovery, next, retry, retirements)
             }
         }
+    }
+}
+
+fn early_recovery_stage(
+    unpublished: &crate::domain_computation::WorthQueryProductUnpublishedApplication,
+) -> WorthQueryGeneratedOutputSuspensionRecoveryStage {
+    use worth_runtime_world::facade::ProductUnpublishedNextAction as Action;
+    let actions = unpublished.next_actions();
+    if actions.contains(&Action::ReopenRequired) {
+        WorthQueryGeneratedOutputSuspensionRecoveryStage::ReopenRequired
+    } else if actions.contains(&Action::ReleaseObligations) {
+        WorthQueryGeneratedOutputSuspensionRecoveryStage::ReleaseRequired
+    } else {
+        WorthQueryGeneratedOutputSuspensionRecoveryStage::AdoptionPreparation
     }
 }
 

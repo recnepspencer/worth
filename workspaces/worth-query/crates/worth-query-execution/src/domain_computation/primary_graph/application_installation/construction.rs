@@ -30,10 +30,6 @@ pub(super) fn construct_with_contributions_in_advancement<Schema, Contributions>
         Box<dyn crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource>,
     >,
     program_admission: Option<WorthQueryProgramAdmissionStep<'_, Schema>>,
-    checkpoint: Option<super::super::WorthQueryApplicationCheckpoint>,
-    checkpoint_transition: Option<
-        super::super::bootstrap::checkpoint_transition::CheckpointTransition<'_, '_, Schema>,
-    >,
 ) -> Result<WorthQueryPrimaryGraphApplicationRuntime<Schema>, WorthQueryApplicationPreparationDenial>
 where
     Schema: ApplicationSchemaComposition,
@@ -48,8 +44,6 @@ where
         initial_state,
         authorization_time_source,
         program_admission,
-        checkpoint,
-        checkpoint_transition,
     )?;
     publication::publish(phase, prepared)
 }

@@ -25,7 +25,7 @@ fn checkpoint_payload(bytes: &[u8]) -> Result<&[u8], DurabilityError> {
 pub mod checkpoint_decoding;
 pub mod checkpoint_encoding;
 pub mod complete_encoding;
-pub(crate) use complete_encoding::{canonical_inline_size, encode_complete};
+pub(crate) use complete_encoding::encode_complete;
 pub mod checkpoint_wire;
 pub mod cold_checkpoint;
 pub mod dictionary_capture;
@@ -36,10 +36,12 @@ pub mod manifest_capture;
 pub mod manifest_validation;
 pub mod member_frame;
 pub mod member_sequence;
-pub mod member_source;
-pub use checkpoint_decoding::decode_checkpoint;
 pub use checkpoint_decoding::decode_checkpoint_from_source;
-pub(crate) use checkpoint_decoding::{decode_checkpoint_with_image, decode_interim_with_image};
+#[doc(hidden)]
+pub use checkpoint_decoding::decode_expanded_checkpoint;
+pub(crate) use checkpoint_decoding::{decode_checkpoint_with_image, decode_manifest_directory};
+#[doc(hidden)]
+pub use checkpoint_encoding::encode_checkpoint_members;
 pub(crate) use checkpoint_encoding::{
     encode_captured, populate_expanded_canonical_members, CheckpointEncodingControl,
 };

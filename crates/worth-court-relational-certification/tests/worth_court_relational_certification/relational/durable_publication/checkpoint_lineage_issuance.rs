@@ -89,7 +89,10 @@ fn published_lineage_identities_stay_spent_after_image_embedded_and_cold_recover
                     source: None,
                 }
             } else {
-                RelationalCheckpointArtifactPolicy::Embedded
+                RelationalCheckpointArtifactPolicy::ExternalMembers {
+                    current_members: &[],
+                    source: None,
+                }
             };
             let native = producer
                 .durability_authority()

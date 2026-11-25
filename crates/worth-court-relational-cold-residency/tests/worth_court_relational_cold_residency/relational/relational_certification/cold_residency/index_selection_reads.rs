@@ -45,16 +45,20 @@ fn assert_selected(
 }
 
 /// The actual native capture restored into an independent receiver.
-fn restored(request: &ExecutionRequest<'_, '_>, runtime: &RelationalRuntime) -> RelationalRuntime {
-    let image = runtime
-        .durability_authority()
-        .native_checkpoint(request, request.allocation_policy())
-        .unwrap();
+fn restored(
+    request: &ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    prior: &std::sync::Arc<
+        worth_testkit_relational::durable_medium::immutable_members::ImmutableCheckpointMemberSource,
+    >,
+) -> RelationalRuntime {
+    let (image, image_source) =
+        worth_testkit_relational::cold_recovery::capture_external_carrying(request, runtime, prior);
     let medium = TestDurableMedium::new();
     let mut receiver = durable_runtime(&medium);
     receiver
         .durability_recovery()
-        .restore_native_checkpoint(request, &image)
+        .restore_native_checkpoint(request, &image, image_source)
         .unwrap();
     receiver
 }
@@ -166,10 +170,13 @@ fn complete_checkpoint_saves_the_selection_carried_to_its_current_root() {
     drop(head_basis);
     let image = producer
         .durability_authority()
-        .native_checkpoint(execution, execution.allocation_policy())
+        .native_checkpoint_with_policy(execution, execution.allocation_policy(), worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
         .unwrap();
     let inspected = image
-        .inspect_carried_index_selections(execution)
+        .inspect_carried_index_selections(
+            execution,
+            worth_testkit_relational::cold_recovery::members_source(&image),
+        )
         .unwrap()
         .expect("the checkpoint emits the selection-carrying payload");
     assert_eq!(inspected.format_version, inspected.expected_format_version);
@@ -195,7 +202,11 @@ fn complete_checkpoint_saves_the_selection_carried_to_its_current_root() {
     let mut receiver = durable_runtime(&medium);
     receiver
         .durability_recovery()
-        .restore_native_checkpoint(execution, &image)
+        .restore_native_checkpoint(
+            execution,
+            &image,
+            worth_testkit_relational::cold_recovery::members_source(&image),
+        )
         .unwrap();
     assert_selected(execution, &receiver, &[&*current, &*carried]);
 }
@@ -209,7 +220,7 @@ fn reclose_before_any_image_demand_keeps_the_selections_the_image_carried() {
     let pending = fixture.runtime.observe_carried_index_checkpoint_image();
     assert_eq!(pending, Some(fixture.member));
     let carried = fixture.carried.as_ref().unwrap();
-    let receiver = restored(execution, &fixture.runtime);
+    let receiver = restored(execution, &fixture.runtime, &fixture.source);
     assert_eq!(
         fixture.runtime.observe_carried_index_checkpoint_image(),
         pending,

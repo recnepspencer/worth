@@ -27,10 +27,7 @@ fn native_checkpoint_round_trip_restores_a_live_editable_world() {
     let committed = create_entity_outcome(execution, &runtime, "native-checkpoint");
     let checkpoint = runtime
         .durability_authority()
-        .native_checkpoint(
-            execution,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .native_checkpoint_with_policy(execution, worth_execution::ExecutionAllocationPolicy::SystemAllocation, worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
         .expect("the canonical committed world encodes as one opaque checkpoint");
 
     let mut recovered = durable_runtime(&medium);
@@ -38,7 +35,11 @@ fn native_checkpoint_round_trip_restores_a_live_editable_world() {
     let pre_recovery_identity = recovered.runtime_instance_id();
     let outcome = recovered
         .durability_recovery()
-        .restore_native_checkpoint(execution, &checkpoint)
+        .restore_native_checkpoint(
+            execution,
+            &checkpoint,
+            worth_testkit_relational::cold_recovery::members_source(&checkpoint),
+        )
         .expect("the opaque native checkpoint restores through durability authority");
 
     assert_ne!(recovered.runtime_instance_id(), pre_recovery_identity);
@@ -64,17 +65,18 @@ fn recovery_authority_only_admits_a_basis_from_the_recovered_image() {
     create_entity_outcome(execution, &source, "recovered-authority-source");
     let checkpoint = source
         .durability_authority()
-        .native_checkpoint(
-            execution,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .native_checkpoint_with_policy(execution, worth_execution::ExecutionAllocationPolicy::SystemAllocation, worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
         .unwrap();
 
     let mut exact_recovery = durable_runtime(&medium);
 
     let (_, exact_authority) = exact_recovery
         .durability_recovery()
-        .restore_native_checkpoint_with_authority(execution, &checkpoint)
+        .restore_native_checkpoint_with_authority(
+            execution,
+            &checkpoint,
+            worth_testkit_relational::cold_recovery::members_source(&checkpoint),
+        )
         .unwrap();
     let (_, exact_basis) = exact_recovery
         .observe_branch(&exact_recovery.main_branch_identity())
@@ -85,7 +87,11 @@ fn recovery_authority_only_admits_a_basis_from_the_recovered_image() {
 
     let (_, moved_authority) = moved_recovery
         .durability_recovery()
-        .restore_native_checkpoint_with_authority(execution, &checkpoint)
+        .restore_native_checkpoint_with_authority(
+            execution,
+            &checkpoint,
+            worth_testkit_relational::cold_recovery::members_source(&checkpoint),
+        )
         .unwrap();
     create_entity_outcome(execution, &moved_recovery, "post-recovery-movement");
     let (_, moved_basis) = moved_recovery
@@ -141,17 +147,18 @@ fn native_checkpoint_round_trip_restores_current_relation_adjacency() {
     let relation = changed_relations(&created)[0];
     let checkpoint = runtime
         .durability_authority()
-        .native_checkpoint(
-            execution,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .native_checkpoint_with_policy(execution, worth_execution::ExecutionAllocationPolicy::SystemAllocation, worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
         .unwrap();
 
     let mut recovered = durable_runtime(&medium);
 
     recovered
         .durability_recovery()
-        .restore_native_checkpoint(execution, &checkpoint)
+        .restore_native_checkpoint(
+            execution,
+            &checkpoint,
+            worth_testkit_relational::cold_recovery::members_source(&checkpoint),
+        )
         .unwrap();
     let rows = recovered
         .read_truth()
@@ -197,10 +204,7 @@ fn native_checkpoint_rejects_a_foreign_runtime_name_without_publishing_state() {
     create_entity_outcome(execution, &runtime, "native-checkpoint-runtime-name");
     let checkpoint = runtime
         .durability_authority()
-        .native_checkpoint(
-            execution,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .native_checkpoint_with_policy(execution, worth_execution::ExecutionAllocationPolicy::SystemAllocation, worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
         .unwrap();
     let mut recovered = RelationalRuntimeApi::builder()
         .schema_registry(worth_testkit_relational::durable_publication::schema())
@@ -210,7 +214,11 @@ fn native_checkpoint_rejects_a_foreign_runtime_name_without_publishing_state() {
 
     let error = recovered
         .durability_recovery()
-        .restore_native_checkpoint(execution, &checkpoint)
+        .restore_native_checkpoint(
+            execution,
+            &checkpoint,
+            worth_testkit_relational::cold_recovery::members_source(&checkpoint),
+        )
         .expect_err("a foreign runtime checkpoint cannot be admitted");
     let error = super::checkpoint_recovery_observation::failure(error);
 

@@ -7,15 +7,12 @@
 //! charge and boundary observes cancellation and the deadline; none opens a
 //! scope, consults the request, or takes a reservation. Retained buffers admit
 //! their exact bytes on the stage's memory lineage once, before allocation.
-use crate::durability::log::native_checkpoint_codec::member_frame;
 #[cfg(test)]
 use worth_execution::ExecutionAllocationPolicy;
 use worth_execution::{
-    ExecutionByteBuffer, ExecutionMemoryReservation, ExecutionRequest, ExecutionRequestArrayDenial,
-    MapKernelContext,
+    ExecutionByteBuffer, ExecutionRequest, ExecutionRequestArrayDenial, MapKernelContext,
 };
 use worth_relational_contracts::internal_port::durability::data::native_checkpoint_capture_denial::RelationalNativeCheckpointCaptureDenial as Denial;
-use worth_relational_storage::internal_port::durability::medium::cold_source::RelationalDurableMemberLocator;
 
 pub(crate) enum CheckpointEncodingControl<'stage, 'scope, 'lease, 'request, 'authority> {
     Original {
@@ -48,30 +45,6 @@ impl CheckpointEncodingControl<'_, '_, '_, '_, '_> {
             Self::Policy(policy) => {
                 ExecutionByteBuffer::allocate(bytes, *policy).map_err(Denial::Allocation)
             }
-        }
-    }
-    pub(crate) fn reserve_read(
-        &mut self,
-        bytes: u64,
-    ) -> Result<Option<ExecutionMemoryReservation>, Denial> {
-        match self {
-            Self::Original { execution, stage } => execution
-                .reserve_retained_memory_in_stage(stage, bytes)
-                .map_err(|cause| Denial::Request(cause.into())),
-            #[cfg(test)]
-            Self::Policy(_) => Ok(None),
-        }
-    }
-    pub(crate) fn locator(
-        &mut self,
-        bytes: &[u8],
-    ) -> Result<RelationalDurableMemberLocator, Denial> {
-        match self {
-            Self::Original { stage, .. } => {
-                member_frame::locator_in_stage(stage, bytes).map_err(Denial::Request)
-            }
-            #[cfg(test)]
-            Self::Policy(_) => Ok(member_frame::locator(bytes)),
         }
     }
 }

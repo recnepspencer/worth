@@ -164,6 +164,103 @@ pub fn recovered_with_history(
     }
 }
 
+/// External cold source built strictly from the members owned by a captured
+/// `RelationalNativeCheckpoint` (for standalone capture/restore test fixtures).
+pub fn members_source(
+    checkpoint: &RelationalNativeCheckpoint,
+) -> Arc<ImmutableCheckpointMemberSource> {
+    Arc::new(ImmutableCheckpointMemberSource {
+        members: checkpoint
+            .members()
+            .iter()
+            .map(|member| match member {
+                RelationalCheckpointMember::New { locator, bytes } => (*locator, bytes.clone()),
+                RelationalCheckpointMember::Carried { .. } => {
+                    panic!("standalone external capture owns all of its members")
+                }
+            })
+            .collect(),
+        commits: Default::default(),
+        canonical_members: Default::default(),
+        damaged: AtomicBool::new(false),
+        reads: Default::default(),
+        canonical_member_reads: Default::default(),
+        journal_reads: Default::default(),
+        member_reads: Default::default(),
+        commit_reads: Default::default(),
+        commits_damaged: Default::default(),
+        failed_member: Default::default(),
+        failures: Default::default(),
+    })
+}
+
+/// Capture a standalone external-member checkpoint and its member-backed cold source.
+pub fn capture_external_checkpoint(
+    request: &ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+) -> (
+    RelationalNativeCheckpoint,
+    Arc<ImmutableCheckpointMemberSource>,
+) {
+    let checkpoint = runtime
+        .durability_authority()
+        .native_checkpoint_with_policy(
+            request,
+            request.allocation_policy(),
+            RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
+        )
+        .expect("external native checkpoint capture");
+    let source = members_source(&checkpoint);
+    (checkpoint, source)
+}
+
+/// Capture an external-member checkpoint carrying unchanged members from `prior`.
+pub fn capture_external_carrying(
+    request: &ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    prior: &Arc<ImmutableCheckpointMemberSource>,
+) -> (
+    RelationalNativeCheckpoint,
+    Arc<ImmutableCheckpointMemberSource>,
+) {
+    let current_members: Vec<_> = prior.members.keys().copied().collect();
+    let checkpoint = runtime
+        .durability_authority()
+        .native_checkpoint_with_policy(
+            request,
+            request.allocation_policy(),
+            RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &current_members,
+                source: Some(prior.clone()),
+            },
+        )
+        .expect("carrying external native checkpoint capture");
+    let mut members = prior.members.clone();
+    for member in checkpoint.members() {
+        if let RelationalCheckpointMember::New { locator, bytes } = member {
+            members.insert(*locator, bytes.clone());
+        }
+    }
+    let source = Arc::new(ImmutableCheckpointMemberSource {
+        members,
+        commits: prior.commits.clone(),
+        canonical_members: prior.canonical_members.clone(),
+        damaged: AtomicBool::new(false),
+        reads: Default::default(),
+        canonical_member_reads: Default::default(),
+        journal_reads: Default::default(),
+        member_reads: Default::default(),
+        commit_reads: Default::default(),
+        commits_damaged: Default::default(),
+        failed_member: Default::default(),
+        failures: Default::default(),
+    });
+    (checkpoint, source)
+}
+
 /// The checkpoint members and canonical artifacts actually committed by its medium.
 pub fn immutable_source(
     checkpoint: &RelationalNativeCheckpoint,

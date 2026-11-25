@@ -4,13 +4,38 @@ use super::*;
 use worth_query_host::facade::application_entry::WorthQueryApplicationReadObservation;
 mod selected;
 use selected::{access, navigation_access, read};
-fn install() -> Host {
+fn install() -> world::DirHost<program::Program> {
     let schema = Schema::declaration().unwrap();
-    in_memory_program(ApplicationProgramAuthoring::<Schema, program::Program>::begin().with_schema(&schema).validated_program().unwrap(),
-        schema, (world::Configuration::default(),),
-        ApplicationBuildIdentity::parse("91830000-0000-0000-0000-000000005356").unwrap(),
-        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
-        |_, graph, installed| { world::seed(graph, installed, 1, Some(10))?; policy::seed(graph) }).unwrap()
+    let directory = worth_query_testkit_document_retention::facade::directory_home::unique_directory(
+        "owned-outputs-predecessor-inspection",
+    );
+    let home = worth_query_testkit_document_retention::facade::directory_home::with_directory_bootstrap(
+        |phase| {
+            worth_query_host::facade::WorthQueryApplicationHomeRequest::new(
+                worth_query_host::facade::WorthQueryApplicationHomeLocation::Directory(
+                    directory.clone(),
+                ),
+                ApplicationProgramAuthoring::<Schema, program::Program>::begin()
+                    .with_schema(&schema)
+                    .validated_program()
+                    .unwrap(),
+                WorthQueryApplicationProgramRoster::new(),
+                schema,
+                (world::Configuration::default(),),
+                ApplicationBuildIdentity::parse("91830000-0000-0000-0000-000000005356").unwrap(),
+                host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
+                |_, graph, installed| {
+                    world::seed(graph, installed, 1, Some(10))?;
+                    policy::seed(graph)
+                },
+            )
+            .open_in_advancement(phase)
+        },
+    )
+    .unwrap_or_else(|refused| panic!("predecessor inspection directory open refused: {refused:?}"));
+    worth_query_testkit_document_retention::facade::directory_home::DirectoryHomeGuard::wrap(
+        home, directory,
+    )
 }
 fn mutate(
     host: &Host,

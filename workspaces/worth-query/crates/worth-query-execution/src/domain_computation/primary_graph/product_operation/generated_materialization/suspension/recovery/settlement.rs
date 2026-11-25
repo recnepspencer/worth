@@ -27,7 +27,9 @@ impl PublishedSuspensionSettlement {
             retry.branch,
             retry.correspondence,
             retry.producer,
-            retry.completion,
+            retry
+                .completion
+                .expect("performed suspension adoption carries prepared Relational completion"),
             commit,
         )
     }

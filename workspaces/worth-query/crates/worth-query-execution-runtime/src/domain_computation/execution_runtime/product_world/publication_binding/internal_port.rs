@@ -39,6 +39,11 @@ pub trait ProductPublicationBindingInternalPort {
         selected: &WorthQuerySelectedProgramInspection,
     ) -> Result<(), SelectedProgramSourceRetentionDenial>;
 
+    fn carry_selected_program_source_from(
+        &mut self,
+        prior: &Self,
+    ) -> Result<(), SelectedProgramSourceRetentionDenial>;
+
     fn admitted_program_source(
         &self,
     ) -> Result<worth_proof::AdmittedBranchProgramSource, WorldOpenAttemptRefusal>;
@@ -139,6 +144,13 @@ impl ProductPublicationBindingInternalPort for WorthQueryProductPublicationBindi
         selected: &WorthQuerySelectedProgramInspection,
     ) -> Result<(), SelectedProgramSourceRetentionDenial> {
         Self::retain_selected_program_source(self, selected)
+    }
+
+    fn carry_selected_program_source_from(
+        &mut self,
+        prior: &Self,
+    ) -> Result<(), SelectedProgramSourceRetentionDenial> {
+        Self::carry_selected_program_source_from(self, prior)
     }
 
     fn admitted_program_source(

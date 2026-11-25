@@ -8,21 +8,6 @@ use crate::durability::data::{
 };
 
 impl<'runtime> DurabilityAuthority<'runtime> {
-    pub fn native_checkpoint(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
-    ) -> Result<
-        crate::durability::data::RelationalNativeCheckpoint,
-        crate::durability::data::RelationalNativeCheckpointCaptureDenial,
-    > {
-        self.native_checkpoint_with_policy(
-            execution,
-            policy,
-            crate::durability::data::RelationalCheckpointArtifactPolicy::Embedded,
-        )
-    }
-
     pub fn native_checkpoint_with_policy(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

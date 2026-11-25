@@ -37,6 +37,7 @@ macro_rules! handler {
         impl<Schema: TopologySchemaBinding> OperationHandler<Schema, $binding<Schema>>
             for $handler<Schema>
         {
+    fn declared_durable_capabilities() -> Option<&'static [worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability]> { Some(&[worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability::RelationalMutation]) }
             fn decide(
                 &self,
                 _: &RegionOutputInput,

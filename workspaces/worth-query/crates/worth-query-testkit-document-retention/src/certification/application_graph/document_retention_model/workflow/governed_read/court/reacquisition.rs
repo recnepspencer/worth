@@ -8,19 +8,18 @@ pub use super::*;
 pub use worth_query_host::facade::application_entry::{
     PerformedWorkflowInstanceStart, PublishedWorkflowInstanceRef, WorkflowProgressOutcome,
 };
-pub use worth_query_host::facade::application_installation::{
-    WorthQueryApplicationProgramRoster, WorthQueryCheckpointCapturePolicy,
-};
+pub use worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster;
 #[path = "reacquisition/successors.rs"]
 pub mod successors;
 
-pub fn support_successor(application: &mut GovernedRuntime) {
+pub fn support_successor(application: &mut impl GovernedWorkflowOwner) {
     let supported = workflow::runtime::install_workflow_spec_for::<
         RetentionProgramP1,
         GovernedDocumentWorkflow,
     >(
         application.runtime().installed_schema(),
         application
+            .program_runtime()
             .supported_program::<RetentionProgramP1>()
             .unwrap()
             .installed_program(),
@@ -33,7 +32,7 @@ pub fn support_successor(application: &mut GovernedRuntime) {
         });
 }
 pub fn carry(
-    application: &GovernedRuntime,
+    application: &impl GovernedWorkflowOwner,
     revision: &worth_query_host::facade::declaration::application_program::ApplicationProgramRevision,
 ) {
     let scope = request_scope();
@@ -73,7 +72,7 @@ pub fn live(view: WorthQueryWorkflowInstanceRead) -> PublishedWorkflowInstanceRe
     }
 }
 pub fn advance(
-    application: &GovernedRuntime,
+    application: &impl GovernedWorkflowOwner,
     instance: PublishedWorkflowInstanceRef,
     key: u64,
 ) -> WorkflowProgressOutcome {

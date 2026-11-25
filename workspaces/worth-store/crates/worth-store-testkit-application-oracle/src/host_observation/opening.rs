@@ -45,6 +45,28 @@ pub fn open(
         .unwrap_or_else(|refused| panic!("production Host opening refused: {refused:?}"))
 }
 
+pub fn open_request<Schema, Program>(
+    mut request: worth_query_host::facade::WorthQueryApplicationHomeRequest<'_, Schema, Program>,
+    control: Option<ApplicationHomeOpeningControlForTest>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> worth_query_host::facade::WorthQueryApplicationHome<Schema, Program>
+where
+    Schema: worth_query_host::facade::declaration::application_schema::ApplicationSchemaComposition,
+    Program: worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
+            Schema,
+        > + 'static,
+    Program::Outputs: worth_query_host::facade::declaration::application_program::ApplicationProgramOutputsShape<Schema>
+        + worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoots<Schema>,
+    Program::Contributions: worth_query_host::facade::application_contribution::WorthQueryApplicationContributionTuple<Schema>,
+{
+    if let Some(control) = control {
+        request = request.with_opening_control_for_test(control);
+    }
+    with_bootstrap_advancement_from_request(*execution, |phase| request.open_in_advancement(&phase))
+        .expect("the actual bootstrap phase is admitted")
+        .unwrap_or_else(|refused| panic!("production Host opening refused: {refused:?}"))
+}
+
 /// Attach certification placement to any Host opening request and return its
 /// physical mutation pause handle.
 pub fn attach_placement<'a, Schema, Program, Transition>(

@@ -73,6 +73,8 @@ impl ActiveAttemptCustody {
     ) -> Result<(), WorldDurablePublicationStop> {
         match binding.publish(subject, execution) {
             Ok(committed) => {
+                let position = committed.position();
+                let digest = *committed.digest().bytes();
                 let mut lease = self.lease_resources();
                 let resources = lease.resources_mut();
                 resources
@@ -80,12 +82,16 @@ impl ActiveAttemptCustody {
                     .as_mut()
                     .expect("same cell movement installed before I/O")
                     .acknowledge(committed.into_witness());
-                let origin = resources
+                let occurrence = resources
                     .durable_occurrence
                     .as_mut()
-                    .expect("same original occurrence custody")
-                    .take_origin();
+                    .expect("same original occurrence custody");
+                let origin = occurrence.take_origin();
+                let location = occurrence.take_location();
                 binding.retain_checkpoint_occurrence(origin);
+                if let Some(location) = location {
+                    binding.install_prepared_occurrence_location(location, position, digest);
+                }
                 Ok(())
             }
             Err(WorldDurablePublicationStop::Refused(cause)) => {

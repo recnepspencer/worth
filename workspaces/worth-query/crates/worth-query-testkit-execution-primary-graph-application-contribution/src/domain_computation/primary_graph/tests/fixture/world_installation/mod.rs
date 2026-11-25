@@ -87,66 +87,6 @@ pub fn installed_world_with_policy_fact(
     })
 }
 
-/// Reopens an identity world from one Query application checkpoint through the
-/// same native readmission application installation uses.
-pub fn restored_world(
-    checkpoint: worth_query_execution::facade::application_installation::WorthQueryApplicationCheckpoint,
-) -> Result<
-    IdentityWorld,
-    worth_query_execution::facade::domain_computation::WorthQueryPrimaryGraphInstallationDenial,
-> {
-    let opening = worth_execution::SerialRequest::from_memory(
-        worth_execution::SerialMemoryBudget::new(None),
-        worth_execution::CancellationSource::new().token(),
-        None,
-    );
-    let execution = worth_execution::ExecutionRequest::serial(&opening);
-    worth_query_execution::facade::application_contribution::with_bootstrap_advancement_from_request(execution, |phase| {
-
-        let declaration = IdentityExecutionSchema::declaration().unwrap();
-        let admitted = WorthQueryInstallationAdmissionProfile::new("support", "configuration")
-            .admit(portable_package(declaration.clone()))
-            .unwrap();
-        let (runtime, authority) = WorthQueryExecutionRuntimeInstaller::new()
-            .install(WorthQueryInstallationGeneration::initial(), [admitted])
-            .unwrap()
-            .into_parts();
-        let schema = runtime
-            .installed_packages()
-            .bind_application_schema(declaration)
-            .unwrap();
-        let binding = schema
-            .principal_binding(IdentityBinding::reference())
-            .unwrap();
-        let decoded = checkpoint
-            .decode_with_execution_for_test(&execution)
-            .expect("the Query-issued checkpoint decodes under the original host request");
-        let mut bootstrap = authority.prepare_primary_graph_from_native_checkpoint_with_invariants(&phase,
-        &runtime,
-        &schema,
-        worth_relational::facade::runtime::RelationalRuntimeApi::builder().build().expect("valid native runtime configuration"),
-        worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
-        worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantFactories::for_installed_schema(&schema),
-        &decoded,
-        false,
-    )?;
-        crate::domain_computation::primary_graph::tests::fixture::handler_installation::install_fixture_handlers(&schema, &mut bootstrap);
-        let application = bootstrap
-            .publish_application_runtime(
-                &phase,
-                runtime,
-                authority,
-                schema,
-                worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
-            )
-            .unwrap();
-        Ok(IdentityWorld {
-            application,
-            binding,
-        })
-    }).expect("the explicit fixture reconstruction request admits its bootstrap")
-}
-
 pub fn installed_authorization_world(
     include_owner_relation: bool,
     admission_clock: worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock,

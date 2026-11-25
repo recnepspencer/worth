@@ -151,12 +151,16 @@ fn a_selection_restore_survives_capture_validation_and_both_restore_forms() {
     let checkpoint = world
         .runtime
         .durability_authority()
-        .native_checkpoint(execution, execution.allocation_policy())
+        .native_checkpoint_with_policy(
+execution,
+execution.allocation_policy(),
+worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None },
+)
         .expect("capture binds the restore's entity allocation");
     let mut expanded = named_runtime();
     expanded
         .durability_recovery()
-        .restore_native_checkpoint(execution, &checkpoint)
+        .restore_native_checkpoint(execution, &checkpoint, worth_testkit_relational::cold_recovery::members_source(&checkpoint))
         .expect("validation accepts the restore's entity binding");
     assert_eq!(served(execution, &expanded, &world), original);
 

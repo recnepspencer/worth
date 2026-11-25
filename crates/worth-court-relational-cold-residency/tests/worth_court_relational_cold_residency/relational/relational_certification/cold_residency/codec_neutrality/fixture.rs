@@ -123,11 +123,33 @@ pub(super) fn capture(
 ) -> RelationalNativeCheckpoint {
     runtime
         .durability_authority()
-        .native_checkpoint(
-            execution,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .native_checkpoint_with_policy(
+execution,
+worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None },
+)
         .unwrap()
+}
+
+/// Restore `native` for codec transition through its own external members.
+pub(crate) fn restore_codec_transition(
+    target: &mut RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    native: &RelationalNativeCheckpoint,
+) -> Result<
+    (
+        worth_relational::facade::durability::RecoveryOutcome,
+        worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority,
+    ),
+    worth_relational::facade::durability::RelationalRecoveryStop,
+> {
+    target
+        .durability_recovery()
+        .restore_native_checkpoint_for_codec_transition_with_authority(
+            execution,
+            native,
+            worth_testkit_relational::cold_recovery::members_source(native),
+        )
 }
 
 pub(super) fn activation(id: EntityId) -> RecoveredCheckpointProgramActivationUpdate {

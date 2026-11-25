@@ -140,6 +140,12 @@ mod domain_computation_primary_graph_application_runtime_managed_cleanup {
         pub fn managed_cleanup_obligations(&self) -> Vec<QueryManagedCleanupObligation> {
             self.inner.managed_cleanup_obligations()
         }
+        pub fn is_output_demand_retained(
+            &self,
+            original: &crate::domain_computation::primary_graph::WorthQueryOriginalOutputDemand,
+        ) -> bool {
+            self.inner.is_output_demand_retained(original)
+        }
         pub fn discharge_managed_cleanup(
             &self,
             phase: &WorthQueryAdvancementPhase<'_>,

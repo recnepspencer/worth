@@ -3,15 +3,19 @@ use super::*;
 use producers::{child, parent};
 pub type Request<'a, 'p, 's> = WorthQueryApplicationRequest<'a, 'p, 's, Schema>;
 pub type Settled = WorthQuerySettledProgramOutputOperation<Schema, Program, program::Tree>;
-pub fn settle(app: &world::App, request: &Request<'_, '_, '_>) -> Settled {
+pub fn settle(app: &world::RuntimeApp, request: &Request<'_, '_, '_>) -> Settled {
     settle_key(app, request, "root")
 }
-pub fn settle_key(app: &world::App, request: &Request<'_, '_, '_>, key: &str) -> Settled {
+pub fn settle_key(app: &world::RuntimeApp, request: &Request<'_, '_, '_>, key: &str) -> Settled {
     let settled = settle_key_unchecked(app, request, key);
     settled.deliver_current(request).unwrap();
     settled
 }
-pub fn settle_key_unchecked(app: &world::App, request: &Request<'_, '_, '_>, key: &str) -> Settled {
+pub fn settle_key_unchecked(
+    app: &world::RuntimeApp,
+    request: &Request<'_, '_, '_>,
+    key: &str,
+) -> Settled {
     let mut operation = request
         .demand(parent::Demand(key.into()))
         .retain_program_outputs::<Program, program::Tree>(app)
@@ -56,7 +60,7 @@ pub fn child_id(settled: &Settled, key: &str) -> impl Eq + std::fmt::Debug + use
     }
 }
 pub fn resize(
-    app: &world::App,
+    app: &world::RuntimeApp,
     request: &Request<'_, '_, '_>,
     width: u64,
     nonce: u64,

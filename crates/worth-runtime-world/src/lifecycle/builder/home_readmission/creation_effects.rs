@@ -9,10 +9,7 @@ use crate::durability::{
 };
 use std::ops::ControlFlow;
 use worth_execution::{ExecutionOrderedMap, ExecutionRequest};
-use worth_foundational::facade::{
-    CanonicalDigestId, DurableCompositePublicationAttemptIdentity as Attempt, DurableOwnerFamily,
-    UncleanRecoveryUnsupported,
-};
+use worth_foundational::facade::DurableCompositePublicationAttemptIdentity as Attempt;
 use worth_relational::facade::{
     branch::RelationalBranchTransition as Transition,
     durability::RecoveredRelationalRuntimeAuthority, runtime::RelationalRuntime,
@@ -57,14 +54,9 @@ pub(super) fn validate(
             let Some(digest) = effect.recorded_artifact_digest() else {
                 return ControlFlow::Break(D::CreationEvidenceMismatch);
             };
-            // A fork with no recorded intent joins no original (D18 until C5).
+            // A fork with no recorded creation intent joins no original.
             let Some(original) = image.creations.get(&association.attempt()) else {
-                return ControlFlow::Break(D::UncleanRecoveryUnsupported(
-                    UncleanRecoveryUnsupported {
-                        owner: DurableOwnerFamily::Relational,
-                        effect: CanonicalDigestId::new(digest),
-                    },
-                ));
+                return ControlFlow::Break(D::MissingCreationIntent);
             };
             let intent = original.intent();
             if intent.association != association {

@@ -15,7 +15,7 @@ pub(super) fn reopen(
     let checkpoint = world
         .runtime
         .durability_authority()
-        .native_checkpoint(execution, execution.allocation_policy())
+        .native_checkpoint_with_policy(execution, execution.allocation_policy(), worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
         .unwrap();
     let path = std::env::temp_dir().join(format!(
         "worth-ordinary-native-{}-{mixed}-{}.checkpoint",
@@ -48,6 +48,7 @@ pub(super) fn reopen(
         .restore_native_checkpoint(
             execution,
             &RelationalNativeCheckpoint::from_untrusted_bytes(bytes.into_boxed_slice()),
+            worth_testkit_relational::cold_recovery::members_source(&checkpoint),
         )
         .expect("the canonical event and current roster must reopen without a format change");
     let receipt = runtime

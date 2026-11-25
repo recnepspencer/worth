@@ -15,7 +15,7 @@ fn checkpoint_recovery_rejects_foreign_branch_target_substitution() {
     let feature = create_branch_from_main(&runtime, "feature");
     create_entity_outcome_on_branch(execution, &runtime, "feature-only", feature.clone());
     create_entity_outcome(execution, &runtime, "main-only");
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     let mut plan = medium
         .recovery_plan(
             execution,
@@ -67,7 +67,7 @@ fn tail_recovery_rejects_foreign_branch_target_substitution() {
         "feature-before-checkpoint",
         feature.clone(),
     );
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     let tail_commit = create_entity_outcome(execution, &runtime, "main-tail");
     let mut plan = medium
         .recovery_plan(

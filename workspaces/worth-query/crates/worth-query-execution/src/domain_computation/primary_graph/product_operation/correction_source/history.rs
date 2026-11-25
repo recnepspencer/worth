@@ -262,6 +262,7 @@ impl<'runtime, S: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime
             principal,
             request,
             &coordinates,
+            None,
             bounds.history,
             bounds.results,
             Some(WalkedOriginal {

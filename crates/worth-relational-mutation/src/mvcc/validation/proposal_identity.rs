@@ -27,6 +27,10 @@ impl RelationalMutationProposalIdentity {
         self.omitted_publication_appendix
     }
 
+    pub fn omits_publication_appendix(&self) -> bool {
+        self.omitted_publication_appendix
+    }
+
     pub(crate) fn same_proposal_sequence(&self, other: &Self) -> bool {
         self.omitted_publication_appendix == other.omitted_publication_appendix
             && self.runtime_instance_id == other.runtime_instance_id

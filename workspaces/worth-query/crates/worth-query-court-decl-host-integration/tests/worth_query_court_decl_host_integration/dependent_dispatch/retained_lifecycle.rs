@@ -17,24 +17,19 @@ fn retained_discovery_reuses_recovered_outputs_after_an_equal_source_commit() {
     // Original: root I, child I, leaf I. Reopen and retain root, then advance
     // the head by an equal authored source commit: all recovered outputs reuse,
     // with zero producer selections and the original full child output ID.
-    let app = world::install(1, Selections::default());
+    let dir = worth_query_testkit_document_retention::facade::directory_home::unique_directory(
+        "retained-lifecycle",
+    );
+    let app = world::open_directory(dir, 1, Selections::default(), false);
     let (scope, principal) = world::authenticate(&app);
     let request = app.request(&principal, &scope);
     let first = settle(&app, &request);
     let id = child_id(&first, "root.0");
     close(first, &request);
-    let checkpoint = app
-        .with_host_advancement(|phase| {
-            app.capture_application_checkpoint(
-                &phase,
-                installation::WorthQueryCheckpointCapturePolicy::SystemAllocation,
-            )
-            .unwrap()
-        })
-        .unwrap();
-    drop((principal, scope, app));
+    drop((principal, scope));
+    let dir = app.checkpoint_and_close_for_reopen();
     let selections = Selections::default();
-    let app = world::restore(checkpoint, selections.clone());
+    let app = world::open_directory(dir, 1, selections.clone(), false);
     let (scope, principal) = world::authenticate(&app);
     let request = app.request(&principal, &scope);
     let older = retain_root(start(&app, &request), &request);

@@ -21,8 +21,7 @@ where
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         request: &WorthQueryRequestScope,
-        runtime_authority: u64,
-        observation: &WorthQueryProductBranchReadIdentity,
+        authority: &crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::publication::operation::WorkflowOperationAuthority,
     ) -> Result<(), WorthQueryApplicationAttemptDenial>;
 }
 

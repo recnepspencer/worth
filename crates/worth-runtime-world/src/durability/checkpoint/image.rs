@@ -225,6 +225,13 @@ pub(crate) struct WorldCheckpointImage {
         ),
         WorldImageHead,
     >,
+    pub(crate) commit_references: ExecutionOrderedMap<
+        (
+            DurableCompositeCommitIdentity,
+            DurableProductBranchIncarnation,
+        ),
+        WorldImageHead,
+    >,
     pub(crate) heads: ExecutionOrderedMap<WorldBranchImageKey, WorldImageHead>,
     pub(crate) opens:
         ExecutionOrderedMap<DurableCompositePublicationAttemptIdentity, AdmittedWorldOpenAttempt>,
@@ -255,6 +262,7 @@ impl WorldCheckpointImage {
             collected_steps: Default::default(),
             history: Default::default(),
             references: Default::default(),
+            commit_references: Default::default(),
             heads: Default::default(),
             opens: Default::default(),
             dispositions: Default::default(),

@@ -136,34 +136,57 @@ pub fn install_owned(
 
 #[allow(
     dead_code,
-    reason = "this shared schema-typed owner reopens V2; the original V1 owner stays live"
+    reason = "this shared schema-typed owner opens or reopens a Directory Home"
 )]
-pub fn restore(checkpoint: WorthQueryApplicationCheckpoint) -> Host {
-    let funding = worth_execution::ExecutionResourceLease::serial(
-        crate::facade::certification::canonical_transition::capture_child::complete_capture_funding(
-        ),
+pub fn open_directory(
+    directory: std::path::PathBuf,
+    value: NestedValue,
+) -> worth_query_testkit_document_retention::facade::directory_home::DirectoryHomeGuard<
+    CanonicalSchema,
+    Program,
+> {
+    let home = worth_query_testkit_document_retention::facade::directory_home::with_directory_bootstrap(|phase| {
+        worth_query_host::facade::WorthQueryApplicationHomeRequest::new(
+            worth_query_host::facade::WorthQueryApplicationHomeLocation::Directory(directory.clone()),
+            program(),
+            WorthQueryApplicationProgramRoster::new().support(
+                super::companion::host::program::<super::companion::program::TargetProgram>(),
+            ),
+            CanonicalSchema::declaration().unwrap(),
+            ((),),
+            ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
+            limits(),
+            move |_, graph, installed| {
+                let binding = installed
+                    .principal_binding(DocumentPrincipalBinding::reference())
+                    .unwrap();
+                graph.bind_principal(
+                    &binding,
+                    WorthQueryApplicationPrincipalKey::new("canonical-value-operator").unwrap(),
+                    1_u64,
+                    operator_identity(),
+                    WorthQueryPrincipalMappingStatus::Enabled,
+                )?;
+                graph.bind_entity(
+                    WorthQueryApplicationEntitySeed::new(
+                        Document::reference(),
+                        WorthQueryApplicationEntityKey::new("nested-row").unwrap(),
+                    )
+                    .field(
+                        DocumentIdentityField::at("DocumentIdentityField"),
+                        "authored-nested".to_owned(),
+                    )
+                    .field(DocumentValueField::at("DocumentValueField"), value),
+                )?;
+                Ok(())
+            },
+        )
+        .open_in_advancement(phase)
+    })
+    .expect("related canonical Directory Home opens");
+    worth_query_testkit_document_retention::facade::directory_home::DirectoryHomeGuard::wrap(
+        home, directory,
     )
-    .unwrap();
-    crate::facade::certification::canonical_transition::capture_child::funded_by(
-        &funding,
-        |phase| {
-            WorthQueryInterimCheckpointRestore::rostered_program_in_advancement(
-                phase,
-                ApplicationProgramAuthoring::<CanonicalSchema, Program>::begin()
-                    .validated_program()
-                    .unwrap(),
-                WorthQueryApplicationProgramRoster::new().support(
-                    super::companion::host::program::<super::companion::program::TargetProgram>(),
-                ),
-                CanonicalSchema::declaration().unwrap(),
-                ((),),
-                ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-                limits(),
-                checkpoint,
-            )
-        },
-    )
-    .expect("current-format native checkpoint restores")
 }
 
 pub fn read(host: &Host) -> NestedValue {
@@ -325,24 +348,4 @@ pub fn output_ids(
         roles.entity::<CreatedLeft>().unwrap().entity_id(),
         roles.entity::<CreatedRight>().unwrap().entity_id(),
     ]
-}
-pub fn capture(host: &Host) -> WorthQueryApplicationCheckpoint {
-    let funding = worth_execution::ExecutionResourceLease::serial(
-        crate::facade::certification::canonical_transition::capture_child::complete_capture_funding(
-        ),
-    )
-    .unwrap();
-    host.runtime()
-        .with_funded_host_advancement(
-            WorthQueryCheckpointCapturePolicy::Execution(&funding),
-            |phase| {
-                host.runtime()
-                    .capture_application_checkpoint(
-                        &phase,
-                        WorthQueryCheckpointCapturePolicy::Execution(&funding),
-                    )
-                    .unwrap()
-            },
-        )
-        .unwrap()
 }

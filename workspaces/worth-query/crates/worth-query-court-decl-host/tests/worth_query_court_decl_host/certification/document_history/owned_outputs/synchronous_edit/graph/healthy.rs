@@ -9,7 +9,7 @@ fn exercise<const CHILD_B: bool>(worker: bool, cold: bool) {
         host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
     };
     let mut host =
-        world::install_program_with_other_model::<program::Program<CHILD_B>>(limits, 2, Some(5));
+        world::open_directory_program_with_other_model::<program::Program<CHILD_B>>(limits, 2, Some(5));
     let scope = request_scope();
     let mut original = None;
     for (key, value, expected_contacts) in [("a", 3, 2), ("b", 7, usize::from(CHILD_B))] {
@@ -93,10 +93,10 @@ fn exercise<const CHILD_B: bool>(worker: bool, cold: bool) {
         );
         if cold && key == "a" {
             drop(outputs);
-            let checkpoint = super::super::failure::checkpoint(&host);
-            drop(host);
-            host = world::restore_program_checkpoint::<program::Program<CHILD_B>>(
-                checkpoint, worker, false,
+            drop(principal);
+            let directory = host.checkpoint_and_close_for_reopen();
+            host = world::reopen_program_directory::<program::Program<CHILD_B>>(
+                directory, worker, false,
             );
         }
     }

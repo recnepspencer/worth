@@ -151,7 +151,7 @@ fn tail_rejects_same_commit_root_descriptor_substitution() {
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);
     create_entity_outcome(execution, &runtime, "tail-descriptor-checkpoint");
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     let tail_commit = create_entity_outcome(execution, &runtime, "tail-descriptor-commit");
     let mut plan = medium
         .recovery_plan(
@@ -205,9 +205,9 @@ fn checkpoint_recovery_plan(
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);
     create_entity_outcome(execution, &runtime, label);
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     medium
-        .recovery_plan(
+        .expanded_recovery_plan(
             execution,
             &runtime,
             RecoveryVerificationMode::NormalRecoveryVerification,

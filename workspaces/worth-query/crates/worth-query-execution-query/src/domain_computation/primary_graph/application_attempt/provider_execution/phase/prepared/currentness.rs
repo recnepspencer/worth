@@ -33,7 +33,7 @@ pub fn readmit_current_basis<Schema, Operation, Input, Scope>(
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     admission: &mut WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     retained: WorthQueryApplicationSnapshotLease,
-    current: crate::basis::WorthQueryProductBranchLease,
+    mut current: crate::basis::WorthQueryProductBranchLease,
     ordinary: bool,
 ) -> Result<WorthQueryApplicationSnapshotLease, WorthQueryApplicationCommitOutcome> {
     if !ordinary
@@ -49,6 +49,14 @@ pub fn readmit_current_basis<Schema, Operation, Input, Scope>(
     {
         return Ok(retained);
     }
+    current
+        .carry_selected_program_source_from(retained.product())
+        .map_err(|denial| {
+            denied_with_detail(
+                DenialStage::DecisionReadSet,
+                format!("current product program source: {denial:?}"),
+            )
+        })?;
     let current_admission = acquire_current_lease(execution, &retained, current.retained_clone())?;
     if let Some(support) = application.program_support.as_ref() {
         super::super::super::program_occurrence_gate::require_readmitted_program_matches(

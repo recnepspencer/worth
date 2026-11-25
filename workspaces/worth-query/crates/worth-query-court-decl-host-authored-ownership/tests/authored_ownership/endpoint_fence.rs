@@ -3,6 +3,7 @@ use super::{
     correction_courts::install_definition,
     coupled::multi::{create, settle, TwoProgram},
     lifecycle::*,
+    metadata_guard::memory_basis_state,
     *,
 };
 use worth_query_testkit_document_retention::facade::document_retention_model::operator_identity::*;
@@ -20,6 +21,10 @@ fn an_owned_edge_with_only_its_target_as_member_refuses_external_retargeting() {
 }
 fn run<const MODE: u8>() {
     type S<const M: u8> = Model<M>;
+    // TwoProgram declares correction output material, which Directory Home refuses
+    // with UnsupportedCorrectionOutputMaterial; this court tests Native's in-process
+    // endpoint retarget fence on MemoryOnly and checks full World + Native + Query
+    // basis commitment equality before and after the refused probe.
     let host = install_definition::<S<MODE>, TwoProgram>();
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
@@ -77,15 +82,7 @@ fn run<const MODE: u8>() {
                 .clone()
         })
         .unwrap();
-    let before = host
-        .with_host_advancement(|phase| {
-            host.capture_application_checkpoint(
-                &phase,
-                WorthQueryCheckpointCapturePolicy::SystemAllocation,
-            )
-            .unwrap()
-        })
-        .unwrap();
+    let before = memory_basis_state(&host);
     let refusal = host
         .runtime()
         .probe_owned_edge_retarget_for_test(body.product_branch(), owner, target, &scope)
@@ -101,37 +98,12 @@ fn run<const MODE: u8>() {
     assert!(
         matches!(error.context.affected_records.as_slice(),[RecordRef::Relation(_),RecordRef::Entity(actual)] if *actual==owner)
     );
-    let after = host
-        .with_host_advancement(|phase| {
-            host.capture_application_checkpoint(
-                &phase,
-                WorthQueryCheckpointCapturePolicy::SystemAllocation,
-            )
-            .unwrap()
-        })
-        .unwrap();
+    let after = memory_basis_state(&host);
+    assert_eq!(
+        after, before,
+        "Native preparation published no World, Native, or Query state change"
+    );
     host.with_host_advancement(|phase| {
-        let before = host
-            .inspect_application_checkpoint(&phase, before.bytes())
-            .unwrap();
-        let after = host
-            .inspect_application_checkpoint(&phase, after.bytes())
-            .unwrap();
-        assert_eq!(
-            before.model, after.model,
-            "Native preparation published no model change"
-        );
-        assert_eq!(
-            before.symbol_identity_frontier,
-            after.symbol_identity_frontier
-        );
-        assert_eq!(before.frontiers, after.frontiers);
-        assert_eq!(before.generations, after.generations);
-        assert_eq!(before.live_records, after.live_records);
-        assert_eq!(
-            before.current_publication_records,
-            after.current_publication_records
-        );
         let selected = host
             .runtime()
             .on_branch(host.current_world())

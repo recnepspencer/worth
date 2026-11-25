@@ -18,7 +18,10 @@ mod temporal_catch_up;
 mod transition;
 mod workflow;
 pub use checkpoint::WorthQueryApplicationHomeCheckpointDenial;
-pub use close::{WorthQueryApplicationHomeCloseRefused, WorthQueryApplicationHomeClosed};
+pub use close::{
+    WorthQueryApplicationHomeClosePhase, WorthQueryApplicationHomeCloseRefused,
+    WorthQueryApplicationHomeClosed,
+};
 pub use close_policy::WorthQueryHomeClosePolicyRefused;
 pub use desktop_open::{
     WorthQueryDirectoryOpenDenial, WorthQueryHomeConfig, DEFAULT_HOST_EXECUTION_POLICY,

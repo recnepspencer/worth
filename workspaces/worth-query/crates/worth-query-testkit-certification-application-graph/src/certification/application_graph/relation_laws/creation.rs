@@ -92,6 +92,11 @@ impl<L: LawPolicy> ApplicationMutationIntent<GraphSchema<L>> for Create<L> {
 
 pub struct CreateHandler;
 impl<L: LawPolicy> OperationHandler<GraphSchema<L>, CreateBinding<L>> for CreateHandler {
+    fn declared_durable_capabilities(
+    ) -> Option<&'static [worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability]> {
+        Some(&[worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability::RelationalMutation])
+    }
+
     fn decide(
         &self,
         input: &CreateNodeInput,

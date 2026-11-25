@@ -1,4 +1,4 @@
-mod checkpoint_stage;
+pub(crate) mod checkpoint_stage;
 mod durability_append_matrix;
 mod embedded_cost;
 mod index_retirement;

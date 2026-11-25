@@ -302,12 +302,82 @@ impl WorkflowOperationAuthority {
     where
         Schema: worth_query_installation::facade::ApplicationSchema,
     {
-        runtime.validate_workflow_operation_authority(
-            phase,
-            request,
-            self.runtime_authority,
-            &self.observation,
+        runtime.validate_workflow_operation_authority(phase, request, self)
+    }
+
+    #[doc(hidden)]
+    pub const fn runtime_authority_u64(&self) -> u64 {
+        self.runtime_authority
+    }
+
+    #[doc(hidden)]
+    pub const fn observation_identity(&self) -> &WorthQueryProductBranchReadIdentity {
+        &self.observation
+    }
+
+    #[doc(hidden)]
+    pub fn validate_on_selected_product(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        product: crate::basis::WorthQueryProductBranchLease,
+        readmit_approval: impl FnOnce(
+            &crate::domain_computation::authorization::WorthQueryWorkflowApprovalAuthorityBasis,
+            &crate::basis::WorthQueryProductBranchLease,
+            crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+        ) -> Result<
+            (),
+            crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial,
+        >,
+    ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial>
+    {
+        use crate::domain_computation::primary_graph::{
+            application_attempt::{
+                check_request_live, workflow_instance_observation::instance_binding::deny_ended,
+                WorthQueryApplicationSnapshotLease,
+            },
+            WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
+        };
+        let mismatch = || {
+            WorthQueryApplicationAttemptDenial::new(
+                WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
+                "workflow operation authority is no longer current",
+            )
+        };
+        let lease = WorthQueryApplicationSnapshotLease::acquire(
+            execution,
+            self.handle.clone(),
+            Arc::clone(&self.layout),
+            product,
         )
+        .map_err(|_| mismatch())?;
+        if let Some(approval_authority) = &self.approval_authority {
+            readmit_approval(approval_authority, lease.product(), self.session_identity)
+                .map_err(approval_denial::denial)?;
+        }
+        lease.handle().with_runtime(execution, |runtime| {
+            let mut current = true;
+            for fact in self.facts.iter() {
+                check_request_live(request, "workflow operation authority")?;
+                if !fact.remains_equal_in(runtime, execution, lease.snapshot())? {
+                    current = false;
+                    break;
+                }
+            }
+            if current {
+                return Ok(());
+            }
+            // An instance that ended since is named before any fact it left
+            // behind can mismatch.
+            deny_ended(
+                execution,
+                runtime,
+                lease.snapshot(),
+                &self.workflow_layout,
+                self.settlement_basis.instance(),
+            )?;
+            Err(mismatch())
+        })
     }
 
     #[doc(hidden)]

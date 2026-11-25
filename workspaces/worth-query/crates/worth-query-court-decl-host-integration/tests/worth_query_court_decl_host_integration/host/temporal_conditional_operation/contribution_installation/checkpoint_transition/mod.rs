@@ -1,232 +1,59 @@
 pub(crate) use worth_query_testkit_host::facade::host::temporal_conditional_operation::contribution_installation::checkpoint_transition::*;
+use worth_query_testkit_document_retention::facade::directory_home::{
+    unique_directory, with_directory_bootstrap, DirectoryHomeGuard,
+};
 
 #[test]
-fn checkpoint_transition_publishes_typed_effects_and_reopens_under_target_roster() {
-    let (source, predecessor) = source();
+fn checkpoint_transition_refuses_ordinary_reopen_and_guards_signal_programme_migration() {
+    let dir = unique_directory("temporal-program-transition");
+    let predecessor = DirectoryHomeGuard::wrap(open_predecessor_directory(dir.clone()), dir);
+    let dir = predecessor.checkpoint_and_close_for_reopen();
+
+    let ordinary_refused =
+        with_directory_bootstrap(|phase| successor_request(dir.clone()).open_in_advancement(phase))
+            .err()
+            .expect("ordinary successor open must refuse the predecessor activation");
     assert!(
-        application_installation::WorthQueryInterimCheckpointRestore::program(
-            validated_program(),
-            TemporalHostSchema::declaration().unwrap(),
-            configuration(),
-            ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-            checkpoint::checkpoint_limits(),
-            source.clone()
-        )
-        .is_err(),
-        "ordinary restore must refuse the retired activation"
+        ordinary_refused.transition_required().is_some(),
+        "expected TransitionRequired, got {ordinary_refused:?}"
     );
-    let migrated = transition(
-        source,
-        predecessor,
-        Resources::bounded(512, 32, 4096).unwrap(),
-        |writer, _| {
-            writer.bind_entity(
-                primary_graph::WorthQueryApplicationEntitySeed::new(
-                    UnrelatedRecord::reference(),
-                    primary_graph::WorthQueryApplicationEntityKey::new("migrated-record").unwrap(),
-                )
-                .field(UnrelatedValueField::at("UnrelatedValueField"), 73_u64),
+    drop(ordinary_refused);
+
+    // D16 Directory Home program transition currently supports Relational-only
+    // programme transitions; TemporalHostSchema carries a Signal conditional
+    // contribution and must refuse cleanly before invoking the author closure.
+    let mut author_invoked = false;
+    let refused = with_directory_bootstrap(|phase| {
+        successor_request(dir.clone())
+            .with_program_transition(
+                predecessor_request(dir.clone()),
+                transition_resources(),
+                |_source, _target| {
+                    author_invoked = true;
+                    unreachable!("Signal programme transition refuses before authoring")
+                },
             )
-        },
-    )
-    .expect("acknowledged native transition must install a World with successor authority");
-    assert!(migrated
-        .with_host_advancement(|host_phase| migrated
-            .on_branch(migrated.current_world())
-            .select(&host_phase)
-            .is_ok())
-        .expect("installed host call opens"));
-    let checkpoint = migrated
-        .with_host_advancement(|host_phase| {
-            migrated
-                .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
-                .unwrap()
-        })
-        .expect("installed host call opens");
-    drop(migrated);
-    let reopened = application_installation::WorthQueryInterimCheckpointRestore::program(
-        validated_program(),
-        TemporalHostSchema::declaration().unwrap(),
-        configuration(),
-        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        checkpoint::checkpoint_limits(),
-        checkpoint,
-    )
-    .expect("ordinary restore must recognize the target activation");
+            .open_in_advancement(phase)
+    })
+    .err()
+    .expect("D16 transition must refuse Signal programme migration before authoring");
+    assert!(
+        !author_invoked,
+        "author closure must not execute when Signal programme migration is refused"
+    );
+    assert!(
+        format!("{refused:?}")
+            .contains("authored Signal programme migration requires its later migration phase"),
+        "expected explicit Signal programme migration refusal, got {refused:?}"
+    );
+    drop(refused);
+
+    // Predecessor Directory Home remains completely intact after both refusals.
+    let reopened = DirectoryHomeGuard::wrap(open_predecessor_directory(dir.clone()), dir);
     assert!(reopened
         .with_host_advancement(|host_phase| reopened
             .on_branch(reopened.current_world())
             .select(&host_phase)
             .is_ok())
         .expect("installed host call opens"));
-    // Resolve the actual migrated row through target World authority; capture
-    // alone would not prove that typed effects survived native publication.
-    let selected = reopened
-        .with_host_advancement(|host_phase| {
-            reopened
-                .on_branch(reopened.current_world())
-                .select(&host_phase)
-                .unwrap()
-        })
-        .expect("installed host call opens");
-    assert!(reopened
-        .with_host_advancement(|host_phase| selected
-            .resolve_entity(
-                &host_phase,
-                UnrelatedValueField::at("UnrelatedValueField"),
-                73_u64,
-                &request_scope(),
-                primary_graph::WorthQueryPrincipalResolutionMode::Ordinary
-            )
-            .is_ok())
-        .expect("installed host call opens"));
 }
-
-#[test]
-fn checkpoint_transition_predecessor_mismatch_and_selection_bound_deny_before_authoring() {
-    let (source, _) = source();
-    for (predecessor, resources) in [
-        (
-            Predecessor::new(&"0".repeat(64)).unwrap(),
-            Resources::bounded(512, 32, 4096).unwrap(),
-        ),
-        (
-            source_predecessor(),
-            Resources::bounded(1, 32, 4096).unwrap(),
-        ),
-    ] {
-        let mut called = false;
-        assert!(transition(source.clone(), predecessor, resources, |_, _| {
-            called = true;
-            Ok(())
-        })
-        .is_err());
-        assert!(
-            !called,
-            "source and scope preflight must precede typed authoring"
-        );
-    }
-}
-
-#[test]
-fn checkpoint_transition_cannot_swallow_authoring_resource_refusal() {
-    let (source, predecessor) = source();
-    let result = transition(
-        source,
-        predecessor,
-        Resources::bounded(512, 1, 4096).unwrap(),
-        |writer, _| {
-            let _ = writer.bind_entity(
-                primary_graph::WorthQueryApplicationEntitySeed::new(
-                    UnrelatedRecord::reference(),
-                    primary_graph::WorthQueryApplicationEntityKey::new("over-budget-record")
-                        .unwrap(),
-                )
-                .field(UnrelatedValueField::at("UnrelatedValueField"), 73_u64),
-            );
-            Ok(())
-        },
-    );
-    assert!(
-        result.is_err(),
-        "an ignored refusal cannot publish partial migration effects"
-    );
-}
-
-#[test]
-fn checkpoint_transition_bounds_retained_key_capacity_even_for_a_short_key() {
-    let (source, predecessor) = source();
-    let result = transition(
-        source,
-        predecessor,
-        Resources::bounded(512, 32, 4096).unwrap(),
-        |writer, _| {
-            let mut key = String::with_capacity(64 * 1024);
-            key.push_str("short-key");
-            writer.bind_entity(
-                primary_graph::WorthQueryApplicationEntitySeed::new(
-                    UnrelatedRecord::reference(),
-                    primary_graph::WorthQueryApplicationEntityKey::new(key).unwrap(),
-                )
-                .field(UnrelatedValueField::at("UnrelatedValueField"), 73_u64),
-            )
-        },
-    );
-    let denial = result
-        .err()
-        .expect("small visible key must not hide retained seed allocation");
-    assert!(format!("{denial:?}").contains("authoring resources exceeded"));
-}
-
-#[test]
-fn checkpoint_transition_retains_acknowledged_checkpoint_after_later_installation_denial() {
-    let (source, predecessor) = source();
-    let (mut configuration,) = configuration();
-    configuration.install_route = false;
-    let denial =
-        application_installation::WorthQueryInterimCheckpointRestore::rostered_program_with_transition(
-            validated_program(),
-            application_installation::WorthQueryApplicationProgramRoster::new(),
-            TemporalHostSchema::declaration().unwrap(),
-            (configuration,),
-            ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-            checkpoint::checkpoint_limits(),
-            source,
-            predecessor,
-            Resources::bounded(512, 32, 4096).unwrap(),
-            CapturePolicy::SystemAllocation,
-            |writer, _| {
-                writer.bind_entity(
-                    primary_graph::WorthQueryApplicationEntitySeed::new(
-                        UnrelatedRecord::reference(),
-                        primary_graph::WorthQueryApplicationEntityKey::new("acknowledged-record")
-                            .unwrap(),
-                    )
-                    .field(UnrelatedValueField::at("UnrelatedValueField"), 101_u64),
-                )
-            },
-        )
-        .err()
-        .expect(
-            "incomplete conditional routes must refuse installation after native acknowledgment",
-        );
-    let application_installation::WorthQueryApplicationPreparationDenial::CheckpointTransitionAcknowledged { checkpoint: target, cause } = denial else { panic!("acknowledged target effects must retain recovery custody: {denial:?}"); };
-    assert!(matches!(
-        cause.as_ref(),
-        application_installation::WorthQueryApplicationPreparationDenial::ConditionalPublication(_)
-    ));
-    let reopened = application_installation::WorthQueryInterimCheckpointRestore::program(
-        validated_program(),
-        TemporalHostSchema::declaration().unwrap(),
-        self::configuration(),
-        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        checkpoint::checkpoint_limits(),
-        target,
-    )
-    .expect("corrected configuration ordinary-restores actual acknowledged target effects");
-    let selected = reopened
-        .with_host_advancement(|host_phase| {
-            reopened
-                .on_branch(reopened.current_world())
-                .select(&host_phase)
-                .unwrap()
-        })
-        .expect("installed host call opens");
-    assert!(reopened
-        .with_host_advancement(|host_phase| selected
-            .resolve_entity(
-                &host_phase,
-                UnrelatedValueField::at("UnrelatedValueField"),
-                101_u64,
-                &request_scope(),
-                primary_graph::WorthQueryPrincipalResolutionMode::Ordinary
-            )
-            .is_ok())
-        .expect("installed host call opens"));
-}
-
-pub(crate) mod admission;
-
-pub(crate) mod funded_capture;
-
-pub(crate) mod original_request;

@@ -28,7 +28,11 @@ fn shared_members_with_inconsistent_leaf_facts_refuse_the_manifest() {
     create_in_partition(&execution, &runtime, &sibling, PartitionId(2), "diverge");
     let native = runtime
         .durability_authority()
-        .native_checkpoint(&execution, execution.allocation_policy())
+        .native_checkpoint_with_policy(
+&execution,
+execution.allocation_policy(),
+worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None },
+)
         .unwrap();
     native.inspect(&execution).unwrap();
 

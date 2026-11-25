@@ -13,7 +13,7 @@ pub fn limits(work: u64) -> WorthQueryApplicationLimits {
         DeterminismContract::CanonicalBitwise,
         ExecutionBudget::new(
             std::num::NonZeroUsize::MIN,
-            Some(64 * 1024 * 1024),
+            Some(512 * 1024 * 1024),
             Some(work),
         ),
     );

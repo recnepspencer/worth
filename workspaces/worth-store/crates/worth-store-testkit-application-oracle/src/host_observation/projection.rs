@@ -88,7 +88,7 @@ pub struct StateProjection {
     pub occurrences: Vec<OccurrenceProjection>,
     pub custody: Vec<CustodyProjection>,
 }
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct GraphEntityProjection {
     pub entity_id: EntityId,
     pub lineage_id: Option<LineageId>,
@@ -98,7 +98,7 @@ pub struct GraphEntityProjection {
     pub retired_at_version: Option<VersionId>,
     pub authoritative_aspect_state: serde_json::Value,
 }
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct GraphRelationProjection {
     pub relation_id: RelationId,
     pub source: EntityId,

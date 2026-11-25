@@ -62,8 +62,6 @@ pub mod retire;
 pub mod retirement;
 #[path = "related/schema.rs"]
 pub mod schema;
-#[path = "related/settlement.rs"]
-pub mod settlement;
 #[path = "related/successor.rs"]
 pub mod successor;
 
@@ -74,7 +72,5 @@ pub fn heavy_value() -> model::NestedValue {
 #[path = "related/companion.rs"]
 pub mod companion;
 
-#[path = "related/companion_transition.rs"]
-pub mod companion_transition;
 #[path = "related/owner_selection.rs"]
 pub mod owner_selection;

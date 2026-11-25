@@ -40,17 +40,13 @@ pub fn encode_native_capture(
                 &mut control,
             )?;
             let mut captured = captured.seal_ordinary();
-            let manifest_publication = if !artifact_policy.is_embedded() {
-                artifact_policy.publication_source().map(|source| {
-                    selection.prepare(
-                        captured.manifest.clone(),
-                        source,
-                        captured.history_members.clone(),
-                    )
-                })
-            } else {
-                None
-            };
+            let manifest_publication = artifact_policy.publication_source().map(|source| {
+                selection.prepare(
+                    captured.manifest.clone(),
+                    source,
+                    captured.history_members.clone(),
+                )
+            });
             let coverage = captured.manifest.covered_position;
             let transitions = captured.manifest.coverage.up_to_branch_transition;
             let component_holds = std::mem::take(&mut captured.component_holds);
@@ -58,8 +54,6 @@ pub fn encode_native_capture(
             let encoded = crate::durability::log::native_checkpoint_codec::encode_captured(
                 captured,
                 execution,
-                policy,
-                &artifact_policy,
                 &mut control,
             )?;
             Ok((

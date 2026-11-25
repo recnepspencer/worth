@@ -23,8 +23,12 @@ use worth_query_host::facade::{
 pub(super) mod co_committed;
 
 pub fn run() {
-    let application = host::install_with_outputs();
-    let scope = request_scope();
+    let application = host::open_directory_with_outputs(
+        host::unique_directory("required-output-courts"),
+        host::installation_limits(),
+    );
+    {
+        let scope = request_scope();
     let principal = authenticate_operator(application.installed_schema(), &scope);
     let request = application.runtime().request(&principal, &scope);
     let key = "source-with-required-output".to_owned();
@@ -255,6 +259,8 @@ pub fn run() {
             secondary: 19
         }]
     );
+    }
+    co_committed::cold::assert_reopened_ready(application, 11, host::installation_limits());
     println!("required-output correction, pre-effect/post-performed cancellation, pending replay and original-owner delivery passed");
 }
 pub fn limits() -> WorthQueryCorrectionHistoryLimits {

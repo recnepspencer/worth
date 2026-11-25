@@ -13,21 +13,15 @@ use worth_query_host::facade::{
         WorthQueryApplicationEntityKey, WorthQueryApplicationEntitySeed,
         WorthQueryApplicationRelationSeed, WorthQueryPrimaryGraphBootstrap,
     },
-    runtime::{
-        RuntimeWorldBranchBudgetInstallation, RuntimeWorldBudgetInstallation,
-        RuntimeWorldCustodyBudgetInstallation, RuntimeWorldHistoryBudgetInstallation,
-        RuntimeWorldObservationBudgetInstallation, RuntimeWorldPublicationBudgetInstallation,
-        RuntimeWorldRecoveryBudgetInstallation, RuntimeWorldRetentionBudgetInstallation,
-        WorthQueryApplicationQueryResourceProfile, WorthQueryProductWorldClock,
-        WorthQueryProductWorldResources,
-    },
 };
 
 use super::*;
 mod admission_time;
+pub(super) mod directory;
 mod installation;
-pub(super) use installation::install_on_clock;
-pub(super) use installation::{install_configured_in_bootstrap, install_program_in_bootstrap};
+pub(super) use installation::{
+    install_configured_in_bootstrap, install_on_clock, install_program_in_bootstrap,
+};
 pub(super) mod observed;
 mod principal_bootstrap;
 pub(super) use principal_bootstrap::bind_model_owner;
@@ -36,36 +30,33 @@ pub(super) type Application = application_installation::WorthQueryProgramApplica
     CheckpointSchema,
     CheckpointProgram,
 >;
+pub(super) type DirApplication = DirectoryApp<CheckpointSchema, CheckpointProgram>;
 
 pub(super) const DEFAULT_RETAINED_COMMITS: u64 = 32;
 
-pub(super) fn install(
-    checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
-) -> Application {
-    install_with_demand_profile(checkpoint, Default::default())
+pub(super) fn install(_: Option<()>) -> Application {
+    install_with_demand_profile(None, Default::default())
 }
 
 pub(super) fn install_with_domain_denial(domain_denial: Arc<AtomicBool>) -> Application {
-    installation::try_install_program_with_limits_and_domain_denial::<CheckpointProgram>(
-        None,
+    installation::try_install_in_memory_configured::<CheckpointProgram>(
         Default::default(),
         limits(DEFAULT_RETAINED_COMMITS, invalidation()),
         seed_cycle,
-        domain_denial,
-        None,
+        installation::configuration(domain_denial, None),
     )
     .expect("the checkpoint source installs")
 }
 
 pub(super) fn install_with_demand_profile(
-    checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
+    _: Option<()>,
     profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
 ) -> Application {
-    install_program::<CheckpointProgram>(checkpoint, profile)
+    install_program::<CheckpointProgram>(None, profile)
 }
 
 pub(super) fn install_program<Program>(
-    checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
+    _: Option<()>,
     profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
 ) -> application_installation::WorthQueryProgramApplicationRuntime<CheckpointSchema, Program>
 where
@@ -76,11 +67,11 @@ where
     >,
     Program::Outputs: application_installation::WorthQueryApplicationProgramRoots<CheckpointSchema>,
 {
-    install_program_with_history::<Program>(checkpoint, profile, DEFAULT_RETAINED_COMMITS)
+    install_program_with_history::<Program>(None, profile, DEFAULT_RETAINED_COMMITS)
 }
 
 pub(super) fn install_program_with_history<Program>(
-    checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
+    _: Option<()>,
     profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
     retained_composite_commits: u64,
 ) -> application_installation::WorthQueryProgramApplicationRuntime<CheckpointSchema, Program>
@@ -92,16 +83,11 @@ where
     >,
     Program::Outputs: application_installation::WorthQueryApplicationProgramRoots<CheckpointSchema>,
 {
-    install_program_with_seed::<Program>(
-        checkpoint,
-        profile,
-        retained_composite_commits,
-        seed_cycle,
-    )
+    install_program_with_seed::<Program>(None, profile, retained_composite_commits, seed_cycle)
 }
 
 pub(super) fn install_program_with_seed<Program>(
-    checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
+    _: Option<()>,
     profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
     retained_composite_commits: u64,
     seed: impl FnOnce(&mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>),
@@ -115,12 +101,11 @@ where
     Program::Outputs: application_installation::WorthQueryApplicationProgramRoots<CheckpointSchema>,
 {
     let limits = limits(retained_composite_commits, invalidation());
-    install_program_with_limits::<Program>(checkpoint, profile, limits, seed)
+    install_program_with_limits::<Program>(None, profile, limits, seed)
 }
 
-/// Installs with caller-built World limits and receiver-scoped invalidation controls.
 pub(super) fn install_program_with_limits<Program>(
-    checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
+    _: Option<()>,
     profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
     limits: WorthQueryApplicationLimits,
     seed: impl FnOnce(&mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>),
@@ -133,31 +118,125 @@ where
     >,
     Program::Outputs: application_installation::WorthQueryApplicationProgramRoots<CheckpointSchema>,
 {
-    match checkpoint {
-        Some(checkpoint) => {
-            worth_query_host::facade::application_contribution::with_bootstrap_advancement(
-                execution_policy::POPULATION_BOOTSTRAP_POLICY,
-                |phase| {
-                    installation::install_checkpoint_in_bootstrap::<Program>(
-                        &phase,
-                        checkpoint,
-                        profile,
-                        limits,
-                        installation::configuration(Arc::new(AtomicBool::new(false)), None),
-                    )
-                },
-            )
-            .expect("the reconstructed population owns its original opening request")
-            .expect("the checkpoint restores")
-        }
-        None => try_install_program_with_limits::<Program>(None, profile, limits, seed)
-            .expect("the checkpoint source installs"),
-    }
+    installation::try_install_in_memory_program_with_limits::<Program>(profile, limits, seed)
+        .expect("the in-memory application installs")
 }
 
-/// Installs or restores, returning the denial when the installation is refused.
+pub(super) fn open_directory(directory: Option<std::path::PathBuf>) -> DirApplication {
+    open_directory_program::<CheckpointProgram>(directory, Default::default())
+}
+
+pub(super) fn open_directory_program<Program>(
+    directory: Option<std::path::PathBuf>,
+    profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
+) -> DirectoryApp<CheckpointSchema, Program>
+where
+    Program: ApplicationProgramDefinition<CheckpointSchema>,
+    Program::Contributions: WorthQueryApplicationContributionTuple<
+        CheckpointSchema,
+        Configuration = (TopologyConfiguration,),
+    >,
+    Program::Outputs: application_installation::WorthQueryApplicationProgramRoots<CheckpointSchema>,
+{
+    open_directory_program_with_seed::<Program>(
+        directory,
+        profile,
+        DEFAULT_RETAINED_COMMITS,
+        seed_cycle,
+    )
+}
+
+pub(super) fn open_directory_program_with_seed<Program>(
+    directory: Option<std::path::PathBuf>,
+    profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
+    retained_composite_commits: u64,
+    seed: impl FnOnce(&mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>),
+) -> DirectoryApp<CheckpointSchema, Program>
+where
+    Program: ApplicationProgramDefinition<CheckpointSchema>,
+    Program::Contributions: WorthQueryApplicationContributionTuple<
+        CheckpointSchema,
+        Configuration = (TopologyConfiguration,),
+    >,
+    Program::Outputs: application_installation::WorthQueryApplicationProgramRoots<CheckpointSchema>,
+{
+    let limits = limits(retained_composite_commits, invalidation());
+    open_directory_program_with_limits::<Program>(directory, profile, limits, seed)
+}
+
+pub(super) fn open_directory_program_with_limits<Program>(
+    directory: Option<std::path::PathBuf>,
+    profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
+    limits: WorthQueryApplicationLimits,
+    seed: impl FnOnce(&mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>),
+) -> DirectoryApp<CheckpointSchema, Program>
+where
+    Program: ApplicationProgramDefinition<CheckpointSchema>,
+    Program::Contributions: WorthQueryApplicationContributionTuple<
+        CheckpointSchema,
+        Configuration = (TopologyConfiguration,),
+    >,
+    Program::Outputs: application_installation::WorthQueryApplicationProgramRoots<CheckpointSchema>,
+{
+    try_open_directory_program_with_limits::<Program>(directory, profile, limits, seed)
+        .expect("the Directory Home opens")
+}
+
+pub(super) fn open_directory_program_with_limits_and_build<Program>(
+    directory: Option<std::path::PathBuf>,
+    profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
+    limits: WorthQueryApplicationLimits,
+    seed: impl FnOnce(&mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>),
+    build_identity: application_installation::ApplicationBuildIdentity,
+) -> DirectoryApp<CheckpointSchema, Program>
+where
+    Program: ApplicationProgramDefinition<CheckpointSchema>,
+    Program::Contributions: WorthQueryApplicationContributionTuple<
+        CheckpointSchema,
+        Configuration = (TopologyConfiguration,),
+    >,
+    Program::Outputs: application_installation::WorthQueryApplicationProgramRoots<CheckpointSchema>,
+{
+    installation::open_directory_configured_with_build::<Program>(
+        directory,
+        profile,
+        limits,
+        seed,
+        installation::configuration(Arc::new(AtomicBool::new(false)), None),
+        build_identity,
+    )
+    .expect("the Directory Home opens with build identity")
+}
+
+pub(super) fn try_open_directory_program_with_limits<Program>(
+    directory: Option<std::path::PathBuf>,
+    profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
+    limits: WorthQueryApplicationLimits,
+    seed: impl FnOnce(&mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>),
+) -> Result<
+    DirectoryApp<CheckpointSchema, Program>,
+    Box<worth_query_host::facade::WorthQueryApplicationHomeOpenRefused<CheckpointSchema, Program>>,
+>
+where
+    Program: ApplicationProgramDefinition<CheckpointSchema>,
+    Program::Contributions: WorthQueryApplicationContributionTuple<
+        CheckpointSchema,
+        Configuration = (TopologyConfiguration,),
+    >,
+    Program::Outputs: application_installation::WorthQueryApplicationProgramRoots<CheckpointSchema>,
+{
+    installation::try_open_directory_program::<Program>(
+        directory,
+        profile,
+        limits,
+        seed,
+        Arc::new(AtomicBool::new(false)),
+        None,
+    )
+}
+
 pub(super) fn try_install_program_with_limits<Program>(
-    checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
+    _checkpoint: Option<()>,
     profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
     limits: WorthQueryApplicationLimits,
     seed: impl FnOnce(&mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>),
@@ -173,14 +252,26 @@ where
     >,
     Program::Outputs: application_installation::WorthQueryApplicationProgramRoots<CheckpointSchema>,
 {
-    installation::try_install_program_with_limits_and_domain_denial::<Program>(
-        checkpoint,
-        profile,
-        limits,
-        seed,
-        Arc::new(AtomicBool::new(false)),
-        None,
-    )
+    installation::try_install_in_memory_program_with_limits::<Program>(profile, limits, seed)
+}
+
+pub(super) fn try_install_in_memory_program_with_limits<Program>(
+    profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
+    limits: WorthQueryApplicationLimits,
+    seed: impl FnOnce(&mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>),
+) -> Result<
+    application_installation::WorthQueryProgramApplicationRuntime<CheckpointSchema, Program>,
+    Box<application_installation::WorthQueryApplicationPreparationDenial>,
+>
+where
+    Program: ApplicationProgramDefinition<CheckpointSchema>,
+    Program::Contributions: WorthQueryApplicationContributionTuple<
+        CheckpointSchema,
+        Configuration = (TopologyConfiguration,),
+    >,
+    Program::Outputs: application_installation::WorthQueryApplicationProgramRoots<CheckpointSchema>,
+{
+    installation::try_install_in_memory_program_with_limits::<Program>(profile, limits, seed)
 }
 
 pub(super) fn seed_cycle<Schema: TopologySchemaBinding>(
@@ -236,101 +327,10 @@ pub(super) fn length(value: u64) -> PositiveLength {
     PositiveLength::new(value).unwrap()
 }
 
-pub(super) fn invalidation() -> worth_query_host::facade::runtime::WorthQueryInvalidationResources {
-    worth_query_host::facade::runtime::WorthQueryInvalidationResources::new()
-}
-
-pub(super) fn limits(
-    retained_composite_commits: u64,
-    invalidation: worth_query_host::facade::runtime::WorthQueryInvalidationResources,
-) -> WorthQueryApplicationLimits {
-    limits_with_room(retained_composite_commits, 16, 64, invalidation)
-}
-
-/// A world with room for a long history under open demands. Rows settled at
-/// different commits keep their own product observations active, and every
-/// open demand pins the exact components it settled on.
-pub(super) fn limits_with_room(
-    retained_composite_commits: u64,
-    active_observations: u64,
-    unique_exact_component_pins: u64,
-    invalidation: worth_query_host::facade::runtime::WorthQueryInvalidationResources,
-) -> WorthQueryApplicationLimits {
-    limits_with_policy(
-        retained_composite_commits,
-        active_observations,
-        unique_exact_component_pins,
-        invalidation,
-        execution_policy::CHECKPOINT_EXECUTION_POLICY,
-    )
-}
-
-pub(super) fn limits_with_policy(
-    retained_composite_commits: u64,
-    active_observations: u64,
-    unique_exact_component_pins: u64,
-    invalidation: worth_query_host::facade::runtime::WorthQueryInvalidationResources,
-    policy: worth_foundational::ExecutionRequestPolicy,
-) -> WorthQueryApplicationLimits {
-    limits_with_history_and_policy(
-        retained_composite_commits,
-        active_observations,
-        unique_exact_component_pins,
-        invalidation,
-        524_288,
-        policy,
-        authentication::WorthQueryAdmissionClock::system(),
-    )
-}
-
-pub(super) fn limits_with_history_and_policy(
-    retained_composite_commits: u64,
-    active_observations: u64,
-    unique_exact_component_pins: u64,
-    invalidation: worth_query_host::facade::runtime::WorthQueryInvalidationResources,
-    history_metadata_bytes: u64,
-    policy: worth_foundational::ExecutionRequestPolicy,
-    clock: authentication::WorthQueryAdmissionClock,
-) -> WorthQueryApplicationLimits {
-    WorthQueryApplicationLimits::new(
-        WorthQueryProductWorldResources::install(
-            RuntimeWorldBudgetInstallation {
-                branches: RuntimeWorldBranchBudgetInstallation {
-                    live_product_branches: 4,
-                },
-                history: RuntimeWorldHistoryBudgetInstallation {
-                    retained_composite_commits,
-                    history_metadata_bytes,
-                },
-                observations: RuntimeWorldObservationBudgetInstallation {
-                    active_observations,
-                },
-                publication: RuntimeWorldPublicationBudgetInstallation {
-                    active_publication_attempts: 4,
-                },
-                recovery: RuntimeWorldRecoveryBudgetInstallation {
-                    retained_product_unpublished_records: 4,
-                    retained_partial_metadata_bytes: 524_288,
-                },
-                retention: RuntimeWorldRetentionBudgetInstallation {
-                    unique_exact_component_pins,
-                    in_flight_pin_acquisition_reservations: 16,
-                },
-                custody: RuntimeWorldCustodyBudgetInstallation {
-                    owner_created_component_custody_records: 16,
-                },
-            },
-            WorthQueryProductWorldClock::start(clock),
-            invalidation,
-            policy,
-        )
-        .unwrap(),
-        WorthQueryApplicationQueryResourceProfile::new(
-            std::num::NonZeroUsize::new(32).expect("concurrent graph work is non-zero"),
-        ),
-        primary_graph::SignalConditionalEvaluationBudget::development(),
-    )
-}
+mod limits;
+pub(super) use limits::{
+    invalidation, limits, limits_with_history_and_policy, limits_with_policy, limits_with_room,
+};
 
 pub(super) mod authentication_fixture;
 pub(super) use authentication_fixture::authenticate;
@@ -338,3 +338,62 @@ pub(super) use authentication_fixture::external_identity;
 
 mod observation_policy;
 pub(super) use observation_policy::{host_call, retain_read};
+
+pub(in crate::checkpoint_recovery) struct DirectoryApp<Schema: ApplicationSchema, Program: 'static> {
+    home: Option<worth_query_host::facade::WorthQueryApplicationHome<Schema, Program>>,
+    directory: std::path::PathBuf,
+    cleanup_dir: bool,
+}
+impl<Schema: ApplicationSchema, Program: 'static> DirectoryApp<Schema, Program> {
+    pub(in crate::checkpoint_recovery) fn wrap(
+        home: worth_query_host::facade::WorthQueryApplicationHome<Schema, Program>,
+        directory: std::path::PathBuf,
+    ) -> Self {
+        Self { home: Some(home), directory, cleanup_dir: true }
+    }
+    pub(in crate::checkpoint_recovery) fn without_dir_cleanup(mut self) -> Self {
+        self.cleanup_dir = false;
+        self
+    }
+    pub(in crate::checkpoint_recovery) fn checkpoint_directory(&self) {
+        let home = self.home.as_ref().expect("directory Home is open");
+        directory::with_directory_bootstrap(|phase| {
+            home.checkpoint_in_advancement(phase)
+                .unwrap_or_else(|refused| panic!("directory Home checkpoint refused: {refused:?}"))
+        });
+    }
+    pub(in crate::checkpoint_recovery) fn close_for_reopen(mut self) -> std::path::PathBuf {
+        self.cleanup_dir = false;
+        let home = self.home.take().expect("directory Home is open");
+        directory::with_directory_bootstrap(|phase| {
+            home.close_in_advancement(phase)
+                .unwrap_or_else(|refused| panic!("directory Home close refused: {refused:?}"))
+                .reclaim();
+        });
+        self.directory.clone()
+    }
+    pub(in crate::checkpoint_recovery) fn checkpoint_and_close_for_reopen(self) -> std::path::PathBuf {
+        self.checkpoint_directory();
+        self.close_for_reopen()
+    }
+}
+impl<Schema: ApplicationSchema, Program: 'static> std::ops::Deref for DirectoryApp<Schema, Program> {
+    type Target = application_installation::WorthQueryProgramApplicationRuntime<Schema, Program>;
+    fn deref(&self) -> &Self::Target {
+        self.home.as_ref().expect("directory Home is open").runtime()
+    }
+}
+impl<Schema: ApplicationSchema, Program: 'static> Drop for DirectoryApp<Schema, Program> {
+    fn drop(&mut self) {
+        if let Some(home) = self.home.take() {
+            directory::with_directory_bootstrap(|phase| {
+                if let Ok(closed) = home.close_in_advancement(phase) {
+                    closed.reclaim();
+                }
+            });
+        }
+        if self.cleanup_dir {
+            let _ = std::fs::remove_dir_all(&self.directory);
+        }
+    }
+}

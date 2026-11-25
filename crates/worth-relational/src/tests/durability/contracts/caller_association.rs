@@ -104,11 +104,19 @@ fn caller_association_embedded_checkpoint_codec_preserves_original_bytes() {
     let artifact = publish(execution, &runtime, "embedded", &association);
     let native = runtime
         .durability_authority()
-        .native_checkpoint(execution, execution.allocation_policy())
+        .native_checkpoint_with_policy(
+            execution,
+            execution.allocation_policy(),
+            crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
+        )
         .unwrap();
-    let decoded = crate::durability::log::native_checkpoint_codec::decode_checkpoint(
+    let decoded = crate::durability::log::native_checkpoint_codec::decode_expanded_checkpoint(
         execution,
         native.bytes(),
+        crate::tests::support::durability::captured_members_source(&native),
     )
     .unwrap();
     let commit = decoded
@@ -193,11 +201,19 @@ fn caller_association_survives_embedded_checkpoint_and_refuses_old_semantics() {
     let artifact = publish(execution, &runtime, "embedded", &association);
     let native = runtime
         .durability_authority()
-        .native_checkpoint(execution, execution.allocation_policy())
+        .native_checkpoint_with_policy(
+            execution,
+            execution.allocation_policy(),
+            crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
+        )
         .unwrap();
-    let decoded = crate::durability::log::native_checkpoint_codec::decode_checkpoint(
+    let decoded = crate::durability::log::native_checkpoint_codec::decode_expanded_checkpoint(
         execution,
         native.bytes(),
+        crate::tests::support::durability::captured_members_source(&native),
     )
     .unwrap();
     let commit = decoded
@@ -213,9 +229,12 @@ fn caller_association_survives_embedded_checkpoint_and_refuses_old_semantics() {
     for prefix in [b"WORTH-REL-CHK13\n", b"WORTH-REL-CHK14\n"] {
         let mut old = native.bytes().to_vec();
         old[..prefix.len()].copy_from_slice(prefix);
-        let stop =
-            crate::durability::log::native_checkpoint_codec::decode_checkpoint(execution, &old)
-                .unwrap_err();
+        let stop = crate::durability::log::native_checkpoint_codec::decode_checkpoint_from_source(
+            execution,
+            &old,
+            crate::tests::support::durability::empty_cold_source(),
+        )
+        .unwrap_err();
         assert_eq!(
             expect_durability_failure(stop).class,
             crate::durability::data::RecoveryFailureClass::UnsupportedLegacySemantics

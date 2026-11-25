@@ -76,6 +76,9 @@ macro_rules! split_phase {
             readiness!($identity, RealizedValue, crate::dependent_dispatch::split_model::canonical_query, "realization");
             pub struct Handler(pub Selections, pub bool);
             impl OperationHandler<Schema, Binding> for Handler {
+                fn declared_durable_capabilities() -> Option<&'static [WorthQueryOperationDurableCapability]> {
+                    Some(&[WorthQueryOperationDurableCapability::RelationalMutation])
+                }
                 fn decide(&self, input: &Input, reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>) -> HandlerResult<SplitDecision, Denial> {
                     let result = (|| {
                         let source = reader.resolve_entity(Key::at("Key"), input.0.key.clone())?;

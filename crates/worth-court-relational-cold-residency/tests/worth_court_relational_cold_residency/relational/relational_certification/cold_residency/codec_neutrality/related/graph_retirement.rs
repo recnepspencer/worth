@@ -113,7 +113,7 @@ fn closed_three_outputs_two_relations_retire_atomically_and_regenerate_ordered_v
     let (mut reopened, receipt) = installed(2);
     reopened
         .durability_recovery()
-        .restore_native_checkpoint_with_authority(execution, &saved)
+        .restore_native_checkpoint_with_authority(execution, &saved, worth_testkit_relational::cold_recovery::members_source(&saved))
         .unwrap();
     reopened
         .readmit_recovered_initial_schema_installation(receipt)

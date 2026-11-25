@@ -50,16 +50,23 @@ pub fn replace_definition(
     }
 }
 
-pub fn perform_approved_effect(
-    application: &DocumentWorkflowRuntime<
-        worth_query_testkit_document_retention::facade::document_retention_model::programs::RetentionProgramP0,
-        impl worth_query_host::facade::declaration::application_program::ApplicationWorkflowSpec<
-            Schema = worth_query_testkit_document_retention::facade::document_retention_model::schema::DocumentRetentionSchema,
-        >,
-    >,
+pub fn perform_approved_effect<A>(
+    application: &A,
     instance: &PublishedWorkflowInstanceRef,
     key: u64,
-) -> worth_query_host::facade::primary_graph::WorthQueryApplicationCommitReceipt {
+) -> worth_query_host::facade::primary_graph::WorthQueryApplicationCommitReceipt
+where
+    A: worth_query_testkit_document_retention::facade::document_retention_model::host::DocumentWorkflowApplication<
+        Program = worth_query_testkit_document_retention::facade::document_retention_model::programs::RetentionProgramP0,
+    >,
+    for<'a> &'a A: Into<
+        worth_query_host::facade::application_installation::WorthQueryWorkflowVocabulary<
+            'a,
+            worth_query_testkit_document_retention::facade::document_retention_model::schema::DocumentRetentionSchema,
+            A::Spec,
+        >,
+    >,
+{
     let required = match advance_instance(application, instance.clone(), key)
         .expect("the approved operation requirement prepares")
     {

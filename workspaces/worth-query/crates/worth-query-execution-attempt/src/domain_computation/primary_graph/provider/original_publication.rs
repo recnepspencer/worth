@@ -4,10 +4,10 @@ use worth_relational::facade::{
     identity::EntityId,
     transactions::RelationalCommitSemanticResult,
 };
-use worth_runtime_world::facade::{WorldObservedMemoryPublication, WorldReadmittedPublication};
+use worth_runtime_world::facade::{WorldObservedHomePublication, WorldObservedMemoryPublication};
 
 pub(super) enum OriginalPublication {
-    Home(WorldReadmittedPublication),
+    Home(WorldObservedHomePublication),
     Memory(WorldObservedMemoryPublication),
 }
 
@@ -17,18 +17,14 @@ impl OriginalPublication {
         expected: &worth_runtime_world::facade::ProductBranchObservation,
     ) -> bool {
         match self {
-            Self::Home(value) => {
-                value.after().branch_identity() == expected.branch_identity()
-                    && value.after().lifecycle_incarnation() == expected.lifecycle_incarnation()
-            }
+            Self::Home(value) => value.matches_receiver(expected),
             Self::Memory(value) => value.matches_receiver(expected),
         }
     }
     pub(super) fn branch_name_bytes(&self) -> usize {
         match self {
             Self::Home(value) => {
-                value.before().branch_identity().name().as_str().len()
-                    + value.after().branch_identity().name().as_str().len()
+                value.before().branch().name().len() + value.after().branch().name().len()
             }
             Self::Memory(value) => value.before().branch().len() + value.after().branch().len(),
         }
@@ -51,16 +47,11 @@ impl OriginalPublication {
         worth_relational::facade::branch::RelationalRecordedComponentRefusal,
     > {
         match self {
-            Self::Home(value) => Ok((
-                port.export_recorded_retained_component(
-                    execution,
-                    value.before().basis().relational_basis(),
-                )?,
-                port.export_recorded_retained_component(
-                    execution,
-                    value.after().basis().relational_basis(),
-                )?,
-            )),
+            Self::Home(value) => port.export_recorded_effect_components(
+                execution,
+                value.native(),
+                value.recorded_before_component(),
+            ),
             Self::Memory(value) => Ok((
                 port.export_memory_component(execution, value.before_component())?,
                 port.export_memory_component(execution, value.after_component())?,
@@ -76,12 +67,7 @@ impl OriginalPublication {
     pub(super) fn owner_coordinate(&self) -> worth_foundational::facade::WorldOwnerCoordinate {
         match self {
             Self::Home(value) => worth_foundational::facade::WorldOwnerCoordinate::Home {
-                owner: value
-                    .after()
-                    .branch_identity()
-                    .owner_identity()
-                    .durable()
-                    .expect("Home owner source"),
+                owner: value.after().branch().owner(),
             },
             Self::Memory(value) => worth_foundational::facade::WorldOwnerCoordinate::MemoryOnly {
                 observation: value.after().owner(),

@@ -40,6 +40,21 @@ pub trait RelationalDurableColdSource: Send + Sync + std::fmt::Debug {
     > {
         Err(super::RelationalDurableOwnedReadRefusal::UnsupportedProvider)
     }
+    /// Capture a journal-scoped immutable native cut without verifying any
+    /// selected checkpoint anchor membership table. Providers that do not
+    /// separate journal cuts fall back to `checkpoint_read_protection`.
+    fn journal_read_protection(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        (
+            super::RelationalDurableReadBounds,
+            super::RelationalDurableReadPayload,
+        ),
+        super::RelationalDurableOwnedReadRefusal,
+    > {
+        self.checkpoint_read_protection(request)
+    }
     /// Capture the provider's actual immutable native cut. No legacy read fallback.
     fn checkpoint_read_protection(
         &self,

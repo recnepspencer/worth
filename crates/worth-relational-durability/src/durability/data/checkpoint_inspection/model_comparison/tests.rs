@@ -47,6 +47,7 @@ fn inspection(runtime: u64, wire: &'static [u8]) -> RelationalCheckpointInspecti
         frontiers: vec![],
         generations: vec![],
         current_publication_records: BTreeSet::new(),
+        mirror_live_records: BTreeSet::new(),
         live_records: BTreeSet::new(),
     }
 }

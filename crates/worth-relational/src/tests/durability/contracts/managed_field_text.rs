@@ -158,7 +158,14 @@ fn native_field_text_checkpoint_readmission_denial_keeps_bytes_and_target_root_i
     release_test_commit_snapshot(&source, &committed);
     let native = source
         .durability_authority()
-        .native_checkpoint(execution, execution.allocation_policy())
+        .native_checkpoint_with_policy(
+            execution,
+            execution.allocation_policy(),
+            crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
+        )
         .unwrap();
     let before = native.bytes().to_vec(); // independent test observation of external evidence
     let mut target = runtime_with_test_schema();
@@ -181,7 +188,11 @@ fn native_field_text_checkpoint_readmission_denial_keeps_bytes_and_target_root_i
         .unwrap();
     let error = target
         .durability_recovery()
-        .restore_native_checkpoint(&ExecutionRequest::leased(&limited), &native)
+        .restore_native_checkpoint(
+            &ExecutionRequest::leased(&limited),
+            &native,
+            crate::tests::support::durability::captured_members_source(&native),
+        )
         .unwrap_err();
     // Physical hashing now enters a funded SDK native scope before member
     // copying or managed text. Freeze that first framework admission invoice.
@@ -201,7 +212,11 @@ fn native_field_text_checkpoint_readmission_denial_keeps_bytes_and_target_root_i
     assert_eq!(target.observe_branch(&identity).unwrap().0, original);
     target
         .durability_recovery()
-        .restore_native_checkpoint(execution, &native)
+        .restore_native_checkpoint(
+            execution,
+            &native,
+            crate::tests::support::durability::captured_members_source(&native),
+        )
         .unwrap();
     read_exact(
         execution,
@@ -252,24 +267,35 @@ fn native_field_text_prior_checkpoint_format_refuses_before_managed_text() {
     release_test_commit_snapshot(&source, &committed);
     let native = source
         .durability_authority()
-        .native_checkpoint(execution, execution.allocation_policy())
+        .native_checkpoint_with_policy(
+            execution,
+            execution.allocation_policy(),
+            crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
+        )
         .unwrap();
     let unframed = native
         .bytes()
         .strip_prefix(crate::durability::log::native_checkpoint_codec::CHECKPOINT_MAGIC)
         .unwrap();
-    let error =
-        crate::durability::log::native_checkpoint_codec::decode_checkpoint(execution, unframed)
-            .unwrap_err();
+    let error = crate::durability::log::native_checkpoint_codec::decode_checkpoint_from_source(
+        execution,
+        unframed,
+        crate::tests::support::durability::empty_cold_source(),
+    )
+    .unwrap_err();
     assert!(matches!(
         error,
         RelationalRecoveryStop::Durability(ref error)
             if error.class == RecoveryFailureClass::UnsupportedLegacySemantics
     ));
     assert!(
-        crate::durability::log::native_checkpoint_codec::decode_checkpoint(
+        crate::durability::log::native_checkpoint_codec::decode_checkpoint_from_source(
             execution,
-            native.bytes()
+            native.bytes(),
+            crate::tests::support::durability::captured_members_source(&native),
         )
         .is_ok()
     );

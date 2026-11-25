@@ -49,6 +49,9 @@ pub(super) fn quote(
                 })?
             }
             "aggregate_identity" => optional(raw, |row| aggregate(row, request))?,
+            "current_publication_storage" => {
+                optional(raw, |row| current_publication_storage(row, request))?
+            }
             "plan_revision" => OwnerAllocation::default(),
             _ => return Err(malformed()),
         };
@@ -103,6 +106,38 @@ fn aggregate(
             };
             add(&mut total, bytes)
         })
+    })?;
+    Ok(total)
+}
+fn current_publication_storage(
+    value: BorrowedPayload<'_>,
+    request: &ExecutionRequest<'_, '_>,
+) -> Result<OwnerAllocation, Refusal> {
+    let mut total = OwnerAllocation::default();
+    value.fields(request, |name, raw| {
+        match name {
+            "entity_kinds" => add(
+                &mut total,
+                vector::<KindId>(raw, request, |_| Ok(OwnerAllocation::default()))?,
+            )?,
+            "catalog_kind"
+            | "publication_kind"
+            | "edge_kind"
+            | "position_kind"
+            | "position_link"
+            | "publication_link"
+            | "member_link"
+            | "edge_link"
+            | "scope_link"
+            | "input_link"
+            | "catalog_aspect"
+            | "publication_aspect"
+            | "edge_aspect"
+            | "position_aspect"
+            | "link_aspect" => {}
+            _ => return Err(malformed()),
+        }
+        Ok(())
     })?;
     Ok(total)
 }

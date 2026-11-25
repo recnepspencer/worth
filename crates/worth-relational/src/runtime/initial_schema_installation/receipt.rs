@@ -6,6 +6,7 @@ use std::sync::Arc;
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RelationalInitialSchemaInstallationReceipt {
     pub(super) source_groups: Arc<SourcePreparationInventory>,
+    pub(super) home_readmission_metadata_kinds: Arc<crate::runtime::HomeReadmissionMetadataKinds>,
     pub(super) runtime_instance_id: u64,
     pub(super) custom_invariant_generation: u64,
     pub(super) custom_invariant_inventory_digest: [u8; 32],

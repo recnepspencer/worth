@@ -48,6 +48,38 @@ impl RelationalDurableReadProtection {
             .map_err(|cause| Refusal::Request(cause.into()))?;
         source.read_initial_inputs_owned(request, self.original.as_ref(), limit)
     }
+    pub fn capture_journal(
+        source: &Arc<dyn RelationalDurableColdSource>,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<Self, Refusal> {
+        request
+            .check_live()
+            .map_err(|cause| Refusal::Request(cause.into()))?;
+        let (bounds, original) = source.journal_read_protection(request)?;
+        Ok(Self {
+            issuer: Arc::downgrade(source),
+            bounds,
+            original,
+        })
+    }
+    pub fn capture_journal_when_available(
+        source: &Arc<dyn RelationalDurableColdSource>,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<Self, Refusal> {
+        let mut pause = std::time::Duration::from_micros(50);
+        loop {
+            match Self::capture_journal(source, request) {
+                Err(Refusal::Busy) => {
+                    request
+                        .check_live()
+                        .map_err(|cause| Refusal::Request(cause.into()))?;
+                    std::thread::sleep(pause);
+                    pause = (pause * 2).min(std::time::Duration::from_millis(5));
+                }
+                settled => return settled,
+            }
+        }
+    }
     pub fn capture(
         source: &Arc<dyn RelationalDurableColdSource>,
         request: &ExecutionRequest<'_, '_>,

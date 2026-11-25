@@ -94,26 +94,13 @@ pub(super) fn current(application: &host::Host, key: &str) -> AspectValue {
 
 /// Exact whole-model equality detects any effect from an admitted read.
 /// Cross-runtime identity is checked by literal payloads, not rebinding metadata.
-pub(super) fn stable_current(application: &host::Host, key: &str) -> AspectValue {
-    let before = capture(application);
+pub(super) fn stable_current(application: &host::DirHost, key: &str) -> AspectValue {
+    let before = application.capture_native_checkpoint_frame();
     let value = current(application, key);
-    let after = capture(application);
-    application
-        .with_host_advancement(|phase| {
-            let first = application
-                .runtime()
-                .inspect_application_checkpoint(&phase, before.bytes())
-                .unwrap();
-            let second = application
-                .runtime()
-                .inspect_application_checkpoint(&phase, after.bytes())
-                .unwrap();
-            assert!(
-                first.model == second.model,
-                "an admitted read must preserve complete model bytes"
-            );
-        })
-        .unwrap();
+    let after = application.capture_native_checkpoint_frame();
+    worth_query_testkit_document_retention::facade::directory_home::assert_native_checkpoint_model_unchanged(
+        &before, &after,
+    );
     value
 }
 
@@ -122,19 +109,6 @@ pub(super) fn assert_wire(value: &AspectValue, expected: &[u8; 9]) {
         panic!("native field must carry inline bytes: {value:?}")
     };
     assert_eq!(bytes.as_bytes(), expected);
-}
-
-pub(super) fn capture(application: &host::Host) -> WorthQueryApplicationCheckpoint {
-    application
-        .with_host_advancement(|phase| {
-            application
-                .capture_application_checkpoint(
-                    &phase,
-                    WorthQueryCheckpointCapturePolicy::SystemAllocation,
-                )
-                .unwrap()
-        })
-        .unwrap()
 }
 
 /// Real Foundational phase progression; byte literals remain the separate oracle.

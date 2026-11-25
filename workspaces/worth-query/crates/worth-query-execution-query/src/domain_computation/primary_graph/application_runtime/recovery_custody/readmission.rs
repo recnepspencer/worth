@@ -69,28 +69,85 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         material
             .admit_recovery_admission(admission, binding, input)
             .map_err(Denial::new)?;
-        let world = owner
-            .observation_port()
-            .readmitted_publication(&durable)
-            .map_err(|_| Denial::new(Kind::RecoveryNotAdmitted))?;
-        if world.native_receipt() != original.commit_reference()
-            || material.capture.original.ordinal() != world.attempt_identity().ordinal()
-        {
-            return Err(Denial::new(Kind::ForeignRuntime));
-        }
-        let history = owner
-            .inspection_port()
-            .trace_ancestry(
-                world.after().selected_commit().clone(),
-                std::num::NonZeroUsize::MIN,
-            )
-            .map_err(|_| Denial::new(Kind::RecoveryNotAdmitted))?;
-        let commit = history
-            .commits()
-            .next()
-            .ok_or_else(|| Denial::new(Kind::RecoveryNotAdmitted))?;
-        let publication = WorthQueryCommittedProductPublication::from_readmitted(&world, commit)
-            .map_err(|cause| Denial::new(Kind::DispatchOwnerReadDenied(cause)))?;
+        let publication = match owner.observation_port().readmitted_publication(&durable) {
+            Ok(world) => {
+                if world.native_receipt() != original.commit_reference()
+                    || material.capture.original.ordinal() != world.attempt_identity().ordinal()
+                {
+                    return Err(Denial::new(Kind::ForeignRuntime));
+                }
+                let history = owner
+                    .inspection_port()
+                    .trace_ancestry(
+                        world.after().selected_commit().clone(),
+                        std::num::NonZeroUsize::MIN,
+                    )
+                    .map_err(history_read_denial)?;
+                let commit = history
+                    .commits()
+                    .next()
+                    .ok_or_else(|| Denial::new(Kind::RecoveryNotAdmitted))?;
+                WorthQueryCommittedProductPublication::from_readmitted(&world, commit)
+                    .map_err(|cause| Denial::new(Kind::DispatchOwnerReadDenied(cause)))?
+            }
+            Err(worth_runtime_world::facade::RuntimeWorldServiceDenial::Denied(
+                worth_runtime_world::facade::WorldReadmittedPublicationDenial::NotReadmitted,
+            )) => {
+                let observed = self
+                    .runtime
+                    .primary_provider
+                    .observe_home_publication_for_receipt(
+                        &execution,
+                        original.commit_reference(),
+                        &owner.observation_port(),
+                    )
+                    .map_err(observed_home_read_denial)?;
+                if observed.after().selected_commit() != durable
+                    || observed.native_receipt() != original.commit_reference()
+                    || material.capture.original.ordinal() != observed.attempt_identity().ordinal()
+                {
+                    return Err(Denial::new(Kind::ForeignRuntime));
+                }
+                let signal_publication = match observed.signal_posture() {
+                    worth_runtime_world::facade::CompositeComponentChangePosture::RetainExact => {
+                        None
+                    }
+                    worth_runtime_world::facade::CompositeComponentChangePosture::Published => {
+                        match owner.inspection_port().trace_ancestry(
+                            observed.composite_commit().clone(),
+                            std::num::NonZeroUsize::MIN,
+                        ) {
+                            Ok(history) => {
+                                let commit = history
+                                    .commits()
+                                    .next()
+                                    .ok_or_else(|| Denial::new(Kind::RecoveryNotAdmitted))?;
+                                if commit.signal_change()
+                                    != worth_runtime_world::facade::CompositeComponentChangePosture::Published
+                                {
+                                    return Err(Denial::new(Kind::RecoveryNotAdmitted));
+                                }
+                                let signal = commit
+                                    .signal_publication_identity()
+                                    .cloned()
+                                    .ok_or_else(|| Denial::new(Kind::RecoveryNotAdmitted))?;
+                                Some(signal)
+                            }
+                            Err(worth_runtime_world::facade::RuntimeWorldServiceDenial::Denied(
+                                worth_runtime_world::facade::CompositeHistoryCatalogDenial::UnknownProtectionTarget(_),
+                            )) => None,
+                            Err(cause) => return Err(history_read_denial(cause)),
+                        }
+                    }
+                };
+                WorthQueryCommittedProductPublication::from_observed_home(
+                    &observed,
+                    signal_publication,
+                )
+                .map_err(|cause| Denial::new(Kind::DispatchOwnerReadDenied(cause)))?
+            }
+            Err(cause) => return Err(world_readmission_denial(cause)),
+        };
         let outbox = if let Some(recorded) = original.dispatch_outbox() {
             let observed = self
                 .observe_committed_dispatch_outbox_for_correlation(
@@ -161,5 +218,59 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 self.runtime.recovery_handles.clone(),
             ),
         )
+    }
+}
+
+fn observed_home_read_denial(
+    cause: crate::domain_computation::primary_graph::provider::WorthQueryInboundCompletionReadDenial,
+) -> Denial {
+    use crate::domain_computation::primary_graph::provider::{
+        relational_execution_denial::relational_execution_kind,
+        WorthQueryCommittedDispatchOutboxReadDenial as OutboxDenial,
+        WorthQueryInboundCompletionReadDenial as ReadDenial,
+    };
+    match cause {
+        ReadDenial::SourceRead(cause) => Denial::new(Kind::DispatchOwnerReadDenied(cause)),
+        ReadDenial::ReadRequest(cause) => Denial::new(Kind::DispatchOwnerReadDenied(
+            OutboxDenial::ReadExecution(relational_execution_kind(cause, None)),
+        )),
+        ReadDenial::CommitUnavailable
+        | ReadDenial::Malformed
+        | ReadDenial::AmbiguousCorrelation
+        | ReadDenial::ReconstructionWorkExhausted => Denial::new(Kind::RecoveryNotAdmitted),
+    }
+}
+
+fn history_read_denial(
+    cause: worth_runtime_world::facade::RuntimeWorldServiceDenial<
+        worth_runtime_world::facade::CompositeHistoryCatalogDenial,
+    >,
+) -> Denial {
+    use crate::domain_computation::primary_graph::provider::WorthQueryCommittedDispatchOutboxReadDenial as OutboxDenial;
+    use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Stop;
+    use worth_runtime_world::facade::{
+        CompositeHistoryCatalogDenial as HistoryDenial, RuntimeWorldServiceDenial as ServiceDenial,
+    };
+    match cause {
+        ServiceDenial::Denied(HistoryDenial::Cancelled) => Denial::new(
+            Kind::DispatchOwnerReadDenied(OutboxDenial::ReadExecution(Err(Stop::Cancelled))),
+        ),
+        ServiceDenial::Denied(HistoryDenial::DeadlineElapsed) => Denial::new(
+            Kind::DispatchOwnerReadDenied(OutboxDenial::ReadExecution(Err(Stop::TimedOut))),
+        ),
+        _ => Denial::new(Kind::RecoveryNotAdmitted),
+    }
+}
+
+fn world_readmission_denial(
+    cause: worth_runtime_world::facade::RuntimeWorldServiceDenial<
+        worth_runtime_world::facade::WorldReadmittedPublicationDenial,
+    >,
+) -> Denial {
+    use crate::domain_computation::primary_graph::provider::WorthQueryCommittedDispatchOutboxReadDenial as OutboxDenial;
+    let mapped = crate::domain_computation::primary_graph::provider::committed_dispatch_outbox::recovered::world_denial(cause);
+    match mapped {
+        OutboxDenial::ReadExecution(_) => Denial::new(Kind::DispatchOwnerReadDenied(mapped)),
+        _ => Denial::new(Kind::RecoveryNotAdmitted),
     }
 }

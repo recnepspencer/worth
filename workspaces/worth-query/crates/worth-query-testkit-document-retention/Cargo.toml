@@ -13,9 +13,11 @@ doctest = false
 
 [dependencies]
 serde = { version = "1", features = ["derive", "rc"] }
+worth-execution = { path = "../../../../crates/worth-execution" }
 worth-foundational = { path = "../../../../crates/worth-foundational" }
 worth-query-decl = { workspace = true }
 worth-query-host = { workspace = true }
+worth-relational = { workspace = true }
 
 [lints]
 workspace = true

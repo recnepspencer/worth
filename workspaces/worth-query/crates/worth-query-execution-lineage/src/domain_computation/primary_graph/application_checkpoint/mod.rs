@@ -3,115 +3,10 @@ pub mod capture {
     pub mod output_facts;
 }
 pub mod accepted_output;
-pub mod decode;
-pub mod denial;
-pub mod encode;
 pub mod facts;
 pub mod header;
-pub mod interim_transport;
-pub(crate) mod internal_port;
 pub mod metadata_funding;
 pub mod producer_computation;
-pub mod section_bytes;
-pub mod transition_capture;
-
-pub use interim_transport::WorthQueryInterimCheckpointOrigin;
-pub use sha2::{Digest, Sha256};
-pub use worth_execution::ExecutionAllocationPolicy as WorthQueryCheckpointCapturePolicy;
-
-#[derive(Clone, Debug)]
-pub struct WorthQueryApplicationCheckpoint {
-    pub(crate) bytes: worth_execution::ExecutionImmutableBytes,
-    pub(crate) origin: Option<WorthQueryInterimCheckpointOrigin>,
-}
-
-impl PartialEq for WorthQueryApplicationCheckpoint {
-    fn eq(&self, other: &Self) -> bool {
-        self.bytes == other.bytes
-    }
-}
-impl Eq for WorthQueryApplicationCheckpoint {}
-
-pub struct DecodedApplicationCheckpoint {
-    pub origin: Option<WorthQueryInterimCheckpointOrigin>,
-    pub native: worth_relational::facade::durability::RelationalNativeCheckpoint,
-    pub bootstrap_commit_id: worth_relational::facade::history::CommitId,
-    pub accepted_outputs:
-        Vec<super::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity>,
-    pub metadata: CheckpointMetadataFunding,
-}
-
-impl WorthQueryApplicationCheckpoint {
-    pub fn from_untrusted_bytes(_: ArchiveDecodeAuthority, bytes: impl Into<Box<[u8]>>) -> Self {
-        Self {
-            origin: None,
-            bytes: worth_execution::ExecutionImmutableBytes::from_external_bytes(
-                std::sync::Arc::new(bytes.into()),
-            ),
-        }
-    }
-
-    pub(crate) fn from_admitted_parts(
-        bytes: worth_execution::ExecutionImmutableBytes,
-        origin: Option<WorthQueryInterimCheckpointOrigin>,
-    ) -> Self {
-        Self { bytes, origin }
-    }
-
-    pub fn bytes(&self) -> &[u8] {
-        self.bytes.bytes()
-    }
-
-    pub fn charged_payload_bytes(&self) -> Option<u64> {
-        self.bytes.charged_payload_bytes()
-    }
-
-    #[doc(hidden)]
-    pub fn rewrite_authenticated_checkpoint_body_for_test(
-        &self,
-        rewrite: impl FnOnce(&mut [u8]),
-    ) -> Self {
-        let mut bytes = self.bytes.to_vec();
-        let body_start = MAGIC.len() + CHECKSUM_BYTES;
-        rewrite(&mut bytes[body_start..]);
-        let checksum = Sha256::digest(&bytes[body_start..]);
-        bytes[MAGIC.len()..body_start].copy_from_slice(&checksum);
-        Self::from_untrusted_bytes(ARCHIVE_DECODE, bytes.into_boxed_slice())
-    }
-
-    pub(crate) fn decode_with_execution(
-        self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<DecodedApplicationCheckpoint, CheckpointDecodeDenial> {
-        let (result, _) = execution
-            .in_scope(|lease| {
-                worth_execution::ExecutionWorkCeiling::new(execution.work_ceiling())
-                    .run_with_checkpoint(lease, None, |context| {
-                        let work = u64::try_from(self.bytes.len())
-                            .map_err(|_| CheckpointDecodeDenial::capacity())?;
-                        context.checkpoint_cost(work, work).map_err(|stop| {
-                            CheckpointDecodeDenial::execution(
-                                worth_execution::WorkCeilingDenial::Stopped(stop),
-                            )
-                        })?;
-                        header::admit(self.bytes.bytes())?;
-                        self.decode_current_body(execution)
-                    })
-            })
-            .map_err(CheckpointDecodeDenial::execution)?
-            .map_err(CheckpointDecodeDenial::execution)?;
-        result
-    }
-
-    pub(crate) fn decode(self) -> Result<DecodedApplicationCheckpoint, CheckpointDecodeDenial> {
-        let host = worth_execution::SerialRequest::from_memory(
-            worth_execution::SerialMemoryBudget::new(None),
-            worth_execution::CancellationToken::new(),
-            None,
-        );
-        self.decode_with_execution(&worth_execution::ExecutionRequest::serial(&host))
-    }
-}
 
 pub struct CheckpointCursor<'a> {
     remaining: &'a [u8],
@@ -199,26 +94,11 @@ impl<'a> CheckpointCursor<'a> {
     }
 }
 
-pub use denial::WorthQueryCheckpointCaptureDenial;
 pub use facts::FactDecodeDenial;
 pub use header::CheckpointDecodeDenial;
 pub use metadata_funding::CheckpointMetadataFunding;
 pub use producer_computation::{decode as decode_checkpoint_computation, CheckpointProducerFacts};
-pub use section_bytes::{
-    WorthQueryApplicationCheckpointSectionBytes, WorthQueryNativeCheckpointSectionBytes,
-};
 
-pub const MAGIC: &[u8; 8] = b"WQAPCP01";
-pub const FORMAT_VERSION: u16 = 14;
-pub const WORKFLOW_FACTS: u16 = 2;
-pub const WORKFLOW_INSTANCES: u16 = 4;
-pub const CHECKSUM_BYTES: usize = 32;
-pub const BODY_PREFIX_BYTES: usize = 2 + 2 + 2 + 8 + 8 + 8 + 8 + 8;
-pub const HEADER_BYTES: usize = MAGIC.len() + CHECKSUM_BYTES + BODY_PREFIX_BYTES;
-pub const MINIMUM_ACCEPTED_OUTPUT_BYTES: usize =
-    8 + 1 + 48 + 32 + 16 + 32 + 33 + 32 + 8 + 8 + 1 + 2;
 pub const MAXIMUM_PRODUCER_IDENTITY_BYTES: usize = 4 * 1024;
 pub const MAXIMUM_ROLE_IDENTITY_BYTES: usize = 4 * 1024;
 pub const MAXIMUM_ENTITY_NAME_BYTES: usize = 4 * 1024;
-
-mod court_doors_for_test;

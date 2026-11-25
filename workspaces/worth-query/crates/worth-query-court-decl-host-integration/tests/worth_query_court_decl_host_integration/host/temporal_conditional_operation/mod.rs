@@ -35,12 +35,6 @@ fn application_checkpoint_restores_fresh_editable_authority() {
 }
 
 #[test]
-fn application_checkpoint_denies_corrupt_incompatible_and_forged_bytes() {
-    contribution_installation::application_checkpoint_denies_corrupt_incompatible_and_forged_bytes(
-    );
-}
-
-#[test]
 fn contribution_installation_rejects_a_zero_route_callback() {
     contribution_installation::zero_route_installation_is_denied();
 }

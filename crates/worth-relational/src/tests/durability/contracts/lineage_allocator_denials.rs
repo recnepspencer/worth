@@ -15,7 +15,7 @@ fn tail_created_lineage_allocator_exhaustion_denies_before_replay() {
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);
     create_entity_outcome(execution, &runtime, "lineage-overflow-checkpoint");
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     create_entity_outcome(execution, &runtime, "lineage-overflow-tail");
     let mut plan = medium
         .recovery_plan(

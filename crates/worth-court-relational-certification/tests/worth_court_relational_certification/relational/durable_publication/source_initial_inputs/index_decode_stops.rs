@@ -319,7 +319,7 @@ fn complete_fold_matches_original_relation_delete_with_snapshot_and_replay_pins(
     // No ordinary checkpoint is promoted and no expected root is injected.
     let complete = runtime
         .complete_checkpoint_service()
-        .prepare(&execution, RelationalCheckpointArtifactPolicy::Embedded)
+        .prepare(&execution, RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
         .unwrap();
     let image = partition_image(
         complete.checkpoint(),

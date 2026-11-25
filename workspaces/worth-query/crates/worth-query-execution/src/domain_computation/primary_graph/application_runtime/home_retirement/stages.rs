@@ -62,6 +62,17 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         WorthQueryHomeRetirementDenial,
     >{
         if !self.inner.installed_producers.is_empty() {
+            self.inner
+                .flush_pending_coupled_outputs(request)
+                .map_err(|_| {
+                    request
+                        .consult()
+                        .map_err(WorthQueryHomeRetirementDenial::Execution)
+                        .err()
+                        .unwrap_or(WorthQueryHomeRetirementDenial::Busy(
+                            WorthQueryHomeRetirementOwner::InstalledProducers,
+                        ))
+                })?;
             let history = self
                 .installed_program_support()
                 .map(|support| support.obligation_history());
@@ -147,11 +158,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 .expect("serving participation remains owned")
                 .preflight(provider)?;
         }
-        self.inner.runtime.primary_provider_mut().preflight(
-            request,
-            dispatch_custody,
-            transport,
-        )?;
         self.inner
             .mutation_projection
             .preflight_home_retirement(request)?;
@@ -198,6 +204,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .primary_graph()
             .expect("an installed application owns its original primary graph")
             .preflight_home_retirement(request)
+            .map_err(WorthQueryHomeRetirementDenial::from)?;
+        // Run provider preflight last: detaching hot coupled-completion receipt
+        // caches only succeeds once every other owner is already quiescent.
+        self.inner
+            .runtime
+            .primary_provider_mut()
+            .preflight(request, dispatch_custody, transport)
             .map_err(Into::into)
     }
 }

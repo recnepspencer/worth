@@ -11,8 +11,8 @@ fn recovered_signal_only_original_keeps_its_owner_and_continues_without_reexecut
 fn recovered_mixed_original_keeps_both_owners_and_continues_without_reexecution() {
     run(true, false);
 }
-/// D18 still refuses a Signal effect whose recorded open is gone: nothing
-/// joins it to an original, so it never reaches service.
+/// A Signal effect whose recorded open is gone joins no original and refuses
+/// before service as an orphan Signal association.
 #[test]
 fn a_signal_effect_without_its_recorded_open_refuses_before_serving() {
     run(false, true);
@@ -111,13 +111,7 @@ fn run(mixed: bool, orphan: bool) {
             Err(denial) => denial,
         };
         assert!(
-            matches!(
-                denial,
-                WorldReadmissionDenial::UncleanRecoveryUnsupported(UncleanRecoveryUnsupported {
-                    owner: DurableOwnerFamily::Signal,
-                    ..
-                })
-            ),
+            matches!(denial, WorldReadmissionDenial::OrphanSignalAssociation),
             "{denial:?}"
         );
         return;

@@ -123,9 +123,18 @@ impl ReadmittedRegionDirectory {
         let memory = request
             .reserve_retained_memory(bytes)
             .map_err(|cause| RelationalRecoveryStop::Request(cause.into()))?;
+        let configured_snapshot = (!directory.manifest.schemas.is_empty())
+            .then(|| {
+                configured_schema
+                    .snapshot_for_compilation(contracts::schema::compilation_control::SchemaCompilationControl::Request(
+                        *request,
+                    ))
+                    .map_err(RelationalRecoveryStop::Request)
+            })
+            .transpose()?;
         let mut schemas = BTreeMap::new();
         for (index, image) in directory.manifest.schemas.iter().enumerate() {
-            let (mut registry, contracts) = image.readmit_registry().map_err(corrupt)?;
+            let (registry, contracts) = image.readmit_registry().map_err(corrupt)?;
             let expected = registry
                 .snapshot_for_compilation(
                     contracts::schema::compilation_control::SchemaCompilationControl::Request(
@@ -133,6 +142,13 @@ impl ReadmittedRegionDirectory {
                     ),
                 )
                 .map_err(RelationalRecoveryStop::Request)?;
+            // Preserve genuine installed recipe/domain issuers when the exact
+            // schema meaning matches the receiving runtime's declaration.
+            let mut registry = if configured_snapshot.as_ref() == Some(&expected) {
+                configured_schema.clone()
+            } else {
+                registry
+            };
             (*registry.owner_content_formats_mut()) = (*registry.owner_content_formats())
                 .bind_recorded(configured_schema.owner_content_formats())
                 .map_err(RelationalRecoveryStop::from)?;

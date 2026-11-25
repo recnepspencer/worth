@@ -45,6 +45,7 @@ where
             .binding_identity()
             != &runtime.installed_schema().binding_identity()
         || receipt.installed_operation() != &installed.authority_identity_bytes()
+        || receipt.operation_definition_identity() != &installed.definition_identity_bytes()
         || receipt.product_branch() != branch
         || scope.partition_id() != subject.partition_value()
         || scope.local_slot() != subject.local_slot_value()
@@ -89,8 +90,13 @@ pub fn validate_operation_receipt_custody(
 
 pub fn receipt_identity(receipt: &WorthQueryApplicationCommitReceipt) -> Option<[u8; 32]> {
     Some(receipt_identity_from_outcome(
+        receipt
+            .committed_product_publication()
+            .composite_commit()
+            .owner_identity()
+            .durable(),
         receipt.runtime_authority().as_u64(),
         receipt.outcome_identity()?.get(),
-        receipt.installed_operation(),
+        receipt.operation_definition_identity(),
     ))
 }

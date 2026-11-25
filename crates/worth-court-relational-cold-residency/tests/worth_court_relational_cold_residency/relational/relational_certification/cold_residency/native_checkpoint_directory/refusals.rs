@@ -46,7 +46,7 @@ fn current_directory_rejects_damaged_duplicate_and_missing_members() {
             RelationalNativeCheckpoint::from_untrusted_bytes([CHECKPOINT_MAGIC, &amended].concat());
         let result = memory_runtime()
             .durability_recovery()
-            .restore_native_checkpoint(execution, &untrusted);
+            .restore_native_checkpoint(execution, &untrusted, worth_testkit_relational::cold_recovery::members_source(&untrusted));
         assert!(result.is_err(), "alteration {alteration}");
     }
 }
@@ -74,6 +74,7 @@ fn chk6_and_retired_inner_partition_grammars_are_refused() {
             .restore_native_checkpoint(
                 execution,
                 &RelationalNativeCheckpoint::from_untrusted_bytes(old),
+                worth_testkit_relational::cold_recovery::members_source(&native),
             )
             .unwrap_err();
         assert_eq!(
@@ -95,6 +96,7 @@ fn chk6_and_retired_inner_partition_grammars_are_refused() {
             .restore_native_checkpoint(
                 execution,
                 &RelationalNativeCheckpoint::from_untrusted_bytes(bytes),
+                worth_testkit_relational::cold_recovery::members_source(&native),
             )
             .unwrap_err();
         assert_eq!(

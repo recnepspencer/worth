@@ -1,5 +1,5 @@
 pub(crate) use authority::RecordedReplayResultSchema;
-pub(crate) use authority::RecoveredRootInventory;
+pub(crate) use authority::{HomeReadmissionMetadataPhase, RecoveredRootInventory};
 pub(crate) use authority::{AdmittedRecoveredCodecPublication, RecoveredCodecPublicationCustody};
 pub mod authority;
 pub use authority::checkpoint_transition::{
@@ -9,9 +9,10 @@ pub use authority::checkpoint_transition::{
 pub use authority::recovery::home_program_transition::{
     RelationalHomeProgramTransitionSource, RelationalHomeProgramTransitionSourceRefusal,
 };
+pub use authority::HomeReadmissionMetadataAuthority;
 pub use authority::RecoveredRelationalBranchBasis;
 pub(crate) use worth_relational_durability::internal_port::durability::{
-    artifact_payload_emission, authority_continuity, branch_transition_artifact,
+    authority_continuity, branch_transition_artifact,
     canonical_commit_artifact, checkpoint_admission, checkpoint_history,
     checkpoint_selection_denial, checkpoints, cold_residency_census, derived_index_artifacts,
     envelope_version_selection, history_source_readmission, home_world_catalog,

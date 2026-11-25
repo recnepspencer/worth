@@ -1,58 +1,16 @@
-//! The actual edit checkpoint reopens from disk with exact source and output rows.
-use super::super::super::{calculation, program};
+//! The actual Directory Home reopens from disk with exact source and output rows.
+use super::super::super::calculation;
 use super::*;
-use std::sync::atomic::{AtomicU64, Ordering};
-use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
-use worth_query_host::facade::{application_installation::*, domain::ApplicationSchema};
-static NEXT: AtomicU64 = AtomicU64::new(0);
+use worth_query_host::facade::application_installation::WorthQueryApplicationLimits;
 
-pub(super) fn assert_reopened_ready(application: &host::OutputHost, expected: u64) {
-    let rows = host::read(application);
-    let checkpoint = application
-        .with_host_advancement(|phase| {
-            application
-                .runtime()
-                .capture_application_checkpoint(
-                    &phase,
-                    WorthQueryCheckpointCapturePolicy::SystemAllocation,
-                )
-                .unwrap()
-        })
-        .unwrap();
-    let path = std::env::temp_dir().join(format!(
-        "worth-paired-ordinary-{}-{}.checkpoint",
-        std::process::id(),
-        NEXT.fetch_add(1, Ordering::Relaxed)
-    ));
-    let origin = checkpoint
-        .capture_origin()
-        .expect("actual capture issued Native and World origin");
-    std::fs::write(&path, checkpoint.bytes()).unwrap();
-    let bytes = std::fs::read(&path).unwrap();
-    std::fs::remove_file(&path).unwrap();
-    let restored_checkpoint = application
-        .with_host_advancement(|phase| {
-            let execution = phase
-                .checked_execution_request_for(application.runtime().product_runtime())
-                .unwrap();
-            WorthQueryApplicationCheckpoint::from_untrusted_bytes(
-                ARCHIVE_DECODE,
-                bytes.into_boxed_slice(),
-            )
-            .with_capture_origin(origin, &execution)
-        })
-        .unwrap()
-        .expect("disk bytes retain their actual captured Native and World origin");
-    let cold: host::OutputHost = WorthQueryInterimCheckpointRestore::rostered_program(
-        program::validated::<OutputProgram>(),
-        host::roster().support(program::validated::<program::Program>()),
-        NumericSchema::declaration().unwrap(),
-        ((),),
-        ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap(),
-        host::installation_limits(),
-        restored_checkpoint,
-    )
-    .expect("ordinary edit reopens from actual disk bytes without a new origin");
+pub(in super::super::super) fn assert_reopened_ready(
+    application: host::DirOutputHost,
+    expected: u64,
+    limits: WorthQueryApplicationLimits,
+) {
+    let rows = host::read(&application);
+    let directory = application.checkpoint_and_close_for_reopen();
+    let cold = host::open_directory_with_outputs(directory, limits);
     assert_eq!(host::read(&cold), rows);
     assert_eq!(read_calculation(&cold), expected);
     let scope = request_scope();
@@ -88,6 +46,7 @@ pub(super) fn assert_reopened_ready(application: &host::OutputHost, expected: u6
 fn assert_next_edit(application: &host::OutputHost) {
     use super::super::super::edit::{Edit, Value};
     use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
     let scope = request_scope();
     let principal = authenticate_operator(application.installed_schema(), &scope);
     let request = application.request(&principal, &scope);

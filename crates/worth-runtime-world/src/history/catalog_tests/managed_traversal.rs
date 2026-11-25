@@ -119,7 +119,7 @@ fn bounded_traversal_protects_chain_and_reuses_exact_history_leases() {
 fn overlapping_memory_original_reservations_refund_unneeded_growth() {
     use crate::branch::reference_test_fixture;
     use crate::history::publication::memory_observation::{
-        MemoryPublicationMeaning, MemoryPublicationReceiver, MemoryPublicationRecord,
+        MemoryPublicationMeaning, MemoryPublicationRecord,
     };
     use std::sync::Arc;
     use worth_execution::{CancellationToken, ExecutionRequest, SerialMemoryBudget, SerialRequest};
@@ -156,7 +156,6 @@ fn overlapping_memory_original_reservations_refund_unneeded_growth() {
     let make_record = |committed: bool| {
         Arc::new(MemoryPublicationRecord {
             meaning: Arc::clone(&meaning),
-            receiver: MemoryPublicationReceiver::Live,
             before_component: component.clone(),
             after_component: component.clone(),
             committed: std::sync::atomic::AtomicBool::new(committed),

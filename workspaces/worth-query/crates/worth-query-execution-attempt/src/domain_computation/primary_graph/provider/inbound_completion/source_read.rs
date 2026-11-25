@@ -5,7 +5,7 @@ use super::read::{
 };
 use super::*;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
-use worth_runtime_world::facade::{RuntimeWorldObservationPort, WorldReadmittedPublication};
+use worth_runtime_world::facade::{RuntimeWorldObservationPort, WorldObservedHomePublication};
 
 impl WorthQueryPrimaryGraphProvider {
     pub fn completion_source_from_subject(
@@ -13,21 +13,21 @@ impl WorthQueryPrimaryGraphProvider {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         subject: &worth_relational::facade::durability::RelationalAssociatedEffectSubject,
         observation: &RuntimeWorldObservationPort,
-    ) -> Result<WorldReadmittedPublication, Denial> {
+    ) -> Result<WorldObservedHomePublication, Denial> {
         self.graph.with_runtime(execution, |runtime| {
             let native = runtime
                 .durability_authority()
                 .readmit_associated_effect(execution, subject)
                 .map_err(native_read_denial)?;
             observation
-                .readmitted_native_publication(execution, native)
+                .observe_home_original_publication(execution, native)
                 .map_err(world_read_denial)
         })
     }
     pub fn completion_row_from_readmitted_source(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        original: &WorldReadmittedPublication,
+        original: &WorldObservedHomePublication,
         entity: worth_relational::facade::identity::EntityId,
     ) -> Result<WorthQueryCanonicalCompletionRow, Denial> {
         let row = original
@@ -60,7 +60,7 @@ impl WorthQueryPrimaryGraphProvider {
         >,
     ) -> Result<
         Vec<(
-            WorldReadmittedPublication,
+            WorldObservedHomePublication,
             worth_relational::facade::identity::EntityId,
         )>,
         Denial,
@@ -89,7 +89,7 @@ impl WorthQueryPrimaryGraphProvider {
                 }
                 if let Some(entity) = entity {
                     let world = observation
-                        .readmitted_native_publication(execution, native)
+                        .observe_home_original_publication(execution, native)
                         .map_err(world_read_denial)?;
                     completions.push((world, entity));
                 }

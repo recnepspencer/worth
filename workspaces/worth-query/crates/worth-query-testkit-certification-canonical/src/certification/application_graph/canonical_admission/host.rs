@@ -38,10 +38,36 @@ impl WorthQueryApplicationContribution<AdmissionSchema> for AdmissionContributio
         setup.handler::<super::live::publish::PublishBinding, _>(super::live::publish::Handler)
     }
 }
+pub enum HostProgram {
+    Memory(WorthQueryProgramApplicationRuntime<AdmissionSchema, Program>),
+    Directory(
+        worth_query_testkit_document_retention::facade::directory_home::DirectoryHomeGuard<
+            AdmissionSchema,
+            Program,
+        >,
+    ),
+}
+impl std::ops::Deref for HostProgram {
+    type Target = WorthQueryProgramApplicationRuntime<AdmissionSchema, Program>;
+    fn deref(&self) -> &Self::Target {
+        match self {
+            Self::Memory(runtime) => runtime,
+            Self::Directory(guard) => guard,
+        }
+    }
+}
 pub struct Host {
-    pub program: WorthQueryProgramApplicationRuntime<AdmissionSchema, Program>,
+    pub program: HostProgram,
     pub request_work: u64,
     pub second_decode_work: std::cell::Cell<Option<u64>>,
+}
+impl Host {
+    pub fn close_for_reopen(self) -> std::path::PathBuf {
+        match self.program {
+            HostProgram::Directory(guard) => guard.checkpoint_and_close_for_reopen(),
+            HostProgram::Memory(_) => panic!("close_for_reopen requires a Directory Home host"),
+        }
+    }
 }
 pub fn install(work: u64) -> Host {
     install_owned(work, false).0
@@ -119,7 +145,7 @@ pub fn install_owned(
     let projection = projection.expect("real bootstrap retains its native projection authority");
     (
         Host {
-            program: host,
+            program: HostProgram::Memory(host),
             request_work: work,
             second_decode_work: Default::default(),
         },
@@ -130,16 +156,16 @@ pub fn install_owned(
 pub fn key(identity: &str) -> WorthQueryApplicationEntityKey<AdmissionSchema, Document> {
     WorthQueryApplicationEntityKey::new(identity).unwrap()
 }
-pub fn restore(checkpoint: WorthQueryApplicationCheckpoint, work: u64) -> Host {
-    let opening = worth_execution::SerialRequest::from_memory(
-        worth_execution::SerialMemoryBudget::new(None),
-        worth_execution::CancellationSource::new().token(),
-        None,
-    );
-    let execution = worth_execution::ExecutionRequest::serial(&opening);
-    let program = with_bootstrap_advancement_from_request(execution, |phase| {
-        WorthQueryInterimCheckpointRestore::rostered_program_in_advancement(
-            &phase,
+pub fn open_directory(directory: std::path::PathBuf, work: u64) -> Host {
+    open_directory_owned(directory, work, false)
+}
+pub fn open_directory_page(directory: std::path::PathBuf, work: u64) -> Host {
+    open_directory_owned(directory, work, true)
+}
+fn open_directory_owned(directory: std::path::PathBuf, work: u64, page: bool) -> Host {
+    let home = worth_query_testkit_document_retention::facade::directory_home::with_directory_bootstrap(|phase| {
+        worth_query_host::facade::WorthQueryApplicationHomeRequest::new(
+            worth_query_host::facade::WorthQueryApplicationHomeLocation::Directory(directory.clone()),
             ApplicationProgramAuthoring::<AdmissionSchema, Program>::begin()
                 .validated_program()
                 .unwrap(),
@@ -148,30 +174,59 @@ pub fn restore(checkpoint: WorthQueryApplicationCheckpoint, work: u64) -> Host {
             ((),),
             ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
             super::limits::limits(work.max(super::FUNDED_WORK)),
-            checkpoint,
+            move |_, graph, installed| {
+                graph.bind_principal(
+                    &installed
+                        .principal_binding(DocumentPrincipalBinding::reference())
+                        .unwrap(),
+                    WorthQueryApplicationPrincipalKey::new("canonical-admission-operator").unwrap(),
+                    1_u64,
+                    operator_identity(),
+                    WorthQueryPrincipalMappingStatus::Enabled,
+                )?;
+                for identity in ["root", "child"] {
+                    graph.bind_entity(
+                        WorthQueryApplicationEntitySeed::new(Document::reference(), key(identity))
+                            .field(
+                                DocumentIdentityField::at("DocumentIdentityField"),
+                                identity.to_owned(),
+                            )
+                            .field(
+                                DocumentValueField::at("DocumentValueField"),
+                                super::opaque::SwallowingValue(super::value()),
+                            )
+                            .field(CounterField::at("CounterField"), 0_u64),
+                    )?;
+                }
+                graph.bind_relation(WorthQueryApplicationRelationSeed::new(
+                    ChildLink::reference(),
+                    "canonical-admission-child",
+                    key("root"),
+                    key("child"),
+                ))?;
+                if page {
+                    graph.bind_relation(WorthQueryApplicationRelationSeed::new(
+                        ChildLink::reference(),
+                        "canonical-admission-self",
+                        key("root"),
+                        key("root"),
+                    ))?;
+                }
+                Ok(())
+            },
         )
+        .open_in_advancement(phase)
     })
-    .expect("the explicit fixture reconstruction request admits its bootstrap")
-    .expect("current source restores without authored conversion");
+    .expect("canonical admission Directory Home opens");
     Host {
-        program,
+        program: HostProgram::Directory(
+            worth_query_testkit_document_retention::facade::directory_home::DirectoryHomeGuard::wrap(
+                home, directory,
+            ),
+        ),
         request_work: work,
         second_decode_work: Default::default(),
     }
-}
-pub fn capture(host: &Host) -> WorthQueryApplicationCheckpoint {
-    host.program
-        .runtime()
-        .with_host_advancement(|phase| {
-            host.program
-                .runtime()
-                .capture_application_checkpoint(
-                    &phase,
-                    WorthQueryCheckpointCapturePolicy::SystemAllocation,
-                )
-                .unwrap()
-        })
-        .unwrap()
 }
 pub fn advance(
     host: &Host,

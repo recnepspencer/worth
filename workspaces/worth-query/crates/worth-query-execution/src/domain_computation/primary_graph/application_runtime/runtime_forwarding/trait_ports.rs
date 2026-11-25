@@ -168,15 +168,10 @@ impl<Schema: ApplicationSchema> WorkflowOperationAuthorityRuntimePort<Schema>
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         request: &WorthQueryRequestScope,
-        runtime_authority: u64,
-        observation: &WorthQueryProductBranchReadIdentity,
+        authority: &worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_transition_program::publication::operation::WorkflowOperationAuthority,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
-        self.inner.validate_workflow_operation_authority(
-            phase,
-            request,
-            runtime_authority,
-            observation,
-        )
+        self.inner
+            .validate_workflow_operation_authority(phase, request, authority)
     }
 }
 

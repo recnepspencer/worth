@@ -28,7 +28,6 @@ pub(crate) use worth_query_execution_query::facade::domain_computation::primary_
 
 pub(crate) mod application_attempt;
 pub(crate) mod application_checkpoint;
-mod application_checkpoint_runtime;
 pub(crate) mod application_contribution;
 pub(crate) mod application_discovery;
 pub(crate) mod application_installation;
@@ -49,6 +48,7 @@ mod original_operation;
 pub(crate) mod product_activation;
 pub(crate) mod product_operation;
 mod record_reservations;
+pub use record_reservations::*;
 mod typed_bootstrap;
 
 pub use application_output_demand::{

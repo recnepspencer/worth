@@ -146,16 +146,3 @@ pub(super) const POPULATION_BOOTSTRAP_POLICY: worth_foundational::ExecutionReque
             Some(20_000_000_000),
         ),
     );
-
-#[cfg(test)]
-pub(super) fn checkpoint_capture_request(
-) -> worth_query_host::facade::runtime::ExecutionResourceLease<'static> {
-    worth_query_host::facade::runtime::ExecutionResourceLease::serial(
-        worth_query_host::facade::runtime::LeaseRequest {
-            policy: POPULATION_BOOTSTRAP_POLICY,
-            cancellation: worth_query_host::facade::runtime::CancellationToken::new(),
-            deadline: None,
-        },
-    )
-    .expect("the capture owns its original finite setup request")
-}

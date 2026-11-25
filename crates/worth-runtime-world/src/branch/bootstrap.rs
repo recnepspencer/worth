@@ -64,13 +64,6 @@ impl RuntimeWorldBootstrapIntent {
         self.cancellation = Some(cancellation);
         self
     }
-    pub(crate) fn with_initial_generation(
-        mut self,
-        generation: ProductBranchReferenceGeneration,
-    ) -> Self {
-        self.initial_generation = generation;
-        self
-    }
     pub(crate) fn cancellation(
         &self,
     ) -> Option<&crate::publication::RuntimeWorldCancellationToken> {

@@ -212,9 +212,10 @@ let host = in_memory_rostered_program(
   It is `None` when `P` was never rostered on this host. The handle offers
   `installed_program()` (whose `revision()` is the revision),
   `contains_action::<Binding>()`, and `runtime()`.
-- `WorthQueryInterimCheckpointRestore::rostered_program` restores the same roster from a
-  Query-issued checkpoint, so a branch recorded under a supported program still
-  runs it.
+- Reopening a Directory Home with `WorthQueryApplicationHomeRequest` and the
+  same `WorthQueryApplicationProgramRoster` restores the roster from durable
+  Home state, so a branch recorded under a supported program continues running
+  it without replaying `initial_state`.
 - A workflow vocabulary is installed per program. To keep a branch's workflows
   usable after it adopts another program, install the same spec against that
   program with `support_workflow_spec`. See [Workflows](workflows.md).

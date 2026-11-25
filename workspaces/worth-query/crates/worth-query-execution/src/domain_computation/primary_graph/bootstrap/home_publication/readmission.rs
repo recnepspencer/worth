@@ -41,6 +41,9 @@ pub(in crate::domain_computation::primary_graph) fn readmit<Schema: ApplicationS
             worth_foundational::facade::HomeProgramTransitionInstallationBinding,
         >,
     >,
+    metadata_authority: Option<
+        &worth_relational::facade::durability::HomeReadmissionMetadataAuthority,
+    >,
 ) -> Result<WorthQueryPrimaryGraphPublication, Denial> {
     let execution = phase.execution_request();
     bootstrap
@@ -49,21 +52,61 @@ pub(in crate::domain_computation::primary_graph) fn readmit<Schema: ApplicationS
         .with_runtime(&execution, |native| {
             let expected = transition::expected_binding(native, installed, selected, transition)?;
             let basis = root.basis().relational_basis();
-            let view = native
-                .read_truth()
-                .project_observation(&basis.observation())
-                .map_err(|cause| {
-                    denial(format!("Home completion selected basis denied: {cause:?}"))
-                })?;
-            let DecodedCompletion {
-                binding,
-                terminal,
-                created,
-                counts,
-            } = decode_selected_row(&view, bootstrap.graph.layout_ref(), &execution)?;
-            admit_binding(roster, selected, binding, expected)?;
-            admit_receipts(native, basis, terminal, created)?;
-            let activation = admit_activation(bootstrap, &view, &execution, roster)?;
+            let (terminal, counts, activation) = match metadata_authority {
+                Some(authority) => {
+                    let view = native
+                        .read_truth()
+                        .project_home_readmission_metadata(authority, &basis.observation())
+                        .map_err(|cause| {
+                            denial(format!("Home completion selected basis denied: {cause:?}"))
+                        })?;
+                    let rows = view
+                        .bounded_entities_of_kind(
+                            &execution,
+                            bootstrap.graph.layout_ref().bootstrap_publication.kind,
+                            usize::MAX,
+                        )
+                        .map_err(map_metadata_read_denial)?
+                        .map_err(|_| denial("Home completion scan exceeded its bound"))?;
+                    let DecodedCompletion {
+                        binding,
+                        terminal,
+                        created,
+                        counts,
+                    } = decode_selected_rows(rows, bootstrap.graph.layout_ref(), &execution)?;
+                    admit_binding(roster, selected, binding, expected)?;
+                    admit_receipts(native, basis, terminal, created)?;
+                    let activation =
+                        admit_activation_home_readmission(bootstrap, &view, &execution, roster)?;
+                    (terminal, counts, activation)
+                }
+                None => {
+                    let view = native
+                        .read_truth()
+                        .project_observation(&basis.observation())
+                        .map_err(|cause| {
+                            denial(format!("Home completion selected basis denied: {cause:?}"))
+                        })?;
+                    let rows = view
+                        .bounded_entities_of_kind(
+                            &execution,
+                            bootstrap.graph.layout_ref().bootstrap_publication.kind,
+                            usize::MAX,
+                        )
+                        .map_err(super::super::request_read_denial::read)?
+                        .map_err(|_| denial("Home completion scan exceeded its bound"))?;
+                    let DecodedCompletion {
+                        binding,
+                        terminal,
+                        created,
+                        counts,
+                    } = decode_selected_rows(rows, bootstrap.graph.layout_ref(), &execution)?;
+                    admit_binding(roster, selected, binding, expected)?;
+                    admit_receipts(native, basis, terminal, created)?;
+                    let activation = admit_activation(bootstrap, &view, &execution, roster)?;
+                    (terminal, counts, activation)
+                }
+            };
             let publication = publication(installed, terminal, counts);
             let cell = bootstrap
                 .program_activation
@@ -101,6 +144,7 @@ pub(in crate::domain_computation::primary_graph) fn inspect_native_completion<
         >,
     >,
     execution: &ExecutionRequest<'_, '_>,
+    metadata_authority: &worth_relational::facade::durability::HomeReadmissionMetadataAuthority,
 ) -> Result<RecoveredBootstrapPublication, Denial> {
     let expected = transition::expected_binding(native, installed, selected, transition)?;
     let (_, basis) = native
@@ -108,9 +152,13 @@ pub(in crate::domain_computation::primary_graph) fn inspect_native_completion<
         .map_err(|cause| denial(format!("Home completion Native basis denied: {cause:?}")))?;
     let view = native
         .read_truth()
-        .project_observation(&basis.observation())
+        .project_home_readmission_metadata(metadata_authority, &basis.observation())
         .map_err(|cause| denial(format!("Home completion Native view denied: {cause:?}")))?;
-    match decode_optional_selected_row(&view, layout, execution)? {
+    let rows = view
+        .bounded_entities_of_kind(execution, layout.bootstrap_publication.kind, usize::MAX)
+        .map_err(map_metadata_read_denial)?
+        .map_err(|_| denial("Home completion scan exceeded its bound"))?;
+    match decode_optional_selected_rows(rows, layout, execution)? {
         None => Ok(RecoveredBootstrapPublication::Incomplete),
         Some(completion) => {
             if completion.binding != expected {
@@ -124,25 +172,21 @@ pub(in crate::domain_computation::primary_graph) fn inspect_native_completion<
     }
 }
 
-fn decode_selected_row(
-    view: &VisibilityProjectionView,
+fn decode_selected_rows(
+    rows: worth_relational::facade::runtime::BoundedEntityKindTruthRead,
     graph_layout: &super::super::super::schema_layout::WorthQueryPrimaryGraphLayout,
     execution: &ExecutionRequest<'_, '_>,
 ) -> Result<DecodedCompletion, Denial> {
-    decode_optional_selected_row(view, graph_layout, execution)?
+    decode_optional_selected_rows(rows, graph_layout, execution)?
         .ok_or_else(|| denial("Home root must contain exactly one bootstrap completion record"))
 }
 
-fn decode_optional_selected_row(
-    view: &VisibilityProjectionView,
+fn decode_optional_selected_rows(
+    rows: worth_relational::facade::runtime::BoundedEntityKindTruthRead,
     graph_layout: &super::super::super::schema_layout::WorthQueryPrimaryGraphLayout,
     execution: &ExecutionRequest<'_, '_>,
 ) -> Result<Option<DecodedCompletion>, Denial> {
     let layout = &graph_layout.bootstrap_publication;
-    let rows = view
-        .bounded_entities_of_kind(execution, layout.kind, usize::MAX)
-        .map_err(super::super::request_read_denial::read)?
-        .map_err(|_| denial("Home completion scan exceeded its bound"))?;
     if rows.records().is_empty() {
         return Ok(None);
     }
@@ -268,6 +312,43 @@ fn admit_activation<Schema: ApplicationSchema>(
         },
     )
     .map(|(identity, _)| identity)
+}
+fn admit_activation_home_readmission<Schema: ApplicationSchema>(
+    bootstrap: &WorthQueryPrimaryGraphBootstrap<Schema>,
+    view: &worth_relational::facade::runtime::HomeReadmissionMetadataView<'_>,
+    execution: &ExecutionRequest<'_, '_>,
+    roster: &WorthQueryProgramSupportRoster<Schema>,
+) -> Result<EntityId, Denial> {
+    super::super::program_activation_recovery::read_activation_home_readmission(
+        execution,
+        view,
+        bootstrap.graph.layout_ref().program_activation(),
+        usize::MAX,
+        "Home root does not activate its admitted program",
+        |rendering| {
+            roster.entries().iter().any(|entry| {
+                *rendering
+                    == super::super::super::program_occurrence::program_revision_rendering(
+                        entry.revision(),
+                    )
+            })
+        },
+    )
+    .map(|(identity, _)| identity)
+}
+
+fn map_metadata_read_denial(
+    cause: worth_relational::facade::runtime::HomeReadmissionMetadataReadDenial,
+) -> Denial {
+    use worth_relational::facade::runtime::HomeReadmissionMetadataReadDenial as ReadDenial;
+    match cause {
+        ReadDenial::Execution(cause) => super::super::request_read_denial::read(cause),
+        ReadDenial::PhaseClosed => denial("Home readmission metadata phase already closed"),
+        ReadDenial::KindNotAdmitted(kind) => denial(format!(
+            "Home readmission metadata kind {} is not admitted",
+            kind.0
+        )),
+    }
 }
 fn publication<Schema: ApplicationSchema>(
     installed: &WorthQueryInstalledApplicationSchema<Schema>,

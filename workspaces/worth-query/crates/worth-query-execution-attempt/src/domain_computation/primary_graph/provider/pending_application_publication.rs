@@ -1,4 +1,5 @@
 //! Move-only recovery state for Query publication after Relational movement.
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductPublicationReceiptInternalPort as _;
 pub mod aggregate_projection;
 pub mod custody;
@@ -120,7 +121,7 @@ impl WorthQueryPrimaryGraphProvider {
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .remove_exact(occurrence, &slot);
-        self.retire_changed_history(runtime, &committed);
+        self.retire_changed_history(execution, runtime, &committed);
         Ok(())
     }
 }
@@ -255,6 +256,23 @@ fn publish_with_snapshot(
         .committed_product_publication()
         .composite_commit()
         .clone();
+    if let Some(owner) = settled.owner_identity().durable() {
+        let commit = worth_foundational::facade::DurableCompositeCommitIdentity::from_recorded(
+            owner,
+            settled.ordinal(),
+        );
+        let branch = completed
+            .committed_product_publication()
+            .product_branch()
+            .name()
+            .as_str();
+        let mut lineage = provider
+            .graph
+            .output_lineage_ref()
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let _ = lineage.enqueue_coupled_outputs_from_committed(commit, branch, &completed);
+    }
     let mut indexed = completed.clone();
     drop(indexed.take_history());
     original_completion.complete(completed);

@@ -24,7 +24,7 @@ fn recovery_plan_after_native_capture_keeps_covered_forks() {
     let target = create_entity_outcome_on_branch(execution, &runtime, "on-A", BranchId("A".into()));
     let native = runtime
         .durability_authority()
-        .native_checkpoint(execution, execution.allocation_policy())
+        .native_checkpoint_with_policy(execution, execution.allocation_policy(), worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
         .unwrap();
     let contents = medium.clone();
     contents.file_checkpoint(native);
@@ -89,7 +89,7 @@ fn a_memory_fork_can_replay_its_compacted_durable_source() {
     let target = create_entity_outcome_on_branch(execution, &runtime, "on-A", BranchId("A".into()));
     runtime
         .durability_authority()
-        .native_checkpoint(execution, execution.allocation_policy())
+        .native_checkpoint_with_policy(execution, execution.allocation_policy(), worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
         .unwrap();
     let speculative = runtime.fork().unwrap();
     assert!(

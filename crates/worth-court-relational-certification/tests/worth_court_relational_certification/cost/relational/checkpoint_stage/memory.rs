@@ -9,21 +9,19 @@ const ROSTER_BLOCK_BYTES: usize = 136;
 fn empty_checkpoint_memory_boundary_is_its_bytes_plus_one_stage() {
     let _guard = crate::leased_preparation::ordinary_context::serial();
     // The boundary is the capture's peak, when its bytes are admitted: the
-    // 2,645 checkpoint bytes + 400 bytes the one stage retains + what the
-    // capture already holds beside them: the member roster the checkpoint
-    // keeps for `members()`, its owner block plus one entry per inline member,
-    // and the borrowed table the wire encodes its inline members from, one
-    // (locator, bytes) entry per member. A capture without commits retains no
-    // canonical publication.
+    // 2,486 external-manifest bytes + 400 bytes the one stage retains + what
+    // the capture already holds beside them: the member roster the checkpoint
+    // keeps for `members()`, its owner block plus one entry per external member.
+    // A capture without commits retains no canonical publication.
     let request = serial_request();
     let execution = ExecutionRequest::serial(&request);
     let checkpoint = runtime_with_rows(0)
         .durability_authority()
-        .native_checkpoint(&execution, Allocation::SystemAllocation)
+        .native_checkpoint_with_policy(&execution, Allocation::SystemAllocation, worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
         .unwrap();
-    let members = inline_members(checkpoint.bytes()).len();
-    assert_eq!(checkpoint.members().len(), members);
-    let table = members * std::mem::size_of::<(RelationalDurableMemberLocator, &[u8])>();
+    assert!(inline_members(checkpoint.bytes()).is_empty());
+    let members = checkpoint.members().len();
+    assert_eq!(members, 1);
     let roster = ROSTER_BLOCK_BYTES
         + members
             * std::mem::size_of::<worth_relational::facade::durability::RelationalCheckpointMember>(
@@ -31,18 +29,18 @@ fn empty_checkpoint_memory_boundary_is_its_bytes_plus_one_stage() {
     drop(checkpoint);
     for leased in [false, true] {
         let (bytes, held) = memory_outcome(leased, 1 << 20, false).unwrap();
-        assert_eq!(bytes, 2_645, "leased={leased}");
-        assert_eq!(held, (2_645 + roster) as u64, "leased={leased}");
-        let boundary = (2_645 + 400 + roster + table) as u64;
+        assert_eq!(bytes, 2_486, "leased={leased}");
+        assert_eq!(held, (2_486 + roster) as u64, "leased={leased}");
+        let boundary = (2_486 + 400 + roster) as u64;
         let fits = memory_outcome(leased, boundary, false);
-        assert!(matches!(fits, Ok((2_645, _))), "leased={leased}: {fits:?}");
+        assert!(matches!(fits, Ok((2_486, _))), "leased={leased}: {fits:?}");
         let short = memory_outcome(leased, boundary - 1, false);
         assert!(
             matches!(
                 short,
                 Err(Denial::Request(Cause::PolicyMemoryExhausted {
-                    requested: 2_645,
-                    admitted: 2_644,
+                    requested: 2_486,
+                    admitted: 2_485,
                     ancestor: 0,
                 }))
             ),
@@ -102,7 +100,7 @@ fn checkpoint_refusals_preserve_request_custody_and_publication() {
     assert!(matches!(
         runtime
             .durability_authority()
-            .native_checkpoint(&execution, Allocation::SystemAllocation),
+            .native_checkpoint_with_policy(&execution, Allocation::SystemAllocation, worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None }),
         Err(Denial::Request(Cause::WorkExhausted))
     ));
     assert_eq!(request.memory().unwrap().charged_memory_bytes(), 0);

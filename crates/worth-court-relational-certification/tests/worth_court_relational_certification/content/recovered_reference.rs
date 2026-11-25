@@ -101,7 +101,7 @@ fn captured(
     (
         runtime
             .durability_authority()
-            .native_checkpoint(execution, execution.allocation_policy())
+            .native_checkpoint_with_policy(execution, execution.allocation_policy(), worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
             .unwrap(),
         a,
         b,
@@ -117,7 +117,11 @@ fn content_recovered_read_swapped_reference_refuses_the_expected_field_format() 
     let (mut restored, _) = fixture();
     restored
         .durability_recovery()
-        .restore_native_checkpoint(&execution, &checkpoint)
+        .restore_native_checkpoint(
+            &execution,
+            &checkpoint,
+            worth_testkit_relational::cold_recovery::members_source(&checkpoint),
+        )
         .unwrap();
     let (_, selected) = restored
         .observe_branch(&restored.main_branch_identity())
@@ -171,16 +175,16 @@ fn content_stored_authoritative_field_byte_corruption_refuses_at_physical_integr
         }
         field.push(byte);
     }
-    let member = checkpoint
+    let (locator, member) = checkpoint
         .members()
         .iter()
         .find_map(|member| match member {
-            RelationalCheckpointMember::New { bytes, .. }
+            RelationalCheckpointMember::New { locator, bytes }
                 if bytes.starts_with(b"WORTH-REL-REG7\n")
                     && bytes.get(b"WORTH-REL-REG7\n".len() + 38) == Some(&0)
                     && bytes.windows(field.len()).any(|word| word == field) =>
             {
-                Some(bytes)
+                Some((*locator, bytes))
             }
             _ => None,
         })
@@ -189,30 +193,55 @@ fn content_stored_authoritative_field_byte_corruption_refuses_at_physical_integr
         .windows(field.len())
         .position(|word| word == field)
         .unwrap();
-    let mut corrupt = checkpoint.bytes().to_vec();
-    let offset = corrupt
-        .windows(member.len())
-        .position(|word| word == member.as_ref())
-        .unwrap();
+    let mut damaged = member.to_vec();
     // Keep MessagePack framing and lengths unchanged, but invalidate the actual
     // field identity. Do not forge physical/history/root commitments to bypass them.
-    corrupt[offset + field_offset + field.len() - 1] ^= 1;
-    let corrupt = RelationalNativeCheckpoint::from_untrusted_bytes(corrupt);
+    damaged[field_offset + field.len() - 1] ^= 1;
+    let source = worth_testkit_relational::cold_recovery::members_source(&checkpoint);
+    let mut tampered_members = source.members.clone();
+    tampered_members.insert(
+        locator,
+        worth_execution::ExecutionImmutableBytes::from_external_bytes(std::sync::Arc::from(
+            damaged.into_boxed_slice(),
+        )),
+    );
+    let tampered_source = std::sync::Arc::new(
+        worth_testkit_relational::durable_medium::immutable_members::ImmutableCheckpointMemberSource {
+            members: tampered_members,
+            commits: Default::default(),
+            canonical_members: Default::default(),
+            damaged: std::sync::atomic::AtomicBool::new(false),
+            reads: Default::default(),
+            canonical_member_reads: Default::default(),
+            journal_reads: Default::default(),
+            member_reads: Default::default(),
+            commit_reads: Default::default(),
+            commits_damaged: Default::default(),
+            failed_member: Default::default(),
+            failures: Default::default(),
+        },
+    );
     let (mut target, _) = fixture();
     let (_, before) = target
         .observe_branch(&target.main_branch_identity())
         .unwrap();
     let refused = target
         .durability_recovery()
-        .restore_native_checkpoint(&execution, &corrupt)
+        .restore_native_checkpoint(&execution, &checkpoint, tampered_source)
         .unwrap_err();
     let RelationalRecoveryStop::Durability(cause) = refused else {
         panic!("{refused:?}")
     };
-    assert_eq!(cause.class, RecoveryFailureClass::CorruptCheckpoint);
-    assert_eq!(
-        cause.detail,
-        "inline checkpoint member digest or uniqueness mismatch"
+    assert_eq!(cause.class, RecoveryFailureClass::ColdStorageUnavailable);
+    assert!(
+        matches!(
+            cause.storage_unavailable,
+            Some(worth_relational::facade::storage::RelationalStorageUnavailable {
+                cause: worth_relational::facade::storage::RelationalStorageUnavailableCause::IntegrityMismatch,
+                ..
+            })
+        ),
+        "{cause:?}"
     );
     assert_eq!(
         target

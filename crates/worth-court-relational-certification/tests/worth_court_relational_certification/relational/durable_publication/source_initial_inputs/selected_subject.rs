@@ -141,10 +141,13 @@ fn complete_capture_stopped_request_precedes_proven_selected_damage() {
                     stopped,
                     WorkCeilingDenial::Stopped(MapKernelStop::WorkCeiling)
                 );
-                match runtime
-                    .complete_checkpoint_service()
-                    .prepare(execution, RelationalCheckpointArtifactPolicy::Embedded)
-                {
+                match runtime.complete_checkpoint_service().prepare(
+                    execution,
+                    RelationalCheckpointArtifactPolicy::ExternalMembers {
+                        current_members: &[],
+                        source: None,
+                    },
+                ) {
                     Err(RelationalNativeCheckpointCaptureDenial::Request(cause)) => {
                         assert_eq!(cause, stopped.into())
                     }
@@ -257,7 +260,7 @@ fn complete_preserves_partial_update_without_demanding_untouched_aspect_referenc
     assert_eq!(lifecycle, RecordLifecycleState::Live);
     let complete = runtime
         .complete_checkpoint_service()
-        .prepare(&execution, RelationalCheckpointArtifactPolicy::Embedded)
+        .prepare(&execution, RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
         .unwrap();
     let image = partition_image(
         complete.checkpoint(),

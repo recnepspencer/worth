@@ -11,7 +11,11 @@ pub(crate) fn checkpoint_world(
 ) -> Result<DurableCheckpoint, crate::durability::data::RelationalRecoveryStop> {
     let checkpoint = world.runtime.durability_authority().checkpoint(execution)?;
     if let Some(medium) = world.medium.as_ref() {
-        medium.file_embedded_checkpoint(execution, &world.runtime);
+        crate::tests::support::durability::capture_and_file_checkpoint(
+            execution,
+            &world.runtime,
+            &medium,
+        );
     }
     Ok(checkpoint)
 }

@@ -96,10 +96,12 @@ refuse before the transition intent is recorded. Completed dispositions survive
 graceful close and successor-only reopen.
 
 These guarantees cover quiescent boundaries between operations. Executing
-managed runs and cleanup have separate lifecycle contracts. A program
-transition killed after its durable intent resumes when the Home reopens with
-the same transition request; a changed plan refuses with `TransitionPlanDrift`.
-Crash recovery is not yet certified (C4/C5).
+managed runs and cleanup have separate lifecycle contracts. A program transition killed after its durable intent resumes when the Home
+reopens with the same transition request; a changed plan refuses with
+`TransitionPlanDrift`. Track C1–C3 crash-recovery cases (including mid-step
+workflow kills and R9 `Indeterminate` classification) and C5 retirement are
+complete on Directory Home; Track C4 / Landing 3 runs the exhaustive adversarial
+crash oracle and Tier-3 certification.
 
 ## Terms
 
@@ -1569,7 +1571,8 @@ Do not carry an old published reference or branch handle into the restored
 runtime: their owner fences still refuse it. Use the descriptor owner’s recorded-DATA codec across a graceful process handoff.
 Decoding checks the freshly installed validated program revision and grants no
 authority. Home readmission, fresh discovery and exact original-occurrence matching
-remain mandatory. Crash recovery is not yet certified.
+remain mandatory across graceful reopen and Track C1–C3 process kills (full
+adversarial-oracle and Tier-3 certification runs in Track C4 / Landing 3).
 
 This is not a complete business Reopen policy. Applications must additionally
 author which business chain is current when independent chains share one subject,

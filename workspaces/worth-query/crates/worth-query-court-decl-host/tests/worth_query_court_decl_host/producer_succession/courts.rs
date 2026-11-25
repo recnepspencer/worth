@@ -191,7 +191,7 @@ fn settled_generator_roles_match_its_publication_and_closure_witnesses_are_separ
         2,
         "both descendant publications retire their realization"
     );
-    let envelopes = checkpoint::envelopes(&checkpoint::capture(&app));
+    let envelopes = checkpoint::envelopes(&app);
     for observed in seen.iter() {
         let native = envelopes
             .iter()

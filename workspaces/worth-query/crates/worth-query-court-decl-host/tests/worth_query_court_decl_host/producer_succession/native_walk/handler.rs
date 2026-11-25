@@ -6,6 +6,11 @@ pub struct Handler {
     pub computation: model::Installed,
 }
 impl OperationHandler<Schema, preserve::Binding> for Handler {
+    fn declared_durable_capabilities() -> Option<
+        &'static [worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability],
+    > {
+        Some(&[worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability::RelationalMutation])
+    }
     fn decide(
         &self,
         input: &preserve::Input,

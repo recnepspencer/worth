@@ -224,6 +224,28 @@ impl WorthQueryPrimaryGraphLayout {
     pub fn workflow_mut(&mut self) -> &mut WorthQueryWorkflowLayout {
         &mut self.workflow
     }
+
+    /// Owner-admitted internal metadata kinds that Home readmission may scan on
+    /// a recovered branch while generated application records are suspended.
+    /// Never includes any application entity or relation kind.
+    pub fn home_readmission_metadata_kinds(
+        &self,
+    ) -> worth_relational::facade::runtime::HomeReadmissionMetadataKinds {
+        let (workflow_entities, workflow_relations) = self.workflow.home_readmission_kinds();
+        let entity_kinds = [
+            self.bootstrap_publication.kind,
+            self.program_activation.entity_kind,
+            self.provider_idempotency.entity_kind,
+            self.provider_dispatch_outbox.entity_kind,
+            self.provider_aftermath_causality.entity_kind,
+        ]
+        .into_iter()
+        .chain(workflow_entities);
+        worth_relational::facade::runtime::HomeReadmissionMetadataKinds::new(
+            entity_kinds,
+            workflow_relations,
+        )
+    }
 }
 
 mod court_doors_for_test;
