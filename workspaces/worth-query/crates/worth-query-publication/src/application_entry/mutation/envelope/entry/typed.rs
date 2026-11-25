@@ -161,7 +161,9 @@ where
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .take();
         let stage = match original {
-            Some(original) => CapturedAuthoredEditStage::capture_admitted::<I::Binding>(
+            Some(original) => {
+                super::history_stage::require_admitted::<S, I::Binding>(context, phase, ordinal, &original)?;
+                CapturedAuthoredEditStage::capture_admitted::<I::Binding>(
                 &access,
                 context.application,
                 key.clone(),
@@ -171,7 +173,8 @@ where
                 original,
                 admit,
                 value,
-            ),
+            )
+            }
             None => CapturedAuthoredEditStage::capture::<I::Binding>(
                 &access,
                 phase,

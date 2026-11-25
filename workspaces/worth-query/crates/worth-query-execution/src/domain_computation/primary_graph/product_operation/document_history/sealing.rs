@@ -364,7 +364,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             }
             _ => None,
         };
-        let node = RecordedNode { step, root_posture };
+        let node = RecordedNode { step, source_commit: None, root_posture };
         Ok(PreparedBinding {
             discovery_recipes,
             returned: node.step.clone(),

@@ -46,6 +46,14 @@ pub struct WorthQueryApplicationCorrectionRequest<'a, 'p, 's, 'h, Schema> {
     key: String,
     limits: WorthQueryCorrectionHistoryLimits,
 }
+impl<'a, 'p, 's, 'h, Schema> WorthQueryApplicationCorrectionRequest<'a, 'p, 's, 'h, Schema> {
+    /// The principal, scope and branch this correction targets.
+    pub(in crate::application_entry) fn corrections(
+        &self,
+    ) -> &WorthQueryApplicationCorrections<'a, 'p, 's, Schema> {
+        &self.correction.request
+    }
+}
 impl<'a, 'p, 's, 'h, Schema> WorthQueryApplicationCorrection<'a, 'p, 's, 'h, Schema> {
     pub fn idempotency(
         self,

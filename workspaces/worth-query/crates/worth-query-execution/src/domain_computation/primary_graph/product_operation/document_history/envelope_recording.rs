@@ -6,5 +6,5 @@ mod rollback;
 mod stage_constraint;
 mod stage_ownership;
 
-pub use admission::WorthQueryDocumentHistoryEnvelopeIntent;
+pub use admission::{WorthQueryDocumentHistoryCorrectionMeaning, WorthQueryDocumentHistoryEnvelopeIntent};
 pub use stage_constraint::WorthQueryDocumentHistoryEnvelopeConstraint;

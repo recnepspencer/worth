@@ -17,6 +17,7 @@
 //!   real system names its seed.
 mod corrective_cascade;
 mod driver;
+mod history_correction;
 pub(super) mod fixture;
 mod reference;
 mod regressions;

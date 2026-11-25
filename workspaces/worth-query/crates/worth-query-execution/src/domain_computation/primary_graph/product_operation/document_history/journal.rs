@@ -39,6 +39,9 @@ mod retention_work;
 
 pub(super) struct RecordedNode {
     pub(super) step: WorthQueryHistoryStep,
+    /// The commit an envelope's stages made, which a correction names as its
+    /// source. `None` for the root and for steps a writer recorded.
+    pub(super) source_commit: Option<worth_runtime_world::facade::CompositeCommitIdentity>,
     pub(super) root_posture:
         Option<crate::domain_computation::primary_graph::WorthQueryOutputSettlementPosture>,
 }
@@ -201,6 +204,7 @@ impl HistoryJournal {
                             endpoint,
                         )
                     },
+                    source_commit: None,
                     root_posture: None,
                 }),
                 head_slot: None,

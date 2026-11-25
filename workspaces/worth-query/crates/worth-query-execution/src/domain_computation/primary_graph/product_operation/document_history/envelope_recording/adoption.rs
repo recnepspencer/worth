@@ -123,6 +123,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             .prepared_step(&reserved.record, endpoint.clone());
         let node = RecordedNode {
             step,
+            source_commit: Some(receipt.committed_product_publication().composite_commit().clone()),
             root_posture: None,
         };
         Ok(PreparedBinding {

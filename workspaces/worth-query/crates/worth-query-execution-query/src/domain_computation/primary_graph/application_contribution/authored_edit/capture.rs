@@ -29,6 +29,10 @@ impl<S: ApplicationSchema, B: ApplicationMutationBinding<S>> AuthoredEditStageAd
             pending_source: None,
         }
     }
+    /// The admitted operation, for a history document's stage checks.
+    pub fn operation(&self) -> &AuthoredEditStageOperation<S, B> {
+        &self.operation
+    }
     pub fn with_source_expectation(
         mut self,
         source: Option<crate::domain_computation::primary_graph::WorthQueryPendingSourceExpectation<<B::SourceExpectation as worth_query_declaration::facade::application_operation::ApplicationMutationSourceExpectation<S>>::Query>>,

@@ -144,6 +144,7 @@ fn document(cause: WorthQueryDocumentHistoryDenial) -> BankHttpDenial {
         | D::RecordingIdentityExhausted
         | D::AttemptInFlight
         | D::IntentDrift
+        | D::SourceNotOnSelectedLine { .. }
         | D::ForeignRecording
         | D::UnsupportedOperation
         | D::EmptyGroup

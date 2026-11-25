@@ -22,6 +22,15 @@ impl WorthQueryEditEnvelopeExecutionDenial {
     pub fn cause(&self) -> &WorthQueryPerformedMutationExecutionDenial {
         &self.cause
     }
+    /// The correction denial this carries, or this denial unchanged.
+    pub(in crate::application_entry) fn into_correction(
+        self,
+    ) -> Result<crate::application_entry::correction::WorthQueryApplicationCorrectionDenial, Self> {
+        match self.cause {
+            WorthQueryPerformedMutationExecutionDenial::Correction(denial) => Ok(*denial),
+            cause => Err(Self { cause, ..self }),
+        }
+    }
     pub(super) fn stage(
         ordinal: usize,
         binding: &'static str,
