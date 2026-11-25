@@ -276,6 +276,7 @@ impl<Schema> WorthQuerySelectedCorrectionSource<'_, Schema> {
         &self,
     ) -> crate::domain_computation::application_aftermath::WorthQueryRecordedCorrectionSource {
         crate::domain_computation::application_aftermath::WorthQueryRecordedCorrectionSource::from_untrusted_parts(
+            worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE,
             self.source_commit().clone(),
             self.occurrence.commit_reference().clone(),
             self.occurrence.member(),
