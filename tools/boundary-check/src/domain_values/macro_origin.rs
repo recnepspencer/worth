@@ -105,6 +105,7 @@ impl Sources<'_> {
             return self.resolve_binary_names(&owner, rest, depth + 1, true);
         }
         if self.roots.contains_key(first)
+            || matches!(first.as_str(), "core" | "std" | "alloc" | "serde")
             || path.last().is_some_and(|seg| seg == "WorthBinaryValue")
         {
             return self.classify_external_binary_derive(path);

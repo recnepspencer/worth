@@ -329,54 +329,48 @@ fn alias_renamed_to_known_derive_name_still_resolves_through_module_tree() {
     assert_eq!(check_sources(&ok_files, roots(), "bindings.toml"), Ok(()));
 
     // Unregistered struct using `use super::Alias as WorthQuery` is refused.
-    let unreg_files = Files::from([
+    let unreg = Files::from([
         ("app/lib.rs".into(), lib.into()),
         ("app/child.rs".into(), child_src.into()),
         ("bindings.toml".into(), "binding = []".into()),
     ]);
-    let err = check_sources(&unreg_files, roots(), "bindings.toml")
+    let err = check_sources(&unreg, roots(), "bindings.toml")
         .unwrap_err()
         .join("\n");
-    assert!(err.contains("DisguisedBinding"), "{err}");
-    assert!(err.contains("needs exactly one"), "{err}");
+    assert!(
+        err.contains("DisguisedBinding") && err.contains("needs exactly one"),
+        "{err}"
+    );
 
     // `cfg_attr` with `use super::Alias as WorthQuery` is refused.
     let cfg_files = Files::from([
         ("app/lib.rs".into(), lib.into()),
-        (
-            "app/child.rs".into(),
-            r#"
-                use super::Alias as WorthQuery;
-                #[cfg_attr(all(), derive(WorthQuery))]
-                #[worth_query(identity = "app.disguised_cfg.v1")]
-                pub struct DisguisedCfg { pub id: EntityRef }
-            "#
-            .into(),
-        ),
+        ("app/child.rs".into(), "use super::Alias as WorthQuery; #[cfg_attr(all(), derive(WorthQuery))] #[worth_query(identity = \"app.disguised_cfg.v1\")] pub struct DisguisedCfg { pub id: EntityRef }".into()),
         ("bindings.toml".into(), "binding = []".into()),
     ]);
-    let err = check_sources(&cfg_files, roots(), "bindings.toml")
+    assert!(check_sources(&cfg_files, roots(), "bindings.toml")
         .unwrap_err()
-        .join("\n");
-    assert!(err.contains("cfg_attr"), "{err}");
+        .join("\n")
+        .contains("cfg_attr"));
 
     // Even renaming to a builtin derive name (`Clone`) cannot bypass discovery.
-    let builtin_alias_files = Files::from([
+    let clone_alias = Files::from([
         ("app/lib.rs".into(), lib.into()),
-        (
-            "app/child.rs".into(),
-            r#"
-                use super::Alias as Clone;
-                #[derive(Clone)]
-                #[worth_query(identity = "app.disguised_clone.v1")]
-                pub struct DisguisedClone { pub id: EntityRef }
-            "#
-            .into(),
-        ),
+        ("app/child.rs".into(), "use super::Alias as Clone; #[derive(Clone)] #[worth_query(identity = \"app.disguised_clone.v1\")] pub struct DisguisedClone { pub id: EntityRef }".into()),
         ("bindings.toml".into(), "binding = []".into()),
     ]);
-    let err = check_sources(&builtin_alias_files, roots(), "bindings.toml")
+    assert!(check_sources(&clone_alias, roots(), "bindings.toml")
         .unwrap_err()
-        .join("\n");
-    assert!(err.contains("DisguisedCloneBinding"), "{err}");
+        .join("\n")
+        .contains("DisguisedCloneBinding"));
+
+    // Legitimate explicit std/core/alloc/serde derive imports on an identity-bearing non-binary struct pass.
+    let std_imports = Files::from([
+        ("app/lib.rs".into(), "use core::clone::Clone; use std::fmt::Debug; use serde::Serialize; #[derive(Clone, Debug, Serialize)] #[worth_query(identity = \"app.non_binary.v1\")] pub struct OrdinaryIdentityStruct { pub a: i64 }".into()),
+        ("bindings.toml".into(), "binding = []".into()),
+    ]);
+    assert_eq!(
+        check_sources(&std_imports, roots(), "bindings.toml"),
+        Ok(())
+    );
 }
