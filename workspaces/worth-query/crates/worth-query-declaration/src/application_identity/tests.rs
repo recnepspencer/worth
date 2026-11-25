@@ -30,6 +30,7 @@ fn every_role_derives_its_documented_segment_under_the_root() {
             "body",
             "completion",
             "projection",
+            "live_cause",
         ]
         .map(|segment| format!("{ROOT}.{segment}"))
     );
@@ -159,4 +160,47 @@ fn the_const_macros_match_the_runtime_derivation() {
     assert_eq!(HANDLER, runtime.handler().as_str());
     assert_eq!(RESULT, runtime.result().as_str());
     assert_eq!(SLOT, runtime.slot("due").unwrap().as_str());
+}
+
+#[test]
+fn members_share_one_root_without_colliding_with_it_or_each_other() {
+    let rename = namespace().member("rename_project").unwrap();
+    let read = namespace().member("read_projects").unwrap();
+    assert_eq!(
+        rename.binding().as_str(),
+        "daymark.tasks.add.v1.rename_project.binding"
+    );
+    assert_eq!(
+        rename.slot("title").unwrap().as_str(),
+        "daymark.tasks.add.v1.rename_project.slot.title"
+    );
+    assert_eq!(rename.root(), ROOT);
+    for role in Role::ALL {
+        assert_ne!(rename.identity(role), read.identity(role));
+        assert_ne!(rename.identity(role), namespace().identity(role));
+    }
+}
+
+#[test]
+fn reserved_nested_and_overridden_members_are_refused() {
+    for member in ["slot", "query", "binding", "", "a.b", "a b"] {
+        assert_eq!(
+            namespace().member(member),
+            Err(Denial::InvalidMember),
+            "{member:?}"
+        );
+    }
+    let member = namespace().member("rename").unwrap();
+    assert_eq!(member.member("again"), Err(Denial::InvalidMember));
+    assert_eq!(
+        member.with_override(Role::Binding, "legacy.binding.v1"),
+        Err(Denial::MemberWithOverrides)
+    );
+    let overridden = namespace()
+        .with_override(Role::Binding, "legacy.binding.v1")
+        .unwrap();
+    assert_eq!(
+        overridden.member("rename"),
+        Err(Denial::MemberWithOverrides)
+    );
 }

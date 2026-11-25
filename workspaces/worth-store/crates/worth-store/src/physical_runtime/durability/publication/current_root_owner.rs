@@ -27,6 +27,7 @@ pub use release_capacity::CertificationReleaseHeadObservation;
 pub use release_capacity::{ReleaseCertificateCapacityDenial, SelectedReleaseHeadDenial};
 mod root_basis;
 mod root_capture;
+mod root_pin_capture;
 mod serving_custody;
 pub(in crate::physical_runtime) use root_capture::ReleasedDropSourceCaptureDenial;
 pub(in crate::physical_runtime) use serving_custody::ServingCheckpointCustody;

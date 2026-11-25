@@ -37,6 +37,11 @@ impl OrderedJournalName {
         Self::well_formed(RELATIONAL_BRANCH_TRANSITIONS)
     }
 
+    /// The Store-owned journal of durable root pins.
+    pub fn physical_root_pins() -> Self {
+        Self::well_formed(crate::physical_runtime::stability::durable_pins::PHYSICAL_ROOT_PINS)
+    }
+
     pub fn as_str(&self) -> &str {
         self.0.as_str()
     }

@@ -89,9 +89,12 @@ fn branch_lineage_contains(
         if !visited.insert(current.clone()) {
             return false;
         }
-        cursor = history
-            .branch_cell(&current)
-            .and_then(|cell| cell.fork_source_branch_id());
+        match history.branch_cell(&current) {
+            Some(cell) => cursor = cell.fork_source_branch_id(),
+            // A retired ancestor's cell was removed on delete, so its parent link
+            // is no longer live; the commit artifact and chronology fold still guard it.
+            None => return history.retired_branch_names().contains(&current),
+        }
     }
     false
 }

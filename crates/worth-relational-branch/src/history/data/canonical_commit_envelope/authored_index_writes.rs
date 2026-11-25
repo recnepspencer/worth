@@ -39,18 +39,22 @@ struct LiveIndexWriteVerification {
 #[derive(Debug)]
 struct Backing {
     entries: Vec<CanonicalAuthoredIndexWrite>,
+    /// The catalog prefix (`next_index_id`) the entries were prepared against.
+    /// `None` is a legacy packet without provenance; it is never certified.
+    persisted_bound: Option<u64>,
     verified: Option<LiveIndexWriteVerification>,
     // Last: all original-funded canonical backing dies before its payer.
     memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
-/// Missing old evidence and parsed complete data never establish completeness.
+/// Missing old evidence and parsed data never establish completeness by
+/// themselves; only the catalog owner certifies a persisted bound.
 #[derive(Clone, Debug, Default)]
 pub struct CanonicalAuthoredIndexWrites(Option<Arc<Backing>>);
 
 impl PartialEq for CanonicalAuthoredIndexWrites {
     fn eq(&self, other: &Self) -> bool {
-        self.0.as_ref().map(|data| &data.entries) == other.0.as_ref().map(|data| &data.entries)
+        self.persisted_entries() == other.persisted_entries()
     }
 }
 impl Eq for CanonicalAuthoredIndexWrites {}
@@ -59,31 +63,53 @@ impl Eq for CanonicalAuthoredIndexWrites {}
 enum WireRef<'a> {
     Unavailable,
     Complete(&'a [CanonicalAuthoredIndexWrite]),
+    Covered {
+        covered_next_index_id: u64,
+        entries: &'a [CanonicalAuthoredIndexWrite],
+    },
 }
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 enum Wire {
     Unavailable,
     Complete(Vec<CanonicalAuthoredIndexWrite>),
+    Covered {
+        covered_next_index_id: u64,
+        entries: Vec<CanonicalAuthoredIndexWrite>,
+    },
 }
 impl Serialize for CanonicalAuthoredIndexWrites {
+    /// Dispatches on the persisted bound only, so a decoded packet re-encodes exactly.
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         match &self.0 {
             None => WireRef::Unavailable,
-            Some(data) => WireRef::Complete(&data.entries),
+            Some(data) => match data.persisted_bound {
+                None => WireRef::Complete(&data.entries),
+                Some(covered_next_index_id) => WireRef::Covered {
+                    covered_next_index_id,
+                    entries: &data.entries,
+                },
+            },
         }
         .serialize(serializer)
     }
 }
 impl<'de> Deserialize<'de> for CanonicalAuthoredIndexWrites {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        Ok(match Wire::deserialize(deserializer)? {
-            Wire::Unavailable => Self::default(),
-            Wire::Complete(entries) => Self(Some(Arc::new(Backing {
+        let (entries, persisted_bound) = match Wire::deserialize(deserializer)? {
+            Wire::Unavailable => return Ok(Self::default()),
+            Wire::Complete(entries) => (entries, None),
+            Wire::Covered {
+                covered_next_index_id,
                 entries,
-                verified: None,
-                memory: None,
-            }))),
-        })
+            } => (entries, Some(covered_next_index_id)),
+        };
+        Ok(Self(Some(Arc::new(Backing {
+            entries,
+            persisted_bound,
+            verified: None,
+            memory: None,
+        }))))
     }
 }
 
@@ -120,16 +146,42 @@ impl CanonicalAuthoredIndexWrites {
     }
 
     /// Only the actual selected/working preparation owner invokes this issuer.
+    /// `covered_next_index_id` is the captured catalog prefix the entries cover.
     pub fn prepared(
         entries: Vec<CanonicalAuthoredIndexWrite>,
         memory: Option<worth_execution::ExecutionMemoryReservation>,
         coverage: crate::runtime::state::subsystems::indexing::catalog_coverage::IndexCatalogCoverage,
+        covered_next_index_id: u64,
     ) -> Self {
         Self(Some(Arc::new(Backing {
             entries,
+            persisted_bound: Some(covered_next_index_id),
             verified: Some(LiveIndexWriteVerification { coverage }),
             memory,
         })))
+    }
+
+    /// A legacy packet (no persisted bound) carries no provenance.
+    pub fn is_legacy(&self) -> bool {
+        self.0
+            .as_ref()
+            .is_some_and(|data| data.persisted_bound.is_none())
+    }
+
+    /// A persisted bound must name the same catalog prefix as the commit's
+    /// definition delta; anything else is a corrupt envelope.
+    pub(super) fn bound_agrees_with(&self, delta_next_index_id: u64) -> bool {
+        self.0
+            .as_ref()
+            .and_then(|data| data.persisted_bound)
+            .is_none_or(|bound| bound == delta_next_index_id)
+    }
+
+    /// The persisted bound and entries, whether or not live-verified. Only the
+    /// catalog owner turns a persisted bound into coverage.
+    pub fn persisted_entries(&self) -> Option<(Option<u64>, &[CanonicalAuthoredIndexWrite])> {
+        let data = self.0.as_ref()?;
+        Some((data.persisted_bound, &data.entries))
     }
 
     pub fn verified_entries(&self) -> Option<&[CanonicalAuthoredIndexWrite]> {

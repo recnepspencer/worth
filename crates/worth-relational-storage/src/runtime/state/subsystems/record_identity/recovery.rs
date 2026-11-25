@@ -20,7 +20,8 @@ impl RecordIdentitySubsystem {
     /// RAII returns reclaimed slots while append-frontier gaps stay burned.
     pub fn release_unowned_reservations(&self) {
         let reservations = {
-            let state = self.lock();
+            let mut state = self.lock();
+            state.replay_gaps.clear();
             state
                 .pending
                 .iter()
@@ -45,7 +46,7 @@ impl RecordIdentitySubsystem {
 
     pub fn clear_staged_replay_allocations(&self) -> bool {
         let mut state = self.lock();
-        state.replay_blocks.clear();
+        state.replay_slots.clear();
         state.staged_replay_allocations.take().is_some()
     }
 
@@ -238,19 +239,26 @@ impl RecordIdentitySubsystem {
                 ReservationOrigin::Reclaimed
             }
             RecordAllocationOrigin::AppendFrontier => {
-                // Staging advanced the frontier past this commit's whole block;
-                // each live slot only has to lie in it, unconsumed (H0).
-                let block = state
-                    .replay_blocks
-                    .get(&(class, partition_id))
-                    .cloned()
-                    .unwrap_or(0..0);
-                if !block.contains(&slot) {
+                // Staging admitted this commit's append slots against the
+                // frontier and the replay gaps (H0, #389); each live slot is
+                // one of them, consumed once, in any order.
+                let key = (class, partition_id);
+                if !state
+                    .replay_slots
+                    .get_mut(&key)
+                    .is_some_and(|slots| slots.remove(&slot))
+                {
+                    let expected_slot = state
+                        .replay_slots
+                        .get(&key)
+                        .and_then(|slots| slots.first().copied())
+                        .or_else(|| state.next_slots.get(&key).copied())
+                        .unwrap_or(0);
                     return Err(RecordAllocationDenial::ReplayAppendFrontierMismatch {
                         ordinal,
                         class,
                         partition_id,
-                        expected_slot: block.start,
+                        expected_slot,
                         observed_slot: slot,
                     });
                 }

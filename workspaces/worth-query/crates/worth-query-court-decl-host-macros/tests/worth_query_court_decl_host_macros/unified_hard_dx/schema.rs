@@ -52,7 +52,7 @@ pub struct Principal;
 #[worth_query(
     entity,
     aspects(ProjectFacts),
-    relations(Contains),
+    relations(Contains, NestsProject, WatchesProject),
     reference(DaymarkSchema, DaymarkFragment)
 )]
 pub struct Project;
@@ -96,6 +96,23 @@ pub struct Contains;
 )]
 pub struct BlockedBy;
 
+/// Project nesting forbids self edges, like Daymark's project inboxes.
+#[derive(WorthQueryRelation)]
+#[worth_query(
+    to = Project,
+    from = Project,
+    reference(DaymarkSchema, DaymarkFragment),
+    acyclic,
+    self_edges = false,
+    unique = ApplicationRelationUniquenessScope::DirectedSemanticEdge,
+)]
+pub struct NestsProject;
+
+/// Each created project watches itself, like Daymark's project watch target.
+#[derive(WorthQueryRelation)]
+#[worth_query(to = Project, from = Project, reference(DaymarkSchema, DaymarkFragment))]
+pub struct WatchesProject;
+
 #[derive(WorthQueryRecord)]
 #[worth_query(
     bindings = DaymarkCodecs,
@@ -130,7 +147,7 @@ pub struct PrincipalFactsValue {
     entity = Project
 )]
 pub struct ProjectFactsValue {
-    #[worth_query(column = "ProjectKey", equality, read_only)]
+    #[worth_query(column = "ProjectKey", equality, unique, read_only)]
     pub project_key: u64,
     pub label: String,
 }
@@ -143,7 +160,7 @@ pub struct ProjectFactsValue {
     entity = Task
 )]
 pub struct TaskFactsValue {
-    #[worth_query(column = "TaskKey", equality, read_only)]
+    #[worth_query(column = "TaskKey", equality, unique, read_only)]
     pub task_key: u64,
     pub title: String,
     #[worth_query(equality)]

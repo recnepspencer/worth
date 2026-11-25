@@ -28,18 +28,24 @@ pub(in crate::query) struct OrderBySpec {
     pub(in crate::query) span: Span,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::query) enum LiveMode {
     WholeResult,
+    Effect(Box<super::super::live_effect::LiveEffect>),
 }
 
 pub(in crate::query) fn parse_live_mode(meta: &ParseNestedMeta<'_>) -> syn::Result<LiveMode> {
     let ident: Ident = meta.value()?.parse()?;
     match ident.unraw().to_string().as_str() {
         "whole_result" => Ok(LiveMode::WholeResult),
+        "effect" => {
+            let content;
+            syn::parenthesized!(content in meta.input);
+            super::super::live_effect::LiveEffect::parse(&content)
+                .map(|live| LiveMode::Effect(Box::new(live)))
+        }
         other => Err(syn::Error::new(
             ident.span(),
-            format!("unknown `live = {other}` mode; expected `whole_result`"),
+            format!("unknown `live = {other}` mode; expected `whole_result` or `effect(..)`"),
         )),
     }
 }

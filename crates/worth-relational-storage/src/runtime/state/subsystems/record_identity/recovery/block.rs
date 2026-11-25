@@ -1,12 +1,17 @@
-//! Stage one durable commit's live and cancelled allocation evidence (H0, D2).
+//! Stage one durable commit's live and cancelled allocation evidence (H0, D2,
+//! #389).
 //!
 //! A coupled candidate allocates member by member, cancels superseded slots
 //! and records its live evidence in merged-plan order, so a commit's live
-//! append slots need not ascend. Together with its cancelled append slots they
-//! still fill one contiguous block per class and partition from the frontier
-//! (a leading gap is the burned remainder of abandoned candidates). Staging
-//! checks that block exactly, burns the cancelled slots, and leaves each live
-//! slot to `reserve_exact`, in any order, inside the block.
+//! append slots need not ascend. Concurrent branch candidates also reserve
+//! interleaved append slots and may publish out of preparation order, so a
+//! commit's slots need not be contiguous nor above the frontier. Staging
+//! walks the commit's live and cancelled append slots in ascending order: a
+//! slot at or above the frontier records the slots it skips as replay gaps
+//! and advances the frontier; a slot below it must consume a recorded gap.
+//! A duplicate, or a slot below the frontier that no gap holds, is refused.
+//! Staging burns the cancelled slots and leaves each live slot to
+//! `reserve_exact`, in any order, among the staged ones.
 use std::collections::{BTreeMap, BTreeSet};
 
 use super::super::record_ref::{record_generation, record_partition, record_slot};
@@ -43,29 +48,28 @@ impl RecordIdentitySubsystem {
             };
         let appends = live
             .iter()
-            .map(|entry| (entry.class(), entry.record(), entry.origin()))
+            .map(|entry| (entry.class(), entry.record(), entry.origin(), true))
             .chain(
                 cancelled
                     .iter()
-                    .map(|entry| (entry.class(), entry.record(), entry.origin())),
+                    .map(|entry| (entry.class(), entry.record(), entry.origin(), false)),
             )
-            .filter(|(_, _, origin)| *origin == RecordAllocationOrigin::AppendFrontier)
-            .filter(|(class, record, origin)| !restored(*class, record, *origin));
-        let mut slots = BTreeMap::<_, Vec<usize>>::new();
-        for (class, record, _) in appends {
+            .filter(|(_, _, origin, _)| *origin == RecordAllocationOrigin::AppendFrontier)
+            .filter(|(class, record, origin, _)| !restored(*class, record, *origin));
+        let mut slots = BTreeMap::<_, Vec<(usize, bool)>>::new();
+        for (class, record, _, live) in appends {
             slots
                 .entry((class, record_partition(record)))
                 .or_default()
-                .push(record_slot(record));
+                .push((record_slot(record), live));
         }
-        let mut blocks = BTreeMap::new();
+        let mut gaps = state.replay_gaps.clone();
+        let mut frontiers = BTreeMap::new();
+        let mut staged = BTreeMap::<_, BTreeSet<usize>>::new();
         for ((class, partition_id), mut slots) in slots {
+            let key = (class, partition_id);
             slots.sort_unstable();
-            let frontier = state
-                .next_slots
-                .get(&(class, partition_id))
-                .copied()
-                .unwrap_or(0);
+            let mut frontier = state.next_slots.get(&key).copied().unwrap_or(0);
             let broken =
                 |expected_slot, observed_slot| RecordAllocationDenial::ReplayEvidenceBlockBroken {
                     class,
@@ -73,15 +77,30 @@ impl RecordIdentitySubsystem {
                     expected_slot,
                     observed_slot,
                 };
-            if slots[0] < frontier {
-                return Err(broken(frontier, slots[0]));
-            }
-            for pair in slots.windows(2) {
-                if pair[1] != pair[0] + 1 {
-                    return Err(broken(pair[0] + 1, pair[1]));
+            let mut previous = None;
+            for (slot, live) in slots {
+                if previous == Some(slot) {
+                    return Err(broken(slot + 1, slot));
+                }
+                previous = Some(slot);
+                if slot < frontier {
+                    if !gaps.take(key, slot) {
+                        return Err(broken(frontier, slot));
+                    }
+                } else {
+                    gaps.skip(key, frontier, slot);
+                    frontier = slot.checked_add(1).ok_or(
+                        RecordAllocationDenial::SlotFrontierExhausted {
+                            class,
+                            partition_id,
+                        },
+                    )?;
+                }
+                if live {
+                    staged.entry(key).or_default().insert(slot);
                 }
             }
-            blocks.insert((class, partition_id), slots[0]..slots[slots.len() - 1] + 1);
+            frontiers.insert(key, frontier);
         }
         let mut burned = BTreeSet::new();
         let mut released = Vec::new();
@@ -123,10 +142,10 @@ impl RecordIdentitySubsystem {
                 });
             }
         }
-        for (key, block) in &blocks {
-            let frontier = state.next_slots.entry(*key).or_default();
-            *frontier = (*frontier).max(block.end);
+        for (key, frontier) in frontiers {
+            state.next_slots.insert(key, frontier);
         }
+        state.replay_gaps = gaps;
         for entry in &cancelled {
             let record = entry.record();
             let key = (entry.class(), record_partition(record), record_slot(record));
@@ -141,7 +160,7 @@ impl RecordIdentitySubsystem {
                 state.reusable.insert(key, ());
             }
         }
-        state.replay_blocks = blocks;
+        state.replay_slots = staged;
         state.staged_replay_allocations = Some(StagedReplayAllocations { live, cancelled });
         Ok(())
     }

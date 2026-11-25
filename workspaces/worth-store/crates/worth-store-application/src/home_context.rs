@@ -98,6 +98,14 @@ pub(crate) struct HomeContext {
 }
 
 impl HomeContext {
+    pub(crate) fn frontier_retention(&self) -> crate::home_retention::DurableHomeRetention {
+        crate::home_retention::DurableHomeRetention::new(
+            Arc::clone(&self.serving),
+            self.descriptor.incarnation,
+            *self.descriptor.binding.selected().revision().bytes(),
+        )
+    }
+
     pub(crate) fn selected_home_manifest(
         &mut self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
@@ -131,6 +139,11 @@ impl ReadmittedApplicationHome {
 
     pub fn build_identity(&self) -> worth_foundational::facade::ApplicationBuildIdentity {
         self.context.descriptor.build
+    }
+
+    /// Durable whole-Home frontier pins over this Home's physical Store.
+    pub fn frontier_retention(&self) -> crate::home_retention::DurableHomeRetention {
+        self.context.frontier_retention()
     }
 
     /// Native component access for the next owner readmission. This is not an

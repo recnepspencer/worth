@@ -1,4 +1,5 @@
-//! Nullable existing-reference replacement, distinct from allocation and ownership transfer.
+//! Existing-reference replacement or exact-edge toggling, distinct from allocation and
+//! ownership transfer.
 mod authoring;
 mod validation;
 use crate::{
@@ -10,6 +11,15 @@ use crate::{
 };
 pub(super) use validation::{validate, validate_shape};
 use worth_foundational::facade::ScalarAspectType;
+/// How the captured input selects the scope's reference edge.
+#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
+pub enum ApplicationOperationBodyReferenceInputMode {
+    /// `Option<key>` replaces an at-most-one outgoing selection; explicit `None` clears it.
+    ReplaceNullable,
+    /// A required key and the bool `linked_member`: link the exact edge when true and
+    /// absent, unlink it when false and present, and otherwise change nothing.
+    ToggleExact { linked_member: String },
+}
 /// Inert correspondence. A captured business key grants no graph or target authority.
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct ApplicationOperationBodyReferenceInput {
@@ -21,8 +31,36 @@ pub struct ApplicationOperationBodyReferenceInput {
     pub scalar_family: ScalarAspectType,
     pub member: String,
     pub key: String,
+    pub mode: ApplicationOperationBodyReferenceInputMode,
 }
 impl ApplicationOperationBodyReferenceInput {
+    /// Replacement captures `Option<key>`; a toggle requires its exact target key.
+    pub fn target_is_optional(&self) -> bool {
+        self.mode == ApplicationOperationBodyReferenceInputMode::ReplaceNullable
+    }
+    /// Every name, including a toggle's bool member, is non-empty and unpadded.
+    pub(in crate::application_schema::operation_definition::body) fn has_trimmed_names(
+        &self,
+    ) -> bool {
+        [
+            self.relation.as_str(),
+            &self.from,
+            &self.to,
+            &self.member,
+            &self.key,
+        ]
+        .into_iter()
+        .chain(self.linked_member())
+        .all(|part| !part.is_empty() && part.trim() == part)
+    }
+    pub fn linked_member(&self) -> Option<&str> {
+        match &self.mode {
+            ApplicationOperationBodyReferenceInputMode::ReplaceNullable => None,
+            ApplicationOperationBodyReferenceInputMode::ToggleExact { linked_member } => {
+                Some(linked_member)
+            }
+        }
+    }
     pub fn decision_reads(&self) -> [Read; 4] {
         [
             Read::Entity {
@@ -59,7 +97,14 @@ impl ApplicationOperationBodyReferenceInput {
     }
     pub fn canonical_record(&self) -> String {
         use std::fmt::Write;
-        let mut record = String::from("nullable-reference-input-v1;");
+        let mut record = String::from(match self.mode {
+            ApplicationOperationBodyReferenceInputMode::ReplaceNullable => {
+                "nullable-reference-input-v1;"
+            }
+            ApplicationOperationBodyReferenceInputMode::ToggleExact { .. } => {
+                "exact-reference-toggle-v1;"
+            }
+        });
         for part in [
             &self.relation,
             &self.from,
@@ -71,7 +116,10 @@ impl ApplicationOperationBodyReferenceInput {
             self.scalar_family.canonical_name(),
             &self.member,
             &self.key,
-        ] {
+        ]
+        .into_iter()
+        .chain(self.linked_member())
+        {
             write!(record, "{}:{part};", part.len()).expect("String write");
         }
         record

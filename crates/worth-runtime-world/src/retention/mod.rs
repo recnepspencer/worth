@@ -1,5 +1,6 @@
 pub(crate) mod component_obligation;
 mod dependency_counts;
+pub(crate) mod frontier_pin;
 mod obligation_transfer;
 mod observation_capacity;
 pub(crate) use observation_capacity::ReservedObservationCapacity;

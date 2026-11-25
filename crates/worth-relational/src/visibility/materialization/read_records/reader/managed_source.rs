@@ -10,7 +10,7 @@ use worth_relational_publication::internal_port::mvcc::publication::companion::c
     cold_source,
     rebuild::{ManagedIndexSourceRebuildFieldsPort as _, ManagedIndexSourceRebuildOwnerPort as _},
 };
-use worth_relational_publication::internal_port::mvcc::publication::companion::registration::install_readmitted_source_image;
+use worth_relational_publication::internal_port::mvcc::publication::companion::registration::install_vacant_source_image;
 
 impl VisibilityReadContext<'_> {
     /// Observe exact physical Source material at this genuine selected snapshot.
@@ -122,7 +122,14 @@ impl VisibilityReadContext<'_> {
         let (image, scope_checked) =
             match root.managed_source_image.for_branch(selected.branch_id()) {
                 Some(placed) => (placed, false),
-                None if root.managed_source_image.is_readmitted() => {
+                // A vacant live head (recovered, or left vacant by the
+                // registration that published it) takes the active one's image.
+                None if root.managed_source_image.is_readmitted()
+                    || self
+                        .runtime
+                        .history
+                        .branch_live_root_matches(selected.branch_id(), root) =>
+                {
                     admit_cold_scope(&projection)?;
                     let installed = {
                         // Failed participant placement drops its lookup outside Native's epochs.
@@ -134,7 +141,7 @@ impl VisibilityReadContext<'_> {
                         let configuration = self.runtime.configuration_binding();
                         let _configuration = configuration.operation();
                         let publication = self.runtime.publication_binding();
-                        install_readmitted_source_image(
+                        install_vacant_source_image(
                             publication.companion_registry(),
                             self.runtime.runtime_instance_id(),
                             execution,

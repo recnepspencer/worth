@@ -17,6 +17,18 @@
 //! overridable via `cardinality`, `disclosure`, `basis_support`, `lanes`, and
 //! `ability`).
 //!
+//! Governed shared queries: `disclosure = access::disclosure()` with
+//! `disclose_by = access::scope_view()` (both typed, from a stock
+//! `worth_query_scope_access!` module) governs the scope key's internal use
+//! and every result field and relation slot. `live = effect(Effect, row_key =
+//! Row::key(), payload_key = path_or_closure)` declares effect-driven live
+//! mode on a root that is its scope: it emits `<Request>LiveCause`, the
+//! request's `ApplicationLiveQueryIntent` and the `live_root_by` step.
+//!
+//! `namespace = NS, member` (or `member = ".."`) shares one namespace among
+//! several derives: identities derive as `root.<member>.<role>`, the member
+//! defaulting to the snake_case request name.
+//!
 //! Exactly one scope: a field marked `#[worth_query(scope = Selection)]`
 //! (with optional `column = ".."`), struct-level `principal_scope = Selection`,
 //! or struct-level `scope = Selection, scope_value = path::to::fn` (with
@@ -31,8 +43,11 @@ mod emit;
 mod emit_definition;
 mod emit_predicates;
 mod fields;
+#[cfg(test)]
+mod governed_live_tests;
 mod grammar;
 mod hygiene;
+mod live_effect;
 mod predicates;
 #[cfg(test)]
 mod tests;

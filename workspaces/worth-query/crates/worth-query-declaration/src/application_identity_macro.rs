@@ -77,3 +77,31 @@ macro_rules! worth_query_identity {
         TEXT
     }};
 }
+
+/// Evaluates one member of a shared identity namespace at compile time.
+///
+/// Input: `NAMESPACE, "member"`. The result is an
+/// `ApplicationIdentityNamespace` deriving `root.member.<role>`; derives use
+/// it for `member` (see `#[derive(WorthQuery)]`). A refused member fails
+/// compilation with the denial's message.
+///
+/// ```
+/// use worth_query_declaration::{
+///     worth_query_identity, worth_query_identity_member, worth_query_identity_namespace,
+/// };
+/// use worth_query_declaration::facade::application_identity::ApplicationIdentityNamespace;
+/// const TASKS: ApplicationIdentityNamespace = worth_query_identity_namespace!("daymark.tasks.v3");
+/// const BINDING: &str = worth_query_identity!(worth_query_identity_member!(TASKS, "rename"), binding);
+/// assert_eq!(BINDING, "daymark.tasks.v3.rename.binding");
+/// ```
+#[macro_export]
+macro_rules! worth_query_identity_member {
+    ($namespace:expr, $member:expr) => {
+        const {
+            match $namespace.member($member) {
+                ::core::result::Result::Ok(namespace) => namespace,
+                ::core::result::Result::Err(denial) => ::core::panic!("{}", denial.message()),
+            }
+        }
+    };
+}

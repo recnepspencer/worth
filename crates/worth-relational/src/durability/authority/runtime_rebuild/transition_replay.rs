@@ -5,15 +5,17 @@
 //! registry, with a durable step that requires the operation to reproduce
 //! exactly the recorded transition. So a fork applies only when its target is
 //! absent and not retired and its source is live with the recorded
-//! generation, truth version and head; an archive or delete applies only to
-//! the recorded prior generation and truth version. Anything else refuses
-//! before any effect.
+//! generation, truth version and head; a retained fork applies only when its
+//! recorded historical head resolves to the exact root recovery rebuilt; an
+//! archive or delete applies only to the recorded prior generation and truth
+//! version. Anything else refuses before any effect.
 
+use crate::branch::fork::recovered_retained::RecordedRetainedForkSource;
 use crate::branch::lifecycle::RelationalBranchDeletionKind;
 use crate::branch::transition::{
     PositionedBranchTransition, RelationalBranchTransition, ReplayedBranchTransitionStep,
 };
-use crate::durability::data::{DurabilityError, RecoveryFailureClass, RelationalRecoveryStop};
+use crate::durability::data::RelationalRecoveryStop;
 use crate::runtime::RelationalRuntime;
 
 use super::root_inventory::RecoveredRootInventory;
@@ -40,11 +42,51 @@ pub(super) fn replay_branch_transition(
         ReplayedBranchTransitionStep::transition_only(recorded)
     };
     match recorded.transition() {
-        RelationalBranchTransition::RetainedFork { .. } => {
-            return Err(DurabilityError::new(
-                RecoveryFailureClass::UnsupportedRetainedForkReplay,
-                "retained-source forks require original live root custody; historical tail reconstruction is unsupported",
-            ).into());
+        RelationalBranchTransition::RetainedFork {
+            target,
+            source,
+            source_generation,
+            source_truth_version,
+            source_head,
+        } => {
+            let commit = crate::history::data::CommitId(source_head.selected_commit_id());
+            let root = recovered_roots
+                .retained_fork_source(
+                    execution,
+                    &restored.history,
+                    &restored.config.schema.registry,
+                    &restored.services.symbols,
+                    commit,
+                )?
+                .ok_or_else(|| {
+                    refused(
+                        recorded,
+                        format!(
+                            "retained fork source commit {} is not retained by recorded history",
+                            commit.0
+                        ),
+                    )
+                })?;
+            restored
+                .fork_port()
+                .fork_recovered_retained_with(
+                    execution,
+                    &step,
+                    target.clone(),
+                    RecordedRetainedForkSource {
+                        branch: source,
+                        generation: *source_generation,
+                        truth_version: *source_truth_version,
+                        head: source_head,
+                        root,
+                    },
+                )
+                .map_err(|failure| replay_stop(recorded, failure))?;
+            recovered_roots.retain_current(
+                &restored.history,
+                &restored.config.schema.registry,
+                target,
+            )?;
         }
         RelationalBranchTransition::Fork { target, source, .. } => {
             restored

@@ -120,16 +120,6 @@ impl ApplicationExternalEffectBinding for OmittedNoticePayload {
     }
 }
 worth_query_effect!(pub(super) OmittedNoticeEffect for OmittedSchema, payload OmittedNoticePayload);
-impl Registration<OmittedSchema> for OmittedNoticeEffect {
-    fn register(
-        builder: ApplicationSchemaDeclarationBuilder<OmittedSchema>,
-    ) -> Result<
-        ApplicationSchemaDeclarationBuilder<OmittedSchema>,
-        ApplicationSchemaDeclarationDenial,
-    > {
-        Ok(builder.effect(Self::reference()))
-    }
-}
 
 worth_query_operation!(pub(super) OmittedNotifyOp for OmittedSchema, input BalanceValueBinding);
 worth_query_operation_reads!(OmittedNotifyOp => [Number, Balance]);

@@ -20,6 +20,7 @@ Through `worth_query_decl::facade::application_schema`:
 - `creation.with_peer(entity, key, authoring_closure)`
 - `creation.link_from_path(ApplicationQueryRootPath, relation, key)`
 - `creation.link_to_principal::<Binding, Relation>(relation, key)`
+- `creation.link_to_self(relation, key)`
 
 The peer closure receives the existing typed creation builder, not a runtime
 callback or another mutation executor. Initializers, native actor capture and
@@ -43,6 +44,19 @@ A snapshot can be reused while an independently declared audit is still created.
 Snapshot replacement retires only its disposable predecessor. It does not delete
 the peer audit or move that audit under the snapshot's ownership. Peers may own
 their own children.
+
+## Self Edges
+
+`creation.link_to_self(relation, key)` links the created entity to itself in
+the creating commit, for example a project that watches itself so a shared live
+read continues through it. Both relation endpoints must be the created type and
+Link capability is a compiler requirement. A relation declaring
+`self_edges = false` is refused at authoring with
+`ApplicationOperationBodyAuthoringDenial::ForbiddenSelfEdge`; fresh schema
+validation independently refuses a cold self edge on such a relation or with
+unequal endpoints. Self edges append only and use portable archive profile 41
+(direction `self-edge` in the canonical link record). Child and path links stay
+scope or parent anchored.
 
 ## How It Executes
 

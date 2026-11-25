@@ -25,6 +25,14 @@ pub enum WorthQueryCorrectionRestoredSupportDenial {
     SizeOverflow,
     Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     Adjacency(worth_relational::facade::runtime::RelationalAdjacencySupportDenial),
+    /// A durable Home's original native effect could not be discovered or read.
+    OriginalSource(Box<worth_relational::facade::durability::RelationalAssociatedEffectRefusal>),
+    /// A durable Home's World original history could not be read or refused the effect.
+    OriginalHistory(
+        worth_runtime_world::facade::RuntimeWorldServiceDenial<
+            worth_runtime_world::facade::WorldReadmissionDenial,
+        >,
+    ),
 }
 
 // Ordered keys are fixed CommitIds here. Admit the immutable AVL descent before

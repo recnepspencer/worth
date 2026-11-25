@@ -50,16 +50,6 @@ worth_query_operation_reads!(NotifyBalance => [Number, Balance]);
 worth_query_operation_writes!(NotifyBalance => [Balance]);
 worth_query_operation_emits!(NotifyBalance => [BalanceNoticeEffect]);
 
-impl Registration<DispatchHomeSchema> for BalanceNoticeEffect {
-    fn register(
-        builder: ApplicationSchemaDeclarationBuilder<DispatchHomeSchema>,
-    ) -> Result<
-        ApplicationSchemaDeclarationBuilder<DispatchHomeSchema>,
-        ApplicationSchemaDeclarationDenial,
-    > {
-        Ok(builder.effect(Self::reference()))
-    }
-}
 impl Registration<DispatchHomeSchema> for NotifyBalance {
     fn register(
         builder: ApplicationSchemaDeclarationBuilder<DispatchHomeSchema>,

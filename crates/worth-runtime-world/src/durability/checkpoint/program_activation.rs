@@ -165,3 +165,57 @@ impl WorldProgramActivationHistoryEntry<'_> {
         }
     }
 }
+impl WorldProgramActivationHistory {
+    /// #388: the live World commit that published exactly this Native effect,
+    /// joined by key through the protected image: the subject's association
+    /// names an open, that open's commit heads history as that very open, and
+    /// the admitted occurrence carries the subject's Relational commit,
+    /// position and digest. Anything else is absent, never a guess.
+    pub fn resolve_published_native_commit(
+        &self,
+        owner: crate::identity::RuntimeWorldOwnerIdentity,
+        subject: &worth_relational::facade::durability::RelationalAssociatedEffectSubject,
+    ) -> Result<Option<crate::identity::CompositeCommitIdentity>, WorldReadmissionDenial> {
+        let binding = self.binding.binding();
+        if owner.durable() != Some(binding.owner())
+            || owner
+                .home_incarnation_fence()
+                .is_none_or(|fence| fence.admit(binding.incarnation().fence()).is_err())
+        {
+            return Err(WorldReadmissionDenial::ForeignOwner);
+        }
+        let Some(association) = subject.association() else {
+            return Ok(None);
+        };
+        let association =
+            crate::durability::decode_association(association.as_bytes(), binding.owner().home())
+                .map_err(|_| WorldReadmissionDenial::MalformedNativeAssociation)?;
+        let Some(open) = self.image.opens.get(&association.attempt()) else {
+            return Ok(None);
+        };
+        if open.association != association {
+            return Ok(None);
+        }
+        let Some(head) = self
+            .image
+            .history
+            .get(&open.commit)
+            .filter(|head| head.represents_open(open.open()))
+        else {
+            return Ok(None);
+        };
+        let Some(occurrence) = self.image.occurrences.get(&head.event_position()) else {
+            return Ok(None);
+        };
+        let receipt = subject.receipt();
+        let bound = occurrence.open() == open.open()
+            && occurrence.relational().is_some_and(|relational| {
+                relational.commit == receipt.commit_id.0
+                    && relational.position == subject.position().0
+                    && &relational.digest == subject.artifact_digest()
+            });
+        Ok(bound
+            .then(|| crate::identity::readmission::readmit_commit(owner, open.commit))
+            .flatten())
+    }
+}

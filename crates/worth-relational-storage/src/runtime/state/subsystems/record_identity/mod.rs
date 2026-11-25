@@ -12,6 +12,7 @@ pub mod reclaimed;
 pub mod reclamation;
 pub mod record_ref;
 pub mod recovery;
+mod replay_gaps;
 pub mod reservation;
 
 #[cfg(test)]
@@ -44,9 +45,11 @@ struct RecordIdentityState {
     generation_high_water: BTreeMap<RecordSlotKey, u32>,
     pending: BTreeMap<RecordSlotKey, PendingRecordReservation>,
     staged_replay_allocations: Option<StagedReplayAllocations>,
-    /// The contiguous append block each staged commit's evidence fills, per
-    /// class and partition; live replay allocations must fall inside it.
-    replay_blocks: BTreeMap<RecordFrontierKey, std::ops::Range<usize>>,
+    /// The live append slots the staged commit's evidence admitted, per class
+    /// and partition; each live replay allocation consumes one of them.
+    replay_slots: BTreeMap<RecordFrontierKey, std::collections::BTreeSet<usize>>,
+    /// Append slots tail replay skipped, which a later commit may publish (#389).
+    replay_gaps: replay_gaps::ReplayGaps,
 }
 
 /// One durable commit's allocation evidence, staged for its replay.
@@ -175,7 +178,8 @@ impl RecordIdentitySubsystem {
     pub fn detached(&self) -> Self {
         let mut state = self.lock().clone();
         state.staged_replay_allocations = None;
-        state.replay_blocks.clear();
+        state.replay_slots.clear();
+        state.replay_gaps.clear();
         let fork = Self {
             state: Arc::new(Mutex::new(state)),
         };
@@ -223,7 +227,8 @@ impl RecordIdentitySubsystem {
                     generation_high_water,
                     pending: BTreeMap::new(),
                     staged_replay_allocations: None,
-                    replay_blocks: BTreeMap::new(),
+                    replay_slots: BTreeMap::new(),
+                    replay_gaps: Default::default(),
                 })),
             },
             reservation,

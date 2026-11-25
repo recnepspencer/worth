@@ -117,7 +117,7 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
                     .flat_map(|p| p.decision_reads()),
             );
             for target in reads {
-                self.push_member_in_place(ApplicationSchemaMember::OperationDecisionRead {
+                self.push_derived_member(ApplicationSchemaMember::OperationDecisionRead {
                     operation: operation.clone(),
                     target,
                 });
@@ -164,7 +164,7 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
                 });
             }
             for target in programs {
-                self.push_member_in_place(ApplicationSchemaMember::OperationProgram {
+                self.push_derived_member(ApplicationSchemaMember::OperationProgram {
                     operation: operation.clone(),
                     target,
                 });

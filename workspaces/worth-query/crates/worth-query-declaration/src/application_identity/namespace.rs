@@ -15,9 +15,14 @@ const SLOT_SEGMENT: &str = "slot";
 /// override; `slot(field)` is `root.slot.<field>`. Overrides keep persisted
 /// wire identities, and may not reuse the root, another role's identity or
 /// the slot space.
+///
+/// Several declarations share one namespace through [`Self::member`]: the
+/// member `rename_project` derives `root.rename_project.<segment>` and
+/// `root.rename_project.slot.<field>`.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct ApplicationIdentityNamespace {
     root: &'static str,
+    member: Option<&'static str>,
     overrides: [Option<&'static str>; ROLE_COUNT],
 }
 
@@ -44,12 +49,47 @@ impl ApplicationIdentityNamespace {
         }
         Ok(Self {
             root,
+            member: None,
             overrides: [None; ROLE_COUNT],
         })
     }
 
+    /// The declared root, without any member segment.
     pub const fn root(&self) -> &'static str {
         self.root
+    }
+
+    /// One declaration's identities within a namespace several declarations
+    /// share: `root.<member>.<segment>`.
+    ///
+    /// The member is one segment that is neither `slot` nor a role segment,
+    /// so a member's identities never equal the shared root's own. A member
+    /// of a member, or of a namespace with overrides, is refused: overrides
+    /// keep one declaration's persisted identities and do not transfer.
+    pub const fn member(
+        self,
+        member: &'static str,
+    ) -> Result<Self, ApplicationIdentityNamespaceDenial> {
+        if self.member.is_some() || is_reserved_segment(member) || !is_segment(member) {
+            return Err(ApplicationIdentityNamespaceDenial::InvalidMember);
+        }
+        let mut index = 0;
+        while index < ROLE_COUNT {
+            if self.overrides[index].is_some() {
+                return Err(ApplicationIdentityNamespaceDenial::MemberWithOverrides);
+            }
+            index += 1;
+        }
+        let required =
+            self.root.len() + 1 + member.len() + 1 + ApplicationIdentityRole::longest_segment();
+        if required > MAXIMUM_APPLICATION_IDENTITY_BYTES {
+            return Err(overlong(required));
+        }
+        Ok(Self {
+            root: self.root,
+            member: Some(member),
+            overrides: self.overrides,
+        })
     }
 
     /// Keeps an existing wire identity for one role instead of deriving it.
@@ -58,6 +98,9 @@ impl ApplicationIdentityNamespace {
         role: ApplicationIdentityRole,
         identity: &'static str,
     ) -> Result<Self, ApplicationIdentityNamespaceDenial> {
+        if self.member.is_some() {
+            return Err(ApplicationIdentityNamespaceDenial::MemberWithOverrides);
+        }
         if self.overrides[role.index()].is_some() {
             return Err(ApplicationIdentityNamespaceDenial::DuplicateOverride { role });
         }
@@ -76,9 +119,12 @@ impl ApplicationIdentityNamespace {
 
     /// The role's identity: its explicit override, else `root.<segment>`.
     pub const fn identity(&self, role: ApplicationIdentityRole) -> ApplicationDerivedIdentity {
-        match self.overrides[role.index()] {
-            Some(identity) => ApplicationDerivedIdentity::joined(&[identity]),
-            None => ApplicationDerivedIdentity::joined(&[self.root, role.segment()]),
+        match (self.overrides[role.index()], self.member) {
+            (Some(identity), _) => ApplicationDerivedIdentity::joined(&[identity]),
+            (None, Some(member)) => {
+                ApplicationDerivedIdentity::joined(&[self.root, member, role.segment()])
+            }
+            (None, None) => ApplicationDerivedIdentity::joined(&[self.root, role.segment()]),
         }
     }
 
@@ -95,6 +141,7 @@ impl ApplicationIdentityNamespace {
         body => Body,
         completion => Completion,
         projection => Projection,
+        live_cause => LiveCause,
     );
 
     /// The identity of one result or capability slot: `root.slot.<field>`.
@@ -105,15 +152,20 @@ impl ApplicationIdentityNamespace {
         if !is_segment(field) {
             return Err(ApplicationIdentityNamespaceDenial::InvalidSlotField);
         }
-        let required = self.root.len() + 1 + SLOT_SEGMENT.len() + 1 + field.len();
+        let member = match self.member {
+            Some(member) => member.len() + 1,
+            None => 0,
+        };
+        let required = self.root.len() + 1 + member + SLOT_SEGMENT.len() + 1 + field.len();
         if required > MAXIMUM_APPLICATION_IDENTITY_BYTES {
             return Err(overlong(required));
         }
-        Ok(ApplicationDerivedIdentity::joined(&[
-            self.root,
-            SLOT_SEGMENT,
-            field,
-        ]))
+        Ok(match self.member {
+            Some(member) => {
+                ApplicationDerivedIdentity::joined(&[self.root, member, SLOT_SEGMENT, field])
+            }
+            None => ApplicationDerivedIdentity::joined(&[self.root, SLOT_SEGMENT, field]),
+        })
     }
 
     /// Whether `identity` would make two of this namespace's identities equal.
@@ -131,6 +183,22 @@ impl ApplicationIdentityNamespace {
         }
         false
     }
+}
+
+/// `slot` or a role segment: a member named so would shadow the shared
+/// root's own identities.
+const fn is_reserved_segment(member: &str) -> bool {
+    if same_text(member, SLOT_SEGMENT) {
+        return true;
+    }
+    let mut index = 0;
+    while index < ROLE_COUNT {
+        if same_text(member, ApplicationIdentityRole::ALL[index].segment()) {
+            return true;
+        }
+        index += 1;
+    }
+    false
 }
 
 const fn overlong(required: usize) -> ApplicationIdentityNamespaceDenial {

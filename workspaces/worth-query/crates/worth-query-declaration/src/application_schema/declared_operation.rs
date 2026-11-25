@@ -59,7 +59,8 @@ pub trait ApplicationDeclaredOperation<Schema>: ApplicationOperationMarkerIdenti
 
 impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
     /// Registers one operation with explicit effect/aftermath policy and its declared access.
-    /// No read-work ceiling is inferred from the access set.
+    /// No read-work ceiling is inferred from the access set. Access registers first, so a
+    /// body-derived read or program the access already declares is not repeated.
     pub fn declared_operation<Operation>(
         self,
         definition: ApplicationOperationDefinition<
@@ -72,7 +73,7 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
         Operation: ApplicationDeclaredOperation<Schema> + 'static,
         <Operation::InputBinding as ApplicationStructuredValueBinding>::Value: 'static,
     {
-        Operation::declare_access(self.operation(definition))
+        Operation::declare_access(self).operation(definition)
     }
 }
 

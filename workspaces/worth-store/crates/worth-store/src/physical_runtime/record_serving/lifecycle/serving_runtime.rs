@@ -19,6 +19,7 @@ mod ordered_journals;
 mod physical_work;
 mod record_reader;
 mod retirement;
+mod root_pins;
 mod scrub;
 mod terminal_head_retirement;
 
@@ -42,16 +43,25 @@ impl ServingPhysicalRuntime {
         journal_registry: crate::physical_runtime::OrderedJournalRegistry,
     ) -> Result<Self, super::super::RecordServingAdmissionInspectionRequired> {
         match PhysicalStoreInstanceParts::from_record_admission(foundation) {
-            Ok(parts) => Ok(Self {
-                journal_registry,
-                scrub: crate::physical_runtime::integrity::PhysicalIntegrityScrubOwner::new(),
-                blob_declarations: std::sync::Mutex::new(()),
-                blob_index_publications: std::sync::Mutex::new(()),
-                ordered_journals: std::sync::Arc::new(std::sync::Mutex::new(Default::default())),
-                anchored_records: std::sync::Arc::new(std::sync::Mutex::new(Default::default())),
-                anchored_membership: std::sync::Mutex::new(Default::default()),
-                parts,
-            }),
+            Ok(parts) => {
+                let serving = Self {
+                    journal_registry,
+                    scrub: crate::physical_runtime::integrity::PhysicalIntegrityScrubOwner::new(),
+                    blob_declarations: std::sync::Mutex::new(()),
+                    blob_index_publications: std::sync::Mutex::new(()),
+                    ordered_journals: std::sync::Arc::new(
+                        std::sync::Mutex::new(Default::default()),
+                    ),
+                    anchored_records: std::sync::Arc::new(
+                        std::sync::Mutex::new(Default::default()),
+                    ),
+                    anchored_membership: std::sync::Mutex::new(Default::default()),
+                    parts,
+                };
+                // Durable pins are restored before any retirement can run.
+                serving.restore_root_pins();
+                Ok(serving)
+            }
             Err(failure) => {
                 let (identity, terminal, cause) = failure.abort();
                 Err(super::super::RecordServingAdmissionInspectionRequired::new(
@@ -61,6 +71,13 @@ impl ServingPhysicalRuntime {
                 ))
             }
         }
+    }
+
+    /// Live read registrations and durable root pins of this runtime.
+    pub(in crate::physical_runtime) fn root_protection(
+        &self,
+    ) -> std::sync::Arc<crate::physical_runtime::stability::RootProtectionRegistry> {
+        self.parts.read_protection.registry()
     }
 
     pub const fn runtime_identity(&self) -> RuntimeIdentity {

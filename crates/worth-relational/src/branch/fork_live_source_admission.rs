@@ -1,6 +1,6 @@
 //! Bind current and retained fork source admission to the live owner.
 use super::{
-    source_validation::{ForkSourceInput, ValidatedForkSource},
+    source_validation::{ForkSourceCustody, ForkSourceInput, ValidatedForkSource},
     RelationalForkDenial,
 };
 use crate::branch::fork_source_basis::RelationalForkSourceDescriptor;
@@ -27,8 +27,8 @@ impl RelationalForkPort {
                 let (descriptor, _authority) = source.into_parts();
                 self.validate_fork_source(descriptor)
             }
+            ForkSourceInput::Recovered(validated) => Ok(*validated),
             ForkSourceInput::Retained(source) => {
-                self.validate_retained_fork_profile()?;
                 let basis = source.into_basis();
                 self.validate_retained_basis(&basis)?;
                 let source_observation = basis.reference().clone();
@@ -46,7 +46,7 @@ impl RelationalForkPort {
                     source_observation,
                     source_truth_version: basis.truth_version(),
                     source_root: Arc::clone(&basis.owner_inner().root),
-                    retained: Some(basis),
+                    custody: ForkSourceCustody::Retained(basis),
                 })
             }
         }
@@ -83,7 +83,7 @@ impl RelationalForkPort {
             source_truth_version,
             source_root: source_root.ok_or(RelationalForkDenial::MissingArtifact)?,
             source_head,
-            retained: None,
+            custody: ForkSourceCustody::Current,
         })
     }
 
@@ -109,10 +109,9 @@ impl RelationalForkPort {
                 return Err(RelationalForkDenial::SourceDeleting)
             }
         }
-        if validated.retained.is_some() {
+        if validated.custody.is_retained() {
             // This distinct receiver guards lifecycle, not the old reference's
             // currentness. Truth remains the original retained immutable root.
-            self.validate_retained_fork_profile()?;
             return Ok(());
         }
         if state.truth_version() != validated.source_truth_version

@@ -202,20 +202,12 @@ fn read_publication(
             .map_err(super::source_denial::world);
     }
 
-    let mut exact = None;
-    for subject in authority
-        .discover_all_associated_effects(execution)
+    let exact = authority
+        .discover_associated_effect(execution, commit)
         .map_err(super::source_denial::native)?
-    {
-        if subject.receipt() == commit {
-            if exact.is_some() {
-                return Err(Denial::Unavailable);
-            }
-            exact = Some(subject);
-        }
-    }
+        .ok_or(Denial::Unavailable)?;
     let effect = authority
-        .readmit_associated_effect(execution, &exact.ok_or(Denial::Unavailable)?)
+        .readmit_associated_effect(execution, &exact)
         .map_err(super::source_denial::native)?;
     product
         .observation_port()

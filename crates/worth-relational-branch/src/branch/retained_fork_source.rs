@@ -1,11 +1,11 @@
-//! Process-local fork custody for one actual retained immutable root.
+//! Fork custody for one actual retained immutable historical root.
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::branch::fork::RelationalForkDenial;
 
 /// A move-only retained source, distinct from a freshly current fork source.
 /// It retains the original admitted basis; descriptors cannot construct it.
-/// This profile refuses a durable medium because historical-root reopening is
-/// not part of this receiver's contract.
+/// A durable receiver records the fork as `RetainedFork`; recovery rebuilds the
+/// recorded historical root from durable history and replays the same fork.
 #[cfg_attr(not(doctest), doc = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/docs/facade_examples/retained_fork_source.md")))]
 #[derive(Debug)]
 pub struct AdmittedRelationalRetainedForkSource {

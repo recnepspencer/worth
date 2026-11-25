@@ -109,8 +109,14 @@ impl PhysicalCurrentRootOwner {
         &self,
     ) -> Result<Option<DisplacedArtifact>, PhysicalRetirementDenial> {
         let state = self.lock_publication_state();
-        let Some(displaced) = self.publication.next_displaced() else {
-            return Err(PhysicalRetirementDenial::Absent);
+        let Some(displaced) = self
+            .publication
+            .next_displaced_where(|displaced| !pinned(self, displaced))
+        else {
+            return Err(match self.publication.next_displaced() {
+                Some(_) => PhysicalRetirementDenial::Protected,
+                None => PhysicalRetirementDenial::Absent,
+            });
         };
         if let Some(denial) = retirement_blocked(self, &state, &displaced, None) {
             return Err(denial);
@@ -178,6 +184,25 @@ impl PhysicalCurrentRootOwner {
     #[cfg(feature = "certification-test-authority")]
     pub(in crate::physical_runtime) fn next_displaced(&self) -> Option<DisplacedArtifact> {
         self.publication.next_displaced()
+    }
+}
+
+/// Whether a durable root pin holds `displaced`, by the same per-artifact rule
+/// live readers use. Pins are a leaf lock under the current-root lock.
+fn pinned(owner: &PhysicalCurrentRootOwner, displaced: &DisplacedArtifact) -> bool {
+    let pins = owner.read_protection.pins();
+    match displaced.artifact {
+        RetiredArtifact::Segment {
+            segment,
+            generation,
+        } => {
+            pins.protects_root(displaced.source_root)
+                || pins.protects_inline_segment(segment, generation)
+        }
+        RetiredArtifact::Extent { .. } => pins.protects_root_at_or_below(displaced.source_root),
+        RetiredArtifact::Arena { .. } => {
+            pins.protects_root_at_or_below(displaced.source_root.saturating_sub(1))
+        }
     }
 }
 

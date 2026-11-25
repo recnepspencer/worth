@@ -48,22 +48,12 @@ pub struct Owner;
 pub struct Mapping;
 
 #[derive(Clone, Copy, WorthQuerySchema)]
-#[worth_query(
-    entity,
-    aspects(ProjectFacts),
-    relations(ProjectWatchTarget),
-    reference(BoardSchema, Records)
-)]
+#[worth_query(entity, aspects(ProjectFacts), reference(BoardSchema, Records))]
 pub struct Project;
 
 #[derive(WorthQueryRelation)]
 #[worth_query(to = Owner, from = Mapping, reference(BoardSchema, Records))]
 pub struct MappingOwner;
-
-/// Each project watches itself, so a live shared read continues by it.
-#[derive(WorthQueryRelation)]
-#[worth_query(to = Project, from = Project, reference(BoardSchema, Records))]
-pub struct ProjectWatchTarget;
 
 #[derive(WorthQueryRecord)]
 #[worth_query(bindings = Codecs, aspect = OwnerFacts, fragment = Records, entity = Owner)]

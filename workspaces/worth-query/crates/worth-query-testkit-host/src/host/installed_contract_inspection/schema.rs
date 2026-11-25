@@ -143,16 +143,6 @@ pub fn changed_account(
 ) -> ApplicationRelationRef<ContractInspectionSchema, ChangedAccount, Account, Account> {
     relation(ContractInspectionSchema, Account, ChangedAccount)
 }
-impl Registration<ContractInspectionSchema> for AccountNoticeEffect {
-    fn register(
-        builder: ApplicationSchemaDeclarationBuilder<ContractInspectionSchema>,
-    ) -> Result<
-        ApplicationSchemaDeclarationBuilder<ContractInspectionSchema>,
-        ApplicationSchemaDeclarationDenial,
-    > {
-        Ok(builder.effect(Self::reference()))
-    }
-}
 impl Registration<ContractInspectionSchema> for UpdateAccount {
     fn register(
         builder: ApplicationSchemaDeclarationBuilder<ContractInspectionSchema>,

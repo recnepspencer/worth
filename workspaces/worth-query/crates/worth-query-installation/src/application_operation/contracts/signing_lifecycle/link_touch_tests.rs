@@ -62,6 +62,7 @@ fn peer_existing_anchor_links_participate_without_touching_fresh_endpoints() {
             let (from, to) = match direction {
                 Direction::FromScope => ("Existing", "Created"),
                 Direction::ToScope => ("Created", "Existing"),
+                Direction::SelfEdge => unreachable!("only scope-anchored directions are iterated"),
             };
             let link = Link {
                 relation: "Selected".into(),

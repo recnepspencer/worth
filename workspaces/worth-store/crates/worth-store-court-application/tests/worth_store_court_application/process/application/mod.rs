@@ -11,6 +11,7 @@ mod query_readmission;
 mod world_branch_retirement;
 mod world_durable_release;
 mod world_home;
+mod world_native_commit_join;
 mod world_occurrence_readmission;
 mod world_original_observation;
 mod world_original_state;

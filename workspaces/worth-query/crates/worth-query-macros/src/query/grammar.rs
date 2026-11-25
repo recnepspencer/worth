@@ -8,6 +8,7 @@ use super::predicates::{
 use super::DERIVE;
 use crate::case::snake_case;
 use crate::grammar::{flag, unknown_key, value, visit_keys, Once};
+use crate::identity_member::{parse_member, DeclaredNamespace, RawMember};
 use quote::format_ident;
 use syn::meta::ParseNestedMeta;
 use syn::{DeriveInput, Expr, FieldsNamed, Ident, LitStr, Path, Type};
@@ -21,6 +22,7 @@ const STRUCT_KEYS: &[&str] = &[
     "schema",
     "context",
     "namespace",
+    "member",
     "query",
     "input",
     "binding",
@@ -42,6 +44,7 @@ const STRUCT_KEYS: &[&str] = &[
     "managed_index_refined",
     "cardinality",
     "disclosure",
+    "disclose_by",
     "basis_support",
     "lanes",
     "ability",
@@ -69,7 +72,7 @@ const STRUCT_KEYS: &[&str] = &[
 pub(super) struct QueryDeclaration {
     pub(super) schema: Type,
     pub(super) context: Type,
-    pub(super) namespace: Path,
+    pub(super) namespace: DeclaredNamespace,
     pub(super) query: Ident,
     pub(super) input: Ident,
     pub(super) binding: Ident,
@@ -107,6 +110,7 @@ pub(super) struct DefinitionDefaults {
     pub(super) root: Type,
     pub(super) cardinality: Option<Expr>,
     pub(super) disclosure: Option<Expr>,
+    pub(super) disclose_by: Option<Expr>,
     pub(super) basis_support: Option<Expr>,
     pub(super) lanes: Option<Expr>,
     pub(super) ability: Option<Expr>,
@@ -122,6 +126,7 @@ struct StructKeys {
     schema: Once<Type>,
     context: Once<Type>,
     namespace: Once<Path>,
+    member: Once<RawMember>,
     query: Once<Ident>,
     input: Once<Ident>,
     binding: Once<Ident>,
@@ -205,7 +210,11 @@ impl QueryDeclaration {
         Ok(Self {
             schema,
             context: keys.context.required(missing, DERIVE)?,
-            namespace: keys.namespace.required(missing, DERIVE)?,
+            namespace: DeclaredNamespace::new(
+                keys.namespace.required(missing, DERIVE)?,
+                keys.member.optional(),
+                &input.ident,
+            ),
             query,
             input: input_binding,
             binding,
@@ -239,6 +248,7 @@ impl StructKeys {
             schema,
             context,
             namespace,
+            member,
             query,
             input,
             binding,
@@ -270,6 +280,7 @@ impl StructKeys {
             "schema" => self.schema.set(meta, value(meta)?),
             "context" => self.context.set(meta, value(meta)?),
             "namespace" => self.namespace.set(meta, value(meta)?),
+            "member" => self.member.set(meta, parse_member(meta)?),
             "query" => self.query.set(meta, value(meta)?),
             "input" => self.input.set(meta, value(meta)?),
             "binding" => self.binding.set(meta, value(meta)?),
@@ -291,6 +302,7 @@ impl StructKeys {
             "fields" => self.definition.fields.set(meta, value(meta)?),
             "cardinality" => self.definition.cardinality.set(meta, value(meta)?),
             "disclosure" => self.definition.disclosure.set(meta, value(meta)?),
+            "disclose_by" => self.definition.disclose_by.set(meta, value(meta)?),
             "basis_support" => self.definition.basis_support.set(meta, value(meta)?),
             "lanes" => self.definition.lanes.set(meta, value(meta)?),
             "ability" => self.definition.ability.set(meta, value(meta)?),

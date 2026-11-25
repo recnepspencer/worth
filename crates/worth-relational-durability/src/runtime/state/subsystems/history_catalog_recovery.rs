@@ -16,6 +16,26 @@ pub mod inventory;
 #[path = "history_catalog_recovery/source_binding.rs"]
 pub mod source_binding;
 
+/// The canonical envelope of a live root's commit. A historical root a
+/// retained fork selected may be checkpoint-covered and cold; its envelope is
+/// demanded from the same authenticated durable source.
+fn live_root_envelope(
+    history: &HistorySubsystem,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    commit_id: contracts::history::data::coordinates::CommitId,
+) -> Result<Arc<CanonicalCommitEnvelope>, RelationalHistoryRecoveryDenial> {
+    if let Some(envelope) = history.recorded_commit_envelope(commit_id) {
+        return Ok(envelope);
+    }
+    let missing = || format!("live recovery root `{}` has no envelope", commit_id.0);
+    let artifact = history.commit_artifact(commit_id).ok_or_else(missing)?;
+    let positioned = artifact
+        .envelope_residency()
+        .demand_positioned(execution, 1 << 30)
+        .map_err(RelationalHistoryRecoveryDenial::Source)?;
+    Ok(positioned.canonical_arc().clone())
+}
+
 fn rebuild_catalog_with_live_roots(
     history: &HistorySubsystem,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -82,9 +102,7 @@ fn rebuild_catalog_with_live_roots_and_descriptors(
                 roots.insert(commit_id, root);
                 continue;
             }
-            let canonical = history
-                .recorded_commit_envelope(commit_id)
-                .ok_or_else(|| format!("live recovery root `{}` has no envelope", commit_id.0))?;
+            let canonical = live_root_envelope(history, execution, commit_id)?;
             let canonical_root = if let Some(existing) = roots.get(&commit_id) {
                 Arc::clone(existing)
             } else if root.links_envelope(&canonical) {

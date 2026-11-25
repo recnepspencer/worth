@@ -26,6 +26,7 @@ pub use crate::home_context::{
     AdmittedApplicationHome, ReadmittedApplicationHome, RecoveredPhysicalHome,
 };
 pub use crate::home_request::ApplicationHomeRequest;
+pub use crate::home_retention::{volatile::VolatileHomeRetention, DurableHomeRetention};
 #[cfg(feature = "certification-test-authority")]
 pub use crate::open::physical_admission::ApplicationHomeCertificationProfile;
 pub use crate::open::physical_admission::{

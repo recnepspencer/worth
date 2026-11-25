@@ -1,5 +1,6 @@
-//! A commit's live and cancelled evidence replays as one contiguous append
-//! block, in any live order; cancellations burn exactly what live did (H0, D2).
+//! A commit's live and cancelled evidence replays its append slots in any
+//! live order against the frontier and the replay gaps; cancellations burn
+//! exactly what live did (H0, D2, #389).
 use super::*;
 use crate::identity::data::{EntityId, KindId};
 use crate::symbols::data::ClientKey;
@@ -51,7 +52,7 @@ fn live_append_evidence_replays_in_plan_order_inside_its_block() {
 }
 
 #[test]
-fn a_hole_a_duplicate_or_a_slot_behind_the_frontier_is_refused_unchanged() {
+fn a_duplicate_or_a_slot_behind_the_frontier_outside_a_gap_is_refused_unchanged() {
     let authority = RecordIdentitySubsystem::default();
     let refuse = |live_slots: Vec<CanonicalRecordAllocation>,
                   gone: Vec<CancelledRecordAllocation>| {
@@ -59,10 +60,6 @@ fn a_hole_a_duplicate_or_a_slot_behind_the_frontier_is_refused_unchanged() {
             .stage_replay_allocations(live_slots, gone)
             .unwrap_err()
     };
-    assert_eq!(
-        refuse(vec![live(0, 0), live(1, 2)], Vec::new()),
-        broken(1, 2)
-    );
     assert_eq!(refuse(vec![live(0, 0)], vec![cancelled(0)]), broken(1, 0));
     authority.restore_frontier(E, P, 3);
     assert_eq!(
@@ -74,6 +71,29 @@ fn a_hole_a_duplicate_or_a_slot_behind_the_frontier_is_refused_unchanged() {
         "nothing was staged"
     );
     assert_eq!(authority.frontier_snapshot(), vec![(E, P, 3)]);
+}
+
+/// A hole in one commit's slots is a concurrent candidate's slot (#389): a
+/// later commit may publish it once; a commit replaying it again is refused.
+#[test]
+fn a_hole_is_a_replay_gap_a_later_commit_consumes_once() {
+    let authority = RecordIdentitySubsystem::default();
+    authority
+        .stage_replay_allocations(vec![live(0, 2), live(1, 0)], vec![cancelled(4)])
+        .unwrap();
+    assert_eq!(replay(&authority, 2), vec![2, 0]);
+    assert_eq!(authority.frontier_snapshot(), vec![(E, P, 5)]);
+    authority
+        .stage_replay_allocations(vec![live(0, 3)], vec![cancelled(1)])
+        .unwrap();
+    assert_eq!(replay(&authority, 1), vec![3]);
+    assert_eq!(
+        authority
+            .stage_replay_allocations(vec![live(0, 1)], Vec::new())
+            .unwrap_err(),
+        broken(5, 1),
+        "a consumed gap slot cannot replay again"
+    );
 }
 
 #[test]
@@ -151,7 +171,7 @@ fn live_evidence_takes_the_merged_plan_order_and_cancels_into_held_slots() {
         a.clone(),
         RecordAllocationOrigin::AppendFrontier,
     );
-    assert_eq!(pending.canonical(), &[a_live.clone()]);
+    assert_eq!(pending.canonical(), std::slice::from_ref(&a_live));
     let mut sibling = authority.begin_allocations();
     let after = sibling.reserve(E, P).unwrap().slot;
     assert_ne!(after, 9, "a held reclaimed slot is not reissued");

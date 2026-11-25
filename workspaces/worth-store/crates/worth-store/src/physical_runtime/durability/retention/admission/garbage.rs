@@ -60,13 +60,24 @@ impl PhysicalPublicationAdmission {
     }
 
     pub(in crate::physical_runtime) fn next_displaced(&self) -> Option<DisplacedArtifact> {
+        self.next_displaced_where(|_| true)
+    }
+
+    /// The first incomplete displaced artifact `admit` accepts. A long-lived
+    /// durable pin may hold an early entry; unrelated later garbage still
+    /// reaches retirement.
+    pub(in crate::physical_runtime) fn next_displaced_where(
+        &self,
+        admit: impl Fn(&DisplacedArtifact) -> bool,
+    ) -> Option<DisplacedArtifact> {
         let state = self.lock();
         state.garbage.iter().find_map(|(artifact, garbage)| {
-            (!garbage.completed).then_some(DisplacedArtifact {
+            let displaced = DisplacedArtifact {
                 source_root: garbage.source_root,
                 artifact: *artifact,
                 bytes: garbage.bytes,
-            })
+            };
+            (!garbage.completed && admit(&displaced)).then_some(displaced)
         })
     }
 

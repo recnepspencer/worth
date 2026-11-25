@@ -89,6 +89,33 @@ impl RecoveredRootInventory {
             .and_then(|image| image.root.root())
     }
 
+    /// The exact historical root a recorded retained fork selected.
+    ///
+    /// A tail commit's root is held while its recovery runs. A commit the
+    /// selected checkpoint covers is rebuilt from that checkpoint's exact root
+    /// image when a retained component recorded it. `None` means the recorded
+    /// history did not retain this root.
+    pub fn retained_fork_source(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        history: &HistorySubsystem,
+        schema: &RelationalSchemaRegistry,
+        symbols: &RuntimeSymbolTable,
+        commit_id: CommitId,
+    ) -> Result<
+        Option<Arc<RelationalBranchRoot>>,
+        contracts::durability::data::recovery_stop::RelationalRecoveryStop,
+    > {
+        let Some(image) = self.roots.get(&commit_id) else {
+            return Ok(None);
+        };
+        if let Some(root) = image.root.root() {
+            return Ok(Some(root));
+        }
+        self.materialize_commit_image(execution, history, schema, symbols, commit_id, image)
+            .map(Some)
+    }
+
     /// The actual runtime retains materialized roots. After reconstruction,
     /// descriptive authority must not invisibly retain Home source/Serving
     /// ownership. Demanded admission upgrades a real root and acquires pins.

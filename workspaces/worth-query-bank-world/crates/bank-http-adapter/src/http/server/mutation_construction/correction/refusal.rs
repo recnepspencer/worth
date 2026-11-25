@@ -149,7 +149,9 @@ fn restored_support(cause: WorthQueryCorrectionRestoredSupportDenial) -> BankHtt
         | D::Selection(_)
         | D::FieldSupport(_)
         | D::AspectPresence(_)
-        | D::Adjacency(_) => unavailable(),
+        | D::Adjacency(_)
+        | D::OriginalSource(_)
+        | D::OriginalHistory(_) => unavailable(),
     }
 }
 
