@@ -114,7 +114,10 @@ fn grants(
     if omitted.is_empty() {
         return Ok(());
     }
-    if !source_has_body || demand.output_fields().is_some() {
+    if !source_has_body
+        || demand.output_fields().is_some()
+        || (demand.loci().is_empty() && demand.relations().is_empty())
+    {
         return Err(DeclaredPreImageDemandDenial::UnsupportedOmittedReversal);
     }
     for (index, grant) in omitted.iter().enumerate() {
