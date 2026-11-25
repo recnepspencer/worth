@@ -58,10 +58,25 @@ fn nested_distinct_child_serial_advancement_respects_enclosing_parent_room_and_d
             .expect("distinct nested child advancement completes");
             assert_eq!(child_budget.charged_memory_bytes(), 0);
 
-            // 2. Pre-opened child advancement run inside parent scope still obeys parent room.
+            // 2. Pre-opened child advancement run inside parent scope still obeys parent room
+            //    for both phase-borrowed and direct `preopened_exec.reserve(...)` calls.
+            assert!(matches!(
+                preopened_exec.reserve(8 * 1024),
+                Err(Resource::MemoryLimit { .. })
+            ));
             preopened_exec
                 .run_advancement(None, None, |phase| {
                     assert!(reserve_phase_memory(&phase, 8 * 1024).is_err());
+                    assert!(matches!(
+                        preopened_exec.reserve(8 * 1024),
+                        Err(Resource::MemoryLimit { .. })
+                    ));
+                    let direct = preopened_exec
+                        .reserve(2 * 1024)
+                        .expect("2 KiB direct reserve fits in parent remaining room");
+                    assert!(parent_budget.charged_memory_bytes() >= 12 * 1024);
+                    assert!(preopened_budget.charged_memory_bytes() >= 2 * 1024);
+                    drop(direct);
                     let raw = reserve_phase_memory(&phase, 2 * 1024)
                         .expect("2 KiB fits in parent remaining room")
                         .expect("leased phase returns reservation");

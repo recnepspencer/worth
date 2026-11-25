@@ -150,12 +150,24 @@ impl<'a> QueryRequestExecution<'a> {
 
     /// Holds `bytes` on the request's memory until the reservation drops.
     pub fn reserve(&self, bytes: u64) -> Result<QueryMemoryReservation, Resource> {
-        let lease = match &self.form {
-            Form::Leased { lease, .. } | Form::Serial { lease, .. } => {
-                lease.as_ref().map_err(|denial| lease_denial(*denial))?
+        let (lease, caller_serial) = match &self.form {
+            Form::Leased {
+                lease,
+                caller_serial,
+                ..
             }
+            | Form::Serial {
+                lease,
+                caller_serial,
+                ..
+            } => (
+                lease.as_ref().map_err(|denial| lease_denial(*denial))?,
+                *caller_serial,
+            ),
         };
-        lease
+        let scoped = caller_serial.map(|caller| lease.child_within_request(caller));
+        let active_lease = scoped.as_ref().unwrap_or(lease);
+        active_lease
             .reserve_memory(bytes)
             .map(|held| QueryMemoryReservation {
                 held: Some(held),
@@ -167,17 +179,28 @@ impl<'a> QueryRequestExecution<'a> {
     /// Every run, including serial placement, descends from the request's lease.
     pub fn dispatch(&self) -> Result<QueryDispatch<'_>, Resource> {
         let form = match &self.form {
-            Form::Leased { lease, policy, .. } | Form::Serial { lease, policy, .. } => {
+            Form::Leased {
+                lease,
+                policy,
+                caller_serial,
+            }
+            | Form::Serial {
+                lease,
+                policy,
+                caller_serial,
+            } => {
                 let lease = lease.as_ref().map_err(|denial| lease_denial(*denial))?;
-                DispatchForm::Leased(
-                    lease
+                let child = match *caller_serial {
+                    Some(caller) => lease.child_within_request(caller),
+                    None => lease
                         .child(LeaseRequest {
                             policy: *policy,
                             deadline: None,
                             cancellation: worth_execution::CancellationToken::new(),
                         })
                         .map_err(lease_denial)?,
-                )
+                };
+                DispatchForm::Leased(child)
             }
         };
         Ok(QueryDispatch {
