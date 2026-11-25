@@ -7,6 +7,7 @@ use super::*;
 mod budget;
 mod cad_shape;
 mod content;
+mod derived_law;
 mod elision;
 mod entities;
 mod guards;
@@ -44,9 +45,22 @@ fn run_in(
     stage: bool,
     assembly: &Step<'_>,
 ) -> Result<Run, TransactionCommitError> {
+    run_with(
+        |execution| setup(World::new(execution, true, true)),
+        stage,
+        assembly,
+    )
+}
+
+/// `run` in the world `make` builds.
+fn run_with(
+    make: impl FnOnce(&ExecutionRequest<'_, '_>) -> World,
+    stage: bool,
+    assembly: &Step<'_>,
+) -> Result<Run, TransactionCommitError> {
     let host = request();
     let execution = &ExecutionRequest::serial(&host);
-    let world = setup(World::new(execution, true, true));
+    let world = make(execution);
     let before = world.basis();
     let assembled = assemble(|execution, candidate| assembly(&world, execution, candidate));
     let prepared = if stage {
