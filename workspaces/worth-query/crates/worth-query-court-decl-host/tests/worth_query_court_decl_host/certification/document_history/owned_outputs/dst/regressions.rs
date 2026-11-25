@@ -90,13 +90,14 @@ fn a_consumer_on_a_forked_head_settles() {
     }
 }
 
-/// The reproducer of public #348 through both entry points: one envelope
-/// sets `e1` and retires `e2`, or retires both, on the document, then
-/// outside it. Each must record (or write) as the model says; today all
-/// refuse `OwnedPublicationRequiresCascade`, and `workload::held` keeps the
-/// pairs out of the sweep.
+/// One envelope that sets `e1` then retires `e2`, or retires both, on the
+/// document and outside it. The retirement is a later stage in each (child
+/// first, a set before a retirement), which public #369 postpones: since
+/// #348 (PR #374) each refuses typed `LaterStageRetirementPostponed { issue:
+/// 369 }` where the model records, and `workload::held` keeps the pairs out
+/// of the sweep.
 #[test]
-#[ignore = "held on public #348: an envelope that retires an owner beside another live member's stage refuses OwnedPublicationRequiresCascade"]
+#[ignore = "held on public #369: a retirement in a later stage of one envelope refuses LaterStageRetirementPostponed { issue: 369 } (per-stage retirement events)"]
 fn an_owner_retirement_beside_another_stage_in_one_envelope_agrees() {
     let _observation = WorthQueryExecutionObservation::install_on_this_thread();
     let host = world::install();

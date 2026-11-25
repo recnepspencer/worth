@@ -3,13 +3,15 @@
 //! issue until the fix lands.
 use super::{Op, StagePick};
 
-/// Held on public #348: one envelope that retires an owner and has another
-/// stage on a live member refuses, though each stage commits alone. Traced:
-/// a set then a retirement (seed 0x7b020009, `OwnedPublicationRequiresCascade`;
-/// retirement first, `MissingCoupledOwner` by probe) and two retirements
-/// (seed 0x7b020020, `OwnedPublicationRequiresCascade`). The generator cannot
-/// tell a set from a creation without the state, so a retirement next to any
-/// other stage is dropped, a creation's partner too; two keep the first.
+/// Held on public #369 (per-stage retirement events): a retirement in a
+/// later stage of one envelope refuses typed `LaterStageRetirementPostponed`.
+/// #348 (PR #374) released retirement-first envelopes, but in the DST's push
+/// order (`reference::push_order`: the child before its owner, anything
+/// before a retirement of `e2`) a retirement paired with another stage is
+/// always the later one, so every such pair stays narrowed. The generator
+/// cannot tell a set from a creation without the state, so a retirement next
+/// to any other stage is dropped, a creation's partner too; two keep the
+/// first.
 pub fn narrow(op: Op) -> Op {
     let narrow = |picks: [StagePick; 2]| match picks {
         [StagePick::Retire, StagePick::Retire] => [StagePick::Retire, StagePick::Skip],

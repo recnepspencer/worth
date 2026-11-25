@@ -107,9 +107,10 @@ where
     /// Begin a correction envelope recorded as this document's next step:
     /// stage 0 reverses the selected source, and stages pushed after it commit
     /// with it. The source must be a step this document recorded on its
-    /// selected line. An envelope that retires an owner beside another stage
-    /// on a live member is held on public #348, and a later stage of a
-    /// multi-stage step cannot yet be corrected (public #368).
+    /// selected line. A retirement in a stage after the corrective one is
+    /// postponed on public #369 (it refuses `LaterStageRetirementPostponed`),
+    /// and a later stage of a multi-stage step cannot yet be corrected
+    /// (public #368).
     pub fn correction_envelope<'request, 'program, C, P, R>(
         self,
         program: &'program WorthQueryProgramApplicationRuntime<S, P>,

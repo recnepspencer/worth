@@ -39,27 +39,32 @@ fn a_corrective_retirement_alone_commits_outside_the_document() {
     }
 }
 
-/// The two shapes a plain envelope refuses on #348, with the retirement now
-/// an authored correction: `MissingCoupledOwner` beside a set of `e1`, and
-/// `OwnedPublicationRequiresCascade` beside a retirement of `e1`.
+/// Released by public #348 (PR #374): a corrective retirement as the prefix,
+/// with a set of the other live member after it, commits in one envelope.
 #[test]
-#[ignore = "held on public #348: a corrective retirement beside another live member's stage refuses MissingCoupledOwner / OwnedPublicationRequiresCascade (correction identity)"]
-fn a_corrective_retirement_beside_a_coupled_stage_commits_outside_the_document() {
+fn a_corrective_retirement_before_a_coupled_set_commits_outside_the_document() {
     let _observation = WorthQueryExecutionObservation::install_on_this_thread();
     let host = world::install();
-    let mut refused = Vec::new();
-    for (name, coupled) in [
-        ("[undo-create e2, set e1]", [Stage::Set(2), Stage::Skip]),
-        ("[undo-create e2, retire e1]", [Stage::Retire, Stage::Skip]),
-    ] {
-        let mut document = created(&host, &[E1, E2]);
-        match document.correct_coupled(9, 2, E2, &coupled) {
-            Coupled::Committed => {}
-            other => refused.push(format!("{name}: {other:?}")),
-        }
-        document.release();
-    }
-    assert!(refused.is_empty(), "#348 under a correction identity refuses:\n{}", refused.join("\n"));
+    let mut document = created(&host, &[E1, E2]);
+    let outcome = document.correct_coupled(9, 2, E2, &[Stage::Set(2), Stage::Skip]);
+    document.release();
+    assert!(matches!(outcome, Coupled::Committed), "[undo-create e2, set e1]: {outcome:?}");
+}
+
+/// A retirement in a later stage than the corrective prefix is postponed on
+/// public #369 (per-stage retirement events): the envelope refuses typed,
+/// before any effect.
+#[test]
+fn a_retirement_after_the_corrective_prefix_refuses_typed_on_369() {
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+    let host = world::install();
+    let mut document = created(&host, &[E1, E2]);
+    let outcome = document.correct_coupled(9, 2, E2, &[Stage::Retire, Stage::Skip]);
+    document.release();
+    assert!(
+        matches!(&outcome, Coupled::Refused(denial) if denial.contains("LaterStageRetirementPostponed { issue: 369")),
+        "[undo-create e2, retire e1]: {outcome:?}"
+    );
 }
 
 /// Public #368, memory path: correction evidence is commit-granular, so a
