@@ -50,7 +50,10 @@ impl<S> HistoryJournal<'_, S> {
 
     /// Index the commit an envelope's stages made, and the step's retained
     /// basis, as `node`'s while the record is prepared; a cancelled record
-    /// releases both again.
+    /// releases both again. An entry that already names another step is
+    /// kept, never overwritten: each step's commits are its own fresh ones,
+    /// so a collision should not happen, and if one did, keeping the earliest
+    /// means a release removes only what this record inserted.
     pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn index_source(
         &mut self,
         execution: &ExecutionRequest<'_, '_>,
@@ -58,7 +61,7 @@ impl<S> HistoryJournal<'_, S> {
         endpoint: Option<worth_relational::facade::history::CommitId>,
         node: WorthQueryHistoryNodeId,
     ) -> Result<(), worth_relational::facade::transactions::RelationalExecutionDenialCause> {
-        if let Some(commit) = commit {
+        if let Some(commit) = commit.filter(|commit| !self.sources.contains_key(*commit)) {
             let allocation = self.allocate::<(
                 worth_runtime_world::facade::CompositeCommitIdentity,
                 (u64, HistoryInsertionAllocation),
@@ -67,7 +70,7 @@ impl<S> HistoryJournal<'_, S> {
             self.sources.insert(commit.clone(), (node.ordinal(), allocation));
             self.pending_source = Some(commit.clone());
         }
-        if let Some(endpoint) = endpoint {
+        if let Some(endpoint) = endpoint.filter(|endpoint| !self.endpoints.contains_key(endpoint)) {
             let allocation = self.allocate::<(
                 worth_relational::facade::history::CommitId,
                 (u64, HistoryInsertionAllocation),

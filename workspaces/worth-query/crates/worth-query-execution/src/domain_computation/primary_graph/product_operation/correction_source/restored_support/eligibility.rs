@@ -103,7 +103,9 @@ pub(in crate::domain_computation::primary_graph::product_operation::correction_s
     let occurrences = history::narrow(target, execution, facts, occurrences)
         .inspect_err(|cause| correction_rejection("managed-historical-relevance", None, cause))?;
     // A history document's own navigation commits restore recorded states
-    // (S3 ruling B; the rule and its soundness are in `navigation`).
+    // (S3 ruling B; the rule and its soundness are in `navigation`). The final
+    // `compare` below must always run after this: it is the only guard for
+    // facts a superseded write touched outside the owned closure.
     let occurrences = application
         .inner
         .runtime

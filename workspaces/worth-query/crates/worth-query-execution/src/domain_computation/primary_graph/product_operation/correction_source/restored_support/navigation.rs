@@ -24,9 +24,18 @@
 //! - Every occurrence after the latest navigation still needs its correction
 //!   witness, as without this rule.
 //! - The final comparison of the original facts with the target
-//!   (`eligibility::compare`) still runs on what is actually present, and it
-//!   is what refuses a navigation that restored a state where the source's
-//!   occurrence is no longer the one present (`SourceDiverged`).
+//!   (`eligibility::compare`) ALWAYS runs after `without_vouched_navigation`,
+//!   on what is actually present. Supersession may cancel writes to facts a
+//!   navigation does not restore (outside the owned closure), and the
+//!   comparison is then their only guard; skipping it would accept them (a
+//!   counterexample the proof trial checked). It is also what refuses a
+//!   navigation that restored a state where the source's occurrence is no
+//!   longer the one present (`SourceDiverged`; court
+//!   `a_navigation_that_restored_another_occurrence_still_refuses_the_correction`
+//!   kills the mutant that drops it).
+//! - The descends-from-source check is defense in depth: a latest navigation
+//!   to an ancestor of the source precedes the source, so no public path
+//!   reaches it, and the unit tests pin it.
 use super::super::{WorthQueryCorrectionDerivationDenial as Denial, WorthQuerySelectedCorrectionSource};
 use super::cancellation::Occurrences;
 use super::WorthQueryCorrectionRestoredSupportDenial as Stop;
