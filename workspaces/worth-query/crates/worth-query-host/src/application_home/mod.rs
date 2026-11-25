@@ -13,6 +13,7 @@ mod preview;
 mod refusal;
 mod request;
 mod runtime;
+mod temporal_catch_up;
 mod transition;
 mod workflow;
 pub use checkpoint::WorthQueryApplicationHomeCheckpointDenial;

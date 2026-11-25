@@ -75,6 +75,32 @@ impl crate::domain_computation::execution_runtime::product_world::WorthQueryProd
         })?
     }
 
+    /// Runs a call carrying the caller's exact original `ExecutionRequest`
+    /// (both leased and lease-free `ExecutionRequest::serial`), preserving its
+    /// work ceiling, memory limit, deadline, and cancellation end-to-end.
+    pub(crate) fn with_execution_request_advancement<R>(
+        &self,
+        caller: worth_execution::ExecutionRequest<'_, '_>,
+        body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+    ) -> Result<R, WorthQueryAdvancementDenial> {
+        let _custody = OpeningCustody::enter()?;
+        self.with_execution_placement(|placement| {
+            let execution = match caller.allocation_policy() {
+                worth_execution::ExecutionAllocationPolicy::Execution(lease) => {
+                    QueryRequestExecution::under_lease_within_placement(
+                        lease,
+                        placement,
+                        caller.deadline(),
+                    )
+                }
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation => {
+                    QueryRequestExecution::open_serial_request(placement, caller)
+                }
+            };
+            execution.run_product_advancement(self, false, body)
+        })?
+    }
+
     #[inline(never)]
     fn with_request_advancement_on_execution_stack<R>(
         &self,

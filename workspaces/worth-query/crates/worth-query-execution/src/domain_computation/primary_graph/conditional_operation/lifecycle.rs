@@ -11,6 +11,7 @@ pub(crate) mod installed_operation;
 pub(crate) mod operation_cell;
 mod operation_totals;
 mod pending_invalidations;
+mod predecessor_custody;
 pub(crate) mod registry;
 mod resource_observation;
 mod runtime_rebinding;

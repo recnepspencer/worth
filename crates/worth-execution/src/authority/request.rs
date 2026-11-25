@@ -198,6 +198,23 @@ impl<'request, 'authority> ExecutionRequest<'request, 'authority> {
         matches!(self.form, RequestBacking::Leased(_))
     }
 
+    pub(in crate::authority) fn effective_serial_memory_budget(
+        self,
+    ) -> Option<super::SerialMemoryBudget> {
+        let own = match self.form {
+            RequestBacking::Serial(request) => request.memory().cloned(),
+            RequestBacking::Leased(lease) => lease.lineage_serial_budget().cloned(),
+        };
+        [
+            own,
+            super::lease::active_worker_serial_memory(),
+            crate::backend::active_serial_memory_lineage(),
+        ]
+        .into_iter()
+        .flatten()
+        .reduce(|inner, outer| inner.within_parent(&outer))
+    }
+
     /// Fixed-size backing metadata; commits derive their allocation authority
     /// from this request rather than accepting an independent policy.
     /// The policy borrows the backing, not its active scope. Use it only for

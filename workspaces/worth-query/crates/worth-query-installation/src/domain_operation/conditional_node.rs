@@ -83,12 +83,12 @@ pub use reference::WorthQueryConditionalNodeRef;
 pub use temporal::{WorthQueryTemporalCondition, WorthQueryTemporalWake};
 pub use temporal_intent_contract::{
     WorthQueryTemporalIntentBounds, WorthQueryTemporalIntentCandidate,
-    WorthQueryTemporalIntentIdempotencyRelation, WorthQueryTemporalIntentIdentity,
-    WorthQueryTemporalIntentLifecycle, WorthQueryTemporalIntentProjectionFailure,
-    WorthQueryTemporalIntentProjectionFailureKind, WorthQueryTemporalIntentProjector,
-    WorthQueryTemporalIntentRevisionValue, WorthQueryTemporalOperationInputIdentity,
-    MAX_TEMPORAL_DUE_WAKES_PER_OBSERVATION, MAX_TEMPORAL_INTENT_QUERY_WORK,
-    MAX_TEMPORAL_INTENT_RECONSTRUCTION_ROWS,
+    WorthQueryTemporalIntentDueValue, WorthQueryTemporalIntentIdempotencyRelation,
+    WorthQueryTemporalIntentIdentity, WorthQueryTemporalIntentLifecycle,
+    WorthQueryTemporalIntentProjectionFailure, WorthQueryTemporalIntentProjectionFailureKind,
+    WorthQueryTemporalIntentProjector, WorthQueryTemporalIntentRevisionValue,
+    WorthQueryTemporalOperationInputIdentity, MAX_TEMPORAL_DUE_WAKES_PER_OBSERVATION,
+    MAX_TEMPORAL_INTENT_QUERY_WORK, MAX_TEMPORAL_INTENT_RECONSTRUCTION_ROWS,
 };
 pub use trigger::WorthQueryConditionalTrigger;
 

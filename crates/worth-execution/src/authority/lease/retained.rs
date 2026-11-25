@@ -54,6 +54,21 @@ impl ExecutionResourceLease<'_> {
             memory_bytes,
         )
         .map_err(LeaseDenial::MemoryExhausted)?;
+        let old_budget = memory
+            .lineage
+            .iter()
+            .find_map(|id| ledger.serial_budgets.get(id))
+            .cloned();
+        let new_budget = self.lineage_serial_budget_node();
+        crate::SerialMemoryBudget::rebind_between(
+            old_budget.as_ref(),
+            new_budget.map(|(_, b)| b),
+            held,
+            memory_bytes,
+        )
+        .map_err(|denial| {
+            LeaseDenial::MemoryExhausted(denial.offset_ancestor(lineage.len() as u32))
+        })?;
         let process_used = ledger.charged_memory_bytes - held;
         let process_after = process_used + memory_bytes;
         ledger.charged_memory_bytes = process_after;
@@ -63,11 +78,15 @@ impl ExecutionResourceLease<'_> {
                 .get_mut(id)
                 .expect("retained reservation has a node");
             usage.charged_memory_bytes -= held;
-            if usage.active_workers == 0 && usage.charged_memory_bytes == 0 {
-                ledger.nodes.remove(id);
-            }
+            ledger.retire_if_idle(*id);
         }
         if memory_bytes != 0 {
+            if let Some((budget_node_id, budget)) = new_budget {
+                ledger
+                    .serial_budgets
+                    .entry(budget_node_id)
+                    .or_insert_with(|| budget.clone());
+            }
             for node in &lineage {
                 ledger
                     .nodes

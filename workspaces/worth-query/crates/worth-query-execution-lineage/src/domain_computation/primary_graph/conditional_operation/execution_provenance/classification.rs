@@ -111,6 +111,8 @@ pub enum WorthQueryConditionalExecutionCause {
     Cancelled,
     /// The attempt timed out.
     TimedOut,
+    /// Principal resolution or operation authorization refused the attempt.
+    AuthorizationRefused,
     /// Admission or commit refused the attempt with a terminal denial.
     TerminalFailure,
 }

@@ -21,7 +21,9 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) struct W
     pub(in crate::domain_computation::primary_graph::conditional_operation) lifecycle_token:
         std::sync::Arc<()>,
     candidate: WorthQueryTemporalIntentCandidate<Clock, Input>,
+    scheduled_due_coordinate: u64,
     source_record: worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts,
+    _retained_memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 impl<Clock, Input> WorthQueryReconstructedTemporalIntent<Clock, Input> {
@@ -31,10 +33,31 @@ impl<Clock, Input> WorthQueryReconstructedTemporalIntent<Clock, Input> {
         &self.candidate
     }
 
+    pub(in crate::domain_computation::primary_graph::conditional_operation) fn scheduled_due_coordinate(
+        &self,
+    ) -> u64 {
+        self.scheduled_due_coordinate
+    }
+
     pub(in crate::domain_computation::primary_graph::conditional_operation) fn source_record(
         &self,
     ) -> worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts {
         self.source_record
+    }
+
+    pub(in crate::domain_computation::primary_graph::conditional_operation) fn rescheduled(
+        &self,
+        candidate: WorthQueryTemporalIntentCandidate<Clock, Input>,
+        scheduled_due_coordinate: u64,
+        retained_memory: Option<worth_execution::ExecutionMemoryReservation>,
+    ) -> Self {
+        Self {
+            lifecycle_token: Default::default(),
+            candidate,
+            scheduled_due_coordinate,
+            source_record: self.source_record,
+            _retained_memory: retained_memory,
+        }
     }
 }
 
@@ -114,12 +137,15 @@ where
                     entity.local_slot.0,
                     entity.generation.0,
                 );
+            let scheduled_due_coordinate = candidate.due().nanoseconds();
             Ok((
                 identity,
                 WorthQueryReconstructedTemporalIntent {
                     lifecycle_token: Default::default(),
                     candidate,
+                    scheduled_due_coordinate,
                     source_record,
+                    _retained_memory: None,
                 },
             ))
         })

@@ -10,7 +10,16 @@ pub struct MemberRequestExecution<'authority> {
 impl<'authority> QueryRequestExecution<'authority> {
     fn descendant(&self) -> Self {
         let form = match &self.form {
-            Form::Leased { lease, policy } | Form::Serial { lease, policy } => Form::Leased {
+            Form::Leased {
+                lease,
+                policy,
+                caller_serial,
+            }
+            | Form::Serial {
+                lease,
+                policy,
+                caller_serial,
+            } => Form::Leased {
                 lease: lease
                     .as_ref()
                     .map(|lease| {
@@ -18,6 +27,7 @@ impl<'authority> QueryRequestExecution<'authority> {
                     })
                     .map_err(|denial| *denial),
                 policy: *policy,
+                caller_serial: *caller_serial,
             },
         };
         Self {

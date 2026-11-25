@@ -75,6 +75,7 @@ impl<
         LifecycleField,
         LifecycleValue,
         Authorization,
+        DueField,
     > WorthQueryPendingConditionalOperation<Schema>
     for PendingTemporalOperation<
         WorthQueryInstalledTemporalConditionalOperation<
@@ -121,6 +122,7 @@ impl<
             LifecycleField,
             LifecycleValue,
             Authorization,
+            DueField,
         >,
     >
 where
@@ -199,6 +201,7 @@ where
     LifecycleValue: Clone + Send + Sync + 'static,
     Authorization: super::WorthQueryTemporalOperationAuthorization<Schema, ApplicationOperation, Input, Scope>
         + 'static,
+    DueField: super::operation_invocation::WorthQueryTemporalDueFieldWriter<Schema, IntentEntity>,
 {
     fn binding_identity(&self) -> &str {
         self.binding_identity.support_identity()
@@ -270,6 +273,7 @@ where
             pending_invalidations: super::lifecycle::WorthQueryPendingGranularInvalidations::empty(
             ),
             inactive_bindings: Default::default(),
+            inactive_reclaim_pending: false,
             next_evaluation_binding_ordinal: 1,
         }))
     }

@@ -142,6 +142,12 @@ pub trait ProductRuntimeInternalPort: Sized {
         retain_returned_outcome: bool,
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial>;
+
+    fn with_execution_request_advancement<R>(
+        &self,
+        caller: worth_execution::ExecutionRequest<'_, '_>,
+        body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+    ) -> Result<R, WorthQueryAdvancementDenial>;
 }
 
 impl ProductRuntimeInternalPort for WorthQueryProductRuntime {
@@ -341,5 +347,13 @@ impl ProductRuntimeInternalPort for WorthQueryProductRuntime {
             retain_returned_outcome,
             body,
         )
+    }
+
+    fn with_execution_request_advancement<R>(
+        &self,
+        caller: worth_execution::ExecutionRequest<'_, '_>,
+        body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+    ) -> Result<R, WorthQueryAdvancementDenial> {
+        Self::with_execution_request_advancement(self, caller, body)
     }
 }

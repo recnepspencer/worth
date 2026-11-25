@@ -330,6 +330,7 @@ pub use crate::source_custody::{
     WorthQuerySourceCustody, WorthQuerySourceCustodyPending, WorthQuerySourceCustodyPhase,
     WorthQuerySourceCustodyStep, WorthQuerySourceCustodyWithdrawal,
 };
+pub mod temporal_contribution;
 pub use worth_foundational::facade::{
     CanonicalDigestId, DurableOwnerFamily, UncleanRecoveryUnsupported,
 };

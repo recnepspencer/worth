@@ -16,6 +16,8 @@ pub(in crate::domain_computation::primary_graph) struct ConditionalRoutes<Schema
     pub(in crate::domain_computation::primary_graph) operations: Mutex<
         super::super::conditional_operation::WorthQueryConditionalOperationRegistry<Schema>,
     >,
+    pub(in crate::domain_computation::primary_graph) refuse_next_decision_publication:
+        std::sync::atomic::AtomicBool,
 }
 
 impl<Schema> ConditionalRoutes<Schema> {
@@ -27,6 +29,7 @@ impl<Schema> ConditionalRoutes<Schema> {
         Self {
             definitions: RwLock::new(Default::default()),
             operations: Mutex::new(operations),
+            refuse_next_decision_publication: std::sync::atomic::AtomicBool::new(false),
         }
     }
 }

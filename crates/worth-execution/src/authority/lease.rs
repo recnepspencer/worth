@@ -51,6 +51,7 @@ pub(in crate::authority) use memory::LeaseMemory;
 pub(crate) use reservation::SlotRefusal;
 use reservation::{ClaimSlot, RunInline};
 pub(crate) use stage_origin::StageOrigin;
+pub(in crate::authority) use worker_context::active_worker_serial_memory;
 use worker_context::ACTIVE_WORKER;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -127,17 +128,34 @@ struct Ledger {
     active_workers: usize,
     charged_memory_bytes: u64,
     nodes: HashMap<u64, NodeUsage>,
+    serial_budgets: std::collections::BTreeMap<u64, super::SerialMemoryBudget>,
 }
 
 impl Ledger {
+    /// Retires a node's usage entry and any attached serial budget once neither
+    /// workers nor memory remain charged on it.
+    fn retire_if_idle(&mut self, id: u64) {
+        let idle = self
+            .nodes
+            .get(&id)
+            .is_some_and(|usage| usage.active_workers == 0 && usage.charged_memory_bytes == 0);
+        if idle {
+            self.nodes.remove(&id);
+            self.serial_budgets.remove(&id);
+        }
+    }
+
     /// An idle authority owns no usage backing. Retire the table after the
     /// complete transition and destroy it after releasing the ledger lock.
     fn take_unused_nodes(&mut self) -> Option<HashMap<u64, NodeUsage>> {
         // Logical insertion capacity may be zero while deleted buckets still
         // own a table. Only emptiness decides when the owner can hand it off.
-        self.nodes
-            .is_empty()
-            .then(|| std::mem::take(&mut self.nodes))
+        if self.nodes.is_empty() {
+            debug_assert!(self.serial_budgets.is_empty());
+            Some(std::mem::take(&mut self.nodes))
+        } else {
+            None
+        }
     }
 }
 
@@ -155,6 +173,7 @@ pub(crate) struct LeaseNode {
     max_workers: usize,
     posture: ExecutionPosture,
     charged_memory_bytes: Option<u64>,
+    serial_budget: Option<super::SerialMemoryBudget>,
     deadline: Option<crate::MonotonicDeadline>,
     cancellation: CancellationToken,
 }
@@ -190,6 +209,15 @@ impl<'a> ExecutionResourceLease<'a> {
             node = current.parent.as_deref();
         }
         lineage
+    }
+
+    pub(in crate::authority) fn lineage_serial_budget(&self) -> Option<&super::SerialMemoryBudget> {
+        self.lineage_serial_budget_node().map(|(_, budget)| budget)
+    }
+
+    pub(super) fn lineage_serial_budget_node(&self) -> Option<(u64, &super::SerialMemoryBudget)> {
+        std::iter::successors(Some(self.node.as_ref()), |node| node.parent.as_deref())
+            .find_map(|node| node.serial_budget.as_ref().map(|budget| (node.id, budget)))
     }
 
     /// Reuse the invoking worker's slot for nested work. The child records one
@@ -323,6 +351,14 @@ impl Drop for ResourceReservation {
             .unwrap_or_else(|error| error.into_inner());
         ledger.active_workers -= self.process_workers;
         if let Some(memory) = &self.memory {
+            if memory.bytes != 0
+                && let Some(budget) = memory
+                    .lineage
+                    .iter()
+                    .find_map(|id| ledger.serial_budgets.get(id))
+            {
+                let _ = budget.resize(memory.bytes, 0);
+            }
             ledger.charged_memory_bytes -= memory.bytes;
         }
         for id in &self.worker_lineage {
@@ -337,12 +373,7 @@ impl Drop for ResourceReservation {
         }
         let memory_nodes = self.memory.iter().flat_map(|memory| &memory.lineage);
         for id in self.worker_lineage.iter().chain(memory_nodes) {
-            let Some(usage) = ledger.nodes.get(id) else {
-                continue;
-            };
-            if usage.active_workers == 0 && usage.charged_memory_bytes == 0 {
-                ledger.nodes.remove(id);
-            }
+            ledger.retire_if_idle(*id);
         }
         let retired = ledger.take_unused_nodes();
         drop(ledger);

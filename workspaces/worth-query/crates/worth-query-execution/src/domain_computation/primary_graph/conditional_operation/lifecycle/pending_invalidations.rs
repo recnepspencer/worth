@@ -20,7 +20,7 @@ use crate::domain_computation::primary_graph::WorthQueryGranularInvalidationCove
 /// `RefreshAll`, which absorbs everything owed after it.
 pub(in crate::domain_computation::primary_graph::conditional_operation) struct WorthQueryPendingGranularInvalidations
 {
-    direct: Option<BridgeGranularInvalidationDelivery>,
+    direct: Vec<BridgeGranularInvalidationDelivery>,
     owed: Vec<BridgeGranularInvalidationDelivery>,
     /// `owed[..carried]` was already owed before the current observation.
     carried: usize,
@@ -37,7 +37,7 @@ impl WorthQueryPendingGranularInvalidations {
     pub(in crate::domain_computation::primary_graph::conditional_operation) const fn empty() -> Self
     {
         Self {
-            direct: None,
+            direct: Vec::new(),
             owed: Vec::new(),
             carried: 0,
             coverage: WorthQueryGranularInvalidationCoverage::Exact,
@@ -45,19 +45,26 @@ impl WorthQueryPendingGranularInvalidations {
     }
 
     pub(super) fn retain_direct(&mut self, receipt: &BridgeCorrespondenceDeliveryReceipt) {
+        let incoming = receipt.change_set();
         assert!(
-            self.direct.is_none(),
+            !self.direct.iter().any(|existing| {
+                let change = existing.correspondence_receipt().change_set();
+                change.commit_identity() == incoming.commit_identity()
+                    && change.dependency().dependency_ordinal()
+                        == incoming.dependency().dependency_ordinal()
+            }),
             "one exact product occurrence can retain only its unique performed change"
         );
-        self.direct = Some(BridgeGranularInvalidationDelivery::direct(receipt));
+        self.direct
+            .push(BridgeGranularInvalidationDelivery::direct(receipt));
     }
 
-    /// The Query-performed delivery the next observation must not deliver
+    /// The Query-performed deliveries the next observation must not deliver
     /// again and must reconsider retained wakes against.
     pub(in crate::domain_computation::primary_graph::conditional_operation) fn direct(
         &self,
     ) -> &[BridgeGranularInvalidationDelivery] {
-        self.direct.as_slice()
+        &self.direct
     }
 
     /// Starts an observation: everything still owed was carried past a
@@ -76,9 +83,36 @@ impl WorthQueryPendingGranularInvalidations {
         }
     }
 
-    /// Owes the reconsidered direct delivery alongside consumed ones.
+    /// Removes and returns only the direct deliveries whose exact commit has
+    /// just been passed by the observation cursor, leaving later preperformed
+    /// commits retained as deduplication evidence across bounded partial scans.
+    pub(in crate::domain_computation::primary_graph::conditional_operation) fn take_direct_for_commit(
+        &mut self,
+        commit: worth_relational::facade::history::CommitId,
+    ) -> Vec<BridgeGranularInvalidationDelivery> {
+        let target =
+            worth_runtime_bridge::facade::TruthCommitIdentity::from_relational_commit_id(commit.0);
+        let mut matched = Vec::new();
+        let mut remaining = Vec::new();
+        for delivery in std::mem::take(&mut self.direct) {
+            if delivery
+                .correspondence_receipt()
+                .change_set()
+                .commit_identity()
+                == &target
+            {
+                matched.push(delivery);
+            } else {
+                remaining.push(delivery);
+            }
+        }
+        self.direct = remaining;
+        matched
+    }
+
+    /// Owes the reconsidered direct deliveries alongside consumed ones.
     pub(super) fn owe_direct(&mut self) {
-        if let Some(delivery) = self.direct.take() {
+        for delivery in std::mem::take(&mut self.direct) {
             self.owe_one(delivery);
         }
     }
@@ -129,8 +163,50 @@ impl WorthQueryPendingGranularInvalidations {
         }
     }
 
+    /// Restores released invalidations when an accepted observation cannot
+    /// complete persistence and therefore cannot return a receipt to the caller.
+    pub(super) fn restore_released(&mut self, released: WorthQueryReleasedGranularInvalidations) {
+        if released.coverage == WorthQueryGranularInvalidationCoverage::RefreshAll {
+            self.refresh_all();
+            return;
+        }
+        self.owe(released.deliveries);
+    }
+
+    /// Transfers all owed and direct invalidation deliveries from a superseded
+    /// same-branch predecessor into this successor binding so no restored or
+    /// cursor-advanced delivery is ever stranded on branch reselection, while
+    /// preserving direct preperformed-delivery evidence in `self.direct` so
+    /// `authoritative_reconsideration` skips duplicate Bridge delivery until
+    /// the inherited cursor passes those commits.
+    pub(super) fn absorb_predecessor(&mut self, predecessor: &mut Self) {
+        for direct in std::mem::take(&mut predecessor.direct) {
+            let incoming = direct.correspondence_receipt().change_set();
+            let duplicate = self.direct.iter().any(|existing| {
+                let change = existing.correspondence_receipt().change_set();
+                change.commit_identity() == incoming.commit_identity()
+                    && change.dependency().dependency_ordinal()
+                        == incoming.dependency().dependency_ordinal()
+            });
+            if !duplicate {
+                self.direct.push(direct);
+            }
+        }
+        let released = predecessor.release();
+        if released.coverage == WorthQueryGranularInvalidationCoverage::RefreshAll {
+            self.refresh_all();
+        } else {
+            self.owe(released.deliveries);
+        }
+    }
+
+    pub(super) fn has_owed(&self) -> bool {
+        self.retained_delivery_count() > 0
+            || self.coverage == WorthQueryGranularInvalidationCoverage::RefreshAll
+    }
+
     pub(super) fn retained_delivery_count(&self) -> usize {
-        usize::from(self.direct.is_some()) + self.owed.len()
+        self.direct.len() + self.owed.len()
     }
 }
 
@@ -155,4 +231,29 @@ fn snapshot_version(delivery: &BridgeGranularInvalidationDelivery) -> Option<u64
         .snapshot_identity()
         .relational_snapshot_parts()
         .map(|parts| parts.version_id())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn absorb_predecessor_propagates_refresh_all_and_clears_predecessor() {
+        let mut predecessor = WorthQueryPendingGranularInvalidations::empty();
+        assert!(!predecessor.has_owed());
+        predecessor.refresh_all();
+        assert!(predecessor.has_owed());
+
+        let mut successor = WorthQueryPendingGranularInvalidations::empty();
+        successor.absorb_predecessor(&mut predecessor);
+        assert!(!predecessor.has_owed());
+        assert!(successor.has_owed());
+
+        let released = successor.release();
+        assert_eq!(
+            released.coverage,
+            WorthQueryGranularInvalidationCoverage::RefreshAll
+        );
+        assert!(!successor.has_owed());
+    }
 }

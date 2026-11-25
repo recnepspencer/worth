@@ -20,11 +20,13 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) struct W
         WorthQueryApplicationEntityIdentity<Schema, IntentEntity>,
     pub(in crate::domain_computation::primary_graph::conditional_operation) expected_revision:
         RevisionValue,
+    pub(in crate::domain_computation::primary_graph::conditional_operation) expected_due_nanoseconds:
+        u64,
 }
 
 #[rustfmt::skip]
-impl<Schema, Operation, Input, Scope, Invoker, IntentEntity, IdentityField, IdentityValue, RevisionField, RevisionValue, LifecycleField, LifecycleValue, Authorization>
-    WorthQueryTemporalOperationExecution<Schema, Operation, Input, Scope, Invoker, IntentEntity, IdentityField, IdentityValue, RevisionField, RevisionValue, LifecycleField, LifecycleValue, Authorization>
+impl<Schema, Operation, Input, Scope, Invoker, IntentEntity, IdentityField, IdentityValue, RevisionField, RevisionValue, LifecycleField, LifecycleValue, Authorization, DueField>
+    WorthQueryTemporalOperationExecution<Schema, Operation, Input, Scope, Invoker, IntentEntity, IdentityField, IdentityValue, RevisionField, RevisionValue, LifecycleField, LifecycleValue, Authorization, DueField>
 where
     Invoker: WorthQueryTemporalOperationInvoker<Schema, Operation, Input, Scope>,
     IdentityField: worth_query_declaration::facade::application_schema::fragment::RecordSelection<Entity = IntentEntity, Value = IdentityValue>,
@@ -41,6 +43,7 @@ _execution: &worth_execution::ExecutionRequest<'_, '_>,
         reader: &mut WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>,
         identity: IdentityValue,
         expected_revision: &RevisionValue,
+        expected_due_nanoseconds: u64,
     ) -> Result<bool, WorthQueryTemporalReentryDenial>
     where
         Schema: ApplicationSchema,
@@ -50,6 +53,7 @@ _execution: &worth_execution::ExecutionRequest<'_, '_>,
         RevisionValue: Clone,
         LifecycleField::Binding: ApplicationReadableScalarValueBinding<Value = LifecycleValue>,
         LifecycleValue: Clone,
+        DueField: super::WorthQueryTemporalDueFieldWriter<Schema, IntentEntity>,
     {
         let _read_observation = super::super::read_observation::IntentReadObservation::enter();
         let intent = match reader.resolve_entity(self.identity_field, identity) {
@@ -86,7 +90,13 @@ _execution: &worth_execution::ExecutionRequest<'_, '_>,
         }
         Ok(())
         })();
-        Ok(currentness.is_ok())
+        if currentness.is_err() {
+            return Ok(false);
+        }
+        self.due_field
+            .observe_and_verify_due(reader, &intent, expected_due_nanoseconds)
+            .map_err(super::super::WorthQueryConditionalReentryFailure::Invocation)?;
+        Ok(true)
     }
 
     pub(in crate::domain_computation::primary_graph::conditional_operation) fn resolve_current_intent(
@@ -95,6 +105,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         product: &WorthQuerySelectedProductOperation<'_, Schema>,
         record_identity: &worth_foundational::facade::AspectValue,
         revision: u64,
+        expected_due_nanoseconds: u64,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     ) -> Result<Option<WorthQueryCurrentTemporalIntent<Schema, IntentEntity, IdentityValue, RevisionValue>>, WorthQueryTemporalReentryDenial>
     where
@@ -105,6 +116,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         RevisionValue: Clone,
         LifecycleField::Binding: ApplicationReadableScalarValueBinding<Value = LifecycleValue>,
         LifecycleValue: Clone,
+        DueField: super::WorthQueryTemporalDueFieldWriter<Schema, IntentEntity>,
     {
         let _read_observation = super::super::read_observation::IntentReadObservation::enter();
         let identity_value = IdentityField::Binding::decode(record_identity)
@@ -122,14 +134,15 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         let current = self
             .invariant
             .project_operation_on_product::<Operation, _>(execution, product.product(), |reader| {
-                self.observe_current_intent(execution, reader, identity_value.clone(), &expected_revision)
-            }, worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+                self.observe_current_intent(execution, reader, identity_value.clone(), &expected_revision, expected_due_nanoseconds)
+            }, execution.allocation_policy())
         .map_err(WorthQueryTemporalReentryDenial::from_invariant)?;
         let is_current = current.into_output()?;
         Ok(is_current.then_some(WorthQueryCurrentTemporalIntent {
             identity_value,
             entity,
             expected_revision,
+            expected_due_nanoseconds,
         }))
     }
 }

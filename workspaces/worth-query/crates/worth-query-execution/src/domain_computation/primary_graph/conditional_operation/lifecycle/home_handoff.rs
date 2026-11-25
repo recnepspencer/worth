@@ -4,7 +4,6 @@ use crate::domain_computation::primary_graph::{
     WorthQueryHomeRetirementDenial as Denial, WorthQueryHomeRetirementOwner as Owner,
     WorthQueryPrimaryGraphApplicationRuntime,
 };
-use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 
 impl<Binding, Reconstruction, Execution, Clock, Input>
     WorthQueryInstalledTemporalOperation<Binding, Reconstruction, Execution, Clock, Input>
@@ -13,6 +12,7 @@ impl<Binding, Reconstruction, Execution, Clock, Input>
         &mut self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        bridge: &crate::domain_computation::primary_graph::managed_bridge::conditional_execution::ConditionalExecutionOwner<'_>,
     ) -> Result<(), Denial> {
         for wake in self.retained_wakes.iter_mut().chain(
             self.inactive_bindings
@@ -21,12 +21,8 @@ impl<Binding, Reconstruction, Execution, Clock, Input>
         ) {
             prepare_wake(request, runtime, wake)?;
         }
-        let owner = runtime.inner.runtime.bridge_ref().conditional_operations();
-        let bridge = owner
-            .read()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if let (Some(affinity), Some(clock)) = (&self.active_affinity, &self.managed_clock) {
-            release_clock(&bridge, affinity, clock)?;
+            release_clock(bridge, affinity, clock)?;
         }
         self.managed_clock = None;
         self.active_affinity = None;
@@ -36,7 +32,7 @@ impl<Binding, Reconstruction, Execution, Clock, Input>
                 .inactive_bindings
                 .get(&key)
                 .expect("original inactive binding");
-            release_clock(&bridge, &binding.affinity, &binding.managed_clock)?;
+            release_clock(bridge, &binding.affinity, &binding.managed_clock)?;
             self.inactive_bindings.remove(&key);
         }
         self.retained_wakes.clear();
@@ -82,11 +78,19 @@ fn prepare_wake<Schema: worth_query_installation::facade::ApplicationSchema>(
         | Decision::OperationRetiredNoEffect(_) => Ok(()),
         Decision::OperationRetryable(_, _)
         | Decision::OperationCommitRetryable(_, _)
-        | Decision::OperationProductStale(_, _)
-        | Decision::OperationIndeterminate(_, _) => match wake.continuation_identity {
+        | Decision::OperationProductStale(_, _) => match wake.continuation_identity {
             Some(_) => Ok(()),
             None => Err(Denial::Unsupported(Owner::ConditionalRuntime)),
         },
+        Decision::OperationIndeterminate(_, _) => {
+            if wake.continuation_identity.is_some()
+                || wake.original_retry_finish_confirmed == Some(true)
+            {
+                Ok(())
+            } else {
+                Err(Denial::Unsupported(Owner::ConditionalRuntime))
+            }
+        }
         Decision::OperationCleanupRequired(_, cleanup) => {
             if cleanup.logical_discharged() || wake.continuation_identity.is_some() {
                 Ok(())

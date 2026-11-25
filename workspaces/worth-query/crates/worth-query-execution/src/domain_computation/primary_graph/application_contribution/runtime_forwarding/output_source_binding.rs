@@ -194,6 +194,14 @@ mod domain_computation_primary_graph_application_contribution_request_execution_
             self.inner
                 .with_funded_host_advancement::<R>(allocation_policy, body)
         }
+        pub fn with_execution_request_advancement<R>(
+            &self,
+            execution: worth_execution::ExecutionRequest<'_, '_>,
+            body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+        ) -> Result<R, WorthQueryAdvancementDenial> {
+            self.inner
+                .with_execution_request_advancement::<R>(execution, body)
+        }
         pub fn with_funded_application_advancement<R>(
             &self,
             request: &WorthQueryRequestScope,

@@ -231,24 +231,24 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryMandatoryReviewAuthorizationDenial, WorthQueryMandatoryReviewOutcome,
     WorthQueryMandatoryReviewProgram, WorthQueryMutationHandlerExecutionReport,
     WorthQueryMutationHandlerProjectionWork, WorthQueryMutationHandlerWork,
-    WorthQueryMutationPreconditionComparisonEvidence, WorthQueryObservedApplicationRelation,
-    WorthQueryObservedOutputAvailability, WorthQueryObservedResultSet, WorthQueryObservedSource,
-    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialIdentity,
-    WorthQueryOperationAuthorizationDenialKind, WorthQueryOperationAuthorizationRefusalKind,
-    WorthQueryOperationBodyAssessmentDenial, WorthQueryOperationBodyDecision,
-    WorthQueryOperationBodyDenial, WorthQueryOperationBodyRequirementFinding,
-    WorthQueryOperationBodyRequirementStatus, WorthQueryOperationBodyRequirementTarget,
-    WorthQueryOperationProjectionDenial, WorthQueryOperationProjectionDenialKind,
-    WorthQueryOperationScopeBinding, WorthQueryOperationScopeEntityBinding,
-    WorthQueryOracleHistoryPageForTest, WorthQueryOracleOccurrenceForTest,
-    WorthQueryOracleSignalMovementForTest, WorthQueryOrderedProgramAdoptionCoverage,
-    WorthQueryOrdinaryApplicationRead, WorthQueryOrdinaryReadBatch, WorthQueryOrdinaryReadMetadata,
-    WorthQueryOrdinaryReadProjection, WorthQueryOrdinaryReadVersion,
-    WorthQueryOriginalOutputDemand, WorthQueryOutputAvailabilityDenial,
-    WorthQueryOutputAvailabilityState, WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial,
-    WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandNotifications,
-    WorthQueryOutputDemandRecoveryPosture, WorthQueryOutputDemandSettlement,
-    WorthQueryOutputReadCleanup, WorthQueryOutputReadCloseDenial,
+    WorthQueryMutationPreconditionComparisonEvidence, WorthQueryNoTemporalDueField,
+    WorthQueryObservedApplicationRelation, WorthQueryObservedOutputAvailability,
+    WorthQueryObservedResultSet, WorthQueryObservedSource, WorthQueryOperationAuthorizationDenial,
+    WorthQueryOperationAuthorizationDenialIdentity, WorthQueryOperationAuthorizationDenialKind,
+    WorthQueryOperationAuthorizationRefusalKind, WorthQueryOperationBodyAssessmentDenial,
+    WorthQueryOperationBodyDecision, WorthQueryOperationBodyDenial,
+    WorthQueryOperationBodyRequirementFinding, WorthQueryOperationBodyRequirementStatus,
+    WorthQueryOperationBodyRequirementTarget, WorthQueryOperationProjectionDenial,
+    WorthQueryOperationProjectionDenialKind, WorthQueryOperationScopeBinding,
+    WorthQueryOperationScopeEntityBinding, WorthQueryOracleHistoryPageForTest,
+    WorthQueryOracleOccurrenceForTest, WorthQueryOracleSignalMovementForTest,
+    WorthQueryOrderedProgramAdoptionCoverage, WorthQueryOrdinaryApplicationRead,
+    WorthQueryOrdinaryReadBatch, WorthQueryOrdinaryReadMetadata, WorthQueryOrdinaryReadProjection,
+    WorthQueryOrdinaryReadVersion, WorthQueryOriginalOutputDemand,
+    WorthQueryOutputAvailabilityDenial, WorthQueryOutputAvailabilityState,
+    WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
+    WorthQueryOutputDemandNotifications, WorthQueryOutputDemandRecoveryPosture,
+    WorthQueryOutputDemandSettlement, WorthQueryOutputReadCleanup, WorthQueryOutputReadCloseDenial,
     WorthQueryOutputReadinessDeliveryEvidence, WorthQueryOutputSettlementPosture,
     WorthQueryOutputSettlementProvenanceDenial, WorthQueryOutputSourceEvidence,
     WorthQueryOutputSourceReplay, WorthQueryPendingSourceExpectation,
@@ -289,8 +289,9 @@ pub use crate::domain_computation::primary_graph::{
     WorthQuerySelectedProgramInspectionDenial, WorthQuerySourceExpectationDenial,
     WorthQuerySourceExpectationDenialKind, WorthQueryStoppedBranchSetAdoption,
     WorthQueryStorageRetentionDenial, WorthQueryStorageRetentionProgress,
-    WorthQueryStorageRetentionStop, WorthQuerySuspendedGeneratedOutput,
-    WorthQueryTemporalInvocationFailure, WorthQueryTemporalInvocationFailureKind,
+    WorthQueryStorageRetentionStop, WorthQuerySuspendedGeneratedOutput, WorthQueryTemporalDueField,
+    WorthQueryTemporalDueFieldWriter, WorthQueryTemporalInvocationFailure,
+    WorthQueryTemporalInvocationFailureKind, WorthQueryTemporalOccurrenceOutcome,
     WorthQueryTemporalOperationAuthorization, WorthQueryTemporalOperationExecution,
     WorthQueryTemporalOperationInvoker, WorthQueryTemporalPrincipalAdmission,
     WorthQueryTemporalPrincipalFailure, WorthQueryTemporalPrincipalFailureKind,
@@ -363,20 +364,17 @@ pub use {
 pub use crate::domain_computation::invalidation_equivalence_control::WorthQueryInvalidationEquivalenceForTest;
 
 /// Native delivery causes carried by the Query host audience.
-pub use worth_runtime_bridge::facade::BridgeConditionalDenialKind;
-pub use worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryStop;
-
+pub use worth_runtime_bridge::facade::{
+    BridgeConditionalDenialKind, BridgeCorrespondenceDeliveryStop,
+    BridgeExecutionBasisFinalizationFailureKind,
+};
 mod managed_cleanup;
 pub use managed_cleanup::*;
-
 mod product;
 pub use crate::domain_computation::primary_graph::WorthQueryManagedPhaseStorageForTest;
 pub use product::*;
-
 mod read_denials;
 pub use read_denials::*;
-
-pub use worth_runtime_bridge::facade::BridgeExecutionBasisFinalizationFailureKind;
 
 /// Original field refusals carried through primary-graph installation.
 pub use worth_foundational::facade::{ContractValidationDenial, PortableAspectReadmissionDenial};
