@@ -122,7 +122,7 @@ fn assert_nonblocking_trickle_and_reclamation(
     let limits = RemoteServerLimits::default()
         .with_max_active_watches(1, 1)
         .unwrap()
-        .with_request_timeout(Duration::from_millis(200))
+        .with_request_timeout(Duration::from_millis(240))
         .unwrap();
     let cfg = make_auth_config().with_limits(limits);
     let mut server = home
@@ -147,34 +147,46 @@ fn assert_multi_chunk_trickle_expires(
     server: &mut WorthQueryRemoteServer<'_, SharedProjectSchema, SharedProjectProgram>,
 ) {
     let addr = server.local_addr();
-    // Multi-chunk trickle: inter-chunk gaps (75ms) stay below request_timeout (200ms),
-    // proving later chunks NEVER reset the absolute frame_deadline.
+    // Drive the server after EVERY intermediate chunk while the original 240ms
+    // frame_deadline is still live, proving chunks 2 & 3 are actively consumed
+    // without resetting the absolute deadline.
     let mut trickle = TcpStream::connect(addr).unwrap();
     trickle.write_all(b"WQS1").unwrap();
     trickle.flush().unwrap();
     let start = Instant::now();
-    assert!(!server.serve_once(Duration::from_millis(25)).unwrap());
-    assert!(
-        start.elapsed() < Duration::from_millis(250),
-        "partial frame stalled serve_once for {:?}",
-        start.elapsed()
-    );
+    assert!(!server.serve_once(Duration::from_millis(15)).unwrap());
+    assert!(start.elapsed() < Duration::from_millis(180));
     assert_eq!(server.active_connection_count(), 1);
 
-    std::thread::sleep(Duration::from_millis(75));
+    std::thread::sleep(Duration::from_millis(60));
     trickle.write_all(b"\x01\x01").unwrap();
     trickle.flush().unwrap();
-    assert!(!server.serve_once(Duration::from_millis(25)).unwrap());
+    assert!(!server.serve_once(Duration::from_millis(10)).unwrap());
+    assert_eq!(server.active_connection_count(), 1);
 
-    std::thread::sleep(Duration::from_millis(75));
-    let _ = trickle.write_all(b"\x00\x00");
-    let _ = trickle.flush();
     std::thread::sleep(Duration::from_millis(60));
+    trickle.write_all(b"\x00\x00").unwrap();
+    trickle.flush().unwrap();
+    let last_chunk_at = Instant::now();
+    assert!(!server.serve_once(Duration::from_millis(10)).unwrap());
+    assert_eq!(
+        server.active_connection_count(),
+        1,
+        "chunk 3 must be read while original 240ms deadline is still live"
+    );
+
+    // Wait just past the original 240ms deadline, strictly BEFORE a renewed 240ms
+    // deadline from chunk 3 could elapse.
+    std::thread::sleep(Duration::from_millis(115));
     let _ = server.serve_pending().unwrap();
+    assert!(
+        last_chunk_at.elapsed() < Duration::from_millis(230),
+        "expiry check must happen before a renewed 240ms deadline from chunk 3"
+    );
     assert_eq!(
         server.active_connection_count(),
         0,
-        "multi-chunk trickle connection MUST expire at absolute frame_deadline without reset"
+        "multi-chunk trickle connection MUST expire at original frame_deadline without reset"
     );
     drop(trickle);
 }

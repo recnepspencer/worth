@@ -360,11 +360,15 @@ opening a second writer on the Directory:
   your declared grant/revoke mutation intents, read/watch capabilities, and
   governed live query.
 - **Native commit-backed grants and revocations:**
-  `home.grant_scope_access(scope, collaborator_principal, ScopeAccess::read_and_watch())?`
-  and `home.revoke_scope_access(grant.id())?` execute your declared mutation
+  `WorthQueryApplicationHome::grant_scope_access` and
+  `WorthQueryApplicationHome::revoke_scope_access` execute your declared mutation
   intents directly through WORTH's own mutation runtime and refuse unless a
   published commit receipt with non-zero durable record changes is produced.
-  Grants and revocations survive graceful close and reopen.
+  Grants and revocations survive graceful close and reopen; on reopen, prior
+  watch sessions terminate (`WatchNotFound`) and earlier incarnation-pinned
+  tokens refuse with `StaleIncarnation`, while valid unpinned tokens bound to
+  the same `HomeIdentity` continue to authenticate unless
+  `RemoteAuthConfig::with_require_incarnation_pin(true)` is set.
 - **Loopback-only TCP trust boundary:** `home.serve_remote(bind_addr, auth_config)?`
   and `WorthQueryRemoteClient::connect(addr, token)?` both fail closed with
   `SharedAccessDenial::NonLoopbackAddressRefused` for any non-loopback address,

@@ -9,10 +9,11 @@ use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use super::auth::RemoteAuthToken;
 use super::binding::{RemoteBinaryCodec, WorthQuerySharedAccessProgram};
 use super::capped_writer::{
-    decode_refusal_payload, decode_rows_payload, encode_scope_request, encode_watch_id_request,
+    decode_refusal_payload, decode_rows_payload, encode_scope_request_frame,
+    encode_watch_id_request_frame,
 };
 use super::denial::{ProtocolRefusalReason, SharedAccessDenial};
-use super::framing::{read_bounded_frame, write_bounded_frame, BinaryReader, FrameKind};
+use super::framing::{read_bounded_frame, write_raw_frame, BinaryReader, FrameKind};
 use super::types::{RemoteClientLimits, RemoteWatchId, RemoteWatchPollOutcome};
 
 /// Authenticated collaborator client connected to a single-owner loopback remote Home.
@@ -91,10 +92,13 @@ impl WorthQueryRemoteClient {
         Schema: ApplicationSchema + 'static,
         Program: WorthQuerySharedAccessProgram<Schema>,
     {
-        let max = self.limits.max_frame_bytes();
-        let payload =
-            encode_scope_request(&self.auth_token, &Program::scope_key(scope), query, max)?;
-        write_bounded_frame(&mut self.stream, FrameKind::QueryRequest, &payload, max)
+        let frame = encode_scope_request_frame(
+            (FrameKind::QueryRequest, self.limits.max_frame_bytes()),
+            &self.auth_token,
+            &Program::scope_key(scope),
+            query,
+        )?;
+        write_raw_frame(&mut self.stream, &frame)
     }
 
     /// Receives and decodes the response for a previously sent remote query.
@@ -143,16 +147,14 @@ impl WorthQueryRemoteClient {
         Schema: ApplicationSchema + 'static,
         Program: WorthQuerySharedAccessProgram<Schema>,
     {
-        let mut watch_stream = connect_loopback_stream(self.addr, self.limits)?;
-        let max = self.limits.max_frame_bytes();
-        let payload =
-            encode_scope_request(&self.auth_token, &Program::scope_key(scope), query, max)?;
-        write_bounded_frame(
-            &mut watch_stream,
-            FrameKind::WatchOpenRequest,
-            &payload,
-            max,
+        let frame = encode_scope_request_frame(
+            (FrameKind::WatchOpenRequest, self.limits.max_frame_bytes()),
+            &self.auth_token,
+            &Program::scope_key(scope),
+            query,
         )?;
+        let mut watch_stream = connect_loopback_stream(self.addr, self.limits)?;
+        write_raw_frame(&mut watch_stream, &frame)?;
         self.pending_watch_stream = Some(watch_stream);
         Ok(())
     }
@@ -201,13 +203,13 @@ impl WorthQueryRemoteClient {
         &mut self,
         watch_id: RemoteWatchId,
     ) -> Result<(), SharedAccessDenial> {
-        let payload = encode_watch_id_request(&self.auth_token, watch_id);
-        write_bounded_frame(
-            &mut self.stream,
+        let frame = encode_watch_id_request_frame(
             FrameKind::WatchPollRequest,
-            &payload,
+            &self.auth_token,
+            watch_id,
             self.limits.max_frame_bytes(),
-        )
+        )?;
+        write_raw_frame(&mut self.stream, &frame)
     }
 
     /// Receives the response for a `send_watch_poll_id` request.
@@ -284,13 +286,13 @@ where
     }
 
     pub fn send_poll(&mut self) -> Result<(), SharedAccessDenial> {
-        let payload = encode_watch_id_request(&self.auth_token, self.id);
-        write_bounded_frame(
-            &mut self.stream,
+        let frame = encode_watch_id_request_frame(
             FrameKind::WatchPollRequest,
-            &payload,
+            &self.auth_token,
+            self.id,
             self.limits.max_frame_bytes(),
-        )
+        )?;
+        write_raw_frame(&mut self.stream, &frame)
     }
 
     pub fn recv_poll(
@@ -305,13 +307,13 @@ where
     }
 
     pub fn send_close(&mut self) -> Result<(), SharedAccessDenial> {
-        let payload = encode_watch_id_request(&self.auth_token, self.id);
-        write_bounded_frame(
-            &mut self.stream,
+        let frame = encode_watch_id_request_frame(
             FrameKind::WatchCloseRequest,
-            &payload,
+            &self.auth_token,
+            self.id,
             self.limits.max_frame_bytes(),
-        )
+        )?;
+        write_raw_frame(&mut self.stream, &frame)
     }
 
     pub fn recv_close(mut self) -> Result<(), SharedAccessDenial> {

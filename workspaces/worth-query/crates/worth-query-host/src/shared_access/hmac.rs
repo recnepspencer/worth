@@ -3,6 +3,7 @@
 use sha2::{Digest, Sha256};
 use worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentity;
 
+use super::capped_writer::RemoteByteWriter;
 use super::denial::{AuthenticationRefusalReason, SharedAccessDenial};
 use super::framing::{BinaryReader, BinaryWriter};
 
@@ -36,6 +37,26 @@ pub(super) fn encode_token_body(writer: &mut BinaryWriter, body: &TokenBody) {
     writer.write_u64(body.issued_at_unix_secs);
     writer.write_u64(body.expires_at_unix_secs);
     writer.write_fixed(&body.nonce);
+}
+
+pub(super) fn encode_token_body_capped(
+    writer: &mut RemoteByteWriter,
+    body: &TokenBody,
+) -> Result<(), SharedAccessDenial> {
+    writer.write_str(&body.key_id)?;
+    writer.write_fixed(&body.home_identity)?;
+    match body.pinned_incarnation {
+        Some(inc) => {
+            writer.write_u8(1)?;
+            writer.write_u64(inc)?;
+        }
+        None => writer.write_u8(0)?,
+    }
+    writer.write_str(body.principal.issuer())?;
+    writer.write_str(body.principal.subject())?;
+    writer.write_u64(body.issued_at_unix_secs)?;
+    writer.write_u64(body.expires_at_unix_secs)?;
+    writer.write_fixed(&body.nonce)
 }
 
 pub(super) fn decode_token_parts(

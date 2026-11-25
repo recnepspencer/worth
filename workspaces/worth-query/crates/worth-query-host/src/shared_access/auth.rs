@@ -21,11 +21,12 @@ use worth_query_declaration::facade::{
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
 
+use super::capped_writer::RemoteByteWriter;
 use super::denial::{AuthenticationRefusalReason, SharedAccessDenial};
 use super::framing::{BinaryReader, BinaryWriter};
 use super::hmac::{
-    compute_token_mac, constant_time_eq_32, decode_token_parts, encode_token_body, TokenBody,
-    MAX_KEY_ID_BYTES, MAX_TOKEN_BYTES,
+    compute_token_mac, constant_time_eq_32, decode_token_parts, encode_token_body,
+    encode_token_body_capped, TokenBody, MAX_KEY_ID_BYTES, MAX_TOKEN_BYTES,
 };
 use super::types::RemoteServerLimits;
 
@@ -112,6 +113,10 @@ impl RemoteAuthConfig {
         self
     }
 
+    /// Requires every presented token to carry a `pinned_incarnation` matching the
+    /// live Directory Home incarnation. When `false` (default), earlier pinned tokens
+    /// still refuse with `StaleIncarnation` after reopen, while valid unpinned tokens
+    /// bound to the same `HomeIdentity` continue to authenticate.
     pub const fn with_require_incarnation_pin(mut self, require: bool) -> Self {
         self.require_incarnation_pin = require;
         self
@@ -210,8 +215,14 @@ impl RemoteAuthToken {
         Ok(Self { body, mac })
     }
 
-    pub(super) fn encode_into(&self, writer: &mut BinaryWriter) {
-        writer.write_bytes(&self.to_bytes());
+    pub(super) fn encode_into_capped(
+        &self,
+        writer: &mut RemoteByteWriter,
+    ) -> Result<(), SharedAccessDenial> {
+        writer.write_length_prefixed(|inner| {
+            encode_token_body_capped(inner, &self.body)?;
+            inner.write_fixed(&self.mac)
+        })
     }
 
     pub(super) fn decode_from(reader: &mut BinaryReader<'_>) -> Result<Self, SharedAccessDenial> {

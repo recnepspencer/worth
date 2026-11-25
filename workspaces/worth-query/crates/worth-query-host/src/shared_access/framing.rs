@@ -164,15 +164,12 @@ pub(super) fn read_bounded_frame(
     Ok((kind, payload))
 }
 
-pub(super) fn write_bounded_frame(
+pub(super) fn write_raw_frame(
     writer: &mut impl Write,
-    kind: FrameKind,
-    payload: &[u8],
-    max_frame_bytes: u32,
+    frame: &[u8],
 ) -> Result<(), SharedAccessDenial> {
-    let frame = encode_frame(kind, payload, max_frame_bytes)?;
     writer
-        .write_all(&frame)
+        .write_all(frame)
         .map_err(|err| SharedAccessDenial::TransportIo(err.kind().to_string()))?;
     writer
         .flush()
