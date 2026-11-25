@@ -5,9 +5,16 @@ use worth_query_host::facade::{
     application_contribution::{
         WorthQueryAdvancementDenial, WorthQueryManagedComputationInterruption,
     },
-    application_entry::WorthQueryApplicationCorrectionHistoryDenial,
+    application_entry::{
+        WorthQueryApplicationCorrectionHistoryDenial, WorthQueryApplicationRequestQueryDenial,
+        WorthQueryTerminalSourceEvidence,
+    },
     application_installation::ApplicationBuildIdentity,
-    primary_graph::{WorthQueryCorrectionDerivationDenial, WorthQueryOperationBodyDenial},
+    primary_graph::{
+        WorthQueryApplicationIdempotencyResolution as Resolution,
+        WorthQueryApplicationQueryAdmissionDenial, WorthQueryCorrectionDerivationDenial,
+        WorthQueryOperationBodyDenial,
+    },
     shared_access::{AuthorizationRefusalReason, SharedAccessDenial},
     WorthQueryApplicationHome, WorthQueryCorrectionHistoryDenial, WorthQueryCorrectionHistoryLimit,
     WorthQueryHomeConfig, WorthQueryHomeProgramTransitionDenial, WorthQueryHomeRetirementStop,
@@ -16,7 +23,9 @@ use worth_query_host::facade::{
     WorthQueryTypedLiveRefreshDenial, WorthQueryUserFacingRefusal,
 };
 
+use super::actions::SetTaskState;
 use super::program::{owner, seed, DaymarkHome, DaymarkRuntime};
+use super::schema::DaymarkSchema;
 
 /// Rejects internal Rust structure a `Debug` dump would put in a UI banner.
 pub(super) fn assert_readable(message: &str) {
@@ -145,6 +154,51 @@ fn every_primary_refusal_family_explains_itself_without_debug_structure() {
     ];
     for (refusal, category, retryable) in cases {
         assert_summary(refusal, category, retryable);
+    }
+    // Read and keyed refusals classify by their own kind, not their wrapper.
+    use worth_query_host::facade::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind as Kind;
+    let admission = |kind| {
+        WorthQueryApplicationRequestQueryDenial::Admission(
+            WorthQueryApplicationQueryAdmissionDenial::new(kind, "ReadTaskDetails"),
+        )
+    };
+    let keyed = |resolution| {
+        WorthQueryTerminalSourceEvidence::<DaymarkSchema, SetTaskState>::Keyed(resolution)
+    };
+    let classified: [(Box<dyn WorthQueryUserFacingRefusal>, Category, bool); 6] = [
+        (
+            Box::new(admission(Kind::Cancelled)),
+            Category::Interrupted,
+            true,
+        ),
+        (
+            Box::new(admission(Kind::StalePrincipal)),
+            Category::PermissionDenied,
+            false,
+        ),
+        (
+            Box::new(admission(Kind::StaleScope)),
+            Category::NotFound,
+            false,
+        ),
+        (
+            Box::new(admission(Kind::BasisUnavailable)),
+            Category::Unavailable,
+            true,
+        ),
+        (
+            Box::new(keyed(Resolution::IntentDrift)),
+            Category::Conflict,
+            false,
+        ),
+        (
+            Box::new(keyed(Resolution::Unseen)),
+            Category::Unavailable,
+            true,
+        ),
+    ];
+    for (refusal, category, retryable) in &classified {
+        assert_summary(refusal.as_ref(), *category, *retryable);
     }
     // Distinct causes in one category keep distinct guidance.
     assert_ne!(

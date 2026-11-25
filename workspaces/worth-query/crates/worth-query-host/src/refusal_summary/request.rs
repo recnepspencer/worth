@@ -83,7 +83,7 @@ impl WorthQueryUserFacingRefusal for WorthQueryApplicationRequestMutationDenial 
             Self::Authorization(_)
             | Self::PrincipalResolution(_)
             | Self::WorkflowAuthoritySpent => PERMISSION,
-            Self::ScopeResolution(_) => MISSING_ITEM,
+            Self::ScopeResolution(cause) => cause.user_summary(),
             Self::Identity(_) | Self::InputCapture(_) | Self::WorkflowCapturedInput(_) => BAD_INPUT,
             Self::Handler(cause) => cause.user_summary(),
             Self::SourceExpectation(_) | Self::WorkflowTransitionCurrentness(_) => STALE,
@@ -119,10 +119,9 @@ impl WorthQueryUserFacingRefusal for WorthQueryApplicationRequestQueryDenial {
     fn user_summary(&self) -> Summary {
         match self {
             Self::ExecutionRequest(cause) => cause.user_summary(),
-            Self::PrincipalResolution(_) | Self::Admission(_) | Self::CapabilityAdmission(_) => {
-                PERMISSION
-            }
-            Self::ScopeResolution(_) => MISSING_ITEM,
+            Self::PrincipalResolution(_) | Self::CapabilityAdmission(_) => PERMISSION,
+            Self::Admission(cause) => cause.user_summary(),
+            Self::ScopeResolution(cause) => cause.user_summary(),
             Self::InputPreparation(_) => BAD_INPUT,
             Self::Limit(_) => Summary::with_message(
                 Category::Capacity,
@@ -133,7 +132,8 @@ impl WorthQueryUserFacingRefusal for WorthQueryApplicationRequestQueryDenial {
                 Category::Unavailable,
                 "Search is still being prepared. Try again in a moment.",
             ),
-            Self::Execution(_) | Self::ContinuationExecution(_) => CAPACITY,
+            Self::Execution(cause) => cause.user_summary(),
+            Self::ContinuationExecution(cause) => cause.user_summary(),
             Self::RequestMode | Self::BindingInstallation(_) | Self::CapabilityInstallation(_) => {
                 INTERNAL
             }

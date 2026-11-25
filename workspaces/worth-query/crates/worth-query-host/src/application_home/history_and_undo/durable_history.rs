@@ -182,9 +182,22 @@ where
             WorthQueryCancellationSource::new().token(),
             principal.clock().clone(),
         );
+        self.correction_history_with_scope(principal, limit, &scope)
+    }
+
+    /// [`Self::correction_history`] under a caller-owned `scope`, so the
+    /// listing honours the caller's deadline and cancellation. A stopped
+    /// listing refuses; it never returns a shorter or empty history.
+    pub fn correction_history_with_scope(
+        &self,
+        principal: impl Borrow<WorthQueryAuthenticatedExternalPrincipal<Schema>>,
+        limit: WorthQueryCorrectionHistoryLimit,
+        scope: &WorthQueryRequestScope,
+    ) -> Result<WorthQueryCorrectionHistory<Schema>, WorthQueryApplicationCorrectionHistoryDenial>
+    {
         let records = self
             .primary_graph()
-            .request(principal, &scope)
+            .request(principal.borrow(), scope)
             .on_branch(self.active_branch())
             .corrections()
             .history(limit.0, DEFAULT_CORRECTION_HISTORY_LIMITS)?;

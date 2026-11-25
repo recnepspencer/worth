@@ -1,5 +1,6 @@
 //! Source custody stops, declined evidence and non-committed correction outcomes.
 use worth_query_declaration::facade::application_operation::ApplicationMutationIntent;
+use worth_query_execution::facade::primary_graph::WorthQueryApplicationIdempotencyResolution as Keyed;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_query_publication::facade::application_entry::{
     WorthQueryApplicationMutationOutcome, WorthQueryTerminalSourceEvidence,
@@ -20,6 +21,10 @@ use super::summary::{
 const STILL_SAVING: Summary = Summary::with_message(
     Category::Unavailable,
     "The change is still being saved. Check again in a moment before retrying.",
+);
+const NOT_APPLIED: Summary = Summary::with_message(
+    Category::Unavailable,
+    "The earlier attempt didn't finish, so nothing was changed. Try again.",
 );
 const DIFFERENT_REQUEST: Summary = Summary::with_message(
     Category::Conflict,
@@ -50,8 +55,18 @@ impl<S: ApplicationSchema, I: ApplicationMutationIntent<S>> WorthQueryUserFacing
         match self {
             Self::Outcome(outcome) => uncommitted_outcome(outcome).unwrap_or(ALREADY_DONE),
             Self::AdmissionStopped(cause) => cause.user_summary(),
-            Self::Keyed(_) => ALREADY_DONE,
+            Self::Keyed(resolution) => keyed(resolution),
         }
+    }
+}
+
+/// A keyed retry settled from durable idempotency instead of a live outcome.
+fn keyed(resolution: &Keyed) -> Summary {
+    match resolution {
+        Keyed::RecoveredCommitted(_) => ALREADY_DONE,
+        Keyed::IntentDrift => DIFFERENT_REQUEST,
+        Keyed::ProductUnpublished(_) | Keyed::ProductPreparationPending(_) => STILL_SAVING,
+        Keyed::ReleasedOriginal(_) | Keyed::Unseen => NOT_APPLIED,
     }
 }
 

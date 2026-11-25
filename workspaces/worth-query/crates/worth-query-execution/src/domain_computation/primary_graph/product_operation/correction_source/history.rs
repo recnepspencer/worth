@@ -1,24 +1,33 @@
 //! Bounded newest-first listing of retained authored writes on one exact target.
 //!
-//! The durable correction-material catalog supplies candidates; each candidate
-//! is admitted through ordinary Home source selection (World ancestry of this
-//! target plus fresh disclosure for this principal), so the listing never
-//! widens what `select_coordinates` would admit. Reversal state comes from the
-//! canonical lineage index at this target's basis, not from retained material.
+//! One walk of the target's exact product history, from its observed head back
+//! at most `maximum_history` parent links, visits only commits of this branch
+//! (each page consults the request). Commits with ready retained material are
+//! admitted through ordinary Home source selection, handed the identity the
+//! walk already resolved, so the listing never widens what `select_coordinates`
+//! admits. Reversal state comes from the canonical lineage index; reversal
+//! order comes from the walked World ordinals, never from optional material.
+use super::cold_selection::WalkedOriginal;
 use super::occurrence::CorrectionLineageObservation;
 use super::*;
 use crate::domain_computation::application_aftermath::{
     WorthQueryAftermathCausalRole, WorthQueryCorrectionSourceCoordinates,
-    WorthQueryRecordedCorrectionSource,
+    WorthQueryCorrectionSourceMember, WorthQueryRecordedCorrectionSource,
 };
 use crate::domain_computation::primary_graph::provider::{
     WorthQueryActiveReversalProgress, WorthQueryAftermathCausalityReadDenial,
     WorthQueryCanonicalCorrectionFact,
 };
+use std::collections::BTreeMap;
 use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
+use worth_relational::facade::history::RelationalCommitReceipt;
+use worth_runtime_world::facade::{CompositeCommitIdentity, ProductExactHistoryDenial};
+
+mod omission;
+use omission::omits_entry;
 
 /// Lineage postings read per page while classifying one entry's reversal.
 const LINEAGE_PAGE_ENTRIES: usize = 32;
@@ -77,33 +86,61 @@ pub enum WorthQueryCorrectionHistoryDenial {
     DurableHomeRequired,
     ForeignPhase,
     Material(crate::facade::correction_material::QueryCorrectionMaterialDenial),
-    HistorySource(RuntimeWorldServiceDenial<worth_runtime_world::facade::WorldReadmissionDenial>),
+    /// Walking this target's exact history stopped (cancellation, deadline,
+    /// work or memory, a retired branch, or an unavailable owner).
+    ExactHistory(RuntimeWorldServiceDenial<ProductExactHistoryDenial>),
     /// Source selection refused for a reason that is not about one entry.
     Selection(WorthQueryCorrectionSelectionDenial),
     Lineage(WorthQueryAftermathCausalityReadDenial),
     /// One entry's reversal lineage exceeded the bounded classification walk.
     LineageTooLong,
+    /// An active reversal is not a commit of this target's walked history.
+    ReversalOutsideHistory,
 }
 
-struct Candidate {
-    sequence: u64,
-    coordinates: WorthQueryCorrectionSourceCoordinates,
+/// One walked commit: its World identity, ordinal and parent-link distance.
+struct Walked {
+    identity: CompositeCommitIdentity,
+    commit: RelationalCommitReceipt,
+    distance: usize,
 }
 
-struct Reapplication {
-    root: WorthQueryCorrectionSourceCoordinates,
-    occurrence: WorthQueryCorrectionSourceCoordinates,
-    sequence: u64,
+/// The caller's history and disclosure bounds, applied to each selection.
+///
+/// Only World ancestry is tightened to the walk distance; lineage reads back
+/// to an older root keep the caller's full history bound.
+#[derive(Clone, Copy)]
+struct ListingBounds {
+    history: Option<NonZeroUsize>,
+    results: NonZeroUsize,
+}
+
+/// Reapplication and reversal facts gathered newest-first during the walk.
+#[derive(Default)]
+struct WalkFacts {
+    /// Relational commit id to walked World ordinal, for canonical ordering.
+    ordinals: BTreeMap<u64, u64>,
+    /// Lineage root to its newest reapplication occurrence and ordinal.
+    reapplications: BTreeMap<
+        (u64, WorthQueryCorrectionSourceMember),
+        (WorthQueryCorrectionSourceCoordinates, u64),
+    >,
+}
+
+fn root_key(
+    coordinates: &WorthQueryCorrectionSourceCoordinates,
+) -> (u64, WorthQueryCorrectionSourceMember) {
+    (coordinates.relational().commit_id.0, coordinates.member())
 }
 
 impl<'runtime, S: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime, S> {
     /// Lists at most `limit` correctable authored writes on this target, newest first.
     ///
-    /// O(retained material · log) to order candidates, then one Home source
-    /// selection per examined candidate and one bounded lineage walk per
-    /// listed entry. Candidates this principal cannot select on this target
-    /// (other branches, undisclosed, expired or not declared correctable) are
-    /// omitted rather than reported.
+    /// O(walked commits · log retained) plus, per walked writer with ready
+    /// material, one Home source selection bounded by its walk distance and,
+    /// per listed entry, one bounded lineage walk. Writers this principal
+    /// cannot select (undisclosed, expired or not declared correctable) are
+    /// omitted; every request, resource or infrastructure stop propagates.
     pub fn correction_history(
         &self,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
@@ -114,52 +151,6 @@ impl<'runtime, S: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime
         maximum_history: Option<NonZeroUsize>,
         maximum_results: NonZeroUsize,
     ) -> Result<Vec<WorthQueryCorrectionHistoryRecord>, WorthQueryCorrectionHistoryDenial> {
-        let candidates = self.newest_first_candidates(phase)?;
-        let mut reapplications = Vec::new();
-        let mut records = Vec::new();
-        for candidate in &candidates {
-            if records.len() == limit.get() {
-                break;
-            }
-            let selected = match self.select_home_correction_source(
-                phase,
-                principal,
-                request,
-                &candidate.coordinates,
-                maximum_history,
-                maximum_results,
-            ) {
-                Ok(selected) => selected,
-                Err(cause) if omits_entry(&cause) => continue,
-                Err(cause) => return Err(WorthQueryCorrectionHistoryDenial::Selection(cause)),
-            };
-            if let Some(lineage) = selected.occurrence().causality() {
-                note_reapplication(&mut reapplications, &lineage, candidate);
-                continue;
-            }
-            let binding = selected.occurrence().original_binding().ok_or(
-                WorthQueryCorrectionHistoryDenial::Selection(
-                    WorthQueryCorrectionSelectionDenial::SourceNotCorrectable,
-                ),
-            )?;
-            let root = super::lineage::source_locator(&selected);
-            let active = self.active_reversal(phase, &root)?;
-            let (state, handle) = classify(candidate, active, &reapplications, &candidates);
-            records.push(WorthQueryCorrectionHistoryRecord {
-                original: candidate.coordinates.clone(),
-                handle,
-                binding,
-                sequence: candidate.sequence,
-                state,
-            });
-        }
-        Ok(records)
-    }
-
-    fn newest_first_candidates(
-        &self,
-        phase: &WorthQueryAdvancementPhase<'_>,
-    ) -> Result<Vec<Candidate>, WorthQueryCorrectionHistoryDenial> {
         use WorthQueryCorrectionHistoryDenial as D;
         let application = self.application();
         let execution = phase
@@ -171,47 +162,167 @@ impl<'runtime, S: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime
             .durable()
             .ok_or(D::DurableHomeRequired)?;
         let world_owner = worth_foundational::facade::WorldOwnerCoordinate::Home { owner: home };
-        let retained = application
+        let mut ready = BTreeMap::<u64, Vec<_>>::new();
+        for writer in application
             .inner
             .runtime
             .primary_provider_ref()
             .retained_correction_history_candidates()
-            .map_err(D::Material)?;
-        let originals = owner
-            .inspection_port()
-            .observe_program_activation_history(&execution)
-            .map_err(D::HistorySource)?;
-        let mut candidates = retained
-            .into_iter()
-            .filter_map(|writer| {
-                let sequence = originals
-                    .original_state(writer.original)?
-                    .reserved_commit()
-                    .ordinal();
-                Some(Candidate {
-                    sequence,
-                    coordinates: WorthQueryCorrectionSourceCoordinates::from_untrusted_parts(
-                        world_owner,
-                        sequence,
-                        writer.commit,
-                        writer.member,
-                    ),
+            .map_err(D::Material)?
+        {
+            ready
+                .entry(writer.commit.commit_id.0)
+                .or_default()
+                .push(writer);
+        }
+        let observation = owner.observation_port();
+        let mut cursor = observation
+            .open_exact_product_history(execution, self.product().observation())
+            .map_err(D::ExactHistory)?;
+        let mut facts = WalkFacts::default();
+        let mut records = Vec::new();
+        let mut distance = 0_usize;
+        while records.len() < limit.get() {
+            let page = observation
+                .prepare_exact_product_history_page(execution, &cursor)
+                .map_err(D::ExactHistory)?;
+            let walked = page.commit().and_then(|commit| {
+                let observed = commit.basis().relational_basis().observation();
+                let receipt = observed.commit_receipt()?.clone();
+                Some(Walked {
+                    identity: commit.identity().clone(),
+                    commit: receipt,
+                    distance,
                 })
-            })
-            .collect::<Vec<_>>();
-        candidates.sort_by(|left, right| {
-            (right.sequence, right.coordinates.member())
-                .cmp(&(left.sequence, left.coordinates.member()))
-        });
-        Ok(candidates)
+            });
+            let complete = page.is_complete()
+                || maximum_history.is_some_and(|maximum| distance >= maximum.get());
+            if !complete {
+                let (_, next) = cursor
+                    .accept_page(page)
+                    .map_err(|cause| D::ExactHistory(RuntimeWorldServiceDenial::Denied(cause)))?;
+                cursor = next;
+            } else {
+                drop(page);
+            }
+            if let Some(walked) = walked {
+                facts
+                    .ordinals
+                    .insert(walked.commit.commit_id.0, walked.identity.ordinal());
+                let writers = ready.get(&walked.commit.commit_id.0).into_iter().flatten();
+                for writer in writers.filter(|writer| writer.commit == walked.commit) {
+                    if records.len() == limit.get() {
+                        break;
+                    }
+                    let coordinates = WorthQueryCorrectionSourceCoordinates::from_untrusted_parts(
+                        world_owner,
+                        walked.identity.ordinal(),
+                        walked.commit.clone(),
+                        writer.member,
+                    );
+                    if let Some(record) = self.list_writer(
+                        phase,
+                        principal,
+                        request,
+                        &walked,
+                        coordinates,
+                        &mut facts,
+                        ListingBounds {
+                            history: maximum_history,
+                            results: maximum_results,
+                        },
+                    )? {
+                        records.push(record);
+                    }
+                }
+            }
+            if complete {
+                break;
+            }
+            distance = distance.saturating_add(1);
+        }
+        Ok(records)
     }
 
-    /// The root's unconsumed reversal at this target's basis, if any.
+    /// Selects one walked writer and, when it is an original, classifies it.
+    fn list_writer(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        principal: &WorthQueryAuthenticatedExternalPrincipal<S>,
+        request: &WorthQueryRequestScope,
+        walked: &Walked,
+        coordinates: WorthQueryCorrectionSourceCoordinates,
+        facts: &mut WalkFacts,
+        bounds: ListingBounds,
+    ) -> Result<Option<WorthQueryCorrectionHistoryRecord>, WorthQueryCorrectionHistoryDenial> {
+        let bound = NonZeroUsize::MIN.saturating_add(walked.distance);
+        let selected = match self.select_home_correction_source(
+            phase,
+            principal,
+            request,
+            &coordinates,
+            bounds.history,
+            bounds.results,
+            Some(WalkedOriginal {
+                identity: walked.identity.clone(),
+                parent_links_bound: bound,
+            }),
+        ) {
+            Ok(selected) => selected,
+            Err(cause) if omits_entry(&cause) => return Ok(None),
+            Err(cause) => return Err(WorthQueryCorrectionHistoryDenial::Selection(cause)),
+        };
+        if let Some(lineage) = selected.occurrence().causality() {
+            note_reapplication(facts, &lineage, &coordinates, walked.identity.ordinal());
+            return Ok(None);
+        }
+        let Some(binding) = selected.occurrence().original_binding() else {
+            return Ok(None);
+        };
+        let root = super::lineage::source_locator(&selected);
+        let (active, reversed_before) = self.active_reversal(phase, &root)?;
+        let sequence = walked.identity.ordinal();
+        let (state, handle) = match active {
+            Some(reversal) => {
+                let at = *facts
+                    .ordinals
+                    .get(&reversal.child.commit_id.0)
+                    .ok_or(WorthQueryCorrectionHistoryDenial::ReversalOutsideHistory)?;
+                (
+                    WorthQueryCorrectionHistoryState::Reversed { at },
+                    reversal.source,
+                )
+            }
+            None if !reversed_before => (
+                WorthQueryCorrectionHistoryState::Applied { at: sequence },
+                coordinates.clone(),
+            ),
+            // Every reversal was reapplied; undo names the newest reapplication.
+            // If its retained material expired the entry is no longer correctable.
+            None => match facts.reapplications.get(&root_key(&coordinates)) {
+                Some((latest, at)) => (
+                    WorthQueryCorrectionHistoryState::Applied { at: *at },
+                    latest.clone(),
+                ),
+                None => return Ok(None),
+            },
+        };
+        Ok(Some(WorthQueryCorrectionHistoryRecord {
+            original: coordinates,
+            handle,
+            binding,
+            sequence,
+            state,
+        }))
+    }
+
+    /// The root's unconsumed reversal at this basis, and whether it was ever reversed.
     fn active_reversal(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         root: &WorthQueryRecordedCorrectionSource,
-    ) -> Result<Option<WorthQueryCanonicalCorrectionFact>, WorthQueryCorrectionHistoryDenial> {
+    ) -> Result<(Option<WorthQueryCanonicalCorrectionFact>, bool), WorthQueryCorrectionHistoryDenial>
+    {
         use WorthQueryCorrectionHistoryDenial as D;
         let application = self.application();
         let execution = phase
@@ -219,6 +330,7 @@ impl<'runtime, S: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime
             .map_err(|_| D::ForeignPhase)?;
         let provider = application.inner.runtime.primary_provider_ref();
         let mut prior = None;
+        let mut reversed = false;
         for _ in 0..MAXIMUM_LINEAGE_PAGES {
             let page = provider
                 .correction_alternatives_progress_at_basis(
@@ -229,8 +341,11 @@ impl<'runtime, S: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime
                     prior.as_ref(),
                 )
                 .map_err(D::Lineage)?;
+            reversed |= !page.entries.is_empty();
             match page.progress {
-                WorthQueryActiveReversalProgress::Complete(active) => return Ok(active),
+                WorthQueryActiveReversalProgress::Complete(active) => {
+                    return Ok((active, reversed))
+                }
                 incomplete => prior = Some(incomplete),
             }
         }
@@ -238,78 +353,19 @@ impl<'runtime, S: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime
     }
 }
 
-/// Selection refusals that describe one candidate, not the listing itself.
-fn omits_entry(cause: &WorthQueryCorrectionSelectionDenial) -> bool {
-    use WorthQueryCorrectionSelectionDenial as D;
-    match cause {
-        D::Material(_)
-        | D::ExactHistory(_)
-        | D::HistoryLimit
-        | D::SourceUnavailable
-        | D::SourceNotCorrectable
-        | D::SourcePublicationMismatch
-        | D::SourceMemberUnavailable
-        | D::Disclosure(_)
-        | D::Ancestry(_) => true,
-        D::StaleIncarnation | D::HistorySource(_) | D::ForeignPhase | D::ForeignRuntime => false,
-    }
-}
-
-/// Newest-first scanning meets a lineage's latest reapplication before its root.
+/// Newest-first walking meets a lineage's latest reapplication before its root.
 fn note_reapplication(
-    reapplications: &mut Vec<Reapplication>,
+    facts: &mut WalkFacts,
     lineage: &CorrectionLineageObservation<'_>,
-    candidate: &Candidate,
+    occurrence: &WorthQueryCorrectionSourceCoordinates,
+    ordinal: u64,
 ) {
     if lineage.role() != WorthQueryAftermathCausalRole::RecordedReapply {
         return;
     }
     let root = lineage.correction_lineage().root().coordinates();
-    if reapplications.iter().all(|known| known.root != root) {
-        reapplications.push(Reapplication {
-            root,
-            occurrence: candidate.coordinates.clone(),
-            sequence: candidate.sequence,
-        });
-    }
-}
-
-fn classify(
-    candidate: &Candidate,
-    active: Option<WorthQueryCanonicalCorrectionFact>,
-    reapplications: &[Reapplication],
-    candidates: &[Candidate],
-) -> (
-    WorthQueryCorrectionHistoryState,
-    WorthQueryCorrectionSourceCoordinates,
-) {
-    match active {
-        Some(reversal) => {
-            let at = candidates
-                .iter()
-                .find(|known| known.coordinates.relational() == &reversal.child)
-                .map_or(candidate.sequence, |known| known.sequence);
-            (
-                WorthQueryCorrectionHistoryState::Reversed { at },
-                reversal.source,
-            )
-        }
-        None => match reapplications
-            .iter()
-            .find(|known| known.root == candidate.coordinates)
-        {
-            Some(latest) => (
-                WorthQueryCorrectionHistoryState::Applied {
-                    at: latest.sequence,
-                },
-                latest.occurrence.clone(),
-            ),
-            None => (
-                WorthQueryCorrectionHistoryState::Applied {
-                    at: candidate.sequence,
-                },
-                candidate.coordinates.clone(),
-            ),
-        },
-    }
+    facts
+        .reapplications
+        .entry(root_key(&root))
+        .or_insert_with(|| (occurrence.clone(), ordinal));
 }

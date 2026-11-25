@@ -1,7 +1,10 @@
 //! Undo, redo and correction history refusals.
 use worth_query_execution::facade::{
     correction_material::QueryCorrectionMaterialDenial as Material,
-    primary_graph::{WorthQueryCorrectionDerivationDenial, WorthQueryCorrectionSelectionDenial},
+    primary_graph::{
+        WorthQueryAftermathCausalityReadDenial as Lineage, WorthQueryCorrectionDerivationDenial,
+        WorthQueryCorrectionSelectionDenial, WorthQueryProviderSessionControlStopKind as Stop,
+    },
 };
 use worth_query_publication::facade::application_entry::{
     WorthQueryApplicationCorrectionDenial, WorthQueryApplicationCorrectionHistoryDenial,
@@ -10,9 +13,11 @@ use worth_query_publication::facade::application_entry::{
 
 use crate::application_home::WorthQueryHomeUndoDenial;
 
+use super::world_history::{ancestry, exact_history};
+
 use super::request::{
-    ALREADY_DONE, BUSY, CAPACITY, INTERNAL, MISSING_ITEM, PERMISSION, RULE_REFUSED, STALE, STORAGE,
-    VERSION_MISMATCH,
+    ALREADY_DONE, BUSY, CANCELLED, CAPACITY, INTERNAL, PERMISSION, RULE_REFUSED, STALE, STORAGE,
+    TIMED_OUT, VERSION_MISMATCH,
 };
 use super::summary::{
     WorthQueryRefusalCategory as Category, WorthQueryRefusalSummary as Summary,
@@ -23,7 +28,7 @@ const CHANGED_SINCE: Summary = Summary::with_message(
     Category::Conflict,
     "This can't be undone because it was changed again since. Refresh to see the latest version.",
 );
-const HISTORY_GONE: Summary = Summary::with_message(
+pub(super) const HISTORY_GONE: Summary = Summary::with_message(
     Category::NotFound,
     "The history needed to undo this is no longer kept.",
 );
@@ -33,7 +38,7 @@ const NOTHING_TO_REDO: Summary = Summary::with_message(
 );
 const NOT_UNDOABLE: Summary =
     Summary::with_message(Category::Validation, "This kind of change can't be undone.");
-const OTHER_VERSION: Summary = Summary::with_message(
+pub(super) const OTHER_VERSION: Summary = Summary::with_message(
     Category::NotFound,
     "This change isn't part of the version you're looking at.",
 );
@@ -73,9 +78,9 @@ impl WorthQueryUserFacingRefusal for WorthQueryCorrectionSelectionDenial {
             Self::Material(cause) => material(cause),
             Self::Disclosure(cause) => cause.user_summary(),
             Self::SourceNotCorrectable => NOT_UNDOABLE,
-            Self::Ancestry(_) => OTHER_VERSION,
-            Self::ExactHistory(_)
-            | Self::HistoryLimit
+            Self::Ancestry(cause) => ancestry(cause),
+            Self::ExactHistory(cause) => exact_history(cause),
+            Self::HistoryLimit
             | Self::SourceUnavailable
             | Self::SourceMemberUnavailable
             | Self::SourcePublicationMismatch => HISTORY_GONE,
@@ -100,16 +105,18 @@ impl WorthQueryUserFacingRefusal for WorthQueryCorrectionDerivationDenial {
             Self::NoActiveReversal | Self::ReapplicationUnavailable => NOTHING_TO_REDO,
             Self::Selection(cause) => cause.user_summary(),
             Self::Material(cause) => material(cause),
-            Self::SubjectNotDisclosed | Self::Principal(_) | Self::Admission(_) => PERMISSION,
-            Self::Scope(_) => MISSING_ITEM,
-            Self::Ancestry(_) => OTHER_VERSION,
+            Self::SubjectNotDisclosed | Self::Principal(_) => PERMISSION,
+            Self::Admission(cause) => cause.user_summary(),
+            Self::Scope(cause) => cause.user_summary(),
+            Self::Read(cause) => cause.user_summary(),
+            Self::Ancestry(cause) => ancestry(cause),
             Self::UnsupportedSourceMeaning => NOT_UNDOABLE,
             Self::MissingPreImage
             | Self::SemanticMaterialUnavailable
             | Self::SourceOutput(_)
             | Self::RestoredSupport(_)
-            | Self::MissingTargetParent
-            | Self::History(_) => HISTORY_GONE,
+            | Self::MissingTargetParent => HISTORY_GONE,
+            Self::History(cause) => lineage(cause),
             Self::UnsupportedTargetProgram
             | Self::ProgramComparison(_)
             | Self::ProgramMeaningChanged(_)
@@ -119,8 +126,7 @@ impl WorthQueryUserFacingRefusal for WorthQueryCorrectionDerivationDenial {
             Self::Domain(_) | Self::Action(_) => RULE_REFUSED,
             Self::RequiredOutputReconciliation
             | Self::DependencyComparison(_)
-            | Self::Product(_)
-            | Self::Read(_) => BUSY,
+            | Self::Product(_) => BUSY,
             Self::DurableStateAdmission(_) => STORAGE,
             Self::ForeignPhase
             | Self::ForeignSelection
@@ -175,6 +181,23 @@ fn material(cause: &Material) -> Summary {
     }
 }
 
+/// The canonical correction lineage index's own reason it could not be read.
+fn lineage(cause: &Lineage) -> Summary {
+    match cause {
+        Lineage::ExecutionDenied(Err(Stop::Cancelled)) => CANCELLED,
+        Lineage::ExecutionDenied(Err(Stop::TimedOut)) => TIMED_OUT,
+        Lineage::ExecutionDenied(Ok(_))
+        | Lineage::ActiveSnapshotCapacityExhausted { .. }
+        | Lineage::RetentionCapacityExhausted
+        | Lineage::RetentionIdentityExhausted
+        | Lineage::SnapshotIdentityExhausted => CAPACITY,
+        Lineage::Unavailable => HISTORY_GONE,
+        Lineage::IndexUnavailable { .. } => BUSY,
+        Lineage::InconsistentCanonicalRelationships => STORAGE,
+        Lineage::ForeignContinuation => INTERNAL,
+    }
+}
+
 impl WorthQueryUserFacingRefusal for WorthQueryCorrectionHistoryDenial {
     fn user_summary(&self) -> Summary {
         match self {
@@ -184,12 +207,13 @@ impl WorthQueryUserFacingRefusal for WorthQueryCorrectionHistoryDenial {
             ),
             Self::Material(cause) => material(cause),
             Self::Selection(cause) => cause.user_summary(),
-            Self::HistorySource(_) | Self::Lineage(_) => STORAGE,
+            Self::ExactHistory(cause) => exact_history(cause),
+            Self::Lineage(cause) => lineage(cause),
             Self::LineageTooLong => Summary::with_message(
                 Category::Capacity,
                 "This change was undone and redone too many times to list.",
             ),
-            Self::ForeignPhase => INTERNAL,
+            Self::ForeignPhase | Self::ReversalOutsideHistory => INTERNAL,
         }
     }
 }

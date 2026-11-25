@@ -1,9 +1,12 @@
 //! Durable correction history: discover, undo and redo authored writes after a
 //! cold reopen with no application memory, and refuse a stale undo.
 use worth_query_host::facade::{
-    admission::authenticated_principal::WorthQueryAdmissionClock, WorthQueryCorrectionHistory,
-    WorthQueryCorrectionHistoryLimit, WorthQueryHomeAuthoredCorrectionOutcome,
-    WorthQueryHomeUndoDenial, WorthQueryRefusalCategory, WorthQueryUserFacingRefusal,
+    admission::authenticated_principal::{
+        WorthQueryAdmissionClock, WorthQueryCancellationSource, WorthQueryRequestScope,
+    },
+    WorthQueryCorrectionHistory, WorthQueryCorrectionHistoryLimit,
+    WorthQueryHomeAuthoredCorrectionOutcome, WorthQueryHomeUndoDenial, WorthQueryRefusalCategory,
+    WorthQueryUserFacingRefusal,
 };
 
 use super::actions::{CorrectTaskState, SetTaskState};
@@ -179,6 +182,69 @@ fn durable_history_drives_multi_step_undo_and_redo_across_cold_reopens() {
         observed(&home, &clock),
         ("IN_PROGRESS".to_owned(), SEEDED_TITLE.to_owned())
     );
+
+    // A second redo names the reapplication its active reversal undid.
+    let listed = history(&home, &clock);
+    let redo = listed.next_redo().unwrap();
+    assert!(redo.is_corrected_by::<CorrectTaskTitle>());
+    assert_ne!(redo.entry().coordinates(), redo.original());
+    committed(
+        home.redo_authored::<CorrectTaskTitle>(redo.entry(), &me)
+            .unwrap(),
+    );
+    assert_eq!(
+        observed(&home, &clock),
+        ("IN_PROGRESS".to_owned(), RENAMED_TITLE.to_owned())
+    );
+    drop(me);
+    home.close_clean().unwrap();
+    std::fs::remove_dir_all(path).unwrap();
+}
+
+#[test]
+fn a_newer_write_clears_redo_and_a_cancelled_listing_refuses_instead_of_shrinking() {
+    let path = temp_home_path("durable-history-redo-cleared");
+    let clock = WorthQueryAdmissionClock::system();
+    let home = open_daymark(&path, &clock);
+    let me = owner(&home, &clock);
+    home.session(&me)
+        .run(SetTaskState {
+            task: 1,
+            state: "IN_PROGRESS".to_owned(),
+        })
+        .unwrap();
+    let top = history(&home, &clock).next_undo().unwrap().entry().clone();
+    committed(home.undo_authored::<CorrectTaskState>(&top, &me).unwrap());
+    assert!(history(&home, &clock).next_redo().is_some());
+
+    home.session(&me)
+        .run(RenameTask {
+            task: 3,
+            title: RENAMED_TITLE.to_owned(),
+        })
+        .unwrap();
+    let listed = history(&home, &clock);
+    assert!(
+        listed.next_redo().is_none(),
+        "a newer write clears redo: {listed:?}"
+    );
+    assert!(listed
+        .next_undo()
+        .unwrap()
+        .is_corrected_by::<CorrectTaskTitle>());
+
+    let cancellation = WorthQueryCancellationSource::new();
+    cancellation.cancel();
+    let cancelled = WorthQueryRequestScope::new(None, cancellation.token(), clock.clone());
+    let stopped = home
+        .correction_history_with_scope(&me, limit(), &cancelled)
+        .expect_err("a cancelled listing refuses rather than reporting less history");
+    assert_eq!(
+        stopped.refusal_category(),
+        WorthQueryRefusalCategory::Interrupted,
+        "{stopped:?}"
+    );
+    assert_readable(&stopped.user_message());
     drop(me);
     home.close_clean().unwrap();
     std::fs::remove_dir_all(path).unwrap();
