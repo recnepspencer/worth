@@ -69,27 +69,25 @@ impl RemoteTcpPool {
         let now = Instant::now();
         self.accept_bounded(now, limits)?;
         let ids: Vec<u64> = self.connections.keys().copied().collect();
+        let mut dispatched = 0_usize;
         let mut served = 0_usize;
         let mut dropped = Vec::new();
         for conn_id in ids {
             let budget = StepBudget {
                 now,
                 limits,
-                allow_dispatch: served < MAX_FRAMES_PER_TICK,
+                allow_dispatch: dispatched < MAX_FRAMES_PER_TICK,
             };
             let step = self.step_connection(conn_id, budget, &mut dispatch);
-            match step {
-                ConnectionStep::Served => served += 1,
-                ConnectionStep::ServedAndDrop => {
-                    served += 1;
-                    self.connections.remove(&conn_id);
-                    dropped.push(conn_id);
-                }
-                ConnectionStep::Idle => {}
-                ConnectionStep::Drop => {
-                    self.connections.remove(&conn_id);
-                    dropped.push(conn_id);
-                }
+            if step.dispatched {
+                dispatched += 1;
+            }
+            if step.served {
+                served += 1;
+            }
+            if step.drop {
+                self.connections.remove(&conn_id);
+                dropped.push(conn_id);
             }
         }
         Ok((served, dropped))
@@ -135,20 +133,20 @@ impl RemoteTcpPool {
         ) -> Result<(FrameKind, Vec<u8>), SharedAccessDenial>,
     ) -> ConnectionStep {
         let Some(conn) = self.connections.get_mut(&conn_id) else {
-            return ConnectionStep::Drop;
+            return ConnectionStep::DROP;
         };
         if conn.is_expired(budget.now) {
-            return ConnectionStep::Drop;
+            return ConnectionStep::DROP;
         }
         match conn.flush_pending_write(budget.now, budget.limits) {
-            FlushOutcome::InProgress => return ConnectionStep::Idle,
-            FlushOutcome::CompletedAndDrop => return ConnectionStep::ServedAndDrop,
-            FlushOutcome::Completed => return ConnectionStep::Served,
-            FlushOutcome::Failed => return ConnectionStep::Drop,
+            FlushOutcome::InProgress => return ConnectionStep::IDLE,
+            FlushOutcome::CompletedAndDrop => return ConnectionStep::of(false, true, true),
+            FlushOutcome::Completed => return ConnectionStep::of(false, true, false),
+            FlushOutcome::Failed => return ConnectionStep::DROP,
             FlushOutcome::Empty => {}
         }
         if !budget.allow_dispatch {
-            return ConnectionStep::Idle;
+            return ConnectionStep::IDLE;
         }
         conn.read_and_dispatch(conn_id, budget.now, budget.limits, dispatch)
     }
@@ -161,11 +159,24 @@ struct StepBudget {
     allow_dispatch: bool,
 }
 
-enum ConnectionStep {
-    Served,
-    ServedAndDrop,
-    Idle,
-    Drop,
+#[derive(Clone, Copy)]
+struct ConnectionStep {
+    dispatched: bool,
+    served: bool,
+    drop: bool,
+}
+
+impl ConnectionStep {
+    const IDLE: Self = Self::of(false, false, false);
+    const DROP: Self = Self::of(false, false, true);
+
+    const fn of(dispatched: bool, served: bool, drop: bool) -> Self {
+        Self {
+            dispatched,
+            served,
+            drop,
+        }
+    }
 }
 
 enum FlushOutcome {
@@ -267,18 +278,23 @@ impl NonblockingConnection {
                         }
                         Err(denial) => {
                             let frame = encode_refusal_frame(&denial);
-                            return self.queue_and_flush(frame.to_vec(), true, now, limits);
+                            return self.queue_and_flush_dispatched(
+                                frame.to_vec(),
+                                true,
+                                now,
+                                limits,
+                            );
                         }
                     }
                 }
-                ReadStatus::WouldBlock => return ConnectionStep::Idle,
-                ReadStatus::ClosedOrError => return ConnectionStep::Drop,
+                ReadStatus::WouldBlock => return ConnectionStep::IDLE,
+                ReadStatus::ClosedOrError => return ConnectionStep::DROP,
             }
         }
         match self.read_payload_bytes() {
             ReadStatus::Ready => {}
-            ReadStatus::WouldBlock => return ConnectionStep::Idle,
-            ReadStatus::ClosedOrError => return ConnectionStep::Drop,
+            ReadStatus::WouldBlock => return ConnectionStep::IDLE,
+            ReadStatus::ClosedOrError => return ConnectionStep::DROP,
         }
         let (kind, _) = self.parsed_header.take().expect("header parsed");
         let payload = std::mem::take(&mut self.payload_buf);
@@ -286,7 +302,7 @@ impl NonblockingConnection {
         self.payload_read = 0;
         let response_frame =
             encode_dispatch_outcome(dispatch(conn_id, kind, &payload), limits.max_frame_bytes());
-        self.queue_and_flush(response_frame, false, now, limits)
+        self.queue_and_flush_dispatched(response_frame, false, now, limits)
     }
 
     fn read_header_bytes(&mut self, now: Instant, limits: RemoteServerLimits) -> ReadStatus {
@@ -320,7 +336,9 @@ impl NonblockingConnection {
         ReadStatus::Ready
     }
 
-    fn queue_and_flush(
+    /// Charges the per-tick dispatch quota immediately regardless of whether the
+    /// response flushes synchronously, hits `WouldBlock`, or errors on write.
+    fn queue_and_flush_dispatched(
         &mut self,
         frame: Vec<u8>,
         drop_after: bool,
@@ -334,10 +352,10 @@ impl NonblockingConnection {
             self.frame_deadline = Some(now + limits.request_timeout());
         }
         match self.flush_pending_write(now, limits) {
-            FlushOutcome::Completed => ConnectionStep::Served,
-            FlushOutcome::CompletedAndDrop => ConnectionStep::ServedAndDrop,
-            FlushOutcome::InProgress => ConnectionStep::Idle,
-            FlushOutcome::Failed | FlushOutcome::Empty => ConnectionStep::Drop,
+            FlushOutcome::Completed => ConnectionStep::of(true, true, false),
+            FlushOutcome::CompletedAndDrop => ConnectionStep::of(true, true, true),
+            FlushOutcome::InProgress => ConnectionStep::of(true, false, false),
+            FlushOutcome::Failed | FlushOutcome::Empty => ConnectionStep::of(true, false, true),
         }
     }
 }

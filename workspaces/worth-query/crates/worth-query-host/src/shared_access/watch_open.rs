@@ -30,7 +30,6 @@ use super::types::RemoteServerLimits;
 use super::watch_drain::{
     admit_watch_and_read_caps, open_live_lease_with_disclosure, resolve_principal,
     resolve_scope_entity, IntentBinding, LiveLease, QueryMarker, QueryPrincipalId, QueryResult,
-    QueryScope,
 };
 
 struct PreparedLiveOpen<Schema, Program>
@@ -138,12 +137,7 @@ where
             (&principal, scope),
             self.scope_binding,
         )?;
-        let bound = BoundScopeIdentity::from_resolved_and_read::<
-            Schema,
-            Program::ReadCapability,
-            Program::ReadCapabilityInput,
-            QueryScope<Schema, Program>,
-        >(&resolved, &self.read_input)?;
+        let bound = BoundScopeIdentity::from_resolved(&resolved);
         let caps = (
             &self.watch_cap,
             &self.read_cap,

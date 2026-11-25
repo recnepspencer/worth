@@ -107,7 +107,7 @@ impl<'a> SeedRunner<'a> {
             .home_incarnation()
             .ok_or_else(|| format!("seed {}: missing home incarnation", self.seed))?
             .get();
-        let mut close_now = false;
+        let mut pending_close: Option<([u64; 2], [[GrantState; 2]; 2])> = None;
         {
             let server = home
                 .serve_remote("127.0.0.1:0".parse().unwrap(), self.auth_config.clone())
@@ -124,33 +124,73 @@ impl<'a> SeedRunner<'a> {
                 clients,
                 watches: Default::default(),
             };
-            while self.step_idx < step_count && !close_now {
-                close_now =
-                    self.run_open_step(explicit_ops, &home, real_incarnation, &mut session)?;
+            while self.step_idx < step_count {
+                let op = next_op(explicit_ops, &mut self.rng, &self.observed, self.step_idx);
+                if matches!(op, DstOp::CloseHome) {
+                    let durable = observe_durable_home_state(&home, &self.state.grant_ids)?;
+                    pending_close = Some(durable);
+                    break;
+                }
+                self.run_open_step(op, &home, real_incarnation, &mut session)?;
             }
             drop(session.watches);
             drop(session.clients);
             session.server.close();
         }
-        if close_now {
-            self.state.watch_last_delivered = [[0; 2]; 2];
-            home.close(&self.execution)
-                .map_err(|e| format!("seed {}: Home close failed: {e:?}", self.seed))?
-                .reclaim();
+        if let Some((values, grants)) = pending_close {
+            self.finish_close_step(home, real_incarnation, values, grants)?;
         } else {
             self.open_home = Some(home);
         }
         Ok(())
     }
 
+    /// Executes real Directory Home close and verifies post-close transport closure
+    /// strictly BEFORE recording `CloseHome` in the passive trace and oracle.
+    fn finish_close_step(
+        &mut self,
+        home: WorthQueryApplicationHome<SharedProjectSchema, SharedProjectProgram>,
+        real_incarnation: u64,
+        values: [u64; 2],
+        grants: [[GrantState; 2]; 2],
+    ) -> Result<(), String> {
+        self.ops_taken.push(DstOp::CloseHome);
+        self.state.watch_last_delivered = [[0; 2]; 2];
+        let closed = home
+            .close(&self.execution)
+            .map_err(|e| format!("seed {}: Home close failed: {e:?}", self.seed))?;
+        let is_closed = closed.is_closed();
+        closed.reclaim();
+        if !is_closed {
+            return Err(format!(
+                "seed {}: Home close reported not closed",
+                self.seed
+            ));
+        }
+        let (probe_out, _) = self.probe_closed_transport(0)?;
+        if probe_out != "HomeClosed" {
+            return Err(format!(
+                "seed {}: post-close transport probe returned {probe_out}",
+                self.seed
+            ));
+        }
+        let post = PassivePostState {
+            home_open: false,
+            incarnation: real_incarnation,
+            project_values: values,
+            grants,
+            watches_open: [[false; 2]; 2],
+        };
+        self.verify_and_record(DstOp::CloseHome, ("Ok", Vec::new(), GrantState::None), post)
+    }
+
     fn run_open_step(
         &mut self,
-        explicit_ops: Option<&[DstOp]>,
+        op: DstOp,
         home: &WorthQueryApplicationHome<SharedProjectSchema, SharedProjectProgram>,
         real_incarnation: u64,
         session: &mut OpenSession<'_>,
-    ) -> Result<bool, String> {
-        let op = next_op(explicit_ops, &mut self.rng, &self.observed, self.step_idx);
+    ) -> Result<(), String> {
         self.ops_taken.push(op);
         let grant_before = match op {
             DstOp::RemoteWatchOpen { principal, scope } => {
@@ -158,29 +198,17 @@ impl<'a> SeedRunner<'a> {
             }
             _ => GrantState::None,
         };
-        let (close_now, outcome, rows) = match op {
-            DstOp::CloseHome => (true, "Ok", Vec::new()),
-            other => {
-                let (out, r) =
-                    session.execute(&mut self.state, other, self.observed.project_values)?;
-                (false, out, r)
-            }
-        };
+        let (outcome, rows) = session.execute(&mut self.state, op, self.observed.project_values)?;
         let (values, grants) = observe_durable_home_state(home, &self.state.grant_ids)?;
-        let watches = if close_now {
-            [[false; 2]; 2]
-        } else {
-            session.observe_server_watches()
-        };
+        let watches = session.observe_server_watches();
         let post = PassivePostState {
-            home_open: !close_now,
+            home_open: true,
             incarnation: real_incarnation,
             project_values: values,
             grants,
             watches_open: watches,
         };
-        self.verify_and_record(op, (outcome, rows, grant_before), post)?;
-        Ok(close_now)
+        self.verify_and_record(op, (outcome, rows, grant_before), post)
     }
 
     fn run_closed_step(&mut self, explicit_ops: Option<&[DstOp]>) -> Result<(), String> {

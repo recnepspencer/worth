@@ -5,34 +5,22 @@ use std::time::Duration;
 use worth_query_decl::facade::{
     application_capability::ApplicationCapabilityRef,
     application_program::{
-        ApplicationFeatureSpec, ApplicationNoOutputGraph, ApplicationProgramAuthoring,
-        ApplicationProgramDefinition, ApplicationProgramIdentity, ApplicationProgramOutputs,
-        ApplicationRuleLeaf,
+        ApplicationFeatureSpec, ApplicationNoOutputGraph, ApplicationProgramDefinition,
+        ApplicationProgramIdentity, ApplicationProgramOutputs, ApplicationRuleLeaf,
     },
-    application_schema::{ApplicationOperationRef, ApplicationSchema},
+    application_schema::ApplicationOperationRef,
 };
 use worth_query_host::facade::{
     admission::authenticated_principal::{
         WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
     },
-    application_contribution::with_bootstrap_advancement_from_request,
-    application_installation::{
-        ApplicationBuildIdentity, WorthQueryApplicationLimits, WorthQueryApplicationProgramRoster,
-    },
     domain::WorthQueryInstalledApplicationSchema,
-    primary_graph::SignalConditionalEvaluationBudget,
-    runtime::{
-        DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
-        WorthQueryApplicationQueryResourceProfile,
-    },
     shared_access::{
         AuthorizationRefusalReason, BudgetRefusalReason, RemoteBinaryCodec, RemoteByteWriter,
-        RemoteServerLimits, RemoteTokenIssueRequest, RemoteWatchContext, ScopeAccess, ScopeGrantId,
-        SharedAccessDenial, WorthQueryRemoteClient, WorthQuerySharedAccessProgram,
+        RemoteServerLimits, RemoteWatchContext, ScopeAccess, ScopeGrantId, SharedAccessDenial,
+        WorthQueryRemoteClient, WorthQuerySharedAccessProgram,
     },
-    WorthQueryApplicationHome, WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeRequest,
 };
-use worth_query_testkit_host::facade::host::application_runtime_surface as identity_fixture;
 use worth_query_testkit_host::facade::host::checkpoint_capture;
 
 use super::capabilities::{
@@ -41,7 +29,7 @@ use super::capabilities::{
 use super::dst::make_auth_config;
 use super::mutation_handlers::SharedProjectProgram;
 use super::mutations::{alice_identity, GrantProjectIntent, ProjectId, RevokeProjectIntent};
-use super::program::{authenticate_local_owner, seed_shared_home_public};
+use super::program::{authenticate_local_owner, issue_alice_tok, open_custom_home};
 use super::query::{ProjectQueryParams, ProjectStateRead, ProjectStateRow};
 use super::schema::{SharedProjectSchema, SharedProjectSurface};
 
@@ -133,17 +121,18 @@ impl WorthQuerySharedAccessProgram<SharedProjectSchema> for MismatchedWatchScope
     }
 }
 
-/// Row codec that intentionally emits 512 bytes to exercise capped-encoder rollback on WatchOpen.
+/// Row codec exercising the ordinary public `RemoteBinaryCodec::encode_remote_bounded` contract
+/// with a 512-byte payload so pre-allocation frame budgeting rejects both Query and WatchOpen.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct OversizedRow(pub ProjectStateRow);
 
 impl RemoteBinaryCodec for OversizedRow {
-    fn encode_remote(&self) -> Vec<u8> {
-        vec![0xAB_u8; 512]
-    }
-    fn encode_remote_into(&self, writer: &mut RemoteByteWriter) -> Result<(), SharedAccessDenial> {
-        writer.charge(512)?;
-        writer.write_fixed(&[0xAB_u8; 512])
+    fn encode_remote_bounded(
+        &self,
+        writer: &mut RemoteByteWriter,
+    ) -> Result<(), SharedAccessDenial> {
+        writer.write_str(&self.0.project_key)?;
+        writer.write_bytes(&[0xAB_u8; 512])
     }
     fn decode_remote(_: &[u8]) -> Result<Self, SharedAccessDenial> {
         Ok(Self(ProjectStateRow {
@@ -240,63 +229,6 @@ impl WorthQuerySharedAccessProgram<SharedProjectSchema> for OversizedRowProgram 
     }
 }
 
-fn open_custom_home<P>(
-    dir: &std::path::Path,
-    execution: worth_execution::ExecutionRequest<'_, '_>,
-) -> WorthQueryApplicationHome<SharedProjectSchema, P>
-where
-    P: ApplicationProgramDefinition<
-            SharedProjectSchema,
-            Contributions = (SharedProjectSurface,),
-            Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>,
-        > + 'static,
-{
-    let declaration = SharedProjectSchema::declaration().unwrap();
-    let program = ApplicationProgramAuthoring::<SharedProjectSchema, P>::begin()
-        .with_schema(&declaration)
-        .validated_program()
-        .unwrap();
-    let build = ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap();
-    let limits = WorthQueryApplicationLimits::new(
-        identity_fixture::world_resources().with_execution_policy(ExecutionRequestPolicy::new(
-            ExecutionPosture::Serial,
-            DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(std::num::NonZeroUsize::MIN, None, None),
-        )),
-        WorthQueryApplicationQueryResourceProfile::default(),
-        SignalConditionalEvaluationBudget::development(),
-    );
-    let request = WorthQueryApplicationHomeRequest::new(
-        WorthQueryApplicationHomeLocation::Directory(dir.to_path_buf()),
-        program,
-        WorthQueryApplicationProgramRoster::new(),
-        declaration,
-        ((),),
-        build,
-        limits,
-        |_, graph, schema| seed_shared_home_public(graph, schema),
-    );
-    with_bootstrap_advancement_from_request(execution, |phase| request.open_in_advancement(&phase))
-        .unwrap()
-        .unwrap()
-}
-
-fn issue_alice_tok(
-    cfg: &worth_query_host::facade::shared_access::RemoteAuthConfig,
-    home_id: worth_foundational::facade::HomeIdentity,
-    nonce_byte: u8,
-) -> worth_query_host::facade::shared_access::RemoteAuthToken {
-    cfg.issue_token(RemoteTokenIssueRequest {
-        key_id: "k1".to_owned(),
-        home_identity: home_id,
-        pinned_incarnation: None,
-        principal: alice_identity(),
-        ttl: Duration::from_secs(600),
-        nonce: [nonce_byte; 16],
-    })
-    .unwrap()
-}
-
 #[test]
 fn adversarial_mismatched_watch_scope_and_capped_response_rollback() {
     let base = worth_query_testkit_host::facade::host::application_home::location();
@@ -372,23 +304,31 @@ fn assert_oversized_watch_open_rolls_back(
         .unwrap();
     let mut alice = WorthQueryRemoteClient::connect(server.local_addr(), tok).unwrap();
     alice
+        .send_query::<SharedProjectSchema, OversizedRowProgram>(
+            &ProjectId::project1(),
+            &ProjectQueryParams,
+        )
+        .unwrap();
+    assert!(server.serve_once(Duration::from_secs(2)).unwrap());
+    assert!(matches!(
+        alice.recv_query::<SharedProjectSchema, OversizedRowProgram>(),
+        Err(SharedAccessDenial::BudgetRefused(
+            BudgetRefusalReason::ResponseTooLarge { maximum: 300, .. }
+        ))
+    ));
+    alice
         .send_watch_open::<SharedProjectSchema, OversizedRowProgram>(
             &ProjectId::project1(),
             &ProjectQueryParams,
         )
         .unwrap();
     assert!(server.serve_once(Duration::from_secs(2)).unwrap());
-    let res = alice.recv_watch_open::<SharedProjectSchema, OversizedRowProgram>();
-    assert!(
-        matches!(
-            res,
-            Err(SharedAccessDenial::BudgetRefused(
-                BudgetRefusalReason::ResponseTooLarge { maximum: 300, .. }
-            ))
-        ),
-        "oversized watch-open MUST fail closed with ResponseTooLarge: {:?}",
-        res.err()
-    );
+    assert!(matches!(
+        alice.recv_watch_open::<SharedProjectSchema, OversizedRowProgram>(),
+        Err(SharedAccessDenial::BudgetRefused(
+            BudgetRefusalReason::ResponseTooLarge { maximum: 300, .. }
+        ))
+    ));
     assert_eq!(server.active_watch_count(), 0);
     server.close();
     home.close(&execution).unwrap().reclaim();

@@ -49,7 +49,7 @@ pub struct OpenSession<'home> {
 
 impl OpenSession<'_> {
     /// Passively observes real server-side watch ownership from `server.active_watches()`.
-    pub fn observe_server_watches(&mut self) -> [[bool; 2]; 2] {
+    pub fn observe_server_watches(&self) -> [[bool; 2]; 2] {
         let mut matrix = [[false; 2]; 2];
         let alice = alice_identity();
         let bob = bob_identity();

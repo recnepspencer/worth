@@ -63,8 +63,8 @@ worth_query_structured_value_binding!(pub ProjectStateRowBinding for ProjectStat
 });
 
 impl RemoteBinaryCodec for ProjectQueryParams {
-    fn encode_remote(&self) -> Vec<u8> {
-        Vec::new()
+    fn encode_remote_bounded(&self, _: &mut RemoteByteWriter) -> Result<(), SharedAccessDenial> {
+        Ok(())
     }
 
     fn decode_remote(bytes: &[u8]) -> Result<Self, SharedAccessDenial> {
@@ -79,16 +79,10 @@ impl RemoteBinaryCodec for ProjectQueryParams {
 }
 
 impl RemoteBinaryCodec for ProjectStateRow {
-    fn encode_remote(&self) -> Vec<u8> {
-        let key = self.project_key.as_bytes();
-        let mut out = Vec::with_capacity(4 + key.len() + 8);
-        out.extend_from_slice(&(key.len() as u32).to_be_bytes());
-        out.extend_from_slice(key);
-        out.extend_from_slice(&self.version.to_be_bytes());
-        out
-    }
-
-    fn encode_remote_into(&self, writer: &mut RemoteByteWriter) -> Result<(), SharedAccessDenial> {
+    fn encode_remote_bounded(
+        &self,
+        writer: &mut RemoteByteWriter,
+    ) -> Result<(), SharedAccessDenial> {
         writer.write_str(&self.project_key)?;
         writer.write_u64(self.version)
     }

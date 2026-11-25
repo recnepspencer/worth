@@ -5,7 +5,10 @@ use std::time::Duration;
 
 use worth_query_decl::facade::{
     application_capability::ApplicationCapabilityRef,
-    application_program::ApplicationProgramAuthoring,
+    application_program::{
+        ApplicationNoOutputGraph, ApplicationProgramAuthoring, ApplicationProgramDefinition,
+        ApplicationProgramOutputs,
+    },
     application_schema::{ApplicationOperationRef, ApplicationSchema},
     authentication::WorthQueryPrincipalMappingStatus,
 };
@@ -47,7 +50,8 @@ use super::mutations::{
 };
 use super::query::{ProjectQueryParams, ProjectStateRead, ProjectStateRow};
 use super::schema::{
-    Project, ProjectKeyField, ProjectLiveSelf, ProjectVersionField, SharedProjectSchema,
+    Project, ProjectAliasField, ProjectKeyField, ProjectLiveSelf, ProjectVersionField,
+    SharedProjectSchema, SharedProjectSurface,
 };
 
 static NEXT_IDEMPOTENCY_KEY: AtomicU64 = AtomicU64::new(1);
@@ -259,11 +263,63 @@ pub fn open_shared_home(
         .expect("bootstrap advancement executes")
 }
 
-pub fn seed_shared_home_public(
-    graph: &mut WorthQueryPrimaryGraphBootstrap<SharedProjectSchema>,
-    schema: &WorthQueryInstalledApplicationSchema<SharedProjectSchema>,
-) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-    seed_shared_home(graph, schema)
+pub fn open_custom_home<P>(
+    dir: &std::path::Path,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryApplicationHome<SharedProjectSchema, P>
+where
+    P: ApplicationProgramDefinition<
+            SharedProjectSchema,
+            Contributions = (SharedProjectSurface,),
+            Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>,
+        > + 'static,
+{
+    let declaration = SharedProjectSchema::declaration().unwrap();
+    let program = ApplicationProgramAuthoring::<SharedProjectSchema, P>::begin()
+        .with_schema(&declaration)
+        .validated_program()
+        .unwrap();
+    let build = ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap();
+    let limits = WorthQueryApplicationLimits::new(
+        identity_fixture::world_resources().with_execution_policy(ExecutionRequestPolicy::new(
+            ExecutionPosture::Serial,
+            DeterminismContract::CanonicalBitwise,
+            ExecutionBudget::new(std::num::NonZeroUsize::MIN, None, None),
+        )),
+        WorthQueryApplicationQueryResourceProfile::default(),
+        SignalConditionalEvaluationBudget::development(),
+    );
+    let request = WorthQueryApplicationHomeRequest::new(
+        WorthQueryApplicationHomeLocation::Directory(dir.to_path_buf()),
+        program,
+        WorthQueryApplicationProgramRoster::new(),
+        declaration,
+        ((),),
+        build,
+        limits,
+        |_, graph, schema| seed_shared_home(graph, schema),
+    );
+    with_bootstrap_advancement_from_request(execution, |phase| request.open_in_advancement(&phase))
+        .unwrap()
+        .unwrap()
+}
+
+pub fn issue_alice_tok(
+    cfg: &worth_query_host::facade::shared_access::RemoteAuthConfig,
+    home_id: worth_foundational::facade::HomeIdentity,
+    nonce_byte: u8,
+) -> worth_query_host::facade::shared_access::RemoteAuthToken {
+    cfg.issue_token(
+        worth_query_host::facade::shared_access::RemoteTokenIssueRequest {
+            key_id: "k1".to_owned(),
+            home_identity: home_id,
+            pinned_incarnation: None,
+            principal: alice_identity(),
+            ttl: Duration::from_secs(600),
+            nonce: [nonce_byte; 16],
+        },
+    )
+    .unwrap()
 }
 
 fn seed_shared_home(
@@ -294,7 +350,11 @@ fn seed_shared_home(
             .bind_entity(
                 WorthQueryApplicationEntitySeed::new(Project::reference(), mk_key())
                     .field(ProjectKeyField::at("ProjectKey"), project_key.to_owned())
-                    .field(ProjectVersionField::at("ProjectVersion"), 0_u64),
+                    .field(ProjectVersionField::at("ProjectVersion"), 0_u64)
+                    .field(
+                        ProjectAliasField::at("ProjectAlias"),
+                        project_key.to_owned(),
+                    ),
             )
             .unwrap();
         graph

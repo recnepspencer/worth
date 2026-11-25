@@ -1,13 +1,13 @@
-//! Scope-proof binding and native query row-limit intersection.
+//! Native scope-entity proof binding and query row-limit intersection.
 
 use std::num::NonZeroUsize;
 
-use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityRequest, application_schema::ApplicationSchema,
 };
 use worth_query_execution::facade::primary_graph::{
-    WorthQueryApplicationEntityIdentity, WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryAdmittedApplicationCapabilityAccess, WorthQueryApplicationEntityIdentity,
+    WorthQueryPrimaryGraphApplicationRuntime,
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding;
 use worth_relational::facade::identity::EntityId;
@@ -17,42 +17,21 @@ use super::denial::{AuthorizationRefusalReason, BudgetRefusalReason, SharedAcces
 use super::types::RemoteServerLimits;
 use super::watch_drain::IntentBinding;
 
-/// Exact resolved scope entity and selector coordinates retained across a watch's lifetime.
+/// Exact native resolved scope entity identity retained across a watch's lifetime.
 pub(super) struct BoundScopeIdentity {
     entity_id: EntityId,
-    entity: &'static str,
-    aspect: &'static str,
-    field: &'static str,
-    value: AspectValue,
 }
 
 impl BoundScopeIdentity {
-    pub(super) fn from_resolved_and_read<Schema, Cap, Input, Scope>(
+    pub(super) fn from_resolved<Schema, Scope>(
         resolved: &WorthQueryApplicationEntityIdentity<Schema, Scope>,
-        read_input: &Input,
-    ) -> Result<Self, SharedAccessDenial>
+    ) -> Self
     where
         Schema: ApplicationSchema,
-        Input: ApplicationCapabilityRequest<Schema, Cap, Scope = Scope>,
     {
-        let projection = read_input.capability_request().map_err(|_| {
-            SharedAccessDenial::AuthorizationRefused(AuthorizationRefusalReason::CapabilityDenied)
-        })?;
-        let resource = projection.resource();
-        if resource.entity() != resolved.entity_name()
-            || resource.value() != resolved.identity_value()
-        {
-            return Err(SharedAccessDenial::AuthorizationRefused(
-                AuthorizationRefusalReason::CapabilityDenied,
-            ));
-        }
-        Ok(Self {
+        Self {
             entity_id: resolved.entity_id(),
-            entity: resource.entity(),
-            aspect: resource.aspect(),
-            field: resource.field(),
-            value: resource.value().clone(),
-        })
+        }
     }
 
     pub(super) const fn entity_id(&self) -> EntityId {
@@ -60,27 +39,19 @@ impl BoundScopeIdentity {
     }
 }
 
-/// Ensures a capability input's resource selector targets the exact bound scope entity.
-pub(super) fn verify_capability_matches_scope<Schema, Cap, Input, Scope>(
-    input: &Input,
+/// Verifies an admitted native capability proof's resolved resource `EntityId` matches the
+/// exact bound scope entity, failing closed on any cross-row or alternate-selector shift.
+pub(super) fn verify_admitted_scope_entity<Schema, Cap, Op, Input>(
+    admitted: &WorthQueryAdmittedApplicationCapabilityAccess<Schema, Cap, Op, Input>,
     scope: &BoundScopeIdentity,
+    reason: AuthorizationRefusalReason,
 ) -> Result<(), SharedAccessDenial>
 where
     Schema: ApplicationSchema,
-    Input: ApplicationCapabilityRequest<Schema, Cap, Scope = Scope>,
+    Input: ApplicationCapabilityRequest<Schema, Cap>,
 {
-    let projection = input.capability_request().map_err(|_| {
-        SharedAccessDenial::AuthorizationRefused(AuthorizationRefusalReason::CapabilityDenied)
-    })?;
-    let resource = projection.resource();
-    if resource.entity() != scope.entity
-        || resource.aspect() != scope.aspect
-        || resource.field() != scope.field
-        || resource.value() != &scope.value
-    {
-        return Err(SharedAccessDenial::AuthorizationRefused(
-            AuthorizationRefusalReason::CapabilityDenied,
-        ));
+    if admitted.admitted_resource_entity_id() != scope.entity_id() {
+        return Err(SharedAccessDenial::AuthorizationRefused(reason));
     }
     Ok(())
 }

@@ -122,7 +122,7 @@ fn assert_nonblocking_trickle_and_reclamation(
     let limits = RemoteServerLimits::default()
         .with_max_active_watches(1, 1)
         .unwrap()
-        .with_request_timeout(Duration::from_millis(140))
+        .with_request_timeout(Duration::from_millis(200))
         .unwrap();
     let cfg = make_auth_config().with_limits(limits);
     let mut server = home
@@ -139,17 +139,56 @@ fn assert_trickle_does_not_stall(
     cfg: &RemoteAuthConfig,
     home: &WorthQueryApplicationHome<SharedProjectSchema, SharedProjectProgram>,
 ) {
+    assert_multi_chunk_trickle_expires(server);
+    assert_concurrent_trickle_allows_healthy_client(server, cfg, home);
+}
+
+fn assert_multi_chunk_trickle_expires(
+    server: &mut WorthQueryRemoteServer<'_, SharedProjectSchema, SharedProjectProgram>,
+) {
+    let addr = server.local_addr();
+    // Multi-chunk trickle: inter-chunk gaps (75ms) stay below request_timeout (200ms),
+    // proving later chunks NEVER reset the absolute frame_deadline.
+    let mut trickle = TcpStream::connect(addr).unwrap();
+    trickle.write_all(b"WQS1").unwrap();
+    trickle.flush().unwrap();
+    let start = Instant::now();
+    assert!(!server.serve_once(Duration::from_millis(25)).unwrap());
+    assert!(
+        start.elapsed() < Duration::from_millis(250),
+        "partial frame stalled serve_once for {:?}",
+        start.elapsed()
+    );
+    assert_eq!(server.active_connection_count(), 1);
+
+    std::thread::sleep(Duration::from_millis(75));
+    trickle.write_all(b"\x01\x01").unwrap();
+    trickle.flush().unwrap();
+    assert!(!server.serve_once(Duration::from_millis(25)).unwrap());
+
+    std::thread::sleep(Duration::from_millis(75));
+    let _ = trickle.write_all(b"\x00\x00");
+    let _ = trickle.flush();
+    std::thread::sleep(Duration::from_millis(60));
+    let _ = server.serve_pending().unwrap();
+    assert_eq!(
+        server.active_connection_count(),
+        0,
+        "multi-chunk trickle connection MUST expire at absolute frame_deadline without reset"
+    );
+    drop(trickle);
+}
+
+fn assert_concurrent_trickle_allows_healthy_client(
+    server: &mut WorthQueryRemoteServer<'_, SharedProjectSchema, SharedProjectProgram>,
+    cfg: &RemoteAuthConfig,
+    home: &WorthQueryApplicationHome<SharedProjectSchema, SharedProjectProgram>,
+) {
     let addr = server.local_addr();
     let mut trickle = TcpStream::connect(addr).unwrap();
     trickle.write_all(b"WQS1\x01").unwrap();
     trickle.flush().unwrap();
-    let start = Instant::now();
-    assert!(!server.serve_once(Duration::from_millis(35)).unwrap());
-    assert!(
-        start.elapsed() < Duration::from_millis(300),
-        "partial frame stalled serve_once for {:?}",
-        start.elapsed()
-    );
+    let _ = server.serve_pending().unwrap();
 
     let alice_tok = issue_principal_token(cfg, home, 0, 81);
     let mut healthy = WorthQueryRemoteClient::connect(addr, alice_tok).unwrap();
@@ -166,12 +205,6 @@ fn assert_trickle_does_not_stall(
             .unwrap()[0]
             .project_key,
         "Project1"
-    );
-    std::thread::sleep(Duration::from_millis(170));
-    let _ = server.serve_pending().unwrap();
-    assert!(
-        server.active_connection_count() <= 1,
-        "stalled trickle connection must be expired and dropped"
     );
     drop(trickle);
     drop(healthy);
@@ -235,14 +268,21 @@ fn assert_token_expiry_reclaims_watch(
         .unwrap();
     assert_eq!(server.active_watch_count(), 1);
     std::thread::sleep(Duration::from_millis(1150));
-    assert_eq!(
-        server.active_watch_count(),
-        0,
-        "expired watch token MUST automatically reclaim watch slot"
-    );
+    // Read-only observers must NOT mutate or reap watches.
+    assert_eq!(server.active_watch_count(), 1);
+    assert_eq!(server.active_watches().len(), 1);
+    assert_eq!(server.reap_expired_watches(), 1);
+    assert_eq!(server.active_watch_count(), 0);
+    assert_bob_acquires_reclaimed_watch(server, cfg, home);
+}
 
+fn assert_bob_acquires_reclaimed_watch(
+    server: &mut WorthQueryRemoteServer<'_, SharedProjectSchema, SharedProjectProgram>,
+    cfg: &RemoteAuthConfig,
+    home: &WorthQueryApplicationHome<SharedProjectSchema, SharedProjectProgram>,
+) {
     let bob_tok = issue_principal_token(cfg, home, 1, 83);
-    let mut c_bob = WorthQueryRemoteClient::connect(addr, bob_tok).unwrap();
+    let mut c_bob = WorthQueryRemoteClient::connect(server.local_addr(), bob_tok).unwrap();
     c_bob
         .send_watch_open::<SharedProjectSchema, SharedProjectProgram>(
             &ProjectId::project1(),

@@ -34,7 +34,7 @@ use super::denial::{
     AuthorizationRefusalReason, BudgetRefusalReason, SharedAccessDenial, WatchRefusalReason,
 };
 use super::scope_binding::{
-    clamped_query_row_limit, verify_capability_matches_scope, BoundScopeIdentity,
+    clamped_query_row_limit, verify_admitted_scope_entity, BoundScopeIdentity,
 };
 use super::server_dispatch::map_query_denial;
 use super::types::RemoteServerLimits;
@@ -232,28 +232,27 @@ where
 {
     let (principal, request_scope, bound_scope) = caller;
     let (watch_cap, read_cap, watch_input, read_input) = caps;
-    verify_capability_matches_scope::<
-        Schema,
-        Program::WatchCapability,
-        Program::WatchCapabilityInput,
-        QueryScope<Schema, Program>,
-    >(&watch_input, bound_scope)?;
-    verify_capability_matches_scope::<
-        Schema,
-        Program::ReadCapability,
-        Program::ReadCapabilityInput,
-        QueryScope<Schema, Program>,
-    >(&read_input, bound_scope)?;
-    let _watch_admitted = selected
+    let watch_admitted = selected
         .admit_capability_access(phase, principal, watch_cap, watch_input, request_scope)
         .map_err(|_| {
             SharedAccessDenial::AuthorizationRefused(AuthorizationRefusalReason::CapabilityDenied)
         })?;
-    selected
+    verify_admitted_scope_entity(
+        &watch_admitted,
+        bound_scope,
+        AuthorizationRefusalReason::CapabilityDenied,
+    )?;
+    let read_admitted = selected
         .admit_capability_access(phase, principal, read_cap, read_input, request_scope)
         .map_err(|_| {
             SharedAccessDenial::AuthorizationRefused(AuthorizationRefusalReason::CapabilityDenied)
-        })
+        })?;
+    verify_admitted_scope_entity(
+        &read_admitted,
+        bound_scope,
+        AuthorizationRefusalReason::CapabilityDenied,
+    )?;
+    Ok(read_admitted)
 }
 
 pub(super) fn resolve_principal<Schema, Program>(

@@ -136,16 +136,20 @@ impl RemoteByteWriter {
     }
 }
 
-pub(super) fn encode_scope_request(
+pub(super) fn encode_scope_request<Query: RemoteBinaryCodec>(
     token: &RemoteAuthToken,
     scope_key: &str,
-    query_bytes: &[u8],
-) -> Vec<u8> {
+    query: &Query,
+    max_frame_bytes: u32,
+) -> Result<Vec<u8>, SharedAccessDenial> {
+    let mut query_writer = RemoteByteWriter::new(max_frame_bytes);
+    query.encode_remote_bounded(&mut query_writer)?;
+    let query_bytes = query_writer.into_bytes();
     let mut w = BinaryWriter::with_capacity(256 + scope_key.len() + query_bytes.len());
     token.encode_into(&mut w);
     w.write_str(scope_key);
-    w.write_bytes(query_bytes);
-    w.into_bytes()
+    w.write_bytes(&query_bytes);
+    Ok(w.into_bytes())
 }
 
 /// Borrows `scope_key` and `query_bytes` directly from `payload` with zero payload copy.
@@ -194,7 +198,7 @@ pub(super) fn write_encoded_rows<Row: RemoteBinaryCodec>(
     writer.charge(min_needed)?;
     writer.write_u32(count_u32)?;
     for row in rows {
-        writer.write_length_prefixed(|inner| row.encode_remote_into(inner))?;
+        writer.write_length_prefixed(|inner| row.encode_remote_bounded(inner))?;
     }
     Ok(())
 }

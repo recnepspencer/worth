@@ -27,11 +27,11 @@ use super::denial::{
     AuthenticationRefusalReason, AuthorizationRefusalReason, BudgetRefusalReason,
     SharedAccessDenial,
 };
-use super::scope_binding::{verify_capability_matches_scope, BoundScopeIdentity};
+use super::scope_binding::{verify_admitted_scope_entity, BoundScopeIdentity};
 use super::types::{RemoteServerLimits, RemoteWatchId};
 use super::watch_drain::{
     drain_lease_into_payload, resolve_principal, resolve_scope_entity, write_initial_watch_rows,
-    IntentBinding, LiveLease, QueryMarker, QueryPrincipalId, QueryResult, QueryScope,
+    IntentBinding, LiveLease, QueryMarker, QueryPrincipalId, QueryResult,
 };
 use super::watch_open::open_governed_live_lease;
 
@@ -171,12 +171,6 @@ where
             .capability(Program::watch_capability(), Program::watch_operation())
             .map_err(|_| SharedAccessDenial::HostUnavailable)?;
         let watch_input = Program::build_watch_capability_input(&self.scope);
-        verify_capability_matches_scope::<
-            Schema,
-            Program::WatchCapability,
-            Program::WatchCapabilityInput,
-            QueryScope<Schema, Program>,
-        >(&watch_input, &self.bound_scope)?;
         let scope_binding =
             Program::build_query_intent(&self.scope, &self.query_payload)?.into_scope();
         Ok(PreparedWatchPoll {
@@ -219,7 +213,7 @@ where
                 AuthorizationRefusalReason::StaleScope,
             ));
         }
-        selected
+        let watch_admitted = selected
             .admit_capability_access(
                 phase,
                 &principal,
@@ -232,16 +226,17 @@ where
                     AuthorizationRefusalReason::WatchCapabilityRevoked,
                 )
             })?;
-        drain_lease_into_payload::<Schema, Program>(
-            &mut self.lease,
-            phase,
-            &principal,
-            (
-                request_scope,
-                limits.live_buffer_capacity().saturating_add(1),
-                limits.max_frame_bytes(),
-            ),
-        )
+        verify_admitted_scope_entity(
+            &watch_admitted,
+            &self.bound_scope,
+            AuthorizationRefusalReason::StaleScope,
+        )?;
+        let drain_args = (
+            request_scope,
+            limits.live_buffer_capacity().saturating_add(1),
+            limits.max_frame_bytes(),
+        );
+        drain_lease_into_payload::<Schema, Program>(&mut self.lease, phase, &principal, drain_args)
     }
 }
 

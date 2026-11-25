@@ -91,14 +91,10 @@ impl WorthQueryRemoteClient {
         Schema: ApplicationSchema + 'static,
         Program: WorthQuerySharedAccessProgram<Schema>,
     {
-        let scope_key = Program::scope_key(scope);
-        let payload = encode_scope_request(&self.auth_token, &scope_key, &query.encode_remote());
-        write_bounded_frame(
-            &mut self.stream,
-            FrameKind::QueryRequest,
-            &payload,
-            self.limits.max_frame_bytes(),
-        )
+        let max = self.limits.max_frame_bytes();
+        let payload =
+            encode_scope_request(&self.auth_token, &Program::scope_key(scope), query, max)?;
+        write_bounded_frame(&mut self.stream, FrameKind::QueryRequest, &payload, max)
     }
 
     /// Receives and decodes the response for a previously sent remote query.
@@ -148,13 +144,14 @@ impl WorthQueryRemoteClient {
         Program: WorthQuerySharedAccessProgram<Schema>,
     {
         let mut watch_stream = connect_loopback_stream(self.addr, self.limits)?;
-        let scope_key = Program::scope_key(scope);
-        let payload = encode_scope_request(&self.auth_token, &scope_key, &query.encode_remote());
+        let max = self.limits.max_frame_bytes();
+        let payload =
+            encode_scope_request(&self.auth_token, &Program::scope_key(scope), query, max)?;
         write_bounded_frame(
             &mut watch_stream,
             FrameKind::WatchOpenRequest,
             &payload,
-            self.limits.max_frame_bytes(),
+            max,
         )?;
         self.pending_watch_stream = Some(watch_stream);
         Ok(())

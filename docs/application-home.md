@@ -376,12 +376,16 @@ opening a second writer on the Directory:
 - **Bounded, nonblocking hosting and watch reclamation:** `RemoteServerLimits`
   and `RemoteClientLimits` enforce `MIN_MAX_FRAME_BYTES` (64 bytes, strictly
   above the stack-encoded refusal frame), intersect remote row limits with both
-  graph cardinality and the installed query binding cap, stream rows through a
-  pre-allocation-capped `RemoteByteWriter`, keep accepted TCP sockets strictly
-  nonblocking with absolute per-frame/idle deadlines, bind watch authority to
-  the exact resolved scope entity at both open and every poll, roll back failed
-  watch opens before slot insertion, and automatically reclaim watches on
-  disconnect or token expiry.
+  graph cardinality and the installed query binding cap, require bounded
+  `RemoteBinaryCodec::encode_remote_bounded` streaming through
+  `RemoteByteWriter` before allocation, keep accepted TCP sockets strictly
+  nonblocking with per-tick dispatch quotas and absolute per-frame/idle
+  deadlines, verify the native admitted watch capability proof's resolved
+  resource `EntityId` against the exact bound scope entity at both open and
+  every poll, keep `active_watch_count` / `active_watches` strictly read-only,
+  roll back failed watch opens before slot insertion, and reclaim watches on
+  disconnect or token expiry via owner progress (`serve_pending`, `serve_once`,
+  or `reap_expired_watches`).
 
 ## Examples
 

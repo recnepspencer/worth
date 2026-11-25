@@ -288,25 +288,29 @@ where
 
 pub(super) fn reap_expired_watches<Schema, Program>(
     watches: &mut BTreeMap<RemoteWatchId, ActiveRemoteWatch<'_, Schema, Program>>,
-) where
+) -> usize
+where
     Schema: ApplicationSchemaComposition + 'static,
     Program: WorthQuerySharedAccessProgram<Schema>,
     QueryResult<Schema, Program>:
         WorthQueryApplicationProjection<Schema, QueryMarker<Schema, Program>>,
 {
     let Ok(now_secs) = current_unix_secs() else {
-        return;
+        return 0;
     };
     let expired: Vec<RemoteWatchId> = watches
         .iter()
         .filter(|(_, watch)| watch.is_expired_at(now_secs))
         .map(|(&id, _)| id)
         .collect();
+    let mut reclaimed = 0_usize;
     for id in expired {
         if let Some(watch) = watches.remove(&id) {
             watch.close();
+            reclaimed += 1;
         }
     }
+    reclaimed
 }
 
 pub(super) fn reclaim_connection_watches<Schema, Program>(

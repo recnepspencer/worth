@@ -12,13 +12,17 @@
 //! forged by callers:
 //!
 //! ```compile_fail,E0451
-//! use worth_query_host::facade::shared_access::ScopeAccessGrant;
-//! fn forge_grant() -> ScopeAccessGrant {
+//! use worth_query_decl::facade::authentication::WorthQueryExternalPrincipalIdentity;
+//! use worth_query_host::facade::shared_access::{ScopeAccess, ScopeAccessGrant, ScopeGrantId};
+//! fn forge_grant(
+//!     id: ScopeGrantId,
+//!     principal: WorthQueryExternalPrincipalIdentity,
+//! ) -> ScopeAccessGrant {
 //!     ScopeAccessGrant {
-//!         id: todo!(),
+//!         id,
 //!         scope_key: String::new(),
-//!         principal: todo!(),
-//!         access: todo!(),
+//!         principal,
+//!         access: ScopeAccess::read_only(),
 //!         home_identity: None,
 //!         home_incarnation: None,
 //!         committed_record_changes: 1,

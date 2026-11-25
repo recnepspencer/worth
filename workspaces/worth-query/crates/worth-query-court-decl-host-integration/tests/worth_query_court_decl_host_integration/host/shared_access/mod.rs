@@ -4,6 +4,8 @@
 mod adversarial;
 mod adversarial_controls;
 mod adversarial_mismatch;
+mod adversarial_watch_shift;
+mod alias_shift_contract;
 mod capabilities;
 mod dst;
 mod dst_open_session;

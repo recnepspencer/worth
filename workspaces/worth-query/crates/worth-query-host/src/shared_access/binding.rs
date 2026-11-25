@@ -24,16 +24,17 @@ use super::capped_writer::RemoteByteWriter;
 use super::denial::SharedAccessDenial;
 use super::types::{ScopeAccess, ScopeGrantId};
 
-/// Deterministic binary wire codec for remote scope identifiers, queries, and rows.
+/// Deterministic bounded binary wire codec for remote query payloads and rows.
+///
+/// Implementations must stream bytes directly into [`RemoteByteWriter`], which
+/// charges every byte against the active frame ceiling before allocation.
 pub trait RemoteBinaryCodec: Sized {
-    fn encode_remote(&self) -> Vec<u8>;
-    fn decode_remote(bytes: &[u8]) -> Result<Self, SharedAccessDenial>;
+    fn encode_remote_bounded(
+        &self,
+        writer: &mut RemoteByteWriter,
+    ) -> Result<(), SharedAccessDenial>;
 
-    /// Streams encoded bytes directly into a pre-capped frame writer.
-    fn encode_remote_into(&self, writer: &mut RemoteByteWriter) -> Result<(), SharedAccessDenial> {
-        let bytes = self.encode_remote();
-        writer.write_fixed(&bytes)
-    }
+    fn decode_remote(bytes: &[u8]) -> Result<Self, SharedAccessDenial>;
 }
 
 /// Parameters for building a durable scope-access grant mutation on the owner's Home.

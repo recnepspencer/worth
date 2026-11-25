@@ -103,24 +103,34 @@ where
         self.tcp.connection_count()
     }
 
-    pub fn active_watch_count(&mut self) -> usize {
-        reap_expired_watches(&mut self.watches);
+    /// Read-only count of currently live server-owned watches.
+    ///
+    /// Never mutates or reaps watches; drive expiry via `serve_pending`,
+    /// `serve_once`, or `reap_expired_watches`.
+    pub fn active_watch_count(&self) -> usize {
         self.watches.len()
     }
 
     /// Read-only snapshot of live server-owned watches `(id, principal, scope)`.
+    ///
+    /// Never mutates or reaps watches; drive expiry via `serve_pending`,
+    /// `serve_once`, or `reap_expired_watches`.
     pub fn active_watches(
-        &mut self,
+        &self,
     ) -> Vec<(
         RemoteWatchId,
         WorthQueryExternalPrincipalIdentity,
         Program::ScopeId,
     )> {
-        reap_expired_watches(&mut self.watches);
         self.watches
             .iter()
             .map(|(&id, watch)| (id, watch.owner_principal.clone(), watch.scope.clone()))
             .collect()
+    }
+
+    /// Reclaims all live watches whose bearer token has expired and returns the count closed.
+    pub fn reap_expired_watches(&mut self) -> usize {
+        reap_expired_watches(&mut self.watches)
     }
 
     /// Processes one complete framed binary request and returns the framed binary response.

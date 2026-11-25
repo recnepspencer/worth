@@ -11,6 +11,10 @@ use worth_query_decl::facade::{
     },
 };
 
+use super::alias_shift_contract::{
+    SetProjectAlias, SetProjectAliasBinding, WatchProjectByAliasCapability,
+    WatchProjectByAliasOperation,
+};
 use super::capabilities::{
     ReadProjectCapability, ReadProjectOperation, SharedAccessContext, SharedAccessProvenance,
     SharedPrincipalBinding, WatchProjectCapability, WatchProjectOperation,
@@ -70,6 +74,8 @@ impl ApplicationSchemaContribution<SharedProjectSchema> for SharedProjectSurface
             ReadProjectCapability,
             WatchProjectOperation,
             WatchProjectCapability,
+            WatchProjectByAliasOperation,
+            WatchProjectByAliasCapability,
         ),
         (
             ProjectUpdatedEffect,
@@ -87,6 +93,8 @@ impl ApplicationSchemaContribution<SharedProjectSchema> for SharedProjectSurface
             GrantProjectAccessBinding,
             RevokeProjectAccess,
             RevokeProjectAccessBinding,
+            SetProjectAlias,
+            SetProjectAliasBinding,
         ),
     );
 }
@@ -236,6 +244,7 @@ impl Aspect for ProjectStateAspect {
 pub struct ProjectStateRecord {
     pub project_key: String,
     pub version: u64,
+    pub project_alias: String,
 }
 impl Record<ProjectStateRecord> for SharedModelBindings {
     fn record() -> impl Shape<ProjectStateRecord, Self> {
@@ -243,12 +252,19 @@ impl Record<ProjectStateRecord> for SharedModelBindings {
             .equality_queryable(true)
             .read_only()
             .and("ProjectVersion", |r: &ProjectStateRecord| r.version)
-            .build(|project_key, version, _: &mut ValueDecodeAdmission<'_>| {
-                Ok::<_, std::convert::Infallible>(ProjectStateRecord {
-                    project_key,
-                    version,
-                })
+            .and("ProjectAlias", |r: &ProjectStateRecord| {
+                r.project_alias.clone()
             })
+            .equality_queryable(true)
+            .build(
+                |project_key, version, project_alias, _: &mut ValueDecodeAdmission<'_>| {
+                    Ok::<_, std::convert::Infallible>(ProjectStateRecord {
+                        project_key,
+                        version,
+                        project_alias,
+                    })
+                },
+            )
     }
 }
 
@@ -342,6 +358,7 @@ pub type MappingStatusField = FieldSelection<
 pub type PrincipalIdField = FieldSelection<SharedModel, Principal, PrincipalIdentityAspect, u64>;
 pub type ProjectKeyField = FieldSelection<SharedModel, Project, ProjectStateAspect, String>;
 pub type ProjectVersionField = FieldSelection<SharedModel, Project, ProjectStateAspect, u64>;
+pub type ProjectAliasField = FieldSelection<SharedModel, Project, ProjectStateAspect, String>;
 pub type GrantIdField = FieldSelection<SharedModel, ProjectGrant, ProjectGrantAspect, String>;
 pub type GrantActionField = FieldSelection<SharedModel, ProjectGrant, ProjectGrantAspect, String>;
 pub type GrantPurposeField = FieldSelection<SharedModel, ProjectGrant, ProjectGrantAspect, String>;

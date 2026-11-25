@@ -214,7 +214,7 @@ impl Registration<SharedProjectSchema> for WatchProjectCapability {
     }
 }
 
-fn build_capability_contract<Cap, Op>(
+pub(super) fn build_capability_contract<Cap, Op>(
     capability: ApplicationCapabilityRef<SharedProjectSchema, Cap>,
     operation: ApplicationOperationRef<SharedProjectSchema, Op, String>,
     field_dimension: GrantDisclosureField,

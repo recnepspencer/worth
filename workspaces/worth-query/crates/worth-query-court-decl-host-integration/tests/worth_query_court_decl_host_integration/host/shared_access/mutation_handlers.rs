@@ -15,6 +15,9 @@ use worth_query_host::facade::{
     },
 };
 
+use super::alias_shift_contract::{
+    AliasCompletion, SetProjectAliasBinding, SetProjectAliasHandler,
+};
 use super::mutations::{
     GrantProjectAccessBinding, GrantProjectDecision, GrantProjectInput, RevokeProjectAccessBinding,
     RevokeProjectInput, WriteProjectInput, WriteProjectVersionBinding, OWNER_PRINCIPAL_ID,
@@ -303,6 +306,7 @@ impl WorthQueryApplicationContribution<SharedProjectSchema> for SharedProjectSur
         setup.handler::<WriteProjectVersionBinding, _>(WriteProjectHandler)?;
         setup.handler::<GrantProjectAccessBinding, _>(GrantProjectHandler)?;
         setup.handler::<RevokeProjectAccessBinding, _>(RevokeProjectHandler)?;
+        setup.handler::<SetProjectAliasBinding, _>(SetProjectAliasHandler)?;
         Ok(())
     }
 }
@@ -347,6 +351,8 @@ impl ApplicationProgramDefinition<SharedProjectSchema> for SharedProjectProgram 
                 .action::<GrantProjectAccessBinding, GrantCompletion>()
                 .finish_action()
                 .action::<RevokeProjectAccessBinding, RevokeCompletion>()
+                .finish_action()
+                .action::<SetProjectAliasBinding, AliasCompletion>()
                 .finish_action()
                 .finish(),
         ]
