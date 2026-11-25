@@ -86,3 +86,11 @@ ignored; only `hand-*.ndjson` is versioned.
 | `hand-rejected-restore-loses-fact` | exit 11, pc = 6 | `hand-branch-redelete`, but the checkout back to the first delete reports no active reversal fact. |
 | `hand-rejected-other-source-replays` | exit 11, pc = 5 | `hand-replay-other-source` with today's defect: the reused key on the other source answers `AlreadyRecorded`. |
 | `hand-rejected-envelope-replays-writer-key` | exit 11, pc = 4 | `hand-writer-key-envelope`, but the envelope under the writer's key replays the writer's step, as the flat pre-(v) journal said (DST seeds 0x7b020035 and 0x7b020108). |
+
+## Proofs of the implementation kernels
+
+The model checks the protocol. Two kernels of the Phase 2 implementation are also proved against their source:
+- the journal's O(log) jump-pointer lift (`specs/verus/tree_based_undo/`, Verus, plus `specs/lean/tree_based_undo/JumpLift.lean`);
+- restored support's navigation supersession rule (`specs/lean/tree_based_undo/Supersession.lean`).
+
+Their READMEs give the commands. `python specs/proof_mirror_check.py` fails when any source range a proof mirrors has changed.
