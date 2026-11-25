@@ -80,7 +80,9 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 crate = "worth-relational"
 layer = 6
 # +1000 for PR 4C Native staged cold-preflight and transition backfill support.
-cap = 79000
+# +500 for #119 coupled successor supersession (retraction and completion on
+# the candidate), which fit before #389's concurrent runtime growth.
+cap = 79500
 floor = 32000
 depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "indexes", "durability", "publication"]
 

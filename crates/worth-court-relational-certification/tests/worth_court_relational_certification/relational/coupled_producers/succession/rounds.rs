@@ -99,20 +99,24 @@ fn a_birth_round_relinking_its_head_relation_folds() {
     assert_eq!(folded.0, one.0);
 }
 
-/// A relation the head never created is a new record the fold cannot lower.
+/// A relation the head never created is an ordinary new relation of the
+/// round: the commit equals the one-round answer (#119).
 #[test]
-fn a_successor_round_adding_a_relation_is_a_structural_effect() {
+fn a_successor_round_adding_a_relation_commits_the_one_round_answer() {
     let main = PartitionId::main();
-    let refused = linked_chain(&[("round-1", main, &[]), ("round-2", main, &["owned-output"])]);
-    assert_eq!(refused.unwrap_err(), postponed(Reason::StructuralEffect));
+    let rounds = linked_chain(&[("round-1", main, &[]), ("round-2", main, &["owned-output"])]);
+    let one = linked_chain(&[("round-2", main, &["owned-output"])]).unwrap();
+    assert_eq!(rounds.unwrap().0, one.0);
 }
 
-/// A successor that does not re-create its head's relation leaves it uncovered.
+/// A successor that no longer creates its head's relation drops it: the
+/// relation is never published and its identity is cancelled (#119 N2).
 #[test]
-fn a_successor_round_dropping_its_head_relation_is_uncovered() {
+fn a_successor_round_dropping_its_head_relation_commits_the_one_round_answer() {
     let main = PartitionId::main();
-    let refused = linked_chain(&[("round-1", main, &["owned-output"]), ("round-2", main, &[])]);
-    assert_eq!(refused.unwrap_err(), postponed(Reason::UncoveredWrite));
+    let rounds = linked_chain(&[("round-1", main, &["owned-output"]), ("round-2", main, &[])]);
+    let one = linked_chain(&[("round-2", main, &[])]).unwrap();
+    assert_eq!(rounds.unwrap().0.alpha(), one.0.alpha());
 }
 
 /// Each Query attempt issues its own mutation partition. A successor whose

@@ -1,4 +1,5 @@
 pub mod allocation_batch;
+pub mod allocation_source;
 pub mod checkpoint_snapshot;
 pub mod observation;
 pub mod partition_frontier;
@@ -15,13 +16,16 @@ mod replay_gaps;
 pub mod reservation;
 
 #[cfg(test)]
+mod replay_block_tests;
+#[cfg(test)]
 mod tests;
 
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 
 use crate::history::data::canonical_record_allocation::{
-    CanonicalRecordAllocation, RecordAllocationClass, RecordAllocationOrigin,
+    CancelledRecordAllocation, CanonicalRecordAllocation, RecordAllocationClass,
+    RecordAllocationOrigin,
 };
 use crate::identity::data::PartitionId;
 use crate::storage::substrate::SharedMap;
@@ -40,8 +44,19 @@ struct RecordIdentityState {
     next_slots: SharedMap<RecordFrontierKey, usize>,
     generation_high_water: BTreeMap<RecordSlotKey, u32>,
     pending: BTreeMap<RecordSlotKey, PendingRecordReservation>,
-    staged_replay_allocations: Option<Vec<CanonicalRecordAllocation>>,
+    staged_replay_allocations: Option<StagedReplayAllocations>,
+    /// The live append slots the staged commit's evidence admitted, per class
+    /// and partition; each live replay allocation consumes one of them.
+    replay_slots: BTreeMap<RecordFrontierKey, std::collections::BTreeSet<usize>>,
+    /// Append slots tail replay skipped, which a later commit may publish (#389).
     replay_gaps: replay_gaps::ReplayGaps,
+}
+
+/// One durable commit's allocation evidence, staged for its replay.
+#[derive(Debug, Clone, Default)]
+pub struct StagedReplayAllocations {
+    live: Vec<CanonicalRecordAllocation>,
+    cancelled: Vec<CancelledRecordAllocation>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -65,8 +80,10 @@ impl Clone for RecordIdentitySubsystem {
 
 impl RecordIdentitySubsystem {
     pub fn begin_allocations(&self) -> PendingRecordAllocations {
-        let staged_replay_allocations = self.lock().staged_replay_allocations.take();
-        PendingRecordAllocations::new(self.clone(), staged_replay_allocations)
+        match self.lock().staged_replay_allocations.take() {
+            Some(staged) => PendingRecordAllocations::replaying(self.clone(), staged),
+            None => PendingRecordAllocations::new(self.clone(), None),
+        }
     }
 
     pub fn admit_reclaimed(&self, reclaimed: ReclaimedRecordSlot) {
@@ -161,6 +178,7 @@ impl RecordIdentitySubsystem {
     pub fn detached(&self) -> Self {
         let mut state = self.lock().clone();
         state.staged_replay_allocations = None;
+        state.replay_slots.clear();
         state.replay_gaps.clear();
         let fork = Self {
             state: Arc::new(Mutex::new(state)),
@@ -209,6 +227,7 @@ impl RecordIdentitySubsystem {
                     generation_high_water,
                     pending: BTreeMap::new(),
                     staged_replay_allocations: None,
+                    replay_slots: BTreeMap::new(),
                     replay_gaps: Default::default(),
                 })),
             },

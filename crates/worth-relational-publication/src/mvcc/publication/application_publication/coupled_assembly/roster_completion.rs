@@ -29,7 +29,8 @@ pub fn complete(
     let source_effects = RelationalCoupledAuthoredSourceEffects::capture(
         execution,
         fragments,
-        std::iter::once(authored_prefix).chain(stages.iter().map(|stage| stage.fragments.clone())),
+        std::iter::once(authored_prefix)
+            .chain(stages.iter().map(|stage| stage.span.fragments.clone())),
     )?;
     for stage in stages {
         authored_records.extend_from_slice(&stage.records);

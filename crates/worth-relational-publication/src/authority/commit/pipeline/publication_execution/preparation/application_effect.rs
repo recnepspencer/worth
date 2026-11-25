@@ -20,6 +20,7 @@ pub(super) fn unchanged(
     if !adjacency.is_empty()
         || !(*envelope.owner_content()).records().is_empty()
         || !envelope.record_allocations().is_empty()
+        || !envelope.cancelled_record_allocations().is_empty()
         || symbols.has_reserved_meanings()
         || envelope.schema_transition.is_some()
         || envelope.schema_continuation_descriptor.is_some()

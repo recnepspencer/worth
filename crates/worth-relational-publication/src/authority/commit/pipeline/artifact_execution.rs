@@ -137,7 +137,7 @@ pub(super) fn assemble_commit_artifacts(
                 created_entities: &created_entities,
                 created_relations: &created_relations,
                 naming_plan,
-                record_allocations: mutation_identities.records.canonical(),
+                record_allocations: &mutation_identities.records,
                 strategy_commit_artifacts: strategy_artifacts,
                 merge_execution_authority,
                 schema_continuity: &schema_continuity,

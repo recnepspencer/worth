@@ -187,6 +187,12 @@ impl PendingSymbolMeanings {
     pub fn required_references(&self) -> &BTreeSet<Symbol> {
         &self.required
     }
+    /// Forget every required revision reference, so a coupled candidate can
+    /// require again exactly those of its surviving deltas (#119). Reserved
+    /// meanings are kept; only the required set is rebuilt.
+    pub fn clear_required_references(&mut self) {
+        self.required.clear();
+    }
     pub fn adopt(&mut self, prior: &Self) -> Result<(), SymbolReservationDenial> {
         if !Arc::ptr_eq(&self.owner.state, &prior.owner.state) {
             return Err(SymbolReservationDenial::InvalidDictionary);

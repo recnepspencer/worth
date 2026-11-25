@@ -82,6 +82,7 @@ pub fn apply_plan_with_publication_edges(
     let mut effect = MutationEffect::with_capacity(expected_change_count, expected_event_count);
 
     for intent in &apply_plan.merged_intents {
+        workspace.begin_intent(intent);
         let child = dispatch_intent(intent, &mut workspace, lease)?;
         effect.accumulate(
             workspace.run_owned_mutation(|workspace| assemble_effect(child, workspace))?,

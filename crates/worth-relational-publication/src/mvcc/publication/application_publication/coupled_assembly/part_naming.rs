@@ -57,6 +57,89 @@ pub fn visit_client_keys_mut<E>(
     })
 }
 
+/// Every existing record the plan names: postures, split and merge parents,
+/// an existing merge target, and `Existing` endpoints of created relation
+/// targets (#119 `RetiredReference` and stale-identity guards).
+/// O(plan size).
+pub fn visit_all_record_refs(
+    plan: &CommitNamingPlan,
+    mut visit: impl FnMut(contracts::transactions::data::primitives::RecordRef),
+) {
+    use contracts::lineage::data::{LineagePostureClaim as Claim, LineageRecordTarget as Target};
+    use contracts::transactions::data::primitives::RecordRef;
+    let mut target = |record: &Target| {
+        visit(match *record {
+            Target::Entity(id) => RecordRef::Entity(id),
+            Target::Relation(id) => RecordRef::Relation(id),
+        })
+    };
+    for split in &plan.pending_splits {
+        target(&split.parent_target);
+    }
+    for merge in &plan.pending_merges {
+        for (parent, _) in &merge.parents {
+            target(parent);
+        }
+        if let PendingMergeTarget::Existing(existing) = &merge.target {
+            target(existing);
+        }
+    }
+    for posture in &plan.postures {
+        match posture {
+            Claim::Create { target: record, .. }
+            | Claim::Preserve { target: record, .. }
+            | Claim::Retire { target: record, .. }
+            | Claim::Restore { target: record, .. } => target(record),
+            Claim::Split {
+                parent_target,
+                children,
+                ..
+            } => {
+                target(parent_target);
+                for child in children {
+                    target(&child.target);
+                }
+            }
+            Claim::Merge {
+                parents,
+                target: record,
+                ..
+            } => {
+                for (parent, _) in parents {
+                    target(parent);
+                }
+                target(record);
+            }
+        }
+    }
+    let merges = plan
+        .pending_merges
+        .iter()
+        .filter_map(|merge| match &merge.target {
+            PendingMergeTarget::Created(created) => Some(created),
+            PendingMergeTarget::Existing(_) => None,
+        });
+    let births = plan
+        .pending_births
+        .iter()
+        .map(|birth| &birth.target)
+        .chain(
+            plan.pending_splits
+                .iter()
+                .flat_map(|split| split.children.iter().map(|child| &child.target)),
+        )
+        .chain(merges);
+    for birth in births {
+        if let PendingBirthTarget::CreatedRelation(created) = birth {
+            for endpoint in [&created.source, &created.target] {
+                if let EntityReference::Existing(id) = endpoint {
+                    target(&Target::Entity(*id));
+                }
+            }
+        }
+    }
+}
+
 /// Each endpoint reference of a created relation target.
 pub fn visit_endpoints_mut<E>(
     plan: &mut CommitNamingPlan,

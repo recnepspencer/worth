@@ -1,6 +1,7 @@
 pub mod birth;
 pub mod current_slot_data;
 pub mod metadata;
+pub mod retraction;
 use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
 use crate::identity::data::VersionId;
 use crate::storage::data::RecordLifecycleState;
