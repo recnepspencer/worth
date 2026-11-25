@@ -8,7 +8,9 @@ pub mod current_read;
 pub mod index_omission;
 pub mod managed_source;
 pub mod output_adoption;
+mod payload_backing;
 pub mod publication_parts;
+pub(crate) use payload_backing::{SharedCandidatePayload, WeakCandidatePayload};
 pub mod read_condition;
 pub mod required_outputs;
 pub use output_adoption::RelationalCurrentOutputAdoption;
@@ -38,7 +40,7 @@ pub struct PreparedRelationalCommitCandidate {
     transaction_id: TransactionId,
     branch_id: BranchId,
     candidate_id: u64,
-    _payload: Arc<std::sync::Mutex<Option<CandidatePayload>>>,
+    _payload: SharedCandidatePayload,
     reservation_count: usize,
     consumed: bool,
     _not_sync: PhantomData<Cell<()>>,
@@ -99,7 +101,7 @@ impl PreparedRelationalCommitCandidate {
         maximum_candidates: Option<usize>,
     ) -> Result<Self, PreparedRelationalCandidateAdmissionStop> {
         let reservation_count = execution.reservation_count();
-        let payload = Arc::new(std::sync::Mutex::new(Some(CandidatePayload {
+        let payload = SharedCandidatePayload::new(CandidatePayload {
             coupled_read: None,
             current_read: None,
             companion_read: None,
@@ -111,7 +113,7 @@ impl PreparedRelationalCommitCandidate {
             retention,
             published_snapshot_slot,
             control,
-        })));
+        });
         let candidate_id = publication_binding
             .register_candidate(maximum_candidates, &payload)
             .map_err(|denial| match denial {

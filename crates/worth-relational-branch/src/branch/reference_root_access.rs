@@ -27,7 +27,7 @@ impl RelationalBranchReferenceCell {
         pay_scan: impl FnOnce(usize) -> Result<(), E>,
     ) -> Result<
         worth_execution::ExecutionArray<
-            std::sync::Weak<crate::branch::basis::AdmittedRelationalBranchBasisInner>,
+            crate::branch::basis::WeakAdmittedRelationalBranchBasisInner,
         >,
         crate::branch::basis_registry::RelationalRetainedBasisSnapshotStop<E>,
     > {

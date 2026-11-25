@@ -186,10 +186,14 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         };
         match pending.confirm(phase, self, document.branch(), document) {
             Ok(document) => Ok(document),
-            Err((document, denial)) => Err(WorthQueryDocumentHistoryAttachmentFailure {
-                head: document.selection.take().head,
-                denial,
-            }),
+            Err((document, denial)) => {
+                let head = document
+                    .selection
+                    .take()
+                    .take_head()
+                    .rebind(document.application);
+                Err(WorthQueryDocumentHistoryAttachmentFailure { head, denial })
+            }
         }
     }
 

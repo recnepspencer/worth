@@ -17,7 +17,7 @@ impl RelationalBranchRetentionBinding {
     ) -> Result<RelationalRetentionGuard, RelationalRetentionAcquisitionDenial> {
         self.acquire_subject(
             RelationalRetentionObligationKind::ExternalComponentBasis,
-            Some(Arc::downgrade(&basis.inner)),
+            Some(basis.inner.downgrade()),
             vec![basis.inner.root.clone()],
             None,
         )
@@ -61,7 +61,11 @@ impl RelationalBranchRetentionBinding {
             request
                 .consult()
                 .map_err(|cause| Denial::Request(cause.into()))?;
-            if let Some(inner) = record.component.as_ref().and_then(Weak::upgrade) {
+            if let Some(inner) = record
+                .component
+                .as_ref()
+                .and_then(crate::branch::basis::WeakAdmittedRelationalBranchBasisInner::upgrade)
+            {
                 let basis = crate::branch::basis::AdmittedRelationalBranchBasis { inner };
                 if !Weak::ptr_eq(&basis.inner.retention_binding.owner, &self.owner) {
                     return Err(Denial::Retention(
@@ -77,7 +81,7 @@ impl RelationalBranchRetentionBinding {
     fn acquire_subject(
         &self,
         kind: RelationalRetentionObligationKind,
-        component: Option<Weak<crate::branch::basis::AdmittedRelationalBranchBasisInner>>,
+        component: Option<crate::branch::basis::WeakAdmittedRelationalBranchBasisInner>,
         roots: Vec<Arc<RelationalBranchRoot>>,
         operation_branch: Option<RelationalBranchIdentity>,
     ) -> Result<RelationalRetentionGuard, RelationalRetentionAcquisitionDenial> {

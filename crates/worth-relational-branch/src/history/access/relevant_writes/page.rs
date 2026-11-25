@@ -1,5 +1,5 @@
 use super::cursor::RetainedAuthoredWriteSelection;
-use crate::history::data::{CanonicalCommitEnvelope, CommitId, RelationalCommitReceipt};
+use crate::history::data::{CommitId, RelationalCommitReceipt, SharedCanonicalCommitEnvelope};
 use std::{num::NonZeroUsize, sync::Arc};
 
 /// Bounds new page storage and actual relevant occurrence visits.
@@ -14,7 +14,7 @@ pub struct RelationalAuthoredWritePageLimits {
 /// Its receipt is descriptive; this grants no Product, correction, or disclosure permission.
 #[derive(Clone, Debug)]
 pub struct RelationalAuthoredWriteOccurrence {
-    pub(super) canonical: Arc<CanonicalCommitEnvelope>,
+    pub(super) canonical: SharedCanonicalCommitEnvelope,
 }
 impl RelationalAuthoredWriteOccurrence {
     pub fn receipt(&self) -> &RelationalCommitReceipt {

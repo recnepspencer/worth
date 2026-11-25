@@ -18,8 +18,7 @@ pub enum CandidateReadSupport {
 /// only up to the image before `window_end`, its recorded invalidator, whose
 /// own exact comparison invalidated it.
 pub struct RetainedCandidateRead {
-    pub source:
-        worth_relational::facade::identity::EntityId,
+    pub source: worth_relational::facade::identity::EntityId,
     pub position: usize,
     /// The wave task whose discovery retained it, if a task owns it.
     pub owner: Option<usize>,

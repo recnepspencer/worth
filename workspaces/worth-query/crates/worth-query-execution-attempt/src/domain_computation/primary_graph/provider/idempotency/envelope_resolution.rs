@@ -49,14 +49,15 @@ impl WorthQueryPrimaryGraphProvider {
         let mut retired = crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationRetirement::default();
         self.graph.with_runtime(execution, |runtime| {
             if binding.correction_identity().is_some()
-                && self.inspect_pending_correction_idempotency(binding.key_identity())
+                && self
+                    .inspect_pending_correction_idempotency(binding.key_identity())
                     .is_some_and(|recorded| recorded != binding)
             {
                 return Ok(WorthQueryProviderIdempotencyResolution::Drift);
             }
             if let Some(pending) = self.inspect_pending_application_idempotency(
-                product.observation().lifecycle_incarnation())
-            {
+                product.observation().lifecycle_incarnation(),
+            ) {
                 if let Some(recorded) = pending {
                     if recorded.key_identity() == binding.key_identity() {
                         if !candidates.matches(recorded)? {
@@ -71,21 +72,22 @@ impl WorthQueryPrimaryGraphProvider {
                 }
             }
             if purpose == AuthoredEnvelopeResolutionPurpose::Execute {
-                self.resume_pending_application_publication(execution,
+                self.resume_pending_application_publication(
+                    execution,
                     runtime,
                     product.observation().lifecycle_incarnation(),
                     &mut retired,
-                ).map_err(pending_publication_denial)?;
+                )
+                .map_err(pending_publication_denial)?;
             }
             // Concurrent requests can have admitted the same earlier head.
             // Under the branch lane, locate the key in the SAME live occurrence's
             // current owner selection, then read its immutable original source.
             let selected = super::observe_selected_idempotency_branch(product)?;
             let basis = selected.basis().relational_basis();
-            if let Some(resolution) = self.resolve_unpublished_envelope_idempotency(
-                &product_affinity,
-                candidates,
-            )? {
+            if let Some(resolution) =
+                self.resolve_unpublished_envelope_idempotency(&product_affinity, candidates)?
+            {
                 return Ok(resolution);
             }
             let resolution = self.read_current_idempotency_at_basis(
@@ -100,8 +102,10 @@ impl WorthQueryPrimaryGraphProvider {
                 },
             )?;
             if purpose == AuthoredEnvelopeResolutionPurpose::Execute
-                && let WorthQueryProviderIdempotencyResolution::Readmitted(receipt) = &resolution {
-                runtime.repair_pending_publication_settlement(receipt.commit_reference().commit_id)
+                && let WorthQueryProviderIdempotencyResolution::Readmitted(receipt) = &resolution
+            {
+                runtime
+                    .repair_pending_publication_settlement(receipt.commit_reference().commit_id)
                     .map_err(|_| WorthQueryProviderIdempotencyResolutionDenial::Unavailable)?;
             }
             Ok(resolution)

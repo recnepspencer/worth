@@ -76,9 +76,9 @@ fn pinned_read_shares_native_custody_and_outlives_the_runtime() {
             read.query_context().schema_version,
         )
         .unwrap();
-    assert!(Arc::ptr_eq(
-        read.indexes_for_test()[&index].generation.as_ref().unwrap(),
-        &generation
+    assert!(std::ptr::eq(
+        &**read.indexes_for_test()[&index].generation.as_ref().unwrap(),
+        &*generation
     ));
     let old_symbol = read.symbols().symbol("name");
     let projection = read.project_read();

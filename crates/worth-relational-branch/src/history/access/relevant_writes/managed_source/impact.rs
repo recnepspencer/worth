@@ -5,7 +5,7 @@ use super::super::{
     RelationalAuthoredWriteOccurrence,
 };
 use crate::branch::managed_source_affinity::ManagedSourceCellAffinity;
-use crate::history::data::{CanonicalCommitEnvelope, LiveManagedSourceHistory};
+use crate::history::data::{LiveManagedSourceHistory, SharedCanonicalCommitEnvelope};
 use crate::identity::data::EntityId;
 use crate::validation::candidate_source::authored_history::material::HistoricalSourcePair;
 use crate::validation::candidate_source::authored_history::ManagedSourceImpactKey;
@@ -24,7 +24,7 @@ pub enum RelationalAuthoredManagedSourceImpact {
 /// Owned sealed metadata only. This never keeps an opaque Source payload alive.
 /// The actual canonical owner, program/scope and affected row cells remain bound.
 pub struct RelationalAuthoredManagedSourceMaterial {
-    _canonical: Arc<CanonicalCommitEnvelope>,
+    _canonical: SharedCanonicalCommitEnvelope,
     program: ManagedIndexSourceProgram,
     scope: EntityId,
     rows: ManagedSourceImpactRows,

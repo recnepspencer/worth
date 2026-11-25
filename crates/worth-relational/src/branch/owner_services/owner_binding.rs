@@ -1,11 +1,10 @@
-use std::sync::Weak;
-
-use crate::runtime::{RelationalRuntime, RelationalRuntimeOwnerBinding, RelationalRuntimeState};
+use crate::runtime::state::runtime_state::WeakRelationalRuntimeState;
+use crate::runtime::{RelationalRuntime, RelationalRuntimeOwnerBinding};
 
 /// Weak entry to the exact runtime state and its real operation-admission gate.
 #[derive(Debug, Clone)]
 pub(super) struct RelationalOwnerServiceBinding {
-    state: Weak<RelationalRuntimeState>,
+    state: WeakRelationalRuntimeState,
     lifecycle: RelationalRuntimeOwnerBinding,
 }
 
@@ -18,10 +17,10 @@ pub(super) enum RelationalOwnerServiceLifecyclePosture {
 
 impl RelationalOwnerServiceBinding {
     pub(super) fn matches_owner(&self, owner: &RelationalRuntime) -> bool {
-        Weak::ptr_eq(&self.state, &owner.state_binding())
+        self.state.ptr_eq(&owner.state_binding())
     }
     pub(super) fn new(
-        state: Weak<RelationalRuntimeState>,
+        state: WeakRelationalRuntimeState,
         lifecycle: RelationalRuntimeOwnerBinding,
     ) -> Self {
         Self { state, lifecycle }

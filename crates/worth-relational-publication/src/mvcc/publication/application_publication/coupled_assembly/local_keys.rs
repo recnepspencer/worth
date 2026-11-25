@@ -1,6 +1,7 @@
 //! Each admitted participant keeps its local Create coordinates in the combined transaction.
 use crate::mvcc::publication::application_publication::custody;
 use contracts::execution::request_stage::checkpoint;
+use contracts::lineage::data::{CommitNamingPlan, PendingBirthTarget};
 use contracts::mvcc::publication::application_publication::output_meaning::RequiredOutputRoleTarget;
 use contracts::symbols::data::client_key::ClientKey;
 use contracts::symbols::data::string_interner::StringInterner;
@@ -11,7 +12,6 @@ use contracts::transactions::data::primitives::WorkerIntentBatch;
 use std::fmt::Write;
 use worth_execution::ExecutionRequest;
 use worth_relational_contracts::internal_port as contracts;
-use contracts::lineage::data::{CommitNamingPlan, PendingBirthTarget};
 
 /// The scoped coordinates one part chose, by original text. A successor round
 /// of the same route reuses exactly these, so its keys name the chain's records.

@@ -44,7 +44,9 @@ impl WorthQueryOutputDemandRegistry {
     }
 
     pub fn preflight_home_retirement(&mut self) -> Result<(), Denial> {
-        let state = Arc::get_mut(&mut self.state)
+        let state = self
+            .state
+            .get_mut()
             .ok_or(Denial::Busy(Owner::InstalledProducers))?
             .get_mut()
             .map_err(|_| Denial::Busy(Owner::InstalledProducers))?;
@@ -92,7 +94,7 @@ mod tests {
         let alias = original.clone();
         refused(&mut original);
         drop(alias);
-        let weak = Arc::downgrade(&original.state);
+        let weak = original.state.downgrade();
         refused(&mut original);
         drop(weak);
         assert!(original.preflight_home_retirement().is_ok());

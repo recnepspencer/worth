@@ -6,6 +6,7 @@ use contracts::mvcc::publication::application_publication::output_meaning::Requi
 use contracts::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 use contracts::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_execution::{ExecutionArray, ExecutionRequest, ExecutionRequestArrayBuilder};
+use worth_relational_branch::internal_port::history::data::SharedCanonicalCommitEnvelope;
 use worth_relational_contracts::internal_port as contracts;
 struct PreparedOrigin {
     ordinal: usize,
@@ -13,13 +14,13 @@ struct PreparedOrigin {
 }
 pub struct RelationalPreparedOutputPublications {
     installed: RelationalInstalledApplicationPublicationAuthority,
-    envelope: Arc<CanonicalCommitEnvelope>,
+    envelope: SharedCanonicalCommitEnvelope,
     origin_count: usize,
     selected: ExecutionArray<PreparedOrigin>,
 }
 pub struct RelationalPerformedOutputPublications {
     prepared: RelationalPreparedOutputPublications,
-    envelope: Arc<CanonicalCommitEnvelope>,
+    envelope: SharedCanonicalCommitEnvelope,
 }
 pub fn prepare(
     execution: &ExecutionRequest<'_, '_>,
@@ -85,7 +86,7 @@ pub fn prepare(
         .0?;
     Ok(RelationalPreparedOutputPublications {
         installed: installed.clone(),
-        envelope: Arc::clone(envelope),
+        envelope: SharedCanonicalCommitEnvelope::from_arc(Arc::clone(envelope)),
         origin_count,
         selected: selected.seal().map_err(array_stop)?,
     })
@@ -158,7 +159,7 @@ impl RelationalPreparedOutputPublications {
         }
         Some(RelationalPerformedOutputPublications {
             prepared: self,
-            envelope: envelope.clone().into_arc(),
+            envelope: envelope.clone(),
         })
     }
 }
@@ -176,7 +177,7 @@ impl RelationalPerformedOutputPublications {
             .map(move |selected| RelationalRequiredOutputPublication {
                 runtime_instance_id: installed.runtime_instance_id,
                 evidence: worth_relational_branch::internal_port::publication::ownership::evidence::PublicationEvidence::Canonical(
-                    Arc::clone(&self.envelope),
+                    self.envelope.clone(),
                 ),
                 authority: installed.authority.seal_required_output_publication_at(
                     self.envelope.commit.commit_id.0,

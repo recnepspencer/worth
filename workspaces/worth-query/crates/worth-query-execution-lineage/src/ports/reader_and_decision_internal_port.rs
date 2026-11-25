@@ -69,11 +69,7 @@ pub trait InvariantProjectionReaderInternalPort<'runtime, Schema> {
     ) -> &Arc<crate::domain_computation::primary_graph::SourceInvalidationOwner>;
     fn output_lineage(
         &self,
-    ) -> &Arc<
-        std::sync::Mutex<
-            crate::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage,
-        >,
-    >;
+    ) -> &crate::domain_computation::primary_graph::output_lineage::SharedOutputLineage;
     fn native_read(
         &mut self,
     ) -> crate::domain_computation::primary_graph::invariant_projection::native_read::NativeRead<
@@ -163,11 +159,7 @@ impl<'runtime, Schema> InvariantProjectionReaderInternalPort<'runtime, Schema>
 
     fn output_lineage(
         &self,
-    ) -> &Arc<
-        std::sync::Mutex<
-            crate::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage,
-        >,
-    >{
+    ) -> &crate::domain_computation::primary_graph::output_lineage::SharedOutputLineage {
         &self.output_lineage
     }
 

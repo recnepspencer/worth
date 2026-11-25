@@ -11,6 +11,7 @@ impl WorthQueryProductRuntime {
     ) -> Result<WorthQueryProductBranchLease, WorthQueryProductBranchAdmissionDenial> {
         use worth_runtime_world::facade::ProductBranchReferenceReadmissionDenial as DescriptionDenial;
         let observation = self
+            .fields()
             .owner
             .observation_port()
             .readmit_product_branch_reference(description)
@@ -37,7 +38,10 @@ impl WorthQueryProductRuntime {
                     )
                 }
             })?;
-        let gate = self.activations.gate(observation.branch_identity())?;
+        let gate = self
+            .fields()
+            .activations
+            .gate(observation.branch_identity())?;
         gate.with_admission(|| self.lease_from_observation(observation))
     }
 
@@ -46,17 +50,21 @@ impl WorthQueryProductRuntime {
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     ) -> Result<WorthQueryProductBranchLease, WorthQueryProductBranchAdmissionDenial> {
         self.admit_owner_incarnation(occurrence.owner_identity())?;
-        if occurrence.owner_identity() != self.owner.owner_identity() {
+        if occurrence.owner_identity() != self.fields().owner.owner_identity() {
             return Err(WorthQueryProductBranchAdmissionDenial::Refused(
                 AdmissionRefusal::ForeignOwner,
             ));
         }
         let observation = self
+            .fields()
             .owner
             .observation_port()
             .observe_product_branch_occurrence(occurrence)
             .map_err(map_world_denial)?;
-        let gate = self.activations.gate(observation.branch_identity())?;
+        let gate = self
+            .fields()
+            .activations
+            .gate(observation.branch_identity())?;
         gate.with_admission(|| self.lease_from_observation(observation))
     }
 
@@ -66,7 +74,8 @@ impl WorthQueryProductRuntime {
         &self,
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     ) -> Result<(), WorthQueryProductBranchAdmissionDenial> {
-        self.owner
+        self.fields()
+            .owner
             .observation_port()
             .observe_product_branch_occurrence(occurrence)
             .map(|_| ())
@@ -118,17 +127,18 @@ impl WorthQueryProductRuntime {
         ) -> Result<Output, WorthQueryProductBranchAdmissionDenial>,
     ) -> Result<Output, WorthQueryProductBranchAdmissionDenial> {
         self.admit_owner_incarnation(identity.owner_identity())?;
-        if identity.owner_identity() != self.owner.owner_identity() {
+        if identity.owner_identity() != self.fields().owner.owner_identity() {
             return Err(WorthQueryProductBranchAdmissionDenial::Refused(
                 AdmissionRefusal::ForeignOwner,
             ));
         }
-        let gate = match self.activations.gate(identity) {
+        let gate = match self.fields().activations.gate(identity) {
             Ok(gate) => gate,
             Err(super::activation::WorthQueryProductActivationDenial::UnknownProductBranch) => {
                 // Only World decides whether an uncoordinated name is unknown,
                 // retired, or temporarily awaiting executable-package activation.
-                self.owner
+                self.fields()
+                    .owner
                     .observation_port()
                     .observe_product_branch(identity)
                     .map_err(map_world_denial)?;
@@ -140,11 +150,12 @@ impl WorthQueryProductRuntime {
         };
         gate.with_admission(|| {
             let observation = self
+                .fields()
                 .owner
                 .observation_port()
                 .observe_product_branch(identity)
                 .map_err(map_world_denial)?;
-            if observation.owner_identity() != self.owner.owner_identity() {
+            if observation.owner_identity() != self.fields().owner.owner_identity() {
                 return Err(WorthQueryProductBranchAdmissionDenial::Refused(
                     AdmissionRefusal::ForeignOwner,
                 ));

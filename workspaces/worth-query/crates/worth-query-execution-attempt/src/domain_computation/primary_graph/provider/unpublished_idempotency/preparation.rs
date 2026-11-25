@@ -2,8 +2,8 @@
 use super::*;
 use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 
-pub fn abandon_preparing_world(
-    store: &Arc<Mutex<WorthQueryUnpublishedIdempotencyStore>>,
+pub(in crate::domain_computation::primary_graph::provider) fn abandon_preparing_world(
+    store: &SharedUnpublishedIdempotencyStore,
     handle: &ProductUnpublishedRecoveryHandle,
 ) -> Result<(), ()> {
     let phase = {
@@ -34,7 +34,7 @@ pub fn abandon_preparing_world(
 }
 
 pub(super) fn preparation_stage(
-    store: &Arc<Mutex<WorthQueryUnpublishedIdempotencyStore>>,
+    store: &SharedUnpublishedIdempotencyStore,
     handle: &ProductUnpublishedRecoveryHandle,
 ) -> Option<crate::domain_computation::WorthQueryProductPreparationStage> {
     let owner = store

@@ -42,8 +42,8 @@ fn closed_original_and_target_cursor_holds_exact_private_custody_until_release()
     for outcome in [&created, &changed] {
         release_test_commit_snapshot(&runtime, outcome);
     }
-    let original_custody = std::sync::Arc::downgrade(original.owner_inner());
-    let target_custody = std::sync::Arc::downgrade(target.owner_inner());
+    let original_custody = original.owner_inner().downgrade();
+    let target_custody = target.owner_inner().downgrade();
     let cursor = cursor(&runtime, execution, &original, &target, entity);
     drop(original);
     drop(target);

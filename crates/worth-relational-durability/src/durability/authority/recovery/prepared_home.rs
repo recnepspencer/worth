@@ -27,11 +27,31 @@ pub enum RelationalHomeRecoveryPreparationDenial {
 }
 use RelationalHomeRecoveryPreparationDenial as Denial;
 
+trait HomeRecoveryPreparationBacking: std::fmt::Debug + Send + Sync {
+    fn as_state(&self) -> &HomeRecoveryPreparation;
+    fn as_state_mut(&mut self) -> &mut HomeRecoveryPreparation;
+    fn into_state(self: Box<Self>) -> HomeRecoveryPreparation;
+}
+
+impl HomeRecoveryPreparationBacking for HomeRecoveryPreparation {
+    fn as_state(&self) -> &HomeRecoveryPreparation {
+        self
+    }
+
+    fn as_state_mut(&mut self) -> &mut HomeRecoveryPreparation {
+        self
+    }
+
+    fn into_state(self: Box<Self>) -> HomeRecoveryPreparation {
+        *self
+    }
+}
+
 /// Admitted schema DATA, never a readmitted runtime, basis or execution grant.
 /// The plan cannot be mutated or replaced after its graph has been prepared.
 #[derive(Debug)]
 pub struct PreparedRelationalHomeRecovery {
-    state: Box<HomeRecoveryPreparation>,
+    state: Box<dyn HomeRecoveryPreparationBacking>,
 }
 #[derive(Debug)]
 pub struct HomeRecoveryPreparation {
@@ -42,6 +62,14 @@ pub struct HomeRecoveryPreparation {
 }
 
 impl PreparedRelationalHomeRecovery {
+    pub(super) fn state(&self) -> &HomeRecoveryPreparation {
+        self.state.as_state()
+    }
+
+    fn state_mut(&mut self) -> &mut HomeRecoveryPreparation {
+        self.state.as_state_mut()
+    }
+
     pub(crate) fn prepare(
         receiver: u64,
         plan: RecoveryPlan,
@@ -54,14 +82,13 @@ impl PreparedRelationalHomeRecovery {
         let graph = OriginalSchemaGraph::admit_unbound(&plan, request)
             .map_err(Denial::Recovery)?
             .ok_or(Denial::MissingOriginalSource)?;
-        Ok(Self {
-            state: Box::new(HomeRecoveryPreparation {
-                receiver,
-                plan,
-                graph,
-                _memory: memory,
-            }),
-        })
+        let state: Box<HomeRecoveryPreparation> = Box::new(HomeRecoveryPreparation {
+            receiver,
+            plan,
+            graph,
+            _memory: memory,
+        });
+        Ok(Self { state })
     }
 
     /// The original installation role, not the last publication or Native main.
@@ -73,11 +100,11 @@ impl PreparedRelationalHomeRecovery {
         use crate::durability::source_initial_inputs::image::InitialInputEntry;
         request.consult().map_err(Denial::Request)?;
         let Some(InitialInputEntry::Installation { after, .. }) =
-            self.state.graph.original.current.entries.get(1)
+            self.state().graph.original.current.entries.get(1)
         else {
             return Err(Denial::InitialInstallationMissing);
         };
-        self.state
+        self.state()
             .graph
             .schemas
             .rows
@@ -95,14 +122,14 @@ impl PreparedRelationalHomeRecovery {
     ) -> Result<&RelationalSchemaRegistry, Denial> {
         use crate::durability::source_initial_inputs::image::InitialInputEntry as Entry;
         request.consult().map_err(Denial::Request)?;
-        let carrier = match self.state.graph.original.current.entries.as_slice() {
+        let carrier = match self.state().graph.original.current.entries.as_slice() {
             [Entry::Birth(birth)] => birth.schema_carrier,
             [Entry::Birth(_), Entry::Installation { after, .. }] => after.schema_carrier,
             [] | [Entry::Installation { .. }] | [_, _] | [_, _, _, ..] => {
                 return Err(Denial::InitialInstallationMissing);
             }
         };
-        self.state
+        self.state()
             .graph
             .schemas
             .rows
@@ -121,7 +148,7 @@ impl PreparedRelationalHomeRecovery {
     ) -> Result<&RelationalSchemaRegistry, Denial> {
         request.consult().map_err(Denial::Request)?;
         let schema = self
-            .state
+            .state()
             .graph
             .schemas
             .rows
@@ -160,24 +187,23 @@ pub trait PreparedRelationalHomeRecoveryOwnerPort: Sized {
 
 impl PreparedRelationalHomeRecoveryOwnerPort for PreparedRelationalHomeRecovery {
     fn receiver_identity(&self) -> u64 {
-        self.state.receiver
+        self.state().receiver
     }
 
     fn schema_graph_mut(&mut self) -> &mut OriginalSchemaGraph {
-        &mut self.state.graph
+        &mut self.state_mut().graph
     }
 
     fn bind_schema_directories(
         &mut self,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), crate::durability::data::RelationalRecoveryStop> {
-        self.state
-            .graph
-            .bind_directories(&mut self.state.plan, request)
+        let state = self.state_mut();
+        state.graph.bind_directories(&mut state.plan, request)
     }
 
     fn recovery_plan_mut(&mut self) -> &mut RecoveryPlan {
-        &mut self.state.plan
+        &mut self.state_mut().plan
     }
 
     fn into_prepared_recovery(
@@ -192,7 +218,7 @@ impl PreparedRelationalHomeRecoveryOwnerPort for PreparedRelationalHomeRecovery 
             graph,
             _memory,
             ..
-        } = *self.state;
+        } = self.state.into_state();
         (plan, graph, _memory)
     }
 

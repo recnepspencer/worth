@@ -19,7 +19,7 @@ pub(in crate::domain_computation::primary_graph) struct ConditionalRoutes<Schema
 }
 
 impl<Schema> ConditionalRoutes<Schema> {
-    fn new(
+    pub(super) fn new(
         operations: super::super::conditional_operation::WorthQueryConditionalOperationRegistry<
             Schema,
         >,
@@ -83,13 +83,54 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
     }
 }
 
+trait ConditionalRoutesBacking<Schema>: Send + Sync {
+    fn as_routes(&self) -> &ConditionalRoutes<Schema>;
+}
+
+impl<Schema> ConditionalRoutesBacking<Schema> for ConditionalRoutes<Schema> {
+    fn as_routes(&self) -> &ConditionalRoutes<Schema> {
+        self
+    }
+}
+
+pub(in crate::domain_computation::primary_graph) struct SharedConditionalRoutes<Schema>(
+    Arc<dyn ConditionalRoutesBacking<Schema>>,
+);
+
+impl<Schema: 'static> SharedConditionalRoutes<Schema> {
+    fn from_arc(routes: Arc<ConditionalRoutes<Schema>>) -> Self {
+        Self(routes)
+    }
+}
+
+impl<Schema> std::ops::Deref for SharedConditionalRoutes<Schema> {
+    type Target = ConditionalRoutes<Schema>;
+
+    fn deref(&self) -> &Self::Target {
+        self.0.as_routes()
+    }
+}
+
 /// The original cleanup owner drops first, with all of its dependent registries
 /// and the rest of the Query runtime still alive. Directory leaves owner None.
 pub(in crate::domain_computation::primary_graph) struct ConditionalRuntimeCleanup<Schema> {
     owner: Option<OwnedConditionalCleanup>,
-    pub(in crate::domain_computation::primary_graph) routes: Arc<ConditionalRoutes<Schema>>,
+    pub(in crate::domain_computation::primary_graph) routes: SharedConditionalRoutes<Schema>,
     pub(in crate::domain_computation::primary_graph) resources:
         super::super::application_resource::installation::InstalledResourceRegistry<Schema>,
+}
+
+impl<Schema: 'static> ConditionalRuntimeCleanup<Schema> {
+    pub(super) fn new(
+        owner: Option<OwnedConditionalCleanup>,
+        routes: Arc<ConditionalRoutes<Schema>>,
+    ) -> Self {
+        Self {
+            owner,
+            routes: SharedConditionalRoutes::from_arc(routes),
+            resources: Default::default(),
+        }
+    }
 }
 
 impl<Schema> ConditionalRuntimeCleanup<Schema> {
@@ -106,34 +147,17 @@ impl<Schema> ConditionalRuntimeCleanup<Schema> {
         }
         Ok(())
     }
-
-    pub(super) fn new(
-        owner: Option<OwnedConditionalCleanup>,
-        operations: super::super::conditional_operation::WorthQueryConditionalOperationRegistry<
-            Schema,
-        >,
-    ) -> Self {
-        Self {
-            owner,
-            routes: Arc::new(ConditionalRoutes::new(operations)),
-            resources: Default::default(),
-        }
-    }
 }
 
 /// Actual cleanup custody for an assembly constructed by Query. Adopting a
 /// Home's operational Bridge references leaves this custody with Store.
 pub(super) struct OwnedConditionalCleanup {
-    assembly: std::sync::Arc<
-        std::sync::RwLock<worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly>,
-    >,
+    assembly: worth_query_execution_contracts::facade::SharedMemoryConditionalOwner,
 }
 
 impl OwnedConditionalCleanup {
     pub(super) fn new(
-        assembly: std::sync::Arc<
-            std::sync::RwLock<worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly>,
-        >,
+        assembly: worth_query_execution_contracts::facade::SharedMemoryConditionalOwner,
     ) -> Self {
         Self { assembly }
     }
@@ -227,16 +251,13 @@ impl<Schema> Drop for WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         // The local owner drops first even if cleanup unwinds. Move later
         // custody into its original field positions before cleanup can panic.
         use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
-        let execution = self.inner.runtime.execution_option_mut().take();
-        self.inner
+        let inner = &mut *self.inner;
+        let execution = inner.runtime.execution_option_mut().take();
+        inner
             .post_conditional_teardown
-            .take_from(&mut self.inner.runtime);
-        self.inner
-            .output_teardown
-            .take_from(&mut self.inner.runtime);
-        self.inner
-            .workflow_teardown
-            .take_from(&mut self.inner.runtime);
+            .take_from(&mut inner.runtime);
+        inner.output_teardown.take_from(&mut inner.runtime);
+        inner.workflow_teardown.take_from(&mut inner.runtime);
         if let Some(owner) = &mut self.conditional_cleanup.owner {
             owner.close();
         }

@@ -1,7 +1,6 @@
 //! Qualified use of a producer part (PR C §1.2 R2): its decision facts are
 //! keyed for append-time marking and compared exactly from its own post-own
 //! image when a later append marks it.
-use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::fact::touch_key::{
     self, FactTouchKey,
@@ -10,6 +9,7 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationD
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationAttemptDenial as Denial, WorthQueryApplicationAttemptDenialKind as Kind,
 };
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 impl super::super::WorthQueryPrimaryGraphProvider {
     /// The touch keys of every decision fact `session`'s writer read

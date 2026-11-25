@@ -185,7 +185,7 @@ impl VisibilityReadContext<'_> {
                 index,
                 PinnedIndex {
                     definition,
-                    generation,
+                    generation: generation.map(Into::into),
                 },
             );
         }

@@ -1,4 +1,4 @@
-use std::sync::{Arc, Weak};
+use std::sync::Arc;
 
 use worth_proof::AuthorityWitness;
 
@@ -55,7 +55,7 @@ where
     }
 
     pub(crate) fn issue(
-        weak: Weak<SignalOwner<D, I, T>>,
+        weak: crate::branch::owner_services::owner_backing::WeakSignalOwner<D, I, T>,
         basis: &AdmittedSignalBranchBasis,
         claimant: &SignalAspectLoweringOwner,
         source_authority: &worth_proof::ConditionalSourceObservationAuthority,
@@ -84,7 +84,7 @@ where
             return Err(Denial::StaleBasisAdmission);
         }
         Ok(Self {
-            owner: Arc::downgrade(&owner),
+            owner: weak,
             basis: basis.clone(),
             definition,
             incarnation: cell.incarnation(),

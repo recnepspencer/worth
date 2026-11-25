@@ -1,11 +1,10 @@
 //! Exact completion custody for a provider application attempt in commit.
 
 use super::{
-    WorthQueryApplicationAttemptEntry, WorthQueryApplicationAttemptLookupKey,
-    WorthQueryApprovedApplicationCandidate, WorthQueryPrimaryGraphApplicationAttemptStore,
+    SharedApplicationAttemptStore, WorthQueryApplicationAttemptEntry,
+    WorthQueryApplicationAttemptLookupKey, WorthQueryApprovedApplicationCandidate,
 };
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphApplicationAttempt;
-use std::sync::{Arc, Mutex};
 
 pub(super) struct WorthQueryPreparedProviderApplicationAttempt {
     attempt: WorthQueryPrimaryGraphApplicationAttempt,
@@ -14,14 +13,14 @@ pub(super) struct WorthQueryPreparedProviderApplicationAttempt {
 }
 
 pub(super) struct WorthQueryApplicationAttemptCompletion {
-    attempts: Arc<Mutex<WorthQueryPrimaryGraphApplicationAttemptStore>>,
+    attempts: SharedApplicationAttemptStore,
     key: WorthQueryApplicationAttemptLookupKey,
     identity: u64,
 }
 
 impl WorthQueryApplicationAttemptCompletion {
     pub fn new(
-        attempts: Arc<Mutex<WorthQueryPrimaryGraphApplicationAttemptStore>>,
+        attempts: SharedApplicationAttemptStore,
         key: WorthQueryApplicationAttemptLookupKey,
         identity: u64,
     ) -> Self {
@@ -36,7 +35,7 @@ impl WorthQueryPreparedProviderApplicationAttempt {
     pub fn new(
         attempt: WorthQueryPrimaryGraphApplicationAttempt,
         approved: WorthQueryApprovedApplicationCandidate,
-        attempts: Arc<Mutex<WorthQueryPrimaryGraphApplicationAttemptStore>>,
+        attempts: SharedApplicationAttemptStore,
         key: WorthQueryApplicationAttemptLookupKey,
         identity: u64,
     ) -> Self {

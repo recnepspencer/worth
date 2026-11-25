@@ -40,7 +40,7 @@ impl WorthQueryOutputDemandRegistry {
         // refusal. Its terminal backing and initialized copy are admitted
         // before it can run; failure of this envelope uses empty diagnostics.
 
-        if !std::sync::Arc::ptr_eq(&self.state, &interest.owner.state) {
+        if !self.state.ptr_eq(&interest.owner.state) {
             return Err(WorthQueryOutputDemandDenial::new(
                 crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignDemand,
                 "",

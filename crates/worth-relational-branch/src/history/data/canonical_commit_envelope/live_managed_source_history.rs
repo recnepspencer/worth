@@ -36,20 +36,18 @@ impl PartialEq for LiveManagedSourceHistory {
 }
 impl Eq for LiveManagedSourceHistory {}
 impl LiveManagedSourceHistory {
-    pub fn verified(
-        envelope: &Arc<CanonicalCommitEnvelope>,
-    ) -> Option<&PreparedSourceImpactHistory> {
+    pub fn verified(envelope: &CanonicalCommitEnvelope) -> Option<&PreparedSourceImpactHistory> {
         Some(&Self::bound(envelope)?.prepared)
     }
     pub fn verified_material(
-        envelope: &Arc<CanonicalCommitEnvelope>,
+        envelope: &CanonicalCommitEnvelope,
     ) -> Option<&RetainedSourceHistoryMaterial> {
         Some(&Self::bound(envelope)?.material)
     }
-    fn bound(envelope: &Arc<CanonicalCommitEnvelope>) -> Option<&BoundHistory> {
+    fn bound(envelope: &CanonicalCommitEnvelope) -> Option<&BoundHistory> {
         let live = envelope.live_managed_source_history.0.as_ref()?;
         let owner = live.owner.upgrade()?;
-        Arc::ptr_eq(&owner, envelope).then_some(live)
+        std::ptr::eq(Arc::as_ptr(&owner), envelope).then_some(live)
     }
 }
 /// The exact unpublished envelope whose canonical meaning matches the Source packet.

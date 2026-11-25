@@ -22,9 +22,7 @@ pub trait PrimaryGraphProviderInternalPort {
         &self,
     ) -> &branch_commit_coordination::WorthQueryApplicationBranchCommitCoordinator;
     fn live_delivery_ref(&self) -> &super::super::live_delivery::WorthQueryLiveDeliverySource;
-    fn attempts_ref(
-        &self,
-    ) -> &Arc<Mutex<application_attempt_state::WorthQueryPrimaryGraphApplicationAttemptStore>>;
+    fn attempts_ref(&self) -> &application_attempt_state::SharedApplicationAttemptStore;
     fn application_attempt_operation_control_ref(
         &self,
     ) -> &super::super::application_runtime::WorthQueryApplicationAttemptOperationControl;
@@ -36,7 +34,7 @@ pub trait PrimaryGraphProviderInternalPort {
     ) -> &Mutex<session_commit::WorthQueryCompletedCommitEvidenceStore>;
     fn unpublished_idempotency_ref(
         &self,
-    ) -> &Arc<Mutex<unpublished_idempotency::WorthQueryUnpublishedIdempotencyStore>>;
+    ) -> &unpublished_idempotency::SharedUnpublishedIdempotencyStore;
     fn receipt_basis_retention_ref(
         &self,
     ) -> &Arc<Mutex<session_commit::WorthQueryReceiptBasisRetentionStore>>;
@@ -87,9 +85,7 @@ impl PrimaryGraphProviderInternalPort for WorthQueryPrimaryGraphProvider {
     fn live_delivery_ref(&self) -> &super::super::live_delivery::WorthQueryLiveDeliverySource {
         &self.live_delivery
     }
-    fn attempts_ref(
-        &self,
-    ) -> &Arc<Mutex<application_attempt_state::WorthQueryPrimaryGraphApplicationAttemptStore>> {
+    fn attempts_ref(&self) -> &application_attempt_state::SharedApplicationAttemptStore {
         &self.attempts
     }
     fn application_attempt_operation_control_ref(
@@ -109,7 +105,7 @@ impl PrimaryGraphProviderInternalPort for WorthQueryPrimaryGraphProvider {
     }
     fn unpublished_idempotency_ref(
         &self,
-    ) -> &Arc<Mutex<unpublished_idempotency::WorthQueryUnpublishedIdempotencyStore>> {
+    ) -> &unpublished_idempotency::SharedUnpublishedIdempotencyStore {
         &self.unpublished_idempotency
     }
     fn receipt_basis_retention_ref(

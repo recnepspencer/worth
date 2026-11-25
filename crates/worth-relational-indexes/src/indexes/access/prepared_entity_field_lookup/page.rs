@@ -84,7 +84,7 @@ impl PreparedEntityFieldLookup {
             Some(boundary)
                 if (*boundary.owner_runtime()) == self.runtime_identity
                     && (*boundary.owner_basis()).basis().key() == self.basis.basis().key()
-                    && Arc::ptr_eq(boundary.owner_generation(), &self.generation)
+                    && boundary.owner_generation().ptr_eq(&self.generation)
                     && (*boundary.owner_kind()) == self.kind
                     && (*boundary.owner_key()) == key =>
             {
@@ -164,7 +164,7 @@ impl PreparedEntityFieldLookup {
             assemble_bounded_entity_field_boundary(BoundedEntityFieldBoundaryParts {
                 runtime: self.runtime_identity,
                 basis: self.basis.clone(),
-                generation: Arc::clone(&self.generation),
+                generation: self.generation.to_arc(),
                 kind: self.kind,
                 key,
                 next: start + count,

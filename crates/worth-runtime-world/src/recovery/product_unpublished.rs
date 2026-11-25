@@ -69,12 +69,38 @@ pub(crate) struct ProductUnpublishedOwnerEffectsRecord {
     metadata_bytes: usize,
 }
 
+trait OwnerEffectsRecordBacking: Send + Sync {
+    fn as_record(&self) -> &ProductUnpublishedOwnerEffectsRecord;
+}
+
+impl OwnerEffectsRecordBacking for ProductUnpublishedOwnerEffectsRecord {
+    fn as_record(&self) -> &ProductUnpublishedOwnerEffectsRecord {
+        self
+    }
+}
+
+struct SharedOwnerEffectsRecord(Arc<dyn OwnerEffectsRecordBacking>);
+
+impl SharedOwnerEffectsRecord {
+    fn from_arc(record: Arc<ProductUnpublishedOwnerEffectsRecord>) -> Self {
+        Self(record)
+    }
+}
+
+impl std::ops::Deref for SharedOwnerEffectsRecord {
+    type Target = ProductUnpublishedOwnerEffectsRecord;
+
+    fn deref(&self) -> &Self::Target {
+        self.0.as_record()
+    }
+}
+
 /// Retained record for owner-local effects that were not represented by a
 /// product-reference movement. It is not a commit, rollback token, or replay
 /// artifact.
 #[must_use = "product-unpublished owner effects must remain retained or be explicitly cleaned up"]
 pub struct ProductUnpublishedOwnerEffects {
-    record: Arc<ProductUnpublishedOwnerEffectsRecord>,
+    record: SharedOwnerEffectsRecord,
 }
 
 impl std::fmt::Debug for ProductUnpublishedOwnerEffects {
@@ -144,7 +170,9 @@ impl ProductUnpublishedOwnerEffects {
     }
 
     pub(crate) fn from_catalog_record(record: Arc<ProductUnpublishedOwnerEffectsRecord>) -> Self {
-        Self { record }
+        Self {
+            record: SharedOwnerEffectsRecord::from_arc(record),
+        }
     }
 
     pub fn identity(&self) -> &ProductUnpublishedOwnerEffectsIdentity {

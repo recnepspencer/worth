@@ -190,7 +190,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
     }
 }
 
-impl<S> super::selection::HistorySelection<'_, S> {
+impl super::selection::HistorySelection {
     pub(super) fn validate_reservation(
         &self,
         reserved: &WorthQueryDocumentHistoryReservation,

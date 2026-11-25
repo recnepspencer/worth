@@ -3,7 +3,7 @@ use super::*;
 use worth_query_declaration::facade::application_history::ApplicationHistoryRecentSteps;
 use worth_query_execution_query::facade::ports::HistoryNodeIdInternalPort as _;
 
-impl<S> HistoryJournal<'_, S> {
+impl HistoryJournal {
     pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn retained_source(
         &self,
         node: WorthQueryHistoryNodeId,

@@ -86,7 +86,7 @@ impl<'scope> TestHostRequest<'scope> {
                     .authoritative_source_profile()
                     .runtime_instance_id(),
             ),
-            Some(runtime.owner.owner_identity()),
+            Some(runtime.fields().owner.owner_identity()),
         )
     }
 

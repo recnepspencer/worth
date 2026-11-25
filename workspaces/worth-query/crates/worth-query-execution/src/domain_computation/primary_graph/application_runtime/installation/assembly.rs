@@ -153,35 +153,39 @@ where
         ),
     );
     let installed_operations = installed_schema.installed_view().retain_operation_catalog();
-    let conditional_cleanup = super::super::conditional_cleanup::ConditionalRuntimeCleanup::new(
-        conditional_cleanup_owner,
-        conditional_operations,
+    let conditional_routes = std::sync::Arc::new(
+        super::super::conditional_cleanup::ConditionalRoutes::new(conditional_operations),
     );
-    let conditional_admission_port = std::sync::Arc::downgrade(&conditional_cleanup.routes)
+    let conditional_admission_port = std::sync::Arc::downgrade(&conditional_routes)
         as std::sync::Weak<
             dyn worth_query_execution_query::facade::ports::ConditionalDefinitionAdmissionPort,
         >;
+    let conditional_cleanup = super::super::conditional_cleanup::ConditionalRuntimeCleanup::new(
+        conditional_cleanup_owner,
+        conditional_routes,
+    );
     WorthQueryPrimaryGraphApplicationRuntime {
         conditional_cleanup,
-        inner: super::super::WorthQueryPrimaryGraphApplicationRuntimeInner {
-            installed_schema,
-            mutation_handlers,
-            mutation_projection,
-            installed_producers: Default::default(),
-            post_conditional_teardown: Default::default(),
-            output_teardown: Default::default(),
-            workflow_teardown: Default::default(),
-            conditional_admission_port,
-            program_required_bindings,
-            program_required_operations,
-            workflow_guarded_operations,
-            program_support: None,
-            installed_conditionals: Default::default(),
-            managed_indexes: Default::default(),
-            signing_owners: Default::default(),
-            runtime: {
-                use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
-                super::super::WorthQueryApplicationRuntimeCore::from_parts(
+        inner: super::super::WorthQueryPrimaryGraphApplicationRuntimeInner::new(
+            super::super::WorthQueryPrimaryGraphApplicationRuntimeFields {
+                installed_schema,
+                mutation_handlers,
+                mutation_projection,
+                installed_producers: Default::default(),
+                post_conditional_teardown: Default::default(),
+                output_teardown: Default::default(),
+                workflow_teardown: Default::default(),
+                conditional_admission_port,
+                program_required_bindings,
+                program_required_operations,
+                workflow_guarded_operations,
+                program_support: None,
+                installed_conditionals: Default::default(),
+                managed_indexes: Default::default(),
+                signing_owners: Default::default(),
+                runtime: {
+                    use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+                    super::super::WorthQueryApplicationRuntimeCore::from_parts(
                     Some(graph.runtime),
                     application_readiness_schema_token,
                     graph.publication,
@@ -216,7 +220,8 @@ where
                     Default::default(),
                     installed_operations,
                 )
+                },
             },
-        },
+        ),
     }
 }

@@ -66,7 +66,8 @@ impl RelationalBranchRoot {
             .map_err(RelationalBranchRootCaptureDenial::Content)?;
         // Readmission replaces the envelope owner, so the old change proof is discarded.
         committed.commit_change = None;
-        let evidence = super::RelationalRootCommitEvidence::Original(Arc::clone(&original));
+        let evidence =
+            super::RelationalRootCommitEvidence::original_from_arc(Arc::clone(&original));
         let visibility = RelationalBranchVisibilityCommitment::for_payload_for_request(
             original.payload(),
             committed.axes.storage_root,
@@ -120,7 +121,8 @@ impl RelationalBranchRoot {
                 source.envelope().content.records(),
             )
             .map_err(RelationalBranchRootCaptureDenial::Content)?;
-        let evidence = super::RelationalRootCommitEvidence::Original(Arc::clone(&original));
+        let evidence =
+            super::RelationalRootCommitEvidence::original_from_arc(Arc::clone(&original));
         committed.axes.visibility = RelationalBranchVisibilityCommitment::for_payload_for_request(
             original.payload(),
             committed.axes.storage_root,

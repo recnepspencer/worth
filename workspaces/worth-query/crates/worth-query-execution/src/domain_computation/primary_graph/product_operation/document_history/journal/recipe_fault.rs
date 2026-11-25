@@ -68,7 +68,7 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> WorthQueryDocumentHi
         true
     }
 }
-impl<S> HistoryJournal<'_, S> {
+impl HistoryJournal {
     fn retained_recipe_source_mut(
         &mut self,
         step: WorthQueryHistoryNodeId,

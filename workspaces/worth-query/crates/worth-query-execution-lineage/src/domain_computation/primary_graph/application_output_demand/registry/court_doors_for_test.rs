@@ -17,7 +17,7 @@ impl WorthQueryOutputDemandInterest {
 
 impl WorthQueryOutputDemandRegistry {
     #[doc(hidden)]
-    pub fn state_for_test(&self) -> &Arc<Mutex<DemandRegistryState>> {
+    pub fn state_for_test(&self) -> &SharedDemandRegistryState {
         &self.state
     }
 }
@@ -209,7 +209,7 @@ impl WorthQueryOutputDemandInterest {
 
 impl WorthQueryOutputDemandRegistry {
     #[doc(hidden)]
-    pub fn state_mut_for_test(&mut self) -> &mut Arc<Mutex<DemandRegistryState>> {
+    pub fn state_mut_for_test(&mut self) -> &mut SharedDemandRegistryState {
         &mut self.state
     }
 }

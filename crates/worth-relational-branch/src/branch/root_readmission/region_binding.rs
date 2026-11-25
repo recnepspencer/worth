@@ -156,7 +156,8 @@ impl RelationalBranchRoot {
             .new_authoritative_bytes
             .saturating_add(schema_authority.authoritative_allocation_bytes());
         let memory = super::super::reserve_arc_memory::<Self>(Some(execution))?;
-        let evidence = super::super::RelationalRootCommitEvidence::Original(Arc::clone(&original));
+        let evidence =
+            super::super::RelationalRootCommitEvidence::original_from_arc(Arc::clone(&original));
         let correctness_index = RelationalRootCorrectnessIndex::AuthoritativeFallback;
         let axes = RelationalBranchRootAxes {
             storage_version: envelope.commit.version_id.0,

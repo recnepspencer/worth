@@ -146,7 +146,7 @@ pub trait ProductRuntimeInternalPort: Sized {
 
 impl ProductRuntimeInternalPort for WorthQueryProductRuntime {
     fn owner_ref(&self) -> &WorthQueryProductWorldPorts {
-        &self.owner
+        &self.fields().owner
     }
 
     fn source(&self) -> &RuntimeBridgeRelationalSource {
@@ -172,11 +172,11 @@ impl ProductRuntimeInternalPort for WorthQueryProductRuntime {
     }
 
     fn activations_ref(&self) -> &Arc<WorthQueryProductActivationRegistry> {
-        &self.activations
+        &self.fields().activations
     }
 
     fn clock_ref(&self) -> &WorthQueryProductWorldClock {
-        &self.clock
+        &self.fields().clock
     }
 
     fn owner_cleanup_ref(&self) -> &WorthQueryProductBranchOwnerCleanupRegistry {
@@ -188,7 +188,7 @@ impl ProductRuntimeInternalPort for WorthQueryProductRuntime {
     }
 
     fn default_occurrence(&self) -> ProductBranchIncarnation {
-        self.default_occurrence
+        self.fields().default_occurrence
     }
 
     fn root_identity(&self) -> Arc<WorthQueryProductRootIdentity> {
@@ -196,7 +196,7 @@ impl ProductRuntimeInternalPort for WorthQueryProductRuntime {
     }
 
     fn recovered_root_authority_ref(&self) -> Option<&Arc<RecoveredRuntimeWorldRootAuthority>> {
-        self.recovered_root_authority.as_ref()
+        self.fields().recovered_root_authority.as_ref()
     }
 
     fn from_parts(

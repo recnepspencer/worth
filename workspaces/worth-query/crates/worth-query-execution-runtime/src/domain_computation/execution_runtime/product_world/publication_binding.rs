@@ -85,14 +85,14 @@ impl super::WorthQueryProductRuntime {
         observation: ProductBranchObservation,
     ) -> WorthQueryProductPublicationBinding {
         WorthQueryProductPublicationBinding::new(
-            Arc::clone(&self.adoption_preparation),
+            Arc::clone(&self.fields().adoption_preparation),
             observation,
-            self.owner.publication_port(),
-            self.owner.recovery_port(),
-            self.owner.observation_port(),
-            self.clock.clone(),
+            self.fields().owner.publication_port(),
+            self.fields().owner.recovery_port(),
+            self.fields().owner.observation_port(),
+            self.fields().clock.clone(),
             self.root_identity(),
-            self.branch_program_source_owner.clone(),
+            self.fields().branch_program_source_owner.clone(),
         )
     }
 }

@@ -55,7 +55,10 @@ impl RelationalRegionResidency {
             head_readmission: None,
             raw_head: Mutex::new(None),
             raw_full: Mutex::new(None),
-            state: Mutex::new(RegionState::new(ResidencyState::Full(region.clone()), None)),
+            state: Mutex::new(RegionState::new(
+                ResidencyState::Full(super::SharedResidentRegion::from_arc(region.clone())),
+                None,
+            )),
             damage: OnceLock::new(),
             symbol_aliases: OnceLock::new(),
             symbol_inheritance: OnceLock::new(),

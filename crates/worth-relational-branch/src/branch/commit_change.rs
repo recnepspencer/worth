@@ -73,7 +73,7 @@ fn build(
         routes.insert(MaintenanceRoute::Symbols);
     }
     Ok(Arc::new(CommitChange {
-        envelope,
+        envelope: crate::history::data::canonical_commit_envelope::shared::SharedCanonicalCommitEnvelopeOwnerPort::from_arc(envelope),
         partitions,
         schema_changed,
         required_symbols,

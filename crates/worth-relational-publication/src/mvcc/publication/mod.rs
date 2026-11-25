@@ -43,7 +43,7 @@ pub mod outcome;
 
 pub mod validation;
 
-pub(crate) use candidate::{CandidatePayload, PreparedRelationalCandidateAdmissionStop};
+pub(crate) use candidate::PreparedRelationalCandidateAdmissionStop;
 pub use candidate::{
     DiscardedRelationalCommitCandidate, PreparedRelationalCommitCandidate,
     RelationalCurrentOutputAdoption,

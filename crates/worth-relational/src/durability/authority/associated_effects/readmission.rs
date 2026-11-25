@@ -89,7 +89,10 @@ impl DurabilityAuthority<'_> {
                 let semantic = assemble_recovered_relational_semantic_result(
                     positioned.envelope().semantic_result_arc(),
                 );
-                (ReadmittedEffectOrigin::Original(positioned), semantic)
+                let envelope = worth_relational_branch::internal_port::history::data::canonical_commit_envelope::shared::SharedCanonicalCommitEnvelopeOwnerPort::from_arc(
+                    std::sync::Arc::clone(positioned.canonical_arc()),
+                );
+                (ReadmittedEffectOrigin::Original(envelope), semantic)
             }
         };
         let settlement = self

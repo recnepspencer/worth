@@ -1,19 +1,19 @@
 //! Immutable index handles and the resident basis used to verify their rows.
 use crate::branch::history::retention::selected_snapshot::VisibilitySnapshotBasis;
-use crate::branch::indexes::data::DerivedIndexGeneration;
+use crate::branch::indexes::data::SharedDerivedIndexGeneration;
 use crate::branch::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;
 use crate::branch::snapshots::data::SnapshotHandle;
 use crate::branch::visibility::materialization::read_records::projection::pinned::VisibilityProjectionViewOwnerPort as _;
 use crate::branch::visibility::materialization::read_records::projection::view::VisibilityProjectionView;
 use crate::branch::visibility::snapshot_states::resident_basis::ResidentVisibilitySnapshotBasis;
-use std::{collections::BTreeMap, sync::Arc};
+use std::collections::BTreeMap;
 use worth_relational_contracts::internal_port::identity::data::primitives::VersionId;
 use worth_relational_contracts::internal_port::indexes::data::definition::DerivedIndexId;
 
 #[derive(Clone, Debug)]
 pub struct PinnedIndex {
     pub definition: crate::branch::indexes::retained_definition::RetainedDerivedIndexDefinition,
-    pub generation: Option<Arc<DerivedIndexGeneration>>,
+    pub generation: Option<SharedDerivedIndexGeneration>,
 }
 
 pub struct PinnedIndexLookup<'pin> {

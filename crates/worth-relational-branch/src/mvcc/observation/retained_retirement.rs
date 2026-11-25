@@ -1,5 +1,6 @@
 //! The two original shares of an externally retained observation, with no read door.
 use super::*;
+use crate::branch::basis::AdmittedRelationalBranchBasisInner;
 use crate::branch::basis_registry::RelationalBasisRegistryRetirementCustody;
 use crate::history::retention::{
     RelationalRetentionRetirementCustody, RelationalRetentionRetirementError,
@@ -46,11 +47,11 @@ impl RelationalRetainedObservationShares {
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<bool, RelationalRetentionRetirementError> {
         if let Some(observation) = self.first.take() {
-            self.inner = Arc::into_inner(observation.inner);
+            self.inner = Arc::into_inner(observation.inner.into_arc());
             return Ok(false);
         }
         if let Some(observation) = self.second.take() {
-            self.inner = Arc::into_inner(observation.inner);
+            self.inner = Arc::into_inner(observation.inner.into_arc());
             return Ok(false);
         }
         let Some(inner) = self.inner.as_mut() else {

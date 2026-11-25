@@ -1,8 +1,6 @@
 use std::sync::{Arc, Mutex, Weak};
 
-use crate::branch::owner_services::{
-    SignalOwner, SignalOwnerLifecycleIdentity, SignalOwnerUnavailable,
-};
+use crate::branch::owner_services::{SignalOwnerLifecycleIdentity, SignalOwnerUnavailable};
 use crate::branch::{AdmittedSignalBranchBasis, SignalBranchBasisObservationDenial};
 use crate::data::error::SignalError;
 use crate::data::retained_storage::SignalConditionalRetentionReservation;
@@ -20,7 +18,7 @@ where
     I: Copy + Ord,
     T: Copy + Ord,
 {
-    pub(super) owner: Weak<SignalOwner<D, I, T>>,
+    pub(super) owner: crate::branch::owner_services::owner_backing::WeakSignalOwner<D, I, T>,
     pub(super) cell: Weak<SignalConditionalTemporalCell>,
     pub(super) id: SignalConditionalTemporalPartitionId,
     pub(super) basis: AdmittedSignalBranchBasis,

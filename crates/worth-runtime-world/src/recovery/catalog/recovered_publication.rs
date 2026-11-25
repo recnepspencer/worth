@@ -65,12 +65,12 @@ impl ProductUnpublishedRecoveryCatalog {
         let source = match &*record.native.lock().unwrap_or_else(|e| e.into_inner()) {
             crate::recovery::RecoveredNativeCustody::OpenOnly => None,
             crate::recovery::RecoveredNativeCustody::Relational(native) => Some(
-                crate::recovery::recovered_publication::RecoveredNativeObservation::Original(
+                crate::recovery::recovered_publication::RecoveredNativeObservation::original(
                     native.clone(),
                 ),
             ),
             crate::recovery::RecoveredNativeCustody::Prepared(record) => Some(
-                crate::recovery::recovered_publication::RecoveredNativeObservation::Prepared(
+                crate::recovery::recovered_publication::RecoveredNativeObservation::prepared(
                     record.clone(),
                 ),
             ),
@@ -82,7 +82,7 @@ impl ProductUnpublishedRecoveryCatalog {
         };
         Ok(WorldRecoveredUnpublishedEffects {
             source,
-            record,
+            record: crate::recovery::recovered_publication::SharedRecoveredWorldPublicationRecord::from_arc(record),
             catalog: self.clone(),
         })
     }
@@ -93,15 +93,15 @@ impl ProductUnpublishedRecoveryCatalog {
         }
         let state = self.locked_state();
         matches!(state.slots.get(&claim.record.identity), Some(RecoveryEntry::Recovered(record))
-            if Arc::ptr_eq(record, &claim.record))
+            if std::ptr::eq(record.as_ref(), &*claim.record))
     }
 
-    pub(crate) fn remove_recovered(&self, record: &Arc<RecoveredWorldPublicationRecord>) {
+    pub(crate) fn remove_recovered(&self, record: &RecoveredWorldPublicationRecord) {
         let removed = {
             let mut state = self.locked_state();
             assert!(
                 matches!(state.slots.get(&record.identity), Some(RecoveryEntry::Recovered(actual))
-                if Arc::ptr_eq(actual, record))
+                if std::ptr::eq(actual.as_ref(), record))
             );
             let removed = state.slots.remove(&record.identity);
             state.metadata_bytes -= record.metadata_bytes;

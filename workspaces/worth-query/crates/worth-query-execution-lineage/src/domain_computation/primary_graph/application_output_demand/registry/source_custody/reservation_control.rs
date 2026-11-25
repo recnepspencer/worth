@@ -1,8 +1,10 @@
 //! Receiver-owned control of the actual abandoned-source reservation primitive.
-use super::super::{DemandRegistryState, WorthQueryOutputDemandRegistry};
+use super::super::{
+    DemandRegistryState, SharedDemandRegistryState, WorthQueryOutputDemandRegistry,
+};
 use std::sync::{
     atomic::{AtomicBool, Ordering},
-    Arc, Mutex,
+    Arc,
 };
 /// A reservation registration already lives on this exact registry receiver.
 #[derive(Debug, Eq, PartialEq)]
@@ -13,7 +15,7 @@ pub enum WorthQueryDiscoveredRetentionControlDenial {
 /// This proves native reservation-capacity refusal, not ordinary allocator OOM.
 #[must_use]
 pub struct WorthQueryDiscoveredRetentionReservationForTest {
-    owner: Arc<Mutex<DemandRegistryState>>,
+    owner: SharedDemandRegistryState,
     registration: Arc<AtomicBool>,
 }
 impl WorthQueryOutputDemandRegistry {
@@ -30,7 +32,7 @@ impl WorthQueryOutputDemandRegistry {
         let registration = Arc::new(AtomicBool::new(true));
         state.retention_reservation = Some(Arc::clone(&registration));
         Ok(WorthQueryDiscoveredRetentionReservationForTest {
-            owner: Arc::clone(&self.state),
+            owner: self.state.clone(),
             registration,
         })
     }

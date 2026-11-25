@@ -1,3 +1,5 @@
+mod backing;
+use backing::{SharedPendingSettlement, SharedPositionedCommit};
 use std::sync::Arc;
 use worth_relational_branch::internal_port::history::commit::identity::{
     RelationalCommitIdentity, RelationalCommitIdentityOwnerPort as _,
@@ -35,7 +37,7 @@ pub enum RelationalPublicationDurabilityPosture {
 
 #[derive(Debug)]
 struct PerformedRelationalCommitData {
-    positioned_commit: Arc<PositionedCanonicalCommit>,
+    positioned_commit: SharedPositionedCommit,
     next_basis: AdmittedRelationalBranchBasis,
 }
 
@@ -65,7 +67,7 @@ pub struct PerformedRelationalCommit {
 /// witness must be observable without letting a partial move of the proof
 /// suppress that accounting.
 struct PerformedSettlementCapability {
-    record: Arc<crate::runtime::state::runtime_state::publication_settlement_registry::record::PendingRelationalPublicationSettlement>,
+    record: SharedPendingSettlement,
     consumed: bool,
 }
 
@@ -112,12 +114,12 @@ impl PerformedRelationalCommit {
             performed: worth_proof::Performed::record(
                 &worth_relational_branch::internal_port::branch::authority::issue_relational_branch_publication_authority(),
                 PerformedRelationalCommitData {
-                    positioned_commit,
+                    positioned_commit: SharedPositionedCommit::from_arc(positioned_commit),
                     next_basis,
                 },
             ),
             capability: PerformedSettlementCapability {
-                record,
+                record: SharedPendingSettlement::from_arc(record),
                 consumed: false,
             },
             late_interruption,
@@ -160,9 +162,9 @@ impl PerformedRelationalCommit {
         Arc<crate::runtime::state::runtime_state::publication_settlement_registry::record::PendingRelationalPublicationSettlement>,
     ){
         self.capability.consumed = true;
-        let record = Arc::clone(&self.capability.record);
+        let record = self.capability.record.to_arc();
         let outcome = self.performed.into_outcome();
-        (outcome.positioned_commit, record)
+        (outcome.positioned_commit.into_arc(), record)
     }
 
     pub const fn projection_posture(&self) -> RelationalPublicationProjectionPosture {

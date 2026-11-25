@@ -6,8 +6,8 @@ use super::super::business_original as world_association;
 use crate::domain_computation::{
     execution_runtime::product_world::WorthQueryProductRuntime, WorthQueryMutationCleanupFailure,
 };
-use managed::ManagedCleanupState;
 pub use managed::WorthQueryApplicationManagedCleanup;
+use managed::{ErasedCleanupRequiredOwner, ErasedManagedCleanupState, ManagedCleanupState};
 
 /// Original business evidence and actual failed native cleanup travel together.
 #[derive(Debug)]
@@ -17,7 +17,7 @@ pub struct WorthQueryApplicationCleanupRequired {
         WorthQueryApplicationCommitOutcome,
         WorthQueryApplicationManagedCleanup,
     )>,
-    reserved_state: Option<Box<Option<ManagedCleanupState>>>,
+    reserved_state: Option<ErasedManagedCleanupState>,
     _funding: Option<worth_execution::ExecutionMemoryReservation>,
 }
 impl WorthQueryApplicationCleanupRequired {
@@ -30,7 +30,7 @@ impl WorthQueryApplicationCleanupRequired {
         policy.check_live()?;
         Ok(Box::new(Self {
             parts: None,
-            reserved_state: Some(Box::new(None)),
+            reserved_state: Some(ErasedManagedCleanupState::new(None)),
             _funding: funding,
         }))
     }
@@ -77,7 +77,8 @@ impl WorthQueryApplicationCleanupRequired {
         let mut owner = cleanup
             .return_owner
             .take()
-            .expect("split cleanup retains its preallocated envelope");
+            .expect("split cleanup retains its preallocated envelope")
+            .into_boxed();
         assert!(
             owner.parts.is_none(),
             "split envelope has no duplicate business owner"
@@ -120,7 +121,7 @@ impl WorthQueryApplicationCleanupRequired {
             .parts
             .take()
             .expect("published cleanup retains both owners");
-        cleanup.return_owner = Some(self);
+        cleanup.return_owner = Some(ErasedCleanupRequiredOwner::from_box(self));
         (outcome, cleanup)
     }
 }

@@ -13,7 +13,7 @@ impl ObservedRelationalMemoryComponent {
         captured: Option<(&RelationalCommitIndexEntry, &RelationalCommitArtifact)>,
     ) -> Result<RecordedRelationalComponentReference, Refusal> {
         crate::execution::request_custody::check_request(request).map_err(Refusal::Request)?;
-        match self.original.as_ref() {
+        match self.original.as_origin() {
             MemoryComponentOrigin::Live(meaning) => {
                 require_origin(&meaning.owner, origin)?;
                 copy_bound_original(request, meaning, captured)
@@ -23,7 +23,7 @@ impl ObservedRelationalMemoryComponent {
     }
 
     pub(crate) fn capture_commit_id(&self) -> Option<crate::history::data::CommitId> {
-        let descriptor = match self.original.as_ref() {
+        let descriptor = match self.original.as_origin() {
             MemoryComponentOrigin::Live(value) => &value.descriptor,
             MemoryComponentOrigin::Interim(value) => value.description.descriptor(),
         };

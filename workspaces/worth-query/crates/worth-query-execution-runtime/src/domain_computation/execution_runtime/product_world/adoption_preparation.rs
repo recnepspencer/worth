@@ -36,13 +36,14 @@ impl super::WorthQueryProductRuntime {
         callback: impl FnOnce() + Send + 'static,
     ) -> WorthQueryAdoptionPreparationForTest {
         let previous = self
+            .fields()
             .adoption_preparation
             .callback
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .replace(Box::new(callback));
         WorthQueryAdoptionPreparationForTest {
-            control: Arc::clone(&self.adoption_preparation),
+            control: Arc::clone(&self.fields().adoption_preparation),
             previous,
         }
     }

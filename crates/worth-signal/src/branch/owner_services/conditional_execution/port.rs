@@ -1,9 +1,10 @@
-use std::sync::{Arc, Weak};
+use std::sync::Arc;
 
 use crate::branch::AdmittedSignalBranchBasis;
 
 use super::issuance::SignalConditionalServiceAuthority;
 use super::SignalInstalledDefinitionBinding;
+use crate::branch::owner_services::owner_backing::WeakSignalOwner;
 use crate::branch::owner_services::{SignalBranchCellIncarnation, SignalOwner};
 
 /// Exact-basis conditional capability issued only to its definition claimant.
@@ -16,7 +17,7 @@ where
     I: Copy + Ord,
     T: Copy + Ord,
 {
-    pub(super) owner: Weak<SignalOwner<D, I, T>>,
+    pub(super) owner: WeakSignalOwner<D, I, T>,
     pub(super) basis: AdmittedSignalBranchBasis,
     pub(super) definition: SignalInstalledDefinitionBinding,
     pub(super) incarnation: SignalBranchCellIncarnation,

@@ -61,7 +61,8 @@ fn bind_original(
     require_schema_authority(&schema, envelope, &descriptor)?;
     let schema_root = *descriptor.schema_root();
     let correctness_index = RelationalRootCorrectnessIndex::AuthoritativeFallback;
-    let evidence = super::super::RelationalRootCommitEvidence::Original(Arc::clone(&original));
+    let evidence =
+        super::super::RelationalRootCommitEvidence::original_from_arc(Arc::clone(&original));
     let visibility = RelationalBranchVisibilityCommitment::for_payload_for_request(
         original.payload(),
         storage_root,

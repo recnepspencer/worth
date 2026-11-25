@@ -59,12 +59,8 @@ impl WorthQueryPrimaryGraphProvider {
                 Err(cause) => return Err(world_denial(cause)),
             };
             let description = describe(&original, inspection)?;
-            let record = self.original_record(
-                execution,
-                &original,
-                pending.selector.entity,
-                &description,
-            )?;
+            let record =
+                self.original_record(execution, &original, pending.selector.entity, &description)?;
             if record != pending.selector.record {
                 return Err(Denial::RecordMismatch);
             }

@@ -3,7 +3,7 @@ use super::*;
 impl IndexingSubsystem {
     pub fn fork_catalog(&self) -> Self {
         Self {
-            state: RuntimeOwnedState::new(self.snapshot()),
+            state: SharedIndexingState::new(self.snapshot()),
             definition_publication: RuntimeOwnedState::default(),
             generation_publication: Arc::default(),
         }

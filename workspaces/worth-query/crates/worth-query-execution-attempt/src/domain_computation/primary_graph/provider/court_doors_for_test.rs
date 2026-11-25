@@ -19,9 +19,7 @@ impl WorthQueryPrimaryGraphProvider {
 
 impl WorthQueryPrimaryGraphProvider {
     #[doc(hidden)]
-    pub fn attempts_for_test(
-        &self,
-    ) -> &Arc<Mutex<application_attempt_state::WorthQueryPrimaryGraphApplicationAttemptStore>> {
+    pub fn attempts_for_test(&self) -> &application_attempt_state::SharedApplicationAttemptStore {
         &self.attempts
     }
 }

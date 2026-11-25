@@ -13,11 +13,17 @@ pub fn superseded_window_refuses_for_test(
     changed_by: usize,
 ) -> bool {
     let images = rounds.iter().map(|round| (*round, round));
-    super::window::window_verdict(position, invalidator, images, &position, |earlier, image| {
-        Ok::<_, std::convert::Infallible>(
-            (*earlier < changed_by && *image >= changed_by).then_some(changed_by),
-        )
-    })
+    super::window::window_verdict(
+        position,
+        invalidator,
+        images,
+        &position,
+        |earlier, image| {
+            Ok::<_, std::convert::Infallible>(
+                (*earlier < changed_by && *image >= changed_by).then_some(changed_by),
+            )
+        },
+    )
     .unwrap_or_else(|never| match never {})
     .is_some()
 }

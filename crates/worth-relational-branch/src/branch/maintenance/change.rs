@@ -1,18 +1,17 @@
 //! The Branch change carries its original canonical artifact.
-use crate::history::data::{CanonicalCommitEnvelope, CommitId, RelationalDescriptiveTouch};
+use crate::history::data::{CommitId, RelationalDescriptiveTouch, SharedCanonicalCommitEnvelope};
 use crate::identity::data::PartitionId;
 use crate::storage::substrate::maintenance::{MaintenanceRoute, PartitionChange};
 use crate::symbols::data::{Symbol, SymbolTableSnapshot};
 use crate::transactions::data::primitives::RecordRef;
 use std::collections::{BTreeMap, BTreeSet};
-use std::sync::Arc;
 
 /// Built once at canonical root preparation, shared by Arc through publication.
 /// The canonical envelope owns fields, postings, endpoint and symbol meaning;
 /// this projection carries its exact artifact rather than another truth lane.
 #[derive(Debug)]
 pub struct CommitChange {
-    pub(crate) envelope: Arc<CanonicalCommitEnvelope>,
+    pub(crate) envelope: SharedCanonicalCommitEnvelope,
     pub(crate) partitions: BTreeMap<PartitionId, PartitionChange>,
     pub(crate) schema_changed: bool,
     pub(crate) required_symbols: BTreeSet<Symbol>,

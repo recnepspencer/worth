@@ -72,7 +72,7 @@ where
             .gate(identity)?;
         gate.publish(|| {
             let owner=self.inner.runtime.bridge_ref().conditional();
-            if let crate::domain_computation::primary_graph::managed_bridge::conditional_execution::ConditionalExecutionOwner::Authored(bridge)=&owner {
+            if let crate::domain_computation::primary_graph::managed_bridge::conditional_execution::ConditionalExecutionOwner::Authored(bridge)=owner {
                 return authored::publish(self,phase,product,bridge,predecessor,request,cancellation);
             }
             let publication = self.inner.runtime.product_runtime_ref().owner_ref().publication_port();

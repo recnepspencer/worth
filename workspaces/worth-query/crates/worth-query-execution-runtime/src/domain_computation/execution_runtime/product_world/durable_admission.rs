@@ -52,6 +52,6 @@ impl std::error::Error for WorthQueryDurableStateAdmissionDenial {}
 
 impl WorthQueryProductRuntime {
     pub(crate) fn is_directory_home(&self) -> bool {
-        self.owner.owner_identity().durable().is_some()
+        self.fields().owner.owner_identity().durable().is_some()
     }
 }

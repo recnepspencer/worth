@@ -1,6 +1,7 @@
 //! A funded catalog payload remains private until its native candidate performs.
 use super::generation_publication_gate::{GenerationPublicationGate, GenerationPublicationPermit};
-use super::{IndexingState, IndexingSubsystem};
+use super::shared_state::SharedIndexingState;
+use super::IndexingSubsystem;
 pub mod artifact_settlement;
 pub(super) use artifact_settlement::CatalogArtifactVisibility;
 use artifact_settlement::IndexArtifactSettlement;
@@ -8,13 +9,12 @@ use std::sync::Arc;
 use worth_relational_branch::internal_port::indexes::data::DerivedIndexGeneration;
 use worth_relational_contracts::internal_port::history::data::coordinates::BranchId;
 use worth_relational_contracts::internal_port::indexes::data::maintenance::SelectedIndexGenerationAdmissionStop;
-use worth_relational_storage::internal_port::storage::substrate::owned_state::RuntimeOwnedState;
 
 #[derive(Debug)]
 pub struct PreparedGenerationBatch {
     // Abandonment releases coordination before destroying owning payloads.
     stage: CatalogPublicationStage,
-    catalog: RuntimeOwnedState<IndexingState>,
+    catalog: SharedIndexingState,
     generations: Vec<DerivedIndexGeneration>,
     basis: Option<super::PreparedIndexBasisSelection>,
     visibility: Arc<IndexArtifactSettlement>,

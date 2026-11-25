@@ -7,12 +7,12 @@
 //! and mints, exactly as for a direct operation.
 use crate::mvcc::publication::application_publication::custody;
 use contracts::execution::request_stage::checkpoint;
+use contracts::lineage::data::{CommitNamingPlan, PendingBirthTarget, PendingMergeTarget};
 use contracts::symbols::data::client_key::ClientKey;
 use contracts::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use contracts::transactions::data::primitives::EntityReference;
 use worth_execution::ExecutionRequest;
 use worth_relational_contracts::internal_port as contracts;
-use contracts::lineage::data::{CommitNamingPlan, PendingBirthTarget, PendingMergeTarget};
 
 /// Each pending create target the plan binds: births, split pieces and a
 /// merge survivor created by this commit. Existing targets carry allocated

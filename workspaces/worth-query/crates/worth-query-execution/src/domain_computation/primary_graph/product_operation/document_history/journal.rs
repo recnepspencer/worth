@@ -7,8 +7,8 @@ use super::{
 };
 use crate::basis::WorthQueryProductBranchReadIdentity;
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationReadObservation,
-    WorthQueryOwnedProductHead,
+    product_operation::DetachedOwnedProductHead, WorthQueryApplicationIdempotencyBinding,
+    WorthQueryApplicationReadObservation,
 };
 use std::{
     collections::{BTreeMap, VecDeque},
@@ -77,8 +77,8 @@ pub(super) struct HistoryAttempt {
     _allocation: HistoryInsertionAllocation,
 }
 
-pub(super) struct PastHead<'runtime, S> {
-    pub(super) custody: Arc<super::head_custody::HistoryHeadSlot<'runtime, S>>,
+pub(super) struct PastHead {
+    pub(super) custody: Arc<super::head_custody::HistoryHeadSlot>,
     queued: bool,
     _allocation: HistoryInsertionAllocation,
 }
@@ -100,7 +100,7 @@ impl PendingRecord {
     }
 }
 
-pub(in crate::domain_computation::primary_graph) struct HistoryJournal<'runtime, S> {
+pub(in crate::domain_computation::primary_graph) struct HistoryJournal {
     incarnation: DocumentIncarnation,
     current: WorthQueryHistoryNodeId,
     next: u64,
@@ -110,7 +110,7 @@ pub(in crate::domain_computation::primary_graph) struct HistoryJournal<'runtime,
     pending: Option<PendingRecord>,
     nodes: BTreeMap<u64, HistoryNode>,
     attempts: BTreeMap<[u8; 32], HistoryAttempt>,
-    past_heads: BTreeMap<u64, PastHead<'runtime, S>>,
+    past_heads: BTreeMap<u64, PastHead>,
     retained: BTreeMap<u64, RetainedHistorySource>,
     retained_completed: usize,
     bookmarked: usize,
@@ -143,7 +143,7 @@ pub(super) struct ReservedHistoryRecord {
     view_after: u64,
 }
 
-impl<'runtime, S> HistoryJournal<'runtime, S> {
+impl HistoryJournal {
     pub(super) fn document_identity(&self) -> super::WorthQueryDocumentHistoryIdentity {
         super::WorthQueryDocumentHistoryIdentity(self.incarnation)
     }
@@ -312,7 +312,7 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
         self,
     ) -> (
         usize,
-        std::collections::btree_map::IntoValues<u64, PastHead<'runtime, S>>,
+        std::collections::btree_map::IntoValues<u64, PastHead>,
     ) {
         drop(self.nodes);
         drop(self.retained);

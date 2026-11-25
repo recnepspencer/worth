@@ -106,7 +106,7 @@ impl RelationalRuntime {
     ) -> Result<RecordedRelationalComponentReference, Refusal> {
         crate::execution::request_custody::check_request(execution).map_err(Refusal::Request)?;
         let origin = self.services.origin_identity();
-        let meaning = match (*component.owner_original()).as_ref() {
+        let meaning = match component.owner_original() {
             MemoryComponentOrigin::Live(meaning) => meaning,
             MemoryComponentOrigin::Interim(meaning) => {
                 return meaning.export(&origin, &self.history)

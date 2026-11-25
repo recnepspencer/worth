@@ -48,28 +48,30 @@ pub struct WorthQueryDocumentHistoryClosing<'runtime, S> {
             'runtime,
             S,
         >,
-    current: Option<WorthQueryOwnedProductHead<'runtime, S>>,
-    past: IntoValues<u64, PastHead<'runtime, S>>,
-    pending: Option<HistoryHeadCustody<'runtime, S>>,
+    current: Option<
+        crate::domain_computation::primary_graph::product_operation::DetachedOwnedProductHead,
+    >,
+    past: IntoValues<u64, PastHead>,
+    pending: Option<HistoryHeadCustody>,
     opening_denial: Option<WorthQueryAdvancementDenial>,
     closed: usize,
     last: Option<ClosedHistoryHead>,
-    navigation: super::navigation::NavigationDisposal<'runtime, S>,
+    navigation: super::navigation::NavigationDisposal,
     navigation_denial: Option<super::WorthQueryHistoryNavigationDenial>,
 }
 
 impl<'runtime, S: ApplicationSchema> WorthQueryDocumentHistoryClosing<'runtime, S> {
     pub(super) fn new(
         current: WorthQueryOwnedProductHead<'runtime, S>,
-        journal: HistoryJournal<'runtime, S>,
-        navigation: super::navigation::NavigationJournal<'runtime, S>,
+        journal: HistoryJournal,
+        navigation: super::navigation::NavigationJournal,
     ) -> Self {
         // Every controller source is released before any branch retirement.
         let (closed, past) = journal.into_disposal();
         let navigation = navigation.into_disposal();
         Self {
             application: current.custody(),
-            current: Some(current),
+            current: Some(current.into_detached()),
             past,
             pending: None,
             opening_denial: None,
@@ -110,7 +112,7 @@ impl<'runtime, S: ApplicationSchema> WorthQueryDocumentHistoryClosing<'runtime, 
         }
         self.opening_denial = None;
         self.navigation_denial = None;
-        match self.navigation.retry(phase) {
+        match self.navigation.retry(&self.application, phase) {
             Ok(closed) => self.closed += closed,
             Err(cause) => {
                 self.navigation_denial = Some(cause);
@@ -135,7 +137,7 @@ impl<'runtime, S: ApplicationSchema> WorthQueryDocumentHistoryClosing<'runtime, 
                         .expect("the document's actual current head closed"),
                 });
             };
-            match head.retry(phase) {
+            match head.retry(&self.application, phase) {
                 Ok(Some(receipt)) => {
                     self.closed += 1;
                     self.last = Some(receipt);

@@ -6,7 +6,7 @@
 //! Custody courts use it to observe whether the actual owners (leases, capture
 //! holds, acknowledgement progress) still retain that exact observation.
 use crate::branch::basis::AdmittedRelationalBranchBasis;
-use crate::branch::basis::AdmittedRelationalBranchBasisInner;
+use crate::branch::basis::WeakAdmittedRelationalBranchBasisInner;
 use crate::branch::root::schema::RelationalBranchRootSchemaAuthority;
 use crate::branch::root::RelationalBranchRoot;
 use crate::visibility::snapshot_observation::SnapshotObservationInputs;
@@ -15,7 +15,7 @@ use std::sync::{Arc, Weak};
 /// Weak identity of one admitted basis observation and its root.
 #[derive(Debug, Clone)]
 pub struct RelationalBasisCustodyWitness {
-    basis: Weak<AdmittedRelationalBranchBasisInner>,
+    basis: WeakAdmittedRelationalBranchBasisInner,
     root: Weak<RelationalBranchRoot>,
     schema_authority: Weak<RelationalBranchRootSchemaAuthority>,
     schema_authority_digest: [u8; 32],
@@ -25,7 +25,7 @@ impl AdmittedRelationalBranchBasis {
     /// Witness this exact observation without retaining it.
     pub fn custody_witness(&self) -> RelationalBasisCustodyWitness {
         RelationalBasisCustodyWitness {
-            basis: Arc::downgrade(&self.inner),
+            basis: self.inner.downgrade(),
             root: Arc::downgrade(&self.inner.root),
             schema_authority: Arc::downgrade(&self.inner.root.retained_schema_authority()),
             schema_authority_digest: self.inner.root.schema_authority().authority_digest(),

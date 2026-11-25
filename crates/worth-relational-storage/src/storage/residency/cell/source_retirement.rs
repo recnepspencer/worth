@@ -75,7 +75,7 @@ impl RelationalRegionResidency {
             OriginalResidentSlot::Current => Ok(match &self.try_source_state()?.contents {
                 ResidencyState::Cold | ResidencyState::Damaged { .. } => None,
                 ResidencyState::Head { region } | ResidencyState::Full(region) => {
-                    Some(region.clone())
+                    Some(region.to_arc())
                 }
             }),
             OriginalResidentSlot::RawHead | OriginalResidentSlot::RawFull => {
@@ -90,7 +90,7 @@ impl RelationalRegionResidency {
                     Err(std::sync::TryLockError::WouldBlock) => return Err(Denial::Busy),
                 };
                 Ok(match &*cached {
-                    Some(Ok(region)) => Some(region.clone()),
+                    Some(Ok(region)) => Some(region.to_arc()),
                     Some(Err(_)) | None => None,
                 })
             }

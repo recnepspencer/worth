@@ -37,7 +37,9 @@ pub mod generation_catalog;
 pub mod publication_retirement;
 #[doc(hidden)]
 pub mod query_generation_routing;
+mod shared_state;
 use generation_catalog::GenerationCatalog;
+use shared_state::SharedIndexingState;
 
 use crate::branch::indexes::data::{DerivedIndexArtifacts, DerivedIndexGeneration};
 use crate::contracts::history::data::coordinates::{BranchId, CommitId};
@@ -141,7 +143,7 @@ impl Default for IndexingState {
 
 #[derive(Debug, Default)]
 pub struct IndexingSubsystem {
-    state: RuntimeOwnedState<IndexingState>,
+    state: SharedIndexingState,
     definition_publication: RuntimeOwnedState<()>,
     generation_publication: Arc<GenerationPublicationGate>,
 }
@@ -149,7 +151,7 @@ pub struct IndexingSubsystem {
 /// Index catalog custody for change sealing and native publication preparation.
 #[derive(Debug)]
 pub struct IndexDefinitionReadBinding {
-    state: RuntimeOwnedState<IndexingState>,
+    state: SharedIndexingState,
     definition_publication: RuntimeOwnedState<()>,
     generation_publication: Arc<GenerationPublicationGate>,
 }

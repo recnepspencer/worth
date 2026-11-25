@@ -75,7 +75,7 @@ impl WorthQueryInstalledApplicationBridge {
         Self {
             custody: Some(InstalledBridgeCustody::Serving {
                 ordinary,
-                conditional: conditional_owner::ConditionalOwner::Memory(conditional),
+                conditional: conditional_owner::ConditionalOwner::memory(conditional),
             }),
         }
     }
@@ -133,7 +133,7 @@ impl WorthQueryInstalledApplicationBridge {
         Self {
             custody: Some(InstalledBridgeCustody::Serving {
                 ordinary,
-                conditional: conditional_owner::ConditionalOwner::Authored(conditional),
+                conditional: conditional_owner::ConditionalOwner::authored(conditional),
             }),
         }
     }

@@ -10,14 +10,14 @@ use crate::durability::authority::recovered_runtime::DurabilityRecoveryAuthority
 use crate::durability::authority::recovered_runtime::RecoveredRelationalRuntimeAuthority;
 use crate::durability::authority::runtime_access::DurabilityAuthority;
 use crate::durability::data::RelationalRecoveryStop;
+use crate::runtime::state::runtime_state::WeakRelationalRuntimeState;
 use crate::runtime::RelationalRuntime;
-use std::sync::Weak;
 use worth_relational_branch::internal_port::branch::recorded_basis::memory_component::ObservedRelationalMemoryComponentOwnerPort as _;
 
 #[derive(Clone, Debug)]
 pub struct AdmittedNativeInterimReceiver {
     pub(super) source: Arc<CaptureIdentity>,
-    pub(super) owner: Weak<crate::runtime::RelationalRuntimeState>,
+    pub(super) owner: WeakRelationalRuntimeState,
     pub(super) image: RelationalCheckpointAdmissionArtifact,
 }
 impl AdmittedNativeInterimReceiver {
@@ -31,9 +31,7 @@ impl AdmittedNativeInterimReceiver {
             request
                 .consult()
                 .map_err(|cause| Refusal::Request(cause.into()))?;
-            if !Weak::ptr_eq(&self.owner, &runtime.state_binding())
-                || !captured.belongs_to(&self.source)
-            {
+            if !self.owner.ptr_eq(&runtime.state_binding()) || !captured.belongs_to(&self.source) {
                 return Err(Refusal::BindingMismatch(Mismatch::Runtime));
             }
             let directory = runtime

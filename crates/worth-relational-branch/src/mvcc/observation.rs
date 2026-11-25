@@ -5,8 +5,8 @@ pub use retained_retirement::RelationalRetainedObservationShares;
 pub use retirement::RelationalObservationRetirement;
 
 use crate::branch::basis::AdmittedRelationalBranchBasis;
-use crate::branch::basis::AdmittedRelationalBranchBasisInner;
 use crate::branch::basis::RelationalBranchBasisDescriptor;
+use crate::branch::basis::SharedAdmittedRelationalBranchBasisInner;
 use crate::branch::identity::RelationalBranchIdentity;
 use crate::branch::reference::observation::RelationalBranchReferenceObservation;
 use crate::branch::root::RelationalBranchRoot;
@@ -19,7 +19,7 @@ use crate::branch::version::RelationalBranchVersion;
 /// moves.
 #[derive(Clone, Debug)]
 pub struct RelationalBranchObservation {
-    inner: Arc<AdmittedRelationalBranchBasisInner>,
+    inner: SharedAdmittedRelationalBranchBasisInner,
 }
 
 impl AdmittedRelationalBranchBasis {
@@ -28,7 +28,7 @@ impl AdmittedRelationalBranchBasis {
     }
     pub fn observation(&self) -> RelationalBranchObservation {
         RelationalBranchObservation {
-            inner: Arc::clone(&self.inner),
+            inner: self.inner.clone(),
         }
     }
 }
@@ -148,7 +148,7 @@ pub trait RelationalBranchObservationOwnerPort: Sized {
 impl RelationalBranchObservationOwnerPort for RelationalBranchObservation {
     fn admitted_basis(&self) -> AdmittedRelationalBranchBasis {
         AdmittedRelationalBranchBasis {
-            inner: Arc::clone(&self.inner),
+            inner: self.inner.clone(),
         }
     }
 

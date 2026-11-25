@@ -132,13 +132,12 @@ pub struct WorthQueryPrimaryGraphProvider {
     pub(crate) branch_commit_coordination:
         branch_commit_coordination::WorthQueryApplicationBranchCommitCoordinator,
     pub(crate) live_delivery: super::live_delivery::WorthQueryLiveDeliverySource,
-    pub(crate) attempts: Arc<Mutex<application_attempt_state::WorthQueryPrimaryGraphApplicationAttemptStore>>,
+    pub(crate) attempts: application_attempt_state::SharedApplicationAttemptStore,
     pub(crate) application_attempt_operation_control:
         super::application_runtime::WorthQueryApplicationAttemptOperationControl,
     pub(crate) application_attempt_work: application_attempt_work::WorthQueryApplicationAttemptWorkLedger,
     pub(crate) completed_commit_evidence: Mutex<session_commit::WorthQueryCompletedCommitEvidenceStore>,
-    pub(crate) unpublished_idempotency:
-        Arc<Mutex<unpublished_idempotency::WorthQueryUnpublishedIdempotencyStore>>,
+    pub(crate) unpublished_idempotency: unpublished_idempotency::SharedUnpublishedIdempotencyStore,
     pub(crate) receipt_basis_retention: Arc<Mutex<session_commit::WorthQueryReceiptBasisRetentionStore>>,
     pub(crate) outstanding_dispatch: outstanding_dispatch::OutstandingDispatchOwner,
     pub(crate) inbound_terminal_index: inbound_terminal_index::WorthQueryInboundTerminalIndex,

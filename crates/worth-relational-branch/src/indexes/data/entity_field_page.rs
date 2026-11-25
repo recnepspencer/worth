@@ -1,5 +1,5 @@
 //! Finite pages over one exact entity-field posting generation.
-use super::{DerivedIndexGeneration, DerivedIndexGenerationId};
+use super::{DerivedIndexGeneration, DerivedIndexGenerationId, SharedDerivedIndexGeneration};
 use crate::identity::data::{EntityId, KindId};
 use std::sync::Arc;
 
@@ -9,7 +9,7 @@ use std::sync::Arc;
 pub struct BoundedEntityFieldBoundary {
     pub(crate) runtime: u64,
     pub(crate) basis: crate::visibility::snapshot_states::ResidentVisibilitySnapshotBasis,
-    pub(crate) generation: Arc<DerivedIndexGeneration>,
+    pub(crate) generation: SharedDerivedIndexGeneration,
     pub(crate) kind: KindId,
     pub(crate) key:
         crate::storage::data::authoritative_field_comparison_key::AuthoritativeFieldComparisonKey,
@@ -60,7 +60,7 @@ pub enum BoundedEntityFieldPageStop<E> {
 
 pub trait BoundedEntityFieldBoundaryFieldsPort {
     fn owner_basis(&self) -> &crate::visibility::snapshot_states::ResidentVisibilitySnapshotBasis;
-    fn owner_generation(&self) -> &Arc<DerivedIndexGeneration>;
+    fn owner_generation(&self) -> &SharedDerivedIndexGeneration;
     fn owner_key(
         &self,
     ) -> &crate::storage::data::authoritative_field_comparison_key::AuthoritativeFieldComparisonKey;
@@ -73,7 +73,7 @@ impl BoundedEntityFieldBoundaryFieldsPort for BoundedEntityFieldBoundary {
     fn owner_basis(&self) -> &crate::visibility::snapshot_states::ResidentVisibilitySnapshotBasis {
         &self.basis
     }
-    fn owner_generation(&self) -> &Arc<DerivedIndexGeneration> {
+    fn owner_generation(&self) -> &SharedDerivedIndexGeneration {
         &self.generation
     }
     fn owner_key(
@@ -110,7 +110,7 @@ pub fn assemble_bounded_entity_field_boundary(
     BoundedEntityFieldBoundary {
         runtime: parts.runtime,
         basis: parts.basis,
-        generation: parts.generation,
+        generation: parts.generation.into(),
         kind: parts.kind,
         key: parts.key,
         next: parts.next,

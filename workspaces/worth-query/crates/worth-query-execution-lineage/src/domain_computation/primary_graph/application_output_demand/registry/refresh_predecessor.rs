@@ -111,7 +111,7 @@ impl OutputRefreshPredecessor<'_> {
         let Self::Stable { interest, .. } = self else {
             return Ok(());
         };
-        if !Arc::ptr_eq(&interest.owner.state, &owner.state)
+        if !interest.owner.state.ptr_eq(&owner.state)
             || interest
                 .key
                 .replacement_order(replacement)

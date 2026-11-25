@@ -267,8 +267,7 @@ fn select_action<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<
             if &capture.key != recorded.idempotency_key_identity()
                 || capture.intent != recorded.recorded_intent()
                 || capture.mutation != Binding::IDENTITY
-                || !identity
-                    .matches_mutation_input(Binding::IDENTITY, &capture.input_identity)
+                || !identity.matches_mutation_input(Binding::IDENTITY, &capture.input_identity)
             {
                 return Err(WorthQueryCorrectionDerivationDenial::UnsupportedSourceMeaning);
             }

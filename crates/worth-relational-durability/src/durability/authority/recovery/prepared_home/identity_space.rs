@@ -14,7 +14,7 @@ impl PreparedRelationalHomeRecovery {
     ) -> Result<(Option<KindId>, Option<AspectIdentity>), Denial> {
         let mut kind = None;
         let mut aspect = None;
-        for schema in self.state.graph.schemas.rows.values() {
+        for schema in self.state().graph.schemas.rows.values() {
             let registry = schema.registry();
             for entry in (*registry.owner_entity_kinds()).values() {
                 request.consult().map_err(Denial::Request)?;
@@ -51,7 +51,7 @@ impl PreparedRelationalHomeRecovery {
             }
             worth_relational_branch::internal_port::branch::recorded_basis::RecordedRelationalComponentTarget::Empty => None,
         };
-        let plan = &self.state.plan;
+        let plan = &self.state().plan;
         if plan
             .checkpoint_covered_position()
             .is_some_and(|covered| position.is_none_or(|position| covered > position))
@@ -86,7 +86,7 @@ impl PreparedRelationalHomeRecovery {
         }
         let mut kind = None;
         let mut aspect = None;
-        for (digest, schema) in self.state.graph.schemas.rows.iter() {
+        for (digest, schema) in self.state().graph.schemas.rows.iter() {
             if introduced_later.contains(digest) && !present.contains(digest) {
                 continue;
             }

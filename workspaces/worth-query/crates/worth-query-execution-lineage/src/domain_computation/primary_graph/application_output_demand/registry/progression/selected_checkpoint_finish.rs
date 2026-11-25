@@ -20,7 +20,7 @@ impl WorthQueryOutputDemandRegistry {
         &'a self,
         interest: &'a WorthQueryOutputDemandInterest,
     ) -> Result<PreparedSelectedCheckpointFinish<'a>, WorthQueryOutputDemandDenial> {
-        if !Arc::ptr_eq(&self.state, &interest.owner.state) {
+        if !self.state.ptr_eq(&interest.owner.state) {
             return Err(WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::ForeignDemand,
                 "",

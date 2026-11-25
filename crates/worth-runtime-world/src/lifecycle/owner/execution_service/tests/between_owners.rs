@@ -298,8 +298,7 @@ fn retained_attempt_releases_unsealed_original_admission_for_adoption() {
         adopted,
         &resume_source.token(),
     );
-    let finished =
-        owner.finish_publication(&shared_exec, resume_outcome, &resume_source.token());
+    let finished = owner.finish_publication(&shared_exec, resume_outcome, &resume_source.token());
     assert!(
         matches!(finished, RuntimeWorldPublicationOutcome::Performed(_)),
         "adoption on the same one-original budget must succeed: {finished:?}"

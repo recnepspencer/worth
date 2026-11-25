@@ -78,9 +78,10 @@ impl WorthQueryDocumentHistoryEnvelopeConstraint {
             .request
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        if retained.as_ref().is_none_or(|kept| {
-            admitted.authentication_deadline() < kept.authentication_deadline()
-        }) {
+        if retained
+            .as_ref()
+            .is_none_or(|kept| admitted.authentication_deadline() < kept.authentication_deadline())
+        {
             *retained = Some(admitted);
         }
     }

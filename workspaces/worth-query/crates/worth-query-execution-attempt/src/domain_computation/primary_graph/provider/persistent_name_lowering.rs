@@ -1,6 +1,8 @@
 //! Lowers an attempt's bound output names against its own commit basis.
+use worth_query_execution_lineage::facade::persistent_naming::{
+    BoundOperationNaming, WorthQueryOutputNameDenial,
+};
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
-use worth_query_execution_lineage::facade::persistent_naming::{BoundOperationNaming, WorthQueryOutputNameDenial};
 use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 use worth_relational::facade::lineage::CommitNamingPlan;
 
