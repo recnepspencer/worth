@@ -9938,7 +9938,16 @@ envelopes, named-clock plumbing, and reconstruction bindings separately. Use
    in the binding spec so Query observes, verifies against the projected due
    coordinate, and writes `revision`, `lifecycle`, and `due` atomically in the
    same commit as `apply`.
+   For the common recurring rule (an entity with `rule_id`, `revision`,
+   `due_ns`, `interval_ns`, `max_fires`, `fired_count`, `lifecycle` and `gate`
+   fields under one hub row), `worth_query_recurring_rule!` declares the whole
+   binding (node, clock, projector, invoker, fresh owner admission, fire
+   operation and schedule upsert handler) in one block; install it with
+   `conditionals: Config { recurrence: Rule }` in `worth_query_application_program!`
+   and seed its hub with `Rule::seed_hub(bootstrap)`.
 5. **Pump missed occurrences on reopen in one Home call** via
+   `session.catch_up_temporal::<MyTemporalBinding>(now, WorthQueryTemporalCatchUpPolicy::bounded(64)?)?`
+   (funded by the session's execution policy) or
    `home.catch_up_temporal::<MyTemporalBinding>(now, execution, WorthQueryTemporalCatchUpPolicy::bounded(64)?)?`
    (or `home.catch_up_temporal_observing::<MyTemporalBinding>(now, execution, policy, |batch| ..)`,
    `home.pump_temporal::<MyTemporalBinding>(execution, policy)`, or

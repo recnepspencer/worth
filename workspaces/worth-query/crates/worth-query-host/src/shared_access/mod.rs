@@ -12,9 +12,11 @@ mod binding;
 mod capped_writer;
 mod client;
 mod denial;
+mod field_codec;
 mod framing;
 mod hmac;
 mod home_ops;
+mod program_macro;
 mod scope_binding;
 mod server;
 mod server_dispatch;
@@ -31,6 +33,11 @@ pub use client::{WorthQueryRemoteClient, WorthQueryRemoteWatch};
 pub use denial::{
     AuthenticationRefusalReason, AuthorizationRefusalReason, BudgetRefusalReason,
     ProtocolRefusalReason, SharedAccessDenial, WatchRefusalReason,
+};
+pub use field_codec::{RemoteBinaryField, RemoteByteReader};
+pub use program_macro::{
+    WORTH_QUERY_SHARED_GRANT_KEY_TAG, WORTH_QUERY_SHARED_REVOKE_KEY_TAG,
+    WORTH_QUERY_SHARED_SEQUENCE_MASK,
 };
 pub use server::WorthQueryRemoteServer;
 pub use types::{

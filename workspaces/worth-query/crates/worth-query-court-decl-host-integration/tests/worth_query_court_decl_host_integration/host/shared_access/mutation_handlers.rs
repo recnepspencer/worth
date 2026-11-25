@@ -34,7 +34,10 @@ use super::schema::{
 pub struct WriteProjectHandler;
 impl OperationHandler<SharedProjectSchema, WriteProjectVersionBinding> for WriteProjectHandler {
     fn declared_durable_capabilities() -> Option<&'static [WorthQueryOperationDurableCapability]> {
-        Some(&[WorthQueryOperationDurableCapability::RelationalMutation])
+        Some(&[
+            WorthQueryOperationDurableCapability::RelationalMutation,
+            WorthQueryOperationDurableCapability::ExternalEmission,
+        ])
     }
     fn decide(
         &self,

@@ -298,6 +298,7 @@ pub use crate::session::{
     WorthQueryTypedLiveSubscription, WorthQueryTypedManagedIndexRefreshDenial,
     WorthQueryTypedManagedIndexWatch,
 };
+pub use crate::{worth_query_recurring_rule, worth_query_remote_codec, worth_query_shared_access};
 /// Read-only observations for facade-only certification; these reports grant no authority.
 pub use worth_query_execution::facade::{
     certification, convergence_epoch, installed, primary_graph, product, runtime,

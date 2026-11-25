@@ -44,7 +44,14 @@ use super::{
 
 /// Explicit finite work ceiling used by default Host bootstrap, session, and
 /// clean-close operations when the caller does not override the policy.
-pub const DEFAULT_HOST_EXECUTION_WORK_CEILING: u64 = 10_000_000;
+///
+/// Reopening a Directory Home rebuilds its admission image from retained
+/// history, and the first requests after a reopen may admit more of it. That
+/// reconstructive work grows with the history the default limits retain
+/// (about 5M units for a freshly seeded Home plus about 0.5M per retained
+/// commit), so the ceiling must cover the full default retention and
+/// checkpoint windows rather than one ordinary request. It stays finite.
+pub const DEFAULT_HOST_EXECUTION_WORK_CEILING: u64 = 1 << 32;
 
 /// Explicit bounded serial execution policy used by default Host DX helpers.
 pub const DEFAULT_HOST_EXECUTION_POLICY: ExecutionRequestPolicy = ExecutionRequestPolicy::new(

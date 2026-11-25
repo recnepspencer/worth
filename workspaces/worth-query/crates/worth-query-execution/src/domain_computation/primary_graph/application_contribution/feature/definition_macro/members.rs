@@ -48,6 +48,19 @@ macro_rules! __worth_query_complete_feature {
     };
     (@members $head:tt [$($actions:tt)*] [$($handlers:tt)*] $bodies:tt $roles:tt $queries:tt
         $indexes:tt [$($aliases:tt)*] [$($spec:tt)*];
+        action $field:ident($Binding:ty, $Delivery:ty, $Handler:ty) $(as $Alias:ident $(<$($AliasGen:ident),* $(,)?>)?)? {
+            $($clauses:tt)*
+        }; $($rest:tt)*
+    ) => {
+        $crate::__worth_query_complete_feature!(@members $head
+            [$($actions)* ($Binding, $Delivery, [declare_pure])]
+            [$($handlers)* ($field, $Binding, $Handler)] $bodies $roles $queries $indexes
+            [$($aliases)* $(($Alias, [$($($AliasGen),*)?], $Binding, $Delivery))?]
+            [$($spec)* action($Binding, $Delivery) { $($clauses)* };]; $($rest)*
+        );
+    };
+    (@members $head:tt [$($actions:tt)*] [$($handlers:tt)*] $bodies:tt $roles:tt $queries:tt
+        $indexes:tt [$($aliases:tt)*] [$($spec:tt)*];
         action_ref $field:ident($Binding:ty, $Delivery:ty, $Handler:ty) $(as $Alias:ident $(<$($AliasGen:ident),* $(,)?>)?)? {
             $($clauses:tt)*
         }; $($rest:tt)*
@@ -290,6 +303,20 @@ macro_rules! __worth_query_complete_feature {
     };
     (@declare $schema:ident, $Schema:ty, $Binding:ty, [owned]) => {
         $schema.reference_application_mutation_binding::<$Binding>()
+    };
+    (@declare $schema:ident, $Schema:ty, $Binding:ty, [declare_pure]) => {
+        $schema.declared_operation::<<$Binding as $crate::facade::declaration::application_operation::ApplicationMutationBinding<$Schema>>::Operation>(
+            $crate::facade::declaration::application_schema::ApplicationOperationRef::<
+                $Schema,
+                <$Binding as $crate::facade::declaration::application_operation::ApplicationMutationBinding<$Schema>>::Operation,
+                <$Binding as $crate::facade::declaration::application_operation::ApplicationMutationBinding<$Schema>>::Input,
+            >::from_declaration()
+            .definition()
+            .no_external_effect()
+            .no_aftermath()
+            .finish(),
+        )
+        .application_mutation_binding::<$Binding>()
     };
     (@declare $schema:ident, $Schema:ty, $Binding:ty, [declare $operation:expr]) => {
         $schema.declared_operation::<<$Binding as $crate::facade::declaration::application_operation::ApplicationMutationBinding<$Schema>>::Operation>($operation)

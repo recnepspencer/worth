@@ -438,6 +438,17 @@ the Home's durable derived checkpoint (`home.checkpoint` and its anchored
 members) so reopen reconstructs strictly from authoritative journals and
 recomputes derived state only on demand.
 
+A program installs a recurring rule declared with `worth_query_recurring_rule!`
+through `conditionals: Config { field: Rule }` in `worth_query_application_program!`
+and catches up with `session.catch_up_temporal::<Rule>(now, policy)`, which funds
+the run from the session's execution policy.
+
+The default execution policy's work ceiling (`DEFAULT_HOST_EXECUTION_WORK_CEILING`)
+covers reopening a Directory Home: reopen rebuilds its admission image from
+retained history, and that reconstructive work grows with the retained commits,
+so desktop applications do not need a custom policy to reopen, rebuild indexes
+or run actions.
+
 `host::application_installation::WorthQueryInterimCheckpointRestore` is an
 internal certification door scheduled for deletion. Applications reopen their
 Directory instead.
@@ -450,7 +461,11 @@ opening a second writer on the Directory:
 
 - Implement `host::shared_access::WorthQuerySharedAccessProgram<Schema>` with
   your declared grant/revoke mutation intents, read/watch capabilities, and
-  governed live query.
+  governed live query. For a scope keyed by a string (or a newtype over one),
+  `worth_query_shared_access!` generates the implementation from the query,
+  row projection, capabilities, intent constructors and owner authentication;
+  `worth_query_remote_codec!(Row { field, .. })` derives each payload and row
+  wire codec.
 - **Native commit-backed grants and revocations:**
   `WorthQueryApplicationHome::grant_scope_access` and
   `WorthQueryApplicationHome::revoke_scope_access` execute your declared mutation

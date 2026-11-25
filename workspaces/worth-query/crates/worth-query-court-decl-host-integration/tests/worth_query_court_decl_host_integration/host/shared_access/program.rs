@@ -4,12 +4,11 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
 use worth_query_decl::facade::{
-    application_capability::ApplicationCapabilityRef,
     application_program::{
         ApplicationNoOutputGraph, ApplicationProgramAuthoring, ApplicationProgramDefinition,
         ApplicationProgramOutputs,
     },
-    application_schema::{ApplicationOperationRef, ApplicationSchema},
+    application_schema::ApplicationSchema,
     authentication::WorthQueryPrincipalMappingStatus,
 };
 use worth_query_host::facade::{
@@ -30,11 +29,9 @@ use worth_query_host::facade::{
         DeterminismContract, ExecutionAllocationPolicy, ExecutionBudget, ExecutionPosture,
         ExecutionRequestPolicy, WorthQueryApplicationQueryResourceProfile,
     },
-    shared_access::{
-        ProtocolRefusalReason, RemoteWatchContext, ScopeAccess, ScopeGrantId, SharedAccessDenial,
-        WorthQuerySharedAccessProgram,
-    },
-    WorthQueryApplicationHome, WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeRequest,
+    shared_access::{ScopeAccess, SharedAccessDenial},
+    worth_query_shared_access, WorthQueryApplicationHome, WorthQueryApplicationHomeLocation,
+    WorthQueryApplicationHomeRequest,
 };
 use worth_query_testkit_host::facade::host::application_runtime_surface as identity_fixture;
 
@@ -56,104 +53,29 @@ use super::schema::{
 
 static NEXT_IDEMPOTENCY_KEY: AtomicU64 = AtomicU64::new(1);
 
-impl WorthQuerySharedAccessProgram<SharedProjectSchema> for SharedProjectProgram {
-    type ScopeId = ProjectId;
-    type QueryPayload = ProjectQueryParams;
-    type Row = ProjectStateRow;
-    type GrantMutationIntent = GrantProjectIntent;
-    type RevokeMutationIntent = RevokeProjectIntent;
-    type QueryIntent = ProjectStateRead;
-    type ReadCapability = ReadProjectCapability;
-    type ReadOperation = ReadProjectOperation;
-    type ReadCapabilityInput = String;
-    type WatchCapability = WatchProjectCapability;
-    type WatchOperation = WatchProjectOperation;
-    type WatchCapabilityInput = String;
-
-    fn scope_key(scope: &ProjectId) -> String {
-        scope.0.clone()
-    }
-
-    fn parse_scope_key(key: &str) -> Result<ProjectId, SharedAccessDenial> {
-        if key.is_empty() {
-            return Err(SharedAccessDenial::ProtocolRefused(
-                ProtocolRefusalReason::MalformedPayload,
-            ));
-        }
-        Ok(ProjectId(key.to_owned()))
-    }
-
-    fn authenticate_owner(
-        schema: &WorthQueryInstalledApplicationSchema<SharedProjectSchema>,
-        request_scope: &WorthQueryRequestScope,
-    ) -> Result<WorthQueryAuthenticatedExternalPrincipal<SharedProjectSchema>, SharedAccessDenial>
-    {
-        authenticate_local_owner(schema, request_scope)
-    }
-
-    fn build_grant_mutation_intent(
-        grant: &RemoteWatchContext<'_, ProjectId>,
-    ) -> Result<GrantProjectIntent, SharedAccessDenial> {
-        let mode = match grant.access {
-            ScopeAccess::ReadOnly => "read_only",
-            ScopeAccess::ReadAndWatch => "read_and_watch",
-        };
-        Ok(GrantProjectIntent(GrantProjectInput {
+worth_query_shared_access! {
+    program SharedProjectProgram for SharedProjectSchema {
+        scope: ProjectId,
+        payload: ProjectQueryParams,
+        query: ProjectStateRead = |scope, _| ProjectStateRead(scope.0.clone()),
+        row: ProjectStateRow = |value| value,
+        read: ReadProjectCapability => ReadProjectOperation,
+        watch: WatchProjectCapability => WatchProjectOperation,
+        grant: GrantProjectIntent = |grant| GrantProjectIntent(GrantProjectInput {
             grant_id: grant.grant_id.as_str().to_owned(),
             project_key: grant.scope.0.clone(),
             grantee_issuer: grant.collaborator.issuer().to_owned(),
             grantee_subject: grant.collaborator.subject().to_owned(),
-            mode: mode.to_owned(),
-        }))
-    }
-
-    fn grant_idempotency_key(_grant_id: &ScopeGrantId, sequence: u64) -> u64 {
-        sequence
-    }
-
-    fn build_revoke_mutation_intent(
-        grant_id: &ScopeGrantId,
-    ) -> Result<RevokeProjectIntent, SharedAccessDenial> {
-        Ok(RevokeProjectIntent(RevokeProjectInput {
+            mode: match grant.access {
+                ScopeAccess::ReadOnly => "read_only",
+                ScopeAccess::ReadAndWatch => "read_and_watch",
+            }
+            .to_owned(),
+        }),
+        revoke: RevokeProjectIntent = |grant_id| RevokeProjectIntent(RevokeProjectInput {
             grant_id: grant_id.as_str().to_owned(),
-        }))
-    }
-
-    fn revoke_idempotency_key(_grant_id: &ScopeGrantId, sequence: u64) -> u64 {
-        sequence
-    }
-
-    fn build_query_intent(
-        scope: &ProjectId,
-        _: &ProjectQueryParams,
-    ) -> Result<ProjectStateRead, SharedAccessDenial> {
-        Ok(ProjectStateRead(scope.0.clone()))
-    }
-
-    fn read_capability() -> ApplicationCapabilityRef<SharedProjectSchema, ReadProjectCapability> {
-        ReadProjectCapability::reference()
-    }
-    fn read_operation() -> ApplicationOperationRef<SharedProjectSchema, ReadProjectOperation, String>
-    {
-        ReadProjectOperation::reference()
-    }
-    fn build_read_capability_input(scope: &ProjectId) -> String {
-        scope.0.clone()
-    }
-
-    fn watch_capability() -> ApplicationCapabilityRef<SharedProjectSchema, WatchProjectCapability> {
-        WatchProjectCapability::reference()
-    }
-    fn watch_operation(
-    ) -> ApplicationOperationRef<SharedProjectSchema, WatchProjectOperation, String> {
-        WatchProjectOperation::reference()
-    }
-    fn build_watch_capability_input(scope: &ProjectId) -> String {
-        scope.0.clone()
-    }
-
-    fn project_row(value: ProjectStateRow) -> ProjectStateRow {
-        value
+        }),
+        owner: |schema, request_scope| authenticate_local_owner(schema, request_scope),
     }
 }
 

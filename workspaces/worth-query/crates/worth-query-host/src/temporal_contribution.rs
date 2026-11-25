@@ -24,6 +24,10 @@ mod clock;
 mod contract;
 mod home_binding;
 mod installer;
+mod recurring;
+mod recurring_binding_macro;
+mod recurring_macro;
+mod recurring_parts_macro;
 
 pub use catch_up::{
     pump_temporal_catch_up, pump_temporal_catch_up_observing, pump_temporal_catch_up_until,
@@ -45,4 +49,12 @@ pub use home_binding::{
 pub use installer::{
     install_desktop_temporal_operation, WorthQueryDesktopTemporalBindingSpec,
     WorthQueryDesktopTemporalInstallationDenial, WorthQueryInstalledDesktopTemporal,
+};
+pub use recurring::{
+    recurring_invocation_failure, recurring_next_occurrence, WorthQueryRecurringClock,
+    WorthQueryRecurringConfig, WorthQueryRecurringInvoker, WorthQueryRecurringNode,
+    WorthQueryRecurringOccurrence, WorthQueryRecurringOccurrenceBinding, WorthQueryRecurringOwner,
+    WorthQueryRecurringProjector, WorthQueryRecurringRow, WorthQueryRecurringRuleIdentity,
+    WorthQueryRecurringScheduleDecision, WORTH_QUERY_RECURRING_ACTIVE,
+    WORTH_QUERY_RECURRING_COMPLETED, WORTH_QUERY_RECURRING_READY_GATE,
 };

@@ -87,7 +87,7 @@ pub use super::application_contribution::{
     WorthQueryComputationManagedIndexDenial, WorthQueryComputationManagedIndexDenialKind,
     WorthQueryComputationPartitionMembers, WorthQueryComputationPartitionPlan,
     WorthQueryComputationPartitionStop, WorthQueryComputationPartitionView,
-    WorthQueryComputationReadDenial, WorthQueryComputationReader,
+    WorthQueryComputationReadDenial, WorthQueryComputationReader, WorthQueryConditionalFeature,
     WorthQueryConfiguredApplicationContributions, WorthQueryDecisionContextDependencies,
     WorthQueryDerivedRelationCountOwner, WorthQueryDeterministicReducer,
     WorthQueryExecutionPlacementForTest, WorthQueryFeatureConfiguration,

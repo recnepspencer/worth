@@ -12,7 +12,8 @@ mod members;
 /// `pub feature OperationFamily<S: FamilySchema, O: Operation> for OperationFeature<O> => OperationRuntime where O: Send { .. }`.
 ///
 /// Runtime constructor arguments are explicit values for caller-supplied
-/// handlers. A `body_action(Binding, Delivery)` declares its operation and
+/// handlers. An `action` member without an `operation:` clause declares its
+/// operation as pure (no external effect, no aftermath). A `body_action(Binding, Delivery)` declares its operation and
 /// binding, derives its delivery root and installs the schema-owned
 /// operation body through the contribution's existing body owner; it takes
 /// no handler value.

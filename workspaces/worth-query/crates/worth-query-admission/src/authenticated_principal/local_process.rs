@@ -3,9 +3,13 @@ use std::time::{Duration, SystemTime};
 
 use worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentity;
 
+use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationSchema};
+
 use super::{
+    admit_authentication_adapter, WorthQueryAdmissionClock,
     WorthQueryAdmittedAuthenticationAdapter, WorthQueryAuthenticatedExternalPrincipal,
-    WorthQueryAuthenticationAdapter, WorthQueryAuthenticationAdapterFailure,
+    WorthQueryAuthenticationAdapter, WorthQueryAuthenticationAdapterAdmission,
+    WorthQueryAuthenticationAdapterAdmissionDenial, WorthQueryAuthenticationAdapterFailure,
     WorthQueryAuthenticationAdapterFailureKind, WorthQueryAuthenticationAudience,
     WorthQueryAuthenticationDenial, WorthQueryAuthenticationDenialKind,
     WorthQueryAuthenticationFuture, WorthQueryAuthenticationMethod, WorthQueryRequestScope,
@@ -81,6 +85,24 @@ impl WorthQueryLocalProcessPrincipal {
 
     pub const fn lifetime(&self) -> Duration {
         self.lifetime
+    }
+
+    /// Admits this principal as its own adapter against `schema`, accepting
+    /// exactly its own audience and method under `clock`.
+    pub fn admit<Schema: ApplicationSchema>(
+        self,
+        schema: &WorthQueryInstalledApplicationSchema<Schema>,
+        clock: WorthQueryAdmissionClock,
+    ) -> Result<
+        WorthQueryAdmittedAuthenticationAdapter<Schema, Self>,
+        WorthQueryAuthenticationAdapterAdmissionDenial,
+    > {
+        let admission = WorthQueryAuthenticationAdapterAdmission::new(
+            self.audience.clone(),
+            self.method.clone(),
+            clock,
+        );
+        admit_authentication_adapter(schema, admission, self)
     }
 
     /// The local process vouches for itself now, for the configured lifetime.

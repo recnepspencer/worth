@@ -41,6 +41,7 @@ mod lease;
 mod live_subscription;
 mod managed_index;
 mod query_execution;
+mod temporal;
 pub use auto_key::WorthQueryAutoIdempotencyKey;
 pub use live_subscription::{
     WorthQueryTypedLiveCloseDenial, WorthQueryTypedLiveRefreshDenial,

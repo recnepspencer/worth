@@ -7,6 +7,11 @@
 //! encrypted transport (TLS/mTLS, Tailscale, or SSH) or drive
 //! `WorthQueryRemoteServer::handle_frame` over an encrypted channel.
 //!
+//! Query payloads and rows implement `RemoteBinaryCodec` from their fields
+//! with [`crate::facade::worth_query_remote_codec!`]; a string-scoped program
+//! implements `WorthQuerySharedAccessProgram` with
+//! [`crate::facade::worth_query_shared_access!`].
+//!
 //! Only the owner's `WorthQueryApplicationHome` may issue or revoke durable
 //! scope-access grants and host remote requests. `ScopeAccessGrant` cannot be
 //! forged by callers:
@@ -56,9 +61,10 @@
 pub use crate::shared_access::{
     AuthenticationRefusalReason, AuthorizationRefusalReason, BudgetRefusalReason,
     ProtocolRefusalReason, RemoteAuthConfig, RemoteAuthKey, RemoteAuthToken, RemoteBinaryCodec,
-    RemoteByteWriter, RemoteClientLimits, RemoteServerLimits, RemoteTokenIssueRequest,
-    RemoteWatchContext, RemoteWatchId, RemoteWatchPollOutcome, ScopeAccess, ScopeAccessGrant,
-    ScopeGrantId, SharedAccessDenial, WatchRefusalReason, WorthQueryRemoteClient,
-    WorthQueryRemoteServer, WorthQueryRemoteWatch, WorthQuerySharedAccessProgram,
-    MIN_MAX_FRAME_BYTES,
+    RemoteBinaryField, RemoteByteReader, RemoteByteWriter, RemoteClientLimits, RemoteServerLimits,
+    RemoteTokenIssueRequest, RemoteWatchContext, RemoteWatchId, RemoteWatchPollOutcome,
+    ScopeAccess, ScopeAccessGrant, ScopeGrantId, SharedAccessDenial, WatchRefusalReason,
+    WorthQueryRemoteClient, WorthQueryRemoteServer, WorthQueryRemoteWatch,
+    WorthQuerySharedAccessProgram, MIN_MAX_FRAME_BYTES, WORTH_QUERY_SHARED_GRANT_KEY_TAG,
+    WORTH_QUERY_SHARED_REVOKE_KEY_TAG, WORTH_QUERY_SHARED_SEQUENCE_MASK,
 };
