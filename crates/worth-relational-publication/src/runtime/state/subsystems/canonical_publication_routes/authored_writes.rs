@@ -13,6 +13,8 @@ pub mod managed_source;
 pub mod projection;
 #[path = "authored_writes/rebuild.rs"]
 pub mod rebuild;
+#[path = "authored_writes/span_seed.rs"]
+pub mod span_seed;
 use branch::history::access::relevant_writes::RelationalAuthoredWriteDenial as Denial;
 use branch::history::data::canonical_commit_envelope::CanonicalCommitEnvelope;
 use contracts::history::data::coordinates::CommitId;
@@ -112,6 +114,7 @@ pub fn commit_denial(
         | Denial::UnsupportedAdjacencySelector
         | Denial::UnsupportedMergeInterval
         | Denial::NotSelectedPrefix
+        | Denial::SpanBoundReached
         | Denial::EmptySelection
         | Denial::InvalidContinuation
         | Denial::PageStorageTooSmall

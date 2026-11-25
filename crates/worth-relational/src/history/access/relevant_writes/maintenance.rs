@@ -35,7 +35,7 @@ impl RelationalRuntime {
     }
 }
 
-fn require_exact(
+pub(super) fn require_exact(
     runtime: &RelationalRuntime,
     selected: &RelationalSelectedCommit,
 ) -> Result<(), Denial> {

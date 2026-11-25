@@ -28,9 +28,22 @@ pub(super) fn collect(
     original: &AdmittedRelationalBranchBasis,
     target: &AdmittedRelationalBranchBasis,
     selection: &Selection,
+    maximum_links: Option<NonZeroUsize>,
 ) -> Result<SelectedHistory, Denial> {
     let mut ordinary = Occurrences::default();
     let mut managed = Occurrences::default();
+    // A reopened Home holds no authored-write generation (public #382). Seed
+    // only the span from the original through the target; a covered span
+    // costs one lookup.
+    runtime
+        .seed_authored_write_span(
+            execution,
+            original,
+            selected(runtime, target)?,
+            maximum_links,
+        )
+        .map_err(|cause| Denial::RestoredSupport(Stop::Native(cause)))
+        .inspect_err(|cause| correction_rejection("canonical-history-seed", None, cause))?;
     // Preserve the existing truly-empty selection refusal. An all-managed
     // selection alone may skip the ordinary cursor's unrelated EmptySelection.
     if !selection.keys.is_empty() || selection.managed.is_empty() {

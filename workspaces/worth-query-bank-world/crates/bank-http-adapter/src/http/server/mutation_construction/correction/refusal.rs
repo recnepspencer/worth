@@ -165,6 +165,7 @@ fn native_support(cause: RelationalAuthoredWriteDenial) -> BankHttpDenial {
         D::Allocation(cause) | D::OrderedStorage(Storage::Allocation(cause)) => {
             input_capture(WorthQueryOperationInputCaptureDenial::Allocation(cause))
         }
+        D::SpanBoundReached => BankHttpDenial::new(Kind::ResourceExhausted, Next::NarrowRequest),
         D::SizeOverflow | D::OrderedStorage(Storage::CapacityOverflow) => {
             BankHttpDenial::new(Kind::InternalDenied, Next::ContactOperator)
         }

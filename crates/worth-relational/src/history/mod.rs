@@ -12,7 +12,8 @@ pub use access::{
     RelationalAuthoredManagedSourceSelector, RelationalAuthoredWriteCursor,
     RelationalAuthoredWriteDenial, RelationalAuthoredWriteOccurrence, RelationalAuthoredWritePage,
     RelationalAuthoredWritePageLimits, RelationalAuthoredWriteScope,
-    RelationalAuthoredWriteSelector, RelationalPreparedAuthoredWritePage,
+    RelationalAuthoredWriteSelector, RelationalAuthoredWriteSpan,
+    RelationalPreparedAuthoredWritePage,
 };
 pub use access::{
     RelationalCanonicalRecordHistoryCursor, RelationalPreparedRecordHistoryPage,

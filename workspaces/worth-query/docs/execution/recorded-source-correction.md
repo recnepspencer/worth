@@ -174,6 +174,18 @@ a receipt retained from the previous open refuses with `StaleIncarnation`.
 Selection still requires the original program to be rostered, current disclosure
 and retained ancestry. Recorded bytes grant no mutation authority.
 
+A reopened Home holds no authored-write history accelerator: the checkpoint
+and the replayed journal carry none, and later commits inherit that absence.
+Reversing the head needs no history. Reversing an older source seeds the
+accelerator from the original through the target only, charged to the
+correction request and bounded by `maximum_ancestors` parent links (public
+#382). The first such correction pays for that span, never for the history
+before the original; later corrections in the span reuse it. A diverged
+original, a merge or a span past the bound still refuses typed. History keyed
+by a managed entity-field index, which every root-locating decision read
+records, cannot yet cross commits restored from a checkpoint: such a span
+refuses `IncompleteIndexHistory` until public #384.
+
 The acknowledged World open transfers its existing `OriginalProgramMeaning`
 interpretation into `primary_graph/query_obligations`. It replaces the local count; reopening
 retains the durable count. The original Native key and complete intent remain the

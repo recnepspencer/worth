@@ -20,6 +20,16 @@ pub use selection::{
     RelationalAuthoredWriteScope, RelationalAuthoredWriteSelector,
 };
 
+/// What a span seed did for one original and selected target.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum RelationalAuthoredWriteSpan {
+    /// The target's generation already holds the original; nothing was walked.
+    Covered,
+    /// A generation from the original through the target was installed after
+    /// walking this many canonical commits, the original included.
+    Seeded { commits: usize },
+}
+
 /// A missing derived generation or canonical occurrence never proves absence.
 #[derive(Debug)]
 pub enum RelationalAuthoredWriteDenial {
@@ -44,6 +54,8 @@ pub enum RelationalAuthoredWriteDenial {
     UnsupportedAdjacencySelector,
     UnsupportedIndexSelector,
     NotSelectedPrefix,
+    /// A span seed walked its caller's link bound without reaching the original.
+    SpanBoundReached,
     EmptySelection,
     InvalidContinuation,
     PageStorageTooSmall,
