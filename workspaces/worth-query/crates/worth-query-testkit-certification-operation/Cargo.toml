@@ -15,6 +15,7 @@ doctest = false
 serde = { version = "1", features = ["derive", "rc"] }
 worth-foundational = { path = "../../../../crates/worth-foundational" }
 worth-query-decl = { workspace = true }
+worth-query-declaration = { path = "../worth-query-declaration" }
 worth-query-host = { workspace = true }
 worth-query-testkit-document-retention = { path = "../worth-query-testkit-document-retention" }
 

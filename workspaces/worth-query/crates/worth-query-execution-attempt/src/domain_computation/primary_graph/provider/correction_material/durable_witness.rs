@@ -12,6 +12,7 @@ use crate::domain_computation::application_aftermath::{
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::WorldOwnerCoordinate;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_relational::facade::durability::RelationalAssociatedEffectSubject as Subject;
 use worth_relational::facade::history::RelationalCommitReceipt;
 use worth_relational::facade::runtime::RelationalRuntime;
@@ -128,6 +129,7 @@ impl DurableOriginals<'_> {
             .filter(|(_, world)| world.ordinal() == coordinates.world_commit())
             .map(|(_, world)| {
                 Recorded::from_untrusted_parts(
+                    ARCHIVE_DECODE,
                     world,
                     coordinates.relational().clone(),
                     coordinates.member(),

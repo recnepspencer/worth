@@ -1,5 +1,6 @@
 //! v21 preserves ordinary succession; v23 adds a declared historical output match.
 use super::{BinaryEncodingSink, BinaryInput, Denial, Kind};
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::{
     application_operation::{
         ApplicationMutationOutputPosture as Posture,
@@ -74,6 +75,7 @@ pub(super) fn decode(
             };
             Ok(Some(succession.with_untrusted_output_match(
                 OutputMatch::from_untrusted(
+                    ARCHIVE_DECODE,
                     selected,
                     producer,
                     ApplicationMutationOutputRoleDescription {
@@ -90,6 +92,7 @@ pub(super) fn decode(
 }
 fn decode_base(input: &mut BinaryInput<'_>) -> Result<Succession, Denial> {
     Ok(Succession::from_untrusted(
+        ARCHIVE_DECODE,
         input.text()?.into(),
         input.text()?.into(),
         input.text()?.into(),

@@ -2,6 +2,7 @@ use crate::application_schema::{
     fragment::{self, *},
     *,
 };
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 #[derive(Debug)]
 struct ContributionSchema;
 impl Fragment for ContributionSchema {
@@ -178,6 +179,7 @@ fn portable_readmission_rejects_hostile_contribution_closures() {
     assert_portable_denial(
         vec![
             ApplicationSchemaContributionProvenance::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 "invalid identity".to_owned(),
                 vec![0, 1],
             ),
@@ -238,7 +240,11 @@ fn contribution_identity_must_be_canonical_portable_text() {
 }
 
 fn contribution(identity: &str, ordinals: Vec<u32>) -> ApplicationSchemaContributionProvenance {
-    ApplicationSchemaContributionProvenance::from_untrusted_parts(identity.to_owned(), ordinals)
+    ApplicationSchemaContributionProvenance::from_untrusted_parts(
+        ARCHIVE_DECODE,
+        identity.to_owned(),
+        ordinals,
+    )
 }
 
 fn assert_portable_denial(
@@ -249,7 +255,7 @@ fn assert_portable_denial(
     let mut parts = WorthQueryPortableApplicationSchemaRecord::project(&declaration).into_parts();
     parts.contributions = contributions;
     let denial = validate_portable_application_schema_freshly(
-        WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts),
+        WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(ARCHIVE_DECODE, parts),
     )
     .unwrap_err();
     assert_eq!(denial, expected);

@@ -1,21 +1,28 @@
 //! V9 carries optional source intent in both existing and created fields.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 
 #[test]
 fn optional_assignment_and_initializer_roundtrip_and_old_version_refuses_each_opcode() {
-    let binding = WorthQueryPortableTypeIdentity::from_untrusted("worth.rust.string".to_owned());
-    let assignment = ApplicationOperationBodyProgram::from_untrusted_scope_fields(vec![
-        ApplicationOperationBodyScopeField::AssignOptionalInput {
+    let binding = WorthQueryPortableTypeIdentity::from_untrusted(
+        ARCHIVE_DECODE,
+        "worth.rust.string".to_owned(),
+    );
+    let assignment = ApplicationOperationBodyProgram::from_untrusted_scope_fields(
+        ARCHIVE_DECODE,
+        vec![ApplicationOperationBodyScopeField::AssignOptionalInput {
             field: ApplicationFieldBindingLocus::new("Item", "Facts", "Note"),
             binding: binding.clone(),
             scalar_family: ScalarAspectType::String,
             member: "note".to_owned(),
-        },
-    ]);
+        }],
+    );
     let creation = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
         "Tenant".to_owned(),
         vec![],
         Some(ApplicationOperationBodyCreation::from_untrusted(
+            ARCHIVE_DECODE,
             "Item".to_owned(),
             "item".to_owned(),
             vec![ApplicationOperationBodyCreatedField::OptionalInput {

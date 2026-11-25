@@ -79,9 +79,9 @@ fn shared_scope_export_archive_decode_and_fresh_readmission_preserve_complete_me
         .unwrap()
         .materialize()
         .unwrap()
-        .validate_freshly(
-            WorthQueryExpectedPortablePackageIdentity::from_untrusted_identity(expected.clone()),
-        )
+        .validate_freshly(WorthQueryExpectedPortablePackageIdentity::new(
+            expected.clone(),
+        ))
         .unwrap();
     assert_eq!(validated.identity(), &expected);
 }

@@ -65,11 +65,9 @@ fn artifact_tamper_remains_untrusted_until_expected_identity_comparison() {
     }
     let candidate = reconstruction.close().unwrap().materialize().unwrap();
     assert!(candidate
-        .validate_freshly(
-            WorthQueryExpectedPortablePackageIdentity::from_untrusted_identity(
-                source.identity().clone(),
-            ),
-        )
+        .validate_freshly(WorthQueryExpectedPortablePackageIdentity::new(
+            source.identity().clone(),
+        ),)
         .is_err());
 }
 

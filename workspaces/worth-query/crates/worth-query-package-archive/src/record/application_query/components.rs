@@ -1,5 +1,6 @@
 //! Portable descriptive selection; fresh declaration/schema admission grants no runtime read.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryComponentMeaning, ApplicationQueryComponentSelection,
     WorthQueryPortableApplicationQueryComponentParts,
@@ -32,6 +33,7 @@ pub(super) fn decode(
         _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
     };
     Ok(ApplicationQueryComponentMeaning::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationQueryComponentParts {
             query,
             slot,

@@ -5,6 +5,7 @@ use crate::application_capability::{
 use crate::application_schema::{
     ApplicationOperationDecisionReadTarget, ApplicationOperationProgramTarget,
 };
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 
 struct RevocationOperation;
 
@@ -56,6 +57,7 @@ fn application_cannot_redeclare_revocation_reads_or_effects() {
 
     let definition =
         crate::application_schema::ApplicationDecisionReadScopeMeaning::from_untrusted_parts(
+            ARCHIVE_DECODE,
             vec![field_read("Status")],
             Vec::new(),
         )

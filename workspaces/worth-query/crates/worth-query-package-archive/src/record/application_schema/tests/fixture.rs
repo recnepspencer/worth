@@ -1,4 +1,5 @@
 use worth_foundational::facade::{AspectContractRevision, AspectIdentity, ScalarAspectType};
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::*;
 use worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity;
 
@@ -22,6 +23,7 @@ pub(super) fn schema_record_with_projection_budget(
     let members = members(projection_work);
     let member_count = u32::try_from(members.len()).unwrap();
     WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationSchemaParts {
             owner: "archive.tests".to_owned(),
             name: "CompleteUntrustedSchema".to_owned(),
@@ -36,10 +38,12 @@ pub(super) fn schema_record_with_projection_budget(
 fn contributions(member_count: u32) -> Vec<ApplicationSchemaContributionProvenance> {
     vec![
         ApplicationSchemaContributionProvenance::from_untrusted_parts(
+            ARCHIVE_DECODE,
             "worth.archive.tests.foundation.v1".to_owned(),
             (0..13).collect(),
         ),
         ApplicationSchemaContributionProvenance::from_untrusted_parts(
+            ARCHIVE_DECODE,
             "worth.archive.tests.operations.v1".to_owned(),
             (13..member_count).collect(),
         ),
@@ -123,7 +127,7 @@ fn members(projection_work: Option<usize>) -> Vec<ApplicationSchemaMember> {
         },
         ApplicationSchemaMember::OperationMutationPrecondition {
             operation: text("Apply"),
-            target: ApplicationMutationPreconditionTarget::from_untrusted_fields(
+            target: ApplicationMutationPreconditionTarget::from_untrusted_fields(ARCHIVE_DECODE,
                 ApplicationMutationPreconditionFamily::ExpectedFact,
                 text("Entity"),
                 text("Aspect"),
@@ -195,7 +199,7 @@ fn principal_binding() -> ApplicationSchemaMember {
 }
 
 fn type_id(name: &str) -> WorthQueryPortableTypeIdentity {
-    WorthQueryPortableTypeIdentity::from_untrusted(format!("worth.tests.{name}.v1"))
+    WorthQueryPortableTypeIdentity::from_untrusted(ARCHIVE_DECODE, format!("worth.tests.{name}.v1"))
 }
 
 fn text(value: &str) -> String {

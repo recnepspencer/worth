@@ -1,5 +1,6 @@
 //! A query-bound whole-orbit result slot. These names carry no read authority.
 use super::{ApplicationQueryMarkerIdentity, ApplicationQueryResultSlotKey};
+use crate::archive_decode_authority::{ArchiveDecodeAuthority, ARCHIVE_DECODE};
 use crate::{
     application_schema::ApplicationRelationRef,
     portable_identity::{WorthQueryPortableType, WorthQueryPortableTypeIdentity},
@@ -27,7 +28,10 @@ pub struct WorthQueryPortableApplicationQueryOrbitParts {
     pub output_name: String,
 }
 impl ApplicationQueryOrbitMeaning {
-    pub fn from_untrusted_parts(parts: WorthQueryPortableApplicationQueryOrbitParts) -> Self {
+    pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
+        parts: WorthQueryPortableApplicationQueryOrbitParts,
+    ) -> Self {
         Self {
             query: parts.query,
             slot: parts.slot,
@@ -89,6 +93,7 @@ where
     ) -> Self {
         Self {
             meaning: ApplicationQueryOrbitMeaning::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 WorthQueryPortableApplicationQueryOrbitParts {
                     query: WorthQueryPortableTypeIdentity::declared(Query::QUERY_TYPE_NAME),
                     slot: Slot::PORTABLE_TYPE_IDENTITY,

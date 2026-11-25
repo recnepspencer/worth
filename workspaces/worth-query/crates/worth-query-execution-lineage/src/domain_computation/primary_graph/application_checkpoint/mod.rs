@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::{ArchiveDecodeAuthority, ARCHIVE_DECODE};
 pub mod capture {
     pub mod output_facts;
 }
@@ -41,7 +42,7 @@ pub struct DecodedApplicationCheckpoint {
 }
 
 impl WorthQueryApplicationCheckpoint {
-    pub fn from_untrusted_bytes(bytes: impl Into<Box<[u8]>>) -> Self {
+    pub fn from_untrusted_bytes(_: ArchiveDecodeAuthority, bytes: impl Into<Box<[u8]>>) -> Self {
         Self {
             origin: None,
             bytes: worth_execution::ExecutionImmutableBytes::from_external_bytes(
@@ -75,7 +76,7 @@ impl WorthQueryApplicationCheckpoint {
         rewrite(&mut bytes[body_start..]);
         let checksum = Sha256::digest(&bytes[body_start..]);
         bytes[MAGIC.len()..body_start].copy_from_slice(&checksum);
-        Self::from_untrusted_bytes(bytes.into_boxed_slice())
+        Self::from_untrusted_bytes(ARCHIVE_DECODE, bytes.into_boxed_slice())
     }
 
     pub(crate) fn decode_with_execution(

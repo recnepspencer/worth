@@ -1,3 +1,4 @@
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 use std::marker::PhantomData;
 
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
@@ -50,6 +51,7 @@ pub struct ApplicationQueryPredicate {
 
 impl ApplicationQueryPredicate {
     pub fn from_untrusted_fields(
+        _: ArchiveDecodeAuthority,
         entity: String,
         aspect: String,
         field: String,
@@ -66,6 +68,7 @@ impl ApplicationQueryPredicate {
     }
 
     pub fn from_untrusted_value(
+        _: ArchiveDecodeAuthority,
         entity: String,
         aspect: String,
         field: String,

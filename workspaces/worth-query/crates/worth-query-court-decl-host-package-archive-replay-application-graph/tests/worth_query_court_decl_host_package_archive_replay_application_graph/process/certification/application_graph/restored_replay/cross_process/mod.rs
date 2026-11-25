@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 pub(crate) use worth_query_testkit_certification_application_graph::facade::certification::application_graph::restored_replay::cross_process::*;
 
 #[test]
@@ -53,7 +54,7 @@ fn restore_phase() {
         panic!("the record holds the commit and the ordinal");
     };
     let denial = restore_on_first_program(
-        WorthQueryApplicationCheckpoint::from_untrusted_bytes(bytes),
+        WorthQueryApplicationCheckpoint::from_untrusted_bytes(ARCHIVE_DECODE, bytes),
         WorthQueryApplicationProgramRoster::new().support(validated_second_program()),
     )
     .err()

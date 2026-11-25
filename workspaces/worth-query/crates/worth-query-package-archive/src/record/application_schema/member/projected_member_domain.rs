@@ -1,6 +1,7 @@
 //! Tag44 owns a v1 subgrammar; existing record-frame/member bytes are unchanged.
 use super::*;
 use crate::record::sequence::{decode_sequence, write_sequence};
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::{
     ErasedApplicationProjectedMemberDomainDefinition as Definition,
     WorthQueryPortableProjectedMemberDomainParts as Parts,
@@ -41,12 +42,15 @@ pub(super) fn decode(
     let carrier = input.text()?.to_owned();
     let cases = decode_sequence(input, budget, 4, |input, _| Ok(input.text()?.to_owned()))?;
     let member = ApplicationSchemaMember::ProjectedMemberDomain {
-        definition: Definition::from_untrusted_parts(Parts {
-            semantic_version,
-            domain,
-            carrier,
-            cases,
-        }),
+        definition: Definition::from_untrusted_parts(
+            ARCHIVE_DECODE,
+            Parts {
+                semantic_version,
+                domain,
+                carrier,
+                cases,
+            },
+        ),
     };
     require_shape(&member)?;
     Ok(member)

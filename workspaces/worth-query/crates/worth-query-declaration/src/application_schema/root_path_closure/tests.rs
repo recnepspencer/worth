@@ -2,6 +2,7 @@
 use super::*;
 use crate::application_query::*;
 use crate::application_schema::*;
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 struct Schema;
 struct Node;
 struct Edge;
@@ -106,6 +107,7 @@ fn entity_final_recipe_with_projected_intermediate_is_explicitly_refused() {
     let mut members = members();
     members.push(ApplicationSchemaMember::ProjectedMemberDomain {
         definition: ErasedApplicationProjectedMemberDomainDefinition::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableProjectedMemberDomainParts {
                 semantic_version: 1,
                 domain: "Ports".into(),
@@ -122,6 +124,7 @@ fn entity_final_recipe_with_projected_intermediate_is_explicitly_refused() {
         })
         .unwrap();
     *parts = ErasedApplicationDerivedRelationDefinition::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableDerivedRelationParts {
             relation: "Live".into(),
             from: "Node".into(),

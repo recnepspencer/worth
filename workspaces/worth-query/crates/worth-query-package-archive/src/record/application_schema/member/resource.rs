@@ -8,6 +8,7 @@ use crate::denial::{
 };
 use crate::record::{application_query, decode_budget::RecordDecodeAttempt};
 use crate::{binary_encoding::BinaryEncodingSink, binary_input::BinaryInput};
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_resource::{
     ApplicationResourceAction, ApplicationResourceAuthorization, ApplicationResourceLimits,
     ApplicationResourceRequestResponseProfile, ErasedApplicationResourceDefinition,
@@ -74,14 +75,18 @@ pub(super) fn decode(
         maximum_input_bytes: input.u64()?,
         maximum_frame_bytes: input.u64()?,
     };
-    let authorization = ApplicationResourceAuthorization::from_untrusted_requirements([
-        application_query::controls::decode_authorization(input)?,
-        application_query::controls::decode_authorization(input)?,
-        application_query::controls::decode_authorization(input)?,
-        application_query::controls::decode_authorization(input)?,
-    ]);
+    let authorization = ApplicationResourceAuthorization::from_untrusted_requirements(
+        ARCHIVE_DECODE,
+        [
+            application_query::controls::decode_authorization(input)?,
+            application_query::controls::decode_authorization(input)?,
+            application_query::controls::decode_authorization(input)?,
+            application_query::controls::decode_authorization(input)?,
+        ],
+    );
     let disclosure = application_query::disclosure::decode(input, budget)?;
     let definition = ErasedApplicationResourceDefinition::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationResourceParts {
             name,
             resource_type,

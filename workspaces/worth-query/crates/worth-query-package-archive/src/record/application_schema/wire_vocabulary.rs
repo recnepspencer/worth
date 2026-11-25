@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity;
 
 use crate::binary_encoding::BinaryEncodingSink;
@@ -17,6 +18,7 @@ pub(in crate::record) fn decode_type_identity(
     input: &mut BinaryInput<'_>,
 ) -> Result<WorthQueryPortableTypeIdentity, Denial> {
     Ok(WorthQueryPortableTypeIdentity::from_untrusted(
+        ARCHIVE_DECODE,
         input.text()?.to_owned(),
     ))
 }

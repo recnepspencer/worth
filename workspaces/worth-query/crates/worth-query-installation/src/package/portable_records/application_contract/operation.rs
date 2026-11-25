@@ -6,6 +6,7 @@ use super::{
     WorthQueryPortableOperationGraphReadScope, WorthQueryPortableOperationTouchScope,
     WorthQueryPortableTypeIdentity,
 };
+use worth_query_declaration::archive_decode_authority::ArchiveDecodeAuthority;
 use worth_query_declaration::facade::application_schema::ApplicationOperationBodyProgram;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -23,6 +24,7 @@ pub struct WorthQueryPortableApplicationOperationContractRecord {
 
 impl WorthQueryPortableApplicationOperationContractRecord {
     pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
         parts: WorthQueryPortableApplicationOperationContractParts,
     ) -> Self {
         Self {

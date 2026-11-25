@@ -5,6 +5,7 @@ use super::{
     ApplicationOperationBodyCreation, BinaryEncodingSink, BinaryInput, Denial, Kind,
     RecordDecodeAttempt, WorthQueryPortableTypeIdentity,
 };
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 
 pub(super) fn write(
     output: &mut dyn BinaryEncodingSink,
@@ -106,7 +107,10 @@ pub(super) fn decode(
             }
             let field =
                 ApplicationFieldBindingLocus::new(input.text()?, input.text()?, input.text()?);
-            let binding = WorthQueryPortableTypeIdentity::from_untrusted(input.text()?.to_owned());
+            let binding = WorthQueryPortableTypeIdentity::from_untrusted(
+                ARCHIVE_DECODE,
+                input.text()?.to_owned(),
+            );
             Ok(match tag {
                 11 => super::path_capture::decode(input, budget, field, binding)?,
                 1 => ApplicationOperationBodyCreatedField::Literal {
@@ -159,7 +163,10 @@ pub(super) fn decode(
             })
         })?;
         Ok(Some(ApplicationOperationBodyCreation::from_untrusted(
-            entity, key, fields,
+            ARCHIVE_DECODE,
+            entity,
+            key,
+            fields,
         )))
     } else {
         Ok(None)

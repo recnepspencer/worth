@@ -130,10 +130,8 @@ fn aggregate_versions_truncation_trailing_and_semantic_tamper_fail_closed() {
         .unwrap()
         .materialize()
         .unwrap()
-        .validate_freshly(
-            WorthQueryExpectedPortablePackageIdentity::from_untrusted_identity(
-                source.identity().clone(),
-            ),
-        )
+        .validate_freshly(WorthQueryExpectedPortablePackageIdentity::new(
+            source.identity().clone(),
+        ),)
         .is_err());
 }

@@ -1,5 +1,6 @@
 //! Independent host expectations compared with descriptive envelope claims.
 
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_installation::facade::WorthQueryPortableDomainPackageIdentity;
 use worth_query_package_archive::facade::WorthQueryUnsignedPackageReleaseEnvelope;
 
@@ -187,7 +188,7 @@ fn parse_package_identity(value: &str) -> Result<WorthQueryPortableDomainPackage
     for (index, pair) in value.as_bytes().as_chunks::<2>().0.iter().enumerate() {
         bytes[index] = decode_hex_byte(pair).ok_or(Error::InvalidPackageIdentity)?;
     }
-    Ok(WorthQueryPortableDomainPackageIdentity::from_untrusted_bytes(bytes))
+    Ok(WorthQueryPortableDomainPackageIdentity::from_untrusted_bytes(ARCHIVE_DECODE, bytes))
 }
 
 fn decode_hex_byte(pair: &[u8]) -> Option<u8> {

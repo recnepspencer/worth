@@ -5,6 +5,7 @@ use super::super::{
     OperationReads,
 };
 use super::scope::{ApplicationDecisionReadScopeDefinition, ApplicationDecisionReadScopeMeaning};
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 use std::marker::PhantomData;
 
 pub struct ApplicationDecisionReadScopeRef<Schema, Scope> {
@@ -24,6 +25,7 @@ impl<S, Scope> Clone for ApplicationDecisionReadScopeRef<S, Scope> {
 impl<S, Scope> ApplicationDecisionReadScopeDefinition<S, Scope> {
     pub fn reference(&self) -> Result<ApplicationDecisionReadScopeRef<S, Scope>, Denial> {
         let meaning = ApplicationDecisionReadScopeMeaning::from_untrusted_parts(
+            ARCHIVE_DECODE,
             self.targets.clone(),
             self.derived_relations.clone(),
         )?;
@@ -43,6 +45,7 @@ impl<S> Builder<S> {
             self.member_provenance.fragments.expect_field(recipe);
         }
         match ApplicationDecisionReadScopeMeaning::from_untrusted_parts(
+            ARCHIVE_DECODE,
             definition.targets,
             definition.derived_relations,
         ) {

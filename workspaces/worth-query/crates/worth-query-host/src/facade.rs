@@ -28,6 +28,45 @@
 //! or cleanup. Bind initial workflow vocabulary before retaining handles, and
 //! preserve runtime/spec/signing custody when configuration refuses.
 //!
+//! Raw-part `from_untrusted*` archive decoders are sealed off this audience:
+//! each demands an internal witness that neither the Host facade nor its
+//! re-exported declaration facade names, and that cannot be conjured.
+//!
+//! ```compile_fail,E0432
+//! use worth_query_host::facade::declaration::archive_decode_authority::ARCHIVE_DECODE;
+//! ```
+//!
+//! ```compile_fail,E0277
+//! use worth_query_host::facade::application_installation::WorthQueryApplicationCheckpoint;
+//! fn forge(bytes: Vec<u8>) -> WorthQueryApplicationCheckpoint {
+//!     WorthQueryApplicationCheckpoint::from_untrusted_bytes(Default::default(), bytes)
+//! }
+//! ```
+//!
+//! Transported checkpoints instead readmit through
+//! `WorthQueryApplicationCheckpoint::readmit_transported` under their retained
+//! capture origin, and transports describe correction sources with typed
+//! coordinates:
+//!
+//! ```
+//! use worth_query_host::facade::primary_graph::{
+//!     BranchId, CommitId, RelationalCommitReceipt, VersionId,
+//!     WorthQueryCorrectionSourceCoordinates, WorthQueryCorrectionSourceMember,
+//! };
+//! let coordinates = WorthQueryCorrectionSourceCoordinates::new(
+//!     worth_foundational::WorldOwnerCoordinate::MemoryOnly { observation: 7 },
+//!     19,
+//!     RelationalCommitReceipt {
+//!         commit_id: CommitId(23),
+//!         version_id: VersionId(29),
+//!         branch_id: BranchId("product:fork".into()),
+//!         parents: vec![CommitId(17)],
+//!     },
+//!     WorthQueryCorrectionSourceMember::Primary,
+//! );
+//! assert_eq!(coordinates.relational().commit_id, CommitId(23));
+//! ```
+//!
 //! Program-output publication custody is deliberately absent from this facade;
 //! the workspace boundary checker reserves its issuer to the publication owner.
 //! Inbound completion has separate declaration, installed source, decoded

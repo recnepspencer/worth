@@ -6,6 +6,7 @@ use crate::application_schema::{
     ApplicationScalarValueBinding, ApplicationSigningProvenanceBinding,
     ApplicationSigningSubjectProvenanceBinding,
 };
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 use crate::portable_identity::WorthQueryPortableTypeIdentity as Identity;
 use worth_foundational::facade::ScalarAspectType as Family;
 
@@ -15,7 +16,7 @@ fn members(extra_provenance: bool) -> Vec<Member> {
     let mut fields = vec![
         Step::PrincipalIdentity {
             field: actor.clone(),
-            binding: Identity::from_untrusted("worth.rust.u64".into()),
+            binding: Identity::from_untrusted(ARCHIVE_DECODE, "worth.rust.u64".into()),
             scalar_family: Family::UInt64,
             mutation_binding: "SignBinding".into(),
             principal_binding: "PrincipalBinding".into(),
@@ -32,12 +33,14 @@ fn members(extra_provenance: bool) -> Vec<Member> {
             binding: ApplicationSigningProvenanceBinding::IDENTITY,
         });
     }
-    let creation = Creation::from_untrusted("Evidence".into(), "evidence".into(), fields)
-        .with_untrusted_signing(Some(Signing::from_untrusted(
-            "verification".into(),
-            actor,
-            provenance,
-        )));
+    let creation =
+        Creation::from_untrusted(ARCHIVE_DECODE, "Evidence".into(), "evidence".into(), fields)
+            .with_untrusted_signing(Some(Signing::from_untrusted(
+                ARCHIVE_DECODE,
+                "verification".into(),
+                actor,
+                provenance,
+            )));
     let field = |name: &str, scalar_family, value_type: &str| Member::Field {
         canonical: None,
         content_format: None,
@@ -62,7 +65,13 @@ fn members(extra_provenance: bool) -> Vec<Member> {
         ),
         Member::OperationBody {
             operation: "Sign".into(),
-            body: Body::from_untrusted_in_scope("Draft".into(), vec![], Some(creation), vec![]),
+            body: Body::from_untrusted_in_scope(
+                ARCHIVE_DECODE,
+                "Draft".into(),
+                vec![],
+                Some(creation),
+                vec![],
+            ),
         },
         Member::OperationProgram {
             operation: "Sign".into(),
@@ -146,14 +155,14 @@ fn captured_members(binding: Identity, role: Option<Role>, signed: bool) -> Vec<
             field,
             source,
             role,
-            binding: Identity::from_untrusted("worth.rust.string".into()),
+            binding: Identity::from_untrusted(ARCHIVE_DECODE, "worth.rust.string".into()),
             scalar_family: Family::String,
             source_presence: Presence::Optional,
         },
         None => Step::PresentScopeField {
             field,
             source,
-            binding: Identity::from_untrusted("worth.rust.string".into()),
+            binding: Identity::from_untrusted(ARCHIVE_DECODE, "worth.rust.string".into()),
             scalar_family: Family::String,
         },
     });
@@ -162,10 +171,11 @@ fn captured_members(binding: Identity, role: Option<Role>, signed: bool) -> Vec<
         fields.retain(|step| !matches!(step, Step::SigningProvenance { .. }));
     }
     *body = Body::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
         "Draft".into(),
         vec![],
         Some(
-            Creation::from_untrusted("Evidence".into(), "evidence".into(), fields)
+            Creation::from_untrusted(ARCHIVE_DECODE, "Evidence".into(), "evidence".into(), fields)
                 .with_untrusted_signing(signing),
         ),
         vec![],
@@ -271,10 +281,11 @@ fn capture_role_and_presence_each_change_canonical_schema_meaning() {
     };
     *source_presence = Presence::Required;
     *body = Body::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
         "Draft".into(),
         vec![],
         Some(
-            Creation::from_untrusted("Evidence".into(), "evidence".into(), fields)
+            Creation::from_untrusted(ARCHIVE_DECODE, "Evidence".into(), "evidence".into(), fields)
                 .with_untrusted_signing(creation.signing().cloned()),
         ),
         vec![],

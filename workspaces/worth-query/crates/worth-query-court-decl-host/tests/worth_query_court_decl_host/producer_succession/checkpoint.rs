@@ -3,6 +3,7 @@ use super::*;
 use serde::Deserialize;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 const NATIVE_MAGIC: &[u8] = b"WORTH-REL-CHK23\n";
 const ARTIFACT_HEADER: usize = 66;
 pub fn capture(app: &world::App) -> installation::WorthQueryApplicationCheckpoint {
@@ -113,7 +114,10 @@ pub fn tamper_anchor(
     // capture origin and cannot authorize this changed Native closure.
     let checksum = Sha256::digest(&bytes[40..]);
     bytes[8..40].copy_from_slice(&checksum);
-    installation::WorthQueryApplicationCheckpoint::from_untrusted_bytes(bytes.into_boxed_slice())
+    installation::WorthQueryApplicationCheckpoint::from_untrusted_bytes(
+        ARCHIVE_DECODE,
+        bytes.into_boxed_slice(),
+    )
 }
 pub fn assert_shrink_delta(
     app: &world::App,
@@ -218,5 +222,8 @@ fn replace_member(
     frame[start - 32..start - 24].copy_from_slice(&((native_len - removed) as u64).to_be_bytes());
     let checksum = Sha256::digest(&frame[40..]);
     frame[8..40].copy_from_slice(&checksum);
-    installation::WorthQueryApplicationCheckpoint::from_untrusted_bytes(frame.into_boxed_slice())
+    installation::WorthQueryApplicationCheckpoint::from_untrusted_bytes(
+        ARCHIVE_DECODE,
+        frame.into_boxed_slice(),
+    )
 }

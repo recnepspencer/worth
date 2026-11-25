@@ -2,28 +2,37 @@
 use super::{decode_member, encode_member, try_decode_member};
 use crate::facade::WorthQueryPackageArchiveDenialKind as Kind;
 use worth_foundational::facade::AspectValue;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::{
     application_query::*, application_schema::ApplicationSchemaMember,
     portable_identity::WorthQueryPortableTypeIdentity as Identity,
 };
 
 fn binding() -> ApplicationQueryBindingReference {
-    let id = |name| Identity::from_untrusted(format!("worth.archive.inspection.{name}.v1"));
-    ApplicationQueryBindingReference::from_untrusted_parts(ApplicationQueryBindingReferenceParts {
-        binding: id("binding"),
-        input: id("input"),
-        query_name: "Read".into(),
-        query: id("query"),
-        parameters: id("parameters"),
-        result: id("result"),
-        scope: id("scope"),
-        scope_entity: "Node".into(),
-        scope_aspect: "Identity".into(),
-        scope_field: "Key".into(),
-        scope_value: id("key"),
-        scope_resolution: ApplicationQueryScopeResolutionMode::InputField,
-        principal_binding: "PrincipalBinding".into(),
-    })
+    let id = |name| {
+        Identity::from_untrusted(
+            ARCHIVE_DECODE,
+            format!("worth.archive.inspection.{name}.v1"),
+        )
+    };
+    ApplicationQueryBindingReference::from_untrusted_parts(
+        ARCHIVE_DECODE,
+        ApplicationQueryBindingReferenceParts {
+            binding: id("binding"),
+            input: id("input"),
+            query_name: "Read".into(),
+            query: id("query"),
+            parameters: id("parameters"),
+            result: id("result"),
+            scope: id("scope"),
+            scope_entity: "Node".into(),
+            scope_aspect: "Identity".into(),
+            scope_field: "Key".into(),
+            scope_value: id("key"),
+            scope_resolution: ApplicationQueryScopeResolutionMode::InputField,
+            principal_binding: "PrincipalBinding".into(),
+        },
+    )
 }
 
 fn governed_parts() -> WorthQueryPortableApplicationQueryInspectionParts {
@@ -32,8 +41,10 @@ fn governed_parts() -> WorthQueryPortableApplicationQueryInspectionParts {
         .into_iter()
         .map(|facet| {
             ApplicationQueryDisclosureRule::from_untrusted_fields(
+                ARCHIVE_DECODE,
                 ApplicationQueryDisclosureSelector::InspectionMetadata(
                     ApplicationQueryInspectionMetadataMeaning::from_untrusted_fields(
+                        ARCHIVE_DECODE,
                         binding.clone(),
                         facet,
                     ),
@@ -47,6 +58,7 @@ fn governed_parts() -> WorthQueryPortableApplicationQueryInspectionParts {
         semantic_version: 1,
         binding,
         metadata_disclosure: ApplicationQueryDisclosureContract::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableApplicationQueryDisclosureParts {
                 posture: ApplicationQueryDisclosurePosture::Governed,
                 classification: "inspection".into(),
@@ -61,7 +73,7 @@ fn governed_parts() -> WorthQueryPortableApplicationQueryInspectionParts {
 fn definition(
     parts: WorthQueryPortableApplicationQueryInspectionParts,
 ) -> ErasedApplicationQueryInspectionDefinition {
-    ErasedApplicationQueryInspectionDefinition::from_untrusted_parts(parts)
+    ErasedApplicationQueryInspectionDefinition::from_untrusted_parts(ARCHIVE_DECODE, parts)
 }
 
 fn change_contract(
@@ -77,7 +89,8 @@ fn change_contract(
         rules: source.rules().to_vec(),
     };
     change(&mut contract);
-    parts.metadata_disclosure = ApplicationQueryDisclosureContract::from_untrusted_parts(contract);
+    parts.metadata_disclosure =
+        ApplicationQueryDisclosureContract::from_untrusted_parts(ARCHIVE_DECODE, contract);
 }
 
 #[test]
@@ -126,13 +139,16 @@ fn inspection_metadata_rejects_foreign_full_bindings_partial_mixed_and_influence
             12 => reference.principal_binding = "Other".into(),
             _ => unreachable!(),
         }
-        parts.binding = ApplicationQueryBindingReference::from_untrusted_parts(reference);
+        parts.binding =
+            ApplicationQueryBindingReference::from_untrusted_parts(ARCHIVE_DECODE, reference);
         let facet = ApplicationQueryInspectionMetadataFacet::EvidenceLinks;
         let old = ApplicationQueryInspectionMetadataMeaning::from_untrusted_fields(
+            ARCHIVE_DECODE,
             source.binding.clone(),
             facet,
         );
         let new = ApplicationQueryInspectionMetadataMeaning::from_untrusted_fields(
+            ARCHIVE_DECODE,
             parts.binding.clone(),
             facet,
         );
@@ -160,8 +176,10 @@ fn inspection_metadata_rejects_foreign_full_bindings_partial_mixed_and_influence
             }
             2 => {
                 contract.rules[0] = ApplicationQueryDisclosureRule::from_untrusted_fields(
+                    ARCHIVE_DECODE,
                     ApplicationQueryDisclosureSelector::HistoryMetadata(
                         ApplicationHistoryMetadataMeaning::from_untrusted_fields(
+                            ARCHIVE_DECODE,
                             Identity::declared("worth.history.v1"),
                             ApplicationHistoryMetadataFacet::Occurrence,
                         ),
@@ -173,6 +191,7 @@ fn inspection_metadata_rejects_foreign_full_bindings_partial_mixed_and_influence
             3 => {
                 let rule = contract.rules[2].clone();
                 contract.rules[2] = ApplicationQueryDisclosureRule::from_untrusted_fields(
+                    ARCHIVE_DECODE,
                     rule.selector().clone(),
                     rule.disclosure_value().clone(),
                     ApplicationQueryInfluenceContract::permit([

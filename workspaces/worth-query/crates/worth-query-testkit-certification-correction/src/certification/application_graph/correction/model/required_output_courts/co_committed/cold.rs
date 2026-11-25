@@ -2,6 +2,7 @@
 use super::super::super::{calculation, program};
 use super::*;
 use std::sync::atomic::{AtomicU64, Ordering};
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_host::facade::{application_installation::*, domain::ApplicationSchema};
 static NEXT: AtomicU64 = AtomicU64::new(0);
 
@@ -34,8 +35,11 @@ pub(super) fn assert_reopened_ready(application: &host::OutputHost, expected: u6
             let execution = phase
                 .checked_execution_request_for(application.runtime().product_runtime())
                 .unwrap();
-            WorthQueryApplicationCheckpoint::from_untrusted_bytes(bytes.into_boxed_slice())
-                .with_capture_origin(origin, &execution)
+            WorthQueryApplicationCheckpoint::from_untrusted_bytes(
+                ARCHIVE_DECODE,
+                bytes.into_boxed_slice(),
+            )
+            .with_capture_origin(origin, &execution)
         })
         .unwrap()
         .expect("disk bytes retain their actual captured Native and World origin");

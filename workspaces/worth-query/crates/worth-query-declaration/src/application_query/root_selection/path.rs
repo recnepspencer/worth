@@ -1,3 +1,4 @@
+use crate::archive_decode_authority::{ArchiveDecodeAuthority, ARCHIVE_DECODE};
 use std::marker::PhantomData;
 
 use crate::application_schema::{
@@ -33,6 +34,7 @@ pub struct ApplicationQueryRootPathStep {
 
 impl ApplicationQueryRootPathStep {
     pub fn from_untrusted_fields(
+        _: ArchiveDecodeAuthority,
         relation: String,
         from: String,
         to: String,
@@ -50,6 +52,7 @@ impl ApplicationQueryRootPathStep {
     }
 
     pub fn from_untrusted_source_fields(
+        _: ArchiveDecodeAuthority,
         relation: String,
         from: ApplicationGraphMemberMeaning,
         to: ApplicationGraphMemberMeaning,
@@ -128,7 +131,10 @@ pub struct WorthQueryPortableApplicationQueryRootPathParts {
 }
 
 impl ApplicationQueryRootPathMeaning {
-    pub fn from_untrusted_parts(parts: WorthQueryPortableApplicationQueryRootPathParts) -> Self {
+    pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
+        parts: WorthQueryPortableApplicationQueryRootPathParts,
+    ) -> Self {
         Self {
             start_entity: parts.start_entity,
             terminal_entity: parts.terminal_entity,
@@ -228,6 +234,7 @@ impl<Schema, Start, Current> ApplicationQueryRootPath<Schema, Start, Current> {
     ) -> Self {
         self.steps
             .push(ApplicationQueryRootPathStep::from_untrusted_fields(
+                ARCHIVE_DECODE,
                 relation.name().to_owned(),
                 relation.from().to_owned(),
                 relation.to().to_owned(),
@@ -244,6 +251,7 @@ impl<Schema, Start, Current> ApplicationQueryRootPath<Schema, Start, Current> {
     ) -> Self {
         self.steps
             .push(ApplicationQueryRootPathStep::from_untrusted_fields(
+                ARCHIVE_DECODE,
                 relation.name().to_owned(),
                 relation.from().to_owned(),
                 relation.to().to_owned(),

@@ -170,6 +170,7 @@ fn denial(
 #[cfg(test)]
 mod tests {
     use crate::equality_type_id::EqualityTypeId as TypeId;
+    use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
     use worth_query_installation::facade::{
         WorthQueryPortableApplicationConditionalOperationBinding,
         WorthQueryPortableApplicationConditionalOperationBindingParts,
@@ -179,11 +180,12 @@ mod tests {
 
     fn binding(operation: &str) -> WorthQueryPortableApplicationConditionalOperationBinding {
         WorthQueryPortableApplicationConditionalOperationBinding::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableApplicationConditionalOperationBindingParts {
                 schema_owner: "owner".into(),
                 schema_name: "Schema".into(),
                 application_operation: operation.into(),
-                input_type: worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity::from_untrusted("input".into()),
+                input_type: worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity::from_untrusted(ARCHIVE_DECODE, "input".into()),
                 domain_operation_slot: "domain".into(),
                 domain_operation_canonical_identity: "canonical".into(),
             },

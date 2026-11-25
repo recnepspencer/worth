@@ -2,6 +2,7 @@ use crate::application_schema::{
     ApplicationCanonicalValueReference, ApplicationNativeInputDecodeProfile,
     ApplicationReadableScalarValueBinding, ApplicationValueDecodePosture,
 };
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 use worth_foundational::facade::ScalarAspectType;
 
@@ -40,7 +41,10 @@ impl ApplicationResourceValueBindingReference {
         }
     }
 
-    pub fn from_untrusted_parts(parts: ApplicationResourceValueBindingParts) -> Self {
+    pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
+        parts: ApplicationResourceValueBindingParts,
+    ) -> Self {
         Self { parts }
     }
 

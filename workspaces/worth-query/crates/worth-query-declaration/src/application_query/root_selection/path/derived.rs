@@ -1,6 +1,7 @@
 //! Named derived steps retain endpoint namespaces until completed-schema admission.
 use super::*;
 use crate::application_schema::ApplicationDerivedRelationRef;
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 impl<S, Start, Current> ApplicationQueryRootPath<S, Start, Current> {
     pub fn forward_derived<R, Next>(
         mut self,
@@ -8,6 +9,7 @@ impl<S, Start, Current> ApplicationQueryRootPath<S, Start, Current> {
     ) -> ApplicationQueryRootPath<S, Start, Next> {
         self.steps
             .push(ApplicationQueryRootPathStep::from_untrusted_source_fields(
+                ARCHIVE_DECODE,
                 relation.name().to_owned(),
                 relation.from_member().into_meaning(),
                 relation.to_member().into_meaning(),
@@ -30,6 +32,7 @@ impl<S, Start, Current> ApplicationQueryRootPath<S, Start, Current> {
     ) -> ApplicationQueryRootPath<S, Start, Previous> {
         self.steps
             .push(ApplicationQueryRootPathStep::from_untrusted_source_fields(
+                ARCHIVE_DECODE,
                 relation.name().to_owned(),
                 relation.from_member().into_meaning(),
                 relation.to_member().into_meaning(),

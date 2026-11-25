@@ -1,6 +1,7 @@
 //! Representation-only tests: these requests carry no issued grant or Source.
 use super::super::context::RetainedContext;
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_capability::WorthQueryPortableApplicationCapabilityRelationBindingParts as RelationParts;
 use worth_relational::facade::identity::PartitionId;
 fn entity(slot: u64, generation: u32) -> EntityId {
@@ -10,11 +11,14 @@ fn key(parts: [&str; 5]) -> WorthQueryCapabilityContextKey {
     serde_json::from_value(serde_json::json!({ "context":parts[0], "context_type":parts[1], "slot":parts[2], "slot_type":parts[3], "entity":parts[4] })).unwrap()
 }
 fn relation(parts: [&str; 3]) -> ApplicationCapabilityRelationBinding {
-    ApplicationCapabilityRelationBinding::from_untrusted_parts(RelationParts {
-        relation: parts[0].into(),
-        from: parts[1].into(),
-        to: parts[2].into(),
-    })
+    ApplicationCapabilityRelationBinding::from_untrusted_parts(
+        ARCHIVE_DECODE,
+        RelationParts {
+            relation: parts[0].into(),
+            from: parts[1].into(),
+            to: parts[2].into(),
+        },
+    )
 }
 fn request() -> WorthQueryRetainedCapabilityRequest {
     WorthQueryRetainedCapabilityRequest {

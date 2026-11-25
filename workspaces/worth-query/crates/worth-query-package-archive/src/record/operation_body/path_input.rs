@@ -1,5 +1,6 @@
 //! Path-input guards reuse the existing root-path wire and nested-entry budget.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::{
     ApplicationFieldPresence as Presence, ApplicationOperationBodyPathFieldSource as Source,
     ApplicationOperationBodyPathInputExpectation as Guard,
@@ -30,7 +31,8 @@ pub(super) fn decode(
     decode_sequence(input, budget, 24, |input, budget| {
         let path = super::super::application_query::decode_root_path(input, budget)?;
         let field = ApplicationFieldBindingLocus::new(input.text()?, input.text()?, input.text()?);
-        let binding = WorthQueryPortableTypeIdentity::from_untrusted(input.text()?.into());
+        let binding =
+            WorthQueryPortableTypeIdentity::from_untrusted(ARCHIVE_DECODE, input.text()?.into());
         let member = input.text()?.into();
         let scalar_family = super::super::foundational_aspect::decode_scalar_type(input)?;
         let presence = match input.u16()? {

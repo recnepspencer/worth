@@ -1,5 +1,6 @@
 //! Authority-free projection of one validated portable domain operation.
 
+use worth_query_declaration::archive_decode_authority::ArchiveDecodeAuthority;
 mod canonical_semantics;
 mod readmission;
 mod reconstruction_work;
@@ -39,7 +40,10 @@ pub struct WorthQueryPortableDomainOperationSemanticRecord {
 }
 
 impl WorthQueryPortableDomainOperationSemanticRecord {
-    pub fn from_untrusted_parts(parts: WorthQueryPortableDomainOperationSemanticParts) -> Self {
+    pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
+        parts: WorthQueryPortableDomainOperationSemanticParts,
+    ) -> Self {
         Self {
             parameters: parts.parameters,
             native_projection: parts.native_projection,
@@ -259,7 +263,10 @@ pub struct WorthQueryPortableDomainOperationRecord {
 }
 
 impl WorthQueryPortableDomainOperationRecord {
-    pub fn from_untrusted_parts(parts: WorthQueryPortableDomainOperationParts) -> Self {
+    pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
+        parts: WorthQueryPortableDomainOperationParts,
+    ) -> Self {
         Self {
             identity: parts.identity,
             semantics: parts.semantics,

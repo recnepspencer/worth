@@ -4,6 +4,7 @@ use super::*;
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestInterruption, WorthQueryRequestScope,
 };
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::{
     application_aftermath::DeclaredAuthoredCorrectionParts,
     application_schema::ApplicationFieldPresence,
@@ -22,8 +23,10 @@ fn prepared(posture: Posture) -> PreparedAuthoredIdentity {
     PreparedAuthoredIdentity {
         co_anchors: Vec::new(),
         declaration: DeclaredAuthoredCorrection::from_untrusted_parts(
+            ARCHIVE_DECODE,
             DeclaredAuthoredCorrectionParts {
                 family: WorthQueryPortableTypeIdentity::from_untrusted(
+                    ARCHIVE_DECODE,
                     "authored-number.v1".to_owned(),
                 ),
                 logical_key: Box::new(ApplicationSchemaMember::Field {
@@ -207,8 +210,8 @@ fn member_family_matching_requires_the_declared_entity_and_lifecycle() {
     let mut parts = declaration.parts().clone();
     parts.source_role = "retired-member.".into();
     parts.inverse_role = "restored-member.".into();
-    declaration = DeclaredAuthoredCorrection::from_untrusted_parts(parts).with_member_owner(
-        worth_query_declaration::facade::application_aftermath::PortablePreImageRelationLocus::from_untrusted_fields(
+    declaration = DeclaredAuthoredCorrection::from_untrusted_parts(ARCHIVE_DECODE, parts).with_member_owner(
+        worth_query_declaration::facade::application_aftermath::PortablePreImageRelationLocus::from_untrusted_fields(ARCHIVE_DECODE,
             "OwnedBy".into(), "Number".into(), "Anchor".into()));
     for inverse in [false, true] {
         let (name, posture) = if inverse {

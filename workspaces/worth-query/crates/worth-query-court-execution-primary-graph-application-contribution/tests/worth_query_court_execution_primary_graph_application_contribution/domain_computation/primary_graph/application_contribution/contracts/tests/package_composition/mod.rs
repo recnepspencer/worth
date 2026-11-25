@@ -51,11 +51,9 @@ fn installed_export_reconstructs_and_freshly_validates_against_installed_identit
         .unwrap()
         .materialize()
         .unwrap()
-        .validate_freshly(
-            domain::WorthQueryExpectedPortablePackageIdentity::from_untrusted_identity(
-                expected.clone(),
-            ),
-        )
+        .validate_freshly(domain::WorthQueryExpectedPortablePackageIdentity::new(
+            expected.clone(),
+        ))
         .unwrap();
     assert_eq!(validated.identity(), &expected);
 }

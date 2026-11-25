@@ -1,4 +1,5 @@
 use worth_foundational::facade::ScalarAspectType;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryContinuationTarget, ApplicationQueryOrderingDirection,
     ApplicationQueryOrderingTerm, ApplicationQueryParameterDefinition, ApplicationQueryPredicate,
@@ -165,6 +166,7 @@ fn decode_with_shape_depth(
     };
     related_predicate::validate(&parts)?;
     Ok(ErasedApplicationQueryDefinition::from_untrusted_parts(
+        ARCHIVE_DECODE,
         parts,
     ))
 }
@@ -201,6 +203,7 @@ fn decode_parameter(
         return Err(Denial::new(Kind::InvalidRecordShape));
     }
     let parameter = ApplicationQueryParameterDefinition::from_untrusted_fields(
+        ARCHIVE_DECODE,
         name,
         scalar,
         decode_type_identity(input)?,
@@ -251,6 +254,7 @@ fn decode_predicate(input: &mut BinaryInput<'_>) -> Result<ApplicationQueryPredi
             return Err(Denial::new(Kind::InvalidRecordShape));
         }
         Ok(ApplicationQueryPredicate::from_untrusted_value(
+            ARCHIVE_DECODE,
             entity,
             aspect,
             field,
@@ -259,6 +263,7 @@ fn decode_predicate(input: &mut BinaryInput<'_>) -> Result<ApplicationQueryPredi
         ))
     } else {
         Ok(ApplicationQueryPredicate::from_untrusted_fields(
+            ARCHIVE_DECODE,
             entity,
             aspect,
             field,
@@ -305,6 +310,7 @@ fn decode_ordering(input: &mut BinaryInput<'_>) -> Result<ApplicationQueryOrderi
         _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
     };
     Ok(ApplicationQueryOrderingTerm::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationQueryOrderingParts {
             query_type,
             slot_type,
@@ -334,6 +340,7 @@ fn decode_continuation(
     input: &mut BinaryInput<'_>,
 ) -> Result<ApplicationQueryContinuationTarget, Denial> {
     Ok(ApplicationQueryContinuationTarget::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationQueryContinuationParts {
             query_type: decode_type_identity(input)?,
             slot_type: decode_type_identity(input)?,

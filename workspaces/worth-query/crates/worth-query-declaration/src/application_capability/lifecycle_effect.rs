@@ -1,3 +1,4 @@
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 use std::any::{Any, TypeId};
 use std::cmp::Ordering;
 use std::sync::Arc;
@@ -70,6 +71,7 @@ impl ApplicationCapabilityLifecycleEffectBinding {
     }
 
     pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
         parts: WorthQueryPortableApplicationCapabilityLifecycleEffectParts,
     ) -> Self {
         Self {

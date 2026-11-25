@@ -6,17 +6,20 @@ use crate::application_schema::{
     ApplicationOperationBodyCreation, ApplicationOperationBodyEnrollment,
     ApplicationOperationBodyProgram, ApplicationSchemaMember,
 };
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 
 #[test]
 fn workflow_enrollment_and_each_target_axis_change_schema_identity() {
     let identity = |enrollment| {
         let creation = ApplicationOperationBodyCreation::from_untrusted(
+            ARCHIVE_DECODE,
             "Subject".into(),
             "subject".into(),
             vec![],
         )
         .with_untrusted_enrollment(enrollment);
         let body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+            ARCHIVE_DECODE,
             "Container".into(),
             vec![],
             Some(creation),
@@ -38,6 +41,7 @@ fn workflow_enrollment_and_each_target_axis_change_schema_identity() {
     };
     let enrolled = |workflow: &str, binding: &str, role: &str| {
         Some(ApplicationOperationBodyEnrollment::from_untrusted(
+            ARCHIVE_DECODE,
             workflow.into(),
             binding.into(),
             role.into(),

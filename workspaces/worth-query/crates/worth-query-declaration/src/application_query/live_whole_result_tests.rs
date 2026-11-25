@@ -4,6 +4,7 @@ use super::*;
 use crate::application_schema::{
     ApplicationComponentSetRef, ApplicationEntityRef, U64ApplicationValueBinding,
 };
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 use crate::{worth_query_application_query, worth_query_structured_value_binding};
 
@@ -45,6 +46,7 @@ fn builder(
 
 fn live_cause() -> ApplicationQueryLiveCauseContract {
     ApplicationQueryLiveCauseContract::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationQueryLiveCauseParts {
             binding_type: WorthQueryPortableTypeIdentity::declared(
                 "worth.tests.live_whole.cause.v1",
@@ -101,7 +103,7 @@ fn live_whole_result_validates_with_live_lane_and_changes_canonical_identity() {
     let mut parts_without_whole = whole.clone().into_erased().into_parts();
     parts_without_whole.live_whole_result = false;
     let erased_without_whole =
-        ErasedApplicationQueryDefinition::from_untrusted_parts(parts_without_whole);
+        ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, parts_without_whole);
     assert_ne!(
         erased_without_whole.canonical_basis(),
         whole.into_erased().canonical_basis()
@@ -141,6 +143,7 @@ fn live_whole_result_rejects_incompatible_shapes_on_fresh_validation() {
     let mut with_continuation = base.clone();
     with_continuation.continuation =
         Some(ApplicationQueryContinuationTarget::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableApplicationQueryContinuationParts {
                 query_type: base.query_type.clone(),
                 slot_type: WorthQueryPortableTypeIdentity::declared(
@@ -157,6 +160,7 @@ fn live_whole_result_rejects_incompatible_shapes_on_fresh_validation() {
     // Combining with orbit is refused.
     let mut with_orbit = base.clone();
     with_orbit.orbit = Some(ApplicationQueryOrbitMeaning::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationQueryOrbitParts {
             query: base.query_type.clone(),
             slot: WorthQueryPortableTypeIdentity::declared("worth.tests.live_whole.slot.v1"),
@@ -193,6 +197,7 @@ fn live_whole_result_rejects_incompatible_shapes_on_fresh_validation() {
     // Combining with managed index is refused.
     let mut with_index = base;
     with_index.managed_index = Some(ApplicationQueryManagedIndexMeaning::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableQueryManagedIndexParts {
             semantic_version: 1,
             index: "Prefix".to_owned(),

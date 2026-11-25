@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 pub(crate) use worth_query_testkit_certification::facade::certification::native_graph_input_guards::admission::*;
 
 #[test]
@@ -39,7 +40,7 @@ fn portable_path_guard_reconstructs_scope_and_refuses_missing_or_changed_corresp
                     match defect {
                         "scope" => {
                             guard.source.path =
-                                ApplicationQueryRootPathMeaning::from_untrusted_parts(
+                                ApplicationQueryRootPathMeaning::from_untrusted_parts(ARCHIVE_DECODE,
                                     WorthQueryPortableApplicationQueryRootPathParts {
                                         start_entity: "Parent".into(),
                                         terminal_entity: "Parent".into(),
@@ -50,12 +51,12 @@ fn portable_path_guard_reconstructs_scope_and_refuses_missing_or_changed_corresp
                         }
                         "direction" => {
                             guard.source.path =
-                                ApplicationQueryRootPathMeaning::from_untrusted_parts(
+                                ApplicationQueryRootPathMeaning::from_untrusted_parts(ARCHIVE_DECODE,
                                     WorthQueryPortableApplicationQueryRootPathParts {
                                         start_entity: "Row".into(),
                                         terminal_entity: "Parent".into(),
                                         steps: vec![
-                                            ApplicationQueryRootPathStep::from_untrusted_fields(
+                                            ApplicationQueryRootPathStep::from_untrusted_fields(ARCHIVE_DECODE,
                                                 "ParentRows".into(),
                                                 "Parent".into(),
                                                 "Row".into(),
@@ -66,9 +67,9 @@ fn portable_path_guard_reconstructs_scope_and_refuses_missing_or_changed_corresp
                                     },
                                 )
                         }
-                        "guarded" => guard.source.path = ApplicationQueryRootPathMeaning::from_untrusted_parts(WorthQueryPortableApplicationQueryRootPathParts {
+                        "guarded" => guard.source.path = ApplicationQueryRootPathMeaning::from_untrusted_parts(ARCHIVE_DECODE, WorthQueryPortableApplicationQueryRootPathParts {
                             start_entity: "Row".into(), terminal_entity: "Parent".into(), steps: guard.source.path.steps().to_vec(),
-                            guards: vec![ApplicationQueryRootPathGuard::from_untrusted_parts(WorthQueryPortableApplicationQueryRootPathGuardParts {
+                            guards: vec![ApplicationQueryRootPathGuard::from_untrusted_parts(ARCHIVE_DECODE, WorthQueryPortableApplicationQueryRootPathGuardParts {
                                 after_step: 1, entity: "Parent".into(), aspect: "ParentFacts".into(), field: "Company".into(), scalar_family: worth_foundational::facade::ScalarAspectType::String,
                                 value_type: StringApplicationValueBinding::IDENTITY, expected: worth_foundational::facade::AspectValue::String("company-a".into()),
                             })],
@@ -88,7 +89,10 @@ fn portable_path_guard_reconstructs_scope_and_refuses_missing_or_changed_corresp
         parts.members.sort();
         assert_eq!(
             validate_portable_application_schema_freshly(
-                WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts)
+                WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(
+                    ARCHIVE_DECODE,
+                    parts
+                )
             )
             .unwrap_err(),
             ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency {

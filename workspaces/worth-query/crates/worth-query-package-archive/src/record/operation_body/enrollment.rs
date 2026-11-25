@@ -1,5 +1,6 @@
 //! Body v17 carries created-subject enrollment meaning, never live authority.
 use super::{BinaryEncodingSink, BinaryInput, Denial, Kind};
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::ApplicationOperationBodyEnrollment as Enrollment;
 
 pub(super) fn write(
@@ -19,6 +20,7 @@ pub(super) fn decode(input: &mut BinaryInput<'_>) -> Result<Option<Enrollment>, 
     match input.u8()? {
         0 => Ok(None),
         1 => Ok(Some(Enrollment::from_untrusted(
+            ARCHIVE_DECODE,
             input.text()?.to_owned(),
             input.text()?.to_owned(),
             input.text()?.to_owned(),

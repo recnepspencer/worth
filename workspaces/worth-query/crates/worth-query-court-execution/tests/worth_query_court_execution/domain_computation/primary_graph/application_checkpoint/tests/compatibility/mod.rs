@@ -1,6 +1,7 @@
 //! Header refusal precedes current body/native interpretation and preserves backing.
 use crate::domain_computation::primary_graph::application_checkpoint::tests::checkpoint_body;
 use crate::domain_computation::primary_graph::application_checkpoint::tests::checkpoint_from_body;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_execution::facade::domain_computation::WorthQueryPrimaryGraphInstallationDenialKind as Kind;
 
 pub fn refusal(body: Vec<u8>, expected: Kind) {
@@ -60,7 +61,7 @@ fn malformed_current_header_remains_corruption_not_unsupported() {
     let checkpoint = checkpoint_from_body(checkpoint_body(0, Vec::new()));
     let mut corrupt = checkpoint.bytes().to_vec();
     *corrupt.last_mut().unwrap() ^= 1;
-    let denial = worth_query_execution::facade::application_installation::WorthQueryApplicationCheckpoint::from_untrusted_bytes(corrupt)
+    let denial = worth_query_execution::facade::application_installation::WorthQueryApplicationCheckpoint::from_untrusted_bytes(ARCHIVE_DECODE, corrupt)
         .decode_for_test()
         .err()
         .expect("checksum must refuse");

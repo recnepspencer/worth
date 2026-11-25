@@ -1,6 +1,7 @@
 //! Canonical re-entry for untrusted release-envelope signing payloads.
 
 use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersion};
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_installation::facade::{
     WorthQueryExecutionAccessProductFamily, WorthQueryExecutionAllocatorFamily,
     WorthQueryExecutionProviderFamily, WorthQueryExecutionProviderRequirements,
@@ -184,7 +185,10 @@ impl<'a> EnvelopeBodyDecoder<'a> {
 
     fn decode(mut self) -> Result<DecodedEnvelopeBody, Denial> {
         let expected_package_identity =
-            WorthQueryPortableDomainPackageIdentity::from_untrusted_bytes(self.input.array()?);
+            WorthQueryPortableDomainPackageIdentity::from_untrusted_bytes(
+                ARCHIVE_DECODE,
+                self.input.array()?,
+            );
         let archive_checksum =
             WorthQueryPackageArchiveChecksum::from_untrusted_bytes(self.input.array()?);
         let build_metadata = WorthQueryPackageBuildMetadata::new(

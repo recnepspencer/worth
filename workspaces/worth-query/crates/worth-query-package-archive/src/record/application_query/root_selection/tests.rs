@@ -1,6 +1,7 @@
 //! The combined discriminator is closed and preserves old one-hop byte width.
 use super::*;
 use crate::binary_output::BinaryOutput;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 #[test]
 fn exact_root_path_tags_round_trip_and_unknown_modes_refuse() {
     for (tag, traversal, direction) in [
@@ -10,6 +11,7 @@ fn exact_root_path_tags_round_trip_and_unknown_modes_refuse() {
         (4, Traversal::Closure, RelationDirection::Reverse),
     ] {
         let step = ApplicationQueryRootPathStep::from_untrusted_fields(
+            ARCHIVE_DECODE,
             "Next".into(),
             "Node".into(),
             "Node".into(),
@@ -60,6 +62,7 @@ fn derived_step_tags_are_distinct_and_old_wire_is_literal() {
             RelationDirection::Reverse
         };
         let step = ApplicationQueryRootPathStep::from_untrusted_source_fields(
+            ARCHIVE_DECODE,
             "Next".into(),
             "Node".into(),
             "Node".into(),
@@ -99,6 +102,7 @@ fn unsupported_derived_closure_and_projected_namespaces_refuse_before_step_bytes
         ),
     ] {
         let step = ApplicationQueryRootPathStep::from_untrusted_source_fields(
+            ARCHIVE_DECODE,
             "Live".into(),
             from,
             to,

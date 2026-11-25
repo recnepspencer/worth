@@ -1,3 +1,4 @@
+use crate::archive_decode_authority::{ArchiveDecodeAuthority, ARCHIVE_DECODE};
 mod parts;
 
 pub use parts::WorthQueryPortableApplicationQueryParts;
@@ -25,7 +26,10 @@ pub struct ErasedApplicationQueryDefinition {
 }
 
 impl ErasedApplicationQueryDefinition {
-    pub fn from_untrusted_parts(parts: WorthQueryPortableApplicationQueryParts) -> Self {
+    pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
+        parts: WorthQueryPortableApplicationQueryParts,
+    ) -> Self {
         let canonical = super::canonical_basis::prepare_definition_basis(&parts);
         Self { parts, canonical }
     }
@@ -190,9 +194,10 @@ impl ErasedApplicationQueryDefinition {
     pub(super) fn from_typed<Schema, Query, Parameters, QueryResult, Scope>(
         definition: ApplicationQueryDefinition<Schema, Query, Parameters, QueryResult, Scope>,
     ) -> Self {
-        Self::from_untrusted_parts(WorthQueryPortableApplicationQueryParts::from_typed(
-            definition,
-        ))
+        Self::from_untrusted_parts(
+            ARCHIVE_DECODE,
+            WorthQueryPortableApplicationQueryParts::from_typed(definition),
+        )
     }
 }
 

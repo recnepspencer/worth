@@ -7,6 +7,7 @@ use crate::denial::{
 use crate::record::application_schema::wire_vocabulary::{
     decode_type_identity, write_type_identity,
 };
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_operation::{
     DeclaredApplicationSourceDisclosure, DeclaredApplicationSourceDisclosureParts,
 };
@@ -33,6 +34,7 @@ pub(super) fn decode(
         0 => Ok(None),
         1 => Ok(Some(
             DeclaredApplicationSourceDisclosure::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 DeclaredApplicationSourceDisclosureParts {
                     identity: decode_type_identity(input)?,
                     source_binding: decode_type_identity(input)?,

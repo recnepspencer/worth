@@ -1,5 +1,6 @@
 //! Field correlation and relation endpoint demands for a recorded inverse.
 use super::{DeclaredPreImageLocus, PortablePreImageDemand};
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 use std::{cmp::Ordering, fmt};
 /// Schema-affine retained pre-image demand required by an inverse.
 pub struct DeclaredPreImageDemand<Schema> {
@@ -142,6 +143,7 @@ impl<Schema> DeclaredPreImageDemand<Schema> {
         PortablePreImageDemand {
             output_fields: self.output_fields.map(|(capture, output)| {
                 super::PortablePreImageFieldOutput::from_untrusted_fields(
+                    ARCHIVE_DECODE,
                     output.name().to_owned(),
                     output.entity().to_owned(),
                     capture,

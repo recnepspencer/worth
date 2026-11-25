@@ -5,6 +5,7 @@ use crate::application_query::{
     WorthQueryPortableApplicationQueryRootPathParts,
 };
 use crate::application_schema::{ApplicationRelationIntegrity, ApplicationRelationRef};
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 
 #[test]
 fn typed_root_path_preserves_forward_and_reverse_endpoint_meaning() {
@@ -24,6 +25,7 @@ fn portable_root_path_metadata_cannot_replace_actual_first_or_last_endpoints() {
         // The first step is forward; the last is reverse. Changing the stored
         // source breaks the logical start and terminal respectively.
         steps[index] = ApplicationQueryRootPathStep::from_untrusted_fields(
+            ARCHIVE_DECODE,
             step.relation().to_owned(),
             "Other".to_owned(),
             step.to().to_owned(),
@@ -31,6 +33,7 @@ fn portable_root_path_metadata_cannot_replace_actual_first_or_last_endpoints() {
             step.traversal(),
         );
         let malformed = ApplicationQueryRootPathMeaning::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableApplicationQueryRootPathParts {
                 start_entity: path.start_entity().to_owned(),
                 terminal_entity: path.terminal_entity().to_owned(),
@@ -103,10 +106,11 @@ fn schema_with_path(
             }),
     );
     members.push(ApplicationSchemaMember::ApplicationQuery {
-        definition: ErasedApplicationQueryDefinition::from_untrusted_parts(parts),
+        definition: ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, parts),
     });
     members.sort();
     WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationSchemaParts {
             owner: "WORTH.tests".to_owned(),
             name: "portable-query-path-endpoints".to_owned(),

@@ -1,5 +1,6 @@
 //! Independent graph-domain wire grammar; legacy single-record bytes stay exact.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_history::ApplicationHistoryOwnershipRelation;
 
 fn frame(owns: bool) -> Vec<u8> {
@@ -35,7 +36,7 @@ fn owned_graph_domain_has_a_distinct_versioned_record_even_before_members_are_ow
                 to: "Member".into(),
             });
         }
-        let definition = Definition::from_untrusted_parts(parts);
+        let definition = Definition::from_untrusted_parts(ARCHIVE_DECODE, parts);
         definition.validate().unwrap();
         let member = ApplicationSchemaMember::ApplicationHistory { definition };
         let bytes = frame(owns);
@@ -61,5 +62,5 @@ fn single_record_navigation_cannot_smuggle_an_owned_graph_projection() {
         from: "Document".into(),
         to: "Member".into(),
     });
-    assert!(matches!(Definition::from_untrusted_parts(parts).validate(), Err(worth_query_declaration::facade::application_history::ApplicationHistoryDefinitionDenial::UnsupportedNavigationDomain)));
+    assert!(matches!(Definition::from_untrusted_parts(ARCHIVE_DECODE, parts).validate(), Err(worth_query_declaration::facade::application_history::ApplicationHistoryDefinitionDenial::UnsupportedNavigationDomain)));
 }

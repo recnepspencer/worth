@@ -8,6 +8,7 @@ use crate::application_schema::{
     ApplicationAuthorizationTraversalDirection as Direction, ApplicationRelationRef,
     WorthQueryPortableApplicationAuthorizationTraversalParts as TraversalParts,
 };
+use crate::archive_decode_authority::{ArchiveDecodeAuthority, ARCHIVE_DECODE};
 use std::marker::PhantomData;
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
@@ -44,6 +45,7 @@ impl ApplicationCapabilityResourcePath {
     }
     /// Descriptive reconstruction only. Cold schema admission validates closure and supported posture.
     pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
         head: ApplicationCapabilityRelationBinding,
         root: Option<ApplicationCapabilityContextEntitySlotBinding>,
         traversals: Vec<Traversal>,
@@ -169,14 +171,15 @@ impl<Schema, Current> ApplicationCapabilityResourcePathBuilder<Schema, Current> 
         to: &str,
         direction: Direction,
     ) -> ApplicationCapabilityResourcePathBuilder<Schema, Next> {
-        self.path
-            .traversals
-            .push(Traversal::from_untrusted_parts(TraversalParts {
+        self.path.traversals.push(Traversal::from_untrusted_parts(
+            ARCHIVE_DECODE,
+            TraversalParts {
                 relation: relation.into(),
                 from: from.into(),
                 to: to.into(),
                 direction,
-            }));
+            },
+        ));
         ApplicationCapabilityResourcePathBuilder {
             path: self.path,
             marker: PhantomData,

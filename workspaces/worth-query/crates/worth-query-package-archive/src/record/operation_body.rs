@@ -3,6 +3,7 @@ use super::{
     decode_budget::RecordDecodeAttempt,
     sequence::{decode_sequence, write_sequence},
 };
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 
 mod children;
 mod classified_capture;
@@ -308,6 +309,7 @@ pub(super) fn decode(
     };
     if let Some(scope) = scope {
         Ok(ApplicationOperationBodyProgram::from_untrusted_in_scope(
+            ARCHIVE_DECODE,
             scope,
             steps,
             creation,
@@ -323,6 +325,7 @@ pub(super) fn decode(
         .with_untrusted_reference_inputs(references))
     } else {
         let body = ApplicationOperationBodyProgram::from_untrusted_with_requirements(
+            ARCHIVE_DECODE,
             steps,
             creation,
             requirements,

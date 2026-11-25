@@ -1,6 +1,7 @@
 //! V26 carries the exact whole-input source, protocol and optional native guard.
 use super::*;
 use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersion};
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::{
     ApplicationExternalEffectProtocol, ApplicationOperationBodyExternalEmission as Emission,
 };
@@ -38,8 +39,10 @@ pub(super) fn decode(
     version: u16,
 ) -> Result<Emission, Denial> {
     let effect = input.text()?.to_owned();
-    let input_binding = WorthQueryPortableTypeIdentity::from_untrusted(input.text()?.to_owned());
-    let payload_binding = WorthQueryPortableTypeIdentity::from_untrusted(input.text()?.to_owned());
+    let input_binding =
+        WorthQueryPortableTypeIdentity::from_untrusted(ARCHIVE_DECODE, input.text()?.to_owned());
+    let payload_binding =
+        WorthQueryPortableTypeIdentity::from_untrusted(ARCHIVE_DECODE, input.text()?.to_owned());
     let identity = BoundaryProtocolIdentity::parse(input.text()?.to_owned())
         .map_err(|_| Denial::new(Kind::InvalidRecordShape))?;
     let version_protocol = BoundaryProtocolVersion::try_new(input.u32()?)

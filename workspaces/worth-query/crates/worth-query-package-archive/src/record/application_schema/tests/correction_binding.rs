@@ -1,4 +1,5 @@
 use super::{decode_member, encode_member, try_decode_member};
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::{
     application_aftermath::{
         DeclaredCorrectionAuthority, DeclaredCorrectionBinding, DeclaredCorrectionBindingParts,
@@ -16,7 +17,7 @@ use worth_query_declaration::facade::{
 };
 
 fn member(content_format: Option<[u8; 32]>, frame: Option<String>) -> ApplicationSchemaMember {
-    let binding = DeclaredCorrectionBinding::from_untrusted_parts(DeclaredCorrectionBindingParts {
+    let binding = DeclaredCorrectionBinding::from_untrusted_parts(ARCHIVE_DECODE, DeclaredCorrectionBindingParts {
         identity: identity("restore-amount.v1"),
         source: description("set-amount.v1", "SetAmount", "amount-input.v1"),
         inverse: description("restore-amount.v1", "RestoreAmount", "restore-input.v2"),
@@ -26,7 +27,7 @@ fn member(content_format: Option<[u8; 32]>, frame: Option<String>) -> Applicatio
         inverse_query: Some("amount-current.v2".to_owned()),
         reapplication_source: Some(identity("set-amount.v1")),
         completed_external_reconciliation: Some(worth_query_declaration::facade::application_aftermath::DeclaredReconciliationProcedure::new("settled-source-local-compensation")),
-        authored_identity: Some(worth_query_declaration::facade::application_aftermath::DeclaredAuthoredCorrection::from_untrusted_parts(
+        authored_identity: Some(worth_query_declaration::facade::application_aftermath::DeclaredAuthoredCorrection::from_untrusted_parts(ARCHIVE_DECODE,
             worth_query_declaration::facade::application_aftermath::DeclaredAuthoredCorrectionParts {
                 family: identity("authored-account.v1"), source_role: "retired".to_owned(), inverse_role: "restored".to_owned(),
                 source_posture: worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture::Retire,
@@ -40,7 +41,7 @@ fn member(content_format: Option<[u8; 32]>, frame: Option<String>) -> Applicatio
                 }),
             },
         )),
-        source_output_fields: vec![DeclaredCorrectionOutputField::from_untrusted_parts(DeclaredCorrectionOutputFieldParts {
+        source_output_fields: vec![DeclaredCorrectionOutputField::from_untrusted_parts(ARCHIVE_DECODE, DeclaredCorrectionOutputFieldParts {
             source_binding: identity("set-amount.v1"), role: "created-account".to_owned(),
             entity: "Account".to_owned(), aspect: "State".to_owned(), field: "id".to_owned(),
             presence: ApplicationFieldPresence::Required,
@@ -48,7 +49,7 @@ fn member(content_format: Option<[u8; 32]>, frame: Option<String>) -> Applicatio
             value_binding: identity(if content_format.is_some() { "worth.content_ref" } else { "worth.u64" }), unit: Some("journal-number".to_owned()),
             binding_unit: Some("journal-number".to_owned()), frame, canonical: None, content_format,
         })],
-        disclosure: DeclaredCorrectionDisclosure::from_untrusted_parts(DeclaredCorrectionDisclosureParts {
+        disclosure: DeclaredCorrectionDisclosure::from_untrusted_parts(ARCHIVE_DECODE, DeclaredCorrectionDisclosureParts {
             binding: identity("amount-history.v1"), input: identity("history-input.v1"),
             query_name: "amount-history".to_owned(), query: identity("history-query.v1"),
             parameters: identity("history-parameters.v1"), result: identity("history-result.v1"),
@@ -59,6 +60,7 @@ fn member(content_format: Option<[u8; 32]>, frame: Option<String>) -> Applicatio
         }),
     });
     let contract = PortableApplicationAftermathContract::from_untrusted_fields(
+        ARCHIVE_DECODE,
         DeclaredCorrectionAuthority::RuntimeAlone,
         None,
         None,
@@ -109,28 +111,31 @@ fn correction_archive_retains_both_bindings_handlers_queries_and_codecs() {
 }
 
 fn description(binding: &str, operation: &str, input: &str) -> ApplicationMutationDescription {
-    ApplicationMutationDescription::from_untrusted_parts(ApplicationMutationDescriptionParts {
-        inspection_disclosure: None,
-        binding_identity: identity(binding),
-        operation: operation.to_owned(),
-        input_identity: identity(input),
-        result_identity: identity("amount-result.v1"),
-        denial_identity: identity("amount-denial.v1"),
-        scope: ApplicationMutationScopeDescription {
-            entity: "Account".to_owned(),
-            aspect: "State".to_owned(),
-            field: "id".to_owned(),
-            resolution: ApplicationMutationScopeResolutionMode::InputField,
+    ApplicationMutationDescription::from_untrusted_parts(
+        ARCHIVE_DECODE,
+        ApplicationMutationDescriptionParts {
+            inspection_disclosure: None,
+            binding_identity: identity(binding),
+            operation: operation.to_owned(),
+            input_identity: identity(input),
+            result_identity: identity("amount-result.v1"),
+            denial_identity: identity("amount-denial.v1"),
+            scope: ApplicationMutationScopeDescription {
+                entity: "Account".to_owned(),
+                aspect: "State".to_owned(),
+                field: "id".to_owned(),
+                resolution: ApplicationMutationScopeResolutionMode::InputField,
+            },
+            output_roles: Vec::new(),
+            output_role_families: Vec::new(),
+            workflow_execution_requirements:
+                ApplicationWorkflowExecutionRequirements::occurrence_only(),
         },
-        output_roles: Vec::new(),
-        output_role_families: Vec::new(),
-        workflow_execution_requirements: ApplicationWorkflowExecutionRequirements::occurrence_only(
-        ),
-    })
+    )
 }
 
 fn identity(value: &str) -> WorthQueryPortableTypeIdentity {
-    WorthQueryPortableTypeIdentity::from_untrusted(value.to_owned())
+    WorthQueryPortableTypeIdentity::from_untrusted(ARCHIVE_DECODE, value.to_owned())
 }
 
 #[test]

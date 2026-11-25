@@ -1,4 +1,5 @@
 use worth_foundational::facade::CanonicalizationRuleVersion;
+use worth_query_declaration::archive_decode_authority::ArchiveDecodeAuthority;
 
 pub trait WorthQueryArtifactFamily: 'static {
     const SEMANTIC_FAMILY: &'static str;
@@ -12,7 +13,7 @@ impl WorthQueryArtifactFamilyIdentity {
     ///
     /// Fresh artifact-contract readmission validates portability before this
     /// value can enter package meaning.
-    pub fn from_untrusted_string(value: String) -> Self {
+    pub fn from_untrusted_string(_: ArchiveDecodeAuthority, value: String) -> Self {
         Self(value)
     }
 
@@ -105,6 +106,7 @@ impl WorthQueryArtifactContractReference {
     /// freshly validated artifact-contract record before it can enter
     /// admitted package meaning.
     pub fn from_untrusted_fields(
+        _: ArchiveDecodeAuthority,
         family: WorthQueryArtifactFamilyIdentity,
         schema_version: WorthQueryArtifactSchemaVersion,
         protocol_version: WorthQueryArtifactProtocolVersion,

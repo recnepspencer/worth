@@ -1,3 +1,4 @@
+use crate::archive_decode_authority::{ArchiveDecodeAuthority, ARCHIVE_DECODE};
 use std::marker::PhantomData;
 
 use crate::application_schema::{
@@ -39,7 +40,10 @@ pub struct ErasedApplicationHistoryQueryDefinition {
 }
 
 impl ErasedApplicationHistoryQueryDefinition {
-    pub fn from_untrusted_parts(parts: WorthQueryPortableApplicationHistoryQueryParts) -> Self {
+    pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
+        parts: WorthQueryPortableApplicationHistoryQueryParts,
+    ) -> Self {
         let canonical = super::super::canonical_basis::prepare_history_basis(&parts);
         Self { parts, canonical }
     }
@@ -178,7 +182,10 @@ impl<Schema, History, Record> ApplicationHistoryQueryDefinitionBuilder<Schema, H
         ApplicationHistoryQueryDefinitionDenial,
     > {
         self.parts.aspects.sort();
-        let erased = ErasedApplicationHistoryQueryDefinition::from_untrusted_parts(self.parts);
+        let erased = ErasedApplicationHistoryQueryDefinition::from_untrusted_parts(
+            ARCHIVE_DECODE,
+            self.parts,
+        );
         erased.validate()?;
         Ok(ApplicationHistoryQueryDefinition {
             erased,

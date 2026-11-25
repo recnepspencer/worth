@@ -1,4 +1,5 @@
 //! Typed authoring builder for related-record absence/existence predicates.
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 use std::marker::PhantomData;
 
 use super::{
@@ -100,6 +101,7 @@ impl<Schema, Query, Root, Target> ApplicationQueryRelatedPredicate<Schema, Query
         self.field_expectations.push(field.expected_recipe());
         self.target_predicates.push(
             ApplicationQueryRelatedTargetPredicate::from_untrusted_parameter(
+                ARCHIVE_DECODE,
                 field.entity().to_owned(),
                 field.aspect().to_owned(),
                 field.field().to_owned(),
@@ -140,6 +142,7 @@ impl<Schema, Query, Root, Target> ApplicationQueryRelatedPredicate<Schema, Query
         self.field_expectations.push(field.expected_recipe());
         self.target_predicates.push(
             ApplicationQueryRelatedTargetPredicate::from_untrusted_value(
+                ARCHIVE_DECODE,
                 field.entity().to_owned(),
                 field.aspect().to_owned(),
                 field.field().to_owned(),
@@ -212,6 +215,7 @@ impl<Schema, Query, Root, Target> ApplicationQueryRelatedPredicate<Schema, Query
         self.target_predicates.sort();
         (
             ApplicationQueryRelatedPredicateMeaning::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 WorthQueryPortableApplicationQueryRelatedPredicateParts {
                     relation: self.relation.to_owned(),
                     from: self.from.to_owned(),

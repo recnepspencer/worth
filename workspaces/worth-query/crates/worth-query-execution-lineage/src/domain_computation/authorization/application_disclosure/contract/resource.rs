@@ -1,5 +1,6 @@
 //! Compile exactly the outputs of one installed Resource action surface.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_resource::{
     ApplicationResourceBinding, ApplicationResourceDisclosureMeaning,
 };
@@ -58,6 +59,7 @@ where
         || !purpose.facets().iter().all(|facet| {
             result_rules.contains_key(
                 &ApplicationResourceDisclosureMeaning::from_untrusted_fields(
+                    ARCHIVE_DECODE,
                     parts.resource_type.clone(),
                     *facet,
                 )

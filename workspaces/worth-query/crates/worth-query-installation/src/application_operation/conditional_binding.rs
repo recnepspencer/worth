@@ -1,4 +1,5 @@
 use std::marker::PhantomData;
+use worth_query_declaration::archive_decode_authority::ArchiveDecodeAuthority;
 
 use worth_query_declaration::facade::application_schema::{
     ApplicationOperationMarkerIdentity, ApplicationOperationRef, ApplicationSchema,
@@ -25,6 +26,7 @@ pub struct WorthQueryPortableApplicationConditionalOperationBinding {
 
 impl WorthQueryPortableApplicationConditionalOperationBinding {
     pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
         parts: WorthQueryPortableApplicationConditionalOperationBindingParts,
     ) -> Self {
         Self {

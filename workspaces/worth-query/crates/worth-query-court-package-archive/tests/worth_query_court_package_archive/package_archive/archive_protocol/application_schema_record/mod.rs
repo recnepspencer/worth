@@ -59,11 +59,9 @@ fn application_schema_semantic_tamper_cannot_mint_the_expected_query_identity() 
     }
     let candidate = reconstruction.close().unwrap().materialize().unwrap();
     assert!(candidate
-        .validate_freshly(
-            WorthQueryExpectedPortablePackageIdentity::from_untrusted_identity(
-                source.identity().clone(),
-            ),
-        )
+        .validate_freshly(WorthQueryExpectedPortablePackageIdentity::new(
+            source.identity().clone(),
+        ),)
         .is_err());
 }
 

@@ -1,4 +1,5 @@
 //! Native consequence closure derived from signed-subject declarations, not per-writer registration.
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 #[cfg(test)]
 mod tests;
 use crate::{
@@ -131,6 +132,7 @@ impl SigningLifecycleClosure {
                     };
                     let path = ApplicationOperationBodyPathFieldSource {
                         path: ApplicationQueryRootPathMeaning::from_untrusted_parts(
+                            ARCHIVE_DECODE,
                             WorthQueryPortableApplicationQueryRootPathParts {
                                 start_entity: spec.source_entity.clone(),
                                 terminal_entity: spec.source_entity.clone(),

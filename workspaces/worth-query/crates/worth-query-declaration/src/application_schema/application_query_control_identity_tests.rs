@@ -5,6 +5,7 @@ use crate::application_query::{
     ApplicationQueryResultFieldRef, ApplicationQueryResultShapeBuilder,
     ErasedApplicationQueryDefinition,
 };
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 
 use super::ApplicationEntityRef;
 
@@ -153,7 +154,7 @@ fn definition(fixture: &QueryControlFixture) -> ErasedApplicationQueryDefinition
         .into_erased()
         .into_parts();
     definition.root_entity = fixture.root.into();
-    ErasedApplicationQueryDefinition::from_untrusted_parts(definition)
+    ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, definition)
 }
 
 use super::fragment;

@@ -1,6 +1,7 @@
 //! Additive member45/v1. No observation, permission, or retained root is decoded.
 use super::*;
 use crate::record::application_schema::query_binding_reference;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_query::{
     ErasedApplicationQueryInspectionDefinition as Definition,
     WorthQueryPortableApplicationQueryInspectionParts as Parts,
@@ -41,11 +42,14 @@ pub(super) fn decode(
     let binding = query_binding_reference::decode(input)?;
     let metadata_disclosure = crate::record::application_query::disclosure::decode(input, budget)?;
     let member = ApplicationSchemaMember::ApplicationQueryInspection {
-        definition: Definition::from_untrusted_parts(Parts {
-            semantic_version,
-            binding,
-            metadata_disclosure,
-        }),
+        definition: Definition::from_untrusted_parts(
+            ARCHIVE_DECODE,
+            Parts {
+                semantic_version,
+                binding,
+                metadata_disclosure,
+            },
+        ),
     };
     require_shape(&member)?;
     Ok(member)

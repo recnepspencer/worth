@@ -1,4 +1,5 @@
 //! Once-prepared scalar values retain validation and memory into every sink.
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 pub mod installation;
 use super::super::{
     application_contribution::{QueryMemoryReservation, QueryRequestExecution},
@@ -97,7 +98,10 @@ pub fn prepare<S: worth_query_installation::facade::ApplicationSchema, O, E>(
     }
     Ok(Some(PreparedBodyValues(Arc::new(RetainedValues {
         values,
-        snapshot: ApplicationOperationBodyValueSnapshot::from_untrusted_values(snapshot),
+        snapshot: ApplicationOperationBodyValueSnapshot::from_untrusted_values(
+            ARCHIVE_DECODE,
+            snapshot,
+        ),
         _reservation: reservation,
     }))))
 }

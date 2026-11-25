@@ -31,11 +31,9 @@ pub fn roundtrip<Schema: BirthSchema>() {
         .unwrap()
         .materialize()
         .unwrap()
-        .validate_freshly(
-            WorthQueryExpectedPortablePackageIdentity::from_untrusted_identity(
-                source.identity().clone(),
-            ),
-        )
+        .validate_freshly(WorthQueryExpectedPortablePackageIdentity::new(
+            source.identity().clone(),
+        ))
         .unwrap();
     assert_eq!(fresh.identity(), source.identity());
     assert_eq!(fresh.export_typed_records().unwrap(), exported);

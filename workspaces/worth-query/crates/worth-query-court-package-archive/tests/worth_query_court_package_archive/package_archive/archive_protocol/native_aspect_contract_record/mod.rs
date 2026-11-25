@@ -109,10 +109,8 @@ fn native_aspect_semantic_tamper_decodes_but_cannot_mint_package_identity() {
         .unwrap()
         .materialize()
         .unwrap()
-        .validate_freshly(
-            WorthQueryExpectedPortablePackageIdentity::from_untrusted_identity(
-                source.identity().clone(),
-            ),
-        )
+        .validate_freshly(WorthQueryExpectedPortablePackageIdentity::new(
+            source.identity().clone(),
+        ),)
         .is_err());
 }

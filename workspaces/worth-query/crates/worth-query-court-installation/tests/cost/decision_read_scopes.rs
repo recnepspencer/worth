@@ -1,4 +1,5 @@
 //! Independent width/reference axes measure portable metadata, separately from insertion work.
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::*;
 use worth_query_installation::facade::*;
 
@@ -9,6 +10,7 @@ fn package(width: usize, references: usize) -> WorthQueryValidatedPortableDomain
         })
         .collect::<Vec<_>>();
     let definition = ApplicationDecisionReadScopeMeaning::from_untrusted_parts(
+        ARCHIVE_DECODE,
         (0..width)
             .map(|index| ApplicationOperationDecisionReadTarget::Entity {
                 entity: format!("Entity{index}"),
@@ -29,6 +31,7 @@ fn package(width: usize, references: usize) -> WorthQueryValidatedPortableDomain
     members.sort();
     let schema = validate_portable_application_schema_freshly(
         WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableApplicationSchemaParts {
                 owner: "worth.tests.shared".into(),
                 name: "SharedReads".into(),

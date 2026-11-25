@@ -2,6 +2,7 @@
 use super::*;
 use crate::binary_output::BinaryOutput;
 use crate::limits::WorthQueryPackageArchiveLimits;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_capability::{
     ApplicationCapabilityRecordedActorRequirement as Requirement,
     ApplicationCapabilityRecordedActorRule as Rule,
@@ -14,6 +15,7 @@ fn composition(rule: Rule) -> ApplicationCapabilityComposition {
         ApplicationCapabilityDecisionComposition::new(
             ApplicationCapabilityAllowRule::new(
                 ApplicationCapabilityGraphRule::from_untrusted_parts(
+                    ARCHIVE_DECODE,
                     WorthQueryPortableApplicationCapabilityGraphRuleParts {
                         requirements: vec![],
                     },

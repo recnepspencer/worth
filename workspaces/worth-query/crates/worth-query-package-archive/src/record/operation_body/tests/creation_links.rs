@@ -1,5 +1,6 @@
 //! V11 carries creation linkage without reinterpreting older body bytes.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::{
     ApplicationOperationBodyCreationLink,
     ApplicationOperationBodyCreationLinkDirection as Direction,
@@ -8,18 +9,23 @@ use worth_query_declaration::facade::application_schema::{
 #[test]
 fn replacement_v19_roundtrips_its_distinct_posture_and_nested_accounting() {
     use worth_query_declaration::facade::application_schema::ApplicationOperationBodyCreationLinkPosture as Posture;
-    let creation =
-        ApplicationOperationBodyCreation::from_untrusted("Item".into(), "item".into(), vec![])
-            .with_untrusted_links(vec![ApplicationOperationBodyCreationLink {
-                relation: "Current".into(),
-                from: "Root".into(),
-                to: "Item".into(),
-                key: "current".into(),
-                direction: Direction::FromScope,
-                posture: Posture::ReplaceSingle,
-                source: Default::default(),
-            }]);
+    let creation = ApplicationOperationBodyCreation::from_untrusted(
+        ARCHIVE_DECODE,
+        "Item".into(),
+        "item".into(),
+        vec![],
+    )
+    .with_untrusted_links(vec![ApplicationOperationBodyCreationLink {
+        relation: "Current".into(),
+        from: "Root".into(),
+        to: "Item".into(),
+        key: "current".into(),
+        direction: Direction::FromScope,
+        posture: Posture::ReplaceSingle,
+        source: Default::default(),
+    }]);
     let body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
         "Root".into(),
         vec![],
         Some(creation),
@@ -50,7 +56,7 @@ fn creation_link_directions_roundtrip_and_old_record_cannot_consume_them() {
         } else {
             ("Item", "Root")
         };
-        let creation = ApplicationOperationBodyCreation::from_untrusted(
+        let creation = ApplicationOperationBodyCreation::from_untrusted(ARCHIVE_DECODE,
             "Item".to_owned(),
             "item".to_owned(),
             vec![],
@@ -65,6 +71,7 @@ fn creation_link_directions_roundtrip_and_old_record_cannot_consume_them() {
             source: Default::default(),
         }]);
         let body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+            ARCHIVE_DECODE,
             "Root".to_owned(),
             vec![],
             Some(creation),

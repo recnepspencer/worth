@@ -3,6 +3,7 @@ use super::*;
 use crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceCoordinates;
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::WorldOwnerCoordinate;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
@@ -91,7 +92,7 @@ pub(super) fn performed<S: ApplicationSchema>(
     if matching.next().is_some() {
         return Err(D::SourcePublicationMismatch);
     }
-    let coordinate = crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceCoordinates::from_untrusted_parts(
+    let coordinate = crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceCoordinates::new(
         worth_foundational::facade::WorldOwnerCoordinate::Home { owner: original.identity().owner() },
         original.identity().ordinal(), fact.child.clone(),
         // A correction commits as its group's single primary writer.
@@ -103,5 +104,5 @@ pub(super) fn performed<S: ApplicationSchema>(
         &coordinate,
         maximum,
     )?;
-    Ok(crate::domain_computation::application_aftermath::WorthQueryRecordedCorrectionSource::from_untrusted_parts(identity, fact.child.clone(), coordinate.member()))
+    Ok(crate::domain_computation::application_aftermath::WorthQueryRecordedCorrectionSource::from_untrusted_parts(ARCHIVE_DECODE, identity, fact.child.clone(), coordinate.member()))
 }

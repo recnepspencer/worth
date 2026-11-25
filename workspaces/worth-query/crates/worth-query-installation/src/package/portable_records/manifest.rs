@@ -1,6 +1,7 @@
 //! Version and closure inventory for one typed logical package export.
 
 use crate::package::WorthQueryPortableDomainPackageIdentity;
+use worth_query_declaration::archive_decode_authority::ArchiveDecodeAuthority;
 
 use super::WorthQueryPortablePackageRecordFamily;
 
@@ -54,6 +55,7 @@ impl WorthQueryPortablePackageManifest {
     /// `WorthQueryPortablePackageReconstruction::begin` before any record set
     /// can close as a reconstruction candidate.
     pub const fn from_untrusted_fields(
+        _: ArchiveDecodeAuthority,
         version: WorthQueryPortablePackageManifestVersion,
         package_identity: WorthQueryPortableDomainPackageIdentity,
         record_count: u32,

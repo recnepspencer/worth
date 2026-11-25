@@ -1,4 +1,5 @@
 use worth_foundational::facade::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_query::*;
 
 use super::{text, type_id};
@@ -7,6 +8,7 @@ pub(super) fn application_query() -> ErasedApplicationQueryDefinition {
     let query_type = type_id("query");
     let result_type = type_id("result");
     let nested_shape = ApplicationQueryResultShape::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationQueryResultShapeParts {
             query_type: query_type.clone(),
             root_entity: text("Other"),
@@ -15,12 +17,12 @@ pub(super) fn application_query() -> ErasedApplicationQueryDefinition {
             relations: Vec::new(),
         },
     );
-    let result_shape = ApplicationQueryResultShape::from_untrusted_parts(
+    let result_shape = ApplicationQueryResultShape::from_untrusted_parts(ARCHIVE_DECODE,
         WorthQueryPortableApplicationQueryResultShapeParts {
             query_type: query_type.clone(),
             root_entity: text("Entity"),
             result_type: result_type.clone(),
-            fields: vec![ApplicationQueryResultField::from_untrusted_parts(
+            fields: vec![ApplicationQueryResultField::from_untrusted_parts(ARCHIVE_DECODE,
                 WorthQueryPortableApplicationQueryResultFieldParts {
                     query_type: query_type.clone(),
                     slot_type: type_id("field-slot"),
@@ -33,7 +35,7 @@ pub(super) fn application_query() -> ErasedApplicationQueryDefinition {
                     presence: worth_query_declaration::facade::application_query::ApplicationQueryResultFieldPresence::Required,
                 },
             )],
-            relations: vec![ApplicationQueryResultRelation::from_untrusted_parts(
+            relations: vec![ApplicationQueryResultRelation::from_untrusted_parts(ARCHIVE_DECODE,
                 WorthQueryPortableApplicationQueryResultRelationParts {
                     query_type: query_type.clone(),
                     slot_type: type_id("relation-slot"),
@@ -50,6 +52,7 @@ pub(super) fn application_query() -> ErasedApplicationQueryDefinition {
         },
     );
     ErasedApplicationQueryDefinition::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationQueryParts {
             name: text("ArchiveQuery"),
             query_type: query_type.clone(),
@@ -59,6 +62,7 @@ pub(super) fn application_query() -> ErasedApplicationQueryDefinition {
             root_entity: text("Entity"),
             scope_entity: text("Entity"),
             parameters: vec![ApplicationQueryParameterDefinition::from_untrusted_fields(
+                ARCHIVE_DECODE,
                 text("expected"),
                 ScalarAspectType::UInt64,
                 type_id("u64"),
@@ -72,6 +76,7 @@ pub(super) fn application_query() -> ErasedApplicationQueryDefinition {
             managed_index: None,
             cardinality: ApplicationQueryCardinality::Many,
             predicates: vec![ApplicationQueryPredicate::from_untrusted_fields(
+                ARCHIVE_DECODE,
                 text("Entity"),
                 text("Aspect"),
                 text("field"),
@@ -81,6 +86,7 @@ pub(super) fn application_query() -> ErasedApplicationQueryDefinition {
             where_filter: None,
             related_predicates: Vec::new(),
             ordering: vec![ApplicationQueryOrderingTerm::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 WorthQueryPortableApplicationQueryOrderingParts {
                     query_type: query_type.clone(),
                     slot_type: type_id("field-slot"),
@@ -94,6 +100,7 @@ pub(super) fn application_query() -> ErasedApplicationQueryDefinition {
                 },
             )],
             continuation: Some(ApplicationQueryContinuationTarget::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 WorthQueryPortableApplicationQueryContinuationParts {
                     query_type: query_type.clone(),
                     slot_type: type_id("relation-slot"),
@@ -120,17 +127,17 @@ pub(super) fn application_query() -> ErasedApplicationQueryDefinition {
 }
 
 fn root_path() -> ApplicationQueryRootPathMeaning {
-    ApplicationQueryRootPathMeaning::from_untrusted_parts(
+    ApplicationQueryRootPathMeaning::from_untrusted_parts(ARCHIVE_DECODE,
         WorthQueryPortableApplicationQueryRootPathParts {
             start_entity: text("Entity"),
             terminal_entity: text("Other"),
-            steps: vec![ApplicationQueryRootPathStep::from_untrusted_fields(
+            steps: vec![ApplicationQueryRootPathStep::from_untrusted_fields(ARCHIVE_DECODE,
                 text("relates"),
                 text("Entity"),
                 text("Other"),
                 RelationDirection::Forward,
              worth_query_declaration::facade::application_query::ApplicationQueryRootPathTraversal::OneHop,)],
-            guards: vec![ApplicationQueryRootPathGuard::from_untrusted_parts(
+            guards: vec![ApplicationQueryRootPathGuard::from_untrusted_parts(ARCHIVE_DECODE,
                 WorthQueryPortableApplicationQueryRootPathGuardParts {
                     after_step: 1,
                     entity: text("Other"),
@@ -146,7 +153,7 @@ fn root_path() -> ApplicationQueryRootPathMeaning {
 }
 
 fn live_cause() -> ApplicationQueryLiveCauseContract {
-    ApplicationQueryLiveCauseContract::from_untrusted_parts(
+    ApplicationQueryLiveCauseContract::from_untrusted_parts(ARCHIVE_DECODE,
         WorthQueryPortableApplicationQueryLiveCauseParts {
             binding_type: type_id("live-binding"),
             effect: text("Changed"),
@@ -172,12 +179,14 @@ fn disclosure() -> ApplicationQueryDisclosureContract {
     let projection = AspectMask::<ProjectionMask>::new([CanonicalFieldPath::single(field.clone())]);
     let diagnostic = AspectMask::<DiagnosticMask>::new([CanonicalFieldPath::single(field)]);
     ApplicationQueryDisclosureContract::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationQueryDisclosureParts {
             posture: ApplicationQueryDisclosurePosture::Governed,
             classification: text("restricted"),
             capability_name: Some(text("Capability")),
             capability_type: Some(type_id("capability")),
             rules: vec![ApplicationQueryDisclosureRule::from_untrusted_fields(
+                ARCHIVE_DECODE,
                 ApplicationQueryDisclosureSelector::InternalField {
                     entity: text("Entity"),
                     aspect: text("Aspect"),

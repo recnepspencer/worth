@@ -1,4 +1,5 @@
 use super::{decode_member, encode_member, try_decode_member};
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 mod source_disclosure;
 use crate::facade::WorthQueryPackageArchiveDenialKind;
 use worth_query_declaration::facade::{
@@ -27,7 +28,10 @@ fn mutation_archive_preserves_each_explicit_workflow_requirement() {
         let mut parts = description.clone().into_parts();
         parts.workflow_execution_requirements = requirements;
         let member = ApplicationSchemaMember::ApplicationMutation {
-            description: ApplicationMutationDescription::from_untrusted_parts(parts),
+            description: ApplicationMutationDescription::from_untrusted_parts(
+                ARCHIVE_DECODE,
+                parts,
+            ),
         };
         let encoded = encode_member(&member);
         assert_eq!(decode_member(&encoded), member);
@@ -152,7 +156,7 @@ fn mutation_member(
     middle: ApplicationMutationOutputRoleCardinality,
 ) -> ApplicationSchemaMember {
     ApplicationSchemaMember::ApplicationMutation {
-        description: ApplicationMutationDescription::from_untrusted_parts(
+        description: ApplicationMutationDescription::from_untrusted_parts(ARCHIVE_DECODE,
             ApplicationMutationDescriptionParts {
                 inspection_disclosure: None,
                 workflow_execution_requirements: worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable(),
@@ -199,5 +203,5 @@ fn mutation_member(
 }
 
 fn identity(name: &str) -> WorthQueryPortableTypeIdentity {
-    WorthQueryPortableTypeIdentity::from_untrusted(name.to_owned())
+    WorthQueryPortableTypeIdentity::from_untrusted(ARCHIVE_DECODE, name.to_owned())
 }

@@ -1,5 +1,6 @@
 //! Related correspondence has explicit transport meaning; decoding grants no native target.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::{
     application_operation::{
         ApplicationMutationOutputPosture as Posture,
@@ -14,6 +15,7 @@ use worth_query_declaration::facade::{
 #[test]
 fn related_output_v22_retains_endpoints_accounts_and_rejects_downgrade() {
     let body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
         "Root".into(),
         vec![],
         None,

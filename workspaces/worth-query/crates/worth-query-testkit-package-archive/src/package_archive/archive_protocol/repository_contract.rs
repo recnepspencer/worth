@@ -1,5 +1,6 @@
 pub use std::collections::BTreeMap;
 pub use std::sync::Mutex;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 
 pub use worth_query_installation::facade::{
     WorthQueryExpectedPortablePackageIdentity, WorthQueryPortableDomainPackageIdentity,
@@ -58,8 +59,12 @@ impl WorthQueryPackageArchiveRepository for MemoryPackageArchiveRepository {
             );
         }
         WorthQueryPackageArchiveLoadOutcome::Found(
-            WorthQueryUntrustedLoadedPackageArchive::from_untrusted_bytes(request, bytes.clone())
-                .unwrap(),
+            WorthQueryUntrustedLoadedPackageArchive::from_untrusted_bytes(
+                ARCHIVE_DECODE,
+                request,
+                bytes.clone(),
+            )
+            .unwrap(),
         )
     }
 }

@@ -4,6 +4,7 @@ use crate::facade::{
     WorthQueryPackageArchiveDecodeWork, WorthQueryPackageArchiveDenialKind as Kind,
     WorthQueryPackageArchiveLimits as Limits, WorthQueryPackageArchiveRecordDecoder,
 };
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::{
     validate_portable_application_schema_freshly as readmit, ApplicationRelationIntegrity,
     ApplicationRelationIntegrityRecord, ApplicationRelationMinimumReachabilityRecord,
@@ -183,12 +184,15 @@ fn schema(relation: Member) -> Schema {
         relation,
     ];
     members.sort();
-    Schema::from_untrusted_parts(Parts {
-        owner: "archive.tests".to_owned(),
-        name: "RelationLaws".to_owned(),
-        major: 1,
-        minor: 0,
-        members,
-        contributions: Vec::new(),
-    })
+    Schema::from_untrusted_parts(
+        ARCHIVE_DECODE,
+        Parts {
+            owner: "archive.tests".to_owned(),
+            name: "RelationLaws".to_owned(),
+            major: 1,
+            minor: 0,
+            members,
+            contributions: Vec::new(),
+        },
+    )
 }

@@ -6,6 +6,7 @@ use crate::{
         WorthQueryPackageArchiveDenial as Denial, WorthQueryPackageArchiveDenialKind as Kind,
     },
 };
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_query::{
     ApplicationManagedIndexRefinementMeaning as Meaning,
     WorthQueryPortableManagedIndexRefinementParts as Parts,
@@ -24,11 +25,14 @@ pub(super) fn decode(input: &mut BinaryInput<'_>) -> Result<Meaning, Denial> {
     if semantic_version != 1 {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
-    let meaning = Meaning::from_untrusted_parts(Parts {
-        semantic_version,
-        identity: input.text()?.to_owned(),
-        version: input.u32()?,
-    });
+    let meaning = Meaning::from_untrusted_parts(
+        ARCHIVE_DECODE,
+        Parts {
+            semantic_version,
+            identity: input.text()?.to_owned(),
+            version: input.u32()?,
+        },
+    );
     meaning
         .validate()
         .map_err(|_| Denial::new(Kind::InvalidRecordShape))?;

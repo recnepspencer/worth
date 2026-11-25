@@ -37,11 +37,9 @@ pub(crate) fn readmit_exact_release(
         .close()
         .and_then(|candidate| candidate.materialize())
         .and_then(|candidate| {
-            candidate.validate_freshly(
-                WorthQueryExpectedPortablePackageIdentity::from_untrusted_identity(
-                    expected_identity.clone(),
-                ),
-            )
+            candidate.validate_freshly(WorthQueryExpectedPortablePackageIdentity::new(
+                expected_identity.clone(),
+            ))
         })
         .map_err(|denial| Error::Reconstruction { denial })?;
     let records = validated

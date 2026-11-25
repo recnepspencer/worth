@@ -1,19 +1,27 @@
 //! New guard bytes cannot be interpreted as an old assignment or literal guard.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 #[test]
 fn input_expectation_v30_roundtrips_and_cannot_downgrade_to_v29() {
     let body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
         "Item".into(),
         vec![
             ApplicationOperationBodyScopeField::ExpectInput {
                 field: ApplicationFieldBindingLocus::new("Item", "Facts", "Company"),
-                binding: WorthQueryPortableTypeIdentity::from_untrusted("worth.rust.string".into()),
+                binding: WorthQueryPortableTypeIdentity::from_untrusted(
+                    ARCHIVE_DECODE,
+                    "worth.rust.string".into(),
+                ),
                 scalar_family: ScalarAspectType::String,
                 member: "company".into(),
             },
             ApplicationOperationBodyScopeField::Assign {
                 field: ApplicationFieldBindingLocus::new("Item", "Facts", "Ready"),
-                binding: WorthQueryPortableTypeIdentity::from_untrusted("worth.rust.bool".into()),
+                binding: WorthQueryPortableTypeIdentity::from_untrusted(
+                    ARCHIVE_DECODE,
+                    "worth.rust.bool".into(),
+                ),
                 value: AspectValue::Bool(true),
             },
         ],

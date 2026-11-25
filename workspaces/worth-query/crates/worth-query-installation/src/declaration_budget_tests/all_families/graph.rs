@@ -3,6 +3,7 @@ use super::*;
 use worth_foundational::facade::{
     AbsenceLaw, AspectContractRevision, AspectIdentity, ScalarAspectType,
 };
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryRootPathMeaning, WorthQueryPortableApplicationQueryRootPathParts,
 };
@@ -79,6 +80,7 @@ pub(super) fn extend(members: &mut Vec<ApplicationSchemaMember>) {
         },
         ApplicationSchemaMember::RelationAspect {
             definition: ErasedApplicationRelationAspectDefinition::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 WorthQueryPortableRelationAspectParts {
                     relation: "MappingTarget".into(),
                     from: "TestEntity".into(),
@@ -102,6 +104,7 @@ pub(super) fn extend(members: &mut Vec<ApplicationSchemaMember>) {
         },
         ApplicationSchemaMember::ComponentSet {
             definition: ApplicationComponentSetMeaning::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 WorthQueryPortableApplicationComponentSetParts {
                     name: "BudgetComponents".into(),
                     member: "TestEntity".into(),
@@ -118,12 +121,14 @@ pub(super) fn extend(members: &mut Vec<ApplicationSchemaMember>) {
         },
         ApplicationSchemaMember::OperationComponentRead {
             definition: ApplicationOperationComponentReadMeaning::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 WorthQueryPortableOperationComponentReadParts {
                     operation,
                     set: "BudgetComponents".into(),
                     root: "TestEntity".into(),
                     member: "TestEntity".into(),
                     paths: vec![ApplicationQueryRootPathMeaning::from_untrusted_parts(
+                        ARCHIVE_DECODE,
                         WorthQueryPortableApplicationQueryRootPathParts {
                             start_entity: "TestEntity".into(),
                             terminal_entity: "TestEntity".into(),

@@ -1,6 +1,7 @@
 //! Selector8/v1 retains all fourteen query-binding fields, not a display name.
 use super::*;
 use crate::record::application_schema::query_binding_reference;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryInspectionMetadataFacet as Facet,
     ApplicationQueryInspectionMetadataMeaning as Meaning,
@@ -33,7 +34,11 @@ pub(super) fn decode(input: &mut BinaryInput<'_>) -> Result<Meaning, Denial> {
         6 => Facet::DiagnosticFields,
         _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
     };
-    Ok(Meaning::from_untrusted_fields(binding, facet))
+    Ok(Meaning::from_untrusted_fields(
+        ARCHIVE_DECODE,
+        binding,
+        facet,
+    ))
 }
 
 #[cfg(test)]

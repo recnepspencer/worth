@@ -3,6 +3,7 @@ use crate::application_schema::{
     ApplicationCanonicalValueReference, ApplicationReadableScalarValueBinding,
     ApplicationValueDecodePosture,
 };
+use crate::archive_decode_authority::{ArchiveDecodeAuthority, ARCHIVE_DECODE};
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 use worth_foundational::facade::{InlineBytes, ScalarAspectType};
 
@@ -32,17 +33,23 @@ impl ApplicationManagedIndexProbeMeaning {
         let supports_admitted_decode = Binding::SUPPORTS_ADMITTED_DECODE
             && Binding::Decode::erased_admitted_decode().is_some()
             && (canonical.is_some() != Binding::NATIVE_INPUT_ADMISSION.is_some());
-        Self::from_untrusted_parts(WorthQueryPortableManagedIndexProbeParts {
-            binding: Binding::IDENTITY,
-            scalar_family: Binding::SCALAR_FAMILY,
-            unit: Binding::UNIT.map(|unit| unit.as_str().to_owned()),
-            frame: Binding::FRAME.map(|frame| frame.as_str().to_owned()),
-            canonical,
-            supports_admitted_decode,
-        })
+        Self::from_untrusted_parts(
+            ARCHIVE_DECODE,
+            WorthQueryPortableManagedIndexProbeParts {
+                binding: Binding::IDENTITY,
+                scalar_family: Binding::SCALAR_FAMILY,
+                unit: Binding::UNIT.map(|unit| unit.as_str().to_owned()),
+                frame: Binding::FRAME.map(|frame| frame.as_str().to_owned()),
+                canonical,
+                supports_admitted_decode,
+            },
+        )
     }
 
-    pub fn from_untrusted_parts(parts: WorthQueryPortableManagedIndexProbeParts) -> Self {
+    pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
+        parts: WorthQueryPortableManagedIndexProbeParts,
+    ) -> Self {
         Self { parts }
     }
 

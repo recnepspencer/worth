@@ -1,5 +1,6 @@
 //! Computed path writes reuse the root-path record and ordinary sequence budget.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::{
     ApplicationFieldPresence, ApplicationOperationBodyPathFieldSource,
     ApplicationOperationBodyPathValueAssignment as Assignment,
@@ -32,7 +33,8 @@ pub(super) fn decode(
     decode_sequence(input, budget, 24, |input, budget| {
         let path = super::super::application_query::decode_root_path(input, budget)?;
         let field = ApplicationFieldBindingLocus::new(input.text()?, input.text()?, input.text()?);
-        let binding = WorthQueryPortableTypeIdentity::from_untrusted(input.text()?.into());
+        let binding =
+            WorthQueryPortableTypeIdentity::from_untrusted(ARCHIVE_DECODE, input.text()?.into());
         let value = input.text()?.into();
         let presence = match input.u16()? {
             1 => ApplicationFieldPresence::Required,

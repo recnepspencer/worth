@@ -1,3 +1,4 @@
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 use std::collections::BTreeSet;
 
 use crate::application_schema::{
@@ -32,7 +33,11 @@ pub(in crate::application_schema) fn validate_closure(members: &[Member]) -> Res
             return Err(Denial::MissingApplicationRelationAspectDependency);
         }
         for field in &aspect.fields {
-            if !WorthQueryPortableTypeIdentity::from_untrusted(field.value_type.clone()).is_valid()
+            if !WorthQueryPortableTypeIdentity::from_untrusted(
+                ARCHIVE_DECODE,
+                field.value_type.clone(),
+            )
+            .is_valid()
             {
                 return Err(Denial::InvalidApplicationRelationAspect);
             }

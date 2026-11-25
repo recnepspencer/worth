@@ -1,5 +1,6 @@
 //! Independent member grammar for the explicit navigation extension and legacy twin.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::{
     application_history::{
         ApplicationHistoryNavigationDeclaration,
@@ -10,6 +11,7 @@ use worth_query_declaration::facade::{
 
 pub(super) fn navigation() -> ApplicationHistoryNavigationDeclaration {
     ApplicationHistoryNavigationDeclaration::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationHistoryNavigationParts {
             binding: "NavigateDocument".into(),
             capability: "NavigationPermission".into(),
@@ -70,7 +72,7 @@ fn independently_written_navigation_member_retains_every_policy_reference() {
     let mut parts = definition(Domain::ScopeEntityRecord, false).parts().clone();
     parts.navigation = Some(navigation());
     let expected = ApplicationSchemaMember::ApplicationHistory {
-        definition: Definition::from_untrusted_parts(parts),
+        definition: Definition::from_untrusted_parts(ARCHIVE_DECODE, parts),
     };
     assert_eq!(decode_member(&bytes), expected);
     assert_eq!(encode_member(&expected), bytes);
@@ -97,7 +99,7 @@ fn navigation_version_requires_complete_valid_explicit_scope_meaning() {
     parts.navigation = Some(navigation());
     let mut output = BinaryOutput::with_capacity(0);
     let unsupported = ApplicationSchemaMember::ApplicationHistory {
-        definition: Definition::from_untrusted_parts(parts),
+        definition: Definition::from_untrusted_parts(ARCHIVE_DECODE, parts),
     };
     assert_eq!(
         super::super::super::member::write(&mut output, &unsupported)

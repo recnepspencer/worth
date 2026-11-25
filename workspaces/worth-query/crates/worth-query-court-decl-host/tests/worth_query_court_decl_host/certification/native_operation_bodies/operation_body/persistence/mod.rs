@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 pub(crate) use worth_query_testkit_certification_operation::facade::certification::native_operation_bodies::operation_body::persistence::*;
 
 #[test]
@@ -57,7 +58,7 @@ fn authored_body_portable_readmission_preserves_values_and_rejects_incomplete_re
     parts.members.sort();
     assert!(matches!(
         validate_portable_application_schema_freshly(
-            WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts)
+            WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(ARCHIVE_DECODE, parts)
         )
         .unwrap_err(),
         ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency { .. }

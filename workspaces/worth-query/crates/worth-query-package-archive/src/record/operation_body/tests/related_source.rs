@@ -1,5 +1,6 @@
 //! Codec-only proof: related descriptions survive transport; decoding grants no selection authority.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::{
     ApplicationFieldPresence as Presence, ApplicationOperationBodyRelatedFieldSource as Source,
 };
@@ -8,14 +9,17 @@ use worth_query_declaration::facade::application_schema::{
 fn related_source_v20_preserves_presence_endpoints_and_budget_and_refuses_downgrade() {
     for presence in [Presence::Required, Presence::Optional] {
         let body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+            ARCHIVE_DECODE,
             "Root".into(),
             vec![],
             Some(ApplicationOperationBodyCreation::from_untrusted(
+                ARCHIVE_DECODE,
                 "Child".into(),
                 "child".into(),
                 vec![ApplicationOperationBodyCreatedField::RelatedField {
                     field: ApplicationFieldBindingLocus::new("Child", "Facts", "Text"),
                     binding: WorthQueryPortableTypeIdentity::from_untrusted(
+                        ARCHIVE_DECODE,
                         "worth.rust.string".into(),
                     ),
                     scalar_family: ScalarAspectType::String,
@@ -64,17 +68,25 @@ fn related_source_v20_preserves_presence_endpoints_and_budget_and_refuses_downgr
 #[test]
 fn ordinary_scope_source_keeps_its_existing_v4_encoding() {
     let body = ApplicationOperationBodyProgram::from_untrusted_with_creation(
+        ARCHIVE_DECODE,
         vec![ApplicationOperationBodyScopeField::Assign {
             field: ApplicationFieldBindingLocus::new("Root", "Facts", "Ready"),
-            binding: WorthQueryPortableTypeIdentity::from_untrusted("worth.rust.bool".into()),
+            binding: WorthQueryPortableTypeIdentity::from_untrusted(
+                ARCHIVE_DECODE,
+                "worth.rust.bool".into(),
+            ),
             value: AspectValue::Bool(true),
         }],
         Some(ApplicationOperationBodyCreation::from_untrusted(
+            ARCHIVE_DECODE,
             "Child".into(),
             "child".into(),
             vec![ApplicationOperationBodyCreatedField::ScopeField {
                 field: ApplicationFieldBindingLocus::new("Child", "Facts", "Text"),
-                binding: WorthQueryPortableTypeIdentity::from_untrusted("worth.rust.string".into()),
+                binding: WorthQueryPortableTypeIdentity::from_untrusted(
+                    ARCHIVE_DECODE,
+                    "worth.rust.string".into(),
+                ),
                 scalar_family: ScalarAspectType::String,
                 source: ApplicationFieldBindingLocus::new("Root", "Facts", "Text"),
             }],

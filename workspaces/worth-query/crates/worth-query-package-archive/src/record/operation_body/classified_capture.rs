@@ -62,10 +62,14 @@ pub(super) fn decode(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
     #[test]
     fn unknown_capture_role_or_source_presence_never_becomes_a_default() {
         let field = Locus::new("Evidence", "Facts", "Text");
-        let binding = WorthQueryPortableTypeIdentity::from_untrusted("worth.rust.string".into());
+        let binding = WorthQueryPortableTypeIdentity::from_untrusted(
+            ARCHIVE_DECODE,
+            "worth.rust.string".into(),
+        );
         let step = Step::CapturedScopeField {
             field: field.clone(),
             binding: binding.clone(),

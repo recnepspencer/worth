@@ -1,3 +1,4 @@
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 use std::marker::PhantomData;
 
 use worth_foundational::facade::{AspectValue, ScalarAspectType};
@@ -62,6 +63,7 @@ pub struct ApplicationQueryParameterDefinition {
 
 impl ApplicationQueryParameterDefinition {
     pub fn from_untrusted_fields(
+        _: ArchiveDecodeAuthority,
         name: String,
         scalar_family: ScalarAspectType,
         value_type: crate::portable_identity::WorthQueryPortableTypeIdentity,

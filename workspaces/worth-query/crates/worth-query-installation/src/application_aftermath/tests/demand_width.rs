@@ -1,5 +1,6 @@
 //! A recorded inverse may demand every field and relation of a wide graph.
 
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_aftermath::{
     DeclaredAftermathPostcondition, DeclaredCorrectionAuthority, DeclaredLoweringCorrespondenceRef,
     PortableApplicationAftermathContract, PortableCorrectionMechanism, PortablePreImageDemand,
@@ -15,6 +16,7 @@ fn basis_entries(fields: u32, relations: u32) -> u32 {
     let loci: Vec<_> = (0..fields)
         .map(|index| {
             PortablePreImageLocus::from_untrusted_fields(
+                ARCHIVE_DECODE,
                 "Member".to_owned(),
                 "State".to_owned(),
                 format!("field-{index}"),
@@ -24,6 +26,7 @@ fn basis_entries(fields: u32, relations: u32) -> u32 {
     let relations: Vec<_> = (0..relations)
         .map(|index| {
             PortablePreImageRelationLocus::from_untrusted_fields(
+                ARCHIVE_DECODE,
                 format!("Link{index}"),
                 "Member".to_owned(),
                 "Member".to_owned(),
@@ -48,13 +51,15 @@ fn basis_entries(fields: u32, relations: u32) -> u32 {
         )
         .collect();
     let portable = PortableApplicationAftermathContract::from_untrusted_fields(
+        ARCHIVE_DECODE,
         DeclaredCorrectionAuthority::RuntimeAlone,
         Some(PortableCorrectionMechanism::RecordedInverse(
             PortableRecordedInverse::from_untrusted_fields(
+                ARCHIVE_DECODE,
                 "restore-graph".to_owned(),
                 DeclaredLoweringCorrespondenceRef::new("graph-inverse"),
                 DeclaredAftermathPostcondition::ExactPriorTruth,
-                PortablePreImageDemand::from_untrusted_fields(loci, 1_048_576)
+                PortablePreImageDemand::from_untrusted_fields(ARCHIVE_DECODE, loci, 1_048_576)
                     .with_untrusted_relations(relations),
             ),
         )),

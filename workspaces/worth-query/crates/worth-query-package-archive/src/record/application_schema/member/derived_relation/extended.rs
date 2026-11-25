@@ -1,5 +1,6 @@
 //! Tag47 has an explicit version and endpoint namespaces; tag41 stays exact.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::ApplicationGraphMemberMeaning as Domain;
 
 pub(super) fn write(
@@ -37,6 +38,7 @@ pub(super) fn decode(
     let nodes = decode_sequence(input, budget, 10, |input, _| decode_node(input, version))?;
     let laws = super::decode_laws(input, budget)?;
     let definition = ErasedApplicationDerivedRelationDefinition::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableDerivedRelationParts {
             relation,
             from,

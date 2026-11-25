@@ -1,3 +1,4 @@
+use crate::archive_decode_authority::{ArchiveDecodeAuthority, ARCHIVE_DECODE};
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
 use super::ErasedApplicationCapabilityContract;
@@ -30,6 +31,7 @@ pub struct WorthQueryPortableApplicationCapabilityContractParts {
 
 impl ErasedApplicationCapabilityContract {
     pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
         parts: WorthQueryPortableApplicationCapabilityContractParts,
     ) -> Self {
         Self {
@@ -43,7 +45,10 @@ impl ErasedApplicationCapabilityContract {
             constraints: parts.constraints,
             delegation: parts.delegation,
             composition: parts.composition,
-            elevation: ApplicationCapabilityElevationRule::from_untrusted_parts(parts.elevation),
+            elevation: ApplicationCapabilityElevationRule::from_untrusted_parts(
+                ARCHIVE_DECODE,
+                parts.elevation,
+            ),
         }
     }
 

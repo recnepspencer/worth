@@ -1,4 +1,5 @@
 //! Durable, bounded form of the exact request authorized at workflow approval.
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 pub mod context_inventory;
 pub mod encoding;
 
@@ -129,6 +130,7 @@ impl WorthQueryRetainedCapabilityRequest {
         let context = super::context::RetainedContext::decoded(portable.context).map_err(|_| ())?;
         let related_relation = portable.related_relation.map(|parts| {
             ApplicationCapabilityRelationBinding::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 WorthQueryPortableApplicationCapabilityRelationBindingParts {
                     relation: parts.relation,
                     from: parts.from,

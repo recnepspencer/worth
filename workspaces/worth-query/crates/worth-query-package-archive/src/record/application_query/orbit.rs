@@ -1,5 +1,6 @@
 //! Whole-orbit query meaning is decoded as untrusted declaration data.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryOrbitMeaning, WorthQueryPortableApplicationQueryOrbitParts,
 };
@@ -16,6 +17,7 @@ pub(super) fn write(
 }
 pub(super) fn decode(input: &mut BinaryInput<'_>) -> Result<ApplicationQueryOrbitMeaning, Denial> {
     Ok(ApplicationQueryOrbitMeaning::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationQueryOrbitParts {
             query: decode_type_identity(input)?,
             slot: decode_type_identity(input)?,

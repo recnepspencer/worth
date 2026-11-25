@@ -29,11 +29,9 @@ fn all_record_families_cross_one_archive_and_reenter_fresh_query_validation() {
         .unwrap()
         .materialize()
         .unwrap()
-        .validate_freshly(
-            WorthQueryExpectedPortablePackageIdentity::from_untrusted_identity(
-                source.identity().clone(),
-            ),
-        )
+        .validate_freshly(WorthQueryExpectedPortablePackageIdentity::new(
+            source.identity().clone(),
+        ))
         .unwrap();
     assert_eq!(reconstructed.identity(), source.identity());
 }

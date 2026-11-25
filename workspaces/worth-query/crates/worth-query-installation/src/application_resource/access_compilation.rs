@@ -10,6 +10,7 @@ use crate::{
     graph_obligation::{bind_resource_obligations, install_disclosure_capabilities},
 };
 use std::{collections::BTreeMap, sync::Arc};
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::{
     application_query::{ApplicationQueryDisclosurePosture, ApplicationQueryDisclosureSelector},
     application_resource::ErasedApplicationResourceDefinition,
@@ -65,7 +66,7 @@ pub(super) fn compile_access_contracts<Schema: ApplicationSchema>(
                 obligations: Arc::new(obligations),
                 rules,
                 slots: purpose.facets().iter().map(|facet| {
-                    worth_query_declaration::facade::application_resource::ApplicationResourceDisclosureMeaning::from_untrusted_fields(parts.resource_type.clone(), *facet).slot_key()
+                    worth_query_declaration::facade::application_resource::ApplicationResourceDisclosureMeaning::from_untrusted_fields(ARCHIVE_DECODE, parts.resource_type.clone(), *facet).slot_key()
                 }).collect(),
             }),
         );

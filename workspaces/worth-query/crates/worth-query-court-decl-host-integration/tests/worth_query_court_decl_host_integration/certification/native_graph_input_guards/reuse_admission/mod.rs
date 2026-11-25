@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 pub(crate) use worth_query_testkit_certification::facade::certification::native_graph_input_guards::reuse_admission::*;
 
 #[test]
@@ -41,10 +42,12 @@ fn portable_reuse_requires_complete_installed_content_and_comparison_reads() {
                         _ => unreachable!(),
                     }
                     *body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+                        ARCHIVE_DECODE,
                         "Row".into(),
                         body.scope_fields().to_vec(),
                         Some(
                             ApplicationOperationBodyCreation::from_untrusted(
+                                ARCHIVE_DECODE,
                                 creation.entity().into(),
                                 creation.key().into(),
                                 fields,
@@ -74,7 +77,7 @@ fn portable_reuse_requires_complete_installed_content_and_comparison_reads() {
         assert!(changed, "{defect}");
         parts.members.sort();
         let error = validate_portable_application_schema_freshly(
-            WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts),
+            WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(ARCHIVE_DECODE, parts),
         )
         .unwrap_err();
         let expected = if defect == "missing-read" {

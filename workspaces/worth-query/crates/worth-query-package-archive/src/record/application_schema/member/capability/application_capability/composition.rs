@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_capability::{
     ApplicationCapabilityAcceptedValues, ApplicationCapabilityActorComposition,
     ApplicationCapabilityAllowRule, ApplicationCapabilityComposition,
@@ -102,6 +103,7 @@ fn decode_graph_rule(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationCapabilityGraphRule, Denial> {
     Ok(ApplicationCapabilityGraphRule::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationCapabilityGraphRuleParts {
             requirements: decode_sequence(input, budget, 4, decode_requirement)?,
         },
@@ -118,6 +120,7 @@ fn decode_requirement(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationCapabilityGraphRequirement, Denial> {
     Ok(ApplicationCapabilityGraphRequirement::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationCapabilityGraphRequirementParts {
             clauses: decode_sequence(input, budget, 8, decode_clause)?,
         },
@@ -137,6 +140,7 @@ fn decode_clause(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationCapabilityGraphClause, Denial> {
     Ok(ApplicationCapabilityGraphClause::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationCapabilityGraphClauseParts {
             path: super::super::super::super::authorization_path::decode(input, budget)?,
             guard: decode_guard(input, budget)?,
@@ -158,6 +162,7 @@ fn decode_guard(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationCapabilityScopeGuard, Denial> {
     Ok(ApplicationCapabilityScopeGuard::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationCapabilityScopeGuardParts {
             requirements: decode_sequence(input, budget, 10, decode_accepted_values)?,
         },
@@ -179,6 +184,7 @@ fn decode_accepted_values(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationCapabilityAcceptedValues, Denial> {
     Ok(ApplicationCapabilityAcceptedValues::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationCapabilityAcceptedValuesParts {
             field: bindings::decode_field(input)?,
             values: decode_sequence(input, budget, 2, |input, _| {

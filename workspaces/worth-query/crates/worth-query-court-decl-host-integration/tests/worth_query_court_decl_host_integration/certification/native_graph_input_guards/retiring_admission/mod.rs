@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 pub(crate) use worth_query_testkit_certification::facade::certification::native_graph_input_guards::retiring_admission::*;
 
 #[test]
@@ -97,10 +98,12 @@ fn cold_retiring_replacement_cannot_drop_delete_unlink_or_exclusivity() {
                     let mut links = creation.links().to_vec();
                     links[0].direction = ApplicationOperationBodyCreationLinkDirection::ToScope;
                     *body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+                        ARCHIVE_DECODE,
                         "Row".into(),
                         body.scope_fields().to_vec(),
                         Some(
                             ApplicationOperationBodyCreation::from_untrusted(
+                                ARCHIVE_DECODE,
                                 creation.entity().into(),
                                 creation.key().into(),
                                 creation.fields().to_vec(),
@@ -118,7 +121,10 @@ fn cold_retiring_replacement_cannot_drop_delete_unlink_or_exclusivity() {
         parts.members.sort();
         assert_eq!(
             validate_portable_application_schema_freshly(
-                WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts)
+                WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(
+                    ARCHIVE_DECODE,
+                    parts
+                )
             )
             .unwrap_err(),
             ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency {
@@ -175,24 +181,27 @@ fn inert_retiring_profile_refuses_preserved_predecessor_signed_and_overlapping_t
         .has_supported_retiring_replacement());
     let creation = body.creation().unwrap();
     let signed = ApplicationOperationBodyCreation::from_untrusted(
+        ARCHIVE_DECODE,
         creation.entity().into(),
         creation.key().into(),
         creation.fields().to_vec(),
     )
     .with_untrusted_links(creation.links().to_vec())
     .with_untrusted_signing(Some(ApplicationOperationBodySigningSpec::from_untrusted(
+        ARCHIVE_DECODE,
         "verify".into(),
         ApplicationFieldBindingLocus::new("Snapshot", "Facts", "Actor"),
         ApplicationFieldBindingLocus::new("Snapshot", "Facts", "Provenance"),
     )));
     assert!(!ApplicationOperationBodyProgram::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
         "Row".into(),
         body.scope_fields().to_vec(),
         Some(signed),
         vec![]
     )
     .has_supported_retiring_replacement());
-    let path=worth_query_decl::facade::application_query::ApplicationQueryRootPathMeaning::from_untrusted_parts(worth_query_decl::facade::application_query::WorthQueryPortableApplicationQueryRootPathParts {start_entity:"Row".into(),terminal_entity:"Snapshot".into(),steps:vec![worth_query_decl::facade::application_query::ApplicationQueryRootPathStep::from_untrusted_fields("CurrentSnapshot".into(),"Row".into(),"Snapshot".into(),worth_query_decl::facade::application_query::RelationDirection::Forward, worth_query_decl::facade::application_query::ApplicationQueryRootPathTraversal::OneHop,)],guards:vec![]});
+    let path=worth_query_decl::facade::application_query::ApplicationQueryRootPathMeaning::from_untrusted_parts(ARCHIVE_DECODE, worth_query_decl::facade::application_query::WorthQueryPortableApplicationQueryRootPathParts {start_entity:"Row".into(),terminal_entity:"Snapshot".into(),steps:vec![worth_query_decl::facade::application_query::ApplicationQueryRootPathStep::from_untrusted_fields(ARCHIVE_DECODE, "CurrentSnapshot".into(),"Row".into(),"Snapshot".into(),worth_query_decl::facade::application_query::RelationDirection::Forward, worth_query_decl::facade::application_query::ApplicationQueryRootPathTraversal::OneHop,)],guards:vec![]});
     assert!(!body
         .with_untrusted_path_value_assignments(vec![ApplicationOperationBodyPathValueAssignment {
             target: ApplicationOperationBodyPathFieldSource {

@@ -10,6 +10,7 @@ use crate::record::{
     foundational_aspect, foundational_value,
     sequence::{decode_sequence, write_sequence},
 };
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryWhereFilterOperand as Operand, ApplicationQueryWhereFilterProgram as Program,
     ApplicationQueryWhereFilterSource as Source,
@@ -62,7 +63,8 @@ pub(super) fn decode_program_body(
     let operands = decode_sequence(input, budget, 6, |input, _| decode_operand(input))?;
     let length = usize::try_from(input.u32()?).map_err(|_| Denial::new(Kind::Truncated))?;
     let draft = input.take(length)?;
-    Program::from_untrusted(operands, draft).map_err(|_| Denial::new(Kind::InvalidRecordShape))
+    Program::from_untrusted(ARCHIVE_DECODE, operands, draft)
+        .map_err(|_| Denial::new(Kind::InvalidRecordShape))
 }
 
 fn write_operand(output: &mut dyn BinaryEncodingSink, operand: &Operand) -> Result<(), Denial> {
@@ -142,7 +144,7 @@ fn decode_operand(input: &mut BinaryInput<'_>) -> Result<Operand, Denial> {
         },
         _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
     };
-    Ok(Operand::from_untrusted(name, source))
+    Ok(Operand::from_untrusted(ARCHIVE_DECODE, name, source))
 }
 
 #[cfg(test)]

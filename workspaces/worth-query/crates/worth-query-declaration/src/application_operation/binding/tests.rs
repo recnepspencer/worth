@@ -1,3 +1,4 @@
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 #[path = "tests/records.rs"]
 mod storage_model;
 use std::any::TypeId;
@@ -318,12 +319,13 @@ fn declaration_description_survives_portable_readmission_and_binds_denial_identi
                 crate::portable_identity::WorthQueryPortableTypeIdentity::declared(
                     "worth.query.test.other-denial.v1",
                 );
-            *description = super::ApplicationMutationDescription::from_untrusted_parts(parts);
+            *description =
+                super::ApplicationMutationDescription::from_untrusted_parts(ARCHIVE_DECODE, parts);
         }
     }
     changed.members.sort();
     let changed = validate_portable_application_schema_freshly(
-        WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(changed),
+        WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(ARCHIVE_DECODE, changed),
     )
     .unwrap();
     assert_ne!(restored.identity(), changed.identity());

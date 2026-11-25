@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 #[path = "compilation_tests/catalog_sharing.rs"]
 mod catalog_sharing;
 use super::*;
@@ -318,6 +319,7 @@ fn imported_native_with_codec<Schema: ApplicationSchema>(
     // The imported record is deliberately descriptive/untrusted; the normal
     // native compiler and executable-binding admission must agree on its codec.
     let imported = WorthQueryPortableNativeAspectContractRecord::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableNativeAspectContractParts {
             schema: record.schema().into(),
             entity: record.entity().into(),

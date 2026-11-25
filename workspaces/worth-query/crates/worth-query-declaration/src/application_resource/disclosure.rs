@@ -1,3 +1,4 @@
+use crate::archive_decode_authority::{ArchiveDecodeAuthority, ARCHIVE_DECODE};
 use std::marker::PhantomData;
 
 use crate::application_query::{
@@ -56,6 +57,7 @@ pub struct ApplicationResourceDisclosureMeaning {
 
 impl ApplicationResourceDisclosureMeaning {
     pub fn from_untrusted_fields(
+        _: ArchiveDecodeAuthority,
         resource: WorthQueryPortableTypeIdentity,
         facet: ApplicationResourceDisclosureFacet,
     ) -> Self {
@@ -94,6 +96,7 @@ impl<Resource: WorthQueryPortableType> ApplicationResourceDisclosureRef<Resource
 
     pub fn meaning(&self) -> ApplicationResourceDisclosureMeaning {
         ApplicationResourceDisclosureMeaning::from_untrusted_fields(
+            ARCHIVE_DECODE,
             Resource::PORTABLE_TYPE_IDENTITY,
             self.facet,
         )

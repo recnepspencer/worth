@@ -1,6 +1,7 @@
 //! Existing-reference correspondence has its own v37 sequence, not an entity-ID transport.
 //! v42 adds the selection mode; older profiles carry only nullable replacement.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::{
     ApplicationOperationBodyReferenceInput as Reference,
     ApplicationOperationBodyReferenceInputMode as Mode,
@@ -46,7 +47,8 @@ pub(super) fn decode(
         let from = input.text()?.into();
         let to = input.text()?.into();
         let field = ApplicationFieldBindingLocus::new(input.text()?, input.text()?, input.text()?);
-        let binding = WorthQueryPortableTypeIdentity::from_untrusted(input.text()?.into());
+        let binding =
+            WorthQueryPortableTypeIdentity::from_untrusted(ARCHIVE_DECODE, input.text()?.into());
         let member = input.text()?.into();
         let key = input.text()?.into();
         let scalar_family = super::super::foundational_aspect::decode_scalar_type(input)?;

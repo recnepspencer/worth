@@ -1,5 +1,6 @@
 //! Pending aftermath causality paired with lineage-owned committed aftermath types.
 
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_relational::facade::history::RelationalCommitReceipt;
 
 pub use worth_query_execution_lineage::facade::domain_computation::application_aftermath::causal_fact::{
@@ -28,6 +29,7 @@ impl WorthQueryPendingAftermathCausality {
             parent: correction.target_parent().clone(),
             target_branch: correction.target_branch().clone(),
             source: WorthQueryRecordedCorrectionSource::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 correction.source_world().clone(),
                 correction.source_commit().clone(),
                 correction.source_member(),

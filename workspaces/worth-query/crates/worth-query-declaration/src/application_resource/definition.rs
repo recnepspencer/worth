@@ -1,3 +1,4 @@
+use crate::archive_decode_authority::{ArchiveDecodeAuthority, ARCHIVE_DECODE};
 use std::marker::PhantomData;
 
 use crate::application_query::{
@@ -35,7 +36,10 @@ pub struct ErasedApplicationResourceDefinition {
 }
 
 impl ErasedApplicationResourceDefinition {
-    pub fn from_untrusted_parts(parts: WorthQueryPortableApplicationResourceParts) -> Self {
+    pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
+        parts: WorthQueryPortableApplicationResourceParts,
+    ) -> Self {
         Self { parts }
     }
 
@@ -75,6 +79,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationResourceBinding<Schema>>
     ) -> Result<Self, ApplicationResourceDefinitionDenial> {
         use crate::portable_identity::WorthQueryPortableType;
         let erased = ErasedApplicationResourceDefinition::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableApplicationResourceParts {
                 name: Binding::IDENTITY.to_owned(),
                 resource_type: Binding::PORTABLE_TYPE_IDENTITY,

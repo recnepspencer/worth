@@ -10,6 +10,7 @@ use super::{
     ApplicationSchemaContributionProvenance, ApplicationSchemaDeclarationDenial as Denial,
     ApplicationSchemaMember, ErasedApplicationSchemaDeclaration,
 };
+use crate::archive_decode_authority::{ArchiveDecodeAuthority, ARCHIVE_DECODE};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryPortableApplicationSchemaRecord {
@@ -22,7 +23,10 @@ pub struct WorthQueryPortableApplicationSchemaRecord {
 }
 
 impl WorthQueryPortableApplicationSchemaRecord {
-    pub fn from_untrusted_parts(parts: WorthQueryPortableApplicationSchemaParts) -> Self {
+    pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
+        parts: WorthQueryPortableApplicationSchemaParts,
+    ) -> Self {
         Self {
             owner: parts.owner,
             name: parts.name,
@@ -89,7 +93,7 @@ fn without_live_recipe(member: ApplicationSchemaMember) -> ApplicationSchemaMemb
     match member {
         ApplicationSchemaMember::ApplicationCapability { contract } => {
             ApplicationSchemaMember::ApplicationCapability {
-                contract: crate::application_capability::ErasedApplicationCapabilityContract::from_untrusted_parts(
+                contract: crate::application_capability::ErasedApplicationCapabilityContract::from_untrusted_parts(ARCHIVE_DECODE,
                     contract.into_parts(),
                 ),
             }

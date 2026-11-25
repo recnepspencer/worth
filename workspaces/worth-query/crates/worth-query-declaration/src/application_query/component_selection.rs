@@ -1,5 +1,6 @@
 //! Complete component result meaning. Native alone owns identity and membership.
 use super::{ApplicationQueryMarkerIdentity, ApplicationQueryResultSlotKey};
+use crate::archive_decode_authority::{ArchiveDecodeAuthority, ARCHIVE_DECODE};
 use crate::{
     application_schema::ApplicationComponentSetRef,
     portable_identity::{WorthQueryPortableType, WorthQueryPortableTypeIdentity},
@@ -41,7 +42,10 @@ pub struct WorthQueryPortableApplicationQueryComponentParts {
     pub selection: ApplicationQueryComponentSelection,
 }
 impl ApplicationQueryComponentMeaning {
-    pub fn from_untrusted_parts(parts: WorthQueryPortableApplicationQueryComponentParts) -> Self {
+    pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
+        parts: WorthQueryPortableApplicationQueryComponentParts,
+    ) -> Self {
         Self {
             query: parts.query,
             slot: parts.slot,
@@ -116,6 +120,7 @@ where
     ) -> Self {
         Self {
             meaning: ApplicationQueryComponentMeaning::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 WorthQueryPortableApplicationQueryComponentParts {
                     query: WorthQueryPortableTypeIdentity::declared(Query::QUERY_TYPE_NAME),
                     slot: Slot::PORTABLE_TYPE_IDENTITY,

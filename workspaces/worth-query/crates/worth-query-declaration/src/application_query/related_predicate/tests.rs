@@ -15,6 +15,7 @@ use crate::application_schema::{
     ApplicationEncodedScalarValue, ApplicationEntityRef, ApplicationFieldPresence,
     ApplicationRelationIntegrity, ApplicationRelationRef, StringApplicationValueBinding,
 };
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 use crate::{worth_query_application_query, worth_query_structured_value_binding};
 use worth_foundational::expression_api::expressions;
@@ -52,6 +53,7 @@ fn base_parts() -> WorthQueryPortableApplicationQueryParts {
 
 fn declared_param(name: &str, scalar: ScalarAspectType) -> ApplicationQueryParameterDefinition {
     ApplicationQueryParameterDefinition::from_untrusted_fields(
+        ARCHIVE_DECODE,
         name.to_owned(),
         scalar,
         WorthQueryPortableTypeIdentity::declared("worth.tests.related.param.v1"),
@@ -67,6 +69,7 @@ fn blocked_by(
     target_where_filter: Option<ApplicationQueryWhereFilterProgram>,
 ) -> ApplicationQueryRelatedPredicateMeaning {
     ApplicationQueryRelatedPredicateMeaning::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationQueryRelatedPredicateParts {
             relation: "BlockedBy".to_owned(),
             from: "Task".to_owned(),
@@ -81,6 +84,7 @@ fn blocked_by(
 
 fn open_status_target() -> ApplicationQueryRelatedTargetPredicate {
     ApplicationQueryRelatedTargetPredicate::from_untrusted_value(
+        ARCHIVE_DECODE,
         "Task".to_owned(),
         "TaskFacts".to_owned(),
         "Status".to_owned(),
@@ -92,7 +96,8 @@ fn open_status_target() -> ApplicationQueryRelatedTargetPredicate {
 
 #[test]
 fn canonical_basis_distinguishes_polarity_direction_and_target_predicates() {
-    let plain = ErasedApplicationQueryDefinition::from_untrusted_parts(base_parts());
+    let plain =
+        ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, base_parts());
     let mut absent_parts = base_parts();
     absent_parts.related_predicates = vec![blocked_by(
         RelationDirection::Forward,
@@ -100,7 +105,8 @@ fn canonical_basis_distinguishes_polarity_direction_and_target_predicates() {
         vec![open_status_target()],
         None,
     )];
-    let absent = ErasedApplicationQueryDefinition::from_untrusted_parts(absent_parts);
+    let absent =
+        ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, absent_parts);
 
     let mut exists_parts = base_parts();
     exists_parts.related_predicates = vec![blocked_by(
@@ -109,7 +115,8 @@ fn canonical_basis_distinguishes_polarity_direction_and_target_predicates() {
         vec![open_status_target()],
         None,
     )];
-    let exists = ErasedApplicationQueryDefinition::from_untrusted_parts(exists_parts);
+    let exists =
+        ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, exists_parts);
 
     let mut rev_parts = base_parts();
     rev_parts.related_predicates = vec![blocked_by(
@@ -118,7 +125,7 @@ fn canonical_basis_distinguishes_polarity_direction_and_target_predicates() {
         vec![open_status_target()],
         None,
     )];
-    let reverse = ErasedApplicationQueryDefinition::from_untrusted_parts(rev_parts);
+    let reverse = ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, rev_parts);
 
     let mut unfiltered_parts = base_parts();
     unfiltered_parts.related_predicates = vec![blocked_by(
@@ -127,7 +134,8 @@ fn canonical_basis_distinguishes_polarity_direction_and_target_predicates() {
         vec![],
         None,
     )];
-    let unfiltered = ErasedApplicationQueryDefinition::from_untrusted_parts(unfiltered_parts);
+    let unfiltered =
+        ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, unfiltered_parts);
 
     for (a, b) in [
         (&plain, &absent),
@@ -157,6 +165,7 @@ fn invalid_related_predicates_refuse_with_exact_typed_denials() {
     let mut bad_endpoint = base_parts();
     bad_endpoint.related_predicates = vec![
         ApplicationQueryRelatedPredicateMeaning::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableApplicationQueryRelatedPredicateParts {
                 relation: "Contains".into(),
                 from: "Project".into(),
@@ -180,6 +189,7 @@ fn invalid_related_predicates_refuse_with_exact_typed_denials() {
         ApplicationQueryRelatedPolarity::Absent,
         vec![
             ApplicationQueryRelatedTargetPredicate::from_untrusted_value(
+                ARCHIVE_DECODE,
                 "Project".into(),
                 "ProjectFacts".into(),
                 "ProjectKey".into(),
@@ -207,6 +217,7 @@ fn invalid_related_predicates_refuse_with_exact_typed_denials() {
             ApplicationQueryRelatedPolarity::Absent,
             vec![
                 ApplicationQueryRelatedTargetPredicate::from_untrusted_value(
+                    ARCHIVE_DECODE,
                     "Task".into(),
                     "TaskFacts".into(),
                     "Status".into(),
@@ -232,6 +243,7 @@ fn invalid_related_predicates_refuse_with_exact_typed_denials() {
         ApplicationQueryRelatedPolarity::Absent,
         vec![
             ApplicationQueryRelatedTargetPredicate::from_untrusted_parameter(
+                ARCHIVE_DECODE,
                 "Task".into(),
                 "TaskFacts".into(),
                 "Status".into(),
@@ -277,6 +289,7 @@ fn invalid_related_predicates_refuse_with_exact_typed_denials() {
 
     // Contradictory unequal literals on the same target field refuses with RelatedPredicateContradictory.
     let done_status_target = ApplicationQueryRelatedTargetPredicate::from_untrusted_value(
+        ARCHIVE_DECODE,
         "Task".into(),
         "TaskFacts".into(),
         "Status".into(),
@@ -312,7 +325,9 @@ fn invalid_related_predicates_refuse_with_exact_typed_denials() {
     // Target where_filter field outside target entity refuses.
     let draft = expressions().parse("k == k").unwrap().encode();
     let foreign_filter = ApplicationQueryWhereFilterProgram::from_untrusted(
+        ARCHIVE_DECODE,
         vec![ApplicationQueryWhereFilterOperand::from_untrusted(
+            ARCHIVE_DECODE,
             "k".into(),
             ApplicationQueryWhereFilterSource::Field {
                 entity: "Project".into(),
