@@ -2,6 +2,8 @@
 //! public entry point it names, each return is classified into the model's
 //! outcome, and each observation is read with fresh requests.
 mod coupled;
+mod roomy;
+pub use roomy::install_roomy;
 mod history_correction;
 pub use history_correction::Corrected;
 mod observation;
@@ -57,11 +59,11 @@ pub fn install_consumer() -> Host {
 }
 
 fn install_as(shape: Shape) -> Host {
-    let host: Host = super::super::world::install_program_with_other_model(
-        host_limits(WorthQueryAdmissionClock::system()),
-        1,
-        Some(1),
-    );
+    install_with(shape, host_limits(WorthQueryAdmissionClock::system()))
+}
+
+fn install_with(shape: Shape, limits: worth_query_testkit_document_retention::facade::document_retention_model::host::WorthQueryApplicationLimits) -> Host {
+    let host: Host = super::super::world::install_program_with_other_model(limits, 1, Some(1));
     with_request(&host, |request| envelope::settle(&host, request, shape));
     host
 }
