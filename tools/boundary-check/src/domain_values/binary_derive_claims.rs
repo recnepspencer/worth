@@ -92,7 +92,7 @@ pub(super) fn inspect_worth_binary_derive(
             && path.segments.len() == 1
             && aliases.contains(&path.segments[0].ident.to_string());
         let mut is_binary_claim = direct || local_alias;
-        if !is_binary_claim && !is_non_binary_known_derive(path) {
+        if !is_binary_claim {
             let contexts = contexts_cache.get_or_insert_with(|| {
                 sources.find_sources(source).map(|ctxs| {
                     ctxs.into_iter()

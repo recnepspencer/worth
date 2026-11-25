@@ -308,3 +308,75 @@ fn inline_and_out_of_line_child_super_aliases_resolve_through_module_tree() {
         .join("\n");
     assert!(err.contains("unresolvable derive macro alias"), "{err}");
 }
+
+#[test]
+fn alias_renamed_to_known_derive_name_still_resolves_through_module_tree() {
+    let lib = "use worth_query_decl::facade::WorthBinaryValue as Alias;\nmod child;\n";
+    let child_src = r#"
+        use super::Alias as WorthQuery;
+        #[derive(Clone, Copy, WorthQuery)]
+        #[worth_query(identity = "app.disguised.v1")]
+        pub struct Disguised { pub a: i64 }
+    "#;
+    let reg = "[[binding]]\nsource = 'app/child.rs'\nbinding = 'DisguisedBinding'\nposture='domain'\nreason='reference-free fixture value'\nforbidden_types = ['GraphKey', 'ObjectName']\n";
+
+    // Registered clean struct using `use super::Alias as WorthQuery` is accepted.
+    let ok_files = Files::from([
+        ("app/lib.rs".into(), lib.into()),
+        ("app/child.rs".into(), child_src.into()),
+        ("bindings.toml".into(), reg.into()),
+    ]);
+    assert_eq!(check_sources(&ok_files, roots(), "bindings.toml"), Ok(()));
+
+    // Unregistered struct using `use super::Alias as WorthQuery` is refused.
+    let unreg_files = Files::from([
+        ("app/lib.rs".into(), lib.into()),
+        ("app/child.rs".into(), child_src.into()),
+        ("bindings.toml".into(), "binding = []".into()),
+    ]);
+    let err = check_sources(&unreg_files, roots(), "bindings.toml")
+        .unwrap_err()
+        .join("\n");
+    assert!(err.contains("DisguisedBinding"), "{err}");
+    assert!(err.contains("needs exactly one"), "{err}");
+
+    // `cfg_attr` with `use super::Alias as WorthQuery` is refused.
+    let cfg_files = Files::from([
+        ("app/lib.rs".into(), lib.into()),
+        (
+            "app/child.rs".into(),
+            r#"
+                use super::Alias as WorthQuery;
+                #[cfg_attr(all(), derive(WorthQuery))]
+                #[worth_query(identity = "app.disguised_cfg.v1")]
+                pub struct DisguisedCfg { pub id: EntityRef }
+            "#
+            .into(),
+        ),
+        ("bindings.toml".into(), "binding = []".into()),
+    ]);
+    let err = check_sources(&cfg_files, roots(), "bindings.toml")
+        .unwrap_err()
+        .join("\n");
+    assert!(err.contains("cfg_attr"), "{err}");
+
+    // Even renaming to a builtin derive name (`Clone`) cannot bypass discovery.
+    let builtin_alias_files = Files::from([
+        ("app/lib.rs".into(), lib.into()),
+        (
+            "app/child.rs".into(),
+            r#"
+                use super::Alias as Clone;
+                #[derive(Clone)]
+                #[worth_query(identity = "app.disguised_clone.v1")]
+                pub struct DisguisedClone { pub id: EntityRef }
+            "#
+            .into(),
+        ),
+        ("bindings.toml".into(), "binding = []".into()),
+    ]);
+    let err = check_sources(&builtin_alias_files, roots(), "bindings.toml")
+        .unwrap_err()
+        .join("\n");
+    assert!(err.contains("DisguisedCloneBinding"), "{err}");
+}
