@@ -139,6 +139,33 @@ impl RelationalPreparationOwnerBinding {
 }
 
 impl RelationalPreparationRuntime {
+    /// Detaches every mutable identity, sequence, symbol, instrumentation, and
+    /// diagnostic owner so speculative preflight staging cannot advance the live
+    /// runtime's record append frontier, generation high-water, commit/version
+    /// counters, transaction IDs, proposal ordinals, or symbol table.
+    ///
+    /// Allocator and symbol detachment are funded by `request` before cloning;
+    /// diagnostics start empty so live diagnostic history is never copied.
+    pub(crate) fn detached_for_preflight(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        (Self, Option<worth_execution::ExecutionMemoryReservation>),
+        crate::execution::RelationalExecutionDenialCause,
+    > {
+        let (record_identity, record_identity_memory) =
+            self.record_identity.detached_for_request(request)?;
+        let services = self.services.detached_for_preflight(request)?;
+        let mut runtime = self.clone();
+        runtime.history = self.history.detached_for_preflight();
+        runtime.record_identity = record_identity;
+        runtime.services = services;
+        runtime.lineage_identity = self.lineage_identity.detached();
+        runtime.diagnostics =
+            crate::publication::diagnostic_store::RelationalDiagnosticArtifactStore::default();
+        Ok((runtime, record_identity_memory))
+    }
+
     pub(crate) fn with_current_ownership(
         &self,
         current: Option<Arc<crate::publication::ownership::CurrentPublicationRoster>>,

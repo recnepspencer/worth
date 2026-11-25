@@ -60,7 +60,43 @@ impl crate::runtime::RelationalRuntime {
         codec: Option<std::sync::Arc<crate::durability::RecoveredCodecPublicationCustody>>,
     ) -> Result<super::BranchBoundRelationalTransaction, RelationalBranchTransactionAdmissionDenial>
     {
-        if let Some(medium) = self.durability.medium() {
+        self.begin_branch_transaction_inner(basis, intent, control, home_step, codec, true, None)
+    }
+
+    /// Read-only in-memory staging transaction used solely by Native's
+    /// pre-intent Home program transition cold-index budget preflight. Uses
+    /// detached services so live transaction IDs and symbols never advance.
+    pub(crate) fn begin_home_preflight_transaction(
+        &self,
+        basis: &crate::branch::AdmittedRelationalBranchBasis,
+        intent: super::RelationalTransactionIntent,
+        detached_services: &crate::runtime::RuntimeServices,
+    ) -> Result<super::BranchBoundRelationalTransaction, RelationalBranchTransactionAdmissionDenial>
+    {
+        self.begin_branch_transaction_inner(
+            basis,
+            intent,
+            crate::mvcc::RelationalOperationControl::uninterrupted(),
+            None,
+            None,
+            false,
+            Some(detached_services),
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn begin_branch_transaction_inner(
+        &self,
+        basis: &crate::branch::AdmittedRelationalBranchBasis,
+        intent: super::RelationalTransactionIntent,
+        control: crate::mvcc::RelationalOperationControl,
+        home_step: Option<std::sync::Arc<crate::runtime::AdmittedRelationalHomeProgramStep>>,
+        codec: Option<std::sync::Arc<crate::durability::RecoveredCodecPublicationCustody>>,
+        require_home_write_admission: bool,
+        preflight_services: Option<&crate::runtime::RuntimeServices>,
+    ) -> Result<super::BranchBoundRelationalTransaction, RelationalBranchTransactionAdmissionDenial>
+    {
+        if require_home_write_admission && let Some(medium) = self.durability.medium() {
             medium
                 .admit_home_program_write(home_step.as_deref(), codec.as_deref())
                 .map_err(RelationalBranchTransactionAdmissionDenial::HomeProgramTransition)?;
@@ -194,16 +230,17 @@ impl crate::runtime::RelationalRuntime {
         } else {
             0
         };
+        let services = preflight_services.unwrap_or(&self.services);
         Ok(super::BranchBoundRelationalTransaction {
             appendix_adoption: None,
             authored_coupling: None,
             prepared_coupled_commands: std::sync::Mutex::new(None),
             content: Default::default(),
-            symbols: self.services.symbols.clone(),
+            symbols: services.symbols.clone(),
             read_leases: Default::default(),
             basis: basis.clone(),
             mutation_authority: crate::branch::issue_relational_branch_mutation_authority(),
-            transaction_id: self.services.next_transaction_id(),
+            transaction_id: services.next_transaction_id(),
             intent,
             merge_parent_bases: Vec::new(),
             schema_authority_input: None,

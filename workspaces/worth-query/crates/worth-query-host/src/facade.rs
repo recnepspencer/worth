@@ -315,6 +315,9 @@ pub use worth_query_publication::facade as publication;
 pub use worth_query_publication::facade::application_entry;
 /// Relational data for a Home transition author, without owner authority.
 pub mod home_program_transition;
+/// Declarative Directory Home program transitions (`worth_query_program_transition!`),
+/// single-call open-with-transition helpers, and package-default build identity resolution.
+pub mod program_transition;
 /// Existing owner refusal vocabulary for retained Home custody and Directory checkpoints.
 pub use crate::application_home::{ApplicationHomeCheckpointDenial, ApplicationHomeCloseDenial};
 /// The typed physical causes returned by a Home's `physical_refusal`.

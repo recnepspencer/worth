@@ -251,7 +251,9 @@ fn maintenance_denial(
     use AppliedEntityFieldLookupDenial as D;
     let kind = match cause.kind {
         M::Execution(cause) => return D::Execution(cause),
-        M::WorkBudgetExceeded => return D::Execution(Cause::WorkExhausted),
+        M::WorkBudgetExceeded | M::ColdRecordSlotBudgetExceeded => {
+            return D::Execution(Cause::WorkExhausted)
+        }
         M::ForeignCandidate | M::BeforeRootMismatch => return D::ForeignPredecessor,
         M::Basis(_) | M::SnapshotUnavailable | M::CommitMismatch | M::CandidateUnavailable => {
             return D::ExactBasisRequired

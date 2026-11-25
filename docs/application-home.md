@@ -196,7 +196,88 @@ output) describes the cause.
 
 If the recorded program or schema differs from the request, opening refuses and
 `refused.transition_required()` describes both bindings; reopen with
-`with_program_transition(..)`.
+`with_program_transition(..)` or the declarative helper below.
+
+## In-Place Program Upgrades (v2 -> v3) & Zero-Boilerplate Build Identity
+
+Applications evolving an existing Directory Home across schema/program versions
+(for example, adding a defaulted, equality-indexed field to an existing entity
+while retaining all prior rows) can declare the transition once with
+`worth_query_program_transition!` and open/upgrade in a single call through
+`host::program_transition::open_directory_with_transition`:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+use worth_query_decl::facade::worth_query_program_transition;
+use worth_query_host::facade::program_transition::{
+    open_directory_with_transition, worth_query_default_build_id,
+    WorthQueryProgramTransitionOpenConfig, WorthQueryTransitionOpenOutcome,
+};
+
+worth_query_program_transition! {
+    pub struct DaymarkV2ToV3;
+    from = (DaymarkV2Schema, DaymarkV2Program, version = 2)
+        => to = (DaymarkV3Schema, DaymarkV3Program, version = 3),
+    retained_records = [Project, Task],
+    added_defaults = [
+        task_priority_field()
+            => default = "Normal".to_owned(), required = false, label = "Priority::Normal",
+    ],
+    rebuild_indexes = [task_priority_field()],
+    description = "Add TaskPriority::Priority defaulting to Priority::Normal",
+}
+
+// Honors WORTH_IMPLEMENTATION_BUILD_ID when set; otherwise deterministically
+// derives an RFC 4122 §4.3 UUIDv5 (SHA-1) from CARGO_PKG_NAME@CARGO_PKG_VERSION.
+let build = worth_query_default_build_id!();
+let opened = open_directory_with_transition::<DaymarkV2ToV3>(
+    &phase,
+    v2_request(path.clone(), build),
+    v3_request(path, build),
+    WorthQueryProgramTransitionOpenConfig::default_bounded(),
+)?;
+
+match opened.outcome() {
+    WorthQueryTransitionOpenOutcome::CreatedFresh { program_version } => { /* new v3 Home */ }
+    WorthQueryTransitionOpenOutcome::OpenedCurrent { program_version } => { /* already v3 */ }
+    WorthQueryTransitionOpenOutcome::UpgradedInPlace {
+        from_version,
+        to_version,
+        backfilled_records,
+        indexes_marked_for_rebuild,
+    } => { /* atomically upgraded v2 -> v3 in-place */ }
+}
+```
+
+- **Typed fields only:** `added_defaults` and `rebuild_indexes` accept WORTH's
+  typed `RecordSelection` / `FieldSelection` handles, validate/encode default
+  values through the field's declared scalar binding at declaration time, refuse
+  defaults targeting fields already present in the predecessor schema, and
+  verify every `rebuild_indexes` target against the target program's installed
+  equality-index catalog before populating `indexes_marked_for_rebuild`.
+- **Optional custom step:** use `open_directory_with_transition_and_step` to
+  append custom `WorkerIntentBatch` work to the declarative target step.
+- **Fail-closed guarantees:**
+  - Opening a `v2` Home under `v3` without a transition refuses with typed
+    `refused.transition_required()`.
+  - Opening a `v1` Home with a `v2 -> v3` transition refuses with
+    `WorthQueryProgramTransitionOpenDenial::PredecessorMismatch`.
+  - Declaring duplicate/overlapping records, defaults, index rebuilds, spoofed
+    endpoint specs, or a downgrade (`v3 -> v2`) refuses with typed
+    `WorthQueryProgramTransitionOpenDenial::Declaration(...)` before touching
+    disk (and direct `v2` open on a `v3` Home refuses with `transition_required()`).
+  - Exceeding `max_entities_per_kind` refuses before durable intent publication
+    with typed `WorthQueryProgramTransitionOpenDenial::EntityScanLimitExceeded`.
+  - Budget or cancellation stops during metered backfill planning or pre-intent
+    index-budget preflight fail closed with `BudgetOrCancellationStopped` before
+    publishing `TransitionPending`, leaving the `v2` Home intact and reopenable.
+  - Reopening an upgraded `v3` Home reports `OpenedCurrent` and never re-runs
+    the transition or overwrites post-upgrade edits.
+- **Formal verification:** specified in
+  [`specs/tla/program_transition/ProgramTransition.tla`](../specs/tla/program_transition/ProgramTransition.tla)
+  and validated by the 64-seed Directory Home DST in
+  `worth-query-court-decl-host-integration` (`host::program_transition::dst`).
 
 ## After a crash or unclean close
 
