@@ -10,6 +10,13 @@ use std::sync::{Arc, Mutex};
 pub mod evictor;
 
 const EXPANSION_UNIT: u64 = 1024;
+/// Minimum encoded payload bytes before updating the per-byte decode ratio, so
+/// tiny/empty partitions contribute to fixed per-region overhead rather than
+/// inflating the linear slope for large partitions.
+const MIN_EXPANSION_SAMPLE_BYTES: u64 = 4096;
+/// Upper clamp on the per-byte decode expansion heuristic (16x); exact measured
+/// bytes are always charged before publication.
+const MAX_EXPANSION_RATIO: u64 = 16 * EXPANSION_UNIT;
 /// Bounded re-sweeps of one reservation under concurrent eviction.
 const EVICTION_ROUNDS: usize = 16;
 
@@ -121,9 +128,12 @@ pub struct WorkingSetAccountant {
     ring: Mutex<evictor::ClockRing>,
     evictions: AtomicU64,
     busy_skips: AtomicU64,
-    /// Largest observed decoded/encoded ratio per level, in 1/1024 units.
-    /// Pre-lock estimates scale encoded member lengths by it; loads then
-    /// charge exactly what they measure.
+    /// Observed fixed per-region overhead (struct + empty headers) per level,
+    /// separated from the per-byte expansion slope so tiny partitions cannot
+    /// poison estimates for large partitions.
+    fixed_overhead: [AtomicU64; 2],
+    /// Largest observed variable decoded/encoded ratio per level, in 1/1024
+    /// units, sampled only for payloads `>= MIN_EXPANSION_SAMPLE_BYTES`.
     expansion: [AtomicU64; 2],
 }
 
@@ -145,6 +155,7 @@ pub struct WorkingSetExhausted {
 
 impl WorkingSetAccountant {
     pub fn new(budget: ResidencyBudget) -> Arc<Self> {
+        let base = std::mem::size_of::<super::ResidentRegion>() as u64;
         Arc::new(Self {
             budget,
             head: PoolLedger::new(budget.head_working_set_bytes),
@@ -153,6 +164,7 @@ impl WorkingSetAccountant {
             ring: Mutex::new(evictor::ClockRing::default()),
             evictions: AtomicU64::new(0),
             busy_skips: AtomicU64::new(0),
+            fixed_overhead: [AtomicU64::new(base), AtomicU64::new(base)],
             expansion: [
                 AtomicU64::new(EXPANSION_UNIT),
                 AtomicU64::new(EXPANSION_UNIT),
@@ -172,9 +184,20 @@ impl WorkingSetAccountant {
         }
     }
 
-    /// Estimated resident bytes for `encoded` member bytes, from the largest
-    /// decode expansion this home has measured so far at `level`.
+    /// Estimated resident bytes for `encoded` member bytes, separating fixed
+    /// per-region overhead from the measured per-byte decode expansion.
     pub fn estimate(&self, level: ResidencyLevelKind, encoded: u64) -> u64 {
+        if encoded == 0 {
+            return 0;
+        }
+        let base = std::mem::size_of::<super::ResidentRegion>() as u64;
+        let own_fixed = self.fixed_overhead[level as usize].load(Ordering::Acquire);
+        // Until a Full image is measured, its fixed overhead is at least Head's.
+        let fixed = if own_fixed == base {
+            self.fixed_overhead[ResidencyLevelKind::Head as usize].load(Ordering::Acquire)
+        } else {
+            own_fixed
+        };
         let own = self.expansion[level as usize].load(Ordering::Acquire);
         // Until a Full image is measured, history decodes like the head.
         let ratio = if own == EXPANSION_UNIT {
@@ -182,17 +205,30 @@ impl WorkingSetAccountant {
         } else {
             own
         };
-        u64::try_from(u128::from(encoded) * u128::from(ratio) / u128::from(EXPANSION_UNIT))
-            .unwrap_or(u64::MAX)
+        let variable =
+            u64::try_from(u128::from(encoded) * u128::from(ratio) / u128::from(EXPANSION_UNIT))
+                .unwrap_or(u64::MAX);
+        fixed.saturating_add(variable)
     }
 
     pub(super) fn observe_expansion(&self, level: ResidencyLevelKind, encoded: u64, decoded: u64) {
         if encoded == 0 {
             return;
         }
-        let ratio = u128::from(decoded) * u128::from(EXPANSION_UNIT) / u128::from(encoded) + 1;
-        self.expansion[level as usize]
-            .fetch_max(u64::try_from(ratio).unwrap_or(u64::MAX), Ordering::AcqRel);
+        let idx = level as usize;
+        if encoded < MIN_EXPANSION_SAMPLE_BYTES {
+            let overhead = decoded.saturating_sub(encoded);
+            self.fixed_overhead[idx].fetch_max(overhead, Ordering::AcqRel);
+            return;
+        }
+        let fixed = self.fixed_overhead[idx].load(Ordering::Acquire);
+        let variable_decoded = decoded.saturating_sub(fixed);
+        let ratio =
+            u128::from(variable_decoded) * u128::from(EXPANSION_UNIT) / u128::from(encoded) + 1;
+        let clamped = u64::try_from(ratio)
+            .unwrap_or(MAX_EXPANSION_RATIO)
+            .clamp(EXPANSION_UNIT, MAX_EXPANSION_RATIO);
+        self.expansion[idx].fetch_max(clamped, Ordering::AcqRel);
     }
 
     /// Charged bytes of live resident allocations in `pool`.
@@ -212,6 +248,14 @@ impl WorkingSetAccountant {
         requester: *const super::RelationalRegionResidency,
     ) -> Result<WorkingSetCharge, WorkingSetExhausted> {
         let ledger = self.ledger(LedgerKind::Pool(pool));
+        // An oversized request can never fit even after emptying the pool;
+        // refuse before sweeping so it does not wipe live cached regions.
+        if bytes > ledger.ceiling {
+            return Err(WorkingSetExhausted {
+                requested: bytes,
+                available: ledger.available(),
+            });
+        }
         if ledger.try_add(bytes) {
             return Ok(self.charge(LedgerKind::Pool(pool), bytes));
         }

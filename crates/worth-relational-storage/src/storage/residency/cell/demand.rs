@@ -19,12 +19,33 @@ impl RelationalRegionResidency {
                 .require_cell(self)
                 .map_err(|cause| self.failure(cause))?;
         }
+        self.check_damage()?;
         // M4 §4.3: working-set bytes are reserved before this cell's gate.
         let mut admission = self.admit_working_set(demand);
-        let mut state = self
-            .state
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let mut state = loop {
+            let state = self
+                .state
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            self.check_damage()?;
+            let need_head = matches!(**state, ResidencyState::Cold);
+            let need_full = matches!(demand, ResidencyDemand::Full)
+                && !matches!(**state, ResidencyState::Full(_));
+            if admission
+                .as_ref()
+                .is_none_or(|adm| adm.covers(need_head, need_full))
+            {
+                break state;
+            }
+            // State transitioned (or gate was contended) before we locked; drop
+            // the gate and any stale reservation, then reserve strictly outside
+            // `self.state` for the required cold transition.
+            drop(state);
+            drop(admission);
+            crate::execution::check_request(execution).map_err(Failure::Request)?;
+            admission = self.admit_working_set_for(need_head, need_full);
+        };
+        let mut superseded_head = None;
         let loaded = (|| {
             self.check_damage()?;
             if let ResidencyState::Cold = &**state {
@@ -56,6 +77,13 @@ impl RelationalRegionResidency {
                         .and_then(|physical| physical.source()),
                 )?;
                 **state = ResidencyState::Full(region);
+                if self.working_set.get().is_some() {
+                    let mut raw_head = self
+                        .raw_head
+                        .lock()
+                        .unwrap_or_else(|poisoned| poisoned.into_inner());
+                    superseded_head = raw_head.take_if(|cached| cached.is_ok());
+                }
             }
             match &**state {
                 ResidencyState::Head { region, .. } | ResidencyState::Full(region) => {
@@ -66,7 +94,7 @@ impl RelationalRegionResidency {
                 )),
             }
         })();
-        match readmission_count::acquire(loaded, &self.leases, self.partition_id) {
+        let result = match readmission_count::acquire(loaded, &self.leases, self.partition_id) {
             Ok(region) => {
                 self.mark_referenced();
                 Ok(region)
@@ -93,7 +121,10 @@ impl RelationalRegionResidency {
             }
             Err(Failure::Request(cause)) => Err(Failure::Request(cause)),
             Err(Failure::Content(cause)) => Err(Failure::Content(cause)),
-        }
+        };
+        drop(state);
+        drop(superseded_head);
+        result
     }
 
     // Raw readmission authenticates record content independently of derived
@@ -106,6 +137,17 @@ impl RelationalRegionResidency {
         limit: u64,
         source: &Arc<dyn RelationalDurableColdSource>,
     ) -> Result<super::SharedResidentRegion, Failure> {
+        if self.working_set.get().is_some() {
+            let mut cached = self
+                .raw_head
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            if let Some(Ok(region)) = cached.as_ref()
+                && region.working_set.get().is_none()
+            {
+                *cached = None;
+            }
+        }
         cell_load_cache::load(&self.raw_head, self.partition_id, || {
             let cold = self
                 .backing
@@ -129,6 +171,17 @@ impl RelationalRegionResidency {
         limit: u64,
         source: Option<&Arc<dyn RelationalDurableColdSource>>,
     ) -> Result<super::SharedResidentRegion, Failure> {
+        if self.working_set.get().is_some() {
+            let mut cached = self
+                .raw_full
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            if let Some(Ok(region)) = cached.as_ref()
+                && region.working_set.get().is_none()
+            {
+                *cached = None;
+            }
+        }
         cell_load_cache::load(&self.raw_full, self.partition_id, || match &self.backing {
             Some(cold) => {
                 let region = cold.read_full(

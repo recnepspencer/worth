@@ -52,10 +52,16 @@ impl RelationalRegionResidency {
                         .cloned()
                         .ok_or_else(|| self.failure(Cause::SourceUnavailable))?
                 };
-                cell_load_cache::load(&self.raw_head, self.partition_id, || {
-                    cold.read_head(&source, execution, 1 << 30)
-                })?
-                .into_arc()
+                if self.working_set.get().is_some() {
+                    // Bound cells never cache uncharged reconstruction reads in
+                    // `raw_head`; subsequent `demand_head` must charge properly.
+                    cold.read_head(&source, execution, 1 << 30)?
+                } else {
+                    cell_load_cache::load(&self.raw_head, self.partition_id, || {
+                        cold.read_head(&source, execution, 1 << 30)
+                    })?
+                    .into_arc()
+                }
             }
         };
         Ok(ReconstructedRegionHead {

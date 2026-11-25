@@ -161,4 +161,90 @@ fn borrows_pinning_the_whole_working_set_refuse_new_demand_until_released() {
     let recovered = root[3].borrow_full(execution, LIMIT).unwrap();
     assert_basis(&recovered, basis);
     assert!(basis.source.reads.load(Ordering::SeqCst) > reads);
+    // P2-1: promoting Head -> Full clears the superseded raw_head cache immediately.
+    let obs = root[3].cell().working_set_observation();
+    assert!(obs.resident && !obs.raw_head_cached && obs.raw_full_cached);
+    assert_eq!(obs.raw_cache_bytes, 0);
+}
+
+#[test]
+fn oversized_request_and_in_flight_saturation_refuse_without_wiping_cache() {
+    let bases = bases();
+    let basis = &bases.original;
+    let (head, full) = image_bytes(basis);
+    let ceiling = 2 * head;
+    let accountant = WorkingSetAccountant::new(budget(ceiling, ceiling));
+    let root = bound_root(basis, 2, &accountant);
+    let host = worth_harness::facade::execution_fixture::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host);
+
+    // Warm cell 0 and drop its borrow so it is evictable.
+    let warm = root[0].borrow_head(execution, LIMIT).unwrap();
+    drop(warm);
+    let evictions_before = accountant.pressure().evictions_completed;
+    assert!(root[0].cell().working_set_observation().resident);
+
+    // P1-4a: a single request larger than ceiling refuses immediately without sweeping.
+    let err = accountant
+        .reserve(ResidencyPoolKind::Head, ceiling + 1, std::ptr::null())
+        .unwrap_err();
+    assert_eq!(err.requested, ceiling + 1);
+    assert_eq!(accountant.pressure().evictions_completed, evictions_before);
+    assert!(root[0].cell().working_set_observation().resident);
+
+    // Saturating max_in_flight_fill_bytes refuses cold loads before reading.
+    let fill_cap = accountant.budget().max_in_flight_fill_bytes;
+    let _fill_hold = accountant.reserve_fill(fill_cap).unwrap();
+    let reads_before = basis.source.reads.load(Ordering::SeqCst);
+    let refused = root[1].borrow_head(execution, LIMIT).unwrap_err();
+    assert!(memory_exhausted(&refused));
+    assert_eq!(basis.source.reads.load(Ordering::SeqCst), reads_before);
+    assert!(full >= head);
+}
+
+#[test]
+fn rolling_window_with_k_gt_one_sheds_cleanly_and_small_overhead_does_not_poison_estimates() {
+    use worth_relational_storage::internal_port::storage::residency::working_set::{
+        ResidencyBudget, ResidencyLevelKind,
+    };
+
+    let bases = bases();
+    let basis = &bases.original;
+    let (head, _) = image_bytes(basis);
+    // Only 1 Head image fits, yet K = 3: window must self-shed and complete the full scan.
+    let ceiling = head + head / 2;
+    let accountant = WorkingSetAccountant::new(budget(ceiling, ceiling));
+    let root = bound_root(basis, 4, &accountant);
+    let host = worth_harness::facade::execution_fixture::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host);
+    let regions = root.iter().map(|r| (basis.cold.partition_id, r));
+    let mut window =
+        RollingResidencyWindow::<Head, _>::new(regions, NonZeroUsize::new(3).unwrap(), LIMIT);
+    let mut visited = 0;
+    while let Some(step) = window.advance(execution) {
+        let (_, lease) = step.expect("rolling window sheds older borrows to fit next cell");
+        assert!(lease.head_view().entity(bases.entity).is_some());
+        visited += 1;
+    }
+    assert_eq!(visited, 4);
+
+    // P1-4b: after measuring real small partitions, a 1 MiB encoded estimate must stay
+    // near linear (fixed overhead + ~1 MiB), not 64x inflated.
+    let est_1mib = accountant.estimate(ResidencyLevelKind::Head, 1024 * 1024);
+    assert!(
+        est_1mib < 4 * 1024 * 1024,
+        "1 MiB estimate must not be poisoned by small-partition fixed overhead: {est_1mib}"
+    );
+    let tiny = WorkingSetAccountant::new(ResidencyBudget {
+        head_working_set_bytes: head / 2,
+        historical_working_set_bytes: head / 2,
+        max_in_flight_fill_bytes: 1024 * 1024,
+        streaming_window_bytes: 64 * 1024,
+    });
+    let too_big = bound_root(basis, 1, &tiny);
+    let regions = too_big.iter().map(|r| (basis.cold.partition_id, r));
+    let mut small_window =
+        RollingResidencyWindow::<Head, _>::new(regions, NonZeroUsize::new(2).unwrap(), LIMIT);
+    let err = small_window.advance(execution).unwrap().unwrap_err();
+    assert!(memory_exhausted(&err));
 }
