@@ -555,10 +555,10 @@ build the attempt's effect program through `CandidateWriter`'s create,
 initialize, write, link, unlink, delete, emit, and output-role operations.
 Complete equality selections use `select_entities` with a finite candidate
 limit; empty selections remain dependencies and overflow denies publication.
-Query application checkpoint version 7 preserves these predicate facts with
-bounded scalar values and sorted unique membership. Versions 3–6 remain
-readable. These facts compare against the exact selected branch index after
-restore; a missing or overflowing index result cannot authorize output reuse.
+Directory Home accepted-output obligation records preserve these predicate facts
+with bounded scalar values and sorted unique membership, comparing them against
+the exact selected branch index after reopen; a missing or overflowing index
+result cannot authorize output reuse.
 Invariant factories resolve typed field and relation bindings once and evaluate
 the actual proposed overlay and committed before-image inside a declared prepared
 scope and finite work budget.

@@ -453,9 +453,11 @@ even with equal field meaning. This grants no request, snapshot or settlement au
 Producer readiness uses the actual output-role carrier and its emitted meaning.
 Predecessor comparison requires explicit semantic aspect revision advancement
 for changed meaning and grants no recovered-transition permission.
-The MemoryOnly interim checkpoint transition supports whole-output derived-codec
-retirement when authenticated native
-Create/Preserve publication succession still covers every present field.
+Native codec-retirement transition (`restore_native_checkpoint_for_codec_transition_with_authority`
+and `begin_recovered_codec_transition`) supports whole-output derived-codec
+retirement when authenticated native Create/Preserve publication succession
+still covers every present field. Wiring whole-output derived-codec retirement
+into Directory Home's `with_program_transition` Host route remains deferred.
 Complete membership is independent of individual data writes: unchanged
 companions and genuinely executed no-data Preserve retain their original
 identities, while no-contact reuse retains its performed provenance. Dynamic
@@ -699,8 +701,8 @@ Choose a task and follow its guide for the exact calls and result handling.
 | Retire or revoke an inbound source across a graceful Home reopen | `retire_inbound_occurrence_source` and `revoke_inbound_occurrence_source` record Home-level facts before Directory success. Fresh verifier installation and audience configuration preserve that posture across every slot for the same source. Retirement cannot downgrade revocation; unsettled control publication fences consumption. Source controls are supported independently of inbound-completion custody. | [Home-level source controls](../workspaces/worth-query/docs/execution/application-aftermath-and-recovery.md#home-level-inbound-source-controls) |
 | Preserve an inbound callback or transport completion across graceful reopen | Accepted message identity, original audience, pending work, deduplication, terminal acknowledgement and exact-message expiry survive. Fresh verifier configuration cannot replace an accepted or selected transport audience. `maintain_inbound_occurrences` continues retained obligations; recorded completed transport observations never contact the rail again. Canonical terminals rebuild from actual Native and World sources. A live durable `ProductUnpublished` completion follows `ReopenRequired`: close may refuse with its original Home, and the caller ends that ownership and opens through Host before continuing the original. Crash recovery remains uncertified. | [Durable inbound custody](../workspaces/worth-query/docs/execution/application-aftermath-and-recovery.md#durable-inbound-custody-on-a-directory-home) |
 | Retain an external recovery claim across graceful Home reopen | The Home records claim identity, original deadline and terminal status. A fresh selected original-intent admission reissues current-incarnation capability for the same live claim. Deferred Drop disposal and material-pin release require funded maintenance or close. | [Durable recovery claims](../workspaces/worth-query/docs/execution/application-aftermath-and-recovery.md#durable-recovery-claims-on-a-directory-home) |
-| Reopen a Directory Home after a kill | Open the same `Directory(path)` in a fresh process. A Native effect without its World occurrence is retained as recovered `ProductUnpublished` custody and the same key continues it without rerunning the handler; a no-effect original is durably released before service and its key then executes fresh once; a Signal effect with its recorded open is readmitted; a commit carrying a conditional definition killed with only Native's effect durable continues by performing its recorded Signal leg once (release stays available until the leg begins; a leg the reopened program does not prepare refuses `SignalLeg` before any Signal effect), and a closure Signal leg in a Directory commit refuses `UnrecordableSignalLeg` before any owner effect; an unresolved branch creation is decided before service: released with no owner fork, otherwise continued (a kill between Native's and Signal's forks completes Signal's planned fork once, at the recorded basis); an interrupted program transition resumes when reopened with the same transition request (a changed plan refuses `TransitionPlanDrift`, a different successor `TransitionPending`); a kill during close's checkpoint publication recovers the pre-close committed state. A managed run, managed cleanup obligation or application-resource request outstanding at the kill is cold-released before service: it keeps its original, reports `cold_release` (`Abandoned` or `ReleaseOutstanding`, never a completion), no longer refuses graceful close and discharges through the ordinary door; a mandatory owned-async request is never cold-released. A conditional decision whose commit answer was lost (`Indeterminate`) is classified before service by World's state for its key: published finishes it (a retry returns the original), no committed open releases it as no-effect (the key executes fresh once), a recovered unpublished original joins it and the retry continues that original without rerunning the operation; a temporal operation killed between commit and response re-executes to its original occurrence once. A workflow killed between steps or mid-step keeps its instance, approvals and keys; its running computation is cold-released and the instance is not cancelled. Crash recovery is not yet certified (C4/C5). | [After a crash](application-home.md#after-a-crash-or-unclean-close) |
-| Diagnose an unclean Directory Home refusal | Opening refuses before service with `UncleanRecoveryUnsupported` (D18), naming the durable owner and exact effect digest, only for a Signal effect with no recorded open or a Native branch fork with no creation intent; both arise only from damage. The Host opening refusal's `unclean_recovery_unsupported()` returns `Some(..)` for both. C5 retires this refusal. | [After a crash](application-home.md#after-a-crash-or-unclean-close), [Delivery tracks D18](../plans/database-foundation/milestone-3.md#the-happy-constraint-track-h) |
+| Reopen a Directory Home after a kill | Open the same `Directory(path)` in a fresh process. A Native effect without its World occurrence is retained as recovered `ProductUnpublished` custody and the same key continues it without rerunning the handler; a no-effect original is durably released before service and its key then executes fresh once; a Signal effect with its recorded open is readmitted; a commit carrying a conditional definition killed with only Native's effect durable continues by performing its recorded Signal leg once (release stays available until the leg begins; a leg the reopened program does not prepare refuses `SignalLeg` before any Signal effect), and a closure Signal leg in a Directory commit refuses `UnrecordableSignalLeg` before any owner effect; an unresolved branch creation is decided before service: released with no owner fork, otherwise continued (a kill between Native's and Signal's forks completes Signal's planned fork once, at the recorded basis); an interrupted program transition resumes when reopened with the same transition request (a changed plan refuses `TransitionPlanDrift`, a different successor `TransitionPending`); a kill during close's checkpoint publication recovers the pre-close committed state. A managed run, managed cleanup obligation or application-resource request outstanding at the kill is cold-released before service: it keeps its original, reports `cold_release` (`Abandoned` or `ReleaseOutstanding`, never a completion), no longer refuses graceful close and discharges through the ordinary door; a mandatory owned-async request is never cold-released. A conditional decision whose commit answer was lost (`Indeterminate`) is classified before service by World's state for its key: published finishes it (a retry returns the original), no committed open releases it as no-effect (the key executes fresh once), a recovered unpublished original joins it and the retry continues that original without rerunning the operation; a temporal operation killed between commit and response re-executes to its original occurrence once. A workflow killed between steps or mid-step keeps its instance, approvals and keys; its running computation is cold-released and the instance is not cancelled. Unobserved external dispatch attempts are durably recorded as `Unresolved(UnknownProviderOutcome)` before service so recovery handles and authentic callbacks resolve them without redispatch. Split-completion corrections, live original owners, and divergent-branch corrections recover across kills. Track C1–C3 crash-recovery cases and C5 retirement are complete; Track C4 / Landing 3 runs the exhaustive adversarial crash oracle and Tier-3 certification. | [After a crash](application-home.md#after-a-crash-or-unclean-close) |
+| Diagnose a damaged Directory Home open refusal | The temporary D18 `UncleanRecoveryUnsupported` refusal surface and `unclean_recovery_unsupported()` accessor have been retired (C5). Damage-shaped owner mismatches (a Signal effect with no recorded open or a Native branch fork with no creation intent) refuse before service directly as `WorldReadmissionDenial::OrphanSignalAssociation` and `WorldReadmissionDenial::MissingCreationIntent`, while contended or discard-pending opens report `refused.physical_refusal()` (`MutationOwnerContended` / `DiscardPending`). | [After a crash](application-home.md#after-a-crash-or-unclean-close) |
 | Recognize a contended or discard-pending Home open | `refused.physical_refusal()` returns `Option<&host::ApplicationHomePhysicalRefusal>`; match its `kind()` against `host::ApplicationHomePhysicalRefusalKind::MutationOwnerContended` or `DiscardPending`. Complete an interrupted discard with `host::discard_home`. | [After a crash](application-home.md#after-a-crash-or-unclean-close), [Discard](application-home.md#discard) |
 For a descriptive full physical coordinate, `relation_where_entity(relation,
 nested, parameter)` uses `EntityRefApplicationValueBinding` and the existing
@@ -760,7 +762,7 @@ The cost is the bounded relation roster traversal.
 | Act on time or a signal | A conditional operation: `.conditional_operation::<Op>()` on the feature spec, `host::worth_query_conditional_node!`, and a host-supplied predicate and named clock | [Build §3.2](build-an-application.md#32-attach-actions-to-features), [Conditional installed operations](../workspaces/worth-query/docs/domain-capabilities/conditional-installed-operations.md) |
 | Resume a retained temporal decision after directory reopen | Install authored providers through the ordinary contribution. Inspect `conditional_decision_obligations()`, supply fresh clocks/providers and retry through the selected `conditional_clock(...).observe(...)` door. Cleanup requires recorded live release and ordinary `discharge_managed_cleanup(...)`; resources and clock leases are reacquired. | [Directory temporal custody](../workspaces/worth-query/docs/domain-capabilities/conditional-installed-operations.md#directory-close-and-reopen) |
 | Complete work from an external system | An installed inbound source: `runtime.inbound_occurrences().receive(source, bytes, scope).execute()` (`host::application_entry::WorthQueryApplicationInboundOccurrencesExt`); in a workflow, `await_inbound::<Effect>(..)` | [Aftermath: authenticated inbound completion](../workspaces/worth-query/docs/execution/application-aftermath-and-recovery.md#authenticated-inbound-completion), [Workflows: waiting for an inbound completion](../workspaces/worth-query/docs/foundations/workflows.md#waiting-for-an-inbound-completion) |
-| Survive a restart | Gracefully close the owning Home, then open the same `Directory(path)` in a fresh process under current installation and fresh authentication. Home readmission preserves original occurrences and custody without replaying initialization or business handlers. A close refusal retains the actual Home and lease for `try_close`. MemoryOnly has no restart guarantee; crash recovery is not yet certified. | [Initialize and reopen](build-an-application.md#initialize-once-then-reopen-the-same-directory), [Directory close](../workspaces/worth-query/crates/worth-query-host/README.md#close-a-directory-home) |
+| Survive a restart | Gracefully close the owning Home, then open the same `Directory(path)` in a fresh process under current installation and fresh authentication. Home readmission preserves original occurrences and custody without replaying initialization or business handlers. A close refusal retains the actual Home and lease for `try_close`. MemoryOnly has no restart guarantee. Reopen after a process kill recovers Track C1–C3 cases (full adversarial-oracle and Tier-3 certification runs in Track C4 / Landing 3). | [Initialize and reopen](build-an-application.md#initialize-once-then-reopen-the-same-directory), [Directory close](../workspaces/worth-query/crates/worth-query-host/README.md#close-a-directory-home) |
 | Close a Home with installed signing owners | `home.close(&request)` consumes the intact signing registry with its original Query owner. A runtime alias refuses `Busy(ProgramRuntime)`; refusal/resume keeps the registry. Final supplier destruction waits for `closed.reclaim()` or abandonment, and external authentication owners are not revoked. | [Directory Home close](../workspaces/worth-query/crates/worth-query-host/README.md#close-a-directory-home) |
 | Discard a development Home | `host::discard_home(host::WorthQueryApplicationHomeLocation::Directory(path))` destroys the Home under Store's mutation lease. Close the owning Home first; a held lease returns `WorthQueryApplicationHomeDiscardDenial::MutationOwnerContended`. Retry interrupted disposal explicitly; a tombstone fences opening with `DiscardPending`. The next open initializes a new Home. | [Host disposal contract](../workspaces/worth-query/crates/worth-query-host/README.md#close-a-directory-home) |
 | Configure workflow dispositions for a Home program transition | After `with_program_transition`, call `.with_workflow_dispositions(choices)`. Shared adoption admission governs retirement/cancellation; canonical ending provenance comes from the checked durable Home owner. Missing choices refuse nonempty inventory and explicit absent choices refuse even empty inventory. | [Home transition workflow](../workspaces/worth-query/crates/worth-query-host/README.md#development-workflow-with-program-transitions) |
@@ -983,7 +985,8 @@ recorded original, reopens the same Home, readmits the input under fresh authori
 then checks the native result and retained read. The target scope belongs to the
 encoded input. The combined Bank journey verifies graceful fresh-process
 readmission and no-output divergent correction under the integrated owners.
-Crash recovery is not yet certified.
+Track C1–C3 crash-recovery cases and C5 retirement are complete on Directory
+Home; full adversarial-oracle and Tier-3 certification runs in Track C4 / Landing 3.
 The existing [managed-index setup consumer](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/refusing/host.rs)
 teaches typed provider setup and initialization without adding an index to an
 application that has none. These descriptive contracts confer no extra read,
@@ -1072,10 +1075,10 @@ A cancelled Native effect without World occurrence/disposition refuses close wit
 handler.
 Durable World branch creation (Native and Signal forks), durable branch
 retirement, and durable history disposal publish through World's authoritative
-journals; C4 owns the adversarial oracle; C5 owns final retirement and
-certification.
-**Crash recovery is not yet certified.** Do not substitute MemoryOnly for a
-Directory application that requires persistence.
+journals (C2.8). Track C1–C3 crash-recovery cases and C5 retirement are complete
+on Directory Home; Track C4 / Landing 3 runs the exhaustive adversarial crash
+oracle and Tier-3 certification. Do not substitute MemoryOnly for a Directory
+application that requires persistence.
 
 Durable relation pre-images, correction-bound compensation, authored/output
 material and coupled-output corrections retain their named
@@ -1116,25 +1119,25 @@ its typed `ManagedIndex` failure category and diagnostic detail, rather than the
 provider's live error object: that separate API owns type-erased, nonserializable
 provider custody. Business failures needing value matching must use the rule's
 declared `RefusalBinding` and `WorthQueryApplicationInvariantError::Cause(value)`.
-Schema resolver/registration diagnostics, codec-contract breach detail and Query
-outer-checkpoint grammar detail also remain diagnostic text. Framework invariant
+Schema resolver/registration diagnostics and codec-contract breach detail also
+remain diagnostic text. Framework invariant
 program-activation/custody faults and caught panic payloads remain diagnostics
 under the typed invariant identity, phase and failure kind: they diagnose internal
 platform contracts and have no declared application value codec. These paths do
 not discard a declared application cause or an original Native recovery stop.
 
 The K1c Native content owner admits immutable typed frames and closes Native
-transaction references before publication. Native checkpoint and journal recovery
-reconstruct their retained closure through the existing physical member boundary.
-The field-bound Decl/Host content door, managed Source acquisition and recorded
-correction closure use that same Native owner. Application checkpoints recover
-current Native content. A restored maintained Source without its live World image
-returns RootUnavailable until an opted-in authored cold staging transition; bytes
-do not mint that image. An application checkpoint alone does not reconstruct a
-live correction handle. Directory Homes admit retained correction DATA from
-`query.corrections` against protected World originals and Native bindings; fresh
-coordinate selection still requires retained history. Missing history remains an
-explicit refusal. Bank’s `bank_application_home` attachment reuses the generic
+transaction references before publication. Native external-member checkpoint and
+journal recovery reconstruct their retained closure through the existing physical
+member boundary (Relational embedded-checkpoint placement and the D13 interim
+application-checkpoint path are retired). The field-bound Decl/Host content door,
+managed Source acquisition and recorded correction closure use that same Native
+owner. Directory Home reopen recovers current Native content. A restored
+maintained Source without its live World image returns `RootUnavailable` until an
+opted-in authored cold staging transition; bytes do not mint that image. Directory
+Homes admit retained correction DATA from `query.corrections` against protected
+World originals and Native bindings; fresh coordinate selection still requires
+retained history. Missing history remains an explicit refusal. Bank’s `bank_application_home` attachment reuses the generic
 Home with full static `BankSchema`, `BankApplication`, actual main/P1/P2 revisions,
 full providers, principal binding, account index and invariant. It does not
 attach workflow execution eagerly. Quiescent installed producers retire intact
@@ -1884,9 +1887,10 @@ and unknown codec versions refuse with typed reasons. Unresolved live
 unpublished custody refuses close. After an unclean end, reopen continues a
 Native effect without its World occurrence as recovered `ProductUnpublished`
 custody and readmits a Signal effect with its recorded open; a Signal effect
-with no recorded open (damage only) still refuses with
-`UncleanRecoveryUnsupported` (D18). Pending settlement and resource/temporal
-runtime recovery retain their later boundaries.
+with no recorded open (damage only) refuses before service with
+`WorldReadmissionDenial::OrphanSignalAssociation` (D18 `UncleanRecoveryUnsupported`
+has been retired). Pending settlement and resource/temporal
+runtime recovery follow the Track C1–C3 Directory Home recovery contracts.
 Writeback diagnostics remain process-local and never substitute for durable
 owner evidence. See [derived recovery and Home composition](build-an-application.md#current-durable-home-composition-boundary).
 

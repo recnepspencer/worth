@@ -205,6 +205,7 @@ pub trait CommitAuthorityMintInternalPort: Sized {
         original_mutation_binding: Option<std::any::TypeId>,
         runtime_authority: WorthQueryRuntimeAuthorityIdentity,
         installed_operation: [u8; 32],
+        operation_definition_identity: [u8; 32],
         installed_aftermath: Option<
             worth_query_installation::facade::WorthQueryInstalledAftermathContract,
         >,
@@ -221,6 +222,7 @@ impl CommitAuthorityMintInternalPort for WorthQueryApplicationCommitAuthorityBin
         original_mutation_binding: Option<std::any::TypeId>,
         runtime_authority: WorthQueryRuntimeAuthorityIdentity,
         installed_operation: [u8; 32],
+        operation_definition_identity: [u8; 32],
         installed_aftermath: Option<
             worth_query_installation::facade::WorthQueryInstalledAftermathContract,
         >,
@@ -234,6 +236,7 @@ impl CommitAuthorityMintInternalPort for WorthQueryApplicationCommitAuthorityBin
             original_mutation_binding,
             runtime_authority,
             installed_operation,
+            operation_definition_identity,
             installed_aftermath,
             principal_scope,
             idempotency_binding,

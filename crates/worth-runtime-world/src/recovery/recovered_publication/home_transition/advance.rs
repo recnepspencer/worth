@@ -44,6 +44,8 @@ impl OriginalHomeTransitionContinuation {
                         request,
                     ) {
                         Ok(committed) => {
+                            let position = committed.position();
+                            let digest = *committed.digest().bytes();
                             // The actual cell retains the witness before any other work.
                             work.permit.acknowledge(committed.into_witness());
                             loan.acknowledge();
@@ -58,6 +60,14 @@ impl OriginalHomeTransitionContinuation {
                                     .common
                                     .binding
                                     .retain_checkpoint_occurrence(origin);
+                            }
+                            if let Some(location) = work.work.common.occurrence.take_location() {
+                                work.work
+                                    .common
+                                    .binding
+                                    .install_prepared_occurrence_location(
+                                        location, position, digest,
+                                    );
                             }
                             return Ok(OriginalContinuationAdvance::Pending);
                         }

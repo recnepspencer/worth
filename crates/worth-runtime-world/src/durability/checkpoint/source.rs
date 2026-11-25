@@ -59,6 +59,15 @@ impl WorldCheckpointJournalRecord {
             bytes,
         }
     }
+    pub(crate) fn position(&self) -> u64 {
+        self.position
+    }
+    pub(crate) fn digest(&self) -> [u8; 32] {
+        self.digest
+    }
+    pub(crate) fn bytes(&self) -> &[u8] {
+        self.bytes.as_ref()
+    }
 }
 /// Only the actual attached Home supplies this source. The implementation
 /// retains its protected physical reader and original selected membership.

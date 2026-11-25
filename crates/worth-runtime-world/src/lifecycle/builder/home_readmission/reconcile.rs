@@ -88,9 +88,7 @@ where
             }
             let (observation, after, point) = match &reference.record().record {
                 WorldRecord::Branch {
-                    head,
-                    components,
-                    ..
+                    head, components, ..
                 } => {
                     horizon.root_incarnation = Some(head.incarnation);
                     horizon.bridges.insert(key.0, components.bridge.clone());
@@ -134,10 +132,17 @@ where
                     )
                 }
                 WorldRecord::BranchCreated(created) => {
-                    horizon.bridges.insert(key.0, created.components.bridge.clone());
+                    horizon
+                        .bridges
+                        .insert(key.0, created.components.bridge.clone());
                     horizon.native_branches.insert(
                         key.0,
-                        created.components.relational.descriptor().branch_id().clone(),
+                        created
+                            .components
+                            .relational
+                            .descriptor()
+                            .branch_id()
+                            .clone(),
                     );
                     horizon
                         .creation_boundaries
@@ -274,7 +279,9 @@ where
                 | WorldRecord::BranchRetired { .. }
                 | WorldRecord::HistoryRetired { .. } => return Err(Denial::BranchLineage),
             };
-            horizon.ancestors.insert(commit_id, (observation.clone(), 0));
+            horizon
+                .ancestors
+                .insert(commit_id, (observation.clone(), 0));
             horizon.branch_heads.insert(key.0, observation.clone());
             custody.observations.push(observation.clone());
             insert(&mut observations, key, &observation, execution)?;
@@ -324,6 +331,22 @@ where
             execution,
         )?;
         creation::retire_admissions(&mut custody, native, execution)?;
+        let mut recovered_locations =
+            worth_execution::ExecutionOrderedMap::<u64, (u64, [u8; 32])>::default();
+        for (_, occurrence) in recovered.occurrences.iter() {
+            let attempt = occurrence.open().association.attempt().ordinal();
+            let cell = WorldDurableMediumBinding::prepare_occurrence_location(attempt, execution)
+                .map_err(Denial::Medium)?;
+            if recovered_locations.insert_vacant_prepared(cell).is_ok() {
+                let _ = recovered_locations.set_existing_unique(
+                    &attempt,
+                    (
+                        occurrence.location().position(),
+                        *occurrence.location().digest(),
+                    ),
+                );
+            }
+        }
         // All fallible readmission steps have succeeded.
         for origin in custody.checkpoint_origins.drain(..) {
             binding.retain_checkpoint_origin(origin);
@@ -331,6 +354,7 @@ where
         for origin in custody.checkpoint_occurrences.drain(..) {
             binding.retain_checkpoint_origin(origin);
         }
+        binding.install_recovered_occurrence_locations(recovered_locations);
         binding.mark_checkpoint_origin_installed();
         Ok(())
     })();

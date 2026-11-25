@@ -51,6 +51,7 @@ impl WorthQueryProviderAttemptPreparation {
         mut self,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         outcome_identity: WorthQueryApplicationCommitOutcomeIdentity,
+        world_owner: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,
     ) -> Result<
         (Self, Option<LocalWorkflowSettlementPublication>),
         WorthQueryApplicationAttemptDenial,
@@ -64,9 +65,10 @@ impl WorthQueryProviderAttemptPreparation {
             crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact, detail,
         ))?.is_some_and(|contract| contract.is_declared());
         let receipt_identity = receipt_identity_from_outcome(
+            world_owner.durable(),
             admission.runtime_authority().as_u64(),
             outcome_identity.get(),
-            admission.operation_authority_identity_bytes(),
+            admission.operation_definition_identity(),
         );
         self.workflow_origin = Some(
             crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin {

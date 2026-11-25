@@ -82,6 +82,14 @@ pub(crate) trait RuntimeWorldObservationService:
         crate::history::WorldObservedHomePublication,
         crate::history::WorldReadmittedPublicationDenial,
     >;
+    fn observe_home_original_publication_with_before_component(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        effect: worth_relational::facade::durability::ReadmittedRelationalAssociatedEffect,
+    ) -> Result<
+        crate::history::WorldObservedHomePublication,
+        crate::history::WorldReadmittedPublicationDenial,
+    >;
     fn readmitted_native_publication(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

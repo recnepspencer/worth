@@ -78,15 +78,20 @@ recovered custody, and resumes a program transition reopened with the same
 request (a changed plan refuses `TransitionPlanDrift`), and admits every
 unobserved external dispatch attempt from the ended incarnation by durably
 recording `Unresolved(UnknownProviderOutcome)` before service so recovery
-handles and authentic callbacks resolve it under the rail's contract. Only
-damage-shaped Signal or fork tails retain the D18 `UncleanRecoveryUnsupported`
-refusal (C5); `unclean_recovery_unsupported()` reports both of them. Contended and discard-pending opens are matched by
-`physical_refusal()` and `ApplicationHomePhysicalRefusalKind`. Managed runs,
-managed cleanup and application-resource requests outstanding at process loss
-are cold-released before service (original kept, `cold_release` reported, never
-a completion), so graceful close succeeds and the ordinary discharge doors
-remove them. C2 owns durable-history/branch cleanup, and C4 owns
-the adversarial oracle; C5 owns retirement and final certification. **Crash recovery is not yet certified.**
+handles and authentic callbacks resolve it under the rail's contract. The
+temporary D18 `UncleanRecoveryUnsupported` refusal surface and
+`unclean_recovery_unsupported()` accessor have been retired (C5); damage-shaped
+Signal or fork mismatches refuse directly as
+`WorldReadmissionDenial::OrphanSignalAssociation` and
+`WorldReadmissionDenial::MissingCreationIntent`. Contended and discard-pending
+opens are matched by `physical_refusal()` and `ApplicationHomePhysicalRefusalKind`.
+Managed runs, managed cleanup and application-resource requests outstanding at
+process loss are cold-released before service (original kept, `cold_release`
+reported, never a completion), so graceful close succeeds and the ordinary
+discharge doors remove them. Track C1–C3 crash-recovery cases, C2
+cost/bounds/World history durability, and C5 retirement are complete on
+Directory Home; Track C4 / Landing 3 runs the exhaustive adversarial crash
+oracle and Tier-3 certification.
 
 Correction contracts still refuse unsupported relation pre-images, compensation,
 output material and coupled outputs with their named shape denials. Genuine
@@ -167,9 +172,11 @@ stable data, end current Home ownership and reopen the same location. Old
 recovery handles cannot cross incarnations. Zero observed effects are not proof
 of no effect, and lower recovery does not recreate a Rust business result.
 
-Existing service readmits graceful World recovery, outbox, inbound-completion
-and aftermath custody. An unclean effect that C1 does not recover retains the
-named D18 refusal (C5); keep that owning opening refusal and follow its close
+Existing service readmits World recovery, outbox, inbound-completion,
+correction, and aftermath custody across graceful close and Track C1–C3 process
+kills. Damage-shaped owner mismatches refuse before service as typed
+`WorldReadmissionDenial` errors (D18 `UncleanRecoveryUnsupported` has been
+retired); keep that owning opening refusal and follow its close
 route. `ProductPreparationRefused` is a
 terminal preparation failure, with no publication/retry door; its carrier may
 still own partial reservations until ordinary unbudgeted destruction.
@@ -204,8 +211,10 @@ accepted messages, their original audience, pending completion and acknowledged
 deduplication meaning. Supply fresh verifier and transport configuration, then
 use inbound maintenance to continue retained work. Recorded completed transport
 observations continue without contacting the rail again. Expiring an
-acknowledged message preserves the canonical completion. Crash recovery is not
-yet certified; remote exactly-once remains governed by the external contract.
+acknowledged message preserves the canonical completion. Unobserved dispatch
+attempts across a process kill are recorded as `Unresolved(UnknownProviderOutcome)`
+before service (C3.5); full adversarial-oracle and Tier-3 certification runs in
+Track C4 / Landing 3, and remote exactly-once remains governed by the external contract.
 
 Dispose of a development directory with
 `discard_home(WorthQueryApplicationHomeLocation::Directory(path))` only when its

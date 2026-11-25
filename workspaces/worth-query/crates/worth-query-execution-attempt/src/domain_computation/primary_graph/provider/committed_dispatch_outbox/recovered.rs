@@ -9,7 +9,7 @@ use worth_relational::facade::{
     identity::EntityId,
 };
 use worth_runtime_world::facade::{
-    RuntimeWorldInspectionPort, RuntimeWorldObservationPort, WorldReadmittedPublication,
+    RuntimeWorldInspectionPort, RuntimeWorldObservationPort, WorldObservedHomePublication,
 };
 
 pub(super) struct RecoveredDispatchCandidate {
@@ -74,7 +74,7 @@ impl WorthQueryPrimaryGraphProvider {
                     .readmit_associated_effect(execution, subject)
                     .map_err(native_denial)?;
                 let original = observation
-                    .readmitted_native_publication(execution, native)
+                    .observe_home_original_publication(execution, native)
                     .map_err(world_denial)?;
                 let description = describe(&original, inspection)?;
                 let record =
@@ -87,13 +87,7 @@ impl WorthQueryPrimaryGraphProvider {
                     entity: candidate.entity,
                     record,
                 };
-                self.read_recovered_with_original(
-                    execution,
-                    runtime,
-                    &selector,
-                    &original,
-                    description,
-                )?;
+                self.read_recovered_with_original(runtime, &selector, &original, description)?;
                 if sources
                     .insert(*selector.record.correlation(), selector)
                     .is_some()
@@ -139,7 +133,7 @@ impl WorthQueryPrimaryGraphProvider {
     ) -> Result<
         (
             WorthQueryCommittedDispatchOutboxObservation,
-            WorldReadmittedPublication,
+            WorldObservedHomePublication,
         ),
         Denial,
     > {
@@ -149,7 +143,7 @@ impl WorthQueryPrimaryGraphProvider {
                 .readmit_associated_effect(execution, &selector.subject)
                 .map_err(native_denial)?;
             let original = observation
-                .readmitted_native_publication(execution, native)
+                .observe_home_original_publication(execution, native)
                 .map_err(world_denial)?;
             let description = describe(&original, inspection)?;
             let record =
@@ -157,7 +151,7 @@ impl WorthQueryPrimaryGraphProvider {
             if record != selector.record {
                 return Err(Denial::RecordMismatch);
             }
-            self.read_recovered_with_original(execution, runtime, selector, &original, description)
+            self.read_recovered_with_original(runtime, selector, &original, description)
                 .map(|owner| (owner, original))
         })
     }
@@ -165,7 +159,7 @@ impl WorthQueryPrimaryGraphProvider {
     fn original_record(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        original: &WorldReadmittedPublication,
+        original: &WorldObservedHomePublication,
         entity: EntityId,
         description: &WorthQueryCommittedProductPublication,
     ) -> Result<WorthQueryDispatchOutboxRecord, Denial> {
@@ -226,48 +220,75 @@ impl WorthQueryPrimaryGraphProvider {
 
     fn read_recovered_with_original(
         &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         selector: &RecoveredDispatchSelector,
-        original: &WorldReadmittedPublication,
+        original: &WorldObservedHomePublication,
         description: WorthQueryCommittedProductPublication,
     ) -> Result<WorthQueryCommittedDispatchOutboxObservation, Denial> {
         if original.native_receipt() != selector.subject.receipt() {
             return Err(Denial::CommitMismatch);
         }
-        let lease = runtime
-            .retain_component_basis(original.after().basis().relational_basis())
-            .map_err(|_| Denial::ExactCommitUnavailable)?;
-        let record_ref = RecordRef::Entity(selector.entity);
-        let answer = CommittedOutboxRead {
-            runtime,
-            layout: self.graph.layout_ref().provider_dispatch_outbox(),
-            record: &selector.record,
-            record_ref: &record_ref,
-            expected_commit: original.native_receipt(),
-            expected_runtime: runtime.runtime_instance_id(),
-            retained_basis: &lease,
+        let committed = runtime
+            .history()
+            .immutable_commit_receipt_for_version(original.native_receipt().version_id)
+            .ok_or(Denial::NotAuthoritative)?;
+        if &committed != original.native_receipt() {
+            return Err(Denial::CommitMismatch);
         }
-        .resolve(execution);
-        runtime
-            .release_component_basis(lease)
-            .expect("the exact recovered read releases its same-owner Native loan");
-        answer.map(|owner| WorthQueryCommittedDispatchOutboxObservation::seal(owner, description))
+        let owner = WorthQueryCommittedDispatchOutboxOwnerObservation::seal(
+            selector.record.clone(),
+            committed,
+            RecordRef::Entity(selector.entity),
+            runtime.runtime_instance_id(),
+            WorthQueryCommittedDispatchOutboxReadWork::from_recovered_source(),
+        );
+        Ok(WorthQueryCommittedDispatchOutboxObservation::seal(
+            owner,
+            description,
+        ))
     }
 }
 
 fn describe(
-    original: &WorldReadmittedPublication,
+    original: &WorldObservedHomePublication,
     inspection: &RuntimeWorldInspectionPort,
 ) -> Result<WorthQueryCommittedProductPublication, Denial> {
-    let history = inspection
-        .trace_ancestry(
-            original.after().selected_commit().clone(),
-            std::num::NonZeroUsize::new(1).unwrap(),
-        )
-        .map_err(|_| Denial::NotAuthoritative)?;
-    let commit = history.commits().next().ok_or(Denial::NotAuthoritative)?;
-    WorthQueryCommittedProductPublication::from_readmitted(original, commit)
+    use worth_runtime_world::facade::{
+        CompositeComponentChangePosture as Posture, CompositeHistoryCatalogDenial as HistoryDenial,
+        RuntimeWorldServiceDenial as ServiceDenial,
+    };
+    let signal_publication = match original.signal_posture() {
+        Posture::RetainExact => None,
+        Posture::Published => match inspection.trace_ancestry(
+            original.composite_commit().clone(),
+            std::num::NonZeroUsize::MIN,
+        ) {
+            Ok(history) => {
+                let commit = history.commits().next().ok_or(Denial::CommitMismatch)?;
+                if commit.signal_change() != Posture::Published {
+                    return Err(Denial::CommitMismatch);
+                }
+                let signal = commit
+                    .signal_publication_identity()
+                    .cloned()
+                    .ok_or(Denial::CommitMismatch)?;
+                Some(signal)
+            }
+            Err(ServiceDenial::Denied(HistoryDenial::UnknownProtectionTarget(_))) => None,
+            Err(ServiceDenial::Denied(HistoryDenial::Cancelled)) => {
+                return Err(Denial::ReadExecution(Err(
+                    crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled,
+                )));
+            }
+            Err(ServiceDenial::Denied(HistoryDenial::DeadlineElapsed)) => {
+                return Err(Denial::ReadExecution(Err(
+                    crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
+                )));
+            }
+            Err(_) => return Err(Denial::NotAuthoritative),
+        },
+    };
+    WorthQueryCommittedProductPublication::from_observed_home(original, signal_publication)
 }
 
 pub fn idempotency_denial(

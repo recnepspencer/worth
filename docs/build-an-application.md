@@ -18,10 +18,12 @@ this guide explain the underlying contracts and support specialized composition.
 
 Directory Homes support the declared track-H families through the real installed
 owners in [§4](#4-install-or-reopen). Use graceful close and fresh-process reopen
-for durable continuation; MemoryOnly carries no restart guarantee. Reopen after
-a kill recovers the cases listed in [After a crash](application-home.md#after-a-crash-or-unclean-close);
-crash recovery is not yet certified. For the short lifecycle path (open, write, retry, close,
-crash behavior, discard) start with [Use an Application Home](application-home.md).
+for durable continuation; MemoryOnly carries no restart guarantee. Reopen after a kill recovers the cases listed in
+[After a crash](application-home.md#after-a-crash-or-unclean-close) (Track C1–C3
+crash-recovery cases and C5 retirement are complete; full adversarial-oracle and
+Tier-3 certification runs in Track C4 / Landing 3). For the short lifecycle path
+(open, write, retry, close, crash behavior, discard) start with
+[Use an Application Home](application-home.md).
 
 | Your next task | Start here | What you supply |
 |---|---|---|
@@ -2404,10 +2406,11 @@ the ordinary discharge doors remove the rows
 Native effect that World had not yet recorded as recovered `ProductUnpublished`
 custody, releases a no-effect original, and resumes an interrupted program
 transition ([After a crash](application-home.md#after-a-crash-or-unclean-close)).
-Only an unobserved dispatch attempt and damage-shaped Signal or fork tails keep
-`UncleanRecoveryUnsupported` (D18, C5); C2 owns durable-history/branch cleanup;
-C4 owns the adversarial oracle; C5 owns retirement and final certification.
-**Crash recovery is not yet certified.**
+The temporary D18 `UncleanRecoveryUnsupported` refusal surface and D13 interim
+application-checkpoint path are retired (C5); damage-shaped Signal or fork
+mismatches refuse directly as `WorldReadmissionDenial::OrphanSignalAssociation`
+and `WorldReadmissionDenial::MissingCreationIntent`, while Track C4 / Landing 3
+runs final adversarial-oracle and Tier-3 milestone certification.
 Correction shapes without admitted relation pre-images, output material or
 coupled-output correspondence retain their specific typed refusals. The working
 no-output divergent correction does not authorize those shapes. MemoryOnly adds
@@ -7125,13 +7128,13 @@ recorded-actor policy. Capture declares occurrence-only requirements; archival
 requires the authored approval. The admitted proposal and approval supply their
 actors. Business input never supplies an actor override.
 
-These examples describe graceful current-version Home handoffs. Crash recovery is
-not yet certified. Their caller cutover still needs focused execution at the
-integrated H6 source epoch; it does not certify the milestone's full-family
-positive divergent-correction/materialization journey. That positive journey
-remains a separate H10 prerequisite, including the currently refused coupled or
-authored correction output shapes. C1 recovers the crash core; C2–C5 own the
-remaining unclean recovery and retirement certification.
+These examples run against the public `worth-query-host` and its real Directory
+Home owners (`observable_workflow`, `authored_workflow`, `ordinary_product_workflow`,
+`shared_execution`, and the Bank reference journey). Track C1–C3 crash-recovery
+cases and C5 retirement are complete on Directory Home (with currently unsupported
+relation-preimage, coupled-output, and authored-output correction shapes still
+explicitly refused); Track C4 / Landing 3 owns the exhaustive adversarial crash
+oracle and Tier-3 certification.
 
 #### Keep a basis, reacquire a locator
 
@@ -9067,10 +9070,10 @@ authored state and committed receipts without repeating either effect.
 Unresolved live publication custody refuses close. After an unclean end, a
 Native effect without its World occurrence reopens as recovered
 `ProductUnpublished` custody that the same key continues, and a Signal effect
-with its recorded open is readmitted. A Signal effect with no recorded open
-(damage, not a kill) still refuses with `UncleanRecoveryUnsupported` before
-service (D18). A retained original cannot become a no-effect result; pending
-settlement recovery belongs to track C.
+with its recorded open is readmitted. A Signal effect with no recorded open (damage, not a kill) refuses before
+service with `WorldReadmissionDenial::OrphanSignalAssociation` (D18
+`UncleanRecoveryUnsupported` has been retired). A retained original cannot
+become a no-effect result.
 
 Use `bind_conditional_definition` to install authored conditional membership
 without a managed clock or temporal operation. Actual temporal installation and

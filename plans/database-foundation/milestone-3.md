@@ -150,12 +150,16 @@ guides state that crash recovery is not yet certified.
 
 ### Cleanup track status
 
-**2026-11-20.** C1 (crash core) is complete on branch `m3/cleanup-c1` and
-lands with its PR. C2 (cost and bounds) started on `m3/cleanup-c2`, branched
-from C1; its slices are listed below. C3 started on `m3/cleanup-c3`; C4 and C5
-have not started. D18 remains for the causes below:
-two damage-shaped World causes and the Dispatch cause (C3). C5 retires the
-surface.
+**2026-11-24.** C1 (crash core), C2 (cost, bounds, durable World history &
+branch retirement), C3 (owner crash cases for Phases 5–9, slices C3.1–C3.7), and
+C5 Part 1 slices C5.0–C5.3 (PR #302 regression fix, D18 retirement, D13 interim
+checkpoint & Relational embedded-checkpoint retirement + boundary-check locks,
+Phase 1 family re-audit, ordinary guides/READMEs/examples) are complete. C4
+(exhaustive adversarial crash oracle) and C5.4 / Tier-3 landing certification
+complete the milestone. D18 (`UncleanRecoveryUnsupported` and
+`unclean_recovery_unsupported()`) and D13 (interim application checkpoint
+transport & Relational embedded-checkpoint placement) are retired and locked out
+by `tools/boundary-check/config/road1.toml`.
 
 | C1 slice | State on the branch |
 |---|---|
@@ -180,18 +184,28 @@ surface.
 | C3.6 Correction split completion and original-owner advancement under a true kill | Done (reviewed). Cold `query.corrections` readmission tolerates in-flight `Open` World originals before `admit_original_custody`, filters original-binding entity scans by `ORIGINAL_CLIENT_KEY_PREFIX` so coupled output entities do not collide with idempotency bindings, and re-observes World activation history before Pass 2 `abandon_released`, which emits explicit `MaterialRecord::AbandonPublicationPin` for World-proven `Released`, never-captured publication pins (keeping successful-publication `Release` validation strict and selected source material intact), followed by `release_resolved_original_interpretations` so newly released zero-effect opens immediately drop their `query.obligations` interpretation count; `correction_history::with_correction_snapshot` admits carried known-empty field indexes via `ensure_field_index_for_basis` while still refusing discarded populations as `IndexUnavailable`; `WorthQuerySourceOnlyOperation::original_identity` exposes the recorded durable obligation identity without handoff. Fixed two `worth-relational` coupled-execution replay-parity defects surfaced by the split-completion kill court: `apply_extra_update_using` now coalesces repeated same-version live metadata updates (eliminating zero-width `[V, V)` history entries), and `changed_authoritative_patch` / `semantic_change_projection` filter `FieldLevelPatch` sets/clears by `binding.field_revision_changes` so semantic no-op participant writes match between live coupled execution and composed single-intent replay. Covered by 26/26 focused `worth-relational` tests and 11/11 `correction_material` courts including four real-process-kill Directory Home courts (split completion with uninterrupted positive control and second reopen, live original-owner advancement across OS kill with `StaleIncarnation` and `OwnershipMaterialUnavailable` guards, divergent-branch correction lineage across OS kill with cross-branch `ForeignAlternative` / `TargetIncarnationChanged` refusal and branch-local reapply, and kill after prepared-correction pin transfer before capture proving durable orphan-pin abandonment over two reopens with usable source and clean expiry) |
 | C3.7 Discarding derived caches (D14) | Done (reviewed). Added sealed D14 certification door `discard_derived_for_test` on `WorldReadmittedApplicationHome` and `WorthQueryApplicationHome` (callers recorded in `tools/boundary-check/config/control-callers.txt`), backed by `worth-store-application::checkpoint::discard_for_test`. Inventory verified across every `DurableArtifactRetention` implementation and `registry.rs`: `home.checkpoint` (`SelectedHomeManifest` + anchored members) is the sole durable `RetentionClass::Derived` artifact in a Home. `discard_derived_for_test` serializes on `HomeCheckpointOwner`'s single checkpoint slot (refusing `RecoveryRequired` / `DiscardInProgress` / `DiscardUnresolved`), publishes a versioned zero-member discard marker with a monotonic attempt nonce on `home.checkpoint` (logically unreaching prior member records until Milestone 4 physical reclamation), reconciles both `StoppedPoll::Failed` and `PublicationStep::Failed` against the physical terminal receipt (marking `derived_discarded` if already selected, releasing cleanly only on proven no-effect, or retaining physical failure custody in `CheckpointSlot::DiscardUnresolved` if unknown), clears `acknowledged_native`, and marks the live owner so subsequent same-open `checkpoint()`, `after_advancement()`, and graceful `close()` return `ApplicationHomeCheckpointDenial::DerivedStateDiscarded`; `selected_source/read.rs` treats the zero-member discard marker as no selected checkpoint (`Ok(None)`, refusing non-empty members as `Malformed`) while preserving raw anchor generation so reopened Homes resume normal checkpointing at `discard_generation + 1`. Covered by 41/41 `worth-store-application` unit tests (serialization, pending-attempt refusal, deterministic accepted pre-cutover `BeforeEffectCutover` cancellation + owner stopped-settlement handshake + same-generation retry, deterministic `BeforeTerminalFinalization` post-selection cancellation + owner stopped-settlement handshake, deterministic selected-with-settlement-failure on both ordinary-step and handshake-synchronized stopped-settle paths, same-open `DerivedStateDiscarded` refusal, and reopened fresh checkpointing) and Store/Host fresh-process courts (`host_oracle::graceful::discard_derived` + `host_oracle::graceful::signal::derived_discard`) across graceful close and OS kill under same and changed builds, proving zero Relational checkpoint-member reads (`cold_storage_reads().member_reads == 0`, `commit_reads > 0`), exact 5-lane Store cadence coverage `0`, exact full `DerivedIndexEntries` parity (Relational commit replay rebuilds branch readmission index selections strictly from authored commit journals), cold Signal derived values (`calls == 0` -> `3` -> `3`), Host oracle parity vs `MemoryOnly` under a single run-wide `DurableIdentityCorrespondence` (including immediate kill-reopen truth/history/occurrence/idempotency + custody posture/actions before continuation, direct continuation-to-original attempt/Native-receipt/head/occurrence verification plus once-only continuation retry, post-reopen `IntentDrift` on both interruption paths, and exact original vs `RecoveredCommitted` publication coordinates, journal positions, and 32-byte Native/World artifact digests with zero handler contacts), and resumed fresh checkpointing on subsequent close/reopen |
 
-The Host accessor `unclean_recovery_unsupported()` now reads World's D18
-refusal. After C3.5 deleted the `Dispatch` branch, it reports only the two
-World-wrapped damage causes:
+The temporary Host accessor `unclean_recovery_unsupported()` and D18
+`UncleanRecoveryUnsupported` refusal surface have been retired (C5.1,
+`bef918f5aa`). After C3.5 deleted the `Dispatch` branch, the two remaining
+damage-shaped owner mismatches now refuse directly as typed World readmission
+denials:
 
-- **World-wrapped causes:** a Signal effect without its recorded open, and a
-  Native fork without a creation intent. Neither can come from a kill, because
-  each owner writes only after World acknowledges its record, and WAL damage
-  is refused earlier by physical recovery. A Host open therefore cannot
-  produce them without forged bytes. The World owner court
-  `owner_evidence::recovered_owners` covers the refusal.
+- **World-wrapped damage causes:** a Signal effect without its recorded open
+  (`WorldReadmissionDenial::OrphanSignalAssociation`), and a Native fork without
+  a creation intent (`WorldReadmissionDenial::MissingCreationIntent`). Neither
+  can come from a kill, because each owner writes only after World acknowledges
+  its record, and WAL damage is refused earlier by physical recovery. The World
+  owner court `owner_evidence::recovered_owners` covers both refusals.
 
-C5 deletes the accessor along with D18.
+| C5 slice | State on `m3/cleanup-c5` |
+|---|---|
+| C5.0 PR #302 regression fix | Done (`0a5d86cc0a`, Codex r2 APPROVE): normalized `SealedAllocationWatermarks` in `recovered_state_comparison.rs` |
+| C5.1 Retire D18 refusal surface | Done (`bef918f5aa`, Codex r1 APPROVE): deleted `UncleanRecoveryUnsupported` and Host `unclean_recovery_unsupported()`; damage-shaped Signal/fork mismatches refuse directly as `OrphanSignalAssociation` / `MissingCreationIntent` |
+| C5.2.1 Migrate Query D13 callers (Groups A–F) & Directory Home fixes | Done (`f2ae48ca91`, Codex r7 APPROVE): migrated Groups A–F onto Directory Home close/reopen, fixed `worth-runtime-world` `UnrelatedNestedLease`, retained history splice traversal, durable materialization recovery, coupled output custody, and phase-bounded `HomeReadmissionMetadataAuthority` |
+| C5.2.2 Retire D13 interim application-checkpoint path & boundary lock | Done (`784a24d7a7`, Codex r7 APPROVE): migrated Groups G–K, deleted all Query/World/Relational D13 interim checkpoint code (263 files, +4,068/-14,564 lines), emptied `interim-checkpoint-callers.txt`, locked `tools/boundary-check/config/road1.toml`, restored `optional_aspect_reopen` and `indexed_selection_reopen` courts |
+| C5.2.3 Retire Relational embedded-checkpoint placement & boundary lock | Done (`1d023ea9ee`, Codex r4 APPROVE): deleted `RelationalCheckpointArtifactPolicy::Embedded`, `DurabilityAuthority::native_checkpoint`, `is_embedded()`, `InlineCheckpointSource`, `encode_checkpoint`, `decode_checkpoint`, and inline member decode/encode; fixed 3 cold-residency defects (`source_schema.rs`, `region_directory.rs`, `activation.rs`); locked `road1.toml` |
+| C5.3 Phase 1 family re-audit, guides, READMEs, capability index & examples | Done (reviewed): re-audited all Phase 1 families (`target/lane-evidence/c5-phase1-reaudit.md`), updated guides/READMEs/capability index, closed workflow receipt digest D6 & reopened dispatch/inbound custody gaps (with single-record source lookups, funded occurrence location index & preserved request stops), ran Query executable examples (`ordinary_product_workflow`, `observable_workflow`, `authored_workflow`, `shared_execution`), and compile-checked `h10_graceful_bank_home` (fresh-process execution and OS-kill certification run in C5.4) |
+| C5.4 Phase 10 Full Journey, Phase 4 decisive journey & Daymark Gap 1 repro | Next slice |
 
 | C2 slice | State on the branch |
 |---|---|

@@ -11,6 +11,36 @@ use worth_runtime_world::facade::{
 };
 
 impl WorthQueryPrimaryGraphProvider {
+    pub fn completion_original_outbox_from_observed(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        source: worth_runtime_world::facade::WorldObservedHomePublication,
+        completed: &WorthQueryCanonicalCompletionRow,
+        maximum_created_records: std::num::NonZeroUsize,
+    ) -> Result<
+        crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord,
+        Denial,
+    > {
+        let publication = OriginalPublication::Home(source);
+        self.outbox_from_original_bindings(
+            execution,
+            &publication,
+            completed,
+            maximum_created_records,
+        )
+    }
+
+    pub fn observe_home_publication_for_receipt(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        receipt: &worth_relational::facade::history::RelationalCommitReceipt,
+        observation: &RuntimeWorldObservationPort,
+    ) -> Result<worth_runtime_world::facade::WorldObservedHomePublication, Denial> {
+        self.graph.with_runtime(execution, |runtime| {
+            observe_home_for_receipt(runtime, execution, receipt, observation)
+        })
+    }
+
     pub fn completion_original_outbox(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -128,21 +158,26 @@ fn original_publication(
             .map(OriginalPublication::Memory)
             .map_err(world_read_denial);
     }
-    let mut exact = None;
-    for subject in authority
-        .discover_all_associated_effects(execution)
+    observe_home_for_receipt(runtime, execution, receipt, observation)
+        .map(OriginalPublication::Home)
+}
+
+fn observe_home_for_receipt(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    receipt: &worth_relational::facade::history::RelationalCommitReceipt,
+    observation: &RuntimeWorldObservationPort,
+) -> Result<worth_runtime_world::facade::WorldObservedHomePublication, Denial> {
+    let authority = runtime.durability_authority();
+    let subject = authority
+        .associated_effect_for_receipt(execution, receipt)
         .map_err(native_read_denial)?
-    {
-        if subject.receipt() == receipt && exact.replace(subject).is_some() {
-            return Err(Denial::AmbiguousCorrelation);
-        }
-    }
+        .ok_or(Denial::CommitUnavailable)?;
     let native = authority
-        .readmit_associated_effect(execution, &exact.ok_or(Denial::CommitUnavailable)?)
+        .readmit_associated_effect(execution, &subject)
         .map_err(native_read_denial)?;
     observation
         .observe_home_original_publication(execution, native)
-        .map(OriginalPublication::Home)
         .map_err(world_read_denial)
 }
 

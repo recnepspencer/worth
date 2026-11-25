@@ -52,6 +52,14 @@ impl HistorySubsystem {
             .performed_effect_residencies()
     }
 
+    pub(crate) fn performed_effect_residency(
+        &self,
+        commit_id: CommitId,
+    ) -> Option<Arc<crate::history::RelationalCommitEnvelopeResidency>> {
+        self.canonical_publication_routes
+            .performed_effect_residency(commit_id)
+    }
+
     pub(crate) fn associated_effect_settlement(
         &self,
         entry: &crate::history::RelationalCommitIndexEntry,

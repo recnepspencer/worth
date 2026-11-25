@@ -1968,8 +1968,9 @@ original occurrences and receipts, Signal and Bridge definitions, programs,
 workflows, external dispatch and corrections. Graceful close and fresh-process
 reopen are supported. Reopen after a kill recovers interrupted Native effects,
 no-effect originals, branch creations and program transitions (see
-[After a crash](application-home.md#after-a-crash-or-unclean-close)); crash
-recovery is not yet certified (Milestone 3 cleanup track). Nine crates for semantic durable programs (snapshots,
+[After a crash](application-home.md#after-a-crash-or-unclean-close)); Track C1–C3
+crash-recovery cases and C5 retirement are complete, while full adversarial-oracle
+and Tier-3 certification runs in Track C4 / Landing 3. Nine crates for semantic durable programs (snapshots,
 branch deltas, schema lineage, live-query sync, subscriptions, bulk ingest,
 extensions, analysis, claim boundaries) exist but are dormant.
 

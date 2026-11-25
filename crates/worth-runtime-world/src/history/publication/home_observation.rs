@@ -27,6 +27,13 @@ use worth_relational::facade::{
 pub struct WorldObservedHomePublication {
     before: DurableProductBranchReference,
     after: DurableProductBranchReference,
+    product_branch: crate::identity::ProductBranchIdentity,
+    product_incarnation: crate::identity::ProductBranchIncarnation,
+    product_generation: crate::identity::ProductBranchReferenceGeneration,
+    composite_commit: crate::identity::CompositeCommitIdentity,
+    publication_attempt: crate::identity::CompositePublicationAttemptIdentity,
+    signal_posture: crate::history::CompositeComponentChangePosture,
+    signal_source: Option<worth_signal::facade::durability::SignalRecordedSourcePoint>,
     attempt: DurableCompositePublicationAttemptIdentity,
     journal_position: u64,
     artifact_digest: [u8; 32],
@@ -40,6 +47,13 @@ impl WorldObservedHomePublication {
     pub(crate) fn from_verified_occurrence(
         before: DurableProductBranchReference,
         after: DurableProductBranchReference,
+        product_branch: crate::identity::ProductBranchIdentity,
+        product_incarnation: crate::identity::ProductBranchIncarnation,
+        product_generation: crate::identity::ProductBranchReferenceGeneration,
+        composite_commit: crate::identity::CompositeCommitIdentity,
+        publication_attempt: crate::identity::CompositePublicationAttemptIdentity,
+        signal_posture: crate::history::CompositeComponentChangePosture,
+        signal_source: Option<worth_signal::facade::durability::SignalRecordedSourcePoint>,
         attempt: DurableCompositePublicationAttemptIdentity,
         journal_position: u64,
         artifact_digest: [u8; 32],
@@ -50,6 +64,13 @@ impl WorldObservedHomePublication {
         Self {
             before,
             after,
+            product_branch,
+            product_incarnation,
+            product_generation,
+            composite_commit,
+            publication_attempt,
+            signal_posture,
+            signal_source,
             attempt,
             journal_position,
             artifact_digest,
@@ -64,6 +85,29 @@ impl WorldObservedHomePublication {
     }
     pub fn after(&self) -> &DurableProductBranchReference {
         &self.after
+    }
+    pub fn product_branch(&self) -> &crate::identity::ProductBranchIdentity {
+        &self.product_branch
+    }
+    pub fn product_incarnation(&self) -> crate::identity::ProductBranchIncarnation {
+        self.product_incarnation
+    }
+    pub fn product_generation(&self) -> crate::identity::ProductBranchReferenceGeneration {
+        self.product_generation
+    }
+    pub fn composite_commit(&self) -> &crate::identity::CompositeCommitIdentity {
+        &self.composite_commit
+    }
+    pub fn publication_attempt(&self) -> &crate::identity::CompositePublicationAttemptIdentity {
+        &self.publication_attempt
+    }
+    pub fn signal_posture(&self) -> crate::history::CompositeComponentChangePosture {
+        self.signal_posture
+    }
+    pub fn signal_source(
+        &self,
+    ) -> Option<&worth_signal::facade::durability::SignalRecordedSourcePoint> {
+        self.signal_source.as_ref()
     }
     pub fn attempt_identity(&self) -> DurableCompositePublicationAttemptIdentity {
         self.attempt

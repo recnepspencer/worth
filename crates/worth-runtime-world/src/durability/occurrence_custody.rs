@@ -13,6 +13,7 @@ mod retention_tests;
 #[derive(Debug)]
 pub(crate) struct WorldOccurrenceCustody {
     origin: Option<super::PreparedCheckpointOccurrence>,
+    location: Option<super::PreparedOccurrenceLocation>,
     open: Option<WorldOpenAttemptRecord>,
     destination: OccurrenceByteDestination,
     pub(crate) subject: Option<WorldDurableArtifact>,
@@ -29,6 +30,7 @@ impl WorldOccurrenceCustody {
             .ok_or(WorldDurableMediumDenial::Frame(
                 super::WorldDurableFrameDenial::IdentityMismatch,
             ))?;
+        let attempt_ordinal = open.association.attempt().ordinal();
         // Reserve the selected owner's entire envelope before either owner effect.
         let total = super::codec::occurrence_backing::admitted_length(
             original.as_bytes().len(),
@@ -39,8 +41,13 @@ impl WorldOccurrenceCustody {
             super::PreparedWorldArtifact::prepare_occurrence(open, execution)?;
         let destination = OccurrenceByteDestination::prepare(total, execution)?;
         let origin = super::PreparedCheckpointOccurrence::prepare(execution)?;
+        let location = super::WorldDurableMediumBinding::prepare_occurrence_location(
+            attempt_ordinal,
+            execution,
+        )?;
         Ok(Self {
             origin: Some(origin),
+            location: Some(location),
             open: Some(open),
             destination,
             subject: None,
@@ -72,6 +79,9 @@ impl WorldOccurrenceCustody {
     }
     pub(crate) fn take_unretained_origin(&mut self) -> Option<super::PreparedCheckpointOccurrence> {
         self.origin.take()
+    }
+    pub(crate) fn take_location(&mut self) -> Option<super::PreparedOccurrenceLocation> {
+        self.location.take()
     }
 
     pub(crate) fn finalize(

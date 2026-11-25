@@ -51,6 +51,7 @@ pub(crate) struct PreparedRecoveredPublication {
     pub(crate) transfer: Option<crate::retention::ProductHeadRetentionTransfer>,
     pub(crate) protection: Option<ProductBranchHeadProtection>,
     pub(crate) origin: Option<PreparedCheckpointOccurrence>,
+    pub(crate) location: Option<PreparedOccurrenceLocation>,
     pub(crate) disposition: OriginalContinuationDisposition,
     pub(crate) occurrence: WorldDurableArtifact,
     pub(crate) committed: Option<WorldCommittedPublication>,
@@ -107,6 +108,7 @@ impl PreparedRecoveredPublication {
             transfer,
             protection,
             origin,
+            location,
             disposition,
             occurrence,
             committed,
@@ -123,6 +125,7 @@ impl PreparedRecoveredPublication {
             transfer,
             protection,
             origin,
+            location,
             disposition,
             occurrence,
             committed,
@@ -159,6 +162,13 @@ impl PreparedRecoveredPublication {
         }
         if self.committed.is_none() {
             let committed = owner.binding.publish(&self.occurrence, execution)?;
+            if let Some(location) = self.location.take() {
+                owner.binding.install_prepared_occurrence_location(
+                    location,
+                    committed.position(),
+                    *committed.digest().bytes(),
+                );
+            }
             // Retain the actual outcome before any later work can fail.
             self.committed = Some(committed);
         }

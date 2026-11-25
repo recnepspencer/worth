@@ -3,6 +3,7 @@ use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort
 use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::CommitOutcomeIdentityInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::super::super::provider_binding::installed_preimage_demand;
@@ -198,15 +199,23 @@ where
     else {
         return terminal(denied(DenialStage::ProposalBinding));
     };
-    let (provider, workflow_settlement_publication) =
-        match provider.stage_local_workflow_settlement(&admission, outcome_identity) {
-            Ok(prepared) => prepared,
-            Err(denial) => {
-                return terminal(WorthQueryApplicationCommitOutcome::Denied(
-                    WorthQueryApplicationCommitDenial::workflow_settlement_denied(&denial),
-                ))
-            }
-        };
+    let (provider, workflow_settlement_publication) = match provider
+        .stage_local_workflow_settlement(
+            &admission,
+            outcome_identity,
+            application
+                .runtime
+                .product_runtime
+                .owner_ref()
+                .owner_identity(),
+        ) {
+        Ok(prepared) => prepared,
+        Err(denial) => {
+            return terminal(WorthQueryApplicationCommitOutcome::Denied(
+                WorthQueryApplicationCommitDenial::workflow_settlement_denied(&denial),
+            ))
+        }
+    };
     let authorization = match take_commit_authorization(application, &mut admission) {
         Ok(authorization) => authorization,
         Err(outcome) => return terminal(outcome),

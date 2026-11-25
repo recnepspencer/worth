@@ -44,13 +44,11 @@ pub use publication_source::WorthQueryApplicationCommitPublicationSource;
 /// is descriptive history only.
 #[derive(Debug, PartialEq)]
 pub struct WorthQueryApplicationCommitReceipt {
-    pub(crate) outcome_identity:
-        Option<super::super::WorthQueryApplicationCommitOutcomeIdentity>,
+    pub(crate) outcome_identity: Option<super::super::WorthQueryApplicationCommitOutcomeIdentity>,
     pub(crate) provider_runtime_instance_id: u64,
     pub(crate) commit: RelationalCommitReceipt,
     pub(crate) committed_product_publication: super::WorthQueryCommittedProductPublication,
-    pub(crate) basis_descriptor:
-        worth_relational::facade::branch::RelationalBranchBasisDescriptor,
+    pub(crate) basis_descriptor: worth_relational::facade::branch::RelationalBranchBasisDescriptor,
     pub(crate) changed_record_count: usize,
     pub(crate) emitted_effect_count: usize,
     pub(crate) precondition_comparison: WorthQueryMutationPreconditionComparisonEvidence,
@@ -257,6 +255,10 @@ impl WorthQueryApplicationCommitReceipt {
 
     pub const fn installed_operation(&self) -> &[u8; 32] {
         self.authority_binding.installed_operation()
+    }
+
+    pub const fn operation_definition_identity(&self) -> &[u8; 32] {
+        self.authority_binding.operation_definition_identity()
     }
 
     pub(crate) const fn runtime_authority(

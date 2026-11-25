@@ -36,6 +36,21 @@ impl RuntimeWorldObservationPort {
             .observe_home_original_publication(execution, effect)
             .map_err(super::super::RuntimeWorldServiceDenial::Denied)
     }
+    /// Observe one durable Home's original World occurrence and Native effect,
+    /// also resolving the recorded empty-branch before component when needed
+    /// for first-generation component export.
+    pub fn observe_home_original_publication_with_before_component(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        effect: worth_relational::facade::durability::ReadmittedRelationalAssociatedEffect,
+    ) -> Result<
+        crate::history::WorldObservedHomePublication,
+        super::super::RuntimeWorldServiceDenial<crate::history::WorldReadmittedPublicationDenial>,
+    > {
+        self.service()?
+            .observe_home_original_publication_with_before_component(execution, effect)
+            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+    }
     /// Read the original durable occurrence for this exact Native owner-admitted
     /// effect. Reconstruction reads the selected World image and bounded tails;
     /// it never executes a handler, publishes, or manufactures a live result.

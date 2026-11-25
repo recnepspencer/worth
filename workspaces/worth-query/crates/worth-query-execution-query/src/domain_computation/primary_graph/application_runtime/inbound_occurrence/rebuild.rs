@@ -60,17 +60,19 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
         maximum_changed_records: NonZeroUsize,
         maximum_ancestry_commits: NonZeroUsize,
     ) -> Result<WorthQueryCanonicalInboundCompletion, Denial> {
-        let inspection = self.runtime.product_runtime.owner_ref().inspection_port();
-        let history = inspection
-            .trace_ancestry(source.commit_identity().clone(), maximum_ancestry_commits)
-            .map_err(|_| Denial::IndexUnavailable)?;
-        let commit = history.commits().next().ok_or(Denial::WorldPairMismatch)?;
-        let row = match source {
+        let observation = self.runtime.product_runtime.owner_ref().observation_port();
+        match source {
             InboundTerminalSource::Performed { .. } => {
+                let inspection = self.runtime.product_runtime.owner_ref().inspection_port();
+                let history = inspection
+                    .trace_ancestry(source.commit_identity().clone(), maximum_ancestry_commits)
+                    .map_err(|_| Denial::IndexUnavailable)?;
+                let commit = history.commits().next().ok_or(Denial::WorldPairMismatch)?;
                 let relational = commit
                     .relational_publication_identity()
                     .ok_or(Denial::WorldPairMismatch)?;
-                self.runtime
+                let row = self
+                    .runtime
                     .primary_provider
                     .completion_row_from_commit_patch(
                         execution,
@@ -78,51 +80,172 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
                         maximum_changed_records,
                     )
                     .map_err(completion_read_denial)?
-                    .ok_or(Denial::WorldPairMismatch)?
+                    .ok_or(Denial::WorldPairMismatch)?;
+                match pair_world_history(&history, &row) {
+                    Ok((original, completion, attempt)) => {
+                        if &completion != source.commit_identity()
+                            || row.original_incarnation_ordinal != source.incarnation().ordinal()
+                            || commit.relational_change()
+                                != worth_runtime_world::facade::CompositeComponentChangePosture::Published
+                        {
+                            return Err(Denial::WorldPairMismatch);
+                        }
+                        let record = self
+                            .runtime
+                            .primary_provider
+                            .completion_original_outbox(
+                                execution,
+                                &row,
+                                &original,
+                                source.incarnation(),
+                                &observation,
+                                maximum_changed_records,
+                            )
+                            .map_err(completion_read_denial)?;
+                        let original_receipt = row.original_commit.clone();
+                        let original_world = original.clone();
+                        let sealed = WorthQueryCanonicalInboundCompletion::from_verified_row(
+                            row,
+                            source.incarnation(),
+                            original,
+                            completion,
+                            attempt,
+                        );
+                        if !sealed.matches_original_dispatch(
+                            &record,
+                            &original_receipt,
+                            &original_world,
+                            source.incarnation(),
+                        ) {
+                            return Err(Denial::WorldPairMismatch);
+                        }
+                        Ok(sealed)
+                    }
+                    Err(Denial::IndexUnavailable)
+                        if history.crossed_retired_history()
+                            && source
+                                .commit_identity()
+                                .owner_identity()
+                                .durable()
+                                .is_some() =>
+                    {
+                        let worth_runtime_world::facade::CompositeCommitProvenance::Publication(
+                            attempt,
+                        ) = commit.provenance()
+                        else {
+                            return Err(Denial::WorldPairMismatch);
+                        };
+                        if commit.identity() != source.commit_identity()
+                            || commit.relational_change()
+                                != worth_runtime_world::facade::CompositeComponentChangePosture::Published
+                            || relational.commit_id() != row.completion_commit.commit_id
+                            || relational.version_id() != row.completion_commit.version_id
+                            || relational.authoring_branch() != &row.completion_commit.branch_id
+                            || row.original_incarnation_ordinal != source.incarnation().ordinal()
+                        {
+                            return Err(Denial::WorldPairMismatch);
+                        }
+                        let completion_world = self
+                            .runtime
+                            .primary_provider
+                            .observe_home_publication_for_receipt(
+                                execution,
+                                &row.completion_commit,
+                                &observation,
+                            )
+                            .map_err(completion_read_denial)?;
+                        if completion_world.composite_commit() != source.commit_identity()
+                            || completion_world.product_incarnation() != source.incarnation()
+                            || completion_world.publication_attempt() != attempt
+                            || completion_world.native_receipt() != &row.completion_commit
+                        {
+                            return Err(Denial::WorldPairMismatch);
+                        }
+                        self.pair_home_completion_source(
+                            execution,
+                            &completion_world,
+                            row,
+                            &observation,
+                            maximum_changed_records,
+                            maximum_ancestry_commits,
+                        )
+                    }
+                    Err(denial) => Err(denial),
+                }
             }
-            InboundTerminalSource::Readmitted { world, entity } => self
-                .runtime
-                .primary_provider
-                .completion_row_from_readmitted_source(execution, world, *entity)
-                .map_err(completion_read_denial)?,
-        };
-        let (original, completion, attempt) = pair_world_history(&history, &row)?;
-        if &completion != source.commit_identity()
-            || row.original_incarnation_ordinal != source.incarnation().ordinal()
+            InboundTerminalSource::Readmitted { world, entity } => {
+                let row = self
+                    .runtime
+                    .primary_provider
+                    .completion_row_from_readmitted_source(execution, world, *entity)
+                    .map_err(completion_read_denial)?;
+                self.pair_home_completion_source(
+                    execution,
+                    world,
+                    row,
+                    &observation,
+                    maximum_changed_records,
+                    maximum_ancestry_commits,
+                )
+            }
+        }
+    }
+
+    fn pair_home_completion_source(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        world: &worth_runtime_world::facade::WorldObservedHomePublication,
+        row: crate::domain_computation::primary_graph::provider::WorthQueryCanonicalCompletionRow,
+        observation: &worth_runtime_world::facade::RuntimeWorldObservationPort,
+        maximum_changed_records: NonZeroUsize,
+        maximum_ancestry_commits: NonZeroUsize,
+    ) -> Result<WorthQueryCanonicalInboundCompletion, Denial> {
+        if &row.completion_commit != world.native_receipt()
+            || row.original_incarnation_ordinal != world.product_incarnation().ordinal()
         {
             return Err(Denial::WorldPairMismatch);
         }
-        if commit.relational_change()
-            != worth_runtime_world::facade::CompositeComponentChangePosture::Published
+        let original_world = self
+            .runtime
+            .primary_provider
+            .observe_home_publication_for_receipt(execution, &row.original_commit, observation)
+            .map_err(completion_read_denial)?;
+        if original_world.after().branch().owner() != world.after().branch().owner()
+            || original_world.product_branch() != world.product_branch()
+            || original_world.product_incarnation() != world.product_incarnation()
+            || original_world.native_receipt() != &row.original_commit
+            || original_world.product_generation().get() >= world.product_generation().get()
         {
             return Err(Denial::WorldPairMismatch);
         }
+        let span = world.product_generation().get() - original_world.product_generation().get();
+        if span >= maximum_ancestry_commits.get() as u64 {
+            return Err(Denial::ReconstructionWorkExhausted);
+        }
+        let original_commit = original_world.composite_commit().clone();
         let record = self
             .runtime
             .primary_provider
-            .completion_original_outbox(
+            .completion_original_outbox_from_observed(
                 execution,
+                original_world,
                 &row,
-                &original,
-                source.incarnation(),
-                &self.runtime.product_runtime.owner_ref().observation_port(),
                 maximum_changed_records,
             )
             .map_err(completion_read_denial)?;
         let original_receipt = row.original_commit.clone();
-        let original_world = original.clone();
         let sealed = WorthQueryCanonicalInboundCompletion::from_verified_row(
             row,
-            source.incarnation(),
-            original,
-            completion,
-            attempt,
+            world.product_incarnation(),
+            original_commit.clone(),
+            world.composite_commit().clone(),
+            world.publication_attempt().clone(),
         );
         if !sealed.matches_original_dispatch(
             &record,
             &original_receipt,
-            &original_world,
-            source.incarnation(),
+            &original_commit,
+            world.product_incarnation(),
         ) {
             return Err(Denial::WorldPairMismatch);
         }

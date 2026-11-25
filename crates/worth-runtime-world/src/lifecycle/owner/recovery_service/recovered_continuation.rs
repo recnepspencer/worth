@@ -229,6 +229,7 @@ where
             .map_err(Denial::Durable)?
             .clone();
         let origin = original_occurrence.take_origin();
+        let location = original_occurrence.take_location();
         let disposition = match &effects.record.continued {
             Some(source) => OriginalContinuationDisposition::Readmitted(source.clone()),
             None => OriginalContinuationDisposition::Undisposed(
@@ -308,6 +309,7 @@ where
             transfer: Some(transfer),
             protection: None,
             origin: Some(origin),
+            location,
             disposition,
             occurrence,
             committed: None,

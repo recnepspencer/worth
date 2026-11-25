@@ -68,6 +68,9 @@ impl PublicationGates {
         }
     }
 }
+pub(crate) type PreparedOccurrenceLocation =
+    worth_execution::ExecutionOrderedMapCell<u64, (u64, [u8; 32])>;
+
 /// One attached writer. Unresolved state has no reset; actual reopen constructs
 /// a new binding only after physical recovery and Home admission.
 #[derive(Debug)]
@@ -79,6 +82,7 @@ pub(crate) struct WorldDurableMediumBinding {
         Mutex<super::checkpoint::WorldCheckpointAcknowledgement>,
     pub(in crate::durability) checkpoint_origin:
         Mutex<super::checkpoint::WorldCheckpointOriginState>,
+    occurrence_locations: Mutex<worth_execution::ExecutionOrderedMap<u64, (u64, [u8; 32])>>,
     _funding: Option<worth_execution::ExecutionMemoryReservation>,
 }
 impl WorldDurableMediumBinding {
@@ -98,6 +102,7 @@ impl WorldDurableMediumBinding {
             gates: Mutex::new(PublicationGates::default()),
             checkpoint_acknowledgement: Mutex::new(Default::default()),
             checkpoint_origin: Mutex::new(Default::default()),
+            occurrence_locations: Mutex::new(worth_execution::ExecutionOrderedMap::default()),
             _funding: funding,
         }))
     }
@@ -117,6 +122,59 @@ impl WorldDurableMediumBinding {
         self.current_home_binding
             .set(binding)
             .expect("the before-service Home receiver is promoted once");
+    }
+    pub(crate) fn prepare_occurrence_location(
+        attempt_ordinal: u64,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<PreparedOccurrenceLocation, WorldDurableMediumDenial> {
+        worth_execution::ExecutionOrderedMapCell::prepare_for_request(
+            attempt_ordinal,
+            (0, [0; 32]),
+            *request,
+        )
+        .map_err(WorldDurableMediumDenial::Ordered)
+    }
+    pub(crate) fn install_prepared_occurrence_location(
+        &self,
+        cell: PreparedOccurrenceLocation,
+        position: u64,
+        digest: [u8; 32],
+    ) {
+        let key = *cell.key();
+        let rejected = {
+            let mut locations = self
+                .occurrence_locations
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
+            match locations.insert_vacant_prepared(cell) {
+                Ok(()) => {
+                    let _ = locations.set_existing_unique(&key, (position, digest));
+                    None
+                }
+                Err((_, cell)) => Some(cell),
+            }
+        };
+        drop(rejected);
+    }
+    pub(crate) fn install_recovered_occurrence_locations(
+        &self,
+        recovered: worth_execution::ExecutionOrderedMap<u64, (u64, [u8; 32])>,
+    ) {
+        let previous = {
+            let mut locations = self
+                .occurrence_locations
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
+            std::mem::replace(&mut *locations, recovered)
+        };
+        drop(previous);
+    }
+    pub(crate) fn occurrence_location(&self, attempt_ordinal: u64) -> Option<(u64, [u8; 32])> {
+        self.occurrence_locations
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .get(&attempt_ordinal)
+            .copied()
     }
     pub(crate) fn capture_checkpoint_source(
         self: &Arc<Self>,

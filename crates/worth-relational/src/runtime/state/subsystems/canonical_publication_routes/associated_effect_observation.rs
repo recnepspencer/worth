@@ -18,6 +18,16 @@ impl RelationalCanonicalPublicationRoutes {
             .collect()
     }
 
+    pub(crate) fn performed_effect_residency(
+        &self,
+        commit_id: crate::history::data::CommitId,
+    ) -> Option<Arc<RelationalCommitEnvelopeResidency>> {
+        self.by_commit
+            .get(&commit_id)
+            .filter(|route| route.is_performed())
+            .map(|route| route.envelope.clone())
+    }
+
     pub(crate) fn associated_effect_settlement(
         &self,
         entry: &RelationalCommitIndexEntry,
