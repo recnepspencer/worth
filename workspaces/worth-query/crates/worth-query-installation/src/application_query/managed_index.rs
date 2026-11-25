@@ -147,7 +147,6 @@ fn validate_source(
         || definition.managed_index().is_some()
         || definition.continuation().is_some()
         || definition.live_cause().is_some()
-        || definition.is_live_whole_result()
         || definition.orbit().is_some()
         || definition.component_selection().is_some()
     {

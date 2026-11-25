@@ -1,15 +1,20 @@
-//! Local setup and live/index refusals explain themselves, and an action's
-//! own `validate` reason reaches the end user verbatim.
+//! Local setup, live/index and operation-close refusals explain themselves,
+//! and an action's own `validate` reason reaches the end user verbatim.
 use std::num::NonZeroUsize;
 use std::time::Duration;
 
 use worth_query_host::facade::{
     admission::authenticated_principal::*,
+    application_contribution::{
+        WorthQueryAdvancementDenial, WorthQueryManagedComputationInterruption,
+    },
     application_entry::{
         WorthQueryApplicationLiveOpenRequestDenial, WorthQueryApplicationRequestQueryDenial,
+        WorthQueryOperationCloseDenial,
     },
     application_installation::ApplicationBuildIdentity,
     local_calendar::WorthQueryLocalCalendarDenial,
+    product::WorthQueryProductBranchOwnerCleanupDenial,
     RuntimeWorldBudgetDenial, RuntimeWorldBudgetResource, WorthQueryApplicationHome,
     WorthQueryHomeConfig, WorthQueryRefusalCategory as Category, WorthQueryUserFacingRefusal,
 };
@@ -139,4 +144,37 @@ fn an_action_validate_reason_reaches_the_user_verbatim() {
     );
     assert_eq!(denial.user_message(), LABEL_REASON);
     assert!(!denial.retryable());
+}
+
+#[test]
+fn discarding_a_held_command_explains_its_close_refusal() {
+    // Native still settling, or cleanup busy, is worth retrying shortly.
+    assert_summary(
+        &WorthQueryOperationCloseDenial::NativeObligationRetained,
+        Category::Unavailable,
+    );
+    assert_summary(
+        &WorthQueryOperationCloseDenial::Owner(
+            WorthQueryProductBranchOwnerCleanupDenial::CleanupBusy,
+        ),
+        Category::Unavailable,
+    );
+    assert_summary(
+        &WorthQueryOperationCloseDenial::CleanupCapacity,
+        Category::Capacity,
+    );
+    let cancelled =
+        WorthQueryOperationCloseDenial::Execution(WorthQueryAdvancementDenial::Interrupted(
+            WorthQueryManagedComputationInterruption::Cancelled,
+        ));
+    assert_summary(&cancelled, Category::Interrupted);
+    assert!(cancelled.retryable());
+    // Misusing the close (a different request) is a defect, never retried.
+    let mismatch = WorthQueryOperationCloseDenial::FreshRequestMismatch;
+    assert_summary(&mismatch, Category::Internal);
+    assert!(!mismatch.retryable());
+    assert_summary(
+        &WorthQueryOperationCloseDenial::DeferredFixedCompletionUnsupported { issue: "#1" },
+        Category::Unsupported,
+    );
 }

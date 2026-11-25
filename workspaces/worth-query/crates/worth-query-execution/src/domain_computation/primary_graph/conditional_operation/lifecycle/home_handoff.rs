@@ -28,11 +28,9 @@ impl<Binding, Reconstruction, Execution, Clock, Input>
         self.active_affinity = None;
         let inactive = self.inactive_bindings.keys().cloned().collect::<Vec<_>>();
         for key in inactive {
-            let binding = self
-                .inactive_bindings
-                .get(&key)
-                .expect("original inactive binding");
-            release_clock(bridge, &binding.affinity, &binding.managed_clock)?;
+            if let Some(binding) = self.inactive_bindings.get(&key) {
+                release_clock(bridge, &binding.affinity, &binding.managed_clock)?;
+            }
             self.inactive_bindings.remove(&key);
         }
         self.retained_wakes.clear();
@@ -98,16 +96,37 @@ fn prepare_wake<Schema: worth_query_installation::facade::ApplicationSchema>(
                 Err(Denial::Unsupported(Owner::ConditionalRuntime))
             }
         }
+        // A refused or no-effect attempt committed nothing and owes no
+        // cleanup; the next Home re-derives the still-due wake from the
+        // clock, unless a durable continuation row must be consumed first.
+        Decision::OperationNoEffect(_, _) | Decision::OperationTerminalFailure(_, _) => {
+            if retains_durable_continuation(runtime, wake) {
+                Err(Denial::Unsupported(Owner::ConditionalRuntime))
+            } else {
+                Ok(())
+            }
+        }
         Decision::OperationPreparationPending(_, _)
         | Decision::OperationPreparationRefused(_, _)
         | Decision::OperationProductUnpublished(_, _, _)
-        | Decision::OperationNoEffect(_, _)
         | Decision::OperationExecutionControlRetryable(_, _)
-        | Decision::OperationTerminalFailure(_, _)
         | Decision::OperationControlStopped(_, _)
         | Decision::InterruptedDuringReentry
         | Decision::Failed(_) => Err(Denial::Unsupported(Owner::ConditionalRuntime)),
     }
+}
+
+fn retains_durable_continuation<Schema: worth_query_installation::facade::ApplicationSchema>(
+    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    wake: &super::super::signal_decision_reentry::WorthQueryRetainedConditionalWake,
+) -> bool {
+    wake.continuation_identity.is_some_and(|continuation| {
+        runtime.installed_program_support().is_some_and(|support| {
+            support
+                .lifecycle()
+                .retains_conditional_decision(&continuation.key)
+        })
+    })
 }
 
 fn release_clock(

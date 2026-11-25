@@ -148,6 +148,21 @@ pub(super) fn retained_decision_counts(
     counts
 }
 
+/// Query's fallback output version for one managed due-wake evaluation.
+///
+/// Authoritative deliveries bump the conditional node's output aspect by one
+/// per delivered change, counting up from zero, while a wake's attempt is a
+/// small Signal wake ordinal. Supplied bare, an attempt can equal that
+/// delivery-bumped baseline (a rule scheduled and caught up in one session),
+/// so Signal reads the new occurrence as a reverted-clean recompute and
+/// suppresses it. Wake versions therefore occupy the upper half of the version
+/// space, which per-change bumps never reach: every wake evaluation differs
+/// from its baseline, as it does on a cold reopen with no deliveries.
+fn wake_output_version(attempt: u64) -> u64 {
+    const WAKE_OUTPUT_VERSIONS: u64 = 1 << 63;
+    WAKE_OUTPUT_VERSIONS.saturating_add(attempt)
+}
+
 pub(super) fn evaluate_due_wake(
     execution: worth_execution::ExecutionRequest<'_, '_>,
 
@@ -163,7 +178,7 @@ pub(super) fn evaluate_due_wake(
 ) -> WorthQueryRetainedConditionalWake {
     let attempt = due.signal_ready_ordinal();
     let mut compute = QueryConditionalComputeContext {
-        output_version: attempt,
+        output_version: wake_output_version(attempt),
     };
     let lowering = signal_basis.installed_lowering_ref();
     let result = bridge.execute_managed_due_wake(
@@ -226,7 +241,7 @@ pub(super) fn reconsider_retained_wake(
     }
     wake.attempt = wake.attempt.saturating_add(1);
     let mut compute = QueryConditionalComputeContext {
-        output_version: wake.attempt,
+        output_version: wake_output_version(wake.attempt),
     };
     let lowering = signal_basis.installed_lowering_ref();
     let result = bridge.execute_managed_due_wake(
@@ -282,7 +297,7 @@ pub(super) fn reconsider_execution_denied_wake(
     }
     wake.attempt = wake.attempt.saturating_add(1);
     let mut compute = QueryConditionalComputeContext {
-        output_version: wake.attempt,
+        output_version: wake_output_version(wake.attempt),
     };
     let lowering = signal_basis.installed_lowering_ref();
     let result = bridge.execute_managed_due_wake(

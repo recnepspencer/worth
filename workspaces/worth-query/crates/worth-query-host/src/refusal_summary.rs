@@ -18,6 +18,7 @@ mod home;
 mod live_open;
 mod local_setup;
 mod managed_index;
+mod operation_close;
 mod preview;
 mod query_read;
 mod request;
