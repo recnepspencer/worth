@@ -274,47 +274,32 @@ impl RecordIdentitySubsystem {
                     .get(&(class, partition_id))
                     .copied()
                     .unwrap_or(0);
-                if slot < expected_slot && state.replay_gaps.take((class, partition_id), slot) {
-                    // A candidate prepared earlier published later.
-                    state
-                        .generation_high_water
-                        .insert((class, partition_id, slot), generation);
-                    state.pending.insert(
-                        (class, partition_id, slot),
-                        PendingRecordReservation { generation, origin },
-                    );
-                    super::observation::reserved(
-                        &self.state,
-                        class,
-                        partition_id,
-                        slot,
-                        generation,
-                    );
-                    return Ok(RecordSlotReservation::new(
-                        Arc::clone(&self.state),
-                        class,
-                        partition_id,
-                        slot,
-                        generation,
-                        ReservationOrigin::AppendFrontier,
-                    ));
-                }
-                if slot != expected_slot {
-                    return Err(RecordAllocationDenial::ReplayAppendFrontierMismatch {
-                        ordinal,
-                        class,
-                        partition_id,
-                        expected_slot,
-                        observed_slot: slot,
-                    });
-                }
-                let next =
-                    slot.checked_add(1)
-                        .ok_or(RecordAllocationDenial::SlotFrontierExhausted {
+                if slot < expected_slot {
+                    if !state.replay_gaps.take((class, partition_id), slot) {
+                        return Err(RecordAllocationDenial::ReplayAppendFrontierMismatch {
+                            ordinal,
                             class,
                             partition_id,
-                        })?;
-                state.next_slots.insert((class, partition_id), next);
+                            expected_slot,
+                            observed_slot: slot,
+                        });
+                    }
+                } else {
+                    if slot > expected_slot {
+                        // A concurrent branch preparation reserved the intermediate
+                        // append slot(s) before this candidate published.
+                        state
+                            .replay_gaps
+                            .skip((class, partition_id), expected_slot, slot);
+                    }
+                    let next = slot.checked_add(1).ok_or(
+                        RecordAllocationDenial::SlotFrontierExhausted {
+                            class,
+                            partition_id,
+                        },
+                    )?;
+                    state.next_slots.insert((class, partition_id), next);
+                }
                 ReservationOrigin::AppendFrontier
             }
         };

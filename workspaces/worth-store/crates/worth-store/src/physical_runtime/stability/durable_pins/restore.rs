@@ -52,11 +52,13 @@ pub(in crate::physical_runtime) fn replay(
                 )
                 .map_err(|_| RootPinJournalDamaged)?;
             }
-            RootPinEvent::Expiring { pin } => {
-                if core.state(pin).ok_or(RootPinJournalDamaged)? == RootPinState::Active {
+            RootPinEvent::Expiring { pin } => match core.state(pin).ok_or(RootPinJournalDamaged)? {
+                RootPinState::Active => {
                     core.expire(pin).map_err(|_| RootPinJournalDamaged)?;
                 }
-            }
+                RootPinState::Expiring => {}
+                RootPinState::Expired => return Err(RootPinJournalDamaged),
+            },
             RootPinEvent::Expired { pin } => complete(&mut core, pin)?,
         }
     }

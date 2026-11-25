@@ -157,3 +157,27 @@ fn a_historical_fork_taken_after_a_checkpoint_rebuilds_its_source_from_the_check
         current_head(&runtime, &branch("main"))
     );
 }
+
+#[test]
+fn multi_hop_deleted_fork_source_recovers_inherited_ancestor_commit() {
+    let request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
+    let execution = &ExecutionRequest::serial(&request);
+    let medium = TestDurableMedium::new();
+    let mut runtime = durable_runtime(&medium);
+    let c0 = commit(execution, &runtime, "c0-on-main", "main");
+    fork(execution, &runtime, "b1");
+    let (_, b1_source) = runtime.observe_fork_source(&branch("b1")).unwrap();
+    runtime
+        .fork_branch(execution, branch("b2"), b1_source)
+        .unwrap();
+    let b1 = runtime.branch_identity(&branch("b1")).unwrap();
+    runtime.delete_branch(execution, &b1).unwrap();
+    checkpoint(execution, &runtime, &medium);
+
+    let recovered = recover(execution, &medium, durable_runtime(&medium)).1;
+    assert!(recovered.branch_identity(&branch("b1")).is_err());
+    assert_eq!(
+        current_head(&recovered, &branch("b2")).unwrap().commit_id,
+        c0
+    );
+}

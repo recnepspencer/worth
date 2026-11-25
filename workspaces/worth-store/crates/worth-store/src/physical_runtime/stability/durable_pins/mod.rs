@@ -8,9 +8,11 @@
 //! protected across displaced-segment retirement and crash/reopen, while
 //! unrelated displaced garbage keeps retiring.
 //!
-//! Ordering keeps protection conservative across any crash: a pin and an
-//! `Expiring` step take effect in memory before their durable entry, and an
-//! `Expired` step is made durable before memory releases the root.
+//! Ordering keeps protection conservative across any crash: a pin takes effect
+//! in memory before its durable entry, while `Expiring` and `Expired` steps
+//! are written durably before memory advances (`Expiring` is also applied
+//! conservatively in memory if its append fate is indeterminate, and left
+//! unchanged on proven `NoEffect`).
 pub(in crate::physical_runtime) mod event;
 mod loan;
 pub(in crate::physical_runtime) mod restore;
@@ -122,9 +124,18 @@ impl<'runtime> PhysicalRootPins<'runtime> {
         let pins = registry.pins();
         let _journal = pins.lock_journal();
         if pins.expiry(pin)? == RootPinExpiry::BeginExpiring {
-            pins.expire(pin)?;
-            self.append(&RootPinEvent::Expiring { pin }, write)
-                .map_err(storage)?;
+            match self.append(&RootPinEvent::Expiring { pin }, write) {
+                Ok(()) => {
+                    pins.expire(pin)?;
+                }
+                Err(AppendFate::Indeterminate) => {
+                    let _ = pins.expire(pin);
+                    return Err(RootPinDenial::StorageIndeterminate);
+                }
+                Err(AppendFate::NoEffect) => {
+                    return Err(RootPinDenial::StorageUnavailable);
+                }
+            }
         }
         self.settle(pin, write)?;
         pins.state(pin).ok_or(RootPinDenial::PinNotFound)
