@@ -159,6 +159,34 @@ fn host_oracle_service_child() {
                     &mut originals,
                 );
             }
+            Request::MutateDroppingResponse { key, value } => {
+                let outcome = super::execution::mutation(
+                    home.as_ref().unwrap(),
+                    &HostCommand::Mutate {
+                        branch: BranchLabel::Main,
+                        key,
+                        value,
+                    },
+                    &mut originals,
+                );
+                let dropped = Response {
+                    state: home
+                        .as_ref()
+                        .map(|h| host_observation::projection::observe(h.runtime(), &execution)),
+                    mutation: outcome,
+                    disposition: None,
+                    initialized: initialized.load(std::sync::atomic::Ordering::SeqCst),
+                    contacts: contacts.load(std::sync::atomic::Ordering::SeqCst),
+                    closed: false,
+                };
+                crate::killed_child::announce(
+                    &channel.join("dropped_response_observation"),
+                    &serde_json::to_vec(&dropped).unwrap(),
+                );
+                loop {
+                    std::thread::sleep(std::time::Duration::from_secs(60));
+                }
+            }
             Request::Close => {
                 let result = home
                     .take()
@@ -174,8 +202,13 @@ fn host_oracle_service_child() {
                 };
                 closed = result.is_closed();
                 result.reclaim();
-                disposition = Some(super::protocol::Disposition::ClosedWithCheckpoint {
-                    generation,
+                disposition =
+                    Some(super::protocol::Disposition::ClosedWithCheckpoint { generation });
+            }
+            Request::Checkpoint => {
+                let checkpoint = home.as_ref().unwrap().checkpoint(&execution).unwrap();
+                disposition = Some(super::protocol::Disposition::Checkpointed {
+                    generation: checkpoint.generation(),
                 });
             }
             Request::CheckpointAndDiscard => {
@@ -205,12 +238,15 @@ fn host_oracle_service_child() {
                 ));
                 closed = result.is_closed();
                 result.reclaim();
-                disposition = Some(super::protocol::Disposition::ClosedWithCheckpoint {
-                    generation: None,
-                });
+                disposition =
+                    Some(super::protocol::Disposition::ClosedWithCheckpoint { generation: None });
             }
             Request::InspectCadence => {
-                let inspection = home.as_ref().unwrap().inspect_checkpoint(&execution).unwrap();
+                let inspection = home
+                    .as_ref()
+                    .unwrap()
+                    .inspect_checkpoint(&execution)
+                    .unwrap();
                 let journals = inspection
                     .journals
                     .iter()

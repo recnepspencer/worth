@@ -20,26 +20,69 @@ use worth_runtime_world::facade::{
 };
 
 mod child;
+mod decisive;
 pub(super) use child::{continue_original, release_original};
 
 #[test]
 fn recovered_original_release_kill_reopen_stays_released() {
-    journey(false, false);
+    script_journey(false, false);
 }
 #[test]
 fn recovered_original_continue_kill_reopen_publishes_once() {
-    journey(true, false);
+    script_journey(true, false);
 }
 #[test]
 fn killed_after_continued_resumes_original_occurrence_and_forbids_release() {
-    journey(true, true);
+    script_journey(true, true);
+}
+#[test]
+fn recovered_original_release_kill_reopen_stays_released_before_first_checkpoint() {
+    checkpoint_posture_journey(false, false, false);
+}
+#[test]
+fn recovered_original_continue_kill_reopen_publishes_once_before_first_checkpoint() {
+    checkpoint_posture_journey(true, false, false);
+}
+#[test]
+fn killed_after_continued_resumes_original_occurrence_and_forbids_release_before_first_checkpoint()
+{
+    checkpoint_posture_journey(true, true, false);
+}
+#[test]
+fn recovered_original_release_kill_reopen_stays_released_after_first_checkpoint() {
+    checkpoint_posture_journey(false, false, true);
+}
+#[test]
+fn recovered_original_continue_kill_reopen_publishes_once_after_first_checkpoint() {
+    checkpoint_posture_journey(true, false, true);
+}
+#[test]
+fn killed_after_continued_resumes_original_occurrence_and_forbids_release_after_first_checkpoint() {
+    checkpoint_posture_journey(true, true, true);
 }
 
 fn start(path: &Path, root: &Path, generation: &mut usize) -> (Session, super::protocol::Response) {
     *generation += 1;
     Session::start(path, &root.join(format!("session-{generation}")), 0)
 }
-fn journey(continuing: bool, interrupt_continued: bool) {
+fn assert_checkpoint_posture(session: &mut Session, expect_checkpointed: bool, label: &str) {
+    let Some(Disposition::Cadence { journals }) = session.send(Request::InspectCadence).disposition
+    else {
+        panic!("expected cadence inspection ({label})");
+    };
+    if expect_checkpointed {
+        assert!(
+            journals.iter().any(|(_, covered, _)| *covered > 0),
+            "post-checkpoint journey must have journal coverage ({label}): {journals:?}"
+        );
+    } else {
+        assert!(
+            journals.iter().all(|(_, covered, _)| *covered == 0),
+            "pre-checkpoint journey must have zero checkpoint coverage ({label}): {journals:?}"
+        );
+    }
+}
+fn script_journey(continuing: bool, interrupt_continued: bool) {
     let root = tempfile::tempdir().unwrap();
     let path = root.path().join("home");
     let script = HostScript::generate(0);
@@ -67,12 +110,81 @@ fn journey(continuing: bool, interrupt_continued: bool) {
         }
     }
     let original = abandoned.unwrap().state.unwrap();
+    complete_recovered_journey(
+        session,
+        &path,
+        root.path(),
+        &mut generation,
+        original,
+        key,
+        value,
+        continuing,
+        interrupt_continued,
+        None,
+    );
+}
+fn checkpoint_posture_journey(
+    continuing: bool,
+    interrupt_continued: bool,
+    take_first_checkpoint: bool,
+) {
+    let root = tempfile::tempdir().unwrap();
+    let path = root.path().join("home");
+    let mut generation = 0;
+    let (mut session, _) = start(&path, root.path(), &mut generation);
+    let seeded = session.send(Request::Mutate { key: 1, value: 10 });
+    assert_eq!(
+        seeded.mutation.as_ref().map(|m| m.fate),
+        Some(host_observation::receipts::MutationFate::Committed),
+        "initial mutation must commit before checkpoint posture split"
+    );
+    if take_first_checkpoint {
+        let checkpointed = session.send(Request::Checkpoint);
+        assert!(
+            matches!(
+                checkpointed.disposition,
+                Some(Disposition::Checkpointed { generation }) if generation >= 1
+            ),
+            "first home checkpoint must land before abandonment: {:?}",
+            checkpointed.disposition
+        );
+    }
+    assert_checkpoint_posture(&mut session, take_first_checkpoint, "before abandonment");
+    let (key, value) = (2, 20);
+    let abandoned = session.send(Request::AbandonOriginal { key, value });
+    let original = abandoned.state.unwrap();
+    complete_recovered_journey(
+        session,
+        &path,
+        root.path(),
+        &mut generation,
+        original,
+        key,
+        value,
+        continuing,
+        interrupt_continued,
+        Some(take_first_checkpoint),
+    );
+}
+#[allow(clippy::too_many_arguments)]
+fn complete_recovered_journey(
+    mut session: Session,
+    path: &Path,
+    root: &Path,
+    generation: &mut usize,
+    original: host_observation::projection::StateProjection,
+    key: u64,
+    value: u64,
+    continuing: bool,
+    interrupt_continued: bool,
+    expected_checkpoint_posture: Option<bool>,
+) {
     let [original_custody] = original.custody.as_slice() else {
         panic!("one actual original abandoned effect")
     };
     assert!(original_custody.original_effect.is_some());
     session.kill();
-    let (mut session, reopened) = start(&path, root.path(), &mut generation);
+    let (mut session, reopened) = start(path, root, generation);
     let state = reopened.state.unwrap();
     let [custody] = state.custody.as_slice() else {
         panic!("actual custody reaches reopened service")
@@ -82,6 +194,9 @@ fn journey(continuing: bool, interrupt_continued: bool) {
     assert_eq!(state.head, original.head);
     assert_eq!(reopened.contacts, 0);
     assert_eq!(reopened.initialized, 0);
+    if let Some(expect_checkpointed) = expected_checkpoint_posture {
+        assert_checkpoint_posture(&mut session, expect_checkpointed, "after first kill/reopen");
+    }
     if interrupt_continued {
         session.dispatch(Request::ContinueOriginal {
             key,
@@ -102,7 +217,7 @@ fn journey(continuing: bool, interrupt_continued: bool) {
             "no response before the occurrence"
         );
         session.kill();
-        let (next, recovered) = start(&path, root.path(), &mut generation);
+        let (next, recovered) = start(path, root, generation);
         session = next;
         let state = recovered.state.unwrap();
         assert_eq!(state.head, original.head);
@@ -168,12 +283,15 @@ fn journey(continuing: bool, interrupt_continued: bool) {
         assert_eq!(selected.head, original.head);
     }
     session.kill();
-    let (mut session, recovered) = start(&path, root.path(), &mut generation);
+    let (mut session, recovered) = start(path, root, generation);
     let stable = recovered.state.unwrap();
     assert!(stable.custody.is_empty());
     assert_eq!(stable.head, selected.head);
     assert_eq!(stable.occurrences.len(), selected.occurrences.len());
     assert_eq!(recovered.contacts, 0);
+    if let Some(expect_checkpointed) = expected_checkpoint_posture {
+        assert_checkpoint_posture(&mut session, expect_checkpointed, "after final kill/reopen");
+    }
     if let Some(released) = released {
         let observed = session.send(Request::ObserveReleased { key, value });
         assert_eq!(observed.contacts, 0);

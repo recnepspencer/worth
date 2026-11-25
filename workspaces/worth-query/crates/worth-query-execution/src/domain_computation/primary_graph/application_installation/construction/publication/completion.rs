@@ -41,12 +41,21 @@ pub(super) fn complete<S: ApplicationSchemaComposition>(
             .product_runtime_ref()
             .activations_ref()
             .require_program_coordination();
-        application.inner.program_support = Some(
+        let installed_support =
             crate::domain_computation::primary_graph::program_occurrence::WorthQueryInstalledProgramSupport::installed(
                 support.roster,
                 activation,
-            ),
-        );
+            );
+        installed_support
+            .obligation_history()
+            .attach_obligation_basis_pins(
+                application
+                    .inner
+                    .runtime
+                    .recovered_outputs_ref()
+                    .basis_pins_handle(),
+            );
+        application.inner.program_support = Some(installed_support);
     }
     crate::domain_computation::primary_graph::application_installation::checkpoint_lineage::restore(&application, &execution).map_err(Denial::Graph)?;
     Ok(application)

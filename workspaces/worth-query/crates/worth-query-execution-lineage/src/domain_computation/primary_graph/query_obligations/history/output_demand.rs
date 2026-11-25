@@ -6,6 +6,13 @@ use worth_execution::ExecutionRequest;
 use worth_foundational::facade::DurableCompositeCommitIdentity;
 use worth_query_execution_obligations::facade::ledger_inspect;
 
+fn merge_sorted<T: Ord>(mut target: Vec<T>, extra: impl IntoIterator<Item = T>) -> Vec<T> {
+    target.extend(extra);
+    target.sort_unstable();
+    target.dedup();
+    target
+}
+
 pub struct OutputDemandRetention {
     pub position: NonZeroU64,
     pub pending_denial: Option<QueryObligationDenial>,
@@ -51,6 +58,7 @@ impl QueryObligationHistory {
         &self,
         request: &ExecutionRequest<'_, '_>,
         mut row: QueryOutputDemandObligation,
+        lifecycle: u64,
     ) -> Result<Option<OutputDemandRetention>, QueryObligationDenial> {
         let Some(medium) = self.medium.get() else {
             return Ok(None);
@@ -58,9 +66,68 @@ impl QueryObligationHistory {
         self.flush_output_discharges(request)?;
         let driver = self.lock_publication()?;
         driver.finish_pending(medium.as_ref(), request)?;
+        let prior = {
+            let mut state = self.state();
+            if state
+                .retired_branches
+                .contains(&(row.branch.clone(), lifecycle))
+            {
+                return Err(QueryObligationDenial::ObligationSubjectMismatch);
+            }
+            let pos = state.journal.as_ref().and_then(|journal| {
+                ledger_inspect::output(&journal.ledger)
+                    .subjects
+                    .get(&ledger_inspect::output_demand_subject(&row))
+                    .copied()
+            });
+            if let Some(pos) = pos {
+                match state.demand_lifecycles.get(&pos).copied() {
+                    Some(prior_lc) if prior_lc > lifecycle => {
+                        return Err(QueryObligationDenial::ObligationSubjectMismatch);
+                    }
+                    Some(prior_lc) if prior_lc < lifecycle => Some((pos, None)),
+                    _ => {
+                        state.demand_lifecycles.entry(pos).or_insert(lifecycle);
+                        let existing = ledger_inspect::output(
+                            &state.journal.as_ref().expect("admitted journal").ledger,
+                        )
+                        .demands[&pos]
+                            .clone();
+                        Some((pos, Some(existing)))
+                    }
+                }
+            } else {
+                None
+            }
+        };
+        if let Some((prior, existing)) = prior {
+            if let Some(existing) = existing {
+                let record = QueryOutputDemandRecord::Links {
+                    acquire_position: prior,
+                    performed_sources: merge_sorted(
+                        existing.performed_sources,
+                        row.performed_sources,
+                    ),
+                    prerequisites: merge_sorted(existing.prerequisites, row.prerequisites),
+                    checkpoint_prerequisites: merge_sorted(
+                        existing.checkpoint_prerequisites,
+                        row.checkpoint_prerequisites,
+                    ),
+                };
+                let pending_denial = driver.publish(medium.as_ref(), record, request).err();
+                return Ok(Some(OutputDemandRetention {
+                    position: prior,
+                    pending_denial,
+                }));
+            }
+            let discharge = QueryOutputDemandRecord::Discharge {
+                acquire_position: prior,
+            };
+            driver.publish(medium.as_ref(), discharge, request)?;
+        }
         let position = {
-            let state = self.state();
-            state
+            let mut state = self.state();
+            let position = state
                 .journal
                 .as_ref()
                 .ok_or(QueryObligationDenial::SupportUnavailable)?
@@ -68,63 +135,16 @@ impl QueryObligationHistory {
                 .position()
                 .checked_add(1)
                 .and_then(NonZeroU64::new)
-                .ok_or(QueryObligationDenial::IdentityExhausted)?
+                .ok_or(QueryObligationDenial::IdentityExhausted)?;
+            row.acquire_position = position;
+            state
+                .journal
+                .as_mut()
+                .expect("admitted journal")
+                .prepare_pending(QueryOutputDemandRecord::Retain(row))?;
+            state.demand_lifecycles.insert(position, lifecycle);
+            position
         };
-        row.acquire_position = position;
-        let prior = {
-            let state = self.state();
-            state.journal.as_ref().and_then(|journal| {
-                ledger_inspect::output(&journal.ledger)
-                    .subjects
-                    .get(&ledger_inspect::output_demand_subject(&row))
-                    .copied()
-            })
-        };
-        if let Some(prior) = prior {
-            let existing = ledger_inspect::output(
-                &self
-                    .state()
-                    .journal
-                    .as_ref()
-                    .expect("admitted journal")
-                    .ledger,
-            )
-            .demands[&prior]
-                .clone();
-            let mut sources = existing.performed_sources;
-            sources.extend(row.performed_sources);
-            sources.sort_unstable();
-            sources.dedup();
-            let mut prerequisites = existing.prerequisites;
-            prerequisites.extend(row.prerequisites);
-            prerequisites.sort_unstable();
-            prerequisites.dedup();
-            let mut checkpoint_prerequisites = existing.checkpoint_prerequisites;
-            checkpoint_prerequisites.extend(row.checkpoint_prerequisites);
-            checkpoint_prerequisites.sort_unstable();
-            checkpoint_prerequisites.dedup();
-            let pending_denial = driver
-                .publish(
-                    medium.as_ref(),
-                    QueryOutputDemandRecord::Links {
-                        acquire_position: prior,
-                        performed_sources: sources,
-                        prerequisites,
-                        checkpoint_prerequisites,
-                    },
-                    request,
-                )
-                .err();
-            return Ok(Some(OutputDemandRetention {
-                position: prior,
-                pending_denial,
-            }));
-        }
-        self.state()
-            .journal
-            .as_mut()
-            .expect("admitted journal")
-            .prepare_pending(QueryOutputDemandRecord::Retain(row))?;
         let pending_denial = driver.finish_pending(medium.as_ref(), request).err();
         if pending_denial == Some(QueryObligationDenial::PublicationNoEffect) {
             return Err(QueryObligationDenial::PublicationNoEffect);
@@ -133,6 +153,95 @@ impl QueryObligationHistory {
             position,
             pending_denial,
         }))
+    }
+    pub fn active_output_demands(
+        &self,
+    ) -> Vec<(NonZeroU64, DurableCompositeCommitIdentity, String)> {
+        let state = self.state();
+        let Some(journal) = state.journal.as_ref() else {
+            return Vec::new();
+        };
+        let output = ledger_inspect::output(&journal.ledger);
+        output
+            .demands
+            .values()
+            .filter(|row| !output.completed.contains(&row.acquire_position))
+            .map(|row| (row.acquire_position, row.basis, row.branch.clone()))
+            .collect()
+    }
+    pub fn active_output_demands_for_branch(
+        &self,
+        branch: &str,
+        lifecycle: u64,
+    ) -> Vec<NonZeroU64> {
+        let state = self.state();
+        let Some(journal) = state.journal.as_ref() else {
+            return Vec::new();
+        };
+        let output = ledger_inspect::output(&journal.ledger);
+        output
+            .demands
+            .values()
+            .filter(|row| {
+                !output.completed.contains(&row.acquire_position)
+                    && row.branch == branch
+                    && state.demand_lifecycles.get(&row.acquire_position) == Some(&lifecycle)
+            })
+            .map(|row| row.acquire_position)
+            .collect()
+    }
+    pub fn active_output_basis_pins(&self) -> Vec<(DurableCompositeCommitIdentity, String)> {
+        let state = self.state();
+        let Some(journal) = state.journal.as_ref() else {
+            return Vec::new();
+        };
+        let output = ledger_inspect::output(&journal.ledger);
+        let mut pins = Vec::new();
+        for row in output.demands.values() {
+            if !output.completed.contains(&row.acquire_position) {
+                pins.push((row.basis, row.branch.clone()));
+                for source in &row.performed_sources {
+                    pins.push((*source, row.branch.clone()));
+                }
+            }
+        }
+        for row in output.sources.values() {
+            pins.push((row.commit, row.branch.clone()));
+        }
+        pins
+    }
+    pub fn has_active_output_basis(&self, commit: DurableCompositeCommitIdentity) -> bool {
+        let state = self.state();
+        let Some(journal) = state.journal.as_ref() else {
+            return false;
+        };
+        if let Some(frame) = journal.pending.as_ref() {
+            match frame.record() {
+                QueryObligationRecord::OutputDemand(QueryOutputDemandRecord::Retain(row))
+                    if row.basis == commit || row.performed_sources.contains(&commit) =>
+                {
+                    return true;
+                }
+                QueryObligationRecord::OutputDemand(QueryOutputDemandRecord::Links {
+                    performed_sources,
+                    ..
+                }) if performed_sources.contains(&commit) => {
+                    return true;
+                }
+                QueryObligationRecord::OutputSource(QueryOutputSourceRecord::Retain(row))
+                    if row.commit == commit =>
+                {
+                    return true;
+                }
+                _ => {}
+            }
+        }
+        let output = ledger_inspect::output(&journal.ledger);
+        output.sources.contains_key(&commit)
+            || output.demands.values().any(|row| {
+                !output.completed.contains(&row.acquire_position)
+                    && (row.basis == commit || row.performed_sources.contains(&commit))
+            })
     }
     pub fn has_output_demands(&self) -> bool {
         let state = self.state();
@@ -175,9 +284,10 @@ impl QueryObligationHistory {
         &self,
         request: &ExecutionRequest<'_, '_>,
         position: NonZeroU64,
-        mut sources: Vec<DurableCompositeCommitIdentity>,
-        mut prerequisites: Vec<NonZeroU64>,
-        mut checkpoint_prerequisites: Vec<Vec<u8>>,
+        lifecycle: u64,
+        sources: Vec<DurableCompositeCommitIdentity>,
+        prerequisites: Vec<NonZeroU64>,
+        checkpoint_prerequisites: Vec<Vec<u8>>,
     ) -> Result<(), QueryObligationDenial> {
         let Some(medium) = self.medium.get() else {
             return Ok(());
@@ -186,7 +296,7 @@ impl QueryObligationHistory {
         driver.finish_pending(medium.as_ref(), request)?;
         let original = {
             let state = self.state();
-            state
+            let row = state
                 .journal
                 .as_ref()
                 .and_then(|journal| {
@@ -195,17 +305,25 @@ impl QueryObligationHistory {
                         .get(&position)
                 })
                 .cloned()
-                .ok_or(QueryObligationDenial::UnknownObligation)?
+                .ok_or(QueryObligationDenial::UnknownObligation)?;
+            if state
+                .retired_branches
+                .contains(&(row.branch.clone(), lifecycle))
+                || state
+                    .demand_lifecycles
+                    .get(&position)
+                    .is_some_and(|recorded| *recorded != lifecycle)
+            {
+                return Err(QueryObligationDenial::ObligationSubjectMismatch);
+            }
+            row
         };
-        sources.extend(original.performed_sources.iter().copied());
-        prerequisites.extend(original.prerequisites.iter().copied());
-        sources.sort_unstable();
-        sources.dedup();
-        prerequisites.sort_unstable();
-        prerequisites.dedup();
-        checkpoint_prerequisites.extend(original.checkpoint_prerequisites.iter().cloned());
-        checkpoint_prerequisites.sort_unstable();
-        checkpoint_prerequisites.dedup();
+        let sources = merge_sorted(sources, original.performed_sources.iter().copied());
+        let prerequisites = merge_sorted(prerequisites, original.prerequisites.iter().copied());
+        let checkpoint_prerequisites = merge_sorted(
+            checkpoint_prerequisites,
+            original.checkpoint_prerequisites.iter().cloned(),
+        );
         if checkpoint_prerequisites == original.checkpoint_prerequisites
             && sources == original.performed_sources
             && prerequisites == original.prerequisites

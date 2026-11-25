@@ -152,14 +152,15 @@ guides state that crash recovery is not yet certified.
 
 **2026-11-24.** C1 (crash core), C2 (cost, bounds, durable World history &
 branch retirement), C3 (owner crash cases for Phases 5–9, slices C3.1–C3.7), and
-C5 Part 1 slices C5.0–C5.3 (PR #302 regression fix, D18 retirement, D13 interim
+C5 Part 1 (slices C5.0–C5.4: PR #302 regression fix, D18 retirement, D13 interim
 checkpoint & Relational embedded-checkpoint retirement + boundary-check locks,
-Phase 1 family re-audit, ordinary guides/READMEs/examples) are complete. C4
-(exhaustive adversarial crash oracle) and C5.4 / Tier-3 landing certification
-complete the milestone. D18 (`UncleanRecoveryUnsupported` and
-`unclean_recovery_unsupported()`) and D13 (interim application checkpoint
-transport & Relational embedded-checkpoint placement) are retired and locked out
-by `tools/boundary-check/config/road1.toml`.
+Phase 1 family re-audit, ordinary guides/READMEs/examples, Phase 10 Full Journey
+& Phase 4 decisive journey on both sides of the first Home checkpoint, and
+bounded-history reopen repro) are complete. C4 (exhaustive adversarial crash
+oracle) and Tier-3 landing certification complete the milestone. D18
+(`UncleanRecoveryUnsupported` and `unclean_recovery_unsupported()`) and D13
+(interim application checkpoint transport & Relational embedded-checkpoint
+placement) are retired and locked out by `tools/boundary-check/config/road1.toml`.
 
 | C1 slice | State on the branch |
 |---|---|
@@ -204,8 +205,8 @@ denials:
 | C5.2.1 Migrate Query D13 callers (Groups A–F) & Directory Home fixes | Done (`f2ae48ca91`, Codex r7 APPROVE): migrated Groups A–F onto Directory Home close/reopen, fixed `worth-runtime-world` `UnrelatedNestedLease`, retained history splice traversal, durable materialization recovery, coupled output custody, and phase-bounded `HomeReadmissionMetadataAuthority` |
 | C5.2.2 Retire D13 interim application-checkpoint path & boundary lock | Done (`784a24d7a7`, Codex r7 APPROVE): migrated Groups G–K, deleted all Query/World/Relational D13 interim checkpoint code (263 files, +4,068/-14,564 lines), emptied `interim-checkpoint-callers.txt`, locked `tools/boundary-check/config/road1.toml`, restored `optional_aspect_reopen` and `indexed_selection_reopen` courts |
 | C5.2.3 Retire Relational embedded-checkpoint placement & boundary lock | Done (`1d023ea9ee`, Codex r4 APPROVE): deleted `RelationalCheckpointArtifactPolicy::Embedded`, `DurabilityAuthority::native_checkpoint`, `is_embedded()`, `InlineCheckpointSource`, `encode_checkpoint`, `decode_checkpoint`, and inline member decode/encode; fixed 3 cold-residency defects (`source_schema.rs`, `region_directory.rs`, `activation.rs`); locked `road1.toml` |
-| C5.3 Phase 1 family re-audit, guides, READMEs, capability index & examples | Done (reviewed): re-audited all Phase 1 families (`target/lane-evidence/c5-phase1-reaudit.md`), updated guides/READMEs/capability index, closed workflow receipt digest D6 & reopened dispatch/inbound custody gaps (with single-record source lookups, funded occurrence location index & preserved request stops), ran Query executable examples (`ordinary_product_workflow`, `observable_workflow`, `authored_workflow`, `shared_execution`), and compile-checked `h10_graceful_bank_home` (fresh-process execution and OS-kill certification run in C5.4) |
-| C5.4 Phase 10 Full Journey, Phase 4 decisive journey & Daymark Gap 1 repro | Next slice |
+| C5.3 Phase 1 family re-audit, guides, READMEs, capability index & examples | Done (`e6830baa42`, Codex r6 APPROVE): re-audited all Phase 1 families (`target/lane-evidence/c5-phase1-reaudit.md`), updated guides/READMEs/capability index, closed workflow receipt digest D6 & reopened dispatch/inbound custody gaps (with single-record source lookups, funded occurrence location index & preserved request stops), ran Query executable examples (`ordinary_product_workflow`, `observable_workflow`, `authored_workflow`, `shared_execution`), and compile-checked `h10_graceful_bank_home` (fresh-process execution and OS-kill certification run in C5.4) |
+| C5.4 Phase 10 Full Journey, Phase 4 decisive journey & Daymark Gap 1 repro | Done (Claude Opus 5.5 r5 APPROVE): added real OS-kill Phase 10 Full Journey tests (`h10_graceful_bank_home`) on both sides of the first Home checkpoint (`full_journey_kill_reopen_before_first_checkpoint`, `full_journey_kill_reopen_after_first_checkpoint`, `graceful_reopen_in_fresh_process`), Phase 4 decisive journey & recovered-custody tests on both sides of the first Home checkpoint (`worth-store-court-application::recovered_custody`), and AWO Daymark Gap 1 `bounded_history_reopen` repro (`worth-query-court-decl-host-integration`); fixed 3 real production bugs uncovered by the full journey (World obligation basis pins across automatic history retirement with zero-observation reopen inventory and incarnation-exact retirement cleanup, `coupled_assembly` canonical record-allocation alignment with flat-`Vec` memory/work metering and batch-scoped replay staging, and protected owned journal reads in `envelope_residency` avoiding 256 MiB pre-reservation and unrelated checkpoint membership reads while preserving sticky damage and transient `Busy` retry) |
 
 | C2 slice | State on the branch |
 |---|---|

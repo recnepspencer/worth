@@ -14,9 +14,28 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         branch: &str,
     ) -> Result<worth_runtime_world::facade::ProductBranchObservation, Denial> {
         let world = self.runtime.product_runtime.owner_ref().observation_port();
-        let branches = world
-            .observe_installed_product_branches(execution)
-            .map_err(|_| unavailable())?;
+        let request_stop = |cause| {
+            Denial::new(
+                Kind::ExecutionRequest(
+                    crate::domain_computation::primary_graph::application_contribution::advancement_denial(
+                        cause,
+                    ),
+                ),
+                "required source readmission",
+            )
+        };
+        let branches =
+            world
+                .installed_product_branches(execution)
+                .map_err(|cause| match cause {
+                    worth_runtime_world::facade::RuntimeWorldServiceDenial::Denied(
+                        worth_runtime_world::facade::ProductBranchInventoryDenial::Request(cause),
+                    ) => request_stop(cause),
+                    _ => match execution.consult() {
+                        Err(cause) => request_stop(cause),
+                        Ok(()) => unavailable(),
+                    },
+                })?;
         let current = branches
             .branches()
             .iter()
@@ -25,12 +44,23 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                     && known.owner_identity().durable() == Some(commit.owner())
             })
             .ok_or_else(unavailable)?;
+        if current.selected_commit().owner_identity().durable() == Some(commit.owner())
+            && current.selected_commit().ordinal() == commit.ordinal()
+            && let Ok(head) =
+                world.observe_product_branch_occurrence(current.lifecycle_incarnation())
+            && head.selected_commit().owner_identity().durable() == Some(commit.owner())
+            && head.selected_commit().ordinal() == commit.ordinal()
+        {
+            return Ok(head);
+        }
         let mut history = world
             .trace_product_branch_ancestry(execution, current.lifecycle_incarnation(), None)
-            .map_err(|_| unavailable())?;
+            .map_err(|_| match execution.consult() {
+                Err(cause) => request_stop(cause),
+                Ok(()) => unavailable(),
+            })?;
         let observation = loop {
-            execution.consult().map_err(|cause| Denial::new(Kind::ExecutionRequest(
-                crate::domain_computation::primary_graph::application_contribution::advancement_denial(cause)), "required source readmission"))?;
+            execution.consult().map_err(request_stop)?;
             if let Some(index) = history.commits().position(|entry| {
                 entry.identity().owner_identity().durable() == Some(commit.owner())
                     && entry.identity().ordinal() == commit.ordinal()
@@ -44,7 +74,10 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             }
             history = world
                 .continue_product_branch_ancestry(execution, &history, None)
-                .map_err(|_| unavailable())?;
+                .map_err(|_| match execution.consult() {
+                    Err(cause) => request_stop(cause),
+                    Ok(()) => unavailable(),
+                })?;
         };
         Ok(observation)
     }

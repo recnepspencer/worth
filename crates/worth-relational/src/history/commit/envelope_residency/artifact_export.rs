@@ -108,17 +108,58 @@ impl RelationalCommitEnvelopeResidency {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Artifact, Denial> {
         crate::execution::check_request(execution).map_err(Denial::Request)?;
+        let journal = {
+            let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
+            if let Some(failure) = state.damage {
+                return Err(Denial::StorageUnavailable(failure));
+            }
+            if let EnvelopeBacking::Memory {
+                original: Some(bytes),
+                ..
+            } = &state.backing
+            {
+                return Artifact::from_owned_original(bytes.clone(), execution)
+                    .map_err(frame_copy_denial);
+            }
+            if let EnvelopeBacking::SelectedCheckpoint { entry, directory } = &state.backing {
+                let result = Self::selected_artifact(
+                    entry,
+                    directory,
+                    execution,
+                    crate::durability::canonical_commit_artifact::MAXIMUM_ARTIFACT_BYTES as u64,
+                );
+                if let Err(stop) = &result {
+                    state.remember_original_failure(stop);
+                }
+                return result.map_err(export_stop);
+            }
+            if let EnvelopeBacking::Memory { .. } = &state.backing
+                && let Some(commit) = state
+                    .position
+                    .as_ref()
+                    .and_then(|position| position.resident())
+            {
+                return Artifact::from_positioned_request(&commit, execution);
+            }
+            let EnvelopeBacking::Journal { entry, source, .. } = &state.backing else {
+                return Err(Denial::PayloadEncoding {
+                    detail: "memory envelope has no performed position".into(),
+                });
+            };
+            (entry.position, std::sync::Arc::clone(source))
+        };
+        let captured = match crate::durability::medium::RelationalDurableReadProtection::capture_journal_when_available(
+            &journal.1, execution,
+        ) {
+            Ok(protection) => Ok(Some((journal.1, protection))),
+            Err(
+                crate::durability::medium::RelationalDurableOwnedReadRefusal::UnsupportedProvider,
+            ) => Ok(None),
+            Err(cause) => Err(owned_export_denial(cause, journal.0)),
+        };
         let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
         if let Some(failure) = state.damage {
             return Err(Denial::StorageUnavailable(failure));
-        }
-        if let EnvelopeBacking::Memory {
-            original: Some(bytes),
-            ..
-        } = &state.backing
-        {
-            return Artifact::from_owned_original(bytes.clone(), execution)
-                .map_err(frame_copy_denial);
         }
         if let EnvelopeBacking::SelectedCheckpoint { entry, directory } = &state.backing {
             let result = Self::selected_artifact(
@@ -132,14 +173,6 @@ impl RelationalCommitEnvelopeResidency {
             }
             return result.map_err(export_stop);
         }
-        if let EnvelopeBacking::Memory { .. } = &state.backing
-            && let Some(commit) = state
-                .position
-                .as_ref()
-                .and_then(|position| position.resident())
-        {
-            return Artifact::from_positioned_request(&commit, execution);
-        }
         let EnvelopeBacking::Journal { entry, source, .. } = &state.backing else {
             return Err(Denial::PayloadEncoding {
                 detail: "memory envelope has no performed position".into(),
@@ -149,36 +182,30 @@ impl RelationalCommitEnvelopeResidency {
             subject: RelationalStorageSubject::Envelope(entry.position),
             cause,
         };
-        // The existing port certifies no length before reading. Reserve its
-        // complete bounded temporary before asking it to allocate; never guess
-        // a size from unrelated current-root content or read uncharged first.
         const LIMIT: u64 =
             crate::durability::canonical_commit_artifact::MAXIMUM_ARTIFACT_BYTES as u64;
-        let _read = execution
-            .reserve_retained_memory(LIMIT)
-            .map_err(|cause| Denial::Request(cause.into()))?;
-        let read = source.read_commit(entry.position, LIMIT);
-        let result = match read {
-            Err(cause) => Err(Denial::StorageUnavailable(failure(cause))),
-            Ok(bytes) => {
-                use crate::durability::canonical_commit_artifact::ControlledFrameCopyDenial as Copy;
-                Artifact::copy_frame_original(&bytes, execution)
-                    .map_err(|cause| match cause {
-                        Copy::Request(cause) => Denial::Request(cause),
-                        Copy::Allocation(cause) => Denial::Allocation(cause),
-                        Copy::Frame(cause) => Denial::Frame(cause),
-                    })
-                    .and_then(|artifact| {
-                        if artifact.position() != entry.position
-                            || artifact.commit_id() != entry.commit.commit_id
-                            || artifact.payload_digest().as_bytes() != &entry.payload_digest
-                        {
-                            return Err(Denial::StorageUnavailable(failure(
-                                Cause::IntegrityMismatch,
-                            )));
-                        }
-                        Ok(artifact)
-                    })
+        let result = match captured {
+            Err(cause) => Err(cause),
+            Ok(Some((actual, protection))) if std::sync::Arc::ptr_eq(&actual, source) => {
+                match protection.read_commit_owned_at(&actual, execution, entry.position, LIMIT) {
+                    Err(cause) => Err(owned_export_denial(cause, entry.position)),
+                    Ok(bytes) => Artifact::from_owned_original(bytes, execution)
+                        .map_err(frame_copy_denial)
+                        .and_then(|artifact| verify_exported_entry(entry, artifact, failure)),
+                }
+            }
+            Ok(_) => {
+                // Legacy cold-source fixtures without protected owned reads certify
+                // no length before reading; reserve the bounded temporary first.
+                let _read = execution
+                    .reserve_retained_memory(LIMIT)
+                    .map_err(|cause| Denial::Request(cause.into()))?;
+                match source.read_commit(entry.position, LIMIT) {
+                    Err(cause) => Err(Denial::StorageUnavailable(failure(cause))),
+                    Ok(bytes) => Artifact::copy_frame_original(&bytes, execution)
+                        .map_err(frame_copy_denial)
+                        .and_then(|artifact| verify_exported_entry(entry, artifact, failure)),
+                }
             }
         };
         if matches!(&result, Err(Denial::Frame(cause)) if frame_proves_damage(cause)) {
@@ -195,6 +222,50 @@ impl RelationalCommitEnvelopeResidency {
                 crate::execution::check_request(execution).map_err(Denial::Request)?;
                 Ok(artifact)
             }
+        }
+    }
+}
+
+fn verify_exported_entry(
+    entry: &super::RelationalCommitIndexEntry,
+    artifact: Artifact,
+    failure: impl Fn(Cause) -> RelationalStorageUnavailable,
+) -> Result<Artifact, Denial> {
+    if artifact.position() != entry.position
+        || artifact.commit_id() != entry.commit.commit_id
+        || artifact.payload_digest().as_bytes() != &entry.payload_digest
+    {
+        return Err(Denial::StorageUnavailable(failure(
+            Cause::IntegrityMismatch,
+        )));
+    }
+    Ok(artifact)
+}
+
+fn owned_export_denial(
+    cause: crate::durability::medium::RelationalDurableOwnedReadRefusal,
+    position: crate::publication::patch::data::PatchStreamPosition,
+) -> Denial {
+    use crate::durability::medium::RelationalDurableOwnedReadRefusal as Refusal;
+    match cause {
+        Refusal::Request(cause) => Denial::Request(cause),
+        Refusal::Buffer(cause) => Denial::from(cause),
+        Refusal::Storage(cause) => Denial::StorageUnavailable(RelationalStorageUnavailable {
+            subject: RelationalStorageSubject::Envelope(position),
+            cause,
+        }),
+        Refusal::CanonicalFrame(cause) => Denial::Frame(cause),
+        Refusal::ForeignSource | Refusal::ForeignProtection | Refusal::Busy | Refusal::Bounds => {
+            Denial::StorageUnavailable(RelationalStorageUnavailable {
+                subject: RelationalStorageSubject::Envelope(position),
+                cause: Cause::SourceUnavailable,
+            })
+        }
+        Refusal::UnsupportedProvider | Refusal::TransitionFrame(_) => {
+            export_stop(crate::durability::checkpoint_history::capture::owned_stop(
+                cause,
+                RelationalStorageSubject::Envelope(position),
+            ))
         }
     }
 }

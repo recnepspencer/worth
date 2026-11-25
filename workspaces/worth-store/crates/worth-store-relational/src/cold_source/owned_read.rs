@@ -8,7 +8,7 @@ use worth_relational::facade::{
     publication::PatchStreamPosition,
 };
 use worth_store::physical_runtime::{
-    OrderedJournalPayloadStream, OrderedJournalReadFailure as Failure,
+    OrderedJournalPayloadStream, OrderedJournalReadFailure as Failure, RecordStreamFailureKind,
 };
 impl StoreColdSource {
     pub(super) fn owned_commit(
@@ -158,11 +158,22 @@ pub(super) fn journal_failure(failure: Failure, limit: u64) -> Refusal {
         Failure::Execution(cause) => Refusal::from(cause),
         Failure::ForeignReader => Refusal::ForeignProtection,
         Failure::NotFound { .. } => Refusal::Storage(Cause::MissingMember),
+        Failure::Open(error) => Refusal::Storage(super::record_failure(error)),
+        Failure::Stream(error) => Refusal::Storage(stream_failure_cause(error.kind())),
         Failure::LimitExceeded { payload_bytes } => Refusal::Storage(Cause::LimitExceeded {
             length: payload_bytes,
             limit,
         }),
         Failure::Damaged => Refusal::Storage(Cause::Damaged),
         _ => Refusal::Storage(Cause::SourceUnavailable),
+    }
+}
+
+pub(super) fn stream_failure_cause(kind: RecordStreamFailureKind) -> Cause {
+    match kind {
+        RecordStreamFailureKind::SelectedDataFrameChecksumDamaged
+        | RecordStreamFailureKind::ArtifactDamaged
+        | RecordStreamFailureKind::FormatMismatch => Cause::Damaged,
+        _ => Cause::SourceUnavailable,
     }
 }

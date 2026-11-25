@@ -283,3 +283,114 @@ fn retained_byte_owner_bill(bytes: &[u8]) -> u64 {
     assert_eq!(budget.charged_memory_bytes(), 0);
     total
 }
+
+#[test]
+fn journal_only_protected_cut_skips_unrelated_checkpoint_membership_under_tight_budget() {
+    let directory = tempfile::tempdir().unwrap();
+    let serving = Arc::new(crate::cold_source::test_store::initialize(directory.path()));
+    let members: Vec<_> = (0u32..512)
+        .map(|index| {
+            let bytes = format!("unrelated-checkpoint-member-{index:04}").into_bytes();
+            AnchoredRecordMember::New {
+                key: Sha256::digest(&bytes).into(),
+                bytes,
+            }
+        })
+        .collect();
+    serving
+        .anchored_records()
+        .unwrap()
+        .publish(
+            AnchoredRecordPublication::new(
+                AnchoredRecordName::new("home.checkpoint").unwrap(),
+                0,
+                b"opaque checkpoint selection".to_vec(),
+                worth_store_testkit_store::fixture::placement(),
+                PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+            )
+            .with_members(members),
+        )
+        .unwrap();
+    let tail_commit = b"small tail journal commit bytes";
+    publish_journal(&serving, 1, tail_commit, false);
+
+    let concrete = StoreColdSource::new(serving.clone());
+    let source: Arc<dyn RelationalDurableColdSource> = concrete.clone();
+
+    // Tight budget comfortably funds a small journal cut + 31-byte commit,
+    // but cannot materialize the 512-member checkpoint table.
+    let tight = serial(16 * 1024);
+    let tight_req = ExecutionRequest::serial(&tight);
+    assert!(
+        RelationalDurableReadProtection::capture(&source, &tight_req).is_err(),
+        "full checkpoint capture must exceed tight memory budget when 512 members are anchored"
+    );
+    assert_eq!(tight.memory().unwrap().charged_memory_bytes(), 0);
+
+    let journal_cut =
+        RelationalDurableReadProtection::capture_journal(&source, &tight_req).unwrap();
+    assert_eq!(
+        journal_cut.bounds(),
+        Bounds {
+            selected_checkpoint: false,
+            canonical: PatchStreamPosition(1),
+            transitions: RelationalBranchTransitionSequence(0),
+        }
+    );
+    let bytes = journal_cut
+        .read_commit_owned_at(
+            &source,
+            &tight_req,
+            PatchStreamPosition(1),
+            tail_commit.len() as u64,
+        )
+        .unwrap();
+    assert_eq!(bytes.bytes(), tail_commit);
+    assert_eq!(concrete.counters().member_reads, 0);
+    drop(bytes);
+    drop(journal_cut);
+    drop(source);
+    drop(concrete);
+    assert_eq!(tight.memory().unwrap().charged_memory_bytes(), 0);
+    let _closed = Arc::try_unwrap(serving).ok().unwrap().close();
+}
+
+#[test]
+fn protected_journal_failure_preserves_sticky_damage_classification() {
+    use worth_store::physical_runtime::{RecordReadDenial, RecordStreamFailureKind};
+
+    assert_eq!(
+        crate::cold_source::record_denial_cause(RecordReadDenial::RecordNotFound),
+        Cause::MissingMember
+    );
+    assert_eq!(
+        crate::cold_source::record_denial_cause(RecordReadDenial::ArtifactDamaged),
+        Cause::Damaged
+    );
+    assert_eq!(
+        crate::cold_source::record_denial_cause(RecordReadDenial::FormatMismatch),
+        Cause::Damaged
+    );
+    assert_eq!(
+        crate::cold_source::owned_read::stream_failure_cause(
+            RecordStreamFailureKind::SelectedDataFrameChecksumDamaged
+        ),
+        Cause::Damaged
+    );
+    assert_eq!(
+        crate::cold_source::owned_read::stream_failure_cause(
+            RecordStreamFailureKind::ArtifactDamaged
+        ),
+        Cause::Damaged
+    );
+    assert_eq!(
+        crate::cold_source::owned_read::stream_failure_cause(
+            RecordStreamFailureKind::FormatMismatch
+        ),
+        Cause::Damaged
+    );
+    assert_eq!(
+        crate::cold_source::owned_read::stream_failure_cause(RecordStreamFailureKind::Backend),
+        Cause::SourceUnavailable
+    );
+}

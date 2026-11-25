@@ -45,7 +45,7 @@ pub use conflict_class::{
 };
 pub(crate) use created_entity_bindings::CommitCreatedEntityBindings;
 pub(crate) use created_relation_bindings::{
-    CommitCreatedRelationBindings, CoupledOriginalRelationCreates,
+    BorrowedEntityRef, CommitCreatedRelationBindings, CoupledOriginalRelationCreates,
 };
 pub(crate) use plan_artifacts::merge_commit_mutation_plan_token;
 pub use plan_artifacts::{

@@ -26,7 +26,9 @@ use crate::identity::data::PartitionId;
 use crate::storage::substrate::SharedMap;
 use crate::transactions::data::RecordAllocationDenial;
 
-pub(crate) use pending_allocations::PendingRecordAllocations;
+pub(crate) use pending_allocations::{
+    metered_binary_search, metered_false_mask, metered_heapsort, PendingRecordAllocations,
+};
 pub(crate) use reclaimed::ReclaimedRecordSlot;
 use reservation::{RecordSlotReservation, ReservationOrigin};
 
@@ -42,6 +44,7 @@ struct RecordIdentityState {
     generation_high_water: BTreeMap<RecordSlotKey, u32>,
     pending: BTreeMap<RecordSlotKey, PendingRecordReservation>,
     staged_replay_allocations: Option<Vec<CanonicalRecordAllocation>>,
+    staged_replay_append_slots: std::collections::BTreeSet<RecordSlotKey>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -65,8 +68,15 @@ impl Clone for RecordIdentitySubsystem {
 
 impl RecordIdentitySubsystem {
     pub(crate) fn begin_allocations(&self) -> PendingRecordAllocations {
-        let staged_replay_allocations = self.lock().staged_replay_allocations.take();
-        PendingRecordAllocations::new(self.clone(), staged_replay_allocations)
+        let mut state = self.lock();
+        let staged_replay_allocations = state.staged_replay_allocations.take();
+        let staged_replay_append_slots = std::mem::take(&mut state.staged_replay_append_slots);
+        drop(state);
+        PendingRecordAllocations::new_with_staged_append_slots(
+            self.clone(),
+            staged_replay_allocations,
+            staged_replay_append_slots,
+        )
     }
 
     pub(crate) fn admit_reclaimed(&self, reclaimed: ReclaimedRecordSlot) {
@@ -167,6 +177,7 @@ impl RuntimeSubsystem for RecordIdentitySubsystem {
     fn fork(&self) -> Self {
         let mut state = self.lock().clone();
         state.staged_replay_allocations = None;
+        state.staged_replay_append_slots.clear();
         let fork = Self {
             state: Arc::new(Mutex::new(state)),
         };

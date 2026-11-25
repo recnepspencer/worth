@@ -4,9 +4,9 @@ pub use runtime_state::{
     RelationalPublicationRegistryCustody,
 };
 pub(crate) use subsystems::{
-    MutationRecordAllocations, MutationSymbolMeanings, OriginalBranchSchemaInputs,
-    OriginalBranchSchemaInputsDenial, OriginalEmptySchemaInstallation,
-    OriginalEmptySchemaObservation, RetainedBranchTransition,
+    metered_binary_search, metered_false_mask, metered_heapsort, MutationRecordAllocations,
+    MutationSymbolMeanings, OriginalBranchSchemaInputs, OriginalBranchSchemaInputsDenial,
+    OriginalEmptySchemaInstallation, OriginalEmptySchemaObservation, RetainedBranchTransition,
 };
 pub use subsystems::{
     PreparedRelationalIndexDefinitions, RelationalIndexDefinitionPreparation,
@@ -48,8 +48,7 @@ pub(crate) use subsystems::{
     DurabilitySubsystem, FrozenCheckpointIndexes, HistorySubsystem, IndexCatalogCoverage,
     IndexDefinitionCatalog, IndexDefinitionReadBinding, IndexSelectionState, IndexingState,
     IndexingSubsystem, LineageIdentityAllocator, LineageNamingBasisBinding, LineageState,
-    LineageSubsystem,
-    MirrorResidencyDemandBinding, OriginalCheckpointIndexes, PartitionEdition,
+    LineageSubsystem, MirrorResidencyDemandBinding, OriginalCheckpointIndexes, PartitionEdition,
     PatchPositionReservationAdmission, PendingRecordAllocations, PendingSymbolMeanings,
     PerformedCheckpointSelection, PreparedCanonicalPublicationRoute, PreparedCommitSequence,
     PreparedGenerationBatch, PreparedIndexBasisSelection,

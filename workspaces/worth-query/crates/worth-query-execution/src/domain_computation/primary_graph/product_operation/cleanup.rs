@@ -11,6 +11,9 @@ use crate::domain_computation::execution_runtime::product_world::{
 
 #[derive(Debug)]
 pub enum WorthQueryApplicationProductBranchCleanupDenial {
+    ObligationDischarge(
+        crate::domain_computation::primary_graph::query_obligations::QueryObligationDenial,
+    ),
     SignalBasisObservation(worth_signal::facade::branch::SignalBranchBasisObservationDenial),
     ConditionalRetirement(BridgeConditionalDenial),
     Product(WorthQueryProductBranchOwnerCleanupDenial),
@@ -21,6 +24,11 @@ pub enum WorthQueryApplicationProductBranchCleanupDenial {
 pub struct WorthQueryApplicationProductBranchCleanup {
     product: WorthQueryProductBranchOwnerCleanup,
     conditional: crate::domain_computation::primary_graph::managed_bridge::conditional_owner::ConditionalOwner,
+    obligations: Option<
+        std::sync::Arc<
+            crate::domain_computation::primary_graph::query_obligations::history::QueryObligationHistory,
+        >,
+    >,
 }
 
 impl std::fmt::Debug for WorthQueryApplicationProductBranchCleanup {
@@ -36,10 +44,16 @@ impl WorthQueryApplicationProductBranchCleanup {
     pub(in crate::domain_computation) fn new(
         product: WorthQueryProductBranchOwnerCleanup,
         conditional: crate::domain_computation::primary_graph::managed_bridge::conditional_owner::ConditionalOwner,
+        obligations: Option<
+            std::sync::Arc<
+                crate::domain_computation::primary_graph::query_obligations::history::QueryObligationHistory,
+            >,
+        >,
     ) -> Self {
         Self {
             product,
             conditional,
+            obligations,
         }
     }
 
@@ -81,6 +95,7 @@ impl WorthQueryApplicationProductBranchCleanup {
                 return Err(Self::failed(
                     self.product,
                     self.conditional,
+                    self.obligations,
                     WorthQueryApplicationProductBranchCleanupDenial::Product(
                         WorthQueryProductBranchOwnerCleanupDenial::Execution(denial),
                     ),
@@ -101,11 +116,44 @@ impl WorthQueryApplicationProductBranchCleanup {
         let Self {
             product,
             conditional,
+            obligations,
         } = self;
+        if let Some((history, occurrence)) = obligations
+            .as_ref()
+            .zip(product.retired_application_occurrence())
+        {
+            let branch_name = occurrence.branch().name().as_str();
+            let lifecycle = occurrence.incarnation().ordinal();
+            for position in history.active_output_demands_for_branch(branch_name, lifecycle) {
+                if let Err(denial) = history.discharge_output_demand(execution, position) {
+                    return Err(Self::failed(
+                        product,
+                        conditional,
+                        obligations,
+                        WorthQueryApplicationProductBranchCleanupDenial::ObligationDischarge(
+                            denial,
+                        ),
+                    ));
+                }
+            }
+            for commit in history.active_output_sources_for_branch(branch_name, lifecycle) {
+                if let Err(denial) = history.discharge_output_source(execution, commit) {
+                    return Err(Self::failed(
+                        product,
+                        conditional,
+                        obligations,
+                        WorthQueryApplicationProductBranchCleanupDenial::ObligationDischarge(
+                            denial,
+                        ),
+                    ));
+                }
+            }
+        }
         if let Err(denial) = product.release_retired_history_with_request(execution, retirements) {
             return Err(Self::failed(
                 product,
                 conditional,
+                obligations,
                 WorthQueryApplicationProductBranchCleanupDenial::Product(denial),
             ));
         }
@@ -115,6 +163,7 @@ impl WorthQueryApplicationProductBranchCleanup {
                 return Err(Self::failed(
                     product,
                     conditional,
+                    obligations,
                     WorthQueryApplicationProductBranchCleanupDenial::SignalBasisObservation(denial),
                 ));
             }
@@ -129,6 +178,7 @@ impl WorthQueryApplicationProductBranchCleanup {
                 return Err(Self::failed(
                     product,
                     conditional,
+                    obligations,
                     WorthQueryApplicationProductBranchCleanupDenial::ConditionalRetirement(denial),
                 ));
             }
@@ -140,6 +190,7 @@ impl WorthQueryApplicationProductBranchCleanup {
                 Err(Self::failed(
                     failure.into_cleanup(),
                     conditional,
+                    obligations,
                     WorthQueryApplicationProductBranchCleanupDenial::Product(denial),
                 ))
             }
@@ -149,6 +200,11 @@ impl WorthQueryApplicationProductBranchCleanup {
     fn failed(
         product: WorthQueryProductBranchOwnerCleanup,
         conditional: crate::domain_computation::primary_graph::managed_bridge::conditional_owner::ConditionalOwner,
+        obligations: Option<
+            std::sync::Arc<
+                crate::domain_computation::primary_graph::query_obligations::history::QueryObligationHistory,
+            >,
+        >,
         denial: WorthQueryApplicationProductBranchCleanupDenial,
     ) -> WorthQueryApplicationProductBranchCleanupFailure {
         WorthQueryApplicationProductBranchCleanupFailure {
@@ -156,6 +212,7 @@ impl WorthQueryApplicationProductBranchCleanup {
             cleanup: Self {
                 product,
                 conditional,
+                obligations,
             },
         }
     }

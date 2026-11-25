@@ -9,8 +9,8 @@ use worth_query_decl::facade::authentication::WorthQueryExternalPrincipalIdentit
 use worth_query_host::facade::admission::authenticated_principal::{
     admit_authentication_adapter, WorthQueryAdmissionClock,
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryAuthenticationAdapterAdmission,
-    WorthQueryAuthenticationAudience, WorthQueryAuthenticationMethod,
-    WorthQueryCancellationSource, WorthQueryLocalProcessPrincipal, WorthQueryRequestScope,
+    WorthQueryAuthenticationAudience, WorthQueryAuthenticationMethod, WorthQueryCancellationSource,
+    WorthQueryLocalProcessPrincipal, WorthQueryRequestScope,
 };
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationMutationOutcome, WorthQueryApplicationOutputDemandProgress,
@@ -29,7 +29,9 @@ use worth_store_testkit_application_oracle::facade::host_observation;
 
 pub type Home = WorthQueryApplicationHome<Catalog, Program>;
 
-pub fn home_request(location: &Path) -> WorthQueryApplicationHomeRequest<'static, Catalog, Program> {
+pub fn home_request(
+    location: &Path,
+) -> WorthQueryApplicationHomeRequest<'static, Catalog, Program> {
     let declaration = Catalog::declaration().unwrap();
     let program = ApplicationProgramAuthoring::<Catalog, Program>::begin()
         .with_schema(&declaration)
@@ -47,7 +49,7 @@ pub fn home_request(location: &Path) -> WorthQueryApplicationHomeRequest<'static
     )
 }
 
-fn scope() -> (WorthQueryRequestScope, WorthQueryCancellationSource) {
+pub(super) fn scope() -> (WorthQueryRequestScope, WorthQueryCancellationSource) {
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
         None,
@@ -57,7 +59,7 @@ fn scope() -> (WorthQueryRequestScope, WorthQueryCancellationSource) {
     (scope, cancellation)
 }
 
-fn authenticate(
+pub(super) fn authenticate(
     home: &Home,
     scope: &WorthQueryRequestScope,
 ) -> WorthQueryAuthenticatedExternalPrincipal<Catalog> {
@@ -139,7 +141,10 @@ pub fn run_original_write_interrupted_between_members(
     })
     .unwrap();
     assert!(
-        matches!(outcome, WorthQueryApplicationMutationOutcome::Committed { .. }),
+        matches!(
+            outcome,
+            WorthQueryApplicationMutationOutcome::Committed { .. }
+        ),
         "original coupled write committed in World before member 2 flush stopped: {outcome:?}"
     );
     drop((outcome, principal));
@@ -148,8 +153,8 @@ pub fn run_original_write_interrupted_between_members(
     // checkpoint and close must refuse.
     let cancelled = worth_execution::CancellationSource::new();
     cancelled.cancel();
-    let cancelled_lease = worth_execution::ExecutionResourceLease::serial(
-        worth_execution::LeaseRequest {
+    let cancelled_lease =
+        worth_execution::ExecutionResourceLease::serial(worth_execution::LeaseRequest {
             policy: worth_foundational::ExecutionRequestPolicy::new(
                 worth_foundational::ExecutionPosture::Serial,
                 worth_foundational::DeterminismContract::CanonicalBitwise,
@@ -161,9 +166,8 @@ pub fn run_original_write_interrupted_between_members(
             ),
             cancellation: cancelled.token(),
             deadline: None,
-        },
-    )
-    .unwrap();
+        })
+        .unwrap();
     let cancelled_exec = worth_execution::ExecutionRequest::leased(&cancelled_lease);
     assert!(
         matches!(
@@ -182,8 +186,8 @@ pub fn run_original_write_interrupted_between_members(
 
     // A 1-unit work ceiling flush completes cleanly, proving the ORIGINAL write
     // persisted member 1 and left EXACTLY member 2 (1 member) pending.
-    let one_unit_lease = worth_execution::ExecutionResourceLease::serial(
-        worth_execution::LeaseRequest {
+    let one_unit_lease =
+        worth_execution::ExecutionResourceLease::serial(worth_execution::LeaseRequest {
             policy: worth_foundational::ExecutionRequestPolicy::new(
                 worth_foundational::ExecutionPosture::Serial,
                 worth_foundational::DeterminismContract::CanonicalBitwise,
@@ -195,9 +199,8 @@ pub fn run_original_write_interrupted_between_members(
             ),
             cancellation: worth_execution::CancellationToken::new(),
             deadline: None,
-        },
-    )
-    .unwrap();
+        })
+        .unwrap();
     let one_unit_exec = worth_execution::ExecutionRequest::leased(&one_unit_lease);
     home.runtime()
         .flush_pending_coupled_outputs(&one_unit_exec)
@@ -217,7 +220,10 @@ pub fn run_original_write_interrupted_between_members(
     let reopened = host_observation::opening::open_request(home_request(location), None, execution);
     let (reopen_scope, _) = scope();
     let reopen_principal = authenticate(&reopened, &reopen_scope);
-    let request = reopened.runtime().runtime().request(&reopen_principal, &reopen_scope);
+    let request = reopened
+        .runtime()
+        .runtime()
+        .request(&reopen_principal, &reopen_scope);
     let mut first_demand = request
         .demand(first::Demand)
         .start_in_program::<Program, FirstTree>(reopened.runtime())

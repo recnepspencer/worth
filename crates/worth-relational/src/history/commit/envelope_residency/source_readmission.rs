@@ -27,7 +27,7 @@ impl RelationalCommitEnvelopeResidency {
         let protection = journal
             .as_ref()
             .map(|source| {
-                crate::durability::medium::RelationalDurableReadProtection::capture_when_available(
+                crate::durability::medium::RelationalDurableReadProtection::capture_journal_when_available(
                     source, execution,
                 )
                 .map_err(|cause| {
@@ -48,6 +48,27 @@ impl RelationalCommitEnvelopeResidency {
                 .remember_original_failure(stop);
         }
         result
+    }
+    pub(super) fn readmit_journal_owned(
+        entry: &RelationalCommitIndexEntry,
+        source: &Arc<dyn RelationalDurableColdSource>,
+        protection: &crate::durability::medium::RelationalDurableReadProtection,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        limit: u64,
+    ) -> Result<PositionedCanonicalCommit, RelationalRecoveryStop> {
+        let read_limit =
+            limit.min(crate::durability::canonical_commit_artifact::MAXIMUM_ARTIFACT_BYTES as u64);
+        let bytes = protection
+            .read_commit_owned_at(source, execution, entry.position, read_limit)
+            .map_err(|cause| {
+                crate::durability::checkpoint_history::capture::owned_stop(
+                    cause,
+                    RelationalStorageSubject::Envelope(entry.position),
+                )
+            })?;
+        let artifact = RelationalCanonicalCommitArtifact::from_owned_original(bytes, execution)
+            .map_err(super::artifact_export::original_frame_stop)?;
+        Self::readmit_owned_artifact(entry, artifact, execution)
     }
     pub(crate) fn readmit_positioned(
         entry: &RelationalCommitIndexEntry,

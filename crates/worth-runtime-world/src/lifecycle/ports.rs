@@ -123,6 +123,11 @@ pub(crate) trait RuntimeWorldObservationService:
         RuntimeWorldBranchAdmissionDenial,
     >;
 
+    fn installed_product_branches(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<crate::branch::InstalledProductBranches, crate::branch::ProductBranchInventoryDenial>;
+
     fn observe_installed_product_branches(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

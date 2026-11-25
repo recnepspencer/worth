@@ -188,6 +188,16 @@ where
                         "source has no installed support owner",
                     )
                 })?;
+                let _pin_guard = self
+                    .runtime()
+                    .inner
+                    .runtime
+                    .recovered_outputs_ref()
+                    .pin_obligation_basis_in_flight(
+                        commit,
+                        observation.clone(),
+                        support.obligation_history(),
+                    );
                 support.lifecycle().retain_output_source(&execution,
                     crate::domain_computation::primary_graph::query_obligations::QueryOutputSourceObligation {
                         commit, revision: source.revision, root: source.root_identity.to_owned(),
@@ -197,8 +207,13 @@ where
                         scope: { let scope = receipt.principal_scope().scope(); (scope.partition_id(), scope.local_slot(), scope.generation()) },
                         key: *receipt.idempotency_binding().key_identity(),
                         intent: receipt.idempotency_binding().intent_text(), bindings: None, discovery_recipe: source.discovery_recipe.clone(),
-                    }).map_err(|cause| WorthQueryOutputDemandDenial::new(
-                        WorthQueryOutputDemandDenialKind::ObligationPublication(cause), "required source retention"))?;
+                    })
+                    .map_err(|cause| {
+                        WorthQueryOutputDemandDenial::new(
+                            WorthQueryOutputDemandDenialKind::ObligationPublication(cause),
+                            "required source retention",
+                        )
+                    })?;
             }
             self.runtime()
                 .retain_coupled_output_records(&execution, &receipt, observation)?;

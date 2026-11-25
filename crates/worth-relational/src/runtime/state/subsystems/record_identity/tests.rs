@@ -164,3 +164,185 @@ fn divergent_branch_fanout_allocates_unique_slots_without_gap_reuse() {
         vec![(RecordAllocationClass::Entity, partition_id, 4_096)]
     );
 }
+
+#[test]
+fn staged_replay_allows_out_of_order_append_slots_within_one_commit_and_advances_frontier() {
+    let authority = RecordIdentitySubsystem::default();
+    let partition_id = PartitionId(23);
+    let allocations = vec![
+        CanonicalRecordAllocation::with_origin(
+            0,
+            RecordRef::Entity(EntityId::new(partition_id, 1, 1)),
+            RecordAllocationOrigin::AppendFrontier,
+        ),
+        CanonicalRecordAllocation::with_origin(
+            1,
+            RecordRef::Entity(EntityId::new(partition_id, 0, 1)),
+            RecordAllocationOrigin::AppendFrontier,
+        ),
+    ];
+    authority
+        .stage_replay_allocations_with_leading_gaps(allocations)
+        .unwrap();
+    let mut pending = authority.begin_allocations();
+    let first = pending
+        .reserve(RecordAllocationClass::Entity, partition_id)
+        .unwrap();
+    let second = pending
+        .reserve(RecordAllocationClass::Entity, partition_id)
+        .unwrap();
+    assert_eq!((first.slot, first.generation), (1, 1));
+    assert_eq!((second.slot, second.generation), (0, 1));
+    pending.finish_mutation().unwrap();
+    pending.commit();
+    assert_eq!(
+        authority.frontier_snapshot(),
+        vec![(RecordAllocationClass::Entity, partition_id, 2)]
+    );
+}
+
+#[test]
+fn staged_replay_allows_restored_pending_append_reservation_below_frontier() {
+    let authority = RecordIdentitySubsystem::default();
+    let partition_id = PartitionId(31);
+    authority.restore_frontier(RecordAllocationClass::Entity, partition_id, 2);
+    authority.restore_generation(RecordAllocationClass::Entity, partition_id, 0, 1);
+    authority
+        .restore_pending(
+            RecordAllocationClass::Entity,
+            partition_id,
+            0,
+            1,
+            RecordAllocationOrigin::AppendFrontier,
+        )
+        .unwrap();
+    let allocations = vec![
+        CanonicalRecordAllocation::with_origin(
+            0,
+            RecordRef::Entity(EntityId::new(partition_id, 0, 1)),
+            RecordAllocationOrigin::AppendFrontier,
+        ),
+        CanonicalRecordAllocation::with_origin(
+            1,
+            RecordRef::Entity(EntityId::new(partition_id, 2, 1)),
+            RecordAllocationOrigin::AppendFrontier,
+        ),
+    ];
+    authority
+        .stage_replay_allocations_with_leading_gaps(allocations)
+        .unwrap();
+    let mut pending = authority.begin_allocations();
+    let restored = pending
+        .reserve(RecordAllocationClass::Entity, partition_id)
+        .unwrap();
+    let fresh = pending
+        .reserve(RecordAllocationClass::Entity, partition_id)
+        .unwrap();
+    assert_eq!((restored.slot, restored.generation), (0, 1));
+    assert_eq!((fresh.slot, fresh.generation), (2, 1));
+    pending.finish_mutation().unwrap();
+    pending.commit();
+    assert!(authority.pending_snapshot().is_empty());
+    assert_eq!(
+        authority.frontier_snapshot(),
+        vec![(RecordAllocationClass::Entity, partition_id, 3)]
+    );
+}
+
+#[test]
+fn unstaged_out_of_order_append_slot_is_rejected_by_replay() {
+    let authority = RecordIdentitySubsystem::default();
+    let partition_id = PartitionId(29);
+    let expected = CanonicalRecordAllocation::with_origin(
+        0,
+        RecordRef::Entity(EntityId::new(partition_id, 1, 1)),
+        RecordAllocationOrigin::AppendFrontier,
+    );
+    let mut pending = PendingRecordAllocations::new(authority, Some(vec![expected]));
+    let denial = pending
+        .reserve(RecordAllocationClass::Entity, partition_id)
+        .unwrap_err();
+    assert_eq!(
+        denial,
+        RecordAllocationDenial::ReplayAppendFrontierMismatch {
+            ordinal: 0,
+            class: RecordAllocationClass::Entity,
+            partition_id,
+            expected_slot: 0,
+            observed_slot: 1,
+        }
+    );
+}
+
+#[test]
+fn metered_false_mask_and_heapsort_charge_every_chunk_comparison_and_swap() {
+    let mut charges = Vec::new();
+    let mut step = |units: u64| -> Result<(), &'static str> {
+        charges.push(units);
+        Ok(())
+    };
+    let mask = metered_false_mask(150, &mut step, |m| m, "mask").unwrap();
+    assert_eq!(mask.len(), 150);
+    assert!(mask.iter().all(|b| !b));
+    assert_eq!(charges, vec![64, 64, 22]);
+
+    // Exhausting work stops mask initialization before remaining chunks run.
+    let mut budget = 64u64;
+    let err = metered_false_mask(
+        150,
+        &mut |units| {
+            if budget < units {
+                return Err("budget-exhausted");
+            }
+            budget -= units;
+            Ok(())
+        },
+        |m| m,
+        "mask",
+    )
+    .unwrap_err();
+    assert_eq!(err, "budget-exhausted");
+
+    // Heapsort charges each comparison, sift swap, and extraction swap.
+    // On [5, 1, 4, 2, 3]: 9 comparisons + 4 sift swaps + 4 extraction swaps = 17 exact units.
+    let mut values = [5u32, 1, 4, 2, 3];
+    let mut sort_units = 0u64;
+    let mut sort_step = |units: u64| -> Result<(), &'static str> {
+        sort_units += units;
+        Ok(())
+    };
+    metered_heapsort(&mut values, |a, b| a.cmp(b), &mut sort_step).unwrap();
+    assert_eq!(values, [1, 2, 3, 4, 5]);
+    assert_eq!(
+        sort_units, 17,
+        "expected exact 9 comparisons + 4 sift swaps + 4 extraction swaps = 17 units"
+    );
+
+    // One-unit-short budget halts heapsort deterministically on the final operation.
+    let mut short = [5u32, 1, 4, 2, 3];
+    let mut remaining = sort_units - 1;
+    let err = metered_heapsort(&mut short, |a, b| a.cmp(b), &mut |units| {
+        if remaining < units {
+            return Err("sort-stopped");
+        }
+        remaining -= units;
+        Ok(())
+    })
+    .unwrap_err();
+    assert_eq!(err, "sort-stopped");
+    assert_eq!(remaining, 0);
+
+    // Exact budget completes cleanly with zero remaining units.
+    let mut exact = [5u32, 1, 4, 2, 3];
+    let mut exact_remaining = sort_units;
+    metered_heapsort(&mut exact, |a, b| a.cmp(b), &mut |units| {
+        if exact_remaining < units {
+            return Err("sort-stopped");
+        }
+        exact_remaining -= units;
+        Ok(())
+    })
+    .unwrap();
+    assert_eq!(exact, [1, 2, 3, 4, 5]);
+    assert_eq!(exact_remaining, 0);
+}

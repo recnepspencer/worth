@@ -144,6 +144,14 @@ impl WorthQueryProductBranchOwnerCleanup {
         )
     }
 
+    pub(crate) fn retired_application_occurrence(
+        &self,
+    ) -> Option<WorthQueryRetiredProductOccurrence> {
+        self.runtime
+            .owner_cleanup
+            .retired_application_occurrence(self.identity)
+    }
+
     pub(crate) fn pending_signal_bases(
         &self,
     ) -> Result<

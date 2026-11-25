@@ -192,6 +192,19 @@ impl WorthQueryProductBranchOwnerCleanupRegistry {
             .release_retired_history(runtime, execution)
     }
 
+    pub(super) fn retired_application_occurrence(
+        &self,
+        identity: u64,
+    ) -> Option<WorthQueryRetiredProductOccurrence> {
+        let entry = lock(&self.state).entries.get(&identity).cloned()?;
+        match &entry.scope {
+            CleanupScope::ApplicationRetirement(occurrence) => Some(occurrence.clone()),
+            CleanupScope::Creation
+            | CleanupScope::Application
+            | CleanupScope::WorkspaceRetirement => None,
+        }
+    }
+
     pub(super) fn pending_application_retired_product_occurrences(
         &self,
     ) -> Vec<WorthQueryRetiredProductOccurrence> {

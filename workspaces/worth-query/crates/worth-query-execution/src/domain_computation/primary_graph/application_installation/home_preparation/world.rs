@@ -256,12 +256,21 @@ where
             .operations
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner) = operations;
-        application.inner.program_support = Some(
+        let installed_support =
             super::super::super::program_occurrence::WorthQueryInstalledProgramSupport::installed(
                 state.support.roster,
                 state.activation,
-            ),
-        );
+            );
+        installed_support
+            .obligation_history()
+            .attach_obligation_basis_pins(
+                application
+                    .inner
+                    .runtime
+                    .recovered_outputs_ref()
+                    .basis_pins_handle(),
+            );
+        application.inner.program_support = Some(installed_support);
         application
             .inner
             .runtime

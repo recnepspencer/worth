@@ -16,6 +16,17 @@ pub(crate) fn assemble_effect(
     }
 
     for event in outcome.events {
+        if let super::outcomes::MutationEvent::EntityReplaced {
+            replaced_entity_id,
+            replacement_entity_id,
+            ..
+        } = &event
+        {
+            effect
+                .publication
+                .entity_replacements
+                .push((*replaced_entity_id, *replacement_entity_id));
+        }
         effect
             .diagnostics
             .entries

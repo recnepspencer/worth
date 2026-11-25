@@ -47,34 +47,71 @@ impl RecordIdentitySubsystem {
         &self,
         allocations: Vec<CanonicalRecordAllocation>,
     ) -> Result<(), &'static str> {
-        if self.lock().staged_replay_allocations.is_some() {
+        let mut state = self.lock();
+        if state.staged_replay_allocations.is_some() {
             return Err("record allocation replay evidence is already staged");
         }
         let mut first_append_slots = BTreeMap::new();
+        let mut seen_append_slots = std::collections::BTreeSet::new();
+        let mut staged_append_slots = std::collections::BTreeSet::new();
         for allocation in &allocations {
             if allocation.origin() != RecordAllocationOrigin::AppendFrontier {
                 continue;
             }
-            let key = (allocation.class(), record_partition(allocation.record()));
+            let class = allocation.class();
+            let partition_id = record_partition(allocation.record());
             let slot = record_slot(allocation.record());
+            let generation = super::record_ref::record_generation(allocation.record());
+            let slot_key = (class, partition_id, slot);
+            if !seen_append_slots.insert(slot_key) {
+                return Err("duplicate durable append allocation in one commit");
+            }
+            if state.pending.get(&slot_key).copied()
+                == Some(PendingRecordReservation {
+                    generation,
+                    origin: RecordAllocationOrigin::AppendFrontier,
+                })
+            {
+                continue;
+            }
+            let frontier = state
+                .next_slots
+                .get(&(class, partition_id))
+                .copied()
+                .unwrap_or(0);
+            if slot < frontier {
+                return Err("durable append allocation is below the current frontier");
+            }
+            if state
+                .generation_high_water
+                .get(&slot_key)
+                .copied()
+                .unwrap_or(0)
+                != 0
+            {
+                return Err("durable append allocation targets a previously allocated slot");
+            }
+            staged_append_slots.insert(slot_key);
             first_append_slots
-                .entry(key)
+                .entry((class, partition_id))
                 .and_modify(|first: &mut usize| *first = (*first).min(slot))
                 .or_insert(slot);
         }
-        let mut state = self.lock();
         for (key, first_slot) in first_append_slots {
             let frontier = state.next_slots.entry(key).or_default();
             if *frontier < first_slot {
                 *frontier = first_slot;
             }
         }
+        state.staged_replay_append_slots = staged_append_slots;
         state.staged_replay_allocations = Some(allocations);
         Ok(())
     }
 
     pub(crate) fn clear_staged_replay_allocations(&self) -> bool {
-        self.lock().staged_replay_allocations.take().is_some()
+        let mut state = self.lock();
+        state.staged_replay_append_slots.clear();
+        state.staged_replay_allocations.take().is_some()
     }
 
     #[cfg(test)]
@@ -203,6 +240,7 @@ impl RecordIdentitySubsystem {
         Ok(())
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub(super) fn reserve_exact(
         &self,
         ordinal: u64,
@@ -211,6 +249,7 @@ impl RecordIdentitySubsystem {
         slot: usize,
         generation: u32,
         origin: RecordAllocationOrigin,
+        allow_out_of_order_append: bool,
     ) -> Result<RecordSlotReservation, RecordAllocationDenial> {
         let mut state = self.lock();
         let key = (class, partition_id, slot);
@@ -274,7 +313,7 @@ impl RecordIdentitySubsystem {
                     .get(&(class, partition_id))
                     .copied()
                     .unwrap_or(0);
-                if slot != expected_slot {
+                if slot != expected_slot && !allow_out_of_order_append {
                     return Err(RecordAllocationDenial::ReplayAppendFrontierMismatch {
                         ordinal,
                         class,
@@ -289,7 +328,9 @@ impl RecordIdentitySubsystem {
                             class,
                             partition_id,
                         })?;
-                state.next_slots.insert((class, partition_id), next);
+                state
+                    .next_slots
+                    .insert((class, partition_id), expected_slot.max(next));
                 ReservationOrigin::AppendFrontier
             }
         };

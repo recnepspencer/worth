@@ -1,8 +1,9 @@
 pub use state::CompleteRelationalCheckpointPreparation;
 pub(crate) use state::{
-    LineageNamingBasisBinding, MutationRecordAllocations, MutationSymbolMeanings,
-    OriginalBranchSchemaInputs, OriginalBranchSchemaInputsDenial,
-    OriginalEmptySchemaInstallation, OriginalEmptySchemaObservation, RetainedBranchTransition,
+    metered_binary_search, metered_false_mask, metered_heapsort, LineageNamingBasisBinding,
+    MutationRecordAllocations, MutationSymbolMeanings, OriginalBranchSchemaInputs,
+    OriginalBranchSchemaInputsDenial, OriginalEmptySchemaInstallation,
+    OriginalEmptySchemaObservation, RetainedBranchTransition,
 };
 pub mod builder;
 mod construction;
@@ -53,22 +54,21 @@ pub use crate::validation::engine::HarnessAuditMode;
 pub use crate::validation::InvariantAccess;
 pub use crate::visibility::materialization::read_records::{
     AdjacencyStructuralRevision, AdjacencyStructuralRevisionDenial, EntityProjectionRecord,
-    EntityRecordProjection, PinnedStructuralWalk, PinnedStructuralWalkDenial,
-    PinnedStructuralWalkDenialKind, PinnedStructuralWalkReads, PinnedStructuralWalkScope,
-    PinnedStructuralWalkVisit, PositionedRelationalSnapshot, QueryLeasedReadOutcome,
-    QueryReadExecutionStop, QueryReadPacketDenial, RelationProjectionRecord,
-    RelationRecordProjection, RelationalAdjacencyDirection, RelationalAdjacencySupportDenial,
-    RelationalAdjacencyVisit, RelationalAppliedCandidateReadIdentity,
-    RelationalAppliedCandidateReadQualification, RelationalAspectPresenceSupportDenial,
-    RelationalBorrowedRecordReadDenial, RelationalEntityMetadata,
-    RelationalEntityMetadataPinDenial, RelationalEntityRetirement,
+    EntityRecordProjection, HomeReadmissionMetadataReadDenial, HomeReadmissionMetadataView,
+    PinnedStructuralWalk, PinnedStructuralWalkDenial, PinnedStructuralWalkDenialKind,
+    PinnedStructuralWalkReads, PinnedStructuralWalkScope, PinnedStructuralWalkVisit,
+    PositionedRelationalSnapshot, QueryLeasedReadOutcome, QueryReadExecutionStop,
+    QueryReadPacketDenial, RelationProjectionRecord, RelationRecordProjection,
+    RelationalAdjacencyDirection, RelationalAdjacencySupportDenial, RelationalAdjacencyVisit,
+    RelationalAppliedCandidateReadIdentity, RelationalAppliedCandidateReadQualification,
+    RelationalAspectPresenceSupportDenial, RelationalBorrowedRecordReadDenial,
+    RelationalEntityMetadata, RelationalEntityMetadataPinDenial, RelationalEntityRetirement,
     RelationalFieldSupportComparisonDenial, RelationalHistoricalSelectionRead,
     RelationalHistoricalSelectionReadDenial, RelationalHistoricalSourcePresence,
     RelationalHistoricalSourceReadDenial, RelationalPinnedEntityMetadata, RelationalPinnedRead,
     RelationalPinnedReadAdmissionDenial, RelationalProjectedFieldObservation,
     RelationalRelationMetadata, RelationalSnapshotPositionAdmissionStop, SnapshotPositionDenial,
-    HomeReadmissionMetadataReadDenial, HomeReadmissionMetadataView, VisibilityProjectionView,
-    VisibilityReadContext,
+    VisibilityProjectionView, VisibilityReadContext,
 };
 pub use crate::visibility::retention::{
     RelationalRetentionPassProgress, RelationalRetentionPassStop, RelationalStoppedRetentionPass,

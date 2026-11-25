@@ -153,6 +153,7 @@ fn reports_canonical_reservations_as_well_as_live_choices() {
             0,
             1,
             RecordAllocationOrigin::AppendFrontier,
+            false,
         )
         .unwrap();
     assert_eq!(

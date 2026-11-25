@@ -2,7 +2,9 @@ pub(crate) use history::{
     OriginalBranchSchemaInputs, OriginalBranchSchemaInputsDenial, OriginalEmptySchemaInstallation,
     OriginalEmptySchemaObservation, RetainedBranchTransition,
 };
-pub(crate) use record_identity::MutationRecordAllocations;
+pub(crate) use record_identity::{
+    metered_binary_search, metered_false_mask, metered_heapsort, MutationRecordAllocations,
+};
 mod commit_strategies;
 mod durability;
 mod history;

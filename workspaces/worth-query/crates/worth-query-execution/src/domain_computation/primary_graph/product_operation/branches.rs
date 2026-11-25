@@ -174,6 +174,10 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
     /// Discovers every Query-owned cleanup obligation and releases only the
     /// application-retirement occurrences held by the primary provider.
     pub fn pending_cleanup(&self) -> Vec<WorthQueryApplicationProductBranchCleanup> {
+        let obligations = self
+            .application
+            .installed_program_support()
+            .map(|support| support.obligation_history());
         for occurrence in self
             .application
             .inner
@@ -181,6 +185,12 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
             .product_runtime_ref()
             .pending_application_retired_product_occurrences()
         {
+            if let Some(history) = obligations.as_ref() {
+                history.mark_branch_retired(
+                    occurrence.branch().name().as_str(),
+                    occurrence.incarnation().ordinal(),
+                );
+            }
             self.application
                 .inner
                 .runtime
@@ -208,7 +218,11 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
             .pending_owner_cleanup()
             .into_iter()
             .map(|cleanup| {
-                WorthQueryApplicationProductBranchCleanup::new(cleanup, conditional.clone())
+                WorthQueryApplicationProductBranchCleanup::new(
+                    cleanup,
+                    conditional.clone(),
+                    obligations.clone(),
+                )
             })
             .collect()
     }

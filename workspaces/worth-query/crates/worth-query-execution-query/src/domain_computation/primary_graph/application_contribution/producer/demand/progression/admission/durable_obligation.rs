@@ -7,6 +7,7 @@ use crate::domain_computation::primary_graph::application_output_demand::registr
 use std::sync::Arc;
 use worth_foundational::facade::{CanonicalDigestId, DurableCompositeCommitIdentity};
 use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
+use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
@@ -58,6 +59,11 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 .name()
                 .as_str()
                 .to_owned();
+            let lifecycle = selected
+                .product()
+                .observation()
+                .lifecycle_incarnation()
+                .ordinal();
             let basis = DurableCompositeCommitIdentity::from_recorded(owner, commit.ordinal());
             let _ = readmission.recording.set(DurableDemandRecording {
                 history,
@@ -65,6 +71,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 family,
                 producer,
                 branch,
+                lifecycle,
                 basis,
                 query: *source.query_identity().as_bytes(),
                 root: source.source_root(),
@@ -91,6 +98,48 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                     .ok_or_else(unavailable)
             })
             .collect::<Result<Vec<_>, _>>()?;
+        let mut _pin_guards = Vec::new();
+        if let Some(recording) = readmission.recording.get() {
+            let mut required = Vec::with_capacity(1 + sources.len());
+            required.push(recording.basis);
+            required.extend(sources.iter().copied());
+            _pin_guards.reserve(required.len());
+            for commit in required {
+                let guard = match self
+                    .runtime
+                    .recovered_outputs
+                    .try_retain_obligation_basis_in_flight(commit, Arc::clone(&recording.history))
+                {
+                    Some(guard) => guard,
+                    None => {
+                        let observation = readmission
+                            .retained_program_basis()
+                            .and_then(|basis| {
+                                let selected = basis.selected_commit();
+                                (selected.owner_identity().durable() == Some(commit.owner())
+                                    && selected.ordinal() == commit.ordinal())
+                                .then(|| basis.product_observation().clone())
+                            })
+                            .map(Ok)
+                            .unwrap_or_else(|| {
+                                self.readmit_output_observation(
+                                    execution,
+                                    commit,
+                                    &recording.branch,
+                                )
+                            })?;
+                        self.runtime
+                            .recovered_outputs
+                            .pin_obligation_basis_in_flight(
+                                commit,
+                                observation,
+                                Arc::clone(&recording.history),
+                            )
+                    }
+                };
+                _pin_guards.push(guard);
+            }
+        }
         readmission.retain_durable(execution, sources, prerequisites, Vec::new())?;
         Ok(())
     }

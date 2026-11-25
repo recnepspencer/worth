@@ -37,6 +37,7 @@ mod part_corruption;
 mod participant_admission;
 mod prepared_route;
 mod producer_posture;
+mod record_allocations;
 mod stage;
 pub use producer_posture::RelationalCoupledProducerPosture;
 mod scoped_preparation;

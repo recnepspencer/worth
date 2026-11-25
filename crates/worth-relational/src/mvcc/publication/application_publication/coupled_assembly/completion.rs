@@ -214,6 +214,13 @@ pub(crate) fn prepare_coupled_candidate(
     let intents = transaction.normalized_intents_for_merge(&final_runtime, execution)?;
     let commands =
         transaction.build_merged_plan_for_state(&final_runtime, &selected, intents, execution)?;
+    if !parts.is_empty() || !stages.is_empty() {
+        super::record_allocations::align_to_canonical_plan(
+            execution,
+            commands.plan(),
+            &mut mutation,
+        )?;
+    }
     transaction
         .footprint
         .derive_validation_dependencies(commands.plan(), execution.allocation_policy())

@@ -18,6 +18,13 @@ impl PreparedPrerequisiteClaims {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         lineage: &std::sync::Mutex<crate::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage>,
+        mut readmit_observation: impl FnMut(
+            DurableCompositeCommitIdentity,
+            &str,
+        ) -> Result<
+            worth_runtime_world::facade::ProductBranchObservation,
+            WorthQueryOutputDemandDenial,
+        >,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let snapshots = {
             let owner = self.context.registry();
@@ -76,6 +83,39 @@ impl PreparedPrerequisiteClaims {
                     .map(|identity| lineage.encode_checkpoint_prerequisite(identity, execution))
                     .collect::<Result<Vec<_>, _>>()?
             };
+            let mut _pin_guards = Vec::new();
+            if let Some(recording) = snapshot.source.recording.get()
+                && let Some(pins) = recording.history.basis_pins.get()
+            {
+                let mut required = Vec::with_capacity(1 + snapshot.performed.len());
+                required.push(recording.basis);
+                required.extend(snapshot.performed.iter().copied());
+                _pin_guards.reserve(required.len());
+                for commit in required {
+                    let guard = match pins
+                        .try_retain_in_flight(commit, Arc::clone(&recording.history))
+                    {
+                        Some(guard) => guard,
+                        None => {
+                            let observation = snapshot
+                                .source
+                                .retained_program_basis()
+                                .and_then(|basis| {
+                                    let selected = basis.selected_commit();
+                                    (selected.owner_identity().durable() == Some(commit.owner())
+                                        && selected.ordinal() == commit.ordinal())
+                                    .then(|| basis.product_observation().clone())
+                                })
+                                .map(Ok)
+                                .unwrap_or_else(|| {
+                                    readmit_observation(commit, &recording.branch)
+                                })?;
+                            pins.pin_in_flight(commit, observation, Arc::clone(&recording.history))
+                        }
+                    };
+                    _pin_guards.push(guard);
+                }
+            }
             snapshot.source.retain_durable(
                 execution,
                 snapshot.performed,
