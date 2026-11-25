@@ -158,6 +158,11 @@ pub use crate::inspection::{
     RuntimeWorldRetentionInspectionDenial, RuntimeWorldRetentionKey, RuntimeWorldRetentionSnapshot,
 };
 
+pub use crate::retention::frontier_pin::{
+    FrontierPinCustody, HomeFrontierComponents, HomeRootManifest, LeaseState, LeaseTransition,
+    NestedDropPolicy, PhysicalRootPointer, PinId, PinScope, PinSpec, PinnedFrontierLease,
+    RetentionPortDenial, RuntimeWorldRetentionPort, HOME_ROOT_MANIFEST_VERSION,
+};
 pub use crate::retention::{
     ComponentBasisDependencyClass, ComponentBasisDependencyCounts, RetentionCostSnapshot,
     RetentionObligationDenial, RetentionReclamationReport, RetentionTransferDenial,

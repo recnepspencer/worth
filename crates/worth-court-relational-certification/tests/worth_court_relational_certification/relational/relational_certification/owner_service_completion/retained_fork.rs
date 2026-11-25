@@ -1,19 +1,13 @@
-//! Retained fork truth and explicit persistence limits use the actual public owner.
-use crate::relational_certification::ordinary_context::owner_service_completion::world::{
-    commit_through_services, empty_runtime,
-};
+//! Retained fork truth and its tail recovery use the actual public owner.
+use crate::relational_certification::ordinary_context::owner_service_completion::world::commit_through_services;
 use worth_relational::facade::history::BranchId;
 use worth_relational::facade::{
     branch::{RelationalBranchTransition, RelationalBranchTransitionStop, RelationalForkDenial},
-    durability::{
-        RecoveryFailureClass, RecoveryVerificationMode, RelationalBranchTransitionArtifact,
-        RelationalRecoveryStop,
-    },
+    durability::{RecoveryVerificationMode, RelationalBranchTransitionArtifact},
 };
-mod medium;
 
 #[test]
-fn retained_root_fork_preserves_old_truth_and_current_fork_still_refuses_drift() {
+fn retained_root_fork_preserves_old_truth_replays_from_tail_and_current_fork_still_refuses_drift() {
     let request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let schema = worth_testkit_relational::aspect_storage::AspectSchemaFixture::default();
@@ -107,22 +101,24 @@ fn retained_root_fork_preserves_old_truth_and_current_fork_still_refuses_drift()
             RecoveryVerificationMode::NormalRecoveryVerification,
         )
         .unwrap();
-    let mut unsupported = schema.build_runtime();
-    let RelationalRecoveryStop::Durability(cause) = unsupported
+    // Tail recovery rebuilds the recorded historical root and replays the fork.
+    let mut replayed = schema.build_runtime();
+    replayed
         .durability_recovery()
         .recover(execution, plan)
-        .unwrap_err()
-    else {
-        panic!("specific unsupported reconstruction")
-    };
-    assert_eq!(
-        cause.class,
-        RecoveryFailureClass::UnsupportedRetainedForkReplay,
-        "the actual recovery must reach the retained transition: {cause:?}"
-    );
-    assert!(unsupported
+        .unwrap();
+    let replayed_child = replayed
         .branch_identity(destination.identity().branch_id())
-        .is_err());
+        .unwrap();
+    let replayed_child = replayed.admit_branch_basis(&replayed_child).unwrap();
+    assert_eq!(
+        replayed_child.observation().commit_id(),
+        Some(first.commit.commit_id)
+    );
+    assert_eq!(
+        replayed_child.descriptor().schema_commitment(),
+        old.descriptor().schema_commitment()
+    );
     // A checkpoint after the fork captures its actual live destination root.
     runtime
         .durability_authority()

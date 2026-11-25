@@ -109,7 +109,8 @@ pub(crate) fn require_no_pending_home_journals(
             // owners, including Signal's framed authored source before World.
             HomeJournalAdmission::Native
             | HomeJournalAdmission::Signal
-            | HomeJournalAdmission::World => {}
+            | HomeJournalAdmission::World
+            | HomeJournalAdmission::RootPins => {}
             HomeJournalAdmission::Transition => {
                 if !context
                     .transition

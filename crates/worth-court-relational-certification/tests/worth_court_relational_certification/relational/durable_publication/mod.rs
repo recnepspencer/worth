@@ -124,6 +124,8 @@ mod native_checkpoint_reopen;
 mod checkpoint_branch_targets;
 
 mod checkpoint_branch_lifecycle;
+mod concurrent_branch_frontier;
+mod historical_fork_lifecycle;
 
 mod checkpoint_tail_and_indexes;
 

@@ -20,7 +20,8 @@ impl RecordIdentitySubsystem {
     /// RAII returns reclaimed slots while append-frontier gaps stay burned.
     pub fn release_unowned_reservations(&self) {
         let reservations = {
-            let state = self.lock();
+            let mut state = self.lock();
+            state.replay_gaps.clear();
             state
                 .pending
                 .iter()
@@ -65,8 +66,10 @@ impl RecordIdentitySubsystem {
         let mut state = self.lock();
         for (key, first_slot) in first_append_slots {
             let frontier = state.next_slots.entry(key).or_default();
-            if *frontier < first_slot {
+            let skipped = *frontier;
+            if skipped < first_slot {
                 *frontier = first_slot;
+                state.replay_gaps.skip(key, skipped, first_slot);
             }
         }
         state.staged_replay_allocations = Some(allocations);
@@ -271,6 +274,31 @@ impl RecordIdentitySubsystem {
                     .get(&(class, partition_id))
                     .copied()
                     .unwrap_or(0);
+                if slot < expected_slot && state.replay_gaps.take((class, partition_id), slot) {
+                    // A candidate prepared earlier published later.
+                    state
+                        .generation_high_water
+                        .insert((class, partition_id, slot), generation);
+                    state.pending.insert(
+                        (class, partition_id, slot),
+                        PendingRecordReservation { generation, origin },
+                    );
+                    super::observation::reserved(
+                        &self.state,
+                        class,
+                        partition_id,
+                        slot,
+                        generation,
+                    );
+                    return Ok(RecordSlotReservation::new(
+                        Arc::clone(&self.state),
+                        class,
+                        partition_id,
+                        slot,
+                        generation,
+                        ReservationOrigin::AppendFrontier,
+                    ));
+                }
                 if slot != expected_slot {
                     return Err(RecordAllocationDenial::ReplayAppendFrontierMismatch {
                         ordinal,

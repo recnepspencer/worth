@@ -3,7 +3,6 @@ use crate::branch::RuntimeWorldBranchAdmissionDenial as World;
 use worth_relational::facade::branch::RelationalForkDenial as Native;
 pub(super) fn admission_denial(cause: &Native) -> World {
     match cause {
-        Native::RetainedSourceDurabilityUnsupported => World::RetainedSourceDurabilityUnsupported,
         Native::RetentionCapacityExhausted | Native::RetentionIdentityExhausted => {
             World::CapacityExhausted
         }

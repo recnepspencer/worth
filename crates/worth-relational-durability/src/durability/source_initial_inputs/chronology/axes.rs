@@ -132,6 +132,21 @@ pub(super) struct ObservationKey<'a> {
     commit: Option<contracts::history::data::coordinates::CommitId>,
 }
 impl<'a> ObservationKey<'a> {
+    /// The key of a live committed observation at exact axes.
+    pub(super) fn live(
+        branch: &'a BranchId,
+        generation: Generation,
+        truth: RelationalBranchVersion,
+        commit: contracts::history::data::coordinates::CommitId,
+    ) -> Self {
+        Self {
+            branch,
+            generation: generation.get(),
+            truth: truth.as_u64(),
+            posture: posture(Lifecycle::Live),
+            commit: Some(commit),
+        }
+    }
     pub(super) fn of_axes(branch: &'a BranchId, axes: &Axes<'_>) -> Self {
         Self {
             branch,

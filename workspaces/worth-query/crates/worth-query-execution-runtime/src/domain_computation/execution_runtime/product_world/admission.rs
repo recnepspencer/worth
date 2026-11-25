@@ -221,7 +221,6 @@ pub(super) fn map_world_denial(
             | RuntimeWorldBranchAdmissionDenial::ProgramSourceMismatch
             | RuntimeWorldBranchAdmissionDenial::PlansOmitted
             | RuntimeWorldBranchAdmissionDenial::UnsupportedRetainedSourcePlan
-            | RuntimeWorldBranchAdmissionDenial::RetainedSourceDurabilityUnsupported
             | RuntimeWorldBranchAdmissionDenial::EmptyNativeForkSource
             | RuntimeWorldBranchAdmissionDenial::ForkSourceChanged
             | RuntimeWorldBranchAdmissionDenial::HistoryEntryUnavailable,

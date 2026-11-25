@@ -10,7 +10,6 @@ impl RelationalForkPort {
         &self,
         source: &AdmittedRelationalBranchBasis,
     ) -> Result<AdmittedRelationalRetainedForkSource, RelationalForkDenial> {
-        self.validate_retained_fork_profile()?;
         let _operation = self
             .lifecycle
             .admit()
@@ -19,13 +18,6 @@ impl RelationalForkPort {
         Ok(assemble_admitted_relational_retained_fork_source(
             source.clone(),
         ))
-    }
-
-    pub(super) fn validate_retained_fork_profile(&self) -> Result<(), RelationalForkDenial> {
-        if self.medium.is_some() {
-            return Err(RelationalForkDenial::RetainedSourceDurabilityUnsupported);
-        }
-        Ok(())
     }
 
     pub(super) fn validate_retained_basis(

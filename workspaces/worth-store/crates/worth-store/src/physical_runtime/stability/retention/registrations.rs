@@ -23,6 +23,8 @@ pub(in crate::physical_runtime) struct RootProtectionRegistry {
     lifecycle: Arc<LifecycleState>,
     policy: PhysicalReadProtectionPolicy,
     state: Mutex<Registrations>,
+    /// Durable root pins; consulted after the registration lock is released.
+    pins: super::root_pins::RootPinTable,
 }
 
 struct Registrations {
@@ -91,7 +93,12 @@ impl RootProtectionRegistry {
                 index_probes: 0,
                 examined_entries: 0,
             }),
+            pins: super::root_pins::RootPinTable::default(),
         })
+    }
+
+    pub(in crate::physical_runtime) fn pins(&self) -> &super::root_pins::RootPinTable {
+        &self.pins
     }
 
     pub(super) fn share(&self, slot: usize, root: RootPublicationCell) {
@@ -230,14 +237,17 @@ impl RootProtectionRegistry {
     }
 
     pub(in crate::physical_runtime) fn protects_root(&self, generation: u64) -> bool {
-        let mut state = self
-            .state
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
-        state.index_probes = state.index_probes.saturating_add(1);
-        let (visited, protected) = state.roots.contains(&generation);
-        state.examined_entries = state.examined_entries.saturating_add(visited);
-        protected
+        let read = {
+            let mut state = self
+                .state
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            state.index_probes = state.index_probes.saturating_add(1);
+            let (visited, protected) = state.roots.contains(&generation);
+            state.examined_entries = state.examined_entries.saturating_add(visited);
+            protected
+        };
+        read || self.pins.protects_root(generation)
     }
 
     /// True when a live reader holds any root at or below generation.
@@ -246,14 +256,17 @@ impl RootProtectionRegistry {
     /// one that placed it and the rewrite's source root. No index names that
     /// span, so the scan is counted and bounded by the retained-root limit.
     pub(in crate::physical_runtime) fn protects_root_at_or_below(&self, generation: u64) -> bool {
-        let mut state = self
-            .state
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
-        state.index_probes = state.index_probes.saturating_add(1);
-        let (visited, protected) = state.roots.any_key(|root| *root <= generation);
-        state.examined_entries = state.examined_entries.saturating_add(visited);
-        protected
+        let read = {
+            let mut state = self
+                .state
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            state.index_probes = state.index_probes.saturating_add(1);
+            let (visited, protected) = state.roots.any_key(|root| *root <= generation);
+            state.examined_entries = state.examined_entries.saturating_add(visited);
+            protected
+        };
+        read || self.pins.protects_root_at_or_below(generation)
     }
 
     /// True when a live reader still names this inline segment as its tail.
@@ -265,15 +278,18 @@ impl RootProtectionRegistry {
         segment_id: u64,
         generation: u64,
     ) -> bool {
-        let mut state = self
-            .state
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
-        state.index_probes = state.index_probes.saturating_add(1);
-        let (visited, count) = state.inline_tails.consult(&(segment_id, generation));
-        let protected = count.is_some_and(|roots| *roots > 0);
-        state.examined_entries = state.examined_entries.saturating_add(visited);
-        protected
+        let read = {
+            let mut state = self
+                .state
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            state.index_probes = state.index_probes.saturating_add(1);
+            let (visited, count) = state.inline_tails.consult(&(segment_id, generation));
+            let protected = count.is_some_and(|roots| *roots > 0);
+            state.examined_entries = state.examined_entries.saturating_add(visited);
+            protected
+        };
+        read || self.pins.protects_inline_segment(segment_id, generation)
     }
 
     pub(super) fn root_acquisitions(&self, binding: PhysicalProtectedRootObservation) -> u32 {
