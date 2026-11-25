@@ -1,6 +1,7 @@
-//! A root or edition retains its cell and any full residency it has admitted.
-//! Accessors never perform storage I/O. A cold cell must be demanded explicitly
-//! by the operation before a full view can be borrowed.
+//! A root or edition retains its cell and any residency it has admitted
+//! through its caching doors. `borrow_head`/`borrow_full` are operation-scoped
+//! instead: they never retain, so an open root does not pin bound cells.
+//! Accessors never perform storage I/O; cold cells must be demanded first.
 use std::sync::{Arc, OnceLock};
 
 use super::{Full, RelationalRegionResidency, RelationalResidencyLease};
@@ -109,6 +110,44 @@ impl RelationalRegionRetention {
             .demand_full(execution, limit, self.authority.as_deref())?;
         let _ = self.full.set(lease.clone());
         Ok(lease)
+    }
+
+    /// Operation-scoped Full borrow: reuses custody this root already holds,
+    /// otherwise demands and returns a lease that this root never retains.
+    /// Dropping the lease releases the borrow, so a long-lived root does not
+    /// pin the image and a bound cell becomes evictable again.
+    pub fn borrow_full(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        limit: u64,
+    ) -> Result<RelationalResidencyLease<Full>, super::RelationalResidencyDemandFailure> {
+        crate::execution::check_request(execution)
+            .map_err(super::RelationalResidencyDemandFailure::Request)?;
+        self.cell.check_damage()?;
+        match self.full.get() {
+            Some(lease) => Ok(lease.clone()),
+            None => self
+                .cell
+                .demand_full(execution, limit, self.authority.as_deref()),
+        }
+    }
+
+    /// Operation-scoped Head borrow with the same non-retaining contract.
+    pub fn borrow_head(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        limit: u64,
+    ) -> Result<RelationalResidencyLease<super::Head>, super::RelationalResidencyDemandFailure>
+    {
+        crate::execution::check_request(execution)
+            .map_err(super::RelationalResidencyDemandFailure::Request)?;
+        self.cell.check_damage()?;
+        match self.accepted_head_lease() {
+            Some(lease) => Ok(lease),
+            None => self
+                .cell
+                .demand_head(execution, limit, self.authority.as_deref()),
+        }
     }
 
     /// Lend only a previously admitted full view. A probe records `None` as a

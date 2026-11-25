@@ -1,4 +1,5 @@
 pub use worth_foundational::facade::{AspectValue, ScalarAspectType};
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 pub use worth_query_declaration::facade::application_capability::{
     ApplicationCapabilityAcceptedValues, ApplicationCapabilityActorComposition,
     ApplicationCapabilityAllowRule, ApplicationCapabilityCardinalityDimension,
@@ -47,6 +48,7 @@ pub fn currentness() -> ApplicationCapabilityCurrentnessDefinition {
 
 pub fn delegation() -> ApplicationCapabilityDelegationDefinition {
     ApplicationCapabilityDelegationDefinition::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationCapabilityDelegationParts {
             parent: relation("Parent", "Grant", "Grant"),
             grantor: relation("Grantor", "Principal", "Grant"),
@@ -62,6 +64,7 @@ pub fn delegation() -> ApplicationCapabilityDelegationDefinition {
 
 pub fn field(name: &str) -> ApplicationCapabilityFieldBinding {
     ApplicationCapabilityFieldBinding::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationCapabilityFieldBindingParts {
             entity: "Grant".to_owned(),
             aspect: "Facts".to_owned(),
@@ -74,6 +77,7 @@ pub fn field(name: &str) -> ApplicationCapabilityFieldBinding {
 
 pub fn value(name: &str, value: u64) -> ApplicationCapabilityValueBinding {
     ApplicationCapabilityValueBinding::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationCapabilityValueBindingParts {
             field: field(name),
             value: AspectValue::UInt64(value),
@@ -83,6 +87,7 @@ pub fn value(name: &str, value: u64) -> ApplicationCapabilityValueBinding {
 
 pub fn relation(name: &str, from: &str, to: &str) -> ApplicationCapabilityRelationBinding {
     ApplicationCapabilityRelationBinding::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationCapabilityRelationBindingParts {
             relation: name.to_owned(),
             from: from.to_owned(),
@@ -92,5 +97,5 @@ pub fn relation(name: &str, from: &str, to: &str) -> ApplicationCapabilityRelati
 }
 
 pub fn identity(value: &str) -> WorthQueryPortableTypeIdentity {
-    WorthQueryPortableTypeIdentity::from_untrusted(value.to_owned())
+    WorthQueryPortableTypeIdentity::from_untrusted(ARCHIVE_DECODE, value.to_owned())
 }

@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 mod diagnostics;
 mod query;
 
@@ -30,6 +31,7 @@ pub(super) fn decode_bundle(
     let counters = diagnostics::decode_counters(input)?;
     Ok(
         WorthQueryPortableCanonicalQueryBundleRecord::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableCanonicalQueryBundleParts {
                 query_digest: query.digest,
                 query_family: query.family,

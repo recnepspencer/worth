@@ -5,6 +5,7 @@ use crate::facade::{
     WorthQueryInstallationRuntimeIdentity, WorthQueryInstalledPackageIndex,
     WorthQueryPortableDomainIdentity, WorthQueryPortableDomainPackage,
 };
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryBindingReference, ApplicationQueryDisclosureContract,
     ApplicationQueryInspectionDefinition, ErasedApplicationQueryInspectionDefinition,
@@ -95,9 +96,12 @@ fn inspection_resolves_every_definition_against_actual_compiled_binding_before_i
     let mut parts = definition.parts().clone();
     let mut changed = parts.binding.parts().clone();
     changed.input = WorthQueryPortableTypeIdentity::declared("worth.query.foreign-input.v1");
-    parts.binding = ApplicationQueryBindingReference::from_untrusted_parts(changed);
+    parts.binding = ApplicationQueryBindingReference::from_untrusted_parts(ARCHIVE_DECODE, changed);
     let foreign = ApplicationSchemaMember::ApplicationQueryInspection {
-        definition: ErasedApplicationQueryInspectionDefinition::from_untrusted_parts(parts),
+        definition: ErasedApplicationQueryInspectionDefinition::from_untrusted_parts(
+            ARCHIVE_DECODE,
+            parts,
+        ),
     };
     assert_eq!(
         validate_definitions(std::slice::from_ref(&foreign), &bindings)
@@ -115,10 +119,13 @@ fn inspection_resolves_every_definition_against_actual_compiled_binding_before_i
     let mut foreign_other_binding = foreign_other_parts.binding.parts().clone();
     foreign_other_binding.input =
         WorthQueryPortableTypeIdentity::declared("worth.query.foreign-input.v1");
-    foreign_other_parts.binding =
-        ApplicationQueryBindingReference::from_untrusted_parts(foreign_other_binding);
+    foreign_other_parts.binding = ApplicationQueryBindingReference::from_untrusted_parts(
+        ARCHIVE_DECODE,
+        foreign_other_binding,
+    );
     let foreign_other = ApplicationSchemaMember::ApplicationQueryInspection {
         definition: ErasedApplicationQueryInspectionDefinition::from_untrusted_parts(
+            ARCHIVE_DECODE,
             foreign_other_parts,
         ),
     };
@@ -141,9 +148,12 @@ fn inspection_resolves_every_definition_against_actual_compiled_binding_before_i
     let mut missing = parts.binding.parts().clone();
     missing.binding =
         WorthQueryPortableTypeIdentity::declared("worth.query.uninstalled-binding.v1");
-    parts.binding = ApplicationQueryBindingReference::from_untrusted_parts(missing);
+    parts.binding = ApplicationQueryBindingReference::from_untrusted_parts(ARCHIVE_DECODE, missing);
     let missing = ApplicationSchemaMember::ApplicationQueryInspection {
-        definition: ErasedApplicationQueryInspectionDefinition::from_untrusted_parts(parts),
+        definition: ErasedApplicationQueryInspectionDefinition::from_untrusted_parts(
+            ARCHIVE_DECODE,
+            parts,
+        ),
     };
     assert_eq!(
         validate_definitions(&[valid, missing], &bindings)
@@ -159,6 +169,7 @@ fn missing_capability_definition() -> ErasedApplicationQueryInspectionDefinition
         application_schema::{ApplicationEncodedScalarValue, BoolApplicationValueBinding},
     };
     let contract = ApplicationQueryDisclosureContract::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationQueryDisclosureParts {
             posture: ApplicationQueryDisclosurePosture::Governed,
             classification: "inspection".into(),

@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_capability::{
     ApplicationCapabilityContextEntitySlotBinding, ApplicationCapabilityFieldBinding,
     ApplicationCapabilityOperationBinding, ApplicationCapabilityPathContextAnchor,
@@ -32,6 +33,7 @@ pub(super) fn decode_field(
     input: &mut BinaryInput<'_>,
 ) -> Result<ApplicationCapabilityFieldBinding, Denial> {
     Ok(ApplicationCapabilityFieldBinding::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationCapabilityFieldBindingParts {
             entity: input.text()?.to_owned(),
             aspect: input.text()?.to_owned(),
@@ -53,6 +55,7 @@ pub(super) fn decode_value(
     input: &mut BinaryInput<'_>,
 ) -> Result<ApplicationCapabilityValueBinding, Denial> {
     Ok(ApplicationCapabilityValueBinding::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationCapabilityValueBindingParts {
             field: decode_field(input)?,
             value: foundational_value::decode_aspect_value(input)?,
@@ -72,6 +75,7 @@ pub(super) fn decode_relation(
     input: &mut BinaryInput<'_>,
 ) -> Result<ApplicationCapabilityRelationBinding, Denial> {
     Ok(ApplicationCapabilityRelationBinding::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationCapabilityRelationBindingParts {
             relation: input.text()?.to_owned(),
             from: input.text()?.to_owned(),
@@ -92,6 +96,7 @@ pub(super) fn decode_operation(
     input: &mut BinaryInput<'_>,
 ) -> Result<ApplicationCapabilityOperationBinding, Denial> {
     Ok(ApplicationCapabilityOperationBinding::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationCapabilityOperationBindingParts {
             operation: input.text()?.to_owned(),
             operation_identity: decode_type_identity(input)?,
@@ -115,6 +120,7 @@ pub(super) fn decode_context_slot(
 ) -> Result<ApplicationCapabilityContextEntitySlotBinding, Denial> {
     Ok(
         ApplicationCapabilityContextEntitySlotBinding::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableApplicationCapabilityContextEntitySlotBindingParts {
                 context: input.text()?.to_owned(),
                 context_identity: decode_type_identity(input)?,
@@ -139,6 +145,7 @@ pub(super) fn decode_anchor(
 ) -> Result<ApplicationCapabilityPathContextAnchor, Denial> {
     Ok(
         ApplicationCapabilityPathContextAnchor::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableApplicationCapabilityPathContextAnchorParts {
                 relation: decode_relation(input)?,
                 direction: super::super::super::super::authorization_path::decode_direction(input)?,

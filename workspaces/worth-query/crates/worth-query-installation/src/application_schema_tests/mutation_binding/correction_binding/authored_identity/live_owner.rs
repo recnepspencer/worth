@@ -1,5 +1,6 @@
 //! Live-owner relation contracts and the kinds covered by their field demands.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 #[test]
 fn a_live_member_owner_requires_its_exact_relation_demand_and_cardinality() {
     use worth_query_declaration::facade::application_aftermath::{
@@ -35,6 +36,7 @@ fn a_live_member_owner_requires_its_exact_relation_demand_and_cardinality() {
         unreachable!();
     };
     let owner = PortablePreImageRelationLocus::from_untrusted_fields(
+        ARCHIVE_DECODE,
         "MemberOf".into(),
         entity.clone(),
         "Owner".into(),
@@ -67,6 +69,7 @@ fn a_live_member_owner_requires_its_exact_relation_demand_and_cardinality() {
         };
         let declared_owner = if axis == "wrong-direction" {
             PortablePreImageRelationLocus::from_untrusted_fields(
+                ARCHIVE_DECODE,
                 "MemberOf".into(),
                 "Owner".into(),
                 entity.clone(),
@@ -74,21 +77,24 @@ fn a_live_member_owner_requires_its_exact_relation_demand_and_cardinality() {
         } else {
             owner.clone()
         };
-        let authored =
-            DeclaredAuthoredCorrection::from_untrusted_parts(DeclaredAuthoredCorrectionParts {
+        let authored = DeclaredAuthoredCorrection::from_untrusted_parts(
+            ARCHIVE_DECODE,
+            DeclaredAuthoredCorrectionParts {
                 family: identity("authored-fixture.v1"),
                 logical_key: Box::new(key.clone()),
                 binding_unit: None,
                 source_role: roles.0.into(),
                 inverse_role: roles.1.into(),
                 source_posture: Posture::Retire,
-            })
-            .with_live_member_owner(declared_owner.clone());
+            },
+        )
+        .with_live_member_owner(declared_owner.clone());
         let mut association = parts(source);
         association.inverse = inverse.description().clone();
         association.inverse_handler = inverse.handler().identity().to_owned();
         association.authored_identity = Some(authored);
         let mut loci = vec![PortablePreImageLocus::from_untrusted_fields(
+            ARCHIVE_DECODE,
             entity.clone(),
             aspect.clone(),
             field.clone(),
@@ -98,6 +104,7 @@ fn a_live_member_owner_requires_its_exact_relation_demand_and_cardinality() {
             "owner-field" | "foreign-field" | "missing-owner-demand-with-field"
         ) {
             loci.push(PortablePreImageLocus::from_untrusted_fields(
+                ARCHIVE_DECODE,
                 if axis == "foreign-field" {
                     "Unrelated"
                 } else {
@@ -108,7 +115,7 @@ fn a_live_member_owner_requires_its_exact_relation_demand_and_cardinality() {
                 "OwnerValue".into(),
             ));
         }
-        let demand = PortablePreImageDemand::from_untrusted_fields(loci, 1024)
+        let demand = PortablePreImageDemand::from_untrusted_fields(ARCHIVE_DECODE, loci, 1024)
             .with_untrusted_relations(
                 if matches!(axis, "missing-demand" | "missing-owner-demand-with-field") {
                     vec![]
@@ -117,9 +124,11 @@ fn a_live_member_owner_requires_its_exact_relation_demand_and_cardinality() {
                 },
             );
         let contract = PortableApplicationAftermathContract::from_untrusted_fields(
+            ARCHIVE_DECODE,
             DeclaredCorrectionAuthority::RuntimeAlone,
             Some(PortableCorrectionMechanism::RecordedInverse(
                 PortableRecordedInverse::from_untrusted_fields(
+                    ARCHIVE_DECODE,
                     inverse.operation_name().to_owned(),
                     DeclaredLoweringCorrespondenceRef::new("fixture.authored.inverse.v1"),
                     DeclaredAftermathPostcondition::ExactPriorTruth,
@@ -129,7 +138,7 @@ fn a_live_member_owner_requires_its_exact_relation_demand_and_cardinality() {
             None,
         )
         .with_untrusted_correction_binding(
-            DeclaredCorrectionBinding::from_untrusted_parts(association),
+            DeclaredCorrectionBinding::from_untrusted_parts(ARCHIVE_DECODE, association),
         );
         let mut actual = vec![
             key.clone(),

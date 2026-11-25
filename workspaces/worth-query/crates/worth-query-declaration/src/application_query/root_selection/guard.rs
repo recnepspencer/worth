@@ -1,3 +1,4 @@
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 use worth_foundational::facade::{AspectValue, ScalarAspectType};
 
 use crate::application_schema::{ApplicationEncodedScalarValue, ApplicationScalarValueBinding};
@@ -27,6 +28,7 @@ pub struct WorthQueryPortableApplicationQueryRootPathGuardParts {
 
 impl ApplicationQueryRootPathGuard {
     pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
         parts: WorthQueryPortableApplicationQueryRootPathGuardParts,
     ) -> Self {
         Self {

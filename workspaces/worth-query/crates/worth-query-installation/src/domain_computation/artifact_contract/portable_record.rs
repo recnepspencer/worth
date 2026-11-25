@@ -7,6 +7,7 @@ use crate::domain_computation::{
     WorthQueryConvergenceContract, WorthQueryDecisionRecordContract,
     WorthQueryStructuralCounterContract, WorthQueryTransformationEvidenceContract,
 };
+use worth_query_declaration::archive_decode_authority::ArchiveDecodeAuthority;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryPortableArtifactContractRecord {
@@ -14,7 +15,10 @@ pub struct WorthQueryPortableArtifactContractRecord {
 }
 
 impl WorthQueryPortableArtifactContractRecord {
-    pub fn from_untrusted_parts(parts: WorthQueryPortableArtifactContractParts) -> Self {
+    pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
+        parts: WorthQueryPortableArtifactContractParts,
+    ) -> Self {
         Self { parts }
     }
 

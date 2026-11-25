@@ -1,5 +1,6 @@
 //! Portable syntax cannot weaken a required destination into optional input.
 pub use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 pub use worth_query_host::facade::declaration::application_schema::*;
 
 pub fn reject_required_assignment() {
@@ -29,6 +30,7 @@ pub fn reject_required_assignment() {
                 })
                 .collect();
             *body = ApplicationOperationBodyProgram::from_untrusted_with_requirements(
+                ARCHIVE_DECODE,
                 fields,
                 body.creation().cloned(),
                 body.requirements().to_vec(),
@@ -38,7 +40,7 @@ pub fn reject_required_assignment() {
     parts.members.sort();
     assert!(matches!(
         validate_portable_application_schema_freshly(
-            WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts)
+            WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(ARCHIVE_DECODE, parts)
         )
         .unwrap_err(),
         ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency { .. }
@@ -76,11 +78,13 @@ pub fn reject_required_initializer() {
                 })
                 .collect();
             let changed = ApplicationOperationBodyCreation::from_untrusted(
+                ARCHIVE_DECODE,
                 creation.entity().to_owned(),
                 creation.key().to_owned(),
                 fields,
             );
             *body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+                ARCHIVE_DECODE,
                 body.scope_entity().unwrap().to_owned(),
                 body.scope_fields().to_vec(),
                 Some(changed),
@@ -91,7 +95,7 @@ pub fn reject_required_initializer() {
     parts.members.sort();
     assert!(matches!(
         validate_portable_application_schema_freshly(
-            WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts)
+            WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(ARCHIVE_DECODE, parts)
         )
         .unwrap_err(),
         ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency { .. }

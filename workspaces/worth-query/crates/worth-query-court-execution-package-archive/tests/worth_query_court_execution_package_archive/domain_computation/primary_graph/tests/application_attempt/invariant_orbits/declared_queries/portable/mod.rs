@@ -1,4 +1,5 @@
 //! Real archive frames and fresh untrusted-schema validation share this artifact.
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::declared_queries::*;
 use worth_query_declaration::facade::application_query::*;
 use worth_query_declaration::facade::application_schema::*;
@@ -83,6 +84,7 @@ fn incomplete_filtered_reordered_and_non_orbit_declarations_refuse() {
             parts
                 .predicates
                 .push(ApplicationQueryPredicate::from_untrusted_fields(
+                    ARCHIVE_DECODE,
                     "Node".into(),
                     "NodeData".into(),
                     "NodeKey".into(),
@@ -100,11 +102,12 @@ fn incomplete_filtered_reordered_and_non_orbit_declarations_refuse() {
             {
                 let mut parts = definition.clone().into_parts();
                 edit(&mut parts);
-                *definition = ErasedApplicationQueryDefinition::from_untrusted_parts(parts);
+                *definition =
+                    ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, parts);
             }
         }
         assert!(validate_portable_application_schema_freshly(
-            WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(schema)
+            WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(ARCHIVE_DECODE, schema)
         )
         .is_err());
     }
@@ -119,7 +122,7 @@ fn incomplete_filtered_reordered_and_non_orbit_declarations_refuse() {
     schema.members.sort();
     assert!(
         validate_portable_application_schema_freshly(
-            WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(schema)
+            WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(ARCHIVE_DECODE, schema)
         )
         .is_err(),
         "a caller's typed selector cannot install the orbit law"

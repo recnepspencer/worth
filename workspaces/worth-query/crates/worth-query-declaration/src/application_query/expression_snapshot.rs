@@ -1,4 +1,5 @@
 //! Pure schema/value data. Construction and cloning confer no query or mutation authority.
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 use std::sync::Arc;
 use worth_foundational::expression_api::{ExpressionSchema, ExpressionType, ExpressionValue};
 #[cfg(test)]
@@ -12,7 +13,11 @@ struct SnapshotData {
     value: ExpressionValue,
 }
 impl ApplicationQueryExpressionSnapshot {
-    pub fn from_untrusted_parts(schema: ExpressionSchema, value: ExpressionValue) -> Self {
+    pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
+        schema: ExpressionSchema,
+        value: ExpressionValue,
+    ) -> Self {
         Self(Arc::new(SnapshotData { schema, value }))
     }
     pub fn schema(&self) -> &ExpressionSchema {
@@ -33,6 +38,7 @@ impl ApplicationQueryExpressionSnapshot {
     /// not caller knowledge of Query's generated record names or ordering.
     ///
     /// ```
+    /// use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
     /// use worth_query_declaration::facade::application_query::ApplicationQueryExpressionSnapshot;
     /// use worth_foundational::expression_api::{ExpressionSchema,ExpressionType,ExpressionTypeName,ExpressionValue};
     /// let person = ExpressionType::Record(ExpressionTypeName::new("Person", 1).unwrap());
@@ -40,7 +46,7 @@ impl ApplicationQueryExpressionSnapshot {
     ///     .record("Person", 1, [("name", ExpressionType::String)]).unwrap()
     ///     .record("QueryContext::root", 1, [("owner", ExpressionType::option(person))]).unwrap()
     ///     .build();
-    /// let snapshot = ApplicationQueryExpressionSnapshot::from_untrusted_parts(schema,
+    /// let snapshot = ApplicationQueryExpressionSnapshot::from_untrusted_parts(ARCHIVE_DECODE, schema,
     ///     ExpressionValue::record(vec![ExpressionValue::some(ExpressionValue::record(vec![ExpressionValue::string("Name")]))]));
     /// assert_eq!(snapshot.field_path(&["owner", "name"]).and_then(ExpressionValue::as_str), Some("Name"));
     /// ```

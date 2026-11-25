@@ -9,11 +9,12 @@ use worth_query_host::facade::{
     WorthQuerySessionQuery, DEFAULT_HOST_EXECUTION_POLICY,
 };
 
-use super::actions::{RenameTask, SetTaskState};
+use super::actions::SetTaskState;
 use super::courts::{build_id, temp_home_path};
 use super::program::{owner, seed, DaymarkHome, DaymarkRuntime};
 use super::queries::FindTasksByTitle;
 use super::schema::DaymarkSchema;
+use super::title_correction::RenameTask;
 
 fn next_build_id() -> ApplicationBuildIdentity {
     ApplicationBuildIdentity::parse("5a5a5a5a-5a5a-4a5a-8a5a-5a5a5a5a5a5b").unwrap()

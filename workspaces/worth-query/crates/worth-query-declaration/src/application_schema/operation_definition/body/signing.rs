@@ -3,6 +3,7 @@ use super::{
     ApplicationOperationBodyAuthoringDenial as Denial,
     ApplicationOperationBodyCreatedField as Step, ApplicationOperationBodyCreationBuilder,
 };
+use crate::archive_decode_authority::{ArchiveDecodeAuthority, ARCHIVE_DECODE};
 use crate::{
     application_operation::ApplicationMutationBinding,
     application_schema::{
@@ -45,7 +46,12 @@ impl ApplicationOperationBodySigningSpec {
         }
         output
     }
-    pub fn from_untrusted(purpose: String, actor: Locus, provenance: Locus) -> Self {
+    pub fn from_untrusted(
+        _: ArchiveDecodeAuthority,
+        purpose: String,
+        actor: Locus,
+        provenance: Locus,
+    ) -> Self {
         Self {
             purpose,
             actor,
@@ -114,6 +120,7 @@ impl<Schema: ApplicationSchema, Operation, Input, Entity>
             binding: provenance_field.recipe().binding_identity().clone(),
         });
         creation.signing = Some(ApplicationOperationBodySigningSpec::from_untrusted(
+            ARCHIVE_DECODE,
             purpose,
             actor_locus,
             provenance_locus,

@@ -152,3 +152,68 @@ fn the_system_zone_today_is_within_a_day_of_the_utc_date() {
     let apart = local_today.days_from_unix_epoch - utc_today.days_from_unix_epoch;
     assert!(apart.abs() <= 1, "{local_today} vs UTC {utc_today}");
 }
+
+/// A zone whose only rule is the POSIX footer `rule`.
+fn footer_only(rule: &str) -> WorthQueryTimeZone {
+    WorthQueryTimeZone::from_tzif(&tzif(&[], &[0], rule)).unwrap()
+}
+
+#[test]
+fn posix_rules_crossing_the_year_end_select_the_surrounding_transition() {
+    let offset = |zone: &WorthQueryTimeZone, instant| zone.offset_at(instant).seconds_east();
+    // Daylight time ends at 00:00 AEDT on Sunday 2023-01-01 (13:00Z).
+    let january_end = footer_only("AEST-10AEDT,M10.1.0,M1.1.0/0");
+    assert_eq!(offset(&january_end, at(2022, 12, 31, 12, 59)), 39_600);
+    assert_eq!(offset(&january_end, at(2022, 12, 31, 13, 30)), 36_000);
+    assert_eq!(
+        january_end.date_at(at(2022, 12, 31, 13, 30)),
+        Ok(date(2022, 12, 31))
+    );
+    // A negative start time: 22:00 EST on December 31 (03:00Z on January 1).
+    let early_start = footer_only("EST5EDT,0/-2,M11.1.0");
+    assert_eq!(offset(&early_start, at(2026, 1, 1, 2, 59)), -18_000);
+    assert_eq!(offset(&early_start, at(2026, 1, 1, 3, 0)), -14_400);
+    // An end past 24:00: 02:00 EDT on January 1 (06:00Z).
+    let late_end = footer_only("EST5EDT,M3.2.0,J365/26");
+    assert_eq!(offset(&late_end, at(2027, 1, 1, 5, 59)), -14_400);
+    assert_eq!(offset(&late_end, at(2027, 1, 1, 6, 0)), -18_000);
+    // Day 365 of a non-leap year is January 1 of the next.
+    let day_365 = footer_only("EST5EDT,M3.2.0,365/0");
+    assert_eq!(offset(&day_365, at(2027, 1, 1, 3, 59)), -14_400);
+    assert_eq!(offset(&day_365, at(2027, 1, 1, 4, 0)), -18_000);
+}
+
+#[test]
+fn tzif_footers_must_be_exactly_framed() {
+    let malformed = Err(WorthQueryLocalCalendarDenial::MalformedZone);
+    let mut truncated = tzif(&[], &[0], "MST7MDT,M3.2.0,M11.1.0");
+    truncated.pop();
+    assert_eq!(WorthQueryTimeZone::from_tzif(&truncated), malformed);
+    let mut trailing = tzif(&[], &[0], "UTC0");
+    trailing.extend_from_slice(b"garbage");
+    assert_eq!(WorthQueryTimeZone::from_tzif(&trailing), malformed);
+}
+
+#[test]
+fn tz_values_route_like_tzset_without_a_utc_fallback() {
+    assert_eq!(
+        WorthQueryTimeZone::from_tz_variable(""),
+        Ok(WorthQueryTimeZone::UTC)
+    );
+    // `:` alone names /etc/localtime, never UTC.
+    assert_eq!(
+        WorthQueryTimeZone::from_tz_variable(":"),
+        WorthQueryTimeZone::from_tz_variable("/etc/localtime")
+    );
+    // A bare value falls back to a POSIX rule; a `:` value is a file only.
+    let eastern = WorthQueryTimeZone::from_tz_variable("EST5").unwrap();
+    assert_eq!(
+        eastern.offset_at(at(2026, 7, 1, 0, 0)).seconds_east(),
+        -18_000
+    );
+    let not_found = Err(WorthQueryLocalCalendarDenial::SystemZoneUnreadable(
+        std::io::ErrorKind::NotFound,
+    ));
+    assert_eq!(WorthQueryTimeZone::from_tz_variable(":EST5"), not_found);
+    assert_eq!(WorthQueryTimeZone::from_tz_variable(":invalid"), not_found);
+}

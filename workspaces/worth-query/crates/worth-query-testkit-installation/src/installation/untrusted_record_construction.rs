@@ -4,6 +4,7 @@ pub use worth_foundational::facade::{
     FieldDeclaration, FieldKey, FieldRequirement, ProjectionMask, ScalarAspectType,
     StructAspectShape,
 };
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 pub use worth_query_declaration::facade::application_query::{
     ApplicationQueryAuthorizationRequirement, ApplicationQueryBasisSupport,
     ApplicationQueryCardinality, ApplicationQueryDisclosureContract,
@@ -45,7 +46,11 @@ pub use worth_query_installation::facade::{
 pub fn assert_public_artifact_parts_type(_: Option<WorthQueryPortableArtifactContractParts>) {}
 
 pub fn portable_family(value: &str) -> WorthQueryTypedFamilyIdentity {
-    WorthQueryTypedFamilyIdentity::from_untrusted_portable_identity(value.to_owned()).unwrap()
+    WorthQueryTypedFamilyIdentity::from_untrusted_portable_identity(
+        ARCHIVE_DECODE,
+        value.to_owned(),
+    )
+    .unwrap()
 }
 
 pub fn semantic_dependency() -> WorthQuerySemanticTruthDependency {

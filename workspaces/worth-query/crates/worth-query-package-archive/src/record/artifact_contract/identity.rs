@@ -1,4 +1,5 @@
 use worth_foundational::facade::CanonicalizationRuleVersion;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_installation::facade::{
     WorthQueryArtifactContentIdentityContract as ContentIdentity,
     WorthQueryArtifactEvidenceContract as Evidence,
@@ -29,7 +30,7 @@ pub(super) fn decode_family(
     input: &mut BinaryInput<'_>,
 ) -> Result<(FamilyIdentity, SchemaVersion, ProtocolVersion), Denial> {
     Ok((
-        FamilyIdentity::from_untrusted_string(input.text()?.to_owned()),
+        FamilyIdentity::from_untrusted_string(ARCHIVE_DECODE, input.text()?.to_owned()),
         SchemaVersion::new(input.u32()?),
         ProtocolVersion::new(input.u32()?),
     ))

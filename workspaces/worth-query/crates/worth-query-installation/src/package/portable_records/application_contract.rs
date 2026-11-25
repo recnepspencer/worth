@@ -1,5 +1,6 @@
 use std::cmp::Ordering;
 use std::collections::BTreeSet;
+use worth_query_declaration::archive_decode_authority::ArchiveDecodeAuthority;
 
 use worth_foundational::facade::{
     AspectBinding, AspectContract, AspectKey, AspectMask, CanonicalFieldPath, FieldKey,
@@ -33,7 +34,10 @@ pub struct WorthQueryPortableNativeAspectContractRecord {
 }
 
 impl WorthQueryPortableNativeAspectContractRecord {
-    pub fn from_untrusted_parts(parts: WorthQueryPortableNativeAspectContractParts) -> Self {
+    pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
+        parts: WorthQueryPortableNativeAspectContractParts,
+    ) -> Self {
         Self {
             schema: parts.schema,
             entity: parts.entity,
@@ -325,7 +329,10 @@ pub struct WorthQueryPortableExternalEffectContractRecord {
 }
 
 impl WorthQueryPortableExternalEffectContractRecord {
-    pub fn from_untrusted_parts(parts: WorthQueryPortableExternalEffectContractParts) -> Self {
+    pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
+        parts: WorthQueryPortableExternalEffectContractParts,
+    ) -> Self {
         Self {
             correlation_family: parts.correlation_family,
             effect: parts.effect,

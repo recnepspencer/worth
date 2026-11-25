@@ -67,6 +67,18 @@ impl WorthQueryPrimaryGraphProvider {
             .ok_or(Denial::AdmissionRequired)?
             .observe_original(commit, member)
     }
+    /// Ready retained writers for a bounded correction history listing.
+    pub fn retained_correction_history_candidates(
+        &self,
+    ) -> Result<
+        Vec<crate::domain_computation::primary_graph::retained_correction::history_candidates::RetainedCorrectionHistoryCandidate>,
+        Denial,
+    >{
+        self.correction_material
+            .get()
+            .ok_or(Denial::AdmissionRequired)?
+            .ready_history_candidates()
+    }
     /// A recorded correction's capture; a correction commits as its group's primary writer.
     pub fn observe_correction_capture_for_replay(
         &self,

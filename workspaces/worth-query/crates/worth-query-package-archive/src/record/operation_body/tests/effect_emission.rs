@@ -4,14 +4,27 @@ use super::*;
 use worth_query_declaration::facade::application_schema::ApplicationOperationBodyEffectEmission as Emission;
 
 fn body() -> ApplicationOperationBodyProgram {
-    ApplicationOperationBodyProgram::from_untrusted_in_scope("Inbox".into(), vec![], None, vec![])
-        .with_untrusted_effect_emission(Some(Emission {
+    ApplicationOperationBodyProgram::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
+        "Inbox".into(),
+        vec![],
+        None,
+        vec![],
+    )
+    .with_untrusted_effect_emission(
+        ARCHIVE_DECODE,
+        Some(Emission {
             effect: "ProjectUpdatedEffect".into(),
-            input_binding: WorthQueryPortableTypeIdentity::from_untrusted("rename.input".into()),
+            input_binding: WorthQueryPortableTypeIdentity::from_untrusted(
+                ARCHIVE_DECODE,
+                "rename.input".into(),
+            ),
             payload_binding: WorthQueryPortableTypeIdentity::from_untrusted(
+                ARCHIVE_DECODE,
                 "project.updated".into(),
             ),
-        }))
+        }),
+    )
 }
 
 fn budget(bytes: &[u8]) -> RecordDecodeAttempt {
@@ -54,6 +67,7 @@ fn effect_emission_v43_roundtrips_and_refuses_older_profiles_and_unknown_tags() 
     assert_eq!(refused.kind(), Kind::InvalidBooleanEncoding);
     // Bodies without an emission keep their historical profile.
     let plain = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
         "Inbox".into(),
         vec![],
         None,

@@ -1,3 +1,4 @@
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 use std::marker::PhantomData;
 use std::num::NonZeroU64;
 
@@ -216,6 +217,7 @@ where
     {
         self.managed_indexes.iter().map(|index| {
             crate::application_query::ApplicationInvariantManagedIndexSource::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 index.clone(),
                 self.managed_index_cold,
             )

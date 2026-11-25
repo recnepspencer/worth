@@ -1,6 +1,7 @@
 //! One additive member in the existing record grammar; no live graph authority.
 use super::*;
 use crate::record::sequence::{decode_sequence, write_sequence};
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::{
     ApplicationComponentSetMeaning, WorthQueryPortableApplicationComponentSetParts,
 };
@@ -28,6 +29,7 @@ pub(super) fn decode(
     let relations = decode_sequence(input, budget, 4, |input, _| Ok(input.text()?.to_owned()))?;
     Ok(ApplicationSchemaMember::ComponentSet {
         definition: ApplicationComponentSetMeaning::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableApplicationComponentSetParts {
                 name,
                 member,

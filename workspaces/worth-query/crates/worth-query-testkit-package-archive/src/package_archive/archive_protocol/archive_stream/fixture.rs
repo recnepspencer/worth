@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::{
     fragment::{self, *},
     *,
@@ -97,12 +98,12 @@ pub fn ordered_requirement_package() -> WorthQueryValidatedPortableDomainPackage
 pub fn conditional_binding(
     operation: &WorthQueryPortableDomainOperationDefinition,
 ) -> WorthQueryPortableApplicationConditionalOperationBinding {
-    WorthQueryPortableApplicationConditionalOperationBinding::from_untrusted_parts(
+    WorthQueryPortableApplicationConditionalOperationBinding::from_untrusted_parts(ARCHIVE_DECODE,
         WorthQueryPortableApplicationConditionalOperationBindingParts {
             schema_owner: CompleteSchema::OWNER.to_owned(),
             schema_name: <CompleteSchema as ApplicationSchema>::NAME.to_owned(),
             application_operation: CompleteOperation::IDENTIFIER.to_owned(),
-            input_type: worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity::from_untrusted(
+            input_type: worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity::from_untrusted(ARCHIVE_DECODE,
                 "worth.query.archive.stream.input".to_owned(),
             ),
             domain_operation_slot: operation.identity().slot(),

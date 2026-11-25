@@ -1,4 +1,5 @@
 use std::collections::BTreeSet;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 
 use worth_foundational::facade::{
     AspectBinding, AspectMask, CanonicalFieldPath, FieldKey, ProjectionMask,
@@ -20,6 +21,7 @@ fn native_binding_bytes_are_charged_before_the_record_is_retained() {
         unreachable!()
     };
     let hostile = WorthQueryPortableNativeAspectContractRecord::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableNativeAspectContractParts {
             schema: native.schema().to_owned(),
             entity: native.entity().to_owned(),
@@ -63,6 +65,7 @@ fn application_projection_mask_paths_are_charged_before_retention() {
         )
     });
     let hostile = WorthQueryPortableApplicationOperationContractRecord::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationOperationContractParts {
             schema: operation.schema().to_owned(),
             operation: operation.operation().to_owned(),
@@ -119,7 +122,7 @@ fn artifact_migration_owner_entries_are_charged_before_retention() {
         exported.manifest(),
         domain,
         WorthQueryPortablePackageRecord::ArtifactContract(
-            crate::domain_computation::WorthQueryPortableArtifactContractRecord::from_untrusted_parts(parts),
+            crate::domain_computation::WorthQueryPortableArtifactContractRecord::from_untrusted_parts(ARCHIVE_DECODE, parts),
         ),
         WorthQueryPortablePackageRecordFamily::ArtifactContract,
         baseline_nested_entries,
@@ -151,9 +154,12 @@ fn operation_collection_entries_are_charged_before_retention() {
             continuation:
                 crate::domain_operation::WorthQueryOperationContinuationPosture::NotRequired,
         };
-    parts.semantics =
-        WorthQueryPortableDomainOperationSemanticRecord::from_untrusted_parts(semantics);
-    let shell = WorthQueryPortableDomainOperationRecord::from_untrusted_parts(parts);
+    parts.semantics = WorthQueryPortableDomainOperationSemanticRecord::from_untrusted_parts(
+        ARCHIVE_DECODE,
+        semantics,
+    );
+    let shell =
+        WorthQueryPortableDomainOperationRecord::from_untrusted_parts(ARCHIVE_DECODE, parts);
     let baseline_nested_entries = shell.reconstruction_work().1;
     let mut parts = shell.into_parts();
     let mut semantics = parts.semantics.into_parts();
@@ -170,13 +176,15 @@ fn operation_collection_entries_are_charged_before_retention() {
         ))
         .unwrap()
     }));
-    parts.semantics =
-        WorthQueryPortableDomainOperationSemanticRecord::from_untrusted_parts(semantics);
+    parts.semantics = WorthQueryPortableDomainOperationSemanticRecord::from_untrusted_parts(
+        ARCHIVE_DECODE,
+        semantics,
+    );
     assert_nested_growth_push_denial(
         exported.manifest(),
         domain,
         WorthQueryPortablePackageRecord::DomainOperation(
-            WorthQueryPortableDomainOperationRecord::from_untrusted_parts(parts),
+            WorthQueryPortableDomainOperationRecord::from_untrusted_parts(ARCHIVE_DECODE, parts),
         ),
         WorthQueryPortablePackageRecordFamily::DomainOperation,
         baseline_nested_entries,
@@ -273,6 +281,7 @@ fn assert_push_denial(
     counts[WorthQueryPortablePackageRecordFamily::DomainIdentity as usize] = 1;
     counts[family as usize] = 1;
     let manifest = WorthQueryPortablePackageManifest::from_untrusted_fields(
+        ARCHIVE_DECODE,
         source.version(),
         source.package_identity().clone(),
         2,

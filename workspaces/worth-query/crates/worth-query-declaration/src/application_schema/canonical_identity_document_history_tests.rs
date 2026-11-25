@@ -1,13 +1,16 @@
 //! A graph domain cannot share a canonical schema identity with a record domain.
 use super::{identity, portable, ApplicationSchemaMember};
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 use crate::{application_history::*, application_query::*};
 
 fn definition(model_domain: ApplicationHistoryModelDomain) -> ErasedApplicationHistoryDefinition {
     ErasedApplicationHistoryDefinition::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationHistoryParts {
             identity: "ModelHistory".into(),
             history_type: portable("history.Model"),
             access: ApplicationQueryBindingReference::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 ApplicationQueryBindingReferenceParts {
                     binding: portable("ModelRead"),
                     input: portable("ModelReadInput"),

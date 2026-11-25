@@ -6,6 +6,7 @@ use crate::{binary_encoding::BinaryEncodingSink, binary_input::BinaryInput};
 use worth_foundational::facade::{
     ManagedIndexColdSourcePosture as Cold, ManagedSourceInterpretationCommitment as Interpretation,
 };
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_query::ApplicationInvariantManagedIndexSource as Requirement;
 use worth_query_declaration::facade::application_schema::{
     ApplicationInvariantExecutionPoint as Point, ApplicationSchemaMember as Member,
@@ -58,6 +59,6 @@ pub(super) fn decode(
     Ok(Member::InvariantManagedIndexSource {
         invariant,
         execution_point,
-        requirement: Requirement::from_untrusted_parts(definition, cold),
+        requirement: Requirement::from_untrusted_parts(ARCHIVE_DECODE, definition, cold),
     })
 }

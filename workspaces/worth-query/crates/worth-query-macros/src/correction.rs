@@ -1,7 +1,9 @@
 //! `#[derive(WorthQueryCorrection)]`: standard recorded-inverse
 //! `ApplicationCorrectionBinding` from one unit marker struct.
 //!
-//! Required keys: `schema = Schema`, either `namespace = NS` or
+//! Required keys: `schema = Schema`, either `namespace = NS` (optionally
+//! narrowed by `member` / `member = ".."` so the correction shares the
+//! application's single namespace with its other derives) or
 //! `identity = ".."`, `source = SourceBinding`, `inverse = InverseIntent`,
 //! `disclosure = DisclosureBinding`, `derive = path::to::fn`, and either
 //! `demand = path::to::fn` or `preimage_fields(expr, ..), preimage_bytes = expr`.

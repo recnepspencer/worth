@@ -7,6 +7,7 @@ use super::{
     ApplicationOperationBodyCreationLinkPosture as Posture,
 };
 use crate::application_schema::{ApplicationRelationRef, OperationCreates, OperationLinks};
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 use std::marker::PhantomData;
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct ApplicationOperationBodyChildCreation {
@@ -202,8 +203,13 @@ where
         source: super::ApplicationOperationBodyCreationLinkSource::Scope,
     };
     let mut child = build(ApplicationOperationBodyChildCreationBuilder {
-        creation: Creation::from_untrusted(relation.to().to_owned(), key.to_owned(), vec![])
-            .with_untrusted_links(vec![link]),
+        creation: Creation::from_untrusted(
+            ARCHIVE_DECODE,
+            relation.to().to_owned(),
+            key.to_owned(),
+            vec![],
+        )
+        .with_untrusted_links(vec![link]),
         marker: PhantomData,
     })?
     .creation;

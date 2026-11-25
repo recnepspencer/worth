@@ -1,6 +1,7 @@
 //! Versioned shared contents and references remain untrusted descriptive meaning.
 use super::*;
 use crate::record::sequence::{decode_sequence, require_canonical_sequence, write_sequence};
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::ApplicationDecisionReadScopeMeaning;
 
 pub(super) fn write(
@@ -49,7 +50,8 @@ pub(super) fn decode(
     // The SDK normalizes authored contents; wire input must already be canonical.
     require_canonical_sequence(&targets)?;
     require_canonical_sequence(&derived)?;
-    let definition = ApplicationDecisionReadScopeMeaning::from_untrusted_parts(targets, derived)
-        .map_err(|_| Denial::new(Kind::InvalidRecordShape))?;
+    let definition =
+        ApplicationDecisionReadScopeMeaning::from_untrusted_parts(ARCHIVE_DECODE, targets, derived)
+            .map_err(|_| Denial::new(Kind::InvalidRecordShape))?;
     Ok(ApplicationSchemaMember::DecisionReadScope { definition })
 }

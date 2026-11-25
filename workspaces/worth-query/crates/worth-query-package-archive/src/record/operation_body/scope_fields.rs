@@ -1,4 +1,5 @@
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 pub(super) fn write(
     output: &mut dyn BinaryEncodingSink,
     steps: &[ApplicationOperationBodyScopeField],
@@ -73,7 +74,10 @@ pub(super) fn decode(
             return Err(Denial::new(Kind::UnsupportedRecordVariant));
         }
         let field = ApplicationFieldBindingLocus::new(input.text()?, input.text()?, input.text()?);
-        let binding = WorthQueryPortableTypeIdentity::from_untrusted(input.text()?.to_owned());
+        let binding = WorthQueryPortableTypeIdentity::from_untrusted(
+            ARCHIVE_DECODE,
+            input.text()?.to_owned(),
+        );
         if tag == 8 {
             return Ok(ApplicationOperationBodyScopeField::AssignValue {
                 field,

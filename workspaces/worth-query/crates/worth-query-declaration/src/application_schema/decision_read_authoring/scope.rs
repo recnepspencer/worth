@@ -3,6 +3,7 @@ use super::super::{
     ApplicationEntityRef, ApplicationOperationDecisionReadTarget as Target, ApplicationRelationRef,
     ApplicationSchemaDeclarationDenial as Denial, OperationReads,
 };
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 use std::marker::PhantomData;
 
 /// Content-addressed, authority-free description of one reusable decision-read scope.
@@ -15,6 +16,7 @@ pub struct ApplicationDecisionReadScopeMeaning {
 
 impl ApplicationDecisionReadScopeMeaning {
     pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
         mut targets: Vec<Target>,
         mut derived_relations: Vec<String>,
     ) -> Result<Self, Denial> {

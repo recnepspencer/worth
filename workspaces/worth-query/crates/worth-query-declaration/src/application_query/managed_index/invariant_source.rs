@@ -1,5 +1,6 @@
 //! An explicit rule requirement, resolved against the real installed index.
 use super::{ApplicationManagedIndexColdSource, ErasedApplicationManagedIndexDefinition};
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 
 /// Portable definition meaning; neither a public READ nor a Native Source loan.
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -17,6 +18,7 @@ impl ApplicationInvariantManagedIndexSource {
     }
 
     pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
         definition: ErasedApplicationManagedIndexDefinition,
         cold: ApplicationManagedIndexColdSource,
     ) -> Self {

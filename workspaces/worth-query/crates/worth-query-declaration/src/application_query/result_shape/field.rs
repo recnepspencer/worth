@@ -1,3 +1,4 @@
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 use worth_foundational::facade::ScalarAspectType;
 
 use crate::application_query::ApplicationQueryResultFieldPresence;
@@ -35,7 +36,10 @@ pub struct WorthQueryPortableApplicationQueryResultFieldParts {
 }
 
 impl ApplicationQueryResultField {
-    pub fn from_untrusted_parts(parts: WorthQueryPortableApplicationQueryResultFieldParts) -> Self {
+    pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
+        parts: WorthQueryPortableApplicationQueryResultFieldParts,
+    ) -> Self {
         let slot_key = ApplicationQueryResultSlotKey::field(
             parts.query_type.clone(),
             parts.slot_type.clone(),

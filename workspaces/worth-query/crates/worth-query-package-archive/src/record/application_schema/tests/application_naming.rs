@@ -1,5 +1,6 @@
 //! Round-trip and malformed-byte refusal proofs for `ApplicationNameScheme` (tag 57)
 //! and `ApplicationGroupNameScheme` (tag 58).
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_naming::{
     ApplicationGroupContinuityRule, ApplicationNameRoleDependency, ApplicationNameSubjectKind,
     ErasedApplicationGroupNameScheme, ErasedApplicationNameScheme,
@@ -21,6 +22,7 @@ use super::{decode_member, encode_member, encode_payload, try_decode_member};
 fn populated_scheme(kind: ApplicationNameSubjectKind, subject: &str) -> Member {
     Member::ApplicationNameScheme {
         definition: ErasedApplicationNameScheme::from_untrusted_parts(
+            ARCHIVE_DECODE,
             format!("worth.cad.{}.v1", subject.to_lowercase()),
             kind,
             subject.to_owned(),
@@ -56,6 +58,7 @@ fn application_name_scheme_round_trips_every_field_and_subject_kind() {
 
     let minimal = Member::ApplicationNameScheme {
         definition: ErasedApplicationNameScheme::from_untrusted_parts(
+            ARCHIVE_DECODE,
             "worth.cad.edge.v1".to_owned(),
             ApplicationNameSubjectKind::Entity,
             "Edge".to_owned(),
@@ -78,6 +81,7 @@ fn application_name_scheme_round_trips_every_field_and_subject_kind() {
     ];
     members.sort();
     let record = WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationSchemaParts {
             owner: "worth.tests.archive".to_owned(),
             name: "NamingArchive".to_owned(),
@@ -184,7 +188,9 @@ fn populated_group_scheme(
 ) -> Member {
     Member::ApplicationGroupNameScheme {
         definition: ErasedApplicationGroupNameScheme::from_untrusted_parts(
+            ARCHIVE_DECODE,
             ErasedApplicationNameScheme::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 format!("worth.cad.group.{}.v1", subject.to_lowercase()),
                 ApplicationNameSubjectKind::Group,
                 subject.to_owned(),
@@ -243,6 +249,7 @@ fn application_group_name_scheme_round_trips_all_continuity_rules_and_payload() 
     ];
     members.sort();
     let record = WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationSchemaParts {
             owner: "worth.tests.archive".to_owned(),
             name: "GroupNamingArchive".to_owned(),

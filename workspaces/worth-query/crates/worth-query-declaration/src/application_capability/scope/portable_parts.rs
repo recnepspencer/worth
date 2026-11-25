@@ -1,3 +1,4 @@
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 use worth_foundational::facade::{AspectValue, ScalarAspectType};
 
@@ -23,6 +24,7 @@ pub struct WorthQueryPortableApplicationCapabilityFieldBindingParts {
 
 impl ApplicationCapabilityFieldBinding {
     pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
         parts: WorthQueryPortableApplicationCapabilityFieldBindingParts,
     ) -> Self {
         Self {
@@ -53,6 +55,7 @@ pub struct WorthQueryPortableApplicationCapabilityValueBindingParts {
 
 impl ApplicationCapabilityValueBinding {
     pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
         parts: WorthQueryPortableApplicationCapabilityValueBindingParts,
     ) -> Self {
         Self {
@@ -78,6 +81,7 @@ pub struct WorthQueryPortableApplicationCapabilityRelationBindingParts {
 
 impl ApplicationCapabilityRelationBinding {
     pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
         parts: WorthQueryPortableApplicationCapabilityRelationBindingParts,
     ) -> Self {
         Self {
@@ -107,6 +111,7 @@ pub struct WorthQueryPortableApplicationCapabilityConstraintParts {
 
 impl ApplicationCapabilityConstraintDefinition {
     pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
         parts: WorthQueryPortableApplicationCapabilityConstraintParts,
     ) -> Self {
         Self {
@@ -143,6 +148,7 @@ pub struct WorthQueryPortableApplicationCapabilityDelegationParts {
 
 impl ApplicationCapabilityDelegationDefinition {
     pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
         parts: WorthQueryPortableApplicationCapabilityDelegationParts,
     ) -> Self {
         Self {

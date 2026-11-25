@@ -9,6 +9,7 @@ use crate::record::sequence::{decode_sequence, write_sequence};
 use crate::record::{decode_budget::RecordDecodeAttempt, foundational_aspect, foundational_value};
 use crate::{binary_encoding::BinaryEncodingSink, binary_input::BinaryInput};
 use worth_foundational::facade::{AspectContractRevision, AspectIdentity};
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::{
     ApplicationRelationFieldDefinition, ErasedApplicationRelationAspectDefinition,
     WorthQueryPortableRelationAspectParts,
@@ -81,6 +82,7 @@ pub(super) fn decode(
         })
     })?;
     let definition = ErasedApplicationRelationAspectDefinition::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableRelationAspectParts {
             relation,
             from,

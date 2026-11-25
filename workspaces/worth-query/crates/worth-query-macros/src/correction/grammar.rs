@@ -1,6 +1,7 @@
 //! Attribute grammar for `#[derive(WorthQueryCorrection)]`.
 use super::DERIVE;
 use crate::grammar::{expr_list, flag, unknown_key, value, visit_keys, Once};
+use crate::identity_member::{parse_member, DeclaredNamespace, RawMember};
 use syn::ext::IdentExt;
 use syn::meta::ParseNestedMeta;
 use syn::{DeriveInput, Expr, Ident, LitStr, Path, Type};
@@ -9,6 +10,7 @@ const KEYS: &[&str] = &[
     "mode",
     "schema",
     "namespace",
+    "member",
     "identity",
     "source",
     "inverse",
@@ -60,7 +62,7 @@ pub(super) struct CorrectionDeclaration {
 }
 
 pub(super) enum CorrectionIdentity {
-    Namespace(Path),
+    Namespace(DeclaredNamespace),
     Explicit(LitStr),
 }
 
@@ -73,6 +75,7 @@ struct Keys {
     mode: Once<CorrectionMode>,
     schema: Once<Type>,
     namespace: Once<Path>,
+    member: Once<RawMember>,
     identity: Once<LitStr>,
     source: Once<Type>,
     inverse: Once<Type>,
@@ -103,7 +106,7 @@ impl CorrectionDeclaration {
             .mode
             .optional()
             .unwrap_or(CorrectionMode::RecordedInverse);
-        let identity = resolve_identity(keys.namespace, keys.identity, missing)?;
+        let identity = resolve_identity(keys.namespace, keys.member, keys.identity, &input.ident)?;
         let demand = resolve_demand(
             keys.demand,
             keys.preimage_fields,
@@ -152,6 +155,7 @@ impl Keys {
             mode: Once::new("mode"),
             schema: Once::new("schema"),
             namespace: Once::new("namespace"),
+            member: Once::new("member"),
             identity: Once::new("identity"),
             source: Once::new("source"),
             inverse: Once::new("inverse"),
@@ -178,6 +182,7 @@ impl Keys {
             "mode" => self.mode.set(meta, parse_mode(meta)?),
             "schema" => self.schema.set(meta, value(meta)?),
             "namespace" => self.namespace.set(meta, value(meta)?),
+            "member" => self.member.set(meta, parse_member(meta)?),
             "identity" => self.identity.set(meta, value(meta)?),
             "source" => self.source.set(meta, value(meta)?),
             "inverse" => self.inverse.set(meta, value(meta)?),
@@ -251,8 +256,9 @@ fn resolve_authored_actions(
 
 fn resolve_identity(
     namespace: Once<Path>,
+    member: Once<RawMember>,
     identity: Once<LitStr>,
-    missing: proc_macro2::Span,
+    item: &Ident,
 ) -> syn::Result<CorrectionIdentity> {
     if let (Some(_), Some(span)) = (namespace.span(), identity.span()) {
         return Err(syn::Error::new(
@@ -260,14 +266,24 @@ fn resolve_identity(
             "specify either `namespace = ..` or `identity = \"..\"`, not both",
         ));
     }
+    if let (None, Some(span)) = (namespace.span(), member.span()) {
+        return Err(syn::Error::new(
+            span,
+            "`member` names a segment of `namespace = ..`; declare the namespace too",
+        ));
+    }
     if let Some(ns) = namespace.optional() {
-        return Ok(CorrectionIdentity::Namespace(ns));
+        return Ok(CorrectionIdentity::Namespace(DeclaredNamespace::new(
+            ns,
+            member.optional(),
+            item,
+        )));
     }
     if let Some(id) = identity.optional() {
         return Ok(CorrectionIdentity::Explicit(id));
     }
     Err(syn::Error::new(
-        missing,
+        item.span(),
         "#[derive(WorthQueryCorrection)] requires `namespace = NAMESPACE` or `identity = \"..\"`",
     ))
 }

@@ -1,4 +1,5 @@
 use std::time::Duration;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 
 use worth_foundational::facade::{AspectValue, ScalarAspectType};
 use worth_query_declaration::facade::application_capability::*;
@@ -28,6 +29,7 @@ pub(super) fn application_capability() -> ErasedApplicationCapabilityContract {
         ),
     );
     let constraints = ApplicationCapabilityConstraintDefinition::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationCapabilityConstraintParts {
             magnitude: ApplicationCapabilityFieldDimension::Bound(field.clone()),
             cardinality: ApplicationCapabilityCardinalityDimension::Bounded(4),
@@ -38,6 +40,7 @@ pub(super) fn application_capability() -> ErasedApplicationCapabilityContract {
     );
     let operation = operation_binding();
     let activation = ApplicationCapabilityDelegationActivationDefinition::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationCapabilityDelegationActivationParts {
             operation: operation.clone(),
             identity: field.clone(),
@@ -45,6 +48,7 @@ pub(super) fn application_capability() -> ErasedApplicationCapabilityContract {
         },
     );
     let revocation = ApplicationCapabilityRevocationDefinition::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationCapabilityRevocationParts {
             operation: operation.clone(),
             identity: field.clone(),
@@ -52,6 +56,7 @@ pub(super) fn application_capability() -> ErasedApplicationCapabilityContract {
         },
     );
     let delegation = ApplicationCapabilityDelegationDefinition::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationCapabilityDelegationParts {
             parent: relation.clone(),
             grantor: relation.clone(),
@@ -64,11 +69,15 @@ pub(super) fn application_capability() -> ErasedApplicationCapabilityContract {
         },
     );
     ErasedApplicationCapabilityContract::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationCapabilityContractParts {
             name: text("Capability"),
             capability_type: type_id("capability"),
             operation: text("Apply"),
-            operation_type: WorthQueryPortableTypeIdentity::from_untrusted(text("Apply")),
+            operation_type: WorthQueryPortableTypeIdentity::from_untrusted(
+                ARCHIVE_DECODE,
+                text("Apply"),
+            ),
             input_type: type_id("input"),
             grant_entity: text("Grant"),
             target: ApplicationCapabilityTargetDefinition::new(
@@ -88,22 +97,26 @@ pub(super) fn application_capability() -> ErasedApplicationCapabilityContract {
 
 fn capability_composition() -> ApplicationCapabilityComposition {
     let accepted = ApplicationCapabilityAcceptedValues::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationCapabilityAcceptedValuesParts {
             field: capability_field(),
             values: vec![AspectValue::UInt64(2), AspectValue::UInt64(1)],
         },
     );
     let guard = ApplicationCapabilityScopeGuard::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationCapabilityScopeGuardParts {
             requirements: vec![accepted],
         },
     );
     let clause = ApplicationCapabilityGraphClause::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationCapabilityGraphClauseParts {
             path: authorization_path(),
             guard: guard.clone(),
             context_anchors: vec![
                 ApplicationCapabilityPathContextAnchor::from_untrusted_parts(
+                    ARCHIVE_DECODE,
                     WorthQueryPortableApplicationCapabilityPathContextAnchorParts {
                         relation: capability_relation(),
                         direction: ApplicationAuthorizationTraversalDirection::Forward,
@@ -114,11 +127,13 @@ fn capability_composition() -> ApplicationCapabilityComposition {
         },
     );
     let requirement = ApplicationCapabilityGraphRequirement::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationCapabilityGraphRequirementParts {
             clauses: vec![clause],
         },
     );
     let graph = ApplicationCapabilityGraphRule::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationCapabilityGraphRuleParts {
             requirements: vec![requirement],
         },
@@ -215,11 +230,13 @@ fn elevation(
 
 pub(super) fn authorization_path() -> ApplicationAuthorizationPath {
     ApplicationAuthorizationPath::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationAuthorizationPathParts {
             effect: ApplicationAuthorizationPathEffect::Allow,
             principal_entity: text("Principal"),
             scope_entity: text("Entity"),
             traversals: vec![ApplicationAuthorizationTraversal::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 WorthQueryPortableApplicationAuthorizationTraversalParts {
                     relation: text("relates"),
                     from: text("Principal"),
@@ -228,6 +245,7 @@ pub(super) fn authorization_path() -> ApplicationAuthorizationPath {
                 },
             )],
             predicates: vec![ApplicationAuthorizationPredicate::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 WorthQueryPortableApplicationAuthorizationPredicateParts {
                     traversal_ordinal: 0,
                     entity: text("Entity"),
@@ -246,6 +264,7 @@ fn capability_field() -> ApplicationCapabilityFieldBinding {
 
 fn capability_field_named(name: &str) -> ApplicationCapabilityFieldBinding {
     ApplicationCapabilityFieldBinding::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationCapabilityFieldBindingParts {
             entity: text("Grant"),
             aspect: text("State"),
@@ -258,6 +277,7 @@ fn capability_field_named(name: &str) -> ApplicationCapabilityFieldBinding {
 
 fn capability_value(value: u64) -> ApplicationCapabilityValueBinding {
     ApplicationCapabilityValueBinding::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationCapabilityValueBindingParts {
             field: capability_field(),
             value: AspectValue::UInt64(value),
@@ -267,6 +287,7 @@ fn capability_value(value: u64) -> ApplicationCapabilityValueBinding {
 
 fn capability_relation() -> ApplicationCapabilityRelationBinding {
     ApplicationCapabilityRelationBinding::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationCapabilityRelationBindingParts {
             relation: text("relates"),
             from: text("Grant"),
@@ -277,9 +298,13 @@ fn capability_relation() -> ApplicationCapabilityRelationBinding {
 
 fn operation_binding() -> ApplicationCapabilityOperationBinding {
     ApplicationCapabilityOperationBinding::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationCapabilityOperationBindingParts {
             operation: text("Apply"),
-            operation_identity: WorthQueryPortableTypeIdentity::from_untrusted(text("Apply")),
+            operation_identity: WorthQueryPortableTypeIdentity::from_untrusted(
+                ARCHIVE_DECODE,
+                text("Apply"),
+            ),
             input_identity: type_id("input"),
         },
     )
@@ -287,6 +312,7 @@ fn operation_binding() -> ApplicationCapabilityOperationBinding {
 
 fn context_slot(slot: &str) -> ApplicationCapabilityContextEntitySlotBinding {
     ApplicationCapabilityContextEntitySlotBinding::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationCapabilityContextEntitySlotBindingParts {
             context: text("Context"),
             context_identity: type_id("context"),

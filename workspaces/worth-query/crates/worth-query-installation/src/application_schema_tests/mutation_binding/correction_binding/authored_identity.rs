@@ -1,5 +1,6 @@
 //! Installation resolves lifecycle families against actual field and output owners.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationOutputPosture as Posture, WorthQueryApplicationDeclaredOutputRole,
     WorthQueryApplicationOutputRole, WorthQueryCreateOutput, WorthQueryExactlyOneOutput,
@@ -166,23 +167,26 @@ fn authored_family_rejects_missing_role_or_changed_logical_key_meaning() {
         let mut association = parts(&source);
         association.inverse = inverse.description().clone();
         association.inverse_handler = inverse.handler().identity().to_owned();
-        association.authored_identity = (axis != "missing-family")
-            .then(|| DeclaredAuthoredCorrection::from_untrusted_parts(identity_parts.clone()));
+        association.authored_identity = (axis != "missing-family").then(|| {
+            DeclaredAuthoredCorrection::from_untrusted_parts(ARCHIVE_DECODE, identity_parts.clone())
+        });
         let contract = |association| {
             PortableApplicationAftermathContract::from_untrusted_fields(
+                ARCHIVE_DECODE,
                 DeclaredCorrectionAuthority::RuntimeAlone,
                 Some(PortableCorrectionMechanism::RecordedInverse(
                     PortableRecordedInverse::from_untrusted_fields(
+                        ARCHIVE_DECODE,
                         inverse.operation_name().to_owned(),
                         DeclaredLoweringCorrespondenceRef::new("fixture.authored.inverse.v1"),
                         DeclaredAftermathPostcondition::ExactPriorTruth,
-                        PortablePreImageDemand::from_untrusted_fields(vec![], 0),
+                        PortablePreImageDemand::from_untrusted_fields(ARCHIVE_DECODE, vec![], 0),
                     ),
                 )),
                 None,
             )
             .with_untrusted_correction_binding(
-                DeclaredCorrectionBinding::from_untrusted_parts(association),
+                DeclaredCorrectionBinding::from_untrusted_parts(ARCHIVE_DECODE, association),
             )
         };
         let mut actual = vec![
@@ -220,6 +224,7 @@ fn authored_family_rejects_missing_role_or_changed_logical_key_meaning() {
                 *value_type = "different-family-codec".to_owned();
             }
             association.authored_identity = Some(DeclaredAuthoredCorrection::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 conflicting,
             ));
             actual.push(ApplicationSchemaMember::OperationAftermath {

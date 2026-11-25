@@ -1,5 +1,6 @@
 //! Codec-only V29 evidence: decoded path descriptions must still pass native readmission.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::{
     application_query::{
         ApplicationQueryRootPathMeaning as Path, ApplicationQueryRootPathStep as Step,
@@ -14,24 +15,30 @@ fn capture(identity_path: bool) -> ApplicationOperationBodyCreatedField {
     let entity = if identity_path { "Row" } else { "Lot" };
     ApplicationOperationBodyCreatedField::CapturedPathField {
         field: ApplicationFieldBindingLocus::new("Evidence", "Facts", "Text"),
-        binding: WorthQueryPortableTypeIdentity::from_untrusted("worth.rust.string".into()),
+        binding: WorthQueryPortableTypeIdentity::from_untrusted(
+            ARCHIVE_DECODE,
+            "worth.rust.string".into(),
+        ),
         scalar_family: ScalarAspectType::String,
         source: Source {
-            path: Path::from_untrusted_parts(Parts {
-                start_entity: "Row".into(),
-                terminal_entity: entity.into(),
-                guards: Vec::new(),
-                steps: if identity_path {
-                    Vec::new()
-                } else {
-                    vec![Step::from_untrusted_fields(
+            path: Path::from_untrusted_parts(
+                ARCHIVE_DECODE,
+                Parts {
+                    start_entity: "Row".into(),
+                    terminal_entity: entity.into(),
+                    guards: Vec::new(),
+                    steps: if identity_path {
+                        Vec::new()
+                    } else {
+                        vec![Step::from_untrusted_fields(ARCHIVE_DECODE,
                         "LotRows".into(),
                         "Lot".into(),
                         "Row".into(),
                         Direction::Reverse,
                      worth_query_declaration::facade::application_query::ApplicationQueryRootPathTraversal::OneHop,)]
+                    },
                 },
-            }),
+            ),
             field: ApplicationFieldBindingLocus::new(entity, "Facts", "Comment"),
             presence: Presence::Optional,
         },
@@ -51,10 +58,12 @@ fn budget(bytes: &[u8]) -> RecordDecodeAttempt {
 fn certified_path_v29_roundtrips_identity_and_reverse_path_with_exact_decode_measure() {
     for identity in [true, false] {
         let body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+            ARCHIVE_DECODE,
             "Row".into(),
             Vec::new(),
             Some(
                 ApplicationOperationBodyCreation::from_untrusted(
+                    ARCHIVE_DECODE,
                     "Evidence".into(),
                     "signed".into(),
                     vec![capture(identity)],
@@ -112,10 +121,12 @@ fn path_capture_refuses_unknown_presence_and_role_tags() {
 #[test]
 fn authored_subject_bound_alone_selects_v29_and_cannot_be_silently_dropped() {
     let body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
         "Row".into(),
         Vec::new(),
         Some(
             ApplicationOperationBodyCreation::from_untrusted(
+                ARCHIVE_DECODE,
                 "Evidence".into(),
                 "signed".into(),
                 Vec::new(),

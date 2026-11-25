@@ -5,6 +5,7 @@ use crate::package::{
     WorthQueryPortableDomainPackage, WorthQueryPortablePackageManifest,
     WorthQueryPortablePackageManifestVersion, WorthQueryPortablePackageRecordFamily,
 };
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 
 #[test]
 fn canonical_typed_export_closes_as_an_unvalidated_candidate() {
@@ -252,6 +253,7 @@ fn manifest_family_total_must_equal_the_declared_record_count() {
 fn manifest_rejects_impossible_byte_width_and_overflowing_family_total() {
     let exported = fixture().export_typed_records().unwrap();
     let impossible_width = WorthQueryPortablePackageManifest::from_untrusted_fields(
+        ARCHIVE_DECODE,
         exported.manifest().version(),
         exported.manifest().package_identity().clone(),
         exported.manifest().record_count(),
@@ -273,6 +275,7 @@ fn manifest_rejects_impossible_byte_width_and_overflowing_family_total() {
     overflowing_counts[0] = u32::MAX;
     overflowing_counts[1] = 1;
     let overflowing_families = WorthQueryPortablePackageManifest::from_untrusted_fields(
+        ARCHIVE_DECODE,
         exported.manifest().version(),
         exported.manifest().package_identity().clone(),
         0,
@@ -344,6 +347,7 @@ fn manifest_from(
     family_counts: [u32; WorthQueryPortablePackageRecordFamily::ALL.len()],
 ) -> WorthQueryPortablePackageManifest {
     WorthQueryPortablePackageManifest::from_untrusted_fields(
+        ARCHIVE_DECODE,
         version,
         source.package_identity().clone(),
         record_count,

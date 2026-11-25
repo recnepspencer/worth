@@ -5,6 +5,7 @@ use crate::record::application_schema::wire_vocabulary::{
     decode_type_identity, write_type_identity,
 };
 use crate::{binary_encoding::BinaryEncodingSink, binary_input::BinaryInput};
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_resource::{
     ApplicationResourceDisclosureFacet as Facet, ApplicationResourceDisclosureMeaning,
 };
@@ -36,7 +37,9 @@ pub(super) fn decode(
         _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
     };
     Ok(ApplicationResourceDisclosureMeaning::from_untrusted_fields(
-        resource, facet,
+        ARCHIVE_DECODE,
+        resource,
+        facet,
     ))
 }
 
@@ -53,6 +56,7 @@ mod tests {
     #[test]
     fn resource_selector_uses_reserved_tag_and_refuses_unknown_facets() {
         let meaning = ApplicationResourceDisclosureMeaning::from_untrusted_fields(
+            ARCHIVE_DECODE,
             WorthQueryPortableTypeIdentity::declared("worth.archive.assessment.v1"),
             Facet::Result,
         );

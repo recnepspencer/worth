@@ -6,6 +6,7 @@ use crate::application_query::{
     WorthQueryPortableApplicationQueryRootPathParts,
 };
 use crate::application_schema::*;
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 struct Accounts;
 impl OperationReads<RenameOperation> for Accounts {}
 struct Coupled;
@@ -58,7 +59,7 @@ fn schema(
         ApplicationSchemaMember::OperationComponentRead { definition: scope },
     ]);
     parts.members.sort();
-    WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts)
+    WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(ARCHIVE_DECODE, parts)
 }
 fn parts(
     scope: &ApplicationOperationComponentReadMeaning,
@@ -86,7 +87,7 @@ fn authored_component_scope_deduplicates_paths_and_binds_actual_mutation_root() 
     let mut changed = parts(&scope);
     changed.paths[0] = ApplicationQueryRootPath::from(Account::reference()).into_meaning();
     let changed = validate_portable_application_schema_freshly(schema(
-        ApplicationOperationComponentReadMeaning::from_untrusted_parts(changed),
+        ApplicationOperationComponentReadMeaning::from_untrusted_parts(ARCHIVE_DECODE, changed),
     ))
     .unwrap();
     assert_ne!(
@@ -113,9 +114,9 @@ fn untrusted_component_scope_refuses_forged_roots_guards_and_noncanonical_path_u
             3 => changed.paths.clear(),
             4 => {
                 let guard = &path.guards()[0];
-                changed.paths[0] = ApplicationQueryRootPathMeaning::from_untrusted_parts(WorthQueryPortableApplicationQueryRootPathParts {
-                    start_entity: "Account".into(), terminal_entity: "Account".into(), steps: vec![], guards: vec![ApplicationQueryRootPathGuard::from_untrusted_parts(WorthQueryPortableApplicationQueryRootPathGuardParts {
-                        after_step: 0, entity: "Account".into(), aspect: guard.aspect().into(), field: "MissingField".into(), scalar_family: guard.scalar_family(), value_type: crate::portable_identity::WorthQueryPortableTypeIdentity::from_untrusted(guard.value_type().into()), expected: guard.expected().clone(),
+                changed.paths[0] = ApplicationQueryRootPathMeaning::from_untrusted_parts(ARCHIVE_DECODE, WorthQueryPortableApplicationQueryRootPathParts {
+                    start_entity: "Account".into(), terminal_entity: "Account".into(), steps: vec![], guards: vec![ApplicationQueryRootPathGuard::from_untrusted_parts(ARCHIVE_DECODE, WorthQueryPortableApplicationQueryRootPathGuardParts {
+                        after_step: 0, entity: "Account".into(), aspect: guard.aspect().into(), field: "MissingField".into(), scalar_family: guard.scalar_family(), value_type: crate::portable_identity::WorthQueryPortableTypeIdentity::from_untrusted(ARCHIVE_DECODE, guard.value_type().into()), expected: guard.expected().clone(),
                     })],
                 });
             }
@@ -123,7 +124,10 @@ fn untrusted_component_scope_refuses_forged_roots_guards_and_noncanonical_path_u
         }
         assert_eq!(
             validate_portable_application_schema_freshly(schema(
-                ApplicationOperationComponentReadMeaning::from_untrusted_parts(changed)
+                ApplicationOperationComponentReadMeaning::from_untrusted_parts(
+                    ARCHIVE_DECODE,
+                    changed
+                )
             ))
             .unwrap_err(),
             ApplicationSchemaDeclarationDenial::InvalidOperationComponentRead,

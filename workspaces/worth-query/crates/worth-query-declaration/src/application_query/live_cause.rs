@@ -1,6 +1,7 @@
 use crate::application_schema::{
     ApplicationEffectRef, ApplicationScalarValueBinding, ApplicationStructuredValueBinding,
 };
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 use crate::portable_identity::{WorthQueryPortableType, WorthQueryPortableTypeIdentity};
 
 use super::{ApplicationQueryMarkerIdentity, ApplicationQueryResultFieldRef};
@@ -81,7 +82,10 @@ pub struct WorthQueryPortableApplicationQueryLiveCauseParts {
 }
 
 impl ApplicationQueryLiveCauseContract {
-    pub fn from_untrusted_parts(parts: WorthQueryPortableApplicationQueryLiveCauseParts) -> Self {
+    pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
+        parts: WorthQueryPortableApplicationQueryLiveCauseParts,
+    ) -> Self {
         Self {
             binding_type: parts.binding_type,
             effect: parts.effect,

@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_installation::facade::{
     WorthQueryArtifactContractReference, WorthQueryArtifactFamilyIdentity,
     WorthQueryArtifactProtocolVersion, WorthQueryArtifactSchemaVersion,
@@ -20,7 +21,11 @@ pub(super) fn decode_reference(
     input: &mut BinaryInput<'_>,
 ) -> Result<WorthQueryArtifactContractReference, Denial> {
     Ok(WorthQueryArtifactContractReference::from_untrusted_fields(
-        WorthQueryArtifactFamilyIdentity::from_untrusted_string(input.text()?.to_owned()),
+        ARCHIVE_DECODE,
+        WorthQueryArtifactFamilyIdentity::from_untrusted_string(
+            ARCHIVE_DECODE,
+            input.text()?.to_owned(),
+        ),
         WorthQueryArtifactSchemaVersion::new(input.u32()?),
         WorthQueryArtifactProtocolVersion::new(input.u32()?),
     ))

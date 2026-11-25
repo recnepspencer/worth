@@ -1,5 +1,6 @@
 //! Frozen aggregate slot0/1 and the new descriptive component slot2.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::{
     facade::{application_query::*, application_schema::*},
     *,
@@ -48,7 +49,7 @@ fn component(
     }
 }
 fn orbit() -> ApplicationQueryOrbitMeaning {
-    ApplicationQueryOrbitMeaning::from_untrusted_parts(WorthQueryPortableApplicationQueryOrbitParts{query:parts().query_type,slot:worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity::declared("slot"),relation:"Next".into(),from:"Node".into(),to:"Node".into(),output_name:"orbit".into()})
+    ApplicationQueryOrbitMeaning::from_untrusted_parts(ARCHIVE_DECODE, WorthQueryPortableApplicationQueryOrbitParts{query:parts().query_type,slot:worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity::declared("slot"),relation:"Next".into(),from:"Node".into(),to:"Node".into(),output_name:"orbit".into()})
 }
 #[test]
 fn aggregate_slot_none_and_orbit_keep_exact_original_wire_bytes() {
@@ -83,6 +84,7 @@ fn component_query_and_whole_slot_disclosure_round_trip_for_both_modes() {
         let mut source = parts();
         source.component_selection = Some(component(mode).meaning().clone());
         source.root_paths = vec![ApplicationQueryRootPathMeaning::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableApplicationQueryRootPathParts {
                 start_entity: "Node".into(),
                 terminal_entity: "Node".into(),
@@ -95,7 +97,7 @@ fn component_query_and_whole_slot_disclosure_round_trip_for_both_modes() {
             ApplicationEncodedScalarValue::<U64ApplicationValueBinding>::try_new(0).unwrap(),
             ApplicationQueryInfluenceContract::permit_all(),
         );
-        let query = ErasedApplicationQueryDefinition::from_untrusted_parts(source);
+        let query = ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, source);
         let mut out = crate::binary_output::BinaryOutput::with_capacity(1024);
         write(&mut out, &query).unwrap();
         let bytes = out.into_bytes();
@@ -119,7 +121,7 @@ fn ambiguous_aggregate_refuses_preflight_and_write_before_bytes() {
             .meaning()
             .clone(),
     );
-    let query = ErasedApplicationQueryDefinition::from_untrusted_parts(source);
+    let query = ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, source);
     assert!(require_nesting_depth(&query, 32).is_err());
     let mut out = crate::binary_output::BinaryOutput::with_capacity(256);
     assert!(write(&mut out, &query).is_err());
@@ -151,6 +153,7 @@ fn committed_index_choice_v1_round_trips_and_keeps_legacy_component_bytes() {
     assert_eq!(output.into_bytes(), expected.into_bytes());
     source.component_selection = None;
     source.managed_index = Some(ApplicationQueryManagedIndexMeaning::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableQueryManagedIndexParts {
             semantic_version: 1,
             index: "Prefix".into(),
@@ -194,7 +197,8 @@ fn decode_query(bytes: &[u8]) -> Result<ErasedApplicationQueryDefinition, Denial
 fn live_whole_result_round_trips_and_emits_zero_bytes_when_disabled() {
     let mut plain = parts();
     plain.lanes = ApplicationQueryLaneEligibility::one_shot().with_live();
-    let plain_query = ErasedApplicationQueryDefinition::from_untrusted_parts(plain.clone());
+    let plain_query =
+        ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, plain.clone());
     let mut plain_out = crate::binary_output::BinaryOutput::with_capacity(512);
     write(&mut plain_out, &plain_query).unwrap();
     let plain_bytes = plain_out.into_bytes();
@@ -203,7 +207,7 @@ fn live_whole_result_round_trips_and_emits_zero_bytes_when_disabled() {
 
     let mut whole = plain;
     whole.live_whole_result = true;
-    let whole_query = ErasedApplicationQueryDefinition::from_untrusted_parts(whole);
+    let whole_query = ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, whole);
     let mut whole_out = crate::binary_output::BinaryOutput::with_capacity(512);
     write(&mut whole_out, &whole_query).unwrap();
     let whole_bytes = whole_out.into_bytes();
@@ -220,7 +224,8 @@ fn live_whole_result_rejects_forged_wire_variants_and_invalid_shapes() {
     // 1. Write refuses invalid shape before emitting marker bytes.
     let mut one_shot_whole = parts();
     one_shot_whole.live_whole_result = true;
-    let bad_query = ErasedApplicationQueryDefinition::from_untrusted_parts(one_shot_whole);
+    let bad_query =
+        ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, one_shot_whole);
     let mut out = crate::binary_output::BinaryOutput::with_capacity(512);
     assert_eq!(
         write(&mut out, &bad_query).unwrap_err().kind(),
@@ -228,7 +233,8 @@ fn live_whole_result_rejects_forged_wire_variants_and_invalid_shapes() {
     );
 
     // 2. Forged WQWL trailer on a one-shot-only query is rejected at decode.
-    let plain_one_shot = ErasedApplicationQueryDefinition::from_untrusted_parts(parts());
+    let plain_one_shot =
+        ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, parts());
     let mut base_out = crate::binary_output::BinaryOutput::with_capacity(512);
     write(&mut base_out, &plain_one_shot).unwrap();
     let mut forged = base_out.into_bytes();
@@ -241,7 +247,8 @@ fn live_whole_result_rejects_forged_wire_variants_and_invalid_shapes() {
     // 3. Forged unsupported version and mode variant on a live query are rejected.
     let mut live_plain = parts();
     live_plain.lanes = ApplicationQueryLaneEligibility::one_shot().with_live();
-    let live_query = ErasedApplicationQueryDefinition::from_untrusted_parts(live_plain);
+    let live_query =
+        ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, live_plain);
     let mut live_out = crate::binary_output::BinaryOutput::with_capacity(512);
     write(&mut live_out, &live_query).unwrap();
     let live_bytes = live_out.into_bytes();

@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_installation::facade::{
     WorthQueryPortableArtifactContractParts, WorthQueryPortableArtifactContractRecord,
     WorthQueryPortablePackageRecord,
@@ -64,6 +65,7 @@ pub(super) fn decode_payload(
     let consumer_roles = decode_roles(input, budget)?;
     Ok(WorthQueryPortablePackageRecord::ArtifactContract(
         WorthQueryPortableArtifactContractRecord::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableArtifactContractParts {
                 family,
                 schema_version,

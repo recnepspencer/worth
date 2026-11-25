@@ -1,5 +1,6 @@
 //! New guard meaning carries native identity/reverse paths with exact decode accounting.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::{
     application_query::{
         ApplicationQueryRootPathMeaning, ApplicationQueryRootPathStep as Step,
@@ -14,21 +15,24 @@ use worth_query_declaration::facade::{
 fn path_input_v32_roundtrips_identity_and_reverse_paths_and_cannot_fully_downgrade() {
     for identity in [true, false] {
         let source = Source {
-            path: ApplicationQueryRootPathMeaning::from_untrusted_parts(Parts {
-                start_entity: "Row".into(),
-                terminal_entity: if identity { "Row" } else { "Parent" }.into(),
-                steps: if identity {
-                    vec![]
-                } else {
-                    vec![Step::from_untrusted_fields(
+            path: ApplicationQueryRootPathMeaning::from_untrusted_parts(
+                ARCHIVE_DECODE,
+                Parts {
+                    start_entity: "Row".into(),
+                    terminal_entity: if identity { "Row" } else { "Parent" }.into(),
+                    steps: if identity {
+                        vec![]
+                    } else {
+                        vec![Step::from_untrusted_fields(ARCHIVE_DECODE,
                         "ParentRows".into(),
                         "Parent".into(),
                         "Row".into(),
                         Direction::Reverse,
                      worth_query_declaration::facade::application_query::ApplicationQueryRootPathTraversal::OneHop,)]
+                    },
+                    guards: vec![],
                 },
-                guards: vec![],
-            }),
+            ),
             field: if identity {
                 ApplicationFieldBindingLocus::new("Row", "Facts", "Identity")
             } else {
@@ -41,10 +45,14 @@ fn path_input_v32_roundtrips_identity_and_reverse_paths_and_cannot_fully_downgra
             },
         };
         let body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+            ARCHIVE_DECODE,
             "Row".into(),
             vec![ApplicationOperationBodyScopeField::Assign {
                 field: ApplicationFieldBindingLocus::new("Row", "Facts", "Value"),
-                binding: WorthQueryPortableTypeIdentity::from_untrusted("worth.rust.u64".into()),
+                binding: WorthQueryPortableTypeIdentity::from_untrusted(
+                    ARCHIVE_DECODE,
+                    "worth.rust.u64".into(),
+                ),
                 value: AspectValue::UInt64(42),
             }],
             None,
@@ -52,7 +60,10 @@ fn path_input_v32_roundtrips_identity_and_reverse_paths_and_cannot_fully_downgra
         )
         .with_untrusted_path_input_expectations(vec![Guard {
             source,
-            binding: WorthQueryPortableTypeIdentity::from_untrusted("worth.rust.string".into()),
+            binding: WorthQueryPortableTypeIdentity::from_untrusted(
+                ARCHIVE_DECODE,
+                "worth.rust.string".into(),
+            ),
             scalar_family: ScalarAspectType::String,
             member: "company".into(),
         }]);

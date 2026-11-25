@@ -2,6 +2,7 @@
 use super::{
     ApplicationQueryWhereFilterDenial as Denial, ApplicationQueryWhereFilterOperand as Operand,
 };
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 use std::{cmp::Ordering, sync::Arc};
 use worth_foundational::expression_api::{
     expressions, CompiledExpression, ExpressionDraft, ExpressionFunctionCatalog, ExpressionProfile,
@@ -26,7 +27,11 @@ impl ApplicationQueryWhereFilterProgram {
 
     /// Readmits encoded draft bytes over `operands` as an untrusted artifact.
     /// This grants no read or execution authority.
-    pub fn from_untrusted(operands: Vec<Operand>, draft: &[u8]) -> Result<Self, Denial> {
+    pub fn from_untrusted(
+        _: ArchiveDecodeAuthority,
+        operands: Vec<Operand>,
+        draft: &[u8],
+    ) -> Result<Self, Denial> {
         let draft = expressions().reading_within(Self::PROFILE).decode(draft)?;
         Self::admit(operands, &draft)
     }

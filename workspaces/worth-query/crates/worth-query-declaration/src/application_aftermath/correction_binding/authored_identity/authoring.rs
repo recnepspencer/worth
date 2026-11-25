@@ -9,6 +9,7 @@ use crate::application_operation::{
 use crate::application_schema::{
     ApplicationFieldBindingRecipe, ApplicationSchemaDeclarationDenial,
 };
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 use std::marker::PhantomData;
 
 pub struct ApplicationAuthoredCorrection<Schema> {
@@ -171,6 +172,7 @@ impl<Schema: ApplicationSchema> ApplicationAuthoredCorrection<Schema> {
         Self {
             compose: Box::new(move || {
                 Ok(DeclaredAuthoredCorrection::from_untrusted_parts(
+                    ARCHIVE_DECODE,
                     DeclaredAuthoredCorrectionParts {
                         family: WorthQueryPortableTypeIdentity::declared(Family::IDENTITY),
                         logical_key: Box::new((key.resolve)()?),

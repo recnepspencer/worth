@@ -1,4 +1,5 @@
 //! Each actual schema owns the recipes that its installed provenance must match.
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::{application_query::*, application_schema::*};
 use worth_query_declaration::{worth_query_structured_value_binding, worth_query_value_binding};
 use worth_query_installation::facade::{
@@ -154,6 +155,7 @@ fn installed_source_structure_changes_canonical_meaning_and_keeps_its_typed_prof
                     parts.structure = ApplicationManagedIndexSourceStructure::Opaque;
                     ApplicationSchemaMember::ManagedIndex {
                         definition: ErasedApplicationManagedIndexDefinition::from_untrusted_parts(
+                            ARCHIVE_DECODE,
                             parts,
                         ),
                     }
@@ -205,6 +207,7 @@ fn installed_exhaustive_membership_binds_its_profile_without_changing_parent_mea
                 parts.membership = ApplicationManagedIndexMembership::Candidates;
                 ApplicationSchemaMember::ManagedIndex {
                     definition: ErasedApplicationManagedIndexDefinition::from_untrusted_parts(
+                        ARCHIVE_DECODE,
                         parts,
                     ),
                 }
@@ -245,6 +248,7 @@ fn installed_exhaustive_membership_binds_its_profile_without_changing_parent_mea
                 parts.membership = ApplicationManagedIndexMembership::ExhaustiveSourceTree;
                 ApplicationSchemaMember::ManagedIndex {
                     definition: ErasedApplicationManagedIndexDefinition::from_untrusted_parts(
+                        ARCHIVE_DECODE,
                         parts,
                     ),
                 }

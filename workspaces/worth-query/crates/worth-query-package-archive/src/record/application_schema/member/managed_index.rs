@@ -1,4 +1,5 @@
 //! Member48: legacy v1-v4 meaning; v5 explicit public maintenance/refinement presence.
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 mod maintenance;
 use super::*;
 use crate::record::application_schema::wire_vocabulary::{
@@ -139,14 +140,17 @@ pub(super) fn decode(
         _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
     };
     let entity = input.text()?.to_owned();
-    let probe = ApplicationManagedIndexProbeMeaning::from_untrusted_parts(Probe {
-        binding: decode_type_identity(input)?,
-        scalar_family: crate::record::foundational_aspect::decode_scalar_type(input)?,
-        unit: decode_optional(input, |input| Ok(input.text()?.to_owned()))?,
-        frame: decode_optional(input, |input| Ok(input.text()?.to_owned()))?,
-        canonical: decode_optional(input, canonical_value_reference::decode)?,
-        supports_admitted_decode: crate::record::foundational_value::decode_bool(input)?,
-    });
+    let probe = ApplicationManagedIndexProbeMeaning::from_untrusted_parts(
+        ARCHIVE_DECODE,
+        Probe {
+            binding: decode_type_identity(input)?,
+            scalar_family: crate::record::foundational_aspect::decode_scalar_type(input)?,
+            unit: decode_optional(input, |input| Ok(input.text()?.to_owned()))?,
+            frame: decode_optional(input, |input| Ok(input.text()?.to_owned()))?,
+            canonical: decode_optional(input, canonical_value_reference::decode)?,
+            supports_admitted_decode: crate::record::foundational_value::decode_bool(input)?,
+        },
+    );
     let parts = Parts {
         semantic_version,
         name,
@@ -174,7 +178,7 @@ pub(super) fn decode(
     } else if let Some(refinement) = refinement {
         Definition::from_refinement_parts(parts, refinement)
     } else {
-        Definition::from_untrusted_parts(parts)
+        Definition::from_untrusted_parts(ARCHIVE_DECODE, parts)
     };
     let member = ApplicationSchemaMember::ManagedIndex { definition };
     require_shape(&member)?;

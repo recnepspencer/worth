@@ -8,10 +8,7 @@ fn installed_composed_package_exports_and_reconstructs_with_headroom() {
     let host = world::install(2, Arc::default());
     let runtime = host.runtime();
     // Expectation comes from installed schema authority, independently of intake.
-    let installed_identity = runtime.installed_schema().binding_identity();
-    let expected = domain::WorthQueryPortableDomainPackageIdentity::from_untrusted_bytes(
-        *installed_identity.package_identity().bytes(),
-    );
+    let expected = runtime.installed_schema().package_identity().clone();
     let exported = runtime
         .export_domain_package(
             Schema::OWNER,
@@ -61,11 +58,9 @@ fn installed_composed_package_exports_and_reconstructs_with_headroom() {
         candidate.work().canonical_work_bytes()
     );
     let validated = candidate
-        .validate_freshly(
-            domain::WorthQueryExpectedPortablePackageIdentity::from_untrusted_identity(
-                expected.clone(),
-            ),
-        )
+        .validate_freshly(domain::WorthQueryExpectedPortablePackageIdentity::new(
+            expected.clone(),
+        ))
         .unwrap();
     assert_eq!(validated.identity(), &expected);
     let required = exported.manifest().canonical_source_bytes();

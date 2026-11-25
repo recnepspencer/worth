@@ -8,21 +8,25 @@ use crate::application_schema::{
     ApplicationOperationBodyCreation, ApplicationOperationBodyOutput,
     ApplicationOperationBodyOutputTarget, ApplicationOperationBodyProgram,
 };
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 
 #[test]
 fn decoded_enrollment_requires_exact_create_slot_binding_role_entity_and_cardinality() {
     let body = |binding: &str, role: &str, entity: &str, key: &str, posture, cardinality| {
         ApplicationOperationBodyProgram::from_untrusted_in_scope(
+            ARCHIVE_DECODE,
             "Container".into(),
             vec![],
             Some(
                 ApplicationOperationBodyCreation::from_untrusted(
+                    ARCHIVE_DECODE,
                     "Subject".into(),
                     "subject".into(),
                     vec![],
                 )
                 .with_untrusted_enrollment(Some(
                     ApplicationOperationBodyEnrollment::from_untrusted(
+                        ARCHIVE_DECODE,
                         "workflow".into(),
                         "binding".into(),
                         "role".into(),

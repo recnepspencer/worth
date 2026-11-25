@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 pub(crate) use worth_query_testkit_certification::facade::certification::native_graph_input_guards::path_signing::admission::*;
 
 #[test]
@@ -26,6 +27,7 @@ fn cold_signed_path_write_refuses_a_direct_subject_conflict_without_a_lifecycle(
                 }
             }
             let creation = ApplicationOperationBodyCreation::from_untrusted(
+                ARCHIVE_DECODE,
                 creation.entity().into(),
                 creation.key().into(),
                 fields,
@@ -33,6 +35,7 @@ fn cold_signed_path_write_refuses_a_direct_subject_conflict_without_a_lifecycle(
             .with_untrusted_signing(creation.signing().cloned())
             .with_untrusted_links(creation.links().to_vec());
             *body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+                ARCHIVE_DECODE,
                 "Row".into(),
                 body.scope_fields().to_vec(),
                 Some(creation),
@@ -46,7 +49,7 @@ fn cold_signed_path_write_refuses_a_direct_subject_conflict_without_a_lifecycle(
     parts.members.sort();
     assert_eq!(
         validate_portable_application_schema_freshly(
-            WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts)
+            WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(ARCHIVE_DECODE, parts)
         )
         .unwrap_err(),
         ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency {

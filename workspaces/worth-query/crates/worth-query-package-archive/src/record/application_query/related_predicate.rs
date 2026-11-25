@@ -11,6 +11,7 @@ use crate::record::{
     foundational_aspect, foundational_value,
     sequence::{decode_sequence, require_canonical_sequence, write_sequence},
 };
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_query::{
     validate_related_predicates, ApplicationQueryPredicateExpected,
     ApplicationQueryRelatedPolarity, ApplicationQueryRelatedPredicateMeaning,
@@ -120,6 +121,7 @@ fn decode_one(
     };
     Ok(
         ApplicationQueryRelatedPredicateMeaning::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableApplicationQueryRelatedPredicateParts {
                 relation,
                 from,
@@ -187,6 +189,7 @@ fn decode_target_predicate(
             }
             Ok(
                 ApplicationQueryRelatedTargetPredicate::from_untrusted_parameter(
+                    ARCHIVE_DECODE,
                     entity,
                     aspect,
                     field,
@@ -206,6 +209,7 @@ fn decode_target_predicate(
             }
             Ok(
                 ApplicationQueryRelatedTargetPredicate::from_untrusted_value(
+                    ARCHIVE_DECODE,
                     entity,
                     aspect,
                     field,

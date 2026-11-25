@@ -1,4 +1,5 @@
 use crate::application_schema::ApplicationAuthorizationTraversalDirection;
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
 use super::{
@@ -17,6 +18,7 @@ pub struct WorthQueryPortableApplicationCapabilityContextEntitySlotBindingParts 
 
 impl ApplicationCapabilityContextEntitySlotBinding {
     pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
         parts: WorthQueryPortableApplicationCapabilityContextEntitySlotBindingParts,
     ) -> Self {
         Self {
@@ -48,6 +50,7 @@ pub struct WorthQueryPortableApplicationCapabilityPathContextAnchorParts {
 
 impl ApplicationCapabilityPathContextAnchor {
     pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
         parts: WorthQueryPortableApplicationCapabilityPathContextAnchorParts,
     ) -> Self {
         Self {

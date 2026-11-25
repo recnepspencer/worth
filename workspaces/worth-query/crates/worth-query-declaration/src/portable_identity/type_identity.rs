@@ -1,3 +1,4 @@
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 use std::borrow::Cow;
 
 /// Stable semantic identity for a Rust type axis retained by a portable package.
@@ -16,7 +17,7 @@ impl WorthQueryPortableTypeIdentity {
     /// Reconstruct descriptive identity text received from an untrusted boundary.
     ///
     /// This value carries no declaration membership or package authority.
-    pub fn from_untrusted(value: String) -> Self {
+    pub fn from_untrusted(_: ArchiveDecodeAuthority, value: String) -> Self {
         Self(Cow::Owned(value))
     }
 
@@ -56,6 +57,7 @@ impl WorthQueryPortableTypeIdentity {
 #[cfg(test)]
 mod storage_tests {
     use super::*;
+    use crate::archive_decode_authority::ARCHIVE_DECODE;
     #[test]
     fn retained_identity_bytes_count_capacity_only_for_owned_text() {
         assert_eq!(
@@ -66,7 +68,8 @@ mod storage_tests {
         text.push_str("owned");
         let capacity = text.capacity();
         assert_eq!(
-            WorthQueryPortableTypeIdentity::from_untrusted(text).retained_heap_bytes(),
+            WorthQueryPortableTypeIdentity::from_untrusted(ARCHIVE_DECODE, text)
+                .retained_heap_bytes(),
             capacity
         );
     }

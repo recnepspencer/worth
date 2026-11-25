@@ -1,5 +1,6 @@
 //! Ordered, portable native values for one operation's scope-bound body.
 
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 mod creation;
 mod entity_field_loci;
 mod query_context;
@@ -30,6 +31,7 @@ pub use creation::ApplicationOperationBodyCreation;
 impl ApplicationOperationBodyProgram {
     /// Authority-free decoded description; fresh schema readmission validates it.
     pub fn from_untrusted_scope_fields(
+        _: ArchiveDecodeAuthority,
         scope_fields: Vec<ApplicationOperationBodyScopeField>,
     ) -> Self {
         Self {
@@ -49,6 +51,7 @@ impl ApplicationOperationBodyProgram {
         }
     }
     pub fn from_untrusted_with_creation(
+        _: ArchiveDecodeAuthority,
         scope_fields: Vec<ApplicationOperationBodyScopeField>,
         creation: Option<ApplicationOperationBodyCreation>,
     ) -> Self {
@@ -69,6 +72,7 @@ impl ApplicationOperationBodyProgram {
         }
     }
     pub fn from_untrusted_with_requirements(
+        _: ArchiveDecodeAuthority,
         scope_fields: Vec<ApplicationOperationBodyScopeField>,
         creation: Option<ApplicationOperationBodyCreation>,
         requirements: Vec<super::ApplicationOperationBodyRequirementProgram>,
@@ -92,6 +96,7 @@ impl ApplicationOperationBodyProgram {
     /// Authority-free scope-bound description. Fresh readmission checks the scope
     /// and its exact decision membership. Redundant field-derived scope normalizes.
     pub fn from_untrusted_in_scope(
+        _: ArchiveDecodeAuthority,
         scope: String,
         scope_fields: Vec<ApplicationOperationBodyScopeField>,
         creation: Option<ApplicationOperationBodyCreation>,
@@ -212,8 +217,11 @@ impl ApplicationOperationBodyProgram {
     pub fn effect_emission(&self) -> Option<&super::ApplicationOperationBodyEffectEmission> {
         self.effect_emission.as_ref()
     }
+    /// Raw-part carriage for Query's own decoders and body builder; fresh
+    /// declaration admission and installation still validate it.
     pub fn with_untrusted_effect_emission(
         mut self,
+        _: ArchiveDecodeAuthority,
         emission: Option<super::ApplicationOperationBodyEffectEmission>,
     ) -> Self {
         self.effect_emission = emission;

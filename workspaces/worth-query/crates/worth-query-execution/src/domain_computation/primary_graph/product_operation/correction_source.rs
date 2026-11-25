@@ -17,6 +17,11 @@ use crate::domain_computation::primary_graph::{
 mod alternatives;
 mod cold_selection;
 mod exact_original;
+mod history;
+pub use history::{
+    WorthQueryCorrectionHistoryDenial, WorthQueryCorrectionHistoryRecord,
+    WorthQueryCorrectionHistoryState,
+};
 mod occurrence;
 mod selection;
 use occurrence::CorrectionOccurrence;

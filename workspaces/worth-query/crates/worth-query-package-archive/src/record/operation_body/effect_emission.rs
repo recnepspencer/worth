@@ -36,8 +36,12 @@ pub(super) fn decode(
         0 => Ok(None),
         1 => Ok(Some(Emission {
             effect: input.text()?.to_owned(),
-            input_binding: WorthQueryPortableTypeIdentity::from_untrusted(input.text()?.to_owned()),
+            input_binding: WorthQueryPortableTypeIdentity::from_untrusted(
+                ARCHIVE_DECODE,
+                input.text()?.to_owned(),
+            ),
             payload_binding: WorthQueryPortableTypeIdentity::from_untrusted(
+                ARCHIVE_DECODE,
                 input.text()?.to_owned(),
             ),
         })),

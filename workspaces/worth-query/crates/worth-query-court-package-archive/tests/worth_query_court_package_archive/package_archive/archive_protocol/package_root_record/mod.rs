@@ -201,11 +201,9 @@ fn semantic_tamper_remains_untrusted_until_fresh_identity_validation() {
             .unwrap()
             .materialize()
             .unwrap()
-            .validate_freshly(
-                WorthQueryExpectedPortablePackageIdentity::from_untrusted_identity(
-                    source.identity().clone(),
-                ),
-            ),
+            .validate_freshly(WorthQueryExpectedPortablePackageIdentity::new(
+                source.identity().clone(),
+            ),),
         Err(WorthQueryPortablePackageReconstructionDenial::ManifestPackageIdentityMismatch { .. })
     ));
 }

@@ -2,6 +2,7 @@
 use super::*;
 use crate::domain_computation::application_aftermath::WorthQueryRecordedCorrectionSource;
 use worth_foundational::facade::AspectFieldLocator;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_relational::facade::indexes::{BoundedEntityFieldBoundary, DerivedIndexId};
 pub mod page_allocation;
@@ -274,7 +275,7 @@ impl WorthQueryPrimaryGraphProvider {
         fact: &WorthQueryCanonicalCorrectionFact,
     ) -> Option<WorthQueryRecordedCorrectionSource> {
         let completed = self.observe_completed_application(&fact.child)?;
-        Some(WorthQueryRecordedCorrectionSource::from_untrusted_parts(
+        Some(WorthQueryRecordedCorrectionSource::from_untrusted_parts(ARCHIVE_DECODE,
             completed
                 .committed_product_publication()
                 .composite_commit()

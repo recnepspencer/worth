@@ -10,6 +10,7 @@ use crate::{
         WorthQueryPackageArchiveDenial as Denial, WorthQueryPackageArchiveDenialKind as Kind,
     },
 };
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::{
     application_operation::{
         ApplicationMutationDescription, ApplicationMutationDescriptionParts,
@@ -136,8 +137,9 @@ pub(super) fn decode_description(
     })?;
     let workflow_execution_requirements = worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements::from_persistence_identity(input.text()?)
         .ok_or_else(|| Denial::new(Kind::UnsupportedRecordVariant))?;
-    let description =
-        ApplicationMutationDescription::from_untrusted_parts(ApplicationMutationDescriptionParts {
+    let description = ApplicationMutationDescription::from_untrusted_parts(
+        ARCHIVE_DECODE,
+        ApplicationMutationDescriptionParts {
             binding_identity,
             operation,
             input_identity,
@@ -148,6 +150,7 @@ pub(super) fn decode_description(
             output_role_families,
             workflow_execution_requirements,
             inspection_disclosure: super::source_disclosure::decode(input)?,
-        });
+        },
+    );
     Ok(description.with_coupled_outputs(super::coupled_outputs::decode(input, budget)?))
 }

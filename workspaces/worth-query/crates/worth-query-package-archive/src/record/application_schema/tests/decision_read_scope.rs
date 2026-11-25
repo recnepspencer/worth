@@ -2,6 +2,7 @@
 use super::{decode_member, encode_member, try_decode_member};
 use crate::binary_output::BinaryOutput;
 use crate::facade::WorthQueryPackageArchiveDenialKind as Kind;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_query::ApplicationQueryBindingReference;
 use worth_query_declaration::facade::application_schema::{
     ApplicationDecisionReadScopeMeaning as Meaning,
@@ -51,14 +52,23 @@ fn wire(targets: &[Target], derived: &[String]) -> Vec<u8> {
 }
 #[test]
 fn shared_scope_roundtrip_preserves_all_targets_parent_axes_and_content_identity() {
-    let definition =
-        Meaning::from_untrusted_parts(targets(), vec!["Zulu".into(), "Alpha".into()]).unwrap();
+    let definition = Meaning::from_untrusted_parts(
+        ARCHIVE_DECODE,
+        targets(),
+        vec!["Zulu".into(), "Alpha".into()],
+    )
+    .unwrap();
     let expected = definition.identity().to_owned();
     let mut reversed = definition.targets().to_vec();
     reversed.reverse();
     assert_eq!(
         definition,
-        Meaning::from_untrusted_parts(reversed, vec!["Zulu".into(), "Alpha".into()]).unwrap()
+        Meaning::from_untrusted_parts(
+            ARCHIVE_DECODE,
+            reversed,
+            vec!["Zulu".into(), "Alpha".into()]
+        )
+        .unwrap()
     );
     let member = Member::DecisionReadScope {
         definition: definition.clone(),
@@ -76,15 +86,23 @@ fn shared_scope_roundtrip_preserves_all_targets_parent_axes_and_content_identity
         entity: "Other".into(),
     });
     assert_ne!(
-        Meaning::from_untrusted_parts(changed, definition.derived_relations().to_vec())
-            .unwrap()
-            .identity(),
+        Meaning::from_untrusted_parts(
+            ARCHIVE_DECODE,
+            changed,
+            definition.derived_relations().to_vec()
+        )
+        .unwrap()
+        .identity(),
         expected
     );
     assert_ne!(
-        Meaning::from_untrusted_parts(definition.targets().to_vec(), vec!["OtherDerived".into()])
-            .unwrap()
-            .identity(),
+        Meaning::from_untrusted_parts(
+            ARCHIVE_DECODE,
+            definition.targets().to_vec(),
+            vec!["OtherDerived".into()]
+        )
+        .unwrap()
+        .identity(),
         expected
     );
     let mut changed = definition.targets().to_vec();
@@ -93,18 +111,26 @@ fn shared_scope_roundtrip_preserves_all_targets_parent_axes_and_content_identity
     };
     let mut parts = parent.parts().clone();
     parts.principal_binding = "OtherPrincipal".into();
-    *parent = ApplicationQueryBindingReference::from_untrusted_parts(parts);
+    *parent = ApplicationQueryBindingReference::from_untrusted_parts(ARCHIVE_DECODE, parts);
     assert_ne!(
-        Meaning::from_untrusted_parts(changed, definition.derived_relations().to_vec())
-            .unwrap()
-            .identity(),
+        Meaning::from_untrusted_parts(
+            ARCHIVE_DECODE,
+            changed,
+            definition.derived_relations().to_vec()
+        )
+        .unwrap()
+        .identity(),
         expected
     );
 }
 #[test]
 fn shared_scope_vectors_refuse_descending_or_duplicate_wire_before_normalization() {
-    let definition =
-        Meaning::from_untrusted_parts(targets(), vec!["Alpha".into(), "Zulu".into()]).unwrap();
+    let definition = Meaning::from_untrusted_parts(
+        ARCHIVE_DECODE,
+        targets(),
+        vec!["Alpha".into(), "Zulu".into()],
+    )
+    .unwrap();
     assert_eq!(
         decode_member(&wire(definition.targets(), definition.derived_relations())),
         Member::DecisionReadScope {

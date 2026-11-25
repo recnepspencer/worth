@@ -1,3 +1,4 @@
+use crate::archive_decode_authority::{ArchiveDecodeAuthority, ARCHIVE_DECODE};
 use std::time::Duration;
 
 use super::{ApplicationCapabilityElevationDefinition, ApplicationCapabilityElevationRule};
@@ -27,6 +28,7 @@ pub struct WorthQueryPortableApplicationCapabilityElevationDefinitionParts {
 
 impl ApplicationCapabilityElevationDefinition {
     pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
         parts: WorthQueryPortableApplicationCapabilityElevationDefinitionParts,
     ) -> Self {
         Self {
@@ -42,6 +44,7 @@ impl ApplicationCapabilityElevationDefinition {
             grant: parts.grant,
             resource_relation: parts.resource_relation,
             lifecycle: ApplicationCapabilityElevationLifecycleDefinition::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 parts.lifecycle,
             ),
             review: parts.review,
@@ -75,6 +78,7 @@ pub enum WorthQueryPortableApplicationCapabilityElevationRuleParts {
 
 impl ApplicationCapabilityElevationRule {
     pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
         parts: WorthQueryPortableApplicationCapabilityElevationRuleParts,
     ) -> Self {
         match parts {
@@ -83,7 +87,10 @@ impl ApplicationCapabilityElevationRule {
             }
             WorthQueryPortableApplicationCapabilityElevationRuleParts::Governed(definition) => {
                 Self::Governed(
-                    ApplicationCapabilityElevationDefinition::from_untrusted_parts(definition),
+                    ApplicationCapabilityElevationDefinition::from_untrusted_parts(
+                        ARCHIVE_DECODE,
+                        definition,
+                    ),
                 )
             }
         }

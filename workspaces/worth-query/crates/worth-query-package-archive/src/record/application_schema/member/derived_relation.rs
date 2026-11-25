@@ -7,6 +7,7 @@ use crate::denial::{
 use crate::record::decode_budget::RecordDecodeAttempt;
 use crate::record::foundational_value::{decode_bool, write_bool};
 use crate::record::sequence::{decode_sequence, write_sequence};
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::{
     ApplicationDerivedRelationExpression, ApplicationDerivedRelationNode as Node,
     ApplicationDerivedRelationSource, ApplicationDerivedRelationSourceKind as SourceKind,
@@ -89,6 +90,7 @@ pub(super) fn decode(
             let laws = decode_laws(input, budget)?;
             Member::DerivedRelation {
                 definition: ErasedApplicationDerivedRelationDefinition::from_untrusted_parts(
+                    ARCHIVE_DECODE,
                     WorthQueryPortableDerivedRelationParts {
                         relation,
                         from: from.into(),

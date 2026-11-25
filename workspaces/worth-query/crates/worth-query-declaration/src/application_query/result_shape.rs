@@ -1,4 +1,5 @@
 use crate::application_query::ApplicationQueryResultFieldPresence;
+use crate::archive_decode_authority::{ArchiveDecodeAuthority, ARCHIVE_DECODE};
 use std::marker::PhantomData;
 
 use crate::application_schema::ApplicationScalarValueBinding;
@@ -45,7 +46,10 @@ pub struct WorthQueryPortableApplicationQueryResultShapeParts {
 }
 
 impl ApplicationQueryResultShape {
-    pub fn from_untrusted_parts(parts: WorthQueryPortableApplicationQueryResultShapeParts) -> Self {
+    pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
+        parts: WorthQueryPortableApplicationQueryResultShapeParts,
+    ) -> Self {
         Self {
             query_type: parts.query_type,
             root_entity: parts.root_entity,
@@ -142,6 +146,7 @@ where
         self.field_expectations.push(field.binding_recipe());
         self.fields
             .push(ApplicationQueryResultField::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 WorthQueryPortableApplicationQueryResultFieldParts {
                     query_type: field.slot_key().query_identity(),
                     slot_type: field.slot_key().slot_identity(),
@@ -173,6 +178,7 @@ where
         self.field_expectations.push(field.binding_recipe());
         self.fields
             .push(ApplicationQueryResultField::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 WorthQueryPortableApplicationQueryResultFieldParts {
                     query_type: field.slot_key().query_identity(),
                     slot_type: field.slot_key().slot_identity(),
@@ -230,6 +236,7 @@ where
         self.field_expectations.extend(nested_fields);
         self.relations
             .push(ApplicationQueryResultRelation::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 WorthQueryPortableApplicationQueryResultRelationParts {
                     query_type: relation.slot_key().query_identity(),
                     slot_type: relation.slot_key().slot_identity(),
@@ -297,6 +304,7 @@ where
         self.field_expectations.extend(nested_fields);
         self.relations
             .push(ApplicationQueryResultRelation::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 WorthQueryPortableApplicationQueryResultRelationParts {
                     query_type: relation.slot_key().query_identity(),
                     slot_type: relation.slot_key().slot_identity(),
@@ -308,6 +316,7 @@ where
                     cardinality: relation.cardinality(),
                     predicate: Some(ApplicationQueryRelationPredicate::EqualParameter(
                         ApplicationQueryPredicate::from_untrusted_fields(
+                            ARCHIVE_DECODE,
                             field.entity().to_owned(),
                             field.aspect().to_owned(),
                             field.field().to_owned(),

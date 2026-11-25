@@ -2,34 +2,46 @@
 //! database under `/usr/share/zoneinfo`, and `/etc/localtime`.
 use super::posix_rule::PosixRule;
 use super::{WorthQueryLocalCalendarDenial as Denial, WorthQueryTimeZone};
+use std::env::VarError;
+use std::io::Read;
 use std::path::{Component, Path, PathBuf};
 
 const LOCALTIME: &str = "/etc/localtime";
 const ZONEINFO: &str = "/usr/share/zoneinfo";
+/// Real TZif files are a few KiB; a larger or special file is refused.
+const MAX_TZIF_BYTES: u64 = 1 << 20;
 
 pub(super) fn load() -> Result<WorthQueryTimeZone, Denial> {
     match std::env::var("TZ") {
         Ok(variable) => from_variable(&variable),
-        Err(_) => read_zone_file(Path::new(LOCALTIME)),
+        Err(VarError::NotPresent) => read_zone_file(Path::new(LOCALTIME)),
+        Err(VarError::NotUnicode(_)) => Err(Denial::MalformedZone),
     }
 }
 
-/// `TZ` is empty (UTC), a `:`-prefixed or plain zone name or path, or a
-/// POSIX rule.
-fn from_variable(variable: &str) -> Result<WorthQueryTimeZone, Denial> {
-    let name = variable.strip_prefix(':').unwrap_or(variable);
-    if name.is_empty() {
+/// Resolves a `TZ` value as `tzset(3)` does: empty is UTC; `:` alone is
+/// `/etc/localtime`; `:name` is only a zone file or database name; a bare
+/// value is a zone file or database name, else a POSIX rule.
+pub(super) fn from_variable(variable: &str) -> Result<WorthQueryTimeZone, Denial> {
+    if variable.is_empty() {
         return Ok(WorthQueryTimeZone::UTC);
     }
-    if Path::new(name).is_absolute() {
-        return read_zone_file(Path::new(name));
-    }
-    match zoneinfo_path(name).map(|path| read_zone_file(&path)) {
-        Some(Ok(zone)) => Ok(zone),
-        Some(Err(unreadable)) => PosixRule::parse(name)
+    let (name, file_only) = match variable.strip_prefix(':') {
+        Some("") => return read_zone_file(Path::new(LOCALTIME)),
+        Some(name) => (name, true),
+        None => (variable, false),
+    };
+    let file = if Path::new(name).is_absolute() {
+        read_zone_file(Path::new(name))
+    } else {
+        zoneinfo_path(name).map_or(Err(Denial::MalformedZone), |path| read_zone_file(&path))
+    };
+    match file {
+        Ok(zone) => Ok(zone),
+        Err(denial) if file_only => Err(denial),
+        Err(denial) => PosixRule::parse(name)
             .map(WorthQueryTimeZone::posix)
-            .map_err(|_| unreadable),
-        None => PosixRule::parse(name).map(WorthQueryTimeZone::posix),
+            .map_err(|_| denial),
     }
 }
 
@@ -43,6 +55,15 @@ fn zoneinfo_path(name: &str) -> Option<PathBuf> {
 }
 
 fn read_zone_file(path: &Path) -> Result<WorthQueryTimeZone, Denial> {
-    let bytes = std::fs::read(path).map_err(|cause| Denial::SystemZoneUnreadable(cause.kind()))?;
+    let unreadable = |cause: std::io::Error| Denial::SystemZoneUnreadable(cause.kind());
+    let mut bytes = Vec::new();
+    std::fs::File::open(path)
+        .map_err(unreadable)?
+        .take(MAX_TZIF_BYTES + 1)
+        .read_to_end(&mut bytes)
+        .map_err(unreadable)?;
+    if bytes.len() as u64 > MAX_TZIF_BYTES {
+        return Err(Denial::MalformedZone);
+    }
     WorthQueryTimeZone::from_tzif(&bytes)
 }

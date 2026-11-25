@@ -1,5 +1,6 @@
 //! Candidate-local creation sites; peer roots are not owned descendants.
 use super::super::ApplicationOperationBodyCreatedField;
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 /// One typed, candidate-local creation site in the admitted scope's context.
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct ApplicationOperationBodyCreation {
@@ -28,6 +29,7 @@ pub struct ApplicationOperationBodyCreation {
 
 impl ApplicationOperationBodyCreation {
     pub fn from_untrusted(
+        _: ArchiveDecodeAuthority,
         entity: String,
         key: String,
         fields: Vec<ApplicationOperationBodyCreatedField>,

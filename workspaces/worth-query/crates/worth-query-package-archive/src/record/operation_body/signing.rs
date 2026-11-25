@@ -1,5 +1,6 @@
 //! Version-thirteen signing declarations, never live authentication proof.
 use super::{ApplicationFieldBindingLocus, BinaryEncodingSink, BinaryInput, Denial, Kind};
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::{
     ApplicationOperationBodyCreatedField as Field, ApplicationOperationBodyProgram,
     ApplicationOperationBodyRequirementSource as Source,
@@ -47,7 +48,12 @@ pub(super) fn decode(input: &mut BinaryInput<'_>) -> Result<Option<Spec>, Denial
                 ApplicationFieldBindingLocus::new(input.text()?, input.text()?, input.text()?);
             let provenance =
                 ApplicationFieldBindingLocus::new(input.text()?, input.text()?, input.text()?);
-            Ok(Some(Spec::from_untrusted(purpose, actor, provenance)))
+            Ok(Some(Spec::from_untrusted(
+                ARCHIVE_DECODE,
+                purpose,
+                actor,
+                provenance,
+            )))
         }
         _ => Err(Denial::new(Kind::InvalidBooleanEncoding)),
     }

@@ -1,4 +1,5 @@
 //! V7 carries exact Foundation drafts and their native source bindings.
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 mod operands;
 mod signed_evidence;
 use super::{BinaryEncodingSink, BinaryInput, Denial, Kind, RecordDecodeAttempt};
@@ -56,8 +57,15 @@ pub(super) fn decode(
             None
         };
         let satisfaction = draft(input, budget)?;
-        Requirement::from_untrusted(identity, operands, applicability, satisfaction, target)
-            .map_err(|_| Denial::new(Kind::InvalidRecordShape))
+        Requirement::from_untrusted(
+            ARCHIVE_DECODE,
+            identity,
+            operands,
+            applicability,
+            satisfaction,
+            target,
+        )
+        .map_err(|_| Denial::new(Kind::InvalidRecordShape))
     })
 }
 

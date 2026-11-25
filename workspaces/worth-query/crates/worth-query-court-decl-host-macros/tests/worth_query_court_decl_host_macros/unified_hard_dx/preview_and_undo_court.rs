@@ -4,7 +4,8 @@ use worth_foundational::facade::CanonicalDate;
 use worth_query_host::facade::{
     admission::authenticated_principal::WorthQueryAdmissionClock,
     application_entry::WorthQueryOwnedApplicationHistoryDocument,
-    WorthQueryHomeAuthoredCorrectionOutcome, WorthQueryHomeUndoDenial,
+    WorthQueryHomeAuthoredCorrectionOutcome, WorthQueryHomeUndoDenial, WorthQueryRefusalCategory,
+    WorthQueryUserFacingRefusal,
 };
 
 use super::actions::{CorrectTaskState, RescheduleTask, SetTaskState};
@@ -69,6 +70,10 @@ fn target_dx_3_4_preview_forks_static_owned_history_and_reopen_authored_undo_red
             failure.denial().is_stale_head(),
             "expected stale-head adoption refusal, got {:?}",
             failure.denial()
+        );
+        assert_eq!(
+            failure.denial().refusal_category(),
+            WorthQueryRefusalCategory::Conflict
         );
         let (stale_preview, _) = failure.into_parts();
         drop(stale_preview);

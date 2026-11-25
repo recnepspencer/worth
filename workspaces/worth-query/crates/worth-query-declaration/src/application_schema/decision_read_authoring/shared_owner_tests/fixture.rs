@@ -2,6 +2,7 @@
 use super::super::super::fragment::{self, *};
 use super::super::super::*;
 use crate::application_query::*;
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 use crate::authentication::{
     WorthQueryExternalPrincipalIdentity, WorthQueryExternalPrincipalIdentityBinding,
     WorthQueryPrincipalMappingStatus, WorthQueryPrincipalMappingStatusBinding,
@@ -228,6 +229,7 @@ fn query_parts(
         parameters: probe
             .map(|p| {
                 vec![ApplicationQueryParameterDefinition::from_untrusted_fields(
+                    ARCHIVE_DECODE,
                     "probe".into(),
                     p.parts().scalar_family,
                     p.parts().binding.clone(),
@@ -237,6 +239,7 @@ fn query_parts(
             })
             .unwrap_or_default(),
         result_shape: ApplicationQueryResultShape::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableApplicationQueryResultShapeParts {
                 query_type: qt,
                 root_entity: "Member".into(),
@@ -250,6 +253,7 @@ fn query_parts(
         orbit: None,
         managed_index: index.map(|idx| {
             ApplicationQueryManagedIndexMeaning::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 WorthQueryPortableQueryManagedIndexParts {
                     semantic_version: 1,
                     index: idx.into(),
@@ -276,6 +280,7 @@ pub(super) fn base() -> ApplicationSchemaDeclarationBuilder<TestSchema> {
     let probe = ApplicationManagedIndexProbeMeaning::of::<ProbeBinding>();
     let source = query_parts("boxes_source", "test.boxes-source.query.v1", None, None);
     let source_binding = ApplicationQueryBindingReference::from_untrusted_parts(
+        ARCHIVE_DECODE,
         ApplicationQueryBindingReferenceParts {
             binding: WorthQueryPortableTypeIdentity::declared("test.boxes-source.binding.v1"),
             input: WorthQueryPortableTypeIdentity::declared("worth.rust.unit"),
@@ -294,6 +299,7 @@ pub(super) fn base() -> ApplicationSchemaDeclarationBuilder<TestSchema> {
     );
     let idx = |name: &str| ApplicationSchemaMember::ManagedIndex {
         definition: ErasedApplicationManagedIndexDefinition::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableManagedIndexParts {
                 semantic_version: 3,
                 name: name.into(),
@@ -311,12 +317,10 @@ pub(super) fn base() -> ApplicationSchemaDeclarationBuilder<TestSchema> {
     };
     let parent =
         |name: &str, qt: &'static str, index: &str| ApplicationSchemaMember::ApplicationQuery {
-            definition: ErasedApplicationQueryDefinition::from_untrusted_parts(query_parts(
-                name,
-                qt,
-                Some(&probe),
-                Some(index),
-            )),
+            definition: ErasedApplicationQueryDefinition::from_untrusted_parts(
+                ARCHIVE_DECODE,
+                query_parts(name, qt, Some(&probe), Some(index)),
+            ),
         };
     ApplicationSchemaDeclarationBuilder::<TestSchema>::from_test_members(vec![
         ApplicationSchemaMember::Entity {
@@ -337,7 +341,10 @@ pub(super) fn base() -> ApplicationSchemaDeclarationBuilder<TestSchema> {
             input_type: WorthQueryPortableTypeIdentity::declared("worth.rust.unit"),
         },
         ApplicationSchemaMember::ApplicationQuery {
-            definition: ErasedApplicationQueryDefinition::from_untrusted_parts(source),
+            definition: ErasedApplicationQueryDefinition::from_untrusted_parts(
+                ARCHIVE_DECODE,
+                source,
+            ),
         },
         idx("VertexIdx"),
         idx("EdgeIdx"),

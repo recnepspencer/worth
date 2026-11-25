@@ -17,13 +17,14 @@ pub(super) struct TzifRules {
 impl TzifRules {
     pub(super) fn parse(bytes: &[u8]) -> Result<Self, Denial> {
         let first = Header::read(bytes)?;
+        let second_at = HEADER_BYTES
+            .checked_add(first.block_bytes(4)?)
+            .filter(|&end| end <= bytes.len())
+            .ok_or(Denial::MalformedZone)?;
         if first.version == 0 {
             return Self::from_block(bytes, HEADER_BYTES, &first, 4, None);
         }
         // Version 2+ repeats the data with 64-bit times, then a footer rule.
-        let second_at = HEADER_BYTES
-            .checked_add(first.block_bytes(4)?)
-            .ok_or(Denial::MalformedZone)?;
         let second = Header::read(bytes.get(second_at..).ok_or(Denial::MalformedZone)?)?;
         let data_at = second_at + HEADER_BYTES;
         let footer_at = data_at
@@ -162,11 +163,12 @@ impl<'bytes> Cursor<'bytes> {
     }
 }
 
-/// The `\n<rule>\n` footer; an empty rule means none.
+/// The RFC 8536 §3.3 footer, exactly `NL <rule> NL`; an empty rule means none.
 fn footer(bytes: &[u8]) -> Result<Option<PosixRule>, Denial> {
     let text = bytes
         .strip_prefix(b"\n")
-        .and_then(|rest| rest.split(|&byte| byte == b'\n').next())
+        .and_then(|rest| rest.strip_suffix(b"\n"))
+        .filter(|text| !text.contains(&b'\n'))
         .ok_or(Denial::MalformedZone)?;
     if text.is_empty() {
         return Ok(None);

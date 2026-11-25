@@ -13,9 +13,7 @@ pub struct WorthQueryExpectedPortablePackageIdentity {
 }
 
 impl WorthQueryExpectedPortablePackageIdentity {
-    pub const fn from_untrusted_identity(
-        identity: WorthQueryPortableDomainPackageIdentity,
-    ) -> Self {
+    pub const fn new(identity: WorthQueryPortableDomainPackageIdentity) -> Self {
         Self { identity }
     }
 

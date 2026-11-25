@@ -1,5 +1,6 @@
 //! Flat record authoring and hostile scalar descriptors meet the same compiler.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::*;
 mod installed_read_scope;
 mod model;
@@ -42,7 +43,7 @@ fn scalar(extra: bool, optional: bool) -> ErasedApplicationSchemaDeclaration {
     parts.members.sort();
     parts.members.dedup();
     validate_portable_application_schema_freshly(
-        WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts),
+        WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(ARCHIVE_DECODE, parts),
     )
     .unwrap()
 }

@@ -146,14 +146,12 @@ fn coordinates(
     }
     let member = WorthQueryCorrectionSourceMember::parse(&string(values, start + 4)?)
         .ok_or(Unavailable)?;
-    Ok(Some(
-        WorthQueryCorrectionSourceCoordinates::from_untrusted_parts(
-            owner,
-            number(values, start + 1)?,
-            relational,
-            member,
-        ),
-    ))
+    Ok(Some(WorthQueryCorrectionSourceCoordinates::new(
+        owner,
+        number(values, start + 1)?,
+        relational,
+        member,
+    )))
 }
 fn number(
     values: &AftermathCausalityValues,

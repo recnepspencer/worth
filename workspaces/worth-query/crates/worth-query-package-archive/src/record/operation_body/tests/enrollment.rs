@@ -1,5 +1,6 @@
 //! v17 cannot silently downgrade the created-subject enrollment attachment.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationOutputPosture, ApplicationMutationOutputRoleCardinality,
     ApplicationMutationOutputRoleDescription,
@@ -11,16 +12,19 @@ use worth_query_declaration::facade::application_schema::{
 
 fn body(enrolled: bool) -> ApplicationOperationBodyProgram {
     ApplicationOperationBodyProgram::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
         "Container".into(),
         vec![],
         Some(
             ApplicationOperationBodyCreation::from_untrusted(
+                ARCHIVE_DECODE,
                 "Subject".into(),
                 "subject".into(),
                 vec![],
             )
             .with_untrusted_enrollment(enrolled.then(|| {
                 ApplicationOperationBodyEnrollment::from_untrusted(
+                    ARCHIVE_DECODE,
                     "workflow".into(),
                     "binding".into(),
                     "subject".into(),

@@ -99,6 +99,7 @@ mod tests {
         ApplicationQueryRootPathStep, ApplicationQueryRootPathTraversal as Mode, RelationDirection,
         WorthQueryPortableApplicationQueryRootPathParts,
     };
+    use crate::archive_decode_authority::ARCHIVE_DECODE;
 
     #[test]
     fn path_field_source_canonical_record_preserves_existing_forward_reverse_bytes() {
@@ -106,6 +107,7 @@ mod tests {
             .into_iter()
             .map(|direction| {
                 ApplicationQueryRootPathStep::from_untrusted_fields(
+                    ARCHIVE_DECODE,
                     "Children".into(),
                     "Node".into(),
                     "Child".into(),
@@ -116,6 +118,7 @@ mod tests {
             .collect();
         let source = ApplicationOperationBodyPathFieldSource {
             path: ApplicationQueryRootPathMeaning::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 WorthQueryPortableApplicationQueryRootPathParts {
                     start_entity: "Node".into(),
                     terminal_entity: "Node".into(),
@@ -142,11 +145,13 @@ mod tests {
         for direction in [RelationDirection::Forward, RelationDirection::Reverse] {
             for mode in [Mode::OneHop, Mode::Closure] {
                 let path = ApplicationQueryRootPathMeaning::from_untrusted_parts(
+                    ARCHIVE_DECODE,
                     WorthQueryPortableApplicationQueryRootPathParts {
                         start_entity: "Node".into(),
                         terminal_entity: "Node".into(),
                         guards: vec![],
                         steps: vec![ApplicationQueryRootPathStep::from_untrusted_fields(
+                            ARCHIVE_DECODE,
                             "Next".into(),
                             "Node".into(),
                             "Node".into(),

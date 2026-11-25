@@ -1,4 +1,5 @@
 //! Contract compilation only: inert capture records never represent signing authority.
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 #[path = "tests/records.rs"]
 mod storage_model;
 use super::*;
@@ -43,12 +44,12 @@ impl Fixture {
                 .unwrap();
         let field = Locus::new("Parent", Revision::at("Revision").aspect(), "Revision");
         let source = ApplicationOperationBodyPathFieldSource {
-            path: ApplicationQueryRootPathMeaning::from_untrusted_parts(
+            path: ApplicationQueryRootPathMeaning::from_untrusted_parts(ARCHIVE_DECODE,
                 WorthQueryPortableApplicationQueryRootPathParts {
                     start_entity: "Row".into(),
                     terminal_entity: "Parent".into(),
                     guards: vec![],
-                    steps: vec![ApplicationQueryRootPathStep::from_untrusted_fields(
+                    steps: vec![ApplicationQueryRootPathStep::from_untrusted_fields(ARCHIVE_DECODE,
                         "ParentRows".into(),
                         "Parent".into(),
                         "Row".into(),
@@ -83,6 +84,7 @@ impl Fixture {
         maximum_subjects: Option<std::num::NonZeroUsize>,
     ) -> SigningLifecycleClosure {
         let creation = ApplicationOperationBodyCreation::from_untrusted(
+            ARCHIVE_DECODE,
             "Evidence".into(),
             "evidence".into(),
             vec![Field::CapturedPathField {
@@ -95,6 +97,7 @@ impl Fixture {
             }],
         )
         .with_untrusted_signing(Some(ApplicationOperationBodySigningSpec::from_untrusted(
+            ARCHIVE_DECODE,
             "verify".into(),
             Locus::new("Evidence", "Facts", "Actor"),
             Locus::new("Evidence", "Facts", "Provenance"),
@@ -111,6 +114,7 @@ impl Fixture {
         let members = vec![Member::OperationBody {
             operation: "Sign".into(),
             body: ApplicationOperationBodyProgram::from_untrusted_in_scope(
+                ARCHIVE_DECODE,
                 "Row".into(),
                 vec![],
                 Some(creation),
@@ -118,6 +122,7 @@ impl Fixture {
             ),
         }];
         let writer = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+            ARCHIVE_DECODE,
             "Row".into(),
             vec![],
             None,

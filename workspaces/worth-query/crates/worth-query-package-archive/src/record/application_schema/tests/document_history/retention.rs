@@ -1,5 +1,6 @@
 //! Independent extension grammar protects role position, flags and legacy bytes.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::{
     application_history::{
         ApplicationHistoryRetentionDeclaration as Policy,
@@ -9,13 +10,16 @@ use worth_query_declaration::facade::{
 };
 
 fn policy(role: &str) -> Policy {
-    Policy::from_untrusted_parts(PolicyParts {
-        binding: format!("{role}Policy"),
-        capability: format!("{role}Permission"),
-        capability_type: Identity::declared("example.retention.capability.v1"),
-        operation: format!("Change{role}"),
-        input_type: Identity::declared("example.retention.input.v1"),
-    })
+    Policy::from_untrusted_parts(
+        ARCHIVE_DECODE,
+        PolicyParts {
+            binding: format!("{role}Policy"),
+            capability: format!("{role}Permission"),
+            capability_type: Identity::declared("example.retention.capability.v1"),
+            operation: format!("Change{role}"),
+            input_type: Identity::declared("example.retention.input.v1"),
+        },
+    )
 }
 fn frame(flags: u16) -> Vec<u8> {
     let mut bytes = navigation::frame(1, false);
@@ -50,7 +54,7 @@ fn independent_window_and_bookmark_frames_keep_role_meaning_and_legacy_bytes() {
         parts.window = (flags & 2 != 0).then(|| policy("Window"));
         parts.bookmarks = (flags & 4 != 0).then(|| policy("Bookmark"));
         let expected = ApplicationSchemaMember::ApplicationHistory {
-            definition: Definition::from_untrusted_parts(parts),
+            definition: Definition::from_untrusted_parts(ARCHIVE_DECODE, parts),
         };
         let independent = frame(flags);
         assert_eq!(decode_member(&independent), expected);

@@ -1,5 +1,6 @@
 //! Typed content recipes cross the real Decl-to-Installation boundary.
 use worth_foundational::facade::{CanonicalDigestId, ContentRefId};
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::*;
 use worth_query_installation::facade::{
     WorthQueryInstallationAdmissionProfile, WorthQueryInstallationGeneration,
@@ -139,7 +140,7 @@ fn content_reference_without_a_declared_format_opens_no_installation_door() {
         .members
         .retain(|member| !matches!(member, ApplicationSchemaMember::ContentFormat { .. }));
     let denied = validate_portable_application_schema_freshly(
-        WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts),
+        WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(ARCHIVE_DECODE, parts),
     )
     .unwrap_err();
     assert_eq!(

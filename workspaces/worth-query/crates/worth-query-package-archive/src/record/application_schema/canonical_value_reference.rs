@@ -3,6 +3,7 @@ use super::wire_vocabulary::{decode_optional, write_optional};
 use crate::denial::WorthQueryPackageArchiveDenial as Denial;
 use crate::record::foundational_value;
 use crate::{binary_encoding::BinaryEncodingSink, binary_input::BinaryInput};
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::{
     ApplicationCanonicalValueReference, ApplicationCanonicalValueReferenceParts,
 };
@@ -31,6 +32,7 @@ pub(super) fn decode(
     // RecordDecodeAttempt admits this complete frame's logical bytes before
     // BinaryInput is created. Shape text remains opaque: no grammar walk occurs.
     Ok(ApplicationCanonicalValueReference::from_untrusted_parts(
+        ARCHIVE_DECODE,
         ApplicationCanonicalValueReferenceParts {
             protocol: input.text()?.to_owned(),
             shape: input.text()?.to_owned(),

@@ -1,4 +1,5 @@
 use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersion};
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::{
     ApplicationExternalEffectProtocol, WorthQueryExternalEffectCorrelationFamily,
 };
@@ -38,7 +39,8 @@ pub(super) fn decode(
     let correlation_family = WorthQueryExternalEffectCorrelationFamily::new(input.text()?)
         .map_err(|_| Denial::new(Kind::InvalidRecordShape))?;
     let effect = input.text()?.to_owned();
-    let payload_type = WorthQueryPortableTypeIdentity::from_untrusted(input.text()?.to_owned());
+    let payload_type =
+        WorthQueryPortableTypeIdentity::from_untrusted(ARCHIVE_DECODE, input.text()?.to_owned());
     let protocol_identity = BoundaryProtocolIdentity::parse(input.text()?.to_owned())
         .map_err(|_| Denial::new(Kind::InvalidRecordShape))?;
     let protocol_version = BoundaryProtocolVersion::try_new(input.u32()?)
@@ -46,6 +48,7 @@ pub(super) fn decode(
     let maximum_payload_bytes = input.u64()?;
     Ok(Some(
         WorthQueryPortableExternalEffectContractRecord::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableExternalEffectContractParts {
                 correlation_family,
                 effect,

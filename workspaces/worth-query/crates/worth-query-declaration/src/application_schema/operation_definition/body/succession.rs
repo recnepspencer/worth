@@ -3,6 +3,7 @@ use super::{
     ApplicationOperationBodyAuthoringDenial as Denial, ApplicationOperationBodyBuilder,
     ApplicationOperationBodyProgram,
 };
+use crate::archive_decode_authority::{ArchiveDecodeAuthority, ARCHIVE_DECODE};
 use crate::{
     application_operation::{
         ApplicationMutationBinding, ApplicationMutationOutputPosture as Posture,
@@ -26,7 +27,12 @@ pub struct ApplicationOperationBodySuccession {
     output_match: Option<ApplicationOperationBodySuccessionOutputMatch>,
 }
 impl ApplicationOperationBodySuccession {
-    pub fn from_untrusted(workflow_spec: String, binding: String, role: String) -> Self {
+    pub fn from_untrusted(
+        _: ArchiveDecodeAuthority,
+        workflow_spec: String,
+        binding: String,
+        role: String,
+    ) -> Self {
         Self {
             workflow_spec,
             binding,
@@ -105,6 +111,7 @@ impl<Schema: ApplicationSchema, Operation, Input>
         }
         self = self.preserve_scope_output::<Binding, Role>()?;
         self.succession = Some(ApplicationOperationBodySuccession::from_untrusted(
+            ARCHIVE_DECODE,
             Spec::IDENTITY.as_str().into(),
             Binding::IDENTITY.into(),
             Role::NAME.into(),

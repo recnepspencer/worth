@@ -4,6 +4,7 @@ use crate::facade::{
     WorthQueryPackageArchiveDenialKind as Kind, WorthQueryPackageArchiveLimits as Limits,
     WorthQueryPackageArchiveRecordDecoder,
 };
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::*;
 use worth_query_installation::facade::WorthQueryPortablePackageRecord;
 
@@ -133,6 +134,7 @@ fn typed_schema(
 fn domain(version: u16, name: &str, carrier: &str, cases: &[&str]) -> ApplicationSchemaMember {
     ApplicationSchemaMember::ProjectedMemberDomain {
         definition: ErasedApplicationProjectedMemberDomainDefinition::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableProjectedMemberDomainParts {
                 semantic_version: version,
                 domain: name.into(),
@@ -146,6 +148,7 @@ fn domain(version: u16, name: &str, carrier: &str, cases: &[&str]) -> Applicatio
 fn schema(mut members: Vec<ApplicationSchemaMember>) -> WorthQueryPortableApplicationSchemaRecord {
     members.sort();
     WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationSchemaParts {
             owner: Schema::OWNER.into(),
             name: <Schema as ApplicationSchema>::NAME.into(),

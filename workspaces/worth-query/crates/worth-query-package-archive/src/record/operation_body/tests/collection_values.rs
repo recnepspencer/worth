@@ -1,5 +1,6 @@
 //! New collection source tags must never acquire meaning in an older body profile.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::{
     ApplicationFieldPresence, ApplicationOperationBodyRequirementExpression as Expression,
     ApplicationOperationBodyRequirementOperand as Operand,
@@ -16,13 +17,21 @@ fn collection_field_values_v24_roundtrip_and_older_profiles_refuse_the_source() 
         from: "Root".into(),
         to: "Item".into(),
         field: ApplicationFieldBindingLocus::new("Item", "Facts", "Description"),
-        binding: WorthQueryPortableTypeIdentity::from_untrusted("worth.rust.string".into()),
+        binding: WorthQueryPortableTypeIdentity::from_untrusted(
+            ARCHIVE_DECODE,
+            "worth.rust.string".into(),
+        ),
         scalar_family: ScalarAspectType::String,
         presence: ApplicationFieldPresence::Optional,
     };
     let requirement = Requirement::from_untrusted(
+        ARCHIVE_DECODE,
         "complete-members".into(),
-        vec![Operand::from_untrusted("values".into(), source)],
+        vec![Operand::from_untrusted(
+            ARCHIVE_DECODE,
+            "values".into(),
+            source,
+        )],
         None,
         expression
             .parse("length(values) >= 1 && values.all(v, is_some(v))")
@@ -32,6 +41,7 @@ fn collection_field_values_v24_roundtrip_and_older_profiles_refuse_the_source() 
     )
     .unwrap();
     let body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
         "Root".into(),
         vec![],
         None,

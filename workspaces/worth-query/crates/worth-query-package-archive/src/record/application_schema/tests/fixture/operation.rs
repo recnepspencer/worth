@@ -1,4 +1,5 @@
 use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersion};
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_aftermath::*;
 use worth_query_declaration::facade::application_schema::{
     ApplicationExternalEffectProtocol, ApplicationSchemaMember,
@@ -24,6 +25,7 @@ pub(super) fn external_effect() -> ApplicationSchemaMember {
 
 pub(super) fn aftermath_contract() -> PortableApplicationAftermathContract {
     PortableApplicationAftermathContract::from_untrusted_fields(
+        ARCHIVE_DECODE,
         DeclaredCorrectionAuthority::RuntimeWithExternalOwner,
         Some(PortableCorrectionMechanism::Compensation(
             DeclaredCompensation::new(
@@ -39,7 +41,9 @@ pub(super) fn aftermath_contract() -> PortableApplicationAftermathContract {
 
 pub(super) fn inverse_aftermath_contract() -> PortableApplicationAftermathContract {
     let demand = PortablePreImageDemand::from_untrusted_fields(
+        ARCHIVE_DECODE,
         vec![PortablePreImageLocus::from_untrusted_fields(
+            ARCHIVE_DECODE,
             text("Entity"),
             text("Aspect"),
             text("field"),
@@ -47,12 +51,14 @@ pub(super) fn inverse_aftermath_contract() -> PortableApplicationAftermathContra
         512,
     );
     let inverse = PortableRecordedInverse::from_untrusted_fields(
+        ARCHIVE_DECODE,
         text("Reverse"),
         DeclaredLoweringCorrespondenceRef::new("reverse-correspondence"),
         DeclaredAftermathPostcondition::ExactPriorTruth,
         demand,
     );
     PortableApplicationAftermathContract::from_untrusted_fields(
+        ARCHIVE_DECODE,
         DeclaredCorrectionAuthority::RuntimeAlone,
         Some(PortableCorrectionMechanism::RecordedInverse(inverse)),
         None,

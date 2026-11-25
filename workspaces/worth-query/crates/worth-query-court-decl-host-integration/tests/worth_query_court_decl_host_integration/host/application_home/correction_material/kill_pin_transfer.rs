@@ -71,7 +71,7 @@ fn replay_source_coordinates(
     };
     assert_eq!(replayed.commit_reference().commit_id.0, expected_commit_id);
     let durable = replayed.new_product_head().durable().unwrap();
-    WorthQueryCorrectionSourceCoordinates::from_untrusted_parts(
+    WorthQueryCorrectionSourceCoordinates::new(
         WorldOwnerCoordinate::Home {
             owner: durable.branch().owner(),
         },

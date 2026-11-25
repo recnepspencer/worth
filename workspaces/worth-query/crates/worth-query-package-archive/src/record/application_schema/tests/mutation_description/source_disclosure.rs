@@ -1,5 +1,6 @@
 //! Source inspection is an explicit portable association, independent of aftermath.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryBindingReference, ApplicationQueryBindingReferenceParts,
     ApplicationQueryScopeResolutionMode,
@@ -14,10 +15,12 @@ fn member() -> ApplicationSchemaMember {
     };
     let mut parts = description.into_parts();
     parts.inspection_disclosure = Some(DeclaredApplicationSourceDisclosure::from_untrusted_parts(
+        ARCHIVE_DECODE,
         DeclaredApplicationSourceDisclosureParts {
             identity: identity("inspect-original-source.v1"),
             source_binding: parts.binding_identity.clone(),
             query: ApplicationQueryBindingReference::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 ApplicationQueryBindingReferenceParts {
                     binding: identity("source-inspection-read.v1"),
                     input: identity("inspection-input.v1"),
@@ -37,7 +40,7 @@ fn member() -> ApplicationSchemaMember {
         },
     ));
     ApplicationSchemaMember::ApplicationMutation {
-        description: ApplicationMutationDescription::from_untrusted_parts(parts),
+        description: ApplicationMutationDescription::from_untrusted_parts(ARCHIVE_DECODE, parts),
     }
 }
 

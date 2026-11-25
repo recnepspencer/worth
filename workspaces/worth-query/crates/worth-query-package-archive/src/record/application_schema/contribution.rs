@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::ApplicationSchemaContributionProvenance;
 
 use crate::binary_encoding::BinaryEncodingSink;
@@ -23,5 +24,11 @@ pub(super) fn decode(
 ) -> Result<ApplicationSchemaContributionProvenance, Denial> {
     let identity = input.text()?.to_owned();
     let member_ordinals = decode_sequence(input, budget, 4, |input, _| input.u32())?;
-    Ok(ApplicationSchemaContributionProvenance::from_untrusted_parts(identity, member_ordinals))
+    Ok(
+        ApplicationSchemaContributionProvenance::from_untrusted_parts(
+            ARCHIVE_DECODE,
+            identity,
+            member_ordinals,
+        ),
+    )
 }

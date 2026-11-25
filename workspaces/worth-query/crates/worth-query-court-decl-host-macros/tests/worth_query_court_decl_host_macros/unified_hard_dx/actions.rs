@@ -16,8 +16,6 @@ pub const RESCHEDULE_NS: ApplicationIdentityNamespace =
     worth_query_identity_namespace!("daymark.unified.reschedule.v1");
 pub const RENAME_PROJECT_NS: ApplicationIdentityNamespace =
     worth_query_identity_namespace!("daymark.unified.rename-project.v1");
-pub const RENAME_TASK_NS: ApplicationIdentityNamespace =
-    worth_query_identity_namespace!("daymark.unified.rename-task.v1");
 pub const RESTORE_STATE_NS: ApplicationIdentityNamespace =
     worth_query_identity_namespace!("daymark.unified.restore-state.v1");
 pub const CORRECT_STATE_NS: ApplicationIdentityNamespace =
@@ -252,34 +250,6 @@ pub fn rename_project_definition(
         .assign_input(ProjectFacts::label(), RenameProject::label_input())
         .finish_pure_definition()
         .expect("rename_project body admits")
-}
-
-#[derive(Clone, Debug, WorthValue, WorthQueryAction)]
-#[worth_query(
-    schema = DaymarkSchema,
-    context = DaymarkContext,
-    namespace = RENAME_TASK_NS,
-    input = RenameTaskInput,
-    operation = RenameTaskOperation,
-    binding = RenameTaskBinding,
-    delivery = RenameTaskDelivery,
-    body,
-    program,
-    reads(Task),
-)]
-pub struct RenameTask {
-    #[worth_query(scope = TaskKey)]
-    pub task: u64,
-    pub title: String,
-}
-
-pub fn rename_task_definition(
-) -> ApplicationOperationDefinition<DaymarkSchema, RenameTaskOperation, RenameTask> {
-    RenameTaskOperation::reference()
-        .typed_body()
-        .assign_input(TaskFacts::title(), RenameTask::title_input())
-        .finish_pure_definition()
-        .expect("rename_task body admits")
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, WorthValue, serde::Deserialize, WorthQueryAction)]

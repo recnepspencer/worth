@@ -1,6 +1,7 @@
 //! Installation-boundary validation and lowering courts for
 //! `ApplicationGroupNameScheme` schema members.
 
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_naming::{
     ApplicationGroupContinuityRule, ApplicationGroupMemberRole, ApplicationGroupNameSchemeBuilder,
     ApplicationGroupSchemeDenial, ApplicationNameSchemeBuilder, ApplicationNameSubjectKind,
@@ -208,6 +209,7 @@ fn untrusted_erased_group_scheme_missing_continuity_role_refuses_at_installation
     };
 
     let base = ErasedApplicationNameScheme::from_untrusted_parts(
+        ARCHIVE_DECODE,
         "worth.bldg.bad_group.v1".to_owned(),
         ApplicationNameSubjectKind::Group,
         "BadSpace".to_owned(),
@@ -219,6 +221,7 @@ fn untrusted_erased_group_scheme_missing_continuity_role_refuses_at_installation
         false,
     );
     let forged = ErasedApplicationGroupNameScheme::from_untrusted_parts(
+        ARCHIVE_DECODE,
         base,
         ApplicationGroupContinuityRule::Boundary,
         None,

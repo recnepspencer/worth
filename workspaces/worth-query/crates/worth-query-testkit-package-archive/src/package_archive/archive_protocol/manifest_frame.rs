@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 pub use worth_query_installation::facade::{
     WorthQueryPortableDomainPackageIdentity, WorthQueryPortablePackageManifest,
     WorthQueryPortablePackageReconstruction, WorthQueryPortablePackageReconstructionLimits,
@@ -11,8 +12,9 @@ pub fn manifest() -> WorthQueryPortablePackageManifest {
     let mut counts = [0; WorthQueryPortablePackageRecordFamily::ALL.len()];
     counts[0] = 1;
     WorthQueryPortablePackageManifest::from_untrusted_fields(
+        ARCHIVE_DECODE,
         WORTH_QUERY_PORTABLE_PACKAGE_MANIFEST_VERSION,
-        WorthQueryPortableDomainPackageIdentity::from_untrusted_bytes([0x41; 32]),
+        WorthQueryPortableDomainPackageIdentity::from_untrusted_bytes(ARCHIVE_DECODE, [0x41; 32]),
         1,
         0,
         64,

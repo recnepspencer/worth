@@ -7,11 +7,12 @@ use crate::application_schema::{
     ApplicationOperationBodyCreationLinkPosture as Posture,
     ApplicationOperationBodyProgram as Body,
 };
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 fn child(parent: &str, from: &str, to: &str, key: &str, relation: &str) -> Child {
     Child {
         parent_key: parent.into(),
-        creation: Creation::from_untrusted(to.into(), key.into(), vec![]).with_untrusted_links(
-            vec![Link {
+        creation: Creation::from_untrusted(ARCHIVE_DECODE, to.into(), key.into(), vec![])
+            .with_untrusted_links(vec![Link {
                 relation: relation.into(),
                 from: from.into(),
                 to: to.into(),
@@ -19,22 +20,21 @@ fn child(parent: &str, from: &str, to: &str, key: &str, relation: &str) -> Child
                 direction: Direction::FromScope,
                 posture: Posture::Append,
                 source: Default::default(),
-            }],
-        ),
+            }]),
     }
 }
 fn body(parent: &str) -> Body {
     Body::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
         "Tenant".into(),
         vec![],
         Some(
-            Creation::from_untrusted("Row".into(), "row".into(), vec![]).with_untrusted_children(
-                vec![
+            Creation::from_untrusted(ARCHIVE_DECODE, "Row".into(), "row".into(), vec![])
+                .with_untrusted_children(vec![
                     child("row", "Row", "Cell", "left", "RowCells"),
                     child("row", "Row", "Cell", "right", "RowCells"),
                     child(parent, "Cell", "Detail", "detail", "CellDetails"),
-                ],
-            ),
+                ]),
         ),
         vec![],
     )
@@ -77,12 +77,18 @@ fn every_child_parent_link_survives_root_and_peer_program_meaning() {
         let make = |relation| {
             let site = multiple(relation);
             let root = if peer {
-                Creation::from_untrusted("Other".into(), "other".into(), vec![])
+                Creation::from_untrusted(ARCHIVE_DECODE, "Other".into(), "other".into(), vec![])
                     .with_untrusted_peers(vec![site])
             } else {
                 site
             };
-            Body::from_untrusted_in_scope("Tenant".into(), vec![], Some(root), vec![])
+            Body::from_untrusted_in_scope(
+                ARCHIVE_DECODE,
+                "Tenant".into(),
+                vec![],
+                Some(root),
+                vec![],
+            )
         };
         let left = make("ArchiveA");
         let right = make("ArchiveB");

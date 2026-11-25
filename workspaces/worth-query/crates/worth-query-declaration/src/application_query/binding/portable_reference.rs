@@ -3,6 +3,7 @@ use crate::application_query::{
     ApplicationQueryBinding, ApplicationQueryBindingDescriptor, ApplicationQueryScopeResolutionMode,
 };
 use crate::application_schema::ApplicationSchema;
+use crate::archive_decode_authority::{ArchiveDecodeAuthority, ARCHIVE_DECODE};
 use crate::portable_identity::WorthQueryPortableTypeIdentity as Identity;
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
@@ -60,7 +61,10 @@ impl ApplicationQueryBindingReference {
         Self::from_descriptor(&Binding::descriptor())
     }
 
-    pub fn from_untrusted_parts(parts: ApplicationQueryBindingReferenceParts) -> Self {
+    pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
+        parts: ApplicationQueryBindingReferenceParts,
+    ) -> Self {
         Self { parts }
     }
     pub const fn parts(&self) -> &ApplicationQueryBindingReferenceParts {
@@ -75,7 +79,7 @@ impl ApplicationQueryBindingReference {
         let field = descriptor.scope().field();
         Self {
             parts: ApplicationQueryBindingReferenceParts {
-                binding: Identity::from_untrusted(descriptor.identity().to_owned()),
+                binding: Identity::from_untrusted(ARCHIVE_DECODE, descriptor.identity().to_owned()),
                 input: descriptor.input_identity().clone(),
                 query_name: descriptor.query_name().to_owned(),
                 query: descriptor.query_identity().clone(),

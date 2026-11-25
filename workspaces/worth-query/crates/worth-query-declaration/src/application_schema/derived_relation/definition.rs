@@ -1,5 +1,6 @@
 //! Portable derived relation meaning; no stored-edge deletion or write authority.
 use crate::application_schema::{ApplicationGraphMemberMeaning, ApplicationRelationGraphLaws};
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 
 use super::denial::ApplicationDerivedRelationDefinitionDenial as Denial;
 use super::expression::ApplicationDerivedRelationExpression;
@@ -22,7 +23,10 @@ pub struct ErasedApplicationDerivedRelationDefinition {
 
 impl ErasedApplicationDerivedRelationDefinition {
     /// Retains transport meaning without granting installed authority.
-    pub fn from_untrusted_parts(parts: WorthQueryPortableDerivedRelationParts) -> Self {
+    pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
+        parts: WorthQueryPortableDerivedRelationParts,
+    ) -> Self {
         Self { parts }
     }
 

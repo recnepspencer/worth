@@ -4,12 +4,14 @@ use crate::facade::WorthQueryPackageArchiveDenialKind as Kind;
 use crate::facade::{
     WorthQueryPackageArchiveLimits as Limits, WorthQueryPackageArchiveRecordDecoder,
 };
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::*;
 use worth_query_installation::facade::WorthQueryPortablePackageRecord;
 
 fn component(sources: &[&str]) -> ApplicationSchemaMember {
     ApplicationSchemaMember::ComponentSet {
         definition: ApplicationComponentSetMeaning::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableApplicationComponentSetParts {
                 name: "Shells".into(),
                 member: "Node".into(),
@@ -47,6 +49,7 @@ fn schema(
     ];
     members.sort();
     WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationSchemaParts {
             owner: "worth.tests.components".into(),
             name: "ComponentArchive".into(),
@@ -105,6 +108,7 @@ fn decoded_empty_missing_or_heterogeneous_rosters_and_duplicate_names_refuse_rea
     members.push(component(&["B"]));
     members.sort();
     record = WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationSchemaParts {
             owner: record.owner().into(),
             name: record.name().into(),

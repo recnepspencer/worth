@@ -1,3 +1,4 @@
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 use worth_foundational::facade::{AspectMask, AspectValue, CanonicalFieldPath, FieldKey};
 
 use super::{
@@ -39,6 +40,7 @@ pub struct ApplicationQueryDisclosureRule {
 
 impl ApplicationQueryDisclosureRule {
     pub fn from_untrusted_fields(
+        _: ArchiveDecodeAuthority,
         selector: ApplicationQueryDisclosureSelector,
         disclosure_value: AspectValue,
         influence: ApplicationQueryInfluenceContract,
@@ -85,7 +87,10 @@ impl ApplicationQueryDisclosureContract {
     pub(crate) fn canonical_basis(&self) -> super::ApplicationQueryCanonicalArtifact {
         super::canonical_basis::prepare_disclosure_basis(self)
     }
-    pub fn from_untrusted_parts(parts: WorthQueryPortableApplicationQueryDisclosureParts) -> Self {
+    pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
+        parts: WorthQueryPortableApplicationQueryDisclosureParts,
+    ) -> Self {
         Self {
             posture: parts.posture,
             classification: parts.classification,

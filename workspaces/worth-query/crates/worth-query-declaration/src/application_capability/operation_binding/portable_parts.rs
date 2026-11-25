@@ -1,3 +1,4 @@
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
 use super::ApplicationCapabilityOperationBinding;
@@ -11,6 +12,7 @@ pub struct WorthQueryPortableApplicationCapabilityOperationBindingParts {
 
 impl ApplicationCapabilityOperationBinding {
     pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
         parts: WorthQueryPortableApplicationCapabilityOperationBindingParts,
     ) -> Self {
         Self {

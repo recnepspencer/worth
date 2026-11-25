@@ -1,5 +1,6 @@
 //! Program identity preserves initializer meaning even when effect footprints match.
 use super::operation_body_record;
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 use crate::{
     application_query::{
         ApplicationQueryRootPathMeaning, ApplicationQueryRootPathStep as Step,
@@ -17,21 +18,27 @@ use crate::{
 };
 fn body(member: &str, relation: &str) -> Body {
     let peer = Creation::from_untrusted(
+        ARCHIVE_DECODE,
         "Journal".into(),
         "audit".into(),
         vec![Field::Input {
             field: ApplicationFieldBindingLocus::new("Journal", "Facts", "Name"),
-            binding: WorthQueryPortableTypeIdentity::from_untrusted("worth.rust.string".into()),
+            binding: WorthQueryPortableTypeIdentity::from_untrusted(
+                ARCHIVE_DECODE,
+                "worth.rust.string".into(),
+            ),
             scalar_family: worth_foundational::facade::ScalarAspectType::String,
             member: member.into(),
         }],
     )
     .with_untrusted_path_links(vec![PathLink {
         path: ApplicationQueryRootPathMeaning::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableApplicationQueryRootPathParts {
                 start_entity: "Row".into(),
                 terminal_entity: "Parent".into(),
                 steps: vec![Step::from_untrusted_fields(
+                    ARCHIVE_DECODE,
                     relation.into(),
                     "Parent".into(),
                     "Row".into(),
@@ -52,10 +59,11 @@ fn body(member: &str, relation: &str) -> Body {
         },
     }]);
     Body::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
         "Row".into(),
         vec![],
         Some(
-            Creation::from_untrusted("Snapshot".into(), "current".into(), vec![])
+            Creation::from_untrusted(ARCHIVE_DECODE, "Snapshot".into(), "current".into(), vec![])
                 .with_untrusted_peers(vec![peer]),
         ),
         vec![],

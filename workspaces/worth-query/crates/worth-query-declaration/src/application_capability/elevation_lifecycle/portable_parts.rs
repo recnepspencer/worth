@@ -1,3 +1,4 @@
+use crate::archive_decode_authority::{ArchiveDecodeAuthority, ARCHIVE_DECODE};
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
 use super::{
@@ -29,15 +30,26 @@ pub struct WorthQueryPortableApplicationCapabilityElevationLifecycleParts {
 
 impl ApplicationCapabilityElevationLifecycleDefinition {
     pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
         parts: WorthQueryPortableApplicationCapabilityElevationLifecycleParts,
     ) -> Self {
         Self {
             elevation_slot: parts.elevation_slot,
             review_slot: parts.review_slot,
-            request: ApplicationCapabilityTransitionBinding::from_untrusted_parts(parts.request),
-            approve: ApplicationCapabilityTransitionBinding::from_untrusted_parts(parts.approve),
-            revoke: ApplicationCapabilityTransitionBinding::from_untrusted_parts(parts.revoke),
+            request: ApplicationCapabilityTransitionBinding::from_untrusted_parts(
+                ARCHIVE_DECODE,
+                parts.request,
+            ),
+            approve: ApplicationCapabilityTransitionBinding::from_untrusted_parts(
+                ARCHIVE_DECODE,
+                parts.approve,
+            ),
+            revoke: ApplicationCapabilityTransitionBinding::from_untrusted_parts(
+                ARCHIVE_DECODE,
+                parts.revoke,
+            ),
             complete_review: ApplicationCapabilityTransitionBinding::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 parts.complete_review,
             ),
         }
@@ -57,15 +69,19 @@ impl ApplicationCapabilityElevationLifecycleDefinition {
 
 impl ApplicationCapabilityTransitionBinding {
     pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
         parts: WorthQueryPortableApplicationCapabilityTransitionBindingParts,
     ) -> Self {
         Self {
             capability: parts.capability,
             capability_type: parts.capability_type,
             operation: parts.operation,
-            lifecycle_effect: parts
-                .lifecycle_effect
-                .map(ApplicationCapabilityLifecycleEffectBinding::from_untrusted_parts),
+            lifecycle_effect: parts.lifecycle_effect.map(|parts| {
+                ApplicationCapabilityLifecycleEffectBinding::from_untrusted_parts(
+                    ARCHIVE_DECODE,
+                    parts,
+                )
+            }),
         }
     }
 

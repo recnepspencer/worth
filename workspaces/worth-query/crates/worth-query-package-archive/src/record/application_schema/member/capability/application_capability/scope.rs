@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_capability::{
     ApplicationCapabilityCardinalityDimension, ApplicationCapabilityConstraintDefinition,
     ApplicationCapabilityCurrentnessDefinition,
@@ -72,6 +73,7 @@ pub(super) fn decode_constraints(
 ) -> Result<ApplicationCapabilityConstraintDefinition, Denial> {
     Ok(
         ApplicationCapabilityConstraintDefinition::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableApplicationCapabilityConstraintParts {
                 magnitude: decode_field_dimension(input)?,
                 cardinality: decode_cardinality(input)?,
@@ -130,6 +132,7 @@ pub(super) fn decode_delegation(
     };
     Ok(
         ApplicationCapabilityDelegationDefinition::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableApplicationCapabilityDelegationParts {
                 parent,
                 grantor,
@@ -158,6 +161,7 @@ fn decode_activation(
 ) -> Result<ApplicationCapabilityDelegationActivationDefinition, Denial> {
     Ok(
         ApplicationCapabilityDelegationActivationDefinition::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableApplicationCapabilityDelegationActivationParts {
                 operation: bindings::decode_operation(input)?,
                 identity: bindings::decode_field(input)?,
@@ -181,6 +185,7 @@ fn decode_revocation(
 ) -> Result<ApplicationCapabilityRevocationDefinition, Denial> {
     Ok(
         ApplicationCapabilityRevocationDefinition::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableApplicationCapabilityRevocationParts {
                 operation: bindings::decode_operation(input)?,
                 identity: bindings::decode_field(input)?,

@@ -67,23 +67,37 @@ impl PosixRule {
         })
     }
 
+    /// The offset of the last transition at or before `second`. Transitions
+    /// come from the surrounding three years, so rules that cross a year end
+    /// (a January end, `J365/26`, `0/-2`, day 365) pick the right state.
     pub(super) fn offset_at(&self, second: i64) -> WorthQueryUtcOffset {
         let Some(daylight) = &self.daylight else {
             return self.standard;
         };
         let local = second.saturating_add(i64::from(self.standard.seconds_east()));
         let year = year_of(local);
-        // A start is expressed in standard time and an end in daylight time.
-        let (Some(start), Some(end)) = (
-            daylight.start.utc_second(year, self.standard),
-            daylight.end.utc_second(year, daylight.offset),
-        ) else {
-            return self.standard;
-        };
-        let in_daylight = if start <= end {
-            start <= second && second < end
-        } else {
-            !(end <= second && second < start)
+        let mut transitions = [(i64::MAX, false); 6];
+        let mut count = 0;
+        for year in [year.checked_sub(1), Some(year), year.checked_add(1)]
+            .into_iter()
+            .flatten()
+        {
+            // A start is expressed in standard time and an end in daylight time.
+            let starts = daylight.start.utc_second(year, self.standard);
+            let ends = daylight.end.utc_second(year, daylight.offset);
+            for (at, is_start) in [(starts, true), (ends, false)] {
+                if let Some(at) = at {
+                    transitions[count] = (at, is_start);
+                    count += 1;
+                }
+            }
+        }
+        let transitions = &mut transitions[..count];
+        // On a tie an end precedes a start, so permanent daylight time holds.
+        transitions.sort_unstable();
+        let in_daylight = match transitions.iter().rev().find(|(at, _)| *at <= second) {
+            Some(&(_, is_start)) => is_start,
+            None => transitions.first().is_some_and(|&(_, is_start)| !is_start),
         };
         if in_daylight {
             daylight.offset

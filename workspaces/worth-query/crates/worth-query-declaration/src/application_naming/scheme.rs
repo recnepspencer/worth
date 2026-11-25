@@ -1,3 +1,4 @@
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 use std::fmt;
 use std::marker::PhantomData;
 
@@ -70,6 +71,7 @@ pub struct ErasedApplicationNameScheme {
 impl ErasedApplicationNameScheme {
     #[allow(clippy::too_many_arguments)]
     pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
         scheme_id: String,
         subject_kind: ApplicationNameSubjectKind,
         subject_name: String,

@@ -1,5 +1,6 @@
 //! Complete descriptive codec identity; typed installation remains the authority.
 use super::ApplicationCanonicalValueContract;
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct ApplicationCanonicalValueReferenceParts {
@@ -20,7 +21,10 @@ pub struct ApplicationCanonicalValueReference {
 }
 
 impl ApplicationCanonicalValueReference {
-    pub fn from_untrusted_parts(parts: ApplicationCanonicalValueReferenceParts) -> Self {
+    pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
+        parts: ApplicationCanonicalValueReferenceParts,
+    ) -> Self {
         Self { parts }
     }
 

@@ -35,11 +35,9 @@ fn decoded_conditional_binding_reenters_only_through_fresh_package_validation() 
         .unwrap()
         .materialize()
         .unwrap()
-        .validate_freshly(
-            WorthQueryExpectedPortablePackageIdentity::from_untrusted_identity(
-                source.identity().clone(),
-            ),
-        )
+        .validate_freshly(WorthQueryExpectedPortablePackageIdentity::new(
+            source.identity().clone(),
+        ))
         .unwrap();
     assert_eq!(reconstructed.identity(), source.identity());
 }
@@ -122,10 +120,8 @@ fn semantic_tamper_decodes_but_cannot_mint_the_expected_package_identity() {
     }
     let candidate = reconstruction.close().unwrap().materialize().unwrap();
     assert!(candidate
-        .validate_freshly(
-            WorthQueryExpectedPortablePackageIdentity::from_untrusted_identity(
-                source.identity().clone(),
-            ),
-        )
+        .validate_freshly(WorthQueryExpectedPortablePackageIdentity::new(
+            source.identity().clone(),
+        ),)
         .is_err());
 }

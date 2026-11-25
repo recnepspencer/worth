@@ -20,13 +20,56 @@
 //!   restart-safe undo/redo via [`WorthQueryApplicationHome::undo`],
 //!   [`WorthQueryApplicationHome::undo_authored`],
 //!   [`WorthQueryApplicationHome::redo`], and
-//!   [`WorthQueryApplicationHome::redo_authored`].
+//!   [`WorthQueryApplicationHome::redo_authored`]; discover what to undo or
+//!   redo after a restart with [`WorthQueryApplicationHome::correction_history`]
+//!   (`history.next_undo()` / `history.next_redo()`).
+//! - Show any refusal to an end user with [`WorthQueryUserFacingRefusal`]
+//!   (`denial.user_message()`), keeping `{denial:?}` for developer logs.
 //!
 //! Ordinary action owners retain the authentic installed runtime and complete
 //! installed action beyond construction. Applications keep their own genuine
 //! runtime handle for fresh requests; operation keepalive grants no admission
 //! or cleanup. Bind initial workflow vocabulary before retaining handles, and
 //! preserve runtime/spec/signing custody when configuration refuses.
+//!
+//! Raw-part `from_untrusted*` archive decoders are sealed off this audience:
+//! each demands an internal witness that neither the Host facade nor its
+//! re-exported declaration facade names, and that cannot be conjured.
+//!
+//! ```compile_fail,E0432
+//! use worth_query_host::facade::declaration::archive_decode_authority::ARCHIVE_DECODE;
+//! ```
+//!
+//! ```compile_fail,E0277
+//! use worth_query_host::facade::application_installation::WorthQueryApplicationCheckpoint;
+//! fn forge(bytes: Vec<u8>) -> WorthQueryApplicationCheckpoint {
+//!     WorthQueryApplicationCheckpoint::from_untrusted_bytes(Default::default(), bytes)
+//! }
+//! ```
+//!
+//! Transported checkpoints instead readmit through
+//! `WorthQueryApplicationCheckpoint::readmit_transported` under their retained
+//! capture origin, and transports describe correction sources with typed
+//! coordinates:
+//!
+//! ```
+//! use worth_query_host::facade::primary_graph::{
+//!     BranchId, CommitId, RelationalCommitReceipt, VersionId,
+//!     WorthQueryCorrectionSourceCoordinates, WorthQueryCorrectionSourceMember,
+//! };
+//! let coordinates = WorthQueryCorrectionSourceCoordinates::new(
+//!     worth_foundational::WorldOwnerCoordinate::MemoryOnly { observation: 7 },
+//!     19,
+//!     RelationalCommitReceipt {
+//!         commit_id: CommitId(23),
+//!         version_id: VersionId(29),
+//!         branch_id: BranchId("product:fork".into()),
+//!         parents: vec![CommitId(17)],
+//!     },
+//!     WorthQueryCorrectionSourceMember::Primary,
+//! );
+//! assert_eq!(coordinates.relational().commit_id, CommitId(23));
+//! ```
 //!
 //! Program-output publication custody is deliberately absent from this facade;
 //! the workspace boundary checker reserves its issuer to the publication owner.
@@ -216,36 +259,6 @@
 //!         .correlate()?.accept()?.execute(scope)
 //! }
 //! ```
-//! Producer publication and admission diagnostics borrow the returned denial;
-//! the application keeps the original terminal operation and its cleanup custody.
-//! Native companion amounts are data, not a new retry or publication authority.
-//!
-//! ```
-//! use worth_query_host::facade::{
-//!     application_entry::{
-//!         WorthQueryApplicationOutputDemandDenial,
-//!         WorthQueryOperationAdvanceDenial,
-//!         WorthQueryRequiredOutputPreparationDenial,
-//!     },
-//!     primary_graph::{CompanionPreflightStop, VerificationCapacityStop},
-//! };
-//! fn producer_stop_origins(
-//!     denial: &WorthQueryOperationAdvanceDenial,
-//! ) -> (Option<CompanionPreflightStop>, Option<CompanionPreflightStop>, Option<VerificationCapacityStop>) {
-//!     let WorthQueryOperationAdvanceDenial::Outputs(required) = denial else {
-//!         return (None, None, None);
-//!     };
-//!     let native = match required {
-//!         WorthQueryRequiredOutputPreparationDenial::DemandExecution(native) => native,
-//!         WorthQueryRequiredOutputPreparationDenial::Demand(
-//!             WorthQueryApplicationOutputDemandDenial::Demand(native),
-//!         ) => native,
-//!         _ => return (None, None, None),
-//!     };
-//!     (native.publication_companion_stop(), native.producer_admission_stop(),
-//!      native.output_verification_capacity_stop())
-//! }
-//! ```
 pub use worth_query_admission::facade as admission;
 pub use worth_query_declaration::facade as declaration;
 pub use worth_query_declaration::{
@@ -282,18 +295,20 @@ pub use crate::application_home::{
     WorthQueryApplicationHomeOpenRefused, WorthQueryApplicationHomeOpenRefusedPhase,
     WorthQueryApplicationHomeOpeningCloseRefused, WorthQueryApplicationHomeOpeningClosed,
     WorthQueryApplicationHomeRequest, WorthQueryApplicationHomeTransitionRequired,
-    WorthQueryCorrectionEntry, WorthQueryDirectoryOpenDenial, WorthQueryDirectoryOpenRetired,
-    WorthQueryHomeAuthoredCorrectionOutcome, WorthQueryHomeClosePolicyRefused,
-    WorthQueryHomeConfig, WorthQueryHomeCorrectionOutcome, WorthQueryHomeOpenDisposition,
-    WorthQueryHomeOwnedHistoryDenial, WorthQueryHomeProgramTransition,
-    WorthQueryHomeProgramTransitionDenial, WorthQueryHomeProgramTransitionOpenPhase,
-    WorthQueryHomeProgramTransitionOpenRefused, WorthQueryHomeProgramTransitionPlan,
-    WorthQueryHomeProgramTransitionStep, WorthQueryHomeRetirement, WorthQueryHomeRetirementStop,
-    WorthQueryHomeUndoDenial, WorthQueryPreviewAdoptDenial, WorthQueryPreviewAdoptFailure,
-    WorthQueryPreviewDiscardDenial, WorthQueryPreviewDiscardFailure, WorthQueryPreviewFork,
-    WorthQueryPreviewForkDenial, WorthQueryWorkflowApplicationHome,
-    WorthQueryWorkflowHomeBindingRefused, WorthQueryWorkflowHomeCloseRefused,
-    WorthQueryWorkflowHomeClosed, DEFAULT_CORRECTION_HISTORY_LIMITS, DEFAULT_HOST_EXECUTION_POLICY,
+    WorthQueryCorrectionEntry, WorthQueryCorrectionHistory, WorthQueryCorrectionHistoryEntry,
+    WorthQueryCorrectionHistoryLimit, WorthQueryDirectoryOpenDenial,
+    WorthQueryDirectoryOpenRetired, WorthQueryHomeAuthoredCorrectionOutcome,
+    WorthQueryHomeClosePolicyRefused, WorthQueryHomeConfig, WorthQueryHomeCorrectionOutcome,
+    WorthQueryHomeOpenDisposition, WorthQueryHomeOwnedHistoryDenial,
+    WorthQueryHomeProgramTransition, WorthQueryHomeProgramTransitionDenial,
+    WorthQueryHomeProgramTransitionOpenPhase, WorthQueryHomeProgramTransitionOpenRefused,
+    WorthQueryHomeProgramTransitionPlan, WorthQueryHomeProgramTransitionStep,
+    WorthQueryHomeRetirement, WorthQueryHomeRetirementStop, WorthQueryHomeUndoDenial,
+    WorthQueryPreviewAdoptDenial, WorthQueryPreviewAdoptFailure, WorthQueryPreviewDiscardDenial,
+    WorthQueryPreviewDiscardFailure, WorthQueryPreviewFork, WorthQueryPreviewForkDenial,
+    WorthQueryWorkflowApplicationHome, WorthQueryWorkflowHomeBindingRefused,
+    WorthQueryWorkflowHomeCloseRefused, WorthQueryWorkflowHomeClosed,
+    DEFAULT_CORRECTION_HISTORY_LIMITS, DEFAULT_HOST_EXECUTION_POLICY,
     DEFAULT_HOST_EXECUTION_WORK_CEILING,
 };
 /// Reusable authenticated Host session and typed whole-result / managed-index live handles.
@@ -323,6 +338,11 @@ pub use worth_query_installation::worth_query_conditional_node;
 pub use worth_query_macros::*;
 pub use worth_query_publication::facade as publication;
 pub use worth_query_publication::facade::application_entry;
+/// Reversal state and whole-listing refusal for [`WorthQueryApplicationHome::correction_history`].
+pub use worth_query_publication::facade::application_entry::{
+    WorthQueryApplicationCorrectionHistoryDenial, WorthQueryCorrectionHistoryDenial,
+    WorthQueryCorrectionHistoryState,
+};
 /// Relational data for a Home transition author, without owner authority.
 pub mod home_program_transition;
 /// Declarative Directory Home program transitions (`worth_query_program_transition!`),
@@ -334,6 +354,10 @@ pub use crate::application_home::{ApplicationHomeCheckpointDenial, ApplicationHo
 pub use crate::application_home::{
     ApplicationHomePhysicalRefusal, ApplicationHomePhysicalRefusalKind,
     ApplicationHomePhysicalStage,
+};
+/// End-user refusal summaries: `denial.user_message()` for UIs, `{denial:?}` for logs.
+pub use crate::refusal_summary::{
+    WorthQueryRefusalCategory, WorthQueryRefusalSummary, WorthQueryUserFacingRefusal,
 };
 /// Interactive custody of one source-only command or correction across frames.
 pub use crate::source_custody::{

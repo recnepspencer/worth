@@ -119,11 +119,20 @@ impl WorthQueryTimeZone {
         })
     }
 
-    /// Reads the operating system's zone: the `TZ` environment variable (a
-    /// zone name, file path or POSIX rule) or else `/etc/localtime`. This is
-    /// file I/O; load once and keep the zone.
+    /// Reads the operating system's zone: the `TZ` environment variable (see
+    /// [`Self::from_tz_variable`]) or else `/etc/localtime`. This is file I/O;
+    /// load once and keep the zone. A non-Unicode `TZ` is malformed.
     pub fn load_system() -> Result<Self, WorthQueryLocalCalendarDenial> {
         system_zone::load()
+    }
+
+    /// Resolves a `TZ`-format value as `tzset(3)` does: empty is UTC, `:`
+    /// alone is `/etc/localtime`, `:name` is only a zone file or zone database
+    /// name (`:America/Denver`), and a bare value is a zone file or database
+    /// name, else a POSIX rule (`MST7MDT,M3.2.0,M11.1.0`). Reads files; a
+    /// missing file never falls back to UTC.
+    pub fn from_tz_variable(value: &str) -> Result<Self, WorthQueryLocalCalendarDenial> {
+        system_zone::from_variable(value)
     }
 
     /// The UTC offset in effect at `instant`.

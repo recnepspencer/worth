@@ -8,6 +8,7 @@ use worth_query_decl::facade::application_query::{
     ErasedApplicationQueryDefinition,
 };
 use worth_query_decl::facade::application_schema::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 
 fn task_field(aspect: &str, field: &str, scalar: ScalarAspectType, optional: bool) -> Source {
     Source::Field {
@@ -44,13 +45,17 @@ fn readmit(source: Option<Source>) -> Result<(), ApplicationSchemaDeclarationDen
             .unwrap()
             .encode();
         query.where_filter = Some(
-            Program::from_untrusted(vec![Operand::from_untrusted("x".into(), source)], &draft)
-                .expect("the untrusted program is well-typed on its own"),
+            Program::from_untrusted(
+                ARCHIVE_DECODE,
+                vec![Operand::from_untrusted(ARCHIVE_DECODE, "x".into(), source)],
+                &draft,
+            )
+            .expect("the untrusted program is well-typed on its own"),
         );
-        *definition = ErasedApplicationQueryDefinition::from_untrusted_parts(query);
+        *definition = ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, query);
     }
     validate_portable_application_schema_freshly(
-        WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts),
+        WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(ARCHIVE_DECODE, parts),
     )
     .map(|_| ())
 }
@@ -116,10 +121,11 @@ fn readmission_refuses_forged_filter_operands_and_accepts_the_genuine_record() {
             }
             let mut query = definition.clone().into_parts();
             mutate(&mut query);
-            *definition = ErasedApplicationQueryDefinition::from_untrusted_parts(query);
+            *definition =
+                ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, query);
         }
         validate_portable_application_schema_freshly(
-            WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts),
+            WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(ARCHIVE_DECODE, parts),
         )
         .map(|_| ())
     };
@@ -131,7 +137,9 @@ fn readmission_refuses_forged_filter_operands_and_accepts_the_genuine_record() {
             .encode();
         query.where_filter = Some(
             Program::from_untrusted(
+                ARCHIVE_DECODE,
                 vec![Operand::from_untrusted(
+                    ARCHIVE_DECODE,
                     "max_due".into(),
                     Source::Parameter {
                         parameter: "max_due".into(),
@@ -149,6 +157,7 @@ fn readmission_refuses_forged_filter_operands_and_accepts_the_genuine_record() {
     let task_aspect = aspect();
     assert!(readmit_query("open_inbox", &|query| {
         query.predicates = vec![ApplicationQueryPredicate::from_untrusted_value(
+            ARCHIVE_DECODE,
             "Task".into(),
             task_aspect.clone(),
             "Status".into(),
@@ -159,6 +168,7 @@ fn readmission_refuses_forged_filter_operands_and_accepts_the_genuine_record() {
     .is_err());
     assert!(readmit_query("open_inbox", &|query| {
         query.predicates = vec![ApplicationQueryPredicate::from_untrusted_value(
+            ARCHIVE_DECODE,
             "Task".into(),
             task_aspect.clone(),
             "Title".into(),

@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_aftermath::{
     DeclaredAftermathPostcondition, DeclaredCompensation, DeclaredCorrectionAuthority,
     DeclaredLoweringCorrespondenceRef, DeclaredReconciliationProcedure,
@@ -54,6 +55,7 @@ pub(super) fn decode(
         Ok(expression)
     })?;
     let contract = PortableApplicationAftermathContract::from_untrusted_fields(
+        ARCHIVE_DECODE,
         authority,
         mechanism,
         reconciliation,
@@ -123,6 +125,7 @@ fn decode_mechanism(
             let value = decode_recorded_inverse(input, budget)?;
             let relations = decode_sequence(input, budget, 12, |input, _| {
                 Ok(PortablePreImageRelationLocus::from_untrusted_fields(
+                    ARCHIVE_DECODE,
                     input.text()?.to_owned(),
                     input.text()?.to_owned(),
                     input.text()?.to_owned(),
@@ -137,6 +140,7 @@ fn decode_mechanism(
                 .with_untrusted_relations(relations);
             Ok(PortableCorrectionMechanism::RecordedInverse(
                 PortableRecordedInverse::from_untrusted_fields(
+                    ARCHIVE_DECODE,
                     value.inverse_operation_slot().to_owned(),
                     value.lowering_correspondence().clone(),
                     value.postcondition().clone(),
@@ -151,6 +155,7 @@ fn decode_mechanism(
                 PreImageOutputFieldCapture::CompleteRetired
             };
             let output = PortablePreImageFieldOutput::from_untrusted_fields(
+                ARCHIVE_DECODE,
                 input.text()?.to_owned(),
                 input.text()?.to_owned(),
                 capture,
@@ -174,6 +179,7 @@ fn decode_mechanism(
             if matches!(tag, 5 | 7) {
                 let relations = decode_sequence(input, budget, 12, |input, _| {
                     Ok(PortablePreImageRelationLocus::from_untrusted_fields(
+                        ARCHIVE_DECODE,
                         input.text()?.to_owned(),
                         input.text()?.to_owned(),
                         input.text()?.to_owned(),
@@ -186,6 +192,7 @@ fn decode_mechanism(
             }
             Ok(PortableCorrectionMechanism::RecordedInverse(
                 PortableRecordedInverse::from_untrusted_fields(
+                    ARCHIVE_DECODE,
                     value.inverse_operation_slot().to_owned(),
                     value.lowering_correspondence().clone(),
                     value.postcondition().clone(),
@@ -224,13 +231,16 @@ fn decode_recorded_inverse(
     let postcondition = decode_postcondition(input)?;
     let loci = decode_sequence(input, budget, 12, |input, _| {
         Ok(PortablePreImageLocus::from_untrusted_fields(
+            ARCHIVE_DECODE,
             input.text()?.to_owned(),
             input.text()?.to_owned(),
             input.text()?.to_owned(),
         ))
     })?;
-    let preimage_demand = PortablePreImageDemand::from_untrusted_fields(loci, decode_usize(input)?);
+    let preimage_demand =
+        PortablePreImageDemand::from_untrusted_fields(ARCHIVE_DECODE, loci, decode_usize(input)?);
     Ok(PortableRecordedInverse::from_untrusted_fields(
+        ARCHIVE_DECODE,
         inverse_operation_slot,
         lowering_correspondence,
         postcondition,

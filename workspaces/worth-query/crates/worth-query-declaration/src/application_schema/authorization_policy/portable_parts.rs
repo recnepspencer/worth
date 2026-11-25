@@ -1,3 +1,4 @@
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 use worth_foundational::facade::AspectValue;
 
 use super::{
@@ -16,6 +17,7 @@ pub struct WorthQueryPortableApplicationAuthorizationTraversalParts {
 
 impl ApplicationAuthorizationTraversal {
     pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
         parts: WorthQueryPortableApplicationAuthorizationTraversalParts,
     ) -> Self {
         Self {
@@ -47,6 +49,7 @@ pub struct WorthQueryPortableApplicationAuthorizationPredicateParts {
 
 impl ApplicationAuthorizationPredicate {
     pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
         parts: WorthQueryPortableApplicationAuthorizationPredicateParts,
     ) -> Self {
         Self {
@@ -80,6 +83,7 @@ pub struct WorthQueryPortableApplicationAuthorizationPathParts {
 
 impl ApplicationAuthorizationPath {
     pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
         parts: WorthQueryPortableApplicationAuthorizationPathParts,
     ) -> Self {
         Self {

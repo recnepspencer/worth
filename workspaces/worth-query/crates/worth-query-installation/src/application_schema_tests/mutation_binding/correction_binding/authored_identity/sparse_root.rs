@@ -1,5 +1,6 @@
 //! A sparse preserved root installs beside live-owner member families only.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_aftermath::{
     PortablePreImageFieldOutput, PortablePreImageLocus, PortablePreImageRelationLocus,
     PreImageOutputFieldCapture,
@@ -89,7 +90,12 @@ revise!(
 );
 
 fn locus(entity: &str, aspect: &str, field: &str) -> PortablePreImageLocus {
-    PortablePreImageLocus::from_untrusted_fields(entity.into(), aspect.into(), field.into())
+    PortablePreImageLocus::from_untrusted_fields(
+        ARCHIVE_DECODE,
+        entity.into(),
+        aspect.into(),
+        field.into(),
+    )
 }
 
 /// One self-inverse revision of a preserved owner: it retires and creates
@@ -155,6 +161,7 @@ fn a_sparse_root_installs_only_beside_live_owner_member_families() {
             "Owner"
         };
         let owner = PortablePreImageRelationLocus::from_untrusted_fields(
+            ARCHIVE_DECODE,
             "MemberOf".into(),
             entity.clone(),
             owner_entity.into(),
@@ -168,7 +175,7 @@ fn a_sparse_root_installs_only_beside_live_owner_member_families() {
                 inverse_role: inverse.into(),
                 source_posture: posture,
             };
-            let declared = DeclaredAuthoredCorrection::from_untrusted_parts(parts);
+            let declared = DeclaredAuthoredCorrection::from_untrusted_parts(ARCHIVE_DECODE, parts);
             if axis == "anchored" {
                 declared
             } else {
@@ -195,8 +202,9 @@ fn a_sparse_root_installs_only_beside_live_owner_member_families() {
             "unrelated-locus" => loci.push(locus("Unrelated", "Facts", "Value")),
             _ => (),
         }
-        let demand = PortablePreImageDemand::from_untrusted_fields(loci, 1024)
+        let demand = PortablePreImageDemand::from_untrusted_fields(ARCHIVE_DECODE, loci, 1024)
             .with_untrusted_output_fields(PortablePreImageFieldOutput::from_untrusted_fields(
+                ARCHIVE_DECODE,
                 "root".into(),
                 root_entity.into(),
                 PreImageOutputFieldCapture::ChangedPreserved,
@@ -207,9 +215,11 @@ fn a_sparse_root_installs_only_beside_live_owner_member_families() {
                 vec![owner.clone()]
             });
         let contract = PortableApplicationAftermathContract::from_untrusted_fields(
+            ARCHIVE_DECODE,
             DeclaredCorrectionAuthority::RuntimeAlone,
             Some(PortableCorrectionMechanism::RecordedInverse(
                 PortableRecordedInverse::from_untrusted_fields(
+                    ARCHIVE_DECODE,
                     binding.operation_name().to_owned(),
                     DeclaredLoweringCorrespondenceRef::new("fixture.sparse-root.inverse.v1"),
                     DeclaredAftermathPostcondition::ExactPriorTruth,
@@ -219,7 +229,7 @@ fn a_sparse_root_installs_only_beside_live_owner_member_families() {
             None,
         )
         .with_untrusted_correction_binding(
-            DeclaredCorrectionBinding::from_untrusted_parts(association),
+            DeclaredCorrectionBinding::from_untrusted_parts(ARCHIVE_DECODE, association),
         );
         let mut integrity = ApplicationRelationIntegrity::same_context_unbounded_retain_dangling();
         integrity.cardinality =

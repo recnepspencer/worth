@@ -30,11 +30,9 @@ fn omitted_work_budget_roundtrips_an_ordinary_domain_package() {
         .unwrap()
         .materialize()
         .unwrap()
-        .validate_freshly(
-            WorthQueryExpectedPortablePackageIdentity::from_untrusted_identity(
-                source.identity().clone(),
-            ),
-        )
+        .validate_freshly(WorthQueryExpectedPortablePackageIdentity::new(
+            source.identity().clone(),
+        ))
         .unwrap();
     assert_eq!(reconstructed.identity(), source.identity());
 }

@@ -1,6 +1,7 @@
 //! Both Native checkpoint classes are matchable through the Query audience.
 use super::*;
 use sha2::{Digest, Sha256};
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 
 const QUERY_BODY_START: usize = 8 + 32;
 const NATIVE_LEN_OFFSET: usize = QUERY_BODY_START + 6 + 8;
@@ -50,6 +51,7 @@ fn assert_native_inspection_class(
 
 fn assert_untrusted_restore_refused(label: &str, bytes: Vec<u8>) {
     let denial = match world::try_restore(WorthQueryApplicationCheckpoint::from_untrusted_bytes(
+        ARCHIVE_DECODE,
         bytes.into_boxed_slice(),
     )) {
         Err(denial) => denial,

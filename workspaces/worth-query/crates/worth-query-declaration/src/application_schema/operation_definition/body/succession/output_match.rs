@@ -2,6 +2,7 @@
 use super::{
     ApplicationOperationBodyBuilder, ApplicationOperationBodyProgram, ApplicationSchema, Denial,
 };
+use crate::archive_decode_authority::{ArchiveDecodeAuthority, ARCHIVE_DECODE};
 use crate::{
     application_operation::{
         ApplicationMutationBinding, ApplicationMutationOutputPosture as Posture,
@@ -22,6 +23,7 @@ pub struct ApplicationOperationBodySuccessionOutputMatch {
 }
 impl ApplicationOperationBodySuccessionOutputMatch {
     pub fn from_untrusted(
+        _: ArchiveDecodeAuthority,
         selected_role: String,
         producer_binding: String,
         producer_role: ApplicationMutationOutputRoleDescription,
@@ -124,6 +126,7 @@ impl<Schema: ApplicationSchema, Operation, Input>
         let role = <Produced as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR;
         succession.output_match = Some(
             ApplicationOperationBodySuccessionOutputMatch::from_untrusted(
+                ARCHIVE_DECODE,
                 Selected::NAME.into(),
                 Producer::IDENTITY.into(),
                 ApplicationMutationOutputRoleDescription {

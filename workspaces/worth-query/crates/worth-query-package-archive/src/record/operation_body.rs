@@ -3,6 +3,7 @@ use super::{
     decode_budget::RecordDecodeAttempt,
     sequence::{decode_sequence, write_sequence},
 };
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 
 mod children;
 mod classified_capture;
@@ -311,6 +312,7 @@ pub(super) fn decode(
     let effect_emission = effect_emission::decode(input, version)?;
     if let Some(scope) = scope {
         Ok(ApplicationOperationBodyProgram::from_untrusted_in_scope(
+            ARCHIVE_DECODE,
             scope,
             steps,
             creation,
@@ -324,9 +326,10 @@ pub(super) fn decode(
         .with_untrusted_path_input_expectations(path_inputs)
         .with_untrusted_path_value_assignments(path_values)
         .with_untrusted_reference_inputs(references)
-        .with_untrusted_effect_emission(effect_emission))
+        .with_untrusted_effect_emission(ARCHIVE_DECODE, effect_emission))
     } else {
         let body = ApplicationOperationBodyProgram::from_untrusted_with_requirements(
+            ARCHIVE_DECODE,
             steps,
             creation,
             requirements,

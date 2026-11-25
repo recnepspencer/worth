@@ -1,5 +1,6 @@
 //! Portable mutation shape and validation from the real schema fixture.
 use super::*;
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 
 #[test]
 fn portable_mutation_description_rejects_missing_scope_and_duplicate_binding() {
@@ -16,6 +17,7 @@ fn portable_mutation_description_rejects_missing_scope_and_duplicate_binding() {
             parts.scope.field = "MissingScopeField".to_owned();
             *description =
                 crate::application_operation::ApplicationMutationDescription::from_untrusted_parts(
+                    ARCHIVE_DECODE,
                     parts,
                 );
         }
@@ -23,7 +25,10 @@ fn portable_mutation_description_rejects_missing_scope_and_duplicate_binding() {
     missing_scope.members.sort();
     assert!(matches!(
         validate_portable_application_schema_freshly(
-            WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(missing_scope)
+            WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(
+                ARCHIVE_DECODE,
+                missing_scope
+            )
         ),
         Err(ApplicationSchemaDeclarationDenial::MissingApplicationMutationDependency)
     ));
@@ -38,7 +43,10 @@ fn portable_mutation_description_rejects_missing_scope_and_duplicate_binding() {
     duplicate.members.sort();
     assert_eq!(
         validate_portable_application_schema_freshly(
-            WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(duplicate)
+            WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(
+                ARCHIVE_DECODE,
+                duplicate
+            )
         )
         .unwrap_err(),
         ApplicationSchemaDeclarationDenial::DuplicateMember

@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 pub(crate) use worth_query_testkit_certification_operation::facade::certification::native_operation_bodies::operation_body::input_expectation::*;
 
 #[test]
@@ -143,7 +144,7 @@ fn input_guard_readmits_as_authored_meaning_not_a_host_callback() {
     assert!(changed, "the guard must declare its exact read");
     parts.members.sort();
     let denied = validate_portable_application_schema_freshly(
-        WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts),
+        WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(ARCHIVE_DECODE, parts),
     )
     .unwrap_err();
     assert!(

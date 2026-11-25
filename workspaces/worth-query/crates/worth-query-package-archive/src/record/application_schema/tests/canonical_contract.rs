@@ -1,4 +1,5 @@
 use worth_foundational::facade::{ScalarAspectType, ValueDecodeBounds};
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::{
     ApplicationCanonicalValueContract, ApplicationSchemaMember,
     WorthQueryPortableApplicationSchemaParts, WorthQueryPortableApplicationSchemaRecord,
@@ -25,6 +26,7 @@ fn unsupported_canonical_metadata_is_refused_before_payload_or_member_bytes() {
     ));
     *scalar_family = ScalarAspectType::String;
     let record = WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationSchemaParts {
             owner: source.owner().to_owned(),
             name: source.name().to_owned(),

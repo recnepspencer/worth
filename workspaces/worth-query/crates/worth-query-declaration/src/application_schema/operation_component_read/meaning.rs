@@ -1,4 +1,5 @@
 use crate::application_query::ApplicationQueryRootPathMeaning;
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 
 /// Portable scope description. Fresh installation and operation admission grant reads.
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
@@ -16,7 +17,10 @@ pub struct WorthQueryPortableOperationComponentReadParts {
 }
 
 impl ApplicationOperationComponentReadMeaning {
-    pub fn from_untrusted_parts(parts: WorthQueryPortableOperationComponentReadParts) -> Self {
+    pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
+        parts: WorthQueryPortableOperationComponentReadParts,
+    ) -> Self {
         Self { parts }
     }
 
