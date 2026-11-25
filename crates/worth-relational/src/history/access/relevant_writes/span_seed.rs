@@ -18,7 +18,9 @@ impl RelationalRuntime {
     /// `original`. If the target's generation already holds the original, it
     /// returns `Covered` after one lookup.
     ///
-    /// Refusals: `NotSelectedPrefix` when the root is reached first,
+    /// Refusals: `ForeignOwner` for an original or target of another runtime,
+    /// `NotSelectedPrefix` when the walk passes below the original's position
+    /// or reaches the root,
     /// `UnsupportedMergeInterval` at a merge, `SpanBoundReached` after
     /// `maximum_links` parent links. The install is widen-only and never
     /// persisted, so the generation is always correct or absent. This is not
@@ -31,6 +33,11 @@ impl RelationalRuntime {
         maximum_links: Option<NonZeroUsize>,
     ) -> Result<RelationalAuthoredWriteSpan, Denial> {
         super::maintenance::require_exact(self, &target)?;
+        // Commit ids restart at 1 on every runtime, so a foreign original could
+        // name a local commit. Ownership is checked before any id is read.
+        if original.identity().runtime_instance_id() != self.runtime_instance_id() {
+            return Err(Denial::ForeignOwner);
+        }
         let original = original
             .observation()
             .commit_id()

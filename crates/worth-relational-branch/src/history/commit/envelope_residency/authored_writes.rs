@@ -27,16 +27,23 @@ impl RelationalCommitEnvelopeResidency {
         generation: AuthoredWriteGeneration,
     ) -> bool {
         let mut state = self.state.lock().unwrap_or_else(|p| p.into_inner());
-        if state
-            .authored_writes
-            .as_ref()
-            .is_some_and(|current| current.prefix.get(&original).is_some())
-        {
+        if !span_widens(state.authored_writes.as_ref(), original) {
             return false;
         }
         state.authored_writes = Some(generation);
         true
     }
+}
+
+/// A seed replaces the current generation only when that generation lacks
+/// `original` and is not a merge marker. Single-parent prefixes ending at the
+/// same target are totally ordered, so lacking `original` means narrower.
+fn span_widens(
+    current: Option<&AuthoredWriteGeneration>,
+    original: crate::history::data::CommitId,
+) -> bool {
+    current
+        .is_none_or(|current| !current.unsupported_merge && current.prefix.get(&original).is_none())
 }
 
 #[cfg(test)]

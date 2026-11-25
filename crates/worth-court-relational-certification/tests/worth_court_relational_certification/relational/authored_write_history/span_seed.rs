@@ -121,11 +121,25 @@ fn a_recovered_runtime_seeds_only_the_span_after_the_original() {
     );
     assert_eq!(seed(&recovered, execution, "original", &widest, 0).unwrap(), Span::Covered);
     assert_eq!(&history(&recovered, execution, &widest, entity), &live[2]);
-    // A diverged original is never reached: the walk ends at the root.
+    // An original off the selected history stops at its own position: a bound of
+    // five refuses NotSelectedPrefix long before the 200 earlier commits.
     assert!(matches!(
-        seed(&recovered, execution, "diverged", "span-2", 0),
+        seed(&recovered, execution, "diverged", "span-2", 5),
         Err(Denial::NotSelectedPrefix)
     ));
+    assert!(matches!(
+        seed(&recovered, execution, "span-12", "span-2", 1),
+        Err(Denial::NotSelectedPrefix)
+    ));
+    // Commit ids restart on every runtime: a foreign original is refused by owner.
+    let foreign = runtime_with_test_schema();
+    let foreign_created = create_entity_outcome(&execution, &foreign, "foreign");
+    let target = selected(&recovered, &basis(&recovered, "span-2"));
+    assert!(matches!(
+        recovered.seed_authored_write_span(execution, &basis(&foreign, "main"), target, None),
+        Err(Denial::ForeignOwner)
+    ));
+    release_test_commit_snapshot(&foreign, &foreign_created);
     release_test_commit_snapshot(&runtime, &created);
     release_test_commit_snapshot(&runtime, &sibling);
     for outcome in &outcomes {
