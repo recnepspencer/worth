@@ -16,6 +16,11 @@ pub enum ApplicationIdentityNamespaceDenial {
     /// The override equals the root, another role's identity, or falls in
     /// the namespace's slot space.
     OverrideCollision { role: ApplicationIdentityRole },
+    /// The member is not one printable segment, is `slot` or a role segment,
+    /// or the namespace is already a member.
+    InvalidMember,
+    /// Members and explicit overrides do not combine.
+    MemberWithOverrides,
 }
 
 impl ApplicationIdentityNamespaceDenial {
@@ -34,6 +39,12 @@ impl ApplicationIdentityNamespaceDenial {
             Self::OverrideCollision { .. } => {
                 "identity override collides with the root, another role or the slot space"
             }
+            Self::InvalidMember => {
+                "identity member must be one printable segment other than `slot` or a role segment, on a namespace that is not already a member"
+            }
+            Self::MemberWithOverrides => {
+                "identity members and explicit role overrides do not combine"
+            }
         }
     }
 }
@@ -51,7 +62,10 @@ impl std::fmt::Display for ApplicationIdentityNamespaceDenial {
                 "{}: {required} bytes, maximum {maximum}",
                 self.message()
             ),
-            Self::InvalidRoot | Self::InvalidSlotField => formatter.write_str(self.message()),
+            Self::InvalidRoot
+            | Self::InvalidSlotField
+            | Self::InvalidMember
+            | Self::MemberWithOverrides => formatter.write_str(self.message()),
         }
     }
 }

@@ -65,13 +65,15 @@ pub(super) fn definition_builder(
     let cardinality = cardinality_expr(def.cardinality.as_ref());
     let disclosure = disclosure_expr(def.disclosure.as_ref());
     let basis = basis_expr(def.basis_support.as_ref());
-    let lanes = match (def.lanes.as_ref(), def.live) {
-        (None, Some(LiveMode::WholeResult)) => {
-            quote!(#aq::ApplicationQueryLaneEligibility::one_shot().with_live())
-        }
+    let lanes = match (def.lanes.as_ref(), def.live.as_ref()) {
+        (None, Some(_)) => quote!(#aq::ApplicationQueryLaneEligibility::one_shot().with_live()),
         (explicit, _) => lanes_expr(explicit),
     };
-    let live_step = (def.live == Some(LiveMode::WholeResult)).then(|| quote!(.live_whole_result()));
+    let live_step = def.live.as_ref().map(|live| match live {
+        LiveMode::WholeResult => quote!(.live_whole_result()),
+        LiveMode::Effect(effect) => super::live_effect::live_step(input, effect),
+    });
+    let governed_steps = governed_disclosure_steps(decl_spec, def.disclose_by.as_ref());
     let auth = def.ability.as_ref().map_or_else(
         || quote!(.public()),
         |ability| quote!(.requires_ability(#ability)),
@@ -299,6 +301,7 @@ pub(super) fn definition_builder(
                             .lanes(#lanes)
                             #auth
                             #live_step
+                            #governed_steps
                             #(#params)*
                             #managed_index_step
                             #(#root_path_steps)*
@@ -310,5 +313,20 @@ pub(super) fn definition_builder(
                 }
             };
         };
+    })
+}
+
+/// With `disclose_by = value`: govern the scope key's internal use and every
+/// result field and relation slot by `value` (evaluated once per step).
+fn governed_disclosure_steps(
+    decl_spec: &QueryDeclaration,
+    disclose_by: Option<&syn::Expr>,
+) -> Option<TokenStream> {
+    let value = disclose_by?;
+    let any = quote!(::worth_query_decl::facade::application_query::ApplicationQueryInfluenceContract::permit_all());
+    let (selection, column) = decl_spec.scope.selected_column();
+    Some(quote! {
+        .use_field_by(<#selection>::at(#column), #value, #any)
+        .disclose_result_by(#value, #any)
     })
 }

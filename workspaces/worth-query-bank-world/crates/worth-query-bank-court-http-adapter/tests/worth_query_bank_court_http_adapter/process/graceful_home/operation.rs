@@ -30,16 +30,6 @@ pub const FAMILY: &str = "estate-death-notice-rail";
 worth_query_effect!(pub EstateDeathNotificationEffect for RailHomeSchema, payload EstateDeathNotificationRequestBinding);
 worth_query_operation!(pub NotifyRail for RailHomeSchema, input EstateActionInputBinding);
 worth_query_operation_emits!(NotifyRail => [EstateDeathNotificationEffect]);
-impl Registration<RailHomeSchema> for EstateDeathNotificationEffect {
-    fn register(
-        builder: ApplicationSchemaDeclarationBuilder<RailHomeSchema>,
-    ) -> Result<
-        ApplicationSchemaDeclarationBuilder<RailHomeSchema>,
-        ApplicationSchemaDeclarationDenial,
-    > {
-        Ok(builder.effect(Self::reference()))
-    }
-}
 impl Registration<RailHomeSchema> for NotifyRail {
     fn register(
         builder: ApplicationSchemaDeclarationBuilder<RailHomeSchema>,

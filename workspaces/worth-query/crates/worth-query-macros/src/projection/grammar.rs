@@ -5,10 +5,11 @@ use crate::grammar::{
     flag, member_name, option_inner, peeled, selection_column, unknown_key, value, vec_inner,
     visit_keys, Once,
 };
+use crate::identity_member::{parse_member, DeclaredNamespace, RawMember};
 use std::collections::BTreeSet;
 use syn::{DeriveInput, Field, FieldsNamed, Ident, LitStr, Path, Type};
 
-const STRUCT_KEYS: &[&str] = &["schema", "root", "namespace"];
+const STRUCT_KEYS: &[&str] = &["schema", "root", "namespace", "member"];
 const FIELD_KEYS: &[&str] = &[
     "field",
     "column",
@@ -31,7 +32,7 @@ const GENERATED: &[&str] = &[
 pub(super) struct ProjectionDeclaration {
     pub(super) schema: Type,
     pub(super) root: Type,
-    pub(super) namespace: Option<Path>,
+    pub(super) namespace: Option<DeclaredNamespace>,
     pub(super) slots: Vec<Slot>,
     /// Fields that project the row's own persistent name.
     pub(super) names: Vec<NameSlot>,
@@ -100,7 +101,7 @@ pub(super) enum Cardinality {
 }
 
 pub(super) enum SlotIdentity {
-    Derived(Path),
+    Derived(DeclaredNamespace),
     Explicit(LitStr),
 }
 
@@ -109,13 +110,18 @@ impl ProjectionDeclaration {
         let mut schema = Once::<Type>::new("schema");
         let mut root = Once::<Type>::new("root");
         let mut namespace = Once::<Path>::new("namespace");
+        let mut member_key = Once::<RawMember>::new("member");
         visit_keys(&input.attrs, |key, meta| match key {
             "schema" => schema.set(meta, value(meta)?),
             "root" => root.set(meta, value(meta)?),
             "namespace" => namespace.set(meta, value(meta)?),
+            "member" => member_key.set(meta, parse_member(meta)?),
             _ => Err(unknown_key(meta, DERIVE, STRUCT_KEYS)),
         })?;
-        let namespace = namespace.optional();
+        member_key.refuse_unless(namespace.is_set(), "a row without `namespace = NAMESPACE`")?;
+        let namespace = namespace
+            .optional()
+            .map(|path| DeclaredNamespace::new(path, member_key.optional(), &input.ident));
         if fields.named.is_empty() {
             return Err(syn::Error::new(
                 input.ident.span(),
@@ -151,7 +157,7 @@ struct KindKeys {
 
 /// A bare `name` key projects the row's persistent name; `name = ".."` names
 /// a slot's output.
-fn member(field: &Field, namespace: Option<&Path>) -> syn::Result<Member> {
+fn member(field: &Field, namespace: Option<&DeclaredNamespace>) -> syn::Result<Member> {
     let member = field.ident.clone().expect("named fields carry identifiers");
     let mut named = Once::<bool>::new("name");
     let mut grouped = Once::<bool>::new("group_name");
@@ -286,7 +292,7 @@ fn traversal(relation: Type, reverse_from: Option<Type>, nested: Type, ty: &Type
 /// An explicit `slot = ".."`, else the namespace's `slot.<name>`.
 fn identity(
     explicit: Option<LitStr>,
-    namespace: Option<&Path>,
+    namespace: Option<&DeclaredNamespace>,
     member: &Ident,
     output: &LitStr,
 ) -> syn::Result<SlotIdentity> {

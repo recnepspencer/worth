@@ -42,6 +42,7 @@ mod case;
 mod correction;
 mod facade_paths;
 mod grammar;
+mod identity_member;
 mod managed_index;
 mod name_discriminator;
 mod name_role;

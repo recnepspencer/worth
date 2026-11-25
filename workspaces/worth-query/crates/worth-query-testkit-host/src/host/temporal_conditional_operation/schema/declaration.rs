@@ -103,26 +103,6 @@ impl Registration<TemporalHostSchema> for TemporalPrincipalBinding {
         Ok(builder.principal_binding(Self::reference()))
     }
 }
-impl Registration<TemporalHostSchema> for TemporalAmendmentEffect {
-    fn register(
-        builder: ApplicationSchemaDeclarationBuilder<TemporalHostSchema>,
-    ) -> Result<
-        ApplicationSchemaDeclarationBuilder<TemporalHostSchema>,
-        ApplicationSchemaDeclarationDenial,
-    > {
-        Ok(builder.effect(Self::reference()))
-    }
-}
-impl Registration<TemporalHostSchema> for TemporalExecutionEffect {
-    fn register(
-        builder: ApplicationSchemaDeclarationBuilder<TemporalHostSchema>,
-    ) -> Result<
-        ApplicationSchemaDeclarationBuilder<TemporalHostSchema>,
-        ApplicationSchemaDeclarationDenial,
-    > {
-        Ok(builder.effect(Self::reference()))
-    }
-}
 impl Registration<TemporalHostSchema> for TemporalIntentQuery {
     fn register(
         builder: ApplicationSchemaDeclarationBuilder<TemporalHostSchema>,

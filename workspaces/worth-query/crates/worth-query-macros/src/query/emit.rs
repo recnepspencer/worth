@@ -20,6 +20,7 @@ pub(super) fn query(input: &DeriveInput, decl_spec: &QueryDeclaration) -> TokenS
     let binding = query_binding(input, decl_spec);
     let definition = definition_builder(input, decl_spec, &names);
     let managed_index_intent = managed_index_intent_impl(input, decl_spec, &names);
+    let live_cause = live_cause_items(input, decl_spec);
     quote! {
         #marker
         #request_binding
@@ -28,6 +29,16 @@ pub(super) fn query(input: &DeriveInput, decl_spec: &QueryDeclaration) -> TokenS
         #binding
         #definition
         #managed_index_intent
+        #live_cause
+    }
+}
+
+fn live_cause_items(input: &DeriveInput, decl_spec: &QueryDeclaration) -> Option<TokenStream> {
+    match decl_spec.definition.as_ref()?.live.as_ref()? {
+        super::predicates::LiveMode::Effect(live) => {
+            Some(super::live_effect::cause_items(input, decl_spec, live))
+        }
+        super::predicates::LiveMode::WholeResult => None,
     }
 }
 

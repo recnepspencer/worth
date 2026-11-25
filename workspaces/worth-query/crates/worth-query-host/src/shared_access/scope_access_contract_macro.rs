@@ -35,13 +35,13 @@ macro_rules! __worth_query_scope_access_contracts {
         }
 
         fn scope_request(
-            scope_key: &::std::string::String,
+            scope_key: &str,
             dimension: ::core::option::Option<ScopeAccess>,
         ) -> ::core::result::Result<
             ApplicationCapabilityRequestProjection<$Schema, $Scope, ScopeAccessContext>,
             ApplicationCapabilityRequestProjectionDenial,
         > {
-            let key = ApplicationEncodedScalarValue::try_new(scope_key.clone()).map_err(|_| {
+            let key = ApplicationEncodedScalarValue::try_new(::std::string::String::from(scope_key)).map_err(|_| {
                 ApplicationCapabilityRequestProjectionDenial::input_variant("scope key")
             })?;
             let request = ApplicationCapabilityRequestProjection::new(
