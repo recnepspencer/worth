@@ -183,6 +183,7 @@ fn native_support(cause: RelationalAuthoredWriteDenial) -> BankHttpDenial {
         | D::UnsupportedAdjacencySelector
         | D::UnsupportedIndexSelector
         | D::NotSelectedPrefix
+        | D::SpanBoundReached
         | D::EmptySelection
         | D::InvalidContinuation
         | D::PageStorageTooSmall

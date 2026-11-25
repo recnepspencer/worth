@@ -11,6 +11,7 @@ mod original_operation;
 mod prepared_reopen;
 mod program;
 mod refused_custody;
+mod reopen_generation;
 mod stage_correction;
 use program::*;
 use super::*;

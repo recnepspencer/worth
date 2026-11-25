@@ -18,7 +18,8 @@ pub use relevant_writes::{
     RelationalAuthoredManagedSourceSelector, RelationalAuthoredWriteDenial,
     RelationalAuthoredWriteOccurrence, RelationalAuthoredWritePage,
     RelationalAuthoredWritePageLimits, RelationalAuthoredWriteScope,
-    RelationalAuthoredWriteSelector, RelationalPreparedAuthoredWritePage,
+    RelationalAuthoredWriteSelector, RelationalAuthoredWriteSpan,
+    RelationalPreparedAuthoredWritePage,
 };
 
 use crate::runtime::RelationalRuntime;
