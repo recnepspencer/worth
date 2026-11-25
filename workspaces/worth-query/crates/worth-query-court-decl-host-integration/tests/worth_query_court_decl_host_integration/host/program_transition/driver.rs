@@ -228,12 +228,13 @@ impl Driver {
                 if !matches!(
                     refused.phase(),
                     WorthQueryHomeProgramTransitionOpenPhase::Transition {
-                        cause: WorthQueryHomeProgramTransitionDenial::Author(_),
+                        cause: WorthQueryHomeProgramTransitionDenial::ColdSlotBudgetExceeded(_)
+                            | WorthQueryHomeProgramTransitionDenial::Indexes(_),
                         ..
                     }
                 ) {
                     return Err(format!(
-                        "expected Transition/Author stop, got {:?}",
+                        "expected pre-intent Transition cold-slot/index budget stop, got {:?}",
                         refused.phase()
                     ));
                 }

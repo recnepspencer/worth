@@ -21,6 +21,7 @@ pub enum WorthQueryHomeProgramTransitionDenial {
     Staging(worth_relational::facade::mvcc::RelationalTransactionStagingDenial),
     Commit(worth_relational::facade::transactions::TransactionCommitError),
     Indexes(worth_relational::facade::indexes::DerivedIndexMaintenanceDenial),
+    ColdSlotBudgetExceeded(worth_relational::facade::indexes::DerivedIndexMaintenanceDenial),
     Intent(worth_store_application::ApplicationHomeTransitionIntentDenial),
     Plan(worth_store_application::ApplicationHomeTransitionPlanningDenial),
     IntentOutcome(worth_store_application::ApplicationHomeTransitionIntentOutcome),

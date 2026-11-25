@@ -28,6 +28,14 @@ pub struct PreparedHomeProgramTransitionTarget<Schema: ApplicationSchemaComposit
     _pending: Box<HomeTransitionTargetCustody<Schema, Program>>,
     pub(super) contracts: Box<PreparedRelationalHomeProgramContracts>,
 }
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct HomeTransitionTargetIndexCounts {
+    pub entity_field: usize,
+    pub relation_field: usize,
+    pub related_ordering: usize,
+    pub relation_join: usize,
+}
+
 struct HomeTransitionTargetCustody<Schema: ApplicationSchemaComposition, Program> {
     _state: Box<HomeApplicationState<Schema, Program>>,
     _layout: super::super::super::schema_layout::WorthQueryPrimaryGraphLayout,
@@ -36,6 +44,7 @@ struct HomeTransitionTargetCustody<Schema: ApplicationSchemaComposition, Program
     _source_initializer:
         Option<super::super::super::application_query::managed_index::SourceInitializationIssuer>,
     _inventory: NativeSchemaInventory,
+    index_counts: HomeTransitionTargetIndexCounts,
 }
 #[derive(Debug)]
 pub enum QueryHomeTransitionPreparationDenial {
@@ -67,6 +76,10 @@ impl<Schema: ApplicationSchemaComposition, Program>
 {
     pub fn native_contracts(&self) -> &PreparedRelationalHomeProgramContracts {
         &self.contracts
+    }
+
+    pub fn installed_index_counts(&self) -> HomeTransitionTargetIndexCounts {
+        self._pending.index_counts
     }
 }
 impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeApplication<Schema, Program> {
@@ -128,6 +141,7 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeApplication<Sche
             _managed_sources: managed_sources,
             _source_initializer: source_initializer,
             _inventory: inventory,
+            index_counts: HomeTransitionTargetIndexCounts::default(),
         });
         let registry = match definition.configuration().schema.registry.clone().extend(additions) {
             Ok(registry) => registry,
@@ -147,10 +161,28 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeApplication<Sche
                     )
                 })?;
             let mut native_refusal = None;
+            let mut counts = HomeTransitionTargetIndexCounts::default();
             let indexes =
                 super::super::super::root::index_installation::install_primary_graph_indexes(
                     &mut pending._layout,
                     |mut definition| {
+                        match &definition.kind {
+                            worth_relational::facade::indexes::DerivedIndexKind::EntityField {
+                                ..
+                            } => counts.entity_field = counts.entity_field.saturating_add(1),
+                            worth_relational::facade::indexes::DerivedIndexKind::RelationField {
+                                ..
+                            } => counts.relation_field = counts.relation_field.saturating_add(1),
+                            worth_relational::facade::indexes::DerivedIndexKind::RelatedEntityOrdering {
+                                ..
+                            } => {
+                                counts.related_ordering =
+                                    counts.related_ordering.saturating_add(1)
+                            }
+                            worth_relational::facade::indexes::DerivedIndexKind::RelationJoin(
+                                _,
+                            ) => counts.relation_join = counts.relation_join.saturating_add(1),
+                        }
                         definition.index_id = definitions
                             .install(&execution, &definition)
                             .map_err(|cause| {
@@ -163,6 +195,7 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeApplication<Sche
                         Ok(definition)
                     },
                 );
+            pending.index_counts = counts;
             if let Err(diagnostic) = indexes {
                 return Err(match native_refusal {
                     Some(cause) => QueryHomeTransitionPreparationDenial::Native(

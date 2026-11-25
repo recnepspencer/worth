@@ -233,6 +233,21 @@ worth_query_program_transition! {
     description = "Illegal rebuild of non-indexed field",
 }
 
+worth_query_program_transition! {
+    /// Transition with an oversized raw string default used to certify exact
+    /// pre-allocation retained-memory admission in backfill planning.
+    pub struct OversizedDefaultTransition;
+    from = (DaymarkV2Schema, DaymarkV2Program, version = 2)
+        => to = (DaymarkV3Schema, DaymarkV3Program, version = 3),
+    retained_records = [Project, Task],
+    added_defaults = [
+        task_priority_field()
+            => default = "X".repeat(24 * 1024 * 1024), required = false, label = "OversizedDefault",
+    ],
+    rebuild_indexes = [task_priority_field()],
+    description = "Oversized default payload for retained-memory admission test",
+}
+
 /// Adversarial manual `WorthQueryProgramTransitionSpec` whose `descriptor()`
 /// tries to spoof a valid `2 -> 3` descriptor for `3 -> 2` endpoints.
 pub struct SpoofedEndpointsTransition;

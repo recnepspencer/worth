@@ -16,7 +16,8 @@ use worth_query_execution::facade::{
     },
 };
 use worth_relational::facade::{
-    indexes::DerivedIndexMaintenanceDenialKind, runtime::RelationalHomeProgramContractDenial,
+    indexes::{DerivedIndexMaintenanceDenialKind, RelationalExecutionDenialCause},
+    runtime::RelationalHomeProgramContractDenial,
 };
 use worth_store_application::{
     ApplicationHomeDescriptorDenial, ApplicationHomeOpenRefusal,
@@ -204,19 +205,57 @@ fn primary_graph_denial_is_budget_stop(kind: WorthQueryPrimaryGraphInstallationD
     )
 }
 
+pub(crate) fn relational_execution_denial_is_budget_stop(
+    cause: RelationalExecutionDenialCause,
+) -> bool {
+    match cause {
+        RelationalExecutionDenialCause::WorkerLimitExceedsParent
+        | RelationalExecutionDenialCause::MemoryLimitExceedsParent
+        | RelationalExecutionDenialCause::WorkLimitExceedsParent
+        | RelationalExecutionDenialCause::PolicyMemoryExhausted { .. }
+        | RelationalExecutionDenialCause::ProcessMemoryExhausted { .. }
+        | RelationalExecutionDenialCause::DeclaredMemoryExhausted { .. }
+        | RelationalExecutionDenialCause::ChargedBytesOverflow
+        | RelationalExecutionDenialCause::Cancelled
+        | RelationalExecutionDenialCause::DeadlineElapsed
+        | RelationalExecutionDenialCause::WorkCounterOverflow
+        | RelationalExecutionDenialCause::WorkExhausted
+        | RelationalExecutionDenialCause::NestedStopped
+        | RelationalExecutionDenialCause::ResultCapacityExceeded
+        | RelationalExecutionDenialCause::AllocationFailed
+        | RelationalExecutionDenialCause::ScratchCapacityExceeded
+        | RelationalExecutionDenialCause::MemoryOverflow => true,
+        RelationalExecutionDenialCause::HistoricalVisibility(_)
+        | RelationalExecutionDenialCause::ProjectionContract(_)
+        | RelationalExecutionDenialCause::StorageUnavailable(_)
+        | RelationalExecutionDenialCause::UnrelatedNestedLease
+        | RelationalExecutionDenialCause::NoActiveExecutionScope
+        | RelationalExecutionDenialCause::EquivalenceContractUnavailable
+        | RelationalExecutionDenialCause::AccountingUnavailable
+        | RelationalExecutionDenialCause::WorkerFailed
+        | RelationalExecutionDenialCause::UncheckedCustomKernel
+        | RelationalExecutionDenialCause::ExpectedIdentitiesNotCanonical
+        | RelationalExecutionDenialCause::ContentInconsistency
+        | RelationalExecutionDenialCause::Content(_) => false,
+    }
+}
+
 pub(crate) fn index_maintenance_denial_is_budget_stop(
     kind: &DerivedIndexMaintenanceDenialKind,
 ) -> bool {
-    matches!(
-        kind,
-        DerivedIndexMaintenanceDenialKind::WorkBudgetExceeded
-            | DerivedIndexMaintenanceDenialKind::Execution(_)
-    )
+    match kind {
+        DerivedIndexMaintenanceDenialKind::WorkBudgetExceeded => true,
+        DerivedIndexMaintenanceDenialKind::Execution(cause) => {
+            relational_execution_denial_is_budget_stop(*cause)
+        }
+        _ => false,
+    }
 }
 
 fn transition_denial_is_budget_stop(cause: &Denial) -> bool {
     match cause {
         Denial::Request(_)
+        | Denial::ColdSlotBudgetExceeded(_)
         | Denial::StoppedOpen { .. }
         | Denial::StoppedPublication { .. }
         | Denial::StoppedContinuation { .. } => true,
@@ -252,14 +291,56 @@ fn transition_denial_is_budget_stop(cause: &Denial) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::index_maintenance_denial_is_budget_stop;
-    use worth_relational::facade::indexes::{DerivedIndexId, DerivedIndexMaintenanceDenialKind};
+    use super::{
+        index_maintenance_denial_is_budget_stop, transition_denial_is_budget_stop, Denial,
+    };
+    use worth_relational::facade::{
+        content::RelationalContentRejection,
+        indexes::{
+            DerivedIndexId, DerivedIndexMaintenanceDenial, DerivedIndexMaintenanceDenialKind,
+            DerivedIndexMaintenanceWork, RelationalExecutionDenialCause,
+        },
+    };
 
     #[test]
-    fn index_denial_classifier_separates_budget_stops_from_structural_refusals() {
+    fn index_denial_classifier_separates_budget_stops_from_structural_and_content_refusals() {
         assert!(index_maintenance_denial_is_budget_stop(
             &DerivedIndexMaintenanceDenialKind::WorkBudgetExceeded
         ));
+        assert!(index_maintenance_denial_is_budget_stop(
+            &DerivedIndexMaintenanceDenialKind::Execution(
+                RelationalExecutionDenialCause::WorkExhausted
+            )
+        ));
+        assert!(index_maintenance_denial_is_budget_stop(
+            &DerivedIndexMaintenanceDenialKind::Execution(
+                RelationalExecutionDenialCause::Cancelled
+            )
+        ));
+        assert!(index_maintenance_denial_is_budget_stop(
+            &DerivedIndexMaintenanceDenialKind::Execution(
+                RelationalExecutionDenialCause::PolicyMemoryExhausted {
+                    requested: 1024,
+                    admitted: 512,
+                    ancestor: 0,
+                }
+            )
+        ));
+
+        // Checkpoint content refusals carried in `Execution(_)` are structural,
+        // NOT budget/cancellation stops.
+        assert!(!index_maintenance_denial_is_budget_stop(
+            &DerivedIndexMaintenanceDenialKind::Execution(
+                RelationalExecutionDenialCause::ContentInconsistency
+            )
+        ));
+        assert!(!index_maintenance_denial_is_budget_stop(
+            &DerivedIndexMaintenanceDenialKind::Execution(RelationalExecutionDenialCause::Content(
+                RelationalContentRejection::IntegrityMismatch
+            ))
+        ));
+
+        // Structural index denials remain non-budget.
         assert!(!index_maintenance_denial_is_budget_stop(
             &DerivedIndexMaintenanceDenialKind::IndexUnavailable(DerivedIndexId(1))
         ));
@@ -269,5 +350,18 @@ mod tests {
         assert!(!index_maintenance_denial_is_budget_stop(
             &DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired
         ));
+
+        // Target-step cold-slot budget exhaustion is classified as a budget stop,
+        // while structural `ColdReconstructionRequired` under `Denial::Indexes` is not.
+        let cold_denial = DerivedIndexMaintenanceDenial {
+            kind: DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired,
+            work: DerivedIndexMaintenanceWork::default(),
+        };
+        assert!(transition_denial_is_budget_stop(
+            &Denial::ColdSlotBudgetExceeded(cold_denial.clone())
+        ));
+        assert!(!transition_denial_is_budget_stop(&Denial::Indexes(
+            cold_denial
+        )));
     }
 }

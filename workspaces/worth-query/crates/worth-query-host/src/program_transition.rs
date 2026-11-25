@@ -3,6 +3,7 @@
 //! program transition authority.
 
 mod backfill;
+mod backfill_memory;
 mod config;
 mod open;
 mod outcome;

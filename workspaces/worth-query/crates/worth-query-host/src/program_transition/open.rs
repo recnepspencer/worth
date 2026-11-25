@@ -6,6 +6,7 @@ use std::sync::{
 };
 
 use crate::application_home::WorthQueryApplicationHomeRequest;
+use worth_execution::ExecutionMemoryReservation;
 use worth_query_declaration::facade::{
     application_program::{ApplicationProgramDefinition, ApplicationProgramOutputsShape},
     program_transition::{
@@ -129,6 +130,11 @@ where
     let (resources, max_entities_per_kind, dispositions) = config.into_parts();
     let observers = OpenObservers::new();
     let record_handle = observers.recorder();
+    // Retain backfill memory reservations until `open_in_advancement` finishes
+    // consuming and committing the planned `WorkerIntentBatch`es.
+    let retained_memory: Arc<Mutex<Vec<ExecutionMemoryReservation>>> =
+        Arc::new(Mutex::new(Vec::new()));
+    let retained_for_plan = Arc::clone(&retained_memory);
 
     let mut request = successor
         .observe_initial_state(observers.created_fresh.clone())
@@ -136,7 +142,7 @@ where
             let input = PlanInput {
                 descriptor: &descriptor,
                 max_entities_per_kind,
-                resources,
+                retained_memory: &retained_for_plan,
             };
             let compiled = compile_declarative_plan(input, source, target, custom_step)?;
             record_handle.record(
@@ -148,9 +154,11 @@ where
     if let Some(dispositions) = dispositions {
         request = request.with_workflow_dispositions(dispositions);
     }
-    let home = request
+    let opened = request
         .open_in_advancement(phase)
-        .map_err(WorthQueryProgramTransitionOpenDenial::classify_host)?;
+        .map_err(WorthQueryProgramTransitionOpenDenial::classify_host);
+    drop(retained_memory);
+    let home = opened?;
     Ok(WorthQueryTransitionOpenedHome::new(
         home,
         observers.into_outcome::<T>(),

@@ -27,6 +27,7 @@ pub mod certification_cost;
 pub mod certification_managed_index;
 pub mod derived_relation;
 pub mod durable_admission;
+pub mod equality_index_residency;
 pub mod execution_memory;
 pub mod external_dispatch_attempt;
 pub mod graph_participation;

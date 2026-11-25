@@ -1,4 +1,5 @@
 //! Program transition admission at the public Home boundary.
+mod budget_preflight;
 mod handoff;
 mod opening;
 mod plan;

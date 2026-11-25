@@ -16,15 +16,43 @@ use worth_query_host::facade::{
 use worth_query_testkit_host::facade::host::{
     application_runtime_surface as identity, checkpoint_capture,
 };
+use worth_relational::facade::indexes::DerivedIndexGenerationResidency;
 
 use super::driver::{request_scope, Driver, LiveHome};
 use super::reference_model::{
     ObservedState, ReferenceModel, RowState, PRIORITIES, ROW_IDS, V2_VALUES,
 };
+use super::schema::task_priority_field;
 use super::v2_program::{v2_request, DaymarkV2Program, DaymarkV2Schema};
 use super::v2_queries::AllTasksV2Read;
 use super::v3_program::{v3_request, DaymarkV3Program, DaymarkV3Schema};
 use super::v3_queries::{AllTasksV3Read, TasksByPriorityRead};
+
+/// Map Native's owner-reported equality-index residency onto the TLA+ trace
+/// `indexState` domain without ever synthesizing `"Ready"` from a scan.
+pub(super) fn index_residency_to_state(
+    residency: Option<DerivedIndexGenerationResidency>,
+) -> &'static str {
+    match residency {
+        Some(DerivedIndexGenerationResidency::Published) => "Ready",
+        Some(
+            DerivedIndexGenerationResidency::DeferredImage
+            | DerivedIndexGenerationResidency::Absent,
+        ) => "Cold",
+        None => "None",
+    }
+}
+
+fn observe_priority_index_state(
+    home: &WorthQueryApplicationHome<DaymarkV3Schema, DaymarkV3Program>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<&'static str, String> {
+    let residency = home
+        .runtime()
+        .observe_equality_index_residency(execution, task_priority_field())
+        .map_err(|e| format!("Priority equality index residency observation failed: {e:?}"))?;
+    Ok(index_residency_to_state(residency))
+}
 
 fn static_v2_val(val: &str) -> &'static str {
     V2_VALUES
@@ -195,11 +223,12 @@ fn inspect_persisted_closed_home(
             .map_err(|e| format!("persisted v3 probe bootstrap failed: {e:?}"))?
             .map_err(|e| format!("persisted v3 probe open failed: {e:?}"))?;
             let rows = observe_v3_rows_and_verify_index(&v3_home, model)?;
+            let index_state = observe_priority_index_state(&v3_home, &execution)?;
             v3_home
                 .close(&execution)
                 .map_err(|e| format!("persisted v3 probe close failed: {e:?}"))?
                 .reclaim();
-            Ok((3, "Ready", rows))
+            Ok((3, index_state, rows))
         }
     }
 }
@@ -218,7 +247,10 @@ impl Driver {
             }
             LiveHome::V3(home) => {
                 let rows = observe_v3_rows_and_verify_index(home, model)?;
-                (3, true, 3, "Ready", rows)
+                let lease = checkpoint_capture::lease(128 * 1024 * 1024);
+                let execution = worth_execution::ExecutionRequest::leased(&lease);
+                let index_state = observe_priority_index_state(home, &execution)?;
+                (3, true, 3, index_state, rows)
             }
         };
         self.last_observed_rows = rows.clone();
