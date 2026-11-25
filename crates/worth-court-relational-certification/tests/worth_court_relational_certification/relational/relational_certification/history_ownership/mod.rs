@@ -4,6 +4,7 @@ use fixture::*;
 mod entity_boundary;
 mod graph_admission;
 mod graph_boundary;
+mod graph_companions;
 mod graph_integrity;
 mod graph_persistence;
 mod graph_publication;
