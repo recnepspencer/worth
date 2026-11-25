@@ -5,6 +5,7 @@ mod adversarial;
 mod adversarial_controls;
 mod adversarial_envelope;
 mod adversarial_mismatch;
+mod adversarial_reopen_watch;
 mod adversarial_watch_shift;
 mod alias_shift_contract;
 mod capabilities;

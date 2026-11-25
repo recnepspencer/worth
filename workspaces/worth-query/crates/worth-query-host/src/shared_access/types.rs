@@ -161,17 +161,31 @@ impl ScopeAccessGrant {
     }
 }
 
-/// Server-assigned identifier for one live governed remote watch handle.
+/// Server-assigned incarnation-bound identifier for one live governed remote watch handle.
+///
+/// Pairs the owning Directory Home's `HomeIncarnation` with a per-incarnation monotonic
+/// sequence so a stale watch handle from an earlier incarnation can never alias a newly
+/// opened replacement watch after reopen.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub struct RemoteWatchId(u64);
+pub struct RemoteWatchId {
+    incarnation: u64,
+    sequence: u64,
+}
 
 impl RemoteWatchId {
-    pub const fn new(raw: u64) -> Self {
-        Self(raw)
+    pub const fn new(incarnation: u64, sequence: u64) -> Self {
+        Self {
+            incarnation,
+            sequence,
+        }
     }
 
-    pub const fn as_u64(self) -> u64 {
-        self.0
+    pub const fn incarnation(self) -> u64 {
+        self.incarnation
+    }
+
+    pub const fn sequence(self) -> u64 {
+        self.sequence
     }
 }
 

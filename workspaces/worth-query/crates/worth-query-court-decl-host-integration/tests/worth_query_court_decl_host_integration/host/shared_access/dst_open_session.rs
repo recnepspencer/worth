@@ -222,7 +222,7 @@ impl OpenSession<'_> {
             }
         } else {
             self.clients[p]
-                .send_watch_poll_id(RemoteWatchId::new(u64::MAX))
+                .send_watch_poll_id(RemoteWatchId::new(0, u64::MAX))
                 .map_err(|e| format!("send_watch_poll_id: {e:?}"))?;
             pump_server_once(&mut self.server)?;
             let Err(denial) =

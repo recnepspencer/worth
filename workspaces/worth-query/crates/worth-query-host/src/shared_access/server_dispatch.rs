@@ -166,7 +166,7 @@ where
         let query_payload = Program::QueryPayload::decode_remote(query_bytes)?;
         let live_intent = Program::build_query_intent(&scope, &query_payload)?;
         let initial_intent = Program::build_query_intent(&scope, &query_payload)?;
-        let watch_id = RemoteWatchId::new(*self.next_watch_id);
+        let watch_id = RemoteWatchId::new(self.home_incarnation.get(), *self.next_watch_id);
         let (active, response_payload) = ActiveRemoteWatch::open(
             app,
             &auth.external,
@@ -239,6 +239,11 @@ where
         watch_id: RemoteWatchId,
         principal: &WorthQueryExternalPrincipalIdentity,
     ) -> Result<ActiveRemoteWatch<'home, Schema, Program>, SharedAccessDenial> {
+        if watch_id.incarnation() != self.home_incarnation.get() {
+            return Err(SharedAccessDenial::WatchRefused(
+                WatchRefusalReason::WatchNotFound,
+            ));
+        }
         let Some(watch) = self.watches.remove(&watch_id) else {
             return Err(SharedAccessDenial::WatchRefused(
                 WatchRefusalReason::WatchNotFound,

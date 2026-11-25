@@ -6,7 +6,10 @@ use super::denial::{BudgetRefusalReason, ProtocolRefusalReason, SharedAccessDeni
 use super::framing::{BinaryReader, FrameKind, FRAME_HEADER_LEN, FRAME_MAGIC, FRAME_VERSION};
 use super::types::{RemoteWatchId, MAX_SCOPE_KEY_BYTES};
 
-/// Bounded binary wire writer that refuses BEFORE exceeding `max_bytes`.
+const INITIAL_WRITER_CAPACITY: usize = 256;
+
+/// Bounded binary wire writer that refuses BEFORE exceeding `max_bytes` and caps
+/// backing buffer capacity strictly at `max_bytes` (never doubling past the ceiling).
 pub struct RemoteByteWriter {
     buf: Vec<u8>,
     max_bytes: usize,
@@ -14,7 +17,7 @@ pub struct RemoteByteWriter {
 
 impl RemoteByteWriter {
     pub(super) fn new(max_bytes: u32) -> Self {
-        let cap = (max_bytes as usize).min(256);
+        let cap = (max_bytes as usize).min(INITIAL_WRITER_CAPACITY);
         Self {
             buf: Vec::with_capacity(cap),
             max_bytes: max_bytes as usize,
@@ -28,7 +31,7 @@ impl RemoteByteWriter {
         max_frame_bytes: u32,
     ) -> Result<Self, SharedAccessDenial> {
         let mut writer = Self::new(max_frame_bytes);
-        writer.charge(FRAME_HEADER_LEN)?;
+        writer.charge_and_reserve(FRAME_HEADER_LEN)?;
         writer.buf.extend_from_slice(&FRAME_MAGIC);
         writer.buf.push(FRAME_VERSION);
         writer.buf.push(kind as u8);
@@ -50,6 +53,10 @@ impl RemoteByteWriter {
 
     pub fn len(&self) -> usize {
         self.buf.len()
+    }
+
+    pub fn capacity(&self) -> usize {
+        self.buf.capacity()
     }
 
     pub fn is_empty(&self) -> bool {
@@ -83,26 +90,39 @@ impl RemoteByteWriter {
         Ok(())
     }
 
+    /// Charges `additional` bytes and reserves capacity bounded strictly at `self.max_bytes`
+    /// so `Vec` growth can never double past the configured frame ceiling.
+    fn charge_and_reserve(&mut self, additional: usize) -> Result<(), SharedAccessDenial> {
+        self.charge(additional)?;
+        let needed_len = self.buf.len() + additional;
+        if needed_len > self.buf.capacity() {
+            let grown = self.buf.capacity().saturating_mul(2).max(needed_len);
+            let target_cap = grown.min(self.max_bytes);
+            self.buf.reserve_exact(target_cap - self.buf.len());
+        }
+        Ok(())
+    }
+
     pub fn write_u8(&mut self, value: u8) -> Result<(), SharedAccessDenial> {
-        self.charge(1)?;
+        self.charge_and_reserve(1)?;
         self.buf.push(value);
         Ok(())
     }
 
     pub fn write_u32(&mut self, value: u32) -> Result<(), SharedAccessDenial> {
-        self.charge(4)?;
+        self.charge_and_reserve(4)?;
         self.buf.extend_from_slice(&value.to_be_bytes());
         Ok(())
     }
 
     pub fn write_u64(&mut self, value: u64) -> Result<(), SharedAccessDenial> {
-        self.charge(8)?;
+        self.charge_and_reserve(8)?;
         self.buf.extend_from_slice(&value.to_be_bytes());
         Ok(())
     }
 
     pub fn write_fixed(&mut self, bytes: &[u8]) -> Result<(), SharedAccessDenial> {
-        self.charge(bytes.len())?;
+        self.charge_and_reserve(bytes.len())?;
         self.buf.extend_from_slice(bytes);
         Ok(())
     }
@@ -116,7 +136,7 @@ impl RemoteByteWriter {
                     maximum: u32::try_from(self.max_bytes).unwrap_or(u32::MAX),
                 },
             ))?;
-        self.charge(needed)?;
+        self.charge_and_reserve(needed)?;
         let len = u32::try_from(bytes.len()).map_err(|_| {
             SharedAccessDenial::BudgetRefused(BudgetRefusalReason::ResponseTooLarge {
                 bytes: u32::MAX,
@@ -138,7 +158,7 @@ impl RemoteByteWriter {
         &mut self,
         encode: impl FnOnce(&mut Self) -> Result<(), SharedAccessDenial>,
     ) -> Result<(), SharedAccessDenial> {
-        self.charge(4)?;
+        self.charge_and_reserve(4)?;
         let len_pos = self.buf.len();
         self.buf.extend_from_slice(&[0_u8; 4]);
         let start = self.buf.len();
@@ -202,7 +222,8 @@ pub(super) fn decode_scope_request(
     Ok((token, scope_key, query_bytes))
 }
 
-/// Encodes a watch-id request frame (12-byte header, token, watch id) through ONE capped writer.
+/// Encodes a watch-id request frame (12-byte header, token, incarnation-bound watch id)
+/// through ONE capped writer.
 pub(super) fn encode_watch_id_request_frame(
     kind: FrameKind,
     token: &RemoteAuthToken,
@@ -215,7 +236,10 @@ pub(super) fn encode_watch_id_request_frame(
         .encode_into_capped(&mut writer)
         .map_err(map_request_budget)?;
     writer
-        .write_u64(watch_id.as_u64())
+        .write_u64(watch_id.incarnation())
+        .map_err(map_request_budget)?;
+    writer
+        .write_u64(watch_id.sequence())
         .map_err(map_request_budget)?;
     Ok(writer.finish_frame())
 }
@@ -225,7 +249,7 @@ pub(super) fn decode_watch_id_request(
 ) -> Result<(RemoteAuthToken, RemoteWatchId), SharedAccessDenial> {
     let mut r = BinaryReader::new(payload);
     let token = RemoteAuthToken::decode_from(&mut r)?;
-    let watch_id = RemoteWatchId::new(r.read_u64()?);
+    let watch_id = RemoteWatchId::new(r.read_u64()?, r.read_u64()?);
     r.finish()?;
     Ok((token, watch_id))
 }

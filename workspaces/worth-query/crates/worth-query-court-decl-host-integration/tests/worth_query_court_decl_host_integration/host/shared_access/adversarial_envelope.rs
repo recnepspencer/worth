@@ -35,12 +35,40 @@ use super::program::{authenticate_local_owner, issue_alice_tok, open_custom_home
 use super::query::{ProjectStateRead, ProjectStateRow};
 use super::schema::{SharedProjectSchema, SharedProjectSurface};
 
-/// Query payload that streams `body_len` bytes into the single capped request writer
-/// and records the remaining envelope capacity visible to `encode_remote_bounded`.
+/// Query payload that streams bytes into the single capped request writer and records
+/// observed length, remaining bytes, and backing `Vec` capacity.
 #[derive(Clone, Debug)]
 pub struct BoundedQueryPayload {
     pub body_len: usize,
+    pub fill_exact_remaining: bool,
+    pub extra_byte_after_fill: bool,
     pub observed_remaining: Arc<AtomicUsize>,
+    pub observed_len: Arc<AtomicUsize>,
+    pub observed_capacity: Arc<AtomicUsize>,
+}
+
+impl BoundedQueryPayload {
+    fn fixed(body_len: usize, observed_remaining: Arc<AtomicUsize>) -> Self {
+        Self {
+            body_len,
+            fill_exact_remaining: false,
+            extra_byte_after_fill: false,
+            observed_remaining,
+            observed_len: Arc::new(AtomicUsize::new(0)),
+            observed_capacity: Arc::new(AtomicUsize::new(0)),
+        }
+    }
+
+    fn fill_remaining(extra_byte_after_fill: bool) -> Self {
+        Self {
+            body_len: 0,
+            fill_exact_remaining: true,
+            extra_byte_after_fill,
+            observed_remaining: Arc::new(AtomicUsize::new(0)),
+            observed_len: Arc::new(AtomicUsize::new(0)),
+            observed_capacity: Arc::new(AtomicUsize::new(0)),
+        }
+    }
 }
 
 impl RemoteBinaryCodec for BoundedQueryPayload {
@@ -50,21 +78,31 @@ impl RemoteBinaryCodec for BoundedQueryPayload {
     ) -> Result<(), SharedAccessDenial> {
         self.observed_remaining
             .store(writer.remaining(), Ordering::SeqCst);
+        let mut left = if self.fill_exact_remaining {
+            writer.remaining()
+        } else {
+            self.body_len
+        };
         let chunk = [0xCD_u8; 16];
-        let mut left = self.body_len;
         while left > 0 {
             let take = left.min(chunk.len());
             writer.write_fixed(&chunk[..take])?;
             left -= take;
         }
+        self.observed_len.store(writer.len(), Ordering::SeqCst);
+        self.observed_capacity
+            .store(writer.capacity(), Ordering::SeqCst);
+        if self.extra_byte_after_fill {
+            let err = writer.write_u8(0xEE);
+            self.observed_capacity
+                .store(writer.capacity(), Ordering::SeqCst);
+            err?;
+        }
         Ok(())
     }
 
     fn decode_remote(bytes: &[u8]) -> Result<Self, SharedAccessDenial> {
-        Ok(Self {
-            body_len: bytes.len(),
-            observed_remaining: Arc::new(AtomicUsize::new(0)),
-        })
+        Ok(Self::fixed(bytes.len(), Arc::new(AtomicUsize::new(0))))
     }
 }
 
@@ -173,6 +211,7 @@ fn adversarial_request_envelope_enforces_single_writer_frame_cap() {
     .unwrap();
     let cfg = make_auth_config();
     let tok = issue_alice_tok(&cfg, home.home_identity().unwrap(), 0x79);
+    let tok_clone = tok.clone();
     let mut server = home
         .serve_remote("127.0.0.1:0".parse().unwrap(), cfg)
         .unwrap();
@@ -186,6 +225,7 @@ fn adversarial_request_envelope_enforces_single_writer_frame_cap() {
             .unwrap();
 
     assert_envelope_budget_refuses_and_allows(&mut server, &mut alice, max_frame_bytes);
+    assert_exact_257_byte_capacity_ceiling(&mut server, &tok_clone);
 
     server.close();
     home.close(&execution).unwrap().reclaim();
@@ -203,10 +243,7 @@ fn assert_envelope_budget_refuses_and_allows(
 ) {
     // 200 <= 256 (fits by itself), but 12B frame header + token + scope key + 4B len + 200B > 256B.
     let observed = Arc::new(AtomicUsize::new(usize::MAX));
-    let oversized_with_envelope = BoundedQueryPayload {
-        body_len: 200,
-        observed_remaining: Arc::clone(&observed),
-    };
+    let oversized_with_envelope = BoundedQueryPayload::fixed(200, Arc::clone(&observed));
     assert!(oversized_with_envelope.body_len <= max_frame_bytes as usize);
     assert_eq!(
         alice.send_query::<SharedProjectSchema, EnvelopeBudgetProgram>(
@@ -233,10 +270,7 @@ fn assert_envelope_budget_refuses_and_allows(
     );
     assert_eq!(server.active_watch_count(), 0);
 
-    let fits = BoundedQueryPayload {
-        body_len: 32,
-        observed_remaining: Arc::new(AtomicUsize::new(0)),
-    };
+    let fits = BoundedQueryPayload::fixed(32, Arc::new(AtomicUsize::new(0)));
     alice
         .send_query::<SharedProjectSchema, EnvelopeBudgetProgram>(&ProjectId::project1(), &fits)
         .unwrap();
@@ -245,4 +279,60 @@ fn assert_envelope_budget_refuses_and_allows(
         .recv_query::<SharedProjectSchema, EnvelopeBudgetProgram>()
         .unwrap();
     assert_eq!(rows[0].project_key, "Project1");
+}
+
+/// Verifies `max_bytes = 257` (just above initial 256 capacity): writing 257 bytes succeeds
+/// with `capacity() <= 257` (never doubling to 512) and the 258th byte fails closed.
+fn assert_exact_257_byte_capacity_ceiling(
+    server: &mut worth_query_host::facade::shared_access::WorthQueryRemoteServer<
+        '_,
+        SharedProjectSchema,
+        EnvelopeBudgetProgram,
+    >,
+    tok: &worth_query_host::facade::shared_access::RemoteAuthToken,
+) {
+    let limits = RemoteClientLimits::default()
+        .with_max_frame_bytes(257)
+        .unwrap();
+    let mut client =
+        WorthQueryRemoteClient::connect_with_limits(server.local_addr(), tok.clone(), limits)
+            .unwrap();
+
+    let exact_fill = BoundedQueryPayload::fill_remaining(false);
+    client
+        .send_query::<SharedProjectSchema, EnvelopeBudgetProgram>(
+            &ProjectId::project1(),
+            &exact_fill,
+        )
+        .unwrap();
+    assert_eq!(exact_fill.observed_len.load(Ordering::SeqCst), 257);
+    assert!(
+        exact_fill.observed_capacity.load(Ordering::SeqCst) <= 257,
+        "RemoteByteWriter must never double capacity past 257 (got {})",
+        exact_fill.observed_capacity.load(Ordering::SeqCst)
+    );
+    assert!(server.serve_once(Duration::from_secs(2)).unwrap());
+    assert_eq!(
+        client
+            .recv_query::<SharedProjectSchema, EnvelopeBudgetProgram>()
+            .unwrap()[0]
+            .project_key,
+        "Project1"
+    );
+
+    let overflow_258 = BoundedQueryPayload::fill_remaining(true);
+    assert_eq!(
+        client.send_query::<SharedProjectSchema, EnvelopeBudgetProgram>(
+            &ProjectId::project1(),
+            &overflow_258,
+        ),
+        Err(SharedAccessDenial::BudgetRefused(
+            BudgetRefusalReason::RequestLimitExceeded
+        ))
+    );
+    assert!(
+        overflow_258.observed_capacity.load(Ordering::SeqCst) <= 257,
+        "258th-byte refusal must not grow capacity past 257 (got {})",
+        overflow_258.observed_capacity.load(Ordering::SeqCst)
+    );
 }

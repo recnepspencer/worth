@@ -111,14 +111,17 @@ where
             (&args.scope, args.live_intent, args.limits),
         )?;
         let mut writer = RemoteByteWriter::new(args.limits.max_frame_bytes());
-        let encoded = writer.write_u64(args.watch_id.as_u64()).and_then(|()| {
-            write_initial_watch_rows::<Schema, Program>(
-                app,
-                (external, request_scope),
-                (&args.scope, args.initial_intent, args.limits),
-                &mut writer,
-            )
-        });
+        let encoded = writer
+            .write_u64(args.watch_id.incarnation())
+            .and_then(|()| writer.write_u64(args.watch_id.sequence()))
+            .and_then(|()| {
+                write_initial_watch_rows::<Schema, Program>(
+                    app,
+                    (external, request_scope),
+                    (&args.scope, args.initial_intent, args.limits),
+                    &mut writer,
+                )
+            });
         if let Err(denial) = encoded {
             let _ = lease.close();
             return Err(denial);

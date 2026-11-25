@@ -178,7 +178,7 @@ impl WorthQueryRemoteClient {
         match kind {
             FrameKind::WatchOpenResponse => {
                 let mut reader = BinaryReader::new(&payload);
-                let watch_id = RemoteWatchId::new(reader.read_u64()?);
+                let watch_id = RemoteWatchId::new(reader.read_u64()?, reader.read_u64()?);
                 let raw_rows = decode_rows_payload(&mut reader, self.limits.max_frame_bytes())?;
                 reader.finish()?;
                 let initial_rows = decode_typed_rows::<Program::Row>(&raw_rows)?;
