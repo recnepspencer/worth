@@ -11,9 +11,13 @@ use worth_query_execution::facade::{
         QueryHomeProgramTransitionSourceDenial, QueryHomeTransitionPreparationDenial,
         WorthQueryHomeProgramTransitionBodyDenial,
     },
-    primary_graph::WorthQueryPrimaryGraphInstallationDenialKind,
+    primary_graph::{
+        WorthQueryPrimaryGraphInstallationDenialKind, WorthQueryProviderSessionDenialKind,
+    },
 };
-use worth_relational::facade::runtime::RelationalHomeProgramContractDenial;
+use worth_relational::facade::{
+    indexes::DerivedIndexMaintenanceDenialKind, runtime::RelationalHomeProgramContractDenial,
+};
 use worth_store_application::{
     ApplicationHomeDescriptorDenial, ApplicationHomeOpenRefusal,
     ApplicationHomeTransitionIntentDenial, ApplicationHomeTransitionPlanningDenial,
@@ -139,6 +143,23 @@ impl<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaComposition, BP>
         }
     }
 
+    /// Returns the declared scan bound when a transition entity scan stopped
+    /// because live rows exceeded `max_entities_per_kind`.
+    pub fn entity_scan_limit_exceeded(&self) -> Option<usize> {
+        match self.phase() {
+            Phase::Transition {
+                cause: Denial::Author(denial),
+                ..
+            } => match denial.kind() {
+                WorthQueryPrimaryGraphInstallationDenialKind::TransitionEntityScanBoundExceeded {
+                    maximum_work_units,
+                } => Some(maximum_work_units),
+                _ => None,
+            },
+            _ => None,
+        }
+    }
+
     /// Returns true when a budget, work ceiling, allocation limit, or
     /// cancellation stopped the transition before promotion.
     pub fn is_budget_or_cancellation_stop(&self) -> bool {
@@ -176,9 +197,20 @@ fn open_refusal_is_budget_stop(cause: &ApplicationHomeOpenRefusal) -> bool {
 fn primary_graph_denial_is_budget_stop(kind: WorthQueryPrimaryGraphInstallationDenialKind) -> bool {
     matches!(
         kind,
-        WorthQueryPrimaryGraphInstallationDenialKind::ExecutionDenied { .. }
-            | WorthQueryPrimaryGraphInstallationDenialKind::ExecutionControlStopped { .. }
+        WorthQueryPrimaryGraphInstallationDenialKind::ExecutionDenied {
+            kind: WorthQueryProviderSessionDenialKind::ExecutionResource { .. }
+        } | WorthQueryPrimaryGraphInstallationDenialKind::ExecutionControlStopped { .. }
             | WorthQueryPrimaryGraphInstallationDenialKind::NativeAllocation { .. }
+    )
+}
+
+pub(crate) fn index_maintenance_denial_is_budget_stop(
+    kind: &DerivedIndexMaintenanceDenialKind,
+) -> bool {
+    matches!(
+        kind,
+        DerivedIndexMaintenanceDenialKind::WorkBudgetExceeded
+            | DerivedIndexMaintenanceDenialKind::Execution(_)
     )
 }
 
@@ -187,8 +219,8 @@ fn transition_denial_is_budget_stop(cause: &Denial) -> bool {
         Denial::Request(_)
         | Denial::StoppedOpen { .. }
         | Denial::StoppedPublication { .. }
-        | Denial::StoppedContinuation { .. }
-        | Denial::Indexes(_) => true,
+        | Denial::StoppedContinuation { .. } => true,
+        Denial::Indexes(denial) => index_maintenance_denial_is_budget_stop(&denial.kind),
         Denial::Author(denial) => primary_graph_denial_is_budget_stop(denial.kind()),
         Denial::AuthoredBody(WorthQueryHomeProgramTransitionBodyDenial::Request(_)) => true,
         Denial::PlanningRequest(
@@ -215,5 +247,27 @@ fn transition_denial_is_budget_stop(cause: &Denial) -> bool {
             primary_graph_denial_is_budget_stop(denial.kind())
         }
         _ => false,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::index_maintenance_denial_is_budget_stop;
+    use worth_relational::facade::indexes::{DerivedIndexId, DerivedIndexMaintenanceDenialKind};
+
+    #[test]
+    fn index_denial_classifier_separates_budget_stops_from_structural_refusals() {
+        assert!(index_maintenance_denial_is_budget_stop(
+            &DerivedIndexMaintenanceDenialKind::WorkBudgetExceeded
+        ));
+        assert!(!index_maintenance_denial_is_budget_stop(
+            &DerivedIndexMaintenanceDenialKind::IndexUnavailable(DerivedIndexId(1))
+        ));
+        assert!(!index_maintenance_denial_is_budget_stop(
+            &DerivedIndexMaintenanceDenialKind::PriorEntryMismatch
+        ));
+        assert!(!index_maintenance_denial_is_budget_stop(
+            &DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired
+        ));
     }
 }

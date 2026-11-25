@@ -1,20 +1,29 @@
-//! Read-path and managed equality-index observation for the real Directory Home
-//! DST driver.
+//! Owner-backed read-path and managed equality-index observation for the real
+//! Directory Home DST driver.
+//!
+//! Closed and refused states are inspected by reopening the real Directory Home
+//! on disk to observe its authoritative persisted program version, rows, and
+//! managed index state — never by replaying driver-cached values.
 
 use std::collections::{BTreeMap, BTreeSet};
+use std::path::Path;
 
 use worth_query_host::facade::{
-    application_entry::WorthQueryApplicationRequestExt, WorthQueryApplicationHome,
+    application_contribution::with_bootstrap_advancement_from_request,
+    application_entry::WorthQueryApplicationRequestExt,
+    application_installation::ApplicationBuildIdentity, WorthQueryApplicationHome,
 };
-use worth_query_testkit_host::facade::host::application_runtime_surface as identity;
+use worth_query_testkit_host::facade::host::{
+    application_runtime_surface as identity, checkpoint_capture,
+};
 
 use super::driver::{request_scope, Driver, LiveHome};
 use super::reference_model::{
     ObservedState, ReferenceModel, RowState, PRIORITIES, ROW_IDS, V2_VALUES,
 };
-use super::v2_program::{DaymarkV2Program, DaymarkV2Schema};
+use super::v2_program::{v2_request, DaymarkV2Program, DaymarkV2Schema};
 use super::v2_queries::AllTasksV2Read;
-use super::v3_program::{DaymarkV3Program, DaymarkV3Schema};
+use super::v3_program::{v3_request, DaymarkV3Program, DaymarkV3Schema};
 use super::v3_queries::{AllTasksV3Read, TasksByPriorityRead};
 
 fn static_v2_val(val: &str) -> &'static str {
@@ -142,27 +151,85 @@ fn observe_v3_rows_and_verify_index(
     Ok(rows)
 }
 
+/// Inspect a closed Directory Home directly from disk via WORTH's real opening
+/// and query owners. Fails immediately if `TransitionPending` stranded `v2` or
+/// if persisted rows/indexes diverged from the reference model.
+fn inspect_persisted_closed_home(
+    location: &Path,
+    build: ApplicationBuildIdentity,
+    model: &ReferenceModel,
+) -> Result<(u32, &'static str, BTreeMap<&'static str, RowState>), String> {
+    let lease = checkpoint_capture::lease(128 * 1024 * 1024);
+    let execution = worth_execution::ExecutionRequest::leased(&lease);
+
+    let v2_attempt = with_bootstrap_advancement_from_request(execution, |phase| {
+        Box::new(v2_request(location.to_path_buf(), build).open_in_advancement(&phase))
+    })
+    .map_err(|e| format!("persisted v2 probe bootstrap failed: {e:?}"))?;
+
+    match *v2_attempt {
+        Ok(v2_home) => {
+            let rows = observe_v2_rows(&v2_home)?;
+            v2_home
+                .close(&execution)
+                .map_err(|e| format!("persisted v2 probe close failed: {e:?}"))?
+                .reclaim();
+            Ok((2, "None", rows))
+        }
+        Err(refused) => {
+            let recorded_v3 = refused
+                .transition_required()
+                .is_some_and(|req| req.recorded().selected().identity() == "daymark.program.v3");
+            if !recorded_v3 {
+                return Err(format!(
+                    "closed Home refused v2 without being on v3 (possible stranded TransitionPending): {refused:?}"
+                ));
+            }
+            refused
+                .close(&execution)
+                .map_err(|e| format!("close persisted probe v2 refusal failed: {e:?}"))?
+                .reclaim();
+            let v3_home = with_bootstrap_advancement_from_request(execution, |phase| {
+                Box::new(v3_request(location.to_path_buf(), build).open_in_advancement(&phase))
+            })
+            .map_err(|e| format!("persisted v3 probe bootstrap failed: {e:?}"))?
+            .map_err(|e| format!("persisted v3 probe open failed: {e:?}"))?;
+            let rows = observe_v3_rows_and_verify_index(&v3_home, model)?;
+            v3_home
+                .close(&execution)
+                .map_err(|e| format!("persisted v3 probe close failed: {e:?}"))?
+                .reclaim();
+            Ok((3, "Ready", rows))
+        }
+    }
+}
+
 impl Driver {
     pub fn observe(&mut self, model: &ReferenceModel) -> Result<ObservedState, String> {
-        let (home_open, open_version) = match &self.live {
-            LiveHome::Closed => (false, 0),
+        let (disk_version, home_open, open_version, index_state, rows) = match &self.live {
+            LiveHome::Closed => {
+                let (disk_version, index_state, rows) =
+                    inspect_persisted_closed_home(&self.location, self.build, model)?;
+                (disk_version, false, 0, index_state, rows)
+            }
             LiveHome::V2(home) => {
-                self.last_observed_rows = observe_v2_rows(home)?;
-                (true, 2)
+                let rows = observe_v2_rows(home)?;
+                (2, true, 2, "None", rows)
             }
             LiveHome::V3(home) => {
-                self.last_observed_rows = observe_v3_rows_and_verify_index(home, model)?;
-                (true, 3)
+                let rows = observe_v3_rows_and_verify_index(home, model)?;
+                (3, true, 3, "Ready", rows)
             }
         };
+        self.last_observed_rows = rows.clone();
         Ok(ObservedState {
-            disk_version: self.disk_version,
+            disk_version,
             home_open,
             open_version,
-            index_state: self.index_state,
+            index_state,
             transition_runs: self.transition_runs,
             outcome: self.last_outcome,
-            rows: self.last_observed_rows.clone(),
+            rows,
         })
     }
 }

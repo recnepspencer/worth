@@ -1,4 +1,5 @@
-//! Lower declarative field defaults into atomic native entity backfill intents.
+//! Lower declarative field defaults into atomic native entity backfill intents
+//! under full cooperative work metering and retained-memory admission.
 //!
 //! When an entity already carries the target aspect on disk (e.g., adding a new
 //! field to an existing aspect), this emits [`UpdateEntityFieldsIntent`]. When
@@ -9,6 +10,10 @@
 
 use std::collections::BTreeMap;
 
+use worth_execution::{
+    ExecutionMemoryReservation, ExecutionRequest, MapKernelContext, MapKernelStop,
+    WorkCeilingDenial,
+};
 use worth_foundational::facade::{
     AspectContract, AspectFieldLocator, AspectKey, AspectShape, AspectValue,
     AuthoritativeRecordAspectState, ContractValidationInput, FieldKey, PortableAspectContractBasis,
@@ -18,11 +23,13 @@ use worth_query_declaration::facade::program_transition::{
     WorthQueryProgramTransitionDescriptor, WorthQueryProgramTransitionFieldDefault,
 };
 use worth_query_execution::facade::{
+    application_contribution::WorthQueryManagedComputationResourceDenial,
     application_home_integration::{
         WorthQueryHomeProgramTransitionReadSource, WorthQueryHomeProgramTransitionTarget,
     },
     primary_graph::{
         WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
+        WorthQueryProviderSessionControlStopKind, WorthQueryProviderSessionDenialKind,
     },
 };
 use worth_relational::facade::{
@@ -33,10 +40,25 @@ use worth_relational::facade::{
     },
 };
 
+const BYTES_PER_FIELD_INTENT_ESTIMATE: u64 = 128;
+
+pub(super) struct BackfillPlan {
+    pub(super) batches: Vec<WorkerIntentBatch>,
+    pub(super) backfilled_records: usize,
+    pub(super) examined_slots: usize,
+}
+
 struct AspectDefaultGroup {
     aspect_key: AspectKey,
     contract: AspectContract,
     locators: BTreeMap<AspectFieldLocator, AspectValue>,
+}
+
+struct BackfillRequest<'a, 'b, 'c> {
+    descriptor: &'a WorthQueryProgramTransitionDescriptor,
+    max_entities_per_kind: usize,
+    source: &'a WorthQueryHomeProgramTransitionReadSource<'b, 'c>,
+    target: &'a WorthQueryHomeProgramTransitionTarget<'a>,
 }
 
 pub(super) fn build_default_backfill_batches(
@@ -44,10 +66,40 @@ pub(super) fn build_default_backfill_batches(
     max_entities_per_kind: usize,
     source: &WorthQueryHomeProgramTransitionReadSource<'_, '_>,
     target: &WorthQueryHomeProgramTransitionTarget<'_>,
-) -> Result<(Vec<WorkerIntentBatch>, usize), WorthQueryPrimaryGraphInstallationDenial> {
+) -> Result<BackfillPlan, WorthQueryPrimaryGraphInstallationDenial> {
+    let request = source.execution_request();
+    let backfill_req = BackfillRequest {
+        descriptor,
+        max_entities_per_kind,
+        source,
+        target,
+    };
+    let mut inner: Result<BackfillPlan, WorthQueryPrimaryGraphInstallationDenial> =
+        Ok(BackfillPlan {
+            batches: Vec::new(),
+            backfilled_records: 0,
+            examined_slots: 0,
+        });
+    let stage = request.run_native_with_checkpoint(|context| {
+        inner = build_metered_backfill(&backfill_req, request, context);
+    });
+    match (stage, inner) {
+        (Ok(_), result) => result,
+        (Err(WorkCeilingDenial::Stopped(MapKernelStop::NestedStopped)), Err(denial)) => Err(denial),
+        (Err(cause), _) => Err(work_ceiling_denial(cause)),
+    }
+}
+
+fn build_metered_backfill(
+    input: &BackfillRequest<'_, '_, '_>,
+    request: ExecutionRequest<'_, '_>,
+    context: &mut MapKernelContext<'_, '_>,
+) -> Result<BackfillPlan, WorthQueryPrimaryGraphInstallationDenial> {
+    let mut held_memory: Vec<ExecutionMemoryReservation> = Vec::new();
     let mut by_entity: BTreeMap<&'static str, Vec<&WorthQueryProgramTransitionFieldDefault>> =
         BTreeMap::new();
-    for field_default in descriptor.added_defaults() {
+    for field_default in input.descriptor.added_defaults() {
+        charge_work(context, 1)?;
         by_entity
             .entry(field_default.entity())
             .or_default()
@@ -56,18 +108,32 @@ pub(super) fn build_default_backfill_batches(
 
     let mut batches = Vec::with_capacity(by_entity.len());
     let mut backfilled_records = 0usize;
+    let mut examined_slots = 0usize;
 
     for (entity_name, defaults) in by_entity {
-        let groups = resolve_aspect_groups(entity_name, &defaults, target)?;
-        let rows = source.entities(entity_name, max_entities_per_kind)?;
+        charge_work(context, 1)?;
+        let groups = resolve_aspect_groups(entity_name, &defaults, input.target, context)?;
+        let rows = input
+            .source
+            .entities(entity_name, input.max_entities_per_kind)?;
+        examined_slots = examined_slots.saturating_add(rows.entity_slots_examined());
         if rows.records().is_empty() {
             continue;
         }
         let mut batch = WorkerIntentBatch::new(format!(
             "transition-default-backfill:{}:{entity_name}",
-            descriptor.transition_name()
+            input.descriptor.transition_name()
         ));
         for row in rows.records() {
+            let field_count = defaults.len().max(1) as u64;
+            charge_work(context, field_count)?;
+            let estimated_bytes = field_count.saturating_mul(BYTES_PER_FIELD_INTENT_ESTIMATE);
+            if let Some(reservation) = request
+                .reserve_retained_memory_in_stage(context, estimated_bytes)
+                .map_err(work_ceiling_denial)?
+            {
+                held_memory.push(reservation);
+            }
             batch = push_entity_backfill_intents(
                 batch,
                 row.entity_id,
@@ -79,13 +145,19 @@ pub(super) fn build_default_backfill_batches(
         batches.push(batch);
     }
 
-    Ok((batches, backfilled_records))
+    drop(held_memory);
+    Ok(BackfillPlan {
+        batches,
+        backfilled_records,
+        examined_slots,
+    })
 }
 
 fn resolve_aspect_groups(
     entity_name: &'static str,
     defaults: &[&WorthQueryProgramTransitionFieldDefault],
     target: &WorthQueryHomeProgramTransitionTarget<'_>,
+    context: &mut MapKernelContext<'_, '_>,
 ) -> Result<Vec<AspectDefaultGroup>, WorthQueryPrimaryGraphInstallationDenial> {
     let kind_id = target
         .entity_kind(entity_name)
@@ -102,6 +174,7 @@ fn resolve_aspect_groups(
     let mut grouped: BTreeMap<AspectKey, BTreeMap<AspectFieldLocator, AspectValue>> =
         BTreeMap::new();
     for field_default in defaults {
+        charge_work(context, 1)?;
         let locator = target
             .planned_field(entity_name, field_default.aspect(), field_default.field())
             .ok_or_else(|| {
@@ -120,6 +193,7 @@ fn resolve_aspect_groups(
 
     let mut groups = Vec::with_capacity(grouped.len());
     for (aspect_key, locators) in grouped {
+        charge_work(context, 1)?;
         let binding = registration
             .aspect_contract_declarations
             .aspects
@@ -217,6 +291,55 @@ fn build_set_whole_operation(
         }
     };
     Ok(PortableAspectPatchOperation::SetWhole { basis, value })
+}
+
+fn charge_work(
+    context: &mut MapKernelContext<'_, '_>,
+    units: u64,
+) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+    context
+        .checkpoint(units)
+        .map_err(|stop| work_ceiling_denial(WorkCeilingDenial::Stopped(stop)))
+}
+
+fn work_ceiling_denial(cause: WorkCeilingDenial) -> WorthQueryPrimaryGraphInstallationDenial {
+    let kind = match cause {
+        WorkCeilingDenial::Stopped(MapKernelStop::Cancelled) => {
+            WorthQueryPrimaryGraphInstallationDenialKind::ExecutionControlStopped {
+                kind: WorthQueryProviderSessionControlStopKind::Cancelled,
+            }
+        }
+        WorkCeilingDenial::Stopped(MapKernelStop::DeadlineElapsed) => {
+            WorthQueryPrimaryGraphInstallationDenialKind::ExecutionControlStopped {
+                kind: WorthQueryProviderSessionControlStopKind::TimedOut,
+            }
+        }
+        WorkCeilingDenial::Stopped(_) => {
+            WorthQueryPrimaryGraphInstallationDenialKind::ExecutionDenied {
+                kind: WorthQueryProviderSessionDenialKind::ExecutionResource {
+                    denial: WorthQueryManagedComputationResourceDenial::WorkExhausted,
+                    partition_identity: None,
+                    policy_ancestor: None,
+                },
+            }
+        }
+        WorkCeilingDenial::Admission(_) => {
+            WorthQueryPrimaryGraphInstallationDenialKind::ExecutionDenied {
+                kind: WorthQueryProviderSessionDenialKind::ExecutionResource {
+                    denial: WorthQueryManagedComputationResourceDenial::RetainedBytesExhausted,
+                    partition_identity: None,
+                    policy_ancestor: None,
+                },
+            }
+        }
+        WorkCeilingDenial::Panicked => {
+            WorthQueryPrimaryGraphInstallationDenialKind::InvalidSchemaMember
+        }
+    };
+    WorthQueryPrimaryGraphInstallationDenial::new(
+        kind,
+        format!("transition backfill stopped by execution budget: {cause:?}"),
+    )
 }
 
 fn schema_denial(detail: impl Into<String>) -> WorthQueryPrimaryGraphInstallationDenial {

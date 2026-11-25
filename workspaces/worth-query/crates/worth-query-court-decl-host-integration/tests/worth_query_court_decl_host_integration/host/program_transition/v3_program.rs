@@ -167,3 +167,117 @@ worth_query_program_transition! {
     retained_records = [Project, Task],
     description = "Illegal v3 -> v2 downgrade",
 }
+
+worth_query_program_transition! {
+    /// Deliberate duplicate retained record declaration.
+    pub struct DuplicateRetainedTransition;
+    from = (DaymarkV2Schema, DaymarkV2Program, version = 2)
+        => to = (DaymarkV3Schema, DaymarkV3Program, version = 3),
+    retained_records = [Project, Task, Task],
+    description = "Duplicate retained record",
+}
+
+worth_query_program_transition! {
+    /// Deliberate duplicate added record declaration.
+    pub struct DuplicateAddedTransition;
+    from = (DaymarkV2Schema, DaymarkV2Program, version = 2)
+        => to = (DaymarkV3Schema, DaymarkV3Program, version = 3),
+    added_records = [Task, Task],
+    description = "Duplicate added record",
+}
+
+worth_query_program_transition! {
+    /// Deliberate record present in both retained and added lists.
+    pub struct OverlapRetainedAddedTransition;
+    from = (DaymarkV2Schema, DaymarkV2Program, version = 2)
+        => to = (DaymarkV3Schema, DaymarkV3Program, version = 3),
+    retained_records = [Project, Task],
+    added_records = [Task],
+    description = "Overlap between retained and added records",
+}
+
+worth_query_program_transition! {
+    /// Deliberate duplicate index rebuild declaration.
+    pub struct DuplicateIndexRebuildTransition;
+    from = (DaymarkV2Schema, DaymarkV2Program, version = 2)
+        => to = (DaymarkV3Schema, DaymarkV3Program, version = 3),
+    retained_records = [Project, Task],
+    rebuild_indexes = [task_priority_field(), task_priority_field()],
+    description = "Duplicate index rebuild",
+}
+
+worth_query_program_transition! {
+    /// Deliberate default targeting a field that ALREADY exists in predecessor v2.
+    pub struct OverwritePredecessorFieldTransition;
+    from = (DaymarkV2Schema, DaymarkV2Program, version = 2)
+        => to = (DaymarkV3Schema, DaymarkV3Program, version = 3),
+    retained_records = [Project, Task],
+    added_defaults = [
+        task_v2_value_field()
+            => default = "clobber".to_owned(), required = false, label = "clobber",
+    ],
+    description = "Illegal overwrite of predecessor field",
+}
+
+worth_query_program_transition! {
+    /// Deliberate index rebuild targeting a non-indexed field (`V2Value` is not equality_queryable).
+    pub struct NonIndexedRebuildTransition;
+    from = (DaymarkV2Schema, DaymarkV2Program, version = 2)
+        => to = (DaymarkV3Schema, DaymarkV3Program, version = 3),
+    retained_records = [Project, Task],
+    added_defaults = [
+        task_priority_field()
+            => default = "Normal".to_owned(), required = false, label = "Priority::Normal",
+    ],
+    rebuild_indexes = [task_v2_value_field()],
+    description = "Illegal rebuild of non-indexed field",
+}
+
+/// Adversarial manual `WorthQueryProgramTransitionSpec` whose `descriptor()`
+/// tries to spoof a valid `2 -> 3` descriptor for `3 -> 2` endpoints.
+pub struct SpoofedEndpointsTransition;
+impl worth_query_decl::facade::program_transition::WorthQueryProgramTransitionSpec
+    for SpoofedEndpointsTransition
+{
+    type FromSchema = DaymarkV3Schema;
+    type FromProgram = DaymarkV3Program;
+    type ToSchema = DaymarkV2Schema;
+    type ToProgram = DaymarkV2Program;
+
+    const NAME: &'static str = "SpoofedEndpointsTransition";
+    const FROM_VERSION: u32 = 3;
+    const TO_VERSION: u32 = 2;
+
+    fn descriptor() -> Result<
+        worth_query_decl::facade::program_transition::WorthQueryProgramTransitionDescriptor,
+        worth_query_decl::facade::program_transition::WorthQueryProgramTransitionDeclarationDenial,
+    > {
+        DaymarkV2ToV3::descriptor()
+    }
+}
+
+/// Hostile caller-scope macro hygiene check: caller defines constants matching
+/// every descriptor field name in the exact scope of `worth_query_program_transition!`.
+#[allow(non_upper_case_globals, dead_code)]
+pub mod hostile_macro_scope {
+    use super::*;
+
+    pub const retained_records: usize = 0;
+    pub const added_records: usize = 0;
+    pub const added_defaults: usize = 0;
+    pub const index_rebuilds: usize = 0;
+    pub const description: usize = 0;
+
+    worth_query_program_transition! {
+        pub struct HygienicV2ToV3;
+        from = (DaymarkV2Schema, DaymarkV2Program, version = 2)
+            => to = (DaymarkV3Schema, DaymarkV3Program, version = 3),
+        retained_records = [Project, Task],
+        added_defaults = [
+            task_priority_field()
+                => default = "Normal".to_owned(), required = false, label = "Priority::Normal",
+        ],
+        rebuild_indexes = [task_priority_field()],
+        description = "Hygienic macro invocation under hostile constants",
+    }
+}

@@ -218,7 +218,7 @@ worth_query_program_transition! {
 }
 
 // Honors WORTH_IMPLEMENTATION_BUILD_ID when set; otherwise deterministically
-// derives a nonzero UUID from CARGO_PKG_NAME@CARGO_PKG_VERSION (no build.rs).
+// derives an RFC 4122 §4.3 UUIDv5 (SHA-1) from CARGO_PKG_NAME@CARGO_PKG_VERSION.
 let build = worth_query_default_build_id!();
 let opened = open_directory_with_transition::<DaymarkV2ToV3>(
     &phase,
@@ -240,8 +240,11 @@ match opened.outcome() {
 ```
 
 - **Typed fields only:** `added_defaults` and `rebuild_indexes` accept WORTH's
-  typed `RecordSelection` / `FieldSelection` handles and validate/encode default
-  values through the field's declared scalar binding at declaration time.
+  typed `RecordSelection` / `FieldSelection` handles, validate/encode default
+  values through the field's declared scalar binding at declaration time, refuse
+  defaults targeting fields already present in the predecessor schema, and
+  verify every `rebuild_indexes` target against the target program's installed
+  equality-index catalog before populating `indexes_marked_for_rebuild`.
 - **Optional custom step:** use `open_directory_with_transition_and_step` to
   append custom `WorkerIntentBatch` work to the declarative target step.
 - **Fail-closed guarantees:**
@@ -249,12 +252,15 @@ match opened.outcome() {
     `refused.transition_required()`.
   - Opening a `v1` Home with a `v2 -> v3` transition refuses with
     `WorthQueryProgramTransitionOpenDenial::PredecessorMismatch`.
-  - Declaring or attempting a downgrade (`v3 -> v2`) refuses with
-    `WorthQueryProgramTransitionOpenDenial::Declaration(DowngradeRefused { .. })`
-    (and direct `v2` open on a `v3` Home refuses with `transition_required()`).
-  - Budget or cancellation stops during transition planning/preparation fail
-    closed with `BudgetOrCancellationStopped`, leaving the `v2` Home intact and
-    reopenable.
+  - Declaring duplicate/overlapping records, defaults, index rebuilds, spoofed
+    endpoint specs, or a downgrade (`v3 -> v2`) refuses with typed
+    `WorthQueryProgramTransitionOpenDenial::Declaration(...)` before touching
+    disk (and direct `v2` open on a `v3` Home refuses with `transition_required()`).
+  - Exceeding `max_entities_per_kind` refuses before durable intent publication
+    with typed `WorthQueryProgramTransitionOpenDenial::EntityScanLimitExceeded`.
+  - Budget or cancellation stops during metered backfill planning or pre-intent
+    index-budget preflight fail closed with `BudgetOrCancellationStopped` before
+    publishing `TransitionPending`, leaving the `v2` Home intact and reopenable.
   - Reopening an upgraded `v3` Home reports `OpenedCurrent` and never re-runs
     the transition or overwrites post-upgrade edits.
 - **Formal verification:** specified in

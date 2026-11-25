@@ -12,71 +12,7 @@ use crate::application_schema::{
     ApplicationScalarValueBinding, ApplicationSchemaComposition, ApplicationValueEncodeDenial,
 };
 
-/// Typed refusal produced when validating a declarative program transition spec.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum WorthQueryProgramTransitionDeclarationDenial {
-    /// Downgrade transitions (`from_version > to_version`) are strictly refused.
-    DowngradeRefused { from_version: u32, to_version: u32 },
-    /// A transition must strictly advance its semantic program version.
-    NonAdvancingVersion { version: u32 },
-    /// Source and target programs cannot share the same program identity.
-    IdenticalProgramIdentity { identity: String },
-    /// A target field default was declared more than once.
-    DuplicateDefaultField {
-        entity: &'static str,
-        aspect: &'static str,
-        field: &'static str,
-    },
-    /// A declared default value failed its typed scalar binding validation/encoding.
-    DefaultValueEncoding {
-        entity: &'static str,
-        aspect: &'static str,
-        field: &'static str,
-        cause: ApplicationValueEncodeDenial,
-    },
-}
-
-impl std::fmt::Display for WorthQueryProgramTransitionDeclarationDenial {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::DowngradeRefused {
-                from_version,
-                to_version,
-            } => write!(
-                f,
-                "program transition downgrade refused: v{from_version} -> v{to_version}"
-            ),
-            Self::NonAdvancingVersion { version } => {
-                write!(f, "program transition must advance version past v{version}")
-            }
-            Self::IdenticalProgramIdentity { identity } => {
-                write!(
-                    f,
-                    "program transition source and target share program identity `{identity}`"
-                )
-            }
-            Self::DuplicateDefaultField {
-                entity,
-                aspect,
-                field,
-            } => write!(
-                f,
-                "duplicate default field declaration for {entity}.{aspect}.{field}"
-            ),
-            Self::DefaultValueEncoding {
-                entity,
-                aspect,
-                field,
-                cause,
-            } => write!(
-                f,
-                "invalid default value for {entity}.{aspect}.{field}: {cause:?}"
-            ),
-        }
-    }
-}
-
-impl std::error::Error for WorthQueryProgramTransitionDeclarationDenial {}
+use super::denial::WorthQueryProgramTransitionDeclarationDenial;
 
 /// Existing entity kind whose rows must survive the in-place upgrade intact.
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -167,27 +103,21 @@ impl WorthQueryProgramTransitionFieldDefault {
     pub const fn entity(&self) -> &'static str {
         self.entity
     }
-
     pub const fn aspect(&self) -> &'static str {
         self.aspect
     }
-
     pub const fn field(&self) -> &'static str {
         self.field
     }
-
     pub const fn value_type(&self) -> &'static str {
         self.value_type
     }
-
     pub const fn required(&self) -> bool {
         self.required
     }
-
     pub const fn default_label(&self) -> &'static str {
         self.default_label
     }
-
     pub fn default_value(&self) -> &AspectValue {
         &self.default_value
     }
@@ -214,11 +144,9 @@ impl WorthQueryProgramTransitionIndexRebuild {
     pub const fn entity(self) -> &'static str {
         self.entity
     }
-
     pub const fn aspect(self) -> &'static str {
         self.aspect
     }
-
     pub const fn field(self) -> &'static str {
         self.field
     }
@@ -275,7 +203,7 @@ impl WorthQueryProgramTransitionDescriptor {
     }
 
     /// Validate directional monotonicity, distinct program identities, and
-    /// non-duplicate field defaults.
+    /// duplicate/overlap invariants across every declaration list.
     pub fn validate(&self) -> Result<(), WorthQueryProgramTransitionDeclarationDenial> {
         use WorthQueryProgramTransitionDeclarationDenial as Denial;
         if self.from_version > self.to_version {
@@ -294,10 +222,41 @@ impl WorthQueryProgramTransitionDescriptor {
                 identity: self.from_program_identity.as_str().to_owned(),
             });
         }
-        let mut seen = BTreeSet::new();
+        self.validate_record_lists()?;
+        self.validate_field_lists()
+    }
+
+    fn validate_record_lists(&self) -> Result<(), WorthQueryProgramTransitionDeclarationDenial> {
+        use WorthQueryProgramTransitionDeclarationDenial as Denial;
+        let mut retained_set = BTreeSet::new();
+        for record in &self.retained_records {
+            if !retained_set.insert(record.entity_name) {
+                return Err(Denial::DuplicateRetainedRecord {
+                    entity: record.entity_name,
+                });
+            }
+        }
+        let mut added_set = BTreeSet::new();
+        for record in &self.added_records {
+            if !added_set.insert(record.entity_name) {
+                return Err(Denial::DuplicateAddedRecord {
+                    entity: record.entity_name,
+                });
+            }
+            if retained_set.contains(record.entity_name) {
+                return Err(Denial::RecordInBothRetainedAndAdded {
+                    entity: record.entity_name,
+                });
+            }
+        }
+        Ok(())
+    }
+
+    fn validate_field_lists(&self) -> Result<(), WorthQueryProgramTransitionDeclarationDenial> {
+        use WorthQueryProgramTransitionDeclarationDenial as Denial;
+        let mut seen_defaults = BTreeSet::new();
         for default in &self.added_defaults {
-            let key = (default.entity, default.aspect, default.field);
-            if !seen.insert(key) {
+            if !seen_defaults.insert((default.entity, default.aspect, default.field)) {
                 return Err(Denial::DuplicateDefaultField {
                     entity: default.entity,
                     aspect: default.aspect,
@@ -305,45 +264,86 @@ impl WorthQueryProgramTransitionDescriptor {
                 });
             }
         }
+        let mut seen_indexes = BTreeSet::new();
+        for rebuild in &self.index_rebuilds {
+            if !seen_indexes.insert((rebuild.entity, rebuild.aspect, rebuild.field)) {
+                return Err(Denial::DuplicateIndexRebuild {
+                    entity: rebuild.entity,
+                    aspect: rebuild.aspect,
+                    field: rebuild.field,
+                });
+            }
+        }
+        Ok(())
+    }
+
+    /// Validate that this descriptor is consistent with the typed
+    /// [`WorthQueryProgramTransitionSpec`] endpoints before Home admission.
+    pub fn validate_for_spec<T: WorthQueryProgramTransitionSpec>(
+        &self,
+    ) -> Result<(), WorthQueryProgramTransitionDeclarationDenial> {
+        use WorthQueryProgramTransitionDeclarationDenial as Denial;
+        if T::FROM_VERSION > T::TO_VERSION {
+            return Err(Denial::DowngradeRefused {
+                from_version: T::FROM_VERSION,
+                to_version: T::TO_VERSION,
+            });
+        }
+        if T::FROM_VERSION == T::TO_VERSION {
+            return Err(Denial::NonAdvancingVersion {
+                version: T::FROM_VERSION,
+            });
+        }
+        self.validate()?;
+        if self.from_version != T::FROM_VERSION || self.to_version != T::TO_VERSION {
+            return Err(Denial::EndpointVersionMismatch {
+                spec_from: T::FROM_VERSION,
+                spec_to: T::TO_VERSION,
+                descriptor_from: self.from_version,
+                descriptor_to: self.to_version,
+            });
+        }
+        let expected_from =
+            <T::FromProgram as ApplicationProgramDefinition<T::FromSchema>>::IDENTITY;
+        let expected_to = <T::ToProgram as ApplicationProgramDefinition<T::ToSchema>>::IDENTITY;
+        if self.from_program_identity != expected_from || self.to_program_identity != expected_to {
+            return Err(Denial::EndpointProgramIdentityMismatch {
+                expected_from: expected_from.as_str().to_owned(),
+                expected_to: expected_to.as_str().to_owned(),
+                actual_from: self.from_program_identity.as_str().to_owned(),
+                actual_to: self.to_program_identity.as_str().to_owned(),
+            });
+        }
         Ok(())
     }
 
     pub const fn transition_name(&self) -> &'static str {
         self.transition_name
     }
-
     pub fn from_program_identity(&self) -> &ApplicationProgramIdentity {
         &self.from_program_identity
     }
-
     pub fn to_program_identity(&self) -> &ApplicationProgramIdentity {
         &self.to_program_identity
     }
-
     pub const fn from_version(&self) -> u32 {
         self.from_version
     }
-
     pub const fn to_version(&self) -> u32 {
         self.to_version
     }
-
     pub fn retained_records(&self) -> &[WorthQueryProgramTransitionRetainedRecord] {
         &self.retained_records
     }
-
     pub fn added_records(&self) -> &[WorthQueryProgramTransitionAddedRecord] {
         &self.added_records
     }
-
     pub fn added_defaults(&self) -> &[WorthQueryProgramTransitionFieldDefault] {
         &self.added_defaults
     }
-
     pub fn index_rebuilds(&self) -> &[WorthQueryProgramTransitionIndexRebuild] {
         &self.index_rebuilds
     }
-
     pub const fn description(&self) -> &'static str {
         self.description
     }

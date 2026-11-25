@@ -1,21 +1,27 @@
 //! Compile a declarative [`WorthQueryProgramTransitionDescriptor`] onto a real
-//! [`WorthQueryHomeProgramTransitionPlan`] using bounded source scans and
-//! deterministic `BTreeMap` grouping.
+//! [`WorthQueryHomeProgramTransitionPlan`] using bounded source scans, metered
+//! backfill planning, owner-backed index verification, and pre-intent budget
+//! preflight.
 
 use crate::application_home::{
     WorthQueryHomeProgramTransitionPlan, WorthQueryHomeProgramTransitionStep,
 };
 use worth_foundational::facade::FieldKey;
-use worth_query_declaration::facade::program_transition::WorthQueryProgramTransitionDescriptor;
+use worth_query_declaration::facade::program_transition::{
+    WorthQueryProgramTransitionDescriptor, WorthQueryProgramTransitionIndexRebuild,
+};
 use worth_query_execution::facade::{
+    application_contribution::WorthQueryManagedComputationResourceDenial,
     application_home_integration::{
         WorthQueryHomeProgramTransitionReadSource, WorthQueryHomeProgramTransitionTarget,
     },
     primary_graph::{
         WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
+        WorthQueryProviderSessionDenialKind,
     },
 };
 use worth_relational::facade::{
+    indexes::DerivedIndexMaintenanceBudget,
     schema::{
         FreeFormSchemaDiffIntent, HistoricalInterpretationSensitivity, ProposedSchemaTransition,
         SchemaDiffAtom, SchemaDiffDetail, SchemaElementKind, SchemaElementRef, SchemaId,
@@ -30,11 +36,13 @@ use super::backfill::build_default_backfill_batches;
 pub(super) struct CompiledTransitionPlan {
     pub(super) plan: WorthQueryHomeProgramTransitionPlan,
     pub(super) backfilled_records: usize,
+    pub(super) verified_index_rebuilds: Vec<WorthQueryProgramTransitionIndexRebuild>,
 }
 
 pub(super) struct PlanInput<'a> {
     pub(super) descriptor: &'a WorthQueryProgramTransitionDescriptor,
     pub(super) max_entities_per_kind: usize,
+    pub(super) resources: DerivedIndexMaintenanceBudget,
 }
 
 pub(super) fn compile_declarative_plan<CustomStep>(
@@ -50,23 +58,34 @@ where
     )
         -> Result<Vec<WorkerIntentBatch>, WorthQueryPrimaryGraphInstallationDenial>,
 {
-    verify_declared_members(input.descriptor, source, target)?;
+    let verified_index_rebuilds = verify_declared_members(input.descriptor, source, target)?;
     let schema_transition = build_schema_transition(input.descriptor, source, target)?;
-    let (mut batches, backfilled_records) = build_default_backfill_batches(
+    let mut backfill = build_default_backfill_batches(
         input.descriptor,
         input.max_entities_per_kind,
         source,
         target,
     )?;
-    batches.extend(custom_step(source, target)?);
+    preflight_index_maintenance_budget(
+        input.resources,
+        backfill.backfilled_records,
+        backfill.examined_slots,
+        target
+            .installed_equality_index_count()
+            .max(verified_index_rebuilds.len()),
+    )?;
+    backfill.batches.extend(custom_step(source, target)?);
 
     Ok(CompiledTransitionPlan {
         plan: WorthQueryHomeProgramTransitionPlan {
-            steps: vec![WorthQueryHomeProgramTransitionStep { batches }],
+            steps: vec![WorthQueryHomeProgramTransitionStep {
+                batches: backfill.batches,
+            }],
             target: 0,
             schema_transition,
         },
-        backfilled_records,
+        backfilled_records: backfill.backfilled_records,
+        verified_index_rebuilds,
     })
 }
 
@@ -74,7 +93,8 @@ fn verify_declared_members(
     descriptor: &WorthQueryProgramTransitionDescriptor,
     source: &WorthQueryHomeProgramTransitionReadSource<'_, '_>,
     target: &WorthQueryHomeProgramTransitionTarget<'_>,
-) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+) -> Result<Vec<WorthQueryProgramTransitionIndexRebuild>, WorthQueryPrimaryGraphInstallationDenial>
+{
     for retained in descriptor.retained_records() {
         let entity = retained.entity_name();
         if source.entity_kind(entity).is_none() || target.entity_kind(entity).is_none() {
@@ -85,24 +105,100 @@ fn verify_declared_members(
     }
     for added in descriptor.added_records() {
         let entity = added.entity_name();
+        if source.entity_kind(entity).is_some() {
+            return Err(schema_denial(format!(
+                "added entity `{entity}` already exists in predecessor schema"
+            )));
+        }
         if target.entity_kind(entity).is_none() {
             return Err(schema_denial(format!(
                 "added entity `{entity}` is absent from target schema"
             )));
         }
     }
-    for index in descriptor.index_rebuilds() {
+    for default in descriptor.added_defaults() {
+        if source
+            .planned_field(default.entity(), default.aspect(), default.field())
+            .is_some()
+        {
+            return Err(schema_denial(format!(
+                "default field `{}.{}.{}` already exists in predecessor schema; defaults may only target newly added fields",
+                default.entity(),
+                default.aspect(),
+                default.field()
+            )));
+        }
         if target
-            .planned_field(index.entity(), index.aspect(), index.field())
+            .planned_field(default.entity(), default.aspect(), default.field())
             .is_none()
         {
             return Err(schema_denial(format!(
-                "index rebuild target `{}.{}.{}` is absent from target schema",
+                "default field `{}.{}.{}` is absent from target schema",
+                default.entity(),
+                default.aspect(),
+                default.field()
+            )));
+        }
+    }
+    let mut verified_rebuilds = Vec::with_capacity(descriptor.index_rebuilds().len());
+    for index in descriptor.index_rebuilds() {
+        if target
+            .installed_field_index(index.entity(), index.aspect(), index.field())
+            .is_none()
+        {
+            return Err(schema_denial(format!(
+                "index rebuild target `{}.{}.{}` has no installed managed equality index in target program",
                 index.entity(),
                 index.aspect(),
                 index.field()
             )));
         }
+        verified_rebuilds.push(*index);
+    }
+    Ok(verified_rebuilds)
+}
+
+/// Preflight the target step's derived-index maintenance budget strictly BEFORE
+/// Store publishes any durable `TransitionPending` intent, preventing a tight
+/// index budget from stranding the predecessor Home.
+fn preflight_index_maintenance_budget(
+    resources: DerivedIndexMaintenanceBudget,
+    backfilled_records: usize,
+    examined_slots: usize,
+    target_index_count: usize,
+) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+    let index_factor = target_index_count.max(1);
+    let required_slots = examined_slots.max(backfilled_records);
+    let required_rows = backfilled_records.saturating_mul(index_factor);
+    let required_work = required_slots
+        .saturating_add(backfilled_records)
+        .saturating_mul(index_factor)
+        .saturating_add(index_factor);
+
+    let exceeds_work = resources
+        .maximum_work_units
+        .is_some_and(|limit| limit < required_work);
+    let exceeds_slots = resources
+        .maximum_cold_record_slots
+        .is_some_and(|limit| limit < required_slots);
+    let exceeds_rows = resources
+        .maximum_derived_rows
+        .is_some_and(|limit| limit < required_rows);
+
+    if exceeds_work || exceeds_slots || exceeds_rows {
+        return Err(WorthQueryPrimaryGraphInstallationDenial::new(
+            WorthQueryPrimaryGraphInstallationDenialKind::ExecutionDenied {
+                kind: WorthQueryProviderSessionDenialKind::ExecutionResource {
+                    denial: WorthQueryManagedComputationResourceDenial::WorkExhausted,
+                    partition_identity: None,
+                    policy_ancestor: None,
+                },
+            },
+            format!(
+                "transition index maintenance budget insufficient before intent publication \
+                 (required work>={required_work}, slots>={required_slots}, rows>={required_rows})"
+            ),
+        ));
     }
     Ok(())
 }

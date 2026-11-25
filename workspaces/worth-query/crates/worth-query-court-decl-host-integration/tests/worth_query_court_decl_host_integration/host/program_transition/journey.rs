@@ -1,6 +1,7 @@
 //! Real Daymark `v2 -> v3` Directory Home upgrade journeys, including
-//! budget-stop atomic rollback, managed equality-index rebuild, idempotent
-//! reopen, and optional custom migration step composition.
+//! named-boundary budget-stop atomic rollback, managed equality-index rebuild,
+//! idempotent reopen, entity scan bound refusal, predecessor-field overwrite
+//! refusal, non-indexed rebuild refusal, and custom migration step composition.
 
 use std::path::Path;
 use std::sync::{
@@ -18,13 +19,14 @@ use worth_query_host::facade::{
         WorthQueryProgramTransitionOpenDenial, WorthQueryTransitionOpenOutcome,
     },
     runtime::ExecutionAllocationPolicy,
+    WorthQueryHomeProgramTransitionDenial, WorthQueryHomeProgramTransitionOpenPhase,
 };
 use worth_query_testkit_host::facade::host::{
     application_home as fixture, application_runtime_surface as identity, checkpoint_capture,
 };
+use worth_relational::facade::indexes::DerivedIndexMaintenanceBudget;
 
 use super::driver::request_scope;
-use super::schema::tight_budget_lease;
 use super::v2_mutations::{CreateTaskV2, TaskV2Input};
 use super::v2_program::v2_request;
 use super::v2_queries::AllTasksV2Read;
@@ -32,7 +34,7 @@ use super::v3_mutations::{TaskV3Input, UpdateTaskV3};
 use super::v3_program::{v3_request, DaymarkV2ToV3};
 use super::v3_queries::{AllTasksV3Read, TasksByPriorityRead};
 
-fn seed_v2_tasks(
+pub(super) fn seed_v2_tasks(
     location: &Path,
     build: ApplicationBuildIdentity,
     execution: worth_execution::ExecutionRequest<'_, '_>,
@@ -74,38 +76,17 @@ fn seed_v2_tasks(
     (*v2_home).close(&execution).unwrap().reclaim();
 }
 
-fn verify_budget_stop_keeps_v2_intact(
+pub(super) fn assert_v2_reopens_intact(
     location: &Path,
     build: ApplicationBuildIdentity,
     execution: worth_execution::ExecutionRequest<'_, '_>,
     expected_rows: usize,
 ) {
-    let tight = tight_budget_lease(1);
-    let stopped_exec = worth_execution::ExecutionRequest::leased(&tight);
-    let stopped = with_bootstrap_advancement_from_request(stopped_exec, |phase| {
-        open_directory_with_transition::<DaymarkV2ToV3>(
-            &phase,
-            v2_request(location.to_path_buf(), build),
-            v3_request(location.to_path_buf(), build),
-            WorthQueryProgramTransitionOpenConfig::default_bounded(),
-        )
-    });
-    assert!(
-        stopped.is_err()
-            || matches!(
-                stopped,
-                Ok(Err(
-                    WorthQueryProgramTransitionOpenDenial::BudgetOrCancellationStopped { .. }
-                ))
-            ),
-        "budget stop must refuse without promoting v3"
-    );
-
     let reopened_v2 = with_bootstrap_advancement_from_request(execution, |phase| {
         Box::new(
             v2_request(location.to_path_buf(), build)
                 .open_in_advancement(&phase)
-                .expect("v2 home remains intact after budget stop"),
+                .expect("plain v2 home must reopen cleanly without TransitionPending"),
         )
     })
     .unwrap();
@@ -124,6 +105,50 @@ fn verify_budget_stop_keeps_v2_intact(
         assert_eq!(rows.rows().len(), expected_rows);
     }
     (*reopened_v2).close(&execution).unwrap().reclaim();
+}
+
+fn verify_budget_stop_keeps_v2_intact(
+    location: &Path,
+    build: ApplicationBuildIdentity,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
+    expected_rows: usize,
+) {
+    let tight_index_budget = DerivedIndexMaintenanceBudget {
+        maximum_work_units: Some(1),
+        maximum_cold_record_slots: Some(1),
+        maximum_derived_rows: Some(1),
+    };
+    let config =
+        WorthQueryProgramTransitionOpenConfig::default_bounded().with_resources(tight_index_budget);
+    let stopped = with_bootstrap_advancement_from_request(execution, |phase| {
+        open_directory_with_transition::<DaymarkV2ToV3>(
+            &phase,
+            v2_request(location.to_path_buf(), build),
+            v3_request(location.to_path_buf(), build),
+            config,
+        )
+    })
+    .expect("outer bootstrap must succeed so budget stop fires at transition boundary");
+    let denial = stopped
+        .err()
+        .expect("budget-exhausted transition must fail closed");
+    let WorthQueryProgramTransitionOpenDenial::BudgetOrCancellationStopped { refused } = denial
+    else {
+        panic!("expected typed BudgetOrCancellationStopped, got {denial:?}");
+    };
+    assert!(
+        matches!(
+            refused.phase(),
+            WorthQueryHomeProgramTransitionOpenPhase::Transition {
+                cause: WorthQueryHomeProgramTransitionDenial::Author(_),
+                ..
+            }
+        ),
+        "expected named Transition/Author budget refusal, got {:?}",
+        refused.phase()
+    );
+    drop(refused);
+    assert_v2_reopens_intact(location, build, execution, expected_rows);
 }
 
 fn verify_upgraded_v3_and_promote_t1(

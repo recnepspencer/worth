@@ -103,34 +103,6 @@ macro_rules! worth_query_program_transition {
                 $crate::facade::program_transition::WorthQueryProgramTransitionDescriptor,
                 $crate::facade::program_transition::WorthQueryProgramTransitionDeclarationDenial,
             > {
-                let retained_records = ::std::vec![
-                    $($(
-                        $crate::facade::program_transition::WorthQueryProgramTransitionRetainedRecord::for_entity::<$retained>()
-                    ),*)?
-                ];
-                let added_records = ::std::vec![
-                    $($(
-                        $crate::facade::program_transition::WorthQueryProgramTransitionAddedRecord::for_entity::<$added>()
-                    ),*)?
-                ];
-                let added_defaults = ::std::vec![
-                    $($(
-                        $crate::facade::program_transition::WorthQueryProgramTransitionFieldDefault::from_field_selection(
-                            $field_sel,
-                            &($default_val),
-                            $required,
-                            $label,
-                        )?
-                    ),*)?
-                ];
-                let index_rebuilds = ::std::vec![
-                    $($(
-                        $crate::facade::program_transition::WorthQueryProgramTransitionIndexRebuild::for_field($index_sel)
-                    ),*)?
-                ];
-                let description: &'static str = $crate::worth_query_program_transition!(
-                    @description $($description)?
-                );
                 $crate::facade::program_transition::WorthQueryProgramTransitionDescriptor::from_parts(
                     $crate::facade::program_transition::WorthQueryProgramTransitionDescriptorParts {
                         transition_name: <Self as $crate::facade::program_transition::WorthQueryProgramTransitionSpec>::NAME,
@@ -138,11 +110,34 @@ macro_rules! worth_query_program_transition {
                         to_program_identity: <$to_program as $crate::facade::application_program::ApplicationProgramDefinition<$to_schema>>::IDENTITY,
                         from_version: <Self as $crate::facade::program_transition::WorthQueryProgramTransitionSpec>::FROM_VERSION,
                         to_version: <Self as $crate::facade::program_transition::WorthQueryProgramTransitionSpec>::TO_VERSION,
-                        retained_records,
-                        added_records,
-                        added_defaults,
-                        index_rebuilds,
-                        description,
+                        retained_records: ::std::vec![
+                            $($(
+                                $crate::facade::program_transition::WorthQueryProgramTransitionRetainedRecord::for_entity::<$retained>()
+                            ),*)?
+                        ],
+                        added_records: ::std::vec![
+                            $($(
+                                $crate::facade::program_transition::WorthQueryProgramTransitionAddedRecord::for_entity::<$added>()
+                            ),*)?
+                        ],
+                        added_defaults: ::std::vec![
+                            $($(
+                                $crate::facade::program_transition::WorthQueryProgramTransitionFieldDefault::from_field_selection(
+                                    $field_sel,
+                                    &($default_val),
+                                    $required,
+                                    $label,
+                                )?
+                            ),*)?
+                        ],
+                        index_rebuilds: ::std::vec![
+                            $($(
+                                $crate::facade::program_transition::WorthQueryProgramTransitionIndexRebuild::for_field($index_sel)
+                            ),*)?
+                        ],
+                        description: $crate::worth_query_program_transition!(
+                            @description $($description)?
+                        ),
                     },
                 )
             }

@@ -2,8 +2,6 @@
 //! fragment while v3 adds `TaskPriority::Priority` (equality-queryable) via
 //! `Extend<Task, (Option<TaskPriority>,), ()>`.
 
-use std::num::NonZeroUsize;
-
 use worth_query_decl::facade::{
     application_schema::{
         fragment::{self, *},
@@ -307,23 +305,4 @@ pub fn seed_base_project<S: ApplicationSchema>(
         )
         .unwrap();
     Ok(())
-}
-
-/// Real bounded execution lease with a tight work ceiling for deterministic
-/// mid-transition budget-stop certification on the same host.
-pub fn tight_budget_lease(work_units: u64) -> worth_execution::ExecutionResourceLease<'static> {
-    worth_execution::ExecutionResourceLease::serial(worth_execution::LeaseRequest {
-        policy: worth_foundational::ExecutionRequestPolicy::new(
-            worth_foundational::ExecutionPosture::Serial,
-            worth_foundational::DeterminismContract::CanonicalBitwise,
-            worth_foundational::ExecutionBudget::new(
-                NonZeroUsize::MIN,
-                Some(256 << 20),
-                Some(work_units),
-            ),
-        ),
-        cancellation: worth_execution::CancellationToken::new(),
-        deadline: None,
-    })
-    .unwrap()
 }

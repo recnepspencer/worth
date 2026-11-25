@@ -7,6 +7,7 @@ mod dst;
 mod journey;
 mod observe;
 mod reference_model;
+mod refusals;
 mod schema;
 mod v2_mutations;
 mod v2_program;
@@ -37,7 +38,11 @@ use worth_query_host::facade::{
 use worth_query_testkit_host::facade::host::{application_home as fixture, checkpoint_capture};
 
 use v2_program::{v1_request, v2_request};
-use v3_program::{v3_request, DaymarkV2ToV3, DaymarkV3ToV2Downgrade};
+use v3_program::{
+    hostile_macro_scope, v3_request, DaymarkV2ToV3, DaymarkV3ToV2Downgrade,
+    DuplicateAddedTransition, DuplicateIndexRebuildTransition, DuplicateRetainedTransition,
+    OverlapRetainedAddedTransition, SpoofedEndpointsTransition,
+};
 
 fn assert_auto_traits<T: Send + Sync + UnwindSafe + RefUnwindSafe>() {}
 
@@ -225,6 +230,69 @@ fn declared_downgrade_and_invalid_config_refuse_fail_closed() {
         config_refused,
         WorthQueryProgramTransitionOpenDenial::InvalidConfiguration(
             WorthQueryProgramTransitionConfigDenial::InvalidEntityScanLimit
+        )
+    ));
+}
+
+#[test]
+fn declaration_validates_all_duplicates_overlaps_spoofed_endpoints_and_macro_hygiene() {
+    assert_eq!(
+        DuplicateRetainedTransition::descriptor(),
+        Err(
+            WorthQueryProgramTransitionDeclarationDenial::DuplicateRetainedRecord {
+                entity: "Task",
+            }
+        )
+    );
+    assert_eq!(
+        DuplicateAddedTransition::descriptor(),
+        Err(WorthQueryProgramTransitionDeclarationDenial::DuplicateAddedRecord { entity: "Task" })
+    );
+    assert_eq!(
+        OverlapRetainedAddedTransition::descriptor(),
+        Err(
+            WorthQueryProgramTransitionDeclarationDenial::RecordInBothRetainedAndAdded {
+                entity: "Task",
+            }
+        )
+    );
+    assert_eq!(
+        DuplicateIndexRebuildTransition::descriptor(),
+        Err(
+            WorthQueryProgramTransitionDeclarationDenial::DuplicateIndexRebuild {
+                entity: "Task",
+                aspect:
+                    worth_query_decl::facade::application_schema::fragment::RecordSelection::aspect(
+                        schema::task_priority_field(),
+                    ),
+                field: "Priority",
+            }
+        )
+    );
+    assert!(hostile_macro_scope::HygienicV2ToV3::descriptor().is_ok());
+
+    let location = fixture::location();
+    let build = worth_query_default_build_id!();
+    let lease = checkpoint_capture::lease(128 * 1024 * 1024);
+    let execution = worth_execution::ExecutionRequest::leased(&lease);
+    let spoofed = with_bootstrap_advancement_from_request(execution, |phase| {
+        open_directory_with_transition::<SpoofedEndpointsTransition>(
+            &phase,
+            v3_request(location.clone(), build),
+            v2_request(location, build),
+            WorthQueryProgramTransitionOpenConfig::default_bounded(),
+        )
+    })
+    .unwrap()
+    .err()
+    .expect("spoofed 3->2 spec returning 2->3 descriptor must fail closed");
+    assert!(matches!(
+        spoofed,
+        WorthQueryProgramTransitionOpenDenial::Declaration(
+            WorthQueryProgramTransitionDeclarationDenial::DowngradeRefused {
+                from_version: 3,
+                to_version: 2,
+            }
         )
     ));
 }

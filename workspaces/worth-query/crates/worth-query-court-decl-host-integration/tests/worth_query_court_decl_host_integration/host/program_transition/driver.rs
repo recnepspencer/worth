@@ -18,14 +18,15 @@ use worth_query_host::facade::{
         WorthQueryTransitionOpenOutcome,
     },
     runtime::ExecutionAllocationPolicy,
-    WorthQueryApplicationHome,
+    WorthQueryApplicationHome, WorthQueryHomeProgramTransitionDenial,
+    WorthQueryHomeProgramTransitionOpenPhase,
 };
 use worth_query_testkit_host::facade::host::{
     application_home as fixture, application_runtime_surface as identity, checkpoint_capture,
 };
+use worth_relational::facade::indexes::DerivedIndexMaintenanceBudget;
 
 use super::reference_model::{Op, RowState, ROW_IDS};
-use super::schema::tight_budget_lease;
 use super::v2_mutations::{CreateTaskV2, TaskV2Input, UpdateTaskV2};
 use super::v2_program::{v2_request, DaymarkV2Program, DaymarkV2Schema};
 use super::v3_mutations::{CreateTaskV3, TaskV3Input, UpdateTaskV3};
@@ -41,8 +42,6 @@ pub struct Driver {
     pub(super) location: PathBuf,
     pub(super) build: ApplicationBuildIdentity,
     pub(super) live: LiveHome,
-    pub(super) disk_version: u32,
-    pub(super) index_state: &'static str,
     pub(super) transition_runs: usize,
     pub(super) last_outcome: &'static str,
     pub(super) last_observed_rows: BTreeMap<&'static str, RowState>,
@@ -68,8 +67,6 @@ impl Driver {
             location: fixture::location(),
             build: worth_query_default_build_id!(),
             live: LiveHome::Closed,
-            disk_version: 0,
-            index_state: "None",
             transition_runs: 0,
             last_outcome: "Init",
             last_observed_rows: rows,
@@ -91,7 +88,7 @@ impl Driver {
             Op::WriteV2 { row, v2val } => self.write_v2(row, v2val),
             Op::CloseHome => self.close_home(execution),
             Op::OpenV3WithoutTransition => self.refuse_v3_without_transition(execution),
-            Op::OpenV3WithTransitionBudgetStop => self.refuse_v3_budget_stop(),
+            Op::OpenV3WithTransitionBudgetStop => self.refuse_v3_budget_stop(execution),
             Op::OpenV3WithTransition => self.upgrade_v2_to_v3(execution),
             Op::OpenV2OnV3 => self.refuse_downgrade_v2_on_v3(execution),
             Op::WriteV3 {
@@ -115,7 +112,6 @@ impl Driver {
         .map_err(|e| format!("bootstrap v2 failed: {e:?}"))?
         .map_err(|e| format!("open v2 refused: {e:?}"))?;
         self.live = LiveHome::V2(Box::new(home));
-        self.disk_version = 2;
         self.last_outcome = outcome;
         Ok(())
     }
@@ -200,11 +196,7 @@ impl Driver {
         if requirement.recorded().selected().identity() != "daymark.program.v2"
             || requirement.requested().selected().identity() != "daymark.program.v3"
         {
-            return Err(format!(
-                "unexpected transition_required identities: recorded={}, requested={}",
-                requirement.recorded().selected().identity(),
-                requirement.requested().selected().identity()
-            ));
+            return Err("unexpected transition_required identities for v3 on v2".to_owned());
         }
         refused
             .close(&execution)
@@ -214,28 +206,44 @@ impl Driver {
         Ok(())
     }
 
-    fn refuse_v3_budget_stop(&mut self) -> Result<(), String> {
-        let tight = tight_budget_lease(1);
-        let execution = worth_execution::ExecutionRequest::leased(&tight);
+    fn refuse_v3_budget_stop(
+        &mut self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), String> {
         let before = v2_request(self.location.clone(), self.build);
         let after = v3_request(self.location.clone(), self.build);
-        let config = WorthQueryProgramTransitionOpenConfig::default_bounded();
+        let config = WorthQueryProgramTransitionOpenConfig::default_bounded().with_resources(
+            DerivedIndexMaintenanceBudget {
+                maximum_work_units: Some(1),
+                maximum_cold_record_slots: Some(1),
+                maximum_derived_rows: Some(1),
+            },
+        );
         let outcome = with_bootstrap_advancement_from_request(execution, |phase| {
             open_directory_with_transition::<DaymarkV2ToV3>(&phase, before, after, config)
-        });
+        })
+        .map_err(|e| format!("outer bootstrap must not fail before transition boundary: {e:?}"))?;
         match outcome {
-            Err(_) => {}
-            Ok(Err(WorthQueryProgramTransitionOpenDenial::BudgetOrCancellationStopped {
-                refused,
-            })) => drop(refused),
-            Ok(Err(other)) => {
+            Err(WorthQueryProgramTransitionOpenDenial::BudgetOrCancellationStopped { refused }) => {
+                if !matches!(
+                    refused.phase(),
+                    WorthQueryHomeProgramTransitionOpenPhase::Transition {
+                        cause: WorthQueryHomeProgramTransitionDenial::Author(_),
+                        ..
+                    }
+                ) {
+                    return Err(format!(
+                        "expected Transition/Author stop, got {:?}",
+                        refused.phase()
+                    ));
+                }
+            }
+            Err(other) => {
                 return Err(format!(
                     "expected BudgetOrCancellationStopped, got {other:?}"
-                ));
+                ))
             }
-            Ok(Ok(_)) => {
-                return Err("budget-exhausted transition must never succeed".to_owned());
-            }
+            Ok(_) => return Err("budget-exhausted transition must never succeed".to_owned()),
         }
         self.last_outcome = "RefusedBudgetStop";
         Ok(())
@@ -268,23 +276,15 @@ impl Driver {
                 to_version: 3,
                 backfilled_records,
                 indexes_marked_for_rebuild,
-            } => {
-                if backfilled_records != expected_backfilled {
-                    return Err(format!(
-                        "backfilled_records={backfilled_records}, expected {expected_backfilled}"
-                    ));
-                }
-                if indexes_marked_for_rebuild.len() != 1 {
-                    return Err(format!(
-                        "expected 1 rebuilt index, got {indexes_marked_for_rebuild:?}"
-                    ));
-                }
+            } if backfilled_records == expected_backfilled
+                && indexes_marked_for_rebuild.len() == 1 => {}
+            other => {
+                return Err(format!(
+                    "unexpected upgrade outcome (expected {expected_backfilled} backfilled, 1 index): {other:?}"
+                ));
             }
-            other => return Err(format!("expected UpgradedInPlace, got {other:?}")),
         }
         self.live = LiveHome::V3(Box::new(home));
-        self.disk_version = 3;
-        self.index_state = "Ready";
         self.transition_runs += 1;
         self.last_outcome = "UpgradedV2ToV3";
         Ok(())
@@ -307,11 +307,7 @@ impl Driver {
         if requirement.recorded().selected().identity() != "daymark.program.v3"
             || requirement.requested().selected().identity() != "daymark.program.v2"
         {
-            return Err(format!(
-                "unexpected downgrade refusal identities: recorded={}, requested={}",
-                requirement.recorded().selected().identity(),
-                requirement.requested().selected().identity()
-            ));
+            return Err("unexpected downgrade refusal identities for v2 on v3".to_owned());
         }
         refused
             .close(&execution)

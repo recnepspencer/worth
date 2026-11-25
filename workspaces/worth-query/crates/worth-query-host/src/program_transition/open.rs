@@ -2,7 +2,7 @@
 
 use std::sync::{
     atomic::{AtomicBool, AtomicUsize, Ordering},
-    Arc,
+    Arc, Mutex,
 };
 
 use crate::application_home::WorthQueryApplicationHomeRequest;
@@ -118,22 +118,31 @@ where
         -> Result<Vec<WorkerIntentBatch>, WorthQueryPrimaryGraphInstallationDenial>,
 {
     let descriptor = T::descriptor().map_err(WorthQueryProgramTransitionOpenDenial::Declaration)?;
+    descriptor
+        .validate_for_spec::<T>()
+        .map_err(WorthQueryProgramTransitionOpenDenial::Declaration)?;
     config
         .validate()
         .map_err(WorthQueryProgramTransitionOpenDenial::InvalidConfiguration)?;
 
     let (predecessor, successor) = requests;
     let (resources, max_entities_per_kind, dispositions) = config.into_parts();
-    let observers = OpenObservers::new(descriptor.index_rebuilds().to_vec());
-    let (upgraded, backfilled) = (observers.upgraded.clone(), observers.backfilled.clone());
+    let observers = OpenObservers::new();
+    let record_handle = observers.recorder();
 
     let mut request = successor
         .observe_initial_state(observers.created_fresh.clone())
         .with_program_transition(predecessor, resources, move |source, target| {
-            upgraded.store(true, Ordering::SeqCst);
-            let input = PlanInput { descriptor: &descriptor, max_entities_per_kind };
+            let input = PlanInput {
+                descriptor: &descriptor,
+                max_entities_per_kind,
+                resources,
+            };
             let compiled = compile_declarative_plan(input, source, target, custom_step)?;
-            backfilled.store(compiled.backfilled_records, Ordering::SeqCst);
+            record_handle.record(
+                compiled.backfilled_records,
+                compiled.verified_index_rebuilds,
+            );
             Ok(compiled.plan)
         });
     if let Some(dispositions) = dispositions {
@@ -142,33 +151,69 @@ where
     let home = request
         .open_in_advancement(phase)
         .map_err(WorthQueryProgramTransitionOpenDenial::classify_host)?;
-    Ok(WorthQueryTransitionOpenedHome::new(home, observers.into_outcome::<T>()))
+    Ok(WorthQueryTransitionOpenedHome::new(
+        home,
+        observers.into_outcome::<T>(),
+    ))
+}
+
+struct UpgradeRecorder {
+    upgraded: Arc<AtomicBool>,
+    backfilled: Arc<AtomicUsize>,
+    verified_indexes: Arc<Mutex<Vec<WorthQueryProgramTransitionIndexRebuild>>>,
+}
+
+impl UpgradeRecorder {
+    fn record(
+        &self,
+        backfilled_records: usize,
+        indexes: Vec<WorthQueryProgramTransitionIndexRebuild>,
+    ) {
+        self.upgraded.store(true, Ordering::SeqCst);
+        self.backfilled.store(backfilled_records, Ordering::SeqCst);
+        if let Ok(mut guard) = self.verified_indexes.lock() {
+            *guard = indexes;
+        }
+    }
 }
 
 struct OpenObservers {
     created_fresh: Arc<AtomicBool>,
     upgraded: Arc<AtomicBool>,
     backfilled: Arc<AtomicUsize>,
-    indexes_marked_for_rebuild: Vec<WorthQueryProgramTransitionIndexRebuild>,
+    verified_indexes: Arc<Mutex<Vec<WorthQueryProgramTransitionIndexRebuild>>>,
 }
 
 impl OpenObservers {
-    fn new(indexes_marked_for_rebuild: Vec<WorthQueryProgramTransitionIndexRebuild>) -> Self {
+    fn new() -> Self {
         Self {
             created_fresh: Arc::new(AtomicBool::new(false)),
             upgraded: Arc::new(AtomicBool::new(false)),
             backfilled: Arc::new(AtomicUsize::new(0)),
-            indexes_marked_for_rebuild,
+            verified_indexes: Arc::new(Mutex::new(Vec::new())),
+        }
+    }
+
+    fn recorder(&self) -> UpgradeRecorder {
+        UpgradeRecorder {
+            upgraded: self.upgraded.clone(),
+            backfilled: self.backfilled.clone(),
+            verified_indexes: self.verified_indexes.clone(),
         }
     }
 
     fn into_outcome<T: WorthQueryProgramTransitionSpec>(self) -> WorthQueryTransitionOpenOutcome {
         if self.upgraded.load(Ordering::SeqCst) {
+            let indexes_marked_for_rebuild = self
+                .verified_indexes
+                .lock()
+                .map(|guard| guard.clone())
+                .unwrap_or_default();
             WorthQueryTransitionOpenOutcome::UpgradedInPlace {
                 from_version: T::FROM_VERSION,
                 to_version: T::TO_VERSION,
                 backfilled_records: self.backfilled.load(Ordering::SeqCst),
-                indexes_marked_for_rebuild: self.indexes_marked_for_rebuild,
+                indexes_marked_for_rebuild,
             }
         } else if self.created_fresh.load(Ordering::SeqCst) {
             WorthQueryTransitionOpenOutcome::CreatedFresh {

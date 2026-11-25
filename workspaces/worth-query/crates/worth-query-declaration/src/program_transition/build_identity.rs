@@ -2,13 +2,19 @@
 //!
 //! Applications normally embed a CI/release UUID via `WORTH_IMPLEMENTATION_BUILD_ID`.
 //! When that environment variable is absent during local development, this helper
-//! derives a deterministic nonzero RFC 4122 UUID from the Cargo package identity
-//! (`<CARGO_PKG_NAME>@<CARGO_PKG_VERSION>`) without requiring a hand-written `build.rs`.
+//! derives a genuine RFC 4122 §4.3 UUIDv5 (SHA-1 over the fixed WORTH namespace
+//! UUID concatenated with `<CARGO_PKG_NAME>@<CARGO_PKG_VERSION>`) without
+//! requiring a hand-written `build.rs`.
 
-use sha2::{Digest, Sha256};
 use worth_foundational::facade::{ApplicationBuildIdentity, InvalidApplicationBuildIdentity};
 
-const PACKAGE_DEFAULT_DOMAIN: &[u8] = b"worth.application.build-identity.package-default.v1\0";
+use super::sha1::uuid_v5;
+
+/// Fixed RFC 4122 namespace UUID for WORTH package-default build identities:
+/// `7c3b5e12-4a91-4d8e-9b63-2f8a1e5c7d40`.
+pub const WORTH_PACKAGE_BUILD_ID_NAMESPACE: [u8; 16] = [
+    0x7c, 0x3b, 0x5e, 0x12, 0x4a, 0x91, 0x4d, 0x8e, 0x9b, 0x63, 0x2f, 0x8a, 0x1e, 0x5c, 0x7d, 0x40,
+];
 
 /// Pure constructor namespace for deterministic Home build identities.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -17,7 +23,7 @@ pub struct WorthQueryApplicationHomeBuildIdentity;
 impl WorthQueryApplicationHomeBuildIdentity {
     /// Resolve an [`ApplicationBuildIdentity`] honoring an explicit
     /// `WORTH_IMPLEMENTATION_BUILD_ID` override when present and falling back to
-    /// a deterministic package-derived UUID when unset.
+    /// a deterministic RFC 4122 §4.3 UUIDv5 when unset.
     ///
     /// Fails closed if `override_env` is present but invalid (empty, malformed,
     /// or all-zero), or if `override_env` is `None` and `package_descriptor` is empty.
@@ -47,26 +53,30 @@ impl WorthQueryApplicationHomeBuildIdentity {
         Self::from_package_descriptor(&descriptor)
     }
 
-    /// Derive a deterministic nonzero UUID from a non-empty package descriptor
-    /// such as `"daymark@0.3.0"`.
+    /// Derive a deterministic nonzero RFC 4122 §4.3 UUIDv5 from a non-empty
+    /// package descriptor such as `"daymark@0.3.0"`.
     pub fn from_package_descriptor(
         package_descriptor: &str,
     ) -> Result<ApplicationBuildIdentity, InvalidApplicationBuildIdentity> {
         if package_descriptor.is_empty() {
             return Err(InvalidApplicationBuildIdentity::Missing);
         }
-        let mut hasher = Sha256::new();
-        hasher.update(PACKAGE_DEFAULT_DOMAIN);
-        hasher.update((package_descriptor.len() as u64).to_le_bytes());
-        hasher.update(package_descriptor.as_bytes());
-        let digest = hasher.finalize();
+        Self::from_uuid_v5(
+            WORTH_PACKAGE_BUILD_ID_NAMESPACE,
+            package_descriptor.as_bytes(),
+        )
+    }
 
-        let mut bytes = [0u8; 16];
-        bytes.copy_from_slice(&digest[..16]);
-        // RFC 4122 version 5 (name-based) and standard variant bits guarantee nonzero bytes.
-        bytes[6] = (bytes[6] & 0x0f) | 0x50;
-        bytes[8] = (bytes[8] & 0x3f) | 0x80;
-
+    /// Derive a deterministic RFC 4122 §4.3 UUIDv5 under an explicit 16-byte
+    /// namespace UUID and name bytes.
+    pub fn from_uuid_v5(
+        namespace: [u8; 16],
+        name: &[u8],
+    ) -> Result<ApplicationBuildIdentity, InvalidApplicationBuildIdentity> {
+        if name.is_empty() {
+            return Err(InvalidApplicationBuildIdentity::Missing);
+        }
+        let bytes = uuid_v5(namespace, name);
         let formatted = format_uuid(bytes);
         ApplicationBuildIdentity::parse(&formatted)
     }
@@ -89,6 +99,26 @@ fn format_uuid(bytes: [u8; 16]) -> String {
 mod tests {
     use super::WorthQueryApplicationHomeBuildIdentity as BuildId;
     use worth_foundational::facade::{ApplicationBuildIdentity, InvalidApplicationBuildIdentity};
+
+    /// RFC 4122 Appendix C DNS namespace UUID (`6ba7b810-9dad-11d1-80b4-00c04fd430c8`).
+    const RFC4122_DNS_NAMESPACE: [u8; 16] = [
+        0x6b, 0xa7, 0xb8, 0x10, 0x9d, 0xad, 0x11, 0xd1, 0x80, 0xb4, 0x00, 0xc0, 0x4f, 0xd4, 0x30,
+        0xc8,
+    ];
+
+    #[test]
+    fn rfc4122_uuid_v5_matches_known_answer_vectors() {
+        let python = BuildId::from_uuid_v5(RFC4122_DNS_NAMESPACE, b"python.org").unwrap();
+        assert_eq!(
+            python,
+            ApplicationBuildIdentity::parse("886313e1-3b8a-5372-9b90-0c9aee199e5d").unwrap()
+        );
+        let example = BuildId::from_uuid_v5(RFC4122_DNS_NAMESPACE, b"www.example.com").unwrap();
+        assert_eq!(
+            example,
+            ApplicationBuildIdentity::parse("2ed6657d-e927-568b-95e1-2665a8aea6a2").unwrap()
+        );
+    }
 
     #[test]
     fn explicit_env_override_takes_precedence_and_fails_closed_when_invalid() {
@@ -122,6 +152,8 @@ mod tests {
         assert_eq!(v2_a, v2_b);
         assert_ne!(v2_a, v3);
         assert_ne!(v2_a.bytes(), [0u8; 16]);
+        assert_eq!(v2_a.bytes()[6] >> 4, 5);
+        assert_eq!(v2_a.bytes()[8] >> 6, 0b10);
         assert_eq!(
             BuildId::package_default(None, ""),
             Err(InvalidApplicationBuildIdentity::Missing)

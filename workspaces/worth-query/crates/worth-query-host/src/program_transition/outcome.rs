@@ -85,6 +85,12 @@ pub enum WorthQueryProgramTransitionOpenDenial<
         kind: WorthQueryHomePredecessorRefusal,
         refused: WorthQueryHomeProgramTransitionOpenRefused<A, AP, B, BP>,
     },
+    /// A transition entity scan exceeded `max_entities_per_kind` before
+    /// publishing any durable transition intent.
+    EntityScanLimitExceeded {
+        maximum_entities_per_kind: usize,
+        refused: WorthQueryHomeProgramTransitionOpenRefused<A, AP, B, BP>,
+    },
     /// Execution budget, work ceiling, allocation limit, or cancellation stopped
     /// the transition without promoting the successor.
     BudgetOrCancellationStopped {
@@ -103,6 +109,12 @@ impl<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaComposition, BP>
         if let Some(kind) = refused.predecessor_mismatch() {
             return Self::PredecessorMismatch { kind, refused };
         }
+        if let Some(maximum_entities_per_kind) = refused.entity_scan_limit_exceeded() {
+            return Self::EntityScanLimitExceeded {
+                maximum_entities_per_kind,
+                refused,
+            };
+        }
         if refused.is_budget_or_cancellation_stop() {
             return Self::BudgetOrCancellationStopped { refused };
         }
@@ -117,6 +129,7 @@ impl<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaComposition, BP>
         match self {
             Self::Declaration(_) | Self::InvalidConfiguration(_) => None,
             Self::PredecessorMismatch { refused, .. }
+            | Self::EntityScanLimitExceeded { refused, .. }
             | Self::BudgetOrCancellationStopped { refused }
             | Self::Host(refused) => Some(refused),
         }
@@ -129,6 +142,7 @@ impl<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaComposition, BP>
         match self {
             Self::Declaration(_) | Self::InvalidConfiguration(_) => None,
             Self::PredecessorMismatch { refused, .. }
+            | Self::EntityScanLimitExceeded { refused, .. }
             | Self::BudgetOrCancellationStopped { refused }
             | Self::Host(refused) => Some(refused),
         }
@@ -147,6 +161,14 @@ impl<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaComposition, BP> s
             Self::PredecessorMismatch { kind, refused } => f
                 .debug_struct("PredecessorMismatch")
                 .field("kind", kind)
+                .field("refused", refused)
+                .finish(),
+            Self::EntityScanLimitExceeded {
+                maximum_entities_per_kind,
+                refused,
+            } => f
+                .debug_struct("EntityScanLimitExceeded")
+                .field("maximum_entities_per_kind", maximum_entities_per_kind)
                 .field("refused", refused)
                 .finish(),
             Self::BudgetOrCancellationStopped { refused } => f

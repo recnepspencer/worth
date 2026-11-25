@@ -60,7 +60,17 @@ impl WorthQueryHomeProgramTransitionReadSource<'_, '_> {
         self.view
             .bounded_entities_of_kind(&self.phase.execution_request(), kind, maximum_work_units)
             .map_err(super::super::super::super::bootstrap::request_read_denial::read)?
-            .map_err(|_| denied("transition entity read exceeded its declared bound"))
+            .map_err(|_| {
+                WorthQueryPrimaryGraphInstallationDenial::new(
+                    super::super::super::super::WorthQueryPrimaryGraphInstallationDenialKind::TransitionEntityScanBoundExceeded {
+                        maximum_work_units,
+                    },
+                    format!("transition entity read for `{name}` exceeded bound {maximum_work_units}"),
+                )
+            })
+    }
+    pub fn execution_request(&self) -> worth_execution::ExecutionRequest<'_, '_> {
+        self.phase.execution_request()
     }
     pub fn relations(
         &self,
@@ -102,6 +112,19 @@ impl WorthQueryHomeProgramTransitionTarget<'_> {
         self.layout
             .field_locator(entity, aspect, field)
             .map(planned)
+    }
+    pub fn installed_field_index(
+        &self,
+        entity: &str,
+        aspect: &str,
+        field: &str,
+    ) -> Option<worth_relational::facade::indexes::DerivedIndexId> {
+        self.layout
+            .field(entity, aspect, field)
+            .and_then(|layout| layout.equality_index_id)
+    }
+    pub fn installed_equality_index_count(&self) -> usize {
+        self.layout.equality_index_ids().count()
     }
 }
 impl<Schema: ApplicationSchemaComposition, Program>
