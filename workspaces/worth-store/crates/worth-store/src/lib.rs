@@ -14,6 +14,7 @@
 
 pub mod integrity_observation;
 pub mod physical_runtime;
+pub mod pin_table_kernel;
 
 pub mod aspect_native {
     pub use worth_store_aspect_native::{

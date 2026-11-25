@@ -1,0 +1,26 @@
+{
+  "imports": ["StoreM4", "StoreM4.PinSafety"],
+  "allowed_axioms": [],
+  "theorems": [
+    {
+      "name": "StoreM4.PinSafety.active_pin_protects_root",
+      "type": "∀ (t : StoreM4.PinSafety.PinTable) (e : StoreM4.PinSafety.PinEntry), e ∈ t → e.protectsRoot → StoreM4.PinSafety.PinTable.reachableRoot t e.root"
+    },
+    {
+      "name": "StoreM4.PinSafety.acquire_protects_new_and_existing_roots",
+      "type": "∀ (t : StoreM4.PinSafety.PinTable) (id root r : Nat) (parent : Option Nat), (r = root ∨ StoreM4.PinSafety.PinTable.reachableRoot t r) → StoreM4.PinSafety.PinTable.reachableRoot (StoreM4.PinSafety.PinTable.acquire t id root parent) r"
+    },
+    {
+      "name": "StoreM4.PinSafety.expireStep_retains_protection_while_held",
+      "type": "∀ (e : StoreM4.PinSafety.PinEntry), e.protectsRoot → (e.activeReaderLoans > 0 ∨ e.liveChildPins > 0) → e.expireStep.protectsRoot"
+    },
+    {
+      "name": "StoreM4.PinSafety.expireById_preserves_held_reachability",
+      "type": "∀ (t : StoreM4.PinSafety.PinTable) (targetId : Nat) (e : StoreM4.PinSafety.PinEntry), e ∈ t → e.protectsRoot → (e.id = targetId → e.activeReaderLoans > 0 ∨ e.liveChildPins > 0) → StoreM4.PinSafety.PinTable.reachableRoot (StoreM4.PinSafety.PinTable.expireById t targetId) e.root"
+    },
+    {
+      "name": "StoreM4.PinSafety.reclaim_disjoint_preserves_active_pins",
+      "type": "∀ (t : StoreM4.PinSafety.PinTable) (reclaimSet : Nat → Prop) (e : StoreM4.PinSafety.PinEntry), (∀ r, reclaimSet r → ¬ StoreM4.PinSafety.PinTable.reachableRoot t r) → e ∈ t → e.protectsRoot → ¬ reclaimSet e.root"
+    }
+  ]
+}

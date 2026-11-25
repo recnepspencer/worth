@@ -1,0 +1,5 @@
+error[E0599]: no method named `scan_history` found for reference `&store_m4_dx_spike::HeadOnlyView<'_, store_m4_dx_spike::MySchema>` in the current scope
+ --> tests/ui/head_view_forbids_history_access.rs:4:18
+  |
+4 |     let _ = head.scan_history::<AuditEntry>(req, AuditQuery::ordered());
+  |                  ^^^^^^^^^^^^ method not found in `&store_m4_dx_spike::HeadOnlyView<'_, store_m4_dx_spike::MySchema>`
