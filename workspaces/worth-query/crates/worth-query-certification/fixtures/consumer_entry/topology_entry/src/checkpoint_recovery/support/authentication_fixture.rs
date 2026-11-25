@@ -9,8 +9,8 @@ use worth_query_host::facade::declaration::authentication::WorthQueryExternalPri
 worth_query_decl::facade::worth_query_authentication_method!(LocalMethod);
 worth_query_decl::facade::worth_query_authentication_audience!(CheckpointAudience);
 worth_query_decl::facade::worth_query_authentication_audience!(NeutralHistoryAudience);
-worth_query_decl::facade::worth_query_principal_issuer!(CheckpointLocalIssuer);
-worth_query_decl::facade::worth_query_principal_issuer!(NeutralHistoryLocalIssuer);
+worth_query_decl::facade::worth_query_principal_issuer!(CheckpointInvalidLocalIssuer);
+worth_query_decl::facade::worth_query_principal_issuer!(NeutralHistoryInvalidLocalIssuer);
 
 #[derive(Clone, Copy)]
 pub(in super::super) enum FixtureAuthenticationRealm {
@@ -39,12 +39,14 @@ impl FixtureAuthenticationRealm {
 
     pub(in super::super) fn external_identity(self) -> WorthQueryExternalPrincipalIdentity {
         match self {
-            Self::Checkpoint => {
-                WorthQueryExternalPrincipalIdentity::new(CheckpointLocalIssuer, "model-owner")
-            }
-            Self::NeutralHistory => {
-                WorthQueryExternalPrincipalIdentity::new(NeutralHistoryLocalIssuer, "model-owner")
-            }
+            Self::Checkpoint => WorthQueryExternalPrincipalIdentity::new(
+                CheckpointInvalidLocalIssuer,
+                "model-owner",
+            ),
+            Self::NeutralHistory => WorthQueryExternalPrincipalIdentity::new(
+                NeutralHistoryInvalidLocalIssuer,
+                "model-owner",
+            ),
         }
         .unwrap()
     }
