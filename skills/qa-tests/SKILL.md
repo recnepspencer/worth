@@ -51,6 +51,13 @@ explicitly requests it.
   formats remain valid subjects when contractual.
 - Ensure setup reaches the intended action and observation. Consider affected
   error paths.
+- Formal verification when relevant (**Verus** / **Lean 4** / TLA+): do not
+  substitute spot unit tests where the specification or surface calls for a
+  machine-checked Verus proof (pure Rust graph/index/codec/storage transitions)
+  or Lean 4 proof (unbounded history, merge, authorization, or invalidation
+  invariants). Reject proofs relying on `admit()`, `sorry`, or unjustified
+  `#[verifier::external_body]` escapes, and keep proof harnesses isolated from
+  normal edit compile closure.
 
 ## Cost
 
