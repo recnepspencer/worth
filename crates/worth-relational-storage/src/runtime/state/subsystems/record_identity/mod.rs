@@ -179,19 +179,11 @@ impl RecordIdentitySubsystem {
         use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
         crate::execution::request_custody::check_request(request)?;
         let state = self.lock();
-        let reclaimed_pending = state
-            .pending
-            .values()
-            .filter(|pending| matches!(pending.origin, RecordAllocationOrigin::Reclaimed { .. }))
-            .count();
         let bytes = arc_layout_size::<Mutex<RecordIdentityState>>()
             .and_then(|n| {
                 n.checked_add(btree_map_bytes::<RecordSlotKey, u32>(
                     state.generation_high_water.len(),
                 )?)
-            })
-            .and_then(|n| {
-                n.checked_add(reclaimed_pending.checked_mul(std::mem::size_of::<RecordSlotKey>())?)
             })
             .ok_or(Cause::MemoryOverflow)?;
         let reservation = request
@@ -200,7 +192,7 @@ impl RecordIdentitySubsystem {
         let mut reusable = state.reusable.clone();
         for (&key, pending) in &state.pending {
             if matches!(pending.origin, RecordAllocationOrigin::Reclaimed { .. }) {
-                reusable.insert(key, ());
+                reusable.insert_for_request(key, (), request)?;
             }
         }
         let next_slots = state.next_slots.clone();
@@ -236,5 +228,7 @@ fn btree_map_bytes<K, V>(len: usize) -> Option<usize> {
     let node = entry
         .checked_mul(11)?
         .checked_add(std::mem::size_of::<usize>().checked_mul(12)?)?;
-    len.div_ceil(6).checked_mul(node)
+    // Conservative 2x node bound covers internal parent nodes and per-node
+    // alignment/metadata padding across sequential BTreeMap clones.
+    len.div_ceil(6).checked_mul(node)?.checked_mul(2)
 }
