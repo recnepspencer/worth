@@ -1,4 +1,6 @@
 #![allow(unexpected_cfgs)]
+// Wired into Store's `reclaim_guard` in Phase M4.1.
+#![allow(dead_code)]
 
 //! Pure physical root-pin transition kernel for Store Milestone 4 (`M4.0` / `M4.1`).
 //!
@@ -19,7 +21,7 @@ use vstd::prelude::*;
 verus_items! {
     /// Lifecycle state of one durable root-pin lease (`Active -> Expiring -> Expired`).
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-    pub enum PinLifecycleState {
+    pub(crate) enum PinLifecycleState {
         Active,
         Expiring,
         Expired,
@@ -27,7 +29,7 @@ verus_items! {
 
     /// Typed transition refusal from the pure pin-table kernel.
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-    pub enum PinTransitionError {
+    pub(crate) enum PinTransitionError {
         DuplicatePinId,
         PinNotFound,
         ParentPinNotActive,
@@ -37,18 +39,18 @@ verus_items! {
 
     /// Pure physical record for one durable pin entry (zero semantic/branch vocabulary).
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-    pub struct PinRecord {
-        pub pin_id: u64,
-        pub root_id: u64,
-        pub parent_pin_id: Option<u64>,
-        pub state: PinLifecycleState,
-        pub active_reader_loans: u64,
-        pub live_child_pins: u64,
+    pub(crate) struct PinRecord {
+        pub(crate) pin_id: u64,
+        pub(crate) root_id: u64,
+        pub(crate) parent_pin_id: Option<u64>,
+        pub(crate) state: PinLifecycleState,
+        pub(crate) active_reader_loans: u64,
+        pub(crate) live_child_pins: u64,
     }
 
     /// Pure executable transition kernel for Store's durable `PinTable`.
     #[derive(Debug, Clone, PartialEq, Eq, Default)]
-    pub struct PinTableKernel {
+    pub(crate) struct PinTableKernel {
         entries: Vec<PinRecord>,
     }
 }
@@ -56,25 +58,25 @@ verus_items! {
 #[cfg(verus_keep_ghost)]
 verus! {
     impl PinTableKernel {
-        pub closed spec fn spec_len(&self) -> int {
+        pub(crate) closed spec fn spec_len(&self) -> int {
             self.entries@.len() as int
         }
 
-        pub open spec fn spec_entry_protects(entry: PinRecord, root_id: u64) -> bool {
+        spec fn spec_entry_protects(entry: PinRecord, root_id: u64) -> bool {
             entry.root_id == root_id && entry.state != PinLifecycleState::Expired
         }
 
-        pub closed spec fn spec_root_protected(&self, root_id: u64) -> bool {
+        pub(crate) closed spec fn spec_root_protected(&self, root_id: u64) -> bool {
             exists|i: int| 0 <= i < self.entries@.len()
                 && Self::spec_entry_protects(self.entries@[i], root_id)
         }
 
-        pub closed spec fn spec_has_pin_id(&self, pin_id: u64) -> bool {
+        pub(crate) closed spec fn spec_has_pin_id(&self, pin_id: u64) -> bool {
             exists|i: int| 0 <= i < self.entries@.len()
                 && self.entries@[i].pin_id == pin_id
         }
 
-        pub closed spec fn spec_well_formed(&self) -> bool {
+        pub(crate) closed spec fn spec_well_formed(&self) -> bool {
             (forall|i: int, j: int|
                 0 <= i < self.entries@.len() && 0 <= j < self.entries@.len() && i != j
                 ==> self.entries@[i].pin_id != self.entries@[j].pin_id)
@@ -84,11 +86,11 @@ verus! {
                     && self.entries@[i].live_child_pins == 0)
         }
 
-        pub closed spec fn spec_entry_at(&self, idx: int) -> PinRecord {
+        pub(crate) closed spec fn spec_entry_at(&self, idx: int) -> PinRecord {
             self.entries@[idx]
         }
 
-        pub closed spec fn spec_entries(&self) -> Seq<PinRecord> {
+        pub(crate) closed spec fn spec_entries(&self) -> Seq<PinRecord> {
             self.entries@
         }
     }
@@ -96,7 +98,7 @@ verus! {
 
 verus_method! {
     /// Construct an empty pin table.
-    pub fn new() -> (result: Self);
+    pub(crate) fn new() -> (result: Self);
     ensures {
         result.spec_len() == 0,
         result.spec_well_formed(),
@@ -108,7 +110,7 @@ verus_method! {
 
 verus_method! {
     /// Number of tracked pin entries.
-    pub fn len(&self) -> (result: usize);
+    pub(crate) fn len(&self) -> (result: usize);
     ensures {
         result as int == self.spec_len(),
     }
@@ -119,7 +121,7 @@ verus_method! {
 
 verus_method! {
     /// Whether the table currently holds zero pin entries.
-    pub fn is_empty(&self) -> (result: bool);
+    pub(crate) fn is_empty(&self) -> (result: bool);
     ensures {
         result == (self.spec_len() == 0),
     }
@@ -130,7 +132,7 @@ verus_method! {
 
 verus_scan_method! {
     /// Locate an entry index by `pin_id`.
-    pub fn find_index(&self, pin_id: u64) -> (result: Option<usize>);
+    pub(crate) fn find_index(&self, pin_id: u64) -> (result: Option<usize>);
     ensures {
         match result {
             Some(idx) => (idx as int) < self.spec_len()
@@ -160,7 +162,7 @@ verus_scan_method! {
 
 verus_scan_method! {
     /// Query whether `root_id` is currently protected by any non-expired pin.
-    pub fn is_root_protected(&self, root_id: u64) -> (result: bool);
+    pub(crate) fn is_root_protected(&self, root_id: u64) -> (result: bool);
     ensures {
         result == self.spec_root_protected(root_id),
     }

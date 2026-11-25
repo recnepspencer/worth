@@ -50,7 +50,8 @@ VARIABLES
     pinnedEpoch,        \* Epoch pinned by durable PinTable (0 when "None")
     activeReaderLoans,  \* Volatile in-process reader loans against the pin (0..1)
     liveChildPins,      \* Durable nested child overlay pins referencing this pin (0..1)
-    reclaimedEpochs     \* Set of epochs physically reclaimed
+    reclaimedEpochs,    \* Set of epochs physically reclaimed
+    everHeldWhileExpiring \* History flag: pin entered Expiring while held by a loan/child pin
 
 M3 == INSTANCE StoreDurability
       WITH MaxCommits <- MaxCommits,
@@ -78,7 +79,7 @@ m3Vars == <<durableHead, checkpointEpoch, stagedCheckpoint, retainedFloor,
             crashed, recoveryStage, crashCount, buildId, derivedState,
             recoveredHead, reopenSucceeded>>
 
-m4Vars == <<pinState, pinnedEpoch, activeReaderLoans, liveChildPins, reclaimedEpochs>>
+m4Vars == <<pinState, pinnedEpoch, activeReaderLoans, liveChildPins, reclaimedEpochs, everHeldWhileExpiring>>
 vars == <<m3Vars, m4Vars>>
 
 PinStates == {"None", "Active", "Expiring", "Expired"}
@@ -101,6 +102,7 @@ Init ==
     /\ activeReaderLoans = 0
     /\ liveChildPins = 0
     /\ reclaimedEpochs = {}
+    /\ everHeldWhileExpiring = FALSE
 
 \* ---------------------------------------------------------------------------
 \* Coupled M3 Durability Actions (preserving M4 durable pin/reclaim state)
@@ -122,7 +124,7 @@ M3Step ==
 CrashWithVolatileDrop ==
     /\ M3!CrashKill
     /\ activeReaderLoans' = 0
-    /\ UNCHANGED <<pinState, pinnedEpoch, liveChildPins, reclaimedEpochs>>
+    /\ UNCHANGED <<pinState, pinnedEpoch, liveChildPins, reclaimedEpochs, everHeldWhileExpiring>>
 
 \* ---------------------------------------------------------------------------
 \* M4 PinTable, Lease Expiry & Reachability-Guarded Reclamation Actions
@@ -136,33 +138,33 @@ PublishForkPin ==
     /\ pinnedEpoch' = durableHead
     /\ activeReaderLoans' = 0
     /\ liveChildPins' = 0
-    /\ UNCHANGED <<m3Vars, reclaimedEpochs>>
+    /\ UNCHANGED <<m3Vars, reclaimedEpochs, everHeldWhileExpiring>>
 
 AcquireReaderLoan ==
     /\ ~crashed
     /\ pinState = "Active"
     /\ activeReaderLoans = 0
     /\ activeReaderLoans' = 1
-    /\ UNCHANGED <<m3Vars, pinState, pinnedEpoch, liveChildPins, reclaimedEpochs>>
+    /\ UNCHANGED <<m3Vars, pinState, pinnedEpoch, liveChildPins, reclaimedEpochs, everHeldWhileExpiring>>
 
 ReleaseReaderLoan ==
     /\ ~crashed
     /\ activeReaderLoans = 1
     /\ activeReaderLoans' = 0
-    /\ UNCHANGED <<m3Vars, pinState, pinnedEpoch, liveChildPins, reclaimedEpochs>>
+    /\ UNCHANGED <<m3Vars, pinState, pinnedEpoch, liveChildPins, reclaimedEpochs, everHeldWhileExpiring>>
 
 AttachChildPin ==
     /\ ~crashed
     /\ pinState = "Active"
     /\ liveChildPins = 0
     /\ liveChildPins' = 1
-    /\ UNCHANGED <<m3Vars, pinState, pinnedEpoch, activeReaderLoans, reclaimedEpochs>>
+    /\ UNCHANGED <<m3Vars, pinState, pinnedEpoch, activeReaderLoans, reclaimedEpochs, everHeldWhileExpiring>>
 
 ReleaseChildPin ==
     /\ ~crashed
     /\ liveChildPins = 1
     /\ liveChildPins' = 0
-    /\ UNCHANGED <<m3Vars, pinState, pinnedEpoch, activeReaderLoans, reclaimedEpochs>>
+    /\ UNCHANGED <<m3Vars, pinState, pinnedEpoch, activeReaderLoans, reclaimedEpochs, everHeldWhileExpiring>>
 
 \* Active -> Expiring atomically fences NEW reader loans & child pins while
 \* keeping `pinnedEpoch` protected until loans & child pins drain.
@@ -170,6 +172,7 @@ BeginExpireForkLease ==
     /\ ~crashed
     /\ pinState = "Active"
     /\ pinState' = "Expiring"
+    /\ everHeldWhileExpiring' = (everHeldWhileExpiring \/ activeReaderLoans > 0 \/ liveChildPins > 0)
     /\ UNCHANGED <<m3Vars, pinnedEpoch, activeReaderLoans, liveChildPins, reclaimedEpochs>>
 
 \* Expiring -> Expired strictly requires zero active reader loans AND zero live child pins.
@@ -179,7 +182,7 @@ FinishExpireForkLease ==
     /\ activeReaderLoans = 0
     /\ liveChildPins = 0
     /\ pinState' = "Expired"
-    /\ UNCHANGED <<m3Vars, pinnedEpoch, activeReaderLoans, liveChildPins, reclaimedEpochs>>
+    /\ UNCHANGED <<m3Vars, pinnedEpoch, activeReaderLoans, liveChildPins, reclaimedEpochs, everHeldWhileExpiring>>
 
 \* Reclaim an obsolete epoch strictly outside ReachableEpochs.
 ReclaimEpoch(ep) ==
@@ -189,7 +192,7 @@ ReclaimEpoch(ep) ==
     /\ ~(ep \in ReachableEpochs)
     /\ ~(ep \in reclaimedEpochs)
     /\ reclaimedEpochs' = reclaimedEpochs \cup {ep}
-    /\ UNCHANGED <<m3Vars, pinState, pinnedEpoch, activeReaderLoans, liveChildPins>>
+    /\ UNCHANGED <<m3Vars, pinState, pinnedEpoch, activeReaderLoans, liveChildPins, everHeldWhileExpiring>>
 
 Next ==
     \/ M3Step
@@ -216,13 +219,19 @@ TypeOK ==
     /\ activeReaderLoans \in 0..1
     /\ liveChildPins \in 0..1
     /\ reclaimedEpochs \subseteq Epochs
+    /\ everHeldWhileExpiring \in BOOLEAN
 
 M3NoRetiredHistoryGap == M3!NoRetiredHistoryGap
 
-\* StoreGCPinSafety: no reachable epoch (including any Active or Expiring pin)
-\* is ever reclaimed.
+\* StoreGCPinSafety: independent direct assertion (does NOT rely solely on
+\* `ReachableEpochs`) proving no Active or Expiring pinned epoch, nor any live
+\* head/checkpoint/retained epoch, is ever reclaimed.
 StoreGCPinSafety ==
-    reclaimedEpochs \cap ReachableEpochs = {}
+    /\ (pinState \in {"Active", "Expiring"} => ~(pinnedEpoch \in reclaimedEpochs))
+    /\ \A ep \in reclaimedEpochs :
+        /\ ep < retainedFloor
+        /\ ep < checkpointEpoch
+        /\ ep /= durableHead
 
 \* LeaseExpiryNoReaderLoss: a lease never reaches Expired while any reader loan
 \* or nested child pin remains live.
@@ -230,10 +239,13 @@ LeaseExpiryNoReaderLoss ==
     (pinState = "Expired") => (activeReaderLoans = 0 /\ liveChildPins = 0)
 
 \* Non-vacuity reachability witness predicate (verified via StoreM4ScaleReclaimWitness.cfg):
-\* Proves the model reaches a state where a pinned epoch survived expiry while held,
-\* then expired cleanly after draining, and was reclaimed afterward.
+\* Proves the model reaches a state where a pinned epoch entered Expiring while
+\* held by a live reader loan or child pin, survived until drained, expired
+\* cleanly afterward, and was then physically reclaimed.
 NonVacuityPinReclaimWitness ==
-    pinState = "Expired" /\ pinnedEpoch \in reclaimedEpochs
+    /\ everHeldWhileExpiring
+    /\ pinState = "Expired"
+    /\ pinnedEpoch \in reclaimedEpochs
 
 \* Negation used by the dedicated non-vacuity witness check (must produce a trace!).
 WitnessNotReached == ~NonVacuityPinReclaimWitness

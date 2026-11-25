@@ -6,7 +6,7 @@ use vstd::prelude::*;
 
 verus_method! {
     /// Acquire a fresh `Active` pin on `root_id`, optionally linked to an active parent pin.
-    pub fn acquire_pin(
+    pub(crate) fn acquire_pin(
         &mut self,
         pin_id: u64,
         root_id: u64,
@@ -18,9 +18,31 @@ verus_method! {
     ensures {
         final(self).spec_well_formed(),
         match result {
-            Ok(()) => final(self).spec_root_protected(root_id)
+            Ok(()) => final(self).spec_len() == old(self).spec_len() + 1
+                && final(self).spec_entry_at(old(self).spec_len()) == (PinRecord {
+                    pin_id,
+                    root_id,
+                    parent_pin_id,
+                    state: PinLifecycleState::Active,
+                    active_reader_loans: 0,
+                    live_child_pins: 0,
+                })
+                && final(self).spec_root_protected(root_id)
                 && (forall|r: u64| old(self).spec_root_protected(r)
-                    ==> final(self).spec_root_protected(r)),
+                    ==> final(self).spec_root_protected(r))
+                && (match parent_pin_id {
+                    Some(pid) => exists|p: int| 0 <= p < old(self).spec_len()
+                        && old(self).spec_entry_at(p).pin_id == pid
+                        && old(self).spec_entry_at(p).state == PinLifecycleState::Active
+                        && final(self).spec_entry_at(p) == (PinRecord {
+                            live_child_pins: (old(self).spec_entry_at(p).live_child_pins + 1) as u64,
+                            ..old(self).spec_entry_at(p)
+                        })
+                        && (forall|k: int| 0 <= k < old(self).spec_len() && k != p
+                            ==> final(self).spec_entry_at(k) == old(self).spec_entry_at(k)),
+                    None => forall|k: int| 0 <= k < old(self).spec_len()
+                        ==> final(self).spec_entry_at(k) == old(self).spec_entry_at(k),
+                }),
             Err(_) => final(self).spec_entries() == old(self).spec_entries(),
         },
     }
@@ -29,24 +51,28 @@ verus_method! {
             return Err(PinTransitionError::DuplicatePinId);
         }
 
-        if let Some(parent_id) = parent_pin_id {
-            let parent_idx = match self.find_index(parent_id) {
-                Some(idx) => idx,
-                None => return Err(PinTransitionError::ParentPinNotActive),
-            };
-            let parent = self.entries[parent_idx];
-            if !matches!(parent.state, PinLifecycleState::Active) {
-                return Err(PinTransitionError::ParentPinNotActive);
+        let _parent_idx_opt = match parent_pin_id {
+            Some(parent_id) => {
+                let parent_idx = match self.find_index(parent_id) {
+                    Some(idx) => idx,
+                    None => return Err(PinTransitionError::ParentPinNotActive),
+                };
+                let parent = self.entries[parent_idx];
+                if !matches!(parent.state, PinLifecycleState::Active) {
+                    return Err(PinTransitionError::ParentPinNotActive);
+                }
+                if parent.live_child_pins == u64::MAX {
+                    return Err(PinTransitionError::CounterOverflow);
+                }
+                let updated_parent = PinRecord {
+                    live_child_pins: parent.live_child_pins + 1,
+                    ..parent
+                };
+                self.entries.set(parent_idx, updated_parent);
+                Some(parent_idx)
             }
-            if parent.live_child_pins == u64::MAX {
-                return Err(PinTransitionError::CounterOverflow);
-            }
-            let updated_parent = PinRecord {
-                live_child_pins: parent.live_child_pins + 1,
-                ..parent
-            };
-            self.entries.set(parent_idx, updated_parent);
-        }
+            None => None,
+        };
 
         let record = PinRecord {
             pin_id,
@@ -60,7 +86,16 @@ verus_method! {
     }
     ok_proof {
         let last = (self.entries@.len() - 1) as int;
+        assert(self.spec_entry_at(last) == record);
         assert(Self::spec_entry_protects(self.entries@[last], root_id));
+        if let Some(p_idx) = _parent_idx_opt {
+            let p = p_idx as int;
+            assert(0 <= p < old(self).spec_len());
+            assert(self.spec_entry_at(p) == (PinRecord {
+                live_child_pins: (old(self).spec_entry_at(p).live_child_pins + 1) as u64,
+                ..old(self).spec_entry_at(p)
+            }));
+        }
         assert forall|r: u64| old(self).spec_root_protected(r)
             implies self.spec_root_protected(r) by {
             let i = choose|i: int| 0 <= i < old(self).entries@.len()
@@ -74,13 +109,26 @@ verus_method! {
 
 verus_method! {
     /// Admit an in-process reader loan against an `Active` pin (`Expiring` fences new loans).
-    pub fn acquire_reader_loan(&mut self, pin_id: u64) -> (result: Result<(), PinTransitionError>);
+    pub(crate) fn acquire_reader_loan(&mut self, pin_id: u64) -> (result: Result<(), PinTransitionError>);
     requires {
         old(self).spec_well_formed(),
     }
     ensures {
         final(self).spec_well_formed(),
         forall|r: u64| old(self).spec_root_protected(r) ==> final(self).spec_root_protected(r),
+        match result {
+            Ok(()) => final(self).spec_len() == old(self).spec_len()
+                && (exists|idx: int| 0 <= idx < old(self).spec_len()
+                    && old(self).spec_entry_at(idx).pin_id == pin_id
+                    && old(self).spec_entry_at(idx).state == PinLifecycleState::Active
+                    && final(self).spec_entry_at(idx) == (PinRecord {
+                        active_reader_loans: (old(self).spec_entry_at(idx).active_reader_loans + 1) as u64,
+                        ..old(self).spec_entry_at(idx)
+                    })
+                    && (forall|k: int| 0 <= k < old(self).spec_len() && k != idx
+                        ==> final(self).spec_entry_at(k) == old(self).spec_entry_at(k))),
+            Err(_) => final(self).spec_entries() == old(self).spec_entries(),
+        },
     }
     body_with_ok_proof {
         let idx = match self.find_index(pin_id) {
@@ -101,6 +149,8 @@ verus_method! {
         self.entries.set(idx, updated);
     }
     ok_proof {
+        assert(old(self).spec_entry_at(idx as int).pin_id == pin_id);
+        assert(self.spec_entry_at(idx as int) == updated);
         assert forall|r: u64| old(self).spec_root_protected(r)
             implies self.spec_root_protected(r) by {
             let i = choose|i: int| 0 <= i < old(self).entries@.len()
@@ -113,13 +163,29 @@ verus_method! {
 
 verus_method! {
     /// Release one in-process reader loan from `pin_id`.
-    pub fn release_reader_loan(&mut self, pin_id: u64) -> (result: Result<(), PinTransitionError>);
+    pub(crate) fn release_reader_loan(&mut self, pin_id: u64) -> (result: Result<(), PinTransitionError>);
     requires {
         old(self).spec_well_formed(),
     }
     ensures {
         final(self).spec_well_formed(),
         forall|r: u64| old(self).spec_root_protected(r) ==> final(self).spec_root_protected(r),
+        match result {
+            Ok(()) => final(self).spec_len() == old(self).spec_len()
+                && (exists|idx: int| 0 <= idx < old(self).spec_len()
+                    && old(self).spec_entry_at(idx).pin_id == pin_id
+                    && final(self).spec_entry_at(idx) == (PinRecord {
+                        active_reader_loans: if old(self).spec_entry_at(idx).active_reader_loans > 0 {
+                            (old(self).spec_entry_at(idx).active_reader_loans - 1) as u64
+                        } else {
+                            0
+                        },
+                        ..old(self).spec_entry_at(idx)
+                    })
+                    && (forall|k: int| 0 <= k < old(self).spec_len() && k != idx
+                        ==> final(self).spec_entry_at(k) == old(self).spec_entry_at(k))),
+            Err(_) => final(self).spec_entries() == old(self).spec_entries(),
+        },
     }
     body_with_ok_proof {
         let idx = match self.find_index(pin_id) {
@@ -136,6 +202,15 @@ verus_method! {
         }
     }
     ok_proof {
+        assert(old(self).spec_entry_at(idx as int).pin_id == pin_id);
+        assert(self.spec_entry_at(idx as int) == (PinRecord {
+            active_reader_loans: if old(self).spec_entry_at(idx as int).active_reader_loans > 0 {
+                (old(self).spec_entry_at(idx as int).active_reader_loans - 1) as u64
+            } else {
+                0
+            },
+            ..old(self).spec_entry_at(idx as int)
+        }));
         assert forall|r: u64| old(self).spec_root_protected(r)
             implies self.spec_root_protected(r) by {
             let i = choose|i: int| 0 <= i < old(self).entries@.len()
@@ -150,24 +225,58 @@ verus_method! {
     /// Advance `pin_id` along `Active -> Expiring -> Expired`.
     ///
     /// Enforces `LeaseExpiryNoReaderLoss`: never reaches `Expired` while
-    /// `active_reader_loans > 0 || live_child_pins > 0`.
-    pub fn expire_lease(&mut self, pin_id: u64) -> (result: Result<PinLifecycleState, PinTransitionError>);
+    /// `active_reader_loans > 0 || live_child_pins > 0`, and preserves every
+    /// unrelated entry (decrementing only the linked parent's `live_child_pins`
+    /// by exactly 1 upon `Expiring -> Expired`).
+    pub(crate) fn expire_lease(&mut self, pin_id: u64) -> (result: Result<PinLifecycleState, PinTransitionError>);
     requires {
         old(self).spec_well_formed(),
     }
     ensures {
         final(self).spec_well_formed(),
         match result {
-            Ok(PinLifecycleState::Expiring) => exists|i: int|
-                0 <= i < final(self).spec_len()
-                && final(self).spec_entry_at(i).pin_id == pin_id
-                && final(self).spec_root_protected(final(self).spec_entry_at(i).root_id),
-            Ok(PinLifecycleState::Expired) => exists|i: int|
-                0 <= i < final(self).spec_len()
-                && final(self).spec_entry_at(i).pin_id == pin_id
-                && final(self).spec_entry_at(i).active_reader_loans == 0
-                && final(self).spec_entry_at(i).live_child_pins == 0,
-            _ => true,
+            Ok(next_state) => final(self).spec_len() == old(self).spec_len()
+                && (exists|idx: int| 0 <= idx < old(self).spec_len()
+                    && old(self).spec_entry_at(idx).pin_id == pin_id
+                    && final(self).spec_entry_at(idx) == (PinRecord {
+                        state: next_state,
+                        ..old(self).spec_entry_at(idx)
+                    })
+                    && (match old(self).spec_entry_at(idx).state {
+                        PinLifecycleState::Active => next_state == PinLifecycleState::Expiring,
+                        PinLifecycleState::Expiring =>
+                            if old(self).spec_entry_at(idx).active_reader_loans == 0
+                                && old(self).spec_entry_at(idx).live_child_pins == 0
+                            {
+                                next_state == PinLifecycleState::Expired
+                            } else {
+                                next_state == PinLifecycleState::Expiring
+                            },
+                        PinLifecycleState::Expired => next_state == PinLifecycleState::Expired,
+                    })
+                    && (next_state == PinLifecycleState::Expiring
+                        ==> final(self).spec_root_protected(final(self).spec_entry_at(idx).root_id))
+                    && (next_state == PinLifecycleState::Expired
+                        ==> final(self).spec_entry_at(idx).active_reader_loans == 0
+                            && final(self).spec_entry_at(idx).live_child_pins == 0)
+                    && (forall|k: int| 0 <= k < old(self).spec_len() && k != idx ==>
+                        if old(self).spec_entry_at(idx).state == PinLifecycleState::Expiring
+                            && next_state == PinLifecycleState::Expired
+                            && old(self).spec_entry_at(idx).parent_pin_id
+                                == Some(old(self).spec_entry_at(k).pin_id)
+                        {
+                            final(self).spec_entry_at(k) == (PinRecord {
+                                live_child_pins: if old(self).spec_entry_at(k).live_child_pins > 0 {
+                                    (old(self).spec_entry_at(k).live_child_pins - 1) as u64
+                                } else {
+                                    0
+                                },
+                                ..old(self).spec_entry_at(k)
+                            })
+                        } else {
+                            final(self).spec_entry_at(k) == old(self).spec_entry_at(k)
+                        })),
+            Err(_) => final(self).spec_entries() == old(self).spec_entries(),
         },
     }
     body_with_ok_proof {
@@ -192,19 +301,22 @@ verus_method! {
                         ..entry
                     };
                     self.entries.set(idx, updated);
-                    if let Some(parent_id) = entry.parent_pin_id {
-                        if let Some(parent_idx) = self.find_index(parent_id) {
-                            if parent_idx != idx {
-                                let parent = self.entries[parent_idx];
-                                if parent.live_child_pins > 0 {
-                                    let updated_parent = PinRecord {
-                                        live_child_pins: parent.live_child_pins - 1,
-                                        ..parent
-                                    };
-                                    self.entries.set(parent_idx, updated_parent);
-                                }
+                    let parent_idx_opt = match entry.parent_pin_id {
+                        Some(parent_id) => self.find_index(parent_id),
+                        None => None,
+                    };
+                    match parent_idx_opt {
+                        Some(parent_idx) if parent_idx != idx => {
+                            let parent = self.entries[parent_idx];
+                            if parent.live_child_pins > 0 {
+                                let updated_parent = PinRecord {
+                                    live_child_pins: parent.live_child_pins - 1,
+                                    ..parent
+                                };
+                                self.entries.set(parent_idx, updated_parent);
                             }
                         }
+                        _ => {}
                     }
                     PinLifecycleState::Expired
                 } else {
@@ -215,7 +327,11 @@ verus_method! {
         };
     }
     ok_proof {
-        assert(self.spec_entry_at(idx as int).pin_id == pin_id);
+        assert(old(self).spec_entry_at(idx as int).pin_id == pin_id);
+        assert(self.spec_entry_at(idx as int) == (PinRecord {
+            state: next_state,
+            ..old(self).spec_entry_at(idx as int)
+        }));
         if matches!(next_state, PinLifecycleState::Expiring) {
             assert(Self::spec_entry_protects(self.entries@[idx as int], entry.root_id));
         }
