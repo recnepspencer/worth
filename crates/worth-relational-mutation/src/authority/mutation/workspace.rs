@@ -132,6 +132,21 @@ impl<'a> MutationWorkspace<'a> {
         )
     }
 
+    /// Name the records `intent` allocates, so the allocation evidence can
+    /// follow the envelope's merged plan (`PendingRecordAllocations::reorder_live`).
+    pub(crate) fn begin_intent(
+        &mut self,
+        intent: &crate::contracts::transactions::data::intents::mutation_intent::MutationIntent,
+    ) {
+        let sources =
+            crate::contracts::history::data::allocation_source::AllocationSource::of(intent);
+        if let (false, Some(allocations)) =
+            (sources.is_empty(), self.record_allocations.as_deref_mut())
+        {
+            allocations.begin_intent(sources);
+        }
+    }
+
     pub(crate) fn with_context<R>(&mut self, f: impl FnOnce(MutationContext<'_>) -> R) -> R {
         let record_allocations = self
             .record_allocations

@@ -38,7 +38,7 @@ pub(super) struct ArtifactAssemblyInput<'a> {
     pub(super) created_entities: &'a contracts::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings,
     pub(super) created_relations: &'a contracts::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings,
     pub(super) naming_plan: Option<&'a contracts::lineage::data::postures::CommitNamingPlan>,
-    pub(super) record_allocations: &'a [contracts::history::data::canonical_record_allocation::CanonicalRecordAllocation],
+    pub(super) record_allocations: &'a worth_relational_storage::internal_port::runtime::state::subsystems::record_identity::pending_allocations::PendingRecordAllocations,
     pub(super) strategy_commit_artifacts: Option<StrategyCommitArtifactBundle>,
     pub(super) merge_execution_authority: Option<PublishedMergeExecutionAuthority>,
     pub(super) schema_continuity: &'a SchemaContinuityPlan,

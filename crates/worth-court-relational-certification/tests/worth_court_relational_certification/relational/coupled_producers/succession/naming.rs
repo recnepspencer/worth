@@ -75,10 +75,12 @@ pub(super) fn named_world(
     seeds: WorkerIntentBatch,
 ) -> (World, Vec<EntityId>) {
     let runtime = RelationalRuntimeApi::builder()
-        .schema_registry(registry)
+        .schema_registry(registry.clone())
         .build()
         .unwrap();
-    named_world_on(execution, runtime, seeds)
+    let (mut world, ids) = named_world_on(execution, runtime, seeds);
+    world.registry = Some(registry);
+    (world, ids)
 }
 
 /// The same world over an already built `runtime`.
@@ -131,6 +133,7 @@ pub(super) fn named_world_on(
         carrier,
         summary: false,
         optional_struct_only: false,
+        registry: None,
     };
     (world, ids)
 }

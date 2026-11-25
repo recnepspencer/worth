@@ -7,6 +7,7 @@ use super::*;
 use crate::authority::mutation::MutationApplyDenial;
 use crate::branch::selected_read::SelectedRelationalBranchRead;
 use worth_relational_contracts::internal_port::mvcc::transaction::staging::RelationalTransactionStagingDenialOwnerPort as _;
+use worth_relational_contracts::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 
 pub(crate) fn prepare_coupled_candidate(
     execution: &ExecutionRequest<'_, '_>,
@@ -167,6 +168,28 @@ pub(crate) fn prepare_coupled_candidate(
     let intents = transaction.normalized_intents_for_merge(&final_runtime, execution)?;
     let commands =
         transaction.build_merged_plan_for_state(&final_runtime, &selected, intents, execution)?;
+    // Members allocated in member order; replay allocates in this one merged
+    // plan's order, so the live evidence takes that order before it is sealed (H0).
+    execution
+        .run_native_with_checkpoint(|context| {
+            checkpoint(
+                context,
+                (commands.plan().merged_intents.len()
+                    + mutation.identities.records.reservation_count()) as u64,
+            )
+            .map_err(custody::execution_stop)
+        })
+        .map_err(custody::execution_stop)?
+        .0?;
+    mutation
+        .identities
+        .records
+        .reorder_live(&commands.plan().merged_intents)
+        .map_err(|denial| {
+            TransactionCommitError::conflict(crate::transactions::data::CommitConflict::new(
+                crate::transactions::data::ConflictClass::RecordAllocationDenied { denial },
+            ))
+        })?;
     transaction
         .footprint
         .derive_validation_dependencies(commands.plan(), execution.allocation_policy())

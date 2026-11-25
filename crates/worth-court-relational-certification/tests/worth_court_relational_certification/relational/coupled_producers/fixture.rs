@@ -5,6 +5,7 @@ use worth_relational::facade::schema::*;
 use worth_testkit_relational::aspect_storage::AspectSchemaFixture;
 
 mod optional_struct;
+mod replay;
 use optional_struct::*;
 
 const RETAIN: CascadeDeletePolicy = CascadeDeletePolicy::RetainDanglingForAudit;
@@ -20,6 +21,8 @@ pub struct World {
     pub summary: bool,
     /// Declares only the Optional Struct aspect `summary` (no `LifecycleTransition`).
     pub optional_struct_only: bool,
+    /// The schema this world installed, when known, for a cold WAL replay.
+    pub registry: Option<RelationalSchemaRegistry>,
 }
 impl World {
     pub fn new(execution: &ExecutionRequest<'_, '_>, storage: bool, owns_source: bool) -> Self {
@@ -118,7 +121,7 @@ impl World {
         } else {
             fixture.build_registry()
         };
-        let builder = RelationalRuntimeApi::builder().schema_registry(registry);
+        let builder = RelationalRuntimeApi::builder().schema_registry(registry.clone());
         let builder = if let Some(rule) = rule {
             builder.custom_invariant(rule)
         } else {
@@ -164,6 +167,7 @@ impl World {
             carrier,
             summary: false,
             optional_struct_only: false,
+            registry: Some(registry),
         }
     }
     pub fn birth(
@@ -243,7 +247,7 @@ impl World {
             &self.basis(),
             self.source,
         )?;
-        self.prepare_with_owners(execution, owners, assembly)
+        self.prepare_with_owners(execution, owners, None, assembly)
     }
     /// Prepare an edit envelope: the authored prefix edits `source`, and
     /// Native admits `later` as the sources of the authored stages after it.
@@ -260,12 +264,13 @@ impl World {
             self.source,
             later,
         )?;
-        self.prepare_with_owners(execution, owners, assembly)
+        self.prepare_with_owners(execution, owners, None, assembly)
     }
     fn prepare_with_owners(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         owners: RelationalAuthoredCoupledOwners,
+        prefix: Option<WorkerIntentBatch>,
         assembly: &dyn RelationalAuthoredCoupledProducerAssembly,
     ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
         let mut tx = begin_main_transaction(&self.runtime);
@@ -284,6 +289,10 @@ impl World {
             update(self.source, "edited-source")
         };
         tx.push_batch(edit, execution.allocation_policy()).unwrap();
+        if let Some(prefix) = prefix {
+            tx.push_batch(prefix, execution.allocation_policy())
+                .unwrap();
+        }
         let tx = tx.bind_authored_coupled_producers(&self.installed, owners, None)?;
         self.runtime
             .preparation_port()

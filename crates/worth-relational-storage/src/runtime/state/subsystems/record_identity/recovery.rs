@@ -1,13 +1,13 @@
-use std::collections::BTreeMap;
 use std::sync::Arc;
 
+mod block;
+
 use crate::history::data::canonical_record_allocation::{
-    CanonicalRecordAllocation, RecordAllocationClass, RecordAllocationOrigin,
+    RecordAllocationClass, RecordAllocationOrigin,
 };
 use crate::identity::data::PartitionId;
 use crate::transactions::data::outcomes::conflict_class::record_allocation_denial::RecordAllocationDenial;
 
-use super::record_ref::{record_partition, record_slot};
 use super::reservation::{RecordSlotReservation, ReservationOrigin};
 #[cfg(test)]
 use super::RecordSlotKey;
@@ -43,38 +43,10 @@ impl RecordIdentitySubsystem {
         drop(reservations);
     }
 
-    pub fn stage_replay_allocations_with_leading_gaps(
-        &self,
-        allocations: Vec<CanonicalRecordAllocation>,
-    ) -> Result<(), &'static str> {
-        if self.lock().staged_replay_allocations.is_some() {
-            return Err("record allocation replay evidence is already staged");
-        }
-        let mut first_append_slots = BTreeMap::new();
-        for allocation in &allocations {
-            if allocation.origin() != RecordAllocationOrigin::AppendFrontier {
-                continue;
-            }
-            let key = (allocation.class(), record_partition(allocation.record()));
-            let slot = record_slot(allocation.record());
-            first_append_slots
-                .entry(key)
-                .and_modify(|first: &mut usize| *first = (*first).min(slot))
-                .or_insert(slot);
-        }
-        let mut state = self.lock();
-        for (key, first_slot) in first_append_slots {
-            let frontier = state.next_slots.entry(key).or_default();
-            if *frontier < first_slot {
-                *frontier = first_slot;
-            }
-        }
-        state.staged_replay_allocations = Some(allocations);
-        Ok(())
-    }
-
     pub fn clear_staged_replay_allocations(&self) -> bool {
-        self.lock().staged_replay_allocations.take().is_some()
+        let mut state = self.lock();
+        state.replay_blocks.clear();
+        state.staged_replay_allocations.take().is_some()
     }
 
     #[cfg(test)]
@@ -266,27 +238,22 @@ impl RecordIdentitySubsystem {
                 ReservationOrigin::Reclaimed
             }
             RecordAllocationOrigin::AppendFrontier => {
-                let expected_slot = state
-                    .next_slots
+                // Staging advanced the frontier past this commit's whole block;
+                // each live slot only has to lie in it, unconsumed (H0).
+                let block = state
+                    .replay_blocks
                     .get(&(class, partition_id))
-                    .copied()
-                    .unwrap_or(0);
-                if slot != expected_slot {
+                    .cloned()
+                    .unwrap_or(0..0);
+                if !block.contains(&slot) {
                     return Err(RecordAllocationDenial::ReplayAppendFrontierMismatch {
                         ordinal,
                         class,
                         partition_id,
-                        expected_slot,
+                        expected_slot: block.start,
                         observed_slot: slot,
                     });
                 }
-                let next =
-                    slot.checked_add(1)
-                        .ok_or(RecordAllocationDenial::SlotFrontierExhausted {
-                            class,
-                            partition_id,
-                        })?;
-                state.next_slots.insert((class, partition_id), next);
                 ReservationOrigin::AppendFrontier
             }
         };

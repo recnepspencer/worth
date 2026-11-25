@@ -43,6 +43,7 @@ impl CanonicalCommitEnvelope {
             symbol_texts,
             revision_symbol_references,
             record_allocations,
+            cancelled_record_allocations,
             patch,
             descriptive_touches,
             diagnostics_summary,
@@ -102,6 +103,22 @@ impl CanonicalCommitEnvelope {
                 diagnostics_summary.determinism,
             ),
         );
+        let semantic = self.semantic_result();
+        // Cancelled evidence is appended only when present, so every envelope
+        // without a cancelled slot keeps its exact payload and digest.
+        if cancelled_record_allocations.is_empty() {
+            return rmp_serde::encode::write_named(
+                writer,
+                &(
+                    ORIGINAL_ROOT_PAYLOAD_DOMAIN,
+                    identity_and_authority,
+                    publications,
+                    schema,
+                    records,
+                    semantic,
+                ),
+            );
+        }
         rmp_serde::encode::write_named(
             writer,
             &(
@@ -110,7 +127,8 @@ impl CanonicalCommitEnvelope {
                 publications,
                 schema,
                 records,
-                self.semantic_result(),
+                semantic,
+                cancelled_record_allocations,
             ),
         )
     }
