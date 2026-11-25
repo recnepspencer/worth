@@ -23,9 +23,14 @@ impl RelationalPreparationRuntime {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         transaction: &mut BranchBoundRelationalTransaction,
+        prior_staged_partitions: &std::collections::BTreeMap<
+            crate::identity::data::PartitionId,
+            crate::storage::overlay::PartitionState,
+        >,
     ) -> Result<
         (
             crate::identity::data::VersionId,
+            crate::runtime::RuntimeSymbolTable,
             std::collections::BTreeMap<
                 crate::identity::data::PartitionId,
                 (
@@ -49,9 +54,19 @@ impl RelationalPreparationRuntime {
             execution,
             &selected.with_symbol_admission(&self.services.symbols),
             |partitions| {
+                let overlay_view =
+                    worth_relational_storage::internal_port::storage::overlay::access::OverlayStateView::new(
+                        partitions,
+                        prior_staged_partitions,
+                    );
                 let round = self.preparation_round();
                 let read = crate::branch::selected_read::SelectedRelationalBranchRead::in_round(
-                    &selected, partitions,
+                    &selected,
+                    if prior_staged_partitions.is_empty() {
+                        partitions
+                    } else {
+                        &overlay_view
+                    },
                 );
                 crate::authority::commit::preparation::probe_symbol_rounds(
                     execution,

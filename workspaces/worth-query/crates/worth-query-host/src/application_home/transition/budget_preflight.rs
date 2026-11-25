@@ -29,13 +29,19 @@ pub(super) fn preflight_fresh_target_budget<Schema: ApplicationSchemaComposition
     resources: DerivedIndexMaintenanceBudget,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<(), Denial> {
-    let target_batches = &plan.steps[plan.target as usize].batches;
+    let target_index = plan.target as usize;
+    let before_target_steps: Vec<_> = plan.steps[..target_index]
+        .iter()
+        .map(|step| step.batches.as_slice())
+        .collect();
+    let target_batches = &plan.steps[target_index].batches;
     native
         .preflight_home_program_target_index_budget(
             request,
             source.basis().relational_basis(),
             target.native_contracts(),
             plan.schema_transition.clone(),
+            &before_target_steps,
             target_batches,
             resources,
         )

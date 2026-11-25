@@ -28,7 +28,7 @@ impl LineageIdentityAllocator {
         }
     }
 
-    pub(crate) fn detached(&self) -> Self {
+    pub fn detached(&self) -> Self {
         let frontier = *self
             .frontier
             .lock()

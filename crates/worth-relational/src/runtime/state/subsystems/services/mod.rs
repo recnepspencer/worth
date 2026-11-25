@@ -26,6 +26,15 @@ impl RuntimeServices {
     pub(crate) fn preparation_binding(&self) -> Self {
         self.clone()
     }
+
+    pub(crate) fn detached_for_preflight(&self) -> Self {
+        Self {
+            sequence: self.sequence.detached_preserving_runtime_id(),
+            instrumentation: self.instrumentation.fork(),
+            simulation: self.simulation.detached(),
+            symbols: self.symbols.detached_owner_snapshot(),
+        }
+    }
     fn empty() -> Self {
         Self {
             sequence: RuntimeSequenceState::new(),

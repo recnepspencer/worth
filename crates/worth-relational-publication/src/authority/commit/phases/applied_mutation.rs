@@ -94,6 +94,27 @@ impl AppliedMutationDraft {
     pub fn candidate_symbols(&self) -> &PendingSymbolMeanings {
         &self.identities.symbols
     }
+
+    /// Consumes detached preflight record reservations (so reclaimed slots stay
+    /// claimed across sequential preflight steps) and extracts the updated
+    /// detached symbol binding and staged partition commits.
+    pub fn into_detached_preflight_state(
+        self,
+    ) -> (
+        worth_relational_storage::internal_port::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
+        std::collections::BTreeMap<
+            contracts::identity::data::primitives::PartitionId,
+            (
+                worth_relational_storage::internal_port::storage::overlay::PartitionState,
+                worth_relational_storage::internal_port::storage::overlay::PartitionMutationJournal,
+            ),
+        >,
+    ){
+        let symbols = self.identities.symbols.binding();
+        self.identities.records.commit();
+        let partitions = self.state.into_partition_commits().1;
+        (symbols, partitions)
+    }
 }
 
 pub fn apply_mutation_draft<'a>(

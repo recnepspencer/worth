@@ -62,6 +62,18 @@ impl RuntimeSequenceState {
     pub(super) fn runtime_instance_id(&self) -> u64 {
         self.runtime_instance_id
     }
+
+    pub(super) fn detached_preserving_runtime_id(&self) -> Self {
+        Self {
+            runtime_instance_id: self.runtime_instance_id,
+            next_transaction_id: Arc::new(AtomicU64::new(
+                self.next_transaction_id.load(Ordering::Relaxed),
+            )),
+            next_proposal_ordinal: Arc::new(AtomicU64::new(
+                self.next_proposal_ordinal.load(Ordering::Relaxed),
+            )),
+        }
+    }
 }
 
 impl Default for RuntimeSequenceState {

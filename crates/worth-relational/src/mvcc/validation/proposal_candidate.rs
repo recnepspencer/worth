@@ -26,6 +26,7 @@ impl PreparedProposalCandidate {
         self,
     ) -> (
         crate::identity::data::VersionId,
+        crate::runtime::RuntimeSymbolTable,
         std::collections::BTreeMap<
             crate::identity::data::PartitionId,
             (
@@ -35,8 +36,8 @@ impl PreparedProposalCandidate {
         >,
     ) {
         let version = self.identity.proposed_version_id();
-        let partitions = self.mutation.finish().state.into_partition_commits().1;
-        (version, partitions)
+        let (symbols, partitions) = self.mutation.finish().into_detached_preflight_state();
+        (version, symbols, partitions)
     }
 }
 #[inline(never)]
