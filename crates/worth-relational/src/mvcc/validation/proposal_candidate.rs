@@ -20,6 +20,25 @@ pub(super) struct PreparedProposalCandidate {
     identity: RelationalMutationProposalIdentity,
     validation_input: RelationalTransactionValidationInput,
 }
+
+impl PreparedProposalCandidate {
+    pub(super) fn into_staged_partitions(
+        self,
+    ) -> (
+        crate::identity::data::VersionId,
+        std::collections::BTreeMap<
+            crate::identity::data::PartitionId,
+            (
+                crate::storage::overlay::PartitionState,
+                crate::storage::overlay::PartitionMutationJournal,
+            ),
+        >,
+    ) {
+        let version = self.identity.proposed_version_id();
+        let partitions = self.mutation.finish().state.into_partition_commits().1;
+        (version, partitions)
+    }
+}
 #[inline(never)]
 pub(super) fn prepare(
     owner: &RelationalPreparationRuntime,

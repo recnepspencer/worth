@@ -10,8 +10,8 @@ use worth_execution::{
     WorkCeilingDenial,
 };
 use worth_foundational::facade::{
-    AspectContract, AspectFieldLocator, AspectShape, AspectValue, AuthoritativeRecordAspectState,
-    FieldKey, PortableAspectPatchOperation, StructAspectValue,
+    AspectContract, AspectFieldLocator, AspectKey, AspectShape, AspectValue,
+    AuthoritativeRecordAspectState, FieldKey, PortableAspectPatchOperation, StructAspectValue,
 };
 use worth_query_execution::facade::{
     application_contribution::WorthQueryManagedComputationResourceDenial,
@@ -26,16 +26,6 @@ use worth_relational::facade::transactions::{
 
 use super::backfill::AspectDefaultGroup;
 
-/// Per-entry node overhead for `std::collections::BTreeMap` (B=6 internal
-/// pointers, parent pointer, length/height metadata, and slack up to 2x).
-fn btree_entry_bytes<K, V>() -> Result<u64, WorthQueryPrimaryGraphInstallationDenial> {
-    let pair = checked_add(
-        checked_usize(size_of::<K>())?,
-        checked_usize(size_of::<V>())?,
-    )?;
-    checked_add(checked_mul(pair, 2)?, 64)
-}
-
 /// Exact contiguous array allocation size for `count` elements of `T`.
 pub(super) fn vec_backing_bytes<T>(
     count: usize,
@@ -47,92 +37,102 @@ pub(super) fn vec_backing_bytes<T>(
     checked_usize(layout.size())
 }
 
-/// Byte cost of adding one default reference to the per-entity grouping map.
-pub(super) fn by_entity_entry_bytes() -> Result<u64, WorthQueryPrimaryGraphInstallationDenial> {
-    checked_add(
-        btree_entry_bytes::<&'static str, Vec<usize>>()?,
-        checked_usize(size_of::<usize>())?,
-    )
+/// Full B-tree node capacity upper bound for `std::collections::BTreeMap<K, V>`
+/// (`B = 6`, 11 entries per node, 12 child pointers on internal nodes).
+/// Even for `count == 1`, covers the full initial leaf node allocation.
+pub(super) fn btree_map_retained_bytes<K, V>(
+    count: usize,
+) -> Result<u64, WorthQueryPrimaryGraphInstallationDenial> {
+    if count == 0 {
+        return Ok(0);
+    }
+    let pair = checked_add(
+        checked_usize(size_of::<K>())?,
+        checked_usize(size_of::<V>())?,
+    )?;
+    let leaf_node = checked_add(checked_mul(pair, 11)?, 64)?;
+    if count <= 11 {
+        return Ok(leaf_node);
+    }
+    let internal_node = checked_add(
+        leaf_node,
+        checked_mul(checked_usize(size_of::<usize>())?, 12)?,
+    )?;
+    let max_nodes = checked_add(checked_usize(count / 5)?, 2)?;
+    checked_mul(max_nodes, internal_node)
 }
 
 /// Pre-allocation byte cost for constructing `planned_field(aspect, field)` and
-/// storing `(AspectKey, AspectFieldLocator, AspectValue)` in the aspect map.
-pub(super) fn planned_group_entry_bytes(
+/// cloning `AspectValue` into the pre-sized `Vec<(AspectFieldLocator, AspectValue)>`.
+pub(super) fn planned_locator_and_value_bytes(
     aspect: &str,
     field: &str,
     value: &AspectValue,
 ) -> Result<u64, WorthQueryPrimaryGraphInstallationDenial> {
-    // AspectFieldLocator owns AspectKey string + FieldPath Vec<FieldKey> (1 key).
     let aspect_heap = checked_usize(aspect.len())?;
     let field_heap = checked_usize(field.len())?;
-    let locator_bytes = checked_add(
-        checked_usize(size_of::<AspectFieldLocator>())?,
-        checked_add(
-            aspect_heap,
-            checked_add(checked_usize(size_of::<FieldKey>())?, field_heap)?,
-        )?,
-    )?;
-    // Map owns an additional cloned AspectKey string plus cloned AspectValue.
-    let key_bytes = checked_add(
-        checked_usize(size_of::<worth_foundational::facade::AspectKey>())?,
+    let locator_heap = checked_add(
         aspect_heap,
+        checked_add(checked_usize(size_of::<FieldKey>())?, field_heap)?,
     )?;
-    let value_bytes = aspect_value_retained_bytes(value)?;
-    let map_overhead = btree_entry_bytes::<AspectFieldLocator, AspectValue>()?;
-    checked_add(
-        locator_bytes,
-        checked_add(key_bytes, checked_add(value_bytes, map_overhead)?)?,
-    )
+    let value_heap = value
+        .clone_retained_storage_bytes()
+        .ok_or_else(retained_bytes_overflow)?;
+    checked_add(locator_heap, checked_usize(value_heap)?)
 }
 
+/// Pre-allocation byte cost for one `AspectDefaultGroup`: its cloned
+/// `AspectKey`, cloned `AspectContract`, and exact `locators` vector backing.
 pub(super) fn contract_group_retained_bytes(
+    aspect_key: &AspectKey,
     contract: &AspectContract,
+    locator_count: usize,
 ) -> Result<u64, WorthQueryPrimaryGraphInstallationDenial> {
-    checked_add(
-        checked_usize(contract.owned_allocation_capacity_bytes())?,
-        checked_usize(size_of::<AspectDefaultGroup>())?,
-    )
+    let key_heap = checked_usize(aspect_key.as_str().len())?;
+    let contract_heap = checked_usize(contract.owned_allocation_capacity_bytes())?;
+    let vec_bytes = vec_backing_bytes::<(AspectFieldLocator, AspectValue)>(locator_count)?;
+    checked_add(key_heap, checked_add(contract_heap, vec_bytes)?)
 }
 
 /// Pre-allocation byte cost for a formatted batch name string, its
 /// `WorkerIntentBatch` container, and exact `MutationIntent` backing.
 pub(super) fn batch_allocation_bytes(
     name_len: usize,
-    estimated_intents: usize,
+    exact_intents: usize,
 ) -> Result<u64, WorthQueryPrimaryGraphInstallationDenial> {
     checked_add(
         checked_usize(name_len)?,
         checked_add(
             checked_usize(size_of::<WorkerIntentBatch>())?,
-            vec_backing_bytes::<MutationIntent>(estimated_intents)?,
+            vec_backing_bytes::<MutationIntent>(exact_intents)?,
         )?,
     )
 }
 
 /// Exact pre-allocation retained byte cost for all intents cloned and
 /// constructed for one entity row, including `StructAspectValue`'s exact
-/// foundational tree/key/value `Arc` backing (`sorted_construction_storage_bytes`)
-/// and staging slice.
+/// foundational tree/key/value `Arc` backing (`sorted_construction_storage_bytes`),
+/// exact `attach_ops` vector backing, and full `BTreeMap` node capacity for any
+/// `UpdateEntityFieldsIntent`.
 pub(super) fn entity_backfill_retained_bytes(
     aspect_state: Option<&AuthoritativeRecordAspectState>,
     groups: &[AspectDefaultGroup],
 ) -> Result<u64, WorthQueryPrimaryGraphInstallationDenial> {
     let mut total = 0u64;
     let mut attach_count = 0usize;
-    let mut has_update = false;
+    let mut update_field_count = 0usize;
 
     for group in groups {
         let already_attached =
             aspect_state.is_some_and(|state| state.get(&group.aspect_key).is_some());
         if already_attached {
-            has_update = true;
             for (locator, value) in &group.locators {
+                update_field_count = update_field_count
+                    .checked_add(1)
+                    .ok_or_else(retained_bytes_overflow)?;
                 let entry_bytes = checked_add(
                     locator_retained_bytes(locator)?,
-                    checked_add(
-                        aspect_value_retained_bytes(value)?,
-                        btree_entry_bytes::<AspectFieldLocator, AspectValue>()?,
-                    )?,
+                    aspect_value_retained_bytes(value)?,
                 )?;
                 total = checked_add(total, entry_bytes)?;
             }
@@ -154,7 +154,7 @@ pub(super) fn entity_backfill_retained_bytes(
                     total = checked_add(total, struct_bytes)?;
                 }
                 AspectShape::Scalar(_) | AspectShape::Opaque(_) | AspectShape::Reference(_) => {
-                    for value in group.locators.values() {
+                    for (_, value) in &group.locators {
                         total = checked_add(total, aspect_value_retained_bytes(value)?)?;
                     }
                 }
@@ -173,10 +173,15 @@ pub(super) fn entity_backfill_retained_bytes(
         )?;
         total = checked_add(total, intent_bytes)?;
     }
-    if has_update {
+    if update_field_count > 0 {
+        let map_nodes =
+            btree_map_retained_bytes::<AspectFieldLocator, AspectValue>(update_field_count)?;
         let intent_bytes = checked_add(
-            checked_usize(size_of::<UpdateEntityFieldsIntent>())?,
-            checked_usize(size_of::<MutationIntent>())?,
+            map_nodes,
+            checked_add(
+                checked_usize(size_of::<UpdateEntityFieldsIntent>())?,
+                checked_usize(size_of::<MutationIntent>())?,
+            )?,
         )?;
         total = checked_add(total, intent_bytes)?;
     }
@@ -318,56 +323,48 @@ fn checked_mul(a: u64, b: u64) -> Result<u64, WorthQueryPrimaryGraphInstallation
     a.checked_mul(b).ok_or_else(retained_bytes_overflow)
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use worth_foundational::facade::{AspectValue, FieldKey, InternedString};
-
-    fn make_fields(field_count: usize, payload_len: usize) -> Vec<(FieldKey, AspectValue)> {
-        (0..field_count)
-            .map(|idx| {
-                (
-                    FieldKey::new(format!("Field{idx:03}")).unwrap(),
-                    AspectValue::String(InternedString::Raw("a".repeat(payload_len))),
-                )
-            })
-            .collect()
+pub(super) fn count_distinct_runs<T, K: Eq>(sorted: &[T], mut key: impl FnMut(&T) -> K) -> usize {
+    let mut count = 0usize;
+    let mut prev: Option<K> = None;
+    for item in sorted {
+        let current = key(item);
+        if prev.as_ref() != Some(&current) {
+            count += 1;
+            prev = Some(current);
+        }
     }
-
-    #[test]
-    fn entity_backfill_bytes_covers_struct_tree_backing_and_string_payloads() {
-        let small = make_fields(1, 8);
-        let wide = make_fields(32, 8);
-        let large = make_fields(1, 64 * 1024);
-
-        let b_small =
-            struct_attachment_retained_bytes(small.iter().map(|(k, v)| (Some(k), v))).unwrap();
-        let b_wide =
-            struct_attachment_retained_bytes(wide.iter().map(|(k, v)| (Some(k), v))).unwrap();
-        let b_large =
-            struct_attachment_retained_bytes(large.iter().map(|(k, v)| (Some(k), v))).unwrap();
-
-        let exact_tree_32 =
-            StructAspectValue::sorted_construction_storage_bytes(32).unwrap() as u64;
-        assert!(
-            b_wide >= exact_tree_32,
-            "32-field struct charge ({b_wide}) must cover exact StructAspectValue tree backing ({exact_tree_32})"
-        );
-        assert!(b_wide > b_small * 10);
-        assert!(
-            b_large >= 64 * 1024,
-            "64 KiB string payload must be charged in full ({b_large})"
-        );
-
-        let group_large = planned_group_entry_bytes(
-            "TaskPriority",
-            "Priority",
-            &AspectValue::String(InternedString::Raw("x".repeat(32 * 1024))),
-        )
-        .unwrap();
-        assert!(group_large >= 32 * 1024);
-
-        let batch_bytes = batch_allocation_bytes(128, 16).unwrap();
-        assert!(batch_bytes >= 128 + (16 * size_of::<MutationIntent>()) as u64);
-    }
+    count
 }
+
+pub(super) fn count_batch_intents<'a>(
+    states: impl IntoIterator<Item = Option<&'a AuthoritativeRecordAspectState>>,
+    groups: &[AspectDefaultGroup],
+) -> Result<usize, WorthQueryPrimaryGraphInstallationDenial> {
+    let mut total = 0usize;
+    for state in states {
+        let mut has_attach = false;
+        let mut has_update = false;
+        for group in groups {
+            if state.is_some_and(|s| s.get(&group.aspect_key).is_some()) {
+                has_update = true;
+            } else {
+                has_attach = true;
+            }
+        }
+        total = total
+            .checked_add(usize::from(has_attach) + usize::from(has_update))
+            .ok_or_else(retained_bytes_overflow)?;
+    }
+    Ok(total)
+}
+
+pub(super) fn schema_denial(detail: impl Into<String>) -> WorthQueryPrimaryGraphInstallationDenial {
+    WorthQueryPrimaryGraphInstallationDenial::new(
+        WorthQueryPrimaryGraphInstallationDenialKind::InvalidSchemaMember,
+        detail,
+    )
+}
+
+#[cfg(test)]
+#[path = "backfill_memory_tests.rs"]
+mod tests;

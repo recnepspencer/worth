@@ -8,8 +8,8 @@ use worth_foundational::facade::ApplicationHomeBinding;
 use worth_query_declaration::facade::application_schema::ApplicationSchemaComposition;
 use worth_query_execution::facade::{
     application_home_integration::{
-        QueryHomeProgramTransitionSourceDenial, QueryHomeTransitionPreparationDenial,
-        WorthQueryHomeProgramTransitionBodyDenial,
+        QueryHomeProgramActivationDenial, QueryHomeProgramTransitionSourceDenial,
+        QueryHomeTransitionPreparationDenial, WorthQueryHomeProgramTransitionBodyDenial,
     },
     primary_graph::{
         WorthQueryPrimaryGraphInstallationDenialKind, WorthQueryProviderSessionDenialKind,
@@ -310,6 +310,12 @@ pub(super) fn transition_denial_is_budget_stop(cause: &Denial) -> bool {
         Denial::Source(QueryHomeProgramTransitionSourceDenial::Meaning(denial)) => {
             primary_graph_denial_is_budget_stop(denial.kind())
         }
+        Denial::Source(QueryHomeProgramTransitionSourceDenial::Activation(
+            QueryHomeProgramActivationDenial::Execution(_),
+        )) => true,
+        Denial::Source(QueryHomeProgramTransitionSourceDenial::Activation(
+            QueryHomeProgramActivationDenial::Native(denial),
+        )) => primary_graph_denial_is_budget_stop(denial.kind()),
         _ => false,
     }
 }

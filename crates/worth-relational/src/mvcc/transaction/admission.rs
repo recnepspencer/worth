@@ -60,7 +60,39 @@ impl crate::runtime::RelationalRuntime {
         codec: Option<std::sync::Arc<crate::durability::RecoveredCodecPublicationCustody>>,
     ) -> Result<super::BranchBoundRelationalTransaction, RelationalBranchTransactionAdmissionDenial>
     {
-        if let Some(medium) = self.durability.medium() {
+        self.begin_branch_transaction_inner(basis, intent, control, home_step, codec, true)
+    }
+
+    /// Read-only in-memory staging transaction used solely by Native's
+    /// pre-intent Home program transition cold-index budget preflight. Never
+    /// validated for publication or submitted to Store/World.
+    pub(crate) fn begin_home_preflight_transaction(
+        &self,
+        basis: &crate::branch::AdmittedRelationalBranchBasis,
+        intent: super::RelationalTransactionIntent,
+    ) -> Result<super::BranchBoundRelationalTransaction, RelationalBranchTransactionAdmissionDenial>
+    {
+        self.begin_branch_transaction_inner(
+            basis,
+            intent,
+            crate::mvcc::RelationalOperationControl::uninterrupted(),
+            None,
+            None,
+            false,
+        )
+    }
+
+    fn begin_branch_transaction_inner(
+        &self,
+        basis: &crate::branch::AdmittedRelationalBranchBasis,
+        intent: super::RelationalTransactionIntent,
+        control: crate::mvcc::RelationalOperationControl,
+        home_step: Option<std::sync::Arc<crate::runtime::AdmittedRelationalHomeProgramStep>>,
+        codec: Option<std::sync::Arc<crate::durability::RecoveredCodecPublicationCustody>>,
+        require_home_write_admission: bool,
+    ) -> Result<super::BranchBoundRelationalTransaction, RelationalBranchTransactionAdmissionDenial>
+    {
+        if require_home_write_admission && let Some(medium) = self.durability.medium() {
             medium
                 .admit_home_program_write(home_step.as_deref(), codec.as_deref())
                 .map_err(RelationalBranchTransactionAdmissionDenial::HomeProgramTransition)?;

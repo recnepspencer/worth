@@ -48,11 +48,10 @@ impl ChangedRecords {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         work: &mut MaintenanceWork,
     ) -> Result<Self, Denial> {
-        let root = view.root();
-        let slots = root
+        let slots = view
             .entity_slot_count()
-            .saturating_add(root.relation_slot_count())
-            .saturating_add(root.region_count());
+            .saturating_add(view.relation_slot_count())
+            .saturating_add(view.region_count());
         if let Some(maximum) = work.budget.maximum_cold_record_slots {
             if maximum == 0 {
                 return Err(Denial::ColdReconstructionRequired);
@@ -65,7 +64,7 @@ impl ChangedRecords {
         work.note_cold_record_slots(slots);
         let mut entities = BTreeSet::new();
         let mut relations = BTreeSet::new();
-        root.try_visit_partitions(|event| {
+        view.try_visit_partitions(|event| {
             let worth_relational_branch::internal_port::branch::root_regions::partition_visitation::RelationalPartitionVisit::Partition(partition_id) =
                 event
             else {
@@ -82,12 +81,12 @@ impl ChangedRecords {
                 };
                 let id = EntityId::new(partition_id, slot as u64, slot_view.generation());
                 work.lookup(
-                    (*root.schema_authority().registry().owner_entity_kinds()).len(),
+                    (*view.schema_authority().registry().owner_entity_kinds()).len(),
                     1,
                 )?;
                 if slot_view.lifecycle() == RecordLifecycleState::Live
                     && slot_view.kind_id().is_some_and(|kind| {
-                        (*root.schema_authority().registry().owner_entity_kinds())
+                        (*view.schema_authority().registry().owner_entity_kinds())
                             .contains_key(&kind)
                     })
                 {
@@ -102,14 +101,14 @@ impl ChangedRecords {
                 };
                 let id = RelationId::new(partition_id, slot as u64, slot_view.generation());
                 work.lookup(
-                    (*root.schema_authority().registry().owner_relation_kinds()).len(),
+                    (*view.schema_authority().registry().owner_relation_kinds()).len(),
                     1,
                 )?;
                 if matches!(
                     slot_view.lifecycle(),
                     RecordLifecycleState::Live | RecordLifecycleState::RetainedDanglingForAudit
                 ) && slot_view.kind_id().is_some_and(|kind| {
-                    (*root.schema_authority().registry().owner_relation_kinds()).contains_key(&kind)
+                    (*view.schema_authority().registry().owner_relation_kinds()).contains_key(&kind)
                 }) && slot_view.extra().endpoints.is_some()
                 {
                     work.ordered::<RelationId, ()>(relations.len(), 1, 0)?;

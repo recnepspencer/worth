@@ -1,13 +1,6 @@
 //! Lower declarative field defaults into atomic native entity backfill intents
-//! under full cooperative work metering and strict pre-allocation retained-memory
-//! admission.
-//!
-//! When an entity already carries the target aspect on disk (e.g., adding a new
-//! field to an existing aspect), this emits [`UpdateEntityFieldsIntent`]. When
-//! the target aspect is newly introduced on the successor schema (e.g., an
-//! `Extend<Task, (Option<TaskPriority>,), ()>` aspect absent from predecessor
-//! records), this attaches the aspect atomically via
-//! [`ApplyEntityAspectPatchIntent`] + [`PortableAspectPatchOperation::SetWhole`].
+//! under cooperative work metering and strict pre-allocation retained-memory
+//! admission using fallible `Vec::try_reserve_exact` and unstable sorting.
 
 use std::collections::BTreeMap;
 use std::sync::Mutex;
@@ -28,9 +21,7 @@ use worth_query_execution::facade::{
     application_home_integration::{
         WorthQueryHomeProgramTransitionReadSource, WorthQueryHomeProgramTransitionTarget,
     },
-    primary_graph::{
-        WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
-    },
+    primary_graph::WorthQueryPrimaryGraphInstallationDenial,
 };
 use worth_relational::facade::{
     identity::EntityId,
@@ -41,9 +32,10 @@ use worth_relational::facade::{
 };
 
 use super::backfill_memory::{
-    batch_allocation_bytes, by_entity_entry_bytes, charge_work, contract_group_retained_bytes,
-    entity_backfill_retained_bytes, planned_group_entry_bytes, reserve_retained,
-    retained_bytes_overflow, vec_backing_bytes, work_ceiling_denial,
+    batch_allocation_bytes, charge_work, contract_group_retained_bytes, count_batch_intents,
+    count_distinct_runs, entity_backfill_retained_bytes, planned_locator_and_value_bytes,
+    reserve_retained, retained_bytes_overflow, schema_denial, vec_backing_bytes,
+    work_ceiling_denial,
 };
 
 const BATCH_NAME_PREFIX: &str = "transition-default-backfill:";
@@ -56,7 +48,7 @@ pub(super) struct BackfillPlan {
 pub(super) struct AspectDefaultGroup {
     pub(super) aspect_key: AspectKey,
     pub(super) contract: AspectContract,
-    pub(super) locators: BTreeMap<AspectFieldLocator, AspectValue>,
+    pub(super) locators: Vec<(AspectFieldLocator, AspectValue)>,
 }
 
 struct BackfillRequest<'a, 'b, 'c> {
@@ -102,40 +94,56 @@ fn build_metered_backfill(
     request: ExecutionRequest<'_, '_>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<BackfillPlan, WorthQueryPrimaryGraphInstallationDenial> {
-    let mut by_entity: BTreeMap<&'static str, Vec<&WorthQueryProgramTransitionFieldDefault>> =
-        BTreeMap::new();
-    for field_default in input.descriptor.added_defaults() {
-        charge_work(context, 1)?;
-        reserve_retained(
-            request,
-            context,
-            input.retained_memory,
-            by_entity_entry_bytes()?,
-        )?;
-        by_entity
-            .entry(field_default.entity())
-            .or_default()
-            .push(field_default);
+    let raw_defaults = input.descriptor.added_defaults();
+    if raw_defaults.is_empty() {
+        return Ok(BackfillPlan {
+            batches: Vec::new(),
+            backfilled_records: 0,
+        });
     }
-
-    // Reserve batch vector backing strictly BEFORE allocating it.
     reserve_retained(
         request,
         context,
         input.retained_memory,
-        vec_backing_bytes::<WorkerIntentBatch>(by_entity.len())?,
+        vec_backing_bytes::<&WorthQueryProgramTransitionFieldDefault>(raw_defaults.len())?,
+    )?;
+    let mut ordered_defaults: Vec<&WorthQueryProgramTransitionFieldDefault> = Vec::new();
+    ordered_defaults
+        .try_reserve_exact(raw_defaults.len())
+        .map_err(|_| retained_bytes_overflow())?;
+    for field_default in raw_defaults {
+        charge_work(context, 1)?;
+        ordered_defaults.push(field_default);
+    }
+    ordered_defaults.sort_unstable_by_key(|d| (d.entity(), d.aspect(), d.field()));
+
+    let entity_count = count_distinct_runs(&ordered_defaults, |d| d.entity());
+    reserve_retained(
+        request,
+        context,
+        input.retained_memory,
+        vec_backing_bytes::<WorkerIntentBatch>(entity_count)?,
     )?;
     let mut batches = Vec::new();
     batches
-        .try_reserve_exact(by_entity.len())
+        .try_reserve_exact(entity_count)
         .map_err(|_| retained_bytes_overflow())?;
     let mut backfilled_records = 0usize;
 
-    for (entity_name, defaults) in by_entity {
+    let mut cursor = 0usize;
+    while cursor < ordered_defaults.len() {
+        let entity_name = ordered_defaults[cursor].entity();
+        let mut end = cursor + 1;
+        while end < ordered_defaults.len() && ordered_defaults[end].entity() == entity_name {
+            end += 1;
+        }
+        let defaults = &ordered_defaults[cursor..end];
+        cursor = end;
+
         charge_work(context, 1)?;
         let groups = resolve_aspect_groups(
             entity_name,
-            &defaults,
+            defaults,
             input.target,
             request,
             context,
@@ -147,7 +155,7 @@ fn build_metered_backfill(
         if rows.records().is_empty() {
             continue;
         }
-        // Compute exact formatted batch name length and reserve BEFORE allocating.
+
         let transition_name = input.descriptor.transition_name();
         let name_len = BATCH_NAME_PREFIX
             .len()
@@ -155,12 +163,13 @@ fn build_metered_backfill(
             .and_then(|n| n.checked_add(1))
             .and_then(|n| n.checked_add(entity_name.len()))
             .ok_or_else(retained_bytes_overflow)?;
-        let max_intents = rows
-            .records()
-            .len()
-            .checked_mul(2)
-            .ok_or_else(retained_bytes_overflow)?;
-        let header_bytes = batch_allocation_bytes(name_len, max_intents)?;
+        let exact_intents = count_batch_intents(
+            rows.records()
+                .iter()
+                .map(|row| row.authoritative_aspect_state.as_ref()),
+            &groups,
+        )?;
+        let header_bytes = batch_allocation_bytes(name_len, exact_intents)?;
         reserve_retained(request, context, input.retained_memory, header_bytes)?;
 
         let mut batch_name = String::new();
@@ -174,7 +183,7 @@ fn build_metered_backfill(
         let mut batch = WorkerIntentBatch::new(batch_name);
         batch
             .intents
-            .try_reserve_exact(rows.records().len())
+            .try_reserve_exact(exact_intents)
             .map_err(|_| retained_bytes_overflow())?;
 
         for row in rows.records() {
@@ -220,59 +229,70 @@ fn resolve_aspect_groups(
             ))
         })?;
 
-    let mut grouped: BTreeMap<AspectKey, BTreeMap<AspectFieldLocator, AspectValue>> =
-        BTreeMap::new();
-    for field_default in defaults {
-        charge_work(context, 1)?;
-        // Reserve exact bytes BEFORE constructing the owned locator or cloning value/key.
-        let entry_bytes = planned_group_entry_bytes(
-            field_default.aspect(),
-            field_default.field(),
-            field_default.default_value(),
-        )?;
-        reserve_retained(request, context, retained_memory, entry_bytes)?;
-        let locator = target
-            .planned_field(entity_name, field_default.aspect(), field_default.field())
-            .ok_or_else(|| {
-                schema_denial(format!(
-                    "default field `{}.{}.{}` is absent from target schema",
-                    entity_name,
-                    field_default.aspect(),
-                    field_default.field()
-                ))
-            })?;
-        grouped
-            .entry(locator.aspect().aspect_key().clone())
-            .or_default()
-            .insert(locator, field_default.default_value().clone());
-    }
-
-    // Reserve group vector backing strictly BEFORE allocating it.
+    let aspect_count = count_distinct_runs(defaults, |d| d.aspect());
     reserve_retained(
         request,
         context,
         retained_memory,
-        vec_backing_bytes::<AspectDefaultGroup>(grouped.len())?,
+        vec_backing_bytes::<AspectDefaultGroup>(aspect_count)?,
     )?;
     let mut groups = Vec::new();
     groups
-        .try_reserve_exact(grouped.len())
+        .try_reserve_exact(aspect_count)
         .map_err(|_| retained_bytes_overflow())?;
 
-    for (aspect_key, locators) in grouped {
+    let mut cursor = 0usize;
+    while cursor < defaults.len() {
+        let aspect_name = defaults[cursor].aspect();
+        let mut end = cursor + 1;
+        while end < defaults.len() && defaults[end].aspect() == aspect_name {
+            end += 1;
+        }
+        let aspect_slice = &defaults[cursor..end];
+        cursor = end;
+
         charge_work(context, 1)?;
         let binding = registration
             .aspect_contract_declarations
             .aspects
             .iter()
-            .find(|declared| declared.aspect_key() == aspect_key)
+            .find(|declared| declared.aspect_key().as_str() == aspect_name)
             .ok_or_else(|| {
                 schema_denial(format!(
-                    "target aspect `{aspect_key:?}` on `{entity_name}` has no declared contract"
+                    "target aspect `{aspect_name}` on `{entity_name}` has no declared contract"
                 ))
             })?;
-        let contract_bytes = contract_group_retained_bytes(&binding.contract)?;
-        reserve_retained(request, context, retained_memory, contract_bytes)?;
+
+        let aspect_key = binding.aspect_key();
+        let group_overhead =
+            contract_group_retained_bytes(&aspect_key, &binding.contract, aspect_slice.len())?;
+        reserve_retained(request, context, retained_memory, group_overhead)?;
+
+        let mut locators: Vec<(AspectFieldLocator, AspectValue)> = Vec::new();
+        locators
+            .try_reserve_exact(aspect_slice.len())
+            .map_err(|_| retained_bytes_overflow())?;
+        for field_default in aspect_slice {
+            charge_work(context, 1)?;
+            let entry_bytes = planned_locator_and_value_bytes(
+                field_default.aspect(),
+                field_default.field(),
+                field_default.default_value(),
+            )?;
+            reserve_retained(request, context, retained_memory, entry_bytes)?;
+            let locator = target
+                .planned_field(entity_name, field_default.aspect(), field_default.field())
+                .ok_or_else(|| {
+                    schema_denial(format!(
+                        "default field `{}.{}.{}` is absent from target schema",
+                        entity_name,
+                        field_default.aspect(),
+                        field_default.field()
+                    ))
+                })?;
+            locators.push((locator, field_default.default_value().clone()));
+        }
+        locators.sort_unstable_by(|left, right| left.0.cmp(&right.0));
         groups.push(AspectDefaultGroup {
             aspect_key,
             contract: binding.contract.clone(),
@@ -288,8 +308,15 @@ fn push_entity_backfill_intents(
     aspect_state: Option<&AuthoritativeRecordAspectState>,
     groups: &[AspectDefaultGroup],
 ) -> Result<WorkerIntentBatch, WorthQueryPrimaryGraphInstallationDenial> {
+    let attach_count = groups
+        .iter()
+        .filter(|group| !aspect_state.is_some_and(|state| state.get(&group.aspect_key).is_some()))
+        .count();
     let mut existing_aspect_fields: BTreeMap<AspectFieldLocator, AspectValue> = BTreeMap::new();
     let mut attach_ops: Vec<PortableAspectPatchOperation> = Vec::new();
+    attach_ops
+        .try_reserve_exact(attach_count)
+        .map_err(|_| retained_bytes_overflow())?;
 
     for group in groups {
         let already_attached =
@@ -304,19 +331,21 @@ fn push_entity_backfill_intents(
     }
 
     if !attach_ops.is_empty() {
+        let patch = ApplyEntityAspectPatchIntent {
+            entity_id,
+            aspect_patch: PortableRecordAspectPatch::new(attach_ops),
+        };
         batch = batch.push(MutationIntent::Entity(
-            EntityMutationIntent::ApplyAspectPatch(ApplyEntityAspectPatchIntent {
-                entity_id,
-                aspect_patch: PortableRecordAspectPatch::new(attach_ops),
-            }),
+            EntityMutationIntent::ApplyAspectPatch(patch),
         ));
     }
     if !existing_aspect_fields.is_empty() {
+        let update = UpdateEntityFieldsIntent {
+            entity_id,
+            fields: AspectFieldPatch::new(existing_aspect_fields),
+        };
         batch = batch.push(MutationIntent::Entity(EntityMutationIntent::UpdateFields(
-            UpdateEntityFieldsIntent {
-                entity_id,
-                fields: AspectFieldPatch::new(existing_aspect_fields),
-            },
+            update,
         )));
     }
     Ok(batch)
@@ -341,7 +370,7 @@ fn build_set_whole_operation(
                 };
                 entries.push((field_key.clone(), field_value.clone()));
             }
-            entries.sort_by(|left, right| left.0.cmp(&right.0));
+            entries.sort_unstable_by(|left, right| left.0.cmp(&right.0));
             let struct_value = StructAspectValue::from_sorted_fields(entries.into_boxed_slice())
                 .map_err(|cause| {
                     schema_denial(format!(
@@ -359,16 +388,9 @@ fn build_set_whole_operation(
                     group.locators.len()
                 )));
             }
-            let (_, scalar) = group.locators.iter().next().expect("checked len == 1");
+            let (_, scalar) = &group.locators[0];
             ContractValidationInput::Scalar(scalar.clone())
         }
     };
     Ok(PortableAspectPatchOperation::SetWhole { basis, value })
-}
-
-fn schema_denial(detail: impl Into<String>) -> WorthQueryPrimaryGraphInstallationDenial {
-    WorthQueryPrimaryGraphInstallationDenial::new(
-        WorthQueryPrimaryGraphInstallationDenialKind::InvalidSchemaMember,
-        detail,
-    )
 }
