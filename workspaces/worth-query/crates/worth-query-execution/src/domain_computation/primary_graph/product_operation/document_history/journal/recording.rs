@@ -66,6 +66,7 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
             !self.attempts.contains_key(&key),
             "only an unseen attempt reserves storage"
         );
+        let line = self.child_position(self.current.ordinal());
         self.access(Access::Node);
         self.nodes.insert(
             node.ordinal(),
@@ -75,6 +76,7 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
                     label,
                     metadata: metadata.clone(),
                 },
+                line,
                 head_slot: None,
                 _allocation: node_allocation,
             },
@@ -153,6 +155,7 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
     }
 
     fn release_record(&mut self, reserved: &ReservedHistoryRecord) {
+        self.release_pending_source(reserved.node.ordinal());
         self.access(Access::Node);
         self.nodes.remove(&reserved.node.ordinal());
         self.access(Access::Attempt);
@@ -205,6 +208,7 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
         self.completed_end = reserved.node.ordinal() + 1; // Successor was admitted by reserve.
         self.view_generation = reserved.view_after;
         self.pending = None;
+        self.pending_source = None;
         self.trim_one()
     }
 }

@@ -12,6 +12,18 @@ pub enum Corrected {
 }
 
 impl Document<'_> {
+    /// `run`'s result, and the history journal's node probes while it ran.
+    pub fn node_probes_during<T>(&mut self, run: impl FnOnce(&mut Self) -> T) -> (T, u64) {
+        let journal = self
+            .document
+            .as_mut()
+            .expect("the document is held between calls")
+            .observe_history_enrollment_for_test();
+        let from = journal.snapshot().node_probes;
+        let value = run(self);
+        (value, journal.snapshot().node_probes - from)
+    }
+
     /// Reverse `entity`'s stage in step `source` through
     /// `document.correction_envelope` under model key `key`, with `coupled`
     /// resolved against the branch's live members after it.

@@ -1,4 +1,5 @@
 //! The envelope's one commit becomes the document head through one adoption.
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use super::super::{
     journal::RecordedNode, sealing::PreparedBinding, WorthQueryCompletedRecordingOutputs,
     WorthQueryDocumentHistory, WorthQueryDocumentHistoryAdoptionFailure,
@@ -116,14 +117,21 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         let endpoint =
             WorthQueryProductBranchReadIdentity::from_observation(selected.product().observation());
         let exact = selected.product().read_lease();
-        let step = self
-            .selection
-            .lock()
-            .journal
-            .prepared_step(&reserved.record, endpoint.clone());
+        let source_commit = receipt.committed_product_publication().composite_commit().clone();
+        let execution = phase
+            .checked_execution_request_for(runtime.inner.runtime.product_runtime_ref())
+            .map_err(Denial::Stopped)?;
+        let step = {
+            let mut selection = self.selection.lock();
+            selection
+                .journal
+                .index_source(&execution, &source_commit, reserved.record.node)
+                .map_err(Denial::Recording)?;
+            selection.journal.prepared_step(&reserved.record, endpoint.clone())
+        };
         let node = RecordedNode {
             step,
-            source_commit: Some(receipt.committed_product_publication().composite_commit().clone()),
+            source_commit: Some(source_commit),
             root_posture: None,
         };
         Ok(PreparedBinding {

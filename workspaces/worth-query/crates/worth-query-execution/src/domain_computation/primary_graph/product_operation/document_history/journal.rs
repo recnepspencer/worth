@@ -36,6 +36,8 @@ mod recording;
 mod retention;
 #[path = "journal/retention_work.rs"]
 mod retention_work;
+#[path = "journal/sources.rs"]
+mod sources;
 
 pub(super) struct RecordedNode {
     pub(super) step: WorthQueryHistoryStep,
@@ -57,6 +59,7 @@ pub(super) enum NodeBinding {
 
 pub(super) struct HistoryNode {
     pub(super) binding: NodeBinding,
+    line: sources::LinePosition,
     head_slot: Option<u64>,
     _allocation: HistoryInsertionAllocation,
 }
@@ -129,6 +132,9 @@ pub(in crate::domain_computation::primary_graph) struct HistoryJournal<'runtime,
     // Rebuildable annotation index; its links confer no source or disclosure authority.
     children: BTreeMap<(u64, u64), ChildLink>,
     observation: Option<EnrollmentSink>,
+    // Correction sources: an envelope's commit -> its step's ordinal.
+    sources: BTreeMap<worth_runtime_world::facade::CompositeCommitIdentity, (u64, HistoryInsertionAllocation)>,
+    pending_source: Option<worth_runtime_world::facade::CompositeCommitIdentity>,
 }
 
 pub(super) enum AttemptLookup {
@@ -207,6 +213,7 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
                     source_commit: None,
                     root_posture: None,
                 }),
+                line: sources::LinePosition::ROOT,
                 head_slot: None,
                 _allocation: allocation,
             },
@@ -234,6 +241,8 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
             closed_heads: 0,
             children: BTreeMap::new(),
             observation: None,
+            sources: BTreeMap::new(),
+            pending_source: None,
         })
     }
 

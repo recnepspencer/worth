@@ -93,3 +93,36 @@ fn a_correction_with_other_coupled_stages_drifts() {
     assert_eq!(document.observe(4).current, Some(4));
     document.release();
 }
+
+/// Cost law 2 for the selected-line check (plan §10.1a): correcting the
+/// oldest step under 2, 12 and 72 later steps, the journal's added node
+/// probes over the 60 further steps stay within 3x those over the first 10.
+/// A walk of the selected line would grow by 60 against 10.
+#[test]
+fn a_correction_costs_logarithmic_journal_work_in_history_depth() {
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+    let host = world::install_roomy();
+    let mut probes = Vec::new();
+    for depth in [2u32, 12, 72] {
+        let mut document = created(&host, &[E1]);
+        for step in 0..depth {
+            let value = if step % 2 == 0 { 2 } else { 1 };
+            let edit = Action::Envelope { key: 2 + step, intent: Intent::Edit([Stage::Set(value), Stage::Skip]), stop: None };
+            assert_eq!(document.act(&edit), Outcome::Recorded { node: 2 + step });
+            // Release the past heads each step queues; the world's branch
+            // capacity is small.
+            if step % 4 == 3 {
+                document.act(&Action::Maintain);
+            }
+        }
+        document.act(&Action::Maintain);
+        let (corrected, node_probes) = document.node_probes_during(|document| document.correct_recorded(1000, 1, E1, &SKIP));
+        assert!(matches!(corrected, Corrected::Recorded(node) if node == depth + 2), "depth {depth}: {corrected:?}");
+        probes.push(node_probes);
+        document.release();
+    }
+    eprintln!("correction journal node probes at depths 2, 12, 72: {probes:?}");
+    let (near, mid, far) = (probes[0], probes[1], probes[2]);
+    assert!(mid >= near && far >= mid, "probes grow with depth: {probes:?}");
+    assert!(far - mid <= 3 * (mid - near), "node probes at depths 2, 12, 72: {probes:?}");
+}
