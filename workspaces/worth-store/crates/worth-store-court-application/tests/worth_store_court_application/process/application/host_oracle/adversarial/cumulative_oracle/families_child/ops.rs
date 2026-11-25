@@ -300,14 +300,7 @@ pub(super) fn seed_label_edit(home: &LabelHome) -> WorthQueryCorrectionSourceCoo
     else {
         panic!("seed edit");
     };
-    WorthQueryRecordedCorrectionSource::from_untrusted_parts(
-        receipt
-            .committed_product_publication()
-            .composite_commit()
-            .clone(),
-        receipt.commit_reference().clone(),
-    )
-    .coordinates()
+    receipt.correction_source().coordinates()
 }
 
 pub(super) fn reverse_attempt(

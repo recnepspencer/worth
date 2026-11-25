@@ -60,7 +60,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let material = self
             .runtime
             .primary_provider
-            .observe_correction_material(original.commit_reference())
+            .observe_correction_material(
+                original.commit_reference(),
+                // A commit's recovery is admitted through its root writer's material.
+                worth_query_execution_attempt::facade::application_aftermath::WorthQueryCorrectionSourceMember::Primary,
+            )
             .map_err(Denial::material)?;
         material
             .admit_recovery_admission(admission, binding, input)

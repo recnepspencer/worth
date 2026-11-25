@@ -27,7 +27,7 @@ impl CorrectionMaterialOwner {
             let entry = state
                 .catalog
                 .material
-                .get(&original)
+                .get(&(original, coordinates.member()))
                 .ok_or(Denial::Unavailable)?;
             match &entry.body {
                 MaterialBody::Expired { .. } => true,
@@ -75,12 +75,13 @@ impl CorrectionMaterialOwner {
             .catalog
             .material
             .iter()
+            .filter(|((_, writer), _)| *writer == coordinates.member())
             .filter(|(_, entry)| match &entry.body {
                 MaterialBody::Ready { ready, .. } => &ready.commit == coordinates.relational(),
                 MaterialBody::Expired { commit } => commit == coordinates.relational(),
                 MaterialBody::Captured(_) | MaterialBody::Abandoned => false,
             });
-        let (identity, entry) = matches.next().ok_or(Denial::Unavailable)?;
+        let ((identity, _), entry) = matches.next().ok_or(Denial::Unavailable)?;
         if matches.next().is_some() {
             return Err(Denial::OriginalMismatch);
         }
@@ -121,7 +122,7 @@ impl MaterialPublication<'_> {
     pub fn expired_membership(&self, original: Original, revision: CanonicalDigestId) -> bool {
         let state = self.owner.state();
         state.pending.is_none()
-            && state.catalog.material.get(&original).is_some_and(|entry| {
+            && state.catalog.original_entries(original).any(|(_, entry)| {
                 entry.metadata.program == *revision.bytes()
                     && matches!(&entry.body, MaterialBody::Expired { .. })
             })

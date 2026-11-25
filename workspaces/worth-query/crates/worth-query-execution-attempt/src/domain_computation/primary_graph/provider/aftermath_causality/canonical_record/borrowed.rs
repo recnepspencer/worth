@@ -121,7 +121,7 @@ impl<'state> Fields<'state, '_, '_, '_> {
     }
     fn coordinates(
         &mut self,
-        fields: [&AspectFieldLocator; 4],
+        fields: [&AspectFieldLocator; 5],
         expected: Option<&WorthQueryRecordedCorrectionSource>,
     ) -> Result<bool, Denial> {
         match expected {
@@ -130,7 +130,8 @@ impl<'state> Fields<'state, '_, '_, '_> {
                 source.world_owner_coordinate().row_owner_number(),
             )? && self.number(fields[1], source.world().ordinal())?
                 && self.string(fields[2], &source.relational().branch_id.0)?
-                && self.number(fields[3], source.relational().commit_id.0)?),
+                && self.number(fields[3], source.relational().commit_id.0)?
+                && self.string(fields[4], &source.member().text())?),
             None => {
                 for field in fields {
                     if self.value(field)?.is_some() {

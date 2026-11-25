@@ -13,6 +13,7 @@ pub(super) fn selector(source: &WorthQueryCorrectionSourceCoordinates) -> Aspect
             owner: source.world_owner(),
             commit: source.world_commit(),
             receipt: source.relational(),
+            member: source.member(),
         }
     )))
 }
@@ -30,7 +31,8 @@ pub(super) fn selector_matches<Stop>(
     // branch/string traversals before the shared grammar writes comparisons.
     admit(value.len() as u64)?;
     admit(source.relational().branch_id.0.len() as u64)?;
-    admit(4 * 20 + 4)?;
+    // Four u64 conversions, their separators and the longest member text.
+    admit(4 * 20 + 5 + MEMBER_TEXT_BOUND)?;
     if source.world_owner_coordinate().home_owner().is_some() {
         admit(41)?;
     }
@@ -45,6 +47,7 @@ pub(super) fn selector_matches<Stop>(
             owner: source.world_owner_coordinate(),
             commit: source.world().ordinal(),
             receipt: source.relational(),
+            member: source.member(),
         }
     );
     Ok(result.is_ok() && matching.offset == value.len())
@@ -54,7 +57,10 @@ struct Selector<'a> {
     owner: worth_foundational::facade::WorldOwnerCoordinate,
     commit: u64,
     receipt: &'a worth_relational::facade::history::RelationalCommitReceipt,
+    member: crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceMember,
 }
+/// `stage:` + a u64 ordinal + `:` + 64 hex digits.
+const MEMBER_TEXT_BOUND: u64 = 6 + 20 + 1 + 64;
 impl std::fmt::Display for Selector<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use worth_foundational::facade::{BoundaryProtocolVersion, WorldOwnerCoordinate};
@@ -70,11 +76,12 @@ impl std::fmt::Display for Selector<'_> {
         }
         write!(
             f,
-            "{}:{}:{}:{}",
+            "{}:{}:{}:{}:{}",
             self.commit,
             self.receipt.branch_id.0.len(),
             self.receipt.branch_id.0,
-            self.receipt.commit_id.0
+            self.receipt.commit_id.0,
+            self.member
         )
     }
 }
@@ -122,7 +129,7 @@ pub(super) fn locators(
 }
 pub(super) fn values(pending: &WorthQueryPendingAftermathCausality) -> Vec<Option<AspectValue>> {
     let lineage = pending.correction_lineage();
-    let mut fields = Vec::with_capacity(19);
+    let mut fields = Vec::with_capacity(23);
     for source in [
         Some(lineage.root()),
         lineage.selected_alternative(),
@@ -141,8 +148,8 @@ pub(super) fn values(pending: &WorthQueryPendingAftermathCausality) -> Vec<Optio
     );
     fields
 }
-fn coordinates(source: Option<&WorthQueryRecordedCorrectionSource>) -> [Option<AspectValue>; 4] {
-    source.map_or([None, None, None, None], |source| {
+fn coordinates(source: Option<&WorthQueryRecordedCorrectionSource>) -> [Option<AspectValue>; 5] {
+    source.map_or([None, None, None, None, None], |source| {
         [
             Some(AspectValue::UInt64(
                 source.world_owner_coordinate().row_owner_number(),
@@ -152,6 +159,9 @@ fn coordinates(source: Option<&WorthQueryRecordedCorrectionSource>) -> [Option<A
                 source.relational().branch_id.0.clone(),
             ))),
             Some(AspectValue::UInt64(source.relational().commit_id.0)),
+            Some(AspectValue::String(InternedString::from(
+                source.member().text(),
+            ))),
         ]
     })
 }

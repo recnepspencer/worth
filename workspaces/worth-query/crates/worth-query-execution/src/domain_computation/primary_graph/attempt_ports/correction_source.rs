@@ -86,6 +86,10 @@ impl PreparedCorrectionSourcePort for WorthQueryPreparedCorrectionSource {
         self.source_commit()
     }
 
+    fn source_member(&self) -> crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceMember {
+        self.source_member()
+    }
+
     fn intent_causal_key(&self) -> String {
         self.intent().causal_key()
     }

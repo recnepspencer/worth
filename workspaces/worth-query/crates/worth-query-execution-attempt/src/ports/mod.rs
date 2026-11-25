@@ -245,6 +245,7 @@ pub trait PreparedCorrectionSourcePort: std::fmt::Debug + Send + Sync + Any {
     fn target_branch(&self) -> &worth_relational::facade::history::BranchId;
     fn source_world(&self) -> &worth_runtime_world::facade::CompositeCommitIdentity;
     fn source_commit(&self) -> &worth_relational::facade::history::RelationalCommitReceipt;
+    fn source_member(&self) -> crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceMember;
     fn intent_causal_key(&self) -> String;
     fn authored_declaration(
         &self,

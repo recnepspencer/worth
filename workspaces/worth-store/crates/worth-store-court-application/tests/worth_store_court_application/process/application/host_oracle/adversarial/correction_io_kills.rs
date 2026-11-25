@@ -97,10 +97,7 @@ fn seed_label_edit(home: &LabelHome) -> WorthQueryCorrectionSourceCoordinates {
         .execute_in_program(runtime, ExecutionAllocationPolicy::SystemAllocation).unwrap()
     else { panic!("seed LabelEdit must commit"); };
     assert_eq!(result.label, "changed");
-    WorthQueryRecordedCorrectionSource::from_untrusted_parts(
-        receipt.committed_product_publication().composite_commit().clone(),
-        receipt.commit_reference().clone(),
-    ).coordinates()
+    receipt.correction_source().coordinates()
 }
 
 fn build_correction_reference(execution: ExecutionRequest<'_, '_>) -> (SummaryState, SummaryState) {

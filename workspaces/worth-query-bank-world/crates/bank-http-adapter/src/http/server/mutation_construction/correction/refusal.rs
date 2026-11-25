@@ -54,6 +54,7 @@ fn selection(cause: WorthQueryCorrectionSelectionDenial) -> BankHttpDenial {
         D::SourceUnavailable
         | D::SourceNotCorrectable
         | D::SourcePublicationMismatch
+        | D::SourceMemberUnavailable
         | D::ForeignRuntime => BankHttpDenial::new(Kind::PermissionDenied, Next::None),
         D::ForeignPhase => BankHttpDenial::new(Kind::InternalDenied, Next::ContactOperator),
     }

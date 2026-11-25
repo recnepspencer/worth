@@ -7,6 +7,7 @@ pub struct BankHttpCorrectionSource {
     pub world_owner: worth_foundational::WorldOwnerCoordinate,
     pub world_commit: u64,
     pub relational: BankHttpCorrectionCommit,
+    pub member: worth_query_host::facade::primary_graph::WorthQueryCorrectionSourceMember,
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
