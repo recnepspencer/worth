@@ -10,10 +10,14 @@ use worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeId
 
 mod compilation;
 mod predicate;
+mod related_predicate;
 mod relation_predicate;
 mod root_selection;
 mod where_filter;
 pub use predicate::WorthQueryInstalledGraphPredicate;
+pub use related_predicate::{
+    WorthQueryInstalledRelatedPredicate, WorthQueryInstalledRelatedTargetPredicate,
+};
 pub use relation_predicate::WorthQueryInstalledGraphRelationPredicate;
 pub use where_filter::{
     WorthQueryInstalledWhereFilter, WorthQueryInstalledWhereFilterField,
@@ -285,9 +289,11 @@ pub(super) struct WorthQueryInstalledGraphReadMeaning {
     >,
     pub(super) predicates: Vec<WorthQueryInstalledGraphPredicate>,
     pub(super) where_filter: Option<WorthQueryInstalledWhereFilter>,
+    pub(super) related_predicates: Vec<WorthQueryInstalledRelatedPredicate>,
     pub(super) ordering: Vec<WorthQueryInstalledGraphOrdering>,
     pub(super) maximum_traversal_depth: usize,
     pub(super) maximum_result_count: usize,
+    pub(super) live_whole_result: bool,
 }
 
 pub(super) struct WorthQueryInstalledGraphPlanningPreparation<'a> {
@@ -332,6 +338,7 @@ impl WorthQueryInstalledGraphReadContract {
             || meaning.component_selection.is_some()
             || meaning.managed_index.is_some()
             || meaning.where_filter.is_some()
+            || !meaning.related_predicates.is_empty()
     }
 
     pub fn root_entity(&self) -> &str {
@@ -364,5 +371,9 @@ impl WorthQueryInstalledGraphReadContract {
 
     pub const fn maximum_result_count(&self) -> usize {
         self.meaning.maximum_result_count
+    }
+
+    pub const fn is_live_whole_result(&self) -> bool {
+        self.meaning.live_whole_result
     }
 }

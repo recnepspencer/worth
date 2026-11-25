@@ -176,3 +176,73 @@ binding = "TagBytesProbeBinding"
 posture = "domain"
 reason = "Reference-free two-byte prefix value exercised by public managed-index probe and watch courts."
 forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-testkit-document-retention/src/managed_probe_binding.rs"
+binding = "FocusWindowProbeBinding"
+posture = "domain"
+reason = "Reference-free half-open integer interval value exercised by public ordered managed-index adapter courts."
+forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-host/src/ordered_index/probes.rs"
+binding = "WorthQueryInterval1DBinding"
+posture = "domain"
+reason = "Reference-free fixed-width 1D i64 interval probe for the stock ordered managed-index adapter."
+forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-host/src/ordered_index/probes.rs"
+binding = "WorthQueryBox2DBinding"
+posture = "domain"
+reason = "Reference-free fixed-width 2D i64 box probe for the stock ordered managed-index adapter."
+forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-host/src/ordered_index/probes.rs"
+binding = "WorthQueryBox3DBinding"
+posture = "domain"
+reason = "Reference-free fixed-width 3D i64 box probe for the stock ordered managed-index adapter."
+forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-host/src/ordered_index/probes/f64_probes.rs"
+binding = "WorthQueryBox2DF64Binding"
+posture = "domain"
+reason = "Reference-free fixed-width 2D CanonicalF64 box probe for the stock ordered managed-index adapter."
+forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-host/src/ordered_index/probes/f64_probes.rs"
+binding = "WorthQueryBox3DF64Binding"
+posture = "domain"
+reason = "Reference-free fixed-width 3D CanonicalF64 box probe for the stock ordered managed-index adapter."
+forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-court-decl-host-single-source/tests/worth_query_court_decl_host_single_source/managed_index_hard_dx/probes.rs"
+binding = "FocusWindowBinding"
+posture = "domain"
+reason = "Reference-free derived 1D i64 focus-window binary probe for Hard DX acceptance courts."
+forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-court-decl-host-single-source/tests/worth_query_court_decl_host_single_source/managed_index_hard_dx/probes.rs"
+binding = "QueryBox2DBinding"
+posture = "domain"
+reason = "Reference-free derived 2D i64 bounding-box binary probe for Hard DX acceptance courts."
+forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-court-decl-host-single-source/tests/worth_query_court_decl_host_single_source/managed_index_hard_dx/probes.rs"
+binding = "QueryBox3DBinding"
+posture = "domain"
+reason = "Reference-free derived 3D i64 bounding-box binary probe for Hard DX acceptance courts."
+forbidden_types = []
+
+[[binding]]
+source = "workspaces/worth-query/crates/worth-query-court-decl-host-macros/tests/worth_query_court_decl_host_macros/macros/managed_index_hard_dx_probes.rs"
+binding = "QueryBox2DBinding"
+posture = "domain"
+reason = "Reference-free derived 2D i64 bounding-box binary probe for macro Hard DX courts."
+forbidden_types = []

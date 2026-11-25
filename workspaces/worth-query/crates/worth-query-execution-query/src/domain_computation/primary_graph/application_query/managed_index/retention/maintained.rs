@@ -36,6 +36,57 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> ManagedIndexSta
         }
         Ok(())
     }
+
+    /// Attaches a matching published Native observation ONLY when the registration
+    /// is still `Created`. Never resurrects `Evicted`, `Failed`, or `Rebuilding`
+    /// registrations into `Ready`, and refuses `Disposed`.
+    pub fn attach_maintained_if_created(
+        &self,
+        observation: ManagedIndexSourceObservation,
+    ) -> Result<bool, WorthQueryManagedIndexLifecycleDenial> {
+        use WorthQueryManagedIndexLifecycleDenial as Denial;
+        let root = observation
+            .payload()
+            .downcast_ref::<ManagedSourceRoot<S, I>>()
+            .ok_or(Denial::ForeignAssociation)?;
+        if !root.installed.same_installation(self.adapter.installed())
+            || !Arc::ptr_eq(&root.adapter, &self.adapter)
+        {
+            return Err(Denial::ForeignAssociation);
+        }
+        let image = RetainedIndexImage::Maintained {
+            native_custody: observation,
+        };
+        let mut state = self
+            .retained
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if state.status == WorthQueryManagedIndexLifecycle::Disposed {
+            drop(state);
+            image.retire();
+            return Err(Denial::Disposed);
+        }
+        if state.status != WorthQueryManagedIndexLifecycle::Created {
+            drop(state);
+            image.retire();
+            return Ok(false);
+        }
+        state.epoch = match state.epoch.checked_add(1) {
+            Some(next) => next,
+            None => {
+                drop(state);
+                image.retire();
+                return Err(Denial::EpochExhausted);
+            }
+        };
+        let old = state.root.replace(image);
+        state.status = WorthQueryManagedIndexLifecycle::Ready;
+        drop(state);
+        if let Some(old) = old {
+            old.retire();
+        }
+        Ok(true)
+    }
 }
 
 impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> ManagedIndexState<S, I> {

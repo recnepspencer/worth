@@ -27,6 +27,7 @@ mod governed_continuation;
 mod governed_retained;
 mod live_approved;
 mod live_open;
+mod live_whole_result;
 mod retained_projection;
 pub use retained_projection::WorthQueryApplicationProjectionRetentionRequest;
 mod managed_index;

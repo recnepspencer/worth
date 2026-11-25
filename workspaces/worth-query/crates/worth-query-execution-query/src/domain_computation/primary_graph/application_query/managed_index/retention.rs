@@ -25,6 +25,7 @@ mod eviction;
 pub use association::ManagedIndexRegistrationKey;
 mod maintained;
 mod transitions;
+pub use transitions::EnsureReadyClaim;
 
 /// Retained cache status; it does not assert current authorization or Source availability.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

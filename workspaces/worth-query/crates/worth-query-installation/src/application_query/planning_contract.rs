@@ -127,6 +127,10 @@ pub trait WorthQueryReadGraphPlanningContract {
     fn where_filter(&self) -> Option<&super::WorthQueryInstalledWhereFilter> {
         None
     }
+    /// Related-record absence/existence predicates narrowing selected roots.
+    fn related_predicates(&self) -> &[super::WorthQueryInstalledRelatedPredicate] {
+        &[]
+    }
     fn guard_count(&self) -> usize {
         0
     }
@@ -171,7 +175,9 @@ impl WorthQueryReadGraphPlanningContract for WorthQueryInstalledGraphPlanningPre
     }
 
     fn relation_count(&self) -> usize {
-        root_relation_count(self.meaning) + self.meaning.relations.len()
+        root_relation_count(self.meaning)
+            + self.meaning.relations.len()
+            + self.meaning.related_predicates.len()
     }
 
     fn relation(&self, index: usize) -> Option<WorthQueryReadGraphRelationView<'_>> {
@@ -196,6 +202,9 @@ impl WorthQueryReadGraphPlanningContract for WorthQueryInstalledGraphPlanningPre
     }
     fn where_filter(&self) -> Option<&super::WorthQueryInstalledWhereFilter> {
         self.meaning.where_filter.as_ref()
+    }
+    fn related_predicates(&self) -> &[super::WorthQueryInstalledRelatedPredicate] {
+        &self.meaning.related_predicates
     }
 
     fn predicate_count(&self) -> usize {
@@ -249,7 +258,9 @@ impl WorthQueryReadGraphPlanningContract for WorthQueryInstalledGraphReadContrac
     }
 
     fn relation_count(&self) -> usize {
-        root_relation_count(self.meaning()) + self.relations().len()
+        root_relation_count(self.meaning())
+            + self.relations().len()
+            + self.related_predicates().len()
     }
 
     fn relation(&self, index: usize) -> Option<WorthQueryReadGraphRelationView<'_>> {
@@ -274,6 +285,9 @@ impl WorthQueryReadGraphPlanningContract for WorthQueryInstalledGraphReadContrac
     }
     fn where_filter(&self) -> Option<&super::WorthQueryInstalledWhereFilter> {
         WorthQueryInstalledGraphReadContract::where_filter(self)
+    }
+    fn related_predicates(&self) -> &[super::WorthQueryInstalledRelatedPredicate] {
+        WorthQueryInstalledGraphReadContract::related_predicates(self)
     }
 
     fn predicate_count(&self) -> usize {

@@ -27,13 +27,13 @@ macro_rules! worth_query_structured_value_binding {
             )?
 
             fn validate(
-                value: &Self::Value,
+                __worth_structured_value: &Self::Value,
             ) -> ::core::result::Result<
                 (),
                 $crate::facade::application_schema::ApplicationValueValidationDenial,
             > {
                 $crate::worth_query_structured_value_binding!(
-                    @validate <Self as $crate::facade::application_schema::ApplicationStructuredValueBinding>::IDENTITY.clone(), value $(, $validate)?
+                    @validate <Self as $crate::facade::application_schema::ApplicationStructuredValueBinding>::IDENTITY.clone(), __worth_structured_value $(, $validate)?
                 )
             }
         }
@@ -51,15 +51,15 @@ macro_rules! worth_query_structured_value_binding {
         >($wire, |__worth_input: &$Value| &raw const __worth_input.$field)
     };
     (@validate $identity:expr, $value:ident, $validate:path) => {
-        ($validate)($value).map_err(|reason| {
+        ($validate)($value).map_err(|__worth_structured_reason| {
             $crate::facade::application_schema::ApplicationValueValidationDenial::rejected(
                 $identity,
-                reason,
+                __worth_structured_reason,
             )
         })
     };
     (@validate $identity:expr, $value:ident) => {{
         let _ = (&$identity, $value);
-        Ok(())
+        ::core::result::Result::Ok(())
     }};
 }

@@ -31,6 +31,7 @@ pub use super::super::source_facts::{
 pub use applied_publication::AppliedSourcePublication;
 pub use denial::{WorthQuerySourceExpectationDenial, WorthQuerySourceExpectationDenialKind};
 pub use expression_context::{ObservedQueryExpressionContext, RetainedExpressionContext};
+pub use fact_conversion::SourceFactConversionQuote;
 pub use retained_parameters::WorthQueryRetainedObservedParameters;
 pub use root_selection::{
     DeclaredComponentSelection, DeclaredManagedIndexSelection, DeclaredOrbitSelection,

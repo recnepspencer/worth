@@ -34,10 +34,12 @@ pub(in crate::domain_computation::primary_graph) fn prepare_home_application_ser
     runtime: &WorthQueryExecutionRuntime,
     authority: &WorthQueryExecutionInstallationAuthority,
     installed: &WorthQueryInstalledApplicationSchema<Schema>,
+    authorization_clock: &WorthQueryRuntimeClock,
 ) -> Result<HomeApplicationServices<Schema>, WorthQueryPrimaryGraphInstallationDenial> {
-    if !bootstrap.product_world_resources.admits_clock(
-        &worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
-    ) {
+    if !bootstrap
+        .product_world_resources
+        .admits_clock(&authorization_clock.admission_clock)
+    {
         return Err(WorthQueryPrimaryGraphInstallationDenial::new(
             WorthQueryPrimaryGraphInstallationDenialKind::AdmissionClockMismatch,
             "Home Product World and admission require the same monotonic clock",

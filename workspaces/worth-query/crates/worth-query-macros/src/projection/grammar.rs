@@ -31,6 +31,7 @@ const GENERATED: &[&str] = &[
 pub(super) struct ProjectionDeclaration {
     pub(super) schema: Type,
     pub(super) root: Type,
+    pub(super) namespace: Option<Path>,
     pub(super) slots: Vec<Slot>,
     /// Fields that project the row's own persistent name.
     pub(super) names: Vec<NameSlot>,
@@ -132,6 +133,7 @@ impl ProjectionDeclaration {
         Ok(Self {
             schema: schema.required(input.ident.span(), DERIVE)?,
             root: root.required(input.ident.span(), DERIVE)?,
+            namespace,
             slots,
             names,
         })

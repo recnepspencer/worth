@@ -68,10 +68,11 @@ pub(super) fn path(
 }
 
 /// Complete Source membership is a public, unparameterized path union with
-/// no predicate or residual filter it could silently drop.
+/// no predicate, residual filter, or related predicate it could silently drop.
 pub(super) fn is_complete_membership(source: &ErasedApplicationQueryDefinition) -> bool {
     source.predicates().is_empty()
         && source.where_filter().is_none()
+        && source.related_predicates().is_empty()
         && source.parameters().is_empty()
         && !source.root_paths().is_empty()
         && source.disclosure().posture()

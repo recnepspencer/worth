@@ -41,10 +41,15 @@ where
         ),
     };
     query
-        .map(|query| WorthQueryApplicationHome {
-            query,
-            directory: None,
-            checkpoint_limits: request.checkpoint_limits,
+        .map(|query| {
+            let active_head = std::sync::Mutex::new(query.runtime().current_world());
+            WorthQueryApplicationHome {
+                query,
+                directory: None,
+                checkpoint_limits: request.checkpoint_limits,
+                open_disposition: WorthQueryHomeOpenDisposition::Created,
+                active_head,
+            }
         })
         .map_err(|cause| Refused::from_phase(Phase::Preparation(cause)))
 }

@@ -77,4 +77,52 @@ where
             .map_err(WorthQueryApplicationRequestQueryDenial::ExecutionRequest);
         completion::completed_effect(advancement, completed)
     }
+
+    /// Opens the installed index's shared registration and rebuilds it ONLY
+    /// when its status is `Created` (such as after cold reopen), under this
+    /// request's explicit execution controls.
+    ///
+    /// Already-`Ready` registrations return immediately without reading Source.
+    /// `Evicted`, `Failed`, `Rebuilding`, `Disposed`, and budget or authority
+    /// denials refuse honestly without hiding errors.
+    pub fn ensure_index_ready<I: ApplicationManagedIndexBinding<Schema>>(
+        self,
+    ) -> Result<WorthQueryManagedIndex<Schema, I>, WorthQueryApplicationRequestQueryDenial>
+    where
+        <Intent::Binding as ApplicationQueryBinding<Schema>>::ScopeBinding:
+            ApplicationQueryScopeResolution<
+                Schema,
+                <Intent::Binding as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
+            >,
+    {
+        let application = self.application;
+        let request = self.scope;
+        let mut completed = None;
+        let advancement = application
+            .with_application_advancement(request, |phase| {
+                completed = Some(self.ensure_index_ready_in_advancement::<I>(&phase));
+            })
+            .map_err(WorthQueryApplicationRequestQueryDenial::ExecutionRequest);
+        completion::completed_effect(advancement, completed)
+    }
+
+    /// Borrowed-phase counterpart to [`Self::ensure_index_ready`], executing
+    /// inside an already-admitted [`WorthQueryAdvancementPhase`].
+    pub fn ensure_index_ready_in_advancement<I: ApplicationManagedIndexBinding<Schema>>(
+        self,
+        phase: &AdvancementPhase<'_>,
+    ) -> Result<WorthQueryManagedIndex<Schema, I>, WorthQueryApplicationRequestQueryDenial>
+    where
+        <Intent::Binding as ApplicationQueryBinding<Schema>>::ScopeBinding:
+            ApplicationQueryScopeResolution<
+                Schema,
+                <Intent::Binding as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
+            >,
+    {
+        self.with_admitted_query(phase, |application, binding, external, plan| {
+            application
+                .ensure_application_managed_index_ready(phase, binding, external, plan)
+                .map_err(WorthQueryApplicationRequestQueryDenial::ManagedIndex)
+        })
+    }
 }

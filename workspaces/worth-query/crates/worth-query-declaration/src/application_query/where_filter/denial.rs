@@ -8,6 +8,8 @@ pub enum ApplicationQueryWhereFilterDenial {
     /// An operand name is empty or carries surrounding whitespace.
     InvalidOperandName,
     DuplicateOperand,
+    /// Two comparison clauses compare the exact same field, operator, and right-hand operand.
+    DuplicateClause,
     /// A filter reads at least one row field or parameter.
     NoOperands,
     /// Every declared operand must be read by the expression.
@@ -40,6 +42,7 @@ impl std::fmt::Display for ApplicationQueryWhereFilterDenial {
         match self {
             Self::InvalidOperandName => formatter.write_str("where filter operand name is invalid"),
             Self::DuplicateOperand => formatter.write_str("where filter operand is duplicated"),
+            Self::DuplicateClause => formatter.write_str("where filter clause is duplicated"),
             Self::NoOperands => formatter.write_str("where filter reads no field or parameter"),
             Self::UnusedOperand => formatter.write_str("where filter operand is never read"),
             Self::InvalidRecordField { field } => write!(

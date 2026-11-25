@@ -4686,3 +4686,11 @@ crates/worth-relational-publication/ crates/worth-relational/src/tests/transacti
 crates/worth-relational-publication/ crates/worth-relational/src/tests/transactions/core/publication_owner_lifecycle.rs
 crates/worth-relational-publication/ crates/worth-relational/src/tests/transactions/core/publication_route_handoff.rs
 crates/worth-relational-publication/ crates/worth-relational/src/visibility/materialization/read_records/reader/pinned_read/pinning_tests.rs
+# P2.3 / G9: receiver-owned whole-result live poll stage hook for deterministic mid-poll revocation & stage-pinned footprint capture courts.
+workspaces/worth-query/crates/worth-query-execution-query/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/facade.rs
+workspaces/worth-query/crates/worth-query-execution-query/ workspaces/worth-query/crates/worth-query-execution/src/facade/primary_graph.rs
+workspaces/worth-query/crates/worth-query-execution-query/ workspaces/worth-query/crates/worth-query-publication/src/application_entry/live_whole_result.rs
+workspaces/worth-query/crates/worth-query-execution-query/ workspaces/worth-query/crates/worth-query-court-decl-host-where-filter/tests/worth_query_court_decl_host_where_filter/live_whole_result/budget_refresh.rs
+workspaces/worth-query/crates/worth-query-execution-query/ workspaces/worth-query/crates/worth-query-court-decl-host-where-filter/tests/worth_query_court_decl_host_where_filter/live_whole_result/mid_poll_revocation.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host-where-filter/tests/worth_query_court_decl_host_where_filter/live_whole_result/budget_refresh.rs
+workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-court-decl-host-where-filter/tests/worth_query_court_decl_host_where_filter/live_whole_result/mid_poll_revocation.rs

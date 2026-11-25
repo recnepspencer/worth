@@ -83,6 +83,13 @@ where
         };
         drop(bindings);
         let (query, home) = opening::existing::attach_world(phase, home, after, checkpoint_limits)?;
-        opening::service::finish_service(phase, query, home, checkpoint_limits, observation)
+        opening::service::finish_service(
+            phase,
+            query,
+            home,
+            checkpoint_limits,
+            super::super::runtime::WorthQueryHomeOpenDisposition::Opened,
+            observation,
+        )
     }
 }

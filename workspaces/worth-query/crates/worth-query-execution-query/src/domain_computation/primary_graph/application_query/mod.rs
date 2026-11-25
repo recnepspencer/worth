@@ -135,11 +135,14 @@ pub use disclosure::{
 };
 pub use graph_read_plan_binding::WorthQueryAdmittedApplicationQueryPlan;
 pub use live::{
-    WorthQueryApplicationLiveCauseDenialKind, WorthQueryApplicationLiveCloseOutcome,
-    WorthQueryApplicationLiveControlDenial, WorthQueryApplicationLiveControls,
-    WorthQueryApplicationLiveLease, WorthQueryApplicationLiveOpenDenial,
-    WorthQueryApplicationLiveOpenDenialKind, WorthQueryApplicationLiveOutcome,
-    WorthQueryApplicationLiveOverflow, WorthQueryApplicationLiveUpdate,
+    WholeResultLiveStageForTest, WorthQueryApplicationLiveCauseDenialKind,
+    WorthQueryApplicationLiveCloseOutcome, WorthQueryApplicationLiveControlDenial,
+    WorthQueryApplicationLiveControls, WorthQueryApplicationLiveLease,
+    WorthQueryApplicationLiveOpenDenial, WorthQueryApplicationLiveOpenDenialKind,
+    WorthQueryApplicationLiveOutcome, WorthQueryApplicationLiveOverflow,
+    WorthQueryApplicationLiveUpdate, WorthQueryApplicationWholeResultLiveLease,
+    WorthQueryApplicationWholeResultLiveOutcome, WorthQueryApplicationWholeResultLiveSnapshot,
+    WorthQueryApplicationWholeResultLiveUpdate,
 };
 pub use observed_source::{
     BoundStableObservedSourceFacts, PreparedObservedSourceExpectation,

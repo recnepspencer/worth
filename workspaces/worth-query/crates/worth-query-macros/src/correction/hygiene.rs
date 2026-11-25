@@ -17,6 +17,9 @@ pub(super) struct HygienicNames {
     pub(super) inverse_alias: Ident,
     pub(super) disclosure_alias: Ident,
     pub(super) cap_alias: Ident,
+    pub(super) program_alias: Ident,
+    pub(super) inverse_action_alias: Ident,
+    pub(super) source_action_alias: Ident,
     pub(super) identity_const: Ident,
     pub(super) call_disclosure: Ident,
     pub(super) call_source_def: Ident,
@@ -24,6 +27,7 @@ pub(super) struct HygienicNames {
     pub(super) call_demand: Ident,
     pub(super) call_derive: Ident,
     pub(super) call_inverse_key: Ident,
+    pub(super) call_reapply_key: Ident,
     pub(super) bytes: Ident,
     pub(super) expected: Ident,
     pub(super) bounds: Ident,
@@ -45,6 +49,9 @@ impl HygienicNames {
             inverse_alias: fresh_ident("__WorthCorrectionInverse", mixed, &mut used),
             disclosure_alias: fresh_ident("__WorthCorrectionDisclosure", mixed, &mut used),
             cap_alias: fresh_ident("__WorthCorrectionCapability", mixed, &mut used),
+            program_alias: fresh_ident("__WorthCorrectionProgram", mixed, &mut used),
+            inverse_action_alias: fresh_ident("__WorthCorrectionInverseAction", mixed, &mut used),
+            source_action_alias: fresh_ident("__WorthCorrectionSourceAction", mixed, &mut used),
             identity_const: fresh_ident("__WORTH_CORRECTION_IDENTITY", mixed, &mut used),
             call_disclosure: fresh_ident("__worth_correction_call_disclosure", mixed, &mut used),
             call_source_def: fresh_ident("__worth_correction_call_source_def", mixed, &mut used),
@@ -52,6 +59,7 @@ impl HygienicNames {
             call_demand: fresh_ident("__worth_correction_call_demand", mixed, &mut used),
             call_derive: fresh_ident("__worth_correction_call_derive", mixed, &mut used),
             call_inverse_key: fresh_ident("__worth_correction_call_inverse_key", mixed, &mut used),
+            call_reapply_key: fresh_ident("__worth_correction_call_reapply_key", mixed, &mut used),
             bytes: Ident::new("__worth_correction_bytes", mixed),
             expected: Ident::new("__worth_correction_expected", mixed),
             bounds: Ident::new("__worth_correction_bounds", mixed),
@@ -113,6 +121,16 @@ fn collect_used_idents(input: &DeriveInput, spec: &CorrectionDeclaration) -> BTr
     }
     if let Some(p) = &spec.inverse_key {
         collect_stream_idents(p.to_token_stream(), &mut used);
+    }
+    if let Some(p) = &spec.reapplication_key {
+        collect_stream_idents(p.to_token_stream(), &mut used);
+    }
+    if let Some(actions) = &spec.authored_actions {
+        collect_stream_idents(actions.program.to_token_stream(), &mut used);
+        collect_stream_idents(actions.inverse_action.to_token_stream(), &mut used);
+        if let Some(src) = &actions.source_action {
+            collect_stream_idents(src.to_token_stream(), &mut used);
+        }
     }
     used
 }

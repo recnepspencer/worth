@@ -129,7 +129,8 @@ impl<S: ApplicationSchemaComposition, P> HomeProgramInstallationCustody<S, P> {
         phase: &crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<'_>,
     ) -> Result<(), D> {
         let meaning = self.meaning.as_ref().expect("readmitted original meaning");
-        self.services=Some(crate::domain_computation::primary_graph::application_runtime::installation::home_attachment::prepare_home_application_services(phase,self.bootstrap.as_mut().expect("actual bootstrap"),&meaning.runtime,&meaning.authority,&meaning.installed).map_err(D::PrimaryGraph)?);
+        let clock = self.core.clock.as_ref().expect("same original clock");
+        self.services=Some(crate::domain_computation::primary_graph::application_runtime::installation::home_attachment::prepare_home_application_services(phase,self.bootstrap.as_mut().expect("actual bootstrap"),&meaning.runtime,&meaning.authority,&meaning.installed,clock).map_err(D::PrimaryGraph)?);
         Ok(())
     }
 }

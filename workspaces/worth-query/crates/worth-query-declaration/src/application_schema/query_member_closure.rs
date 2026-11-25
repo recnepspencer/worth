@@ -13,9 +13,12 @@ mod history;
 mod inspection;
 mod invariant_source;
 mod managed_index;
+mod related_predicate;
 mod where_filter;
 
-use super::schema_read_closure::{entity_exists, field_is_unitless, field_matches, relation_exists};
+use super::schema_read_closure::{
+    entity_exists, field_is_unitless, field_matches, relation_exists,
+};
 
 pub(crate) fn validate_application_query_members(
     members: &[ApplicationSchemaMember],
@@ -57,6 +60,7 @@ fn validate_query(
     validate_result_shape(definition, members)?;
     validate_predicates(definition, members)?;
     where_filter::validate(definition, members)?;
+    related_predicate::validate(definition, members)?;
     validate_ordering(definition, members)
 }
 

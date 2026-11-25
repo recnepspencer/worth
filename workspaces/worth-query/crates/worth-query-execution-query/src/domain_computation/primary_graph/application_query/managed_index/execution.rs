@@ -13,7 +13,7 @@ mod build;
 mod maintained_build;
 pub mod purpose;
 mod select;
-pub use build::rebuild;
+pub use build::{rebuild, rebuild_claimed};
 pub use select::select;
 
 pub enum ProviderExecutionDenial {

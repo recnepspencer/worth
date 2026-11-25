@@ -157,3 +157,57 @@ fn recorded_inverse_correction_expands_source_body_preimage_and_dispatch() {
         "{expanded}"
     );
 }
+
+#[test]
+fn authored_body_correction_mode_validates_and_emits_actions_and_reapply() {
+    let cases = [
+        (
+            format!("#[worth_query({BASE}, mode = authored_body, namespace = NS, demand = d)] struct Fix;"),
+            "`mode = authored_body` requires `source_body = fn_path`",
+        ),
+        (
+            format!("#[worth_query({BASE}, mode = bogus, namespace = NS, demand = d)] struct Fix;"),
+            "unknown `mode = bogus`",
+        ),
+        (
+            format!(
+                "#[worth_query({BASE}, mode = recorded_inverse, namespace = NS, demand = d, \
+                 program = P, inverse_action = A)] struct Fix;"
+            ),
+            "`program` does not apply to a `mode = recorded_inverse` correction",
+        ),
+        (
+            format!(
+                "#[worth_query({BASE}, mode = authored_body, source_body = sb, namespace = NS, demand = d, \
+                 program = P, inverse_action = IA, source_action = SA)] struct Fix;"
+            ),
+            "`source_action` requires `reapply`",
+        ),
+    ];
+    for (source, expected) in cases {
+        let message = refusal(&source);
+        assert!(message.contains(expected), "{source}: {message}");
+    }
+
+    let input = syn::parse_str(
+        "#[worth_query(mode = authored_body, schema = Schema, namespace = CORR, \
+         source = CompleteBinding, inverse = RestoreCompletion, disclosure = DetailsBinding, \
+         source_body = complete_body, preimage_fields(TaskFacts::done()), preimage_bytes = 8, \
+         derive = derive_restore, reapply, program = Program, inverse_action = RestoreAction, \
+         source_action = CompleteAction)] \
+         pub struct CorrectCompletion;",
+    )
+    .unwrap();
+    let expanded = expand(&input).unwrap().to_string();
+    for needle in [
+        "fn source_body ()",
+        "fn visit_reapplication",
+        "fn reapplication_key",
+        "impl :: worth_query_decl :: facade :: application_aftermath :: ApplicationAuthoredBodyCorrection",
+        "type InverseAction = __WorthCorrectionInverseAction",
+        "impl :: worth_query_decl :: facade :: application_aftermath :: ApplicationAuthoredBodyReapplication",
+        "type SourceAction = __WorthCorrectionSourceAction",
+    ] {
+        assert!(expanded.contains(needle), "missing `{needle}` in: {expanded}");
+    }
+}

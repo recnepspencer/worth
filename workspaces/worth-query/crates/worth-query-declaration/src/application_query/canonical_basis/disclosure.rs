@@ -84,6 +84,21 @@ fn append_rule(
             text(format!("{path}.cardinality"), cardinality_name(cardinality)),
         ]);
     }
+    if let Some((relation, from, to, direction)) = selector.internal_relation_contract() {
+        entries.extend([
+            text(format!("{path}.kind"), "internal-relation"),
+            text(format!("{path}.relation"), relation),
+            text(format!("{path}.from"), from),
+            text(format!("{path}.to"), to),
+            text(
+                format!("{path}.direction"),
+                match direction {
+                    crate::application_query::RelationDirection::Forward => "forward",
+                    crate::application_query::RelationDirection::Reverse => "reverse",
+                },
+            ),
+        ]);
+    }
     if let crate::application_query::ApplicationQueryDisclosureSelector::Orbit(orbit) = selector {
         entries.extend([
             text(format!("{path}.kind"), "orbit"),

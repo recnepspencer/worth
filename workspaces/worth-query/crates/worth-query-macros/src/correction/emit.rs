@@ -10,12 +10,15 @@
 //! - Inner `const _: ()` shadows every generated parameter/local name with a
 //!   local dummy `fn` item so no outer module `const` or unit `struct` with the
 //!   same name can trigger `E0530` or capture a pattern binding.
-use super::grammar::{CorrectionDeclaration, CorrectionIdentity, PreImageDemandSpec};
+use super::grammar::{CorrectionDeclaration, CorrectionIdentity};
 use super::hygiene::HygienicNames;
 use crate::facade_paths::declaration;
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{DeriveInput, Ident};
+use syn::DeriveInput;
+
+mod callbacks;
+use callbacks::outer_callback_helpers;
 
 pub(super) fn correction(input: &DeriveInput, spec: &CorrectionDeclaration) -> TokenStream {
     let (decl, ident) = (declaration(), &input.ident);
@@ -32,6 +35,9 @@ pub(super) fn correction(input: &DeriveInput, spec: &CorrectionDeclaration) -> T
         inverse_alias,
         disclosure_alias,
         cap_alias,
+        program_alias,
+        inverse_action_alias,
+        source_action_alias,
         identity_const,
         call_disclosure,
         call_source_def,
@@ -39,6 +45,7 @@ pub(super) fn correction(input: &DeriveInput, spec: &CorrectionDeclaration) -> T
         call_demand,
         call_derive,
         call_inverse_key,
+        call_reapply_key,
         bytes,
         expected,
         bounds,
@@ -54,6 +61,19 @@ pub(super) fn correction(input: &DeriveInput, spec: &CorrectionDeclaration) -> T
         .capability
         .as_ref()
         .map(|cap| quote!(type #cap_alias = #cap;));
+    let authored_aliases = spec.authored_actions.as_ref().map(|actions| {
+        let program = &actions.program;
+        let inverse_action = &actions.inverse_action;
+        let source_action_def = actions
+            .source_action
+            .as_ref()
+            .map(|src| quote!(type #source_action_alias = #src;));
+        quote! {
+            type #program_alias = #program;
+            type #inverse_action_alias = #inverse_action;
+            #source_action_def
+        }
+    });
     let identity = identity_expr(&decl, spec);
     let outer_helpers = outer_callback_helpers(&aftermath, &op, &aq, &aschema, ident, &names, spec);
     let disclosure_body = if spec.disclosure_parameters.is_some() {
@@ -105,6 +125,57 @@ pub(super) fn correction(input: &DeriveInput, spec: &CorrectionDeclaration) -> T
         || quote!(#dispatch.conventional()),
         |_| quote!(#dispatch.capability::<#cap_alias>()),
     );
+    let reapply_methods = spec.reapply.then(|| {
+        let reapply_key_body = if spec.reapplication_key.is_some() {
+            quote!((#call_reapply_key())(#key))
+        } else {
+            quote! {
+                #key.parse().map_err(|_| {
+                    #aschema::ApplicationValueEncodeDenial::CodecRejected {
+                        binding_identity: #decl::portable_identity::WorthQueryPortableTypeIdentity::declared(
+                            Self::IDENTITY,
+                        ),
+                        reason: "invalid reapplication idempotency key",
+                    }
+                })
+            }
+        };
+        quote! {
+            fn visit_reapplication<#visitor: #aftermath::ApplicationReapplicationVisitor<#schema_alias>>(
+                #dispatch: #aftermath::ApplicationReapplicationDispatch<#schema_alias, Self, #visitor>,
+            ) -> #visitor::Output {
+                #visit_body
+            }
+
+            fn reapplication_key(
+                #key: &str,
+            ) -> ::core::result::Result<
+                <Self::Source as #op::ApplicationMutationBinding<#schema_alias>>::IdempotencyKey,
+                #aschema::ApplicationValueEncodeDenial,
+            > {
+                #reapply_key_body
+            }
+        }
+    });
+    let authored_impls = spec.authored_actions.as_ref().map(|actions| {
+        let reapply_impl = actions.source_action.as_ref().map(|_| {
+            quote! {
+                impl #aftermath::ApplicationAuthoredBodyReapplication<#schema_alias, #program_alias>
+                    for #ident
+                {
+                    type SourceAction = #source_action_alias;
+                }
+            }
+        });
+        quote! {
+            impl #aftermath::ApplicationAuthoredBodyCorrection<#schema_alias, #program_alias>
+                for #ident
+            {
+                type InverseAction = #inverse_action_alias;
+            }
+            #reapply_impl
+        }
+    });
 
     quote! {
         const _: () = {
@@ -113,6 +184,7 @@ pub(super) fn correction(input: &DeriveInput, spec: &CorrectionDeclaration) -> T
             type #inverse_alias = #inverse;
             type #disclosure_alias = #disclosure;
             #cap_alias_def
+            #authored_aliases
             const #identity_const: &'static str = #identity;
             #outer_helpers
 
@@ -227,115 +299,13 @@ pub(super) fn correction(input: &DeriveInput, spec: &CorrectionDeclaration) -> T
                     ) -> #visitor::Output {
                         #visit_body
                     }
+
+                    #reapply_methods
                 }
+
+                #authored_impls
             };
         };
-    }
-}
-
-fn outer_callback_helpers(
-    aftermath: &TokenStream,
-    op: &TokenStream,
-    aq: &TokenStream,
-    aschema: &TokenStream,
-    ident: &Ident,
-    names: &HygienicNames,
-    spec: &CorrectionDeclaration,
-) -> TokenStream {
-    let HygienicNames {
-        schema_alias,
-        source_alias,
-        inverse_alias,
-        disclosure_alias,
-        call_disclosure,
-        call_source_def,
-        call_source_body,
-        call_demand,
-        call_derive,
-        call_inverse_key,
-        ..
-    } = names;
-    let derive_fn = &spec.derive_fn;
-    let disclosure_helper = spec.disclosure_parameters.as_ref().map(|func| {
-        quote! {
-            fn #call_disclosure() -> for<'a> fn(
-                &'a <#source_alias as #op::ApplicationMutationBinding<#schema_alias>>::Input,
-            ) -> ::core::result::Result<
-                #aq::ApplicationQueryParameterSet<
-                    <#disclosure_alias as #aq::ApplicationQueryBinding<#schema_alias>>::Query,
-                >,
-                #aftermath::ApplicationCorrectionDerivationDenial,
-            > {
-                #func
-            }
-        }
-    });
-    let source_def_helper = spec.source_definition.as_ref().map(|func| {
-        quote! {
-            fn #call_source_def() -> fn() -> #aschema::ApplicationOperationDefinitionBuilder<
-                #schema_alias,
-                <#source_alias as #op::ApplicationMutationBinding<#schema_alias>>::Operation,
-                <#source_alias as #op::ApplicationMutationBinding<#schema_alias>>::Input,
-                true,
-                false,
-            > {
-                #func
-            }
-        }
-    });
-    let source_body_helper = spec.source_body.as_ref().map(|func| {
-        quote! {
-            fn #call_source_body() -> fn() -> #aschema::ApplicationOperationBody<
-                #schema_alias,
-                <#source_alias as #op::ApplicationMutationBinding<#schema_alias>>::Operation,
-                <#source_alias as #op::ApplicationMutationBinding<#schema_alias>>::Input,
-            > {
-                #func
-            }
-        }
-    });
-    let demand_helper = match &spec.demand {
-        PreImageDemandSpec::Function(func) => quote! {
-            fn #call_demand() -> #aftermath::DeclaredPreImageDemand<#schema_alias> {
-                (#func)()
-            }
-        },
-        PreImageDemandSpec::Fields { fields, bytes } => quote! {
-            fn #call_demand() -> #aftermath::DeclaredPreImageDemand<#schema_alias> {
-                #aftermath::DeclaredPreImageDemand::new(
-                    [#(#aftermath::DeclaredPreImageLocus::from_field(#fields)),*],
-                    #bytes,
-                )
-            }
-        },
-    };
-    let inverse_key_helper = spec.inverse_key.as_ref().map(|func| {
-        quote! {
-            fn #call_inverse_key() -> for<'a> fn(
-                &'a str,
-            ) -> ::core::result::Result<
-                <#aftermath::ApplicationInverseBinding<#schema_alias, #ident> as #op::ApplicationMutationBinding<#schema_alias>>::IdempotencyKey,
-                #aschema::ApplicationValueEncodeDenial,
-            > {
-                #func
-            }
-        }
-    });
-    quote! {
-        #disclosure_helper
-        #source_def_helper
-        #source_body_helper
-        #demand_helper
-        fn #call_derive() -> for<'a, 'b> fn(
-            &'a <#source_alias as #op::ApplicationMutationBinding<#schema_alias>>::Input,
-            &'b dyn #aftermath::ApplicationCorrectionPreImage<#schema_alias>,
-        ) -> ::core::result::Result<
-            #inverse_alias,
-            #aftermath::ApplicationCorrectionDerivationDenial,
-        > {
-            #derive_fn
-        }
-        #inverse_key_helper
     }
 }
 

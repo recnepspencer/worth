@@ -10,7 +10,8 @@ enum PreparedDecision {
     Public,
     Governed {
         pending: WorthQueryPendingApplicationQueryGovernance,
-        internal_field_rules: GovernedInternalFieldRules,
+        internal_field_rules: SortedGovernedInternalFieldRules,
+        internal_relation_rules: SortedGovernedInternalRelationRules,
         disclosure: WorthQueryApplicationDisclosureDecision,
     },
 }
@@ -34,6 +35,7 @@ pub fn prepare(
                 result_rules,
                 internal_rules,
                 internal_field_rules,
+                internal_relation_rules,
             },
             Some(pending),
         ) => {
@@ -66,6 +68,7 @@ pub fn prepare(
                 decision: PreparedDecision::Governed {
                     pending,
                     internal_field_rules,
+                    internal_relation_rules,
                     disclosure: WorthQueryApplicationDisclosureDecision {
                         classification,
                         disclosed,
@@ -88,6 +91,7 @@ impl WorthQueryPreparedApplicationGovernance {
             PreparedDecision::Governed {
                 pending,
                 internal_field_rules,
+                internal_relation_rules,
                 disclosure,
             } => WorthQueryApplicationQueryGovernance::Governed {
                 capability_name: pending.capability_name,
@@ -97,10 +101,12 @@ impl WorthQueryPreparedApplicationGovernance {
                 computation: WorthQueryApplicationInternalComputationAuthority {
                     binding,
                     internal_field_rules,
+                    internal_relation_rules,
                     disclosure_value: pending.disclosure_value,
                 },
                 disclosure,
                 authorization: pending.authorization,
+                disclosure_memory: None,
             },
         }
     }

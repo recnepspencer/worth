@@ -8,7 +8,7 @@ macro_rules! worth_query_application_query {
         $vis:vis $Query:ident for $Schema:ty,
         identity $query_identity:expr,
         $(parameters $ParameterBinding:path,)?
-        result $ResultBinding:path,
+        result $ResultBinding:ty,
         scope $Scope:ty => $scope_identity:expr,
         name $name:literal
     ) => {
@@ -44,7 +44,7 @@ macro_rules! worth_query_application_query {
         $vis:vis $Query:ident for Schema: $BindingTrait:path,
         identity $query_identity:expr,
         $(parameters $ParameterBinding:path,)?
-        result $ResultBinding:path,
+        result $ResultBinding:ty,
         scope $Scope:ty => $scope_identity:expr,
         name $name:literal
     ) => {

@@ -13,6 +13,11 @@ pub(super) fn validate_dependencies(
             || selector
                 .field_contract()
                 .is_some_and(|field| internal_field_is_installed(field, members))
+            || selector
+                .internal_relation_contract()
+                .is_some_and(|(relation, from, to, _)| {
+                    super::super::schema_read_closure::relation_exists(members, relation, from, to)
+                })
     }) {
         Ok(())
     } else {

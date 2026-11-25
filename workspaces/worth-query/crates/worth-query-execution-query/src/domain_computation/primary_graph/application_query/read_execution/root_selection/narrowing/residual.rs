@@ -18,8 +18,8 @@ use worth_query_installation::facade::WorthQueryInstalledWhereFilter;
 use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 
-mod evaluation;
-mod row_operands;
+pub(super) mod evaluation;
+pub(super) mod row_operands;
 
 pub fn narrow<ReadIdentity>(
     read: &NarrowingRead<'_, '_, '_, '_, ReadIdentity>,
@@ -132,7 +132,7 @@ fn admit_filter_fields<ReadIdentity>(
     Ok(())
 }
 
-type PreparedOperands = (
+pub(super) type PreparedOperands = (
     Vec<(String, ExpressionValue)>,
     Vec<(String, ExpressionValue)>,
 );
@@ -140,7 +140,7 @@ type PreparedOperands = (
 /// Charges lookup and dedup work upfront, reserves scratch and payload memory
 /// before any allocation or conversion, and converts each unique parameter
 /// once so multiple operand aliases share its backing (`Arc<str>`).
-fn prepare_static_operands<ReadIdentity>(
+pub(super) fn prepare_static_operands<ReadIdentity>(
     read: &NarrowingRead<'_, '_, '_, '_, ReadIdentity>,
     filter: &WorthQueryInstalledWhereFilter,
     allocation: &SourceFactsAllocation,
@@ -291,7 +291,7 @@ pub(super) fn try_vec_exact<T>(
     Ok(vec)
 }
 
-fn operands_input_bytes(operands: &[(String, ExpressionValue)]) -> Option<u64> {
+pub(super) fn operands_input_bytes(operands: &[(String, ExpressionValue)]) -> Option<u64> {
     let mut total = 0_u64;
     let clone_box = size_of::<ExpressionValue>() as u64;
     for (name, _) in operands {

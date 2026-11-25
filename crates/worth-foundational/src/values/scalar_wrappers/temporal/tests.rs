@@ -225,3 +225,72 @@ fn timestamp_civil_conversion_and_rfc3339_handle_offsets_fractions_and_endpoints
         Err(CanonicalTemporalTextDenial::OutOfRange)
     );
 }
+
+#[test]
+fn civil_date_parse_iso_add_days_and_start_of_day_utc_are_exact_and_checked() {
+    let leap = CanonicalDate::parse_iso("2024-02-28").unwrap();
+    assert_eq!(leap.add_days(1), CanonicalDate::parse_iso("2024-02-29"));
+    assert_eq!(leap.add_days(2), CanonicalDate::parse_iso("2024-03-01"));
+    assert_eq!(leap.add_days(-28), CanonicalDate::parse_iso("2024-01-31"));
+
+    let non_leap_century = CanonicalDate::parse_iso("1900-02-28").unwrap();
+    assert_eq!(
+        non_leap_century.add_days(1),
+        CanonicalDate::parse_iso("1900-03-01")
+    );
+    let leap_century = CanonicalDate::parse_iso("2000-02-28").unwrap();
+    assert_eq!(
+        leap_century.add_days(1),
+        CanonicalDate::parse_iso("2000-02-29")
+    );
+
+    assert_eq!(
+        CanonicalDate::parse_iso("1970-01-01").unwrap().add_days(-1),
+        CanonicalDate::parse_iso("1969-12-31")
+    );
+    assert_eq!(
+        CanonicalDate::parse_iso("not-a-date"),
+        Err(CanonicalTemporalTextDenial::InvalidDate)
+    );
+    assert_eq!(
+        CanonicalDate {
+            days_from_unix_epoch: i32::MAX,
+        }
+        .add_days(1),
+        Err(CanonicalTemporalTextDenial::OutOfRange)
+    );
+    assert_eq!(
+        CanonicalDate {
+            days_from_unix_epoch: i32::MIN,
+        }
+        .add_days(-1),
+        Err(CanonicalTemporalTextDenial::OutOfRange)
+    );
+    assert_eq!(
+        leap.add_days(i64::MAX),
+        Err(CanonicalTemporalTextDenial::OutOfRange)
+    );
+
+    for iso in ["1969-12-31", "1970-01-01", "2024-02-29", "2026-11-24"] {
+        let date = CanonicalDate::parse_iso(iso).unwrap();
+        let midnight = date.start_of_day_utc().unwrap();
+        assert_eq!(midnight.utc_date(), date);
+        let (y, m, d, h, mi, s, us) = midnight.to_ymd_hms_micros();
+        assert_eq!(((y, m, d), (h, mi, s, us)), (date.to_ymd(), (0, 0, 0, 0)));
+        assert_eq!(midnight.to_string(), format!("{iso}T00:00:00Z"));
+    }
+    assert_eq!(
+        CanonicalDate {
+            days_from_unix_epoch: i32::MAX,
+        }
+        .start_of_day_utc(),
+        Err(CanonicalTemporalTextDenial::OutOfRange)
+    );
+    assert_eq!(
+        CanonicalDate {
+            days_from_unix_epoch: i32::MIN,
+        }
+        .start_of_day_utc(),
+        Err(CanonicalTemporalTextDenial::OutOfRange)
+    );
+}

@@ -40,7 +40,7 @@ impl Fact {
         duplicate: Self,
         control: super::super::retained_decision_facts::StorageControl<'_, '_>,
     ) -> Result<bool, super::super::retained_decision_facts::StoreDenial> {
-        if self.dependency_key() != duplicate.dependency_key() {
+        if !self.same_source_merge_key(&duplicate) {
             return Ok(false);
         }
         self.merge_after_equal_source_key(duplicate, control)

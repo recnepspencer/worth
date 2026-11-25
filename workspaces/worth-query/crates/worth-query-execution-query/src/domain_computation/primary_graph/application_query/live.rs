@@ -5,6 +5,7 @@ pub mod lease;
 pub mod outcome;
 mod projection;
 mod scope_identity;
+pub mod whole_result;
 
 pub use controls::{WorthQueryApplicationLiveControlDenial, WorthQueryApplicationLiveControls};
 pub use lease::WorthQueryApplicationLiveLease;
@@ -13,6 +14,11 @@ pub use outcome::{
     WorthQueryApplicationLiveOpenDenial, WorthQueryApplicationLiveOpenDenialKind,
     WorthQueryApplicationLiveOutcome, WorthQueryApplicationLiveOverflow,
     WorthQueryApplicationLiveUpdate,
+};
+pub use whole_result::{
+    WholeResultLiveStageForTest, WorthQueryApplicationWholeResultLiveLease,
+    WorthQueryApplicationWholeResultLiveOutcome, WorthQueryApplicationWholeResultLiveSnapshot,
+    WorthQueryApplicationWholeResultLiveUpdate,
 };
 #[cfg(test)]
 #[path = "live_inline_type_budget.rs"]
