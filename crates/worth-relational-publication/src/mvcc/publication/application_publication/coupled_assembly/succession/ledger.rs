@@ -103,6 +103,15 @@ impl ChainCreateLedger {
         self.partitions.get(&(relation, text.to_owned())).copied()
     }
 
+    /// The partition of the chain's replacement of `replaced`, if any round
+    /// of the chain replaced it.
+    pub fn replacement_partition(&self, replaced: EntityId) -> Option<PartitionId> {
+        match self.entries.get(&AllocationSource::Replacement(replaced)) {
+            Some((RecordRef::Entity(id), _)) => Some(id.partition_id),
+            _ => None,
+        }
+    }
+
     /// Whether any round of the chain used scoped key `text`.
     pub fn knows_text(&self, text: &str) -> bool {
         self.partitions.contains_key(&(false, text.to_owned()))

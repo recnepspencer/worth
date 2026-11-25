@@ -33,12 +33,12 @@ fn live(world: &World, id: EntityId) -> bool {
     live
 }
 
-fn replace(entity: EntityId) -> WorkerIntentBatch {
+fn replace(entity: EntityId, partition_id: PartitionId) -> WorkerIntentBatch {
     WorkerIntentBatch::new("replace").push(MutationIntent::Entity(EntityMutationIntent::Replace(
         ReplaceEntityIntent {
             entity_id: entity,
             replacement: EntitySpec {
-                partition_id: PartitionId::main(),
+                partition_id,
                 kind_id: KindId(1),
                 client_key: ClientKey::raw("replacement"),
                 fields: string_aspect_field_patch([(
@@ -73,6 +73,8 @@ enum Later {
     RoundUpdates,
     /// An authored stage between the rounds links to it.
     StageLinks,
+    /// Later rounds author their replacement in another partition.
+    OtherPartition,
 }
 
 /// Owned Birth rounds each creating `x`, replacing the spare entity when
@@ -94,7 +96,11 @@ fn rounds(
         for (index, &replacing) in replaces.iter().enumerate() {
             let mut round = creates(&["x"], "1");
             if replacing {
-                round.push(replace(spare));
+                let partition = match later {
+                    Later::OtherPartition if index > 0 => PartitionId(7),
+                    _ => PartitionId::main(),
+                };
+                round.push(replace(spare, partition));
             }
             if index > 0 && matches!(later, Later::RoundUpdates) {
                 round.push(update(first.get().expect("round 1 replaced"), "stale"));
@@ -189,4 +195,102 @@ fn a_member_naming_a_cancelled_replacement_refuses() {
             .expect("a typed #119 refusal");
         assert_eq!(refusal(stop), postponed(reason));
     }
+}
+
+/// (b) across partitions: a round authoring the repeated replacement in its
+/// own attempt partition re-creates it in the chain's, under its identity.
+#[test]
+fn a_cross_partition_round_repeating_its_replacement_keeps_its_identity() {
+    let (chain, _, replacement) = rounds(&[true, true], Later::OtherPartition).unwrap();
+    let (one, _, one_replacement) = rounds(&[true], Later::Nothing).unwrap();
+    let replacement = replacement.expect("round 1 allocated a replacement");
+    assert_eq!(Some(replacement), one_replacement, "M-ID");
+    assert_eq!(chain.observed.alpha(), one.observed.alpha());
+    let host = request();
+    let execution = &ExecutionRequest::serial(&host);
+    assert_eq!(
+        states(&cold::facts(
+            &chain.world.runtime,
+            execution,
+            &[replacement]
+        )),
+        states(&cold::facts(&one.world.runtime, execution, &[replacement])),
+    );
+}
+
+/// Chain `owned` replaces the spare; chain `second` creates `y` in each of
+/// its rounds and updates that replacement when the round's flag is set.
+/// Returns the outcome and the replacement.
+fn second_updates(updates: &[bool]) -> (Result<Run, TransactionCommitError>, EntityId) {
+    use super::multi_chain::{outputs_of, round, two_routes};
+    let target = Cell::new(None);
+    let replaced = Cell::new(None);
+    let setup = |world| {
+        let (world, spare) = spare(world);
+        target.set(Some(spare));
+        two_routes(world)
+    };
+    let run = run_in(setup, false, &|world, execution, candidate| {
+        let spare = target.get().expect("the spare is committed");
+        let main = PartitionId::main();
+        round(
+            world,
+            execution,
+            candidate,
+            0,
+            &["x"],
+            vec![replace(spare, main)],
+        )?;
+        let x = outputs_of(candidate, execution, world, "owned")?[0];
+        let replacement = candidate
+            .chain_overlay(execution, 0)?
+            .exclusive_entities()
+            .iter()
+            .copied()
+            .find(|id| ![x, spare].contains(id))
+            .expect("owned replaced the spare");
+        replaced.set(Some(replacement));
+        for &updating in updates {
+            let extra = if updating {
+                vec![update(replacement, "second")]
+            } else {
+                Vec::new()
+            };
+            round(world, execution, candidate, 1, &["y"], extra)?;
+        }
+        Ok(())
+    });
+    (run, replaced.get().expect("owned replaced the spare"))
+}
+
+/// A chain that only updates another member's replacement does not take
+/// it. Omitting the update in its later round commits the one-round answer
+/// with the replacement live as its owner wrote it. Repeating it refuses
+/// exactly as the one-round answer does: the merged plan's validation
+/// admits an existing id only from the committed basis, and a replacement
+/// has no created reference.
+#[test]
+fn a_chain_updating_another_members_replacement_does_not_take_it() {
+    let (chain, replacement) = second_updates(&[true, false]);
+    let (one, one_replacement) = second_updates(&[false]);
+    let (chain, one) = (chain.unwrap(), one.unwrap());
+    assert_eq!(replacement, one_replacement);
+    assert_eq!(chain.observed.alpha(), one.observed.alpha());
+    let host = request();
+    let execution = &ExecutionRequest::serial(&host);
+    assert_eq!(
+        states(&cold::facts(
+            &chain.world.runtime,
+            execution,
+            &[replacement]
+        )),
+        states(&cold::facts(&one.world.runtime, execution, &[replacement])),
+    );
+    let refused = |updates: &[bool]| {
+        let stop = second_updates(updates).0.err().expect("a typed refusal");
+        let detail = format!("{stop:?}");
+        assert!(detail.contains("StaleTarget"), "{detail}");
+        detail[..detail.find(", commit_log").unwrap_or(detail.len())].to_owned()
+    };
+    assert_eq!(refused(&[true, true]), refused(&[true]));
 }

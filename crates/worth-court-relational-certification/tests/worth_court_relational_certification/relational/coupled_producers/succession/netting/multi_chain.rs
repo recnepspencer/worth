@@ -2,7 +2,7 @@
 use super::*;
 
 /// The world with a second owned producer family, `second`.
-fn two_routes(mut world: World) -> World {
+pub(super) fn two_routes(mut world: World) -> World {
     world.installed = world.installed.clone().with_source_scope_owned_producers([
         ("owned".into(), KindId(1)),
         ("second".into(), KindId(1)),
@@ -26,7 +26,7 @@ fn posture(
 
 /// One round of chain `index` (0: `owned`, 1: `second`) creating `keys`,
 /// plus `extra` batches.
-fn round(
+pub(super) fn round(
     world: &World,
     execution: &ExecutionRequest<'_, '_>,
     candidate: &mut Candidate<'_>,
@@ -56,7 +56,7 @@ fn round(
     }
 }
 
-fn outputs_of(
+pub(super) fn outputs_of(
     candidate: &mut Candidate<'_>,
     execution: &ExecutionRequest<'_, '_>,
     world: &World,

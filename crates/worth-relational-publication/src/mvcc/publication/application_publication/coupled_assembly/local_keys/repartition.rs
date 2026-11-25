@@ -4,8 +4,9 @@
 //! the chain created keeps the partition the ledger gave it, so its identity
 //! is reused. The round's own known keys reveal its attempt partition and the
 //! chain's: a new key authored in the round's attempt partition takes the
-//! chain's; any other new key keeps the partition its producer chose. One
-//! bulk create cannot span partitions.
+//! chain's; any other new key keeps the partition its producer chose. A
+//! replacement of an entity the chain already replaced takes that
+//! replacement's partition. One bulk create cannot span partitions.
 use super::super::succession::ledger::ChainCreateLedger;
 use crate::mvcc::publication::application_publication::custody;
 use contracts::execution::request_stage::checkpoint;
@@ -14,7 +15,9 @@ use contracts::lineage::data::{CommitNamingPlan, PendingBirthTarget};
 use contracts::mvcc::publication::application_publication::output_meaning::RequiredOutputRoleTarget;
 use contracts::symbols::data::client_key::ClientKey;
 use contracts::symbols::data::string_interner::StringInterner;
-use contracts::transactions::data::intents::mutation_intent::{CreateIntent, MutationIntent};
+use contracts::transactions::data::intents::mutation_intent::{
+    CreateIntent, EntityMutationIntent, MutationIntent,
+};
 use contracts::transactions::data::outcomes::transaction_commit_error::{
     origin_denial, TransactionCommitError,
 };
@@ -101,6 +104,14 @@ pub fn repartition(
                 checkpoint(context, units as u64 + 1).map_err(custody::execution_stop)
             };
             for intent in batches.iter().flat_map(|batch| &batch.intents) {
+                if let MutationIntent::Entity(EntityMutationIntent::Replace(spec)) = intent {
+                    charge(1)?;
+                    if let Some(chain) = ledger.replacement_partition(spec.entity_id) {
+                        let authored = spec.replacement.partition_id;
+                        partitions.attempt.entry(authored).or_insert(chain);
+                    }
+                    continue;
+                }
                 let MutationIntent::Create(create) = intent else {
                     continue;
                 };
@@ -137,6 +148,13 @@ pub fn repartition(
             }
             for intent in batches.iter_mut().flat_map(|batch| &mut batch.intents) {
                 charge(1)?;
+                if let MutationIntent::Entity(EntityMutationIntent::Replace(spec)) = intent {
+                    let authored = spec.replacement.partition_id;
+                    spec.replacement.partition_id = ledger
+                        .replacement_partition(spec.entity_id)
+                        .or_else(|| partitions.attempt.get(&authored).copied())
+                        .unwrap_or(authored);
+                }
                 if let MutationIntent::Create(create) = intent {
                     match create {
                         CreateIntent::Entity(spec) => {

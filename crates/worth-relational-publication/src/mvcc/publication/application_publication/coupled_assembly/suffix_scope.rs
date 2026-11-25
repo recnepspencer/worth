@@ -14,6 +14,7 @@ use contracts::transactions::data::outcomes::created_entity_bindings::CommitCrea
 use contracts::transactions::data::outcomes::created_relation_bindings::coupled::CoupledOriginalRelationCreates;
 use contracts::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use contracts::transactions::data::primitives::RecordRef;
+use contracts::publication::patch::data::record_structural_change::RecordStructuralChange;
 use contracts::transactions::data::primitives::WorkerIntentBatch;
 use crate::visibility::materialization::read_records::reader::pinned_read::{
     RelationalAppliedCandidateReadIdentity, RelationalPinnedRead,
@@ -186,13 +187,18 @@ pub fn adopt(
             text: text(&created.client_key)?,
         });
     }
-    // A replacement is a chain create keyed by the entity it replaces.
+    // A replacement is a chain create keyed by the entity it replaces. Only
+    // the suffix that creates it binds it: another member's later write to
+    // a replacement is an update, never the replacement's creation.
     let replacements = identities.records.replacements();
-    for record in &records {
-        if let Some(source) = replacements.get(record) {
+    for delta in &outcome.effect.publication.canonical_deltas {
+        if delta.structural_change != RecordStructuralChange::Created {
+            continue;
+        }
+        if let Some(source) = replacements.get(&delta.target) {
             creates.push(super::succession::ledger::ChainCreate {
                 source: source.clone(),
-                record: record.clone(),
+                record: delta.target.clone(),
                 text: String::new(),
             });
         }
