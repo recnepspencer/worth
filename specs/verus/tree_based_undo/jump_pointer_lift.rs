@@ -1,6 +1,6 @@
 //! Verus model of the history journal's skew-binary jump pointers (TBU Phase 2,
 //!
-//! proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal.rs:203-221 sha256:3f8ba118a90b6ca483874b1408bdd3ada83465777d7395d164fe9abb0ed3ecab
+//! proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal.rs:208-227 sha256:b2cf75724d9464cb72d037feb2e0b196f2ae96b7fc25f180c6a46fd5945ca3fa
 //! proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal/recording.rs:69-69 sha256:c61709e07f1e87c34f5b7714e7f44e265d3f93574f644f1cfd6bcfafcf088188
 //! proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal/recording.rs:69-83 sha256:3c6c9d0e557acaa9013dde170c29b21c01c8b081502a746f929e304d2e419930
 //! proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/journal/sources.rs:11-24 sha256:440e9bbceea3610f10e055e9191b260d19a90f831c3c666ca66aa4c6104fcbc9
@@ -39,7 +39,7 @@
 //!     `is_ancestor_or_self`.
 //!
 //! Proved:
-//!   1. `root_wf`: the journal's initial one-node tree (journal.rs:203-221) is
+//!   1. `root_wf`: the journal's initial one-node tree (journal.rs:208-227) is
 //!      well formed.
 //!   2. `child_position` (reserve): never panics, never underflows or
 //!      overflows, and inserting its result at the fresh ordinal keeps the tree
@@ -353,7 +353,7 @@ proof fn lemma_up_insert(m: Map<u64, LinePosition>, new: u64, v: LinePosition, k
     }
 }
 
-/// The journal at creation (journal.rs:203-221) is one root node.
+/// The journal at creation (journal.rs:208-227) is one root node.
 pub proof fn root_wf()
     ensures
         wf(map![0u64 => root_spec()]),

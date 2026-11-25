@@ -66,6 +66,32 @@ TLC's exit codes are:
   restored outputs' marks did not answer at the forked head, and each
   verified readmission joined the adopted row without marking it, so the
   required wave spun until the deadline. `dst::regressions` pins it.
+- A correction step is not itself a correction source (coordinator ruling
+  2026-11-25, option 1, under the spec owner's Phase 2 ruling Q2 that
+  reapply is out of scope). The corrections sweep (seed `0x7b020007`) found
+  the r2 model letting a correction reverse an earlier correction's
+  retirement. The platform refuses to select a correction commit,
+  `SourceNotCorrectable`, because a corrective binding declares no
+  correction of its own. `MeaningDerivable` now excludes `CorrectionSteps`.
+  Every other use of `MeaningDerivable` is a guard, and on reachable states
+  `FactsAgreeWithSnapshots` reads the same as before. So the change only
+  removes behaviours: the earlier full check's result carries over, and
+  `WedgeBug`/`FactBug` and every hand trace were rerun (logs
+  `ruling1-*.log`).
+- Refinement (p) narrowed to the declared contract (ruling 2026-11-25,
+  confirmed by the spec owner): a cascade co-retires only what the same
+  source stage (binding) created, which is what `co_retire_created`
+  declares. Every stage here creates one entity, so `CoRetired` is `FALSE`,
+  and reversing `e1`'s creation while a same-step sibling from another stage
+  lives refuses `StageRefused`. A cross-stage cascade waits on public #369,
+  which is not a CAD Phase 3 prerequisite. The change only turns that
+  recording into a refusal, so it removes behaviours, and the earlier full
+  check's result carries over (corrections sweep, seed `0x7b020010`).
+- Refinement (w), approved 2026-11-25: a correction's head pass reads no head. On a diverged
+  head, a source with no derivable meaning refuses `SourceRefused` (selection
+  or head pass), and a derivable source refuses `HeadDiverged`.
+  `RefuseCorrectionSource`'s underivable branch needs only `Held`. It adds a
+  refusal and no state (corrections sweep, after ruling (1)).
 
 ## Hand traces
 
@@ -75,12 +101,16 @@ ignored; only `hand-*.ndjson` is versioned.
 | Trace | Expected | Contents |
 | --- | --- | --- |
 | `hand-accepted` | exit 0 | 15 steps: create, coupled create, refused partial retirement, cascade correction, undo across it, branch after undo, checkout to the retired sibling, correction replay, stop, record, maintain, out-of-band write, diverged refusal, close. |
-| `hand-co-retire` | exit 0 | Replays a recorded correction on its line after its source was reversed. |
+| `hand-co-retire-across-stages-refused` | exit 0 | One step creates `e1` and `e2` (two stages); reversing `e1`'s creation refuses `StageRefused`: a cascade co-retires only what the same source stage created, so the live sibling makes it a partial retirement (refinement (p), narrowed). |
+| `hand-rejected-co-retire-across-stages` | exit 11, pc = 2 | The former `hand-co-retire`: the reversal co-retires the sibling another stage created and records, as the r2 model's (p) allowed. |
 | `hand-writer-out-of-band` | exit 0 | A stop at Recording; `Begin(edit)` then `Commit`; `Begin(gesture)`; an out-of-band retire under the writer; `Discard`; maintenance; close. |
 | `hand-branch-redelete` | exit 0 | Create, delete by correction, undo, sibling edit, delete on the sibling, then a checkout back to the first delete. There a fresh-key delete on the same source is refused, because the reversal fact follows the selected line. |
 | `hand-replay-other-source` | exit 0 | A correction key reused on another source step with the same derived input drifts; an edit under that key drifts; the key on its own source replays; a fresh key on the other source records. |
 | `hand-writer-key-envelope` | exit 0 | A writer commits under `k2`. An envelope under `k2` then records a new step, because the namespaces are separate (refinement (v)). Its replay answers `AlreadyRecorded` with the envelope's own step. The flat pre-(v) journal rejects this trace (exit 11, pc = 4). |
 | `hand-stage-distinct-corrections` | exit 0 | One step creates `e1` and `e2`. Key `k2` reverses `e2`'s creation, `k2` on `e1`'s creation of the same step drifts, and `k2` on `e2` again replays step 2. The model's `CorrectionIntent` already names the entity (the stage); the platform's meaning names the commit member (public #368). |
+| `hand-correction-step-not-a-source` | exit 0 | Create `e1`, delete it by correction, then a fresh-key correction of that correction step refuses `SourceRefused` and changes nothing: a correction step is not a correction source. |
+| `hand-diverged-head-underivable-source` | exit 0 | Create `e1`, write `e2` outside the document (the head diverges), then a correction of step 1's `e2` stage, which has no corrective binding: the head pass refuses `SourceRefused` before any head read (refinement (w)). The model without (w) rejects it (exit 11, pc = 3). |
+| `hand-rejected-correction-step-corrected` | exit 11, pc = 3 | `hand-correction-step-not-a-source`, but the correction of the correction records and restores `e1`, as the r2 model allowed. |
 | `hand-rejected-fresh-generation` | exit 11, pc = 5 | `hand-accepted`, but the undo across the retirement reports a fresh generation. That is what re-running `restore_retired` instead of navigating would do. |
 | `hand-rejected-writer-hides-divergence` | exit 11, pc = 7 | `hand-writer-out-of-band`, claiming the head is current after the discard. |
 | `hand-rejected-readable-omits-divergence` | exit 11, pc = 2 | `hand-accepted` with `postHeadDiverged` left out of a record where the document is readable. |

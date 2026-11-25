@@ -18,6 +18,8 @@ use worth_execution::ExecutionRequest;
 use worth_query_execution_query::facade::ports::HistoryNodeIdInternalPort as _;
 #[path = "journal/discovery_recipes.rs"]
 mod discovery_recipes;
+#[path = "journal/facts.rs"]
+mod facts;
 #[path = "journal/group.rs"]
 mod group;
 #[path = "journal/heads.rs"]
@@ -44,6 +46,9 @@ pub(super) struct RecordedNode {
     /// The commit an envelope's stages made, which a correction names as its
     /// source. `None` for the root and for steps a writer recorded.
     pub(super) source_commit: Option<worth_runtime_world::facade::CompositeCommitIdentity>,
+    /// The reversal fact (aftermath-causality record) a correction step's
+    /// commit posted, which navigation retires and restores (ruling (u)).
+    pub(super) posted_fact: Option<worth_relational::facade::identity::EntityId>,
     pub(super) root_posture:
         Option<crate::domain_computation::primary_graph::WorthQueryOutputSettlementPosture>,
 }
@@ -215,6 +220,7 @@ impl HistoryJournal {
                         )
                     },
                     source_commit: None,
+                    posted_fact: None,
                     root_posture: None,
                 }),
                 line: sources::LinePosition::ROOT,

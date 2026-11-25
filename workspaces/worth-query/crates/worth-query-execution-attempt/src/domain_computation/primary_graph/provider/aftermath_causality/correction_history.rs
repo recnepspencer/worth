@@ -286,7 +286,7 @@ impl WorthQueryPrimaryGraphProvider {
             ),
         ))
     }
-    fn with_correction_snapshot<T>(
+    pub(super) fn with_correction_snapshot<T>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,

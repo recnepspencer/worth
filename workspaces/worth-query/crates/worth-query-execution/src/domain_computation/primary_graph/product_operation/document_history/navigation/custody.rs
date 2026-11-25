@@ -76,6 +76,8 @@ pub(super) struct NavigationProgress {
     pub(super) ownership: Option<&'static str>,
     pub(super) source: Option<super::super::WorthQueryHistoryPreview>,
     pub(super) requested: super::super::WorthQueryHistoryNodeId,
+    /// The reversal facts this move retires and restores (ruling (u)).
+    pub(super) companions: worth_relational::facade::branch::RelationalOwnedGraphCompanions,
     pub(super) intent: WorthQueryHistoryNavigationIntent,
     pub(super) phase: NavigationPhase,
     /// Restored producer custody and its rows, from preparation until World.

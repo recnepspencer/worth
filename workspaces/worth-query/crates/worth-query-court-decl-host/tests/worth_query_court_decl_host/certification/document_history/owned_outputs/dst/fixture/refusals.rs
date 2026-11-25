@@ -27,6 +27,11 @@ fn named(denial: &WorthQueryHistoryEditEnvelopeDenial) -> Option<Outcome> {
             document(denial)
         }
         Denial::Envelope(WorthQueryEditEnvelopeOutcome::DomainDenied(_)) => Some(Outcome::StageRefused),
+        // The correction's source cannot be reversed: already reversed,
+        // no longer current, or diverged (the model's RefuseCorrectionSource).
+        Denial::Correction(worth_query_host::facade::application_entry::WorthQueryApplicationCorrectionDenial::Derivation(_)) => {
+            Some(Outcome::SourceRefused)
+        }
         _ => None,
     }
 }
@@ -36,6 +41,7 @@ fn document(denial: &WorthQueryDocumentHistoryDenial) -> Option<Outcome> {
     Some(match denial {
         Denial::HeadDiverged => Outcome::HeadDiverged,
         Denial::IntentDrift => Outcome::IntentDrift,
+        Denial::SourceNotOnSelectedLine { .. } => Outcome::SourceRefused,
         Denial::StepMetadataTooLarge { .. } => Outcome::Environment(Environment::MetadataTooLarge),
         Denial::ForeignModel => Outcome::Environment(Environment::ForeignModel),
         Denial::UnownedOperationScope { .. } => Outcome::Environment(Environment::UnownedOperationScope),
@@ -97,6 +103,8 @@ pub fn provoke<'h>(
                 .unwrap_or_else(|| panic!("{cause:?}: a refusal the model does not name: {denial:?}"));
             (document, outcome)
         }
-        Executed::Recorded { .. } | Executed::AlreadyRecorded { .. } => panic!("{cause:?} must refuse"),
+        Executed::Recorded { .. } | Executed::AlreadyRecorded { .. } | Executed::Unselectable { .. } => {
+            panic!("{cause:?} must refuse")
+        }
     }
 }

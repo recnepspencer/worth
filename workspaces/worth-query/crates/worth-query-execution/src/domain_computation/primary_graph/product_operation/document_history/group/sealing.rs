@@ -76,6 +76,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
                     .as_ref()
                     .map(|outputs| Arc::clone(&outputs.recipes)),
                 node: RecordedNode {
+                    posted_fact: None,
                     step: step.clone(),
                     source_commit: group.completed.last().map(|member| member.commit.clone()),
                     root_posture: group

@@ -3,7 +3,7 @@
 //! paged `history_page` walk and the paged `redo_choices` walk.
 use super::super::fixture::label;
 use super::super::fixture::reads::{read_outputs, read_tree, try_read_entities, Tree};
-use super::super::reference::{History, Observed, Redo, RedoChoice, Row, Snapshot, ENTITIES};
+use super::super::reference::{Fact, History, Observed, Redo, RedoChoice, Row, Snapshot, ENTITIES};
 use super::*;
 
 impl Document<'_> {
@@ -36,6 +36,11 @@ impl Document<'_> {
             Some((current, history, redo)) => (Some(current), Some(history), Some(redo)),
             None => (None, None, None),
         };
+        // A writer posts no reversal fact and close moves none, so while the
+        // document cannot be read the last read still holds.
+        if !self.closed && self.writer.is_none() && self.document.is_some() {
+            self.reversals = self.read_reversals();
+        }
         Observed {
             current,
             history,
@@ -44,10 +49,34 @@ impl Document<'_> {
             outputs: Some(outputs),
             head_diverged: (!self.closed && self.writer.is_none()).then_some(self.head_diverged),
             closed: self.closed,
-            // No reader of reversal facts exists before S2's correction
-            // envelope; today's route posts none the document attributes.
-            reversals: Default::default(),
+            reversals: self.reversals.clone(),
         }
+    }
+
+    /// The reversal facts live on the document branch (ruling (u)): each
+    /// recorded correction step whose posted fact is live at the head, with
+    /// the source step resolved through the fact's own source commit. The
+    /// fact names a commit, not an entity, so the entity is the one that
+    /// step's correction reversed. A fact whose source no recorded step made,
+    /// or on a step the world did not correct, fails the seed.
+    fn read_reversals(&mut self) -> std::collections::BTreeSet<Fact> {
+        let document = self.document.as_ref().expect("checked by the caller");
+        let facts = self
+            .host
+            .with_host_advancement(|phase| document.reversal_facts_for_test(&phase))
+            .expect("the host advances");
+        facts
+            .into_iter()
+            .map(|fact| {
+                let source = fact.source.unwrap_or_else(|| panic!("a fact no recorded step names: {fact:?}"));
+                let step = self.number(&fact.step);
+                let entity = *self
+                    .reversed
+                    .get(&step)
+                    .unwrap_or_else(|| panic!("a fact on a step the world did not correct: {fact:?}"));
+                Fact { step, source: self.number(&source), entity }
+            })
+            .collect()
     }
 
     /// After close retired the document branch: nothing reads the document
@@ -61,7 +90,7 @@ impl Document<'_> {
             outputs: None,
             head_diverged: None,
             closed: true,
-            reversals: Default::default(),
+            reversals: self.reversals.clone(),
         }
     }
 

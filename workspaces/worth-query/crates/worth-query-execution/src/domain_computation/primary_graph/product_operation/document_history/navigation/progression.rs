@@ -186,13 +186,14 @@ impl NavigationProgress {
                     .history_ownership(recipe)
                     .expect("eligibility admitted the installed recipe");
                 let selected = native
-                    .prepare_owned_model_graph_selection(
+                    .prepare_owned_model_graph_selection_with_companions(
                         &execution,
                         current.product().relational_basis(),
                         historical.product().relational_basis(),
                         ownership,
                         layout.installed_history_ownership(),
                         self.model.entity(),
+                        self.companions.clone(),
                     )
                     .map_err(Denial::OwnedGraph)?;
                 return super::output_custody::prepare(

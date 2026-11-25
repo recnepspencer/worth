@@ -60,7 +60,7 @@ where
 {
     use WorthQueryHistoryNavigationDenial as Denial;
     let key = meaning.canonical_key();
-    let (requested, source) = {
+    let (requested, source, companions) = {
         let selected = document.selection.lock();
         if let Some(attempt) = selected
             .navigation
@@ -94,7 +94,12 @@ where
             .journal
             .preview(requested, document.model.clone())
             .map_err(Denial::Document)?;
-        (requested, source)
+        // Ruling (u): the reversal facts this move retires and restores. The
+        // second lock below re-checks that the selected step is unchanged.
+        let companions = selected.journal.facts_between(requested).ok_or(Denial::Document(
+            super::super::WorthQueryDocumentHistoryDenial::HistoryNodeUnavailable,
+        ))?;
+        (requested, source, companions)
     };
     let application = document.application();
     let current = application
@@ -114,6 +119,7 @@ where
         &document.model,
         &source,
         output_profile.as_ref(),
+        &companions,
     )?;
     drop(current);
     let execution = phase
@@ -191,6 +197,7 @@ where
                 .then_some(H::IDENTITY),
             source: Some(source),
             requested,
+            companions,
             intent,
             phase: NavigationPhase::Prepared,
             output_transport: None,

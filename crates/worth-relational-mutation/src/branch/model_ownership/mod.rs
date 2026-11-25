@@ -19,7 +19,7 @@ pub mod graph_selection;
 pub mod invariant;
 pub mod publication;
 pub use graph_denial::{RelationalOwnedModelForeignRelation, RelationalOwnedModelSelectionDenial};
-pub use graph_selection::RelationalOwnedModelGraphSelection;
+pub use graph_selection::{RelationalOwnedGraphCompanions, RelationalOwnedModelGraphSelection};
 pub use publication::validate_candidate_ownership;
 
 pub mod selection;

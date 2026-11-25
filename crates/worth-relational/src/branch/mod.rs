@@ -49,7 +49,8 @@ pub use model_ownership::{
     observe_candidate_custody_reads, RelationalCandidateCustodyReads, RelationalModelOwnership,
     RelationalModelOwnershipConflict, RelationalModelOwnershipDenial,
     RelationalModelOwnershipDomain, RelationalOwnedModelEntityBoundary,
-    RelationalOwnedModelForeignRelation, RelationalOwnedModelGraphSelection,
+    RelationalOwnedGraphCompanions, RelationalOwnedModelForeignRelation,
+    RelationalOwnedModelGraphSelection,
     RelationalOwnedModelSelectionDenial,
 };
 pub use record_advance::{

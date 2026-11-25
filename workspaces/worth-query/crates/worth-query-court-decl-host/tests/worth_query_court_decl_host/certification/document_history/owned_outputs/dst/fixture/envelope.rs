@@ -14,7 +14,7 @@ use worth_query_host::facade::product::WorthQueryProductBranch;
 use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 
 /// Every DST binding has the same result and denial, so one token type.
-type Token = WorthQueryEditStageToken<
+pub type Token = WorthQueryEditStageToken<
     <set_e1::Binding as ApplicationMutationBinding<Schema>>::Result,
     <set_e1::Binding as ApplicationMutationBinding<Schema>>::Denial,
 >;
@@ -46,6 +46,12 @@ pub enum Executed<'h> {
     AlreadyRecorded {
         document: Forest<'h>,
         step: WorthQueryHistoryStep,
+    },
+    /// A correction whose source refused to select, before any envelope
+    /// opened: the document is untouched.
+    Unselectable {
+        document: Forest<'h>,
+        denial: String,
     },
     Refused {
         document: Forest<'h>,

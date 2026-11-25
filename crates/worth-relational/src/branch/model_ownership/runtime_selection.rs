@@ -61,6 +61,31 @@ impl RelationalRuntime {
         installed_ownership: &RelationalModelOwnership,
         model: EntityId,
     ) -> Result<RelationalOwnedModelGraphSelection, Denial> {
+        self.prepare_owned_model_graph_selection_with_companions(
+            execution,
+            current,
+            selected,
+            ownership,
+            installed_ownership,
+            model,
+            RelationalOwnedGraphCompanions::default(),
+        )
+    }
+
+    /// As `prepare_owned_model_graph_selection`, with companion records
+    /// outside the owned closure that follow the selection (tree-based undo's
+    /// reversal facts, public #56 ruling (u)).
+    #[allow(clippy::too_many_arguments)]
+    pub fn prepare_owned_model_graph_selection_with_companions(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        current: &AdmittedRelationalBranchBasis,
+        selected: &AdmittedRelationalBranchBasis,
+        ownership: &RelationalModelOwnership,
+        installed_ownership: &RelationalModelOwnership,
+        model: EntityId,
+        companions: RelationalOwnedGraphCompanions,
+    ) -> Result<RelationalOwnedModelGraphSelection, Denial> {
         let mut result = None;
         execution
             .run_native_with_checkpoint(|context| {
@@ -96,6 +121,7 @@ impl RelationalRuntime {
                         ownership,
                         installed_ownership,
                         meaning_memory,
+                        companions,
                     )
                 })());
             })

@@ -10,7 +10,7 @@ mod observation;
 mod writer;
 
 use super::super::*;
-use super::fixture::envelope::{self, correct_outside, write_outside, Executed, Push, Receipt, Undo};
+use super::fixture::envelope::{self, write_outside, Executed, Push, Receipt, Undo};
 use super::fixture::reads::{read_entities, with_request, Forest, Host};
 use super::fixture::refusals::{classify, classify_navigation, classify_read, provoke};
 use super::fixture::writers::Held;
@@ -83,6 +83,11 @@ pub struct Document<'h> {
     nodes: Vec<WorthQueryHistoryNodeId>,
     /// Real full-generation ID → dense first-seen number.
     generations: BTreeMap<worth_relational::facade::identity::EntityId, u32>,
+    /// Each recorded correction step -> the model entity whose stage it
+    /// reversed. The fact names its source commit, not the entity.
+    reversed: BTreeMap<u32, usize>,
+    /// The reversal facts as of the last read that could see the document.
+    reversals: std::collections::BTreeSet<super::reference::Fact>,
     /// Each envelope key's stages and the calls they resolved to: a replay
     /// with the same stages makes the same calls, so its intent matches. A
     /// stopped attempt pins nothing; its retry resolves at the head it runs
@@ -91,6 +96,9 @@ pub struct Document<'h> {
     keyed: BTreeMap<u32, (Stages, Vec<Call>)>,
     /// Each recorded creation or retirement, for today's correction route.
     sources: BTreeMap<(u32, usize), (Receipt, Undo)>,
+    /// One stage receipt of each recorded step, for a correction the model
+    /// refuses because that step created or retired nothing on the entity.
+    step_receipts: BTreeMap<u32, Receipt>,
     /// This document's number on the host: every key it uses carries it, so
     /// the seeds sharing one host never meet each other's keys.
     id: u64,
@@ -141,6 +149,9 @@ impl<'h> Document<'h> {
             branch,
             nodes: vec![root],
             generations: BTreeMap::new(),
+            reversed: BTreeMap::new(),
+            step_receipts: BTreeMap::new(),
+            reversals: Default::default(),
             keyed: BTreeMap::new(),
             sources: BTreeMap::new(),
             id: DOCUMENTS.fetch_add(1, Ordering::Relaxed),
@@ -256,6 +267,9 @@ impl Document<'_> {
                 self.document = Some(document);
                 self.keyed.entry(key).or_insert_with(|| (*stages, calls.clone()));
                 let node = self.number(&step.id());
+                if let Some((_, receipt)) = receipts.first() {
+                    self.step_receipts.insert(node, receipt.clone());
+                }
                 for ((entity, receipt), call) in receipts.into_iter().zip(&calls) {
                     let undo = match call {
                         Call::Create(..) => Undo::Create(entity),
@@ -275,27 +289,8 @@ impl Document<'_> {
                 classify(&denial, stop.is_some())
                     .unwrap_or_else(|| panic!("k{key}: a refusal the model does not name: {denial:?}"))
             }
+            Executed::Unselectable { .. } => unreachable!("an edit envelope selects no correction source"),
         }
-    }
-
-    /// Today's correction route: the source stage is reversed on the
-    /// document branch outside the document, with the coupled stages after
-    /// it. The model records a step; the real document sees a write outside,
-    /// or the inverse binding's refusal.
-    fn correct(&mut self, key: u32, source: u32, entity: usize, coupled: &Stages) -> Outcome {
-        let (receipt, undo) = self
-            .sources
-            .get(&(source, entity))
-            .cloned()
-            .unwrap_or_else(|| panic!("k{key}: step {source} has no envelope receipt for entity {entity}"));
-        if !correct_outside(self.host, self.shape, self.branch, self.key(key), &receipt, undo) {
-            return Outcome::StageRefused;
-        }
-        if *coupled != NO_STAGES {
-            let calls = calls(coupled, read_entities(self.host, self.branch).map(|entity| entity.is_some()));
-            write_outside(self.host, self.shape, self.branch, format!("{}:coupled", self.key(key)), &calls);
-        }
-        Outcome::OutOfBand
     }
 
     /// Prepare the move from the current selection and advance it to its end.
@@ -361,6 +356,7 @@ impl Document<'_> {
         // A kept commit receipt holds the history it committed on: across
         // close it defers the branch's release (traced, S1 probe).
         self.sources.clear();
+        self.step_receipts.clear();
         self.host.with_host_advancement(|phase| document.close(&phase).unwrap()).unwrap();
         assert!(self.host.runtime().branches().pending_cleanup().is_empty());
         self.closed = true;

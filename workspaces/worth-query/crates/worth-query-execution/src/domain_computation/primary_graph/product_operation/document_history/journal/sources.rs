@@ -166,3 +166,14 @@ impl HistoryJournal {
         Some(self.nodes.get(&ordinal)?.line)
     }
 }
+
+impl LinePosition {
+    /// The parent step, `None` at the root.
+    pub(super) fn parent(&self) -> Option<u64> {
+        self.parent
+    }
+    /// The number of steps between this node and the root.
+    pub(super) fn depth(&self) -> u64 {
+        self.depth
+    }
+}

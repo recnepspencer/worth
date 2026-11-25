@@ -26,6 +26,9 @@ impl Document<'_> {
         // A writer's stages are correction sources, as an envelope's are:
         // an `.edit`'s one stage, and each gesture member (each receipt names
         // that stage's commit).
+        if let Some(receipt) = receipt.iter().flatten().next() {
+            self.step_receipts.insert(node, receipt.clone());
+        }
         for (call, receipt) in calls.iter().zip(receipt) {
             let undo = match call {
                 Call::Create(entity, _) => Some(super::super::fixture::envelope::Undo::Create(*entity)),

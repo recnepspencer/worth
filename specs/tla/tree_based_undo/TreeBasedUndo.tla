@@ -301,12 +301,23 @@ ReversesRetirement(src, e) ==
     /\ ops[src][e] = "retired"
     /\ \A n \in Since(src) : e \notin snapshots[n].live
 
+\* The recorded correction steps. A corrective binding declares no
+\* correction of its own (reapply is out of Phase 2's scope, spec-owner
+\* ruling Q2), so a correction step is never a correction source: the
+\* platform refuses to select it, SourceNotCorrectable (ruling 2026-11-25,
+\* option 1).
+CorrectionSteps ==
+    {idem[j].node : j \in {x \in JournalKeys : idem[x].status = "recorded"
+                                         /\ idem[x].intent.kind = "correction"}}
+
 \* The head pass (plan r2, 2.3): the source is a step this document recorded
-\* on its selected line and its stage on `e` has a corrective binding. Only
-\* then can the document derive the correction's meaning and consult its
-\* journal. It reads nothing else of the branch.
+\* on its selected line, it is not itself a correction, and its stage on `e`
+\* has a corrective binding. Only then can the document derive the
+\* correction's meaning and consult its journal. It reads nothing else of
+\* the branch.
 MeaningDerivable(src, e) ==
     /\ src \in Line(current) \ {0}
+    /\ src \notin CorrectionSteps
     /\ ops[src][e] \in {"born", "retired"}
 
 \* The candidate pass, after the journal found the key unseen.
@@ -319,17 +330,14 @@ SourceReversible(src, e) ==
 CorrectiveOp(src, e) ==
     IF ops[src][e] = "born" THEN Retire ELSE snapshots[parent[src]].val[e]
 
-\* Reversing the creation of "e1" also retires the owned child the same
-\* source created, while that occurrence is still live (co_retire_created,
-\* the owned-subgraph cascade). A child born in a later step is not part of
-\* the source and stays, so the correction is a refused partial retirement
-\* unless the caller retires it in a coupled stage.
-CoRetired(src, e) ==
-    /\ e = "e1"
-    /\ ops[src]["e1"] = "born"
-    /\ ops[src]["e2"] = "born"
-    /\ "e2" \in live
-    /\ gen["e2"] = snapshots[src].gen["e2"]
+\* Reversing a creation also retires what the same source stage created
+\* (co_retire_created, the owned-subgraph cascade over one binding's own
+\* outputs). Each stage here creates one entity, so a sibling born by
+\* another stage of the same step is not co-retired: reversing "e1" while
+\* that "e2" is live is a refused partial retirement (StageRefused), unless
+\* the caller retires it in a coupled stage, which public #369 holds today.
+\* Refinement (p), narrowed to the declared contract (ruling 2026-11-25).
+CoRetired(src, e) == FALSE
 
 WithCorrective(src, e, st) ==
     [x \in Entities |->
@@ -391,11 +399,14 @@ RefuseStages(st, k) ==
 \* corrective binding, whatever the key. With an unseen key, the candidate
 \* pass refuses a source that is no longer current, or one an active reversal
 \* fact says is already reversed (SourceAlreadyReversed).
+\* The head pass reads no head (refinement (w)): a source with no derivable
+\* meaning refuses there even on a diverged head, before the head read that
+\* would refuse HeadDiverged. Only the candidate pass needs a writable head.
 RefuseCorrectionSource(src, e, k) ==
-    /\ Writable
     /\ k \in Keys
-    /\ \/ ~MeaningDerivable(src, e)
-       \/ /\ idem[Env(k)].status = "unseen"
+    /\ \/ Held /\ ~MeaningDerivable(src, e)
+       \/ /\ Writable
+          /\ idem[Env(k)].status = "unseen"
           /\ \/ ~SourceReversible(src, e)
              \/ ReversedByFact(src, e)
     /\ UNCHANGED vars

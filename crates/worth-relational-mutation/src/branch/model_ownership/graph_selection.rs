@@ -14,6 +14,19 @@ pub mod canonical;
 pub mod transfers;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelContext};
 
+/// Records outside the owned closure that follow one navigation: tree-based
+/// undo's reversal facts (public #56, ruling (u)). The caller names the
+/// records the steps it leaves posted (`retire`, live on the current basis)
+/// and the records the steps it enters posted (`restore`, live on the
+/// selected basis, rematerialized in their original full-generation slots).
+/// Each must be relation-free and outside the owned closure; preparation
+/// checks both on the exact bases and grants no other authority.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct RelationalOwnedGraphCompanions {
+    pub retire: BTreeSet<EntityId>,
+    pub restore: BTreeSet<EntityId>,
+}
+
 /// The declared structural part of an owned model selection. Original bases
 /// retain payloads; publication custody is a required additional phase. This
 /// material grants no mutation authority. Ordinary incoming relations from
@@ -24,6 +37,7 @@ pub struct RelationalOwnedModelGraphSelection {
     _meaning_memory: Option<ExecutionMemoryReservation>,
     entities: RelationalOwnedModelEntityBoundary,
     restoration: transfers::RestorationBoundary,
+    companions: RelationalOwnedGraphCompanions,
     current: BTreeMap<RelationId, StructuralRelationRecord>,
     selected: BTreeMap<RelationId, StructuralRelationRecord>,
     _current_memory: Vec<ExecutionMemoryReservation>,
@@ -65,6 +79,10 @@ impl RelationalOwnedModelGraphSelection {
     pub(crate) fn transfer_participants(&self) -> &BTreeSet<EntityId> {
         &self.restoration.participants
     }
+    /// Companion records this selection retires and rematerializes.
+    pub fn companions(&self) -> &RelationalOwnedGraphCompanions {
+        &self.companions
+    }
     pub fn current_relations(&self) -> &BTreeMap<RelationId, StructuralRelationRecord> {
         &self.current
     }
@@ -101,6 +119,7 @@ fn insert(
     }
     Ok(())
 }
+#[allow(clippy::too_many_arguments)]
 pub fn prepare(
     history: CanonicalHistoryRead<'_>,
     execution: &ExecutionRequest<'_, '_>,
@@ -109,6 +128,7 @@ pub fn prepare(
     ownership: &RelationalModelOwnership,
     installed: &RelationalModelOwnership,
     meaning_memory: Option<ExecutionMemoryReservation>,
+    companions: RelationalOwnedGraphCompanions,
 ) -> Result<RelationalOwnedModelGraphSelection, Denial> {
     let current = entities.current_basis();
     let selected = entities.selected_basis();
@@ -242,19 +262,58 @@ pub fn prepare(
                     }
                 }
             }
-            Ok::<_, Denial>(())
+            companion_check(read, &companions, &in_domain, true)
         },
     )?;
+    basis::read(history.branch.runtime_instance_id, execution, selected, context, |read| {
+        companion_check(read, &companions, &in_domain, false)
+    })?;
     Ok(RelationalOwnedModelGraphSelection {
         ownership: ownership.clone(),
         installed_ownership: installed.clone(),
         _meaning_memory: meaning_memory,
         entities,
         restoration,
+        companions,
         current: current_relations,
         selected: selected_relations,
         _current_memory: current_memory,
         _selected_memory: selected_memory,
         _validation_memory: validation_memory,
     })
+}
+
+/// One basis's side of the companion contract. On the current basis each
+/// retired record is live and each restored record is not; on the selected
+/// basis each restored record is live. Every live companion is relation-free
+/// and outside the owned closure.
+fn companion_check(
+    read: &mut basis::BasisRead<'_, '_, '_, '_, '_, '_>,
+    companions: &RelationalOwnedGraphCompanions,
+    in_domain: &impl Fn(EntityId) -> bool,
+    current: bool,
+) -> Result<(), Denial> {
+    for &entity in companions.retire.iter().chain(&companions.restore) {
+        if in_domain(entity)
+            || (companions.retire.contains(&entity) && companions.restore.contains(&entity))
+        {
+            return Err(Denial::CompanionOverlap { entity });
+        }
+        let live = read.kind(entity)?.is_some();
+        let expected = current == companions.retire.contains(&entity);
+        if live != expected {
+            return Err(if live {
+                Denial::CompanionOverlap { entity }
+            } else {
+                Denial::CompanionUnavailable { entity }
+            });
+        }
+        if live
+            && !(read.relations(entity, true)?.is_empty()
+                && read.relations(entity, false)?.is_empty())
+        {
+            return Err(Denial::CompanionRelated { entity });
+        }
+    }
+    Ok(())
 }

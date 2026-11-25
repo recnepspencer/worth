@@ -383,7 +383,8 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             }
             _ => None,
         };
-        let node = RecordedNode { step, source_commit, root_posture };
+        // A writer's commit posts no reversal fact.
+        let node = RecordedNode { step, source_commit, posted_fact: None, root_posture };
         Ok(PreparedBinding {
             discovery_recipes,
             returned: node.step.clone(),

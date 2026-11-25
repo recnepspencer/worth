@@ -131,9 +131,18 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
                 .map_err(Denial::Recording)?;
             selection.journal.prepared_step(&reserved.record, endpoint.clone())
         };
+        // A correction's commit posts one aftermath-causality fact, which
+        // navigation retires and restores with this step (ruling (u)).
+        let posted_fact = receipt.aftermath_causality().and_then(|causality| {
+            match causality.fact_record() {
+                worth_relational::facade::transactions::RecordRef::Entity(id) => Some(*id),
+                worth_relational::facade::transactions::RecordRef::Relation(_) => None,
+            }
+        });
         let node = RecordedNode {
             step,
             source_commit: Some(source_commit),
+            posted_fact,
             root_posture: None,
         };
         Ok(PreparedBinding {

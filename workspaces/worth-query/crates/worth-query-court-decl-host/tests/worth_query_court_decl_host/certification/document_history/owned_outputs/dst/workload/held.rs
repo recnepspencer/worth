@@ -24,6 +24,12 @@ pub fn narrow(op: Op) -> Op {
         Op::Edit(picks) => Op::Edit(narrow(picks)),
         Op::Stopped { stages, at } => Op::Stopped { stages: narrow(stages), at },
         Op::OutOfBand(picks) => Op::OutOfBand(narrow(picks)),
+        // A correction's coupled retirement of `e2` is a retirement after
+        // the corrective prefix: held on #369 too. Since (p) cascades only
+        // within one source stage, it is the only cross-stage cascade.
+        Op::Correction { pick, entity, on_line, cascade: true, stop } => {
+            Op::Correction { pick, entity, on_line, cascade: false, stop }
+        }
         other => other,
     }
 }

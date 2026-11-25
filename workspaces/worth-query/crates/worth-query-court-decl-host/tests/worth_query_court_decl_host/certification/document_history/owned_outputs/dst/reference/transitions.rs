@@ -26,7 +26,12 @@ impl State {
         match action {
             Action::Empty { .. } => self.unchanged(Outcome::Empty),
             _ if self.head_diverged && self.is_document_entry(action) => {
-                let mut successors = self.unchanged(Outcome::HeadDiverged);
+                // The correction's head pass reads no head (refinement (w)):
+                // a source with no derivable meaning refuses there first.
+                let underivable = matches!(action, Action::Envelope { intent: Intent::Correction { source, entity, .. }, .. }
+                    if !self.meaning_derivable(*source, *entity));
+                let mut successors =
+                    self.unchanged(if underivable { Outcome::SourceRefused } else { Outcome::HeadDiverged });
                 // A request that stops before its history read learns
                 // nothing: the `Admission` stop needs only a held document
                 // (TLA+ `WriterStopped`; traced, seed 0x7b020000 k7).
@@ -228,13 +233,24 @@ impl State {
         line[..end].to_vec()
     }
 
-    /// `MeaningDerivable`: the source is a recorded step on the selected line
-    /// and its stage on `entity` has a corrective binding.
+    /// `MeaningDerivable`: the source is a recorded step on the selected
+    /// line, it is not itself a correction (`CorrectionSteps`: a corrective
+    /// binding declares no correction, so selecting it refuses
+    /// `SourceNotCorrectable`; reapply is out of Phase 2), and its stage on
+    /// `entity` has a corrective binding.
     pub(super) fn meaning_derivable(&self, source: u32, entity: usize) -> bool {
         source != 0
             && source < self.nodes()
             && self.line(self.current).contains(&source)
+            && !self.is_correction_step(source)
             && matches!(self.ops[source as usize][entity], StepOp::Born | StepOp::Retired)
+    }
+
+    /// `CorrectionSteps`: a step a recorded correction envelope made.
+    fn is_correction_step(&self, node: u32) -> bool {
+        self.journal
+            .values()
+            .any(|entry| entry.node == node && matches!(entry.intent, Intent::Correction { .. }))
     }
 
     /// `SourceReversible`: the source's occurrence is still the live one, or
@@ -273,13 +289,13 @@ impl State {
     /// The owned child the source created with `E1`, while that occurrence is
     /// still live: `co_retire_created` retires it with its owner (refinement
     /// (p)).
-    fn co_retired(&self, source: u32, entity: usize) -> bool {
-        let s = source as usize;
-        entity == E1
-            && self.ops[s][E1] == StepOp::Born
-            && self.ops[s][E2] == StepOp::Born
-            && self.branch.live[E2]
-            && self.branch.generation[E2] == self.snapshots[s].generation[E2]
+    /// `CoRetired`: what the same source stage created. Each stage creates
+    /// one entity, so nothing is co-retired across stages (refinement (p),
+    /// narrowed to `co_retire_created`'s declared contract, ruling
+    /// 2026-11-25); a live sibling makes the reversal a refused partial
+    /// retirement.
+    fn co_retired(&self, _source: u32, _entity: usize) -> bool {
+        false
     }
 
     fn with_corrective(&self, source: u32, entity: usize, stages: Stages) -> Stages {

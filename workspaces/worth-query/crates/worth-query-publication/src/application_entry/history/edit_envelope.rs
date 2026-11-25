@@ -107,10 +107,18 @@ where
     /// Begin a correction envelope recorded as this document's next step:
     /// stage 0 reverses the selected source, and stages pushed after it commit
     /// with it. The source must be a step this document recorded on its
-    /// selected line. A retirement in a stage after the corrective one is
-    /// postponed on public #369 (it refuses `LaterStageRetirementPostponed`),
-    /// and a later stage of a multi-stage step cannot yet be corrected
-    /// (public #368).
+    /// selected line, and its meaning names the stage it reverses, so any
+    /// stage of a multi-stage step can be corrected (public #368). Reversing
+    /// a creation cascades only to what the same source binding created
+    /// (`co_retire_created`); a sibling another stage created stays, so the
+    /// reversal refuses as a partial retirement while that sibling lives. A
+    /// retirement in a stage after the corrective one is postponed on public
+    /// #369 (it refuses `LaterStageRetirementPostponed`). A correction step
+    /// cannot itself be corrected: a corrective binding declares no
+    /// correction, so selecting it refuses `SourceNotCorrectable`; reapply is
+    /// future work. The step's reversal fact follows navigation: a move
+    /// retires the facts of the steps it leaves and restores those of the
+    /// steps it enters.
     pub fn correction_envelope<'request, 'program, C, P, R>(
         self,
         program: &'program WorthQueryProgramApplicationRuntime<S, P>,
