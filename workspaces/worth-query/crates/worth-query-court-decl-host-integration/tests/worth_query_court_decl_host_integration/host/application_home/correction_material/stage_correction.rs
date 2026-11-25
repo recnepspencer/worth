@@ -213,3 +213,34 @@ fn a_directory_home_refuses_coordinates_naming_a_foreign_member() {
     let home = open_program_home_with(fixture::location(), worth_execution::ExecutionRequest::leased(&lease), true, STAGE_NUMBERS);
     foreign_member!(home, DirectoryProgram);
 }
+
+/// Reversals of two stages of one commit stay distinct across a Directory
+/// reopen: both stay active and each refuses a second reversal.
+#[test]
+fn a_directory_home_reopens_after_reversing_two_stages_of_one_commit() {
+    let location = fixture::location();
+    let lease = checkpoint_capture::lease(256 << 20);
+    let execution = worth_execution::ExecutionRequest::leased(&lease);
+    let home = open_program_home_with(location.clone(), execution, true, STAGE_NUMBERS);
+    let sources: Vec<_> = envelope!(home).iter().map(|receipt| receipt.correction_source().coordinates()).collect();
+    for (stage, key) in [(1, "undo-1"), (2, "undo-2")] {
+        reverse!(home, DirectoryProgram, key, |corrections| corrections.select_coordinates(&sources[stage], limits()))
+            .unwrap_or_else(|cause| panic!("#368 reverses stage {stage}: {cause}"));
+    }
+    // Graceful close after a committed edit envelope is refused (public #375).
+    drop(home);
+    let home = open_program_home_with(location, execution, false, STAGE_NUMBERS);
+    assert_eq!(values(home.runtime()), restored(&[1, 2]), "#368 both reversals stay active");
+    for (stage, key) in [(1, "again-1"), (2, "again-2")] {
+        let again = reverse!(home, DirectoryProgram, key, |corrections| corrections.select_coordinates(&sources[stage], limits()));
+        assert!(
+            matches!(&again, Err(cause) if cause.contains("SourceAlreadyReversed")),
+            "#368 stage {stage} stays reversed after reopen: {again:?}"
+        );
+    }
+    assert_eq!(values(home.runtime()), restored(&[1, 2]));
+    // Stage 0 is not reversed after this reopen: an older source refuses
+    // `GenerationUnavailable` once a later correction heads the reopened Home,
+    // with Primary-only sources too (public #382).
+}
+

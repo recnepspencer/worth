@@ -16,6 +16,7 @@ impl WorthQueryCorrectionIntent {
         occurrence: &worth_runtime_world::facade::CompositeCommitIdentity,
         branch: &worth_runtime_world::facade::ProductBranchObservation,
         original_intent: &[u8; 32],
+        source_member: crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceMember,
         command_key: &WorthQueryCorrectionCommandKey,
         lineage: &crate::domain_computation::application_aftermath::WorthQueryCorrectionLineageBinding,
     ) -> Self {
@@ -28,6 +29,7 @@ impl WorthQueryCorrectionIntent {
             role: lineage.role(),
             source_owner: canonical_identity::scope(owner.durable(), owner.get()),
             source_commit: occurrence.ordinal(),
+            source_member,
             target_owner: canonical_identity::scope(target_owner.durable(), target_owner.get()),
             target_branch: branch.branch_identity().name().as_str(),
             target_lifecycle: lifecycle.ordinal(),
