@@ -99,6 +99,15 @@ impl TestDurableMedium {
             .get_mut(&position.0)
             .expect("actual held artifact")[offset] ^= 0xff;
     }
+    /// Replace a held artifact with another frame for the same position.
+    pub fn replace_artifact(&self, artifact: RelationalCanonicalCommitArtifact) {
+        *self
+            .lock()
+            .commits
+            .entries
+            .get_mut(&artifact.position().0)
+            .expect("actual held artifact") = Box::from(artifact.as_bytes());
+    }
     pub fn drop_artifact(&self, position: PatchStreamPosition) {
         self.lock()
             .commits

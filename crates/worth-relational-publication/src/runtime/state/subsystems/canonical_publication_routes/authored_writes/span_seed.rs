@@ -43,6 +43,7 @@ impl super::super::RelationalCanonicalPublicationRoutes {
         original: CommitId,
         selected: CommitId,
         maximum_links: Option<NonZeroUsize>,
+        catalog: &worth_relational_indexes::internal_port::runtime::state::subsystems::indexing::catalog_publication::CapturedIndexDefinitionCatalog,
     ) -> Result<Span, Denial> {
         let owner = self
             .authored_generation_owner(selected)
@@ -103,7 +104,13 @@ impl super::super::RelationalCanonicalPublicationRoutes {
                     .demand_envelope(&execution, *commit)
                     .map_err(|cause| Denial::Execution(cause.into()))?
                     .ok_or(Denial::CanonicalEvidenceUnavailable)?;
-                super::extend_generation(&mut generation, execution, context, &envelope)?;
+                super::extend_generation(
+                    &mut generation,
+                    execution,
+                    context,
+                    &envelope,
+                    Some(catalog),
+                )?;
             }
             Ok(Some((generation, chain.len())))
         })?;

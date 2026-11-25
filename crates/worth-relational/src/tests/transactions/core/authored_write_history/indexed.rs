@@ -61,5 +61,29 @@ fn authored_index_retirement_preserves_verified_entity_generation_and_old_kind()
     release_test_commit_snapshot(&runtime, &retired);
 }
 
+/// One authored equal-value write to a built entity-field index.
+fn indexed_equal_write(
+    execution: &ExecutionRequest<'_, '_>,
+) -> (RelationalRuntime, CommitResult, CommitResult) {
+    let runtime = runtime_with_test_schema();
+    let created = create_entity_outcome(execution, &runtime, "before");
+    let entity = changed_entities(&created)[0];
+    let source = test_owner_main_basis(&runtime).unwrap();
+    let definition = register(&runtime, name_locator());
+    let built = runtime.index_authority().build_for_basis(
+        execution,
+        crate::facade::indexes::DerivedIndexBuildRequest {
+            source_commit_id: source.observation().commit_id().unwrap(),
+            branch_id: BranchId("main".into()),
+            index_ids: vec![definition.index_id],
+        },
+        &source,
+    );
+    assert!(built.failed_indexes.is_empty());
+    create_branch_from_main(&runtime, "index-source");
+    let equal = update_entity(execution, &runtime, entity, "before");
+    (runtime, created, equal)
+}
+
 #[path = "indexed/recovery.rs"]
 mod recovery;

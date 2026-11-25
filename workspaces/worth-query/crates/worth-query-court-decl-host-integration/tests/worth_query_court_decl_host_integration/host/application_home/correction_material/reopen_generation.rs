@@ -2,7 +2,7 @@
 //! follow, from before or after the reopen. Reversing the head skips history;
 //! an older source needs the authored-write history that a reopen drops. A
 //! source from before the reopen also needs index-keyed history across
-//! checkpoint-restored commits, held on public #384.
+//! checkpoint-restored commits, which the catalog owner certifies (#384).
 use super::numeric_home::*;
 use super::*;
 use model::{
@@ -97,7 +97,6 @@ fn refused_by_history(outcome: &Result<(), String>) -> bool {
 }
 
 #[test]
-#[ignore = "held on public #384: prepare: Derivation(RestoredSupport(Native(IncompleteIndexHistory)))"]
 fn a_reopened_directory_home_reverses_a_source_from_before_the_reopen() {
     let location = fixture::location();
     let lease = checkpoint_capture::lease(256 << 20);
@@ -144,7 +143,7 @@ fn a_memory_home_reverses_an_older_source() {
 /// A later write to the reversed key lies in a checkpointed commit. The seed
 /// must see it: the reopened Home refuses exactly as a Memory Home does.
 #[test]
-#[ignore = "held on public #384: prepare: Derivation(RestoredSupport(Native(IncompleteIndexHistory)))"]
+#[ignore = "held on public #388: prepare: Derivation(RestoredSupport(CanonicalEvidenceUnavailable))"]
 fn a_reopened_directory_home_sees_a_checkpointed_write_to_the_reversed_key() {
     let lease = checkpoint_capture::lease(256 << 20);
     let execution = worth_execution::ExecutionRequest::leased(&lease);
