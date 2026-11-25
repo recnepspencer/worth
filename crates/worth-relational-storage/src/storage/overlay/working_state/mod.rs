@@ -4,6 +4,7 @@ pub mod consequence_materialization;
 pub mod construction;
 pub mod mutation_tracking;
 pub mod request_mutation;
+pub mod retraction;
 pub mod sequential_apply;
 #[cfg(test)]
 mod tests;

@@ -139,7 +139,7 @@ impl<'a> MutationWorkspace<'a> {
         intent: &crate::contracts::transactions::data::intents::mutation_intent::MutationIntent,
     ) {
         let sources =
-            crate::contracts::history::data::allocation_source::AllocationSource::of(intent);
+            worth_relational_storage::internal_port::runtime::state::subsystems::record_identity::allocation_source::AllocationSource::of(intent);
         if let (false, Some(allocations)) =
             (sources.is_empty(), self.record_allocations.as_deref_mut())
         {

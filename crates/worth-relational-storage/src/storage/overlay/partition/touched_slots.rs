@@ -29,6 +29,11 @@ impl TouchedSlots {
         self.slots.insert(slot, ());
         true
     }
+    /// Forget `slot`: a retracted coupled round's slot that again holds its
+    /// basis image is no longer a touched slot of the candidate.
+    pub fn remove(&mut self, slot: usize) -> bool {
+        self.slots.remove(&slot).0
+    }
     pub fn insert_for_request(
         &mut self,
         slot: usize,

@@ -2,9 +2,9 @@
 //! their live evidence is cancelled and reordered here before commit (H0, D2).
 use std::collections::BTreeMap;
 
+use super::super::allocation_source::AllocationSource;
 use super::super::record_ref::{record_partition, record_slot};
 use super::PendingRecordAllocations;
-use crate::history::data::allocation_source::AllocationSource;
 use crate::history::data::canonical_record_allocation::{
     CancelledRecordAllocation, CanonicalRecordAllocation,
 };
@@ -13,6 +13,41 @@ use crate::transactions::data::outcomes::conflict_class::record_allocation_denia
 use crate::transactions::data::primitives::RecordRef;
 
 impl PendingRecordAllocations {
+    /// Let the next applied round re-create these records under their keys:
+    /// an allocation whose source is prebound reuses its identity, with no
+    /// new reservation and no new evidence (the original live evidence
+    /// stands). Replaces any earlier prebinding. Live mode only.
+    pub fn prebind(&mut self, prebound: BTreeMap<AllocationSource, RecordRef>) {
+        if self.expected.is_none() {
+            self.prebound = prebound;
+        }
+    }
+
+    pub(super) fn reuse_prebound(
+        &mut self,
+        class: crate::history::data::canonical_record_allocation::RecordAllocationClass,
+        partition_id: crate::identity::data::PartitionId,
+    ) -> Result<Option<super::ReservedRecordAllocation>, RecordAllocationDenial> {
+        let Some(record) = self
+            .next_sources
+            .front()
+            .and_then(|source| self.prebound.get(source))
+        else {
+            return Ok(None);
+        };
+        let entry = CanonicalRecordAllocation::with_origin(0, record.clone(), Default::default());
+        if entry.class() != class || record_partition(record) != partition_id {
+            return Err(RecordAllocationDenial::LiveAllocationUnknown {
+                record: record.clone(),
+            });
+        }
+        self.reusing = true;
+        Ok(Some(super::ReservedRecordAllocation {
+            slot: record_slot(record),
+            generation: super::super::record_ref::record_generation(record),
+        }))
+    }
+
     /// Cancel the live allocation of `record`: it leaves the live evidence,
     /// its reservation is held until `commit`, and it is recorded as
     /// cancelled. O(live allocations).

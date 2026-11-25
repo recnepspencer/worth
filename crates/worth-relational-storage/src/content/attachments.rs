@@ -50,6 +50,27 @@ impl RelationalContentAttachments {
         *self = next;
         Ok(())
     }
+    /// Append each of `retained`'s records this set does not already hold,
+    /// by content identity: the union of several members' attachments, each
+    /// content record once (#119). O(records · log records).
+    pub fn attach_retained_once(
+        &mut self,
+        execution: &ExecutionRequest<'_, '_>,
+        retained: &Self,
+    ) -> Result<(), Denial> {
+        let mut held = self
+            .records()
+            .map(RelationalContentRecord::identity)
+            .collect::<std::collections::BTreeSet<_>>();
+        let mut next = self.clone();
+        for record in retained.records() {
+            if held.insert(record.identity()) {
+                next.append_record(execution, record)?;
+            }
+        }
+        *self = next;
+        Ok(())
+    }
     pub fn attach(
         &mut self,
         execution: &ExecutionRequest<'_, '_>,

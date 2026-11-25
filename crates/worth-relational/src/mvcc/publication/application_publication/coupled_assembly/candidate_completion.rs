@@ -89,6 +89,22 @@ pub(crate) fn prepare_coupled_candidate(
     authored_writes
         .retain(execution, 0, authored_commands.plan(), &authored_records)
         .map_err(|failure| failure.into_cause())?;
+    let mut indexes = succession::indexes::MemberIndexes::default();
+    let prefix_references = succession::guards::named_records(
+        &authored_commands.plan().merged_intents,
+        &[],
+        transaction.naming_plan.as_deref(),
+    );
+    indexes.insert(
+        succession::indexes::MemberId::Prefix,
+        &authored_records,
+        prefix_references,
+    );
+    let prefix_span = succession::segment::SpanStart::default().end(
+        &mutation.outcome.effect,
+        mutation.outcome.effect.publication.has_entity_deletions,
+    );
+    let prefix_content = transaction.content.clone();
     let mut candidate = RelationalAuthoredCoupledCandidate {
         input_issuance: std::cell::RefCell::new(None),
         runtime: &runtime,
@@ -105,6 +121,9 @@ pub(crate) fn prepare_coupled_candidate(
         authored_writes,
         read: std::cell::RefCell::new(None),
         successor_rounds: 0,
+        indexes,
+        prefix_span,
+        prefix_content,
     };
     crate::execution::phase_observation::symbol_preparation_event(
         crate::execution::phase_observation::SymbolPreparationEvent::AssemblerCallback,
@@ -119,6 +138,9 @@ pub(crate) fn prepare_coupled_candidate(
         );
         return Ok(false);
     }
+    candidate
+        .complete_succession(execution)
+        .map_err(|failure| failure.into_cause())?;
     let RelationalAuthoredCoupledCandidate {
         mut parts,
         mut stages,
@@ -135,7 +157,7 @@ pub(crate) fn prepare_coupled_candidate(
         &mut authored_records,
     )?;
     if let Some(batches) =
-        super::succession::batches_after_withdrawal(execution, transaction.batches(), &parts)?
+        succession::batches_after_withdrawal(execution, transaction.batches(), &parts)?
     {
         transaction
             .restage_coupled_field_batches(batches, execution.allocation_policy())

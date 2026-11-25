@@ -54,11 +54,8 @@ impl CanonicalRecordAllocation {
     }
 }
 
-/// A slot a coupled candidate reserved and then cancelled before commit (a
-/// superseded successor round's create its final round no longer makes). The
-/// slot is burned exactly as a live allocation would burn it: an append slot
-/// advances the frontier, a reclaimed slot's generation is spent and the slot
-/// returns to reuse. Recovery replays it beside the live allocations.
+/// A slot a coupled candidate reserved and cancelled before commit (#119 N2),
+/// burned exactly as a live allocation would be; recovery replays it too.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CancelledRecordAllocation {
     record: RecordRef,

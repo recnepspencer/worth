@@ -36,6 +36,25 @@ impl CreatorCustody {
         }
         Ok(())
     }
+    /// Forget a retracted round's fresh records: no live writer created them.
+    /// O(|records| · log n).
+    pub fn forget<'r>(
+        &mut self,
+        execution: &ExecutionRequest<'_, '_>,
+        records: impl IntoIterator<Item = &'r RecordRef>,
+    ) -> Result<(), TransactionCommitError> {
+        for record in records {
+            self.records
+                .remove_for_request(record, *execution)
+                .map_err(|cause| match cause {
+                    ExecutionOrderedMapDenial::Request(cause) => custody::execution_stop(cause),
+                    _ => custody::execution_stop(
+                        contracts::execution::denial_cause::RelationalExecutionDenialCause::AllocationFailed,
+                    ),
+                })?;
+        }
+        Ok(())
+    }
     fn insert(
         &mut self,
         execution: &ExecutionRequest<'_, '_>,

@@ -4,8 +4,10 @@ use worth_relational::facade::config::CascadeDeletePolicy;
 use worth_relational::facade::schema::*;
 use worth_testkit_relational::aspect_storage::AspectSchemaFixture;
 
+mod content;
 mod optional_struct;
 mod replay;
+pub use content::{attachments, content_create};
 use optional_struct::*;
 
 const RETAIN: CascadeDeletePolicy = CascadeDeletePolicy::RetainDanglingForAudit;

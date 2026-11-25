@@ -108,9 +108,12 @@ fn reads(
 /// One Preserve chain over `owned-output` in a fresh world. Each entry is one
 /// round: the value it writes on the output, and what it does to the linked
 /// record. The first is appended, the rest are successors. Returns the commit
-/// with whether a committed read still finds the record's link, or the
+/// with whether a committed read still finds the record and its link, or the
 /// refusal, having checked that it published nothing.
-fn chain(cascading: bool, rounds: &[(&str, &[Effect])]) -> Result<(Observed, bool), Cause> {
+fn chain(
+    cascading: bool,
+    rounds: &[(&str, &[Effect])],
+) -> Result<(Observed, (bool, bool)), TransactionCommitError> {
     let host = request();
     let execution = &ExecutionRequest::serial(&host);
     let world = world(execution, cascading);
@@ -143,13 +146,11 @@ fn chain(cascading: bool, rounds: &[(&str, &[Effect])]) -> Result<(Observed, boo
     match prepared {
         Ok(proposal) => {
             let observed = committed(&world, execution, proposal, &meaning).0;
-            let (record, link) = reads(&world, execution, (record, link));
-            assert!(!record, "the committed chain deleted the record");
-            Ok((observed, link))
+            Ok((observed, reads(&world, execution, (record, link))))
         }
         Err(err) => {
             assert_eq!(world.basis(), before, "nothing published");
-            Err(refusal(err))
+            Err(err)
         }
     }
 }
@@ -164,7 +165,8 @@ fn a_successor_re_deleting_the_record_its_chain_deleted_folds_to_the_one_round_w
     let mut worlds = Vec::new();
     for cascading in [false, true] {
         let one = chain(cascading, &[("round-3", DELETE)]).unwrap();
-        assert_eq!(one.1, !cascading, "a retained link is still read");
+        assert!(!one.1 .0, "the committed chain deleted the record");
+        assert_eq!(one.1 .1, !cascading, "a retained link is still read");
         let two = chain(cascading, &[("round-2", DELETE), ("round-3", DELETE)]);
         assert_eq!(two.unwrap(), one, "two rounds, cascading={cascading}");
         let three = chain(
@@ -181,39 +183,51 @@ fn a_successor_re_deleting_the_record_its_chain_deleted_folds_to_the_one_round_w
     assert_ne!(worlds[0], worlds[1], "each policy writes its own records");
 }
 
-/// A successor that keeps a record its chain deleted leaves that delete
-/// uncovered: the fold cannot restore the record.
+/// A successor that keeps a record its chain deleted restores it from the
+/// head's image, with the cascaded link (#119 N5).
 #[test]
-fn a_successor_keeping_the_record_its_chain_deleted_is_uncovered() {
-    let refused = chain(false, &[("round-1", DELETE), ("round-2", KEEP)]);
-    assert_eq!(refused.unwrap_err(), postponed(Reason::UncoveredWrite));
-}
-
-/// A successor that writes a record its chain deleted, without deleting it
-/// again, leaves the delete uncovered too.
-#[test]
-fn a_successor_writing_the_record_its_chain_deleted_is_uncovered() {
-    let refused = chain(false, &[("round-1", DELETE), ("round-2", PATCH)]);
-    assert_eq!(refused.unwrap_err(), postponed(Reason::UncoveredWrite));
-}
-
-/// The re-delete is the record's one write in the round. Deleting it twice,
-/// or deleting and writing it in either order, is not one round's answer.
-#[test]
-fn a_successor_re_deleting_a_record_beside_another_write_of_it_is_a_structural_effect() {
-    let seconds: [&[Effect]; 3] = [&[delete, delete], &[patch, delete], &[delete, patch]];
-    for second in seconds {
-        let refused = chain(false, &[("round-1", DELETE), ("round-2", second)]);
-        assert_eq!(refused.unwrap_err(), postponed(Reason::StructuralEffect));
+fn a_successor_keeping_the_record_its_chain_deleted_restores_it() {
+    for cascading in [false, true] {
+        let rounds = chain(cascading, &[("round-1", DELETE), ("round-2", KEEP)]).unwrap();
+        assert_eq!(rounds, chain(cascading, &[("round-2", KEEP)]).unwrap());
+        assert_eq!(rounds.1, (true, true), "record and link live again");
     }
 }
 
-/// A successor that deletes a record its chain kept makes a new effect: the
-/// fold may not drop a delete no earlier round applied.
+/// A successor that writes a record its chain deleted writes it over the
+/// head's image, where it is live (#119).
 #[test]
-fn a_successor_deleting_a_record_its_chain_kept_is_a_structural_effect() {
-    let refused = chain(false, &[("round-1", KEEP), ("round-2", DELETE)]);
-    assert_eq!(refused.unwrap_err(), postponed(Reason::StructuralEffect));
+fn a_successor_writing_the_record_its_chain_deleted_commits_the_one_round_answer() {
+    let rounds = chain(false, &[("round-1", DELETE), ("round-2", PATCH)]).unwrap();
+    assert_eq!(rounds, chain(false, &[("round-2", PATCH)]).unwrap());
+}
+
+/// A round is applied as written: deleting a record twice, or deleting and
+/// writing it, is the ordinary conflicting-intent refusal of that round alone.
+#[test]
+fn a_successor_re_deleting_a_record_beside_another_write_of_it_is_the_ordinary_conflict() {
+    let seconds: [&[Effect]; 3] = [&[delete, delete], &[patch, delete], &[delete, patch]];
+    for second in seconds {
+        let rounds = chain(false, &[("round-1", DELETE), ("round-2", second)]).unwrap_err();
+        let one = chain(false, &[("round-2", second)]).unwrap_err();
+        assert!(
+            matches!(rounds, TransactionCommitError::Conflict { .. }),
+            "{rounds:?}"
+        );
+        assert_eq!(
+            format!("{rounds:?}"),
+            format!("{one:?}"),
+            "the one round's own refusal"
+        );
+    }
+}
+
+/// A successor that deletes a record its chain kept is an ordinary delete
+/// over the head's image (#119).
+#[test]
+fn a_successor_deleting_a_record_its_chain_kept_commits_the_one_round_answer() {
+    let rounds = chain(false, &[("round-1", KEEP), ("round-2", DELETE)]).unwrap();
+    assert_eq!(rounds, chain(false, &[("round-2", DELETE)]).unwrap());
 }
 
 /// The chain's delete retained the record's link, a record the chain changed.

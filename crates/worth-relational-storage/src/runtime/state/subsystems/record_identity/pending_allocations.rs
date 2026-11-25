@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use crate::history::data::allocation_source::AllocationSource;
+use super::allocation_source::AllocationSource;
 use crate::history::data::canonical_record_allocation::{
     CancelledRecordAllocation, CanonicalRecordAllocation, RecordAllocationClass,
     RecordAllocationOrigin,
@@ -39,6 +39,11 @@ pub struct PendingRecordAllocations {
     /// replay mode carries the staged evidence for the history parity check.
     cancelled: Vec<CancelledRecordAllocation>,
     held: Vec<RecordSlotReservation>,
+    /// Live mode: records a coupled successor round re-creates under a key its
+    /// chain already allocated; such a create reuses the identity (`prebind`).
+    prebound: std::collections::BTreeMap<AllocationSource, RecordRef>,
+    /// The allocation being made reuses a prebound identity.
+    reusing: bool,
 }
 
 impl PendingRecordAllocations {
@@ -56,6 +61,8 @@ impl PendingRecordAllocations {
             next_sources: VecDeque::new(),
             cancelled: Vec::new(),
             held: Vec::new(),
+            prebound: Default::default(),
+            reusing: false,
         }
     }
 
@@ -74,6 +81,9 @@ impl PendingRecordAllocations {
         class: RecordAllocationClass,
         partition_id: PartitionId,
     ) -> Result<ReservedRecordAllocation, RecordAllocationDenial> {
+        if let Some(reused) = self.reuse_prebound(class, partition_id)? {
+            return Ok(reused);
+        }
         let ordinal = self.reservations.len() as u64;
         let (reservation, generation, expected_decision) = match self.expected.as_mut() {
             Some(expected) => {
@@ -124,6 +134,10 @@ impl PendingRecordAllocations {
     }
 
     pub fn record(&mut self, record: RecordRef) {
+        if std::mem::take(&mut self.reusing) {
+            self.next_sources.pop_front();
+            return;
+        }
         if self.expected.is_none() {
             let origin = self
                 .pending_origins

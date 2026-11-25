@@ -1,6 +1,6 @@
 //! The allocation operations used by the one mutation algorithm.
 
-use crate::history::data::allocation_source::AllocationSource;
+use super::allocation_source::AllocationSource;
 use crate::history::data::record_allocation_class::RecordAllocationClass;
 use crate::identity::data::PartitionId;
 use crate::transactions::data::outcomes::conflict_class::record_allocation_denial::RecordAllocationDenial;

@@ -1,19 +1,23 @@
-//! One owned route's later round folds into its chain in place, or refuses
-//! under #119 before anything applies. The chain stays one producer part, so
-//! every first-match consumer of `parts` reads its latest round.
+//! A successor round supersedes its chain's live round (#119): the live round
+//! is retracted to the image before the chain's head, the new round applies
+//! as written, and it becomes the chain's live round. The commit is what the
+//! chain's last round alone would publish at the head's position, or the
+//! round refuses with its #119 reason before anything publishes.
 use worth_relational_publication::internal_port::mvcc::publication::application_publication::coupled_assembly::producer_posture::RelationalCoupledProducerPostureOwnerPort as _;
 use super::*;
 use crate::publication::data::CoupledProvenancePostponement as Reason;
 use crate::transactions::data::primitives::WorkerIntentBatch;
 
-pub(crate) use worth_relational_publication::internal_port::mvcc::publication::application_publication::coupled_assembly::succession::{fold, proof};
-pub(super) use fold::{appended_rounds, batches_after_withdrawal};
+pub(crate) use worth_relational_publication::internal_port::mvcc::publication::application_publication::coupled_assembly::succession::{adoption, guards, indexes, ledger, route, segment};
+pub(super) use adoption::{appended_rounds, batches_after_withdrawal};
+use indexes::MemberId;
+
+mod completion;
+mod retraction;
 
 impl RelationalAuthoredCoupledCandidate<'_> {
-    /// Fold a complete re-derivation of owned route `token`'s chain into it.
-    /// Admitted only for the same route, producer and posture kind, and only
-    /// when the round re-writes everything the chain wrote with no other kind
-    /// of effect. Any other round refuses with its #119 reason before applying.
+    /// Supersede owned route `token`'s chain with a new round of the same
+    /// route, producer and posture kind (`append_named_successor_publication`).
     pub fn append_successor_publication(
         &mut self,
         execution: &ExecutionRequest<'_, '_>,
@@ -22,13 +26,20 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         content: &crate::content::RelationalContentAttachments,
         batches: Vec<WorkerIntentBatch>,
     ) -> Result<(), RelationalCoupledAssemblyFailure> {
-        self.append_named_successor_publication(execution, token, publication, content, batches, None)
+        self.append_named_successor_publication(
+            execution,
+            token,
+            publication,
+            content,
+            batches,
+            None,
+        )
     }
 
-    /// The same fold, carrying the round's naming plan. Its create targets
-    /// take the chain head's keys and partitions with its commands (a key the
-    /// head never chose refuses as a `StructuralEffect`), and the plan
-    /// replaces the superseded round's, whose batches are withdrawn.
+    /// The same round, carrying its naming plan. Its keys take the chain's
+    /// coordinates (a new key gets a new one) and partitions; a key an earlier
+    /// round created keeps that identity. Refuses `IntervenedOutput`,
+    /// `PriorEffectRead` or `RetiredReference` (#119 §2.3) with no effect.
     pub fn append_named_successor_publication(
         &mut self,
         execution: &ExecutionRequest<'_, '_>,
@@ -38,54 +49,167 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         mut batches: Vec<WorkerIntentBatch>,
         mut naming: Option<crate::lineage::data::CommitNamingPlan>,
     ) -> Result<(), RelationalCoupledAssemblyFailure> {
-        let index = self.continuation.consume(token, self.identity, self.applied_parts())?;
-        let source = proof::require_same_route(&self.parts[index].publication, &publication)?;
+        let index = self
+            .continuation
+            .consume(token, self.identity, self.applied_parts())?;
+        let source = route::require_same_route(&self.parts[index].publication, &publication)?;
         let predecessor = super::participant_admission::admit_posture(
-            self.binding, self.runtime.services.runtime_instance_id(),
-            &self.mutation.outcome.created_entities, execution, &publication,
+            self.binding,
+            self.runtime.services.runtime_instance_id(),
+            &self.mutation.outcome.created_entities,
+            execution,
+            &publication,
         )?;
-        let chain = &self.parts[index].chain;
-        let interner = self.mutation.candidate_symbols().interner();
-        if super::local_keys::rescope(execution, &chain.local_keys, interner, &mut batches, publication.roles_mut(), naming.as_mut())?.is_err() {
-            return Err(continuation::postponed(Reason::StructuralEffect, source).into());
+        let member = MemberId::Part(index);
+        let head_ordinal = self.parts[index].chain.head_ordinal;
+        self.charge(execution, self.parts[index].chain.touched.len())?;
+        if let Some(record) = guards::intervened(
+            &self.indexes,
+            &self.parts[index].chain.touched,
+            member,
+            head_ordinal,
+        ) {
+            return Err(continuation::postponed(
+                Reason::IntervenedOutput,
+                guards::subject(record, source),
+            )
+            .into());
         }
-        super::local_keys::repartition(execution, &self.parts[index].commands.plan().merged_intents, interner, &mut batches, publication.roles_mut(), naming.as_mut())?;
-        let redeleted = proof::prove_succession(execution, &self.parts[index], &self.mutation.outcome, interner, content, &publication, &batches)?;
-        let pub_effect = &self.mutation.outcome.effect.publication;
-        let (first_record, first_fragment) = (pub_effect.changed_records.len(), pub_effect.patch_fragments.len());
+        let interner = self.mutation.candidate_symbols().interner();
+        let chain = &mut self.parts[index].chain;
+        super::local_keys::rescope(
+            execution,
+            &mut chain.local_keys,
+            chain.scope,
+            &self.mutation.outcome.created_entities,
+            &chain.ledger,
+            interner,
+            &mut batches,
+            publication.roles_mut(),
+            naming.as_mut(),
+        )?;
+        super::local_keys::repartition(
+            execution,
+            &chain.ledger,
+            interner,
+            &mut batches,
+            publication.roles_mut(),
+            naming.as_mut(),
+        )?;
+        let superseded = self.retract_chain(execution, index)?;
+        let named = guards::named_records(
+            batches.iter().flat_map(|batch| &batch.intents),
+            publication.roles(),
+            naming.as_ref(),
+        );
+        self.charge(execution, named.len())?;
+        if let Some(record) = guards::stale(&self.parts[index].chain.ledger, &named) {
+            return Err(continuation::postponed(
+                Reason::PriorEffectRead,
+                guards::subject(record, source),
+            )
+            .into());
+        }
+        let prebound = self.parts[index].chain.ledger.prebound();
+        self.mutation.identities.records.prebind(prebound);
+        let start = segment::SpanStart::of(&self.mutation.outcome.effect);
         let first_batch = self.transaction.batches().len();
-        let mut applied = self.apply_suffix(
+        let applied = self.apply_suffix(
             execution,
-            part::SuffixWriter::Successor { index, source, predecessor: predecessor.as_deref(), redeleted: &redeleted },
-            content, batches, naming.as_mut(),
-        )?;
-        fold::fold_records(
-            execution,
-            fold::FoldInputs {
-                schema: self.prepared.schema_authority.aspect_plans(),
-                version: self.identity.proposed_version_id(),
-                outcome: &mut self.mutation.outcome,
-                chain: &mut self.parts[index].chain,
-                state: &mut self.mutation.state,
-                symbols: &mut self.mutation.identities.symbols,
+            part::SuffixWriter::Successor {
+                index,
+                source,
+                predecessor: predecessor.as_deref(),
             },
-            first_fragment, &applied.plan, &redeleted, &applied.read, &mut applied.delta_state,
-        )?;
-        let records_end = self.mutation.outcome.effect.publication.changed_records.len();
-        let batches_end = self.transaction.batches().len();
-        let prior_round_touches = crate::mvcc::validation::proposal_touches::project_applied_intents(
-            execution, &self.mutation.state, &self.parts[index].commands.plan().merged_intents,
-        )?;
-        fold::adopt_round(
-            execution, &mut self.parts, index, prior_round_touches,
-            fold::AppliedRound {
-                records: &applied.records, input: applied.read, plan: applied.plan,
-                publication, batches: first_batch..batches_end, record_range: first_record..records_end,
+            content,
+            batches,
+            naming.as_mut(),
+        );
+        self.mutation.identities.records.prebind(Default::default());
+        let applied = applied?;
+        let span = start.end(&self.mutation.outcome.effect, applied.has_entity_deletions);
+        self.guard_applied_round(execution, index, source, &applied.records)?;
+        self.parts[index].chain.ledger.bind_round(&applied.creates);
+        if let Some(record) =
+            guards::retired(&self.parts[index].chain.ledger, &self.indexes, member)
+        {
+            return Err(continuation::postponed(
+                Reason::RetiredReference,
+                guards::subject(record, source),
+            )
+            .into());
+        }
+        let references = guards::named_records(
+            &applied.plan.plan().merged_intents,
+            publication.roles(),
+            naming.as_ref(),
+        );
+        self.indexes.insert(member, &applied.records, references);
+        let ordinary_ids = publication
+            .resolve_ordinary_roles(execution, &self.mutation.outcome.created_entities)?;
+        adoption::adopt_round(
+            &mut self.parts,
+            index,
+            adoption::AppliedRound {
+                records: applied.records,
+                input: applied.read,
+                plan: applied.plan,
+                publication,
+                batches: first_batch..self.transaction.batches().len(),
+                span,
+                content: content.clone(),
+                naming,
+                creates: applied.creates,
+                superseded,
             },
-        )?;
-        self.parts[index].naming = naming;
+        );
+        self.parts[index].ordinary_ids = ordinary_ids;
         self.successor_rounds += 1;
-        let input = self.parts[index].input.clone();
-        self.advance_pin(execution, &applied.delta_state, &applied.content, &applied.records, &input)
+        let part = &self.parts[index];
+        self.advance_pin(
+            execution,
+            &applied.delta_state,
+            &applied.content,
+            &part.records,
+            &part.input,
+        )
+    }
+
+    /// Option A's forward guard and the stale-base guard over the applied
+    /// round's changed records (§2.3 step 8; Lean `StaleBaseOk`).
+    fn guard_applied_round(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        index: usize,
+        source: crate::identity::data::EntityId,
+        records: &[crate::transactions::data::primitives::RecordRef],
+    ) -> Result<(), RelationalCoupledAssemblyFailure> {
+        self.charge(
+            execution,
+            records.len().saturating_mul(self.parts.len() + 1),
+        )?;
+        let refused = guards::applied_round(&self.parts, &self.indexes, index, records);
+        match refused {
+            Some(record) => Err(continuation::postponed(
+                Reason::IntervenedOutput,
+                guards::subject(record, source),
+            )
+            .into()),
+            None => Ok(()),
+        }
+    }
+
+    /// Charge `units` of bounded Native work.
+    pub(super) fn charge(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        units: usize,
+    ) -> Result<(), TransactionCommitError> {
+        execution
+            .run_native_with_checkpoint(|context| {
+                checkpoint(context, units as u64 + 1).map_err(custody::execution_stop)
+            })
+            .map_err(custody::execution_stop)?
+            .0
     }
 }

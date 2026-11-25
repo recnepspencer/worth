@@ -1,4 +1,5 @@
 pub mod allocation_batch;
+pub mod allocation_source;
 pub mod checkpoint_snapshot;
 pub mod observation;
 pub mod partition_frontier;

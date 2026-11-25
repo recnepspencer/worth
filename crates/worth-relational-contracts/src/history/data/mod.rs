@@ -1,4 +1,3 @@
-pub mod allocation_source;
 pub mod branch_creation;
 pub mod canonical_commit_envelope;
 pub mod canonical_record_allocation;

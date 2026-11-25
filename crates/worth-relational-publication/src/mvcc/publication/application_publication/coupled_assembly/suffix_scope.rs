@@ -8,7 +8,6 @@ use worth_relational_branch::internal_port::history::data::canonical_commit_enve
 use contracts::identity::data::record_ids::EntityId;
 use worth_relational_mutation::internal_port::mvcc::transaction::normalized_plan::OwnedNormalizedPlan;
 use contracts::publication::data::authored_retirement_refusal::CoupledFreshWriter;
-use contracts::schema::data::aspect_contracts::lowered_plan::AspectContractPlanCatalog;
 use worth_relational_storage::internal_port::storage::overlay::working_state::WorkingState;
 use contracts::symbols::data::string_interner::StringInterner;
 use contracts::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings;
@@ -30,14 +29,12 @@ pub enum SuffixWriter<'a> {
         roles: &'a mut [RequiredOutputRoleTarget],
         predecessor: Option<&'a CanonicalRequiredOutputOrigin>,
     },
-    /// A successor round of producer part `index`, already rescoped to the
-    /// coordinates its chain head chose.
+    /// A successor round of producer part `index`, already rescoped to its
+    /// chain's coordinates and applied as written over the retracted image.
     Successor {
         index: usize,
         source: contracts::identity::data::record_ids::EntityId,
         predecessor: Option<&'a CanonicalRequiredOutputOrigin>,
-        /// The entities the round provably deletes again (`prove_succession`).
-        redeleted: &'a std::collections::BTreeSet<EntityId>,
     },
     /// The authored writer: later stage `stage` editing an admitted stage source.
     Authored {
@@ -60,9 +57,11 @@ pub struct AppliedSuffix {
         WorkingState,
     pub local_keys:
         local_keys::LocalKeys,
-    /// The entities this suffix allocated.
-    pub created:
-        Vec<contracts::identity::data::record_ids::EntityId>,
+    /// The records this suffix created, by source and key text.
+    pub creates:
+        Vec<super::succession::ledger::ChainCreate>,
+    /// Whether this suffix deleted an entity.
+    pub has_entity_deletions: bool,
 }
 
 pub fn scope<'a>(
@@ -128,48 +127,64 @@ pub fn scope<'a>(
 pub fn normalize(
     execution: &ExecutionRequest<'_, '_>,
     intents: OwnedNormalizedPlan,
-    redeleted: Option<&std::collections::BTreeSet<EntityId>>,
     created: &CommitCreatedEntityBindings,
-    aspect_plans: &AspectContractPlanCatalog,
-) -> Result<
-    (
-        OwnedNormalizedPlan,
-        Option<OwnedNormalizedPlan>,
-        CoupledOriginalRelationCreates,
-    ),
-    TransactionCommitError,
-> {
-    let originals = CoupledOriginalRelationCreates::capture(
-        execution,
-        if redeleted.is_some() {
-            &[]
-        } else {
-            &intents.plan().merged_intents
-        },
-    )?;
-    let mut intents = intents.into_coupled_suffix(0, created, execution)?;
-    // A successor records its commands as authored (re-creates stay
-    // creates, so its touches match the one-round answer) but applies them
-    // lowered onto the chain's allocations, without its proved re-deletes.
-    let recorded = if let Some(redeleted) = redeleted {
-        let recorded = OwnedNormalizedPlan::copy_for_request(intents.plan(), execution)?;
-        intents = intents.lower_coupled_recreates(created, aspect_plans, redeleted, execution)?;
-        Some(recorded)
-    } else {
-        None
-    };
-    Ok((intents, recorded, originals))
+) -> Result<(OwnedNormalizedPlan, CoupledOriginalRelationCreates), TransactionCommitError> {
+    let originals =
+        CoupledOriginalRelationCreates::capture(execution, &intents.plan().merged_intents)?;
+    let intents = intents.into_coupled_suffix(0, created, execution)?;
+    Ok((intents, originals))
 }
 
+/// Adopt one applied suffix into the candidate. Returns its changed records,
+/// its creates (for its chain's ledger) and its sparse state.
 pub fn adopt(
     execution: &ExecutionRequest<'_, '_>,
     current_outcome: &mut MutationApplyOutcome,
     current_state: &mut WorkingState,
     outcome: MutationApplyOutcome,
     state: WorkingState,
-) -> Result<(Vec<RecordRef>, Vec<EntityId>, WorkingState), TransactionCommitError> {
+    symbols: &StringInterner,
+) -> Result<
+    (
+        Vec<RecordRef>,
+        Vec<super::succession::ledger::ChainCreate>,
+        WorkingState,
+    ),
+    TransactionCommitError,
+> {
+    use worth_relational_storage::internal_port::runtime::state::subsystems::record_identity::allocation_source::AllocationSource;
     let records = outcome.effect.publication.changed_records.clone();
-    let created = outcome.created_entities.allocated_identities().collect();
+    let text =
+        |key: &contracts::symbols::data::client_key::ClientKey| {
+            key.resolve_with_interner(symbols).map(str::to_owned).ok_or_else(|| {
+            contracts::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                "coupled local key has no actual Native symbol meaning",
+            )
+        })
+        };
+    let mut creates = Vec::new();
+    for (created, id) in outcome.created_entities.iter() {
+        creates.push(super::succession::ledger::ChainCreate {
+            source: AllocationSource::Entity {
+                partition_id: created.partition_id,
+                kind_id: created.kind_id,
+                client_key: created.client_key.clone(),
+            },
+            record: RecordRef::Entity(*id),
+            text: text(&created.client_key)?,
+        });
+    }
+    for (created, id) in outcome.created_relations.iter() {
+        creates.push(super::succession::ledger::ChainCreate {
+            source: AllocationSource::Relation {
+                partition_id: created.partition_id,
+                kind_id: created.kind_id,
+                client_key: created.client_key.clone(),
+            },
+            record: RecordRef::Relation(*id),
+            text: text(&created.client_key)?,
+        });
+    }
     current_outcome
         .created_entities
         .append_owned(outcome.created_entities)
@@ -189,5 +204,5 @@ pub fn adopt(
         .adopt_sequential_apply(state, execution)
         .map_err(custody::execution_stop)?;
 
-    Ok((records, created, delta_state))
+    Ok((records, creates, delta_state))
 }

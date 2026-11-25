@@ -364,8 +364,11 @@ fn a_successor_round_naming_nothing_refuses_missing_birth() {
     assert_eq!(world.basis(), before, "no effect");
 }
 
+/// A key no round of the chain used gets its own new coordinate, so a plan
+/// naming a record no command creates is the ordinary naming refusal, not a
+/// #119 postponement (#119 §2.6 Naming).
 #[test]
-fn a_successor_plan_naming_a_key_its_head_never_chose_refuses() {
+fn a_successor_plan_naming_a_key_no_command_creates_is_the_ordinary_refusal() {
     let host = request();
     let execution = &ExecutionRequest::serial(&host);
     let world = named_world(execution, named_registry(), seeds()).0;
@@ -374,6 +377,9 @@ fn a_successor_plan_naming_a_key_its_head_never_chose_refuses() {
     stray.pending_births[0].target =
         PendingBirthTarget::CreatedEntity(at("never-created", PartitionId::new(5)));
     let err = fold(execution, &world, "round.1", Some(stray)).unwrap_err();
-    assert_eq!(refusal(err), postponed(Reason::StructuralEffect));
+    assert!(
+        err.lineage_name_denial_ref().is_some(),
+        "an ordinary naming refusal: {err:?}"
+    );
     assert_eq!(world.basis(), before, "no effect");
 }

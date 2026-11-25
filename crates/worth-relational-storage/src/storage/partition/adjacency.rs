@@ -11,6 +11,7 @@ pub mod ids;
 pub mod kind_delta;
 pub mod kind_memberships;
 pub mod request;
+pub mod retraction;
 pub use ids::AdjacencyIds;
 pub type HistoricalKindCustody = crate::storage::substrate::StorageAllocation<
     std::sync::Mutex<worth_execution::ExecutionMemoryReservation>,

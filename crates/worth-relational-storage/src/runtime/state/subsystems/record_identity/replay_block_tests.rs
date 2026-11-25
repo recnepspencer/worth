@@ -132,9 +132,7 @@ fn live_evidence_takes_the_merged_plan_order_and_cancels_into_held_slots() {
     let mut pending = authority.begin_allocations();
     let mut records = Vec::new();
     for key in ["b", "a", "c"] {
-        pending.begin_intent(
-            crate::history::data::allocation_source::AllocationSource::of(&create(key)),
-        );
+        pending.begin_intent(super::allocation_source::AllocationSource::of(&create(key)));
         let slot = pending.reserve(E, P).unwrap();
         records.push(entity(slot.slot as u64, slot.generation));
         pending.record(records.last().unwrap().clone());

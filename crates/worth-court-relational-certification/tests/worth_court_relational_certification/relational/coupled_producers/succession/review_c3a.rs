@@ -111,30 +111,17 @@ fn parallel_relations_of_one_identity_are_refused_before_any_fold() {
     );
 }
 
-/// Dropping one of two head relations leaves it uncovered.
+/// Dropping one of two head relations drops it: never published, its
+/// identity cancelled (#119 N2). The commit is the one-round answer.
 #[test]
-fn a_round_dropping_a_head_relation_is_uncovered() {
-    let refused = relation_chain(&[
-        (
-            "round-1",
-            vec![
-                ("link:a", source as fn(&World) -> EntityId),
-                ("link:b", carrier),
-            ],
-        ),
+fn a_round_dropping_a_head_relation_commits_the_one_round_answer() {
+    let round_2 = || {
         (
             "round-2",
             vec![("link:a", source as fn(&World) -> EntityId)],
-        ),
-    ]);
-    assert_eq!(refused.unwrap_err(), postponed(Reason::UncoveredWrite));
-}
-
-/// A round that swaps its head relations' keys across their endpoints names
-/// relations the head never created under those keys.
-#[test]
-fn a_round_swapping_its_head_relation_keys_is_a_structural_effect() {
-    let refused = relation_chain(&[
+        )
+    };
+    let rounds = relation_chain(&[
         (
             "round-1",
             vec![
@@ -142,15 +129,42 @@ fn a_round_swapping_its_head_relation_keys_is_a_structural_effect() {
                 ("link:b", carrier),
             ],
         ),
+        round_2(),
+    ]);
+    assert_eq!(
+        rounds.unwrap().alpha(),
+        relation_chain(&[round_2()]).unwrap().alpha()
+    );
+}
+
+/// A round that swaps its head relations' keys across their endpoints
+/// re-creates each key on its new endpoints; each key keeps its own identity
+/// (#119 M-ID). The commit is the one-round answer.
+#[test]
+fn a_round_swapping_its_head_relation_keys_commits_the_one_round_answer() {
+    let round_2 = || {
         (
             "round-2",
             vec![
                 ("link:a", carrier as fn(&World) -> EntityId),
                 ("link:b", source),
             ],
+        )
+    };
+    let rounds = relation_chain(&[
+        (
+            "round-1",
+            vec![
+                ("link:a", source as fn(&World) -> EntityId),
+                ("link:b", carrier),
+            ],
         ),
+        round_2(),
     ]);
-    assert_eq!(refused.unwrap_err(), postponed(Reason::StructuralEffect));
+    assert_eq!(
+        rounds.unwrap().alpha(),
+        relation_chain(&[round_2()]).unwrap().alpha()
+    );
 }
 
 fn status(entity: EntityId, value: &str) -> WorkerIntentBatch {

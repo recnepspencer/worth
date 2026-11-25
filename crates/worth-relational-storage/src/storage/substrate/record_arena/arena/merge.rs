@@ -36,7 +36,7 @@ impl<K: RecordKind> RecordArena<K> {
         chunk_count
     }
 
-    fn move_slot_from_overlay(&mut self, overlay: &Self, slot: usize) -> u64 {
+    pub(super) fn move_slot_from_overlay(&mut self, overlay: &Self, slot: usize) -> u64 {
         let adoption = super::slot_adoption::SlotAdoption::prepare(
             slot, &self.slots, &overlay.slots,
         ).expect(/* Proof: WorkingState::into_partition_commits emits this private journal only from the successful applied-mutation phase. Every touched slot has completed its native arena write; an errored mutation cannot issue PublicationArtifacts. Replay recomputes that journal through mutation rather than decoding one from media. */ "touched overlay slot must be materialized");

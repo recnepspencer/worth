@@ -62,6 +62,10 @@ impl<'lease> RelationalRegionHeadView<'lease> {
     pub fn from_owned_partition(partition: &'lease PartitionState) -> Self {
         Self { partition }
     }
+    /// The stored partition, for an owner restoring rows from this image.
+    pub(crate) fn partition_state(&self) -> &'lease PartitionState {
+        self.partition
+    }
     pub fn same_region_view(&self, other: Self) -> bool {
         std::ptr::eq(self.partition, other.partition)
     }

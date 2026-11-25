@@ -1,66 +1,50 @@
-//! Recorded physical positions of one producer's succession chain.
+//! One producer route's succession chain in the candidate (#119).
 use super::local_keys::LocalKeys;
+use super::succession::{ledger::ChainCreateLedger, segment::MemberSpan};
 use crate::visibility::materialization::read_records::reader::pinned_read::{
     RelationalAppliedCandidateReadIdentity, RelationalPinnedRead,
 };
-use contracts::identity::data::record_ids::EntityId;
-use contracts::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use contracts::identity::data::primitives::PartitionId;
 use contracts::transactions::data::primitives::RecordRef;
 use std::{collections::BTreeSet, ops::Range};
 use worth_relational_contracts::internal_port as contracts;
+use worth_relational_mutation::internal_port::mvcc::validation::proposal_touches::ValidatedMutationTouch;
+use worth_relational_storage::internal_port::storage::overlay::partition::PartitionMutationJournal;
+use worth_relational_storage::internal_port::storage::substrate::SharedMap;
 
 pub(super) type Read = RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>;
 
-/// One route's chain in the candidate. Positions are physical: transaction
-/// batches and patch fragments are only ever appended before completion.
+/// One route's chain. Its live round's entries are `span`; every superseded
+/// round was retracted to the head's image and left no entry behind.
 pub struct Chain {
-    /// The candidate read immediately before the chain's head appended.
+    /// The candidate read immediately before the chain's head appended (`B`).
     pub head_input: Read,
-    /// Cumulative certified touches of superseded rounds of this chain.
-    pub prior_touches:
-        Vec<worth_relational_mutation::internal_port::mvcc::validation::proposal_touches::ValidatedMutationTouch>,
-    /// The latest round's transaction batches.
+    /// The candidate's journal at the head: which records and anchors `B`
+    /// already changed against the basis.
+    pub head_journal: SharedMap<PartitionId, PartitionMutationJournal>,
+    /// The head's append ordinal: later members are the chain's interveners.
+    pub head_ordinal: u64,
+    /// The head's local-key scope: a new key a later round introduces is
+    /// framed in it (`local_keys::rescope`).
+    pub scope: usize,
+    /// Exact touches of every superseded round, captured before retraction.
+    pub prior_touches: Vec<ValidatedMutationTouch>,
+    /// Exact touches of the round the live round superseded.
+    pub last_superseded: Vec<ValidatedMutationTouch>,
+    /// The live round's transaction batches.
     pub batches: Range<usize>,
-    /// Earlier rounds' batches, withdrawn once at completion.
+    /// Superseded rounds' batches, withdrawn once at completion.
     pub superseded: Vec<Range<usize>>,
-    /// The chain's patch fragments, one per record it changed, each with the
-    /// candidate read from before the chain first wrote that record.
-    pub fragments: Vec<(usize, Read)>,
-    /// The scoped coordinates the head chose; every round reuses them.
+    /// The scoped coordinates of every key a round of the chain used.
     pub local_keys: LocalKeys,
-    /// The records the head allocated; every round re-creates exactly these.
-    pub created: Vec<EntityId>,
-    /// Each round's span of the changed-record log, head first, ascending.
-    pub rounds: Vec<Range<usize>>,
-    /// The candidate-wide append ordinal of the latest round: rounds order by
-    /// it even when one appended no batch.
+    /// Every key's identity, bound or dormant.
+    pub ledger: ChainCreateLedger,
+    /// Every record any round of the chain changed; it only grows.
+    pub touched: BTreeSet<RecordRef>,
+    /// The live round's entries in the candidate's accumulators.
+    pub span: MemberSpan,
+    /// How many rounds the chain has applied.
+    pub rounds: usize,
+    /// The candidate-wide round ordinal of the live round.
     pub latest: usize,
-}
-
-impl Chain {
-    /// The first record in `own` that a member outside this chain changed
-    /// since the chain's head: every log entry from the head's span on,
-    /// outside the chain's own rounds (§1.5 fold condition 5).
-    pub(crate) fn intervened<'a>(
-        &self,
-        changed: &'a [RecordRef],
-        own: &BTreeSet<&RecordRef>,
-        charge: &mut impl FnMut(u64) -> Result<(), TransactionCommitError>,
-    ) -> Result<Option<&'a RecordRef>, TransactionCommitError> {
-        let start = self.rounds.first().map_or(changed.len(), |head| head.start);
-        let mut rounds = self.rounds.iter().peekable();
-        for (index, record) in changed.iter().enumerate().skip(start) {
-            charge(1)?;
-            while rounds.peek().is_some_and(|round| round.end <= index) {
-                rounds.next();
-            }
-            if rounds.peek().is_some_and(|round| round.contains(&index)) {
-                continue;
-            }
-            if own.contains(record) {
-                return Ok(Some(record));
-            }
-        }
-        Ok(None)
-    }
 }
