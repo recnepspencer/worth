@@ -27,9 +27,10 @@ use super::v3_indexed_program::{
     FindTasksByValuePrefix, ValuePrefixIndex,
 };
 
-type IndexedHome = WorthQueryApplicationHome<DaymarkV3IndexedSchema, DaymarkV3IndexedProgram>;
+pub(super) type IndexedHome =
+    WorthQueryApplicationHome<DaymarkV3IndexedSchema, DaymarkV3IndexedProgram>;
 
-fn open_indexed(
+pub(super) fn open_indexed(
     location: &Path,
     build: ApplicationBuildIdentity,
     execution: worth_execution::ExecutionRequest<'_, '_>,

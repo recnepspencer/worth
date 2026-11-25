@@ -53,18 +53,18 @@ impl ManagedDerivedViewRegistry {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .upgrade();
-        let successor = target
-            .as_ref()
-            .filter(|target| {
-                source
-                    .home_catalog()
-                    .is_some_and(|catalog| catalog.same_inventory(&target.catalog))
-            })
-            .and_then(|target| target.sources.service(source.program()));
-        successor
-            .or_else(|| self.sources.service(source.program()))
-            .map(Arc::clone)
-            .ok_or(Denial::MissingParticipant)
+        let successor = target.as_ref().filter(|target| {
+            source
+                .home_catalog()
+                .is_some_and(|catalog| catalog.same_inventory(&target.catalog))
+        });
+        // A preparation under the successor's catalog resolves only against
+        // the successor's services, never falling back across programs.
+        let service = match successor {
+            Some(target) => target.sources.service(source.program()),
+            None => self.sources.service(source.program()),
+        };
+        service.map(Arc::clone).ok_or(Denial::MissingParticipant)
     }
 }
 

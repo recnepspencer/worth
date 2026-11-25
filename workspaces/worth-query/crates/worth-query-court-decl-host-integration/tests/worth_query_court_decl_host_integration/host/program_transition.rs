@@ -7,6 +7,7 @@ mod dst;
 mod index_residency;
 mod journey;
 mod managed_index;
+mod managed_index_fork;
 mod observe;
 mod reference_model;
 mod refusals;
