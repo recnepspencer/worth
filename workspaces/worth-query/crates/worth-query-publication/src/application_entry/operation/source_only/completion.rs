@@ -76,6 +76,19 @@ where
         self.operation.completion()
     }
 
+    /// Descriptive identity of the retained durable original, if one has been recorded.
+    /// Grants no admission or discharge authority.
+    pub fn original_identity(
+        &self,
+    ) -> Option<worth_foundational::facade::ProgramSupportObligationIdentity> {
+        self.operation.original_identity()
+    }
+
+    /// Descriptive check for whether this completed owner holds an undischarged durable original.
+    pub fn has_durable_original(&self) -> bool {
+        self.original_identity().is_some()
+    }
+
     /// Borrows the exact immutable input encoded for this completed operation.
     /// This is data correspondence, not current read permission or authority to
     /// publish again. A transport must authorize disclosure separately. Recovered
@@ -188,6 +201,19 @@ where
             _ => None,
         }
     }
+    /// Descriptive identity of the retained durable original, if one has been recorded.
+    /// Grants no admission or discharge authority.
+    pub fn original_identity(
+        &self,
+    ) -> Option<worth_foundational::facade::ProgramSupportObligationIdentity> {
+        self.operation.original_identity()
+    }
+
+    /// Descriptive check for whether this terminal owner holds an undischarged durable original.
+    pub fn has_durable_original(&self) -> bool {
+        self.original_identity().is_some()
+    }
+
     pub fn close(
         mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
@@ -250,6 +276,29 @@ where
     ) -> Result<WorthQueryClosedOperation, (Self, WorthQueryOperationCloseDenial)> {
         self.close_in_place(request)
             .map_err(|denial| (self, denial))
+    }
+
+    /// Closes strictly unexecuted (`Initial`) custody without running the handler.
+    ///
+    /// Post-handler states (including `RetryableNoEffect`) and native recovery obligations refuse
+    /// with [`WorthQueryOperationCloseDenial::NativeObligationRetained`] and return `self` intact;
+    /// callers holding a proven no-effect attempt can still close it explicitly via [`Self::close`].
+    pub fn close_unexecuted(
+        mut self,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+    ) -> Result<WorthQueryClosedOperation, (Self, WorthQueryOperationCloseDenial)> {
+        if !matches!(&*self.state, SourceState::<S, I>::Initial)
+            || !native_posture::can_close::<S, I>(&self.state)
+        {
+            return Err((
+                self,
+                WorthQueryOperationCloseDenial::NativeObligationRetained,
+            ));
+        }
+        match self.close_cleanup(request) {
+            Ok(closed) => Ok(closed),
+            Err(denial) => Err((self, denial)),
+        }
     }
 
     pub(in crate::application_entry::operation) fn close_in_place(

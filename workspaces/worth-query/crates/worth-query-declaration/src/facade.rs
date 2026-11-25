@@ -9,8 +9,9 @@
 pub mod application_schema {
     pub use crate::application_schema::*;
     pub use worth_foundational::facade::{
-        CanonicalDate, CanonicalF32, CanonicalF64, CanonicalTime, CanonicalTimestamp,
-        CanonicalTimestampTz, InlineBytes, InlineBytesLengthDenial, InternedString,
+        CanonicalDate, CanonicalF32, CanonicalF64, CanonicalTemporalTextDenial, CanonicalTime,
+        CanonicalTimestamp, CanonicalTimestampTz, InlineBytes, InlineBytesLengthDenial,
+        InternedString,
     };
     pub use worth_foundational::CanonicalDigestId;
 }

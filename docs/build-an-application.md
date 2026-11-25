@@ -1639,13 +1639,18 @@ installs a derived board beside hand-written members under
 searches with a case-insensitive `where_filter`, filters an
 `Option<CanonicalDate>` column and commits derived and written actions through
 `WorthQuerySourceCustody`; its parity courts compare derived and hand-written
-declarations, wire-identity overrides included. `CanonicalDate` and the other
-native scalar carriers (`CanonicalTime`, `CanonicalTimestamp`,
-`CanonicalTimestampTz`, `CanonicalF32`, `CanonicalF64`, `InlineBytes`,
-`InternedString`) are named from `decl::application_schema` (in Host,
+declarations, wire-identity overrides included. `CanonicalDate` and the other native scalar carriers (`CanonicalTime`,
+`CanonicalTimestamp`, `CanonicalTimestampTz`, `CanonicalF32`, `CanonicalF64`,
+`InlineBytes`, `InternedString`) plus `CanonicalTemporalTextDenial` are named
+from `decl::application_schema` (in Host,
 `host::declaration::application_schema`), so an application needs no
-`worth-foundational` dependency. A `CanonicalDate` input member is captured
-through `serde::Serialize`; it is not a `WorthValue`.
+`worth-foundational` dependency. `CanonicalDate` provides proleptic Gregorian
+`from_ymd`/`to_ymd` and ISO-8601 `Display`/`FromStr` (supporting 4-digit years
+and signed expanded years beyond `0000..=9999`); `CanonicalTimestamp` provides
+`from_ymd_hms_micros`/`to_ymd_hms_micros`/`utc_date`, expanded-year ISO-8601
+`Display`/`FromStr`, and strict 4-digit-year RFC 3339
+`from_rfc3339`/`to_rfc3339`. A `CanonicalDate` input member
+is captured through `serde::Serialize`; it is not a `WorthValue`.
 
 Declare operation access once with `worth_query_operation!(... for Schema:
 SchemaBinding, input Input; access { ... })`. Both Rust capabilities and schema
@@ -4328,7 +4333,20 @@ or phase is retained; matching a variant lends or returns the exact owner. Match
 command. Report `Declined` evidence and drop it; do not keep the native carrier
 across frames. `WorthQueryTerminalSourceEvidence<S, I>` is `Debug` whenever the
 binding's `Denial` and `Result` are, so a generic helper reports it with that one
-bound (`where WorthQueryTerminalSourceEvidence<S, I>: Debug`).
+bound (`where WorthQueryTerminalSourceEvidence<S, I>: Debug`). Call `.erase()`
+on `WorthQuerySourceCustody` or `WorthQuerySourceCustodyStep` to store
+heterogeneous actions in one `WorthQueryAnySourceCustody<S, P>` slot; use
+`close_unexecuted(&fresh_request)` to discharge an unexecuted command without
+running its handler (post-execution phases refuse with
+`NativeObligationRetained` and return custody intact), or `try_into_typed` to
+recover the exact typed owner (`Err(self)` on mismatch). Feed prepared
+reversals or reapplications (`WorthQueryOperationCorrectionPreparation`) into
+`WorthQuerySourceCustody::accept_correction` or
+`WorthQueryAnySourceCustody::accept_correction` so corrections share the same
+Host custody spine: `Prepared` candidates publish under the prepared
+candidate's scope and use the supplied `request` first for cleanup close (so a
+foreign or stopped close request can yield `Pending` after commit, preserving
+the committed owner for a fresh retry).
 
 <!-- illustrative -->
 ```rust,ignore

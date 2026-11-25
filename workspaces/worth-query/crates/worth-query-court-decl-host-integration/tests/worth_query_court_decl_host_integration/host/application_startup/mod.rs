@@ -31,10 +31,19 @@ pub(super) fn open_home(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     limits: WorthQueryApplicationLimits,
 ) -> Result<Home, WorthQueryApplicationHomeOpenRefused<Schema, fixture::HomeProgram>> {
+    open_home_with_contacts(execution, limits, Arc::new(AtomicUsize::new(0)))
+}
+
+/// Same as [`open_home`] while exposing the handler contact counter.
+pub(super) fn open_home_with_contacts(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    limits: WorthQueryApplicationLimits,
+    contacts: Arc<AtomicUsize>,
+) -> Result<Home, WorthQueryApplicationHomeOpenRefused<Schema, fixture::HomeProgram>> {
     let request = fixture::request_with_limits(
         fixture::location(),
         ApplicationBuildIdentity::parse("33333333-3333-4333-8333-333333333333").unwrap(),
-        Arc::new(AtomicUsize::new(0)),
+        contacts,
         limits,
         |_, graph, schema| {
             fixture::schema::seed(graph, schema)?;

@@ -64,6 +64,24 @@ impl std::error::Error for HandlerExecutionDenial {
     }
 }
 
+impl From<super::super::application_attempt::WorthQueryApplicationAttemptDenial>
+    for HandlerExecutionDenial
+{
+    fn from(source: super::super::application_attempt::WorthQueryApplicationAttemptDenial) -> Self {
+        Self::new(source)
+    }
+}
+
+impl From<super::super::invariant_projection::WorthQueryInvariantProjectionTraversalDenial>
+    for HandlerExecutionDenial
+{
+    fn from(
+        source: super::super::invariant_projection::WorthQueryInvariantProjectionTraversalDenial,
+    ) -> Self {
+        Self::new(source)
+    }
+}
+
 /// Domain outcome of one handler phase, keeping request interruption distinct.
 #[derive(Debug)]
 pub enum HandlerResult<Value, Denial> {
@@ -72,4 +90,63 @@ pub enum HandlerResult<Value, Denial> {
     ExecutionDenied(HandlerExecutionDenial),
     Cancelled,
     DeadlineExceeded,
+}
+
+impl<Value, Denial, Execution> From<Result<Value, Execution>> for HandlerResult<Value, Denial>
+where
+    Execution: Into<HandlerExecutionDenial>,
+{
+    fn from(result: Result<Value, Execution>) -> Self {
+        match result {
+            Ok(value) => Self::Completed(value),
+            Err(denial) => Self::ExecutionDenied(denial.into()),
+        }
+    }
+}
+
+#[cfg(test)]
+mod handler_denial_conversion_tests {
+    use super::*;
+    use crate::domain_computation::primary_graph::{
+        application_attempt::{
+            WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
+        },
+        invariant_projection::{
+            WorthQueryInvariantProjectionTraversalDenial,
+            WorthQueryInvariantProjectionTraversalDenialKind,
+        },
+    };
+
+    #[test]
+    fn attempt_and_traversal_denials_convert_into_handler_execution_denial() {
+        let attempt = WorthQueryApplicationAttemptDenial::new(
+            WorthQueryApplicationAttemptDenialKind::UndeclaredEffect,
+            "field-write",
+        );
+        let execution: HandlerExecutionDenial = attempt.into();
+        let recovered = execution
+            .downcast::<WorthQueryApplicationAttemptDenial>()
+            .expect("original attempt denial stays recoverable");
+        assert_eq!(
+            recovered.kind(),
+            WorthQueryApplicationAttemptDenialKind::UndeclaredEffect
+        );
+        assert_eq!(recovered.subject(), "field-write");
+
+        let traversal = WorthQueryInvariantProjectionTraversalDenial::new(
+            WorthQueryInvariantProjectionTraversalDenialKind::RelationNotInstalled,
+            "links",
+        );
+        let result: HandlerResult<u32, ()> = Err(traversal).into();
+        let HandlerResult::ExecutionDenied(execution) = result else {
+            panic!("traversal error converts into ExecutionDenied");
+        };
+        let recovered = execution
+            .downcast::<WorthQueryInvariantProjectionTraversalDenial>()
+            .expect("original traversal denial stays recoverable");
+        assert_eq!(recovered.relation(), "links");
+
+        let ok: HandlerResult<u32, ()> = Ok::<u32, HandlerExecutionDenial>(42).into();
+        assert!(matches!(ok, HandlerResult::Completed(42)));
+    }
 }

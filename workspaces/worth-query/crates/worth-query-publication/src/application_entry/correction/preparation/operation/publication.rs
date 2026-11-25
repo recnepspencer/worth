@@ -21,6 +21,23 @@ where
 impl<S, B, P, A> WorthQueryPreparedOperationCorrection<'_, S, B, P, A>
 where
     S: ApplicationSchema + 'static,
+    B: crate::application_entry::WorthQuerySourceOperationBinding<S>,
+    B::Input: ApplicationMutationInputScope<S, B>,
+    P: ApplicationProgramDefinition<S>,
+    A: ApplicationAction<S, B>,
+    Mode<S, B, A>: WorthQuerySourceDeliveryMode,
+{
+    /// Publishes once and transfers every native outcome into ordinary source custody.
+    pub fn publish(self) -> Result<Advance<S, B, P, A>, WorthQueryApplicationCorrectionDenial> {
+        <B as crate::application_entry::operation::SourceAssessmentDriver<S>>::publish_correction(
+            self,
+        )
+    }
+}
+
+impl<S, B, P, A> WorthQueryPreparedOperationCorrection<'_, S, B, P, A>
+where
+    S: ApplicationSchema + 'static,
     B: ApplicationMutationAdmissionBinding<S>,
     B::Admission: WorthQueryBindingAdmission<S, B>,
     B::Input: Clone + Send + Sync + ApplicationMutationInputScope<S, B>,
@@ -29,8 +46,9 @@ where
     A: ApplicationAction<S, B>,
     Mode<S, B, A>: WorthQuerySourceDeliveryMode,
 {
-    /// Publishes once and transfers every native outcome into ordinary source custody.
-    pub fn publish(self) -> Result<Advance<S, B, P, A>, WorthQueryApplicationCorrectionDenial> {
+    pub(in crate::application_entry) fn publish_admitted(
+        self,
+    ) -> Result<Advance<S, B, P, A>, WorthQueryApplicationCorrectionDenial> {
         use WorthQueryApplicationCorrectionDenial as Denial;
         let Self { action, operation } = self;
         let PreparedCorrectionAction {

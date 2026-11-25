@@ -1,10 +1,12 @@
 //! Public directory originals and corrections use the shared installed handler.
+mod correction_custody;
 mod expiry;
+mod handler_ergonomics;
 mod kill_divergent_branch;
 mod kill_original_owner;
 mod kill_pin_transfer;
 mod kill_split_completion;
-mod numeric_home;
+pub(in crate::host) mod numeric_home;
 mod original_operation;
 mod prepared_reopen;
 mod program;

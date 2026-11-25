@@ -2,7 +2,7 @@
 use super::*;
 use worth_query_host::facade::{
     runtime::{RuntimeWorldBranchAdmissionDenial, RuntimeWorldServiceDenial},
-    ApplicationHomeQueryRootDenial, WorthQueryApplicationHomeOpenRefused,
+    ApplicationHomeQueryRootDenial, WorthQueryApplicationHomeOpenRefusedPhase,
 };
 
 #[test]
@@ -44,14 +44,23 @@ fn assert_initializer_panic_refuses_and_closes(
     .err()
     .expect("the actual initializer refuses");
     assert!(matches!(
-        &refused,
-        WorthQueryApplicationHomeOpenRefused::InitialState {
+        refused.phase(),
+        WorthQueryApplicationHomeOpenRefusedPhase::InitialState {
             cause: worth_query_execution::facade::application_home_integration::QueryHomeInitialStateDenial::Panicked,
             ..
         }
     ));
+    assert!(refused.to_string().contains("Panicked"));
     refused
-        .close(&execution)
+        .close_with_policy(worth_foundational::facade::ExecutionRequestPolicy::new(
+            worth_foundational::facade::ExecutionPosture::Serial,
+            worth_foundational::facade::DeterminismContract::CanonicalBitwise,
+            worth_foundational::facade::ExecutionBudget::new(
+                std::num::NonZeroUsize::MIN,
+                Some(128 * 1024 * 1024),
+                None,
+            ),
+        ))
         .unwrap_or_else(|refused| panic!("original owning close: {refused:?}"));
 }
 
@@ -73,8 +82,8 @@ fn assert_missing_world_origin_holds_lease_against_competing(
     .unwrap()
     .err()
     .expect("the closed partial Home still has no World origin");
-    match &refused {
-        WorthQueryApplicationHomeOpenRefused::ExistingWorldRoot {
+    match refused.phase() {
+        WorthQueryApplicationHomeOpenRefusedPhase::ExistingWorldRoot {
             cause:
                 ApplicationHomeQueryRootDenial::ExistingRoot(RuntimeWorldServiceDenial::Denied(
                     RuntimeWorldBranchAdmissionDenial::OwnerUnavailable,
@@ -110,8 +119,8 @@ fn assert_competing_request_contended_and_close(
     .err()
     .expect("the original refusal still holds its mutation lease");
     assert!(matches!(
-        &competing,
-        WorthQueryApplicationHomeOpenRefused::Physical { .. }
+        competing.phase(),
+        WorthQueryApplicationHomeOpenRefusedPhase::Physical { .. }
     ));
     assert!(competing.detail().contains("MutationOwnerContended"));
     competing
