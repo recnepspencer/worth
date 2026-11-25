@@ -98,7 +98,12 @@ impl RelationalRegionResidency {
         };
         let encoded = head_bytes.saturating_add(full_bytes);
         let mut admission = WorkingSetAdmission::default();
+        if !need_head && !need_full {
+            return Some(admission);
+        }
         if encoded == 0 {
+            admission.reserved_head = need_head;
+            admission.reserved_full = need_full;
             return Some(admission);
         }
         let estimate = binding
