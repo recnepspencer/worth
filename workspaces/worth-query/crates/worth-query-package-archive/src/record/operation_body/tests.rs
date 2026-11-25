@@ -23,6 +23,8 @@ mod field_assignment_versions;
 mod genesis;
 #[path = "tests/input_expectation.rs"]
 mod input_expectation;
+#[path = "tests/optional_guard.rs"]
+mod optional_guard;
 #[path = "tests/optional_input.rs"]
 mod optional_input;
 #[path = "tests/outputs.rs"]

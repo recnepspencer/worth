@@ -34,7 +34,11 @@ where
             .map(|inputs| inputs.values.drain(..));
         let mut source_values = decision.sources.into_iter();
         for step in self.body.scope_fields() {
-            if matches!(step, ApplicationOperationBodyScopeField::ExpectInput { .. }) {
+            if matches!(
+                step,
+                ApplicationOperationBodyScopeField::ExpectInput { .. }
+                    | ApplicationOperationBodyScopeField::ExpectOptionalInput { .. }
+            ) {
                 let _ = input_values
                     .as_mut()
                     .and_then(Iterator::next)

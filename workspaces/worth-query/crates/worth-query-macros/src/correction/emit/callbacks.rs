@@ -74,12 +74,17 @@ pub(super) fn outer_callback_helpers(
                 (#func)()
             }
         },
-        PreImageDemandSpec::Fields { fields, bytes } => quote! {
+        PreImageDemandSpec::Fields {
+            fields,
+            bytes,
+            omitted,
+        } => quote! {
             fn #call_demand() -> #aftermath::DeclaredPreImageDemand<#schema_alias> {
                 #aftermath::DeclaredPreImageDemand::new(
                     [#(#aftermath::DeclaredPreImageLocus::from_field(#fields)),*],
                     #bytes,
                 )
+                #(.allow_omitted_reversal(#omitted))*
             }
         },
     };

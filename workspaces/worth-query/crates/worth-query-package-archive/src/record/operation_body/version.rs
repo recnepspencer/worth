@@ -1,6 +1,14 @@
 //! New meaning selects a new portable profile; old bodies retain their historical version.
 use super::*;
 pub(super) fn select(body: &ApplicationOperationBodyProgram) -> u16 {
+    if body.scope_fields().iter().any(|step| {
+        matches!(
+            step,
+            ApplicationOperationBodyScopeField::ExpectOptionalInput { .. }
+        )
+    }) {
+        return super::scope_fields::OPTIONAL_GUARD_PROFILE;
+    }
     if body.effect_emission().is_some() {
         return super::effect_emission::PROFILE;
     }

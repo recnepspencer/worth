@@ -184,6 +184,7 @@ pub(crate) fn validate_operation_bodies(
                 step,
                 ApplicationOperationBodyScopeField::SetOptionalInput { .. }
                     | ApplicationOperationBodyScopeField::AssignOptionalInput { .. }
+                    | ApplicationOperationBodyScopeField::ExpectOptionalInput { .. }
                     | ApplicationOperationBodyScopeField::ClearOptional { .. }
                     | ApplicationOperationBodyScopeField::RequirePresent { .. }
             ) {

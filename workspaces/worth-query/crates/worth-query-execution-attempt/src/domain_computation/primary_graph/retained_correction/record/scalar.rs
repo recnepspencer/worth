@@ -88,6 +88,9 @@ pub(super) fn validate(record: &MaterialRecord) -> Result<(), Denial> {
                     scalar(&field.value)?;
                 }
             }
+            if !material.absences.is_empty() {
+                validate_standalone_absences(material)?;
+            }
             if let Some(output) = &material.output_fields {
                 if output.role.is_empty() || output.entity.is_empty() || material.preimage.is_none()
                 {
@@ -183,6 +186,33 @@ pub(super) fn validate(record: &MaterialRecord) -> Result<(), Denial> {
             }
         }
         MaterialRecord::Abandon { .. } | MaterialRecord::Expire { .. } => {}
+    }
+    Ok(())
+}
+
+/// Standalone absences sit beside a field capture with no output capture,
+/// each at a distinct demanded slot no present field or other absence names.
+fn validate_standalone_absences(material: &MaterialCapture) -> Result<(), Denial> {
+    let Some(fields) = &material.preimage else {
+        return Err(Denial::MalformedFrame);
+    };
+    if material.output_fields.is_some() {
+        return Err(Denial::MalformedFrame);
+    }
+    let mut captured: std::collections::BTreeSet<_> = fields
+        .iter()
+        .map(|field| (&field.entity, &field.aspect, &field.field))
+        .collect();
+    for field in &material.absences {
+        if field.entity.is_empty()
+            || field.location.aspect != field.aspect
+            || field.location.fields.len() != 1
+            || field.location.fields.first().map(String::as_str) != Some(field.field.as_str())
+            || !captured.insert((&field.entity, &field.aspect, &field.field))
+        {
+            return Err(Denial::MalformedFrame);
+        }
+        location(&field.location)?;
     }
     Ok(())
 }

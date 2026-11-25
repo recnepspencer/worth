@@ -18,13 +18,14 @@ use worth_query_host::facade::{
 
 use super::actions::*;
 use super::body_links::*;
+use super::details_correction::*;
 use super::queries::*;
 use super::schema::*;
 use super::title_correction::*;
 
-worth_query_decl::facade::worth_query_principal_issuer!(DaymarkIssuer);
-worth_query_decl::facade::worth_query_authentication_audience!(HostAudience);
-worth_query_decl::facade::worth_query_authentication_method!(LocalProcessMethod);
+worth_query_decl::facade::worth_query_principal_issuer!(pub DaymarkIssuer);
+worth_query_decl::facade::worth_query_authentication_audience!(pub HostAudience);
+worth_query_decl::facade::worth_query_authentication_method!(pub LocalProcessMethod);
 
 impl WorthQueryApplicationManagedIndexRegistration<DaymarkSchema> for TaskTitleIndex {
     fn install_managed_index(
@@ -41,7 +42,8 @@ worth_query_application_program! {
         identity: "daymark.unified.program.v1",
         contribution: DaymarkContribution {
             identity: "daymark.unified.contribution.v1",
-            members: [DaymarkFragment, DaymarkPrincipal, CorrectTaskState, CorrectTaskTitle],
+            members: [DaymarkFragment, DaymarkPrincipal, CorrectTaskState, CorrectTaskTitle,
+                CorrectTaskDetails],
         },
         managed_indexes: [TaskTitleIndex],
         feature: DaymarkFeature => DaymarkDefinition / DaymarkRuntime {
@@ -50,6 +52,7 @@ worth_query_application_program! {
                 schema
                     .declared_operation(restore_task_state_definition())
                     .declared_operation(restore_task_title_definition())
+                    .declared_operation(restore_task_details_definition())
                     .application_history(
                         ApplicationHistoryDefinition::<DaymarkSchema, DaymarkHistory>::for_binding(
                             ApplicationQueryDisclosureContract::public(),
@@ -88,6 +91,8 @@ worth_query_application_program! {
             body_action_ref(SetTaskStateBinding, SetTaskStateDelivery) as SetTaskStateAction {};
             body_action_ref(RenameTaskBinding, RenameTaskDelivery) as RenameTaskAction {};
             body_action_ref(RestoreTaskTitleBinding, RestoreTaskTitleDelivery) as RestoreTaskTitleAction {};
+            body_action_ref(EditTaskDetailsBinding, EditTaskDetailsDelivery) as EditTaskDetailsAction {};
+            body_action_ref(RestoreTaskDetailsBinding, RestoreTaskDetailsDelivery) as RestoreTaskDetailsAction {};
         }
     }
 }
@@ -152,7 +157,7 @@ fn key<E>(kind: &str, id: u64) -> WorthQueryApplicationEntityKey<DaymarkSchema, 
     WorthQueryApplicationEntityKey::new(format!("{kind}-{id}")).unwrap()
 }
 
-fn owner_identity() -> WorthQueryExternalPrincipalIdentity {
+pub(super) fn owner_identity() -> WorthQueryExternalPrincipalIdentity {
     WorthQueryExternalPrincipalIdentity::new(DaymarkIssuer, "owner").unwrap()
 }
 

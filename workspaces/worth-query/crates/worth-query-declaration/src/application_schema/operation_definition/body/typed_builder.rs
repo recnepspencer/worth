@@ -125,6 +125,20 @@ impl<Schema, Operation, Input> TypedApplicationOperationBodyBuilder<Schema, Oper
         self.step(|builder| builder.assign_typed_optional_input(field, input))
     }
 
+    /// Guards an optional field against an `Option` input member: `Some(v)`
+    /// matches iff the stored field holds `v`, `None` iff it is absent.
+    pub fn expect_optional_input<Field: RecordSelection>(
+        self,
+        field: Field,
+        input: ApplicationOptionalInputField<Input, Field::Value>,
+    ) -> Self
+    where
+        Operation: ApplicationOperationMarkerIdentity<Schema>,
+        Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+    {
+        self.step(|builder| builder.expect_typed_optional_input(field, input))
+    }
+
     pub fn clear_optional<Field: RecordSelection>(self, field: Field) -> Self {
         self.step(|builder| builder.clear_optional(field))
     }

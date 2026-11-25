@@ -236,11 +236,22 @@ pub fn reschedule_task_definition(
     body,
     program,
     reads(Project),
+    validate = label_on_one_line,
 )]
 pub struct RenameProject {
     #[worth_query(scope = ProjectKey)]
     pub project: u64,
     pub label: String,
+}
+
+/// The action's own end-user validation reason.
+pub const LABEL_REASON: &str = "Enter a project label on one line.";
+
+fn label_on_one_line(input: &RenameProject) -> Result<(), &'static str> {
+    let label = input.label.trim();
+    (!label.is_empty() && !label.chars().any(char::is_control))
+        .then_some(())
+        .ok_or(LABEL_REASON)
 }
 
 pub fn rename_project_definition(

@@ -13,7 +13,8 @@ mod dispatch;
 mod inverse;
 mod preimage;
 pub use preimage::{
-    decode_preimage_field, ApplicationCorrectionFieldPreImage, ApplicationCorrectionPreImage,
+    decode_optional_preimage_field, decode_preimage_field, ApplicationCorrectionFieldPreImage,
+    ApplicationCorrectionPreImage,
 };
 mod reapplication;
 pub use reapplication::{

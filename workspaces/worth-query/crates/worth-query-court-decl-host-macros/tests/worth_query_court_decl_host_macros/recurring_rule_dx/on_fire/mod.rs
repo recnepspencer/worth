@@ -3,6 +3,7 @@
 //! silent once the rule is cancelled.
 mod program;
 mod schema;
+mod targeted;
 
 use worth_query_host::facade::{
     admission::authenticated_principal::WorthQueryAdmissionClock,

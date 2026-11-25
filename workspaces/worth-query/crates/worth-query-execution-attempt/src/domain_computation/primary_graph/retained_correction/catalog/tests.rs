@@ -50,6 +50,7 @@ fn capture(ledger: &MaterialCatalog) -> MaterialRecord {
             scope: Some(scope()),
             disclosure: None,
             preimage: Some(Vec::new()),
+            absences: Vec::new(),
             output_fields: None,
             content: Default::default(),
         }),
@@ -233,6 +234,7 @@ fn pin_owners_cannot_be_replaced_without_the_prepared_to_publication_handoff() {
     assert_eq!(ledger.pins[&identity].owner, owner);
 }
 
+pub mod standalone_absence;
 pub mod terminal;
 
 #[test]
@@ -243,7 +245,7 @@ fn output_fields_capture_retains_mode_and_absence_across_the_material_roundtrip(
     let ledger = catalog();
     let mut record = capture(&ledger);
     let strict: serde_json::Value = serde_json::from_slice(&record.encode().unwrap()).unwrap();
-    assert_eq!(strict["version"], 4);
+    assert_eq!(strict["version"], 5);
     assert!(strict["body"]["material"]["output_fields"].is_null());
     let MaterialRecord::Capture { material } = &mut record else {
         unreachable!()
@@ -343,7 +345,10 @@ fn a_version_3_material_frame_is_refused_by_version_never_reinterpreted() {
         &serde_json::to_vec(&old).unwrap(),
     )
     .unwrap();
-    assert_eq!(MaterialRecord::decode(&frame), Err(Denial::UnsupportedVersion(3)));
+    assert_eq!(
+        MaterialRecord::decode(&frame),
+        Err(Denial::UnsupportedVersion(3))
+    );
     assert_eq!(ledger.fold(&frame), Err(Denial::UnsupportedVersion(3)));
     assert_eq!(ledger.position, 0);
     assert!(ledger.material.is_empty());

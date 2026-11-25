@@ -17,7 +17,10 @@ pub fn evaluate<S: ApplicationSchema, B: ApplicationMutationBinding<S>>(
         .scope_fields()
         .iter()
         .find_map(|step| match step {
-            ApplicationOperationBodyScopeField::ExpectInput { member, .. } => Some(member),
+            ApplicationOperationBodyScopeField::ExpectInput { member, .. }
+            | ApplicationOperationBodyScopeField::ExpectOptionalInput { member, .. } => {
+                Some(member)
+            }
             _ => None,
         })
         .or_else(|| {
@@ -39,11 +42,32 @@ pub fn evaluate<S: ApplicationSchema, B: ApplicationMutationBinding<S>>(
         .filter(|step| step.input_member().is_some())
         .zip(&inputs.values)
     {
-        let ApplicationOperationBodyScopeField::ExpectInput { field, .. } = step else {
-            continue;
+        let (field, expected) = match step {
+            // A required guard's member was admitted present.
+            ApplicationOperationBodyScopeField::ExpectInput {
+                field,
+                member: guarded,
+                ..
+            } => match value {
+                Some(expected) => (field, BodyFieldExpectation::Equals(expected)),
+                None => {
+                    return HandlerResult::DomainDenied(
+                        WorthQueryOperationBodyDenial::InputMismatch {
+                            member: guarded.clone(),
+                        },
+                    )
+                }
+            },
+            // `Some(v)` matches iff the field holds `v`; `None` iff it is absent.
+            ApplicationOperationBodyScopeField::ExpectOptionalInput { field, .. } => (
+                field,
+                value
+                    .as_ref()
+                    .map_or(BodyFieldExpectation::Absent, BodyFieldExpectation::Equals),
+            ),
+            _ => continue,
         };
-        let expected = value.as_ref().expect("required input guard was admitted");
-        match reader.body_scope_field(field, BodyFieldExpectation::Equals(expected)) {
+        match reader.body_scope_field(field, expected) {
             Ok(true) => {}
             Ok(false) => {
                 return HandlerResult::DomainDenied(WorthQueryOperationBodyDenial::SourceMismatch {

@@ -21,6 +21,7 @@ const KEYS: &[&str] = &[
     "demand",
     "preimage_fields",
     "preimage_bytes",
+    "allow_omitted_reversal",
     "derive",
     "inverse_key",
     "capability",
@@ -68,7 +69,11 @@ pub(super) enum CorrectionIdentity {
 
 pub(super) enum PreImageDemandSpec {
     Function(Path),
-    Fields { fields: Vec<Expr>, bytes: Expr },
+    Fields {
+        fields: Vec<Expr>,
+        bytes: Expr,
+        omitted: Vec<Expr>,
+    },
 }
 
 struct Keys {
@@ -86,6 +91,7 @@ struct Keys {
     demand: Once<Path>,
     preimage_fields: Once<Vec<Expr>>,
     preimage_bytes: Once<Expr>,
+    omitted: Once<Vec<Expr>>,
     derive_fn: Once<Path>,
     inverse_key: Once<Path>,
     capability: Once<Type>,
@@ -111,6 +117,7 @@ impl CorrectionDeclaration {
             keys.demand,
             keys.preimage_fields,
             keys.preimage_bytes,
+            keys.omitted,
             missing,
         )?;
         let source_body = keys.source_body.optional();
@@ -166,6 +173,7 @@ impl Keys {
             demand: Once::new("demand"),
             preimage_fields: Once::new("preimage_fields"),
             preimage_bytes: Once::new("preimage_bytes"),
+            omitted: Once::new("allow_omitted_reversal"),
             derive_fn: Once::new("derive"),
             inverse_key: Once::new("inverse_key"),
             capability: Once::new("capability"),
@@ -193,6 +201,7 @@ impl Keys {
             "demand" => self.demand.set(meta, value(meta)?),
             "preimage_fields" => self.preimage_fields.set(meta, expr_list(meta)?),
             "preimage_bytes" => self.preimage_bytes.set(meta, value(meta)?),
+            "allow_omitted_reversal" => self.omitted.set(meta, expr_list(meta)?),
             "derive" => self.derive_fn.set(meta, value(meta)?),
             "inverse_key" => self.inverse_key.set(meta, value(meta)?),
             "capability" => self.capability.set(meta, value(meta)?),
@@ -292,14 +301,15 @@ fn resolve_demand(
     demand: Once<Path>,
     fields: Once<Vec<Expr>>,
     bytes: Once<Expr>,
+    omitted: Once<Vec<Expr>>,
     missing: proc_macro2::Span,
 ) -> syn::Result<PreImageDemandSpec> {
-    let inline_span = fields.span().or(bytes.span());
+    let inline_span = fields.span().or(bytes.span()).or(omitted.span());
     if let Some(demand_fn) = demand.optional() {
         if let Some(span) = inline_span {
             return Err(syn::Error::new(
                 span,
-                "specify either `demand = fn` or `preimage_fields(..)` + `preimage_bytes = ..`, not both",
+                "specify either `demand = fn` or `preimage_fields(..)` + `preimage_bytes = ..` (+ `allow_omitted_reversal(..)`), not both",
             ));
         }
         return Ok(PreImageDemandSpec::Function(demand_fn));
@@ -319,5 +329,10 @@ fn resolve_demand(
         ));
     }
     let bytes = bytes.required(span, DERIVE)?;
-    Ok(PreImageDemandSpec::Fields { fields, bytes })
+    let omitted = omitted.optional().unwrap_or_default();
+    Ok(PreImageDemandSpec::Fields {
+        fields,
+        bytes,
+        omitted,
+    })
 }

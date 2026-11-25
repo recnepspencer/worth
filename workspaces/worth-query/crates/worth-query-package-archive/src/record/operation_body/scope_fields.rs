@@ -1,5 +1,7 @@
 use super::*;
 use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
+/// V44 carries an optional-field input guard (`expect_optional_input`).
+pub(super) const OPTIONAL_GUARD_PROFILE: u16 = 44;
 pub(super) fn write(
     output: &mut dyn BinaryEncodingSink,
     steps: &[ApplicationOperationBodyScopeField],
@@ -15,6 +17,7 @@ pub(super) fn write(
             ApplicationOperationBodyScopeField::ClearOptional { .. } => 5,
             ApplicationOperationBodyScopeField::RequirePresent { .. } => 6,
             ApplicationOperationBodyScopeField::AssignOptionalInput { .. } => 7,
+            ApplicationOperationBodyScopeField::ExpectOptionalInput { .. } => 10,
         })?;
         output.text(step.field().entity())?;
         output.text(step.field().aspect())?;
@@ -45,6 +48,11 @@ pub(super) fn write(
                 member,
                 scalar_family,
                 ..
+            }
+            | ApplicationOperationBodyScopeField::ExpectOptionalInput {
+                member,
+                scalar_family,
+                ..
             } => {
                 super::super::foundational_aspect::write_scalar_type(output, *scalar_family)?;
                 output.text(member)
@@ -69,7 +77,8 @@ pub(super) fn decode(
             || (version >= 6 && tag == 6)
             || (version >= 9 && tag == 7)
             || (version >= 28 && tag == 8)
-            || (version >= 30 && tag == 9);
+            || (version >= 30 && tag == 9)
+            || (version >= OPTIONAL_GUARD_PROFILE && tag == 10);
         if !supported {
             return Err(Denial::new(Kind::UnsupportedRecordVariant));
         }
@@ -85,10 +94,17 @@ pub(super) fn decode(
                 value: input.text()?.to_owned(),
             });
         }
-        if matches!(tag, 3 | 4 | 7 | 9) {
+        if matches!(tag, 3 | 4 | 7 | 9 | 10) {
             let scalar_family = super::super::foundational_aspect::decode_scalar_type(input)?;
             let member = input.text()?.to_owned();
-            return Ok(if tag == 9 {
+            return Ok(if tag == 10 {
+                ApplicationOperationBodyScopeField::ExpectOptionalInput {
+                    field,
+                    binding,
+                    scalar_family,
+                    member,
+                }
+            } else if tag == 9 {
                 ApplicationOperationBodyScopeField::ExpectInput {
                     field,
                     binding,

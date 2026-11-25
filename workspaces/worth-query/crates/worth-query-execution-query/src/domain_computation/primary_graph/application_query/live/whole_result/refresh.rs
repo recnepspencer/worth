@@ -79,32 +79,36 @@ where
             Ok(plan) => plan,
             Err(denial) => return self.handle_admission_denial(denial),
         };
-        if let Err(denial) = refresh_governed_authorization(execution, self.runtime, &mut plan) {
+        if let Err(denial) = refresh_governed_authorization(execution, &self.runtime, &mut plan) {
             let _ = plan.basis.release();
             return self.handle_read_denial(denial);
         }
-        let (raw, authorization_work, read_proof) =
-            match execute_authorized_read(execution, self.runtime, &plan, |runtime, graph, plan| {
+        let (raw, authorization_work, read_proof) = match execute_authorized_read(
+            execution,
+            &self.runtime,
+            &plan,
+            |runtime, graph, plan| {
                 let mut raw = read_bounded_root_rows(runtime, execution, graph, plan, None)?;
                 if QueryResult::PROJECTS_PERSISTENT_NAMES {
                     observe_persistent_names(runtime, execution, plan, &mut raw);
                 }
                 Ok(raw)
-            }) {
-                Ok(ok) => ok,
-                Err(denial) => {
-                    let released = plan.basis.release().released();
-                    if !released {
-                        return self.terminate_outcome(
-                            WorthQueryApplicationWholeResultLiveOutcome::Unavailable,
-                        );
-                    }
-                    return self.handle_read_denial(denial);
+            },
+        ) {
+            Ok(ok) => ok,
+            Err(denial) => {
+                let released = plan.basis.release().released();
+                if !released {
+                    return self.terminate_outcome(
+                        WorthQueryApplicationWholeResultLiveOutcome::Unavailable,
+                    );
                 }
-            };
+                return self.handle_read_denial(denial);
+            }
+        };
         let completed = match complete_one_shot(
             execution,
-            self.runtime,
+            &self.runtime,
             plan,
             raw,
             authorization_work,

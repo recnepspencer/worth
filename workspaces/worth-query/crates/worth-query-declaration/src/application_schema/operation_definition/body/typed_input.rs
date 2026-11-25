@@ -273,6 +273,19 @@ where
         self.assign_optional_input(field, input.member())
     }
 
+    pub fn expect_typed_optional_input<Field: RecordSelection>(
+        self,
+        field: Field,
+        input: ApplicationOptionalInputField<Input, Field::Value>,
+    ) -> Result<Self, Denial> {
+        verify_typed_input_selector::<Operation::InputBinding, Field::Value>(
+            input.member(),
+            input.binding_type_id,
+            true,
+        )?;
+        self.expect_optional_input(field, input.member())
+    }
+
     /// Requires a present terminal field along `path` equal to one typed input field.
     pub fn expect_typed_input_from_path<Root, Selected, F>(
         self,

@@ -22,6 +22,14 @@ pub enum WorthQueryOperationInputCaptureDenial {
     Encoding(ApplicationValueEncodeDenial),
 }
 impl WorthQueryOperationInputCaptureDenial {
+    /// The value encoding refusal, including an application `validate` reason.
+    pub const fn encoding(&self) -> Option<&ApplicationValueEncodeDenial> {
+        match self {
+            Self::Encoding(cause) => Some(cause),
+            Self::Execution(_) | Self::Allocation(_) => None,
+        }
+    }
+
     /// Preserves the allocation owner's request cause separately from physical refusal.
     pub fn execution_stop(&self) -> Option<WorthQueryAdvancementDenial> {
         match self {

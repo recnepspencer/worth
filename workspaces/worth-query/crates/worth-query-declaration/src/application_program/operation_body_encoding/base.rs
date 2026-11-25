@@ -15,6 +15,7 @@ pub(super) fn operation_body_base_record(body: &ApplicationOperationBodyProgram)
         matches!(
             step,
             ApplicationOperationBodyScopeField::SetOptionalInput { .. }
+                | ApplicationOperationBodyScopeField::ExpectOptionalInput { .. }
                 | ApplicationOperationBodyScopeField::ClearOptional { .. }
         )
     });
@@ -46,6 +47,11 @@ pub(super) fn operation_body_base_record(body: &ApplicationOperationBodyProgram)
                 ..
             }
             | ApplicationOperationBodyScopeField::AssignOptionalInput {
+                member,
+                scalar_family,
+                ..
+            }
+            | ApplicationOperationBodyScopeField::ExpectOptionalInput {
                 member,
                 scalar_family,
                 ..
@@ -93,6 +99,9 @@ pub(super) fn operation_body_base_record(body: &ApplicationOperationBodyProgram)
                         }
                         ApplicationOperationBodyScopeField::AssignOptionalInput { .. } => {
                             "assign-optional-input"
+                        }
+                        ApplicationOperationBodyScopeField::ExpectOptionalInput { .. } => {
+                            "expect-optional-input"
                         }
                         ApplicationOperationBodyScopeField::ClearOptional { .. } => {
                             "clear-optional"

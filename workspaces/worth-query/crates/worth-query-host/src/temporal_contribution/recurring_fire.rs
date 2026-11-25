@@ -1,6 +1,6 @@
 //! The `on_fire` hook of a stock recurring rule: a typed domain action that
 //! runs atomically inside each fire commit, after the rule's `fired_count`
-//! advances.
+//! advances, optionally in a target entity the fire resolves by a unique key.
 use super::recurring::WorthQueryRecurringOccurrence;
 use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationEffectEntity,
@@ -91,6 +91,36 @@ pub trait WorthQueryRecurringFireHook<Schema, Operation, RuleEntity> {
     fn on_fire(
         fire: WorthQueryRecurringFire<'_>,
         rule: &WorthQueryApplicationEffectEntity<Schema, RuleEntity>,
+        effects: &mut WorthQueryApplicationEffectProgramBuilder<
+            Schema,
+            Operation,
+            WorthQueryRecurringOccurrence,
+            RuleEntity,
+        >,
+    ) -> Result<(), WorthQueryRecurringFireDenial>;
+}
+
+/// A domain action declared with `on_fire: Hook { creates: [..]; links: [..];
+/// writes: [..]; } in Target by TargetFacts::key()` on
+/// `worth_query_recurring_rule!`: each fire first resolves its `Target` row
+/// whose unique `key` field equals [`Self::target_key`], at the fire's
+/// decision basis, and hands it to `on_fire` beside the rule row.
+///
+/// The fire reads the target's key field implicitly; a target that does not
+/// resolve refuses the whole fire, which commits nothing.
+pub trait WorthQueryRecurringTargetedFireHook<Schema, Operation, RuleEntity, Target> {
+    /// The value type of the target's unique key field.
+    type TargetKey;
+
+    /// The unique key naming the entity this fire acts in.
+    fn target_key(fire: WorthQueryRecurringFire<'_>) -> Self::TargetKey;
+
+    /// Authors this fire's domain effects in `target`; `rule` is the firing
+    /// rule row.
+    fn on_fire(
+        fire: WorthQueryRecurringFire<'_>,
+        rule: &WorthQueryApplicationEffectEntity<Schema, RuleEntity>,
+        target: &WorthQueryApplicationEffectEntity<Schema, Target>,
         effects: &mut WorthQueryApplicationEffectProgramBuilder<
             Schema,
             Operation,

@@ -103,6 +103,6 @@ pub use super::application_query::{
     WorthQueryManagedIndexWatchUpdate, WorthQueryManagedIndexWorkDenial,
     WorthQueryObservedResultSet, WorthQueryObservedSource, WorthQueryPendingSourceExpectation,
     WorthQueryPrerequisiteSelection, WorthQueryPrimaryGraphApplicationReadinessSnapshot,
-    WorthQueryScopeFreshnessCheck, WorthQueryScopeFreshnessDiagnostic,
+    WorthQueryScopeFreshnessCheck, WorthQueryScopeFreshnessDiagnostic, WorthQuerySharedLiveRuntime,
     WorthQuerySourceExpectationDenial, WorthQuerySourceExpectationDenialKind,
 };

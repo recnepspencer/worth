@@ -20,6 +20,7 @@ use super::super::super::wire_vocabulary::{
 };
 
 mod correction_binding;
+mod omitted_reversals;
 
 pub(super) fn write(
     output: &mut dyn BinaryEncodingSink,
@@ -72,6 +73,11 @@ fn write_mechanism(
     mechanism: &PortableCorrectionMechanism,
 ) -> Result<(), Denial> {
     match mechanism {
+        PortableCorrectionMechanism::RecordedInverse(value)
+            if !value.preimage_demand().omitted_reversals().is_empty() =>
+        {
+            omitted_reversals::write(output, value, write_mechanism)
+        }
         PortableCorrectionMechanism::RecordedInverse(value) => {
             let relations = value.preimage_demand().relations();
             if let Some(target) = value.preimage_demand().output_fields() {
@@ -200,6 +206,7 @@ fn decode_mechanism(
                 ),
             ))
         }
+        omitted_reversals::TAG => omitted_reversals::decode(input, budget, decode_mechanism),
         _ => Err(Denial::new(Kind::UnsupportedRecordVariant)),
     }
 }

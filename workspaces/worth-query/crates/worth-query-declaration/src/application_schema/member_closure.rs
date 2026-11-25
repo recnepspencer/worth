@@ -44,6 +44,7 @@ pub(super) fn validate_member_closure(
     }
     super::mutation_description_validation::validate_dependencies(members)?;
     super::operation_definition::validate_operation_bodies(members)?;
+    super::correction_coverage::validate(members)?;
     validate_application_query_members(members)?;
     super::resource_member_closure::validate(members)?;
     super::history_member_closure::validate(members)?;

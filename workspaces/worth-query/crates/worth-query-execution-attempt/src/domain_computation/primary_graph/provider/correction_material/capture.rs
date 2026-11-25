@@ -68,20 +68,18 @@ impl WorthQueryPrimaryGraphProvider {
                 })
                 .collect()
         });
-        let output_fields = preimage.and_then(|image| image.output_fields().map(|output| {
-            use crate::domain_computation::application_aftermath::retained_preimage::RetainedPreImageAbsenceKind as Kind;
-            RecordedOutputFields {
+        let absences = preimage
+            .filter(|image| image.output_fields().is_none())
+            .map_or_else(Vec::new, |image| recorded_absences(image.absences()));
+        let output_fields = preimage.and_then(|image| {
+            image.output_fields().map(|output| RecordedOutputFields {
                 capture: output.output.capture().into(),
-                role: output.output.role().to_owned(), entity: output.output.entity().to_owned(),
+                role: output.output.role().to_owned(),
+                entity: output.output.entity().to_owned(),
                 target: output.target,
-                absences: image.absences().iter().map(|field| RecordedPreImageAbsence {
-                    entity: field.locus.entity().to_owned(), aspect: field.locus.aspect().to_owned(),
-                    field: field.locus.field().to_owned(), target: field.target.clone(),
-                    kind: field.entity_kind, location: location(&field.locator),
-                    absence: match field.kind { Kind::Field => RecordedAbsenceKind::Field, Kind::Aspect => RecordedAbsenceKind::Aspect },
-                }).collect(),
-            }
-        }));
+                absences: recorded_absences(image.absences()),
+            })
+        });
         owner.ensure_capture(
             MaterialCapture {
                 original,
@@ -100,6 +98,7 @@ impl WorthQueryPrimaryGraphProvider {
                 scope,
                 disclosure,
                 preimage: fields,
+                absences,
                 output_fields,
                 content: preimage
                     .map(|preimage| preimage.content().clone())
@@ -119,4 +118,25 @@ pub(super) fn location(locator: &AspectFieldLocator) -> RecordedLocation {
             .map(|field| field.as_str().to_owned())
             .collect(),
     }
+}
+
+fn recorded_absences(
+    absences: &[crate::domain_computation::application_aftermath::retained_preimage::RetainedPreImageAbsence],
+) -> Vec<RecordedPreImageAbsence> {
+    use crate::domain_computation::application_aftermath::retained_preimage::RetainedPreImageAbsenceKind as Kind;
+    absences
+        .iter()
+        .map(|field| RecordedPreImageAbsence {
+            entity: field.locus.entity().to_owned(),
+            aspect: field.locus.aspect().to_owned(),
+            field: field.locus.field().to_owned(),
+            target: field.target.clone(),
+            kind: field.entity_kind,
+            location: location(&field.locator),
+            absence: match field.kind {
+                Kind::Field => RecordedAbsenceKind::Field,
+                Kind::Aspect => RecordedAbsenceKind::Aspect,
+            },
+        })
+        .collect()
 }

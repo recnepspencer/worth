@@ -5,6 +5,8 @@ pub enum BodyFieldExpectation<'a> {
     Any,
     Equals(&'a AspectValue),
     Present,
+    /// The field (or its optional aspect) holds no value.
+    Absent,
 }
 
 impl BodyFieldExpectation<'_> {
@@ -13,6 +15,7 @@ impl BodyFieldExpectation<'_> {
             Self::Any => true,
             Self::Equals(expected) => observed == Some(*expected),
             Self::Present => observed.is_some(),
+            Self::Absent => observed.is_none(),
         }
     }
 }

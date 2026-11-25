@@ -73,6 +73,10 @@ pub struct MaterialCapture {
     pub scope: Option<RecordedScope>,
     pub disclosure: Option<RecordedDisclosure>,
     pub preimage: Option<Vec<RecordedPreImageField>>,
+    /// Authenticated original absences of demanded optional fields beside
+    /// `preimage` when no output capture owns them (an output capture keeps
+    /// its own absences in `output_fields`).
+    pub absences: Vec<RecordedPreImageAbsence>,
     pub output_fields: Option<RecordedOutputFields>,
     pub content: RelationalContentAttachments,
 }
@@ -167,8 +171,9 @@ struct EncodedMaterialEnvelope<'a> {
     body: &'a MaterialRecord,
 }
 /// Version 4 keys capture and ready material by coupled-group member (public #368);
-/// earlier versions are refused, never reinterpreted (arch law 21).
-pub(super) const MATERIAL_RECORD_VERSION: u16 = 4;
+/// version 5 adds a capture's standalone optional-field absences. Earlier
+/// versions are refused, never reinterpreted (arch law 21).
+pub(super) const MATERIAL_RECORD_VERSION: u16 = 5;
 impl MaterialRecord {
     pub fn encode(&self) -> Result<Vec<u8>, Denial> {
         scalar::validate(self)?;

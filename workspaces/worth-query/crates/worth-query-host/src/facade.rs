@@ -313,9 +313,9 @@ pub use crate::application_home::{
 };
 /// Reusable authenticated Host session and typed whole-result / managed-index live handles.
 pub use crate::session::{
-    WorthQueryAutoIdempotencyKey, WorthQueryHostSession, WorthQuerySessionCommit,
-    WorthQuerySessionIndexedQuery, WorthQuerySessionQuery, WorthQuerySessionRunDenial,
-    WorthQueryTypedLiveCloseDenial, WorthQueryTypedLiveRefreshDenial,
+    WorthQueryAutoIdempotencyKey, WorthQueryHostSession, WorthQueryOwnedLiveSubscription,
+    WorthQuerySessionCommit, WorthQuerySessionIndexedQuery, WorthQuerySessionQuery,
+    WorthQuerySessionRunDenial, WorthQueryTypedLiveCloseDenial, WorthQueryTypedLiveRefreshDenial,
     WorthQueryTypedLiveSubscription, WorthQueryTypedManagedIndexRefreshDenial,
     WorthQueryTypedManagedIndexWatch,
 };
@@ -373,4 +373,7 @@ pub use worth_foundational::facade::{
 };
 /// Typed refusal from fresh authored-program installation before Home service.
 pub use worth_query_execution::facade::application_home_integration::QueryHomeSignalProgramPreparationDenial;
-pub use worth_runtime_world::facade::{RuntimeWorldCloseDenial, RuntimeWorldServiceDenial};
+pub use worth_runtime_world::facade::{
+    RuntimeWorldBudgetDenial, RuntimeWorldBudgetResource, RuntimeWorldCloseDenial,
+    RuntimeWorldServiceDenial,
+};

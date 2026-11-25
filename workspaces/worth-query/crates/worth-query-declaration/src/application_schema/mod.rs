@@ -21,6 +21,8 @@ mod canonical_identity;
 mod canonical_operation_identity;
 mod capabilities;
 mod content;
+mod correction_coverage;
+pub use correction_coverage::ApplicationCorrectionCoverageGap;
 mod correction_fields;
 mod principal_fields;
 pub use content::*;

@@ -12,6 +12,7 @@ mod inspection;
 mod invariant;
 mod managed_index;
 mod mutation_description;
+mod omitted_reversal;
 mod operation_body;
 mod projected_member_domain;
 mod query_context;

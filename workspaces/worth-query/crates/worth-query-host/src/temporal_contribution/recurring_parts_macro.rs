@@ -1,5 +1,5 @@
 //! Schema-bound parts lowered by `worth_query_recurring_rule!`: fire operation
-//! registration, invoker, schedule handler and conditional binding.
+//! registration, then the invoker, schedule handler and conditional binding.
 
 #[doc(hidden)]
 #[macro_export]
@@ -7,7 +7,8 @@ macro_rules! __worth_query_recurring_rule_parts {
     ([$vis:vis $Rule:ident, $Schema:ty, $identity:literal, $Operation:ident, $operation_name:literal,
       $Context:ty, $Entity:ident, $Fields:ty, $Link:ty, $hub:expr, $Query:ty,
       $ScheduleBinding:ty, $ScheduleHandler:ident]
-     [$($Hook:ty { $($kind:ident: [$($Member:tt)*];)* })?]) => {
+     [$($Hook:ty { $($kind:ident: [$($Member:tt)*];)* }
+        $(in $Target:ident by $TargetKey:expr)?)?]) => {
         $($($crate::facade::temporal_contribution::__worth_query_operation_access!(
             @capabilities $kind $Operation [$($Member)*]
         );)*)?
@@ -77,6 +78,7 @@ macro_rules! __worth_query_recurring_rule_parts {
                     $(let builder = $crate::facade::temporal_contribution::__worth_query_operation_access!(
                         @register $kind builder operation [$($Member)*]
                     );)*
+                    $(let builder = builder.operation_read_field(operation, $TargetKey);)?
                     let _ = operation;
                     builder
                 }))?
@@ -84,7 +86,7 @@ macro_rules! __worth_query_recurring_rule_parts {
         }
 
         $crate::__worth_query_recurring_rule_invoker!(
-            [$Rule, $Schema, $Operation, $Entity, $Fields] [$($Hook)?]
+            [$Rule, $Schema, $Operation, $Entity, $Fields] [$($Hook $(=> $Target, $TargetKey)?)?]
         );
         $crate::__worth_query_recurring_rule_schedule!(
             [$vis $Schema, $Entity, $Fields, $Link, $hub, $ScheduleBinding, $ScheduleHandler]
@@ -92,94 +94,5 @@ macro_rules! __worth_query_recurring_rule_parts {
         $crate::__worth_query_recurring_rule_binding!(
             [$Rule, $Schema, $identity, $Operation, $Context, $Entity, $Fields, $hub, $Query]
         );
-    };
-}
-
-#[doc(hidden)]
-#[macro_export]
-macro_rules! __worth_query_recurring_rule_invoker {
-    ([$Rule:ident, $Schema:ty, $Operation:ident, $Entity:ident, $Fields:ty] [$($Hook:ty)?]) => {
-        impl $crate::facade::primary_graph::WorthQueryTemporalOperationInvoker<
-                $Schema,
-                $Operation,
-                $crate::facade::temporal_contribution::WorthQueryRecurringOccurrence,
-                $Entity,
-            > for $crate::facade::temporal_contribution::WorthQueryRecurringInvoker<$Rule>
-        {
-            const SEMANTIC_IDENTITY: &'static str =
-                <$Rule as $crate::facade::temporal_contribution::WorthQueryRecurringRuleIdentity>::INVOKER;
-            type Projection = $crate::facade::primary_graph::WorthQueryInvariantMutationTarget<$Schema, $Entity>;
-
-            fn project(
-                &self,
-                input: &$crate::facade::temporal_contribution::WorthQueryRecurringOccurrence,
-                reader: &mut $crate::facade::primary_graph::WorthQueryApplicationOperationInvariantProjectionReader<
-                    '_, '_, $Schema, $Operation,
-                >,
-                _: &$crate::facade::primary_graph::WorthQueryInvariantEntityIdentity<$Schema, $Entity>,
-            ) -> ::core::result::Result<Self::Projection, $crate::facade::primary_graph::WorthQueryTemporalInvocationFailure> {
-                use $crate::facade::temporal_contribution::recurring_invocation_failure as failure;
-                let kind = $crate::facade::primary_graph::WorthQueryTemporalInvocationFailureKind::ProjectionRejected;
-                let rule = reader
-                    .resolve_entity(<$Fields>::rule_id(), input.rule_id.clone())
-                    .map_err(|cause| failure(kind, cause))?;
-                reader
-                    .require_decision_field(&rule, <$Fields>::rule_id())
-                    .map_err(|cause| failure(kind, cause))?;
-                reader
-                    .decision_field(&rule, <$Fields>::fired_count())
-                    .map_err(|cause| failure(kind, cause))?;
-                reader.mutation_target(&rule).map_err(|cause| failure(kind, cause))
-            }
-
-            fn next_occurrence(
-                &self,
-                input: &$crate::facade::temporal_contribution::WorthQueryRecurringOccurrence,
-                _: &Self::Projection,
-                current_due_nanoseconds: u64,
-                next_revision: u64,
-            ) -> ::core::result::Result<
-                $crate::facade::primary_graph::WorthQueryTemporalOccurrenceOutcome<
-                    $crate::facade::temporal_contribution::WorthQueryRecurringOccurrence,
-                >,
-                $crate::facade::primary_graph::WorthQueryTemporalInvocationFailure,
-            > {
-                $crate::facade::temporal_contribution::recurring_next_occurrence(
-                    input,
-                    current_due_nanoseconds,
-                    next_revision,
-                )
-            }
-
-            fn apply(
-                &self,
-                input: $crate::facade::temporal_contribution::WorthQueryRecurringOccurrence,
-                target: Self::Projection,
-                effects: &mut $crate::facade::primary_graph::WorthQueryApplicationEffectProgramBuilder<
-                    $Schema,
-                    $Operation,
-                    $crate::facade::temporal_contribution::WorthQueryRecurringOccurrence,
-                    $Entity,
-                >,
-            ) -> ::core::result::Result<(), $crate::facade::primary_graph::WorthQueryTemporalInvocationFailure> {
-                use $crate::facade::temporal_contribution::recurring_invocation_failure as failure;
-                let kind = $crate::facade::primary_graph::WorthQueryTemporalInvocationFailureKind::InvocationRejected;
-                let rule = effects.projected_entity(&target).map_err(|cause| failure(kind, cause))?;
-                effects
-                    .write_field(&rule, <$Fields>::fired_count(), input.fired_count.saturating_add(1))
-                    .map_err(|cause| failure(kind, cause))?;
-                $(<$Hook as $crate::facade::temporal_contribution::WorthQueryRecurringFireHook<
-                    $Schema,
-                    $Operation,
-                    $Entity,
-                >>::on_fire(
-                    $crate::facade::temporal_contribution::WorthQueryRecurringFire::new(&input),
-                    &rule,
-                    effects,
-                )
-                .map_err(|cause| failure(kind, cause))?;)?
-                ::core::result::Result::Ok(())
-            }
-        }
     };
 }

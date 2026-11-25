@@ -357,7 +357,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             receipt,
         );
         Ok(WorthQueryApplicationWholeResultLiveLease {
-            runtime: self,
+            runtime: super::LiveRuntimeCustody::Borrowed(self),
             termination_failed: false,
             query: request.query,
             scope: request.scope,
@@ -367,7 +367,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             opening_incarnation,
             opening_product: Some(retained_product),
             governance: completed.governance,
-            basis: Some(basis),
+            basis: super::LiveBasisSlot(Some(basis)),
             read_completion: Some(read_completion),
             subscription: Some(subscription),
             cursor,

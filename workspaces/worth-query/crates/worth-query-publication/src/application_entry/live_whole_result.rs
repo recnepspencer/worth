@@ -7,7 +7,8 @@ use worth_query_execution::facade::primary_graph::{
     WholeResultLiveStageForTest, WorthQueryApplicationLiveCloseOutcome,
     WorthQueryApplicationProjection, WorthQueryApplicationWholeResultLiveLease,
     WorthQueryApplicationWholeResultLiveOutcome, WorthQueryApplicationWholeResultLiveSnapshot,
-    WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrincipalResolutionDenialKind,
+    WorthQueryLiveRuntimeKeepalive, WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryPrincipalResolutionDenialKind,
     WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal,
 };
 use worth_query_installation::facade::ApplicationSchema;
@@ -46,10 +47,34 @@ where
     Intent: ApplicationQueryIntent<Schema>,
     QueryResult<Schema, Intent>: WorthQueryApplicationProjection<Schema, Query<Schema, Intent>>,
 {
-    application: &'application WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: LiveApplication<'application, Schema>,
     branch: worth_query_execution::facade::product::WorthQueryProductBranch,
     lease: WholeResultLiveLease<'application, Schema, Intent>,
 }
+
+/// The runtime a subscription polls: borrowed, or kept alive by the subscription.
+enum LiveApplication<'application, Schema> {
+    Borrowed(&'application WorthQueryPrimaryGraphApplicationRuntime<Schema>),
+    Kept(WorthQueryLiveRuntimeKeepalive<Schema>),
+}
+
+impl<Schema> LiveApplication<'_, Schema> {
+    fn runtime(&self) -> &WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+        match self {
+            Self::Borrowed(runtime) => runtime,
+            Self::Kept(keepalive) => keepalive.application(),
+        }
+    }
+}
+
+/// A whole-result live subscription that keeps its runtime alive instead of
+/// borrowing it, so it can be stored beside the runtime's owner.
+///
+/// Every operation of the borrowed subscription applies unchanged. While it is
+/// open the runtime's clean close refuses `RuntimeKeepaliveRetained`; closing
+/// or dropping it releases the hold.
+pub type WorthQueryOwnedApplicationWholeResultLiveSubscription<Schema, Intent> =
+    WorthQueryApplicationWholeResultLiveSubscription<'static, Schema, Intent>;
 
 impl<'application, Schema, Intent>
     WorthQueryApplicationWholeResultLiveSubscription<'application, Schema, Intent>
@@ -64,9 +89,38 @@ where
         lease: WholeResultLiveLease<'application, Schema, Intent>,
     ) -> Self {
         Self {
+            application: LiveApplication::Borrowed(application),
+            branch,
+            lease,
+        }
+    }
+
+    /// Moves this subscription onto `keepalive`'s custody of its own runtime.
+    ///
+    /// A keepalive of another runtime returns the subscription unchanged.
+    pub fn into_owned(
+        self,
+        keepalive: WorthQueryLiveRuntimeKeepalive<Schema>,
+    ) -> Result<WorthQueryOwnedApplicationWholeResultLiveSubscription<Schema, Intent>, Self> {
+        if !std::ptr::eq(keepalive.application(), self.application.runtime()) {
+            return Err(self);
+        }
+        let Self {
             application,
             branch,
             lease,
+        } = self;
+        match lease.into_shared(keepalive.live_backing()) {
+            Ok(lease) => Ok(WorthQueryApplicationWholeResultLiveSubscription {
+                application: LiveApplication::Kept(keepalive),
+                branch,
+                lease,
+            }),
+            Err(lease) => Err(Self {
+                application,
+                branch,
+                lease,
+            }),
         }
     }
 
@@ -102,7 +156,7 @@ where
         >,
         WorthQueryApplicationLiveNextDenial,
     > {
-        if !std::ptr::eq(self.application, fresh_request.application) {
+        if !std::ptr::eq(self.application.runtime(), fresh_request.application) {
             return Err(WorthQueryApplicationLiveNextDenial::ForeignApplication);
         }
         if self.branch != fresh_request.branch {
@@ -111,7 +165,8 @@ where
         if let Some(outcome) = self.lease.observe_interruption(fresh_request.scope) {
             return Ok(outcome);
         }
-        let result = self
+        // The request's runtime is this subscription's own, checked above.
+        let result = fresh_request
             .application
             .with_application_advancement(fresh_request.scope, |phase| {
                 self.next_in_advancement(&phase, fresh_request)
@@ -188,7 +243,7 @@ where
         >,
         WorthQueryApplicationLiveNextDenial,
     > {
-        if !std::ptr::eq(self.application, fresh_request.application) {
+        if !std::ptr::eq(self.application.runtime(), fresh_request.application) {
             return Err(WorthQueryApplicationLiveNextDenial::ForeignApplication);
         }
         if self.branch != fresh_request.branch {
@@ -199,12 +254,14 @@ where
         }
         let binding = self
             .application
+            .runtime()
             .installed_schema()
             .installed_query_binding::<Binding<Schema, Intent>>()
             .map_err(WorthQueryApplicationLiveNextDenial::BindingInstallation)?;
         use worth_query_execution::facade::primary_graph::WorthQueryProductBranchAdmissionDenial as Selection;
         let selected = match self
             .application
+            .runtime()
             .on_branch(fresh_request.branch)
             .select(phase)
         {

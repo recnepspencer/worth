@@ -184,7 +184,10 @@ pub use live::{
     WorthQueryApplicationLiveLimits, WorthQueryApplicationLiveNextDenial,
     WorthQueryApplicationLiveOpenRequestDenial, WorthQueryApplicationLiveSubscription,
 };
-pub use live_whole_result::WorthQueryApplicationWholeResultLiveSubscription;
+pub use live_whole_result::{
+    WorthQueryApplicationWholeResultLiveSubscription,
+    WorthQueryOwnedApplicationWholeResultLiveSubscription,
+};
 pub use mandatory_review::{
     WorthQueryApplicationMandatoryReviewDenial, WorthQueryApplicationMandatoryReviewFailure,
 };

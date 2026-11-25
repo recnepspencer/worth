@@ -23,6 +23,7 @@ pub(super) fn query_denial(denial: BankApplicationQueryDenial) -> BankHttpDenial
         | BankApplicationQueryDenial::LiveControls(_) => malformed(),
         BankApplicationQueryDenial::Installation(_)
         | BankApplicationQueryDenial::CapabilityInstallation(_)
+        | BankApplicationQueryDenial::LiveForeignRuntime
         | BankApplicationQueryDenial::PreviewSession(_)
         => unavailable(),
         BankApplicationQueryDenial::ContinuationExecution(cause) => retained_execution::continuation(cause.kind()),

@@ -87,52 +87,56 @@ impl WorthQueryUserFacingRefusal for WorthQueryApplicationContinuationDenial {
 
 impl WorthQueryUserFacingRefusal for WorthQueryApplicationQueryAdmissionDenial {
     fn user_summary(&self) -> Summary {
-        match self.kind() {
-            Admit::Authorization(kind) => authorization(&kind),
-            Admit::ExecutionRequest(kind) => session(&kind),
-            Admit::StalePrincipal
-            | Admit::DisclosureAuthorizationMismatch
-            | Admit::InternalComputationDenied => PERMISSION,
-            Admit::StaleScope
-            | Admit::HistoricalSourceNotLive { .. }
-            | Admit::HistoricalSourceKindMismatch { .. }
-            | Admit::HistoricalSourceOutsideDomain { .. }
-            | Admit::HistoricalSourceOwnershipUnavailable { .. } => MISSING_ITEM,
-            Admit::Cancelled => CANCELLED,
-            Admit::DeadlineExceeded => TIMED_OUT,
-            Admit::StaleBasis | Admit::StaleContinuation => STALE,
-            Admit::Parameter(_) => BAD_INPUT,
-            Admit::ExpiredBasis
-            | Admit::BasisUnavailable
-            | Admit::BranchMaterializationSuspended
-            | Admit::RuntimeSupportUnavailable
-            | Admit::GraphWorkAdmissionUnavailable => BUSY,
-            Admit::ActiveSnapshotCapacityExhausted { .. }
-            | Admit::SnapshotIdentityExhausted
-            | Admit::RetentionCapacityExhausted
-            | Admit::RetentionIdentityExhausted
-            | Admit::WorkLimitExceeded
-            | Admit::ReadmissionPreparationMemoryExhausted
-            | Admit::CanonicalWorkDenied => CAPACITY,
-            Admit::InstalledQuery(_)
-            | Admit::ForeignPrincipal
-            | Admit::ForeignScope
-            | Admit::ScopeTypeMismatch
-            | Admit::BasisUnsupported
-            | Admit::ForeignBasis
-            | Admit::WrongProviderBasis
-            | Admit::ForeignHistoricalReceipt
-            | Admit::ForeignContinuation
-            | Admit::ContinuationParameterMismatch
-            | Admit::ContinuationScopeMismatch
-            | Admit::ContinuationProviderMismatch
-            | Admit::ContinuationPageWidthUnsupported
-            | Admit::LaneUnsupported
-            | Admit::DisclosureGovernanceRequired
-            | Admit::DisclosureContractInvalid
-            | Admit::GraphReadPlan(_)
-            | Admit::ExecutionShapeUnsupported => INTERNAL,
-        }
+        admission(&self.kind())
+    }
+}
+
+pub(super) fn admission(kind: &Admit) -> Summary {
+    match kind {
+        Admit::Authorization(kind) => authorization(kind),
+        Admit::ExecutionRequest(kind) => session(kind),
+        Admit::StalePrincipal
+        | Admit::DisclosureAuthorizationMismatch
+        | Admit::InternalComputationDenied => PERMISSION,
+        Admit::StaleScope
+        | Admit::HistoricalSourceNotLive { .. }
+        | Admit::HistoricalSourceKindMismatch { .. }
+        | Admit::HistoricalSourceOutsideDomain { .. }
+        | Admit::HistoricalSourceOwnershipUnavailable { .. } => MISSING_ITEM,
+        Admit::Cancelled => CANCELLED,
+        Admit::DeadlineExceeded => TIMED_OUT,
+        Admit::StaleBasis | Admit::StaleContinuation => STALE,
+        Admit::Parameter(_) => BAD_INPUT,
+        Admit::ExpiredBasis
+        | Admit::BasisUnavailable
+        | Admit::BranchMaterializationSuspended
+        | Admit::RuntimeSupportUnavailable
+        | Admit::GraphWorkAdmissionUnavailable => BUSY,
+        Admit::ActiveSnapshotCapacityExhausted { .. }
+        | Admit::SnapshotIdentityExhausted
+        | Admit::RetentionCapacityExhausted
+        | Admit::RetentionIdentityExhausted
+        | Admit::WorkLimitExceeded
+        | Admit::ReadmissionPreparationMemoryExhausted
+        | Admit::CanonicalWorkDenied => CAPACITY,
+        Admit::InstalledQuery(_)
+        | Admit::ForeignPrincipal
+        | Admit::ForeignScope
+        | Admit::ScopeTypeMismatch
+        | Admit::BasisUnsupported
+        | Admit::ForeignBasis
+        | Admit::WrongProviderBasis
+        | Admit::ForeignHistoricalReceipt
+        | Admit::ForeignContinuation
+        | Admit::ContinuationParameterMismatch
+        | Admit::ContinuationScopeMismatch
+        | Admit::ContinuationProviderMismatch
+        | Admit::ContinuationPageWidthUnsupported
+        | Admit::LaneUnsupported
+        | Admit::DisclosureGovernanceRequired
+        | Admit::DisclosureContractInvalid
+        | Admit::GraphReadPlan(_)
+        | Admit::ExecutionShapeUnsupported => INTERNAL,
     }
 }
 

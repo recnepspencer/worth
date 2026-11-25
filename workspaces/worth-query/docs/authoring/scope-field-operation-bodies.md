@@ -285,6 +285,20 @@ field }`. Neither publishes an assignment or creation. The source fact remains
 a publication obligation, so another session changing only the compared field
 can stale a prepared candidate.
 
+To guard an optional field, use `expect_optional_input` with an `Option`
+input member. `Some(v)` matches only when the stored field holds `v`; `None`
+matches only when the field is absent. A restore action typically pairs it
+with `assign_optional_input`, so an undo of an edit that dated an undated task
+restores the absence and refuses if another session changed the date since:
+
+```rust,ignore
+RestoreTaskDetails::reference()
+    .typed_body()
+    .expect_optional_input(TaskFacts::due_date(), RestoreTaskDetails::expected_due_date_input())
+    .assign_optional_input(TaskFacts::due_date(), RestoreTaskDetails::restored_due_date_input())
+    .finish_pure_definition()?;
+```
+
 A realistic use is selecting a provider lot whose captured company must equal
 the NCR's committed company. Resolve and revision-admit the provider selection
 through the installed external-input port, construct the original input with

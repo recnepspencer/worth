@@ -197,6 +197,20 @@ impl<S> ApplicationCorrectionPreImage<S> for DisclosedPreImage<'_> {
                 .map(|field| field.value()),
         }
     }
+    fn field_state(
+        &self,
+        locus: &DeclaredPreImageLocus<S>,
+    ) -> worth_query_declaration::facade::application_aftermath::ApplicationCorrectionFieldPreImage<'_>{
+        use worth_query_declaration::facade::application_aftermath::ApplicationCorrectionFieldPreImage as State;
+        match self {
+            Self::Retained(value) => {
+                value.preimage_locus_state(locus.entity(), locus.aspect(), locus.field())
+            }
+            Self::Captured(_) => self.retained().map_or(State::Uncaptured, |image| {
+                image.original_locus_state(locus.entity(), locus.aspect(), locus.field())
+            }),
+        }
+    }
     fn field_for_output(
         &self,
         role: &worth_query_declaration::facade::application_operation::ApplicationMutationOutputRoleDescriptor,

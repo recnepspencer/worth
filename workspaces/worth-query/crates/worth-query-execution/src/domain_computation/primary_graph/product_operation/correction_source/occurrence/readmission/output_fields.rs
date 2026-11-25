@@ -1,4 +1,5 @@
-//! Retained output fields match the installed mode, exact role and vocabulary.
+//! Retained output fields match the installed mode, exact role and vocabulary;
+//! standalone absences name demanded loci.
 use super::*;
 use crate::domain_computation::primary_graph::retained_correction::record::{
     MaterialCapture, RecordedFieldCapture,
@@ -19,7 +20,7 @@ pub(super) fn validate(
     let expected = demand.and_then(|demand| demand.output_fields());
     let (Some(output), Some(recorded)) = (expected, capture.output_fields.as_ref()) else {
         return if expected.is_none() && capture.output_fields.is_none() {
-            Ok(())
+            standalone_absences(capture, demand)
         } else {
             Err(Denial::SemanticMaterialUnavailable)
         };
@@ -104,4 +105,25 @@ pub(super) fn validate(
         return Err(Denial::SemanticMaterialUnavailable);
     }
     Ok(())
+}
+
+/// Each standalone absence names a locus the installed demand retains.
+fn standalone_absences(
+    capture: &MaterialCapture,
+    demand: Option<&worth_query_installation::facade::InstalledPreImageDemand>,
+) -> Result<(), Denial> {
+    if capture.absences.is_empty() {
+        return Ok(());
+    }
+    let demand = demand.ok_or(Denial::UnsupportedSourceMeaning)?;
+    let demanded = capture.absences.iter().all(|absent| {
+        demand.loci().iter().any(|locus| {
+            locus.entity() == absent.entity
+                && locus.aspect() == absent.aspect
+                && locus.field() == absent.field
+        })
+    });
+    demanded
+        .then_some(())
+        .ok_or(Denial::SemanticMaterialUnavailable)
 }

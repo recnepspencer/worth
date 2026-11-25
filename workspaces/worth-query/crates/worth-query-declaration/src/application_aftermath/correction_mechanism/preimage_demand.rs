@@ -6,6 +6,7 @@ use std::{cmp::Ordering, fmt};
 pub struct DeclaredPreImageDemand<Schema> {
     loci: Vec<DeclaredPreImageLocus<Schema>>,
     relations: Vec<super::DeclaredPreImageRelationLocus<Schema>>,
+    omitted_reversals: Vec<DeclaredPreImageLocus<Schema>>,
     maximum_encoded_bytes: usize,
     created_entity: bool,
     output_fields: Option<(
@@ -19,6 +20,7 @@ impl<Schema> DeclaredPreImageDemand<Schema> {
         Self {
             loci: Vec::new(),
             relations: Vec::new(),
+            omitted_reversals: Vec::new(),
             maximum_encoded_bytes: 0,
             created_entity: true,
             output_fields: None,
@@ -32,6 +34,7 @@ impl<Schema> DeclaredPreImageDemand<Schema> {
         Self {
             loci: loci.into_iter().collect(),
             relations: Vec::new(),
+            omitted_reversals: Vec::new(),
             maximum_encoded_bytes,
             created_entity: false,
             output_fields: None,
@@ -83,6 +86,23 @@ impl<Schema> DeclaredPreImageDemand<Schema> {
         self
     }
 
+    /// Explicitly grants that the correction does not reverse one field its
+    /// source operation writes. Without a grant, schema validation refuses a
+    /// correction whose pre-image or inverse omits any written field
+    /// (`IncompleteCorrectionCoverage`), so a partial undo is never accidental.
+    pub fn allow_omitted_reversal<Field: crate::application_schema::fragment::RecordSelection>(
+        mut self,
+        field: Field,
+    ) -> Self {
+        self.omitted_reversals
+            .push(DeclaredPreImageLocus::from_field(field));
+        self
+    }
+
+    pub fn omitted_reversals(&self) -> &[DeclaredPreImageLocus<Schema>] {
+        &self.omitted_reversals
+    }
+
     pub(crate) fn validate(&self) -> Result<(), DeclaredPreImageDemandDenial> {
         if let Some((capture, output)) = self.output_fields {
             use super::PreImageOutputFieldCapture as Capture;
@@ -114,6 +134,14 @@ impl<Schema> DeclaredPreImageDemand<Schema> {
             return Err(DeclaredPreImageDemandDenial::ZeroByteBound);
         }
         validate_loci(&self.loci)?;
+        validate_loci(&self.omitted_reversals)?;
+        if self
+            .omitted_reversals
+            .iter()
+            .any(|omitted| self.loci.contains(omitted))
+        {
+            return Err(DeclaredPreImageDemandDenial::ContradictoryOmittedReversal);
+        }
         for (index, locus) in self.relations.iter().enumerate() {
             if locus.relation().trim().is_empty()
                 || locus.from().trim().is_empty()
@@ -159,6 +187,11 @@ impl<Schema> DeclaredPreImageDemand<Schema> {
                 .into_iter()
                 .map(super::DeclaredPreImageRelationLocus::into_portable)
                 .collect(),
+            omitted_reversals: self
+                .omitted_reversals
+                .into_iter()
+                .map(DeclaredPreImageLocus::into_portable)
+                .collect(),
             maximum_encoded_bytes: self.maximum_encoded_bytes,
         }
     }
@@ -189,6 +222,7 @@ impl<Schema> Clone for DeclaredPreImageDemand<Schema> {
         Self {
             loci: self.loci.clone(),
             relations: self.relations.clone(),
+            omitted_reversals: self.omitted_reversals.clone(),
             maximum_encoded_bytes: self.maximum_encoded_bytes,
             created_entity: self.created_entity,
             output_fields: self.output_fields,
@@ -202,6 +236,7 @@ impl<Schema> fmt::Debug for DeclaredPreImageDemand<Schema> {
             .debug_struct("DeclaredPreImageDemand")
             .field("loci", &self.loci)
             .field("relations", &self.relations)
+            .field("omitted_reversals", &self.omitted_reversals)
             .field("maximum_encoded_bytes", &self.maximum_encoded_bytes)
             .field("created_entity", &self.created_entity)
             .field("output_fields", &self.output_fields)
@@ -213,6 +248,7 @@ impl<Schema> PartialEq for DeclaredPreImageDemand<Schema> {
     fn eq(&self, other: &Self) -> bool {
         self.loci == other.loci
             && self.relations == other.relations
+            && self.omitted_reversals == other.omitted_reversals
             && self.maximum_encoded_bytes == other.maximum_encoded_bytes
             && self.created_entity == other.created_entity
             && self.output_fields == other.output_fields
@@ -232,6 +268,7 @@ impl<Schema> Ord for DeclaredPreImageDemand<Schema> {
         (
             &self.loci,
             &self.relations,
+            &self.omitted_reversals,
             self.maximum_encoded_bytes,
             self.created_entity,
             self.output_fields,
@@ -239,6 +276,7 @@ impl<Schema> Ord for DeclaredPreImageDemand<Schema> {
             .cmp(&(
                 &other.loci,
                 &other.relations,
+                &other.omitted_reversals,
                 other.maximum_encoded_bytes,
                 other.created_entity,
                 other.output_fields,
@@ -253,4 +291,6 @@ pub enum DeclaredPreImageDemandDenial {
     ZeroByteBound,
     DuplicateLocus,
     InvalidOutputFieldCapture,
+    /// A field is both demanded for reversal and granted as omitted.
+    ContradictoryOmittedReversal,
 }

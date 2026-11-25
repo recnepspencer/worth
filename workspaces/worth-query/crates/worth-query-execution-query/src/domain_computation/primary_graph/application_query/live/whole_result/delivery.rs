@@ -197,12 +197,12 @@ where
                 Err(denial) => return Err(self.handle_admission_denial(denial)),
             }
         };
-        if let Err(denial) = refresh_governed_authorization(execution, self.runtime, &mut plan) {
+        if let Err(denial) = refresh_governed_authorization(execution, &self.runtime, &mut plan) {
             let _ = plan.basis.release();
             return Err(self.handle_read_denial(denial));
         }
         let (observed, _, read_proof) =
-            match execute_authorized_read(execution, self.runtime, &plan, |_, _, _| {
+            match execute_authorized_read(execution, &self.runtime, &plan, |_, _, _| {
                 Ok(
                     crate::domain_computation::provider_session::WorthQueryObservedGraphReadWork {
                         examined_candidates: 0,

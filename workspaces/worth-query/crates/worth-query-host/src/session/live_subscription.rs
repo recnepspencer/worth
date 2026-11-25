@@ -21,9 +21,8 @@ use worth_query_execution::facade::primary_graph::{
     WorthQueryOperationAuthorizationDenial, WorthQueryProviderSessionDenialKind,
 };
 use worth_query_publication::facade::application_entry::{
-    WorthQueryApplicationLiveLimits, WorthQueryApplicationLiveNextDenial,
-    WorthQueryApplicationLiveOpenRequestDenial, WorthQueryApplicationRequest,
-    WorthQueryApplicationWholeResultLiveSubscription,
+    WorthQueryApplicationLiveNextDenial, WorthQueryApplicationLiveOpenRequestDenial,
+    WorthQueryApplicationRequest, WorthQueryApplicationWholeResultLiveSubscription,
 };
 
 use super::{QueryBinding, QueryMarker, QueryRow, QueryScope, WorthQueryHostSession};
@@ -82,7 +81,7 @@ where
     Intent: ApplicationQueryIntent<Schema>,
     QueryRow<Schema, Intent>: WorthQueryApplicationProjection<Schema, QueryMarker<Schema, Intent>>,
 {
-    fn from_opened(
+    pub(super) fn from_opened(
         mut inner: WorthQueryApplicationWholeResultLiveSubscription<'home, Schema, Intent>,
     ) -> Self {
         let current = inner
@@ -235,35 +234,6 @@ impl<'home, Schema, Program> WorthQueryHostSession<'home, Schema, Program>
 where
     Schema: ApplicationSchema,
 {
-    fn resolved_live_limits<Intent>(&self) -> WorthQueryApplicationLiveLimits
-    where
-        Intent: ApplicationQueryIntent<Schema>,
-    {
-        let maximum_results = match self.live_maximum_results {
-            Some(explicit) => explicit,
-            None => {
-                let installed_max = self
-                    .home
-                    .primary_graph()
-                    .installed_schema()
-                    .installed_query_binding::<QueryBinding<Schema, Intent>>()
-                    .map(|binding| {
-                        self.home
-                            .primary_graph()
-                            .resolve_application_query_limits(binding.limits())
-                            .maximum_results()
-                            .get()
-                    })
-                    .unwrap_or(super::DEFAULT_LIVE_MAXIMUM_RESULTS);
-                match self.query_result_limit {
-                    Some(narrowed) => narrowed.get().min(installed_max),
-                    None => installed_max,
-                }
-            }
-        };
-        WorthQueryApplicationLiveLimits::bounded(self.live_buffer_capacity, maximum_results)
-    }
-
     /// Opens a typed whole-result live subscription for a query declared with
     /// `#[worth_query(..., live = whole_result)]`.
     pub fn subscribe<Intent>(
@@ -282,19 +252,8 @@ where
             >,
         QueryRow<Schema, Intent>: WorthQueryApplicationProjection<Schema, QueryMarker<Schema, Intent>>,
 {
-        let scope = self.fresh_scope();
-        let request = self.request(&scope);
-        let query_req = request.query(intent);
-        let query_req = match self.query_result_limit {
-            Some(limit) => query_req.limit_results(limit),
-            None => query_req,
-        };
-        let limits = self.resolved_live_limits::<Intent>();
-        self.with_funded_advancement(&scope, |phase| {
-            query_req.subscribe_whole_result_in_advancement(&phase, limits)
-        })
-        .map_err(WorthQueryApplicationLiveOpenRequestDenial::ExecutionRequest)?
-        .map(WorthQueryTypedLiveSubscription::from_opened)
+        self.open_whole_result(intent)
+            .map(WorthQueryTypedLiveSubscription::from_opened)
     }
 
     /// Opens a capability-governed typed whole-result live subscription.

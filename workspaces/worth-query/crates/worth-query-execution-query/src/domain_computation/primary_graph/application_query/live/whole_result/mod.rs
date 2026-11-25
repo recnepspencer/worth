@@ -1,5 +1,6 @@
 //! Whole-result live subscriptions preserving exact negative, related-record,
 //! and row invalidation evidence over the installed canonical read graph.
+mod custody;
 mod delivery;
 mod denial;
 mod footprint;
@@ -8,6 +9,7 @@ mod open;
 pub mod outcome;
 mod refresh;
 
+pub use custody::WorthQuerySharedLiveRuntime;
 pub use outcome::{
     WorthQueryApplicationWholeResultLiveOutcome, WorthQueryApplicationWholeResultLiveSnapshot,
     WorthQueryApplicationWholeResultLiveUpdate,
@@ -51,13 +53,10 @@ use worth_query_declaration::facade::application_query::ApplicationQueryParamete
 use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
 
 use super::controls::WorthQueryApplicationLiveControls;
-use crate::domain_computation::{
-    managed_run::WorthQueryManagedLowerExecutionBasis,
-    primary_graph::{
-        live_delivery::WorthQueryLiveSubscription, WorthQueryApplicationEntityIdentity,
-        WorthQueryPrimaryGraphApplicationRuntime,
-    },
+use crate::domain_computation::primary_graph::{
+    live_delivery::WorthQueryLiveSubscription, WorthQueryApplicationEntityIdentity,
 };
+use custody::{LiveBasisSlot, LiveRuntimeCustody};
 use footprint::WholeResultInvalidationFootprint;
 
 /// An open whole-result live subscription that delivers the complete freshly
@@ -77,7 +76,14 @@ pub struct WorthQueryApplicationWholeResultLiveLease<
     PrincipalIdentity,
     Scope,
 > {
-    pub(super) runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    // Drop order matters: the subscription, footprint, opening product and
+    // initial snapshot release before the basis finalizes.
+    pub(super) opening_product: Option<crate::basis::WorthQueryProductBranchLease>,
+    pub(super) subscription: Option<WorthQueryLiveSubscription>,
+    pub(super) footprint: Option<WholeResultInvalidationFootprint>,
+    pub(super) initial: Option<WorthQueryApplicationWholeResultLiveSnapshot<Query, QueryResult>>,
+    pub(super) basis: LiveBasisSlot,
+    pub(super) runtime: LiveRuntimeCustody<'runtime, Schema>,
     pub(super) termination_failed: bool,
     pub(super) query:
         WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
@@ -86,15 +92,10 @@ pub struct WorthQueryApplicationWholeResultLiveLease<
     pub(super) controls: WorthQueryApplicationLiveControls,
     pub(super) opening_branch: worth_runtime_world::facade::ProductBranchIdentity,
     pub(super) opening_incarnation: worth_runtime_world::facade::ProductBranchIncarnation,
-    pub(super) opening_product: Option<crate::basis::WorthQueryProductBranchLease>,
     pub(super) governance: super::super::disclosure::WorthQueryApplicationQueryGovernance,
-    pub(super) basis: Option<WorthQueryManagedLowerExecutionBasis>,
     pub(super) read_completion:
         Option<crate::domain_computation::provider_session::WorthQueryGraphReadCompletion>,
-    pub(super) subscription: Option<WorthQueryLiveSubscription>,
     pub(super) cursor: u64,
-    pub(super) footprint: Option<WholeResultInvalidationFootprint>,
-    pub(super) initial: Option<WorthQueryApplicationWholeResultLiveSnapshot<Query, QueryResult>>,
     pub(super) _principal: PhantomData<fn() -> (Principal, PrincipalIdentity)>,
     pub(super) _thread_affinity: PhantomData<Rc<()>>,
 }

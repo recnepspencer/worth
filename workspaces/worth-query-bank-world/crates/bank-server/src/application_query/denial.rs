@@ -88,6 +88,7 @@ pub enum BankApplicationQueryDenial {
     ),
     RequestMode,
     LiveRetainedBasis,
+    LiveForeignRuntime,
     LiveControls(worth_query_host::facade::primary_graph::WorthQueryApplicationLiveControlDenial),
     Installation(BankApplicationQueryInstallationDenialKind),
     CapabilityInstallation(BankApplicationCapabilityInstallationDenialKind),
@@ -137,6 +138,7 @@ impl BankApplicationQueryDenial {
                 Self::InputPreparation(denial)
             }
             WorthQueryApplicationLiveOpenRequestDenial::RetainedBasis => Self::LiveRetainedBasis,
+            WorthQueryApplicationLiveOpenRequestDenial::ForeignRuntime => Self::LiveForeignRuntime,
             WorthQueryApplicationLiveOpenRequestDenial::BindingInstallation(denial) => {
                 Self::from_installation(denial)
             }
