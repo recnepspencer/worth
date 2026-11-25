@@ -77,9 +77,9 @@ pub(super) fn summarize_outcome(
         Outcome::Committed(_) => "committed".to_owned(),
         Outcome::Uncommitted(Uncommitted::Denied(cause)) => {
             if let Some(failure) = cause.invariant_execution_failure() {
-                format!("refused {:?}", failure.kind())
+                format!("refused {}", stable_debug(&failure.kind()))
             } else if let Some(denial) = cause.coupled_producer_denial() {
-                format!("refused {:?}", denial.kind())
+                format!("refused {}", stable_debug(&denial.kind()))
             } else {
                 let text = format!("{cause:?}");
                 let kind = text
@@ -105,6 +105,18 @@ pub(super) fn summarize_outcome(
         observation.wave_events_for_test(),
         observation.wave_charged_units_for_test(),
     )
+}
+/// A refusal's text without each record id's kind marker: the derived `Debug`
+/// of `PhantomData<K>` prints the compiler's unstable type name for `K`.
+fn stable_debug(value: &impl std::fmt::Debug) -> String {
+    let text = format!("{value:?}");
+    let (mut stable, mut rest) = (String::with_capacity(text.len()), text.as_str());
+    while let Some(at) = rest.find(", _marker: PhantomData<") {
+        stable += &rest[..at];
+        rest = &rest[at..];
+        rest = &rest[rest.find('>').map_or(rest.len(), |end| end + 1)..];
+    }
+    stable + rest
 }
 pub(super) fn summarize_denial(
     denial: &impl std::fmt::Debug,
