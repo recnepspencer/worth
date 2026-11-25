@@ -14,6 +14,8 @@ use worth_query_installation::facade::WorthQueryInstalledApplicationValueBinding
 
 pub struct PreparedBodyInputs {
     pub values: Vec<Option<AspectValue>>,
+    /// One entry per reference input: a toggle's captured bool, `None` for replacement.
+    pub reference_linked: Vec<Option<bool>>,
     _reservation: QueryMemoryReservation,
 }
 
@@ -42,6 +44,12 @@ pub fn prepare_inputs(
                 .checked_mul(size_of::<Option<AspectValue>>())
                 .and_then(|slots| slots.checked_mul(2))
                 .and_then(|slots| bytes.checked_add(slots))
+        })
+        .and_then(|bytes| {
+            body.reference_inputs()
+                .len()
+                .checked_mul(size_of::<Option<bool>>())
+                .and_then(|linked| bytes.checked_add(linked))
         })
         .and_then(|bytes| u64::try_from(bytes).ok());
     let Some(bound) = bound else {
@@ -92,11 +100,13 @@ pub fn prepare_inputs(
         for ((member, family, optional), binding) in scope_inputs
             .chain(created_inputs)
             .chain(path_inputs)
-            .chain(
-                body.reference_inputs()
-                    .iter()
-                    .map(|reference| (reference.member.as_str(), reference.scalar_family, true)),
-            )
+            .chain(body.reference_inputs().iter().map(|reference| {
+                (
+                    reference.member.as_str(),
+                    reference.scalar_family,
+                    reference.target_is_optional(),
+                )
+            }))
             .zip(bindings)
         {
             context
@@ -157,18 +167,51 @@ pub fn prepare_inputs(
             }
             values.push(Some(value));
         }
-        Ok(Ok(values))
+        let mut reference_linked = Vec::with_capacity(body.reference_inputs().len());
+        for reference in body.reference_inputs() {
+            let Some(member) = reference.linked_member() else {
+                reference_linked.push(None);
+                continue;
+            };
+            context
+                .checkpoint(u64::try_from(bytes).unwrap_or(u64::MAX))
+                .map_err(|cause| {
+                    super::super::application_contribution::advancement_denial(
+                        worth_execution::WorkCeilingDenial::Stopped(cause),
+                    )
+                })?;
+            let Some(linked) = captured_bool(captured, member) else {
+                return Ok(Err(WorthQueryOperationBodyDenial::InputMismatch {
+                    member: member.to_owned(),
+                }));
+            };
+            reference_linked.push(Some(linked));
+        }
+        Ok(Ok((values, reference_linked)))
     });
     match prepared {
-        Ok(Ok(Ok(values))) => HandlerResult::Completed(Some(PreparedBodyInputs {
-            values,
-            _reservation: reservation,
-        })),
+        Ok(Ok(Ok((values, reference_linked)))) => {
+            HandlerResult::Completed(Some(PreparedBodyInputs {
+                values,
+                reference_linked,
+                _reservation: reservation,
+            }))
+        }
         Ok(Ok(Err(denial))) => HandlerResult::DomainDenied(denial),
         Ok(Err(cause)) => HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause)),
-        Err(cause) => HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(
-            crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(cause),
-        )),
+        Err(cause) => HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause)),
+    }
+}
+
+/// A toggle's selector is a plain bool member; it has no field codec to admit.
+fn captured_bool(captured: &ApplicationCanonicalInput, member: &str) -> Option<bool> {
+    match captured
+        .scalar_member(member, worth_foundational::facade::ScalarAspectType::Bool)
+        .ok()?
+        .into_value()
+    {
+        AspectValue::Bool(linked) => Some(linked),
+        _ => None,
     }
 }
 

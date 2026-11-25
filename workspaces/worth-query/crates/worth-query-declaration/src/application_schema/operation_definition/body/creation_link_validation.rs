@@ -27,6 +27,7 @@ pub(super) fn validate_links(
             }
             if link.posture.replaces_selection()
                 && !replacement_is_declared(operation, creation, link, members)
+                || link.direction == Direction::SelfEdge && !self_edge_is_admitted(link, members)
             {
                 return Err(Denial::program_body_dependency(operation));
             }
@@ -49,10 +50,12 @@ fn source_is_declared(
 ) -> bool {
     use crate::application_schema::ApplicationOperationBodyCreationLinkSource as Source;
     match &link.source {
-        Source::Scope => link.scope_entity() == body.scope_entity().unwrap_or_default(),
+        Source::Scope => link
+            .scope_entity()
+            .is_none_or(|scope| scope == body.scope_entity().unwrap_or_default()),
         Source::Principal {mutation_binding, principal_binding, identity} => {
             link.direction == Direction::ToScope && !link.posture.replaces_selection()
-                && link.scope_entity() == identity.entity()
+                && link.scope_entity() == Some(identity.entity())
                 && members.iter().any(|m| matches!(m, ApplicationSchemaMember::ApplicationMutation {description}
                     if description.operation()==operation && description.binding_identity().as_str()==mutation_binding
                     && Some(description.scope().entity.as_str())==body.scope_entity()))
@@ -63,6 +66,17 @@ fn source_is_declared(
                 && link.source_reads().iter().all(|read| crate::application_schema::operation_declares_decision_read(members, operation, read))
         }
     }
+}
+
+/// A self edge appends one created-to-created edge on a relation admitting self edges.
+fn self_edge_is_admitted(link: &Link, members: &[ApplicationSchemaMember]) -> bool {
+    link.from == link.to
+        && link.posture
+            == crate::application_schema::ApplicationOperationBodyCreationLinkPosture::Append
+        && members.iter().any(|member| {
+            matches!(member, ApplicationSchemaMember::Relation { relation, integrity, .. }
+            if relation == &link.relation && integrity.endpoints.self_edges_allowed)
+        })
 }
 
 fn replacement_is_declared(
@@ -84,3 +98,7 @@ fn replacement_is_declared(
             if declared == operation && target == &unlink))
         && link.replacement_reads().iter().all(|read| crate::application_schema::operation_declares_decision_read(members, operation, read))
 }
+
+#[cfg(test)]
+#[path = "creation_link_validation/tests.rs"]
+mod tests;

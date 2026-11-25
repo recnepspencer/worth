@@ -239,6 +239,14 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
         self.members.push(member);
     }
 
+    /// Body-derived contracts restate access; one the operation already declares is not
+    /// repeated. Two authored declarations of the same member still refuse as duplicates.
+    pub(super) fn push_derived_member(&mut self, member: ApplicationSchemaMember) {
+        if !self.members.contains(&member) {
+            self.members.push(member);
+        }
+    }
+
     pub(super) fn contribution_member_count(&self) -> usize {
         self.members.len()
     }

@@ -3,6 +3,7 @@ use super::{
     ApplicationOperationBodyAuthoringDenial as Denial, ApplicationOperationBodyCreationBuilder,
 };
 mod principal;
+mod self_edge;
 use crate::application_schema::{
     ApplicationOperationDecisionReadTarget, ApplicationOperationProgramTarget,
     ApplicationRelationRef, OperationLinks, OperationReads, OperationUnlinks,
@@ -12,6 +13,8 @@ use crate::application_schema::{
 pub enum ApplicationOperationBodyCreationLinkDirection {
     FromScope,
     ToScope,
+    /// Both endpoints are this exact created entity; no scope endpoint exists.
+    SelfEdge,
 }
 #[derive(Clone, Debug, Default, Eq, PartialEq, Ord, PartialOrd)]
 pub enum ApplicationOperationBodyCreationLinkSource {
@@ -99,15 +102,18 @@ impl ApplicationOperationBodyCreationLink {
             },
         ]
     }
-    pub fn scope_entity(&self) -> &str {
+    /// The existing endpoint, absent when the link joins the created entity to itself.
+    pub fn scope_entity(&self) -> Option<&str> {
         match self.direction {
-            ApplicationOperationBodyCreationLinkDirection::FromScope => &self.from,
-            ApplicationOperationBodyCreationLinkDirection::ToScope => &self.to,
+            ApplicationOperationBodyCreationLinkDirection::FromScope => Some(&self.from),
+            ApplicationOperationBodyCreationLinkDirection::ToScope => Some(&self.to),
+            ApplicationOperationBodyCreationLinkDirection::SelfEdge => None,
         }
     }
     pub fn created_entity(&self) -> &str {
         match self.direction {
-            ApplicationOperationBodyCreationLinkDirection::FromScope => &self.to,
+            ApplicationOperationBodyCreationLinkDirection::FromScope
+            | ApplicationOperationBodyCreationLinkDirection::SelfEdge => &self.to,
             ApplicationOperationBodyCreationLinkDirection::ToScope => &self.from,
         }
     }
@@ -122,6 +128,7 @@ impl ApplicationOperationBodyCreationLink {
         let direction = match self.direction {
             ApplicationOperationBodyCreationLinkDirection::FromScope => "from-scope",
             ApplicationOperationBodyCreationLinkDirection::ToScope => "to-scope",
+            ApplicationOperationBodyCreationLinkDirection::SelfEdge => "self-edge",
         };
         let mut record = String::from(match self.posture {
             ApplicationOperationBodyCreationLinkPosture::Append => "creation-link-v1;",

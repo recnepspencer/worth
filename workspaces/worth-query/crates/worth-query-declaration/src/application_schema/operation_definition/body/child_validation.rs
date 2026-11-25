@@ -78,7 +78,7 @@ impl Body {
             for child in root.children() {
                 if !child.has_supported_shape()
                     || parents.get(child.parent_key.as_str()).copied()
-                        != Some(child.creation.links()[0].scope_entity())
+                        != child.creation.links()[0].scope_entity()
                     || parents
                         .insert(child.creation.key(), child.creation.entity())
                         .is_some()

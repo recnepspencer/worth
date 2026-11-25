@@ -315,6 +315,35 @@ where
         )?;
         self.replace_relation_from_input(relation, identity, input.member(), key)
     }
+
+    /// Links or unlinks one exact edge from a typed required identity and a typed bool input.
+    pub fn toggle_relation_from_typed_input<R, Root, Selected, F>(
+        self,
+        relation: ApplicationRelationRef<Schema, R, Root, Selected>,
+        identity: F,
+        target: ApplicationInputField<Input, F::Value>,
+        linked: ApplicationInputField<Input, bool>,
+        key: &str,
+    ) -> Result<Self, Denial>
+    where
+        Root: OperationReads<Operation>,
+        Selected: OperationReads<Operation>,
+        R: OperationReads<Operation> + OperationLinks<Operation> + OperationUnlinks<Operation>,
+        F: RecordSelection<Entity = Selected>,
+        F::Binding: ApplicationIdentityScalarValueBinding,
+    {
+        verify_typed_input_selector::<Operation::InputBinding, F::Value>(
+            target.member(),
+            target.binding_type_id,
+            false,
+        )?;
+        verify_typed_input_selector::<Operation::InputBinding, bool>(
+            linked.member(),
+            linked.binding_type_id,
+            false,
+        )?;
+        self.toggle_relation_from_input(relation, identity, target.member(), linked.member(), key)
+    }
 }
 
 impl<Schema, Operation, Input, Entity>

@@ -17,6 +17,7 @@ use worth_query_host::facade::{
 };
 
 use super::actions::*;
+use super::body_links::*;
 use super::queries::*;
 use super::schema::*;
 
@@ -75,6 +76,14 @@ worth_query_application_program! {
             };
             body_action(ExhaustedKeyTaskStateBinding, ExhaustedKeyTaskStateDelivery) as ExhaustedKeyTaskStateAction {
                 operation: exhausted_key_task_state_definition();
+            };
+            query(NestedProjectsBinding) { definition: NestedProjectsQuery::definition(); };
+            query(WatchedProjectsBinding) { definition: WatchedProjectsQuery::definition(); };
+            body_action(NewProjectBinding, NewProjectDelivery) as NewProjectAction {
+                operation: new_project_definition();
+            };
+            body_action(SetDependencyBinding, SetDependencyDelivery) as SetDependencyAction {
+                operation: set_dependency_definition();
             };
             body_action_ref(RestoreTaskStateBinding, RestoreTaskStateDelivery) as RestoreTaskStateAction {};
             body_action_ref(SetTaskStateBinding, SetTaskStateDelivery) as SetTaskStateAction {};

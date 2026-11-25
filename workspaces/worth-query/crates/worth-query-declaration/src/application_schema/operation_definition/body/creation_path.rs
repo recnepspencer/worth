@@ -17,7 +17,7 @@ impl ApplicationOperationBodyCreationPathLink {
                 self.link.source,
                 super::ApplicationOperationBodyCreationLinkSource::Scope
             )
-            && self.link.scope_entity() == self.path.terminal_entity()
+            && self.link.scope_entity() == Some(self.path.terminal_entity())
             && !self.link.key.is_empty()
             && self.link.key.trim() == self.link.key
             && !self.link.posture.replaces_selection()

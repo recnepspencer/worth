@@ -2,6 +2,7 @@
 use super::*;
 use crate::application_schema::{
     ApplicationFieldBindingLocus, ApplicationOperationBodyReferenceInput as Reference,
+    ApplicationOperationBodyReferenceInputMode as Mode,
 };
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 #[test]
@@ -25,13 +26,14 @@ fn reference_correspondence_changes_program_meaning_without_rewriting_old_profil
         scalar_family: worth_foundational::facade::ScalarAspectType::UInt64,
         member: "selected".into(),
         key: "selected".into(),
+        mode: Mode::ReplaceNullable,
     };
     let original = operation_body_record(
         &base
             .clone()
             .with_untrusted_reference_inputs(vec![reference.clone()]),
     );
-    for variant in 0..10 {
+    for variant in 0..11 {
         let mut changed = reference.clone();
         match variant {
             0 => changed.relation = "Other".into(),
@@ -46,6 +48,11 @@ fn reference_correspondence_changes_program_meaning_without_rewriting_old_profil
             7 => changed.scalar_family = worth_foundational::facade::ScalarAspectType::String,
             8 => changed.member = "other".into(),
             9 => changed.key = "other".into(),
+            10 => {
+                changed.mode = Mode::ToggleExact {
+                    linked_member: "linked".into(),
+                }
+            }
             _ => unreachable!(),
         }
         assert_ne!(
@@ -54,4 +61,12 @@ fn reference_correspondence_changes_program_meaning_without_rewriting_old_profil
             "member {variant}"
         );
     }
+    let toggle = |linked_member: &str| {
+        let mut toggled = reference.clone();
+        toggled.mode = Mode::ToggleExact {
+            linked_member: linked_member.into(),
+        };
+        operation_body_record(&base.clone().with_untrusted_reference_inputs(vec![toggled]))
+    };
+    assert_ne!(toggle("linked"), toggle("other"));
 }

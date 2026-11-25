@@ -25,6 +25,8 @@ pub(super) fn write(
         output.u16(match link.direction {
             Direction::FromScope => 1,
             Direction::ToScope => 2,
+            Direction::SelfEdge if version >= 41 => 3,
+            Direction::SelfEdge => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
         })?;
         if version >= 19 {
             output.u16(match link.posture {
@@ -73,6 +75,7 @@ pub(super) fn decode(
         let direction = match input.u16()? {
             1 => Direction::FromScope,
             2 => Direction::ToScope,
+            3 if version >= 41 => Direction::SelfEdge,
             _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
         };
         let posture = if version >= 19 {

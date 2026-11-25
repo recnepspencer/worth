@@ -176,6 +176,31 @@ impl<Schema, Operation, Input> TypedApplicationOperationBodyBuilder<Schema, Oper
         })
     }
 
+    /// Links (`linked = true`) or unlinks (`false`) the exact scope-to-target edge
+    /// selected by a required identity input, only when it is absent or present.
+    /// Repeats are no-ops; an unknown target refuses before any effect.
+    pub fn toggle_relation_from_input<R, Root, Selected, F>(
+        self,
+        relation: ApplicationRelationRef<Schema, R, Root, Selected>,
+        identity: F,
+        target: ApplicationInputField<Input, F::Value>,
+        linked: ApplicationInputField<Input, bool>,
+        key: &str,
+    ) -> Self
+    where
+        Operation: ApplicationOperationMarkerIdentity<Schema>,
+        Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+        Root: OperationReads<Operation>,
+        Selected: OperationReads<Operation>,
+        R: OperationReads<Operation> + OperationLinks<Operation> + OperationUnlinks<Operation>,
+        F: RecordSelection<Entity = Selected>,
+        F::Binding: ApplicationIdentityScalarValueBinding,
+    {
+        self.step(|builder| {
+            builder.toggle_relation_from_typed_input(relation, identity, target, linked, key)
+        })
+    }
+
     pub fn create_in_scope<Entity: OperationCreates<Operation>>(
         self,
         entity: ApplicationEntityRef<Schema, Entity>,
@@ -290,6 +315,15 @@ impl<Schema, Operation, Input, Entity>
         key: &str,
     ) -> Self {
         self.step(|builder| builder.link_to_scope(relation, key))
+    }
+
+    /// Links the created entity to itself; `self_edges = false` relations are refused.
+    pub fn link_to_self<Relation: OperationLinks<Operation>>(
+        self,
+        relation: ApplicationRelationRef<Schema, Relation, Entity, Entity>,
+        key: &str,
+    ) -> Self {
+        self.step(|builder| builder.link_to_self(relation, key))
     }
 
     pub fn replace_from_scope<Relation, Scope>(
