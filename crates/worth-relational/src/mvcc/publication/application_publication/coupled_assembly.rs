@@ -231,7 +231,31 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         if let Some(read) = self.read.borrow().as_ref() {
             return Ok(read.clone());
         }
-        let read = RelationalPinnedRead::capture_applied(
+        let read = self.capture_pin(execution, self.aggregate_read(execution)?)?;
+        self.read.replace(Some(read.clone()));
+        Ok(read)
+    }
+
+    /// The retracted image a successor round applies over (#119 §2.3). It
+    /// is never cached and has no aggregate projection: another chain's
+    /// records may name one the round has yet to re-create, so the derived
+    /// laws cannot be read there. The pin after the round projects them.
+    pub(super) fn retracted_pin(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>, TransactionCommitError>
+    {
+        debug_assert!(self.read.borrow().is_none(), "a retracted candidate");
+        self.capture_pin(execution, None)
+    }
+
+    fn capture_pin(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        aggregate: Option<crate::aggregate_identity::AggregateCandidateRead>,
+    ) -> Result<RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>, TransactionCommitError>
+    {
+        RelationalPinnedRead::capture_applied(
             execution,
             self.runtime,
             self.binding.owners.before(),
@@ -241,11 +265,9 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             &self.mutation.content,
             self.mutation.candidate_symbols(),
             &self.mutation.outcome.effect.publication.changed_records,
-            self.aggregate_read(execution)?,
+            aggregate,
             None,
-        )?;
-        self.read.replace(Some(read.clone()));
-        Ok(read)
+        )
     }
 
     /// Whether the unpublished envelope claims group scheme `scheme` (#361).

@@ -18,7 +18,8 @@ impl RelationalAuthoredCoupledCandidate<'_> {
     /// accumulator entries, bindings, fresh custody, index entries and
     /// content leave the candidate, which then reads as it did before the
     /// chain's head for everything the chain changed. Returns the round's
-    /// exact touches with the kind touches retraction implies (§3.7 H-Q).
+    /// exact touches; the kind touches retraction implies (§3.7 H-Q) are
+    /// added only to the successor's append touches, at adoption.
     /// O(|segment| · log n + entries after it + content).
     pub(super) fn retract_chain(
         &mut self,
@@ -87,8 +88,10 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         let attachments = self.live_attachments(execution)?;
         self.mutation.content = self.whole_content(execution, &attachments)?;
         self.recapture_aggregate();
-        // The next read is the internal retracted root over the basis.
+        // The round reads the retracted image through `retracted_pin` only:
+        // another chain's records may still name the ones retracted here
+        // until the round re-creates them, so no pin of it is cached.
         self.read.replace(None);
-        Ok(super::adoption::with_retraction_kinds(superseded))
+        Ok(superseded)
     }
 }
