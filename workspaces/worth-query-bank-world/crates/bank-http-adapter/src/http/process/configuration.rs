@@ -72,7 +72,7 @@ impl BankHttpProcessConfiguration {
             .map_err(BankHttpProcessConfigurationError::Oidc)?;
         let world = self
             .world
-            .build(&oidc)
+            .build()
             .map_err(|_| BankHttpProcessConfigurationError::World)?;
         let cancellation = WorthQueryCancellationSource::new();
         let scope = WorthQueryRequestScope::new(

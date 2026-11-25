@@ -11,6 +11,8 @@ use worth_query_host::facade::{
     primary_graph::*,
     *,
 };
+
+worth_query_decl::facade::worth_query_disclosure_classification!(NumericCausalDiagnosticDisclosure);
 pub struct Slot;
 worth_query_portable_type!(Slot => "numeric-scalar.output-slot.v1");
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -35,7 +37,7 @@ pub fn definition(
     .optional_aspect_field(output())
     .build();
     let disclosure = ApplicationQueryDisclosureContract::governed_by(
-        "numeric-causal-diagnostic",
+        NumericCausalDiagnosticDisclosure,
         capability::Inspect::reference(),
     )
     .disclose_optional_aspect_field_by(

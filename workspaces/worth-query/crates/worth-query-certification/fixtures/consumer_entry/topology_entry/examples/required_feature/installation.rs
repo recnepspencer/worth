@@ -14,6 +14,10 @@ use worth_query_host::facade::declaration::authentication::{
 };
 use worth_query_host::facade::{admission::authenticated_principal as authentication, runtime::*};
 
+worth_query_decl::facade::worth_query_authentication_method!(LocalMethod);
+worth_query_decl::facade::worth_query_authentication_audience!(RequiredFeatureAudience);
+worth_query_decl::facade::worth_query_principal_issuer!(RequiredFeatureInvalidLocalIssuer);
+
 pub fn configuration() -> program::ExampleConfiguration {
     program::ExampleConfiguration {
         source: PlanarSourceRuntime::new(PlanarSourceAdjustmentHandler),
@@ -201,11 +205,8 @@ pub fn limits_for_policy(
 }
 
 fn external_identity() -> WorthQueryExternalPrincipalIdentity {
-    WorthQueryExternalPrincipalIdentity::new(
-        "https://required-feature.invalid/local",
-        "model-owner",
-    )
-    .unwrap()
+    WorthQueryExternalPrincipalIdentity::new(RequiredFeatureInvalidLocalIssuer, "model-owner")
+        .unwrap()
 }
 struct LocalIdentity;
 impl authentication::WorthQueryAuthenticationAdapter for LocalIdentity {
@@ -222,8 +223,8 @@ impl authentication::WorthQueryAuthenticationAdapter for LocalIdentity {
             let now = SystemTime::now();
             authentication::WorthQueryValidatedExternalPrincipal::new(
                 external_identity(),
-                authentication::WorthQueryAuthenticationAudience::new("required-feature").unwrap(),
-                authentication::WorthQueryAuthenticationMethod::new("local").unwrap(),
+                authentication::WorthQueryAuthenticationAudience::of(RequiredFeatureAudience),
+                authentication::WorthQueryAuthenticationMethod::of(LocalMethod),
                 now,
                 now + Duration::from_secs(600),
                 Vec::new(),
@@ -247,8 +248,8 @@ pub fn authenticate(
     let adapter = authentication::admit_authentication_adapter(
         application.installed_schema(),
         authentication::WorthQueryAuthenticationAdapterAdmission::new(
-            authentication::WorthQueryAuthenticationAudience::new("required-feature").unwrap(),
-            authentication::WorthQueryAuthenticationMethod::new("local").unwrap(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
+            authentication::WorthQueryAuthenticationAudience::of(RequiredFeatureAudience),
+            authentication::WorthQueryAuthenticationMethod::of(LocalMethod), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         LocalIdentity,
     )
     .unwrap();

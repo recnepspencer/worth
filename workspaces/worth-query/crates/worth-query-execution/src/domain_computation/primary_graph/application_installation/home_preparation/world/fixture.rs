@@ -8,6 +8,8 @@ use worth_query_declaration::facade::{
 use worth_query_declaration::{
     worth_query_application_query, worth_query_portable_type, worth_query_structured_value_binding,
 };
+
+worth_query_declaration::worth_query_principal_issuer!(HomeCustodyIssuer);
 #[path = "fixture/records.rs"]
 mod records;
 use records::*;
@@ -224,7 +226,7 @@ pub(super) fn seed_principal(
             &installed.principal_binding(principal_binding()).unwrap(),
             WorthQueryApplicationPrincipalKey::new("custody-reader").unwrap(),
             1u64,
-            WorthQueryExternalPrincipalIdentity::new("home-custody", "reader").unwrap(),
+            WorthQueryExternalPrincipalIdentity::new(HomeCustodyIssuer, "reader").unwrap(),
             WorthQueryPrincipalMappingStatus::Enabled,
         )
         .unwrap();

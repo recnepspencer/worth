@@ -23,8 +23,10 @@ pub fn discover_home_target(
         let RecordRef::Entity(entity) = record else {
             continue;
         };
-        match source.entity_kind(*entity) {
-            Ok(kind) if kind == program.scope_kind() => {}
+        // A target step may carry records of any retained kind; only the
+        // Source's declared scope kind roots a closure.
+        match source.declared_entity_kind(*entity) {
+            Ok(Some(kind)) if kind == program.scope_kind() => {}
             Ok(_) | Err(Denial::Definition(Definition::RecordUnavailable)) => continue,
             Err(cause) => return Err(cause),
         }

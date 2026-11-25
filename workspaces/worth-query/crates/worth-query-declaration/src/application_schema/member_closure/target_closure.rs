@@ -90,9 +90,11 @@ impl ClosureIndex<'_> {
                 owner,
                 member,
             } => {
-                self.decision_read_target_exists(&ApplicationOperationDecisionReadTarget::ManagedIndex {
-                    parent: parent.clone(),
-                }) && self
+                self.decision_read_target_exists(
+                    &ApplicationOperationDecisionReadTarget::ManagedIndex {
+                        parent: parent.clone(),
+                    },
+                ) && self
                     .relations
                     .contains(&(relation.as_str(), owner.as_str(), member.as_str()))
             }

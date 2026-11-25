@@ -225,7 +225,7 @@ let definition = ApplicationQueryDefinitionBuilder::declare(AccountActivity::ref
 .scope(Account::reference())
 .result_shape(shape)
 .cardinality(ApplicationQueryCardinality::Many)
-.disclosure(ApplicationQueryDisclosureContract::installed_policy("account-holder"))
+.disclosure(ApplicationQueryDisclosureContract::installed_policy(AccountHolderDisclosure))
 .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
 .lanes(ApplicationQueryLaneEligibility::one_shot().with_historical())
 .public()
@@ -419,11 +419,14 @@ and 64-seed differential DST live in the
 [whole-result live court](../../crates/worth-query-court-decl-host-where-filter/tests/worth_query_court_decl_host_where_filter/live_whole_result/mod.rs).
 
 When the definition is governed, give the optional slot its own disclosure
-rule and keep policy omission typed in the result:
+rule and keep policy omission typed in the result. Disclosure classifications
+are declared types (`worth_query_disclosure_classification!`), never strings:
 
 ```rust
+worth_query_disclosure_classification!(pub AccountDetailDisclosure);
+
 let disclosure = ApplicationQueryDisclosureContract::governed_by(
-    "account-detail",
+    AccountDetailDisclosure,
     ViewAccountDetailCapability::reference(),
 )
 .disclose_field_by(

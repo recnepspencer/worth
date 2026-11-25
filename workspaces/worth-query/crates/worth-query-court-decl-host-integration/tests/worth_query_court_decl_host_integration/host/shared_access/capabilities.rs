@@ -2,9 +2,17 @@
 
 use worth_query_decl::facade::{
     application_capability::*,
-    application_schema::{fragment::Registration, *},
+    application_schema::{
+        fragment::{RecordSelection, Registration},
+        *,
+    },
     worth_query_capability, worth_query_capability_context, worth_query_capability_provenance,
     worth_query_operation, worth_query_operation_reads, worth_query_structured_value_binding,
+};
+
+use worth_query_host::facade::shared_access::{
+    scope_grant_value, ScopeAccess, ScopeGrantAction, ScopeGrantDisclosure,
+    ScopeGrantDisclosureBinding, ScopeGrantPurpose,
 };
 
 use super::schema::{
@@ -72,9 +80,14 @@ pub fn text(value: &str) -> ApplicationEncodedScalarValue<StringApplicationValue
     ApplicationEncodedScalarValue::try_new(value.to_owned()).unwrap()
 }
 
-fn project_capability_request(
+/// The disclosure value a read grant carries.
+pub fn scope_view() -> ApplicationEncodedScalarValue<ScopeGrantDisclosureBinding> {
+    scope_grant_value(ScopeGrantDisclosure::ScopeView)
+}
+
+fn project_capability_request<Dimension: ApplicationScalarValueBinding>(
     project_key: &str,
-    field_token: &str,
+    dimension: ApplicationEncodedScalarValue<Dimension>,
 ) -> Result<
     ApplicationCapabilityRequestProjection<SharedProjectSchema, Project, SharedAccessContext>,
     ApplicationCapabilityRequestProjectionDenial,
@@ -85,11 +98,11 @@ fn project_capability_request(
             text(project_key),
         )
         .unwrap(),
-        text("access"),
-        text("shared"),
+        scope_grant_value(ScopeGrantAction::Access),
+        scope_grant_value(ScopeGrantPurpose::Shared),
         ApplicationCapabilityRequestContext::new(SharedAccessContext::reference()),
     )
-    .field(text(field_token)))
+    .field(dimension))
 }
 
 impl ApplicationCapabilityRequest<SharedProjectSchema, ReadProjectCapability> for String {
@@ -101,7 +114,7 @@ impl ApplicationCapabilityRequest<SharedProjectSchema, ReadProjectCapability> fo
         ApplicationCapabilityRequestProjection<SharedProjectSchema, Project, SharedAccessContext>,
         ApplicationCapabilityRequestProjectionDenial,
     > {
-        project_capability_request(self, "project_version")
+        project_capability_request(self, scope_view())
     }
 }
 
@@ -114,7 +127,7 @@ impl ApplicationCapabilityRequest<SharedProjectSchema, WatchProjectCapability> f
         ApplicationCapabilityRequestProjection<SharedProjectSchema, Project, SharedAccessContext>,
         ApplicationCapabilityRequestProjectionDenial,
     > {
-        project_capability_request(self, "read_and_watch")
+        project_capability_request(self, scope_grant_value(ScopeAccess::ReadAndWatch))
     }
 }
 
@@ -193,7 +206,7 @@ impl Registration<SharedProjectSchema> for ReadProjectCapability {
             ReadProjectCapability::reference(),
             ReadProjectOperation::reference(),
             GrantDisclosureField::at("GrantDisclosure"),
-            vec![text("project_version")],
+            vec![scope_view()],
         )))
     }
 }
@@ -209,18 +222,19 @@ impl Registration<SharedProjectSchema> for WatchProjectCapability {
             WatchProjectCapability::reference(),
             WatchProjectOperation::reference(),
             GrantModeField::at("GrantMode"),
-            vec![text("read_and_watch")],
+            vec![scope_grant_value(ScopeAccess::ReadAndWatch)],
         )))
     }
 }
 
-pub(super) fn build_capability_contract<Cap, Op>(
+pub(super) fn build_capability_contract<Cap, Op, Dimension>(
     capability: ApplicationCapabilityRef<SharedProjectSchema, Cap>,
     operation: ApplicationOperationRef<SharedProjectSchema, Op, String>,
-    field_dimension: GrantDisclosureField,
-    accepted_values: Vec<ApplicationEncodedScalarValue<StringApplicationValueBinding>>,
+    field_dimension: Dimension,
+    accepted_values: Vec<ApplicationEncodedScalarValue<Dimension::Binding>>,
 ) -> ApplicationCapabilityContract<SharedProjectSchema, Cap, Op, String>
 where
+    Dimension: RecordSelection<Entity = ProjectGrant> + Copy + 'static,
     Cap: ApplicationCapabilityMarkerIdentity + 'static,
     Op: ApplicationOperationMarkerIdentity<SharedProjectSchema> + 'static,
     Op::InputBinding: ApplicationStructuredValueBinding<Value = String>,
@@ -243,18 +257,22 @@ where
         .build()
 }
 
-fn capability_target(
-    field_dimension: GrantDisclosureField,
-) -> ApplicationCapabilityTargetDefinition {
+fn capability_target<Dimension>(field_dimension: Dimension) -> ApplicationCapabilityTargetDefinition
+where
+    Dimension: RecordSelection<Entity = ProjectGrant> + Copy + 'static,
+{
     ApplicationCapabilityTargetDefinition::new(
-        ApplicationCapabilityValueBinding::new(GrantActionField::at("GrantAction"), text("access"))
-            .unwrap(),
+        ApplicationCapabilityValueBinding::new(
+            GrantActionField::at("GrantAction"),
+            scope_grant_value(ScopeGrantAction::Access),
+        )
+        .unwrap(),
         ApplicationCapabilityRelationBinding::from_reference(GrantResource::reference()),
         ApplicationCapabilityRelationDimension::not_applicable(),
         ApplicationCapabilityFieldDimension::bound(field_dimension).unwrap(),
         ApplicationCapabilityValueBinding::new(
             GrantPurposeField::at("GrantPurpose"),
-            text("shared"),
+            scope_grant_value(ScopeGrantPurpose::Shared),
         )
         .unwrap(),
     )
@@ -310,11 +328,14 @@ fn capability_delegation() -> ApplicationCapabilityDelegationDefinition {
     )
 }
 
-fn capability_composition(
+fn capability_composition<Dimension>(
     allow: ApplicationAuthorizationPath,
-    field_dimension: GrantDisclosureField,
-    accepted_values: Vec<ApplicationEncodedScalarValue<StringApplicationValueBinding>>,
-) -> ApplicationCapabilityComposition {
+    field_dimension: Dimension,
+    accepted_values: Vec<ApplicationEncodedScalarValue<Dimension::Binding>>,
+) -> ApplicationCapabilityComposition
+where
+    Dimension: RecordSelection<Entity = ProjectGrant> + Copy + 'static,
+{
     ApplicationCapabilityComposition::new(
         ApplicationCapabilityDecisionComposition::new(
             ApplicationCapabilityAllowRule::new(ApplicationCapabilityGraphRule::any([

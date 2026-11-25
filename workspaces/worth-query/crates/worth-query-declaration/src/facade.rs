@@ -8,6 +8,10 @@
 /// siblings), each bound by `worth_query_native_scalar_bindings!`.
 pub mod application_schema {
     pub use crate::application_schema::*;
+    pub use crate::recurring_vocabulary::{
+        WorthQueryRecurringGate, WorthQueryRecurringGateBinding, WorthQueryRecurringLifecycle,
+        WorthQueryRecurringLifecycleBinding,
+    };
     pub use worth_foundational::facade::{
         CanonicalDate, CanonicalF32, CanonicalF64, CanonicalTemporalTextDenial, CanonicalTime,
         CanonicalTimestamp, CanonicalTimestampTz, InlineBytes, InlineBytesLengthDenial,

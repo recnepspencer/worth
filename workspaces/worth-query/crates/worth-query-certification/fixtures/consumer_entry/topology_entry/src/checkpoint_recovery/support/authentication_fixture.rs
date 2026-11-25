@@ -6,6 +6,12 @@ use std::task::{Context, Poll, Waker};
 use std::time::{Duration, SystemTime};
 use worth_query_host::facade::declaration::authentication::WorthQueryExternalPrincipalIdentity;
 
+worth_query_decl::facade::worth_query_authentication_method!(LocalMethod);
+worth_query_decl::facade::worth_query_authentication_audience!(CheckpointAudience);
+worth_query_decl::facade::worth_query_authentication_audience!(NeutralHistoryAudience);
+worth_query_decl::facade::worth_query_principal_issuer!(CheckpointInvalidLocalIssuer);
+worth_query_decl::facade::worth_query_principal_issuer!(NeutralHistoryInvalidLocalIssuer);
+
 #[derive(Clone, Copy)]
 pub(in super::super) enum FixtureAuthenticationRealm {
     Checkpoint,
@@ -13,10 +19,14 @@ pub(in super::super) enum FixtureAuthenticationRealm {
 }
 
 impl FixtureAuthenticationRealm {
-    fn audience(self) -> &'static str {
+    fn audience(self) -> authentication::WorthQueryAuthenticationAudience {
         match self {
-            Self::Checkpoint => "checkpoint",
-            Self::NeutralHistory => "neutral-history",
+            Self::Checkpoint => {
+                authentication::WorthQueryAuthenticationAudience::of(CheckpointAudience)
+            }
+            Self::NeutralHistory => {
+                authentication::WorthQueryAuthenticationAudience::of(NeutralHistoryAudience)
+            }
         }
     }
 
@@ -28,11 +38,17 @@ impl FixtureAuthenticationRealm {
     }
 
     pub(in super::super) fn external_identity(self) -> WorthQueryExternalPrincipalIdentity {
-        let issuer = match self {
-            Self::Checkpoint => "https://checkpoint.invalid/local",
-            Self::NeutralHistory => "https://neutral-history.invalid/local",
-        };
-        WorthQueryExternalPrincipalIdentity::new(issuer, "model-owner").unwrap()
+        match self {
+            Self::Checkpoint => WorthQueryExternalPrincipalIdentity::new(
+                CheckpointInvalidLocalIssuer,
+                "model-owner",
+            ),
+            Self::NeutralHistory => WorthQueryExternalPrincipalIdentity::new(
+                NeutralHistoryInvalidLocalIssuer,
+                "model-owner",
+            ),
+        }
+        .unwrap()
     }
 }
 
@@ -55,8 +71,8 @@ impl authentication::WorthQueryAuthenticationAdapter for LocalIdentityAdapter {
             let now = SystemTime::now();
             authentication::WorthQueryValidatedExternalPrincipal::new(
                 self.0.external_identity(),
-                authentication::WorthQueryAuthenticationAudience::new(self.0.audience()).unwrap(),
-                authentication::WorthQueryAuthenticationMethod::new("local").unwrap(),
+                self.0.audience(),
+                authentication::WorthQueryAuthenticationMethod::of(LocalMethod),
                 now,
                 furthest_principal_expiry(now),
                 Vec::new(),
@@ -133,8 +149,8 @@ pub(in super::super) fn authenticate_in_realm<Schema: ApplicationSchema + 'stati
     let adapter = authentication::admit_authentication_adapter(
         application.installed_schema(),
         authentication::WorthQueryAuthenticationAdapterAdmission::new(
-            authentication::WorthQueryAuthenticationAudience::new(realm.audience()).unwrap(),
-            authentication::WorthQueryAuthenticationMethod::new("local").unwrap(),
+            realm.audience(),
+            authentication::WorthQueryAuthenticationMethod::of(LocalMethod),
             clock,
         ),
         LocalIdentityAdapter(realm),

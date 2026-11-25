@@ -8,6 +8,8 @@ use worth_query_host::facade::{
     application_contribution::*, application_entry::*, application_installation::*,
     primary_graph::*,
 };
+
+worth_query_host::facade::worth_query_principal_issuer!(OwnershipInvalidIssuer);
 mod worker_requests;
 use worker_requests::host_limits;
 mod readiness;
@@ -49,7 +51,7 @@ fn install<const MODE: u8>() -> Result<
                 &installed.principal_binding(actor()).unwrap(),
                 WorthQueryApplicationPrincipalKey::new("operator").unwrap(),
                 1,
-                WorthQueryExternalPrincipalIdentity::new("https://ownership.invalid", "operator")
+                WorthQueryExternalPrincipalIdentity::new(OwnershipInvalidIssuer, "operator")
                     .unwrap(),
                 WorthQueryPrincipalMappingStatus::Enabled,
             )?;

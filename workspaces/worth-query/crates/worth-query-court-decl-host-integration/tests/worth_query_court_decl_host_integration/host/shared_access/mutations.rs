@@ -18,7 +18,7 @@ use super::schema::{
     SharedProjectSchema,
 };
 
-pub const ISSUER: &str = "https://daymark.local";
+worth_query_decl::facade::worth_query_principal_issuer!(pub DaymarkLocalIssuer);
 pub const OWNER_SUBJECT: &str = "owner";
 pub const ALICE_SUBJECT: &str = "alice";
 pub const BOB_SUBJECT: &str = "bob";
@@ -27,15 +27,15 @@ pub const ALICE_PRINCIPAL_ID: u64 = 2;
 pub const BOB_PRINCIPAL_ID: u64 = 3;
 
 pub fn owner_identity() -> WorthQueryExternalPrincipalIdentity {
-    WorthQueryExternalPrincipalIdentity::new(ISSUER, OWNER_SUBJECT).unwrap()
+    WorthQueryExternalPrincipalIdentity::new(DaymarkLocalIssuer, OWNER_SUBJECT).unwrap()
 }
 
 pub fn alice_identity() -> WorthQueryExternalPrincipalIdentity {
-    WorthQueryExternalPrincipalIdentity::new(ISSUER, ALICE_SUBJECT).unwrap()
+    WorthQueryExternalPrincipalIdentity::new(DaymarkLocalIssuer, ALICE_SUBJECT).unwrap()
 }
 
 pub fn bob_identity() -> WorthQueryExternalPrincipalIdentity {
-    WorthQueryExternalPrincipalIdentity::new(ISSUER, BOB_SUBJECT).unwrap()
+    WorthQueryExternalPrincipalIdentity::new(DaymarkLocalIssuer, BOB_SUBJECT).unwrap()
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
@@ -139,9 +139,8 @@ impl ApplicationMutationIntent<SharedProjectSchema> for WriteProjectIntent {
 pub struct GrantProjectInput {
     pub grant_id: String,
     pub project_key: String,
-    pub grantee_issuer: String,
-    pub grantee_subject: String,
-    pub mode: String,
+    pub grantee: WorthQueryExternalPrincipalIdentity,
+    pub mode: worth_query_host::facade::shared_access::ScopeAccess,
 }
 worth_query_portable_type!(GrantProjectInput => "worth.query.court.shared_access.grant_input.v1");
 worth_query_structured_value_binding!(pub GrantProjectInputBinding for GrantProjectInput {

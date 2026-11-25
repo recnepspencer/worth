@@ -12,9 +12,16 @@ mod binding;
 mod capped_writer;
 mod client;
 mod denial;
+mod field_codec;
 mod framing;
+mod grant_vocabulary;
 mod hmac;
 mod home_ops;
+mod program_macro;
+mod scope_access_action_macro;
+mod scope_access_contract_macro;
+mod scope_access_macro;
+mod scope_access_schema_macro;
 mod scope_binding;
 mod server;
 mod server_dispatch;
@@ -32,6 +39,17 @@ pub use denial::{
     AuthenticationRefusalReason, AuthorizationRefusalReason, BudgetRefusalReason,
     ProtocolRefusalReason, SharedAccessDenial, WatchRefusalReason,
 };
+pub use field_codec::{RemoteBinaryField, RemoteByteReader};
+pub use grant_vocabulary::{
+    scope_grant_value, ScopeAccessBinding, ScopeGrantAction, ScopeGrantActionBinding,
+    ScopeGrantDisclosure, ScopeGrantDisclosureBinding, ScopeGrantPurpose, ScopeGrantPurposeBinding,
+    ScopeGrantValue,
+};
+pub use program_macro::{
+    scope_grant_idempotency_key, scope_revoke_idempotency_key, WORTH_QUERY_SHARED_GRANT_KEY_TAG,
+    WORTH_QUERY_SHARED_REVOKE_KEY_TAG, WORTH_QUERY_SHARED_SEQUENCE_MASK,
+};
+pub use scope_access_macro::WorthQueryScopeGrantRefusal;
 pub use server::WorthQueryRemoteServer;
 pub use types::{
     RemoteClientLimits, RemoteServerLimits, RemoteWatchId, RemoteWatchPollOutcome, ScopeAccess,

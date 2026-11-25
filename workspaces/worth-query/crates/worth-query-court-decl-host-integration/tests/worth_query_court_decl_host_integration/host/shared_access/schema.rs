@@ -11,6 +11,11 @@ use worth_query_decl::facade::{
     },
 };
 
+use worth_query_host::facade::shared_access::{
+    ScopeAccess, ScopeAccessBinding, ScopeGrantAction, ScopeGrantActionBinding,
+    ScopeGrantDisclosure, ScopeGrantDisclosureBinding, ScopeGrantPurpose, ScopeGrantPurposeBinding,
+};
+
 use super::alias_shift_contract::{
     SetProjectAlias, SetProjectAliasBinding, WatchProjectByAliasCapability,
     WatchProjectByAliasOperation,
@@ -131,6 +136,22 @@ impl Scalar<u64> for SharedModelBindings {
 }
 impl Scalar<String> for SharedModelBindings {
     type Binding = StringApplicationValueBinding;
+    const WRITABLE: bool = true;
+}
+impl Scalar<ScopeAccess> for SharedModelBindings {
+    type Binding = ScopeAccessBinding;
+    const WRITABLE: bool = true;
+}
+impl Scalar<ScopeGrantAction> for SharedModelBindings {
+    type Binding = ScopeGrantActionBinding;
+    const WRITABLE: bool = true;
+}
+impl Scalar<ScopeGrantPurpose> for SharedModelBindings {
+    type Binding = ScopeGrantPurposeBinding;
+    const WRITABLE: bool = true;
+}
+impl Scalar<ScopeGrantDisclosure> for SharedModelBindings {
+    type Binding = ScopeGrantDisclosureBinding;
     const WRITABLE: bool = true;
 }
 impl Scalar<bool> for SharedModelBindings {
@@ -287,10 +308,10 @@ impl Aspect for ProjectGrantAspect {
 }
 pub struct ProjectGrantRecord {
     pub grant_id: String,
-    pub action: String,
-    pub purpose: String,
-    pub disclosure: String,
-    pub mode: String,
+    pub action: ScopeGrantAction,
+    pub purpose: ScopeGrantPurpose,
+    pub disclosure: ScopeGrantDisclosure,
+    pub mode: ScopeAccess,
     pub active: bool,
     pub workflow: String,
     pub not_before: u64,
@@ -301,12 +322,10 @@ impl Record<ProjectGrantRecord> for SharedModelBindings {
     fn record() -> impl Shape<ProjectGrantRecord, Self> {
         field("GrantId", |r: &ProjectGrantRecord| r.grant_id.clone())
             .equality_queryable(true)
-            .and("GrantAction", |r: &ProjectGrantRecord| r.action.clone())
-            .and("GrantPurpose", |r: &ProjectGrantRecord| r.purpose.clone())
-            .and("GrantDisclosure", |r: &ProjectGrantRecord| {
-                r.disclosure.clone()
-            })
-            .and("GrantMode", |r: &ProjectGrantRecord| r.mode.clone())
+            .and("GrantAction", |r: &ProjectGrantRecord| r.action)
+            .and("GrantPurpose", |r: &ProjectGrantRecord| r.purpose)
+            .and("GrantDisclosure", |r: &ProjectGrantRecord| r.disclosure)
+            .and("GrantMode", |r: &ProjectGrantRecord| r.mode)
             .and("GrantActive", |r: &ProjectGrantRecord| r.active)
             .and("GrantWorkflow", |r: &ProjectGrantRecord| r.workflow.clone())
             .and("GrantNotBefore", |r: &ProjectGrantRecord| r.not_before)
@@ -360,11 +379,14 @@ pub type ProjectKeyField = FieldSelection<SharedModel, Project, ProjectStateAspe
 pub type ProjectVersionField = FieldSelection<SharedModel, Project, ProjectStateAspect, u64>;
 pub type ProjectAliasField = FieldSelection<SharedModel, Project, ProjectStateAspect, String>;
 pub type GrantIdField = FieldSelection<SharedModel, ProjectGrant, ProjectGrantAspect, String>;
-pub type GrantActionField = FieldSelection<SharedModel, ProjectGrant, ProjectGrantAspect, String>;
-pub type GrantPurposeField = FieldSelection<SharedModel, ProjectGrant, ProjectGrantAspect, String>;
+pub type GrantActionField =
+    FieldSelection<SharedModel, ProjectGrant, ProjectGrantAspect, ScopeGrantAction>;
+pub type GrantPurposeField =
+    FieldSelection<SharedModel, ProjectGrant, ProjectGrantAspect, ScopeGrantPurpose>;
 pub type GrantDisclosureField =
-    FieldSelection<SharedModel, ProjectGrant, ProjectGrantAspect, String>;
-pub type GrantModeField = FieldSelection<SharedModel, ProjectGrant, ProjectGrantAspect, String>;
+    FieldSelection<SharedModel, ProjectGrant, ProjectGrantAspect, ScopeGrantDisclosure>;
+pub type GrantModeField =
+    FieldSelection<SharedModel, ProjectGrant, ProjectGrantAspect, ScopeAccess>;
 pub type GrantActiveField = FieldSelection<SharedModel, ProjectGrant, ProjectGrantAspect, bool>;
 pub type GrantWorkflowField = FieldSelection<SharedModel, ProjectGrant, ProjectGrantAspect, String>;
 pub type GrantNotBeforeField = FieldSelection<SharedModel, ProjectGrant, ProjectGrantAspect, u64>;

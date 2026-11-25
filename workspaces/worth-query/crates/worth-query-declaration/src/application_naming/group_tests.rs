@@ -134,7 +134,8 @@ fn schema_builder_carries_group_name_scheme_with_sensitive_canonical_identity() 
         const NAME: &'static str = "GroupSchema";
 
         fn declaration(
-        ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial>
+        {
             let group = Builder::<Self, Space>::new("cad.space.v1", "Space", Rule::Boundary)
                 .role_order(&["wall", "producer", "void"])
                 .boundary_role("wall")
@@ -153,7 +154,8 @@ fn schema_builder_carries_group_name_scheme_with_sensitive_canonical_identity() 
         const NAME: &'static str = "GroupSchema";
 
         fn declaration(
-        ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+        ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial>
+        {
             let group = Builder::<Self, Space>::new("cad.space.v1", "Space", Rule::ProducerRole)
                 .role_order(&["wall", "producer", "void"])
                 .anchor_role("producer")

@@ -5,6 +5,8 @@ pub use worth_query_host::facade::{declaration, primary_graph};
 pub use super::super::{adapters::block_on, schema::*};
 pub use super::{admit_identity_adapter, request_scope, CourtroomWorld};
 
+worth_query_decl::facade::worth_query_principal_issuer!(IssuerExampleIssuer);
+
 impl CourtroomWorld {
     pub fn revoke_principal_on_default_product(&self) {
         let schema = self.application.installed_schema();
@@ -42,7 +44,7 @@ impl CourtroomWorld {
                         &phase,
                         ExternalIdentityField::at("ExternalIdentityField"),
                         declaration::authentication::WorthQueryExternalPrincipalIdentity::new(
-                            "https://issuer.example",
+                            IssuerExampleIssuer,
                             "temporal-host",
                         )
                         .unwrap(),
@@ -181,7 +183,7 @@ pub fn projection_target_is_bound_to_exact_admission() {
                             &phase,
                             ExternalIdentityField::at("ExternalIdentityField"),
                             declaration::authentication::WorthQueryExternalPrincipalIdentity::new(
-                                "https://issuer.example",
+                                IssuerExampleIssuer,
                                 "temporal-host",
                             )
                             .unwrap(),

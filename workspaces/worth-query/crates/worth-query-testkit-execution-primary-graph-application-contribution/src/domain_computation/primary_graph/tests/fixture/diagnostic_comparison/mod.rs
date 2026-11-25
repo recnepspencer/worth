@@ -38,6 +38,9 @@ pub use crate::domain_computation::primary_graph::tests::fixture::diagnostic_com
 pub use crate::domain_computation::primary_graph::tests::fixture::diagnostic_comparison::shape::DiagnosticResultBinding;
 use crate::domain_computation::primary_graph::tests::fixture::diagnostic_comparison::shape::DiagnosticUnitBinding;
 
+worth_query_declaration::worth_query_disclosure_classification!(DiagnosticAccountDisclosure);
+worth_query_declaration::worth_query_disclosure_classification!(DiagnosticMetadataDisclosure);
+
 worth_query_declaration::worth_query_structured_value_binding!(pub DiagnosticParametersBinding for AccountSummaryParameters { identity: "AccountSummaryParameters" });
 
 macro_rules! query {
@@ -117,7 +120,7 @@ where
         )
     };
     let disclosure = ApplicationQueryDisclosureContract::governed_by(
-        "diagnostic-account",
+        DiagnosticAccountDisclosure,
         TouchAccountCapability::reference(),
     )
     .use_field_by(
@@ -179,7 +182,7 @@ pub fn governed_metadata(
         .into_iter()
         .fold(
             ApplicationQueryDisclosureContract::governed_by(
-                "diagnostic-metadata",
+                DiagnosticMetadataDisclosure,
                 TouchAccountCapability::reference(),
             ),
             |contract, facet| {

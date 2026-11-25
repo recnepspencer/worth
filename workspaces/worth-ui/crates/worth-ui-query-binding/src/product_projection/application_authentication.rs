@@ -13,6 +13,9 @@ use crate::declaration::WorthUiApplicationSchema;
 use super::application_runtime::external_identity;
 use super::WorthUiStatusOwnerError;
 
+worth_query_decl::facade::worth_query_authentication_method!(LocalSourceOwnerMethod);
+worth_query_decl::facade::worth_query_authentication_audience!(WorthUiPlatformPulseAudience);
+
 pub(super) struct WorthUiLocalSourceAdapter;
 
 pub(super) struct WorthUiLocalSourceCredential;
@@ -33,10 +36,8 @@ impl authentication::WorthQueryAuthenticationAdapter for WorthUiLocalSourceAdapt
             let now = SystemTime::now();
             authentication::WorthQueryValidatedExternalPrincipal::new(
                 external_identity(),
-                authentication::WorthQueryAuthenticationAudience::new("worth-ui-platform-pulse")
-                    .expect("the local UI audience is canonical"),
-                authentication::WorthQueryAuthenticationMethod::new("local-source-owner")
-                    .expect("the local UI method is canonical"),
+                authentication::WorthQueryAuthenticationAudience::of(WorthUiPlatformPulseAudience),
+                authentication::WorthQueryAuthenticationMethod::of(LocalSourceOwnerMethod),
                 now,
                 now + Duration::from_secs(120),
                 Vec::new(),
@@ -69,10 +70,8 @@ pub(super) fn authenticate(
     let adapter = authentication::admit_authentication_adapter(
         schema,
         authentication::WorthQueryAuthenticationAdapterAdmission::new(
-            authentication::WorthQueryAuthenticationAudience::new("worth-ui-platform-pulse")
-                .expect("the local UI audience is canonical"),
-            authentication::WorthQueryAuthenticationMethod::new("local-source-owner")
-                .expect("the local UI method is canonical"),
+            authentication::WorthQueryAuthenticationAudience::of(WorthUiPlatformPulseAudience),
+            authentication::WorthQueryAuthenticationMethod::of(LocalSourceOwnerMethod),
             authentication::WorthQueryAdmissionClock::system(),
         ),
         WorthUiLocalSourceAdapter,

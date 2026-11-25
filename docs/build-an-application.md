@@ -3930,11 +3930,16 @@ use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryAuthenticationAudience, WorthQueryAuthenticationMethod,
 };
 
+// Audiences, methods and issuers are declared types, never strings.
+worth_query_authentication_audience!(pub HostAudience);
+worth_query_authentication_method!(pub ExampleMethod);
+worth_query_principal_issuer!(pub ExampleIssuer);
+
 let adapter = admit_authentication_adapter(
     application.runtime.installed_schema(),
     WorthQueryAuthenticationAdapterAdmission::new(
-        WorthQueryAuthenticationAudience::new("host")?,
-        WorthQueryAuthenticationMethod::new("example")?,
+        WorthQueryAuthenticationAudience::of(HostAudience),
+        WorthQueryAuthenticationMethod::of(ExampleMethod),
         admission_clock.clone(), // the observer installed with the runtime time source
     ),
     IdentityAdapter,          // your impl of WorthQueryAuthenticationAdapter
@@ -3952,15 +3957,16 @@ executor:
 ```rust,ignore
 // Illustrative: not compiled. The compiled court is
 // worth-query-court-decl-host-integration/.../host/application_startup/local_principal.rs.
+worth_query_principal_issuer!(pub BoardLocal);
+worth_query_authentication_method!(pub LocalProcess);
+
 let local = WorthQueryLocalProcessPrincipal::new(
-    "board.local-owner.v1",                 // configuration identity
-    WorthQueryExternalPrincipalIdentity::new("local://board", "owner")?,
-    WorthQueryAuthenticationAudience::new("host")?,
-    WorthQueryAuthenticationMethod::new("local-process")?,
+    WorthQueryExternalPrincipalIdentity::new(BoardLocal, "owner")?,
+    HostAudience,
+    LocalProcess,
     Duration::from_secs(600),               // finite; zero is refused
 )?;
-let principal = admit_authentication_adapter(schema, admission, local)?
-    .authenticate_local(&scope)?;
+let principal = local.admit(schema, clock)?.authenticate_local(&scope)?;
 ```
 
 The admission's audience, method and clock are checked exactly as for a remote
@@ -3969,7 +3975,10 @@ expired identity is refused at request admission like any other credential.
 
 `IdentityAdapter` implements `WorthQueryAuthenticationAdapter`: it names its
 `Credential` type and returns a `WorthQueryValidatedExternalPrincipal` from
-`validate` (see `.../product_workflow_support/adapters.rs`). The external
+`validate` (see `.../product_workflow_support/adapters.rs`). A verifier maps
+each credential issuer it trusts onto a declared issuer type
+(`WorthQueryExternalPrincipalIdentity::new(ExampleIssuer, subject)`); an
+undeclared issuer cannot form an identity at all. The external
 identity must already be bound to a principal in the graph. The example does
 that while seeding, in the `initial_state` closure from §4.1:
 
@@ -3982,7 +3991,7 @@ graph.bind_principal(
     primary_graph::WorthQueryApplicationPrincipalKey::new("product-example")?,
     1_u64,                    // the application's own principal id
     declaration::authentication::WorthQueryExternalPrincipalIdentity::new(
-        "https://issuer.example",
+        ExampleIssuer,
         "product-example",
     )?,
     declaration::authentication::WorthQueryPrincipalMappingStatus::Enabled,
@@ -9938,7 +9947,16 @@ envelopes, named-clock plumbing, and reconstruction bindings separately. Use
    in the binding spec so Query observes, verifies against the projected due
    coordinate, and writes `revision`, `lifecycle`, and `due` atomically in the
    same commit as `apply`.
+   For the common recurring rule (an entity with `rule_id`, `revision`,
+   `due_ns`, `interval_ns`, `max_fires`, `fired_count`, `lifecycle` and `gate`
+   fields under one hub row), `worth_query_recurring_rule!` declares the whole
+   binding (node, clock, projector, invoker, fresh owner admission, fire
+   operation and schedule upsert handler) in one block; install it with
+   `conditionals: Config { recurrence: Rule }` in `worth_query_application_program!`
+   and seed its hub with `Rule::seed_hub(bootstrap)`.
 5. **Pump missed occurrences on reopen in one Home call** via
+   `session.catch_up_temporal::<MyTemporalBinding>(now, WorthQueryTemporalCatchUpPolicy::bounded(64)?)?`
+   (funded by the session's execution policy) or
    `home.catch_up_temporal::<MyTemporalBinding>(now, execution, WorthQueryTemporalCatchUpPolicy::bounded(64)?)?`
    (or `home.catch_up_temporal_observing::<MyTemporalBinding>(now, execution, policy, |batch| ..)`,
    `home.pump_temporal::<MyTemporalBinding>(execution, policy)`, or

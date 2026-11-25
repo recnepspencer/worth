@@ -29,10 +29,10 @@ use worth_query_host::facade::primary_graph::WorthQueryRuntimeTimeSource;
 use super::super::super::protocol::{BankHttpCredential, BankHttpDenial};
 use super::super::authentication::BankHttpApplicationAuthenticator;
 
-const TEST_ISSUER: &str = "https://bank-http.test.invalid";
+worth_query_host::facade::worth_query_principal_issuer!(BankHttpTestIssuer);
 const TEST_SUBJECT: &str = "tcp-owner";
-const TEST_AUDIENCE: &str = "bank-http-test";
-const TEST_METHOD: &str = "causal-http-test";
+worth_query_host::facade::worth_query_authentication_audience!(BankHttpTestAudience);
+worth_query_host::facade::worth_query_authentication_method!(CausalHttpTestMethod);
 
 mod estate;
 mod expiring_authentication;
@@ -224,15 +224,15 @@ fn world_seed(account: AccountId) -> BankWorldSeed {
         .principal(BankPrincipalSeed::enabled(principal, external_identity()))
         .principal(BankPrincipalSeed::enabled(
             BankPrincipalId::new(2).unwrap(),
-            WorthQueryExternalPrincipalIdentity::new(TEST_ISSUER, "estate-subject").unwrap(),
+            WorthQueryExternalPrincipalIdentity::new(BankHttpTestIssuer, "estate-subject").unwrap(),
         ))
         .principal(BankPrincipalSeed::enabled(
             BankPrincipalId::new(3).unwrap(),
-            WorthQueryExternalPrincipalIdentity::new(TEST_ISSUER, "beneficiary").unwrap(),
+            WorthQueryExternalPrincipalIdentity::new(BankHttpTestIssuer, "beneficiary").unwrap(),
         ))
         .principal(BankPrincipalSeed::enabled(
             BankPrincipalId::new(4).unwrap(),
-            WorthQueryExternalPrincipalIdentity::new(TEST_ISSUER, "executor").unwrap(),
+            WorthQueryExternalPrincipalIdentity::new(BankHttpTestIssuer, "executor").unwrap(),
         ))
         .principal(BankPrincipalSeed::enabled(
             BankPrincipalId::new(5).unwrap(),
@@ -366,15 +366,15 @@ pub(super) fn external_identity() -> WorthQueryExternalPrincipalIdentity {
 }
 
 fn external_identity_for(subject: &str) -> WorthQueryExternalPrincipalIdentity {
-    WorthQueryExternalPrincipalIdentity::new(TEST_ISSUER, subject).unwrap()
+    WorthQueryExternalPrincipalIdentity::new(BankHttpTestIssuer, subject).unwrap()
 }
 
 fn audience() -> WorthQueryAuthenticationAudience {
-    WorthQueryAuthenticationAudience::new(TEST_AUDIENCE).unwrap()
+    WorthQueryAuthenticationAudience::of(BankHttpTestAudience)
 }
 
 fn method() -> WorthQueryAuthenticationMethod {
-    WorthQueryAuthenticationMethod::new(TEST_METHOD).unwrap()
+    WorthQueryAuthenticationMethod::of(CausalHttpTestMethod)
 }
 
 pub(super) mod expiring_notification;

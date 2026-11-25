@@ -12,6 +12,9 @@ use worth_query_host::facade::{
     WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeRequest,
     WorthQueryWorkflowApplicationHome,
 };
+
+worth_query_decl::facade::worth_query_authentication_method!(CertificationMethod);
+worth_query_decl::facade::worth_query_authentication_audience!(DocumentRetentionHostAudience);
 type Home = WorthQueryWorkflowApplicationHome<Schema, Spec, Program>;
 fn input() -> SetRetentionInput {
     SetRetentionInput {
@@ -74,8 +77,8 @@ fn authenticate(
     let adapter = admit_authentication_adapter(
         home.runtime().installed_schema(),
         WorthQueryAuthenticationAdapterAdmission::new(
-            WorthQueryAuthenticationAudience::new("document-retention-host").unwrap(),
-            WorthQueryAuthenticationMethod::new("certification").unwrap(),
+            WorthQueryAuthenticationAudience::of(DocumentRetentionHostAudience),
+            WorthQueryAuthenticationMethod::of(CertificationMethod),
             scope.clock().clone(),
         ),
         document::operator_identity::OperatorAdapter,

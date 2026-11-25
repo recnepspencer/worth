@@ -438,6 +438,19 @@ the Home's durable derived checkpoint (`home.checkpoint` and its anchored
 members) so reopen reconstructs strictly from authoritative journals and
 recomputes derived state only on demand.
 
+A program installs a recurring rule declared with `worth_query_recurring_rule!`
+through `conditionals: Config { field: Rule }` in `worth_query_application_program!`
+and catches up with `session.catch_up_temporal::<Rule>(now, policy)`, which funds
+the run from the session's execution policy and fires on the session's branch.
+The rule row's lifecycle and gate are typed (`WorthQueryRecurringLifecycle`,
+`WorthQueryRecurringGate`), never strings.
+
+The default execution policy's work ceiling (`DEFAULT_HOST_EXECUTION_WORK_CEILING`)
+covers reopening a Directory Home: reopen rebuilds its admission image from
+retained history, and that reconstructive work grows with the retained commits,
+so desktop applications do not need a custom policy to reopen, rebuild indexes
+or run actions.
+
 `host::application_installation::WorthQueryInterimCheckpointRestore` is an
 internal certification door scheduled for deletion. Applications reopen their
 Directory instead.
@@ -448,9 +461,18 @@ A single-owner Directory Home can delegate governed read (or read+watch) access
 for one application scope to authenticated remote collaborators without ever
 opening a second writer on the Directory:
 
-- Implement `host::shared_access::WorthQuerySharedAccessProgram<Schema>` with
-  your declared grant/revoke mutation intents, read/watch capabilities, and
-  governed live query.
+- Declare the stock grant schema once with `worth_query_scope_access!`: typed
+  grant records (access is `ScopeAccess`; action, purpose and disclosure are
+  closed enums), read/watch capabilities and contracts, the governed
+  disclosure (`access::disclosure()` with `access::scope_view()`) and
+  grant/revoke actions. `worth_query_shared_access! { program P for Schema {
+  access: access, payload, query, row, owner } }` then implements
+  `host::shared_access::WorthQuerySharedAccessProgram<Schema>`, and
+  `worth_query_remote_codec!(Row { field, .. })` derives each payload and row
+  wire codec. The
+  [stock scope-access court](../workspaces/worth-query/crates/worth-query-court-decl-host-macros/tests/worth_query_court_decl_host_macros/scope_access_dx/mod.rs)
+  is the worked example. A custom grant schema implements the trait or uses
+  the macro's explicit `read`/`watch`/`grant`/`revoke` form.
 - **Native commit-backed grants and revocations:**
   `WorthQueryApplicationHome::grant_scope_access` and
   `WorthQueryApplicationHome::revoke_scope_access` execute your declared mutation

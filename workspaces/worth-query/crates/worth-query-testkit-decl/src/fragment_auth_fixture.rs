@@ -3,6 +3,8 @@ use super::fragment_fixture::*;
 pub use bindings::{MappingData, PrincipalData};
 pub use grants::{ChangeForm, FieldsOnly, IdentityBinding, IdentityValueBinding, InspectOptional};
 use worth_query_decl::facade::authentication::*;
+
+worth_query_decl::facade::worth_query_principal_issuer!(IssuerExampleIssuer);
 mod bindings;
 mod grants;
 
@@ -94,7 +96,7 @@ impl Relation for OwnsOptional {
 pub fn samples(value: std::any::TypeId) -> Option<Vec<Box<dyn BindingSample>>> {
     use std::any::TypeId;
     let external =
-        || WorthQueryExternalPrincipalIdentity::new("https://issuer.example", "person").unwrap();
+        || WorthQueryExternalPrincipalIdentity::new(IssuerExampleIssuer, "person").unwrap();
     if value == TypeId::of::<PrincipalData>() {
         return Some(vec![super::fragment_fixture::row_sample(PrincipalData {
             id: 13,

@@ -30,6 +30,8 @@ use worth_query_execution::facade::domain_computation::WorthQueryApplicationProj
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationProjectionDenialKind;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationProjectionRow;
 
+worth_query_declaration::worth_query_disclosure_classification!(HiddenOrderingDisclosure);
+
 worth_query_declaration::worth_query_structured_value_binding!(NestedUnitResultBinding for () { identity: "worth.rust.unit" });
 
 pub struct ActivitiesSlot;
@@ -111,7 +113,7 @@ pub fn governed_hidden_ordering_definition() -> ApplicationQueryDefinitionBuilde
     .relation(activities(), activity)
     .build();
     let disclosure = ApplicationQueryDisclosureContract::governed_by(
-        "hidden-ordering",
+        HiddenOrderingDisclosure,
         TouchAccountCapability::reference(),
     )
     .use_field_by(

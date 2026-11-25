@@ -12,11 +12,13 @@ mod history;
 pub use history::ApplicationHistoryMetadataDisclosureDenial;
 mod inspection;
 
+mod classification;
 mod components;
 mod influence;
 mod optional_aspect;
 mod resource;
 mod selector;
+pub use classification::ApplicationDisclosureClassification;
 pub use influence::{ApplicationQueryInfluenceContract, ApplicationQueryObservableInfluence};
 pub use selector::ApplicationQueryDisclosureSelector;
 
@@ -124,23 +126,30 @@ impl ApplicationQueryDisclosureContract {
         }
     }
 
-    pub fn installed_policy(classification: &'static str) -> Self {
+    /// Disclosure that requires an installed policy for `Classification`.
+    pub fn installed_policy<Classification: ApplicationDisclosureClassification>(
+        _: Classification,
+    ) -> Self {
         Self {
             posture: ApplicationQueryDisclosurePosture::InstalledPolicyRequired,
-            classification: classification.to_owned(),
+            classification: Classification::CLASSIFICATION.to_owned(),
             capability_name: None,
             capability_type: None,
             rules: Vec::new(),
         }
     }
 
-    pub fn governed_by<Schema, Capability>(
-        classification: &'static str,
+    /// Disclosure governed by `capability` under the typed `Classification`.
+    pub fn governed_by<Classification, Schema, Capability>(
+        _: Classification,
         capability: ApplicationCapabilityRef<Schema, Capability>,
-    ) -> Self {
+    ) -> Self
+    where
+        Classification: ApplicationDisclosureClassification,
+    {
         Self {
             posture: ApplicationQueryDisclosurePosture::Governed,
-            classification: classification.to_owned(),
+            classification: Classification::CLASSIFICATION.to_owned(),
             capability_name: Some(capability.name().to_owned()),
             capability_type: Some(capability.marker_identity()),
             rules: Vec::new(),

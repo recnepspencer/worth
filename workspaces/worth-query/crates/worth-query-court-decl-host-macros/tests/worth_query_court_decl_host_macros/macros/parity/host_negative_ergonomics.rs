@@ -30,6 +30,10 @@ use worth_query_host::facade::{
     worth_query_application_program, WorthQuerySourceCustody, WorthQuerySourceCustodyStep,
 };
 
+worth_query_decl::facade::worth_query_principal_issuer!(BoardIssuer);
+worth_query_decl::facade::worth_query_authentication_audience!(HostAudience);
+worth_query_decl::facade::worth_query_authentication_method!(LocalProcessMethod);
+
 const NEG_ROW: ApplicationIdentityNamespace =
     worth_query_identity_namespace!("macros.parity.negative-row.v1");
 const GUARDED_QUERY: ApplicationIdentityNamespace =
@@ -219,7 +223,7 @@ fn seed_negative(
             .unwrap(),
         WorthQueryApplicationPrincipalKey::new("board-owner").unwrap(),
         1_u64,
-        WorthQueryExternalPrincipalIdentity::new("local://board", "owner").unwrap(),
+        WorthQueryExternalPrincipalIdentity::new(BoardIssuer, "owner").unwrap(),
         WorthQueryPrincipalMappingStatus::Enabled,
     )?;
     for project in [1_u64, 2] {
@@ -275,13 +279,12 @@ fn derived_query_validate_and_rejecting_codec_return_typed_refusals_and_serde_re
     .expect("negative-court host installs");
 
     let req_scope = scope(&clock);
-    let audience = || WorthQueryAuthenticationAudience::new("host").unwrap();
-    let method = || WorthQueryAuthenticationMethod::new("local-process").unwrap();
+    let audience = || WorthQueryAuthenticationAudience::of(HostAudience);
+    let method = || WorthQueryAuthenticationMethod::of(LocalProcessMethod);
     let local = WorthQueryLocalProcessPrincipal::new(
-        "macros.local-owner.v1",
-        WorthQueryExternalPrincipalIdentity::new("local://board", "owner").unwrap(),
-        audience(),
-        method(),
+        WorthQueryExternalPrincipalIdentity::new(BoardIssuer, "owner").unwrap(),
+        HostAudience,
+        LocalProcessMethod,
         Duration::from_secs(600),
     )
     .unwrap();

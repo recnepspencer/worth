@@ -20,6 +20,8 @@ pub mod reaffirm;
 pub mod stimuli;
 pub use grants::seed;
 
+worth_query_decl::facade::worth_query_disclosure_classification!(RecordHistoryMetadataDisclosure);
+
 pub struct PublicChanges;
 pub struct GovernedChanges;
 worth_query_portable_type!(PublicChanges => "worth.query.certification.record-history.public.v1");
@@ -37,7 +39,7 @@ pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<DocumentRetentionSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<DocumentRetentionSchema> {
     let mut disclosure = ApplicationQueryDisclosureContract::governed_by(
-        "record-history-metadata",
+        RecordHistoryMetadataDisclosure,
         capability::MetadataCapability::reference(),
     );
     for facet in ApplicationHistoryMetadataFacet::ALL {

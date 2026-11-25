@@ -1,8 +1,10 @@
 //! Operation handlers and application program declaration for the shared-access court.
 
 use worth_query_decl::facade::{
-    application_program::*,
-    authentication::{WorthQueryExternalPrincipalIdentity, WorthQueryPrincipalMappingStatus},
+    application_program::*, authentication::WorthQueryPrincipalMappingStatus,
+};
+use worth_query_host::facade::shared_access::{
+    ScopeGrantAction, ScopeGrantDisclosure, ScopeGrantPurpose,
 };
 use worth_query_host::facade::{
     application_contribution::{
@@ -34,7 +36,10 @@ use super::schema::{
 pub struct WriteProjectHandler;
 impl OperationHandler<SharedProjectSchema, WriteProjectVersionBinding> for WriteProjectHandler {
     fn declared_durable_capabilities() -> Option<&'static [WorthQueryOperationDurableCapability]> {
-        Some(&[WorthQueryOperationDurableCapability::RelationalMutation])
+        Some(&[
+            WorthQueryOperationDurableCapability::RelationalMutation,
+            WorthQueryOperationDurableCapability::ExternalEmission,
+        ])
     }
     fn decide(
         &self,
@@ -193,11 +198,7 @@ fn resolve_enabled_grantee(
     >,
     HandlerResult<GrantProjectDecision, ()>,
 > {
-    let ext = WorthQueryExternalPrincipalIdentity::new(
-        input.grantee_issuer.clone(),
-        input.grantee_subject.clone(),
-    )
-    .map_err(|_| HandlerResult::DomainDenied(()))?;
+    let ext = input.grantee.clone();
     let mapping = reader
         .resolve_entity(ExternalIdentityField::at("ExternalIdentityField"), ext)
         .map_err(|_| HandlerResult::DomainDenied(()))?;
@@ -228,19 +229,19 @@ fn init_grant_fields(
     writer.initialize_field(
         grant,
         GrantActionField::at("GrantAction"),
-        "access".to_owned(),
+        ScopeGrantAction::Access,
     )?;
     writer.initialize_field(
         grant,
         GrantPurposeField::at("GrantPurpose"),
-        "shared".to_owned(),
+        ScopeGrantPurpose::Shared,
     )?;
     writer.initialize_field(
         grant,
         GrantDisclosureField::at("GrantDisclosure"),
-        "project_version".to_owned(),
+        ScopeGrantDisclosure::ScopeView,
     )?;
-    writer.initialize_field(grant, GrantModeField::at("GrantMode"), input.mode.clone())?;
+    writer.initialize_field(grant, GrantModeField::at("GrantMode"), input.mode)?;
     writer.initialize_field(grant, GrantActiveField::at("GrantActive"), true)?;
     writer.initialize_field(
         grant,

@@ -8,9 +8,13 @@ use std::{
 use worth_query_host::facade::{
     admission::authenticated_principal as auth, declaration::authentication::*,
 };
+
+worth_query_host::facade::worth_query_authentication_audience!(DispatchAudience);
+worth_query_host::facade::worth_query_principal_issuer!(DispatchInvalidIssuer);
+worth_query_host::facade::worth_query_authentication_method!(LocalMethod);
 pub type App = installation::WorthQueryProgramApplicationRuntime<Schema, Program>;
 pub fn identity() -> WorthQueryExternalPrincipalIdentity {
-    WorthQueryExternalPrincipalIdentity::new("https://dispatch.invalid", "operator").unwrap()
+    WorthQueryExternalPrincipalIdentity::new(DispatchInvalidIssuer, "operator").unwrap()
 }
 pub fn install(width: u64, selections: Selections) -> App {
     install_source(width, selections, Fault::None, 1, None)
@@ -229,8 +233,8 @@ impl auth::WorthQueryAuthenticationAdapter for Local {
             let now = SystemTime::now();
             auth::WorthQueryValidatedExternalPrincipal::new(
                 identity(),
-                auth::WorthQueryAuthenticationAudience::new("dispatch").unwrap(),
-                auth::WorthQueryAuthenticationMethod::new("local").unwrap(),
+                auth::WorthQueryAuthenticationAudience::of(DispatchAudience),
+                auth::WorthQueryAuthenticationMethod::of(LocalMethod),
                 now,
                 now + Duration::from_secs(600),
                 Vec::new(),
@@ -268,8 +272,8 @@ pub fn authenticate_cancellable<P: ApplicationProgramDefinition<Schema>>(
     let adapter = auth::admit_authentication_adapter(
         app.installed_schema(),
         auth::WorthQueryAuthenticationAdapterAdmission::new(
-            auth::WorthQueryAuthenticationAudience::new("dispatch").unwrap(),
-            auth::WorthQueryAuthenticationMethod::new("local").unwrap(),
+            auth::WorthQueryAuthenticationAudience::of(DispatchAudience),
+            auth::WorthQueryAuthenticationMethod::of(LocalMethod),
             scope.clock().clone(),
         ),
         Local,

@@ -11,16 +11,16 @@ use worth_query_host::facade::{
         WorthQueryApplicationProjection, WorthQueryApplicationProjectionDenial,
         WorthQueryApplicationProjectionRow,
     },
-    shared_access::{
-        ProtocolRefusalReason, RemoteBinaryCodec, RemoteByteWriter, SharedAccessDenial,
-    },
+    worth_query_remote_codec,
 };
 
-use super::capabilities::{text, ReadProjectCapability, SharedPrincipalBinding};
+use super::capabilities::{scope_view, ReadProjectCapability, SharedPrincipalBinding};
 use super::schema::{
     ExternalMapping, Principal, Project, ProjectKeyField, ProjectLiveSelf, ProjectVersionField,
     SharedProjectSchema,
 };
+
+worth_query_decl::facade::worth_query_disclosure_classification!(SharedProjectVersionDisclosure);
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ProjectUpdatedNotice {
@@ -62,59 +62,11 @@ worth_query_structured_value_binding!(pub ProjectStateRowBinding for ProjectStat
     identity: "worth.query.court.shared_access.project_row_binding.v1"
 });
 
-impl RemoteBinaryCodec for ProjectQueryParams {
-    fn encode_remote_bounded(&self, _: &mut RemoteByteWriter) -> Result<(), SharedAccessDenial> {
-        Ok(())
-    }
-
-    fn decode_remote(bytes: &[u8]) -> Result<Self, SharedAccessDenial> {
-        if bytes.is_empty() {
-            Ok(Self)
-        } else {
-            Err(SharedAccessDenial::ProtocolRefused(
-                ProtocolRefusalReason::TrailingBytes,
-            ))
-        }
-    }
-}
-
-impl RemoteBinaryCodec for ProjectStateRow {
-    fn encode_remote_bounded(
-        &self,
-        writer: &mut RemoteByteWriter,
-    ) -> Result<(), SharedAccessDenial> {
-        writer.write_str(&self.project_key)?;
-        writer.write_u64(self.version)
-    }
-
-    fn decode_remote(bytes: &[u8]) -> Result<Self, SharedAccessDenial> {
-        let len_slice: [u8; 4] = bytes.get(..4).and_then(|s| s.try_into().ok()).ok_or(
-            SharedAccessDenial::ProtocolRefused(ProtocolRefusalReason::MalformedPayload),
-        )?;
-        let key_len = u32::from_be_bytes(len_slice) as usize;
-        let expected = 4_usize
-            .checked_add(key_len)
-            .and_then(|n| n.checked_add(8))
-            .ok_or(SharedAccessDenial::ProtocolRefused(
-                ProtocolRefusalReason::MalformedPayload,
-            ))?;
-        if bytes.len() != expected {
-            return Err(SharedAccessDenial::ProtocolRefused(
-                ProtocolRefusalReason::MalformedPayload,
-            ));
-        }
-        let project_key = std::str::from_utf8(&bytes[4..4 + key_len])
-            .map(str::to_owned)
-            .map_err(|_| {
-                SharedAccessDenial::ProtocolRefused(ProtocolRefusalReason::MalformedPayload)
-            })?;
-        let ver_slice: [u8; 8] = bytes[4 + key_len..expected].try_into().unwrap();
-        Ok(Self {
-            project_key,
-            version: u64::from_be_bytes(ver_slice),
-        })
-    }
-}
+worth_query_remote_codec!(ProjectQueryParams);
+worth_query_remote_codec!(ProjectStateRow {
+    project_key,
+    version
+});
 
 pub struct ProjectKeySlot;
 pub struct ProjectVersionSlot;
@@ -212,31 +164,19 @@ impl ApplicationQueryLiveCauseBinding<SharedProjectSchema, ProjectStateQuery, Pr
 fn project_state_disclosure() -> ApplicationQueryDisclosureContract {
     let influence = ApplicationQueryInfluenceContract::permit_all();
     ApplicationQueryDisclosureContract::governed_by(
-        "shared-project-version-disclosure",
+        SharedProjectVersionDisclosure,
         ReadProjectCapability::reference(),
     )
     .use_field_by(
         ProjectKeyField::at("ProjectKey"),
-        text("project_version"),
+        scope_view(),
         influence.clone(),
     )
     .unwrap()
-    .disclose_field_by(
-        project_key_result(),
-        text("project_version"),
-        influence.clone(),
-    )
-    .disclose_field_by(
-        project_version_result(),
-        text("project_version"),
-        influence.clone(),
-    )
-    .disclose_field_by(
-        target_project_key_result(),
-        text("project_version"),
-        influence.clone(),
-    )
-    .disclose_relation_by(project_live_targets(), text("project_version"), influence)
+    .disclose_field_by(project_key_result(), scope_view(), influence.clone())
+    .disclose_field_by(project_version_result(), scope_view(), influence.clone())
+    .disclose_field_by(target_project_key_result(), scope_view(), influence.clone())
+    .disclose_relation_by(project_live_targets(), scope_view(), influence)
 }
 
 pub fn project_state_query_definition() -> ApplicationQueryDefinitionBuilder<

@@ -82,10 +82,10 @@ fn every_scalar_query_control_is_identity_bearing() {
     changed.cardinality = ApplicationQueryCardinality::OptionalOne;
     variants.push(("cardinality", changed));
     let mut changed = baseline.clone();
-    changed.disclosure = ApplicationQueryDisclosureContract::installed_policy("private");
+    changed.disclosure = ApplicationQueryDisclosureContract::installed_policy(PrivateDisclosure);
     variants.push(("disclosure posture", changed));
     let mut changed = baseline.clone();
-    changed.disclosure = ApplicationQueryDisclosureContract::installed_policy("secret");
+    changed.disclosure = ApplicationQueryDisclosureContract::installed_policy(SecretDisclosure);
     variants.push(("disclosure classification", changed));
     let mut changed = baseline.clone();
     changed.basis = ApplicationQueryBasisSupport::current_and_pinned().with_preview();
@@ -157,6 +157,9 @@ fn definition(fixture: &QueryControlFixture) -> ErasedApplicationQueryDefinition
 }
 
 use super::fragment;
+
+crate::worth_query_disclosure_classification!(PrivateDisclosure);
+crate::worth_query_disclosure_classification!(SecretDisclosure);
 struct QueryModel;
 impl fragment::Fragment for QueryModel {
     const NAME: &'static str = "query_model";

@@ -11,6 +11,10 @@ use worth_query_host::facade::{
     application_installation::*, primary_graph::*, worth_query_application_program,
 };
 
+worth_query_decl::facade::worth_query_principal_issuer!(BoardIssuer);
+worth_query_decl::facade::worth_query_authentication_audience!(HostAudience);
+worth_query_decl::facade::worth_query_authentication_method!(LocalProcessMethod);
+
 worth_query_application_program! {
     pub program Program for Schema {
         identity: "macros.program.v1",
@@ -127,7 +131,7 @@ fn key<E>(kind: &str, key: u64) -> WorthQueryApplicationEntityKey<Schema, E> {
 }
 
 fn owner_identity() -> WorthQueryExternalPrincipalIdentity {
-    WorthQueryExternalPrincipalIdentity::new("local://board", "owner").unwrap()
+    WorthQueryExternalPrincipalIdentity::new(BoardIssuer, "owner").unwrap()
 }
 
 pub fn scope(clock: &WorthQueryAdmissionClock) -> WorthQueryRequestScope {
@@ -144,13 +148,12 @@ pub fn owner(
     clock: &WorthQueryAdmissionClock,
     scope: &WorthQueryRequestScope,
 ) -> WorthQueryAuthenticatedExternalPrincipal<Schema> {
-    let audience = || WorthQueryAuthenticationAudience::new("host").unwrap();
-    let method = || WorthQueryAuthenticationMethod::new("local-process").unwrap();
+    let audience = || WorthQueryAuthenticationAudience::of(HostAudience);
+    let method = || WorthQueryAuthenticationMethod::of(LocalProcessMethod);
     let local = WorthQueryLocalProcessPrincipal::new(
-        "macros.local-owner.v1",
         owner_identity(),
-        audience(),
-        method(),
+        HostAudience,
+        LocalProcessMethod,
         Duration::from_secs(600),
     )
     .expect("a finite local lifetime is admitted");

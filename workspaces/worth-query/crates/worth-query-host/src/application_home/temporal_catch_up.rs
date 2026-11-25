@@ -1,6 +1,7 @@
 //! Single-call caller-pumped temporal catch-up on [`WorthQueryApplicationHome`].
 
 use worth_execution::ExecutionRequest;
+use worth_query_execution::facade::product::WorthQueryProductBranch;
 use worth_query_execution::facade::{
     application_contribution::WorthQueryApplicationConditionalBinding,
     primary_graph::WorthQueryGranularInvalidationDeliveryBatch,
@@ -48,12 +49,34 @@ where
         B: WorthQueryApplicationConditionalBinding<Schema> + 'static,
         B::Installed: WorthQueryDesktopTemporalHomeBinding<Schema>,
     {
+        self.catch_up_temporal_on::<B>(self.query.current_world(), now, execution, policy)
+    }
+
+    /// [`Self::catch_up_temporal`] on `branch` rather than the current world.
+    pub(crate) fn catch_up_temporal_on<B>(
+        &self,
+        branch: WorthQueryProductBranch,
+        now: WorthQueryClockCoordinate<
+            <B::Installed as WorthQueryDesktopTemporalHomeBinding<Schema>>::Clock,
+        >,
+        execution: &ExecutionRequest<'_, '_>,
+        policy: WorthQueryTemporalCatchUpPolicy,
+    ) -> Result<
+        WorthQueryTemporalCatchUpReport<
+            <B::Installed as WorthQueryDesktopTemporalHomeBinding<Schema>>::Clock,
+        >,
+        WorthQueryTemporalCatchUpDenial,
+    >
+    where
+        B: WorthQueryApplicationConditionalBinding<Schema> + 'static,
+        B::Installed: WorthQueryDesktopTemporalHomeBinding<Schema>,
+    {
         let Some(installed) = self.query.conditional::<B>() else {
             return Err(WorthQueryTemporalCatchUpDenial::TemporalBindingNotInstalled);
         };
         pump_temporal_catch_up_until(
             self.query.runtime(),
-            self.query.current_world(),
+            branch,
             installed.as_ref(),
             installed.desktop_clock(),
             now,

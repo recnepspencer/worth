@@ -18,6 +18,10 @@ use super::program;
 use super::program::TemporalExampleProgram;
 use super::schema::*;
 
+worth_query_decl::facade::worth_query_authentication_method!(ExampleMethod);
+worth_query_decl::facade::worth_query_authentication_audience!(HostAudience);
+worth_query_decl::facade::worth_query_principal_issuer!(IssuerExampleIssuer);
+
 pub struct ExampleApplication {
     pub runtime: application_installation::WorthQueryProgramApplicationRuntime<
         TemporalHostSchema,
@@ -93,10 +97,8 @@ pub fn admit_identity_adapter(
     admission::authenticated_principal::admit_authentication_adapter(
         schema,
         admission::authenticated_principal::WorthQueryAuthenticationAdapterAdmission::new(
-            admission::authenticated_principal::WorthQueryAuthenticationAudience::new("host")
-                .expect("the example audience is valid"),
-            admission::authenticated_principal::WorthQueryAuthenticationMethod::new("example")
-                .expect("the example method is valid"), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
+            admission::authenticated_principal::WorthQueryAuthenticationAudience::of(HostAudience),
+            admission::authenticated_principal::WorthQueryAuthenticationMethod::of(ExampleMethod), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         IdentityAdapter,
     )
     .expect("the example identity adapter must be admitted")
@@ -121,7 +123,7 @@ pub fn seed_graph(
                 .expect("the principal key is valid"),
             1_u64,
             declaration::authentication::WorthQueryExternalPrincipalIdentity::new(
-                "https://issuer.example",
+                IssuerExampleIssuer,
                 "product-example",
             )
             .expect("the external identity is valid"),

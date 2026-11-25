@@ -41,6 +41,8 @@ mod lease;
 mod live_subscription;
 mod managed_index;
 mod query_execution;
+mod query_intent;
+mod temporal;
 pub use auto_key::WorthQueryAutoIdempotencyKey;
 pub use live_subscription::{
     WorthQueryTypedLiveCloseDenial, WorthQueryTypedLiveRefreshDenial,
@@ -49,6 +51,7 @@ pub use live_subscription::{
 pub use managed_index::{
     WorthQueryTypedManagedIndexRefreshDenial, WorthQueryTypedManagedIndexWatch,
 };
+pub use query_intent::{WorthQuerySessionIndexedQuery, WorthQuerySessionQuery};
 
 const DEFAULT_LIVE_BUFFER_CAPACITY: usize = 64;
 const DEFAULT_LIVE_MAXIMUM_RESULTS: usize = 1024;

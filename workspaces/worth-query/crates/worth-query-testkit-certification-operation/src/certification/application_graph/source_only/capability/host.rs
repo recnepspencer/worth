@@ -14,6 +14,10 @@ pub use worth_query_host::facade::{
     application_installation::*, declaration::application_program::*,
     declaration::authentication::*, primary_graph::*,
 };
+
+worth_query_decl::facade::worth_query_authentication_audience!(CapabilityRetentionHostAudience);
+worth_query_decl::facade::worth_query_authentication_method!(CertificationMethod);
+worth_query_decl::facade::worth_query_principal_issuer!(IssuerExampleIssuer);
 pub struct Host<P = Program> {
     pub application: WorthQueryProgramApplicationRuntime<CapabilitySchema, P>,
     pub contacts: Arc<Contacts>,
@@ -47,7 +51,7 @@ impl WorthQueryApplicationContribution<CapabilitySchema> for CapabilityContribut
 pub struct Adapter;
 pub fn identity(actor: u64) -> WorthQueryExternalPrincipalIdentity {
     WorthQueryExternalPrincipalIdentity::new(
-        "https://issuer.example",
+        IssuerExampleIssuer,
         format!("capability-actor-{actor}"),
     )
     .unwrap()
@@ -66,8 +70,8 @@ impl WorthQueryAuthenticationAdapter for Adapter {
             let now = SystemTime::now();
             WorthQueryValidatedExternalPrincipal::new(
                 identity(actor),
-                WorthQueryAuthenticationAudience::new("capability-retention-host").unwrap(),
-                WorthQueryAuthenticationMethod::new("certification").unwrap(),
+                WorthQueryAuthenticationAudience::of(CapabilityRetentionHostAudience),
+                WorthQueryAuthenticationMethod::of(CertificationMethod),
                 now,
                 now + Duration::from_secs(3600),
                 vec![],
@@ -88,8 +92,8 @@ pub fn authenticate<P>(
     let adapter = admit_authentication_adapter(
         host.application.installed_schema(),
         WorthQueryAuthenticationAdapterAdmission::new(
-            WorthQueryAuthenticationAudience::new("capability-retention-host").unwrap(),
-            WorthQueryAuthenticationMethod::new("certification").unwrap(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
+            WorthQueryAuthenticationAudience::of(CapabilityRetentionHostAudience),
+            WorthQueryAuthenticationMethod::of(CertificationMethod), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         Adapter,
     )
     .unwrap();

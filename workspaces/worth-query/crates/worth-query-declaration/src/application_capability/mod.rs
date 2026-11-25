@@ -8,6 +8,8 @@ mod contract;
 mod currentness;
 mod delegation;
 mod delegation_activation_program;
+mod scope_access;
+pub use scope_access::ScopeAccess;
 mod delegation_transition;
 mod disclosure;
 mod elevation;

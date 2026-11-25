@@ -5,6 +5,8 @@ pub use worth_query_decl::facade::{
 
 pub struct Resource;
 pub use super::provider::ProviderRole;
+
+worth_query_decl::facade::worth_query_disclosure_classification!(ResourceMetadataDisclosure);
 worth_query_portable_type!(Resource => "capability-retention.resource.v1");
 
 impl ApplicationResourceBinding<CapabilitySchema> for Resource {
@@ -32,7 +34,7 @@ impl ApplicationResourceBinding<CapabilitySchema> for Resource {
 
 pub fn definition() -> ApplicationResourceDefinition<CapabilitySchema, Resource> {
     let mut disclosure = ApplicationQueryDisclosureContract::governed_by(
-        "resource-metadata",
+        ResourceMetadataDisclosure,
         super::metadata::ResourceDisclosure::reference(),
     );
     for facet in ApplicationResourceDisclosureFacet::ALL {

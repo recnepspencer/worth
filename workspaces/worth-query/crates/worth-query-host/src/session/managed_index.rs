@@ -226,26 +226,16 @@ where
 
     /// Ensures the managed index backing `parent_intent` is `Ready`, rebuilding
     /// ONLY if its status is `Created` (such as after cold reopen).
-    pub fn ensure_index_ready<Intent>(
+    pub fn ensure_index_ready<
+        Intent: super::query_intent::WorthQuerySessionIndexedQuery<Schema>,
+    >(
         &self,
         parent_intent: Intent,
-    ) -> Result<WorthQueryManagedIndex<Schema, Intent::Index>, WorthQueryApplicationRequestQueryDenial>
-    where
-        Intent: ApplicationManagedIndexQueryIntent<Schema>,
-        <QueryBinding<Schema, Intent> as ApplicationQueryBinding<Schema>>::ScopeBinding:
-            ApplicationQueryScopeResolution<
-                Schema,
-                <QueryBinding<Schema, Intent> as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
-            >,
-{
-        let scope = self.fresh_scope();
-        let request = self.request(&scope);
-        self.with_funded_advancement(&scope, |phase| {
-            request
-                .query(parent_intent)
-                .ensure_index_ready_in_advancement::<Intent::Index>(&phase)
-        })
-        .map_err(WorthQueryApplicationRequestQueryDenial::ExecutionRequest)?
+    ) -> Result<
+        WorthQueryManagedIndex<Schema, Intent::Index>,
+        WorthQueryApplicationRequestQueryDenial,
+    > {
+        parent_intent.ensure_ready_in_session(self)
     }
 
     /// Ensures the managed index backing a `Default`-constructible parent query

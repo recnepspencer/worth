@@ -70,6 +70,13 @@ mod authoring;
 #[macro_use]
 mod application_capability_macro;
 #[macro_use]
+mod application_disclosure_classification_macro;
+#[macro_use]
+mod authentication_identity_macro;
+#[macro_use]
+mod vocabulary_binding_macro;
+mod recurring_vocabulary;
+#[macro_use]
 mod principal_binding_macro;
 #[macro_use]
 mod application_operation_macro;

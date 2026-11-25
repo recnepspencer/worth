@@ -11,6 +11,10 @@ pub use super::schema::{
     MarketObservation, RiskValueField,
 };
 
+worth_query_host::facade::worth_query_authentication_audience!(HostAudience);
+worth_query_host::facade::worth_query_principal_issuer!(IssuerExampleIssuer);
+worth_query_host::facade::worth_query_authentication_method!(TestMethod);
+
 #[path = "adapters/conditional.rs"]
 pub mod conditional;
 pub use conditional::{
@@ -208,11 +212,11 @@ impl admission::authenticated_principal::WorthQueryAuthenticationAdapter
             let now = SystemTime::now();
             admission::authenticated_principal::WorthQueryValidatedExternalPrincipal::new(
                 worth_query_host::facade::declaration::authentication::WorthQueryExternalPrincipalIdentity::new(
-                    "https://issuer.example",
+                    IssuerExampleIssuer,
                     "financial-courtroom",
                 ).unwrap(),
-                admission::authenticated_principal::WorthQueryAuthenticationAudience::new("host").unwrap(),
-                admission::authenticated_principal::WorthQueryAuthenticationMethod::new("test").unwrap(),
+                admission::authenticated_principal::WorthQueryAuthenticationAudience::of(HostAudience),
+                admission::authenticated_principal::WorthQueryAuthenticationMethod::of(TestMethod),
                 now,
                 now + Duration::from_secs(3600),
                 Vec::new(),
@@ -254,10 +258,8 @@ pub fn admitted_identity_adapter(
     admission::authenticated_principal::admit_authentication_adapter(
         schema,
         admission::authenticated_principal::WorthQueryAuthenticationAdapterAdmission::new(
-            admission::authenticated_principal::WorthQueryAuthenticationAudience::new("host")
-                .unwrap(),
-            admission::authenticated_principal::WorthQueryAuthenticationMethod::new("test")
-                .unwrap(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
+            admission::authenticated_principal::WorthQueryAuthenticationAudience::of(HostAudience),
+            admission::authenticated_principal::WorthQueryAuthenticationMethod::of(TestMethod), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         FinancialIdentityAdapter,
     )
     .unwrap()

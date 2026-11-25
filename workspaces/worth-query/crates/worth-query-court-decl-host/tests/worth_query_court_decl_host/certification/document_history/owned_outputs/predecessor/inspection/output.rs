@@ -1,5 +1,9 @@
 //! Real produced fields observed through their declared model ownership relation.
 use super::*;
+
+worth_query_decl::facade::worth_query_disclosure_classification!(
+    PredecessorInspectionOutputDisclosure
+);
 worth_query_application_query!(pub Query for Schema, identity "predecessor.inspection-output.query.v1",
     parameters query::ParametersBinding, result ResultBinding, scope Model => "Model", name "PredecessorInspectionOutput");
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -41,7 +45,7 @@ pub(super) fn declare(
         .relation(outputs(), child)
         .build();
     let disclosure = ApplicationQueryDisclosureContract::governed_by(
-        "predecessor-inspection-output",
+        PredecessorInspectionOutputDisclosure,
         Inspect::reference(),
     )
     .disclose_field_by(

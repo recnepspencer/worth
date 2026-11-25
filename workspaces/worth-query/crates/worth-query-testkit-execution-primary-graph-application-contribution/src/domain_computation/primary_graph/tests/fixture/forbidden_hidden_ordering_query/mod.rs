@@ -20,6 +20,8 @@ use crate::domain_computation::primary_graph::tests::fixture::CapabilityDisclosu
 use crate::domain_computation::primary_graph::tests::fixture::IdentityExecutionSchema;
 use crate::domain_computation::primary_graph::tests::fixture::TouchAccountCapability;
 
+worth_query_declaration::worth_query_disclosure_classification!(ForbiddenHiddenOrderingDisclosure);
+
 worth_query_declaration::worth_query_structured_value_binding!(pub ForbiddenHiddenOrderingQueryParametersBinding for AccountSummaryParameters { identity: "AccountSummaryParameters" });
 worth_query_declaration::worth_query_structured_value_binding!(pub ForbiddenHiddenOrderingQueryResultBinding for AccountSummaryResult { identity: "AccountSummaryResult" });
 worth_query_application_query!(
@@ -49,7 +51,7 @@ pub fn forbidden_hidden_ordering_definition() -> ApplicationQueryDefinitionBuild
     .field(label_result_field::<ForbiddenHiddenOrderingQuery>())
     .build();
     let disclosure = ApplicationQueryDisclosureContract::governed_by(
-        "forbidden-hidden-ordering",
+        ForbiddenHiddenOrderingDisclosure,
         TouchAccountCapability::reference(),
     )
     .use_field_by(

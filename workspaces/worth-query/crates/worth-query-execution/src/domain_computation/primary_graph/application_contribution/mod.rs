@@ -80,7 +80,9 @@ pub use composition::{
     WorthQueryApplicationContribution, WorthQueryApplicationContributionTuple,
     WorthQueryConfiguredApplicationContributions,
 };
-pub use conditional::{RefusedConditionalBatch, WorthQueryApplicationConditionalBinding};
+pub use conditional::{
+    RefusedConditionalBatch, WorthQueryApplicationConditionalBinding, WorthQueryConditionalFeature,
+};
 pub use contracts::{
     WorthQueryApplicationContractCatalog, WorthQueryApplicationContributionContracts,
 };

@@ -12,6 +12,8 @@ use worth_query_declaration::facade::authentication::{
     WorthQueryExternalPrincipalIdentityBinding, WorthQueryPrincipalMappingStatusBinding,
 };
 
+worth_query_declaration::worth_query_principal_issuer!(IssuerExampleIssuer);
+
 pub mod exact_preimage_retention;
 pub mod wrong_field_retention;
 
@@ -228,7 +230,7 @@ pub struct IdentityWorld {
 }
 
 pub fn external_identity(subject: &str) -> WorthQueryExternalPrincipalIdentity {
-    WorthQueryExternalPrincipalIdentity::new("https://issuer.example", subject).unwrap()
+    WorthQueryExternalPrincipalIdentity::new(IssuerExampleIssuer, subject).unwrap()
 }
 
 pub fn live_scope() -> WorthQueryRequestScope {

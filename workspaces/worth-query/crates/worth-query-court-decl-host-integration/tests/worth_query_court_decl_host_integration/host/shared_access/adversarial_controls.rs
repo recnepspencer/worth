@@ -22,6 +22,8 @@ use super::program::open_shared_home;
 use super::query::ProjectQueryParams;
 use super::schema::SharedProjectSchema;
 
+worth_query_decl::facade::worth_query_principal_issuer!(EvilExampleIssuer);
+
 #[test]
 fn adversarial_round2_identity_loopback_nonblocking_bounds_and_watch_reclaim() {
     let dir = worth_query_testkit_host::facade::host::application_home::location()
@@ -64,8 +66,7 @@ fn assert_min_frame_size_bounds() {
 fn assert_wrong_issuer_and_nonloopback_boundaries(
     home: &WorthQueryApplicationHome<SharedProjectSchema, SharedProjectProgram>,
 ) {
-    let evil_alice =
-        WorthQueryExternalPrincipalIdentity::new("https://evil.example", "alice").unwrap();
+    let evil_alice = WorthQueryExternalPrincipalIdentity::new(EvilExampleIssuer, "alice").unwrap();
     let denied =
         home.grant_scope_access(ProjectId::project1(), evil_alice, ScopeAccess::read_only());
     assert!(

@@ -24,6 +24,9 @@ use super::mutation_handlers::SharedProjectProgram;
 use super::mutations::{alice_identity, bob_identity};
 use super::schema::SharedProjectSchema;
 
+worth_query_decl::facade::worth_query_authentication_audience!(DaymarkRemoteAudience);
+worth_query_decl::facade::worth_query_authentication_method!(HmacSha256Method);
+
 pub const STEPS_PER_SEED: usize = 24;
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -108,8 +111,8 @@ impl DstCoverage {
 pub fn make_auth_config() -> RemoteAuthConfig {
     let key = RemoteAuthKey::new("k1", [0x42_u8; 32]).unwrap();
     RemoteAuthConfig::new(
-        WorthQueryAuthenticationAudience::new("daymark.remote").unwrap(),
-        WorthQueryAuthenticationMethod::new("hmac-sha256").unwrap(),
+        WorthQueryAuthenticationAudience::of(DaymarkRemoteAudience),
+        WorthQueryAuthenticationMethod::of(HmacSha256Method),
         key,
     )
 }

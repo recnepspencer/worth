@@ -24,9 +24,11 @@ pub use worth_query_execution_query::facade::domain_computation::primary_graph::
 };
 
 mod batch_installation;
+mod feature;
 mod target_coverage;
 pub use batch_installation::RefusedConditionalBatch;
 use batch_installation::RefusedConditionalConfiguration;
+pub use feature::WorthQueryConditionalFeature;
 
 pub trait WorthQueryApplicationConditionalBinding<Schema>: Sized + 'static
 where

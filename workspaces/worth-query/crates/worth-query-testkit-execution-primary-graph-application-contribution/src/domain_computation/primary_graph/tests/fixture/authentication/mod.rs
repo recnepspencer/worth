@@ -12,6 +12,9 @@ use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
 use crate::domain_computation::primary_graph::tests::fixture::schema_types::external_identity;
 use worth_query_installation::facade::ApplicationSchema;
 
+worth_query_declaration::worth_query_authentication_audience!(BankAudience);
+worth_query_declaration::worth_query_authentication_method!(TestOidcMethod);
+
 pub fn authenticate_external<Schema: ApplicationSchema>(
     schema: &WorthQueryInstalledApplicationSchema<Schema>,
     subject: &str,
@@ -21,8 +24,8 @@ pub fn authenticate_external<Schema: ApplicationSchema>(
     let adapter = admit_authentication_adapter(
         schema,
         WorthQueryAuthenticationAdapterAdmission::new(
-            WorthQueryAuthenticationAudience::new("bank").unwrap(),
-            WorthQueryAuthenticationMethod::new("test-oidc").unwrap(),
+            WorthQueryAuthenticationAudience::of(BankAudience),
+            WorthQueryAuthenticationMethod::of(TestOidcMethod),
             scope.clock().clone(),
         ),
         CausalIdentityAdapter,
@@ -73,8 +76,8 @@ impl WorthQueryAuthenticationAdapter for CausalIdentityAdapter {
             let now = SystemTime::now();
             WorthQueryValidatedExternalPrincipal::new(
                 external_identity(&credential.subject),
-                WorthQueryAuthenticationAudience::new("bank").unwrap(),
-                WorthQueryAuthenticationMethod::new("test-oidc").unwrap(),
+                WorthQueryAuthenticationAudience::of(BankAudience),
+                WorthQueryAuthenticationMethod::of(TestOidcMethod),
                 now,
                 now + credential.lifetime,
                 vec![WorthQueryPrincipalAttribute::new("display", "Test User").unwrap()],

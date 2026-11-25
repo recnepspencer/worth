@@ -1,4 +1,6 @@
-//! Higher-level desktop temporal contribution and bounded caller-pumped reopen catch-up.
+//! Higher-level desktop temporal contribution, the stock recurring rule
+//! ([`crate::facade::worth_query_recurring_rule!`]) and bounded caller-pumped
+//! reopen catch-up.
 
 pub use crate::temporal_contribution::{
     install_desktop_temporal_clock_operation, install_desktop_temporal_operation,
@@ -13,4 +15,16 @@ pub use crate::temporal_contribution::{
     WorthQueryTemporalCatchUpReport, WorthQueryTemporalCatchUpStatus,
     DEFAULT_DESKTOP_TEMPORAL_MAX_MEMORY_BYTES, DEFAULT_DESKTOP_TEMPORAL_MAX_WORK,
     MAX_TEMPORAL_CATCH_UP_STEPS,
+};
+#[doc(hidden)]
+pub use crate::temporal_contribution::{
+    recurring_installation_denial, recurring_invocation_failure, recurring_next_occurrence,
+};
+pub use crate::temporal_contribution::{
+    WorthQueryRecurringClock, WorthQueryRecurringConfig, WorthQueryRecurringGate,
+    WorthQueryRecurringGateBinding, WorthQueryRecurringInvoker, WorthQueryRecurringLifecycle,
+    WorthQueryRecurringLifecycleBinding, WorthQueryRecurringNode, WorthQueryRecurringOccurrence,
+    WorthQueryRecurringOccurrenceBinding, WorthQueryRecurringOwner, WorthQueryRecurringProjector,
+    WorthQueryRecurringRow, WorthQueryRecurringRuleIdentity, WorthQueryRecurringRuleRefusal,
+    WorthQueryRecurringScheduleDecision,
 };

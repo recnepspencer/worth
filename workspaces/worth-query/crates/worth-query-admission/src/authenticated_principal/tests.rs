@@ -15,6 +15,14 @@ use worth_query_installation::facade::{
 
 use super::*;
 
+worth_query_declaration::worth_query_authentication_audience!(BankAudience);
+worth_query_declaration::worth_query_authentication_audience!(OtherAudience);
+worth_query_declaration::worth_query_authentication_method!(OidcMethod);
+worth_query_declaration::worth_query_authentication_method!(MtlsMethod);
+worth_query_declaration::worth_query_authentication_method!(CausalTestMethod);
+const BANK: WorthQueryAuthenticationAudience = WorthQueryAuthenticationAudience::of(BankAudience);
+worth_query_declaration::worth_query_principal_issuer!(Issuer);
+
 struct TestSchema;
 struct Principal;
 
@@ -61,14 +69,17 @@ impl WorthQueryAuthenticationAdapter for CausalAdapter {
         Box::pin(async move {
             let now = SystemTime::now();
             let (audience, expires_at) = match credential {
-                TestCredential::Valid => ("bank", now + Duration::from_secs(60)),
-                TestCredential::WrongAudience => ("other", now + Duration::from_secs(60)),
-                TestCredential::Expired => ("bank", now - Duration::from_secs(1)),
+                TestCredential::Valid => (BANK, now + Duration::from_secs(60)),
+                TestCredential::WrongAudience => (
+                    WorthQueryAuthenticationAudience::of(OtherAudience),
+                    now + Duration::from_secs(60),
+                ),
+                TestCredential::Expired => (BANK, now - Duration::from_secs(1)),
             };
             WorthQueryValidatedExternalPrincipal::new(
-                WorthQueryExternalPrincipalIdentity::new("https://issuer", "subject").unwrap(),
-                WorthQueryAuthenticationAudience::new(audience).unwrap(),
-                WorthQueryAuthenticationMethod::new("causal-test").unwrap(),
+                WorthQueryExternalPrincipalIdentity::new(Issuer, "subject").unwrap(),
+                audience,
+                WorthQueryAuthenticationMethod::of(CausalTestMethod),
                 now - Duration::from_secs(2),
                 expires_at,
                 vec![WorthQueryPrincipalAttribute::new("display", "Test User").unwrap()],
@@ -110,8 +121,8 @@ fn only_admitted_adapter_output_mints_external_proof() {
     let adapter = admit_authentication_adapter(
         &schema,
         WorthQueryAuthenticationAdapterAdmission::new(
-            WorthQueryAuthenticationAudience::new("bank").unwrap(),
-            WorthQueryAuthenticationMethod::new("causal-test").unwrap(),
+            WorthQueryAuthenticationAudience::of(BankAudience),
+            WorthQueryAuthenticationMethod::of(CausalTestMethod),
             crate::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
         ),
         CausalAdapter,
@@ -119,7 +130,7 @@ fn only_admitted_adapter_output_mints_external_proof() {
     .unwrap();
     let scope = live_scope();
     let proof = block_on(adapter.authenticate(TestCredential::Valid, &scope)).unwrap();
-    assert_eq!(proof.identity().issuer(), "https://issuer");
+    assert_eq!(proof.identity().issuer(), "Issuer");
     assert_eq!(proof.identity().subject(), "subject");
     assert_eq!(
         proof.binding_identity().runtime_ordinal(),
@@ -135,8 +146,8 @@ fn mismatched_expired_cancelled_and_timed_out_candidates_fail_closed() {
     let adapter = admit_authentication_adapter(
         &schema,
         WorthQueryAuthenticationAdapterAdmission::new(
-            WorthQueryAuthenticationAudience::new("bank").unwrap(),
-            WorthQueryAuthenticationMethod::new("causal-test").unwrap(),
+            WorthQueryAuthenticationAudience::of(BankAudience),
+            WorthQueryAuthenticationMethod::of(CausalTestMethod),
             crate::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
         ),
         CausalAdapter,
@@ -208,8 +219,8 @@ fn proof_debug_discloses_no_external_identity_or_attribute_values() {
     let adapter = admit_authentication_adapter(
         &schema,
         WorthQueryAuthenticationAdapterAdmission::new(
-            WorthQueryAuthenticationAudience::new("bank").unwrap(),
-            WorthQueryAuthenticationMethod::new("causal-test").unwrap(),
+            WorthQueryAuthenticationAudience::of(BankAudience),
+            WorthQueryAuthenticationMethod::of(CausalTestMethod),
             crate::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
         ),
         CausalAdapter,
@@ -229,8 +240,8 @@ fn adapter_identity_converges_and_separates_every_semantic_binding_axis() {
         admit_authentication_adapter(
             &schema,
             WorthQueryAuthenticationAdapterAdmission::new(
-                WorthQueryAuthenticationAudience::new(audience).unwrap(),
-                WorthQueryAuthenticationMethod::new(method).unwrap(),
+                audience,
+                method,
                 crate::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
             ),
             ConfiguredAdapter(configuration),
@@ -240,11 +251,14 @@ fn adapter_identity_converges_and_separates_every_semantic_binding_axis() {
         .to_owned()
     };
 
-    let baseline = admit("configuration-a", "bank", "oidc");
-    assert_eq!(baseline, admit("configuration-a", "bank", "oidc"));
-    assert_ne!(baseline, admit("configuration-b", "bank", "oidc"));
-    assert_ne!(baseline, admit("configuration-a", "other", "oidc"));
-    assert_ne!(baseline, admit("configuration-a", "bank", "mtls"));
+    let oidc = WorthQueryAuthenticationMethod::of(OidcMethod);
+    let other = WorthQueryAuthenticationAudience::of(OtherAudience);
+    let baseline = admit("configuration-a", BANK, oidc.clone());
+    assert_eq!(baseline, admit("configuration-a", BANK, oidc.clone()));
+    assert_ne!(baseline, admit("configuration-b", BANK, oidc.clone()));
+    assert_ne!(baseline, admit("configuration-a", other, oidc));
+    let mtls = WorthQueryAuthenticationMethod::of(MtlsMethod);
+    assert_ne!(baseline, admit("configuration-a", BANK, mtls));
 }
 
 #[test]
@@ -320,8 +334,8 @@ fn owned_monotonic_clock_holds_and_advances_authentication_and_deadlines() {
     let adapter = admit_authentication_adapter(
         &installed_schema(),
         WorthQueryAuthenticationAdapterAdmission::new(
-            WorthQueryAuthenticationAudience::new("bank").unwrap(),
-            WorthQueryAuthenticationMethod::new("causal-test").unwrap(),
+            WorthQueryAuthenticationAudience::of(BankAudience),
+            WorthQueryAuthenticationMethod::of(CausalTestMethod),
             clock.clone(),
         ),
         CausalAdapter,
@@ -360,8 +374,8 @@ fn authentication_rejects_a_request_from_another_clock_before_adapter_work() {
     let adapter = admit_authentication_adapter(
         &installed_schema(),
         WorthQueryAuthenticationAdapterAdmission::new(
-            WorthQueryAuthenticationAudience::new("bank").unwrap(),
-            WorthQueryAuthenticationMethod::new("causal-test").unwrap(),
+            WorthQueryAuthenticationAudience::of(BankAudience),
+            WorthQueryAuthenticationMethod::of(CausalTestMethod),
             time.clock(),
         ),
         CausalAdapter,

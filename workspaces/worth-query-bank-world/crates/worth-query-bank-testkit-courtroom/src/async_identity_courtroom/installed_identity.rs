@@ -35,7 +35,7 @@ impl InstalledIdentityWorld {
         let endpoints = docker.wait_until_ready(&fixture).await?;
         let scope = request_scope(Duration::from_secs(300));
         let configuration = configuration(&endpoints, &fixture, &callback)?;
-        let seeds = principal_seeds(&endpoints, &fixture)?;
+        let seeds = principal_seeds(&fixture)?;
         require_ordinary_tls_rejection(configuration.clone(), &scope).await?;
         let identity = cold_certification_for_test::install_identity_for_test(
             configuration,
@@ -79,10 +79,7 @@ pub async fn require_ordinary_tls_rejection(
     }
 }
 
-pub fn principal_seeds(
-    endpoints: &IdentityEndpoints,
-    fixture: &IdentityFixture,
-) -> Result<Vec<BankPrincipalSeed>, String> {
+pub fn principal_seeds(fixture: &IdentityFixture) -> Result<Vec<BankPrincipalSeed>, String> {
     fixture
         .participants()
         .iter()
@@ -93,7 +90,7 @@ pub fn principal_seeds(
                 .and_then(BankPrincipalId::new)
                 .ok_or_else(|| "courtroom principal inventory exceeded typed IDs".to_string())?;
             let external_identity = WorthQueryExternalPrincipalIdentity::new(
-                endpoints.issuer(),
+                bank_http_adapter::AuthentikIssuer,
                 participant.username(),
             )
             .map_err(|error| format!("dynamic external identity failed: {error}"))?;

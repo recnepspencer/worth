@@ -15,6 +15,8 @@ use worth_query_host::facade::{
         WorthQueryPrimaryGraphInstallationDenial,
     },
 };
+
+worth_query_decl::facade::worth_query_principal_issuer!(IssuerExampleIssuer);
 #[path = "schema/records.rs"]
 mod records;
 pub use records::*;
@@ -101,7 +103,7 @@ pub fn seed(
             &binding,
             WorthQueryApplicationPrincipalKey::new("host-principal").unwrap(),
             1_u64,
-            WorthQueryExternalPrincipalIdentity::new("https://issuer.example", "subject").unwrap(),
+            WorthQueryExternalPrincipalIdentity::new(IssuerExampleIssuer, "subject").unwrap(),
             WorthQueryPrincipalMappingStatus::Enabled,
         )
         .unwrap();

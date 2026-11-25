@@ -13,6 +13,8 @@ use worth_query_declaration::facade::application_schema::*;
 use worth_query_declaration::facade::authentication::*;
 use worth_query_installation::facade::*;
 
+worth_query_declaration::worth_query_principal_issuer!(IssuerExampleIssuer);
+
 pub struct World<const O: bool = true> {
     pub application:
         WorthQueryPrimaryGraphApplicationRuntime<OrbitSchema<O>>,
@@ -147,8 +149,7 @@ pub fn install_with_visibility<const O: bool>(
                 &binding,
                 WorthQueryApplicationPrincipalKey::new("principal-0").unwrap(),
                 1,
-                WorthQueryExternalPrincipalIdentity::new("https://issuer.example", "alice")
-                    .unwrap(),
+                WorthQueryExternalPrincipalIdentity::new(IssuerExampleIssuer, "alice").unwrap(),
                 WorthQueryPrincipalMappingStatus::Enabled,
             )
             .unwrap();

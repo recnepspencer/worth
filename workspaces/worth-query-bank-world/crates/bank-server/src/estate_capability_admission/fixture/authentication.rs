@@ -8,15 +8,16 @@ use worth_query_host::facade::declaration::authentication::WorthQueryExternalPri
 
 use crate::BankAuthenticationConfiguration;
 
+worth_query_decl::facade::worth_query_authentication_audience!(BankPhase7CapabilityTestAudience);
+worth_query_decl::facade::worth_query_authentication_method!(CausalPhase7AdapterMethod);
+worth_query_decl::facade::worth_query_principal_issuer!(BankPhase7TestIssuer);
+
 pub(super) fn external_identity(
     scenario: &str,
     subject: &str,
 ) -> WorthQueryExternalPrincipalIdentity {
-    WorthQueryExternalPrincipalIdentity::new(
-        format!("https://{scenario}.bank.test.invalid"),
-        subject,
-    )
-    .unwrap()
+    WorthQueryExternalPrincipalIdentity::new(BankPhase7TestIssuer, format!("{scenario}:{subject}"))
+        .unwrap()
 }
 
 pub(crate) fn request_scope() -> WorthQueryRequestScope {
@@ -27,8 +28,8 @@ pub(crate) fn request_scope() -> WorthQueryRequestScope {
 
 pub(super) fn authentication_configuration() -> BankAuthenticationConfiguration {
     BankAuthenticationConfiguration::new(
-        WorthQueryAuthenticationAudience::new("bank-phase-7-capability-test").unwrap(),
-        WorthQueryAuthenticationMethod::new("causal-phase-7-adapter").unwrap(),
+        WorthQueryAuthenticationAudience::of(BankPhase7CapabilityTestAudience),
+        WorthQueryAuthenticationMethod::of(CausalPhase7AdapterMethod),
     )
 }
 
@@ -37,10 +38,9 @@ pub(super) fn local_principal(
     identity: WorthQueryExternalPrincipalIdentity,
 ) -> WorthQueryLocalProcessPrincipal {
     WorthQueryLocalProcessPrincipal::new(
-        "bank-phase-7-capability-local-principal-v1",
         identity,
-        WorthQueryAuthenticationAudience::new("bank-phase-7-capability-test").unwrap(),
-        WorthQueryAuthenticationMethod::new("causal-phase-7-adapter").unwrap(),
+        BankPhase7CapabilityTestAudience,
+        CausalPhase7AdapterMethod,
         Duration::from_secs(60),
     )
     .unwrap()

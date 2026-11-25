@@ -16,6 +16,8 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationProjectionRow,
 };
 
+worth_query_decl::facade::worth_query_disclosure_classification!(CatalogBoxQueryDisclosure);
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Row {
     pub coordinate: (u32, u64, u32),
@@ -92,7 +94,7 @@ pub fn governed_definition(
 ) -> ApplicationQueryDefinitionBuilder<Catalog, GovernedQuery, Parameters, Row, Directory> {
     let influence = ApplicationQueryInfluenceContract::permit_all();
     let disclosure = ApplicationQueryDisclosureContract::governed_by(
-        "catalog-box-query",
+        CatalogBoxQueryDisclosure,
         access::ReadBoxes::reference(),
     )
     .use_field_by(
