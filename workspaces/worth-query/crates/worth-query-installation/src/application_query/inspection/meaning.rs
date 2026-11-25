@@ -9,6 +9,7 @@ use crate::{
     },
 };
 use std::sync::Arc;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::{
     application_query::{
         ApplicationQueryDisclosurePosture, ApplicationQueryInspectionMetadataFacet,
@@ -51,6 +52,7 @@ impl CompiledInspectionMeaning {
         .map_err(|cause| crate::application_query::denial::graph_obligation_denial(name, cause))?;
         let slots = ApplicationQueryInspectionMetadataFacet::ALL.map(|facet| {
             ApplicationQueryInspectionMetadataMeaning::from_untrusted_fields(
+                ARCHIVE_DECODE,
                 definition.parts().binding.clone(),
                 facet,
             )

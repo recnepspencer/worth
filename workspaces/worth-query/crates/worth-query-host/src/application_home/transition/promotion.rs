@@ -30,6 +30,12 @@ impl<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaComposition, BP>
         let request = phase.execution_request();
         let steps = HomeProgramTransitionSteps::new(plan);
         let performed = (|| {
+            // B's managed Sources are prepared through A's companion while
+            // the positioned steps commit under B's contracts.
+            let sources = owners
+                .target
+                .attach_home_transition_sources(&owners.before)
+                .map_err(Denial::Author)?;
             // Resumed original roots stay pinned until the binding has finished.
             let _catalogs = match origin {
                 Origin::Fresh(reserved) => {
@@ -61,6 +67,7 @@ impl<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaComposition, BP>
                     Some(catalogs)
                 }
             };
+            drop(sources);
             let final_source = owners
                 .home
                 .world()

@@ -122,3 +122,81 @@ fn input() -> (Vec<u8>, Vec<u8>) {
         rmp_serde::to_vec_named(&ParsedEvidence::Complete(Vec::new())).unwrap(),
     )
 }
+
+fn named(value: impl serde::Serialize) -> Vec<u8> {
+    rmp_serde::to_vec(&value).unwrap()
+}
+
+/// `{"Covered": {fields...}}` with each field given as (name, encoded value).
+fn covered(fields: &[(&str, Vec<u8>)]) -> Vec<u8> {
+    let mut bytes = vec![0x81];
+    bytes.extend(named("Covered"));
+    bytes.push(0x80 | fields.len() as u8);
+    for (name, value) in fields {
+        bytes.extend(named(name));
+        bytes.extend(value);
+    }
+    bytes
+}
+
+/// Public #384: the persisted bound adds no funded memory, and the quote
+/// refuses exactly what the owner decoder refuses.
+#[test]
+fn covered_index_writes_quote_like_complete_and_refuse_malformed_fields() {
+    let cancellation = CancellationSource::new();
+    let host = SerialRequest::from_memory(
+        SerialMemoryBudget::new(Some(65_536)),
+        cancellation.token(),
+        None,
+    );
+    let request = ExecutionRequest::serial(&host);
+    let (_, complete) = input();
+    let entries = named(Vec::<CanonicalAuthoredIndexWrite>::new());
+    let bound = named(2u64);
+    let valid = covered(&[
+        ("covered_next_index_id", bound.clone()),
+        ("entries", entries.clone()),
+    ]);
+    let quote = |bytes: &[u8]| authored(BorrowedPayload(bytes), &request);
+    let (covered_quote, complete_quote) = (quote(&valid).unwrap(), quote(&complete).unwrap());
+    assert_eq!(
+        (covered_quote.retained, covered_quote.transient),
+        (complete_quote.retained, complete_quote.transient)
+    );
+    let empty =
+        SerialRequest::from_memory(SerialMemoryBudget::new(Some(0)), cancellation.token(), None);
+    let unfunded = DecodedQuote {
+        index_writes: authored(BorrowedPayload(&valid), &ExecutionRequest::serial(&empty)).unwrap(),
+        ..DecodedQuote::default()
+    };
+    assert!(matches!(
+        unfunded.admit(&ExecutionRequest::serial(&empty), None),
+        Err(Refusal::Request(_))
+    ));
+    let decoded: CanonicalAuthoredIndexWrites = rmp_serde::from_slice(&valid).unwrap();
+    assert_eq!(decoded.persisted_entries(), Some((Some(2), &[][..])));
+    assert!(decoded.verified_entries().is_none());
+    for malformed in [
+        covered(&[
+            ("covered_next_index_id", bound.clone()),
+            ("covered_next_index_id", bound.clone()),
+        ]),
+        covered(&[("entries", entries.clone()), ("entries", entries.clone())]),
+        covered(&[("entries", entries.clone())]),
+        covered(&[("covered_next_index_id", bound.clone())]),
+        covered(&[
+            ("covered_next_index_id", bound.clone()),
+            ("entries", entries.clone()),
+            ("coverage", bound.clone()),
+        ]),
+    ] {
+        assert!(
+            quote(&malformed).is_err(),
+            "the quote refuses {malformed:?}"
+        );
+        assert!(
+            rmp_serde::from_slice::<CanonicalAuthoredIndexWrites>(&malformed).is_err(),
+            "the decoder refuses {malformed:?}"
+        );
+    }
+}

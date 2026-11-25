@@ -4,6 +4,7 @@ use crate::denial::{
 };
 use crate::record::application_schema::wire_vocabulary::decode_type_identity;
 use crate::{binary_encoding::BinaryEncodingSink, binary_input::BinaryInput};
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryBindingReference, ApplicationQueryBindingReferenceParts,
     ApplicationQueryScopeResolutionMode,
@@ -23,6 +24,7 @@ pub(in crate::record) fn decode(
     input: &mut BinaryInput<'_>,
 ) -> Result<ApplicationQueryBindingReference, Denial> {
     Ok(ApplicationQueryBindingReference::from_untrusted_parts(
+        ARCHIVE_DECODE,
         ApplicationQueryBindingReferenceParts {
             binding: decode_type_identity(input)?,
             input: decode_type_identity(input)?,

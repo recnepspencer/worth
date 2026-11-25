@@ -1,4 +1,5 @@
 //! Typed aggregate slots and fresh declaration/schema closure, without runtime authority.
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 use crate::{application_query::*, application_schema::*, *};
 struct Schema;
 struct Node;
@@ -50,6 +51,7 @@ fn members(query: ErasedApplicationQueryDefinition) -> Vec<ApplicationSchemaMemb
         },
         ApplicationSchemaMember::ComponentSet {
             definition: ApplicationComponentSetMeaning::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 WorthQueryPortableApplicationComponentSetParts {
                     name: "Shells".into(),
                     member: "Node".into(),
@@ -89,10 +91,12 @@ fn fresh_component_shapes_refuse_missing_paths_scope_and_mismatched_disclosure()
     let mut scope = base.clone();
     scope.scope_entity = "Other".into();
     scope.root_paths = vec![ApplicationQueryRootPathMeaning::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationQueryRootPathParts {
             start_entity: "Other".into(),
             terminal_entity: "Node".into(),
             steps: vec![ApplicationQueryRootPathStep::from_untrusted_fields(
+                ARCHIVE_DECODE,
                 "Owns".into(),
                 "Other".into(),
                 "Node".into(),
@@ -108,6 +112,7 @@ fn fresh_component_shapes_refuse_missing_paths_scope_and_mismatched_disclosure()
     );
     let mut both = base.clone();
     both.orbit = Some(ApplicationQueryOrbitMeaning::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationQueryOrbitParts {
             query: base.query_type.clone(),
             slot: base.component_selection.as_ref().unwrap().slot_identity(),
@@ -148,6 +153,7 @@ fn actual_component_set_and_path_dependencies_must_close() {
         unreachable!()
     };
     *definition = ApplicationComponentSetMeaning::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationComponentSetParts {
             name: "Shells".into(),
             member: "Other".into(),
@@ -160,10 +166,12 @@ fn actual_component_set_and_path_dependencies_must_close() {
     );
     let mut parts = base.into_parts();
     parts.root_paths = vec![ApplicationQueryRootPathMeaning::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationQueryRootPathParts {
             start_entity: "Node".into(),
             terminal_entity: "Node".into(),
             steps: vec![ApplicationQueryRootPathStep::from_untrusted_fields(
+                ARCHIVE_DECODE,
                 "Missing".into(),
                 "Node".into(),
                 "Node".into(),
@@ -173,7 +181,7 @@ fn actual_component_set_and_path_dependencies_must_close() {
             guards: vec![],
         },
     )];
-    let bad = ErasedApplicationQueryDefinition::from_untrusted_parts(parts);
+    let bad = ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, parts);
     assert_eq!(
         super::super::validate_application_query_members(&members(bad)),
         Err(ApplicationSchemaDeclarationDenial::InvalidApplicationQuery)

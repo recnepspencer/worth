@@ -12,6 +12,7 @@ pub(super) struct RawDefinitionKeys {
     pub(super) fields: Once<Path>,
     pub(super) cardinality: Once<Expr>,
     pub(super) disclosure: Once<Expr>,
+    pub(super) disclose_by: Once<Expr>,
     pub(super) basis_support: Once<Expr>,
     pub(super) lanes: Once<Expr>,
     pub(super) ability: Once<Expr>,
@@ -30,6 +31,7 @@ impl RawDefinitionKeys {
             fields: Once::new("fields"),
             cardinality: Once::new("cardinality"),
             disclosure: Once::new("disclosure"),
+            disclose_by: Once::new("disclose_by"),
             basis_support: Once::new("basis_support"),
             lanes: Once::new("lanes"),
             ability: Once::new("ability"),
@@ -52,6 +54,10 @@ impl RawDefinitionKeys {
         let label = "a query without `root = Entity`";
         self.cardinality.refuse_unless(has_root, label)?;
         self.disclosure.refuse_unless(has_root, label)?;
+        self.disclose_by.refuse_unless(
+            self.disclosure.is_set(),
+            "a query without a governed `disclosure = ..`",
+        )?;
         self.basis_support.refuse_unless(has_root, label)?;
         self.lanes.refuse_unless(has_root, label)?;
         self.ability.refuse_unless(has_root, label)?;
@@ -88,13 +94,13 @@ impl RawDefinitionKeys {
         }
         let live = self.live.optional();
         let lanes = self.lanes.optional();
-        if live == Some(LiveMode::WholeResult)
+        if live.is_some()
             && let Some(ref expr) = lanes
             && bare_expr_ident(expr).is_some_and(|ident| ident == "OneShot")
         {
             return Err(syn::Error::new_spanned(
                 expr,
-                "`live = whole_result` requires live lane eligibility; omit `lanes` or use `lanes = OneShotAndLive`",
+                "`live` requires live lane eligibility; omit `lanes` or use `lanes = OneShotAndLive`",
             ));
         }
 
@@ -113,6 +119,7 @@ impl RawDefinitionKeys {
             root,
             cardinality: self.cardinality.optional(),
             disclosure: self.disclosure.optional(),
+            disclose_by: self.disclose_by.optional(),
             basis_support: self.basis_support.optional(),
             lanes,
             ability: self.ability.optional(),

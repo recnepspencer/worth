@@ -1,5 +1,6 @@
 //! Transport preserves succession meaning but confers no completed-source authority.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::ApplicationOperationBodySuccession;
 use worth_query_declaration::facade::{
     application_operation::{
@@ -15,11 +16,13 @@ fn succession_output_match_v23_roundtrips_and_older_profiles_refuse_instead_of_d
     // Transport-only world: schema/installation validity is proved by the supplier's
     // real portable readmission and guarded journey, not these descriptive literals.
     let succession = ApplicationOperationBodySuccession::from_untrusted(
+        ARCHIVE_DECODE,
         "workflow".into(),
         "renew".into(),
         "item".into(),
     );
     let matching = OutputMatch::from_untrusted(
+        ARCHIVE_DECODE,
         "selected".into(),
         "certify".into(),
         ApplicationMutationOutputRoleDescription {
@@ -30,6 +33,7 @@ fn succession_output_match_v23_roundtrips_and_older_profiles_refuse_instead_of_d
         },
     );
     let plain = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
         "Item".into(),
         vec![],
         None,
@@ -81,6 +85,7 @@ fn succession_output_match_v23_roundtrips_and_older_profiles_refuse_instead_of_d
 #[test]
 fn succession_v21_roundtrips_and_cannot_be_silently_downgraded() {
     let plain = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
         "Root".into(),
         vec![],
         None,
@@ -88,6 +93,7 @@ fn succession_v21_roundtrips_and_cannot_be_silently_downgraded() {
     );
     let body = plain.clone().with_untrusted_succession(Some(
         ApplicationOperationBodySuccession::from_untrusted(
+            ARCHIVE_DECODE,
             "workflow".into(),
             "binding".into(),
             "root".into(),

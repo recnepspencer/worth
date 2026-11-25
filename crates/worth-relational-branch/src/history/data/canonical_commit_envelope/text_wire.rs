@@ -65,6 +65,8 @@ pub struct CanonicalEnvelopeWire<Symbols> {
     revision_symbol_references: Vec<crate::symbols::data::Symbol>,
     #[serde(default)]
     record_allocations: Vec<crate::history::data::CanonicalRecordAllocation>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    cancelled_record_allocations: Vec<crate::history::data::CancelledRecordAllocation>,
     patch: CanonicalAuthoritativePatch,
     #[serde(default = "RelationalDescriptiveTouchGraph::unavailable")]
     descriptive_touches: RelationalDescriptiveTouchGraph,
@@ -252,6 +254,7 @@ impl<Symbols> CanonicalEnvelopeWire<Symbols> {
             symbol_texts,
             revision_symbol_references: self.revision_symbol_references,
             record_allocations: self.record_allocations,
+            cancelled_record_allocations: self.cancelled_record_allocations,
             patch: self.patch,
             descriptive_touches: self.descriptive_touches,
             diagnostics_summary: self.diagnostics_summary,
@@ -273,6 +276,13 @@ impl<Symbols> CanonicalEnvelopeWire<Symbols> {
         };
         if !envelope.codec_retirement_headers_valid() {
             return Err("invalid canonical codec retirement headers");
+        }
+        if !envelope
+            .body
+            .authored_index_writes
+            .bound_agrees_with(envelope.body.index_definition_delta.next_index_id)
+        {
+            return Err("authored index-write bound disagrees with the catalog delta");
         }
         Ok(envelope)
     }

@@ -6,6 +6,7 @@ use super::{
     ApplicationOperationBodyRequirementSource as Source,
 };
 use crate::application_schema::{ApplicationOperationRef, ApplicationRelationRef, OperationReads};
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 use std::marker::PhantomData;
 
 /// Typed native sources available to one operation's requirement expressions.
@@ -139,8 +140,11 @@ impl<Schema, Operation> ApplicationOperationBodyRequirementOperands<Schema, Oper
         if self.operands.iter().any(|operand| operand.name() == name) {
             return Err(Denial::DuplicateOperand);
         }
-        self.operands
-            .push(Operand::from_untrusted(name.to_owned(), source));
+        self.operands.push(Operand::from_untrusted(
+            ARCHIVE_DECODE,
+            name.to_owned(),
+            source,
+        ));
         Ok(self)
     }
 }

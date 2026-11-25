@@ -1,6 +1,15 @@
 //! New meaning selects a new portable profile; old bodies retain their historical version.
 use super::*;
 pub(super) fn select(body: &ApplicationOperationBodyProgram) -> u16 {
+    if body
+        .reference_inputs()
+        .iter()
+        .any(|r| !r.target_is_optional())
+    {
+        return 42;
+    }
+    if body.creation().into_iter().flat_map(|c|c.initialization_sites()).flat_map(|c|c.links())
+        .any(|l|l.direction==worth_query_declaration::facade::application_schema::ApplicationOperationBodyCreationLinkDirection::SelfEdge) {return 41;}
     if body.creation().into_iter().flat_map(|c|c.initialization_sites()).flat_map(|c|c.links())
         .any(|l|!matches!(l.source,worth_query_declaration::facade::application_schema::ApplicationOperationBodyCreationLinkSource::Scope)) {return 40;}
     let scoped = body.explicit_scope_entity().is_some() || body.is_creation_only();

@@ -10,6 +10,7 @@ use worth_store_application::*;
 
 mod physical;
 mod query_custody;
+mod user_summary;
 pub use query_custody::{UnadmittedHomeQueryCustodyRefused, UnadmittedHomeQueryService};
 
 /// Owning open refusal keeps the exact opening phase on the heap, so error

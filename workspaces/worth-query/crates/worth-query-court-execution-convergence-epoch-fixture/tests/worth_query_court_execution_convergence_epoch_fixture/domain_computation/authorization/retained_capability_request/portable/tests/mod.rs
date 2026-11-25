@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRelationBinding;
 use std::sync::Arc;
 use worth_foundational::facade::AspectValue;
@@ -44,7 +45,7 @@ fn approval_request_round_trip_preserves_every_authorization_axis() {
                 worth_relational::facade::identity::PartitionId::main(),
                 3,
                 0,
-            )), AspectValue::UInt64(4), AspectValue::UInt64(5), Some(ApplicationCapabilityRelationBinding::from_untrusted_parts(
+            )), AspectValue::UInt64(4), AspectValue::UInt64(5), Some(ApplicationCapabilityRelationBinding::from_untrusted_parts(ARCHIVE_DECODE,
                 WorthQueryPortableApplicationCapabilityRelationBindingParts {
                     relation: "related".into(),
                     from: "resource".into(),

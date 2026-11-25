@@ -39,13 +39,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         if self.next_authored_stage() != Some(source) {
             return Err(part::reject(Cause::UnadmittedAuthoredStage, source).into());
         }
-        let fragment_start = self
-            .mutation
-            .outcome
-            .effect
-            .publication
-            .patch_fragments
-            .len();
+        let start = super::succession::segment::SpanStart::of(&self.mutation.outcome.effect);
         let applied = self.apply_suffix(
             execution,
             part::SuffixWriter::Authored {
@@ -68,15 +62,20 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             &roles,
             &self.mutation.outcome.created_entities,
         )?;
+        let span = start.end(&self.mutation.outcome.effect, applied.has_entity_deletions);
+        let references = super::succession::guards::named_records(
+            &applied.plan.plan().merged_intents,
+            &roles,
+            naming.as_ref(),
+        );
+        self.indexes.insert(
+            super::succession::indexes::MemberId::Stage(self.stages.len()),
+            &applied.records,
+            references,
+        );
         self.stages.push(CoupledAuthoredStagePart {
-            fragments: fragment_start
-                ..self
-                    .mutation
-                    .outcome
-                    .effect
-                    .publication
-                    .patch_fragments
-                    .len(),
+            span,
+            content: content.clone(),
             roles,
             output_ids,
             source,

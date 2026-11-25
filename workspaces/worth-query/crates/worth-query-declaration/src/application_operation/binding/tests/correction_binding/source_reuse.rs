@@ -1,5 +1,6 @@
 //! A correction source may already be another action's declared inverse binding.
 use super::*;
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 
 #[test]
 fn correction_source_reuses_the_complete_preinstalled_binding() {
@@ -29,7 +30,10 @@ fn correction_source_does_not_hide_a_conflicting_portable_scope() {
     let mut conflicting = descriptor.description().clone().into_parts();
     conflicting.scope.field = "DifferentScopeField".to_owned();
     let member = ApplicationSchemaMember::ApplicationMutation {
-        description: ApplicationMutationDescription::from_untrusted_parts(conflicting),
+        description: ApplicationMutationDescription::from_untrusted_parts(
+            ARCHIVE_DECODE,
+            conflicting,
+        ),
     };
     let builder =
         ApplicationSchemaDeclarationBuilder::<MutationSchema>::from_test_members(vec![member])

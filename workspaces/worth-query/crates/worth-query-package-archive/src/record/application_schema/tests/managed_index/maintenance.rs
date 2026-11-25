@@ -1,5 +1,6 @@
 //! Explicit maintenance survives transport; absent legacy metadata stays absent.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use ApplicationManagedIndexColdSource as Cold;
 use ApplicationManagedIndexMaintenance as Maintenance;
 
@@ -43,7 +44,8 @@ fn v5_round_trips_explicit_modes_optional_refinement_and_exact_legacy_fences() {
         }
     }
     assert_eq!(
-        ErasedApplicationManagedIndexDefinition::from_untrusted_parts(parts()).validate(),
+        ErasedApplicationManagedIndexDefinition::from_untrusted_parts(ARCHIVE_DECODE, parts())
+            .validate(),
         Err(ApplicationManagedIndexDefinitionDenial::UnsupportedMaintenance)
     );
     assert_eq!(

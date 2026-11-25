@@ -86,6 +86,15 @@ impl RecordSlotDirectory {
         Ok(copied_bytes.saturating_add(self.physical_by_logical.insert(logical_slot, physical)))
     }
 
+    /// Unmap `logical_slot`, returning its physical row. The row stays in the
+    /// columns, unreachable: a sparse overlay row withdrawn so its base shows
+    /// through. A later insert of the same slot appends a fresh row.
+    pub(super) fn remove(&mut self, logical_slot: u64) -> Option<usize> {
+        let physical = self.physical_index(logical_slot as usize)?;
+        self.physical_by_logical.remove(&logical_slot);
+        Some(physical)
+    }
+
     pub(super) fn insert_for_request(
         &mut self,
         logical_slot: u64,

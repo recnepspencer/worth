@@ -8,7 +8,9 @@ use super::{
 };
 use crate::branch::reference_checkpoint_data::RelationalBranchCellCheckpoint;
 use crate::content::publication::ContentPublication;
-use crate::history::data::{CanonicalRecordAllocation, RelationalCallerAssociation};
+use crate::history::data::{
+    CancelledRecordAllocation, CanonicalRecordAllocation, RelationalCallerAssociation,
+};
 use crate::lineage::data::PublishedLineageArtifact;
 use crate::symbols::data::{Symbol, SymbolTableSnapshot};
 use crate::transactions::data::primitives::RecordRef;
@@ -19,6 +21,8 @@ use std::sync::Arc;
 pub trait CanonicalCommitEnvelopeBodyOwnerPort: Sized {
     fn install_record_allocations(&mut self, allocations: Vec<CanonicalRecordAllocation>);
     fn record_allocations(&self) -> &[CanonicalRecordAllocation];
+    fn install_cancelled_record_allocations(&mut self, cancelled: Vec<CancelledRecordAllocation>);
+    fn cancelled_record_allocations(&self) -> &[CancelledRecordAllocation];
     fn published_lineage(&self) -> &PublishedLineageArtifact;
     fn touched_record_refs(&self) -> BTreeSet<RecordRef>;
     fn authored_intent_targets(&self) -> impl Iterator<Item = Option<RecordRef>> + '_;
@@ -31,6 +35,14 @@ impl CanonicalCommitEnvelopeBodyOwnerPort for CanonicalCommitEnvelopeBody {
 
     fn record_allocations(&self) -> &[CanonicalRecordAllocation] {
         self.record_allocations()
+    }
+
+    fn install_cancelled_record_allocations(&mut self, cancelled: Vec<CancelledRecordAllocation>) {
+        self.install_cancelled_record_allocations(cancelled)
+    }
+
+    fn cancelled_record_allocations(&self) -> &[CancelledRecordAllocation] {
+        self.cancelled_record_allocations()
     }
 
     fn published_lineage(&self) -> &PublishedLineageArtifact {

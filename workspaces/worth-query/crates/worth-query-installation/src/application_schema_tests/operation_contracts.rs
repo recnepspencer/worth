@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 mod optional_projection_budget;
 
 use super::*;
@@ -349,11 +350,14 @@ fn coherent_candidate(axis: &str, maximum_encoded_bytes: usize) -> Vec<Applicati
                     panic!("recorded inverse fixture")
                 };
                 let changed = PortableRecordedInverse::from_untrusted_fields(
+                    ARCHIVE_DECODE,
                     inverse.inverse_operation_slot().into(),
                     inverse.lowering_correspondence().clone(),
                     inverse.postcondition().clone(),
                     PortablePreImageDemand::from_untrusted_fields(
+                        ARCHIVE_DECODE,
                         vec![PortablePreImageLocus::from_untrusted_fields(
+                            ARCHIVE_DECODE,
                             entity.into(),
                             aspect.into(),
                             name.into(),
@@ -364,6 +368,7 @@ fn coherent_candidate(axis: &str, maximum_encoded_bytes: usize) -> Vec<Applicati
                 ApplicationSchemaMember::OperationAftermath {
                     operation,
                     contract: PortableApplicationAftermathContract::from_untrusted_fields(
+                        ARCHIVE_DECODE,
                         contract.authority(),
                         Some(PortableCorrectionMechanism::RecordedInverse(changed)),
                         contract.reconciliation().cloned(),

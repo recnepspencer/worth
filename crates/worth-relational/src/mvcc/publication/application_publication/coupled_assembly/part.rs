@@ -42,35 +42,76 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             execution,
             &publication,
         )?;
-        let source = publication.producing_meaning().expect("admitted writer").source_scope;
+        let source = publication
+            .producing_meaning()
+            .expect("admitted writer")
+            .source_scope;
         let index = self.parts.len();
-        let pub_effect = &self.mutation.outcome.effect.publication;
-        let (first_record, first_fragment) = (pub_effect.changed_records.len(), pub_effect.patch_fragments.len());
+        let scope = self.applied_parts();
+        let head_journal = self.mutation.state().mutation_journal().clone();
+        let start = super::succession::segment::SpanStart::of(&self.mutation.outcome.effect);
         let first_batch = self.transaction.batches().len();
         let applied = self.apply_suffix(
             execution,
-            SuffixWriter::Producer { index, source, roles: publication.roles_mut(), predecessor: predecessor_origin.as_deref() },
-            content, batches, naming.as_mut(),
+            SuffixWriter::Producer {
+                index,
+                source,
+                roles: publication.roles_mut(),
+                predecessor: predecessor_origin.as_deref(),
+            },
+            content,
+            batches,
+            naming.as_mut(),
         )?;
-        let ordinary_ids = publication.resolve_ordinary_roles(execution, &self.mutation.outcome.created_entities)?;
-        let publication_effect = &self.mutation.outcome.effect.publication;
-        let latest = super::succession::appended_rounds(&self.parts);
+        let span = start.end(&self.mutation.outcome.effect, applied.has_entity_deletions);
+        let ordinary_ids = publication
+            .resolve_ordinary_roles(execution, &self.mutation.outcome.created_entities)?;
+        let references = super::succession::guards::named_records(
+            &applied.plan.plan().merged_intents,
+            publication.roles(),
+            naming.as_ref(),
+        );
+        let head_ordinal = self.indexes.insert(
+            super::succession::indexes::MemberId::Part(index),
+            &applied.records,
+            references,
+        );
+        let mut ledger = super::succession::ledger::ChainCreateLedger::default();
+        ledger.bind_round(&applied.creates);
         let chain = Chain {
             head_input: applied.read.clone(),
+            head_journal,
+            head_ordinal,
+            scope,
             prior_touches: Vec::new(),
+            last_superseded: Vec::new(),
             batches: first_batch..self.transaction.batches().len(),
-            fragments: (first_fragment..publication_effect.patch_fragments.len()).map(|p| (p, applied.read.clone())).collect(),
             superseded: Vec::new(),
             local_keys: applied.local_keys,
-            created: applied.created,
-            rounds: vec![first_record..publication_effect.changed_records.len()],
-            latest,
+            ledger,
+            touched: applied.records.iter().cloned().collect(),
+            span,
+            rounds: 1,
+            latest: super::succession::appended_rounds(&self.parts),
         };
         self.parts.push(CoupledPublicationPart {
-            inputs: None, ordinary_ids, input: applied.read, publication,
-            commands: applied.plan, records: applied.records, chain, naming,
+            inputs: None,
+            ordinary_ids,
+            input: applied.read,
+            publication,
+            commands: applied.plan,
+            records: applied.records,
+            chain,
+            naming,
+            content: content.clone(),
         });
         let latest = self.parts.last().expect("the actual part just appended");
-        self.advance_pin(execution, &applied.delta_state, &applied.content, &latest.records, &latest.input)
+        self.advance_pin(
+            execution,
+            &applied.delta_state,
+            &applied.content,
+            &latest.records,
+            &latest.input,
+        )
     }
 }

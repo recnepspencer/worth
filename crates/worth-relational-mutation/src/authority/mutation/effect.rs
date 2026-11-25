@@ -1,5 +1,4 @@
 use crate::contracts::diagnostics::data::artifacts::RelationalDiagnosticsEntry;
-use crate::contracts::identity::data::record_ids::EntityId;
 use crate::contracts::transactions::data::primitives::RecordRef;
 
 use super::canonical_deltas::{CanonicalRecordAspectDelta, FoundationalPatchFragment};
@@ -14,7 +13,6 @@ pub struct MutationPublicationEffect {
     pub changed_records: Vec<RecordRef>,
     pub canonical_deltas: Vec<CanonicalRecordAspectDelta>,
     pub patch_fragments: Vec<FoundationalPatchFragment>,
-    pub entity_replacements: Vec<(EntityId, EntityId)>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -42,7 +40,6 @@ impl MutationEffect {
                 changed_records: Vec::with_capacity(change_count),
                 canonical_deltas: Vec::with_capacity(change_count),
                 patch_fragments: Vec::with_capacity(change_count),
-                entity_replacements: Vec::new(),
             },
             diagnostics: MutationDiagnosticsEffect {
                 entries: Vec::with_capacity(diagnostic_count),
@@ -64,9 +61,6 @@ impl MutationEffect {
         self.publication
             .patch_fragments
             .extend(child.publication.patch_fragments);
-        self.publication
-            .entity_replacements
-            .extend(child.publication.entity_replacements);
         self.diagnostics.entries.extend(child.diagnostics.entries);
         self.adjacency.deltas.extend(child.adjacency.deltas);
     }

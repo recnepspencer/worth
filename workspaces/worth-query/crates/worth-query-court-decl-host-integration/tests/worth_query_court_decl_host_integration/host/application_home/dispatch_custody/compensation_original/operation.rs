@@ -20,14 +20,6 @@ use worth_query_testkit_host::facade::host::dispatch_home::notify::{
 pub const FAMILY: &str = "compensation-original-notice";
 pub const SOURCE: &str = "compensation-original-source";
 worth_query_effect!(pub NoticeEffect for Schema, payload BalanceNoticeBinding);
-impl Registration<Schema> for NoticeEffect {
-    fn register(
-        builder: ApplicationSchemaDeclarationBuilder<Schema>,
-    ) -> Result<ApplicationSchemaDeclarationBuilder<Schema>, ApplicationSchemaDeclarationDenial>
-    {
-        Ok(builder.effect(Self::reference()))
-    }
-}
 pub type Scope = ApplicationMutationFieldScope<Number>;
 type Number = worth_query_decl::facade::application_schema::fragment::FieldSelection<
     super::schema::HomeRecords,

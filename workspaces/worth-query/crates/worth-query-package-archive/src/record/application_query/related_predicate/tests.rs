@@ -7,6 +7,7 @@ use crate::record::application_query::{decode, write};
 use crate::record::decode_budget::RecordDecodeAttempt;
 use worth_foundational::expression_api::expressions;
 use worth_foundational::facade::{AspectValue, InternedString, ScalarAspectType};
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_query::*;
 use worth_query_declaration::facade::application_schema::*;
 use worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity;
@@ -38,6 +39,7 @@ fn plain_query() -> ErasedApplicationQueryDefinition {
         .into_erased()
         .into_parts();
     parts.parameters = vec![ApplicationQueryParameterDefinition::from_untrusted_fields(
+        ARCHIVE_DECODE,
         "min_rank".into(),
         ScalarAspectType::Int64,
         WorthQueryPortableTypeIdentity::declared("worth.tests.archive.i64.v1"),
@@ -45,7 +47,7 @@ fn plain_query() -> ErasedApplicationQueryDefinition {
         None,
     )
     .with_optional_presence()];
-    ErasedApplicationQueryDefinition::from_untrusted_parts(parts)
+    ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, parts)
 }
 
 fn with_related() -> ErasedApplicationQueryDefinition {
@@ -55,8 +57,10 @@ fn with_related() -> ErasedApplicationQueryDefinition {
         .unwrap()
         .encode();
     let target_filter = ApplicationQueryWhereFilterProgram::from_untrusted(
+        ARCHIVE_DECODE,
         vec![
             ApplicationQueryWhereFilterOperand::from_untrusted(
+                ARCHIVE_DECODE,
                 "rank".into(),
                 ApplicationQueryWhereFilterSource::Field {
                     entity: "Task".into(),
@@ -67,6 +71,7 @@ fn with_related() -> ErasedApplicationQueryDefinition {
                 },
             ),
             ApplicationQueryWhereFilterOperand::from_untrusted(
+                ARCHIVE_DECODE,
                 "min_rank".into(),
                 ApplicationQueryWhereFilterSource::OptionalParameter {
                     parameter: "min_rank".into(),
@@ -79,6 +84,7 @@ fn with_related() -> ErasedApplicationQueryDefinition {
     .unwrap();
     parts.related_predicates = vec![
         ApplicationQueryRelatedPredicateMeaning::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableApplicationQueryRelatedPredicateParts {
                 relation: "BlockedBy".into(),
                 from: "Task".into(),
@@ -87,6 +93,7 @@ fn with_related() -> ErasedApplicationQueryDefinition {
                 polarity: ApplicationQueryRelatedPolarity::Absent,
                 target_predicates: vec![
                     ApplicationQueryRelatedTargetPredicate::from_untrusted_value(
+                        ARCHIVE_DECODE,
                         "Task".into(),
                         "TaskFacts".into(),
                         "Status".into(),
@@ -117,7 +124,7 @@ fn with_related() -> ErasedApplicationQueryDefinition {
             ApplicationQueryObservableInfluence::Count,
         ]),
     );
-    ErasedApplicationQueryDefinition::from_untrusted_parts(parts)
+    ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, parts)
 }
 
 fn encode(query: &ErasedApplicationQueryDefinition) -> Vec<u8> {
@@ -148,7 +155,8 @@ fn related_predicate_and_internal_relation_disclosure_round_trip_without_affecti
 
     let mut only_related_parts = plain_query().into_parts();
     only_related_parts.related_predicates = with_related().related_predicates().to_vec();
-    let only_related = ErasedApplicationQueryDefinition::from_untrusted_parts(only_related_parts);
+    let only_related =
+        ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, only_related_parts);
     let related_bytes = encode(&only_related);
     assert!(
         related_bytes.starts_with(&plain),
@@ -170,6 +178,7 @@ fn forged_related_predicate_payloads_refuse_at_archive_boundary() {
     let mut only_related_parts = plain_query().into_parts();
     only_related_parts.related_predicates = with_related().related_predicates().to_vec();
     let bytes = encode(&ErasedApplicationQueryDefinition::from_untrusted_parts(
+        ARCHIVE_DECODE,
         only_related_parts,
     ));
     let kind = |raw: &[u8]| decode_bytes(raw).unwrap_err().kind();
@@ -193,6 +202,7 @@ fn forged_related_predicate_payloads_refuse_at_archive_boundary() {
     let mut oversized = plain_query().into_parts();
     oversized.related_predicates = vec![
         ApplicationQueryRelatedPredicateMeaning::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableApplicationQueryRelatedPredicateParts {
                 relation: "BlockedBy".into(),
                 from: "Task".into(),
@@ -201,6 +211,7 @@ fn forged_related_predicate_payloads_refuse_at_archive_boundary() {
                 polarity: ApplicationQueryRelatedPolarity::Absent,
                 target_predicates: vec![
                     ApplicationQueryRelatedTargetPredicate::from_untrusted_value(
+                        ARCHIVE_DECODE,
                         "Task".into(),
                         "TaskFacts".into(),
                         "Status".into(),
@@ -217,7 +228,7 @@ fn forged_related_predicate_payloads_refuse_at_archive_boundary() {
     assert_eq!(
         write(
             &mut out,
-            &ErasedApplicationQueryDefinition::from_untrusted_parts(oversized)
+            &ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, oversized)
         )
         .unwrap_err()
         .kind(),
@@ -231,7 +242,7 @@ fn forged_related_predicate_payloads_refuse_at_archive_boundary() {
         let mut out = BinaryOutput::with_capacity(256);
         write(
             &mut out,
-            &ErasedApplicationQueryDefinition::from_untrusted_parts(parts),
+            &ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, parts),
         )
         .unwrap_err()
         .kind()
@@ -240,6 +251,7 @@ fn forged_related_predicate_payloads_refuse_at_archive_boundary() {
     let mut wrong_endpoint = plain_query().into_parts();
     wrong_endpoint.related_predicates = vec![
         ApplicationQueryRelatedPredicateMeaning::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableApplicationQueryRelatedPredicateParts {
                 relation: "Contains".into(),
                 from: "Project".into(),
@@ -255,6 +267,7 @@ fn forged_related_predicate_payloads_refuse_at_archive_boundary() {
 
     let mut contra = plain_query().into_parts();
     let absent_one = ApplicationQueryRelatedPredicateMeaning::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationQueryRelatedPredicateParts {
             relation: "BlockedBy".into(),
             from: "Task".into(),
@@ -266,6 +279,7 @@ fn forged_related_predicate_payloads_refuse_at_archive_boundary() {
         },
     );
     let exists_one = ApplicationQueryRelatedPredicateMeaning::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationQueryRelatedPredicateParts {
             relation: "BlockedBy".into(),
             from: "Task".into(),
@@ -301,6 +315,7 @@ fn forged_related_predicate_payloads_refuse_at_archive_boundary() {
     //    decode must refuse definition-level unsupported shape!
     let mut orbit_parts = plain_query().into_parts();
     orbit_parts.orbit = Some(ApplicationQueryOrbitMeaning::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationQueryOrbitParts {
             query: orbit_parts.query_type.clone(),
             slot: WorthQueryPortableTypeIdentity::declared("worth.tests.archive.orbit.v1"),
@@ -311,7 +326,7 @@ fn forged_related_predicate_payloads_refuse_at_archive_boundary() {
         },
     ));
     let mut forged_orbit_with_related = encode(
-        &ErasedApplicationQueryDefinition::from_untrusted_parts(orbit_parts),
+        &ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, orbit_parts),
     );
     forged_orbit_with_related.extend_from_slice(&bytes[plain.len()..]);
     assert_eq!(kind(&forged_orbit_with_related), Kind::InvalidRecordShape);

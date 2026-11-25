@@ -1,4 +1,5 @@
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 pub(in crate::record::operation_body) fn write_operands(
     output: &mut dyn BinaryEncodingSink,
     operands: &[Operand],
@@ -132,7 +133,10 @@ pub(in crate::record::operation_body) fn decode_operands(
                     input.text()?,
                     input.text()?,
                 ),
-                binding: WorthQueryPortableTypeIdentity::from_untrusted(input.text()?.to_owned()),
+                binding: WorthQueryPortableTypeIdentity::from_untrusted(
+                    ARCHIVE_DECODE,
+                    input.text()?.to_owned(),
+                ),
                 scalar_family: super::super::super::foundational_aspect::decode_scalar_type(input)?,
                 presence: if boolean(input)? {
                     ApplicationFieldPresence::Optional
@@ -156,14 +160,19 @@ pub(in crate::record::operation_body) fn decode_operands(
                     input.text()?,
                     input.text()?,
                 ),
-                binding: WorthQueryPortableTypeIdentity::from_untrusted(input.text()?.to_owned()),
+                binding: WorthQueryPortableTypeIdentity::from_untrusted(
+                    ARCHIVE_DECODE,
+                    input.text()?.to_owned(),
+                ),
                 scalar_family: super::super::super::foundational_aspect::decode_scalar_type(input)?,
             },
             1 => {
                 let field =
                     ApplicationFieldBindingLocus::new(input.text()?, input.text()?, input.text()?);
-                let binding =
-                    WorthQueryPortableTypeIdentity::from_untrusted(input.text()?.to_owned());
+                let binding = WorthQueryPortableTypeIdentity::from_untrusted(
+                    ARCHIVE_DECODE,
+                    input.text()?.to_owned(),
+                );
                 let scalar_family =
                     super::super::super::foundational_aspect::decode_scalar_type(input)?;
                 let presence = if boolean(input)? {
@@ -192,6 +201,6 @@ pub(in crate::record::operation_body) fn decode_operands(
             },
             _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
         };
-        Ok(Operand::from_untrusted(name, source))
+        Ok(Operand::from_untrusted(ARCHIVE_DECODE, name, source))
     })
 }

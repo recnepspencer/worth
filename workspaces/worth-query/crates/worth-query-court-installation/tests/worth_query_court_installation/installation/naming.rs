@@ -1,4 +1,5 @@
 //! Installation-boundary validation and lowering courts for persistent naming schemes.
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_naming::{
     ApplicationNameRoleDependency, ApplicationNameSchemeBuilder, ApplicationNameSchemeDenial,
     ApplicationNameSubjectKind, ErasedApplicationNameScheme, WorthQueryName,
@@ -234,6 +235,7 @@ fn installation_refuses_cyclic_role_order_before_runtime_starts() {
     // Also verify direct lowering catches duplicate roles in role_order,
     // self-loops, and multi-hop cycles with concrete cycle paths.
     let duplicate_role_scheme = ErasedApplicationNameScheme::from_untrusted_parts(
+        ARCHIVE_DECODE,
         "worth.cad.dup_role.v1".to_owned(),
         ApplicationNameSubjectKind::Entity,
         "Face".to_owned(),
@@ -253,6 +255,7 @@ fn installation_refuses_cyclic_role_order_before_runtime_starts() {
     ));
 
     let self_loop_scheme = ErasedApplicationNameScheme::from_untrusted_parts(
+        ARCHIVE_DECODE,
         "worth.cad.self_loop.v1".to_owned(),
         ApplicationNameSubjectKind::Entity,
         "Face".to_owned(),
@@ -297,6 +300,7 @@ fn installation_refuses_split_scheme_missing_discriminator_and_duplicate_schemes
 
     // Direct duplicate scheme_id across two different subjects also refuses.
     let s1 = ErasedApplicationNameScheme::from_untrusted_parts(
+        ARCHIVE_DECODE,
         "worth.cad.shared.v1".to_owned(),
         ApplicationNameSubjectKind::Entity,
         "Face".to_owned(),
@@ -308,6 +312,7 @@ fn installation_refuses_split_scheme_missing_discriminator_and_duplicate_schemes
         true,
     );
     let s2 = ErasedApplicationNameScheme::from_untrusted_parts(
+        ARCHIVE_DECODE,
         "worth.cad.shared.v1".to_owned(),
         ApplicationNameSubjectKind::Entity,
         "Edge".to_owned(),
@@ -328,6 +333,7 @@ fn installation_refuses_split_scheme_missing_discriminator_and_duplicate_schemes
 #[test]
 fn installation_refuses_undeclared_role_dependency_and_missing_subject_target() {
     let undeclared_dep = ErasedApplicationNameScheme::from_untrusted_parts(
+        ARCHIVE_DECODE,
         "worth.cad.undeclared_dep.v1".to_owned(),
         ApplicationNameSubjectKind::Entity,
         "Face".to_owned(),

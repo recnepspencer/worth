@@ -69,11 +69,13 @@ pub(super) fn insert_target(members: &[Member], selected: &mut EntityFields, tar
 #[cfg(test)]
 mod tests {
     use super::*;
+    use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
     use worth_query_declaration::facade::application_schema::ApplicationDecisionReadScopeMeaning;
 
     #[test]
     fn shared_selector_fields_keep_exact_membership_and_one_allocation() {
         let definition = ApplicationDecisionReadScopeMeaning::from_untrusted_parts(
+            ARCHIVE_DECODE,
             vec![Target::Field {
                 entity: "Record".into(),
                 aspect: "Facts".into(),

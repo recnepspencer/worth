@@ -291,7 +291,7 @@ fn unified_predicates_optional_params_related_and_live_whole_result_expand_clean
                 "#[worth_query(root = Task, live = whole_result, lanes = OneShot)] {HEADER} \
                  struct Read {{ #[worth_query(scope = ProjectKey)] project: u64 }}"
             ),
-            "`live = whole_result` requires live lane eligibility",
+            "`live` requires live lane eligibility",
         ),
         (
             format!(

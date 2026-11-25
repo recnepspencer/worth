@@ -1,6 +1,7 @@
 use super::test_support::close_records;
 use super::*;
 use crate::package::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 
 #[test]
 fn honest_complete_export_has_tight_intake_limits_and_round_trips_within_its_claim() {
@@ -42,11 +43,9 @@ fn honest_complete_export_has_tight_intake_limits_and_round_trips_within_its_cla
     )
     .materialize()
     .unwrap()
-    .validate_freshly(
-        WorthQueryExpectedPortablePackageIdentity::from_untrusted_identity(
-            source.identity().clone(),
-        ),
-    )
+    .validate_freshly(WorthQueryExpectedPortablePackageIdentity::new(
+        source.identity().clone(),
+    ))
     .unwrap();
     assert!(validated.has_same_authoritative_meaning(&source));
 
@@ -97,6 +96,7 @@ fn manifest_with_logical_bytes(
     logical_export_bytes: u64,
 ) -> WorthQueryPortablePackageManifest {
     WorthQueryPortablePackageManifest::from_untrusted_fields(
+        ARCHIVE_DECODE,
         source.version(),
         source.package_identity().clone(),
         source.record_count(),

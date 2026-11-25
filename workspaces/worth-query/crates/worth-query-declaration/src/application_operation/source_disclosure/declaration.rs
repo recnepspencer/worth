@@ -1,5 +1,6 @@
 use crate::application_query::ApplicationQueryBindingReference;
 use crate::application_schema::ApplicationSchema;
+use crate::archive_decode_authority::{ArchiveDecodeAuthority, ARCHIVE_DECODE};
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
 use super::super::ApplicationMutationBinding;
@@ -21,16 +22,22 @@ pub struct DeclaredApplicationSourceDisclosureParts {
 impl DeclaredApplicationSourceDisclosure {
     pub fn of<Schema: ApplicationSchema, Binding: ApplicationSourceDisclosureBinding<Schema>>(
     ) -> Self {
-        Self::from_untrusted_parts(DeclaredApplicationSourceDisclosureParts {
-            identity: WorthQueryPortableTypeIdentity::declared(Binding::IDENTITY),
-            source_binding: WorthQueryPortableTypeIdentity::declared(
-                <Binding::Source as ApplicationMutationBinding<Schema>>::IDENTITY,
-            ),
-            query: ApplicationQueryBindingReference::of::<Schema, Binding::Disclosure>(),
-        })
+        Self::from_untrusted_parts(
+            ARCHIVE_DECODE,
+            DeclaredApplicationSourceDisclosureParts {
+                identity: WorthQueryPortableTypeIdentity::declared(Binding::IDENTITY),
+                source_binding: WorthQueryPortableTypeIdentity::declared(
+                    <Binding::Source as ApplicationMutationBinding<Schema>>::IDENTITY,
+                ),
+                query: ApplicationQueryBindingReference::of::<Schema, Binding::Disclosure>(),
+            },
+        )
     }
 
-    pub fn from_untrusted_parts(parts: DeclaredApplicationSourceDisclosureParts) -> Self {
+    pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
+        parts: DeclaredApplicationSourceDisclosureParts,
+    ) -> Self {
         Self { parts }
     }
 

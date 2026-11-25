@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 pub(super) mod choice;
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryRootPathGuard, ApplicationQueryRootPathMeaning,
@@ -40,6 +41,7 @@ pub(in crate::record) fn decode_path(
     let steps = decode_sequence(input, budget, 14, |input, _| decode_step(input))?;
     let guards = decode_sequence(input, budget, 22, |input, _| decode_guard(input))?;
     Ok(ApplicationQueryRootPathMeaning::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationQueryRootPathParts {
             start_entity,
             terminal_entity,
@@ -114,6 +116,7 @@ fn decode_step(input: &mut BinaryInput<'_>) -> Result<ApplicationQueryRootPathSt
         _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
     };
     Ok(ApplicationQueryRootPathStep::from_untrusted_source_fields(
+        ARCHIVE_DECODE,
         relation,
         from.into(),
         to.into(),
@@ -137,6 +140,7 @@ fn write_guard(
 }
 fn decode_guard(input: &mut BinaryInput<'_>) -> Result<ApplicationQueryRootPathGuard, Denial> {
     Ok(ApplicationQueryRootPathGuard::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationQueryRootPathGuardParts {
             after_step: decode_usize(input)?,
             entity: input.text()?.to_owned(),

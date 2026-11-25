@@ -1,6 +1,8 @@
 //! Versioned provider meaning never serializes an executable provider or root.
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 mod legacy_wire;
 mod maintenance;
+mod managed_source;
 mod refinement;
 use super::{decode_member, encode_member, try_decode_member};
 use crate::facade::WorthQueryPackageArchiveDenialKind as Kind;
@@ -46,6 +48,7 @@ worth_query_declaration::worth_query_value_binding!(pub BinaryProbeBinding for B
 
 pub(super) fn definition() -> ErasedApplicationManagedIndexDefinition {
     ErasedApplicationManagedIndexDefinition::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableManagedIndexParts {
             semantic_version: 1,
             name: "Prefix".into(),
@@ -55,6 +58,7 @@ pub(super) fn definition() -> ErasedApplicationManagedIndexDefinition {
             membership: ApplicationManagedIndexMembership::Candidates,
             source: ApplicationManagedIndexSourceMeaning::same_scope_without_parameters(
                 ApplicationQueryBindingReference::from_untrusted_parts(
+                    ARCHIVE_DECODE,
                     ApplicationQueryBindingReferenceParts {
                         binding: Identity::declared("worth.tests.source-binding.v1"),
                         input: Identity::declared("worth.tests.source-input.v1"),
@@ -83,7 +87,10 @@ fn ordered_predecessor_scope_round_trips_as_distinct_provider_meaning() {
     let mut parts = definition().parts().clone();
     parts.source.scope = ApplicationManagedIndexSourceScope::OrderedPredecessor;
     let ordered = ApplicationSchemaMember::ManagedIndex {
-        definition: ErasedApplicationManagedIndexDefinition::from_untrusted_parts(parts),
+        definition: ErasedApplicationManagedIndexDefinition::from_untrusted_parts(
+            ARCHIVE_DECODE,
+            parts,
+        ),
     };
     let same = ApplicationSchemaMember::ManagedIndex {
         definition: definition(),
@@ -98,6 +105,7 @@ fn invariant_source_policy_revision_is_explicit_and_refuses_unversioned_or_futur
         invariant: "UniqueNames".into(),
         execution_point: ApplicationInvariantExecutionPoint::CommitBoundary,
         requirement: ApplicationInvariantManagedIndexSource::from_untrusted_parts(
+            ARCHIVE_DECODE,
             definition(),
             ApplicationManagedIndexColdSource::AdmitRebuild,
         ),
@@ -147,19 +155,27 @@ fn managed_index_v1_round_trips_full_probe_and_rejects_future_version_before_pay
     let mut parts = definition().parts().clone();
     parts.probe = ApplicationManagedIndexProbeMeaning::of::<StringApplicationValueBinding>();
     let native = ApplicationSchemaMember::ManagedIndex {
-        definition: ErasedApplicationManagedIndexDefinition::from_untrusted_parts(parts.clone()),
+        definition: ErasedApplicationManagedIndexDefinition::from_untrusted_parts(
+            ARCHIVE_DECODE,
+            parts.clone(),
+        ),
     };
     assert_eq!(decode_member(&encode_member(&native)), native);
     parts.probe = ApplicationManagedIndexProbeMeaning::of::<BinaryProbeBinding>();
     let binary = ApplicationSchemaMember::ManagedIndex {
-        definition: ErasedApplicationManagedIndexDefinition::from_untrusted_parts(parts.clone()),
+        definition: ErasedApplicationManagedIndexDefinition::from_untrusted_parts(
+            ARCHIVE_DECODE,
+            parts.clone(),
+        ),
     };
     assert_eq!(decode_member(&encode_member(&binary)), binary);
     let mut unfunded = parts.probe.parts().clone();
     unfunded.supports_admitted_decode = false;
-    parts.probe = ApplicationManagedIndexProbeMeaning::from_untrusted_parts(unfunded);
+    parts.probe =
+        ApplicationManagedIndexProbeMeaning::from_untrusted_parts(ARCHIVE_DECODE, unfunded);
     assert_eq!(
-        ErasedApplicationManagedIndexDefinition::from_untrusted_parts(parts).validate(),
+        ErasedApplicationManagedIndexDefinition::from_untrusted_parts(ARCHIVE_DECODE, parts)
+            .validate(),
         Err(ApplicationManagedIndexDefinitionDenial::UnsupportedProbeProfile)
     );
     // The old physical entity grammar remains an independent literal byte oracle.
@@ -177,12 +193,19 @@ fn managed_index_structure_is_versioned_and_old_bytes_cannot_claim_source_covera
     let mut parts = definition().parts().clone();
     parts.structure = ApplicationManagedIndexSourceStructure::BinarySourceTree;
     assert_eq!(
-        ErasedApplicationManagedIndexDefinition::from_untrusted_parts(parts.clone()).validate(),
+        ErasedApplicationManagedIndexDefinition::from_untrusted_parts(
+            ARCHIVE_DECODE,
+            parts.clone()
+        )
+        .validate(),
         Err(ApplicationManagedIndexDefinitionDenial::UnsupportedSourceStructure)
     );
     parts.semantic_version = 2;
     let member = ApplicationSchemaMember::ManagedIndex {
-        definition: ErasedApplicationManagedIndexDefinition::from_untrusted_parts(parts),
+        definition: ErasedApplicationManagedIndexDefinition::from_untrusted_parts(
+            ARCHIVE_DECODE,
+            parts,
+        ),
     };
     let bytes = encode_member(&member);
     assert_eq!(&bytes[..4], &[0, 48, 0, 2]);
@@ -216,18 +239,26 @@ fn managed_index_membership_keeps_old_versions_conservative_and_requires_actual_
         parts.semantic_version = version;
         let member = ApplicationSchemaMember::ManagedIndex {
             definition: ErasedApplicationManagedIndexDefinition::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 parts.clone(),
             ),
         };
         assert_eq!(decode_member(&encode_member(&member)), member);
         parts.membership = ApplicationManagedIndexMembership::ExhaustiveSourceTree;
         assert_eq!(
-            ErasedApplicationManagedIndexDefinition::from_untrusted_parts(parts.clone()).validate(),
+            ErasedApplicationManagedIndexDefinition::from_untrusted_parts(
+                ARCHIVE_DECODE,
+                parts.clone()
+            )
+            .validate(),
             Err(ApplicationManagedIndexDefinitionDenial::UnsupportedMembership)
         );
         if version >= 2 {
             parts.structure = ApplicationManagedIndexSourceStructure::BinarySourceTree;
-            let definition = ErasedApplicationManagedIndexDefinition::from_untrusted_parts(parts);
+            let definition = ErasedApplicationManagedIndexDefinition::from_untrusted_parts(
+                ARCHIVE_DECODE,
+                parts,
+            );
             if version == 2 {
                 assert_eq!(
                     definition.validate(),
@@ -247,7 +278,10 @@ fn managed_index_membership_keeps_old_versions_conservative_and_requires_actual_
     parts.structure = ApplicationManagedIndexSourceStructure::BinarySourceTree;
     parts.membership = ApplicationManagedIndexMembership::CheckedSummarySourceTree;
     let member = ApplicationSchemaMember::ManagedIndex {
-        definition: ErasedApplicationManagedIndexDefinition::from_untrusted_parts(parts.clone()),
+        definition: ErasedApplicationManagedIndexDefinition::from_untrusted_parts(
+            ARCHIVE_DECODE,
+            parts.clone(),
+        ),
     };
     assert_eq!(decode_member(&encode_member(&member)), member);
     for version in [1, 2] {
@@ -256,7 +290,11 @@ fn managed_index_membership_keeps_old_versions_conservative_and_requires_actual_
             parts.structure = ApplicationManagedIndexSourceStructure::Opaque;
         }
         assert_eq!(
-            ErasedApplicationManagedIndexDefinition::from_untrusted_parts(parts.clone()).validate(),
+            ErasedApplicationManagedIndexDefinition::from_untrusted_parts(
+                ARCHIVE_DECODE,
+                parts.clone()
+            )
+            .validate(),
             Err(ApplicationManagedIndexDefinitionDenial::UnsupportedMembership)
         );
     }
@@ -268,113 +306,5 @@ fn managed_index_membership_keeps_old_versions_conservative_and_requires_actual_
         .unwrap_err()
         .kind(),
         Kind::UnsupportedRecordVariant
-    );
-}
-
-fn source_query() -> ErasedApplicationQueryDefinition {
-    let binding = definition().parts().source.binding.parts().clone();
-    ErasedApplicationQueryDefinition::from_untrusted_parts(
-        WorthQueryPortableApplicationQueryParts {
-            name: binding.query_name,
-            query_type: binding.query.clone(),
-            parameter_type: binding.parameters,
-            result_type: binding.result.clone(),
-            scope_type: binding.scope,
-            root_entity: "Document".into(),
-            scope_entity: "Document".into(),
-            parameters: vec![],
-            result_shape: ApplicationQueryResultShape::from_untrusted_parts(
-                WorthQueryPortableApplicationQueryResultShapeParts {
-                    query_type: binding.query,
-                    result_type: binding.result,
-                    root_entity: "Document".into(),
-                    fields: vec![],
-                    relations: vec![],
-                },
-            ),
-            root_paths: vec![],
-            orbit: None,
-            component_selection: None,
-            managed_index: None,
-            cardinality: ApplicationQueryCardinality::Many,
-            predicates: vec![],
-            where_filter: None,
-            related_predicates: vec![],
-            ordering: vec![],
-            continuation: None,
-            live_cause: None,
-            live_whole_result: false,
-            disclosure: ApplicationQueryDisclosureContract::public(),
-            authorization: ApplicationQueryAuthorizationRequirement::Public,
-            basis_support: ApplicationQueryBasisSupport::current_and_pinned(),
-            lanes: ApplicationQueryLaneEligibility::one_shot(),
-        },
-    )
-}
-
-fn schema(source: ErasedApplicationQueryDefinition) -> WorthQueryPortableApplicationSchemaRecord {
-    let mut members = vec![
-        ApplicationSchemaMember::Entity {
-            entity: "Document".into(),
-        },
-        ApplicationSchemaMember::ApplicationQuery { definition: source },
-        ApplicationSchemaMember::ManagedIndex {
-            definition: definition(),
-        },
-    ];
-    members.sort();
-    WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(
-        WorthQueryPortableApplicationSchemaParts {
-            owner: "worth.tests.index".into(),
-            name: "Index".into(),
-            major: 1,
-            minor: 0,
-            members,
-            contributions: vec![],
-        },
-    )
-}
-
-#[test]
-fn managed_source_requires_public_disclosure_and_a_real_cycle_is_refused() {
-    let source = source_query();
-    assert!(validate_portable_application_schema_freshly(schema(source.clone())).is_ok());
-    let mut parts = source.clone().into_parts();
-    worth_query_declaration::worth_query_disclosure_classification!(PrivateDisclosure);
-    parts.disclosure = ApplicationQueryDisclosureContract::installed_policy(PrivateDisclosure);
-    assert_eq!(
-        validate_portable_application_schema_freshly(schema(
-            ErasedApplicationQueryDefinition::from_untrusted_parts(parts)
-        ))
-        .unwrap_err(),
-        ApplicationSchemaDeclarationDenial::InvalidManagedIndex {
-            index: "Prefix".into(),
-            cause: ApplicationManagedIndexDefinitionDenial::UnsupportedSourcePosture,
-        }
-    );
-    let mut parts = source.into_parts();
-    parts.parameters = vec![ApplicationQueryParameterDefinition::from_untrusted_fields(
-        "probe".into(),
-        ScalarAspectType::String,
-        ProbeBinding::IDENTITY,
-        None,
-        None,
-    )];
-    parts.managed_index = Some(ApplicationQueryManagedIndexMeaning::from_untrusted_parts(
-        WorthQueryPortableQueryManagedIndexParts {
-            semantic_version: 1,
-            index: "Prefix".into(),
-            probe_parameter: "probe".into(),
-        },
-    ));
-    assert_eq!(
-        validate_portable_application_schema_freshly(schema(
-            ErasedApplicationQueryDefinition::from_untrusted_parts(parts)
-        ))
-        .unwrap_err(),
-        ApplicationSchemaDeclarationDenial::InvalidManagedIndex {
-            index: "Prefix".into(),
-            cause: ApplicationManagedIndexDefinitionDenial::SourceDependencyCycle,
-        }
     );
 }

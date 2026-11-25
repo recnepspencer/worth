@@ -1,3 +1,4 @@
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 use std::collections::{BTreeSet, HashSet};
 
 use crate::application_schema::{
@@ -11,7 +12,7 @@ use super::WorthQueryPortableTypeIdentity;
 fn reconstructed_identity_owns_dynamic_text() {
     let identity = {
         let source = format!("worth.tests.dynamic.{}", 7);
-        WorthQueryPortableTypeIdentity::from_untrusted(source)
+        WorthQueryPortableTypeIdentity::from_untrusted(ARCHIVE_DECODE, source)
     };
 
     assert_eq!(identity.as_str(), "worth.tests.dynamic.7");
@@ -21,8 +22,10 @@ fn reconstructed_identity_owns_dynamic_text() {
 #[test]
 fn declared_and_reconstructed_identity_have_equal_semantics() {
     let declared = WorthQueryPortableTypeIdentity::declared("worth.tests.equal.v1");
-    let reconstructed =
-        WorthQueryPortableTypeIdentity::from_untrusted("worth.tests.equal.v1".to_owned());
+    let reconstructed = WorthQueryPortableTypeIdentity::from_untrusted(
+        ARCHIVE_DECODE,
+        "worth.tests.equal.v1".to_owned(),
+    );
 
     assert_eq!(declared, reconstructed);
     assert_eq!(
@@ -35,7 +38,8 @@ fn declared_and_reconstructed_identity_have_equal_semantics() {
 #[test]
 fn reconstructed_identity_remains_unvalidated_description() {
     for invalid in ["", " leading", "trailing ", "contains space", "line\nbreak"] {
-        let identity = WorthQueryPortableTypeIdentity::from_untrusted(invalid.to_owned());
+        let identity =
+            WorthQueryPortableTypeIdentity::from_untrusted(ARCHIVE_DECODE, invalid.to_owned());
         assert!(!identity.is_valid(), "{invalid:?} must fail validation");
     }
 }
@@ -43,6 +47,7 @@ fn reconstructed_identity_remains_unvalidated_description() {
 #[test]
 fn reconstructed_identity_reenters_through_fresh_schema_validation() {
     let record = WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationSchemaParts {
             owner: "WORTH.tests".to_owned(),
             name: "owned_identity_readmission".to_owned(),
@@ -50,10 +55,10 @@ fn reconstructed_identity_reenters_through_fresh_schema_validation() {
             minor: 0,
             members: vec![ApplicationSchemaMember::ApplicationCapabilityContext {
                 context: "review".to_owned(),
-                context_type: WorthQueryPortableTypeIdentity::from_untrusted(format!(
-                    "worth.tests.context.{}",
-                    1
-                )),
+                context_type: WorthQueryPortableTypeIdentity::from_untrusted(
+                    ARCHIVE_DECODE,
+                    format!("worth.tests.context.{}", 1),
+                ),
             }],
             contributions: Vec::new(),
         },

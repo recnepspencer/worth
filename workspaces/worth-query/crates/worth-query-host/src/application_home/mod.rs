@@ -32,7 +32,8 @@ pub use failure_close::{
     WorthQueryApplicationHomeOpeningCloseRefused, WorthQueryApplicationHomeOpeningClosed,
 };
 pub use history_and_undo::{
-    WorthQueryCorrectionEntry, WorthQueryHomeAuthoredCorrectionOutcome,
+    WorthQueryCorrectionEntry, WorthQueryCorrectionHistory, WorthQueryCorrectionHistoryEntry,
+    WorthQueryCorrectionHistoryLimit, WorthQueryHomeAuthoredCorrectionOutcome,
     WorthQueryHomeCorrectionOutcome, WorthQueryHomeOwnedHistoryDenial, WorthQueryHomeUndoDenial,
     DEFAULT_CORRECTION_HISTORY_LIMITS,
 };

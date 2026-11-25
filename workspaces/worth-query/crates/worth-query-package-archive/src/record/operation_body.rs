@@ -3,6 +3,7 @@ use super::{
     decode_budget::RecordDecodeAttempt,
     sequence::{decode_sequence, write_sequence},
 };
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 
 mod children;
 mod classified_capture;
@@ -145,7 +146,7 @@ pub(super) fn write(
         )?;
     }
     if version >= 37 {
-        reference_input::write(output, body.reference_inputs())?;
+        reference_input::write(output, body.reference_inputs(), version)?;
     }
     if version >= 38 {
         peers::write(output, body, version)?;
@@ -158,7 +159,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationOperationBodyProgram, Denial> {
     let version = input.u16()?;
-    if !matches!(version, 1..=40) {
+    if !matches!(version, 1..=42) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     let scope = if version >= 8 {
@@ -297,7 +298,7 @@ pub(super) fn decode(
         creation
     };
     let references = if version >= 37 {
-        reference_input::decode(input, budget)?
+        reference_input::decode(input, budget, version)?
     } else {
         Vec::new()
     };
@@ -308,6 +309,7 @@ pub(super) fn decode(
     };
     if let Some(scope) = scope {
         Ok(ApplicationOperationBodyProgram::from_untrusted_in_scope(
+            ARCHIVE_DECODE,
             scope,
             steps,
             creation,
@@ -323,6 +325,7 @@ pub(super) fn decode(
         .with_untrusted_reference_inputs(references))
     } else {
         let body = ApplicationOperationBodyProgram::from_untrusted_with_requirements(
+            ARCHIVE_DECODE,
             steps,
             creation,
             requirements,

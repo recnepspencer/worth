@@ -1,5 +1,6 @@
 //! Only existing-anchor direction may invalidate old certified selections.
 use super::link_can_change_existing_anchor;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::{
     application_query::{
         ApplicationQueryRootPathMeaning, ApplicationQueryRootPathStep as Step,
@@ -32,21 +33,22 @@ fn creation_to_principal_changes_reverse_existing_subjects_not_fresh_forward_sub
         },
     };
     let body = Body::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
         "Organization".into(),
         vec![],
         Some(
-            Creation::from_untrusted("Created".into(), "new".into(), vec![])
+            Creation::from_untrusted(ARCHIVE_DECODE, "Created".into(), "new".into(), vec![])
                 .with_untrusted_links(vec![link]),
         ),
         vec![],
     );
-    let forward = Step::from_untrusted_fields(
+    let forward = Step::from_untrusted_fields(ARCHIVE_DECODE,
         "CreatedBy".into(),
         "Created".into(),
         "Principal".into(),
         Path::Forward,
      worth_query_declaration::facade::application_query::ApplicationQueryRootPathTraversal::OneHop,);
-    let reverse = Step::from_untrusted_fields(
+    let reverse = Step::from_untrusted_fields(ARCHIVE_DECODE,
         "CreatedBy".into(),
         "Created".into(),
         "Principal".into(),
@@ -62,6 +64,7 @@ fn peer_existing_anchor_links_participate_without_touching_fresh_endpoints() {
             let (from, to) = match direction {
                 Direction::FromScope => ("Existing", "Created"),
                 Direction::ToScope => ("Created", "Existing"),
+                Direction::SelfEdge => unreachable!("only scope-anchored directions are iterated"),
             };
             let link = Link {
                 relation: "Selected".into(),
@@ -72,14 +75,15 @@ fn peer_existing_anchor_links_participate_without_touching_fresh_endpoints() {
                 posture: Posture::Append,
                 source: Default::default(),
             };
-            let peer = Creation::from_untrusted("Created".into(), "peer".into(), vec![]);
+            let peer =
+                Creation::from_untrusted(ARCHIVE_DECODE, "Created".into(), "peer".into(), vec![]);
             let peer = if path_link {
                 peer.with_untrusted_path_links(vec![PathLink {
-                    path: ApplicationQueryRootPathMeaning::from_untrusted_parts(
+                    path: ApplicationQueryRootPathMeaning::from_untrusted_parts(ARCHIVE_DECODE,
                         WorthQueryPortableApplicationQueryRootPathParts {
                             start_entity: "Scope".into(),
                             terminal_entity: "Existing".into(),
-                            steps: vec![Step::from_untrusted_fields(
+                            steps: vec![Step::from_untrusted_fields(ARCHIVE_DECODE,
                                 "Anchor".into(),
                                 "Scope".into(),
                                 "Existing".into(),
@@ -94,17 +98,23 @@ fn peer_existing_anchor_links_participate_without_touching_fresh_endpoints() {
                 peer.with_untrusted_links(vec![link])
             };
             let body = Body::from_untrusted_in_scope(
+                ARCHIVE_DECODE,
                 if path_link { "Scope" } else { "Existing" }.into(),
                 vec![],
                 Some(
-                    Creation::from_untrusted("Snapshot".into(), "root".into(), vec![])
-                        .with_untrusted_peers(vec![peer]),
+                    Creation::from_untrusted(
+                        ARCHIVE_DECODE,
+                        "Snapshot".into(),
+                        "root".into(),
+                        vec![],
+                    )
+                    .with_untrusted_peers(vec![peer]),
                 ),
                 vec![],
             );
             for path in [Path::Forward, Path::Reverse] {
                 let step =
-                    Step::from_untrusted_fields("Selected".into(), from.into(), to.into(), path, worth_query_declaration::facade::application_query::ApplicationQueryRootPathTraversal::OneHop,);
+                    Step::from_untrusted_fields(ARCHIVE_DECODE, "Selected".into(), from.into(), to.into(), path, worth_query_declaration::facade::application_query::ApplicationQueryRootPathTraversal::OneHop,);
                 assert_eq!(
                     link_can_change_existing_anchor(&body, &step),
                     matches!(
@@ -114,7 +124,7 @@ fn peer_existing_anchor_links_participate_without_touching_fresh_endpoints() {
                 );
             }
             let unrelated =
-                Step::from_untrusted_fields("Other".into(), from.into(), to.into(), Path::Forward, worth_query_declaration::facade::application_query::ApplicationQueryRootPathTraversal::OneHop,);
+                Step::from_untrusted_fields(ARCHIVE_DECODE, "Other".into(), from.into(), to.into(), Path::Forward, worth_query_declaration::facade::application_query::ApplicationQueryRootPathTraversal::OneHop,);
             assert!(!link_can_change_existing_anchor(&body, &unrelated));
         }
     }

@@ -15,6 +15,7 @@ use crate::application_query::{
     WorthQueryPortableApplicationQueryResultShapeParts,
 };
 use crate::application_schema::{ApplicationEntityRef, ApplicationFieldPresence};
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 use worth_foundational::expression_api::{expressions, ExpressionDenialFamily};
 use worth_foundational::facade::{
@@ -38,6 +39,7 @@ crate::worth_query_application_query!(
 
 fn field(name: &str, entity: &str, scalar: ScalarAspectType, optional: bool) -> Operand {
     Operand::from_untrusted(
+        ARCHIVE_DECODE,
         name.to_owned(),
         Source::Field {
             entity: entity.to_owned(),
@@ -55,6 +57,7 @@ fn field(name: &str, entity: &str, scalar: ScalarAspectType, optional: bool) -> 
 
 fn parameter(name: &str, scalar: ScalarAspectType) -> Operand {
     Operand::from_untrusted(
+        ARCHIVE_DECODE,
         name.to_owned(),
         Source::Parameter {
             parameter: name.to_owned(),
@@ -93,8 +96,9 @@ fn an_admitted_filter_readmits_from_its_portable_draft_with_equal_identity() {
             .collect::<Vec<_>>(),
         ["notes", "q", "title"]
     );
-    let readmitted = Program::from_untrusted(program.operands().to_vec(), program.draft())
-        .expect("its own draft readmits");
+    let readmitted =
+        Program::from_untrusted(ARCHIVE_DECODE, program.operands().to_vec(), program.draft())
+            .expect("its own draft readmits");
     assert_eq!(readmitted, program);
     assert_eq!(readmitted.semantic_material(), program.semantic_material());
 }
@@ -151,7 +155,7 @@ fn static_admission_refuses_non_bool_unknown_mismatched_and_unused_operands() {
         ),
         Err(Denial::UnsupportedScalar)
     );
-    assert!(Program::from_untrusted(vec![rank()], b"not a draft").is_err());
+    assert!(Program::from_untrusted(ARCHIVE_DECODE, vec![rank()], b"not a draft").is_err());
 }
 
 fn definition_parts() -> crate::application_query::WorthQueryPortableApplicationQueryParts {
@@ -178,6 +182,7 @@ fn definition_parts() -> crate::application_query::WorthQueryPortableApplication
 
 fn declared(name: &str, scalar: ScalarAspectType) -> ApplicationQueryParameterDefinition {
     ApplicationQueryParameterDefinition::from_untrusted_fields(
+        ARCHIVE_DECODE,
         name.to_owned(),
         scalar,
         WorthQueryPortableTypeIdentity::declared("worth.tests.where-filter-parameter.v1"),
@@ -188,18 +193,22 @@ fn declared(name: &str, scalar: ScalarAspectType) -> ApplicationQueryParameterDe
 
 #[test]
 fn the_filter_joins_canonical_identity_only_when_present() {
-    let unfiltered = ErasedApplicationQueryDefinition::from_untrusted_parts(definition_parts());
+    let unfiltered =
+        ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, definition_parts());
     let mut parts = definition_parts();
     parts.where_filter = None;
     assert_eq!(
-        ErasedApplicationQueryDefinition::from_untrusted_parts(parts.clone()).canonical_basis(),
+        ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, parts.clone())
+            .canonical_basis(),
         unfiltered.canonical_basis(),
         "an absent filter contributes no identity entry"
     );
     parts.parameters = vec![declared("q", ScalarAspectType::String)];
-    let parameterized = ErasedApplicationQueryDefinition::from_untrusted_parts(parts.clone());
+    let parameterized =
+        ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, parts.clone());
     parts.where_filter = Some(text_search());
-    let filtered = ErasedApplicationQueryDefinition::from_untrusted_parts(parts.clone());
+    let filtered =
+        ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, parts.clone());
     assert_eq!(
         validate_portable_application_query_freshly(filtered.parts()),
         Ok(())
@@ -215,7 +224,7 @@ fn the_filter_joins_canonical_identity_only_when_present() {
         )
         .unwrap(),
     );
-    let other = ErasedApplicationQueryDefinition::from_untrusted_parts(parts);
+    let other = ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, parts);
     assert_ne!(other.canonical_basis(), filtered.canonical_basis());
 }
 

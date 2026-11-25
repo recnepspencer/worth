@@ -1,4 +1,5 @@
 use std::marker::PhantomData;
+mod governed;
 mod managed_index;
 mod predicates;
 

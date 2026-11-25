@@ -1,5 +1,6 @@
 //! The closed application journal namespace and its current owner admission.
 
+use worth_store::physical_runtime::stability::durable_pins::PHYSICAL_ROOT_PINS;
 use worth_store::physical_runtime::{
     OrderedJournalRegistry, RELATIONAL_BRANCH_TRANSITIONS, RELATIONAL_CANONICAL_COMMITS,
 };
@@ -17,6 +18,8 @@ pub(crate) enum HomeJournalAdmission {
     QueryObligations,
     QueryCorrections,
     QueryDispatch,
+    /// Store restores its own durable root pins before serving.
+    RootPins,
 }
 
 #[derive(Clone, Copy)]
@@ -25,7 +28,7 @@ pub(crate) struct HomeJournal {
     pub(crate) admission: HomeJournalAdmission,
 }
 
-pub(crate) const HOME_JOURNALS: [HomeJournal; 11] = [
+pub(crate) const HOME_JOURNALS: [HomeJournal; 12] = [
     HomeJournal {
         name: "home.transitions",
         admission: HomeJournalAdmission::Transition,
@@ -69,6 +72,10 @@ pub(crate) const HOME_JOURNALS: [HomeJournal; 11] = [
     HomeJournal {
         name: "query.corrections",
         admission: HomeJournalAdmission::QueryCorrections,
+    },
+    HomeJournal {
+        name: PHYSICAL_ROOT_PINS,
+        admission: HomeJournalAdmission::RootPins,
     },
 ];
 

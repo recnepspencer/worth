@@ -8,6 +8,7 @@ use crate::application_operation::{
     WorthQueryApplicationOutputRoleFamily,
 };
 use crate::application_schema::ApplicationRelationRef;
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 
 impl<S: ApplicationSchema> ApplicationAuthoredCorrection<S> {
     /// Zero to many members of one family leave or join an owner that stays
@@ -144,6 +145,7 @@ fn owner_locus<S, Owner, Member, Anchor>(
     owner: &ApplicationRelationRef<S, Owner, Member, Anchor>,
 ) -> PortablePreImageRelationLocus {
     PortablePreImageRelationLocus::from_untrusted_fields(
+        ARCHIVE_DECODE,
         owner.name().to_owned(),
         owner.from().to_owned(),
         owner.to().to_owned(),

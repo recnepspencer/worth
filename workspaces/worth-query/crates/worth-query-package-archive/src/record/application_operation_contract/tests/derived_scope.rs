@@ -1,5 +1,6 @@
 //! Composite scope5 is an explicit versioned association, not leaf permission.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_installation::facade::WorthQueryPortableOperationGraphReadScope as Scope;
 #[test]
 fn derived_source_scope_is_versioned_and_unique_in_canonical_order() {
@@ -30,7 +31,10 @@ fn derived_source_scope_is_versioned_and_unique_in_canonical_order() {
     assert_eq!(denial.kind(), Kind::UnsupportedRecordVariant);
     let mut parts = fixture::complete_parts();
     parts.graph_reads.push(scope.clone());
-    let record = WorthQueryPortableApplicationOperationContractRecord::from_untrusted_parts(parts);
+    let record = WorthQueryPortableApplicationOperationContractRecord::from_untrusted_parts(
+        ARCHIVE_DECODE,
+        parts,
+    );
     let bytes = encode_untrusted(&record, WorthQueryPackageArchiveLimits::DEFAULT);
     let mut decoder =
         WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT);
@@ -40,8 +44,10 @@ fn derived_source_scope_is_versioned_and_unique_in_canonical_order() {
     );
     let mut parts = fixture::complete_parts();
     parts.graph_reads.extend([scope.clone(), scope]);
-    let duplicate =
-        WorthQueryPortableApplicationOperationContractRecord::from_untrusted_parts(parts);
+    let duplicate = WorthQueryPortableApplicationOperationContractRecord::from_untrusted_parts(
+        ARCHIVE_DECODE,
+        parts,
+    );
     let bytes = encode_untrusted(&duplicate, WorthQueryPackageArchiveLimits::DEFAULT);
     assert!(decoder.decode_frame(&bytes).is_err());
 }

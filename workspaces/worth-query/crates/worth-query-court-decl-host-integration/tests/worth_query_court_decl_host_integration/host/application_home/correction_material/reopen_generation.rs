@@ -2,7 +2,7 @@
 //! follow, from before or after the reopen. Reversing the head skips history;
 //! an older source needs the authored-write history that a reopen drops. A
 //! source from before the reopen also needs index-keyed history across
-//! checkpoint-restored commits, held on public #384.
+//! checkpoint-restored commits, which the catalog owner certifies (#384).
 use super::numeric_home::*;
 use super::*;
 use model::{
@@ -81,6 +81,41 @@ macro_rules! undo {
     }};
 }
 
+/// Reapplies the reversal of a source under `key`; the refusal is rendered.
+macro_rules! redo {
+    ($home:expr, $program:ty, $key:expr, $select:ident($source:expr)) => {{
+        let scope = request_scope();
+        let principal = authenticate_operator($home.primary_graph().installed_schema(), &scope);
+        let request = $home.runtime().request(&principal, &scope);
+        let redone: Result<(), String> = (|| {
+            let selected = request
+                .corrections()
+                .$select($source, limits())
+                .map_err(|denial| format!("select: {denial:?}"))?;
+            let alternatives = request
+                .corrections()
+                .alternatives(&selected, limits(), std::num::NonZeroUsize::new(8).unwrap())
+                .map_err(|denial| format!("alternatives: {denial:?}"))?;
+            let alternative = alternatives.entries().first().ok_or("no alternative")?;
+            let selected = alternatives
+                .select(alternative, limits())
+                .map_err(|denial| format!("alternative: {denial:?}"))?;
+            let prepared = request
+                .corrections()
+                .reapply(&selected)
+                .idempotency($key)
+                .limits(limits())
+                .prepare_operation::<RecordedEdit, $program, model::program::Action>($home.runtime())
+                .map_err(|denial| format!("prepare: {denial:?}"))?;
+            match WorthQueryAnySourceCustody::accept_correction(prepared, &request) {
+                Outcome::Custody(Step::Committed { .. }) => Ok(()),
+                _ => Err("custody: not committed".to_owned()),
+            }
+        })();
+        redone
+    }};
+}
+
 fn values<P: worth_query_decl::facade::application_program::ApplicationProgramDefinition<model::schema::NumericSchema>>(
     runtime: &worth_query_host::facade::application_installation::WorthQueryProgramApplicationRuntime<model::schema::NumericSchema, P>,
 ) -> [u64; 2] {
@@ -97,7 +132,6 @@ fn refused_by_history(outcome: &Result<(), String>) -> bool {
 }
 
 #[test]
-#[ignore = "held on public #384: prepare: Derivation(RestoredSupport(Native(IncompleteIndexHistory)))"]
 fn a_reopened_directory_home_reverses_a_source_from_before_the_reopen() {
     let location = fixture::location();
     let lease = checkpoint_capture::lease(256 << 20);
@@ -144,7 +178,6 @@ fn a_memory_home_reverses_an_older_source() {
 /// A later write to the reversed key lies in a checkpointed commit. The seed
 /// must see it: the reopened Home refuses exactly as a Memory Home does.
 #[test]
-#[ignore = "held on public #384: prepare: Derivation(RestoredSupport(Native(IncompleteIndexHistory)))"]
 fn a_reopened_directory_home_sees_a_checkpointed_write_to_the_reversed_key() {
     let lease = checkpoint_capture::lease(256 << 20);
     let execution = worth_execution::ExecutionRequest::leased(&lease);
@@ -180,4 +213,74 @@ fn a_reopened_directory_home_refuses_a_source_past_its_ancestor_limit() {
     let refused = undo!(home, DirectoryProgram, "undo-a", select_coordinates(&a), one);
     assert!(refused.is_err() && !refused_by_history(&refused), "a typed limit refusal: {refused:?}");
     assert_eq!(values(home.runtime()), [10, 30]);
+}
+
+/// Public #388: a reversal already in history cancels its source, so an older
+/// source of the same key corrects after a reopen exactly as on a Memory Home.
+#[test]
+fn a_reopened_directory_home_cancels_a_checkpointed_reversal_and_corrects_an_older_source() {
+    let lease = checkpoint_capture::lease(256 << 20);
+    let execution = worth_execution::ExecutionRequest::leased(&lease);
+    let memory = open_memory_program_home_with(execution, STAGE_NUMBERS);
+    let a = edit!(memory, model::program::Program, KEYS[0], 10, "edit-a");
+    let b = edit!(memory, model::program::Program, KEYS[0], 20, "edit-b");
+    undo!(memory, model::program::Program, "undo-b", select(&b), limits()).expect("the head reverses");
+    undo!(memory, model::program::Program, "undo-a", select(&a), limits()).expect("Memory corrects a");
+    assert_eq!(values(memory.runtime()), [5, 5]);
+    let location = fixture::location();
+    let home = open_program_home_with(location.clone(), execution, true, STAGE_NUMBERS);
+    let a = edit!(home, DirectoryProgram, KEYS[0], 10, "edit-a").correction_source().coordinates();
+    let b = edit!(home, DirectoryProgram, KEYS[0], 20, "edit-b").correction_source().coordinates();
+    undo!(home, DirectoryProgram, "undo-b", select_coordinates(&b), limits()).expect("the head reverses");
+    drop(home);
+    let home = open_program_home_with(location, execution, false, STAGE_NUMBERS);
+    undo!(home, DirectoryProgram, "undo-a", select_coordinates(&a), limits())
+        .unwrap_or_else(|cause| panic!("#388 the reopened Home corrects as Memory does: {cause}"));
+    assert_eq!(values(home.runtime()), [5, 5]);
+}
+
+/// A redo restores the reversed write, so the older source has diverged on
+/// both Homes; undo/redo is navigation, not a cancelled pair.
+#[test]
+fn a_reopened_directory_home_with_a_redo_refuses_as_memory_does() {
+    let lease = checkpoint_capture::lease(256 << 20);
+    let execution = worth_execution::ExecutionRequest::leased(&lease);
+    let memory = open_memory_program_home_with(execution, STAGE_NUMBERS);
+    let a = edit!(memory, model::program::Program, KEYS[0], 10, "edit-a");
+    let b = edit!(memory, model::program::Program, KEYS[0], 20, "edit-b");
+    undo!(memory, model::program::Program, "undo-b", select(&b), limits()).expect("the head reverses");
+    redo!(memory, model::program::Program, "redo-b", select(&b)).expect("Memory redoes b");
+    let expected = undo!(memory, model::program::Program, "undo-a", select(&a), limits());
+    assert!(matches!(&expected, Err(cause) if cause.contains("SourceDiverged")), "{expected:?}");
+    let location = fixture::location();
+    let home = open_program_home_with(location.clone(), execution, true, STAGE_NUMBERS);
+    let a = edit!(home, DirectoryProgram, KEYS[0], 10, "edit-a").correction_source().coordinates();
+    let b = edit!(home, DirectoryProgram, KEYS[0], 20, "edit-b").correction_source().coordinates();
+    undo!(home, DirectoryProgram, "undo-b", select_coordinates(&b), limits()).expect("the head reverses");
+    redo!(home, DirectoryProgram, "redo-b", select_coordinates(&b)).expect("Directory redoes b");
+    drop(home);
+    let home = open_program_home_with(location, execution, false, STAGE_NUMBERS);
+    let reopened = undo!(home, DirectoryProgram, "undo-a", select_coordinates(&a), limits());
+    assert_eq!(reopened, expected, "#388 the reopened Home refuses as the Memory Home does");
+    assert_eq!(values(home.runtime()), [20, 5]);
+}
+
+/// The cancelled pair straddles a checkpoint (the source) and the WAL tail
+/// (its reversal); both witnesses restore from durable custody.
+#[test]
+fn a_reopened_directory_home_cancels_a_pair_straddling_checkpoint_and_wal_tail() {
+    let location = fixture::location();
+    let lease = checkpoint_capture::lease(256 << 20);
+    let execution = worth_execution::ExecutionRequest::leased(&lease);
+    let home = open_program_home_with(location.clone(), execution, true, STAGE_NUMBERS);
+    let a = edit!(home, DirectoryProgram, KEYS[0], 10, "edit-a").correction_source().coordinates();
+    let b = edit!(home, DirectoryProgram, KEYS[0], 20, "edit-b").correction_source().coordinates();
+    home.close(&execution).unwrap_or_else(|refused| panic!("close: {refused:?}")).reclaim();
+    let home = open_program_home_with(location.clone(), execution, false, STAGE_NUMBERS);
+    undo!(home, DirectoryProgram, "undo-b", select_coordinates(&b), limits()).expect("the head reverses");
+    drop(home);
+    let home = open_program_home_with(location, execution, false, STAGE_NUMBERS);
+    undo!(home, DirectoryProgram, "undo-a", select_coordinates(&a), limits())
+        .unwrap_or_else(|cause| panic!("#388 the straddling pair cancels: {cause}"));
+    assert_eq!(values(home.runtime()), [5, 5]);
 }

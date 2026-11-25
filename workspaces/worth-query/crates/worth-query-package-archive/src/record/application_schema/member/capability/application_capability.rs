@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_capability::{
     ErasedApplicationCapabilityContract, WorthQueryPortableApplicationCapabilityContractParts,
 };
@@ -50,6 +51,7 @@ pub(super) fn decode(
     let composition = composition::decode(input, budget)?;
     let elevation = elevation::decode(input, budget)?;
     Ok(ErasedApplicationCapabilityContract::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationCapabilityContractParts {
             name,
             capability_type,

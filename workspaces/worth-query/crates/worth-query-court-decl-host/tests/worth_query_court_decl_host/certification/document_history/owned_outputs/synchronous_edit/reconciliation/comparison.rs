@@ -128,12 +128,12 @@ fn compare(worker: bool) {
     });
 }
 #[test]
-#[ignore = "Postponed: public #119 / proprietary #100 retirement metadata; assertions retained"]
+#[ignore = "Postponed: retirement metadata (proprietary #100; #119 NativeRevisionUnavailable half). #119 succession cancellation has landed; assertions retained"]
 fn synchronous_shrink_matches_the_legacy_complete_row_oracle() {
     compare(false);
 }
 #[test]
-#[ignore = "Postponed: public #119 / proprietary #100 retirement metadata; assertions retained"]
+#[ignore = "Postponed: retirement metadata (proprietary #100; #119 NativeRevisionUnavailable half). #119 succession cancellation has landed; assertions retained"]
 fn worker_only_synchronous_shrink_matches_the_legacy_complete_row_oracle() {
     compare(true);
 }

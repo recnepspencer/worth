@@ -1,4 +1,5 @@
 //! Closed application commit receipt.
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 pub mod recording;
 
@@ -120,6 +121,7 @@ impl WorthQueryApplicationCommitReceipt {
         &self,
     ) -> crate::domain_computation::application_aftermath::WorthQueryRecordedCorrectionSource {
         crate::domain_computation::application_aftermath::WorthQueryRecordedCorrectionSource::from_untrusted_parts(
+            ARCHIVE_DECODE,
             self.committed_product_publication.composite_commit().clone(),
             self.commit.clone(),
             crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceMember::of_writer(

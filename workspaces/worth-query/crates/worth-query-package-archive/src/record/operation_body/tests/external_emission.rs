@@ -1,6 +1,7 @@
 //! V26 encodes effect meaning; older profiles cannot silently consume the extension.
 use super::*;
 use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersion};
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::{
     ApplicationExternalEffectProtocol, ApplicationFieldPresence,
     ApplicationOperationBodyExternalEmission as Emission,
@@ -15,12 +16,17 @@ fn whole_external_emission_v26_roundtrips_conditional_and_unconditional_meaning(
     let expression =
         worth_foundational::expression_api::expressions().reading_within(Expression::PROFILE);
     let condition = Requirement::from_untrusted(
+        ARCHIVE_DECODE,
         "notify".into(),
         vec![Operand::from_untrusted(
+            ARCHIVE_DECODE,
             "ready".into(),
             Source::Field {
                 field: ApplicationFieldBindingLocus::new("Item", "Facts", "Ready"),
-                binding: WorthQueryPortableTypeIdentity::from_untrusted("worth.rust.bool".into()),
+                binding: WorthQueryPortableTypeIdentity::from_untrusted(
+                    ARCHIVE_DECODE,
+                    "worth.rust.bool".into(),
+                ),
                 scalar_family: ScalarAspectType::Bool,
                 presence: ApplicationFieldPresence::Required,
                 presence_only: false,
@@ -32,7 +38,7 @@ fn whole_external_emission_v26_roundtrips_conditional_and_unconditional_meaning(
     )
     .unwrap();
     for condition in [None, Some(condition)] {
-        let body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+        let body = ApplicationOperationBodyProgram::from_untrusted_in_scope(ARCHIVE_DECODE,
             "Item".into(),
             vec![],
             None,
@@ -41,8 +47,8 @@ fn whole_external_emission_v26_roundtrips_conditional_and_unconditional_meaning(
         .with_untrusted_external_emission(Some(Emission {
             source: worth_query_declaration::facade::application_schema::ApplicationOperationBodyExternalPayloadSource::OperationInput,
             effect: "Notice".into(),
-            input_binding: WorthQueryPortableTypeIdentity::from_untrusted("item.input".into()),
-            payload_binding: WorthQueryPortableTypeIdentity::from_untrusted("item.notice".into()),
+            input_binding: WorthQueryPortableTypeIdentity::from_untrusted(ARCHIVE_DECODE, "item.input".into()),
+            payload_binding: WorthQueryPortableTypeIdentity::from_untrusted(ARCHIVE_DECODE, "item.notice".into()),
             protocol: ApplicationExternalEffectProtocol::new(
                 BoundaryProtocolIdentity::new("item.notice"),
                 BoundaryProtocolVersion::new(3),

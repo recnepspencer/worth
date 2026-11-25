@@ -45,3 +45,17 @@ impl<'delta, 'symbols> AdmittedDeltaSymbols<'delta, 'symbols> {
             .expect(/* Proof: Delta symbol admission walks these exact aspect and field keys before constructing this private admitted delta view. */ "delta admission includes this field")
     }
 }
+
+/// Require exactly the revision references of `deltas`: the surviving deltas
+/// of a coupled candidate after superseded rounds were retracted (#119). The
+/// same walk as `AdmittedDeltaSymbols::admit`. O(changed fields).
+pub fn rebuild_required_revision_references(
+    deltas: &[CanonicalRecordAspectDelta],
+    symbols: &mut worth_relational_storage::internal_port::runtime::state::subsystems::services::symbol_table::reservations::PendingSymbolMeanings,
+) -> Result<(), SymbolReservationDenial> {
+    symbols.clear_required_references();
+    for delta in deltas {
+        AdmittedDeltaSymbols::admit(delta, symbols)?;
+    }
+    Ok(())
+}

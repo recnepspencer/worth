@@ -1,4 +1,5 @@
 use super::*;
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 
 #[test]
 fn assessment_subject_selector_is_canonical_and_round_trips_persistence(
@@ -47,14 +48,14 @@ fn assessment_subject_selector_is_canonical_and_round_trips_persistence(
 
 fn context_selector() -> ApplicationWorkflowSubjectSelector {
     ApplicationWorkflowSubjectSelector::context(
-        crate::application_capability::ApplicationCapabilityContextEntitySlotBinding::from_untrusted_parts(
+        crate::application_capability::ApplicationCapabilityContextEntitySlotBinding::from_untrusted_parts(ARCHIVE_DECODE,
             crate::application_capability::WorthQueryPortableApplicationCapabilityContextEntitySlotBindingParts {
                 context: "review|context:primary".to_owned(),
-                context_identity: crate::portable_identity::WorthQueryPortableTypeIdentity::from_untrusted(
+                context_identity: crate::portable_identity::WorthQueryPortableTypeIdentity::from_untrusted(ARCHIVE_DECODE,
                     "worth.query.tests|context:type".to_owned(),
                 ),
                 slot: "subject|slot:secondary".to_owned(),
-                slot_identity: crate::portable_identity::WorthQueryPortableTypeIdentity::from_untrusted(
+                slot_identity: crate::portable_identity::WorthQueryPortableTypeIdentity::from_untrusted(ARCHIVE_DECODE,
                     "worth.query.tests|slot:type".to_owned(),
                 ),
                 entity: "part|entity:related".to_owned(),

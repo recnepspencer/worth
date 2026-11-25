@@ -9,8 +9,8 @@ use worth_query_host::facade::{
     domain::WorthQueryInstalledApplicationSchema,
     primary_graph::{
         WorthQueryApplicationEntityKey, WorthQueryApplicationEntitySeed,
-        WorthQueryApplicationPrincipalKey, WorthQueryApplicationRelationSeed,
-        WorthQueryPrimaryGraphBootstrap, WorthQueryPrimaryGraphInstallationDenial,
+        WorthQueryApplicationPrincipalKey, WorthQueryPrimaryGraphBootstrap,
+        WorthQueryPrimaryGraphInstallationDenial,
     },
     shared_access::SharedAccessDenial,
     worth_query_application_program, worth_query_shared_access, WorthQueryApplicationHome,
@@ -33,7 +33,7 @@ worth_query_application_program! {
         },
         feature: BoardFeature => BoardDefinition / BoardRuntime {
             identity: "scope.access.dx.feature.v1",
-            query(SharedProjectReadBinding) { definition: shared_project_definition(); };
+            query(SharedProjectReadBinding) { definition: SharedProjectReadQuery::definition(); };
             action grant(
                 project_access::GrantScopeAccessBinding,
                 project_access::ScopeAccessGranted,
@@ -51,9 +51,9 @@ worth_query_application_program! {
 
 worth_query_shared_access! {
     program BoardProgram for BoardSchema {
-        access: project_access,
+        access: super::schema::project_access,
         payload: SharedParams,
-        query: SharedProjectRead = |scope, _| SharedProjectRead(scope.clone()),
+        query: SharedProjectRead = |scope, _| SharedProjectRead { project: scope.clone() },
         row: SharedProject = |value| value,
         owner: |schema, request_scope| {
             local(OWNER)
@@ -100,18 +100,15 @@ fn seed(
             WorthQueryPrincipalMappingStatus::Enabled,
         )?;
     }
-    let key = || WorthQueryApplicationEntityKey::new(PROJECT).unwrap();
     graph.bind_entity(
-        WorthQueryApplicationEntitySeed::new(Project::reference(), key())
-            .field(ProjectFacts::project_id(), PROJECT.to_owned())
-            .field(ProjectFacts::name(), "Launch".to_owned()),
+        WorthQueryApplicationEntitySeed::new(
+            Project::reference(),
+            WorthQueryApplicationEntityKey::new(PROJECT).unwrap(),
+        )
+        .field(ProjectFacts::project_id(), PROJECT.to_owned())
+        .field(ProjectFacts::name(), "Launch".to_owned()),
     )?;
-    graph.bind_relation(WorthQueryApplicationRelationSeed::new(
-        ProjectWatchTarget::reference(),
-        "watch-self",
-        key(),
-        key(),
-    ))
+    Ok(())
 }
 
 pub fn open(path: &std::path::Path) -> BoardHome {

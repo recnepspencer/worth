@@ -5,6 +5,8 @@ pub(crate) mod live_source_admission;
 pub(crate) mod port_operations;
 #[path = "fork_publication.rs"]
 pub(crate) mod publication;
+#[path = "fork_recovered_retained.rs"]
+pub(crate) mod recovered_retained;
 #[path = "fork_runtime_adapters.rs"]
 pub(crate) mod runtime_adapters;
 #[path = "fork_target_installation.rs"]

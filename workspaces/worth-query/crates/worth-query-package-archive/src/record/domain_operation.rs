@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_installation::facade::{
     WorthQueryDomainOperationIdentity, WorthQueryPortableDomainOperationParts,
     WorthQueryPortableDomainOperationRecord, WorthQueryPortableDomainOperationSemanticParts,
@@ -67,6 +68,7 @@ pub(super) fn decode_payload(
     let (support, lowering) = semantic_contracts::decode_support_lowering(input)?;
     let canonical_identity = input.text()?.to_owned();
     let semantics = WorthQueryPortableDomainOperationSemanticRecord::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableDomainOperationSemanticParts {
             parameters,
             native_projection,
@@ -97,6 +99,7 @@ pub(super) fn decode_payload(
     );
     Ok(WorthQueryPortablePackageRecord::DomainOperation(
         WorthQueryPortableDomainOperationRecord::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableDomainOperationParts {
                 identity,
                 semantics,

@@ -1,9 +1,11 @@
-//! A successor round's own-output view (PR C §1.5): the reopened derivation
-//! reads every record its own chain wrote exclusively as it was immediately
+//! A successor round's own-output view (#119 §3.5): the reopened derivation
+//! reads every record any round of its chain touched as it was immediately
 //! before the chain's head appended, so it re-derives from that image under
-//! the new inputs. Native certified the exclusivity (`chain_overlay`); field
-//! reads and key resolution of those records are served here, and any other
-//! read of a key the chain wrote stops before append (`PriorEffectRead`).
+//! the new inputs, which is the image Native retracts the chain to before it
+//! applies the round as written. Native certified that no later live member
+//! changed those records (`chain_overlay`); field reads and key resolution of
+//! those records are served here, and any other read of a key the chain
+//! wrote stops before append (`PriorEffectRead`).
 //!
 //! Relations are served too (#277): an adjacency read is the current list
 //! minus the chain's own links, plus the links it removed, as they were at

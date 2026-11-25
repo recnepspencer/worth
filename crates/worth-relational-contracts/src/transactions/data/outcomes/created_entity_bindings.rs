@@ -3,6 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 pub mod lookup;
 pub mod semantic;
+pub mod withdrawal;
 
 use crate::identity::data::EntityId;
 use crate::identity::data::{KindId, PartitionId};

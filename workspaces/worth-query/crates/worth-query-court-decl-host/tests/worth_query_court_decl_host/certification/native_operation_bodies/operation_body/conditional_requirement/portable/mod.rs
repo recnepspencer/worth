@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 pub(crate) use worth_query_testkit_certification_operation::facade::certification::native_operation_bodies::operation_body::conditional_requirement::portable::*;
 
 #[test]
@@ -63,11 +64,12 @@ fn portable_requirement_cannot_claim_a_different_installed_field_codec() {
             let operands = required.operands().iter().map(|operand| {
                 let mut source = operand.source().clone();
                 if let ApplicationOperationBodyRequirementSource::Field { binding, .. } = &mut source {
-                    *binding = worth_query_host::facade::declaration::portable_identity::WorthQueryPortableTypeIdentity::from_untrusted("wrong.codec.v1".to_owned());
+                    *binding = worth_query_host::facade::declaration::portable_identity::WorthQueryPortableTypeIdentity::from_untrusted(ARCHIVE_DECODE, "wrong.codec.v1".to_owned());
                 }
-                ApplicationOperationBodyRequirementOperand::from_untrusted(operand.name().to_owned(), source)
+                ApplicationOperationBodyRequirementOperand::from_untrusted(ARCHIVE_DECODE, operand.name().to_owned(), source)
             }).collect();
             let changed = ApplicationOperationBodyRequirementProgram::from_untrusted(
+                ARCHIVE_DECODE,
                 required.identity().to_owned(),
                 operands,
                 required
@@ -78,6 +80,7 @@ fn portable_requirement_cannot_claim_a_different_installed_field_codec() {
             )
             .unwrap();
             *body = ApplicationOperationBodyProgram::from_untrusted_with_requirements(
+                ARCHIVE_DECODE,
                 body.scope_fields().to_vec(),
                 body.creation().cloned(),
                 vec![changed],
@@ -87,7 +90,7 @@ fn portable_requirement_cannot_claim_a_different_installed_field_codec() {
     parts.members.sort();
     assert!(matches!(
         validate_portable_application_schema_freshly(
-            WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts)
+            WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(ARCHIVE_DECODE, parts)
         )
         .unwrap_err(),
         ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency { .. }

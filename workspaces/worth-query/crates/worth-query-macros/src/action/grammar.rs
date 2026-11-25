@@ -6,6 +6,7 @@ use crate::grammar::{
     flag, option_inner, selection_column, token_group, type_list, unknown_key, value, visit_keys,
     Once,
 };
+use crate::identity_member::{parse_member, DeclaredNamespace, RawMember};
 use proc_macro2::TokenStream;
 use std::collections::BTreeSet;
 use syn::meta::ParseNestedMeta;
@@ -27,6 +28,7 @@ const STRUCT_KEYS: &[&str] = &[
     "schema",
     "context",
     "namespace",
+    "member",
     "input",
     "operation",
     "binding",
@@ -49,7 +51,7 @@ const FIELD_KEYS: &[&str] = &["scope", "column"];
 pub(super) struct ActionDeclaration {
     pub(super) schema: Type,
     pub(super) context: Type,
-    pub(super) namespace: Path,
+    pub(super) namespace: DeclaredNamespace,
     pub(super) input: Ident,
     pub(super) operation: Ident,
     pub(super) binding: Ident,
@@ -114,6 +116,7 @@ struct Keys {
     schema: Once<Type>,
     context: Once<Type>,
     namespace: Once<Path>,
+    member: Once<RawMember>,
     input: Once<Ident>,
     operation: Once<Ident>,
     binding: Once<Ident>,
@@ -199,7 +202,11 @@ impl ActionDeclaration {
             scope,
             schema,
             context: keys.context.required(missing, DERIVE)?,
-            namespace: keys.namespace.required(missing, DERIVE)?,
+            namespace: DeclaredNamespace::new(
+                keys.namespace.required(missing, DERIVE)?,
+                keys.member.optional(),
+                &input.ident,
+            ),
             input: keys.input.required(missing, DERIVE)?,
             operation: keys.operation.required(missing, DERIVE)?,
             binding: keys.binding.required(missing, DERIVE)?,
@@ -223,6 +230,7 @@ impl Keys {
             schema: Once::new("schema"),
             context: Once::new("context"),
             namespace: Once::new("namespace"),
+            member: Once::new("member"),
             input: Once::new("input"),
             operation: Once::new("operation"),
             binding: Once::new("binding"),
@@ -247,6 +255,7 @@ impl Keys {
             "schema" => self.schema.set(meta, value(meta)?),
             "context" => self.context.set(meta, value(meta)?),
             "namespace" => self.namespace.set(meta, value(meta)?),
+            "member" => self.member.set(meta, parse_member(meta)?),
             "input" => self.input.set(meta, value(meta)?),
             "operation" => self.operation.set(meta, value(meta)?),
             "binding" => self.binding.set(meta, value(meta)?),

@@ -224,6 +224,7 @@ pub(in crate::physical_runtime::record_serving) fn load_current_root(
         access: bootstrap.access,
         current_root,
         previous_root,
+        prior_roots,
         displaced_artifacts,
         publication_overheads,
         publication_residue,

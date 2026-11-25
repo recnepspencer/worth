@@ -4,6 +4,7 @@ use crate::package::{
     WorthQueryPortablePackageManifest, WorthQueryPortablePackageRecord,
     WorthQueryPortablePackageRecordFamily as Family,
 };
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 
 use super::super::test_support::close_records;
 use super::super::{
@@ -28,7 +29,8 @@ fn complete_typed_package_round_trips_through_fresh_query_validation() {
 fn forged_manifest_identity_cannot_receive_fresh_package_authority() {
     let source = crate::application_schema_tests::complete_typed_package_fixture();
     let exported = source.export_typed_records().unwrap();
-    let forged_identity = WorthQueryPortableDomainPackageIdentity::from_untrusted_bytes([0xA5; 32]);
+    let forged_identity =
+        WorthQueryPortableDomainPackageIdentity::from_untrusted_bytes(ARCHIVE_DECODE, [0xA5; 32]);
     let forged_manifest = manifest_with(
         exported.manifest(),
         forged_identity.clone(),
@@ -181,7 +183,8 @@ fn forged_manifest_work_claim_is_rejected_after_fresh_export() {
 fn caller_expected_identity_is_distinct_from_the_manifest_claim() {
     let source = crate::application_schema_tests::complete_typed_package_fixture();
     let exported = source.export_typed_records().unwrap();
-    let foreign = WorthQueryPortableDomainPackageIdentity::from_untrusted_bytes([0x5A; 32]);
+    let foreign =
+        WorthQueryPortableDomainPackageIdentity::from_untrusted_bytes(ARCHIVE_DECODE, [0x5A; 32]);
 
     assert!(matches!(
         semantic_candidate(exported.manifest(), exported.records().to_vec())
@@ -207,7 +210,7 @@ fn semantic_candidate(
 fn expected_identity(
     identity: &WorthQueryPortableDomainPackageIdentity,
 ) -> WorthQueryExpectedPortablePackageIdentity {
-    WorthQueryExpectedPortablePackageIdentity::from_untrusted_identity(identity.clone())
+    WorthQueryExpectedPortablePackageIdentity::new(identity.clone())
 }
 
 fn manifest_with(
@@ -216,6 +219,7 @@ fn manifest_with(
     logical_export_bytes: u64,
 ) -> WorthQueryPortablePackageManifest {
     WorthQueryPortablePackageManifest::from_untrusted_fields(
+        ARCHIVE_DECODE,
         source.version(),
         identity,
         source.record_count(),

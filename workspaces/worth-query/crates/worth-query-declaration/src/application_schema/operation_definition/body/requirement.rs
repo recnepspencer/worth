@@ -1,4 +1,5 @@
 //! Installed expression meaning and typed sources for an operation precondition.
+use crate::archive_decode_authority::{ArchiveDecodeAuthority, ARCHIVE_DECODE};
 mod authoring;
 mod collection;
 pub(super) mod encoding;
@@ -82,6 +83,7 @@ impl<Schema, Operation> ApplicationOperationBodyRequirement<Schema, Operation> {
     ) -> Result<Self, ApplicationOperationBodyRequirementDenial> {
         Ok(Self {
             program: ApplicationOperationBodyRequirementProgram::from_untrusted(
+                ARCHIVE_DECODE,
                 identity.to_owned(),
                 operands.operands,
                 applicability.map(|draft| draft.encode()),
@@ -96,6 +98,7 @@ impl<Schema, Operation> ApplicationOperationBodyRequirement<Schema, Operation> {
 impl ApplicationOperationBodyRequirementProgram {
     /// Decodes pure expressions, granting no read or execution authority.
     pub fn from_untrusted(
+        _: ArchiveDecodeAuthority,
         identity: String,
         mut operands: Vec<ApplicationOperationBodyRequirementOperand>,
         applicability: Option<Vec<u8>>,

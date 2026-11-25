@@ -131,9 +131,9 @@ impl<Schema: ApplicationSchemaComposition, Program>
     > {
         attach(self.prepared, assembly)
             .map(|prepared| {
-                super::super::PreparedExistingHomeQueryRuntime::from_authored_preparation(
-                    Box::new(prepared),
-                )
+                super::super::PreparedExistingHomeQueryRuntime::from_authored_preparation(Box::new(
+                    prepared,
+                ))
             })
             .map_err(|inner| super::super::QueryExistingHomeSourceAttachmentRefused { inner })
     }
@@ -214,6 +214,12 @@ impl<Schema: ApplicationSchemaComposition, Program>
             self.prepared.bootstrap.graph.layout_ref(),
             self.prepared.bootstrap.installed_native_receipt(),
         )
+    }
+    /// The managed-view registry A's active publication companion consults.
+    pub(in crate::domain_computation::primary_graph::application_installation::home_preparation) fn predecessor_managed_views(
+        &self,
+    ) -> Arc<dyn worth_query_execution_lineage::facade::ports::ManagedDerivedViewPort> {
+        self.prepared.bootstrap.graph.managed_derived_views()
     }
     pub(in crate::domain_computation::primary_graph::application_installation::home_preparation) fn predecessor_program_roster(
         &self,

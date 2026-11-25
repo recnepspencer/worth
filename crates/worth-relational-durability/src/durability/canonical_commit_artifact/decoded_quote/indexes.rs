@@ -94,34 +94,67 @@ pub(super) fn authored(
     }
     let mut bytes = OwnerAllocation::default();
     value.fields(request, |variant, value| {
-        if variant == "Complete" {
-            add(
-                &mut bytes,
-                CanonicalAuthoredIndexWrites::root_bytes().ok_or_else(malformed)?,
-            )?;
-            add(
-                &mut bytes,
-                vector::<CanonicalAuthoredIndexWrite>(value, request, |entry| {
-                    let mut bytes = OwnerAllocation::default();
-                    entry.fields(request, |field, value| {
-                        add(
-                            &mut bytes,
-                            match field {
-                                "definition" => authored_definition(value, request)?,
-                                "old_key" | "new_key" => {
-                                    optional(value, |value| comparison_key(value, request))?
-                                }
-                                _ => OwnerAllocation::default(),
-                            },
-                        )
-                    })?;
-                    Ok(bytes)
-                })?,
-            )?;
+        match variant {
+            "Complete" => {
+                add(
+                    &mut bytes,
+                    CanonicalAuthoredIndexWrites::root_bytes().ok_or_else(malformed)?,
+                )?;
+                add(&mut bytes, authored_entries(value, request)?)?;
+            }
+            "Covered" => {
+                add(
+                    &mut bytes,
+                    CanonicalAuthoredIndexWrites::root_bytes().ok_or_else(malformed)?,
+                )?;
+                // Each field exactly once: a duplicate would quote one vector
+                // while serde keeps another.
+                let mut seen = 0u8;
+                value.fields(request, |field, value| {
+                    let bit = match field {
+                        "covered_next_index_id" => 1,
+                        "entries" => 2,
+                        _ => return Err(malformed()),
+                    };
+                    if seen & bit != 0 {
+                        return Err(malformed());
+                    }
+                    seen |= bit;
+                    if bit == 2 {
+                        add(&mut bytes, authored_entries(value, request)?)?;
+                    }
+                    Ok(())
+                })?;
+                if seen != 3 {
+                    return Err(malformed());
+                }
+            }
+            _ => {}
         }
         Ok(())
     })?;
     Ok(bytes)
+}
+fn authored_entries(
+    value: BorrowedPayload<'_>,
+    request: &ExecutionRequest<'_, '_>,
+) -> Result<OwnerAllocation, Refusal> {
+    vector::<CanonicalAuthoredIndexWrite>(value, request, |entry| {
+        let mut bytes = OwnerAllocation::default();
+        entry.fields(request, |field, value| {
+            add(
+                &mut bytes,
+                match field {
+                    "definition" => authored_definition(value, request)?,
+                    "old_key" | "new_key" => {
+                        optional(value, |value| comparison_key(value, request))?
+                    }
+                    _ => OwnerAllocation::default(),
+                },
+            )
+        })?;
+        Ok(bytes)
+    })
 }
 fn authored_definition(
     value: BorrowedPayload<'_>,

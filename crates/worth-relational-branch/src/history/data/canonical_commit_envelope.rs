@@ -195,6 +195,11 @@ pub struct CanonicalCommitEnvelopeBody {
     pub(crate) revision_symbol_references: Vec<crate::symbols::data::Symbol>,
     #[serde(default)]
     pub(crate) record_allocations: Vec<crate::history::data::CanonicalRecordAllocation>,
+    /// Slots the candidate reserved and cancelled; recovery burns them beside
+    /// `record_allocations` so the replayed frontier and generations match.
+    /// Encoded only when present, so other envelopes keep their exact bytes.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) cancelled_record_allocations: Vec<crate::history::data::CancelledRecordAllocation>,
     pub patch: CanonicalAuthoritativePatch,
     #[serde(default = "RelationalDescriptiveTouchGraph::unavailable")]
     descriptive_touches: RelationalDescriptiveTouchGraph,
@@ -261,6 +266,19 @@ impl CanonicalCommitEnvelopeBody {
 
     pub(crate) fn record_allocations(&self) -> &[crate::history::data::CanonicalRecordAllocation] {
         &self.record_allocations
+    }
+
+    pub(crate) fn install_cancelled_record_allocations(
+        &mut self,
+        cancelled: Vec<crate::history::data::CancelledRecordAllocation>,
+    ) {
+        self.cancelled_record_allocations = cancelled;
+    }
+
+    pub(crate) fn cancelled_record_allocations(
+        &self,
+    ) -> &[crate::history::data::CancelledRecordAllocation] {
+        &self.cancelled_record_allocations
     }
     pub fn authority_kind(&self) -> CanonicalCommitAuthorityKind {
         self.authority_kind.clone()

@@ -18,18 +18,15 @@ pub enum CoupledFreshWriter {
 pub enum CoupledProvenancePostponement {
     /// A verified continuation round would change the candidate.
     ContinuedRoundEffect,
-    /// The successor does not re-patch a field, or re-create a record, the
-    /// chain's earlier round wrote.
-    UncoveredWrite,
-    /// The successor deletes a record its own chain created.
-    FreshDelete,
-    /// The successor read a record the chain's earlier round wrote (Query).
+    /// The successor read a record the chain's earlier round wrote (Query), or
+    /// names a record only a superseded round of its chain created (Native).
     PriorEffectRead,
-    /// The successor has an effect a fold cannot lower in place: a deletion,
-    /// a relation change, a new record or content.
-    StructuralEffect,
-    /// Another writer changed a record of the chain after its earlier round.
+    /// Another writer changed, after the chain's head, a record the chain
+    /// changed or the successor round changes.
     IntervenedOutput,
+    /// Another writer links to, names or assigns a role to a record the
+    /// successor round no longer creates.
+    RetiredReference,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]

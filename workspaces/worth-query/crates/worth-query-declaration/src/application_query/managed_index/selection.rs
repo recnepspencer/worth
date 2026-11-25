@@ -2,6 +2,7 @@
 use super::{ApplicationManagedIndexBinding, ApplicationManagedIndexRef};
 use crate::application_query::ApplicationQueryParameterRef;
 use crate::application_schema::ApplicationSchema;
+use crate::archive_decode_authority::{ArchiveDecodeAuthority, ARCHIVE_DECODE};
 
 /// Descriptive association between a query probe parameter and an index.
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -18,7 +19,10 @@ pub struct ApplicationQueryManagedIndexMeaning {
     refinement: Option<super::ApplicationManagedIndexRefinementMeaning>,
 }
 impl ApplicationQueryManagedIndexMeaning {
-    pub fn from_untrusted_parts(parts: WorthQueryPortableQueryManagedIndexParts) -> Self {
+    pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
+        parts: WorthQueryPortableQueryManagedIndexParts,
+    ) -> Self {
         Self {
             parts,
             refinement: None,
@@ -72,15 +76,19 @@ impl ApplicationQueryManagedIndexMeaning {
         S: ApplicationSchema,
         I: ApplicationManagedIndexBinding<S>,
     {
-        let mut value = Self::from_untrusted_parts(WorthQueryPortableQueryManagedIndexParts {
-            semantic_version: if posture == super::ApplicationManagedIndexMatchPosture::Refined {
-                2
-            } else {
-                1
+        let mut value = Self::from_untrusted_parts(
+            ARCHIVE_DECODE,
+            WorthQueryPortableQueryManagedIndexParts {
+                semantic_version: if posture == super::ApplicationManagedIndexMatchPosture::Refined
+                {
+                    2
+                } else {
+                    1
+                },
+                index: index.name().to_owned(),
+                probe_parameter: parameter.name().to_owned(),
             },
-            index: index.name().to_owned(),
-            probe_parameter: parameter.name().to_owned(),
-        });
+        );
         if posture == super::ApplicationManagedIndexMatchPosture::Refined {
             value.refinement = I::REFINEMENT.map(|refinement| refinement.meaning());
         }

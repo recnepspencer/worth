@@ -1,5 +1,6 @@
 //! Pure declaration carriage: no runtime, binding recipe or live head is made.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 mod navigation;
 mod owned_graph;
 mod retention;
@@ -15,31 +16,34 @@ use worth_query_declaration::facade::{
 
 fn definition(domain: Domain, governed: bool) -> Definition {
     let history = super::history::history();
-    Definition::from_untrusted_parts(Parts {
-        identity: "DocumentHistory".into(),
-        history_type: history.parts().history_type.clone(),
-        access: history.parts().subject_read.clone(),
-        metadata_disclosure: if governed {
-            history.parts().metadata_disclosure.clone()
-        } else {
-            ApplicationQueryDisclosureContract::public()
+    Definition::from_untrusted_parts(
+        ARCHIVE_DECODE,
+        Parts {
+            identity: "DocumentHistory".into(),
+            history_type: history.parts().history_type.clone(),
+            access: history.parts().subject_read.clone(),
+            metadata_disclosure: if governed {
+                history.parts().metadata_disclosure.clone()
+            } else {
+                ApplicationQueryDisclosureContract::public()
+            },
+            model_domain: domain,
+            ownership: Vec::new(),
+            navigation: None,
+            window: None,
+            bookmarks: None,
+            operations: vec![
+                ApplicationHistoryOperation {
+                    binding: "ZEdit".into(),
+                    label: "Move Z".into(),
+                },
+                ApplicationHistoryOperation {
+                    binding: "AEdit".into(),
+                    label: "Move A".into(),
+                },
+            ],
         },
-        model_domain: domain,
-        ownership: Vec::new(),
-        navigation: None,
-        window: None,
-        bookmarks: None,
-        operations: vec![
-            ApplicationHistoryOperation {
-                binding: "ZEdit".into(),
-                label: "Move Z".into(),
-            },
-            ApplicationHistoryOperation {
-                binding: "AEdit".into(),
-                label: "Move A".into(),
-            },
-        ],
-    })
+    )
 }
 
 #[test]
@@ -107,12 +111,12 @@ fn malformed_history_definitions_refuse_before_the_member_tag_is_emitted() {
             5 => {
                 let mut access = parts.access.parts().clone();
                 access.query_name.clear();
-                parts.access = ApplicationQueryBindingReference::from_untrusted_parts(access);
+                parts.access = ApplicationQueryBindingReference::from_untrusted_parts(ARCHIVE_DECODE, access);
             }
             _ => unreachable!(),
         }
         let member = ApplicationSchemaMember::ApplicationHistory {
-            definition: Definition::from_untrusted_parts(parts),
+            definition: Definition::from_untrusted_parts(ARCHIVE_DECODE, parts),
         };
         let mut output = BinaryOutput::with_capacity(0);
         assert_eq!(
@@ -159,7 +163,7 @@ fn declared_ownership_has_distinct_wire_meaning_and_preserves_exact_endpoints() 
         },
     ];
     let owned = ApplicationSchemaMember::ApplicationHistory {
-        definition: Definition::from_untrusted_parts(parts),
+        definition: Definition::from_untrusted_parts(ARCHIVE_DECODE, parts),
     };
     let encoded = encode_member(&owned);
     assert_eq!(&unowned[..4], &[0, 51, 0, 1]);

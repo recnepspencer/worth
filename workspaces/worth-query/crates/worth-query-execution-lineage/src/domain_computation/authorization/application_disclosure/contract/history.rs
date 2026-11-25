@@ -1,5 +1,6 @@
 //! History metadata has its own closed installed slots, independent of payload masks.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_query::{
     ApplicationHistoryMetadataFacet, ApplicationHistoryMetadataMeaning,
     ApplicationHistoryQueryBinding,
@@ -83,6 +84,7 @@ fn compile_metadata(
             .all(|facet| {
                 result_rules.contains_key(
                     &ApplicationHistoryMetadataMeaning::from_untrusted_fields(
+                        ARCHIVE_DECODE,
                         history_type.clone(),
                         facet,
                     )

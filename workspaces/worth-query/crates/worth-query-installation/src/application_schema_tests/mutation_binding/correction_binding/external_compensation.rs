@@ -1,5 +1,6 @@
 //! External business compensation retains its explicit reconciliation requirement.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 
 #[test]
 #[expect(
@@ -64,10 +65,11 @@ fn external_correction_requires_compensation_reconciliation_and_exact_action() {
         } else {
             PortableCorrectionMechanism::RecordedInverse(
                 PortableRecordedInverse::from_untrusted_fields(
+                    ARCHIVE_DECODE,
                     slot.to_owned(),
                     DeclaredLoweringCorrespondenceRef::new("fixture.restore.v1"),
                     DeclaredAftermathPostcondition::ExactPriorTruth,
-                    PortablePreImageDemand::from_untrusted_fields(Vec::new(), 0),
+                    PortablePreImageDemand::from_untrusted_fields(ARCHIVE_DECODE, Vec::new(), 0),
                 ),
             )
         };
@@ -80,13 +82,14 @@ fn external_correction_requires_compensation_reconciliation_and_exact_action() {
             association.completed_external_reconciliation =
                 opt_in.map(DeclaredReconciliationProcedure::new);
             let contract = PortableApplicationAftermathContract::from_untrusted_fields(
+                ARCHIVE_DECODE,
                 authority,
                 Some(mechanism.clone()),
                 reconciliation
                     .then(|| DeclaredReconciliationProcedure::new("confirm-original-settlement")),
             )
             .with_untrusted_correction_binding(
-                DeclaredCorrectionBinding::from_untrusted_parts(association),
+                DeclaredCorrectionBinding::from_untrusted_parts(ARCHIVE_DECODE, association),
             );
             let members = [ApplicationSchemaMember::OperationAftermath {
                 operation: source.operation_name().to_owned(),

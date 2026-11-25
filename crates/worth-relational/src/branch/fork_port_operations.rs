@@ -22,16 +22,15 @@ use super::source_validation::ForkSourceInput;
 
 impl RelationalForkPort {
     /// Consume a retained source into a new independently writable branch.
-    /// This process-local profile refuses attached durability before reserving
-    /// the destination. It grants no model-navigation or application permission.
+    /// An attached medium records a durable `RetainedFork` transition naming the
+    /// exact historical head; recovery rebuilds that root and replays the fork.
+    /// It grants no model-navigation or application permission.
     pub fn fork_retained_branch(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         target: BranchId,
         source: crate::branch::AdmittedRelationalRetainedForkSource,
     ) -> Result<(RelationalForkOutcome, AdmittedRelationalBranchBasis), ForkStop> {
-        self.validate_retained_fork_profile()
-            .map_err(RelationalBranchTransitionStop::Denied)?;
         let reservation = self
             .reserve_fork_target(target)
             .map_err(RelationalBranchTransitionStop::Denied)?;
@@ -44,7 +43,7 @@ impl RelationalForkPort {
         reservation: RelationalForkTargetReservation,
         source: crate::branch::AdmittedRelationalRetainedForkSource,
     ) -> Result<(RelationalForkOutcome, AdmittedRelationalBranchBasis), ForkStop> {
-        self.validate_retained_fork_profile()
+        self.admit_home_program_fork()
             .map_err(RelationalBranchTransitionStop::Denied)?;
         let step = LiveBranchTransitionStep::new(self.medium.clone(), execution);
         self.fork_reserved_input_with_hooks(

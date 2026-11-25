@@ -10,7 +10,7 @@ pub(in crate::domain_computation::primary_graph) use inventory::NativeSchemaInve
 
 pub(in crate::domain_computation::primary_graph) struct PreparedNativeSchemaMeaning {
     pub(in crate::domain_computation::primary_graph) managed_sources:
-        super::super::application_query::managed_index::ManagedSourceInstallation,
+        Arc<super::super::application_query::managed_index::ManagedSourceInstallation>,
     pub(in crate::domain_computation::primary_graph) source_initializer:
         Option<super::super::application_query::managed_index::SourceInitializationIssuer>,
     pub(in crate::domain_computation::primary_graph) layout: WorthQueryPrimaryGraphLayout,

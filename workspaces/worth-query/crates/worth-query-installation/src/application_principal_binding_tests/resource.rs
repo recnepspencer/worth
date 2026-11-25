@@ -1,4 +1,5 @@
 //! The real installed principal/query fixture supplies resource recipe authority.
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 #[path = "resource/access.rs"]
 mod access;
 use super::*;
@@ -181,12 +182,14 @@ fn cold_resource_shape_and_bounds_cannot_replace_actual_typed_schema() {
         } else {
             canonical.maximum_wire_bytes = Some(4096);
         }
-        result.canonical = Some(worth_query_declaration::facade::application_schema::ApplicationCanonicalValueReference::from_untrusted_parts(canonical));
-        parts.result = ApplicationResourceValueBindingReference::from_untrusted_parts(result);
-        *definition = ErasedApplicationResourceDefinition::from_untrusted_parts(parts);
+        result.canonical = Some(worth_query_declaration::facade::application_schema::ApplicationCanonicalValueReference::from_untrusted_parts(ARCHIVE_DECODE, canonical));
+        parts.result =
+            ApplicationResourceValueBindingReference::from_untrusted_parts(ARCHIVE_DECODE, result);
+        *definition =
+            ErasedApplicationResourceDefinition::from_untrusted_parts(ARCHIVE_DECODE, parts);
         record.members.sort();
         let cold = validate_portable_application_schema_freshly(
-            WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(record),
+            WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(ARCHIVE_DECODE, record),
         )
         .unwrap();
         assert_ne!(cold.identity(), declaration.identity());
@@ -222,15 +225,18 @@ fn resource_rejects_missing_admitted_codec_and_zero_capacity_before_installation
     let mut definition = definition().into_erased().parts().clone();
     let mut value = definition.result.parts().clone();
     value.supports_admitted_decode = false;
-    definition.result = ApplicationResourceValueBindingReference::from_untrusted_parts(value);
+    definition.result =
+        ApplicationResourceValueBindingReference::from_untrusted_parts(ARCHIVE_DECODE, value);
     assert_eq!(
-        ErasedApplicationResourceDefinition::from_untrusted_parts(definition).validate(),
+        ErasedApplicationResourceDefinition::from_untrusted_parts(ARCHIVE_DECODE, definition)
+            .validate(),
         Err(ApplicationResourceDefinitionDenial::UnsupportedValueProfile)
     );
     let mut definition = self::definition().into_erased().parts().clone();
     definition.limits.maximum_live = 0;
     assert_eq!(
-        ErasedApplicationResourceDefinition::from_untrusted_parts(definition).validate(),
+        ErasedApplicationResourceDefinition::from_untrusted_parts(ARCHIVE_DECODE, definition)
+            .validate(),
         Err(ApplicationResourceDefinitionDenial::InvalidLimits)
     );
 }
@@ -244,12 +250,14 @@ fn ordinary_query_cannot_borrow_resource_payload_disclosure_slot() {
     };
     let mut query = principal_query_definition().into_erased().into_parts();
     query.disclosure = ApplicationQueryDisclosureContract::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationQueryDisclosureParts {
             posture: ApplicationQueryDisclosurePosture::Public,
             classification: "public".to_owned(),
             capability_name: None,
             capability_type: None,
             rules: vec![ApplicationQueryDisclosureRule::from_untrusted_fields(
+                ARCHIVE_DECODE,
                 ApplicationQueryDisclosureSelector::Resource(
                     ApplicationResourceDisclosureRef::<Assessment<AssessmentResultBinding>>::new(
                         ApplicationResourceDisclosureFacet::Result,
@@ -267,10 +275,10 @@ fn ordinary_query_cannot_borrow_resource_payload_disclosure_slot() {
     let member = record.members.iter_mut().find(|member| matches!(member,
         worth_query_declaration::facade::application_schema::ApplicationSchemaMember::ApplicationQuery { .. })).unwrap();
     *member = worth_query_declaration::facade::application_schema::ApplicationSchemaMember::ApplicationQuery {
-        definition: worth_query_declaration::facade::application_query::ErasedApplicationQueryDefinition::from_untrusted_parts(query),
+        definition: worth_query_declaration::facade::application_query::ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, query),
     };
     record.members.sort();
     assert_eq!(validate_portable_application_schema_freshly(
-        WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(record)).unwrap_err(),
+        WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(ARCHIVE_DECODE, record)).unwrap_err(),
         worth_query_declaration::facade::application_schema::ApplicationSchemaDeclarationDenial::InvalidApplicationQuery);
 }

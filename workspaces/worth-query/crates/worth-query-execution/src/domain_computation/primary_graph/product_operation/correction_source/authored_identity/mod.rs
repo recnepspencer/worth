@@ -1,4 +1,5 @@
 //! Exact original identity and declared key retained for native inverse validation.
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 pub(crate) mod candidate;
 #[cfg(test)]
 mod candidate_tests;
@@ -114,7 +115,8 @@ impl PreparedAuthoredIdentity {
             let suffix = &name[parts.source_role.len()..];
             parts.inverse_role = format!("{}{suffix}", parts.inverse_role);
             parts.source_role = name.to_owned();
-            let mut member = DeclaredAuthoredCorrection::from_untrusted_parts(parts);
+            let mut member =
+                DeclaredAuthoredCorrection::from_untrusted_parts(ARCHIVE_DECODE, parts);
             if let Some(owner) = family.live_member_owner() {
                 member = member.with_live_member_owner(owner.clone());
             }

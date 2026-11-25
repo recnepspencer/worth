@@ -119,55 +119,70 @@ fn a_folded_relation_relink_replays_in_a_fresh_process() {
         .unwrap();
     let (observed, ids) = committed(&world, execution, proposal, &meaning);
     let (cold, _) = cold::reopen(&world, execution, true);
-    assert_eq!(states(&cold::facts(&cold, execution, &ids)), observed.states);
+    assert_eq!(
+        states(&cold::facts(&cold, execution, &ids)),
+        observed.states
+    );
 }
 
 /// Each round links its output to the source with a labelled relation: the
-/// successor's relation carries fields, so it is a re-create the fold cannot
-/// lower in place (`StructuralEffect`).
+/// successor re-creates it with its own fields over the head's image, under
+/// the same identity (#119 M-ID). The commit is the one-round answer.
 #[test]
-fn a_relation_re_created_with_fields_is_a_structural_effect() {
+fn a_relation_re_created_with_fields_commits_the_one_round_answer() {
     let host = request();
     let execution = &ExecutionRequest::serial(&host);
-    let world = World::new(execution, true, true);
-    let keys = ["owned-output"];
-    let main = PartitionId::main();
-    let labelled = |value: &str| {
-        let mut batches = linked_round(&world, &keys, value, main, &[]);
-        let created = CreatedEntityRef {
-            partition_id: main,
-            kind_id: KindId(1),
-            client_key: ClientKey::raw("owned-output"),
+    let run = |values: &[&str]| {
+        let world = World::new(execution, true, true);
+        let keys = ["owned-output"];
+        let main = PartitionId::main();
+        let labelled = |value: &str| {
+            let mut batches = linked_round(&world, &keys, value, main, &[]);
+            let created = CreatedEntityRef {
+                partition_id: main,
+                kind_id: KindId(1),
+                client_key: ClientKey::raw("owned-output"),
+            };
+            let batch = std::mem::replace(&mut batches[0], WorkerIntentBatch::new("round"));
+            batches[0] = batch.push(MutationIntent::Create(CreateIntent::Relation(
+                RelationSpec {
+                    partition_id: main,
+                    kind_id: KindId(2),
+                    client_key: ClientKey::raw("link:owned-output"),
+                    source: EntityReference::Created(created),
+                    target: EntityReference::Existing(world.source),
+                    fields: string_aspect_field_patch([(
+                        aspect_key("label"),
+                        field_key("label"),
+                        value,
+                    )]),
+                },
+            )));
+            batches
         };
-        let batch = std::mem::replace(&mut batches[0], WorkerIntentBatch::new("round"));
-        batches[0] = batch.push(MutationIntent::Create(CreateIntent::Relation(RelationSpec {
-            partition_id: main,
-            kind_id: KindId(2),
-            client_key: ClientKey::raw("link:owned-output"),
-            source: EntityReference::Created(created),
-            target: EntityReference::Existing(world.source),
-            fields: string_aspect_field_patch([(aspect_key("label"), field_key("label"), value)]),
-        })));
-        batches
+        let proposal = world
+            .prepare(
+                execution,
+                &assemble(|execution, candidate| {
+                    candidate.append_publication(
+                        execution,
+                        birth(&world, execution, &keys),
+                        &none(),
+                        labelled(values[0]),
+                    )?;
+                    for value in &values[1..] {
+                        successor(
+                            execution,
+                            candidate,
+                            birth(&world, execution, &keys),
+                            labelled(value),
+                        )?;
+                    }
+                    Ok(())
+                }),
+            )
+            .unwrap();
+        committed(&world, execution, proposal, &world.meaning("owned")).0
     };
-    let refused = world
-        .prepare(
-            execution,
-            &assemble(|execution, candidate| {
-                candidate.append_publication(
-                    execution,
-                    birth(&world, execution, &keys),
-                    &none(),
-                    labelled("round-1"),
-                )?;
-                successor(
-                    execution,
-                    candidate,
-                    birth(&world, execution, &keys),
-                    labelled("round-2"),
-                )
-            }),
-        )
-        .unwrap_err();
-    assert_eq!(refusal(refused), postponed(Reason::StructuralEffect));
+    assert_eq!(run(&["round-1", "round-2"]), run(&["round-2"]));
 }

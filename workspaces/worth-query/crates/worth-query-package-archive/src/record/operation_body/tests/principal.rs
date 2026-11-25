@@ -1,17 +1,21 @@
 //! Actor metadata survives transport; transport never supplies admission authority.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 
 #[test]
 fn principal_initializer_roundtrips_only_as_version_twelve() {
     let body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
         "Item".to_owned(),
         vec![],
         Some(ApplicationOperationBodyCreation::from_untrusted(
+            ARCHIVE_DECODE,
             "Audit".to_owned(),
             "audit".to_owned(),
             vec![ApplicationOperationBodyCreatedField::PrincipalIdentity {
                 field: ApplicationFieldBindingLocus::new("Audit", "Facts", "Actor"),
                 binding: WorthQueryPortableTypeIdentity::from_untrusted(
+                    ARCHIVE_DECODE,
                     "worth.rust.u64".to_owned(),
                 ),
                 scalar_family: ScalarAspectType::UInt64,

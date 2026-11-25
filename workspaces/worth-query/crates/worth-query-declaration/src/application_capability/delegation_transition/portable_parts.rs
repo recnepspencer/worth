@@ -5,6 +5,7 @@ use crate::application_capability::{
     ApplicationCapabilityFieldBinding, ApplicationCapabilityOperationBinding,
     ApplicationCapabilityRelationBinding, ApplicationCapabilityValueBinding,
 };
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryPortableApplicationCapabilityDelegationActivationParts {
@@ -15,6 +16,7 @@ pub struct WorthQueryPortableApplicationCapabilityDelegationActivationParts {
 
 impl ApplicationCapabilityDelegationActivationDefinition {
     pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
         parts: WorthQueryPortableApplicationCapabilityDelegationActivationParts,
     ) -> Self {
         Self {
@@ -42,6 +44,7 @@ pub struct WorthQueryPortableApplicationCapabilityRevocationParts {
 
 impl ApplicationCapabilityRevocationDefinition {
     pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
         parts: WorthQueryPortableApplicationCapabilityRevocationParts,
     ) -> Self {
         Self {

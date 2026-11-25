@@ -17,8 +17,10 @@ use worth_query_host::facade::{
 };
 
 use super::actions::*;
+use super::body_links::*;
 use super::queries::*;
 use super::schema::*;
+use super::title_correction::*;
 
 worth_query_decl::facade::worth_query_principal_issuer!(DaymarkIssuer);
 worth_query_decl::facade::worth_query_authentication_audience!(HostAudience);
@@ -39,7 +41,7 @@ worth_query_application_program! {
         identity: "daymark.unified.program.v1",
         contribution: DaymarkContribution {
             identity: "daymark.unified.contribution.v1",
-            members: [DaymarkFragment, DaymarkPrincipal, CorrectTaskState],
+            members: [DaymarkFragment, DaymarkPrincipal, CorrectTaskState, CorrectTaskTitle],
         },
         managed_indexes: [TaskTitleIndex],
         feature: DaymarkFeature => DaymarkDefinition / DaymarkRuntime {
@@ -47,6 +49,7 @@ worth_query_application_program! {
             schema: |schema| {
                 schema
                     .declared_operation(restore_task_state_definition())
+                    .declared_operation(restore_task_title_definition())
                     .application_history(
                         ApplicationHistoryDefinition::<DaymarkSchema, DaymarkHistory>::for_binding(
                             ApplicationQueryDisclosureContract::public(),
@@ -67,17 +70,24 @@ worth_query_application_program! {
             body_action(RenameProjectBinding, RenameProjectDelivery) as RenameProjectAction {
                 operation: rename_project_definition();
             };
-            body_action(RenameTaskBinding, RenameTaskDelivery) as RenameTaskAction {
-                operation: rename_task_definition();
-            };
             body_action(ProbeOccupiedTaskStateBinding, ProbeOccupiedTaskStateDelivery) as ProbeOccupiedTaskStateAction {
                 operation: probe_occupied_task_state_definition();
             };
             body_action(ExhaustedKeyTaskStateBinding, ExhaustedKeyTaskStateDelivery) as ExhaustedKeyTaskStateAction {
                 operation: exhausted_key_task_state_definition();
             };
+            query(NestedProjectsBinding) { definition: NestedProjectsQuery::definition(); };
+            query(WatchedProjectsBinding) { definition: WatchedProjectsQuery::definition(); };
+            body_action(NewProjectBinding, NewProjectDelivery) as NewProjectAction {
+                operation: new_project_definition();
+            };
+            body_action(SetDependencyBinding, SetDependencyDelivery) as SetDependencyAction {
+                operation: set_dependency_definition();
+            };
             body_action_ref(RestoreTaskStateBinding, RestoreTaskStateDelivery) as RestoreTaskStateAction {};
             body_action_ref(SetTaskStateBinding, SetTaskStateDelivery) as SetTaskStateAction {};
+            body_action_ref(RenameTaskBinding, RenameTaskDelivery) as RenameTaskAction {};
+            body_action_ref(RestoreTaskTitleBinding, RestoreTaskTitleDelivery) as RestoreTaskTitleAction {};
         }
     }
 }

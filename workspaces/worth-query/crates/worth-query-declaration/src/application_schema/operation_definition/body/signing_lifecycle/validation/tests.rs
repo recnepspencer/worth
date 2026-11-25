@@ -8,6 +8,7 @@ use crate::application_schema::{
     ApplicationScalarValueBinding, ApplicationSigningSubjectProvenanceBinding,
     ApplicationSigningSupersessionBinding,
 };
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 use worth_foundational::facade::{AspectValue, ScalarAspectType};
 
 fn fixture() -> (Body, Vec<Member>) {
@@ -20,6 +21,7 @@ fn fixture() -> (Body, Vec<Member>) {
         maximum_evidence: 32,
     };
     let creation = Creation::from_untrusted(
+        ARCHIVE_DECODE,
         "Evidence".into(),
         "evidence".into(),
         vec![
@@ -31,6 +33,7 @@ fn fixture() -> (Body, Vec<Member>) {
                 field: Locus::new("Evidence", "Facts", "Text"),
                 source: Locus::new("Draft", "Facts", "Description"),
                 binding: crate::portable_identity::WorthQueryPortableTypeIdentity::from_untrusted(
+                    ARCHIVE_DECODE,
                     "worth.rust.string".into(),
                 ),
                 scalar_family: ScalarAspectType::String,
@@ -40,6 +43,7 @@ fn fixture() -> (Body, Vec<Member>) {
         ],
     )
     .with_untrusted_signing(Some(Signing::from_untrusted(
+        ARCHIVE_DECODE,
         "verification".into(),
         Locus::new("Evidence", "Facts", "Actor"),
         Locus::new("Evidence", "Facts", "Provenance"),
@@ -60,7 +64,13 @@ fn fixture() -> (Body, Vec<Member>) {
             .collect(),
     )
     .with_untrusted_signing_lifecycle(Some(spec));
-    let body = Body::from_untrusted_in_scope("Draft".into(), vec![], Some(creation), vec![]);
+    let body = Body::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
+        "Draft".into(),
+        vec![],
+        Some(creation),
+        vec![],
+    );
     let relation = |name: &str, from: &str, to: &str| Member::Relation {
         relation: name.into(),
         from: from.into(),
@@ -105,20 +115,30 @@ fn lifecycle_compatibility_checks_child_sites_without_claiming_an_admission_bypa
     let (body, mut members) = fixture();
     let child = Child {
         parent_key: "holder".into(),
-        creation: Creation::from_untrusted("Evidence".into(), "child".into(), vec![])
-            .with_untrusted_links(vec![Link {
-                relation: "OwnedEvidence".into(),
-                from: "Holder".into(),
-                to: "Evidence".into(),
-                key: "child".into(),
-                direction: Direction::FromScope,
-                posture: Posture::Append,
-                source: Default::default(),
-            }]),
+        creation: Creation::from_untrusted(
+            ARCHIVE_DECODE,
+            "Evidence".into(),
+            "child".into(),
+            vec![],
+        )
+        .with_untrusted_links(vec![Link {
+            relation: "OwnedEvidence".into(),
+            from: "Holder".into(),
+            to: "Evidence".into(),
+            key: "child".into(),
+            direction: Direction::FromScope,
+            posture: Posture::Append,
+            source: Default::default(),
+        }]),
     };
-    let holder = Creation::from_untrusted("Holder".into(), "holder".into(), vec![]);
-    let without_child =
-        Body::from_untrusted_in_scope("Draft".into(), vec![], Some(holder.clone()), vec![]);
+    let holder = Creation::from_untrusted(ARCHIVE_DECODE, "Holder".into(), "holder".into(), vec![]);
+    let without_child = Body::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
+        "Draft".into(),
+        vec![],
+        Some(holder.clone()),
+        vec![],
+    );
     members.push(Member::OperationBody {
         operation: "Unsigned".into(),
         body: without_child,
@@ -128,6 +148,7 @@ fn lifecycle_compatibility_checks_child_sites_without_claiming_an_admission_bypa
         unreachable!()
     };
     *unsigned = Body::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
         "Draft".into(),
         vec![],
         Some(holder.with_untrusted_children(vec![child])),
@@ -198,10 +219,12 @@ fn ordinary_writers_cannot_manufacture_or_remove_lifecycle_truth() {
 fn self_mutation_and_wrong_consequence_shapes_fail_cold() {
     let (body, members) = fixture();
     let changing = Body::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
         "Draft".into(),
         vec![ScopeField::Assign {
             field: Locus::new("Draft", "Facts", "Description"),
             binding: crate::portable_identity::WorthQueryPortableTypeIdentity::from_untrusted(
+                ARCHIVE_DECODE,
                 "worth.rust.string".into(),
             ),
             value: AspectValue::String(worth_foundational::facade::InternedString::Raw(
@@ -274,6 +297,7 @@ fn lifecycle_associations_and_limits_are_canonical_schema_meaning() {
             _ => spec.maximum_evidence += 1,
         }
         let changed = Body::from_untrusted_in_scope(
+            ARCHIVE_DECODE,
             "Draft".into(),
             vec![],
             Some(

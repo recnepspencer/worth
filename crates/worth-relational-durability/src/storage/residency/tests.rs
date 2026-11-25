@@ -44,6 +44,12 @@ pub mod history_consolidation_tests;
 pub mod region_fixture;
 #[path = "resident_history_tests.rs"]
 pub mod resident_history_tests;
+#[path = "working_set_eviction_tests.rs"]
+pub mod working_set_eviction_tests;
+#[path = "working_set_fixture.rs"]
+pub mod working_set_fixture;
+#[path = "working_set_stress_tests.rs"]
+pub mod working_set_stress_tests;
 use region_fixture::{region_with_history, CountedSource, RegionFixture};
 
 #[test]

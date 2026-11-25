@@ -1,17 +1,21 @@
 //! The scope-bearing record is not an older body with discarded scope bytes.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 
 #[test]
 fn creation_only_v8_roundtrips_with_scope_and_exact_framing() {
     let body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
         "Tenant".to_owned(),
         vec![],
         Some(ApplicationOperationBodyCreation::from_untrusted(
+            ARCHIVE_DECODE,
             "Item".to_owned(),
             "item".to_owned(),
             vec![ApplicationOperationBodyCreatedField::Input {
                 field: ApplicationFieldBindingLocus::new("Item", "Facts", "Name"),
                 binding: WorthQueryPortableTypeIdentity::from_untrusted(
+                    ARCHIVE_DECODE,
                     "worth.rust.string".to_owned(),
                 ),
                 scalar_family: ScalarAspectType::String,

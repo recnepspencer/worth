@@ -65,6 +65,7 @@ impl RelationalRegionResidency {
             symbol_aliases: OnceLock::new(),
             symbol_inheritance: OnceLock::new(),
             leases: AtomicUsize::new(0),
+            working_set: OnceLock::new(),
             _control_memory: memory,
         }))
     }

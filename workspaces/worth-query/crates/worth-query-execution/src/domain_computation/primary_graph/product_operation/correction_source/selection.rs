@@ -63,6 +63,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
                 Some(receipt.committed_product_publication().composite_commit()),
                 maximum,
                 maximum_results,
+                None,
             );
         }
         let occurrence = self.observe_member(
@@ -142,6 +143,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
                 None,
                 maximum,
                 maximum_results,
+                None,
             );
         }
         let occurrence = self.observe_member(locator.relational(), locator.member())?;
@@ -172,14 +174,20 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         &self,
         commit: &worth_relational::facade::history::RelationalCommitReceipt,
         member: crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceMember,
-    ) -> Result<WorthQueryPrimaryGraphCommittedApplication, WorthQueryCorrectionSelectionDenial> {
+    ) -> Result<WorthQueryPrimaryGraphCommittedApplication, WorthQueryCorrectionSelectionDenial>
+    {
         let group = (self.application().inner.runtime.primary_provider_ref())
             .observe_completed_application(commit)
             .ok_or(WorthQueryCorrectionSelectionDenial::SourceUnavailable)?;
         group
             .publication_members()
             .find(|writer| {
-                member.names_writer(writer.commit_evidence().idempotency().authored_stage_identity())
+                member.names_writer(
+                    writer
+                        .commit_evidence()
+                        .idempotency()
+                        .authored_stage_identity(),
+                )
             })
             .cloned()
             .ok_or(WorthQueryCorrectionSelectionDenial::SourceMemberUnavailable)

@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 pub(crate) use worth_query_testkit_package_archive::facade::package_archive::archive_protocol::manifest_frame::*;
 use worth_query_testkit_package_archive::facade::package_archive::archive_protocol::protocol_compatibility::assert_compatibility;
 
@@ -99,8 +100,9 @@ fn malformed_or_downgraded_frames_fail_closed() {
 fn inconsistent_manifest_inventory_is_not_encoded() {
     let counts = [0; WorthQueryPortablePackageRecordFamily::ALL.len()];
     let inconsistent = WorthQueryPortablePackageManifest::from_untrusted_fields(
+        ARCHIVE_DECODE,
         WORTH_QUERY_PORTABLE_PACKAGE_MANIFEST_VERSION,
-        WorthQueryPortableDomainPackageIdentity::from_untrusted_bytes([0x41; 32]),
+        WorthQueryPortableDomainPackageIdentity::from_untrusted_bytes(ARCHIVE_DECODE, [0x41; 32]),
         1,
         0,
         64,
@@ -119,8 +121,9 @@ fn caller_work_ceilings_reject_claims_on_both_protocol_directions() {
     let mut counts = [0; WorthQueryPortablePackageRecordFamily::ALL.len()];
     counts[0] = 1;
     let claimed_work = WorthQueryPortablePackageManifest::from_untrusted_fields(
+        ARCHIVE_DECODE,
         WORTH_QUERY_PORTABLE_PACKAGE_MANIFEST_VERSION,
-        WorthQueryPortableDomainPackageIdentity::from_untrusted_bytes([0x41; 32]),
+        WorthQueryPortableDomainPackageIdentity::from_untrusted_bytes(ARCHIVE_DECODE, [0x41; 32]),
         1,
         32,
         64,
@@ -173,8 +176,9 @@ fn caller_cannot_widen_frame_or_record_ceilings() {
     let mut counts = [0; WorthQueryPortablePackageRecordFamily::ALL.len()];
     counts[0] = beyond_default;
     let oversized = WorthQueryPortablePackageManifest::from_untrusted_fields(
+        ARCHIVE_DECODE,
         WORTH_QUERY_PORTABLE_PACKAGE_MANIFEST_VERSION,
-        WorthQueryPortableDomainPackageIdentity::from_untrusted_bytes([0x41; 32]),
+        WorthQueryPortableDomainPackageIdentity::from_untrusted_bytes(ARCHIVE_DECODE, [0x41; 32]),
         beyond_default,
         0,
         64,
@@ -208,8 +212,9 @@ fn caller_cannot_widen_declared_work_ceilings() {
         WorthQueryPackageArchiveLimits::new(u64::MAX, u32::MAX, u64::MAX, u64::MAX);
     let logical_default = WorthQueryPackageArchiveLimits::DEFAULT.maximum_logical_bytes();
     let excessive_logical = WorthQueryPortablePackageManifest::from_untrusted_fields(
+        ARCHIVE_DECODE,
         WORTH_QUERY_PORTABLE_PACKAGE_MANIFEST_VERSION,
-        WorthQueryPortableDomainPackageIdentity::from_untrusted_bytes([0x41; 32]),
+        WorthQueryPortableDomainPackageIdentity::from_untrusted_bytes(ARCHIVE_DECODE, [0x41; 32]),
         1,
         0,
         logical_default + 1,
@@ -228,8 +233,9 @@ fn caller_cannot_widen_declared_work_ceilings() {
 
     let canonical_default = WorthQueryPackageArchiveLimits::DEFAULT.maximum_canonical_work_bytes();
     let excessive_canonical = WorthQueryPortablePackageManifest::from_untrusted_fields(
+        ARCHIVE_DECODE,
         WORTH_QUERY_PORTABLE_PACKAGE_MANIFEST_VERSION,
-        WorthQueryPortableDomainPackageIdentity::from_untrusted_bytes([0x41; 32]),
+        WorthQueryPortableDomainPackageIdentity::from_untrusted_bytes(ARCHIVE_DECODE, [0x41; 32]),
         1,
         canonical_default + 1,
         0,

@@ -19,12 +19,13 @@ impl RelationalCanonicalPublicationRoutes {
             .collect()
     }
 
+    /// The one performed route of `id`, under the same filter as the enumeration.
     pub(crate) fn performed_effect_residency(
         &self,
-        commit_id: worth_relational_contracts::internal_port::history::data::coordinates::CommitId,
+        id: worth_relational_contracts::internal_port::history::data::coordinates::CommitId,
     ) -> Option<Arc<RelationalCommitEnvelopeResidency>> {
         self.by_commit
-            .get(&commit_id)
+            .get(&id)
             .filter(|route| route.is_performed())
             .map(|route| route.envelope.clone())
     }

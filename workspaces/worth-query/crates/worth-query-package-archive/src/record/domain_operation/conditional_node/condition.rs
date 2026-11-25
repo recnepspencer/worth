@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_installation::facade::*;
 
 use crate::binary_encoding::BinaryEncodingSink;
@@ -83,6 +84,7 @@ pub(super) fn decode_condition(
                 _ => return unsupported(),
             };
             let threshold = WorthQueryDeltaThreshold::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 WorthQueryPortableDeltaThresholdParts {
                     value,
                     unit,
@@ -105,7 +107,7 @@ pub(super) fn decode_condition(
         },
         _ => return unsupported(),
     };
-    Ok(WorthQueryConditionalEvaluationCondition::from_untrusted_parts(parts))
+    Ok(WorthQueryConditionalEvaluationCondition::from_untrusted_parts(ARCHIVE_DECODE, parts))
 }
 
 fn write_parameter(
@@ -197,8 +199,11 @@ fn decode_temporal(input: &mut BinaryInput<'_>) -> Result<WorthQueryTemporalCond
 }
 
 fn decode_family(input: &mut BinaryInput<'_>) -> Result<WorthQueryTypedFamilyIdentity, Denial> {
-    WorthQueryTypedFamilyIdentity::from_untrusted_portable_identity(input.text()?.to_owned())
-        .map_err(|_| invalid())
+    WorthQueryTypedFamilyIdentity::from_untrusted_portable_identity(
+        ARCHIVE_DECODE,
+        input.text()?.to_owned(),
+    )
+    .map_err(|_| invalid())
 }
 
 fn quantity_family_tag(value: WorthQueryQuantityValueFamily) -> u16 {

@@ -1,5 +1,6 @@
 //! A new retirement posture cannot be silently downgraded to historical retention.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::{
     ApplicationOperationBodyCreationLink as Link,
     ApplicationOperationBodyCreationLinkDirection as Direction,
@@ -17,10 +18,12 @@ fn retiring_replacement_v34_roundtrips_and_older_posture_readers_refuse() {
         source: Default::default(),
     };
     let body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
         "Row".into(),
         vec![],
         Some(
             ApplicationOperationBodyCreation::from_untrusted(
+                ARCHIVE_DECODE,
                 "Snapshot".into(),
                 "snapshot".into(),
                 vec![],

@@ -79,6 +79,7 @@ impl CanonicalCommitEnvelopeDraft {
                 schema_authority,
                 merged_plan,
                 record_allocations: Vec::new(),
+                cancelled_record_allocations: Vec::new(),
                 symbol_texts: Default::default(),
                 revision_symbol_references: Vec::new(),
                 patch,

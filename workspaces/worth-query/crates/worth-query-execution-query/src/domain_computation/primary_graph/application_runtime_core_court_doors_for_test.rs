@@ -128,3 +128,25 @@ impl WorthQueryApplicationRuntimeCore {
         &mut self.output_producer_routes
     }
 }
+
+impl WorthQueryApplicationRuntimeCore {
+    /// One capture of a durable Home's World original history and its owner,
+    /// as `cancellation::require` takes them; `None` on a Memory Home.
+    #[doc(hidden)]
+    pub fn durable_originals_for_test(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Option<(
+        worth_runtime_world::facade::WorldProgramActivationHistory,
+        worth_runtime_world::facade::RuntimeWorldOwnerIdentity,
+    )> {
+        use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
+        let owner = self.product_runtime.owner_ref();
+        owner.owner_identity().durable()?;
+        let originals = owner
+            .inspection_port()
+            .observe_program_activation_history(execution)
+            .unwrap_or_else(|denial| panic!("original history: {denial:?}"));
+        Some((originals, owner.owner_identity()))
+    }
+}

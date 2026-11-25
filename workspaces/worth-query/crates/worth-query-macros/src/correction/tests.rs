@@ -26,6 +26,24 @@ fn malformed_corrections_are_refused() {
             "either `namespace = ..` or `identity = \"..\"`, not both",
         ),
         (
+            format!("#[worth_query({BASE}, member, demand = preimage_demand)] struct Fix;"),
+            "`member` names a segment of `namespace = ..`",
+        ),
+        (
+            format!(
+                "#[worth_query({BASE}, identity = \"a.b\", member = \"fix\", \
+                 demand = preimage_demand)] struct Fix;"
+            ),
+            "`member` names a segment of `namespace = ..`",
+        ),
+        (
+            format!(
+                "#[worth_query({BASE}, namespace = NS, member, member = \"fix\", \
+                 demand = preimage_demand)] struct Fix;"
+            ),
+            "duplicate",
+        ),
+        (
             format!("#[worth_query({BASE}, namespace = NS)] struct Fix;"),
             "requires `demand = fn` or `preimage_fields(..), preimage_bytes = ..`",
         ),
@@ -210,4 +228,30 @@ fn authored_body_correction_mode_validates_and_emits_actions_and_reapply() {
     ] {
         assert!(expanded.contains(needle), "missing `{needle}` in: {expanded}");
     }
+}
+
+#[test]
+fn a_member_correction_shares_its_application_namespace() {
+    let derived = syn::parse_str(&format!(
+        "#[worth_query({BASE}, namespace = APP, member, demand = preimage_demand)] \
+         pub struct CorrectStateChange;"
+    ))
+    .unwrap();
+    let derived = expand(&derived).unwrap().to_string();
+    assert!(
+        derived
+            .contains("worth_query_identity_member ! (APP , \"correct_state_change\") , binding)"),
+        "{derived}"
+    );
+    let explicit = syn::parse_str(&format!(
+        "#[worth_query({BASE}, namespace = APP, member = \"undo_state\", \
+         demand = preimage_demand)] pub struct CorrectStateChange;"
+    ))
+    .unwrap();
+    let explicit = expand(&explicit).unwrap().to_string();
+    assert!(
+        explicit.contains("worth_query_identity_member ! (APP , \"undo_state\")"),
+        "{explicit}"
+    );
+    assert!(!explicit.contains("correct_state_change"), "{explicit}");
 }

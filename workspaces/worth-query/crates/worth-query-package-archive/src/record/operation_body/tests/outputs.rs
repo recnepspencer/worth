@@ -1,5 +1,6 @@
 //! V10 extends descriptions; old body bytes are still selected when unused.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::{
     application_operation::{
         ApplicationMutationOutputPosture as Posture,
@@ -20,6 +21,7 @@ fn fixed_output_targets_roundtrip_and_require_their_version() {
         },
     ] {
         let body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+            ARCHIVE_DECODE,
             "Item".to_owned(),
             vec![],
             None,

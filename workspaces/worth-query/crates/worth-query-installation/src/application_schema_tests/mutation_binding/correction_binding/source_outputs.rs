@@ -1,5 +1,6 @@
 //! Untrusted field manifests must match the actual created role and value meaning.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_operation::{
     WorthQueryApplicationDeclaredOutputRole, WorthQueryApplicationOutputRole,
     WorthQueryCreateOutput, WorthQueryExactlyOneOutput,
@@ -74,7 +75,10 @@ fn source_output_manifest_resolves_actual_role_and_complete_field_meaning() {
         }
         let mut association = parts(&source);
         association.source_output_fields =
-            vec![DeclaredCorrectionOutputField::from_untrusted_parts(altered)];
+            vec![DeclaredCorrectionOutputField::from_untrusted_parts(
+                ARCHIVE_DECODE,
+                altered,
+            )];
         if axis == "duplicate" {
             association
                 .source_output_fields

@@ -336,10 +336,11 @@ let preparation = request.corrections()
 full Relational receipt. Its `coordinates()` method returns the serializable
 `WorthQueryCorrectionSourceCoordinates`. Store these coordinates with the
 application's history entry. A transport can define its own scalar wire type
-and construct native coordinates with
-`WorthQueryCorrectionSourceCoordinates::from_untrusted_fields`, supplying the
-World owner and commit, Relational branch and commit, version, parent list and
-source member. Then call
+and construct native coordinates with the typed
+`WorthQueryCorrectionSourceCoordinates::new`, supplying the World owner
+coordinate and commit, a `RelationalCommitReceipt` (typed `BranchId`,
+`CommitId`, `VersionId` and parent list, all from
+`worth_query_host::facade::primary_graph`) and the source member. Then call
 `request.corrections().select_coordinates(&coordinates, limits)`.
 Selection resolves the actual retained completed evidence, compares its World
 identity and checks ancestry and current disclosure on the target branch. Keep

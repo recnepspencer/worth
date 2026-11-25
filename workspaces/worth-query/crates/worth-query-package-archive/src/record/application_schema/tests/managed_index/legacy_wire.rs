@@ -1,5 +1,6 @@
 //! Frozen versioned-member receipts for the current portable query association.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 
 fn member(version: u16) -> ApplicationSchemaMember {
     let mut parts = definition().parts().clone();
@@ -16,7 +17,7 @@ fn member(version: u16) -> ApplicationSchemaMember {
             ApplicationManagedIndexRefinement::row_local("domain.exact-name.v1", 7).meaning(),
         )
     } else {
-        ErasedApplicationManagedIndexDefinition::from_untrusted_parts(parts)
+        ErasedApplicationManagedIndexDefinition::from_untrusted_parts(ARCHIVE_DECODE, parts)
     };
     ApplicationSchemaMember::ManagedIndex { definition }
 }

@@ -1,6 +1,7 @@
 //! Pure compiler-meaning twins; no runtime, session or READ is constructed.
 use super::*;
 use worth_foundational::facade::{CanonicalDigestId, CanonicalDigestWorkBudget};
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryOrderingDirection, ApplicationQueryParameterDefinition,
     ApplicationQueryPredicate,
@@ -23,12 +24,12 @@ fn definitions() -> (
     source.predicates.clear();
     let mut parent = parent.into_parts();
     let parameter = &parent.parameters[0];
-    parent.parameters.push(ApplicationQueryParameterDefinition::from_untrusted_fields(
-        "probe".into(), parameter.scalar_family(), worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity::from_untrusted(parameter.value_type().to_owned()), None, None,
+    parent.parameters.push(ApplicationQueryParameterDefinition::from_untrusted_fields(ARCHIVE_DECODE,
+        "probe".into(), parameter.scalar_family(), worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity::from_untrusted(ARCHIVE_DECODE, parameter.value_type().to_owned()), None, None,
     ));
     (
-        ErasedApplicationQueryDefinition::from_untrusted_parts(source),
-        ErasedApplicationQueryDefinition::from_untrusted_parts(parent),
+        ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, source),
+        ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, parent),
     )
 }
 fn profile(
@@ -64,7 +65,7 @@ fn actual_compiled_root_projection_supports_explicit_conservative_refinement() {
     assert_eq!(
         profile(
             &source,
-            &ErasedApplicationQueryDefinition::from_untrusted_parts(direct)
+            &ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, direct)
         ),
         Ok(WorthQueryManagedIndexPredicateProfile::DirectSourceProjection)
     );
@@ -75,13 +76,13 @@ fn unused_parameter_cannot_claim_a_tracked_predicate_profile() {
     let (source, parent) = definitions();
     let mut parts = parent.into_parts();
     let parameter = &parts.parameters[0];
-    parts.parameters.push(ApplicationQueryParameterDefinition::from_untrusted_fields(
-        "unused".into(), parameter.scalar_family(), worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity::from_untrusted(parameter.value_type().to_owned()), None, None,
+    parts.parameters.push(ApplicationQueryParameterDefinition::from_untrusted_fields(ARCHIVE_DECODE,
+        "unused".into(), parameter.scalar_family(), worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity::from_untrusted(ARCHIVE_DECODE, parameter.value_type().to_owned()), None, None,
     ));
     assert_eq!(
         profile(
             &source,
-            &ErasedApplicationQueryDefinition::from_untrusted_parts(parts)
+            &ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, parts)
         ),
         Err(WorthQueryManagedIndexPredicateProfileDenial::UntrackedParameters)
     );
@@ -93,6 +94,7 @@ fn predicate_field_absent_from_source_projection_cannot_claim_tracked_refinement
     let mut parts = parent.into_parts();
     let old = &parts.predicates[0];
     parts.predicates = vec![ApplicationQueryPredicate::from_untrusted_fields(
+        ARCHIVE_DECODE,
         old.field().0.into(),
         old.field().1.into(),
         "unprojected".into(),
@@ -102,7 +104,7 @@ fn predicate_field_absent_from_source_projection_cannot_claim_tracked_refinement
     assert_eq!(
         profile(
             &source,
-            &ErasedApplicationQueryDefinition::from_untrusted_parts(parts)
+            &ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, parts)
         ),
         Err(WorthQueryManagedIndexPredicateProfileDenial::UntrackedSelection)
     );
@@ -116,7 +118,7 @@ fn a_filtered_source_cannot_claim_a_tracked_profile() {
         ApplicationQueryWhereFilterOperand as Operand, ApplicationQueryWhereFilterProgram,
         ApplicationQueryWhereFilterSource as Source,
     };
-    let rank = Operand::from_untrusted(
+    let rank = Operand::from_untrusted(ARCHIVE_DECODE,
         "rank".into(),
         Source::Field {
             entity: "Account".into(),
@@ -131,11 +133,13 @@ fn a_filtered_source_cannot_claim_a_tracked_profile() {
         .parse("rank >= 5")
         .unwrap()
         .encode();
-    parts.where_filter =
-        Some(ApplicationQueryWhereFilterProgram::from_untrusted(vec![rank], &draft).unwrap());
+    parts.where_filter = Some(
+        ApplicationQueryWhereFilterProgram::from_untrusted(ARCHIVE_DECODE, vec![rank], &draft)
+            .unwrap(),
+    );
     assert_eq!(
         profile(
-            &ErasedApplicationQueryDefinition::from_untrusted_parts(parts),
+            &ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, parts),
             &parent
         ),
         Err(WorthQueryManagedIndexPredicateProfileDenial::UntrackedSelection)

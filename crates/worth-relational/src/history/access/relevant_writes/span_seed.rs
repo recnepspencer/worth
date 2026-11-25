@@ -42,11 +42,14 @@ impl RelationalRuntime {
             .observation()
             .commit_id()
             .ok_or(Denial::NoSelectedCommit)?;
+        // One catalog capture certifies every readmitted commit in the span.
+        let catalog = self.indexes.catalog_binding().capture_catalog();
         self.history.seed_authored_write_span(
             execution,
             original,
             target.commit_id(),
             maximum_links,
+            &catalog,
         )
     }
 }

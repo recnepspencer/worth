@@ -2,6 +2,7 @@
 use super::{
     ApplicationOperationBodyAuthoringDenial as Denial, ApplicationOperationBodyCreationBuilder,
 };
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 use crate::{
     application_operation::{
         ApplicationMutationBinding, ApplicationMutationOutputRoleCardinality,
@@ -23,7 +24,12 @@ pub struct ApplicationOperationBodyEnrollment {
 
 impl ApplicationOperationBodyEnrollment {
     /// Decoded meaning only; schema and vocabulary installation must readmit it.
-    pub fn from_untrusted(workflow_spec: String, binding: String, role: String) -> Self {
+    pub fn from_untrusted(
+        _: ArchiveDecodeAuthority,
+        workflow_spec: String,
+        binding: String,
+        role: String,
+    ) -> Self {
         Self {
             workflow_spec,
             binding,

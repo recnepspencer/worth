@@ -1,4 +1,5 @@
 //! Portable encoding of the typed source and corrective action association.
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_aftermath::{
     DeclaredCorrectionBinding, DeclaredCorrectionBindingParts, DeclaredReconciliationProcedure,
 };
@@ -49,27 +50,32 @@ pub(super) fn decode(
     input: &mut BinaryInput<'_>,
     budget: &mut RecordDecodeAttempt,
 ) -> Result<DeclaredCorrectionBinding, Denial> {
-    let binding = DeclaredCorrectionBinding::from_untrusted_parts(DeclaredCorrectionBindingParts {
-        identity: decode_type_identity(input)?,
-        source: mutation_description::decode_description(input, budget)?,
-        inverse: mutation_description::decode_description(input, budget)?,
-        source_handler: input.text()?.to_owned(),
-        inverse_handler: input.text()?.to_owned(),
-        source_query: decode_optional(input, |input| Ok(input.text()?.to_owned()))?,
-        inverse_query: decode_optional(input, |input| Ok(input.text()?.to_owned()))?,
-        disclosure: disclosure::decode(input)?,
-        source_output_fields: source_outputs::decode(input, budget)?,
-        authored_identity: decode_optional(input, |input| {
-            authored_identity::decode(input, budget)
-        })?,
-        completed_external_reconciliation: decode_optional(input, |input| {
-            let expression = DeclaredReconciliationProcedure::new(input.text()?.to_owned());
-            expression.validate().map_err(|_| {
-                Denial::new(crate::denial::WorthQueryPackageArchiveDenialKind::InvalidRecordShape)
-            })?;
-            Ok(expression)
-        })?,
-        reapplication_source: decode_optional(input, decode_type_identity)?,
-    });
+    let binding = DeclaredCorrectionBinding::from_untrusted_parts(
+        ARCHIVE_DECODE,
+        DeclaredCorrectionBindingParts {
+            identity: decode_type_identity(input)?,
+            source: mutation_description::decode_description(input, budget)?,
+            inverse: mutation_description::decode_description(input, budget)?,
+            source_handler: input.text()?.to_owned(),
+            inverse_handler: input.text()?.to_owned(),
+            source_query: decode_optional(input, |input| Ok(input.text()?.to_owned()))?,
+            inverse_query: decode_optional(input, |input| Ok(input.text()?.to_owned()))?,
+            disclosure: disclosure::decode(input)?,
+            source_output_fields: source_outputs::decode(input, budget)?,
+            authored_identity: decode_optional(input, |input| {
+                authored_identity::decode(input, budget)
+            })?,
+            completed_external_reconciliation: decode_optional(input, |input| {
+                let expression = DeclaredReconciliationProcedure::new(input.text()?.to_owned());
+                expression.validate().map_err(|_| {
+                    Denial::new(
+                        crate::denial::WorthQueryPackageArchiveDenialKind::InvalidRecordShape,
+                    )
+                })?;
+                Ok(expression)
+            })?,
+            reapplication_source: decode_optional(input, decode_type_identity)?,
+        },
+    );
     Ok(binding.with_coupled_outputs(super::super::super::coupled_outputs::decode(input, budget)?))
 }

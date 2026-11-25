@@ -1,5 +1,6 @@
 //! Versioned carrier/case meaning, independent of live graph authority.
 use super::{ApplicationProjectedMemberCaseRef, ApplicationProjectedMemberDomainRef};
+use crate::archive_decode_authority::{ArchiveDecodeAuthority, ARCHIVE_DECODE};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ApplicationProjectedMemberDomainDefinitionDenial {
@@ -29,7 +30,10 @@ impl ErasedApplicationProjectedMemberDomainDefinition {
     pub const CURRENT_VERSION: u16 = 1;
 
     /// Normalize semantic case order; duplicates remain visible to validation.
-    pub fn from_untrusted_parts(mut parts: WorthQueryPortableProjectedMemberDomainParts) -> Self {
+    pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
+        mut parts: WorthQueryPortableProjectedMemberDomainParts,
+    ) -> Self {
         parts.cases.sort();
         Self { parts }
     }
@@ -64,6 +68,7 @@ impl<S, D, C> ApplicationProjectedMemberDomainDefinition<S, D, C> {
     }
     pub(super) fn into_erased(self) -> ErasedApplicationProjectedMemberDomainDefinition {
         ErasedApplicationProjectedMemberDomainDefinition::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableProjectedMemberDomainParts {
                 semantic_version: ErasedApplicationProjectedMemberDomainDefinition::CURRENT_VERSION,
                 domain: self.reference.name().into(),

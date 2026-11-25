@@ -8,6 +8,7 @@ use worth_foundational::expression_api::{ExpressionSchema, ExpressionValue};
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryRequestInterruption, WorthQueryRequestScope,
 };
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryCardinality, ApplicationQueryExpressionSnapshot,
     ApplicationQueryResultFieldPresence,
@@ -32,7 +33,7 @@ pub fn retain_expression_context(
     let schema = schema.ok_or(Denial::ExpressionContextUnavailable)?.clone();
     let value = project(row, "root", contract, request)?;
     Ok(RetainedExpressionContext::from_snapshot(
-        ApplicationQueryExpressionSnapshot::from_untrusted_parts(schema, value),
+        ApplicationQueryExpressionSnapshot::from_untrusted_parts(ARCHIVE_DECODE, schema, value),
     ))
 }
 

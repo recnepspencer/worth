@@ -7,6 +7,7 @@ use crate::application_query::{
     ApplicationQueryWhereFilterProgram, RelationDirection,
 };
 use crate::application_schema::ApplicationFieldPresence;
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 use worth_foundational::facade::{AspectValue, ScalarAspectType};
 
 mod authoring;
@@ -50,6 +51,7 @@ pub struct ApplicationQueryRelatedTargetPredicate {
 
 impl ApplicationQueryRelatedTargetPredicate {
     pub fn from_untrusted_parameter(
+        _: ArchiveDecodeAuthority,
         entity: String,
         aspect: String,
         field: String,
@@ -68,6 +70,7 @@ impl ApplicationQueryRelatedTargetPredicate {
     }
 
     pub fn from_untrusted_value(
+        _: ArchiveDecodeAuthority,
         entity: String,
         aspect: String,
         field: String,
@@ -147,6 +150,7 @@ pub struct WorthQueryPortableApplicationQueryRelatedPredicateParts {
 
 impl ApplicationQueryRelatedPredicateMeaning {
     pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
         parts: WorthQueryPortableApplicationQueryRelatedPredicateParts,
     ) -> Self {
         Self {

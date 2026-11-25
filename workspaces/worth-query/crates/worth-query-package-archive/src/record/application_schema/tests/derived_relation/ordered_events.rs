@@ -1,6 +1,7 @@
 //! Typed event syntax survives canonical transport and fresh schema validation.
 use super::*;
 use crate::facade::WorthQueryPackageArchiveDenialKind as ArchiveKind;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::*;
 struct Events;
 struct Event;
@@ -67,14 +68,17 @@ fn definition(member: &Member) -> &Definition {
     definition
 }
 fn record(members: Vec<Member>) -> Schema {
-    Schema::from_untrusted_parts(Parts {
-        owner: Events::OWNER.into(),
-        name: <Events as ApplicationSchema>::NAME.into(),
-        major: 1,
-        minor: 0,
-        members,
-        contributions: vec![],
-    })
+    Schema::from_untrusted_parts(
+        ARCHIVE_DECODE,
+        Parts {
+            owner: Events::OWNER.into(),
+            name: <Events as ApplicationSchema>::NAME.into(),
+            major: 1,
+            minor: 0,
+            members,
+            contributions: vec![],
+        },
+    )
 }
 #[test]
 fn typed_ordered_events_have_fresh_versioned_transport_and_complete_physical_closure() {
@@ -111,7 +115,7 @@ fn typed_ordered_events_have_fresh_versioned_transport_and_complete_physical_clo
         .iter_mut()
         .find(|m| matches!(m, Member::DerivedRelation { .. }))
         .unwrap() = Member::DerivedRelation {
-        definition: Definition::from_untrusted_parts(swapped),
+        definition: Definition::from_untrusted_parts(ARCHIVE_DECODE, swapped),
     };
     assert_ne!(
         readmit(record(members)).unwrap().identity(),
@@ -255,7 +259,7 @@ fn untrusted_event_roles_reject_nonliteral_projected_bad_indices_and_missing_sou
                 Cause::InvalidEventOperand
             }
         };
-        let invalid = Definition::from_untrusted_parts(parts);
+        let invalid = Definition::from_untrusted_parts(ARCHIVE_DECODE, parts);
         assert_eq!(invalid.validate(), Err(expected), "hostile mode{mode}");
         let mut output = crate::binary_output::BinaryOutput::with_capacity(0);
         assert_eq!(

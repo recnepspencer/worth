@@ -1,4 +1,5 @@
 use worth_foundational::facade::{AspectMask, CanonicalFieldPath, FieldKey};
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryDisclosureContract, ApplicationQueryDisclosurePosture,
     ApplicationQueryDisclosureRule, ApplicationQueryDisclosureSelector,
@@ -45,6 +46,7 @@ pub(in crate::record) fn decode(
     let capability_type = decode_optional(input, decode_type_identity)?;
     let rules = decode_sequence(input, budget, 10, decode_rule)?;
     Ok(ApplicationQueryDisclosureContract::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationQueryDisclosureParts {
             posture,
             classification,
@@ -79,6 +81,7 @@ fn decode_rule(
     })?;
     require_canonical_sequence(&influences)?;
     Ok(ApplicationQueryDisclosureRule::from_untrusted_fields(
+        ARCHIVE_DECODE,
         selector,
         disclosure_value,
         ApplicationQueryInfluenceContract::permit(influences),
@@ -225,7 +228,11 @@ fn decode_selector(
                 _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
             };
             ApplicationQueryDisclosureSelector::HistoryMetadata(
-                ApplicationHistoryMetadataMeaning::from_untrusted_fields(history, facet),
+                ApplicationHistoryMetadataMeaning::from_untrusted_fields(
+                    ARCHIVE_DECODE,
+                    history,
+                    facet,
+                ),
             )
         }
         6 => ApplicationQueryDisclosureSelector::Components(super::components::decode(input)?),

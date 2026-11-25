@@ -1,3 +1,4 @@
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 #[path = "canonical_identity_version_tests/managed_index.rs"]
 mod managed_index;
 use worth_foundational::facade::ScalarAspectType;
@@ -34,6 +35,7 @@ fn schema_axes_use_the_current_complete_identity_preimage() {
                 .into(),
     };
     let provenance = ApplicationSchemaContributionProvenance::from_untrusted_parts(
+        ARCHIVE_DECODE,
         "worth.tests.contribution.v1".to_owned(),
         Vec::new(),
     );

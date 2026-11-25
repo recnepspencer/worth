@@ -59,11 +59,13 @@ fn checkpoint_stage_charges_the_documented_rate_for_each_encoded_byte() {
     //
     // CHK23 carries each envelope as an external journal artifact, so wire
     // inline members are always empty and `envelopes` section bytes are 0.
+    // Authored index writes persist their catalog bound (public #384), so each
+    // artifact and digest input is 31 bytes longer than before.
     let mut per_row_reconstruction = Vec::new();
     for (rows, expected_bytes, sections, digests, artifacts) in [
         (0, Some(2_486), [0, 1, 172, 1, 1], 0, 0),
-        (8, None, [0, 1_351, 340, 776, 1], 44_196, 43_876),
-        (64, None, [0, 3_646, 340, 3_071, 1], 354_880, 352_320),
+        (8, None, [0, 1_351, 340, 776, 1], 44_444, 44_124),
+        (64, None, [0, 3_646, 340, 3_071, 1], 356_864, 354_304),
     ] {
         let request = serial_request();
         let execution = ExecutionRequest::serial(&request);

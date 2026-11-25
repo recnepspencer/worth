@@ -4,6 +4,7 @@ use crate::application_schema::{
     ApplicationOperationRef, ApplicationRelationGraphLaws, ApplicationSchema,
     ApplicationSchemaDeclarationBuilder, ApplicationSchemaMember, OperationReads,
 };
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 
 use super::{
     ApplicationDerivedRelation, ApplicationDerivedRelationRef,
@@ -21,6 +22,7 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
     ) -> Self {
         self.push_member(ApplicationSchemaMember::DerivedRelation {
             definition: ErasedApplicationDerivedRelationDefinition::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 WorthQueryPortableDerivedRelationParts {
                     relation: relation.name().to_owned(),
                     from: relation.from_member().into_meaning(),

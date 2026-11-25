@@ -5920,23 +5920,35 @@ allocation denial, the deadline or a work budget, refuses the edit at once.
   never reuses its earlier verification. A verified parent whose support is
   equal stays verified, and is never recaptured.
 - A producer that already published re-runs as a successor round of the same
-  route. Its own output records read as they were before its first round. Any
-  other read of a key its chain wrote stops before append, with
-  `CoupledContinuationProvenancePostponed { issue: 119, reason: PriorEffectRead }`.
-  Native folds the round in place, so the route keeps one part and one
-  writer, only when its fold proof holds. Otherwise the edit refuses with the
-  same #119 postponement and reason `UncoveredWrite` (the round does not
-  re-patch a field, or re-create a record, an earlier round of its chain
-  wrote), `FreshDelete` (it deletes a record its chain created),
-  `StructuralEffect` (an effect a fold cannot lower in place: a deletion, a
-  relation change, a new record or content) or `IntervenedOutput` (another
-  writer changed one of the chain's records after its earlier round).
-  The own-output view covers records, not relations (public #277): a
-  relation read at the current image can reach a record the chain
-  created, which the view holds as absent. Such a round, whether it reads
-  the record's fields or only reaches it as a relation endpoint, stops
-  with the same #119 postponement and reason `PriorEffectRead`, and the
-  edit refuses until #277 makes that view coherent.
+  route. Its own records, links and content read as they were before its
+  first round. Any other read of a key its chain wrote stops before append
+  with `CoupledContinuationProvenancePostponed { issue: 119, reason: PriorEffectRead }`.
+  Native **supersedes** the earlier round: it retracts the chain's earlier
+  effects (records, links, content references) to the image before the
+  chain's first round, then applies the new round's commands as written. The
+  commit is what one round alone would publish. A record re-created under the
+  same key keeps its identity, even after a round that omitted it. A record
+  the new round no longer creates is never published and its identity is
+  never reused. A record it no longer changes returns to its earlier image.
+  Relation, role and content changes are ordinary. The edit refuses with the
+  same postponement and reason `IntervenedOutput` (another member changed,
+  after the chain's first round, a record the chain changed or the new round
+  changes; or an earlier-headed chain re-rounded after this chain's first
+  round and the new round changes a record that chain touched),
+  `RetiredReference` (another member links to, names or assigns a role to a
+  record the new round no longer creates) or `PriorEffectRead` (the round
+  names a record only an earlier round of its chain created).
+- The own-output view covers the chain's records, links and content (#277).
+  A source query's adjacency revision, and a declared source query's field
+  revision, are read at the current image; if they intersect the chain's
+  earlier writes the round stops with `PriorEffectRead`. A derived traversal
+  over a covered link does too.
+- Allocation evidence follows the envelope's merged plan: a coupled
+  candidate's live allocations are recorded in plan order, the slots it
+  cancelled (a create a superseded round made and no live round makes) are
+  recorded beside them, and recovery requires the live and cancelled append
+  slots of each class and partition to form one contiguous block from the
+  frontier, accepting live slots in any order inside it.
 - A consumer of a re-derived output settles when the replacement is equal in
   payload, role, generation, custody, readiness and demand key. Otherwise the
   consumer re-runs.

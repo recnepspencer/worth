@@ -170,7 +170,7 @@ fn observe_home_for_receipt(
 ) -> Result<worth_runtime_world::facade::WorldObservedHomePublication, Denial> {
     let authority = runtime.durability_authority();
     let subject = authority
-        .associated_effect_for_receipt(execution, receipt)
+        .discover_associated_effect(execution, receipt)
         .map_err(native_read_denial)?
         .ok_or(Denial::CommitUnavailable)?;
     let native = authority

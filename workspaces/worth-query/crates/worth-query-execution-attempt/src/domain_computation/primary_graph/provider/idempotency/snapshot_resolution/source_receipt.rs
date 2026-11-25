@@ -202,12 +202,12 @@ fn read_publication(
             .map_err(super::source_denial::world);
     }
 
-    let subject = authority
-        .associated_effect_for_receipt(execution, commit)
+    let exact = authority
+        .discover_associated_effect(execution, commit)
         .map_err(super::source_denial::native)?
         .ok_or(Denial::Unavailable)?;
     let effect = authority
-        .readmit_associated_effect(execution, &subject)
+        .readmit_associated_effect(execution, &exact)
         .map_err(super::source_denial::native)?;
     product
         .observation_port()

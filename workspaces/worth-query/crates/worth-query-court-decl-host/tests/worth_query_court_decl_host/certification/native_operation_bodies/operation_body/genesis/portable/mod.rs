@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 pub(crate) use worth_query_testkit_certification_operation::facade::certification::native_operation_bodies::operation_body::genesis::portable::*;
 
 #[test]
@@ -75,6 +76,7 @@ fn portable_genesis_cannot_replace_its_scope_with_a_foreign_entity() {
             && operation == "CreateDocument"
         {
             *body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+                ARCHIVE_DECODE,
                 "Principal".to_owned(),
                 body.scope_fields().to_vec(),
                 body.creation().cloned(),
@@ -85,7 +87,7 @@ fn portable_genesis_cannot_replace_its_scope_with_a_foreign_entity() {
     parts.members.sort();
     assert!(matches!(
         validate_portable_application_schema_freshly(
-            WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts),
+            WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(ARCHIVE_DECODE, parts),
         )
         .unwrap_err(),
         ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency { .. }
@@ -105,12 +107,14 @@ fn explicit_scope_preserves_legacy_field_body_identity_and_cannot_be_effectless(
             // must normalize to the same value as the old field-derived form.
             assert_eq!(body.explicit_scope_entity(), None);
             let old = ApplicationOperationBodyProgram::from_untrusted_with_requirements(
+                ARCHIVE_DECODE,
                 body.scope_fields().to_vec(),
                 body.creation().cloned(),
                 body.requirements().to_vec(),
             );
             assert_eq!(*body, old);
             *body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+                ARCHIVE_DECODE,
                 "Document".to_owned(),
                 old.scope_fields().to_vec(),
                 old.creation().cloned(),
@@ -120,7 +124,7 @@ fn explicit_scope_preserves_legacy_field_body_identity_and_cannot_be_effectless(
     }
     assert_eq!(
         validate_portable_application_schema_freshly(
-            WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts),
+            WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(ARCHIVE_DECODE, parts),
         )
         .unwrap(),
         *schema.erased()

@@ -1,6 +1,7 @@
 //! The Query receiver owns semantic material, publication and mandatory uses.
 pub mod catalog;
 pub mod expiry;
+pub mod history_candidates;
 pub mod journal;
 pub mod mutation;
 pub mod observation;
@@ -59,10 +60,7 @@ impl MaterialFunding {
     }
 }
 impl CorrectionMaterialOwner {
-    pub fn install_post_transfer_observer(
-        &self,
-        observer: Box<dyn FnOnce() + Send>,
-    ) {
+    pub fn install_post_transfer_observer(&self, observer: Box<dyn FnOnce() + Send>) {
         *self
             .post_transfer_observer
             .0

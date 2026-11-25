@@ -3,6 +3,7 @@ use super::*;
 use crate::application_query::{
     ApplicationQueryManagedIndexMeaning, WorthQueryPortableQueryManagedIndexParts,
 };
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 
 #[test]
 fn managed_live_without_business_cause_still_requires_a_valid_probe_selection() {
@@ -13,6 +14,7 @@ fn managed_live_without_business_cause_still_requires_a_valid_probe_selection() 
         Err(ApplicationQueryDefinitionDenial::LiveLaneWithoutCauseContract)
     );
     parts.managed_index = Some(ApplicationQueryManagedIndexMeaning::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableQueryManagedIndexParts {
             semantic_version: 1,
             index: "actual_installed_index".into(),

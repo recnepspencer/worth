@@ -1,6 +1,4 @@
 #![allow(unexpected_cfgs)]
-// Wired into Store's `reclaim_guard` in Phase M4.1.
-#![allow(dead_code)]
 
 //! Pure physical root-pin transition kernel for Store Milestone 4 (`M4.0` / `M4.1`).
 //!
@@ -71,6 +69,15 @@ verus! {
                 && Self::spec_entry_protects(self.entries@[i], root_id)
         }
 
+        spec fn spec_entry_protects_at_or_below(entry: PinRecord, generation: u64) -> bool {
+            entry.root_id <= generation && entry.state != PinLifecycleState::Expired
+        }
+
+        pub(crate) closed spec fn spec_root_protected_at_or_below(&self, generation: u64) -> bool {
+            exists|i: int| 0 <= i < self.entries@.len()
+                && Self::spec_entry_protects_at_or_below(self.entries@[i], generation)
+        }
+
         pub(crate) closed spec fn spec_has_pin_id(&self, pin_id: u64) -> bool {
             exists|i: int| 0 <= i < self.entries@.len()
                 && self.entries@[i].pin_id == pin_id
@@ -108,28 +115,6 @@ verus_method! {
     }
 }
 
-verus_method! {
-    /// Number of tracked pin entries.
-    pub(crate) fn len(&self) -> (result: usize);
-    ensures {
-        result as int == self.spec_len(),
-    }
-    body {
-        self.entries.len()
-    }
-}
-
-verus_method! {
-    /// Whether the table currently holds zero pin entries.
-    pub(crate) fn is_empty(&self) -> (result: bool);
-    ensures {
-        result == (self.spec_len() == 0),
-    }
-    body {
-        self.entries.is_empty()
-    }
-}
-
 verus_scan_method! {
     /// Locate an entry index by `pin_id`.
     pub(crate) fn find_index(&self, pin_id: u64) -> (result: Option<usize>);
@@ -160,6 +145,24 @@ verus_scan_method! {
     }
 }
 
+verus_method! {
+    /// The exact record held for `pin_id`, if any.
+    pub(crate) fn record(&self, pin_id: u64) -> (result: Option<PinRecord>);
+    ensures {
+        match result {
+            Some(record) => record.pin_id == pin_id
+                && exists|i: int| 0 <= i < self.spec_len() && self.spec_entry_at(i) == record,
+            None => !self.spec_has_pin_id(pin_id),
+        },
+    }
+    body {
+        match self.find_index(pin_id) {
+            Some(idx) => Some(self.entries[idx]),
+            None => None,
+        }
+    }
+}
+
 verus_scan_method! {
     /// Query whether `root_id` is currently protected by any non-expired pin.
     pub(crate) fn is_root_protected(&self, root_id: u64) -> (result: bool);
@@ -180,6 +183,39 @@ verus_scan_method! {
         let entry = self.entries[i];
         let is_expired = matches!(entry.state, PinLifecycleState::Expired);
         if entry.root_id == root_id && !is_expired {
+            return true;
+        }
+        i += 1;
+    }
+    after {
+        false
+    }
+}
+
+verus_scan_method! {
+    /// Query whether any non-expired pin holds a root at or below `generation`.
+    ///
+    /// A displaced extent generation stays readable from every root between the
+    /// one that placed it and the rewrite's source root, so extent and arena
+    /// retirement consult this span rather than one exact root.
+    pub(crate) fn is_root_protected_at_or_below(&self, generation: u64) -> (result: bool);
+    ensures {
+        result == self.spec_root_protected_at_or_below(generation),
+    }
+    init {
+        let mut i: usize = 0;
+    }
+    while (i < self.entries.len())
+    invariant {
+        0 <= i <= self.entries@.len(),
+        forall|k: int| 0 <= k < i
+            ==> !Self::spec_entry_protects_at_or_below(self.entries@[k], generation),
+    }
+    decreases { self.entries@.len() - i, }
+    step {
+        let entry = self.entries[i];
+        let is_expired = matches!(entry.state, PinLifecycleState::Expired);
+        if entry.root_id <= generation && !is_expired {
             return true;
         }
         i += 1;

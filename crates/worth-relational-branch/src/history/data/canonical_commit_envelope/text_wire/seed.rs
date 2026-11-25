@@ -44,6 +44,7 @@ impl<'de> Visitor<'de> for CanonicalEnvelopeSeed<'_, '_, '_, '_> {
         let mut symbol_texts = None;
         let mut revision_symbol_references = None;
         let mut record_allocations = None;
+        let mut cancelled_record_allocations = None;
         let mut patch = None;
         let mut descriptive_touches = None;
         let mut diagnostics_summary = None;
@@ -213,6 +214,12 @@ impl<'de> Visitor<'de> for CanonicalEnvelopeSeed<'_, '_, '_, '_> {
                     }
                     revision_symbol_references = Some(map.next_value()?);
                 }
+                "cancelled_record_allocations" => {
+                    if cancelled_record_allocations.is_some() {
+                        return Err(M::Error::duplicate_field("cancelled_record_allocations"));
+                    }
+                    cancelled_record_allocations = Some(map.next_value()?);
+                }
                 "record_allocations" => {
                     if record_allocations.is_some() {
                         return Err(M::Error::duplicate_field("record_allocations"));
@@ -331,6 +338,8 @@ impl<'de> Visitor<'de> for CanonicalEnvelopeSeed<'_, '_, '_, '_> {
                 .ok_or_else(|| M::Error::missing_field("revision_symbol_references"))?,
             record_allocations: record_allocations
                 .ok_or_else(|| M::Error::missing_field("record_allocations"))?,
+            // Encoded only when a slot was cancelled.
+            cancelled_record_allocations: cancelled_record_allocations.unwrap_or_default(),
             patch: patch.ok_or_else(|| M::Error::missing_field("patch"))?,
             descriptive_touches: descriptive_touches
                 .ok_or_else(|| M::Error::missing_field("descriptive_touches"))?,

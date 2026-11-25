@@ -125,7 +125,7 @@ where
             },
             Self::Declined { closed, evidence } => WorthQueryAnySourceCustodyStep::Declined {
                 closed,
-                evidence: WorthQueryAnyTerminalSourceEvidence(Box::new(evidence)),
+                evidence: WorthQueryAnyTerminalSourceEvidence::erase(evidence),
             },
             Self::Pending { custody, cause } => WorthQueryAnySourceCustodyStep::Pending {
                 custody: custody.erase(),
@@ -197,7 +197,7 @@ where
             },
             WorthQuerySourceCustodyStep::Declined { closed, evidence } => Step::Declined {
                 closed,
-                evidence: WorthQueryAnyTerminalSourceEvidence(Box::new(evidence)),
+                evidence: WorthQueryAnyTerminalSourceEvidence::erase(evidence),
             },
             WorthQuerySourceCustodyStep::Pending { custody, cause } => {
                 *self = Some(custody);
@@ -287,21 +287,42 @@ impl<T: 'static> ErasedCompletion for WorthQuerySourceCompletion<T> {
 
 /// Owned terminal evidence with the original typed refusal available by downcast.
 #[derive(Debug)]
-pub struct WorthQueryAnyTerminalSourceEvidence(Box<dyn ErasedTerminal>);
+pub struct WorthQueryAnyTerminalSourceEvidence {
+    evidence: Box<dyn ErasedTerminal>,
+    summary: crate::refusal_summary::WorthQueryRefusalSummary,
+}
 
 impl WorthQueryAnyTerminalSourceEvidence {
+    /// Classifies the typed stop for end users before its type is erased.
+    fn erase<S, I>(evidence: WorthQueryTerminalSourceEvidence<S, I>) -> Self
+    where
+        S: ApplicationSchema + 'static,
+        I: ApplicationMutationIntent<S> + 'static,
+        WorthQueryTerminalSourceEvidence<S, I>: fmt::Debug,
+    {
+        use crate::refusal_summary::WorthQueryUserFacingRefusal as _;
+        Self {
+            summary: evidence.user_summary(),
+            evidence: Box::new(evidence),
+        }
+    }
+
+    pub(crate) fn summary(&self) -> &crate::refusal_summary::WorthQueryRefusalSummary {
+        &self.summary
+    }
+
     pub fn evidence<S: ApplicationSchema, I: ApplicationMutationIntent<S> + 'static>(
         &self,
     ) -> Option<&WorthQueryTerminalSourceEvidence<S, I>> {
-        (self.0.as_ref() as &dyn Any).downcast_ref()
+        (self.evidence.as_ref() as &dyn Any).downcast_ref()
     }
 
     pub fn into_evidence<S: ApplicationSchema, I: ApplicationMutationIntent<S> + 'static>(
         self,
     ) -> std::result::Result<WorthQueryTerminalSourceEvidence<S, I>, Self> {
-        if (self.0.as_ref() as &dyn Any).is::<WorthQueryTerminalSourceEvidence<S, I>>() {
+        if (self.evidence.as_ref() as &dyn Any).is::<WorthQueryTerminalSourceEvidence<S, I>>() {
             let boxed = self
-                .0
+                .evidence
                 .into_any()
                 .downcast::<WorthQueryTerminalSourceEvidence<S, I>>()
                 .expect("type identity verified before downcast");

@@ -290,6 +290,44 @@ exclude_sources = ["worth-relational", "worth-relational-storage", "worth-relati
 forbidden_targets = ["worth-relational-contracts", "worth-relational-storage"]
 guidance = "Relational's physical owners are reachable only through the sibling owner or the Relational facade"
 
+[[dependency_denials]]
+workspace_manifest = "workspaces/worth-query-bank-world/Cargo.toml"
+sources = []
+source_prefixes = ["bank-", "worth-query-bank-"]
+forbidden_targets = ["worth-query-declaration"]
+guidance = "Consumers author Query meaning only through worth-query-decl and worth-query-host; worth-query-declaration owns the internal archive_decode_authority seam that every from_untrusted* decoder demands"
+
+[[dependency_denials]]
+workspace_manifest = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml"
+sources = ["worth-query-consumer-root", "worth-query-consumer-values", "worth-query-hostile-foreign-schema", "worth-query-parameter-entry", "worth-query-topology-entry"]
+source_prefixes = []
+forbidden_targets = ["worth-query-declaration"]
+guidance = "Consumers author Query meaning only through worth-query-decl and worth-query-host; worth-query-declaration owns the internal archive_decode_authority seam that every from_untrusted* decoder demands"
+
+[[source_identifier_denials]]
+root = "workspaces/worth-query/crates/worth-query-decl/src"
+forbidden_identifiers = ["archive_decode_authority", "ArchiveDecodeAuthority", "ARCHIVE_DECODE"]
+forbidden_identifier_fragments = []
+guidance = "Audience facades and their derive expansions never name the internal archive-decode witness; consumers author typed declarations and cannot reach any from_untrusted* decoder"
+
+[[source_identifier_denials]]
+root = "workspaces/worth-query/crates/worth-query-host/src"
+forbidden_identifiers = ["archive_decode_authority", "ArchiveDecodeAuthority", "ARCHIVE_DECODE"]
+forbidden_identifier_fragments = []
+guidance = "Audience facades and their derive expansions never name the internal archive-decode witness; consumers author typed declarations and cannot reach any from_untrusted* decoder"
+
+[[source_identifier_denials]]
+root = "workspaces/worth-query/crates/worth-query-macros/src"
+forbidden_identifiers = ["archive_decode_authority", "ArchiveDecodeAuthority", "ARCHIVE_DECODE"]
+forbidden_identifier_fragments = []
+guidance = "Audience facades and their derive expansions never name the internal archive-decode witness; consumers author typed declarations and cannot reach any from_untrusted* decoder"
+
+[[source_identifier_denials]]
+root = "workspaces/worth-query/crates/worth-query-declaration/src/facade.rs"
+forbidden_identifiers = ["archive_decode_authority", "ArchiveDecodeAuthority", "ARCHIVE_DECODE"]
+forbidden_identifier_fragments = []
+guidance = "Audience facades and their derive expansions never name the internal archive-decode witness; consumers author typed declarations and cannot reach any from_untrusted* decoder"
+
 [[source_identifier_denials]]
 root = "crates"
 exclude_paths = [

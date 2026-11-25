@@ -1,5 +1,6 @@
 //! Data selection follows nominal schema meaning, not native generated record names or positions.
 use super::*;
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 use worth_foundational::expression_api::ExpressionTypeName;
 fn schema(reverse: bool) -> ExpressionSchema {
     let fields = if reverse {
@@ -42,6 +43,7 @@ fn nested_selection_tracks_nominal_types_and_changed_field_order_not_first_list_
         }
         let person = ExpressionValue::record(values);
         let snapshot = ApplicationQueryExpressionSnapshot::from_untrusted_parts(
+            ARCHIVE_DECODE,
             schema(reverse),
             ExpressionValue::record(vec![
                 ExpressionValue::some(person.clone()),
@@ -73,8 +75,11 @@ fn absent_optional_intermediate_and_incomplete_untrusted_values_are_not_defaulte
         ExpressionValue::record(vec![]),
         ExpressionValue::string("not a record"),
     ] {
-        let snapshot =
-            ApplicationQueryExpressionSnapshot::from_untrusted_parts(schema(false), value);
+        let snapshot = ApplicationQueryExpressionSnapshot::from_untrusted_parts(
+            ARCHIVE_DECODE,
+            schema(false),
+            value,
+        );
         assert!(snapshot.field_path(&["owner", "name"]).is_none());
     }
     let person_list = ExpressionValue::list(vec![
@@ -82,11 +87,13 @@ fn absent_optional_intermediate_and_incomplete_untrusted_values_are_not_defaulte
         ExpressionValue::string("noise"),
     ]);
     let nested = ApplicationQueryExpressionSnapshot::from_untrusted_parts(
+        ARCHIVE_DECODE,
         schema(false),
         ExpressionValue::record(vec![ExpressionValue::some(person_list.clone())]),
     );
     assert!(nested.field_path(&["owner", "name"]).is_none());
     let root = ApplicationQueryExpressionSnapshot::from_untrusted_parts(
+        ARCHIVE_DECODE,
         schema(false),
         ExpressionValue::list(vec![ExpressionValue::some(person_list)]),
     );

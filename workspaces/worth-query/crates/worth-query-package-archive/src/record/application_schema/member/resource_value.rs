@@ -5,6 +5,7 @@ use super::super::{
 use crate::denial::WorthQueryPackageArchiveDenial as Denial;
 use crate::record::{foundational_aspect, foundational_value};
 use crate::{binary_encoding::BinaryEncodingSink, binary_input::BinaryInput};
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::{
     application_resource::{
         ApplicationResourceValueBindingParts, ApplicationResourceValueBindingReference,
@@ -48,6 +49,7 @@ pub(super) fn decode(
 ) -> Result<ApplicationResourceValueBindingReference, Denial> {
     Ok(
         ApplicationResourceValueBindingReference::from_untrusted_parts(
+            ARCHIVE_DECODE,
             ApplicationResourceValueBindingParts {
                 identity: decode_type_identity(input)?,
                 scalar_family: foundational_aspect::decode_scalar_type(input)?,

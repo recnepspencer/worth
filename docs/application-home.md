@@ -257,6 +257,11 @@ match opened.outcome() {
   equality-index catalog before populating `indexes_marked_for_rebuild`.
 - **Optional custom step:** use `open_directory_with_transition_and_step` to
   append custom `WorkerIntentBatch` work to the declarative target step.
+- **Successor managed indexes:** the target program may declare
+  `#[derive(WorthManagedIndex)]` indexes the predecessor lacks. The target step
+  prepares their Sources under the successor's catalog, and the upgraded Home's
+  first `ensure_index_ready` (or `session.query_indexed`) builds each index from
+  the retained records.
 - **Fail-closed guarantees:**
   - Opening a `v2` Home under `v3` without a transition refuses with typed
     `refused.transition_required()`.

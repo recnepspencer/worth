@@ -12,6 +12,7 @@ mod authored_body;
 mod bridge;
 mod program_source;
 mod promotion;
+mod target_sources;
 pub use authored_body::WorthQueryHomeProgramTransitionBodyDenial;
 mod author_source;
 pub use author_source::{
@@ -19,6 +20,7 @@ pub use author_source::{
     WorthQueryHomeProgramTransitionTarget,
 };
 pub use promotion::QueryHomeTransitionPromotionRefused;
+use std::sync::Arc;
 use worth_relational::facade::{
     branch::AdmittedRelationalBranchBasis,
     runtime::{PreparedRelationalHomeProgramContracts, RelationalHomeProgramContractDenial},
@@ -32,7 +34,7 @@ struct HomeTransitionTargetCustody<Schema: ApplicationSchemaComposition, Program
     _state: Box<HomeApplicationState<Schema, Program>>,
     _layout: super::super::super::schema_layout::WorthQueryPrimaryGraphLayout,
     _managed_sources:
-        super::super::super::application_query::managed_index::ManagedSourceInstallation,
+        Arc<super::super::super::application_query::managed_index::ManagedSourceInstallation>,
     _source_initializer:
         Option<super::super::super::application_query::managed_index::SourceInitializationIssuer>,
     _inventory: NativeSchemaInventory,
@@ -125,7 +127,7 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeApplication<Sche
         let mut pending = Box::new(HomeTransitionTargetCustody {
             _state: state,
             _layout: layout,
-            _managed_sources: managed_sources,
+            _managed_sources: Arc::new(managed_sources),
             _source_initializer: source_initializer,
             _inventory: inventory,
         });

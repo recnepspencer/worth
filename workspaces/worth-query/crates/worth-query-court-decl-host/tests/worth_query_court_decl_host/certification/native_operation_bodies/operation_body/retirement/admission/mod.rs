@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 pub(crate) use worth_query_testkit_certification_operation::facade::certification::native_operation_bodies::operation_body::retirement::admission::*;
 
 #[test]
@@ -104,6 +105,7 @@ fn fresh_readmission_reconstructs_retirement_meaning_and_required_authority() {
                                     .clone()
                                     .with_untrusted_signing(Some(
                                         ApplicationOperationBodySigningSpec::from_untrusted(
+                                            ARCHIVE_DECODE,
                                             "approval".into(),
                                             ApplicationFieldBindingLocus::new(
                                                 "Audit", "Facts", "Actor",
@@ -116,6 +118,7 @@ fn fresh_readmission_reconstructs_retirement_meaning_and_required_authority() {
                                         ),
                                     ));
                             *body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+                                ARCHIVE_DECODE,
                                 "Document".into(),
                                 body.scope_fields().to_vec(),
                                 Some(creation),
@@ -132,7 +135,7 @@ fn fresh_readmission_reconstructs_retirement_meaning_and_required_authority() {
         }
         parts.members.sort();
         let denied = validate_portable_application_schema_freshly(
-            WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts),
+            WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(ARCHIVE_DECODE, parts),
         )
         .unwrap_err();
         let denied_operation = match &denied {

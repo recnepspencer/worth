@@ -1,4 +1,5 @@
 //! Authored family/key correspondence uses the existing schema-field wire owner.
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 #[cfg(test)]
 mod tests;
 use crate::record::application_schema::{
@@ -108,18 +109,21 @@ fn decode_at_depth(
     if posture > 8 {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
-    let mut identity =
-        DeclaredAuthoredCorrection::from_untrusted_parts(DeclaredAuthoredCorrectionParts {
+    let mut identity = DeclaredAuthoredCorrection::from_untrusted_parts(
+        ARCHIVE_DECODE,
+        DeclaredAuthoredCorrectionParts {
             family,
             logical_key: Box::new(logical_key),
             binding_unit,
             source_role,
             inverse_role,
             source_posture,
-        });
+        },
+    );
     if posture >= 3 {
         if let Some(owner) = decode_optional(input, |input| {
             Ok(PortablePreImageRelationLocus::from_untrusted_fields(
+                ARCHIVE_DECODE,
                 input.text()?.to_owned(),
                 input.text()?.to_owned(),
                 input.text()?.to_owned(),
@@ -141,6 +145,7 @@ fn decode_at_depth(
     if posture >= 6 {
         identity =
             identity.with_live_member_owner(PortablePreImageRelationLocus::from_untrusted_fields(
+                ARCHIVE_DECODE,
                 input.text()?.to_owned(),
                 input.text()?.to_owned(),
                 input.text()?.to_owned(),

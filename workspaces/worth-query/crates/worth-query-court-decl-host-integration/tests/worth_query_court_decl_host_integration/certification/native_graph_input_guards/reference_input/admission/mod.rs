@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 pub(crate) use worth_query_testkit_certification::facade::certification::native_graph_input_guards::reference_input::admission::*;
 
 #[test]
@@ -85,7 +86,7 @@ fn cold_reference_input_rejects_mandatory_relation_missing_contract_and_forged_i
         assert!(changed, "{defect}");
         parts.members.sort();
         let denied = validate_portable_application_schema_freshly(
-            WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts),
+            WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(ARCHIVE_DECODE, parts),
         )
         .unwrap_err();
         let expected = if defect == "read" {
@@ -135,12 +136,14 @@ fn cold_signing_cannot_retarget_its_own_certified_subject_path() {
     // complete after adding the two inert program contracts.
     assert_eq!(parts.contributions.len(), 1);
     parts.contributions[0] = ApplicationSchemaContributionProvenance::from_untrusted_parts(
+        ARCHIVE_DECODE,
         parts.contributions[0].identity().as_str().into(),
         (0..parts.members.len())
             .map(|index| u32::try_from(index).unwrap())
             .collect(),
     );
-    let supplied = WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts);
+    let supplied =
+        WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(ARCHIVE_DECODE, parts);
     assert!(
         validate_portable_application_schema_freshly(supplied.clone()).is_ok(),
         "extra contracts alone must be valid"
@@ -158,7 +161,7 @@ fn cold_signing_cannot_retarget_its_own_certified_subject_path() {
     parts.members.sort();
     assert_eq!(
         validate_portable_application_schema_freshly(
-            WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts)
+            WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(ARCHIVE_DECODE, parts)
         )
         .unwrap_err(),
         ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency {

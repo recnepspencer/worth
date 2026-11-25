@@ -15,11 +15,12 @@ pub use correction_source::{
     WorthQueryCorrectionActionInputSelection, WorthQueryCorrectionAlternativeRef,
     WorthQueryCorrectionAlternativeResolution, WorthQueryCorrectionAlternativesContinuation,
     WorthQueryCorrectionAlternativesPage, WorthQueryCorrectionCommandKey,
-    WorthQueryCorrectionDerivationDenial, WorthQueryCorrectionInputSelection,
-    WorthQueryCorrectionIntent, WorthQueryCorrectionOutputProjectionDenial,
-    WorthQueryCorrectionRestoredSupportDenial, WorthQueryCorrectionSelectionDenial,
-    WorthQueryPreparedCorrectionSource, WorthQuerySelectedCorrectionAlternative,
-    WorthQuerySelectedCorrectionSource,
+    WorthQueryCorrectionDerivationDenial, WorthQueryCorrectionHistoryDenial,
+    WorthQueryCorrectionHistoryRecord, WorthQueryCorrectionHistoryState,
+    WorthQueryCorrectionInputSelection, WorthQueryCorrectionIntent,
+    WorthQueryCorrectionOutputProjectionDenial, WorthQueryCorrectionRestoredSupportDenial,
+    WorthQueryCorrectionSelectionDenial, WorthQueryPreparedCorrectionSource,
+    WorthQuerySelectedCorrectionAlternative, WorthQuerySelectedCorrectionSource,
 };
 pub(crate) mod generated_materialization;
 mod history;

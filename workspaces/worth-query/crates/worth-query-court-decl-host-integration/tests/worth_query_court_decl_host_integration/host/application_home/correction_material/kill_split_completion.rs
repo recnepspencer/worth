@@ -281,7 +281,7 @@ fn reader() {
         assert_eq!(orig_replay.commit_reference().commit_id.0, recorded.original_commit_id);
         let orig_durable = orig_replay.new_product_head().durable().unwrap();
         assert_eq!(orig_durable.selected_commit().ordinal(), recorded.original_world_ordinal);
-        let orig_coords = WorthQueryCorrectionSourceCoordinates::from_untrusted_parts(
+        let orig_coords = WorthQueryCorrectionSourceCoordinates::new(
             worth_foundational::facade::WorldOwnerCoordinate::Home { owner: orig_durable.branch().owner() },
             orig_durable.selected_commit().ordinal(),
             orig_replay.commit_reference().clone(),

@@ -144,6 +144,17 @@ fn bounded_observation_and_sealed_reports_hold_exactly_their_payload_charge() {
 #[test]
 fn reports_canonical_reservations_as_well_as_live_choices() {
     let owner = RecordIdentitySubsystem::default();
+    // Canonical replay reserves inside the commit's staged evidence block.
+    owner
+        .stage_replay_allocations(
+            vec![crate::history::data::canonical_record_allocation::CanonicalRecordAllocation::with_origin(
+                0,
+                RecordRef::Entity(EntityId::new(PartitionId(7), 0, 1)),
+                RecordAllocationOrigin::AppendFrontier,
+            )],
+            Vec::new(),
+        )
+        .unwrap();
     let observation = owner.observe_reservations(1, SystemAllocation).unwrap();
     let mut reservation = owner
         .reserve_exact(
@@ -153,7 +164,6 @@ fn reports_canonical_reservations_as_well_as_live_choices() {
             0,
             1,
             RecordAllocationOrigin::AppendFrontier,
-            false,
         )
         .unwrap();
     assert_eq!(

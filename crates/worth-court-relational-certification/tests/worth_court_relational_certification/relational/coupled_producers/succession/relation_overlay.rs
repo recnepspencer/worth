@@ -170,20 +170,22 @@ fn a_preserve_round_unlinking_a_relation_folds() {
     assert_eq!(folded.unwrap(), one.unwrap());
 }
 
-/// A successor that keeps a relation its chain's latest round deleted leaves
-/// that delete uncovered.
+/// A successor that keeps a relation its chain's earlier round deleted
+/// restores it: the relation is live again from the head's image (#119 N5).
 #[test]
-fn a_successor_keeping_a_relation_its_chain_unlinked_is_uncovered() {
-    let (refused, _) = preserve_chain(&[("round-1", true), ("round-2", false)]);
-    assert_eq!(refused.unwrap_err(), postponed(Reason::UncoveredWrite));
+fn a_successor_keeping_a_relation_its_chain_unlinked_restores_it() {
+    let (rounds, _) = preserve_chain(&[("round-1", true), ("round-2", false)]);
+    let (one, _) = preserve_chain(&[("round-2", false)]);
+    assert_eq!(rounds.unwrap(), one.unwrap());
 }
 
-/// A successor that deletes a relation its chain never deleted is a new
-/// effect the fold cannot lower.
+/// A successor that deletes a relation its chain never deleted is an
+/// ordinary delete over the head's image (#119).
 #[test]
-fn a_successor_unlinking_a_relation_its_chain_kept_is_a_structural_effect() {
-    let (refused, _) = preserve_chain(&[("round-1", false), ("round-2", true)]);
-    assert_eq!(refused.unwrap_err(), postponed(Reason::StructuralEffect));
+fn a_successor_unlinking_a_relation_its_chain_kept_commits_the_one_round_answer() {
+    let (rounds, _) = preserve_chain(&[("round-1", false), ("round-2", true)]);
+    let (one, _) = preserve_chain(&[("round-2", true)]);
+    assert_eq!(rounds.unwrap(), one.unwrap());
 }
 
 /// A round that moves a relation's endpoints exposes both live sides: the

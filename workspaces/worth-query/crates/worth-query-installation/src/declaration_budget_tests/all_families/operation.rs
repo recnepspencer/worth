@@ -2,6 +2,7 @@
 use super::*;
 use std::num::NonZeroU64;
 use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersion};
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 
 pub(super) fn extend(members: &mut Vec<ApplicationSchemaMember>) {
     let n = NonZeroU64::new(128).unwrap();
@@ -12,13 +13,14 @@ pub(super) fn extend(members: &mut Vec<ApplicationSchemaMember>) {
         },
         ApplicationSchemaMember::OperationBody {
             operation: "BudgetBody".into(),
-            body: ApplicationOperationBodyProgram::from_untrusted_scope_fields(vec![
-                ApplicationOperationBodyScopeField::Assign {
+            body: ApplicationOperationBodyProgram::from_untrusted_scope_fields(
+                ARCHIVE_DECODE,
+                vec![ApplicationOperationBodyScopeField::Assign {
                     field: ApplicationFieldBindingLocus::new("BudgetScalar", "Value", "value"),
                     binding: portable("u64"),
                     value: worth_foundational::facade::AspectValue::UInt64(7),
-                },
-            ]),
+                }],
+            ),
         },
         ApplicationSchemaMember::OperationDecisionRead {
             operation: "BudgetBody".into(),

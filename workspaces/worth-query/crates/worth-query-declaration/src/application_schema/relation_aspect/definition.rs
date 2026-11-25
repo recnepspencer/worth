@@ -1,4 +1,5 @@
 use super::ApplicationRelationFieldDefinition;
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 use worth_foundational::facade::{AbsenceLaw, AspectContractRevision, AspectIdentity};
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct WorthQueryPortableRelationAspectParts {
@@ -27,7 +28,10 @@ pub enum ApplicationRelationAspectDefinitionDenial {
 }
 
 impl ErasedApplicationRelationAspectDefinition {
-    pub fn from_untrusted_parts(parts: WorthQueryPortableRelationAspectParts) -> Self {
+    pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
+        parts: WorthQueryPortableRelationAspectParts,
+    ) -> Self {
         Self { parts }
     }
     pub fn parts(&self) -> &WorthQueryPortableRelationAspectParts {

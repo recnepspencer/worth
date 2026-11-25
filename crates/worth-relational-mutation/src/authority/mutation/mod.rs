@@ -1,5 +1,6 @@
 pub mod aspect_versions;
 pub mod canonical_deltas;
+pub mod chain_retraction;
 pub mod disjoint_publication;
 pub mod mutation_delta_dispatch;
 pub mod pending_identities;
@@ -22,8 +23,6 @@ pub mod record_changes;
 pub mod retained_entity_selection;
 pub mod round_denial;
 pub mod stale_targets;
-pub mod succession_record;
-pub use succession_record::{restamp_succession_entity, succession_record};
 pub mod workspace;
 
 pub use canonical_deltas::CanonicalAspectDeltaEvidence;

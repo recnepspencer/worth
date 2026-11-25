@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 pub mod coupled;
 pub mod lookup;
 pub mod semantic;
+pub mod withdrawal;
 pub use coupled::CoupledOriginalRelationCreates;
 pub use lookup::BorrowedEntityRef;
 

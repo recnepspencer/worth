@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::{ArchiveDecodeAuthority, ARCHIVE_DECODE};
 pub mod capture {
     pub mod output_facts;
 }

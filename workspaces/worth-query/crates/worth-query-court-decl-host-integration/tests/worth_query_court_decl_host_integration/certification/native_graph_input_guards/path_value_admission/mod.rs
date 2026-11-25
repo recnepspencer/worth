@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 pub(crate) use worth_query_testkit_certification::facade::certification::native_graph_input_guards::path_value_admission::*;
 
 #[test]
@@ -109,7 +110,7 @@ fn computed_path_write_readmission_refuses_weakened_target_correspondence() {
                 {
                     let mut steps = body.path_value_assignments().to_vec();
                     match defect {
-                        "scope" => steps[0].target.path = worth_query_decl::facade::application_query::ApplicationQueryRootPathMeaning::from_untrusted_parts(worth_query_decl::facade::application_query::WorthQueryPortableApplicationQueryRootPathParts {start_entity:"Parent".into(),terminal_entity:"Parent".into(),steps:vec![],guards:vec![]}),
+                        "scope" => steps[0].target.path = worth_query_decl::facade::application_query::ApplicationQueryRootPathMeaning::from_untrusted_parts(ARCHIVE_DECODE, worth_query_decl::facade::application_query::WorthQueryPortableApplicationQueryRootPathParts {start_entity:"Parent".into(),terminal_entity:"Parent".into(),steps:vec![],guards:vec![]}),
                         "binding" => steps[0].binding = StringApplicationValueBinding::IDENTITY,
                         "value" => steps[0].value = "not-declared".into(),
                         "presence" => steps[0].target.presence = ApplicationFieldPresence::Optional,
@@ -125,7 +126,7 @@ fn computed_path_write_readmission_refuses_weakened_target_correspondence() {
         assert!(changed, "{defect}");
         parts.members.sort();
         let denial = validate_portable_application_schema_freshly(
-            WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts),
+            WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(ARCHIVE_DECODE, parts),
         )
         .unwrap_err();
         assert_eq!(

@@ -2,6 +2,7 @@
 use super::*;
 use crate::{binary_output::BinaryOutput, limits::WorthQueryPackageArchiveLimits};
 use worth_foundational::facade::{AspectValue, ScalarAspectType};
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 #[path = "tests/children.rs"]
 mod children;
 #[path = "tests/collection_values.rs"]
@@ -14,6 +15,8 @@ mod creation_reuse;
 mod enrollment;
 #[path = "tests/external_emission.rs"]
 mod external_emission;
+#[path = "tests/field_assignment_versions.rs"]
+mod field_assignment_versions;
 #[path = "tests/genesis.rs"]
 mod genesis;
 #[path = "tests/input_expectation.rs"]
@@ -45,6 +48,8 @@ mod requirements;
 mod retirements;
 #[path = "tests/retiring_replacement.rs"]
 mod retiring_replacement;
+#[path = "tests/self_edge_links.rs"]
+mod self_edge_links;
 #[path = "tests/signed_evidence.rs"]
 mod signed_evidence;
 #[path = "tests/signing.rs"]
@@ -56,13 +61,17 @@ mod values;
 
 #[test]
 fn operation_body_false_literal_roundtrips_and_unknown_version_is_refused() {
-    let body = ApplicationOperationBodyProgram::from_untrusted_scope_fields(vec![
-        ApplicationOperationBodyScopeField::Assign {
+    let body = ApplicationOperationBodyProgram::from_untrusted_scope_fields(
+        ARCHIVE_DECODE,
+        vec![ApplicationOperationBodyScopeField::Assign {
             field: ApplicationFieldBindingLocus::new("Item", "Facts", "Ready"),
-            binding: WorthQueryPortableTypeIdentity::from_untrusted("worth.rust.bool".to_owned()),
+            binding: WorthQueryPortableTypeIdentity::from_untrusted(
+                ARCHIVE_DECODE,
+                "worth.rust.bool".to_owned(),
+            ),
             value: AspectValue::Bool(false),
-        },
-    ]);
+        }],
+    );
     let mut output = BinaryOutput::with_capacity(128);
     write(&mut output, &body).unwrap();
     let mut bytes = output.into_bytes();
@@ -94,13 +103,17 @@ fn operation_body_false_literal_roundtrips_and_unknown_version_is_refused() {
 
 #[test]
 fn required_presence_uses_version_six_and_old_reader_refuses_the_opcode() {
-    let body = ApplicationOperationBodyProgram::from_untrusted_scope_fields(vec![
-        ApplicationOperationBodyScopeField::RequirePresent {
+    let body = ApplicationOperationBodyProgram::from_untrusted_scope_fields(
+        ARCHIVE_DECODE,
+        vec![ApplicationOperationBodyScopeField::RequirePresent {
             field: ApplicationFieldBindingLocus::new("Item", "Draft", "Note"),
-            binding: WorthQueryPortableTypeIdentity::from_untrusted("worth.rust.string".to_owned()),
+            binding: WorthQueryPortableTypeIdentity::from_untrusted(
+                ARCHIVE_DECODE,
+                "worth.rust.string".to_owned(),
+            ),
             scalar_family: ScalarAspectType::String,
-        },
-    ]);
+        }],
+    );
     let mut output = BinaryOutput::with_capacity(128);
     write(&mut output, &body).unwrap();
     let mut bytes = output.into_bytes();
@@ -131,14 +144,18 @@ fn required_presence_uses_version_six_and_old_reader_refuses_the_opcode() {
 
 #[test]
 fn optional_set_and_clear_use_version_five_without_reinterpreting_v1_to_v4() {
-    let body = ApplicationOperationBodyProgram::from_untrusted_scope_fields(vec![
-        ApplicationOperationBodyScopeField::SetOptionalInput {
+    let body = ApplicationOperationBodyProgram::from_untrusted_scope_fields(
+        ARCHIVE_DECODE,
+        vec![ApplicationOperationBodyScopeField::SetOptionalInput {
             field: ApplicationFieldBindingLocus::new("Item", "Draft", "Note"),
-            binding: WorthQueryPortableTypeIdentity::from_untrusted("worth.rust.string".to_owned()),
+            binding: WorthQueryPortableTypeIdentity::from_untrusted(
+                ARCHIVE_DECODE,
+                "worth.rust.string".to_owned(),
+            ),
             scalar_family: ScalarAspectType::String,
             member: "note".to_owned(),
-        },
-    ]);
+        }],
+    );
     let mut output = BinaryOutput::with_capacity(128);
     write(&mut output, &body).unwrap();
     let mut bytes = output.into_bytes();
@@ -166,13 +183,17 @@ fn optional_set_and_clear_use_version_five_without_reinterpreting_v1_to_v4() {
         Kind::UnsupportedRecordVariant
     );
 
-    let clear = ApplicationOperationBodyProgram::from_untrusted_scope_fields(vec![
-        ApplicationOperationBodyScopeField::ClearOptional {
+    let clear = ApplicationOperationBodyProgram::from_untrusted_scope_fields(
+        ARCHIVE_DECODE,
+        vec![ApplicationOperationBodyScopeField::ClearOptional {
             field: ApplicationFieldBindingLocus::new("Item", "Draft", "Note"),
-            binding: WorthQueryPortableTypeIdentity::from_untrusted("worth.rust.string".to_owned()),
+            binding: WorthQueryPortableTypeIdentity::from_untrusted(
+                ARCHIVE_DECODE,
+                "worth.rust.string".to_owned(),
+            ),
             scalar_family: ScalarAspectType::String,
-        },
-    ]);
+        }],
+    );
     let mut output = BinaryOutput::with_capacity(128);
     write(&mut output, &clear).unwrap();
     let bytes = output.into_bytes();
@@ -190,17 +211,23 @@ fn optional_set_and_clear_use_version_five_without_reinterpreting_v1_to_v4() {
 #[test]
 fn version_five_creation_flag_preserves_recipe_and_rejects_an_invalid_flag() {
     let body = ApplicationOperationBodyProgram::from_untrusted_with_creation(
+        ARCHIVE_DECODE,
         vec![ApplicationOperationBodyScopeField::ClearOptional {
             field: ApplicationFieldBindingLocus::new("Item", "Draft", "Note"),
-            binding: WorthQueryPortableTypeIdentity::from_untrusted("worth.rust.string".to_owned()),
+            binding: WorthQueryPortableTypeIdentity::from_untrusted(
+                ARCHIVE_DECODE,
+                "worth.rust.string".to_owned(),
+            ),
             scalar_family: ScalarAspectType::String,
         }],
         Some(ApplicationOperationBodyCreation::from_untrusted(
+            ARCHIVE_DECODE,
             "Audit".to_owned(),
             "audit".to_owned(),
             vec![ApplicationOperationBodyCreatedField::Literal {
                 field: ApplicationFieldBindingLocus::new("Audit", "Facts", "Ready"),
                 binding: WorthQueryPortableTypeIdentity::from_untrusted(
+                    ARCHIVE_DECODE,
                     "worth.rust.bool".to_owned(),
                 ),
                 value: AspectValue::Bool(true),
@@ -233,140 +260,6 @@ fn version_five_creation_flag_preserves_recipe_and_rejects_an_invalid_flag() {
     let flag = bytes.len() - prefix.remaining_len();
     assert_eq!(&bytes[flag..flag + 2], &1_u16.to_be_bytes());
     bytes[flag..flag + 2].copy_from_slice(&2_u16.to_be_bytes());
-    let mut budget = RecordDecodeAttempt::begin(
-        Default::default(),
-        bytes.len() as u64,
-        WorthQueryPackageArchiveLimits::DEFAULT,
-    )
-    .unwrap();
-    assert_eq!(
-        decode(&mut BinaryInput::new(&bytes), &mut budget)
-            .unwrap_err()
-            .kind(),
-        Kind::UnsupportedRecordVariant
-    );
-}
-
-#[test]
-fn created_scope_field_uses_version_four_and_old_record_refuses_its_opcode() {
-    let body = ApplicationOperationBodyProgram::from_untrusted_with_creation(
-        vec![ApplicationOperationBodyScopeField::Assign {
-            field: ApplicationFieldBindingLocus::new("Item", "Facts", "Ready"),
-            binding: WorthQueryPortableTypeIdentity::from_untrusted("worth.rust.bool".to_owned()),
-            value: AspectValue::Bool(true),
-        }],
-        Some(ApplicationOperationBodyCreation::from_untrusted(
-            "Audit".to_owned(),
-            "audit-slot".to_owned(),
-            vec![ApplicationOperationBodyCreatedField::ScopeField {
-                field: ApplicationFieldBindingLocus::new("Audit", "Facts", "Prior"),
-                binding: WorthQueryPortableTypeIdentity::from_untrusted(
-                    "worth.rust.u64".to_owned(),
-                ),
-                scalar_family: ScalarAspectType::UInt64,
-                source: ApplicationFieldBindingLocus::new("Item", "Facts", "Retention"),
-            }],
-        )),
-    );
-    let mut output = BinaryOutput::with_capacity(256);
-    write(&mut output, &body).unwrap();
-    let mut bytes = output.into_bytes();
-    assert_eq!(&bytes[..2], &4_u16.to_be_bytes());
-    let mut budget = RecordDecodeAttempt::begin(
-        Default::default(),
-        bytes.len() as u64,
-        WorthQueryPackageArchiveLimits::DEFAULT,
-    )
-    .unwrap();
-    let mut input = BinaryInput::new(&bytes);
-    assert_eq!(decode(&mut input, &mut budget).unwrap(), body);
-    assert!(input.is_finished());
-
-    bytes[..2].copy_from_slice(&3_u16.to_be_bytes());
-    let mut budget = RecordDecodeAttempt::begin(
-        Default::default(),
-        bytes.len() as u64,
-        WorthQueryPackageArchiveLimits::DEFAULT,
-    )
-    .unwrap();
-    assert_eq!(
-        decode(&mut BinaryInput::new(&bytes), &mut budget)
-            .unwrap_err()
-            .kind(),
-        Kind::UnsupportedRecordVariant
-    );
-}
-
-#[test]
-fn created_entity_fields_use_version_three_and_roundtrip_without_authority() {
-    let body = ApplicationOperationBodyProgram::from_untrusted_with_creation(
-        vec![ApplicationOperationBodyScopeField::Assign {
-            field: ApplicationFieldBindingLocus::new("Item", "Facts", "Ready"),
-            binding: WorthQueryPortableTypeIdentity::from_untrusted("worth.rust.bool".to_owned()),
-            value: AspectValue::Bool(true),
-        }],
-        Some(ApplicationOperationBodyCreation::from_untrusted(
-            "Audit".to_owned(),
-            "audit-slot".to_owned(),
-            vec![
-                ApplicationOperationBodyCreatedField::Literal {
-                    field: ApplicationFieldBindingLocus::new("Audit", "Facts", "Ready"),
-                    binding: WorthQueryPortableTypeIdentity::from_untrusted(
-                        "worth.rust.bool".to_owned(),
-                    ),
-                    value: AspectValue::Bool(true),
-                },
-                ApplicationOperationBodyCreatedField::Input {
-                    field: ApplicationFieldBindingLocus::new("Audit", "Facts", "Note"),
-                    binding: WorthQueryPortableTypeIdentity::from_untrusted(
-                        "worth.rust.string".to_owned(),
-                    ),
-                    scalar_family: ScalarAspectType::String,
-                    member: "note".to_owned(),
-                },
-            ],
-        )),
-    );
-    let mut output = BinaryOutput::with_capacity(256);
-    write(&mut output, &body).unwrap();
-    let bytes = output.into_bytes();
-    assert_eq!(&bytes[..2], &3_u16.to_be_bytes());
-    let mut budget = RecordDecodeAttempt::begin(
-        Default::default(),
-        bytes.len() as u64,
-        WorthQueryPackageArchiveLimits::DEFAULT,
-    )
-    .unwrap();
-    let mut input = BinaryInput::new(&bytes);
-    assert_eq!(decode(&mut input, &mut budget).unwrap(), body);
-    assert!(input.is_finished());
-}
-
-#[test]
-fn input_member_assignment_uses_version_two_and_old_record_refuses_its_opcode() {
-    let body = ApplicationOperationBodyProgram::from_untrusted_scope_fields(vec![
-        ApplicationOperationBodyScopeField::AssignInput {
-            field: ApplicationFieldBindingLocus::new("Item", "Facts", "Retention"),
-            binding: WorthQueryPortableTypeIdentity::from_untrusted("worth.rust.u64".to_owned()),
-            scalar_family: ScalarAspectType::UInt64,
-            member: "retention_days".to_owned(),
-        },
-    ]);
-    let mut output = BinaryOutput::with_capacity(128);
-    write(&mut output, &body).unwrap();
-    let mut bytes = output.into_bytes();
-    assert_eq!(&bytes[..2], &2_u16.to_be_bytes());
-    let mut budget = RecordDecodeAttempt::begin(
-        Default::default(),
-        bytes.len() as u64,
-        WorthQueryPackageArchiveLimits::DEFAULT,
-    )
-    .unwrap();
-    let mut input = BinaryInput::new(&bytes);
-    assert_eq!(decode(&mut input, &mut budget).unwrap(), body);
-    assert!(input.is_finished());
-
-    bytes[..2].copy_from_slice(&1_u16.to_be_bytes());
     let mut budget = RecordDecodeAttempt::begin(
         Default::default(),
         bytes.len() as u64,

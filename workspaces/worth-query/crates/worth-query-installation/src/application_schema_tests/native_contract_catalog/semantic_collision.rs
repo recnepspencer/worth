@@ -3,6 +3,7 @@ use super::{
     admitted_package, assert_package_contract_denial, WorthQueryPortablePackageValidationDenialKind,
 };
 use worth_foundational::facade::{AspectContractRevision, AspectIdentity, ScalarAspectType};
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::*;
 mod model;
 pub(super) use model::*;
@@ -16,7 +17,7 @@ pub(super) fn fresh(
     edit(&mut parts.members);
     parts.members.sort();
     validate_portable_application_schema_freshly(
-        WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts),
+        WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(ARCHIVE_DECODE, parts),
     )
     .unwrap()
 }

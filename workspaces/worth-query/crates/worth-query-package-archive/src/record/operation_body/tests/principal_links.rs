@@ -1,5 +1,6 @@
 //! V40 preserves principal anchor meaning at every supported creation site.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::{
     application_query::{
         ApplicationQueryRootPathMeaning, WorthQueryPortableApplicationQueryRootPathParts,
@@ -30,52 +31,60 @@ fn principal_link(entity: &str) -> Link {
 }
 #[test]
 fn principal_anchor_v40_roundtrip_includes_root_peer_path_and_child_links_and_refuses_downgrade() {
-    let root =
-        ApplicationOperationBodyCreation::from_untrusted("Created".into(), "root".into(), vec![])
-            .with_untrusted_links(vec![principal_link("Created")])
-            .with_untrusted_children(vec![Child {
-                parent_key: "root".into(),
-                creation: ApplicationOperationBodyCreation::from_untrusted(
-                    "Child".into(),
-                    "child".into(),
-                    vec![],
-                )
-                .with_untrusted_links(vec![Link {
-                    relation: "Children".into(),
-                    from: "Created".into(),
-                    to: "Child".into(),
-                    key: "child".into(),
-                    direction: Direction::FromScope,
-                    posture: Posture::Append,
-                    source: Source::Scope,
-                }]),
-            }])
-            .with_untrusted_peers(vec![ApplicationOperationBodyCreation::from_untrusted(
-                "Peer".into(),
-                "peer".into(),
-                vec![],
-            )
-            .with_untrusted_links(vec![principal_link("Peer")])])
-            .with_untrusted_path_links(vec![PathLink {
-                path: ApplicationQueryRootPathMeaning::from_untrusted_parts(
-                    WorthQueryPortableApplicationQueryRootPathParts {
-                        start_entity: "Organization".into(),
-                        terminal_entity: "Organization".into(),
-                        steps: vec![],
-                        guards: vec![],
-                    },
-                ),
-                link: Link {
-                    relation: "Owned".into(),
-                    from: "Organization".into(),
-                    to: "Created".into(),
-                    key: "owner".into(),
-                    direction: Direction::FromScope,
-                    posture: Posture::Append,
-                    source: Source::Scope,
-                },
-            }]);
+    let root = ApplicationOperationBodyCreation::from_untrusted(
+        ARCHIVE_DECODE,
+        "Created".into(),
+        "root".into(),
+        vec![],
+    )
+    .with_untrusted_links(vec![principal_link("Created")])
+    .with_untrusted_children(vec![Child {
+        parent_key: "root".into(),
+        creation: ApplicationOperationBodyCreation::from_untrusted(
+            ARCHIVE_DECODE,
+            "Child".into(),
+            "child".into(),
+            vec![],
+        )
+        .with_untrusted_links(vec![Link {
+            relation: "Children".into(),
+            from: "Created".into(),
+            to: "Child".into(),
+            key: "child".into(),
+            direction: Direction::FromScope,
+            posture: Posture::Append,
+            source: Source::Scope,
+        }]),
+    }])
+    .with_untrusted_peers(vec![ApplicationOperationBodyCreation::from_untrusted(
+        ARCHIVE_DECODE,
+        "Peer".into(),
+        "peer".into(),
+        vec![],
+    )
+    .with_untrusted_links(vec![principal_link("Peer")])])
+    .with_untrusted_path_links(vec![PathLink {
+        path: ApplicationQueryRootPathMeaning::from_untrusted_parts(
+            ARCHIVE_DECODE,
+            WorthQueryPortableApplicationQueryRootPathParts {
+                start_entity: "Organization".into(),
+                terminal_entity: "Organization".into(),
+                steps: vec![],
+                guards: vec![],
+            },
+        ),
+        link: Link {
+            relation: "Owned".into(),
+            from: "Organization".into(),
+            to: "Created".into(),
+            key: "owner".into(),
+            direction: Direction::FromScope,
+            posture: Posture::Append,
+            source: Source::Scope,
+        },
+    }]);
     let body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
         "Organization".into(),
         vec![],
         Some(root),

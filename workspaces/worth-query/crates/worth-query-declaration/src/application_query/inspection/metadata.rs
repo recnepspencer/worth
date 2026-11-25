@@ -1,3 +1,4 @@
+use crate::archive_decode_authority::{ArchiveDecodeAuthority, ARCHIVE_DECODE};
 use std::marker::PhantomData;
 
 use super::super::{
@@ -54,6 +55,7 @@ pub struct ApplicationQueryInspectionMetadataMeaning {
 
 impl ApplicationQueryInspectionMetadataMeaning {
     pub fn from_untrusted_fields(
+        _: ArchiveDecodeAuthority,
         binding: ApplicationQueryBindingReference,
         facet: ApplicationQueryInspectionMetadataFacet,
     ) -> Self {
@@ -95,6 +97,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationQueryBinding<Schema>>
 
     pub fn meaning(&self) -> ApplicationQueryInspectionMetadataMeaning {
         ApplicationQueryInspectionMetadataMeaning::from_untrusted_fields(
+            ARCHIVE_DECODE,
             ApplicationQueryBindingReference::of::<Schema, Binding>(),
             self.facet,
         )

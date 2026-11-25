@@ -2,11 +2,14 @@
 use super::*;
 use crate::application_schema::{
     ApplicationFieldBindingLocus, ApplicationOperationBodyReferenceInput as Reference,
+    ApplicationOperationBodyReferenceInputMode as Mode,
 };
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 #[test]
 fn reference_correspondence_changes_program_meaning_without_rewriting_old_profiles() {
     let base = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
         "Row".into(),
         vec![],
         None,
@@ -21,17 +24,21 @@ fn reference_correspondence_changes_program_meaning_without_rewriting_old_profil
         from: "Row".into(),
         to: "Principal".into(),
         field: ApplicationFieldBindingLocus::new("Principal", "Facts", "Identity"),
-        binding: WorthQueryPortableTypeIdentity::from_untrusted("worth.rust.u64".into()),
+        binding: WorthQueryPortableTypeIdentity::from_untrusted(
+            ARCHIVE_DECODE,
+            "worth.rust.u64".into(),
+        ),
         scalar_family: worth_foundational::facade::ScalarAspectType::UInt64,
         member: "selected".into(),
         key: "selected".into(),
+        mode: Mode::ReplaceNullable,
     };
     let original = operation_body_record(
         &base
             .clone()
             .with_untrusted_reference_inputs(vec![reference.clone()]),
     );
-    for variant in 0..10 {
+    for variant in 0..11 {
         let mut changed = reference.clone();
         match variant {
             0 => changed.relation = "Other".into(),
@@ -42,10 +49,18 @@ fn reference_correspondence_changes_program_meaning_without_rewriting_old_profil
                 changed.field = ApplicationFieldBindingLocus::new("Principal", "Other", "Identity")
             }
             5 => changed.field = ApplicationFieldBindingLocus::new("Principal", "Facts", "Other"),
-            6 => changed.binding = WorthQueryPortableTypeIdentity::from_untrusted("other".into()),
+            6 => {
+                changed.binding =
+                    WorthQueryPortableTypeIdentity::from_untrusted(ARCHIVE_DECODE, "other".into())
+            }
             7 => changed.scalar_family = worth_foundational::facade::ScalarAspectType::String,
             8 => changed.member = "other".into(),
             9 => changed.key = "other".into(),
+            10 => {
+                changed.mode = Mode::ToggleExact {
+                    linked_member: "linked".into(),
+                }
+            }
             _ => unreachable!(),
         }
         assert_ne!(
@@ -54,4 +69,12 @@ fn reference_correspondence_changes_program_meaning_without_rewriting_old_profil
             "member {variant}"
         );
     }
+    let toggle = |linked_member: &str| {
+        let mut toggled = reference.clone();
+        toggled.mode = Mode::ToggleExact {
+            linked_member: linked_member.into(),
+        };
+        operation_body_record(&base.clone().with_untrusted_reference_inputs(vec![toggled]))
+    };
+    assert_ne!(toggle("linked"), toggle("other"));
 }

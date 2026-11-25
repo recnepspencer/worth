@@ -1,6 +1,7 @@
 //! Codec carriage of a full query source is descriptive, never readmission.
 use super::*;
 use crate::{binary_input::BinaryInput, record::operation_body};
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::{
     application_query::{ApplicationQueryCardinality, ErasedApplicationQueryDefinition},
     application_schema::{
@@ -31,12 +32,15 @@ fn context_body() -> Body {
     let expression =
         worth_foundational::expression_api::expressions().reading_within(Expression::PROFILE);
     let requirement = Requirement::from_untrusted(
+        ARCHIVE_DECODE,
         "source-value".into(),
         vec![Operand::from_untrusted(
+            ARCHIVE_DECODE,
             "context".into(),
             Source::QueryContext {
                 mutation_binding: "archive.tests.check.v1".into(),
                 query: Box::new(ErasedApplicationQueryDefinition::from_untrusted_parts(
+                    ARCHIVE_DECODE,
                     query,
                 )),
             },
@@ -49,7 +53,13 @@ fn context_body() -> Body {
         "context".into(),
     )
     .unwrap();
-    Body::from_untrusted_in_scope("Entity".into(), vec![], None, vec![requirement])
+    Body::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
+        "Entity".into(),
+        vec![],
+        None,
+        vec![requirement],
+    )
 }
 
 #[test]
@@ -102,10 +112,14 @@ fn operation_contract_query_depth_is_symmetric_on_encode_and_decode() {
     };
     for body in [context_body(), payload_context_body()] {
         let record = WorthQueryPortableApplicationOperationContractRecord::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableApplicationOperationContractParts {
                 schema: "ArchiveSchema".into(),
                 operation: "Check".into(),
-                input_type: WorthQueryPortableTypeIdentity::from_untrusted("archive.input".into()),
+                input_type: WorthQueryPortableTypeIdentity::from_untrusted(
+                    ARCHIVE_DECODE,
+                    "archive.input".into(),
+                ),
                 graph_reads: vec![],
                 touches: vec![],
                 emissions: vec![],
@@ -162,15 +176,15 @@ fn payload_context_body() -> Body {
     else {
         unreachable!()
     };
-    Body::from_untrusted_in_scope("Entity".into(), vec![], None, vec![])
+    Body::from_untrusted_in_scope(ARCHIVE_DECODE, "Entity".into(), vec![], None, vec![])
         .with_untrusted_external_emission(Some(Emission {
             source: PayloadSource::QueryContext {
                 mutation_binding: mutation_binding.clone(),
                 query: query.clone(),
             },
             effect: "Notice".into(),
-            input_binding: Identity::from_untrusted("input".into()),
-            payload_binding: Identity::from_untrusted("payload".into()),
+            input_binding: Identity::from_untrusted(ARCHIVE_DECODE, "input".into()),
+            payload_binding: Identity::from_untrusted(ARCHIVE_DECODE, "payload".into()),
             protocol: ApplicationExternalEffectProtocol::new(
                 worth_foundational::facade::BoundaryProtocolIdentity::new("context.notice"),
                 worth_foundational::facade::BoundaryProtocolVersion::new(1),

@@ -1,4 +1,5 @@
 use super::digest_hash::digest_hash_parts;
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 use std::fmt::Write;
 use worth_foundational::facade::{
     canonicalization, prepare_canonical_basis_sequence, CanonicalBasisDomain, CanonicalBasisEntry,
@@ -15,7 +16,7 @@ macro_rules! declaration_digest {
         impl $name {
             /// Retains one descriptive digest claim decoded from untrusted
             /// storage without minting canonicalization authority.
-            pub fn from_untrusted(value: String) -> Self {
+            pub fn from_untrusted(_: ArchiveDecodeAuthority, value: String) -> Self {
                 Self(value)
             }
 

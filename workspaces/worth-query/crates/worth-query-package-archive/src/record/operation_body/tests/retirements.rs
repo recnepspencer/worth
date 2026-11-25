@@ -1,13 +1,16 @@
 //! Carriage preserves consequence meaning; a prior version cannot consume its new tail.
 use super::*;
 use std::num::NonZeroUsize;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::ApplicationOperationBodyOwnedSelectionRetirement as Rule;
 
 #[test]
 fn owned_selection_retirement_v31_roundtrips_and_cannot_be_fully_read_as_v30() {
-    let binding = WorthQueryPortableTypeIdentity::from_untrusted("worth.rust.string".into());
+    let binding =
+        WorthQueryPortableTypeIdentity::from_untrusted(ARCHIVE_DECODE, "worth.rust.string".into());
     let trigger = ApplicationFieldBindingLocus::new("Item", "Facts", "Company");
     let body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
         "Item".into(),
         vec![ApplicationOperationBodyScopeField::AssignInput {
             field: trigger.clone(),

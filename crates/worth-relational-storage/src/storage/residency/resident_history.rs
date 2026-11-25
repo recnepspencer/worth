@@ -173,6 +173,7 @@ impl ResidentHistoryReadmission {
                             crate::storage::substrate::SealedAllocationWatermarks::capture(),
                         commitment: Some(commitment),
                         _history_custody: None,
+                        working_set: OnceLock::new(),
                         _memory: memory.into_memory(),
                     }))
                 },

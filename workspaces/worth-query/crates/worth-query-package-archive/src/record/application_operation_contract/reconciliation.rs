@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_installation::facade::WorthQueryPortableInstalledReconciliationProcedureRecord;
 
 use crate::binary_encoding::BinaryEncodingSink;
@@ -23,6 +24,7 @@ pub(super) fn decode(
     }
     Ok(Some(
         WorthQueryPortableInstalledReconciliationProcedureRecord::from_untrusted_procedure_slot(
+            ARCHIVE_DECODE,
             input.text()?.to_owned(),
         ),
     ))

@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 pub(crate) use worth_query_testkit_certification_application_graph::facade::certification::application_graph::restored_replay::cross_process::*;
 
 #[test]

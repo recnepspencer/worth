@@ -358,6 +358,7 @@ mod application_home;
 pub mod facade;
 mod ordinary_contract;
 mod program_transition;
+mod refusal_summary;
 mod workflow_owner_contract;
 
 mod discovered_currentness_contract;

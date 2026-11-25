@@ -82,6 +82,12 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
                 created,
                 scope,
             ),
+            Direction::SelfEdge => self.candidate.link_at_target(
+                &link.program_target(),
+                link.key.as_str(),
+                created,
+                created,
+            ),
         }
     }
     pub(crate) fn body_output<Entity>(

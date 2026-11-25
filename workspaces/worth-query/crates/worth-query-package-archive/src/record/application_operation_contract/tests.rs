@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 mod component_scope;
 mod derived_scope;
 mod fixture;
@@ -66,7 +67,10 @@ fn absent_optional_contracts_round_trip_without_synthetic_defaults() {
     let mut parts = fixture::complete_parts();
     parts.external_effect = None;
     parts.reconciliation = None;
-    let record = WorthQueryPortableApplicationOperationContractRecord::from_untrusted_parts(parts);
+    let record = WorthQueryPortableApplicationOperationContractRecord::from_untrusted_parts(
+        ARCHIVE_DECODE,
+        parts,
+    );
     let bytes = encode_untrusted(&record, WorthQueryPackageArchiveLimits::DEFAULT);
     let decoded =
         WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT)
@@ -111,6 +115,7 @@ fn noncanonical_operation_contract_sequences_fail_without_normalization() {
     assert_decode_kind(
         &encode_untrusted(
             &WorthQueryPortableApplicationOperationContractRecord::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 graph_parts,
             ),
             WorthQueryPackageArchiveLimits::DEFAULT,
@@ -123,6 +128,7 @@ fn noncanonical_operation_contract_sequences_fail_without_normalization() {
     assert_decode_kind(
         &encode_untrusted(
             &WorthQueryPortableApplicationOperationContractRecord::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 touch_parts,
             ),
             WorthQueryPackageArchiveLimits::DEFAULT,
@@ -135,6 +141,7 @@ fn noncanonical_operation_contract_sequences_fail_without_normalization() {
     assert_decode_kind(
         &encode_untrusted(
             &WorthQueryPortableApplicationOperationContractRecord::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 emission_parts,
             ),
             WorthQueryPackageArchiveLimits::DEFAULT,
@@ -211,7 +218,7 @@ fn truncation_and_trailing_payload_fail_without_committing_work() {
     assert_decode_kind(&trailing, Kind::Truncated);
     trailing.pop();
     let mut body = BinaryOutput::with_capacity(64);
-    crate::record::operation_body::write(&mut body, &worth_query_declaration::facade::application_schema::ApplicationOperationBodyProgram::from_untrusted_scope_fields(vec![])).unwrap();
+    crate::record::operation_body::write(&mut body, &worth_query_declaration::facade::application_schema::ApplicationOperationBodyProgram::from_untrusted_scope_fields(ARCHIVE_DECODE, vec![])).unwrap();
     trailing.extend(body.into_bytes());
     trailing.push(0);
     let payload_length = u32::try_from(trailing.len() - 12).unwrap();
@@ -249,7 +256,10 @@ fn assert_untrusted_parts_decode_kind(
     parts: worth_query_installation::facade::WorthQueryPortableApplicationOperationContractParts,
     expected: Kind,
 ) {
-    let record = WorthQueryPortableApplicationOperationContractRecord::from_untrusted_parts(parts);
+    let record = WorthQueryPortableApplicationOperationContractRecord::from_untrusted_parts(
+        ARCHIVE_DECODE,
+        parts,
+    );
     let bytes = encode_untrusted(&record, WorthQueryPackageArchiveLimits::DEFAULT);
     assert_decode_kind(&bytes, expected);
 }

@@ -329,17 +329,17 @@ checkpoint cut remain separate integration obligations; this Native phase alone
 grants no product movement.
 ## Fork an actually retained root
 
-For a memory-only runtime, pass an original `AdmittedRelationalBranchBasis` to
+Pass an original `AdmittedRelationalBranchBasis` to
 `runtime.fork_port().admit_retained_fork_source(&basis)`. Consume the returned
 move-only source with `fork_retained_branch(execution, target, source)` to create
 an independent writable branch sharing that exact immutable root. The source
 branch must remain live; its head may have advanced. The ordinary `fork_branch`
 receiver continues to require its freshly observed source to remain current.
 
-Handle `RetainedSourceDurabilityUnsupported` when a medium is attached. This
-profile records `RelationalBranchTransition::RetainedFork`; replaying its raw
-tail returns `UnsupportedRetainedForkReplay`. A checkpoint taken after creation
-captures the actual live destination root and can restore that destination.
+With a medium attached the fork is durable: it records
+`RelationalBranchTransition::RetainedFork` naming the exact historical head, and
+recovery rebuilds that root (from the replayed tail, or from the checkpoint image
+a retained component recorded) and replays the same fork. No base chunk is copied.
 Retain application authorization separately from this component fork custody.
 
 ## Select a retained entity payload on current truth

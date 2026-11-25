@@ -1,4 +1,5 @@
 use crate::application_operation::ApplicationMutationBinding;
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 use crate::{
     application_capability::ApplicationCapabilityContextEntitySlotBinding,
     application_capability::ApplicationCapabilityMarkerIdentity,
@@ -206,12 +207,12 @@ impl ApplicationWorkflowSubjectSelector {
                     return None;
                 }
                 Some(Self::Context(
-                    ApplicationCapabilityContextEntitySlotBinding::from_untrusted_parts(
+                    ApplicationCapabilityContextEntitySlotBinding::from_untrusted_parts(ARCHIVE_DECODE,
                         crate::application_capability::WorthQueryPortableApplicationCapabilityContextEntitySlotBindingParts {
                             context: fields.remove(0),
-                            context_identity: WorthQueryPortableTypeIdentity::from_untrusted(fields.remove(0)),
+                            context_identity: WorthQueryPortableTypeIdentity::from_untrusted(ARCHIVE_DECODE, fields.remove(0)),
                             slot: fields.remove(0),
-                            slot_identity: WorthQueryPortableTypeIdentity::from_untrusted(fields.remove(0)),
+                            slot_identity: WorthQueryPortableTypeIdentity::from_untrusted(ARCHIVE_DECODE, fields.remove(0)),
                             entity: fields.remove(0),
                         },
                     ),

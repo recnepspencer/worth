@@ -1,5 +1,6 @@
 //! Bounded descriptive records crossing the repository boundary.
 
+use worth_query_declaration::archive_decode_authority::ArchiveDecodeAuthority;
 use worth_query_installation::facade::WorthQueryPortableDomainPackageIdentity;
 
 use crate::denial::WorthQueryPackageArchiveDenial;
@@ -37,6 +38,7 @@ impl WorthQuerySignedPackageArchiveRecord {
     }
 
     pub fn from_untrusted_envelope_bytes(
+        _: ArchiveDecodeAuthority,
         envelope_bytes: Vec<u8>,
         limits: WorthQueryPackageEnvelopeLimits,
     ) -> Result<Self, WorthQueryPackageArchiveDenial> {
@@ -74,6 +76,7 @@ pub struct WorthQueryUntrustedLoadedPackageArchive {
 
 impl WorthQueryUntrustedLoadedPackageArchive {
     pub fn from_untrusted_bytes(
+        _: ArchiveDecodeAuthority,
         request: WorthQueryExactPackageArchiveRequest,
         envelope_bytes: Vec<u8>,
     ) -> Result<Self, WorthQueryPackageArchiveRepositoryDenial> {

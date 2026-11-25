@@ -1,8 +1,10 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 pub(crate) use worth_query_testkit_installation::facade::installation::installation_contracts::untrusted_record_construction::*;
 
 #[test]
 fn downstream_code_constructs_untrusted_typed_records_without_package_authority() {
     let schema = WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationSchemaParts {
             owner: "external.decoder".to_owned(),
             name: "decoded".to_owned(),
@@ -18,8 +20,9 @@ fn downstream_code_constructs_untrusted_typed_records_without_package_authority(
     family_counts[0] = 1;
     family_counts[7] = 1;
     let manifest = WorthQueryPortablePackageManifest::from_untrusted_fields(
+        ARCHIVE_DECODE,
         WORTH_QUERY_PORTABLE_PACKAGE_MANIFEST_VERSION,
-        WorthQueryPortableDomainPackageIdentity::from_untrusted_bytes([0x41; 32]),
+        WorthQueryPortableDomainPackageIdentity::from_untrusted_bytes(ARCHIVE_DECODE, [0x41; 32]),
         2,
         0,
         64,
@@ -50,25 +53,33 @@ fn downstream_code_constructs_untrusted_typed_records_without_package_authority(
 
 #[test]
 fn downstream_decoder_constructs_owned_untrusted_application_query_meaning() {
-    let query_type =
-        WorthQueryPortableTypeIdentity::from_untrusted("worth.tests.query.v1".to_owned());
-    let result_type =
-        WorthQueryPortableTypeIdentity::from_untrusted("worth.tests.query-result.v1".to_owned());
+    let query_type = WorthQueryPortableTypeIdentity::from_untrusted(
+        ARCHIVE_DECODE,
+        "worth.tests.query.v1".to_owned(),
+    );
+    let result_type = WorthQueryPortableTypeIdentity::from_untrusted(
+        ARCHIVE_DECODE,
+        "worth.tests.query-result.v1".to_owned(),
+    );
     let definition = ErasedApplicationQueryDefinition::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationQueryParts {
             name: ["decoded", "query"].join("_"),
             query_type: query_type.clone(),
             parameter_type: WorthQueryPortableTypeIdentity::from_untrusted(
+                ARCHIVE_DECODE,
                 "worth.tests.query-parameters.v1".to_owned(),
             ),
             result_type: result_type.clone(),
             scope_type: WorthQueryPortableTypeIdentity::from_untrusted(
+                ARCHIVE_DECODE,
                 "worth.tests.query-scope.v1".to_owned(),
             ),
             root_entity: "DecodedEntity".to_owned(),
             scope_entity: "DecodedEntity".to_owned(),
             parameters: Vec::new(),
             result_shape: ApplicationQueryResultShape::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 WorthQueryPortableApplicationQueryResultShapeParts {
                     query_type,
                     root_entity: "DecodedEntity".to_owned(),
@@ -102,9 +113,12 @@ fn downstream_decoder_constructs_owned_untrusted_application_query_meaning() {
 
 #[test]
 fn downstream_code_constructs_untrusted_cross_reference_and_derived_records() {
-    let input_type =
-        WorthQueryPortableTypeIdentity::from_untrusted("worth.tests.input.v1".to_owned());
+    let input_type = WorthQueryPortableTypeIdentity::from_untrusted(
+        ARCHIVE_DECODE,
+        "worth.tests.input.v1".to_owned(),
+    );
     let binding = WorthQueryPortableApplicationConditionalOperationBinding::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationConditionalOperationBindingParts {
             schema_owner: "external.decoder".to_owned(),
             schema_name: "decoded".to_owned(),
@@ -115,6 +129,7 @@ fn downstream_code_constructs_untrusted_cross_reference_and_derived_records() {
         },
     );
     let operation = WorthQueryPortableApplicationOperationContractRecord::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationOperationContractParts {
             schema: "decoded".to_owned(),
             operation: "apply".to_owned(),
@@ -134,6 +149,7 @@ fn downstream_code_constructs_untrusted_cross_reference_and_derived_records() {
     );
     assert_eq!(operation.operation(), "apply");
     let family = WorthQueryArtifactFamilyIdentity::from_untrusted_string(
+        ARCHIVE_DECODE,
         "worth.tests.decoded-artifact".to_owned(),
     );
     assert_eq!(family.as_str(), "worth.tests.decoded-artifact");
@@ -160,7 +176,11 @@ fn downstream_decoder_retains_owned_replay_comparator_identity() {
 fn downstream_decoder_retains_owned_descriptive_artifact_reference() {
     let decoded_family = format!("worth.tests.artifact.{}", 1);
     let reference = WorthQueryArtifactContractReference::from_untrusted_fields(
-        WorthQueryArtifactFamilyIdentity::from_untrusted_string(decoded_family.clone()),
+        ARCHIVE_DECODE,
+        WorthQueryArtifactFamilyIdentity::from_untrusted_string(
+            ARCHIVE_DECODE,
+            decoded_family.clone(),
+        ),
         WorthQueryArtifactSchemaVersion::new(2),
         WorthQueryArtifactProtocolVersion::new(3),
     );
@@ -175,8 +195,8 @@ fn downstream_decoder_retains_owned_descriptive_artifact_reference() {
 fn downstream_decoder_retains_owned_descriptive_query_digests() {
     let query_source = format!("decoded-query-{}", 7);
     let shape_source = format!("decoded-shape-{}", 9);
-    let query = CanonicalQueryDigest::from_untrusted(query_source.clone());
-    let shape = CanonicalResultShapeDigest::from_untrusted(shape_source.clone());
+    let query = CanonicalQueryDigest::from_untrusted(ARCHIVE_DECODE, query_source.clone());
+    let shape = CanonicalResultShapeDigest::from_untrusted(ARCHIVE_DECODE, shape_source.clone());
     drop((query_source, shape_source));
 
     assert_eq!(query.as_str(), "decoded-query-7");
@@ -187,15 +207,17 @@ fn downstream_decoder_retains_owned_descriptive_query_digests() {
 fn downstream_decoder_reconstructs_every_conditional_condition_variant_from_owned_parts() {
     let dependency = semantic_dependency();
     let family = portable_family("worth.tests.condition.v1");
-    let threshold =
-        WorthQueryDeltaThreshold::from_untrusted_parts(WorthQueryPortableDeltaThresholdParts {
+    let threshold = WorthQueryDeltaThreshold::from_untrusted_parts(
+        ARCHIVE_DECODE,
+        WorthQueryPortableDeltaThresholdParts {
             value: AspectValue::UInt64(7),
             unit: portable_family("worth.tests.unit.count"),
             value_family: WorthQueryQuantityValueFamily::Integer,
             comparison_domain: WorthQueryDeltaComparisonDomain::AbsoluteDifference,
             boundary: WorthQueryThresholdBoundary::Inclusive,
-        })
-        .unwrap();
+        },
+    )
+    .unwrap();
     let parameter_z =
         worth_query_installation::facade::WorthQueryPortableConditionParameter::text("z", "last")
             .unwrap();
@@ -223,8 +245,10 @@ fn downstream_decoder_reconstructs_every_conditional_condition_variant_from_owne
     ];
 
     for parts in variants {
-        let condition =
-            WorthQueryConditionalEvaluationCondition::from_untrusted_parts(parts.clone());
+        let condition = WorthQueryConditionalEvaluationCondition::from_untrusted_parts(
+            ARCHIVE_DECODE,
+            parts.clone(),
+        );
         assert_eq!(condition.into_parts(), parts);
     }
 }
@@ -250,6 +274,7 @@ fn untrusted_conditional_declaration_preserves_noncanonical_sequences_for_fresh_
             WorthQueryConditionalNodeContext::WorkflowRun,
         ],
         condition: WorthQueryConditionalEvaluationCondition::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableConditionalConditionParts::DomainSpecific {
                 family: family.clone(),
                 parameters: vec![parameter_z, parameter_a],
@@ -267,8 +292,10 @@ fn untrusted_conditional_declaration_preserves_noncanonical_sequences_for_fresh_
         output_relationship: WorthQueryOutputRelationship::IntermediateOnly,
     };
 
-    let declaration =
-        WorthQueryPortableConditionalNodeDeclaration::from_untrusted_parts(parts.clone());
+    let declaration = WorthQueryPortableConditionalNodeDeclaration::from_untrusted_parts(
+        ARCHIVE_DECODE,
+        parts.clone(),
+    );
 
     assert_eq!(declaration.into_parts(), parts);
 }
@@ -276,27 +303,36 @@ fn untrusted_conditional_declaration_preserves_noncanonical_sequences_for_fresh_
 #[test]
 fn portable_identity_and_threshold_reconstruction_fail_closed_on_invalid_local_shape() {
     assert_eq!(
-        WorthQueryTypedFamilyIdentity::from_untrusted_portable_identity("not-portable".to_owned()),
+        WorthQueryTypedFamilyIdentity::from_untrusted_portable_identity(
+            ARCHIVE_DECODE,
+            "not-portable".to_owned()
+        ),
         Err(WorthQueryPortableFamilyIdentityDenial::InvalidPortableIdentity)
     );
     assert_eq!(
-        WorthQueryDeltaThreshold::from_untrusted_parts(WorthQueryPortableDeltaThresholdParts {
-            value: AspectValue::UInt64(7),
-            unit: portable_family("worth.tests.unit.count"),
-            value_family: WorthQueryQuantityValueFamily::Float64,
-            comparison_domain: WorthQueryDeltaComparisonDomain::RelativeRatio,
-            boundary: WorthQueryThresholdBoundary::Exclusive,
-        }),
+        WorthQueryDeltaThreshold::from_untrusted_parts(
+            ARCHIVE_DECODE,
+            WorthQueryPortableDeltaThresholdParts {
+                value: AspectValue::UInt64(7),
+                unit: portable_family("worth.tests.unit.count"),
+                value_family: WorthQueryQuantityValueFamily::Float64,
+                comparison_domain: WorthQueryDeltaComparisonDomain::RelativeRatio,
+                boundary: WorthQueryThresholdBoundary::Exclusive,
+            }
+        ),
         Err(WorthQueryPortableDeltaThresholdDenial::ValueFamilyMismatch)
     );
     assert_eq!(
-        WorthQueryDeltaThreshold::from_untrusted_parts(WorthQueryPortableDeltaThresholdParts {
-            value: AspectValue::Int64(-1),
-            unit: portable_family("worth.tests.unit.count"),
-            value_family: WorthQueryQuantityValueFamily::Integer,
-            comparison_domain: WorthQueryDeltaComparisonDomain::AbsoluteDifference,
-            boundary: WorthQueryThresholdBoundary::Inclusive,
-        }),
+        WorthQueryDeltaThreshold::from_untrusted_parts(
+            ARCHIVE_DECODE,
+            WorthQueryPortableDeltaThresholdParts {
+                value: AspectValue::Int64(-1),
+                unit: portable_family("worth.tests.unit.count"),
+                value_family: WorthQueryQuantityValueFamily::Integer,
+                comparison_domain: WorthQueryDeltaComparisonDomain::AbsoluteDifference,
+                boundary: WorthQueryThresholdBoundary::Inclusive,
+            }
+        ),
         Err(WorthQueryPortableDeltaThresholdDenial::InvalidNumericValue)
     );
 }

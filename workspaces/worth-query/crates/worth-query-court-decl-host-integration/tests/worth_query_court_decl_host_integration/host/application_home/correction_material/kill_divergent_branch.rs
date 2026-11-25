@@ -153,7 +153,7 @@ fn replay_coords(
         panic!("branch key {key} must replay RecoveredCommitted");
     };
     let durable = replayed.new_product_head().durable().unwrap();
-    let coords = WorthQueryCorrectionSourceCoordinates::from_untrusted_parts(
+    let coords = WorthQueryCorrectionSourceCoordinates::new(
         worth_foundational::facade::WorldOwnerCoordinate::Home {
             owner: durable.branch().owner(),
         },

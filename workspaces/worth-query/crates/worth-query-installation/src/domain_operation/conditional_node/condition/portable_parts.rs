@@ -1,6 +1,7 @@
 //! Owned reconstruction parts for authority-free conditional conditions.
 
 use worth_foundational::facade::AspectValue;
+use worth_query_declaration::archive_decode_authority::ArchiveDecodeAuthority;
 
 use super::{
     numeric_family, validate_nonnegative_finite_numeric, ConditionalEvaluationConditionKind,
@@ -31,6 +32,7 @@ pub enum WorthQueryPortableDeltaThresholdDenial {
 impl WorthQueryDeltaThreshold {
     /// Reconstructs an authority-free threshold without a compile-time unit type.
     pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
         parts: WorthQueryPortableDeltaThresholdParts,
     ) -> Result<Self, WorthQueryPortableDeltaThresholdDenial> {
         validate_nonnegative_finite_numeric(&parts.value)
@@ -80,7 +82,10 @@ impl WorthQueryConditionalEvaluationCondition {
     ///
     /// Sequence order and duplicates are deliberately preserved for the fresh
     /// package-readmission boundary to judge.
-    pub fn from_untrusted_parts(parts: WorthQueryPortableConditionalConditionParts) -> Self {
+    pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
+        parts: WorthQueryPortableConditionalConditionParts,
+    ) -> Self {
         let kind = match parts {
             WorthQueryPortableConditionalConditionParts::AlwaysEligible => {
                 ConditionalEvaluationConditionKind::AlwaysEligible

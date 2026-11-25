@@ -18,10 +18,6 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         mut batches: Vec<WorkerIntentBatch>,
         mut naming: Option<&mut crate::lineage::data::CommitNamingPlan>,
     ) -> Result<AppliedSuffix, RelationalCoupledAssemblyFailure> {
-        let redeleted = match &writer {
-            SuffixWriter::Successor { redeleted, .. } => Some(*redeleted),
-            _ => None,
-        };
         let (creator, source, custody, local_keys) = suffix_scope::scope(
             execution,
             writer,
@@ -68,16 +64,9 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             .transaction
             .push_normalized_coupled_batches(execution, &runtime, batches)?;
         // Preserve master's original relation correspondence before prefix-created
-        // endpoints are lowered, for either producer or authored-stage suffixes.
-        // A successor's relation creates are proved re-creates the head already
-        // applied; lowering drops them, so they have no original to complete.
-        let (intents, recorded, originals) = suffix_scope::normalize(
-            execution,
-            intents,
-            redeleted,
-            &self.mutation.outcome.created_entities,
-            self.prepared.schema_authority.aspect_plans(),
-        )?;
+        // endpoints are lowered, for every writer's suffix.
+        let (intents, originals) =
+            suffix_scope::normalize(execution, intents, &self.mutation.outcome.created_entities)?;
         let read = self.pin_source(execution)?;
         let root = read.resident_basis().root();
         let plan = self.transaction.build_merged_plan_for_state(
@@ -167,14 +156,15 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         )?;
         self.fresh_records
             .retain(execution, creator, source, &outcome)?;
-        let (records, created, delta_state) = suffix_scope::adopt(
+        let has_entity_deletions = outcome.effect.publication.has_entity_deletions;
+        let (records, creates, delta_state) = suffix_scope::adopt(
             execution,
             &mut self.mutation.outcome,
             &mut self.mutation.state,
             outcome,
             state,
+            &self.mutation.identities,
         )?;
-        self.mutation.content = content.clone();
         self.mutation.aggregate = crate::aggregate_identity::AggregateProposal::capture(
             &self.prepared.schema_authority,
             &self.prepared.selected_branch_state,
@@ -190,12 +180,13 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         );
         Ok(AppliedSuffix {
             read,
-            plan: recorded.unwrap_or(plan),
+            plan,
             records,
             delta_state,
             content,
             local_keys,
-            created,
+            creates,
+            has_entity_deletions,
         })
     }
 

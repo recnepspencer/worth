@@ -37,7 +37,6 @@ mod ordinary_roles;
 mod part;
 mod part_corruption;
 mod prepared_route;
-mod record_allocations;
 mod stage;
 pub use producer_posture::RelationalCoupledProducerPosture;
 mod scoped_preparation;
@@ -85,9 +84,14 @@ pub struct RelationalAuthoredCoupledCandidate<'a> {
     fresh_records: net_plan::CreatorCustody,
     authored_writes: authored_writes::AuthoredWrites,
     read: std::cell::RefCell<Option<RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>>>,
-    /// Successor rounds folded into earlier parts; each is still one applied
-    /// part in the pin, local-key and continuation sequence.
+    /// Successor rounds applied to earlier parts' chains; each is still one
+    /// applied part in the pin, local-key and continuation sequence.
     successor_rounds: usize,
+    /// Every live member's writes and references (#119 guards).
+    indexes: succession::indexes::MemberIndexes,
+    /// The authored prefix's entries in the accumulators, and its content.
+    prefix_span: succession::segment::MemberSpan,
+    prefix_content: crate::content::RelationalContentAttachments,
 }
 
 impl RelationalAuthoredCoupledCandidate<'_> {

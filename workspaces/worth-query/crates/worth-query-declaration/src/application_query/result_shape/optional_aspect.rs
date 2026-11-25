@@ -1,5 +1,6 @@
 //! One explicit parent-optional result slot; the schema child stays Required.
 use super::*;
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 impl<Schema, Query, Entity, Row, Binding>
     ApplicationQueryResultShapeBuilder<Schema, Query, Entity, Row, Binding>
 where
@@ -26,6 +27,7 @@ where
         self.field_expectations.push(field.binding_recipe());
         self.fields
             .push(ApplicationQueryResultField::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 WorthQueryPortableApplicationQueryResultFieldParts {
                     query_type: field.slot_key().query_identity(),
                     slot_type: field.slot_key().slot_identity(),

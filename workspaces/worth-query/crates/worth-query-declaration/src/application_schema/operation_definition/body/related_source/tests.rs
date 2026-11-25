@@ -3,6 +3,7 @@ use super::*;
 use crate::application_schema::{
     ApplicationOperationBodyCreation as Creation, ApplicationOperationBodySigningSpec as Signing,
 };
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 use worth_foundational::facade::ScalarAspectType;
 #[test]
 fn related_capture_is_not_a_signed_subject_footprint_and_presence_changes_meaning() {
@@ -23,11 +24,13 @@ fn related_capture_is_not_a_signed_subject_footprint_and_presence_changes_meanin
         different_selection.canonical_record()
     );
     let creation = Creation::from_untrusted(
+        ARCHIVE_DECODE,
         "Child".into(),
         "child".into(),
         vec![Step::RelatedField {
             field: source.field.clone(),
             binding: crate::portable_identity::WorthQueryPortableTypeIdentity::from_untrusted(
+                ARCHIVE_DECODE,
                 "worth.rust.string".into(),
             ),
             scalar_family: ScalarAspectType::String,
@@ -39,6 +42,7 @@ fn related_capture_is_not_a_signed_subject_footprint_and_presence_changes_meanin
         Ok(())
     );
     let signed = creation.with_untrusted_signing(Some(Signing::from_untrusted(
+        ARCHIVE_DECODE,
         "approval".into(),
         ApplicationFieldBindingLocus::new("Child", "Facts", "Actor"),
         ApplicationFieldBindingLocus::new("Child", "Facts", "Provenance"),

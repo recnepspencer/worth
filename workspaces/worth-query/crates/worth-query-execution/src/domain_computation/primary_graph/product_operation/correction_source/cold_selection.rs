@@ -6,11 +6,21 @@ use crate::domain_computation::application_aftermath::{
     WorthQueryCorrectionSourceCoordinates, WorthQueryRecordedCorrectionSource,
 };
 use crate::domain_computation::primary_graph::retained_correction::RetainedCorrectionMaterial;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_runtime_world::facade::WorldProgramActivationHistory;
+
+/// An original already resolved by a walk of this target's exact history.
+///
+/// Only the in-crate history listing constructs it, from the very page whose
+/// coordinates it accompanies, so selection need not walk the history again.
+pub(super) struct WalkedOriginal {
+    pub(super) identity: worth_runtime_world::facade::CompositeCommitIdentity,
+    pub(super) parent_links_bound: NonZeroUsize,
+}
 
 impl<'runtime, S: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime, S> {
     pub(super) fn select_home_correction_source(
@@ -22,6 +32,7 @@ impl<'runtime, S: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime
         known: Option<&worth_runtime_world::facade::CompositeCommitIdentity>,
         maximum: Option<NonZeroUsize>,
         maximum_results: NonZeroUsize,
+        walked: Option<WalkedOriginal>,
     ) -> Result<WorthQuerySelectedCorrectionSource<'runtime, S>, WorthQueryCorrectionSelectionDenial>
     {
         use WorthQueryCorrectionSelectionDenial as D;
@@ -61,15 +72,19 @@ impl<'runtime, S: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime
         {
             return Err(D::SourcePublicationMismatch);
         }
-        let observed = match known {
-            Some(known) => known.clone(),
-            None => exact_original::resolve(
-                execution,
-                &owner.observation_port(),
-                self.product().observation(),
-                coordinates,
+        let (observed, ancestor_bound) = match (walked, known) {
+            (Some(walked), _) => (walked.identity, Some(walked.parent_links_bound)),
+            (None, Some(known)) => (known.clone(), maximum),
+            (None, None) => (
+                exact_original::resolve(
+                    execution,
+                    &owner.observation_port(),
+                    self.product().observation(),
+                    coordinates,
+                    maximum,
+                )?,
                 maximum,
-            )?,
+            ),
         };
         let ancestry = owner
             .observation_port()
@@ -77,7 +92,7 @@ impl<'runtime, S: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime
                 &execution,
                 self.product().observation(),
                 &observed,
-                maximum,
+                ancestor_bound,
             )
             .map_err(D::Ancestry)?;
         if ancestry
@@ -203,6 +218,7 @@ pub(super) fn read_lineage<S: ApplicationSchema>(
         )
         .map(|identity| {
             WorthQueryRecordedCorrectionSource::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 identity,
                 coordinate.relational().clone(),
                 coordinate.member(),

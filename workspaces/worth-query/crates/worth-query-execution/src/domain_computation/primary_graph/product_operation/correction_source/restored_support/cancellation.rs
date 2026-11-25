@@ -29,12 +29,33 @@ pub(super) fn require<Schema: ApplicationSchema>(
     let provider = &target.application().inner.runtime.primary_provider_ref();
     let mut witnesses = Witnesses::default();
     let mut covered = ExecutionOrderedMap::<CommitId, ()>::default();
+    // A durable Home restores each witness from its own retained custody, warm
+    // or reopened; a memory Home's session store is its complete evidence.
+    let owner = target
+        .application()
+        .inner
+        .runtime
+        .product_runtime_ref()
+        .owner_ref();
+    let originals = originals(owner.owner_identity().durable().is_some(), occurrences, || {
+        owner
+            .inspection_port()
+            .observe_program_activation_history(&execution)
+    })
+    .map_err(|cause| Denial::RestoredSupport(Stop::OriginalHistory(cause)))?;
     super::admit_work(execution, occurrences.len() as u64).map_err(Denial::RestoredSupport)?;
     for (commit, occurrence) in occurrences {
-        let witness = provider
-            .capture_correction_witness(execution, occurrence.receipt())
-            .map_err(witness_denial)?
-            .ok_or(Denial::RestoredSupport(Stop::CanonicalEvidenceUnavailable))?;
+        let witness = match &originals {
+            None => provider.capture_correction_witness(execution, occurrence.receipt()),
+            Some(originals) => provider.restore_correction_witness(
+                execution,
+                originals,
+                owner.owner_identity(),
+                occurrence.receipt(),
+            ),
+        }
+        .map_err(witness_denial)?
+        .ok_or(Denial::RestoredSupport(Stop::CanonicalEvidenceUnavailable))?;
         super::ordered_visit(execution, witnesses.len()).map_err(Denial::RestoredSupport)?;
         witnesses
             .insert_cloned_native_for_request(commit, &witness, execution)
@@ -77,6 +98,19 @@ pub(super) fn require<Schema: ApplicationSchema>(
         return Err(Denial::SourceDiverged);
     }
     Ok(())
+}
+
+/// A durable Home's original history, read only when there is a witness to
+/// restore: an empty selection reads no World history.
+fn originals<History, Cause>(
+    durable: bool,
+    occurrences: &Occurrences,
+    observe: impl FnOnce() -> Result<History, Cause>,
+) -> Result<Option<History>, Cause> {
+    if !durable || occurrences.is_empty() {
+        return Ok(None);
+    }
+    observe().map(Some)
 }
 
 fn require_pair<Schema: ApplicationSchema>(
@@ -176,6 +210,17 @@ fn witness_denial(cause: CorrectionWitnessDenial) -> Denial {
         CorrectionWitnessDenial::Execution(cause) => {
             Denial::RestoredSupport(Stop::Execution(cause))
         }
+        CorrectionWitnessDenial::OriginalSource(cause) => {
+            Denial::RestoredSupport(Stop::OriginalSource(cause))
+        }
+        CorrectionWitnessDenial::OriginalHistory(cause) => {
+            Denial::RestoredSupport(Stop::OriginalHistory(
+                worth_runtime_world::facade::RuntimeWorldServiceDenial::Denied(cause),
+            ))
+        }
+        CorrectionWitnessDenial::InconsistentCausality => {
+            Denial::RestoredSupport(Stop::CanonicalAssociationMismatch)
+        }
     }
 }
 
@@ -188,3 +233,7 @@ fn receipt_work(receipt: &RelationalCommitReceipt) -> Result<u64, Denial> {
             worth_execution::MapKernelStop::WorkCounterOverflow,
         )))
 }
+
+#[cfg(test)]
+#[path = "cancellation/tests.rs"]
+mod tests;

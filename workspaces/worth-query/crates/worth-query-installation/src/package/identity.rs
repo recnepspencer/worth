@@ -1,6 +1,7 @@
 use worth_foundational::facade::{
     CanonicalDigestDerivationDenial, CanonicalDigestId, CanonicalDigestWorkBudget,
 };
+use worth_query_declaration::archive_decode_authority::ArchiveDecodeAuthority;
 
 use super::WorthQueryPortableDomainPackage;
 use crate::canonical_digest_derivation::InstallationCanonicalIdentityBasis;
@@ -47,7 +48,7 @@ impl WorthQueryPortableDomainPackageIdentity {
     ///
     /// This value carries no validation or installation authority. Phase 3
     /// compares it with identity freshly derived from reconstructed meaning.
-    pub const fn from_untrusted_bytes(bytes: [u8; 32]) -> Self {
+    pub const fn from_untrusted_bytes(_: ArchiveDecodeAuthority, bytes: [u8; 32]) -> Self {
         Self(CanonicalDigestId::new(bytes))
     }
 

@@ -1,19 +1,23 @@
 //! Exact reuse carriage is not ordinary retiring replacement; no decoded value is authority.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 #[test]
 fn complete_content_reuse_v35_roundtrips_without_changing_old_replacement_bytes() {
     let creation = ApplicationOperationBodyCreation::from_untrusted(
+        ARCHIVE_DECODE,
         "Snapshot".into(),
         "snapshot".into(),
         vec![],
     );
     let ordinary = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
         "Row".into(),
         vec![],
         Some(creation.clone()),
         vec![],
     );
     let body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+        ARCHIVE_DECODE,
         "Row".into(),
         vec![],
         Some(creation.with_untrusted_reuse_current_if_unchanged(true)),

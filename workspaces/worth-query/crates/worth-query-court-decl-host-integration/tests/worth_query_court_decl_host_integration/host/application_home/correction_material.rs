@@ -1,5 +1,6 @@
 //! Public directory originals and corrections use the shared installed handler.
 mod correction_custody;
+mod durable_witness;
 mod expiry;
 mod handler_ergonomics;
 mod kill_divergent_branch;

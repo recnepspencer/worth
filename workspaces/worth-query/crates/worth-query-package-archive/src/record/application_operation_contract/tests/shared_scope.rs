@@ -1,5 +1,6 @@
 //! Shared references preserve the complete schema/content pair and strict wire order.
 use super::*;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_installation::facade::{
     WorthQueryPortableApplicationOperationContractRecord as Record,
     WorthQueryPortableOperationGraphReadScope as Scope,
@@ -14,7 +15,7 @@ fn shared_graph_scope_pairs_roundtrip_and_refuse_duplicate_or_descending_wire() 
     let ordered = [scope("A", "a"), scope("A", "b"), scope("B", "a")];
     let mut parts = fixture::complete_parts();
     parts.graph_reads.extend(ordered.clone());
-    let record = Record::from_untrusted_parts(parts);
+    let record = Record::from_untrusted_parts(ARCHIVE_DECODE, parts);
     let bytes = encode_untrusted(&record, WorthQueryPackageArchiveLimits::DEFAULT);
     let mut decoder =
         WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT);
@@ -30,7 +31,7 @@ fn shared_graph_scope_pairs_roundtrip_and_refuse_duplicate_or_descending_wire() 
         let mut bad = fixture::complete_parts();
         bad.graph_reads.extend(pair);
         let bytes = encode_untrusted(
-            &Record::from_untrusted_parts(bad),
+            &Record::from_untrusted_parts(ARCHIVE_DECODE, bad),
             WorthQueryPackageArchiveLimits::DEFAULT,
         );
         assert_eq!(

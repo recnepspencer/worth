@@ -1,4 +1,5 @@
 use super::fragment;
+use crate::archive_decode_authority::{ArchiveDecodeAuthority, ARCHIVE_DECODE};
 use std::marker::PhantomData;
 
 use worth_foundational::facade::AspectValue;
@@ -37,6 +38,7 @@ impl ApplicationMutationPreconditionTarget {
     /// validation. The enclosing application-schema readmission boundary owns
     /// those decisions.
     pub fn from_untrusted_fields(
+        _: ArchiveDecodeAuthority,
         family: ApplicationMutationPreconditionFamily,
         entity: String,
         aspect: String,
@@ -57,6 +59,7 @@ impl ApplicationMutationPreconditionTarget {
         field: &str,
     ) -> Self {
         Self::from_untrusted_fields(
+            ARCHIVE_DECODE,
             family,
             entity.to_owned(),
             aspect.to_owned(),

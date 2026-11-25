@@ -1,6 +1,7 @@
 //! Pure declaration and closure evidence; installed authorization has its own consumer court.
 use super::super::*;
 use super::scope::ApplicationDecisionReadScopeMeaning as Meaning;
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 
 fn entity(name: &str) -> ApplicationOperationDecisionReadTarget {
     ApplicationOperationDecisionReadTarget::Entity {
@@ -8,7 +9,7 @@ fn entity(name: &str) -> ApplicationOperationDecisionReadTarget {
     }
 }
 fn scope(targets: Vec<ApplicationOperationDecisionReadTarget>) -> Meaning {
-    Meaning::from_untrusted_parts(targets, Vec::new()).unwrap()
+    Meaning::from_untrusted_parts(ARCHIVE_DECODE, targets, Vec::new()).unwrap()
 }
 fn operation() -> ApplicationSchemaMember {
     ApplicationSchemaMember::Operation {
@@ -102,7 +103,9 @@ fn renaming_a_scope_marker_preserves_its_schema_identity_and_contents() {
 
 #[test]
 fn mixed_scope_and_inline_grants_have_exact_union_contents() {
-    let definition = Meaning::from_untrusted_parts(vec![entity("A")], vec!["Owns".into()]).unwrap();
+    let definition =
+        Meaning::from_untrusted_parts(ARCHIVE_DECODE, vec![entity("A")], vec!["Owns".into()])
+            .unwrap();
     let members = vec![
         reference(&definition),
         ApplicationSchemaMember::DecisionReadScope { definition },
@@ -209,6 +212,7 @@ fn a_shared_field_still_satisfies_only_its_exact_precondition_read() {
         ApplicationSchemaMember::OperationMutationPrecondition {
             operation: "Read".into(),
             target: ApplicationMutationPreconditionTarget::from_untrusted_fields(
+                ARCHIVE_DECODE,
                 ApplicationMutationPreconditionFamily::ExpectedVersion,
                 "A".into(),
                 "Facts".into(),

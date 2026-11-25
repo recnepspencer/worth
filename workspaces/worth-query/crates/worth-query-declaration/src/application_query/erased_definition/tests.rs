@@ -14,6 +14,7 @@ use crate::application_schema::{
     validate_portable_application_schema_freshly, ApplicationEntityRef, ApplicationSchemaMember,
     WorthQueryPortableApplicationSchemaParts, WorthQueryPortableApplicationSchemaRecord,
 };
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 use worth_foundational::facade::{
     AspectMask, AspectValue, CanonicalFieldPath, FieldKey, ScalarAspectType,
@@ -42,7 +43,8 @@ fn typed_definition_round_trips_through_owned_untrusted_parts() {
     let canonical = original.canonical_basis().clone();
     let parts = original.clone().into_parts();
 
-    let reconstructed = ErasedApplicationQueryDefinition::from_untrusted_parts(parts.clone());
+    let reconstructed =
+        ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, parts.clone());
 
     assert_eq!(reconstructed, original);
     assert_eq!(reconstructed.parts(), &parts);
@@ -57,6 +59,7 @@ fn reconstructed_definition_owns_runtime_text_without_static_promotion() {
     parts.root_entity = dynamic_entity.clone();
     parts.scope_entity = dynamic_entity.clone();
     parts.result_shape = ApplicationQueryResultShape::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationQueryResultShapeParts {
             query_type: parts.query_type.clone(),
             root_entity: dynamic_entity.clone(),
@@ -66,7 +69,8 @@ fn reconstructed_definition_owns_runtime_text_without_static_promotion() {
         },
     );
 
-    let reconstructed = ErasedApplicationQueryDefinition::from_untrusted_parts(parts);
+    let reconstructed =
+        ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, parts);
 
     assert_eq!(reconstructed.name(), "ownedentity_query");
     assert_eq!(reconstructed.root_entity(), dynamic_entity);
@@ -80,7 +84,8 @@ fn reconstructed_definition_owns_runtime_text_without_static_promotion() {
 fn noncanonical_untrusted_sequences_are_preserved_and_fail_fresh_schema_readmission() {
     let mut parts = dynamically_owned_parts();
     parts.parameters = vec![parameter("zeta"), parameter("alpha")];
-    let reconstructed = ErasedApplicationQueryDefinition::from_untrusted_parts(parts);
+    let reconstructed =
+        ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, parts);
     assert_eq!(reconstructed.parameters()[0].name(), "zeta");
     assert_eq!(reconstructed.parameters()[1].name(), "alpha");
     assert_eq!(
@@ -98,6 +103,7 @@ fn noncanonical_untrusted_sequences_are_preserved_and_fail_fresh_schema_readmiss
     ];
     members.sort();
     let record = WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationSchemaParts {
             owner: "WORTH.tests".to_owned(),
             name: "portable-query-readmission".to_owned(),
@@ -118,6 +124,7 @@ fn noncanonical_untrusted_sequences_are_preserved_and_fail_fresh_schema_readmiss
 fn incomplete_disclosure_capability_is_total_to_construct_but_fails_fresh_validation() {
     let mut parts = dynamically_owned_parts();
     parts.disclosure = ApplicationQueryDisclosureContract::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationQueryDisclosureParts {
             posture: ApplicationQueryDisclosurePosture::Governed,
             classification: "restricted".to_owned(),
@@ -127,7 +134,8 @@ fn incomplete_disclosure_capability_is_total_to_construct_but_fails_fresh_valida
         },
     );
 
-    let reconstructed = ErasedApplicationQueryDefinition::from_untrusted_parts(parts);
+    let reconstructed =
+        ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, parts);
 
     assert_eq!(
         validate_portable_application_query_freshly(reconstructed.parts()),
@@ -147,12 +155,14 @@ fn disclosure_field_masks_must_match_the_typed_selector_contract() {
         diagnostic_mask: AspectMask::new([CanonicalFieldPath::single(field)]),
     };
     parts.disclosure = ApplicationQueryDisclosureContract::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationQueryDisclosureParts {
             posture: ApplicationQueryDisclosurePosture::Public,
             classification: "public".to_owned(),
             capability_name: None,
             capability_type: None,
             rules: vec![ApplicationQueryDisclosureRule::from_untrusted_fields(
+                ARCHIVE_DECODE,
                 selector,
                 AspectValue::Bool(true),
                 ApplicationQueryInfluenceContract::forbid_all(),
@@ -160,7 +170,8 @@ fn disclosure_field_masks_must_match_the_typed_selector_contract() {
         },
     );
 
-    let reconstructed = ErasedApplicationQueryDefinition::from_untrusted_parts(parts);
+    let reconstructed =
+        ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, parts);
 
     assert_eq!(
         validate_portable_application_query_freshly(reconstructed.parts()),
@@ -198,6 +209,7 @@ fn dynamically_owned_parts() -> WorthQueryPortableApplicationQueryParts {
     parts.root_entity = "OwnedEntity".to_owned();
     parts.scope_entity = "OwnedEntity".to_owned();
     parts.result_shape = ApplicationQueryResultShape::from_untrusted_parts(
+        ARCHIVE_DECODE,
         WorthQueryPortableApplicationQueryResultShapeParts {
             query_type: parts.query_type.clone(),
             root_entity: "OwnedEntity".to_owned(),
@@ -211,9 +223,13 @@ fn dynamically_owned_parts() -> WorthQueryPortableApplicationQueryParts {
 
 fn parameter(name: &str) -> ApplicationQueryParameterDefinition {
     ApplicationQueryParameterDefinition::from_untrusted_fields(
+        ARCHIVE_DECODE,
         name.to_owned(),
         ScalarAspectType::String,
-        WorthQueryPortableTypeIdentity::from_untrusted("worth.rust.string".to_owned()),
+        WorthQueryPortableTypeIdentity::from_untrusted(
+            ARCHIVE_DECODE,
+            "worth.rust.string".to_owned(),
+        ),
         None,
         None,
     )
@@ -224,34 +240,39 @@ fn query_parameter_dimensions_change_canonical_meaning_and_reject_malformed_iden
     let source = typed_definition();
     let mut parts = source.clone().into_parts();
     parts.parameters = vec![ApplicationQueryParameterDefinition::from_untrusted_fields(
+        ARCHIVE_DECODE,
         "distance".to_owned(),
         ScalarAspectType::UInt64,
         WorthQueryPortableTypeIdentity::declared("worth.tests.distance.v1"),
         Some("worth.units.metre.v1".to_owned()),
         Some("worth.frames.model.v1".to_owned()),
     )];
-    let framed = ErasedApplicationQueryDefinition::from_untrusted_parts(parts.clone());
+    let framed =
+        ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, parts.clone());
     assert_eq!(
         validate_portable_application_query_freshly(framed.parts()),
         Ok(())
     );
     parts.parameters = vec![ApplicationQueryParameterDefinition::from_untrusted_fields(
+        ARCHIVE_DECODE,
         "distance".to_owned(),
         ScalarAspectType::UInt64,
         WorthQueryPortableTypeIdentity::declared("worth.tests.distance.v1"),
         Some("worth.units.millimetre.v1".to_owned()),
         Some("worth.frames.model.v1".to_owned()),
     )];
-    let changed = ErasedApplicationQueryDefinition::from_untrusted_parts(parts.clone());
+    let changed =
+        ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, parts.clone());
     assert_ne!(framed.canonical_basis(), changed.canonical_basis());
     parts.parameters = vec![ApplicationQueryParameterDefinition::from_untrusted_fields(
+        ARCHIVE_DECODE,
         "distance".to_owned(),
         ScalarAspectType::UInt64,
         WorthQueryPortableTypeIdentity::declared("worth.tests.distance.v1"),
         Some(" ".to_owned()),
         None,
     )];
-    let invalid = ErasedApplicationQueryDefinition::from_untrusted_parts(parts);
+    let invalid = ErasedApplicationQueryDefinition::from_untrusted_parts(ARCHIVE_DECODE, parts);
     assert_eq!(
         validate_portable_application_query_freshly(invalid.parts()),
         Err(ApplicationQueryDefinitionDenial::InvalidPortableIdentity)

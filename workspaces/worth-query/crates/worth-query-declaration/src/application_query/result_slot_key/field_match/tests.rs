@@ -1,6 +1,7 @@
 //! Pure canonical equality, independent of projected rows or runtime authority.
 use super::*;
 use crate::application_query::ApplicationQueryResultFieldPresence as Presence;
+use crate::archive_decode_authority::ARCHIVE_DECODE;
 
 fn contract(
     names: [&str; 5],
@@ -12,7 +13,7 @@ fn contract(
         aspect: names[1],
         field: names[2],
         output_name: names[3],
-        value_type: WorthQueryPortableTypeIdentity::from_untrusted(names[4].into()),
+        value_type: WorthQueryPortableTypeIdentity::from_untrusted(ARCHIVE_DECODE, names[4].into()),
         scalar_family: family,
         presence,
     }

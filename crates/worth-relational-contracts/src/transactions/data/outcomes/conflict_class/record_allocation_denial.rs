@@ -58,6 +58,27 @@ pub enum RecordAllocationDenial {
         slot: usize,
         detail: String,
     },
+    /// A commit's live and cancelled append slots are not one contiguous block.
+    ReplayEvidenceBlockBroken {
+        class: RecordAllocationClass,
+        partition_id: PartitionId,
+        expected_slot: usize,
+        observed_slot: usize,
+    },
+    ReplayCancelledSlotInvalid {
+        class: RecordAllocationClass,
+        partition_id: PartitionId,
+        slot: usize,
+        expected_generation: u32,
+        observed_generation: u32,
+    },
+    LiveAllocationUnknown {
+        record: RecordRef,
+    },
+    LiveAllocationOrderDiverged {
+        planned: usize,
+        live: usize,
+    },
 }
 
 impl RecordAllocationDenial {
@@ -129,6 +150,13 @@ impl RecordAllocationDenial {
             } => format!(
                 "{class:?} allocation for partition {partition_id:?} slot {slot} was denied: {detail}"
             ),
+            // Coupled evidence (#119): the variant's own fields are the detail.
+            Self::ReplayEvidenceBlockBroken { .. }
+            | Self::ReplayCancelledSlotInvalid { .. }
+            | Self::LiveAllocationUnknown { .. }
+            | Self::LiveAllocationOrderDiverged { .. } => {
+                format!("coupled record allocation evidence refused: {self:?}")
+            }
         }
     }
 }

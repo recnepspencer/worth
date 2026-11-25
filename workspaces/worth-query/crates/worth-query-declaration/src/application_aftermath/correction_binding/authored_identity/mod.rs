@@ -1,4 +1,5 @@
 //! Family-declared logical identity for authored lifecycle inverses.
+use crate::archive_decode_authority::ArchiveDecodeAuthority;
 mod authoring;
 mod key;
 mod owned_members;
@@ -39,7 +40,10 @@ pub struct DeclaredAuthoredCorrectionParts {
 }
 
 impl DeclaredAuthoredCorrection {
-    pub fn from_untrusted_parts(parts: DeclaredAuthoredCorrectionParts) -> Self {
+    pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
+        parts: DeclaredAuthoredCorrectionParts,
+    ) -> Self {
         Self {
             parts,
             co_anchors: Vec::new(),

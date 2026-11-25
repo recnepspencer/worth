@@ -1,13 +1,13 @@
-use std::collections::BTreeMap;
 use std::sync::Arc;
 
+mod block;
+
 use crate::history::data::canonical_record_allocation::{
-    CanonicalRecordAllocation, RecordAllocationClass, RecordAllocationOrigin,
+    RecordAllocationClass, RecordAllocationOrigin,
 };
 use crate::identity::data::PartitionId;
 use crate::transactions::data::outcomes::conflict_class::record_allocation_denial::RecordAllocationDenial;
 
-use super::record_ref::{record_partition, record_slot};
 use super::reservation::{RecordSlotReservation, ReservationOrigin};
 #[cfg(test)]
 use super::RecordSlotKey;
@@ -20,7 +20,8 @@ impl RecordIdentitySubsystem {
     /// RAII returns reclaimed slots while append-frontier gaps stay burned.
     pub fn release_unowned_reservations(&self) {
         let reservations = {
-            let state = self.lock();
+            let mut state = self.lock();
+            state.replay_gaps.clear();
             state
                 .pending
                 .iter()
@@ -43,74 +44,9 @@ impl RecordIdentitySubsystem {
         drop(reservations);
     }
 
-    pub fn stage_replay_allocations_with_leading_gaps(
-        &self,
-        allocations: Vec<CanonicalRecordAllocation>,
-    ) -> Result<(), &'static str> {
-        let mut state = self.lock();
-        if state.staged_replay_allocations.is_some() {
-            return Err("record allocation replay evidence is already staged");
-        }
-        let mut first_append_slots = BTreeMap::new();
-        let mut seen_append_slots = std::collections::BTreeSet::new();
-        let mut staged_append_slots = std::collections::BTreeSet::new();
-        for allocation in &allocations {
-            if allocation.origin() != RecordAllocationOrigin::AppendFrontier {
-                continue;
-            }
-            let class = allocation.class();
-            let partition_id = record_partition(allocation.record());
-            let slot = record_slot(allocation.record());
-            let generation = super::record_ref::record_generation(allocation.record());
-            let slot_key = (class, partition_id, slot);
-            if !seen_append_slots.insert(slot_key) {
-                return Err("duplicate durable append allocation in one commit");
-            }
-            if state.pending.get(&slot_key).copied()
-                == Some(PendingRecordReservation {
-                    generation,
-                    origin: RecordAllocationOrigin::AppendFrontier,
-                })
-            {
-                continue;
-            }
-            let frontier = state
-                .next_slots
-                .get(&(class, partition_id))
-                .copied()
-                .unwrap_or(0);
-            if slot < frontier {
-                return Err("durable append allocation is below the current frontier");
-            }
-            if state
-                .generation_high_water
-                .get(&slot_key)
-                .copied()
-                .unwrap_or(0)
-                != 0
-            {
-                return Err("durable append allocation targets a previously allocated slot");
-            }
-            staged_append_slots.insert(slot_key);
-            first_append_slots
-                .entry((class, partition_id))
-                .and_modify(|first: &mut usize| *first = (*first).min(slot))
-                .or_insert(slot);
-        }
-        for (key, first_slot) in first_append_slots {
-            let frontier = state.next_slots.entry(key).or_default();
-            if *frontier < first_slot {
-                *frontier = first_slot;
-            }
-        }
-        state.staged_replay_append_slots = staged_append_slots;
-        state.staged_replay_allocations = Some(allocations);
-        Ok(())
-    }
-
     pub fn clear_staged_replay_allocations(&self) -> bool {
         let mut state = self.lock();
-        state.staged_replay_append_slots.clear();
+        state.replay_slots.clear();
         state.staged_replay_allocations.take().is_some()
     }
 
@@ -237,7 +173,6 @@ impl RecordIdentitySubsystem {
         Ok(())
     }
 
-    #[allow(clippy::too_many_arguments)]
     pub(super) fn reserve_exact(
         &self,
         ordinal: u64,
@@ -246,7 +181,6 @@ impl RecordIdentitySubsystem {
         slot: usize,
         generation: u32,
         origin: RecordAllocationOrigin,
-        allow_out_of_order_append: bool,
     ) -> Result<RecordSlotReservation, RecordAllocationDenial> {
         let mut state = self.lock();
         let key = (class, partition_id, slot);
@@ -305,12 +239,21 @@ impl RecordIdentitySubsystem {
                 ReservationOrigin::Reclaimed
             }
             RecordAllocationOrigin::AppendFrontier => {
-                let expected_slot = state
-                    .next_slots
-                    .get(&(class, partition_id))
-                    .copied()
-                    .unwrap_or(0);
-                if slot != expected_slot && !allow_out_of_order_append {
+                // Staging admitted this commit's append slots against the
+                // frontier and the replay gaps (H0, #389); each live slot is
+                // one of them, consumed once, in any order.
+                let key = (class, partition_id);
+                if !state
+                    .replay_slots
+                    .get_mut(&key)
+                    .is_some_and(|slots| slots.remove(&slot))
+                {
+                    let expected_slot = state
+                        .replay_slots
+                        .get(&key)
+                        .and_then(|slots| slots.first().copied())
+                        .or_else(|| state.next_slots.get(&key).copied())
+                        .unwrap_or(0);
                     return Err(RecordAllocationDenial::ReplayAppendFrontierMismatch {
                         ordinal,
                         class,
@@ -319,15 +262,6 @@ impl RecordIdentitySubsystem {
                         observed_slot: slot,
                     });
                 }
-                let next =
-                    slot.checked_add(1)
-                        .ok_or(RecordAllocationDenial::SlotFrontierExhausted {
-                            class,
-                            partition_id,
-                        })?;
-                state
-                    .next_slots
-                    .insert((class, partition_id), expected_slot.max(next));
                 ReservationOrigin::AppendFrontier
             }
         };

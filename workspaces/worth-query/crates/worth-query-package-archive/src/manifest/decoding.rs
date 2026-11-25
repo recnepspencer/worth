@@ -1,3 +1,4 @@
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_installation::facade::{
     WorthQueryPortableDomainPackageIdentity, WorthQueryPortablePackageManifest,
     WorthQueryPortablePackageManifestVersion, WorthQueryPortablePackageRecordFamily,
@@ -41,7 +42,10 @@ pub fn decode_manifest_frame(
         version.get(),
         Kind::UnsupportedManifestVersion,
     )?;
-    let identity = WorthQueryPortableDomainPackageIdentity::from_untrusted_bytes(input.array()?);
+    let identity = WorthQueryPortableDomainPackageIdentity::from_untrusted_bytes(
+        ARCHIVE_DECODE,
+        input.array()?,
+    );
     let record_count = input.u32()?;
     let canonical_source_bytes = input.u64()?;
     let logical_export_bytes = input.u64()?;
@@ -56,6 +60,7 @@ pub fn decode_manifest_frame(
         return Err(Denial::new(Kind::TrailingBytes));
     }
     let manifest = WorthQueryPortablePackageManifest::from_untrusted_fields(
+        ARCHIVE_DECODE,
         version,
         identity,
         record_count,

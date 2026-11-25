@@ -24,11 +24,14 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                 self.authored_source(),
             ));
         };
+        // A successor round also reports what superseding its predecessor
+        // changed: that round's exact touches and their kind inverses (H-Q).
         touch_projection::append_touches(
             execution,
             &self.mutation.state,
             part.commands.plan(),
             &part.records,
+            &part.chain.last_superseded,
         )
     }
 
@@ -49,14 +52,14 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             &self.mutation.state,
             part.commands.plan(),
             &part.records,
+            &[],
         )
     }
 
-    /// Verify non-intervention on chain `index`'s exclusive write set and return
-    /// its head pre-pin, exclusive entities, overlay relations, and cumulative
-    /// prior write touches.
-    /// Stops with `#119 IntervenedOutput` if any later member wrote a record in
-    /// this chain's write set.
+    /// Verify non-intervention on chain `index`'s touched set and return its
+    /// own-output view: head pre-pin, touched entities, overlay relations, and
+    /// every earlier round's exact touches. Stops with `#119 IntervenedOutput`
+    /// if a later live member changed a record the chain touched.
     pub fn chain_overlay(
         &self,
         execution: &ExecutionRequest<'_, '_>,
@@ -71,8 +74,9 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         touch_projection::chain_overlay(
             execution,
             &self.mutation.state,
-            &self.mutation.outcome.effect.publication.changed_records,
             part,
+            &self.indexes,
+            super::succession::indexes::MemberId::Part(index),
             || self.pin_source(execution),
         )
     }

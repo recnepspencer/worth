@@ -62,6 +62,8 @@ pub use cell::ResidentRegion;
 pub use cell::{ReconstructedRegionHead, RelationalColdRegion, RelationalRegionResidency};
 
 pub mod retention;
+pub mod rolling_window;
+pub mod working_set;
 pub use retention::RelationalRegionRetention;
 
 pub mod checkpoint_capture;

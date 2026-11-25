@@ -1,3 +1,4 @@
+use crate::archive_decode_authority::{ArchiveDecodeAuthority, ARCHIVE_DECODE};
 use std::marker::PhantomData;
 
 use super::super::{
@@ -21,7 +22,10 @@ pub struct ErasedApplicationQueryInspectionDefinition {
 }
 
 impl ErasedApplicationQueryInspectionDefinition {
-    pub fn from_untrusted_parts(parts: WorthQueryPortableApplicationQueryInspectionParts) -> Self {
+    pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
+        parts: WorthQueryPortableApplicationQueryInspectionParts,
+    ) -> Self {
         let canonical = super::super::canonical_basis::prepare_inspection_basis(&parts);
         Self { parts, canonical }
     }
@@ -59,6 +63,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationQueryBinding<Schema>>
         metadata_disclosure: ApplicationQueryDisclosureContract,
     ) -> Result<Self, ApplicationQueryInspectionDefinitionDenial> {
         let erased = ErasedApplicationQueryInspectionDefinition::from_untrusted_parts(
+            ARCHIVE_DECODE,
             WorthQueryPortableApplicationQueryInspectionParts {
                 semantic_version: 1,
                 binding: ApplicationQueryBindingReference::of::<Schema, Binding>(),

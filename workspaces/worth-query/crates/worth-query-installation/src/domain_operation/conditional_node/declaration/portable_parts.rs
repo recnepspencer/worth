@@ -8,6 +8,7 @@ use crate::domain_operation::conditional_node::{
     WorthQueryMaintenancePosture, WorthQueryOutputEquivalenceRequirement,
     WorthQueryOutputRelationship, WorthQuerySemanticTruthDependency,
 };
+use worth_query_declaration::archive_decode_authority::ArchiveDecodeAuthority;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryPortableConditionalNodeParts {
@@ -31,7 +32,10 @@ impl WorthQueryPortableConditionalNodeDeclaration {
     ///
     /// Unlike the authoring constructor, this does not canonicalize or validate
     /// package meaning. Fresh package reconstruction remains the semantic gate.
-    pub fn from_untrusted_parts(parts: WorthQueryPortableConditionalNodeParts) -> Self {
+    pub fn from_untrusted_parts(
+        _: ArchiveDecodeAuthority,
+        parts: WorthQueryPortableConditionalNodeParts,
+    ) -> Self {
         Self {
             identity: parts.identity,
             role: parts.role,

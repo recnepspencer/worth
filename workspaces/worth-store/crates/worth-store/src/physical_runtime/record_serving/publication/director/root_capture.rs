@@ -46,6 +46,18 @@ impl RecordPublicationDirector {
         self.root_owner.capture_read_root()
     }
 
+    pub(in crate::physical_runtime) fn pin_current_root(
+        &self,
+        parent: Option<crate::pin_table::RootPinId>,
+        policy: crate::pin_table::RootPinDropPolicy,
+        payload: Vec<u8>,
+    ) -> Result<
+        (crate::pin_table::RootPinId, DurablePhysicalRootManifest),
+        crate::pin_table::RootPinDenial,
+    > {
+        self.root_owner.pin_current_root(parent, policy, payload)
+    }
+
     pub(in crate::physical_runtime) fn capture_released_drop_source(
         &self,
         attempt: &crate::physical_runtime::durability::PhysicalReclaimAttempt,

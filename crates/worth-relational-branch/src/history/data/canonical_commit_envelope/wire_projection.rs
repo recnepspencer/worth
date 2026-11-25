@@ -42,6 +42,7 @@ pub(super) fn serialize<S: serde::Serializer>(
         symbol_texts,
         revision_symbol_references,
         record_allocations,
+        cancelled_record_allocations,
         patch,
         descriptive_touches,
         diagnostics_summary,
@@ -63,7 +64,8 @@ pub(super) fn serialize<S: serde::Serializer>(
         + usize::from(!authored_index_writes.is_unavailable())
         + usize::from(producer_cascade_retirement.is_some())
         + usize::from(coupled_authored_publication.is_some())
-        + usize::from(historical_output_selection.is_some());
+        + usize::from(historical_output_selection.is_some())
+        + usize::from(!cancelled_record_allocations.is_empty());
     let mut fields = serializer.serialize_struct("CanonicalCommitEnvelope", field_count)?;
     fields.serialize_field("caller_association", caller_association)?;
     fields.serialize_field("index_definition_delta", index_definition_delta)?;
@@ -106,6 +108,9 @@ pub(super) fn serialize<S: serde::Serializer>(
     fields.serialize_field("symbol_texts", symbol_texts)?;
     fields.serialize_field("revision_symbol_references", revision_symbol_references)?;
     fields.serialize_field("record_allocations", record_allocations)?;
+    if !cancelled_record_allocations.is_empty() {
+        fields.serialize_field("cancelled_record_allocations", cancelled_record_allocations)?;
+    }
     fields.serialize_field("patch", patch)?;
     fields.serialize_field("descriptive_touches", descriptive_touches)?;
     fields.serialize_field(

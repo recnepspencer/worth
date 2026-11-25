@@ -1,6 +1,7 @@
 //! History and invariant Source declarations refer to actual query/index members.
 use super::*;
 use std::num::NonZeroU64;
+use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::{application_history::*, application_query::*};
 
 pub(super) fn extend(members: &mut Vec<ApplicationSchemaMember>) {
@@ -86,6 +87,7 @@ pub(super) fn extend(members: &mut Vec<ApplicationSchemaMember>) {
     members.extend([
         ApplicationSchemaMember::ApplicationHistory {
             definition: ErasedApplicationHistoryDefinition::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 WorthQueryPortableApplicationHistoryParts {
                     identity: "BudgetModelHistory".into(),
                     history_type: portable("worth.budget.model-history"),
@@ -105,6 +107,7 @@ pub(super) fn extend(members: &mut Vec<ApplicationSchemaMember>) {
         },
         ApplicationSchemaMember::ApplicationHistoryQuery {
             definition: ErasedApplicationHistoryQueryDefinition::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 WorthQueryPortableApplicationHistoryQueryParts {
                     name: "BudgetRecordHistory".into(),
                     history_type: portable("worth.budget.record-history"),
@@ -132,6 +135,7 @@ pub(super) fn extend(members: &mut Vec<ApplicationSchemaMember>) {
             invariant: "BudgetInvariant".into(),
             execution_point: ApplicationInvariantExecutionPoint::CommitBoundary,
             requirement: ApplicationInvariantManagedIndexSource::from_untrusted_parts(
+                ARCHIVE_DECODE,
                 index,
                 ApplicationManagedIndexColdSource::Refuse,
             ),
