@@ -34,3 +34,15 @@ impl WorthQueryPrimaryGraphProvider {
         Self::retained_application_commit_basis(self, commit)
     }
 }
+
+impl WorthQueryPrimaryGraphProvider {
+    #[doc(hidden)]
+    pub fn completed_receipts_for_test(
+        &self,
+    ) -> Vec<worth_relational::facade::history::RelationalCommitReceipt> {
+        self.completed_commit_evidence
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .completed_receipts_for_test()
+    }
+}

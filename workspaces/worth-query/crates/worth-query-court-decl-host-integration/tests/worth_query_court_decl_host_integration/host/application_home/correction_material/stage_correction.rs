@@ -18,7 +18,7 @@ use model::{
     edit::{Edit, Value},
 };
 
-type OtherAction = worth_query_decl::facade::application_program::ApplicationActionReference<
+pub(super) type OtherAction = worth_query_decl::facade::application_program::ApplicationActionReference<
     model::schema::NumericSchema,
     worth_query_decl::facade::application_program::ApplicationRootComposition,
     model::program::NumericFeature,
@@ -26,8 +26,8 @@ type OtherAction = worth_query_decl::facade::application_program::ApplicationAct
     model::program::OtherCompletion,
 >;
 
-const KEYS: [&str; 3] = ["numeric", "numeric-b", "numeric-c"];
-const SET: [u64; 3] = [10, 20, 30];
+pub(super) const KEYS: [&str; 3] = ["numeric", "numeric-b", "numeric-c"];
+pub(super) const SET: [u64; 3] = [10, 20, 30];
 
 /// Commits one ordered envelope whose stage `n` sets `KEYS[n]` to `SET[n]`; returns each stage's receipt.
 macro_rules! envelope {
@@ -94,8 +94,9 @@ macro_rules! reverse {
         reversed
     }};
 }
+pub(super) use {envelope, reverse};
 
-fn values<P: worth_query_decl::facade::application_program::ApplicationProgramDefinition<model::schema::NumericSchema>>(
+pub(super) fn values<P: worth_query_decl::facade::application_program::ApplicationProgramDefinition<model::schema::NumericSchema>>(
     runtime: &worth_query_host::facade::application_installation::WorthQueryProgramApplicationRuntime<model::schema::NumericSchema, P>,
 ) -> [u64; 3] {
     let scope = request_scope();

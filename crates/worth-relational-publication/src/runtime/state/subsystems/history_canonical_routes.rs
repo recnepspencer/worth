@@ -65,6 +65,14 @@ impl RelationalPublicationHistory {
             .performed_effect_residencies()
     }
 
+    pub fn performed_effect_residency(
+        &self,
+        id: CommitId,
+    ) -> Option<Arc<worth_relational_branch::internal_port::history::commit::envelope_residency::RelationalCommitEnvelopeResidency>>{
+        self.canonical_publication_routes
+            .performed_effect_residency(id)
+    }
+
     pub fn associated_effect_settlement(
         &self,
         entry: &worth_relational_branch::internal_port::history::commit::index_entry::RelationalCommitIndexEntry,

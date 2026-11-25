@@ -34,6 +34,30 @@ fn open(
     .expect("actual filesystem Home owner readmission")
 }
 
+/// #388: the keyed join from this Home's own associated Native effect.
+fn published_world_commit(
+    fixture: &worth_store_testkit_application_oracle::world_home::WorldHomeFixture,
+    execution: &ExecutionRequest<'_, '_>,
+    receipt: &worth_relational::facade::history::RelationalCommitReceipt,
+) -> Option<CompositeCommitIdentity> {
+    let subject = fixture
+        .home
+        .relational()
+        .runtime()
+        .durability_authority()
+        .discover_associated_effect(execution, receipt)
+        .unwrap()
+        .expect("the committed Native effect carries its original association");
+    fixture
+        .home
+        .world()
+        .inspection_port()
+        .observe_program_activation_history(execution)
+        .unwrap()
+        .resolve_published_native_commit(fixture.home.world().owner_identity(), &subject)
+        .unwrap()
+}
+
 #[test]
 fn killed_native_effect_reopens_original_world_custody_releases_and_reopens_again() {
     let directory = tempfile::tempdir().unwrap();
@@ -127,6 +151,11 @@ fn killed_native_effect_reopens_original_world_custody_releases_and_reopens_agai
     assert_eq!(claim.attempt_identity().ordinal(), number(0));
     assert_eq!(claim.reserved_commit_identity().ordinal(), number(1));
     assert_eq!(claim.native_receipt().as_ref(), Some(&receipt));
+    assert_eq!(
+        published_world_commit(&fixture, &execution, &receipt),
+        None,
+        "#388: a committed Native effect whose original stays Open has no World commit"
+    );
     let mut outcome = recovery.release_recovered_effects(&execution, claim);
     let backstop = std::time::Instant::now() + std::time::Duration::from_secs(30);
     let released = loop {
@@ -156,6 +185,11 @@ fn killed_native_effect_reopens_original_world_custody_releases_and_reopens_agai
         .unwrap()
         .rows()
         .is_empty());
+    assert_eq!(
+        published_world_commit(&fixture, &execution, &receipt),
+        None,
+        "#388: a Released original never names a World commit"
+    );
     let unchanged = fixture
         .home
         .world()

@@ -128,17 +128,12 @@ fn original_publication(
             .map(OriginalPublication::Memory)
             .map_err(world_read_denial);
     }
-    let mut exact = None;
-    for subject in authority
-        .discover_all_associated_effects(execution)
+    let exact = authority
+        .discover_associated_effect(execution, receipt)
         .map_err(native_read_denial)?
-    {
-        if subject.receipt() == receipt && exact.replace(subject).is_some() {
-            return Err(Denial::AmbiguousCorrelation);
-        }
-    }
+        .ok_or(Denial::CommitUnavailable)?;
     let native = authority
-        .readmit_associated_effect(execution, &exact.ok_or(Denial::CommitUnavailable)?)
+        .readmit_associated_effect(execution, &exact)
         .map_err(native_read_denial)?;
     observation
         .readmitted_native_publication(execution, native)
