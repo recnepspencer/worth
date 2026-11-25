@@ -17,11 +17,10 @@ pub fn run_advancement(
     discard: &mut dyn FnMut(),
 ) -> Result<(), WorthQueryAdvancementDenial> {
     let posture = match &execution.form {
-        Form::Leased { lease, policy } | Form::Serial { lease, policy } => lease
+        Form::Leased { lease, policy, .. } | Form::Serial { lease, policy, .. } => lease
             .as_ref()
             .map(|lease| lease.resolved_posture())
             .unwrap_or(policy.posture()),
-        Form::BorrowedSerial { policy, .. } => policy.posture(),
     };
     observation::begin(posture, execution.has_accounting());
     let result = run_admitted_advancement(
@@ -60,6 +59,16 @@ fn run_admitted_advancement(
     let request = execution
         .execution_request()
         .map_err(WorthQueryAdvancementDenial::Resource)?;
+    let caller_serial = match &execution.form {
+        Form::Leased { caller_serial, .. } | Form::Serial { caller_serial, .. } => *caller_serial,
+    };
+    if let Some(caller) = caller_serial
+        && let Err(stop) = caller.check_live()
+    {
+        return Err(advancement_denial(
+            worth_execution::WorkCeilingDenial::Stopped(stop),
+        ));
+    }
     if execution.declared_work == Some(0) {
         return Err(WorthQueryAdvancementDenial::Resource(
             super::Resource::WorkExhausted,
@@ -94,30 +103,52 @@ fn run_admitted_advancement(
             }
         }
     };
-    let outcome = if execution.has_accounting() {
-        let ceiling = ExecutionWorkCeiling::new(execution.declared_work);
-        if retain_returned_outcome || maintenance.is_some() {
-            request.run_completion(ceiling, execute)
-        } else {
-            request.run(ceiling, execute)
-        }
-    } else {
-        let native = if retain_returned_outcome || maintenance.is_some() {
-            request.run_native_completion(execute)
-        } else {
-            request.run_native(execute)
-        };
-        native.map(|(value, physical)| {
-            let posture = if physical.active_workers_high_watermark() > 1 {
-                worth_foundational::ExecutionPosture::Automatic
+    let run_inner = || {
+        if execution.has_accounting() {
+            let ceiling = ExecutionWorkCeiling::new(execution.declared_work);
+            if retain_returned_outcome || maintenance.is_some() {
+                request.run_completion(ceiling, execute)
             } else {
-                worth_foundational::ExecutionPosture::Serial
+                request.run(ceiling, execute)
+            }
+        } else {
+            let native = if retain_returned_outcome || maintenance.is_some() {
+                request.run_native_completion(execute)
+            } else {
+                request.run_native(execute)
             };
-            (
-                value,
-                worth_foundational::ExecutionReport::native(posture, physical),
-            )
-        })
+            native.map(|(value, physical)| {
+                let posture = if physical.active_workers_high_watermark() > 1 {
+                    worth_foundational::ExecutionPosture::Automatic
+                } else {
+                    worth_foundational::ExecutionPosture::Serial
+                };
+                (
+                    value,
+                    worth_foundational::ExecutionReport::native(posture, physical),
+                )
+            })
+        }
+    };
+    let outcome = match caller_serial {
+        Some(caller) => {
+            let outer = if caller.has_accounting() || caller.work_ceiling().is_some() {
+                caller
+                    .run_completion(ExecutionWorkCeiling::new(caller.work_ceiling()), |_| {
+                        run_inner()
+                    })
+                    .map(|(inner, _)| inner)
+            } else {
+                caller
+                    .run_native_completion(|_| run_inner())
+                    .map(|(inner, _)| inner)
+            };
+            match outer {
+                Ok(inner) => inner,
+                Err(denial) => Err(denial),
+            }
+        }
+        None => run_inner(),
     };
     // The execution owner catches unwinds to close its accounting scope.
     // Preserve the host body's original unwind and its existing posture.

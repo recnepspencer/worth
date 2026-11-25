@@ -136,14 +136,45 @@ where
         key: [u8; 32],
         intent: [u8; 32],
     ) {
-        if let Some(support) = self.runtime.installed_program_support() {
-            let _ = support.lifecycle().record_conditional_decision(
-                execution,
-                QueryConditionalDecisionRecord::Finish { key, intent },
-            );
+        let finish_confirmed = match self.runtime.installed_program_support() {
+            Some(support) if support.lifecycle().has_medium() => {
+                if self.runtime.take_refuse_next_decision_publication() {
+                    false
+                } else {
+                    support
+                        .lifecycle()
+                        .record_conditional_decision(
+                            execution,
+                            QueryConditionalDecisionRecord::Finish { key, intent },
+                        )
+                        .is_ok()
+                }
+            }
+            _ => true,
+        };
+        let bridge_root = self
+            .runtime
+            .inner
+            .runtime
+            .bridge_ref()
+            .conditional_operations();
+        let bridge = bridge_root
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut operation = self.operation.lock_operation();
+        if bridge
+            .with_view(self.truth.signal_basis(), |view| {
+                operation.settle_resolved_continuation(
+                    key,
+                    intent,
+                    finish_confirmed,
+                    Some(&view),
+                    execution,
+                );
+            })
+            .is_err()
+        {
+            operation.settle_resolved_continuation(key, intent, finish_confirmed, None, execution);
         }
-        self.operation
-            .lock_operation()
-            .settle_resolved_continuation(key, intent);
     }
 }

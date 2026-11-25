@@ -139,6 +139,26 @@ impl WorthQueryPendingGranularInvalidations {
         self.owe(released.deliveries);
     }
 
+    /// Transfers all owed and direct invalidation deliveries from a superseded
+    /// same-branch predecessor into this successor binding so no restored or
+    /// cursor-advanced delivery is ever stranded on branch reselection.
+    pub(super) fn absorb_predecessor(&mut self, predecessor: &mut Self) {
+        if let Some(direct) = predecessor.direct.take() {
+            self.owe_one(direct);
+        }
+        let released = predecessor.release();
+        if released.coverage == WorthQueryGranularInvalidationCoverage::RefreshAll {
+            self.refresh_all();
+        } else {
+            self.owe(released.deliveries);
+        }
+    }
+
+    pub(super) fn has_owed(&self) -> bool {
+        self.retained_delivery_count() > 0
+            || self.coverage == WorthQueryGranularInvalidationCoverage::RefreshAll
+    }
+
     pub(super) fn retained_delivery_count(&self) -> usize {
         usize::from(self.direct.is_some()) + self.owed.len()
     }
@@ -165,4 +185,29 @@ fn snapshot_version(delivery: &BridgeGranularInvalidationDelivery) -> Option<u64
         .snapshot_identity()
         .relational_snapshot_parts()
         .map(|parts| parts.version_id())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn absorb_predecessor_propagates_refresh_all_and_clears_predecessor() {
+        let mut predecessor = WorthQueryPendingGranularInvalidations::empty();
+        assert!(!predecessor.has_owed());
+        predecessor.refresh_all();
+        assert!(predecessor.has_owed());
+
+        let mut successor = WorthQueryPendingGranularInvalidations::empty();
+        successor.absorb_predecessor(&mut predecessor);
+        assert!(!predecessor.has_owed());
+        assert!(successor.has_owed());
+
+        let released = successor.release();
+        assert_eq!(
+            released.coverage,
+            WorthQueryGranularInvalidationCoverage::RefreshAll
+        );
+        assert!(!successor.has_owed());
+    }
 }

@@ -255,13 +255,41 @@ pub fn open_directory_home(
     auth: AuthControl,
     execution: &ExecutionRequest<'_, '_>,
 ) -> ReminderHome {
+    open_directory_home_with_limits(location, fire_log, auth, None, execution)
+}
+
+pub fn open_directory_home_with_limits(
+    location: PathBuf,
+    fire_log: ReminderFireLog,
+    auth: AuthControl,
+    custom_limits: Option<WorthQueryApplicationLimits>,
+    execution: &ExecutionRequest<'_, '_>,
+) -> ReminderHome {
+    open_directory_home_configured(
+        location,
+        fire_log,
+        auth,
+        InvokerControls::default(),
+        custom_limits,
+        execution,
+    )
+}
+
+pub fn open_directory_home_configured(
+    location: PathBuf,
+    fire_log: ReminderFireLog,
+    auth: AuthControl,
+    controls: InvokerControls,
+    custom_limits: Option<WorthQueryApplicationLimits>,
+    execution: &ExecutionRequest<'_, '_>,
+) -> ReminderHome {
     open_home_at(
         WorthQueryApplicationHomeLocation::Directory(location),
         fire_log,
         auth,
-        InvokerControls::default(),
+        controls,
         false,
-        None,
+        custom_limits,
         execution,
     )
 }

@@ -28,9 +28,6 @@ impl QueryRequestExecution<'_> {
                         .map(|(value, _physical)| value)
                 }
             }
-            Form::BorrowedSerial { request, .. } => request
-                .run_native_with_checkpoint(execute)
-                .map(|(value, _physical)| value),
         };
         outcome.map_err(advancement_denial).and_then(|value| {
             value.map_err(|cause| {

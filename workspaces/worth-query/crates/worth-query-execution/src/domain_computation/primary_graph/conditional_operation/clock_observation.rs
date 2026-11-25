@@ -326,8 +326,7 @@ where
                     &token,
                     None,
                 )
-                .ok()
-                .expect("prime_replay_plateau_for_test: prepare_with_signal");
+                .unwrap_or_else(|_| panic!("prime_replay_plateau_for_test: prepare_with_signal"));
             drop(prepared);
         }
     }
@@ -335,10 +334,10 @@ where
     #[doc(hidden)]
     pub fn reenter_retained_wakes_continuation_for_test(
         &mut self,
-        _execution: &worth_execution::ExecutionRequest<'_, '_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> WorthQueryConditionalClockObservationOutcome<Clock> {
         self.runtime
-            .with_host_advancement(|active_phase| {
+            .with_execution_request_advancement(*execution, |active_phase| {
                 let granular_invalidation_installation =
                     self.runtime.granular_invalidation_installation();
                 let granular_source_read_basis = self.truth.granular_source_read_basis();

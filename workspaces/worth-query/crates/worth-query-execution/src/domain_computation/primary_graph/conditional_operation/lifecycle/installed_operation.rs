@@ -138,7 +138,15 @@ pub trait WorthQueryInstalledConditionalOperation<Schema>: Send {
         unreachable!("continuation replay is only defined for installed temporal operations")
     }
 
-    fn settle_resolved_continuation(&mut self, _key: [u8; 32], _intent: [u8; 32]) {}
+    fn settle_resolved_continuation(
+        &mut self,
+        _key: [u8; 32],
+        _intent: [u8; 32],
+        _finish_confirmed: bool,
+        _bridge: Option<&BridgeConditionalExecutionView<'_>>,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) {
+    }
 
     fn temporal_original_key(
         &self,
@@ -230,6 +238,8 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryInstalledTempo
             crate::basis::WorthQueryProductBranchReadPosition,
             super::evaluation_binding::WorthQueryInactiveTemporalEvaluationBinding<Clock, Input>,
         >,
+    pub(in crate::domain_computation::primary_graph::conditional_operation) inactive_reclaim_pending:
+        bool,
     pub(in crate::domain_computation::primary_graph::conditional_operation) next_evaluation_binding_ordinal:
         u64,
 }

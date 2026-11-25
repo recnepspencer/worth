@@ -129,8 +129,26 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
             return Ok(());
         }
 
-        let predecessor = self.predecessor_binding_state(&selected_identity);
+        let predecessor = self.predecessor_binding_state(&selected_identity, truth.signal_basis());
         let mut selected = self.fresh_evaluation_binding(execution, bridge, runtime, truth, predecessor.as_ref())?;
+        if let Some(pred) = &predecessor
+            && pred.same_branch
+        {
+            match &pred.source {
+                super::evaluation_predecessor::PredecessorBindingSource::Active => {
+                    selected
+                        .pending_invalidations
+                        .absorb_predecessor(&mut self.pending_invalidations);
+                }
+                super::evaluation_predecessor::PredecessorBindingSource::Inactive(position) => {
+                    if let Some(binding) = self.inactive_bindings.get_mut(position) {
+                        selected
+                            .pending_invalidations
+                            .absorb_predecessor(&mut binding.pending_invalidations);
+                    }
+                }
+            }
+        }
         if let Some(active_identity) = active_identity {
             let superseded_on_same_branch = self.active_affinity.as_ref().is_some_and(|active| {
                 active.is_predecessor_of(&selected_identity)
@@ -139,7 +157,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
             });
             self.swap_evaluation_binding(&mut selected);
             let can_reclaim = superseded_on_same_branch
-                && selected.pending_invalidations.retained_delivery_count() == 0
+                && !selected.pending_invalidations.has_owed()
                 && super::predecessor_custody::wakes_disposable_metered(
                     execution,
                     &selected.retained_wakes,
@@ -257,10 +275,11 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
     fn predecessor_binding_state(
         &self,
         selected: &crate::basis::WorthQueryProductBranchReadIdentity,
+        selected_signal_basis: &worth_signal::facade::branch::AdmittedSignalBranchBasis,
     ) -> Option<WorthQueryPredecessorEvaluationState> {
         super::evaluation_predecessor::select(
             self.active_affinity.as_ref(), self.authoritative_commit_cursor,
-            &self.commit_watch, &self.inactive_bindings, selected,
+            &self.commit_watch, &self.inactive_bindings, selected, selected_signal_basis,
         )
     }
 }

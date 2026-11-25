@@ -81,6 +81,9 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) fn flush
         Decision::OperationCommitted(_, _)
         | Decision::OperationAlreadyCommitted(_, _)
         | Decision::OperationRetiredNoEffect(_) => {
+            if runtime.take_refuse_next_decision_publication() {
+                return Err(QueryObligationDenial::PublicationUnresolved);
+            }
             history.record_conditional_decision(request, Record::Finish { key, intent })?;
             wake.continuation_identity = None;
             return Ok(());
@@ -100,6 +103,9 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) fn flush
         | Decision::Failed(_) => return Ok(()),
     };
     let product = product.ok_or(QueryObligationDenial::ForeignHome)?;
+    if runtime.take_refuse_next_decision_publication() {
+        return Err(QueryObligationDenial::PublicationUnresolved);
+    }
     history.record_conditional_decision(
         request,
         Record::Retain(QueryConditionalDecision {

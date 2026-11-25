@@ -1,12 +1,10 @@
-//! A request opened under its caller's own lease.
-//!
-//! A run inside an active worker charges only that worker's lineage, so a
-//! caller who funds work with `Execution(lease)` inside an advancement opens
-//! the advancement under that lease: its worker is then a descendant of the
-//! caller's lease, and the caller's charge reaches the lease it names.
+//! A request opened under its caller's own lease or serial backing, narrowed
+//! to any tighter installed World or test placement ceilings without dropping
+//! the caller's live cancellation token or existing memory holds.
 
 use super::{Form, QueryRequestExecution, WorthQueryManagedComputationInterruption};
-use worth_execution::ExecutionResourceLease;
+use worth_execution::{CancellationToken, ExecutionResourceLease, LeaseRequest};
+use worth_runtime_world::facade::RuntimeWorldExecutionPlacement;
 
 impl<'a> QueryRequestExecution<'a> {
     /// The request's execution on a controlled child of the caller's `lease`,
@@ -14,7 +12,7 @@ impl<'a> QueryRequestExecution<'a> {
     /// the caller's own `cancellation` and `deadline`.
     pub(super) fn under_lease(
         lease: &ExecutionResourceLease<'a>,
-        cancellation: worth_execution::CancellationToken,
+        cancellation: CancellationToken,
         deadline: Option<worth_execution::MonotonicDeadline>,
     ) -> Self {
         let policy = *lease.policy();
@@ -26,106 +24,157 @@ impl<'a> QueryRequestExecution<'a> {
             form: Form::Leased {
                 lease: Ok(lease.controlled_child(cancellation, deadline)),
                 policy,
+                caller_serial: None,
             },
         }
     }
 
+    /// Narrows a caller-owned `lease` to any tighter installed placement
+    /// ceiling (workers, memory, or work) while preserving the caller's exact
+    /// lease lineage, live memory holds, deadline, and cancellation token.
+    pub(super) fn under_lease_within_placement(
+        lease: &ExecutionResourceLease<'a>,
+        placement: RuntimeWorldExecutionPlacement<'a>,
+        deadline: Option<worth_execution::MonotonicDeadline>,
+    ) -> Self {
+        let placement = super::test_placement::placed(placement);
+        let placement_policy = match placement {
+            RuntimeWorldExecutionPlacement::Serial(policy)
+            | RuntimeWorldExecutionPlacement::Leased { policy, .. } => policy,
+        };
+        let caller_policy = *lease.policy();
+        let effective_workers = caller_policy
+            .max_workers()
+            .min(placement_policy.max_workers());
+        let effective_memory = min_option(
+            caller_policy.charged_memory_bytes(),
+            placement_policy.charged_memory_bytes(),
+        );
+        let effective_work = min_option(
+            caller_policy.work_ceiling(),
+            placement_policy.work_ceiling(),
+        );
+        let narrowed = narrowed_policy_with_workers(
+            caller_policy,
+            effective_workers,
+            effective_memory,
+            effective_work,
+        );
+        let controlled = lease.controlled_child(CancellationToken::new(), deadline.clone());
+        let final_lease = if narrowed == caller_policy {
+            Ok(controlled)
+        } else {
+            controlled.child(LeaseRequest {
+                policy: narrowed,
+                deadline: deadline.clone(),
+                cancellation: CancellationToken::new(),
+            })
+        };
+        Self {
+            cancellation: CancellationToken::new(),
+            deadline,
+            declared_work: effective_work,
+            certified_seed: super::test_placement::certifying(),
+            form: Form::Leased {
+                lease: final_lease,
+                policy: narrowed,
+                caller_serial: None,
+            },
+        }
+    }
+
+    /// Preserves a lease-free `ExecutionRequest::serial` caller's backing,
+    /// memory holds, deadline, and cancellation token while enforcing any
+    /// tighter installed placement ceilings.
     pub(super) fn open_serial_request(
-        placement: worth_runtime_world::facade::RuntimeWorldExecutionPlacement<'a>,
+        placement: RuntimeWorldExecutionPlacement<'a>,
         caller: worth_execution::ExecutionRequest<'a, 'a>,
     ) -> Self {
         let placement = super::test_placement::placed(placement);
         let placement_policy = match placement {
-            worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
-            | worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased {
-                policy, ..
-            } => policy,
+            RuntimeWorldExecutionPlacement::Serial(policy)
+            | RuntimeWorldExecutionPlacement::Leased { policy, .. } => policy,
         };
         let effective_work = min_option(caller.work_ceiling(), placement_policy.work_ceiling());
         let effective_memory = min_option(
             caller.memory_limit(),
             placement_policy.charged_memory_bytes(),
         );
-        let placement_tighter =
-            effective_work != caller.work_ceiling() || effective_memory != caller.memory_limit();
+        let deadline = caller.deadline();
         match placement {
-            worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(_)
-                if !placement_tighter =>
-            {
-                Self::borrowed_serial(caller)
-            }
-            worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy) => {
-                let narrowed = narrowed_policy(policy, effective_memory, effective_work);
-                Self::open_placed(
-                    worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(narrowed),
-                    worth_execution::CancellationToken::new(),
-                    caller.deadline(),
-                )
-            }
-            worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased {
-                authority,
-                policy,
-            } => {
-                let narrowed = narrowed_policy(policy, effective_memory, effective_work);
-                Self::open_placed(
-                    worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased {
-                        authority,
-                        policy: narrowed,
+            RuntimeWorldExecutionPlacement::Serial(policy) => {
+                let narrowed_pol = narrowed_policy_with_workers(
+                    policy,
+                    std::num::NonZeroUsize::MIN,
+                    effective_memory,
+                    effective_work,
+                );
+                Self {
+                    cancellation: CancellationToken::new(),
+                    deadline: deadline.clone(),
+                    declared_work: effective_work,
+                    certified_seed: super::test_placement::certifying(),
+                    form: Form::Serial {
+                        lease: worth_execution::ExecutionAuthority::serial().request_lease(
+                            LeaseRequest {
+                                policy: narrowed_pol,
+                                deadline,
+                                cancellation: CancellationToken::new(),
+                            },
+                        ),
+                        policy: narrowed_pol,
+                        caller_serial: Some(caller),
                     },
-                    worth_execution::CancellationToken::new(),
-                    caller.deadline(),
-                )
+                }
             }
-        }
-    }
-
-    pub(super) fn borrowed_serial(request: worth_execution::ExecutionRequest<'a, 'a>) -> Self {
-        let budget = worth_foundational::ExecutionBudget::new(
-            std::num::NonZeroUsize::MIN,
-            request.memory_limit(),
-            request.work_ceiling(),
-        );
-        let policy = if request.has_accounting() {
-            worth_foundational::ExecutionRequestPolicy::new(
-                worth_foundational::ExecutionPosture::Serial,
-                worth_foundational::DeterminismContract::CanonicalBitwise,
-                budget,
-            )
-        } else {
-            worth_foundational::ExecutionRequestPolicy::for_workers(
-                worth_foundational::ExecutionPosture::Serial,
-                worth_foundational::DeterminismContract::CanonicalBitwise,
-                std::num::NonZeroUsize::MIN,
-            )
-        };
-        Self {
-            cancellation: worth_execution::CancellationToken::new(),
-            deadline: request.deadline(),
-            declared_work: request.work_ceiling(),
-            certified_seed: super::test_placement::certifying(),
-            form: Form::BorrowedSerial { request, policy },
+            RuntimeWorldExecutionPlacement::Leased { authority, policy } => {
+                let narrowed = narrowed_policy(policy, effective_memory, effective_work);
+                Self {
+                    cancellation: CancellationToken::new(),
+                    deadline: deadline.clone(),
+                    declared_work: effective_work,
+                    certified_seed: super::test_placement::certifying(),
+                    form: Form::Leased {
+                        lease: authority.request_lease(LeaseRequest {
+                            policy: narrowed,
+                            deadline,
+                            cancellation: CancellationToken::new(),
+                        }),
+                        policy: narrowed,
+                        caller_serial: Some(caller),
+                    },
+                }
+            }
         }
     }
 
     /// The request's cancellation or elapsed deadline, if either happened,
-    /// including a cancellation anywhere in its lease's lineage.
+    /// including a cancellation anywhere in its lease or serial caller lineage.
     pub fn interruption(&self) -> Option<WorthQueryManagedComputationInterruption> {
-        if let Form::BorrowedSerial { request, .. } = &self.form {
-            return match request.check_live() {
-                Ok(()) => None,
+        let (lease, serial_caller) = match &self.form {
+            Form::Leased {
+                lease,
+                caller_serial,
+                ..
+            }
+            | Form::Serial {
+                lease,
+                caller_serial,
+                ..
+            } => (lease.as_ref().ok(), *caller_serial),
+        };
+        if let Some(caller) = serial_caller {
+            match caller.check_live() {
+                Ok(()) => {}
                 Err(worth_execution::MapKernelStop::Cancelled) => {
-                    Some(WorthQueryManagedComputationInterruption::Cancelled)
+                    return Some(WorthQueryManagedComputationInterruption::Cancelled);
                 }
                 Err(worth_execution::MapKernelStop::DeadlineElapsed) => {
-                    Some(WorthQueryManagedComputationInterruption::DeadlineExceeded)
+                    return Some(WorthQueryManagedComputationInterruption::DeadlineExceeded);
                 }
-                Err(_) => None,
-            };
+                Err(_) => {}
+            }
         }
-        let lease = match &self.form {
-            Form::Leased { lease, .. } | Form::Serial { lease, .. } => lease.as_ref().ok(),
-            Form::BorrowedSerial { .. } => unreachable!(),
-        };
         if self.cancellation.is_cancelled()
             || lease.is_some_and(ExecutionResourceLease::is_cancelled)
         {
@@ -156,13 +205,26 @@ fn narrowed_policy(
     memory: Option<u64>,
     work: Option<u64>,
 ) -> worth_foundational::ExecutionRequestPolicy {
+    narrowed_policy_with_workers(policy, policy.max_workers(), memory, work)
+}
+
+fn narrowed_policy_with_workers(
+    policy: worth_foundational::ExecutionRequestPolicy,
+    workers: std::num::NonZeroUsize,
+    memory: Option<u64>,
+    work: Option<u64>,
+) -> worth_foundational::ExecutionRequestPolicy {
     if policy.accounting().is_some() || memory.is_some() || work.is_some() {
         worth_foundational::ExecutionRequestPolicy::new(
             policy.posture(),
             policy.determinism(),
-            worth_foundational::ExecutionBudget::new(policy.max_workers(), memory, work),
+            worth_foundational::ExecutionBudget::new(workers, memory, work),
         )
     } else {
-        policy
+        worth_foundational::ExecutionRequestPolicy::for_workers(
+            policy.posture(),
+            policy.determinism(),
+            workers,
+        )
     }
 }

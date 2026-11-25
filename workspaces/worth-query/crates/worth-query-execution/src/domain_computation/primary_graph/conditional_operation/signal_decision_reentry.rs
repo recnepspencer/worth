@@ -6,9 +6,6 @@ use worth_runtime_bridge::facade::{
 
 use super::predicate_admission::QueryConditionalComputeContext;
 
-pub(in crate::domain_computation::primary_graph) use worth_query_execution_query::facade::domain_computation::primary_graph::conditional_operation::signal_decision_reentry::selected_projections;
-pub(in crate::domain_computation::primary_graph) use selected_projections::WorthQuerySelectedSignalProjections;
-
 pub use worth_query_execution_query::facade::domain_computation::primary_graph::conditional_operation::WorthQueryConditionalTruthBasis;
 
 mod retained_decision;
@@ -31,6 +28,11 @@ pub(super) struct WorthQueryRetainedConditionalWake {
     pub(super) last_signal_decision: Option<super::WorthQueryConditionalSignalDecision>,
     pub(super) application_attempted: bool,
     pub(super) continuation_identity: Option<WorthQueryConditionalContinuationIdentity>,
+    /// Explicit settlement state recorded by `retry_original_key`:
+    /// `None` = unresolved, `Some(false)` = resolved in World but durable
+    /// `Finish` was refused and must retry, `Some(true)` = durable `Finish`
+    /// confirmed.
+    pub(super) original_retry_finish_confirmed: Option<bool>,
     pub(super) application_admission_canonical_work:
         worth_query_installation::facade::WorthQueryCanonicalWorkEvidence,
 }
@@ -196,6 +198,7 @@ pub(super) fn evaluate_due_wake(
         last_signal_decision,
         application_attempted: false,
         continuation_identity: None,
+        original_retry_finish_confirmed: None,
         application_admission_canonical_work:
             worth_query_installation::facade::WorthQueryCanonicalWorkEvidence::zero(),
     }

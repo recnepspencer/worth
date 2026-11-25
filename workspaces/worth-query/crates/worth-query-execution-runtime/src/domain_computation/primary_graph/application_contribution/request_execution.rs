@@ -64,17 +64,16 @@ enum Form<'a> {
     Leased {
         lease: Result<ExecutionResourceLease<'a>, LeaseDenial>,
         policy: ExecutionRequestPolicy,
+        /// Original lease-free serial caller backing when a leased placement
+        /// ran for a serial caller, preserving its cancellation and memory holds.
+        caller_serial: Option<worth_execution::ExecutionRequest<'a, 'a>>,
     },
     Serial {
         lease: Result<ExecutionResourceLease<'a>, LeaseDenial>,
         policy: ExecutionRequestPolicy,
-    },
-    /// Original lease-free `ExecutionRequest::serial` borrowed directly from
-    /// the caller so its work ceiling, memory budget, deadline, and
-    /// cancellation govern selection, observation, and commit end-to-end.
-    BorrowedSerial {
-        request: worth_execution::ExecutionRequest<'a, 'a>,
-        policy: ExecutionRequestPolicy,
+        /// Original lease-free serial caller backing when serial placement ran
+        /// for a serial caller, preserving its cancellation and memory holds.
+        caller_serial: Option<worth_execution::ExecutionRequest<'a, 'a>>,
     },
 }
 
@@ -89,9 +88,6 @@ impl<'a> QueryRequestExecution<'a> {
                 .as_ref()
                 .map(worth_execution::ExecutionAllocationPolicy::Execution)
                 .map_err(|e| lease_denial(*e)),
-            Form::BorrowedSerial { .. } => {
-                Ok(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
-            }
         }
     }
     /// The request's execution under `placement`. The request's cancellation
@@ -134,6 +130,7 @@ impl<'a> QueryRequestExecution<'a> {
                     cancellation: cancellation.clone(),
                 }),
                 policy,
+                caller_serial: None,
             },
         };
         Self {
@@ -153,34 +150,44 @@ impl<'a> QueryRequestExecution<'a> {
 
     /// Holds `bytes` on the request's memory until the reservation drops.
     pub fn reserve(&self, bytes: u64) -> Result<QueryMemoryReservation, Resource> {
-        match &self.form {
-            Form::Leased { lease, .. } | Form::Serial { lease, .. } => {
-                let lease = lease.as_ref().map_err(|denial| lease_denial(*denial))?;
-                lease
-                    .reserve_memory(bytes)
-                    .map(|held| QueryMemoryReservation {
-                        held: Some(held),
-                        bytes,
-                    })
-                    .map_err(memory_denial)
+        let (lease, caller_serial) = match &self.form {
+            Form::Leased {
+                lease,
+                caller_serial,
+                ..
             }
-            Form::BorrowedSerial { request, .. } => request
-                .reserve_retained_memory(bytes)
-                .map(|held| QueryMemoryReservation {
-                    bytes: if held.is_some() { bytes } else { 0 },
-                    held,
-                })
-                .map_err(|denial| match advancement_denial(denial) {
-                    WorthQueryAdvancementDenial::Resource(resource) => resource,
-                    _ => Resource::NoActiveExecutionScope,
-                }),
-        }
+            | Form::Serial {
+                lease,
+                caller_serial,
+                ..
+            } => (lease, *caller_serial),
+        };
+        let lease = lease.as_ref().map_err(|denial| lease_denial(*denial))?;
+        let secondary_held = match caller_serial {
+            Some(caller) => {
+                caller
+                    .reserve_retained_memory(bytes)
+                    .map_err(|denial| match advancement_denial(denial) {
+                        WorthQueryAdvancementDenial::Resource(resource) => resource,
+                        _ => Resource::NoActiveExecutionScope,
+                    })?
+            }
+            None => None,
+        };
+        lease
+            .reserve_memory(bytes)
+            .map(|held| QueryMemoryReservation {
+                held: Some(held),
+                secondary_held,
+                bytes,
+            })
+            .map_err(memory_denial)
     }
 
     /// Every run, including serial placement, descends from the request's lease.
     pub fn dispatch(&self) -> Result<QueryDispatch<'_>, Resource> {
         let form = match &self.form {
-            Form::Leased { lease, policy } | Form::Serial { lease, policy } => {
+            Form::Leased { lease, policy, .. } | Form::Serial { lease, policy, .. } => {
                 let lease = lease.as_ref().map_err(|denial| lease_denial(*denial))?;
                 DispatchForm::Leased(
                     lease
@@ -192,7 +199,6 @@ impl<'a> QueryRequestExecution<'a> {
                         .map_err(lease_denial)?,
                 )
             }
-            Form::BorrowedSerial { .. } => return Err(Resource::NoActiveExecutionScope),
         };
         Ok(QueryDispatch {
             form,
@@ -204,6 +210,7 @@ impl<'a> QueryRequestExecution<'a> {
 /// Bytes held against the request's lease lineage until the reservation drops.
 pub struct QueryMemoryReservation {
     held: Option<ExecutionMemoryReservation>,
+    secondary_held: Option<ExecutionMemoryReservation>,
     bytes: u64,
 }
 
@@ -214,8 +221,17 @@ impl QueryMemoryReservation {
 
     /// Holds `bytes` in place of what was held; a refusal keeps what was.
     pub fn resize(&mut self, bytes: u64) -> Result<(), Resource> {
-        if let Some(held) = &mut self.held {
-            held.resize(bytes).map_err(memory_denial)?;
+        let prev = self.bytes;
+        if let Some(secondary) = &mut self.secondary_held {
+            secondary.resize(bytes).map_err(memory_denial)?;
+        }
+        if let Some(held) = &mut self.held
+            && let Err(err) = held.resize(bytes)
+        {
+            if let Some(secondary) = &mut self.secondary_held {
+                let _ = secondary.resize(prev);
+            }
+            return Err(memory_denial(err));
         }
         self.bytes = bytes;
         Ok(())

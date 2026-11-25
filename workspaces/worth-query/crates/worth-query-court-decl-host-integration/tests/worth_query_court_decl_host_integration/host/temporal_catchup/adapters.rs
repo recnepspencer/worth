@@ -210,7 +210,7 @@ impl InvokerControls {
             .clone()
     }
 
-    fn trigger_post_apply_auth_expire(&self) {
+    fn trigger_post_apply(&self) {
         let auth = self
             .state
             .lock()
@@ -368,7 +368,7 @@ impl
             due: input.due,
             fired_count_after: next_count,
         });
-        self.controls.trigger_post_apply_auth_expire();
+        self.controls.trigger_post_apply();
         Ok(())
     }
 }

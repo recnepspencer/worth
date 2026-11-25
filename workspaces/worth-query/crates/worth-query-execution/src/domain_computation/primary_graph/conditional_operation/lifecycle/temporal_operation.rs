@@ -357,8 +357,15 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         }
     }
 
-    fn settle_resolved_continuation(&mut self, key: [u8; 32], intent: [u8; 32]) {
-        self.settle_resolved_continuation_wakes(key, intent);
+    fn settle_resolved_continuation(
+        &mut self,
+        key: [u8; 32],
+        intent: [u8; 32],
+        finish_confirmed: bool,
+        bridge: Option<&BridgeConditionalExecutionView<'_>>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) {
+        self.settle_resolved_continuation_wakes(key, intent, finish_confirmed, bridge, execution);
     }
 
     fn retained_resource_counts(&self) -> WorthQueryConditionalRetainedResourceCounts {

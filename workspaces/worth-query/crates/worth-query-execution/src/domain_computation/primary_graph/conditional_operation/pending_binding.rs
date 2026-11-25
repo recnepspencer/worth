@@ -273,6 +273,7 @@ where
             pending_invalidations: super::lifecycle::WorthQueryPendingGranularInvalidations::empty(
             ),
             inactive_bindings: Default::default(),
+            inactive_reclaim_pending: false,
             next_evaluation_binding_ordinal: 1,
         }))
     }

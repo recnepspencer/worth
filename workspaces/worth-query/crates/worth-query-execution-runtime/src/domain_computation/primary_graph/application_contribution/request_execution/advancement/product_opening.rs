@@ -87,9 +87,9 @@ impl crate::domain_computation::execution_runtime::product_world::WorthQueryProd
         self.with_execution_placement(|placement| {
             let execution = match caller.allocation_policy() {
                 worth_execution::ExecutionAllocationPolicy::Execution(lease) => {
-                    QueryRequestExecution::under_lease(
+                    QueryRequestExecution::under_lease_within_placement(
                         lease,
-                        worth_execution::CancellationToken::new(),
+                        placement,
                         caller.deadline(),
                     )
                 }

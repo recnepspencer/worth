@@ -17,11 +17,6 @@ impl QueryRequestExecution<'_> {
             Form::Leased { lease, .. } | Form::Serial { lease, .. } => lease
                 .as_ref()
                 .map_err(|denial| worth_execution::WorkCeilingDenial::Admission(*denial))?,
-            Form::BorrowedSerial { .. } => {
-                return Err(worth_execution::WorkCeilingDenial::Stopped(
-                    worth_execution::MapKernelStop::AccountingUnavailable,
-                ));
-            }
         };
         ExecutionRequest::leased(lease).in_scope(|active| {
             use_lease(active.expect("a leased request retains its native backing"))

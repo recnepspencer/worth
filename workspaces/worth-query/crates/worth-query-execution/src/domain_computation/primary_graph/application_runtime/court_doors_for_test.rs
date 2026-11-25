@@ -136,6 +136,23 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     }
 
     #[doc(hidden)]
+    pub fn refuse_next_conditional_decision_publication_for_test(&self) {
+        self.conditional_cleanup
+            .routes
+            .refuse_next_decision_publication
+            .store(true, std::sync::atomic::Ordering::Release);
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn take_refuse_next_decision_publication(
+        &self,
+    ) -> bool {
+        self.conditional_cleanup
+            .routes
+            .refuse_next_decision_publication
+            .swap(false, std::sync::atomic::Ordering::AcqRel)
+    }
+
+    #[doc(hidden)]
     pub fn pause_after_commit_before_answer_for_test(
         &self,
     ) -> worth_query_execution_attempt::facade::domain_computation::primary_graph::provider::WorthQueryCommitAnswerPauseForTest{
