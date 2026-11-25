@@ -166,3 +166,37 @@ fn a_registry_successor_is_moved_to_exactly_one_taker() {
         drop((moved, first, second));
     });
 }
+
+/// Public #406: a request stopped after its producer published and before it
+/// delivered. The stopped row owes no delivery, so its sole interest closes and
+/// the release retires the row. An unstopped publication still refuses.
+#[test]
+fn a_stopped_undelivered_publication_closes_its_sole_interest() {
+    let receipt = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
+    let _occurrence = occurrence();
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|_| {
+        let registry = WorthQueryOutputDemandRegistry::default();
+        let row = key("stopped-undelivered", 1, 1);
+        let interest = admit(&registry, &row);
+        publish(&registry, &interest, receipt);
+        assert!(
+            interest.require_read_closeable().is_err(),
+            "a live undelivered publication retains its native custody"
+        );
+        {
+            let mut state = (*registry.state_for_test()).lock().unwrap();
+            let mut record = (*state.records_mut_for_test()).get_mut(&row).unwrap();
+            let DemandState::Output(output) = &mut (*record.state_mut_for_test()) else {
+                panic!("published output")
+            };
+            output.stop_for_test(WorthQueryOutputDemandDenial::new_for_test(
+                WorthQueryOutputDemandDenialKind::Closed,
+                "",
+            ));
+        }
+        interest.require_read_closeable().unwrap();
+        drop(interest);
+        assert!(!(*(*registry.state_for_test()).lock().unwrap().records_for_test())
+            .contains_key_for_test(&row));
+    });
+}
