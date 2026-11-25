@@ -22,6 +22,14 @@ pub(super) enum PreparedCorrectionCustody {
         source: std::sync::Arc<HomeCorrectionOccurrence>,
     },
 }
+impl WorthQueryPreparedCorrectionSource {
+    pub(crate) fn source_member(&self) -> crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceMember {
+        match &self.custody {
+            PreparedCorrectionCustody::Memory { material, .. } => material.member(),
+            PreparedCorrectionCustody::Home { source, .. } => source.material.ready.member,
+        }
+    }
+}
 impl PreparedCorrectionCustody {
     pub(super) fn occurrence(&self) -> CorrectionOccurrence {
         match self {

@@ -22,6 +22,7 @@ pub mod ready;
 pub mod recovery;
 
 impl WorthQueryPrimaryGraphProvider {
+    /// A correction commit's material; a correction commits as its group's primary writer.
     pub fn admit_correction_lineage_material(
         &self,
         commit: &worth_relational::facade::history::RelationalCommitReceipt,
@@ -29,7 +30,7 @@ impl WorthQueryPrimaryGraphProvider {
         self.correction_material
             .get()
             .ok_or(Denial::AdmissionRequired)?
-            .admit_original_metadata(commit)
+            .admit_original_metadata(commit, crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceMember::Primary)
     }
     pub fn has_captured_correction_material(
         &self,
@@ -55,6 +56,7 @@ impl WorthQueryPrimaryGraphProvider {
     pub fn observe_correction_material(
         &self,
         commit: &worth_relational::facade::history::RelationalCommitReceipt,
+        member: crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceMember,
     ) -> Result<
         crate::domain_computation::primary_graph::retained_correction::RetainedCorrectionMaterial,
         Denial,
@@ -62,8 +64,9 @@ impl WorthQueryPrimaryGraphProvider {
         self.correction_material
             .get()
             .ok_or(Denial::AdmissionRequired)?
-            .observe_original(commit)
+            .observe_original(commit, member)
     }
+    /// A recorded correction's capture; a correction commits as its group's primary writer.
     pub fn observe_correction_capture_for_replay(
         &self,
         request: &ExecutionRequest<'_, '_>,
@@ -77,7 +80,7 @@ impl WorthQueryPrimaryGraphProvider {
             .correction_material
             .get()
             .ok_or(Denial::AdmissionRequired)?;
-        owner.observe_capture_for_replay(commit, || {
+        owner.observe_capture_for_replay(commit, crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceMember::Primary, || {
             inspection
                 .observe_program_activation_history(request)
                 .map_err(|_| Denial::Unavailable)

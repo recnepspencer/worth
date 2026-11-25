@@ -93,7 +93,9 @@ pub(super) fn performed<S: ApplicationSchema>(
     }
     let coordinate = crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceCoordinates::from_untrusted_parts(
         worth_foundational::facade::WorldOwnerCoordinate::Home { owner: original.identity().owner() },
-        original.identity().ordinal(), fact.child.clone());
+        original.identity().ordinal(), fact.child.clone(),
+        // A correction commits as its group's single primary writer.
+        crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceMember::Primary);
     let identity = resolve(
         execution,
         &owner.observation_port(),
@@ -101,5 +103,5 @@ pub(super) fn performed<S: ApplicationSchema>(
         &coordinate,
         maximum,
     )?;
-    Ok(crate::domain_computation::application_aftermath::WorthQueryRecordedCorrectionSource::from_untrusted_parts(identity, fact.child.clone()))
+    Ok(crate::domain_computation::application_aftermath::WorthQueryRecordedCorrectionSource::from_untrusted_parts(identity, fact.child.clone(), coordinate.member()))
 }

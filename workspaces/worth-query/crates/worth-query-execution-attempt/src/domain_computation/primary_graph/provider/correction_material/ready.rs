@@ -126,6 +126,7 @@ impl WorthQueryPrimaryGraphProvider {
         owner.ensure_ready(
             MaterialReady {
                 original,
+                member: crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceMember::of_writer(evidence.idempotency().authored_stage_identity()),
                 commit: application.commit_reference().clone(),
                 roles,
                 output_fields: fields,

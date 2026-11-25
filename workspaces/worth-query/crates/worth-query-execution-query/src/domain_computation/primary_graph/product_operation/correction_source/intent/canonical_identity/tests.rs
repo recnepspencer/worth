@@ -13,6 +13,7 @@ fn fields(owner: WorldOwnerCoordinate) -> CorrectionIntentFields<'static> {
         role: WorthQueryAftermathCausalRole::RecordedReverse,
         source_owner: owner,
         source_commit: 12,
+        source_member: WorthQueryCorrectionSourceMember::Primary,
         target_owner: owner,
         target_branch: "main",
         target_lifecycle: 2,
@@ -24,6 +25,7 @@ fn fields(owner: WorldOwnerCoordinate) -> CorrectionIntentFields<'static> {
                 native_commit: CommitId(15),
                 native_version: VersionId(16),
                 native_branch: "main",
+                member: WorthQueryCorrectionSourceMember::Primary,
             }),
             None,
             None,
@@ -88,6 +90,21 @@ fn correction_identity_binds_each_semantic_binding_role_and_original_input_ident
     assert_ne!(encode(base), encode(changed));
 }
 #[test]
+fn correction_identity_binds_the_source_member_of_a_shared_commit_and_input() {
+    // Public #368: two stages of one commit may share binding and input.
+    let base = fields(scope(Some(home(1, 7)), 11));
+    let stage = |ordinal| WorthQueryCorrectionSourceMember::AuthoredStage {
+        ordinal,
+        identity: [ordinal as u8; 32],
+    };
+    let mut first = base;
+    first.source_member = stage(1);
+    let mut second = base;
+    second.source_member = stage(2);
+    assert_ne!(encode(base), encode(first));
+    assert_ne!(encode(first), encode(second));
+}
+#[test]
 fn correction_identity_binds_every_lineage_membership_and_native_receipt_dimension() {
     let mut base = fields(scope(Some(home(1, 7)), 11));
     base.lineage = [base.lineage[0]; 4];
@@ -95,7 +112,7 @@ fn correction_identity_binds_every_lineage_membership_and_native_receipt_dimensi
         let mut changed = base;
         changed.lineage[index] = None;
         assert_ne!(encode(base), encode(changed));
-        for dimension in 0..5 {
+        for dimension in 0..6 {
             let mut changed = base;
             let coordinate = changed.lineage[index].as_mut().unwrap();
             match dimension {
@@ -104,7 +121,13 @@ fn correction_identity_binds_every_lineage_membership_and_native_receipt_dimensi
                 2 => coordinate.native_commit = CommitId(16),
                 3 => coordinate.native_version = VersionId(17),
                 4 => coordinate.native_branch = "sibling",
-                _ => unreachable!("five declared value dimensions"),
+                5 => {
+                    coordinate.member = WorthQueryCorrectionSourceMember::AuthoredStage {
+                        ordinal: 1,
+                        identity: [1; 32],
+                    }
+                }
+                _ => unreachable!("six declared value dimensions"),
             }
             assert_ne!(encode(base), encode(changed));
         }
@@ -122,13 +145,13 @@ fn home_encoding_keeps_owner_scope_in_every_lineage_coordinate() {
 }
 #[test]
 fn memory_correction_identity_preserves_its_active_process_local_vector() {
-    // Literal SHA-256 from the v2 protocol's explicit length-prefixed fields,
+    // Literal SHA-256 from the v3 protocol's explicit length-prefixed fields,
     // not calculated through the encoder under test.
     assert_eq!(
         encode(fields(scope(None, 11))),
         [
-            43, 248, 71, 110, 144, 110, 146, 9, 67, 151, 156, 237, 109, 1, 194, 211, 207, 159, 117,
-            16, 27, 36, 239, 234, 172, 219, 68, 58, 23, 207, 48, 98
+            135, 91, 139, 169, 216, 218, 59, 111, 21, 109, 99, 8, 153, 202, 190, 208, 156, 1, 207,
+            31, 214, 227, 15, 98, 139, 109, 242, 215, 236, 18, 184, 192
         ]
     );
 }

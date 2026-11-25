@@ -17,10 +17,7 @@ impl CorrectionMaterialOwner {
             let state = self.state();
             state
                 .catalog
-                .material
-                .get(&original)
-                .ok_or(Denial::Unavailable)?
-                .available()?;
+                .original_available(original, Denial::Unavailable)?;
             if let Some((identity, _)) = state
                 .catalog
                 .pins

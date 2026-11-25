@@ -4,6 +4,7 @@ use super::*;
 use worth_foundational::facade::WorldOriginalFate;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_relational::facade::runtime::RelationalRuntime;
+use crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceMember as Member;
 
 pub(super) fn admit(
     request: &ExecutionRequest<'_, '_>,
@@ -27,7 +28,7 @@ pub(super) fn admit(
         return Err(Denial::OriginalMismatch);
     }
     let layout = provider.graph.layout_ref().provider_idempotency();
-    for (identity, material) in &catalog.material {
+    for ((identity, member), material) in &catalog.material {
         request.consult().map_err(Denial::Execution)?;
         let original = originals
             .original_state(*identity)
@@ -121,17 +122,26 @@ pub(super) fn admit(
             );
         }
         let binding = binding.ok_or(Denial::OriginalBindingUnavailable)?;
-        let intent = crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding::observe_recorded_intent(&binding.intent)
-            .map_err(|_| Denial::OriginalBindingUnavailable)?;
-        if intent.root != material.metadata.intent_identity
+        let observe = crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding::observe_recorded_intent;
+        let row = observe(&binding.intent).map_err(|_| Denial::OriginalBindingUnavailable)?;
+        // The commit's one ORIGINAL row is its group root's binding. A later
+        // authored stage (public #368) shares that envelope key; its own
+        // recorded intent must describe exactly the captured mutation input.
+        let (intent, joined) = match member {
+            Member::Primary => (row, binding.intent == material.metadata.intent),
+            Member::AuthoredStage { .. } => (
+                observe(&material.metadata.intent).map_err(|_| Denial::OriginalMismatch)?,
+                row.envelope.is_some(),
+            ),
+        };
+        if !joined
+            || binding.key != material.metadata.key
+            || intent.root != material.metadata.intent_identity
             || !intent.matches_mutation_input(
                 &material.metadata.mutation,
                 &material.metadata.input_identity,
             )
         {
-            return Err(Denial::OriginalMismatch);
-        }
-        if binding.key != material.metadata.key || binding.intent != material.metadata.intent {
             return Err(Denial::OriginalMismatch);
         }
     }

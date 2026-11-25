@@ -1,6 +1,8 @@
 //! Value-level grammar and fold laws; these tests issue no original authority.
 use super::*;
+use crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceMember as Member;
 use std::num::NonZeroU64;
+const PRIMARY: Member = Member::Primary;
 use worth_foundational::facade::{
     DurableWorldOwnerIdentity, RetentionClass, WorldOwnerSlotIdentity,
 };
@@ -35,6 +37,7 @@ fn capture(ledger: &MaterialCatalog) -> MaterialRecord {
     MaterialRecord::Capture {
         material: Box::new(MaterialCapture {
             original: original(ledger.home, 1),
+            member: PRIMARY,
             program: [2; 32],
             mutation: "edit".into(),
             key: [4; 32],
@@ -64,6 +67,7 @@ fn ready(ledger: &MaterialCatalog) -> MaterialRecord {
     MaterialRecord::Ready {
         material: Box::new(MaterialReady {
             original: original(ledger.home, 1),
+            member: PRIMARY,
             commit: receipt(),
             roles: Vec::new(),
             output_fields: Vec::new(),
@@ -131,7 +135,7 @@ fn recorded_material_round_trips_before_it_becomes_available() {
         RetentionClass::MandatoryObligation
     );
     assert_eq!(
-        ledger.material[&original(ledger.home, 1)]
+        ledger.material[&(original(ledger.home, 1), PRIMARY)]
             .available()
             .unwrap_err(),
         Denial::MaterialNotReady
@@ -143,7 +147,7 @@ fn recorded_material_round_trips_before_it_becomes_available() {
         RetentionClass::OptionalRetainedMaterial
     );
     assert_eq!(
-        ledger.material[&original(ledger.home, 1)]
+        ledger.material[&(original(ledger.home, 1), PRIMARY)]
             .available()
             .unwrap()
             .1
@@ -239,7 +243,7 @@ fn output_fields_capture_retains_mode_and_absence_across_the_material_roundtrip(
     let ledger = catalog();
     let mut record = capture(&ledger);
     let strict: serde_json::Value = serde_json::from_slice(&record.encode().unwrap()).unwrap();
-    assert_eq!(strict["version"], 3);
+    assert_eq!(strict["version"], 4);
     assert!(strict["body"]["material"]["output_fields"].is_null());
     let MaterialRecord::Capture { material } = &mut record else {
         unreachable!()
@@ -311,4 +315,36 @@ fn output_fields_capture_retains_mode_and_absence_across_the_material_roundtrip(
         Err(Denial::MalformedFrame),
         "repeated or conflicting field truth has no canonical material record"
     );
+}
+#[test]
+fn a_version_3_material_frame_is_refused_by_version_never_reinterpreted() {
+    // A frozen pre-#368 record: version 3, with no coupled-group member.
+    fn strip_member(value: &mut serde_json::Value) {
+        match value {
+            serde_json::Value::Object(fields) => {
+                fields.remove("member");
+                fields.values_mut().for_each(strip_member);
+            }
+            serde_json::Value::Array(items) => items.iter_mut().for_each(strip_member),
+            _ => {}
+        }
+    }
+    let mut ledger = catalog();
+    let mut old: serde_json::Value =
+        serde_json::from_slice(&capture(&ledger).encode().unwrap()).unwrap();
+    old["version"] = 3.into();
+    strip_member(&mut old);
+    let frame = QueryCorrectionMaterialFrame::prepare(
+        ledger.home,
+        NonZeroU64::new(1).unwrap(),
+        [0; 32],
+        NonZeroU64::new(1).unwrap(),
+        RetentionClass::MandatoryObligation,
+        &serde_json::to_vec(&old).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(MaterialRecord::decode(&frame), Err(Denial::UnsupportedVersion(3)));
+    assert_eq!(ledger.fold(&frame), Err(Denial::UnsupportedVersion(3)));
+    assert_eq!(ledger.position, 0);
+    assert!(ledger.material.is_empty());
 }

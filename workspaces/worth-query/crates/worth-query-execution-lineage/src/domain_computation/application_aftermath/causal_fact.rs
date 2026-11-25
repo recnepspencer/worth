@@ -26,14 +26,24 @@ impl WorthQueryAftermathCausalRole {
 pub struct WorthQueryRecordedCorrectionSource {
     world: worth_runtime_world::facade::CompositeCommitIdentity,
     relational: RelationalCommitReceipt,
+    member: super::correction_coordinates::WorthQueryCorrectionSourceMember,
 }
 impl WorthQueryRecordedCorrectionSource {
     /// Descriptive coordinates to be resolved against retained native evidence.
     pub fn from_untrusted_parts(
         world: worth_runtime_world::facade::CompositeCommitIdentity,
         relational: RelationalCommitReceipt,
+        member: super::correction_coordinates::WorthQueryCorrectionSourceMember,
     ) -> Self {
-        Self { world, relational }
+        Self {
+            world,
+            relational,
+            member,
+        }
+    }
+    /// The writer of the commit's coupled group this source names (#368).
+    pub const fn member(&self) -> super::correction_coordinates::WorthQueryCorrectionSourceMember {
+        self.member
     }
 
     pub fn world(&self) -> &worth_runtime_world::facade::CompositeCommitIdentity {

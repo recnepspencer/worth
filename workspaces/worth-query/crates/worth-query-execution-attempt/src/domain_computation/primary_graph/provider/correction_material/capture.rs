@@ -85,6 +85,9 @@ impl WorthQueryPrimaryGraphProvider {
         owner.ensure_capture(
             MaterialCapture {
                 original,
+                member: crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceMember::of_writer(
+                    authority.idempotency_binding().authored_stage_identity(),
+                ),
                 program: *opened.program_revision().bytes(),
                 mutation: mutation.to_owned(),
                 key: *authority.idempotency_binding().key_identity(),

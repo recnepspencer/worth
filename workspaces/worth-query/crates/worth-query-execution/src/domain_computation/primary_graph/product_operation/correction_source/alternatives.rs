@@ -258,6 +258,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
                 WorthQueryRecordedCorrectionSource::from_untrusted_parts(
                     world,
                     expected_fact.source.relational().clone(),
+                    expected_fact.source.member(),
                 ),
                 None,
             )

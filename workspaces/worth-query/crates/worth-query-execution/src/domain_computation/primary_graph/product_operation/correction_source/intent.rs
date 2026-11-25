@@ -37,6 +37,7 @@ impl WorthQueryCorrectionIntentRuntimeExt for WorthQueryCorrectionIntent {
             occurrence,
             branch,
             &original_intent,
+            source.occurrence().member(),
             command_key,
             lineage,
         )

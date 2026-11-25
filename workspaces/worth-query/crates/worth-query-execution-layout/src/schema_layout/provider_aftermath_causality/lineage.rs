@@ -4,10 +4,10 @@ use worth_foundational::facade::StructFieldBuilder;
 
 #[derive(Clone, Debug)]
 pub struct WorthQueryCorrectionLineageLayout {
-    pub root: [AspectFieldLocator; 4],
-    pub selected: [AspectFieldLocator; 4],
-    pub active: [AspectFieldLocator; 4],
-    pub prior: [AspectFieldLocator; 4],
+    pub root: [AspectFieldLocator; 5],
+    pub selected: [AspectFieldLocator; 5],
+    pub active: [AspectFieldLocator; 5],
+    pub prior: [AspectFieldLocator; 5],
     pub reversed_root: AspectFieldLocator,
     pub reversed_source: AspectFieldLocator,
     pub consumed_reversal: AspectFieldLocator,
@@ -25,8 +25,8 @@ pub(super) fn lower(
         "active-reversal",
         "prior-transition",
     ] {
-        for suffix in ["world-owner", "world-commit", "branch", "commit"] {
-            let value_type = if suffix == "branch" {
+        for suffix in ["world-owner", "world-commit", "branch", "commit", "member"] {
+            let value_type = if matches!(suffix, "branch" | "member") {
                 ScalarAspectType::String
             } else {
                 ScalarAspectType::UInt64
@@ -54,11 +54,12 @@ pub(super) fn lower(
     ))
 }
 
-fn coordinates(prefix: &str) -> Result<[AspectFieldLocator; 4], WorthQuerySchemaLayoutDenial> {
+fn coordinates(prefix: &str) -> Result<[AspectFieldLocator; 5], WorthQuerySchemaLayoutDenial> {
     Ok([
         planned_field_locator(ASPECT, &format!("{prefix}-world-owner"))?,
         planned_field_locator(ASPECT, &format!("{prefix}-world-commit"))?,
         planned_field_locator(ASPECT, &format!("{prefix}-branch"))?,
         planned_field_locator(ASPECT, &format!("{prefix}-commit"))?,
+        planned_field_locator(ASPECT, &format!("{prefix}-member"))?,
     ])
 }

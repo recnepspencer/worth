@@ -54,6 +54,7 @@ impl WorthQueryCorrectionHistoryPageAllocation {
         Ok(WorthQueryRecordedCorrectionSource::from_untrusted_parts(
             root.world().clone(),
             self.clone_receipt(root.relational())?,
+            root.member(),
         ))
     }
 
@@ -95,6 +96,7 @@ impl WorthQueryCorrectionHistoryPageAllocation {
             source.world_owner(),
             source.world_commit(),
             self.clone_receipt(source.relational())?,
+            source.member(),
         ))
     }
     fn clone_receipt(

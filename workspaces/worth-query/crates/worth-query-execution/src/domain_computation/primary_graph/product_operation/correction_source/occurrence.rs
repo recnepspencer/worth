@@ -79,6 +79,15 @@ impl CorrectionOccurrence {
             Self::Home(value) => &value.material.ready.commit,
         }
     }
+    /// The writer of the commit's coupled group this occurrence is (public #368).
+    pub(super) fn member(&self) -> crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceMember {
+        match self {
+            Self::Memory(value) => crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceMember::of_writer(
+                value.commit_evidence().idempotency().authored_stage_identity(),
+            ),
+            Self::Home(value) => value.material.ready.member,
+        }
+    }
     pub(super) fn original_binding(&self) -> Option<std::any::TypeId> {
         match self {
             Self::Memory(value) => value

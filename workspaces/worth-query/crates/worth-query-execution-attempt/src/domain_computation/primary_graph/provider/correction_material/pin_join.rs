@@ -65,14 +65,7 @@ pub(super) fn admit(
             if source.fate() != worth_foundational::facade::WorldOriginalFate::Published {
                 return Err(Denial::OriginalMismatch);
             }
-            let (_, ready) = catalog
-                .material
-                .get(&original)
-                .ok_or(Denial::Unavailable)?
-                .available()?;
-            if ready.original != original {
-                return Err(Denial::OriginalMismatch);
-            }
+            catalog.original_available(original, Denial::Unavailable)?;
             continue;
         }
         let prepared = row.prepared()?;

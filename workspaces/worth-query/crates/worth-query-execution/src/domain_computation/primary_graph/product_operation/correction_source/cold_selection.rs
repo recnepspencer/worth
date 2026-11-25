@@ -41,8 +41,13 @@ impl<'runtime, S: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime
             .inner
             .runtime
             .primary_provider_ref()
-            .observe_correction_material(coordinates.relational())
-            .map_err(D::Material)?;
+            .observe_correction_material(coordinates.relational(), coordinates.member())
+            .map_err(|cause| match cause {
+                crate::facade::correction_material::QueryCorrectionMaterialDenial::MemberUnavailable => {
+                    D::SourceMemberUnavailable
+                }
+                cause => D::Material(cause),
+            })?;
         let originals = owner
             .inspection_port()
             .observe_program_activation_history(&execution)
@@ -186,6 +191,7 @@ pub(super) fn read_lineage<S: ApplicationSchema>(
             WorthQueryRecordedCorrectionSource::from_untrusted_parts(
                 identity,
                 coordinate.relational().clone(),
+                coordinate.member(),
             )
         })
     };

@@ -17,5 +17,6 @@ pub fn collect(census: &mut crate::inline_type_sizes::Census) {
         );
         owner.field::<worth_runtime_world::facade::CompositeCommitIdentity>("world");
         owner.field::<RelationalCommitReceipt>("relational");
+        owner.field::<super::correction_coordinates::WorthQueryCorrectionSourceMember>("member");
     }
 }
