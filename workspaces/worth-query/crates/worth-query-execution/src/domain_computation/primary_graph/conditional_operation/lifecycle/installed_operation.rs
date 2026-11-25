@@ -16,12 +16,16 @@ use crate::domain_computation::primary_graph::conditional_operation::{
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
+pub type ConditionalHandoffBridge<'a> =
+    crate::domain_computation::primary_graph::managed_bridge::conditional_execution::ConditionalExecutionOwner<'a>;
+
 pub trait WorthQueryInstalledConditionalOperation<Schema>: Send {
     fn binding_identity(&self) -> &str;
     fn handoff_to_home(
         &mut self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        bridge: &ConditionalHandoffBridge<'_>,
     ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryHomeRetirementDenial>;
 
     fn pending_managed_cleanup(

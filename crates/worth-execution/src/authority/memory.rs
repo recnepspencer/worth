@@ -52,6 +52,35 @@ impl MemoryLimitDenial {
             Self::Capacity { level, .. } | Self::CounterOverflow { level, .. } => level,
         }
     }
+
+    pub(in crate::authority) fn offset_ancestor(self, offset: u32) -> Self {
+        let shift = |level| match level {
+            MemoryLimitLevel::Policy { ancestor } => MemoryLimitLevel::Policy {
+                ancestor: ancestor.saturating_add(offset),
+            },
+            other => other,
+        };
+        match self {
+            Self::Capacity {
+                requested,
+                admitted,
+                level,
+            } => Self::Capacity {
+                requested,
+                admitted,
+                level: shift(level),
+            },
+            Self::CounterOverflow {
+                requested,
+                charged,
+                level,
+            } => Self::CounterOverflow {
+                requested,
+                charged,
+                level: shift(level),
+            },
+        }
+    }
 }
 
 /// Which limit refused a memory reservation. Limits are checked innermost
@@ -180,7 +209,7 @@ impl SerialMemoryBudget {
         }
     }
 
-    fn same_lineage(&self, other: &Self) -> bool {
+    pub(in crate::authority) fn same_lineage(&self, other: &Self) -> bool {
         self.ledgers.len() == other.ledgers.len()
             && self
                 .ledgers
@@ -189,7 +218,7 @@ impl SerialMemoryBudget {
                 .all(|(a, b)| Arc::ptr_eq(a, b))
     }
 
-    fn resize(&self, from: u64, to: u64) -> Result<(), MemoryLimitDenial> {
+    pub(in crate::authority) fn resize(&self, from: u64, to: u64) -> Result<(), MemoryLimitDenial> {
         // Requests can share budgets across threads. Issue order keeps overlapping
         // lineages deadlock-free; refusal order remains innermost policy first.
         let order = self.lock_order();

@@ -90,6 +90,7 @@ impl<'a> ExecutionResourceLease<'a> {
                     .policy
                     .accounting()
                     .and_then(|budget| budget.charged_memory_bytes()),
+                serial_budget: None,
                 deadline: match (self.node.deadline.clone(), request.deadline) {
                     (Some(parent), Some(child)) => Some(parent.meet(child)),
                     (Some(parent), None) => Some(parent),
@@ -110,7 +111,7 @@ impl<'a> ExecutionResourceLease<'a> {
         self.policy.accounting().is_some()
             || self.authority.config.charged_memory_bytes.is_some()
             || std::iter::successors(Some(self.node.as_ref()), |node| node.parent.as_deref())
-                .any(|node| node.accounted)
+                .any(|node| node.accounted || node.serial_budget.is_some())
             || (self.current_descendant().is_some()
                 && crate::backend::RunLimits::parent_accounted())
     }

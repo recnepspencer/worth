@@ -88,6 +88,7 @@ pub struct DesktopReminderConfig {
     pub auth: AuthControl,
     pub controls: InvokerControls,
     pub use_mismatched_due_field: bool,
+    pub max_due_wakes_per_observation: Option<usize>,
 }
 
 pub type InstalledDesktopReminder = WorthQueryInstalledDesktopTemporalClock<
@@ -145,7 +146,12 @@ impl WorthQueryApplicationConditionalBinding<DesktopReminderSchema> for DesktopR
                 clock_source: config.clock_source,
                 parameters: ApplicationQueryParameterSet::new(),
                 projector: ReminderProjector,
-                bounds: domain::WorthQueryTemporalIntentBounds::new(8, 16, 8).unwrap(),
+                bounds: domain::WorthQueryTemporalIntentBounds::new(
+                    8,
+                    16,
+                    config.max_due_wakes_per_observation.unwrap_or(8),
+                )
+                .unwrap(),
                 principal_binding: ReminderPrincipalBinding::reference(),
                 principal_source: DesktopPrincipalSource {
                     adapter,
@@ -213,6 +219,7 @@ pub fn open_memory_home_with_mismatched_due_field(
         InvokerControls::default(),
         true,
         None,
+        None,
         execution,
     )
 }
@@ -230,7 +237,27 @@ pub fn open_memory_home_with_controls(
         auth,
         controls,
         false,
+        None,
         limits,
+        execution,
+    )
+}
+
+pub fn open_memory_home_with_observation_limit(
+    fire_log: ReminderFireLog,
+    auth: AuthControl,
+    controls: InvokerControls,
+    max_due_wakes_per_observation: usize,
+    execution: &ExecutionRequest<'_, '_>,
+) -> ReminderHome {
+    open_home_at(
+        WorthQueryApplicationHomeLocation::MemoryOnly,
+        fire_log,
+        auth,
+        controls,
+        false,
+        Some(max_due_wakes_per_observation),
+        None,
         execution,
     )
 }
@@ -246,6 +273,7 @@ pub fn open_memory_home(
         auth,
         InvokerControls::default(),
         false,
+        None,
         None,
         execution,
     )
@@ -291,17 +319,20 @@ pub fn open_directory_home_configured(
         auth,
         controls,
         false,
+        None,
         custom_limits,
         execution,
     )
 }
 
+#[allow(clippy::too_many_arguments)]
 fn open_home_at(
     location: WorthQueryApplicationHomeLocation,
     fire_log: ReminderFireLog,
     auth: AuthControl,
     controls: InvokerControls,
     use_mismatched_due_field: bool,
+    max_due_wakes_per_observation: Option<usize>,
     custom_limits: Option<WorthQueryApplicationLimits>,
     execution: &ExecutionRequest<'_, '_>,
 ) -> ReminderHome {
@@ -322,6 +353,7 @@ fn open_home_at(
         auth,
         controls,
         use_mismatched_due_field,
+        max_due_wakes_per_observation,
     };
     let limits = custom_limits.unwrap_or_else(|| {
         WorthQueryApplicationLimits::ordinary_serial(

@@ -102,6 +102,31 @@ impl ExecutionAuthority {
         &self,
         request: LeaseRequest,
     ) -> Result<ExecutionResourceLease<'_>, LeaseDenial> {
+        self.request_lease_with_serial_budget(request, None)
+    }
+
+    /// Admits a lease whose memory reservations also charge a lease-free
+    /// `ExecutionRequest::serial` caller's shared [`crate::SerialMemoryBudget`]
+    /// atomically alongside this authority's ledger, preventing over-admission
+    /// across overlapping or concurrent holders of that budget.
+    pub fn request_lease_within_request(
+        &self,
+        mut request: LeaseRequest,
+        caller: crate::ExecutionRequest<'_, '_>,
+    ) -> Result<ExecutionResourceLease<'_>, LeaseDenial> {
+        request.deadline = match (request.deadline, caller.deadline()) {
+            (Some(left), Some(right)) => Some(left.meet(right)),
+            (Some(left), None) => Some(left),
+            (None, right) => right,
+        };
+        self.request_lease_with_serial_budget(request, caller.serial_memory_budget_cloned())
+    }
+
+    fn request_lease_with_serial_budget(
+        &self,
+        request: LeaseRequest,
+        serial_budget: Option<crate::SerialMemoryBudget>,
+    ) -> Result<ExecutionResourceLease<'_>, LeaseDenial> {
         self.admits_policy(&request.policy)
             .map_err(|denial| LeaseDenial::refused(denial.into()))?;
         let id = self.inner.next_id();
@@ -118,6 +143,7 @@ impl ExecutionAuthority {
                     .policy
                     .accounting()
                     .and_then(|budget| budget.charged_memory_bytes()),
+                serial_budget,
                 deadline: request.deadline,
                 cancellation: request.cancellation,
             }),

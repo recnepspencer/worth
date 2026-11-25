@@ -83,6 +83,33 @@ impl WorthQueryPendingGranularInvalidations {
         }
     }
 
+    /// Removes and returns only the direct deliveries whose exact commit has
+    /// just been passed by the observation cursor, leaving later preperformed
+    /// commits retained as deduplication evidence across bounded partial scans.
+    pub(in crate::domain_computation::primary_graph::conditional_operation) fn take_direct_for_commit(
+        &mut self,
+        commit: worth_relational::facade::history::CommitId,
+    ) -> Vec<BridgeGranularInvalidationDelivery> {
+        let target =
+            worth_runtime_bridge::facade::TruthCommitIdentity::from_relational_commit_id(commit.0);
+        let mut matched = Vec::new();
+        let mut remaining = Vec::new();
+        for delivery in std::mem::take(&mut self.direct) {
+            if delivery
+                .correspondence_receipt()
+                .change_set()
+                .commit_identity()
+                == &target
+            {
+                matched.push(delivery);
+            } else {
+                remaining.push(delivery);
+            }
+        }
+        self.direct = remaining;
+        matched
+    }
+
     /// Owes the reconsidered direct deliveries alongside consumed ones.
     pub(super) fn owe_direct(&mut self) {
         for delivery in std::mem::take(&mut self.direct) {

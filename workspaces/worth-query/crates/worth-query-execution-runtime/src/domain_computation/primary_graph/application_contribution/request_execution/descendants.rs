@@ -14,13 +14,11 @@ impl<'authority> QueryRequestExecution<'authority> {
                 lease,
                 policy,
                 caller_serial,
-                caller_serial_hold,
             }
             | Form::Serial {
                 lease,
                 policy,
                 caller_serial,
-                caller_serial_hold,
             } => Form::Leased {
                 lease: lease
                     .as_ref()
@@ -30,7 +28,6 @@ impl<'authority> QueryRequestExecution<'authority> {
                     .map_err(|denial| *denial),
                 policy: *policy,
                 caller_serial: *caller_serial,
-                caller_serial_hold: caller_serial_hold.clone(),
             },
         };
         Self {

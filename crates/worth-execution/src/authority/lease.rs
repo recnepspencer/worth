@@ -127,6 +127,7 @@ struct Ledger {
     active_workers: usize,
     charged_memory_bytes: u64,
     nodes: HashMap<u64, NodeUsage>,
+    serial_budgets: std::collections::BTreeMap<u64, super::SerialMemoryBudget>,
 }
 
 impl Ledger {
@@ -155,6 +156,7 @@ pub(crate) struct LeaseNode {
     max_workers: usize,
     posture: ExecutionPosture,
     charged_memory_bytes: Option<u64>,
+    serial_budget: Option<super::SerialMemoryBudget>,
     deadline: Option<crate::MonotonicDeadline>,
     cancellation: CancellationToken,
 }
@@ -190,6 +192,15 @@ impl<'a> ExecutionResourceLease<'a> {
             node = current.parent.as_deref();
         }
         lineage
+    }
+
+    pub(super) fn lineage_serial_budget(&self) -> Option<&super::SerialMemoryBudget> {
+        self.lineage_serial_budget_node().map(|(_, budget)| budget)
+    }
+
+    pub(super) fn lineage_serial_budget_node(&self) -> Option<(u64, &super::SerialMemoryBudget)> {
+        std::iter::successors(Some(self.node.as_ref()), |node| node.parent.as_deref())
+            .find_map(|node| node.serial_budget.as_ref().map(|budget| (node.id, budget)))
     }
 
     /// Reuse the invoking worker's slot for nested work. The child records one
@@ -323,6 +334,14 @@ impl Drop for ResourceReservation {
             .unwrap_or_else(|error| error.into_inner());
         ledger.active_workers -= self.process_workers;
         if let Some(memory) = &self.memory {
+            if memory.bytes != 0
+                && let Some(budget) = memory
+                    .lineage
+                    .iter()
+                    .find_map(|id| ledger.serial_budgets.get(id))
+            {
+                let _ = budget.resize(memory.bytes, 0);
+            }
             ledger.charged_memory_bytes -= memory.bytes;
         }
         for id in &self.worker_lineage {
@@ -342,6 +361,7 @@ impl Drop for ResourceReservation {
             };
             if usage.active_workers == 0 && usage.charged_memory_bytes == 0 {
                 ledger.nodes.remove(id);
+                ledger.serial_budgets.remove(id);
             }
         }
         let retired = ledger.take_unused_nodes();

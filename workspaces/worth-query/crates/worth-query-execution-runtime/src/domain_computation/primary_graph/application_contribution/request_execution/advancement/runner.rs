@@ -56,17 +56,8 @@ fn run_admitted_advancement(
         discard: Some(discard),
         published: published.clone(),
     };
-    let (caller_serial, caller_serial_hold) = match &execution.form {
-        Form::Leased {
-            caller_serial,
-            caller_serial_hold,
-            ..
-        }
-        | Form::Serial {
-            caller_serial,
-            caller_serial_hold,
-            ..
-        } => (*caller_serial, caller_serial_hold.as_ref()),
+    let caller_serial = match &execution.form {
+        Form::Leased { caller_serial, .. } | Form::Serial { caller_serial, .. } => *caller_serial,
     };
     if let Some(caller) = caller_serial
         && let Err(stop) = caller.check_live()
@@ -159,15 +150,8 @@ fn run_admitted_advancement(
     };
     let outcome = match caller_serial {
         Some(caller) => {
-            let run_within_serial = |_: Option<&worth_execution::ExecutionResourceLease<'_>>| {
-                if let Some(shared) = caller_serial_hold {
-                    super::super::serial_hold::bind_in_active_serial_scope(shared);
-                }
-                let narrowed =
-                    worth_execution::ExecutionMemoryReservation::available_in_scope(None)
-                        .and_then(|available| execution.narrowed_to_live_serial_room(available));
-                run_inner(narrowed.as_ref().unwrap_or(execution))
-            };
+            let run_within_serial =
+                |_: Option<&worth_execution::ExecutionResourceLease<'_>>| run_inner(execution);
             let outer = if caller.has_accounting() || caller.work_ceiling().is_some() {
                 caller
                     .run_completion(

@@ -87,8 +87,13 @@ where
     Authorization: super::super::WorthQueryTemporalOperationAuthorization<Schema, ApplicationOperation, Input, Scope> + 'static,
     DueField: super::super::operation_invocation::WorthQueryTemporalDueFieldWriter<Schema, IntentEntity>,
 {
-    fn handoff_to_home(&mut self, request: &worth_execution::ExecutionRequest<'_, '_>, runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>) -> Result<(), crate::domain_computation::primary_graph::WorthQueryHomeRetirementDenial> {
-        self.handoff_to_home(request, runtime)
+    fn handoff_to_home(
+        &mut self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        bridge: &crate::domain_computation::primary_graph::managed_bridge::conditional_execution::ConditionalExecutionOwner<'_>,
+    ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryHomeRetirementDenial> {
+        self.handoff_to_home(request, runtime, bridge)
     }
 
     fn reset_retained_wakes_for_replay_for_test(&mut self) {
@@ -290,16 +295,19 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
             .managed_clock
             .as_ref()
             .expect("selected conditional operation retains a managed clock");
-        super::super::authoritative_reconsideration::reconsider_retained_wakes_for_deliveries(phase,
-            bridge,
-            self.pending_invalidations.direct(),
-            &mut self.retained_wakes,
-            signal_basis,
-            &self.runtime_binding_identity,
-            self.runtime_capability_identity,
-            truth,
-        );
-        self.pending_invalidations.owe_direct();
+        if !authoritative.work_remaining {
+            super::super::authoritative_reconsideration::reconsider_retained_wakes_for_deliveries(
+                phase,
+                bridge,
+                self.pending_invalidations.direct(),
+                &mut self.retained_wakes,
+                signal_basis,
+                &self.runtime_binding_identity,
+                self.runtime_capability_identity,
+                truth,
+            );
+            self.pending_invalidations.owe_direct();
+        }
         if authoritative.caught_up_to_latest {
             self.bootstrap_commit_catch_up_pending = false;
         }

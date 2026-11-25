@@ -59,7 +59,7 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) fn flush
             }
             history.record_conditional_decision(request, Record::Finish { key, intent })?;
             wake.continuation_identity = None;
-            wake.original_retry_finish_confirmed = None;
+            wake.original_retry_finish_confirmed = Some(true);
             return Ok(());
         }
         None => {}

@@ -308,3 +308,86 @@ fn preexisting_serial_caller_hold_narrows_inner_lease_and_rejects_over_budget_al
     drop(preexisting);
     assert_eq!(serial_available_bytes(caller), baseline);
 }
+
+#[test]
+fn two_advancements_sharing_cloned_serial_budget_and_overlapping_raw_holds_never_over_admit() {
+    let shared_budget = worth_execution::SerialMemoryBudget::new(Some(16 * 1024));
+    let req_a = worth_execution::SerialRequest::from_memory(
+        shared_budget.clone(),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let req_b = worth_execution::SerialRequest::from_memory(
+        shared_budget.clone(),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let caller_a = worth_execution::ExecutionRequest::serial(&req_a);
+    let caller_b = worth_execution::ExecutionRequest::serial(&req_b);
+    let installed_policy = serial_policy(Some(32 * 1024));
+    let exec_a = QueryRequestExecution::open_serial_request(
+        worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(installed_policy),
+        caller_a,
+    );
+    let exec_b = QueryRequestExecution::open_serial_request(
+        worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(installed_policy),
+        caller_b,
+    );
+
+    exec_a
+        .run_advancement(None, None, |phase_a| {
+            // Raw inner phase reservation charges the shared 16 KiB SerialMemoryBudget.
+            let raw_a = phase_a
+                .borrowed_request_for_test()
+                .reserve_retained_memory(10 * 1024)
+                .expect("first 10 KiB raw phase hold fits in shared 16 KiB budget")
+                .expect("leased inner phase returns reservation");
+
+            // A concurrent advancement sharing the cloned SerialMemoryBudget
+            // must NOT over-admit another 10 KiB via raw phase, Query reserve,
+            // or a subsequent overlapping caller hold.
+            std::thread::scope(|scope| {
+                scope.spawn(|| {
+                    assert!(caller_b.reserve_retained_memory(10 * 1024).is_err());
+                    exec_b
+                        .run_advancement(None, None, |phase_b| {
+                            assert!(phase_b
+                                .borrowed_request_for_test()
+                                .reserve_retained_memory(10 * 1024)
+                                .is_err());
+                            assert!(matches!(
+                                exec_b.reserve(10 * 1024),
+                                Err(Resource::MemoryLimit { .. })
+                            ));
+                            let small = phase_b
+                                .borrowed_request_for_test()
+                                .reserve_retained_memory(2 * 1024)
+                                .expect("2 KiB fits alongside live 10 KiB hold")
+                                .expect("leased inner phase returns reservation");
+                            drop(small);
+                        })
+                        .expect("second advancement completes cleanly");
+                });
+            });
+
+            drop(raw_a);
+            // Releasing raw_a restores full shared room for exec_b.
+            std::thread::scope(|scope| {
+                scope.spawn(|| {
+                    exec_b
+                        .run_advancement(None, None, |phase_b| {
+                            let after = phase_b
+                                .borrowed_request_for_test()
+                                .reserve_retained_memory(10 * 1024)
+                                .expect("10 KiB succeeds after sibling raw hold drops")
+                                .expect("leased inner phase returns reservation");
+                            drop(after);
+                        })
+                        .expect("second advancement completes cleanly");
+                });
+            });
+        })
+        .expect("first advancement completes cleanly");
+
+    assert_eq!(shared_budget.charged_memory_bytes(), 0);
+}
