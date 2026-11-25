@@ -11,7 +11,7 @@ use worth_signal::facade::branch::AdmittedSignalBranchBasis;
 
 pub enum ConditionalExecutionOwner<'a> {
     Memory(RwLockReadGuard<'a, BridgeSealedRuntimeAssembly>),
-    Authored(&'a Arc<BridgeReadmittedAuthoredAssembly>),
+    Authored(&'a BridgeReadmittedAuthoredAssembly),
     Stopped,
 }
 fn unavailable(detail: impl Into<String>) -> BridgeConditionalDenial {

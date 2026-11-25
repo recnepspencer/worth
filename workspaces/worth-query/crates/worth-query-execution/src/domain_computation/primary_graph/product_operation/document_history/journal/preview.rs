@@ -5,7 +5,7 @@ use worth_query_execution_query::facade::ports::{
     HistoryNodeIdInternalPort as _, HistoryPreviewInternalPort as _,
 };
 
-impl<S> HistoryJournal<'_, S> {
+impl HistoryJournal {
     pub(in crate::domain_computation::primary_graph) fn owns_node(
         &self,
         id: WorthQueryHistoryNodeId,

@@ -9,7 +9,6 @@ use crate::branch::{
 use crate::durability::authority::recovered_runtime::DurabilityRecoveryAuthority;
 use crate::durability::authority::recovered_runtime::RecoveredRelationalRuntimeAuthority;
 use std::sync::Mutex;
-use std::sync::Weak;
 
 #[derive(Debug)]
 enum State {
@@ -197,7 +196,7 @@ impl NativeInterimBootstrapContinuation {
         Ok(())
     }
     fn require_owner(&self, runtime: &crate::runtime::RelationalRuntime) -> Result<(), Refusal> {
-        if !Weak::ptr_eq(&self.0.receiver.owner, &runtime.state_binding()) {
+        if !self.0.receiver.owner.ptr_eq(&runtime.state_binding()) {
             return Err(Refusal::BindingMismatch(Mismatch::Runtime));
         }
         runtime

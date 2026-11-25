@@ -2,7 +2,7 @@
 use super::*;
 use worth_query_execution_query::facade::ports::HistoryNodeIdInternalPort as _;
 
-impl<S> HistoryJournal<'_, S> {
+impl HistoryJournal {
     pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn resolve_navigation(
         &self,
         intent: super::super::navigation::WorthQueryHistoryNavigationIntent,
@@ -72,7 +72,7 @@ pub(in crate::domain_computation::primary_graph::product_operation::document_his
         u64,
 }
 
-impl<S> HistoryJournal<'_, S> {
+impl HistoryJournal {
     pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn reserve_navigation_source(
         &mut self,
         execution: &ExecutionRequest<'_, '_>,

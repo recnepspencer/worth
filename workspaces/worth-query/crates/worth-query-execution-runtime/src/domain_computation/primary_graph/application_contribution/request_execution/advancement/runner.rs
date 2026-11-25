@@ -17,7 +17,7 @@ pub fn run_advancement(
     discard: &mut dyn FnMut(),
 ) -> Result<(), WorthQueryAdvancementDenial> {
     let posture = match &execution.form {
-        Form::Leased { lease, policy } | Form::Serial { lease, policy } => lease
+        Form::Leased { lease, policy, .. } | Form::Serial { lease, policy, .. } => lease
             .as_ref()
             .map(|lease| lease.resolved_posture())
             .unwrap_or(policy.posture()),
@@ -56,67 +56,122 @@ fn run_admitted_advancement(
         discard: Some(discard),
         published: published.clone(),
     };
-    let request = execution
-        .execution_request()
-        .map_err(WorthQueryAdvancementDenial::Resource)?;
+    let caller_serial = match &execution.form {
+        Form::Leased { caller_serial, .. } | Form::Serial { caller_serial, .. } => *caller_serial,
+    };
+    if let Some(caller) = caller_serial
+        && let Err(stop) = caller.check_live()
+    {
+        return Err(advancement_denial(
+            worth_execution::WorkCeilingDenial::Stopped(stop),
+        ));
+    }
     if execution.declared_work == Some(0) {
         return Err(WorthQueryAdvancementDenial::Resource(
             super::Resource::WorkExhausted,
         ));
     }
     let mut body_unwind = None;
-    let execute = |lease: Option<&worth_execution::ExecutionResourceLease<'_>>| {
-        observation::record_workers(lease.map_or(1, |lease| lease.policy().max_workers().get()));
-        let active = ActiveAdvancement { execution };
-        let source = match (source_instance, owner) {
-            (Some(source), _) => AdvancementSource::Relational(source),
-            (None, Some(owner)) => AdvancementSource::ProductOwner(owner),
-            (None, None) => AdvancementSource::Bootstrap,
+    let run_inner = |active_execution: &QueryRequestExecution<'_>| {
+        let request = match active_execution.execution_request() {
+            Ok(request) => request,
+            Err(_) => {
+                // Re-extract the original LeaseDenial through `execution_request`.
+                return Err(match &active_execution.form {
+                    Form::Leased {
+                        lease: Err(denial), ..
+                    }
+                    | Form::Serial {
+                        lease: Err(denial), ..
+                    } => worth_execution::WorkCeilingDenial::Admission(*denial),
+                    _ => worth_execution::WorkCeilingDenial::Stopped(
+                        worth_execution::MapKernelStop::AccountingUnavailable,
+                    ),
+                });
+            }
         };
-        match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            body(WorthQueryAdvancementPhase {
-                active: &active,
-                source,
-                owner,
-            });
-            if let Some(maintenance) = maintenance {
-                let invoking = lease
-                    .map(worth_execution::ExecutionRequest::leased)
-                    .unwrap_or(request);
-                super::directory_completion::after_business(invoking, maintenance);
+        let execute = |lease: Option<&worth_execution::ExecutionResourceLease<'_>>| {
+            observation::record_workers(
+                lease.map_or(1, |lease| lease.policy().max_workers().get()),
+            );
+            let active = ActiveAdvancement {
+                execution: active_execution,
+            };
+            let source = match (source_instance, owner) {
+                (Some(source), _) => AdvancementSource::Relational(source),
+                (None, Some(owner)) => AdvancementSource::ProductOwner(owner),
+                (None, None) => AdvancementSource::Bootstrap,
+            };
+            match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                body(WorthQueryAdvancementPhase {
+                    active: &active,
+                    source,
+                    owner,
+                });
+                if let Some(maintenance) = maintenance {
+                    let invoking = lease
+                        .map(worth_execution::ExecutionRequest::leased)
+                        .unwrap_or(request);
+                    super::directory_completion::after_business(invoking, maintenance);
+                }
+            })) {
+                Ok(()) => Some(handoff),
+                Err(payload) => {
+                    body_unwind = Some(payload);
+                    None
+                }
             }
-        })) {
-            Ok(()) => Some(handoff),
-            Err(payload) => {
-                body_unwind = Some(payload);
-                None
+        };
+        if active_execution.has_accounting() {
+            let ceiling = ExecutionWorkCeiling::new(active_execution.declared_work);
+            if retain_returned_outcome || maintenance.is_some() {
+                request.run_completion(ceiling, execute)
+            } else {
+                request.run(ceiling, execute)
             }
+        } else {
+            let native = if retain_returned_outcome || maintenance.is_some() {
+                request.run_native_completion(execute)
+            } else {
+                request.run_native(execute)
+            };
+            native.map(|(value, physical)| {
+                let posture = if physical.active_workers_high_watermark() > 1 {
+                    worth_foundational::ExecutionPosture::Automatic
+                } else {
+                    worth_foundational::ExecutionPosture::Serial
+                };
+                (
+                    value,
+                    worth_foundational::ExecutionReport::native(posture, physical),
+                )
+            })
         }
     };
-    let outcome = if execution.has_accounting() {
-        let ceiling = ExecutionWorkCeiling::new(execution.declared_work);
-        if retain_returned_outcome || maintenance.is_some() {
-            request.run_completion(ceiling, execute)
-        } else {
-            request.run(ceiling, execute)
-        }
-    } else {
-        let native = if retain_returned_outcome || maintenance.is_some() {
-            request.run_native_completion(execute)
-        } else {
-            request.run_native(execute)
-        };
-        native.map(|(value, physical)| {
-            let posture = if physical.active_workers_high_watermark() > 1 {
-                worth_foundational::ExecutionPosture::Automatic
-            } else {
-                worth_foundational::ExecutionPosture::Serial
+    let outcome = match caller_serial {
+        Some(caller) => {
+            let run_within_serial = |_: Option<&worth_execution::ExecutionResourceLease<'_>>| {
+                let scoped = execution.within_active_serial_request(caller);
+                run_inner(&scoped)
             };
-            (
-                value,
-                worth_foundational::ExecutionReport::native(posture, physical),
-            )
-        })
+            let outer = if caller.has_accounting() || caller.work_ceiling().is_some() {
+                caller
+                    .run_completion(
+                        ExecutionWorkCeiling::new(caller.work_ceiling()),
+                        run_within_serial,
+                    )
+                    .map(|(inner, _)| inner)
+            } else {
+                caller
+                    .run_native_completion(run_within_serial)
+                    .map(|(inner, _)| inner)
+            };
+            match outer {
+                Ok(inner) => inner,
+                Err(denial) => Err(denial),
+            }
+        }
+        None => run_inner(execution),
     };
     // The execution owner catches unwinds to close its accounting scope.
     // Preserve the host body's original unwind and its existing posture.

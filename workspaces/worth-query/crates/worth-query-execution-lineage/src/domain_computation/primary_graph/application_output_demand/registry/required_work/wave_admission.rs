@@ -156,8 +156,7 @@ impl WorthQueryOutputDemandRegistry {
             match plan.prepared_inputs() {
                 Some(inputs)
                     if {
-                        std::sync::Arc::ptr_eq(&self.state, &inputs.owner.state)
-                            && inputs.accepts_basis(basis)?
+                        self.state.ptr_eq(&inputs.owner.state) && inputs.accepts_basis(basis)?
                     } => {}
                 Some(_) => {
                     return Err(WorthQueryOutputDemandDenial::new(

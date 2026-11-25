@@ -42,6 +42,11 @@ pub struct SourceImageView<'a> {
     pub source_budget: Option<&'a worth_relational::facade::runtime::CustomInvariantReadBudget<'a>>,
 }
 
+/// Depth-proportional work charge for one ordered-map lookup over `len` maintained rows.
+fn maintained_lookup_work(len: usize) -> u64 {
+    u64::from((usize::BITS - len.leading_zeros()).max(1))
+}
+
 /// Query-bound source rows borrowed during one controlled provider invocation.
 pub struct WorthQueryManagedIndexSourceRows<
     'a,
@@ -106,8 +111,9 @@ impl<'a, S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>
                 )
             }
             SourceImageRows::Maintained(rows) => {
-                // The owned ordered map resolves canonical rank without
-                // visiting or charging every preceding Source occurrence.
+                // Charge ordered-map descent depth before resolving canonical rank.
+                self.control
+                    .checkpoint(maintained_lookup_work(rows.len()))?;
                 let (entity, node) = rows
                     .at(ordinal)
                     .ok_or_else(|| self.control.refuse(Stop::SourceSlotUnavailable))?;
@@ -125,16 +131,20 @@ impl<'a, S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>
         &self,
         slot: WorthQueryManagedIndexSourceSlot,
     ) -> Result<super::WorthQueryManagedIndexSourceRow<'_, S, I>, Stop> {
-        self.validate(slot)?;
+        if slot.owner != self.image.owner {
+            return Err(self.control.refuse(Stop::ForeignSourceSlot));
+        }
         match (self.image.rows, slot.entity) {
-            (SourceImageRows::Maintained(rows), Some(entity)) => {
+            (SourceImageRows::Maintained(rows), Some(entity)) if slot.ordinal == 0 => {
+                self.control
+                    .checkpoint(maintained_lookup_work(rows.len()))?;
                 let node = rows
                     .get(entity)
                     .ok_or_else(|| self.control.refuse(Stop::SourceSlotUnavailable))?;
                 Ok(self.row(slot, node))
             }
             (SourceImageRows::Completed { .. }, None) => self.at(slot.ordinal).map(|(_, row)| row),
-            _ => Err(self.control.refuse(Stop::ForeignSourceSlot)),
+            _ => Err(self.control.refuse(Stop::SourceSlotUnavailable)),
         }
     }
     fn row<'row>(
@@ -192,9 +202,6 @@ impl<'a, S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>
         }
         self.control.poll()
     }
-    pub(crate) fn validate(&self, slot: WorthQueryManagedIndexSourceSlot) -> Result<(), Stop> {
-        self.image.validate_slot(slot, self.control)
-    }
 }
 
 impl SourceImageView<'_> {
@@ -234,10 +241,13 @@ impl SourceImageView<'_> {
             return Err(control.refuse(Stop::ForeignSourceSlot));
         }
         match (self.rows, slot.entity) {
-            (SourceImageRows::Maintained(rows), Some(entity))
-                if slot.ordinal == 0 && rows.contains(entity) =>
-            {
-                Ok(())
+            (SourceImageRows::Maintained(rows), Some(entity)) if slot.ordinal == 0 => {
+                control.checkpoint(maintained_lookup_work(rows.len()))?;
+                if rows.contains(entity) {
+                    Ok(())
+                } else {
+                    Err(control.refuse(Stop::SourceSlotUnavailable))
+                }
             }
             (SourceImageRows::Completed { .. }, None) if slot.ordinal < self.len() => Ok(()),
             _ => Err(control.refuse(Stop::SourceSlotUnavailable)),

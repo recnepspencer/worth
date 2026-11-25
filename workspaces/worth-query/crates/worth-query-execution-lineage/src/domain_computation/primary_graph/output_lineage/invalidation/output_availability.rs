@@ -39,13 +39,30 @@ pub struct CompletedPublication {
     pub identity: Arc<RecordedSettlementIdentity>,
 }
 
+pub(super) trait ObservedOutputCandidateBacking: Send + Sync {
+    fn as_candidate(
+        &self,
+    ) -> &crate::domain_computation::primary_graph::invariant_projection::ObservedOutputCandidate;
+}
+
+impl ObservedOutputCandidateBacking
+    for crate::domain_computation::primary_graph::invariant_projection::ObservedOutputCandidate
+{
+    fn as_candidate(
+        &self,
+    ) -> &crate::domain_computation::primary_graph::invariant_projection::ObservedOutputCandidate
+    {
+        self
+    }
+}
+
 /// A pin of the original native image and actual source slot. No data-only
 /// comparison can substitute a slot from another image or native source.
 pub struct ObservedSourcePublication {
     pub awaiting_first: bool,
     pub address: Arc<OutputSourceAddress>,
     pub state: Arc<SourcePublicationState>,
-    candidate: Option<Arc<crate::domain_computation::primary_graph::invariant_projection::ObservedOutputCandidate>>,
+    candidate: Option<Arc<dyn ObservedOutputCandidateBacking>>,
     source_epoch: crate::domain_computation::primary_graph::application_query::WorthQueryRuntimeSourceIdentity,
     read_closure:
         Arc<dyn crate::ports::SourceReadClosurePort>,

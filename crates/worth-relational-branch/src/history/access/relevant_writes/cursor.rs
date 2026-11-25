@@ -72,7 +72,9 @@ impl RetainedAuthoredWriteSelection {
             if self.generation.prefix.get(&canonical.commit.commit_id) != Some(&ordinal) {
                 return Err(Denial::CanonicalEvidenceUnavailable);
             }
-            slots.push(Some(RelationalAuthoredWriteOccurrence { canonical }))?;
+            slots.push(Some(RelationalAuthoredWriteOccurrence {
+                canonical: crate::history::data::canonical_commit_envelope::shared::SharedCanonicalCommitEnvelopeOwnerPort::from_arc(canonical),
+            }))?;
             next = ordinal.checked_add(1).ok_or(Denial::SizeOverflow)?;
         }
         if !complete {

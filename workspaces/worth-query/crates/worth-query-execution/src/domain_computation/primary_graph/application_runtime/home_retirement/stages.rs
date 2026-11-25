@@ -47,8 +47,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         self.inner
             .mutation_handlers
             .preflight_home_retirement(request)?;
-        self.conditional_cleanup
-            .preflight_home_retirement(request)
+        self.conditional_cleanup.preflight_home_retirement(request)
     }
 
     #[inline(never)]
@@ -61,7 +60,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             crate::domain_computation::primary_graph::application_runtime::inbound_publication::InstalledTransportCloseCustody,
         ),
         WorthQueryHomeRetirementDenial,
-    > {
+    >{
         if !self.inner.installed_producers.is_empty() {
             let history = self
                 .installed_program_support()

@@ -17,7 +17,7 @@ pub struct WorthQueryProductSharedRoot {
 impl WorthQueryProductSharedRoot {
     pub fn new(product: WorthQueryProductRuntime, bridge: ConditionalOwner) -> Self {
         Self {
-            owner_identity: product.owner.owner_identity(),
+            owner_identity: product.fields().owner.owner_identity(),
             product_identity: product.root_identity(),
             bridge: bridge.downgrade(),
         }

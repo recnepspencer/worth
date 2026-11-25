@@ -9,11 +9,12 @@ use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
-impl<S: ApplicationSchema> NavigationProgress<'_, S> {
+impl NavigationProgress {
     /// Only the untouched committed restoration is eligible. A fallback's
     /// later endpoint still requires its complete original tree qualification.
-    pub(super) fn accept_verified_restoration(
+    pub(super) fn accept_verified_restoration<S: ApplicationSchema>(
         &mut self,
+        application: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<S>,
         phase: &WorthQueryAdvancementPhase<'_>,
     ) -> Result<bool, WorthQueryHistoryNavigationDenial> {
         if self.ownership.is_none()
@@ -25,7 +26,7 @@ impl<S: ApplicationSchema> NavigationProgress<'_, S> {
         {
             return Ok(false);
         }
-        let current = self.restoration_is_current(phase)?;
+        let current = self.restoration_is_current(application, phase)?;
         if current {
             if matches!(self.phase, NavigationPhase::AwaitingOutputs { .. }) {
                 let NavigationPhase::AwaitingOutputs {
@@ -65,15 +66,15 @@ impl<S: ApplicationSchema> NavigationProgress<'_, S> {
         Ok(current)
     }
 
-    fn restoration_is_current(
+    fn restoration_is_current<S: ApplicationSchema>(
         &self,
+        application: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<S>,
         phase: &WorthQueryAdvancementPhase<'_>,
     ) -> Result<bool, WorthQueryHistoryNavigationDenial> {
         use WorthQueryHistoryNavigationDenial as Denial;
         let restored = self.output_source.as_ref().ok_or(Denial::IntentDrift)?;
         let original = restored.observation();
-        let selected = self
-            .application
+        let selected = application
             .on_branch(crate::basis::WorthQueryProductBranch::from_occurrence(
                 original.product_observation().lifecycle_incarnation(),
             ))
@@ -91,11 +92,10 @@ impl<S: ApplicationSchema> NavigationProgress<'_, S> {
             };
         }
         let execution = phase
-            .checked_execution_request_for(self.application.inner.runtime.product_runtime_ref())
+            .checked_execution_request_for(application.inner.runtime.product_runtime_ref())
             .map_err(Denial::Stopped)?;
         let historical = self.source.as_ref().ok_or(Denial::IntentDrift)?;
-        let current = self
-            .application
+        let current = application
             .inner
             .runtime
             .primary_provider_ref()

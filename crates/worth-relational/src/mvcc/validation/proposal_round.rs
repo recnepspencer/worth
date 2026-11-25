@@ -19,6 +19,84 @@ pub(super) struct PreparedProposalRound {
 }
 
 impl RelationalPreparationRuntime {
+    pub(crate) fn stage_home_target_preflight_partitions(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        transaction: &mut BranchBoundRelationalTransaction,
+        prior_staged_partitions: &std::collections::BTreeMap<
+            crate::identity::data::PartitionId,
+            crate::storage::overlay::PartitionState,
+        >,
+    ) -> Result<
+        (
+            crate::identity::data::VersionId,
+            crate::runtime::RuntimeSymbolTable,
+            std::collections::BTreeMap<
+                crate::identity::data::PartitionId,
+                (
+                    crate::storage::overlay::PartitionState,
+                    crate::storage::overlay::PartitionMutationJournal,
+                ),
+            >,
+        ),
+        TransactionCommitError,
+    > {
+        let basis = transaction.basis.clone();
+        let selected =
+            crate::branch::root_selection::SelectedRelationalBranchState::from_admitted_basis(
+                &basis,
+            );
+        let source = RelationalProposalSource::Transaction {
+            lowered: None,
+            strategy: None,
+        };
+        crate::storage::residency::probe_head(
+            execution,
+            &selected.with_symbol_admission(&self.services.symbols),
+            |partitions| {
+                let overlay_view =
+                    worth_relational_storage::internal_port::storage::overlay::access::OverlayStateView::new(
+                        partitions,
+                        prior_staged_partitions,
+                    );
+                let round = self.preparation_round();
+                let read = crate::branch::selected_read::SelectedRelationalBranchRead::in_round(
+                    &selected,
+                    if prior_staged_partitions.is_empty() {
+                        partitions
+                    } else {
+                        &overlay_view
+                    },
+                );
+                crate::authority::commit::preparation::probe_symbol_rounds(
+                    execution,
+                    &round,
+                    &basis,
+                    |symbols, round| {
+                        transaction.with_funded_preparation_overlay(execution, |transaction| {
+                            super::proposal_candidate::prepare(
+                                round,
+                                execution,
+                                transaction,
+                                &source,
+                                read,
+                                None,
+                                symbols,
+                                round,
+                            )
+                            .map(|candidate| candidate.into_inner().into_staged_partitions())
+                        })
+                    },
+                )
+            },
+        )
+        .map_err(|failure| {
+            crate::authority::commit::preparation::storage_denial::storage_read_denial(
+                &basis, failure,
+            )
+        })?
+    }
+
     pub(super) fn prepare_proposal_round(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

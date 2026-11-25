@@ -1,8 +1,7 @@
 //! One admitted operation through a weak binding to the actual state.
-use std::sync::Weak;
 use worth_execution::ExecutionRequest;
 
-use super::{RelationalRuntime, RelationalRuntimeState};
+use super::{RelationalRuntime, WeakRelationalRuntimeState};
 use crate::durability::data::{
     CompleteRelationalNativeCheckpoint, RelationalCheckpointArtifactPolicy,
     RelationalNativeCheckpointCaptureDenial,
@@ -11,7 +10,7 @@ use crate::durability::data::{
 /// Retains no Runtime, Services, history or lifecycle binding while idle.
 #[derive(Clone, Debug)]
 pub struct CompleteRelationalCheckpointPreparation {
-    state: Weak<RelationalRuntimeState>,
+    state: WeakRelationalRuntimeState,
 }
 
 impl RelationalRuntime {

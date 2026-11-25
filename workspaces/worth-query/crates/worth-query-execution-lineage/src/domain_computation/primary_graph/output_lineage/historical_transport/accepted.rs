@@ -1,9 +1,10 @@
 //! The exact transported row retained by restored-demand acceptance.
+use super::super::recorded_cell::SharedRecordedOutputCell;
 use super::super::*;
 
 #[derive(Clone)]
 pub struct HistoricalAcceptedOrigin {
-    row: Arc<OnceLock<RecordedOutput>>,
+    row: SharedRecordedOutputCell,
 }
 impl HistoricalAcceptedOrigin {
     fn row(&self) -> &RecordedOutput {
@@ -12,7 +13,7 @@ impl HistoricalAcceptedOrigin {
             .expect("acceptance retains a filled transported row")
     }
     pub fn same_owner(&self, other: &Self) -> bool {
-        Arc::ptr_eq(&self.row, &other.row)
+        self.row.ptr_eq(&other.row)
     }
     pub fn publication(
         &self,
@@ -68,7 +69,7 @@ impl WorthQueryApplicationOutputLineage {
                 .as_ref()
                 .is_some_and(|publication| publication.is_historical_selection()))
         .then(|| HistoricalAcceptedOrigin {
-            row: Arc::clone(cell),
+            row: SharedRecordedOutputCell::from_arc(Arc::clone(cell)),
         })
     }
 }

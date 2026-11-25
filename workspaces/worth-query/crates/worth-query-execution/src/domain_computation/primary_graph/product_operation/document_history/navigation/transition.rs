@@ -22,8 +22,8 @@ impl<'runtime, S: ApplicationSchema> WorthQueryDocumentHistoryNavigation<'runtim
         output_profile: Option<&WorthQueryHistoryOutputProfile>,
     ) -> Result<
         (
-            Arc<super::super::selection::HistorySelectionCell<'runtime, S>>,
-            std::sync::MutexGuard<'call, NavigationProgress<'runtime, S>>,
+            super::super::selection::SharedHistorySelectionCell,
+            std::sync::MutexGuard<'call, NavigationProgress>,
         ),
         WorthQueryHistoryNavigationDenial,
     >
@@ -32,10 +32,12 @@ impl<'runtime, S: ApplicationSchema> WorthQueryDocumentHistoryNavigation<'runtim
     {
         use WorthQueryHistoryNavigationDenial as Denial;
         let cell = self.cell.upgrade().ok_or(Denial::DocumentClosed)?;
-        if !Arc::ptr_eq(&cell, &document.selection) {
+        if !cell.ptr_eq(&document.selection) {
             return Err(Denial::ForeignDocument);
         }
-        let compared = self.attempt.readmit_output_profile(phase, output_profile)?;
+        let compared =
+            self.attempt
+                .readmit_output_profile(&self.application, phase, output_profile)?;
         let progress = match self.attempt.progress.try_lock() {
             Ok(progress) => progress,
             Err(std::sync::TryLockError::WouldBlock) => return Err(Denial::Busy),
@@ -79,7 +81,7 @@ impl<'runtime, S: ApplicationSchema> WorthQueryDocumentHistoryNavigation<'runtim
         let (cell, mut progress) =
             self.registered_progress(phase, document, admission, meaning, output_profile)?;
         if let Some(outputs) = outputs {
-            progress.accept_outputs(phase, outputs)?;
+            progress.accept_outputs(&self.application, phase, outputs)?;
         }
         let completed = if let NavigationPhase::Selected(completed) = &progress.phase {
             completed.clone()
@@ -92,7 +94,7 @@ impl<'runtime, S: ApplicationSchema> WorthQueryDocumentHistoryNavigation<'runtim
                     return Err(Denial::HeadChanged);
                 }
             }
-            progress.retry_prior_cleanup(phase)?;
+            progress.retry_prior_cleanup(&self.application, phase)?;
             if progress.ownership.is_some()
                 && progress.output_profile.is_none()
                 && matches!(
@@ -100,7 +102,7 @@ impl<'runtime, S: ApplicationSchema> WorthQueryDocumentHistoryNavigation<'runtim
                     NavigationPhase::AwaitingOutputs { .. }
                         | NavigationPhase::Selecting { _outputs: None, .. }
                 )
-                && !progress.accept_verified_restoration(phase)?
+                && !progress.accept_verified_restoration(&self.application, phase)?
             {
                 return Err(Denial::RequiresSemanticCorrection(
                     WorthQueryHistoryNavigationEligibilityDenial::RequiredOutputs,
@@ -119,9 +121,9 @@ impl<'runtime, S: ApplicationSchema> WorthQueryDocumentHistoryNavigation<'runtim
                 admission
                     .validate_current_authority()
                     .map_err(Denial::Authorization)?;
-                progress.select(phase, selected)?
+                progress.select(&self.application, phase, selected)?
             } else {
-                progress.progress(phase, admission.publication_request())?;
+                progress.progress(&self.application, phase, admission.publication_request())?;
                 return Ok(None);
             }
         };
@@ -134,18 +136,19 @@ impl<'runtime, S: ApplicationSchema> WorthQueryDocumentHistoryNavigation<'runtim
             .validate_current_authority()
             .map_err(Denial::Authorization)?;
         let execution = phase
-            .checked_execution_request_for(progress.application.inner.runtime.product_runtime_ref())
+            .checked_execution_request_for(self.application.inner.runtime.product_runtime_ref())
             .map_err(Denial::Stopped)?;
         execution.check_live().map_err(|cause| Denial::Stopped(crate::domain_computation::primary_graph::application_contribution::advancement_denial(worth_execution::WorkCeilingDenial::Stopped(cause))))?;
         Ok(Some(completed))
     }
 }
 
-impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
-    fn select(
+impl NavigationProgress {
+    fn select<S: ApplicationSchema>(
         &mut self,
+        application: &crate::domain_computation::primary_graph::product_operation::WorthQueryRuntimeCustody<'_, S>,
         phase: &WorthQueryAdvancementPhase<'_>,
-        mut selected: super::super::selection::HistorySelectionGuard<'_, 'runtime, S>,
+        mut selected: super::super::selection::HistorySelectionGuard<'_>,
     ) -> Result<WorthQueryHistoryNavigationCompletion, WorthQueryHistoryNavigationDenial> {
         use WorthQueryHistoryNavigationDenial as Denial;
         // Every descriptor and custody destination exists before changing the head.
@@ -154,7 +157,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
             .as_ref()
             .expect("pending navigation owns its retained source");
         let execution = phase
-            .checked_execution_request_for(self.application.inner.runtime.product_runtime_ref())
+            .checked_execution_request_for(application.inner.runtime.product_runtime_ref())
             .map_err(Denial::Stopped)?;
         let restoration = selected
             .journal
@@ -183,16 +186,23 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         let returned = completion.clone();
         let physical = completion.selection.physical.clone();
         selected.invalidate_output_authority();
-        let (previous, release) = match selected.head.adopt_at_deferred(candidate, phase, &exact) {
+        let mut current_head = selected.take_head().rebind(application.clone());
+        let candidate =
+            crate::domain_computation::primary_graph::WorthQueryExpectedProductBranch::from_detached(
+                application.clone(),
+                candidate,
+            );
+        let (previous, release) = match current_head.adopt_at_deferred(candidate, phase, &exact) {
             Ok(adopted) => adopted,
             Err(failure) => {
+                selected.put_head(current_head.into_detached());
                 selected
                     .journal
                     .cancel_navigation_source(self.requested, restoration);
                 drop(selected);
                 let (candidate, cause) = failure.into_parts();
                 self.phase = NavigationPhase::Selecting {
-                    candidate,
+                    candidate: candidate.into_detached(),
                     exact,
                     _publication,
                     _outputs,
@@ -200,13 +210,14 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                 return Err(Denial::Adoption(cause));
             }
         };
+        selected.put_head(current_head.into_detached());
         selected.expected = physical;
         let previous_source = std::mem::replace(&mut selected.physical_source, exact);
         selected.journal.store_previous(
             self.head_slot
                 .take()
                 .expect("original prepaid head destination"),
-            previous,
+            previous.into_detached(),
         );
         let unused_source = selected.journal.fill_navigation_source(
             self.requested,

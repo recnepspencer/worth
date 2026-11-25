@@ -65,3 +65,30 @@ impl IndexDefinitionReadBinding {
         })
     }
 }
+
+/// Admit `budget` against Native's exact staged successor cold-reconstruction
+/// projection under the blessed schema-transition reconstruction boundary.
+pub fn admit_home_target_cold_reconstruction_budget(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    staged: super::cold_preflight::StagedHomeTargetSuccessor,
+    definitions: Option<&PreparedRelationalIndexDefinitions>,
+    fallback_catalog: &crate::runtime::state::subsystems::indexing::IndexDefinitionCatalog,
+    budget: crate::contracts::indexes::data::maintenance::DerivedIndexMaintenanceBudget,
+) -> Result<
+    crate::contracts::indexes::data::maintenance::DerivedIndexMaintenanceWork,
+    DerivedIndexMaintenanceDenial,
+> {
+    if !super::cold_preflight::target_catalog_is_non_empty(definitions, fallback_catalog) {
+        return Ok(Default::default());
+    }
+    ReconstructionLane::enter_reconstruction(|lane| {
+        super::cold_preflight::admit_in_lane(
+            lane,
+            execution,
+            staged,
+            definitions,
+            fallback_catalog,
+            budget,
+        )
+    })
+}

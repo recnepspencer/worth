@@ -15,8 +15,9 @@ impl CapturedWorldInterimOrigin {
         application: CanonicalDigestId,
     ) -> Result<CapturedWorldInterimAdmission, Stop> {
         request_scope::run(request, || {
-            self.validate_transport(self.0.wrapper.bytes(), request)?;
-            let old = &self.0.captured;
+            let origin = self.0.as_origin();
+            self.validate_transport(origin.wrapper.bytes(), request)?;
+            let old = &origin.captured;
             // Even an empty registry must join its actual original Native source.
             port.readmit_interim_memory_component(
                 request,

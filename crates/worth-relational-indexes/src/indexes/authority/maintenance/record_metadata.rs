@@ -40,21 +40,12 @@ pub(super) fn entity_kind(
         return Ok(None);
     };
     work.lookup(
-        (*view
-            .root()
-            .schema_authority()
-            .registry()
-            .owner_entity_kinds())
-        .len(),
+        (*view.schema_authority().registry().owner_entity_kinds()).len(),
         1,
     )?;
-    Ok((*view
-        .root()
-        .schema_authority()
-        .registry()
-        .owner_entity_kinds())
-    .contains_key(&kind)
-    .then_some(kind))
+    Ok((*view.schema_authority().registry().owner_entity_kinds())
+        .contains_key(&kind)
+        .then_some(kind))
 }
 pub(super) fn relation(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -87,21 +78,10 @@ pub(super) fn relation(
         return Ok(None);
     };
     work.lookup(
-        (*view
-            .root()
-            .schema_authority()
-            .registry()
-            .owner_relation_kinds())
-        .len(),
+        (*view.schema_authority().registry().owner_relation_kinds()).len(),
         1,
     )?;
-    if !(*view
-        .root()
-        .schema_authority()
-        .registry()
-        .owner_relation_kinds())
-    .contains_key(&kind)
-    {
+    if !(*view.schema_authority().registry().owner_relation_kinds()).contains_key(&kind) {
         return Ok(None);
     }
     Ok(slot

@@ -95,7 +95,7 @@ pub fn lookup(
     }
     crate::contracts::execution::request_custody::check_request(execution)
         .map_err(Denial::Execution)?;
-    let seed = predecessor.applied_generation();
+    let seed = predecessor.applied_generation().to_arc();
     let entries = read
         .fields
         .expect("Native applied pin carries its field image")
@@ -103,7 +103,7 @@ pub fn lookup(
             execution,
             (predecessor.index_id(), seed.generation_id),
             predecessor.field_locator(),
-            seed,
+            &seed,
         )
         .map_err(|cause| maintenance_denial(predecessor.index_id(), cause))?;
     let key_bytes =
@@ -251,7 +251,9 @@ fn maintenance_denial(
     use AppliedEntityFieldLookupDenial as D;
     let kind = match cause.kind {
         M::Execution(cause) => return D::Execution(cause),
-        M::WorkBudgetExceeded => return D::Execution(Cause::WorkExhausted),
+        M::WorkBudgetExceeded | M::ColdRecordSlotBudgetExceeded => {
+            return D::Execution(Cause::WorkExhausted)
+        }
         M::ForeignCandidate | M::BeforeRootMismatch => return D::ForeignPredecessor,
         M::Basis(_) | M::SnapshotUnavailable | M::CommitMismatch | M::CandidateUnavailable => {
             return D::ExactBasisRequired

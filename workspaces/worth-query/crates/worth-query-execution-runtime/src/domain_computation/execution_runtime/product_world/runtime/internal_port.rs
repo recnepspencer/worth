@@ -142,11 +142,17 @@ pub trait ProductRuntimeInternalPort: Sized {
         retain_returned_outcome: bool,
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial>;
+
+    fn with_execution_request_advancement<R>(
+        &self,
+        caller: worth_execution::ExecutionRequest<'_, '_>,
+        body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+    ) -> Result<R, WorthQueryAdvancementDenial>;
 }
 
 impl ProductRuntimeInternalPort for WorthQueryProductRuntime {
     fn owner_ref(&self) -> &WorthQueryProductWorldPorts {
-        &self.owner
+        &self.fields().owner
     }
 
     fn source(&self) -> &RuntimeBridgeRelationalSource {
@@ -172,11 +178,11 @@ impl ProductRuntimeInternalPort for WorthQueryProductRuntime {
     }
 
     fn activations_ref(&self) -> &Arc<WorthQueryProductActivationRegistry> {
-        &self.activations
+        &self.fields().activations
     }
 
     fn clock_ref(&self) -> &WorthQueryProductWorldClock {
-        &self.clock
+        &self.fields().clock
     }
 
     fn owner_cleanup_ref(&self) -> &WorthQueryProductBranchOwnerCleanupRegistry {
@@ -188,7 +194,7 @@ impl ProductRuntimeInternalPort for WorthQueryProductRuntime {
     }
 
     fn default_occurrence(&self) -> ProductBranchIncarnation {
-        self.default_occurrence
+        self.fields().default_occurrence
     }
 
     fn root_identity(&self) -> Arc<WorthQueryProductRootIdentity> {
@@ -196,7 +202,7 @@ impl ProductRuntimeInternalPort for WorthQueryProductRuntime {
     }
 
     fn recovered_root_authority_ref(&self) -> Option<&Arc<RecoveredRuntimeWorldRootAuthority>> {
-        self.recovered_root_authority.as_ref()
+        self.fields().recovered_root_authority.as_ref()
     }
 
     fn from_parts(
@@ -341,5 +347,13 @@ impl ProductRuntimeInternalPort for WorthQueryProductRuntime {
             retain_returned_outcome,
             body,
         )
+    }
+
+    fn with_execution_request_advancement<R>(
+        &self,
+        caller: worth_execution::ExecutionRequest<'_, '_>,
+        body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+    ) -> Result<R, WorthQueryAdvancementDenial> {
+        Self::with_execution_request_advancement(self, caller, body)
     }
 }

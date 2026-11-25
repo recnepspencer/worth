@@ -79,7 +79,8 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 [owners.runtime]
 crate = "worth-relational"
 layer = 6
-cap = 78000
+# +1000 for PR 4C Native staged cold-preflight and transition backfill support.
+cap = 79000
 floor = 32000
 depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "indexes", "durability", "publication"]
 

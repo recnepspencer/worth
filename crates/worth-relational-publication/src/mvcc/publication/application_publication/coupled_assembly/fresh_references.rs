@@ -1,6 +1,7 @@
 //! Keep actual prefix allocations and their symbolic transaction references together.
 use crate::mvcc::publication::application_publication::custody;
 use contracts::execution::request_stage::checkpoint;
+use contracts::lineage::data::CommitNamingPlan;
 use contracts::symbols::data::client_key::{ClientKey, ClientKeyOwnerPort as _};
 use contracts::symbols::data::string_interner::StringInterner;
 use contracts::transactions::data::intents::mutation_intent::MutationIntent;
@@ -9,7 +10,6 @@ use contracts::transactions::data::outcomes::transaction_commit_error::Transacti
 use contracts::transactions::data::primitives::EntityReference;
 use worth_execution::{ExecutionRequest, MapKernelContext};
 use worth_relational_contracts::internal_port as contracts;
-use contracts::lineage::data::CommitNamingPlan;
 
 /// A producer sees real allocated IDs in its candidate reads. The enclosing
 /// transaction keeps their original Create references for the final full plan.

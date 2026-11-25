@@ -15,17 +15,26 @@ const ATTRIBUTE: &str = "worth_query";
 /// Visits each key of every `#[worth_query(..)]` attribute, in source order.
 pub(crate) fn visit_keys(
     attributes: &[Attribute],
+    visit: impl FnMut(&str, &ParseNestedMeta<'_>) -> syn::Result<()>,
+) -> syn::Result<()> {
+    visit_keys_for(attributes, &[ATTRIBUTE], visit)
+}
+
+/// Visits each key of every attribute whose path matches one of `names`, in source order.
+pub(crate) fn visit_keys_for(
+    attributes: &[Attribute],
+    names: &[&str],
     mut visit: impl FnMut(&str, &ParseNestedMeta<'_>) -> syn::Result<()>,
 ) -> syn::Result<()> {
     for attribute in attributes
         .iter()
-        .filter(|attribute| attribute.path().is_ident(ATTRIBUTE))
+        .filter(|attribute| names.iter().any(|name| attribute.path().is_ident(name)))
     {
         attribute.parse_nested_meta(|meta| {
             let key = meta
                 .path
                 .get_ident()
-                .ok_or_else(|| meta.error("expected a `worth_query` key, such as `schema = ..`"))?
+                .ok_or_else(|| meta.error("expected an attribute key, such as `namespace = ..`"))?
                 .unraw()
                 .to_string();
             visit(&key, &meta)

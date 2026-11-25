@@ -159,7 +159,7 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> WorthQueryDocumentHi
         }
         let outcome = {
             let mut head = slot.lock();
-            head.advance(phase);
+            head.advance(&self.application, phase);
             match &*head {
                 State::Closed(_) => WorthQueryHistoryReleaseOutcome::Closed,
                 State::Refused { .. } => WorthQueryHistoryReleaseOutcome::HeadRefused,

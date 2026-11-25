@@ -1,11 +1,11 @@
 //! Retain actual discovery evidence on its already registered root, never admit from a descriptor.
-use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use super::*;
 use crate::domain_computation::primary_graph::{
     provider::CandidateReadSupport, WorthQueryApplicationAttemptDenial as Denial,
     WorthQueryApplicationAttemptDenialKind as Kind,
 };
 use crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_relational::facade::identity::EntityId;
 impl WorthQueryPrimaryGraphApplicationAttemptStore {
     fn query_support_root(

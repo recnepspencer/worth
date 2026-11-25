@@ -1,13 +1,55 @@
 //! Durable committed-application evidence minted only from publication completion.
 
+use std::fmt;
+use std::sync::{Arc, OnceLock};
+use worth_execution::ExecutionArray;
 use worth_relational::facade::history::{BranchId, RelationalCommitReceipt};
+
+type CoupledMembersArray = ExecutionArray<OnceLock<WorthQueryPrimaryGraphCommittedApplication>>;
+
+trait CoupledMembersBacking: Send + Sync {
+    fn as_members(&self) -> &CoupledMembersArray;
+}
+
+impl CoupledMembersBacking for CoupledMembersArray {
+    fn as_members(&self) -> &CoupledMembersArray {
+        self
+    }
+}
+
+#[derive(Clone)]
+struct SharedCoupledMembers(Arc<dyn CoupledMembersBacking>);
+
+impl SharedCoupledMembers {
+    fn from_arc(members: Arc<CoupledMembersArray>) -> Self {
+        Self(members)
+    }
+
+    fn as_members(&self) -> &CoupledMembersArray {
+        CoupledMembersBacking::as_members(&*self.0)
+    }
+}
+
+impl PartialEq for SharedCoupledMembers {
+    fn eq(&self, other: &Self) -> bool {
+        self.as_members() == other.as_members()
+    }
+}
+
+impl Eq for SharedCoupledMembers {}
+
+impl fmt::Debug for SharedCoupledMembers {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.as_members().fmt(f)
+    }
+}
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryPrimaryGraphCommittedApplication {
     application_outcome_identity: Option<
         crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity,
     >,
-    coupled_members: Option<std::sync::Arc<worth_execution::ExecutionArray<std::sync::OnceLock<Self>>>>,
+    coupled_members: Option<SharedCoupledMembers>,
     coupled_member: bool,
     runtime_instance_id: u64,
     changed_record_count: usize,
@@ -66,12 +108,16 @@ impl WorthQueryPrimaryGraphCommittedApplication {
         &mut self,
         members: std::sync::Arc<worth_execution::ExecutionArray<std::sync::OnceLock<Self>>>,
     ) {
-        assert!(self.coupled_members.replace(members).is_none());
+        assert!(self
+            .coupled_members
+            .replace(SharedCoupledMembers::from_arc(members))
+            .is_none());
     }
     pub fn complete_coupled_member(&self, ordinal: usize, member: Self) {
         self.coupled_members
             .as_ref()
-            .expect("pre-effect group evidence slots")[ordinal]
+            .expect("pre-effect group evidence slots")
+            .as_members()[ordinal]
             .set(member)
             .unwrap_or_else(|_| panic!("each performed writer settles exactly once"));
     }
@@ -79,7 +125,7 @@ impl WorthQueryPrimaryGraphCommittedApplication {
         std::iter::once(self).chain(
             self.coupled_members
                 .iter()
-                .flat_map(|members| members.iter())
+                .flat_map(|members| members.as_members().iter())
                 .map(|member| {
                     member.get().expect(
                         "group settlement completes every writer before receipt publication",

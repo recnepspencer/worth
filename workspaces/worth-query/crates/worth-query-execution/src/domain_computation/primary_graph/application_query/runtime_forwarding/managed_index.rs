@@ -77,6 +77,19 @@ mod domain_computation_primary_graph_application_query_managed_index_receiver_li
             self.inner
                 .open_application_managed_index::<B, I>(phase, binding, plan)
         }
+        pub fn ensure_application_managed_index_ready<
+            B: ApplicationQueryBinding<S>,
+            I: ApplicationManagedIndexBinding<S>,
+        >(
+            &self,
+            phase: &WorthQueryAdvancementPhase<'_>,
+            binding: &WorthQueryInstalledApplicationQueryBinding<S, B>,
+            external: &WorthQueryAuthenticatedExternalPrincipal<S>,
+            plan: BoundPlan<'_, S, B>,
+        ) -> Result<WorthQueryManagedIndex<S, I>, Denial> {
+            self.inner
+                .ensure_application_managed_index_ready::<B, I>(phase, binding, external, plan)
+        }
         pub fn rebuild_application_managed_index<
             B: ApplicationQueryBinding<S>,
             I: ApplicationManagedIndexBinding<S>,

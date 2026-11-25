@@ -39,13 +39,19 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             self.validate_reservation(&reserved).is_ok(),
             "an envelope abandons only the record its own document reserved"
         );
-        let unclosed = match (candidate.map(|candidate| candidate.into_owned_head()), phase) {
+        let unclosed = match (
+            candidate.map(|candidate| candidate.into_owned_head()),
+            phase,
+        ) {
             (None, _) => None,
-            (Some(head), None) => Some(HistoryHeadCustody::Live(head)),
+            (Some(head), None) => Some(HistoryHeadCustody::Live(head.into_detached())),
             (Some(head), Some(phase)) => match head.close(phase) {
                 Ok(_) => None,
                 Err(WorthQueryOwnedProductHeadCloseFailure::Retained { head, denial }) => {
-                    Some(HistoryHeadCustody::Refused { head, denial })
+                    Some(HistoryHeadCustody::Refused {
+                        head: head.into_detached(),
+                        denial,
+                    })
                 }
                 Err(WorthQueryOwnedProductHeadCloseFailure::Retired { branch, failure }) => {
                     Some(HistoryHeadCustody::Retired { branch, failure })

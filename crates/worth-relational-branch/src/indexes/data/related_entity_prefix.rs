@@ -1,6 +1,7 @@
 //! Request-scoped exact leading-value ranges over one immutable ordered generation.
 use super::{
     BoundedRelatedEntityOrderedLookupRequest, DerivedIndexGeneration, DerivedIndexGenerationId,
+    SharedDerivedIndexGeneration,
 };
 use crate::identity::data::{EntityId, KindId};
 use std::sync::Arc;
@@ -34,7 +35,7 @@ pub struct BoundedRelatedEntityPrefixBoundary {
     pub(crate) basis: crate::history::retention::VisibilitySnapshotBasis,
     pub(crate) _memory: Option<worth_execution::ExecutionMemoryReservation>,
     pub(crate) runtime: u64,
-    pub(crate) generation: Arc<DerivedIndexGeneration>,
+    pub(crate) generation: SharedDerivedIndexGeneration,
     pub(crate) parent: EntityId,
     pub(crate) child_kind: KindId,
     pub(crate) prefix_len: usize,
@@ -104,7 +105,7 @@ impl<'a> BoundedRelatedEntityPrefixLookupRequestFieldsPort<'a>
 pub trait BoundedRelatedEntityPrefixBoundaryFieldsPort {
     fn owner_basis(&self) -> &crate::history::retention::VisibilitySnapshotBasis;
     fn owner_child_kind(&self) -> &KindId;
-    fn owner_generation(&self) -> &Arc<DerivedIndexGeneration>;
+    fn owner_generation(&self) -> &SharedDerivedIndexGeneration;
     fn owner_last(&self) -> &usize;
     fn owner_parent(&self) -> &EntityId;
     fn owner_prefix_len(&self) -> &usize;
@@ -118,7 +119,7 @@ impl BoundedRelatedEntityPrefixBoundaryFieldsPort for BoundedRelatedEntityPrefix
     fn owner_child_kind(&self) -> &KindId {
         &self.child_kind
     }
-    fn owner_generation(&self) -> &Arc<DerivedIndexGeneration> {
+    fn owner_generation(&self) -> &SharedDerivedIndexGeneration {
         &self.generation
     }
     fn owner_last(&self) -> &usize {
@@ -153,7 +154,7 @@ pub fn assemble_bounded_related_entity_prefix_boundary(
         basis: parts.basis,
         _memory: parts._memory,
         runtime: parts.runtime,
-        generation: parts.generation,
+        generation: parts.generation.into(),
         parent: parts.parent,
         child_kind: parts.child_kind,
         prefix_len: parts.prefix_len,

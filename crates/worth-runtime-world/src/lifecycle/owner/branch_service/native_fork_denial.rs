@@ -47,6 +47,7 @@ fn index_preparation_denial(
         | Index::GenerationKindMismatch(_)
         | Index::PriorEntryMismatch
         | Index::ColdReconstructionRequired
+        | Index::ColdRecordSlotBudgetExceeded
         | Index::WorkBudgetExceeded
         | Index::ForeignCandidate
         | Index::CandidateUnavailable

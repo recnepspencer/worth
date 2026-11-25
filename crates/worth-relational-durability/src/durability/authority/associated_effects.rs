@@ -1,10 +1,22 @@
 //! Read-only original effect facts; none of these descriptions grants adoption.
 use contracts::transactions::data::outcomes::commit_semantic_result::RecoveredRelationalSemanticResult;
+use std::any::Any;
 use std::sync::{Arc, Weak};
 use worth_relational_branch::internal_port::history::commit::envelope_residency::RelationalCommitEnvelopeResidency;
 use worth_relational_branch::internal_port::history::data::caller_association::RelationalCallerAssociation;
+use worth_relational_branch::internal_port::history::data::SharedCanonicalCommitEnvelope;
 use worth_relational_contracts::internal_port as contracts;
 use worth_relational_storage::internal_port::durability::medium::cold_source::RelationalDurableColdSource;
+
+trait EnvelopeResidencyBacking: std::fmt::Debug + Send + Sync {
+    fn into_any(self: Arc<Self>) -> Arc<dyn Any + Send + Sync>;
+}
+
+impl EnvelopeResidencyBacking for RelationalCommitEnvelopeResidency {
+    fn into_any(self: Arc<Self>) -> Arc<dyn Any + Send + Sync> {
+        self
+    }
+}
 
 pub mod created_row;
 pub use worth_relational_branch::internal_port::durability::authority::associated_effects::{
@@ -25,7 +37,7 @@ pub struct RelationalAssociatedEffectSubject {
     runtime_instance_id: u64,
     entry: worth_relational_branch::internal_port::history::commit::retained_index::RetainedCanonicalIndex,
     source: Weak<dyn RelationalDurableColdSource>,
-    residency: Weak<RelationalCommitEnvelopeResidency>,
+    residency: Weak<dyn EnvelopeResidencyBacking>,
 }
 
 impl RelationalAssociatedEffectSubject {
@@ -71,7 +83,7 @@ pub struct ReadmittedRelationalAssociatedEffect {
 
 #[derive(Debug)]
 pub enum ReadmittedEffectOrigin {
-    Original(worth_relational_branch::internal_port::history::data::positioned_canonical_commit::PositionedCanonicalCommit),
+    Original(SharedCanonicalCommitEnvelope),
     Checkpoint {
         commit: worth_relational_branch::internal_port::durability::checkpoint_admission::admitted_commit::CheckpointAdmittedCommit,
         data: worth_relational_branch::internal_port::durability::canonical_commit_artifact::decoded_quote::checkpoint_effect_data::CheckpointEffectData,
@@ -81,7 +93,7 @@ pub enum ReadmittedEffectOrigin {
 impl ReadmittedRelationalAssociatedEffect {
     pub(super) fn branch(&self) -> &contracts::history::data::coordinates::BranchId {
         match &self.origin {
-            ReadmittedEffectOrigin::Original(positioned) => &positioned.envelope().branch_context,
+            ReadmittedEffectOrigin::Original(envelope) => &envelope.branch_context,
             ReadmittedEffectOrigin::Checkpoint { commit, .. } => &commit.index().commit.branch_id,
         }
     }
@@ -111,7 +123,14 @@ impl RelationalAssociatedEffectSubject {
     }
 
     fn bound_residency(&self) -> Option<Arc<RelationalCommitEnvelopeResidency>> {
-        let residency = self.residency.upgrade()?;
+        let residency = self
+            .residency
+            .upgrade()?
+            .into_any()
+            .downcast::<RelationalCommitEnvelopeResidency>()
+            .expect(
+                "RelationalAssociatedEffectSubject always wraps RelationalCommitEnvelopeResidency",
+            );
         let source = self.source.upgrade()?;
         let (entry, actual_source) = residency.source_placement()?;
         if !entry.same_owner(&self.entry) || !Arc::ptr_eq(&actual_source, &source) {

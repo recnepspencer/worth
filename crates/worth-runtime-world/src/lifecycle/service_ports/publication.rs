@@ -1,4 +1,5 @@
 use super::super::availability::RuntimeWorldAvailability;
+use super::super::owner_backing::WeakWorldOwner;
 use super::super::{
     RuntimeWorldInstant, RuntimeWorldOwnerExecutionService, RuntimeWorldOwnerRoot,
     RuntimeWorldOwnerUnavailable, RuntimeWorldPreparationService,
@@ -9,7 +10,7 @@ use crate::publication::{
     PreparedCompositePublicationWithSignal, PreparedCompositePublicationWithoutSignal,
     RuntimeWorldCancellationToken, RuntimeWorldPublicationOutcome, WithSignal, WithoutSignal,
 };
-use std::sync::{Arc, Weak};
+use std::sync::Arc;
 use worth_signal::facade::{SignalError, SignalTransaction};
 
 mod bootstrap;
@@ -38,7 +39,7 @@ where
     Ctx: Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
-    owner: Weak<RuntimeWorldOwnerRoot<D, I, E, Ctx, T>>,
+    owner: WeakWorldOwner<RuntimeWorldOwnerRoot<D, I, E, Ctx, T>>,
 }
 impl<D, I, E, Ctx, T> Clone for RuntimeWorldPublicationPort<D, I, E, Ctx, T>
 where
@@ -62,7 +63,9 @@ where
     Ctx: Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
-    pub(in crate::lifecycle) fn new(owner: Weak<RuntimeWorldOwnerRoot<D, I, E, Ctx, T>>) -> Self {
+    pub(in crate::lifecycle) fn new(
+        owner: WeakWorldOwner<RuntimeWorldOwnerRoot<D, I, E, Ctx, T>>,
+    ) -> Self {
         Self { owner }
     }
     pub(in crate::lifecycle) fn service(

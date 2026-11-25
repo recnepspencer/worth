@@ -14,7 +14,8 @@ use super::{
 };
 use crate::domain_computation::primary_graph::conditional_operation::{
     operation_invocation::{
-        WorthQueryTemporalOperationExecution, WorthQueryTemporalOperationInvoker,
+        WorthQueryTemporalDueFieldWriter, WorthQueryTemporalOperationExecution,
+        WorthQueryTemporalOperationInvoker,
     },
     reconstruction_authority::{
         WorthQueryTemporalPrincipalSource, WorthQueryTemporalReconstructionAccess,
@@ -49,6 +50,7 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) fn reent
     LifecycleField,
     LifecycleValue,
     Authorization,
+    DueField,
     Clock,
 >(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -86,6 +88,7 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) fn reent
         LifecycleField,
         LifecycleValue,
         Authorization,
+        DueField,
     >,
     candidates: &mut BTreeMap<
         String,
@@ -93,6 +96,7 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) fn reent
     >,
     wakes: &mut [WorthQueryRetainedConditionalWake],
     runtime_binding: &WorthQueryTemporalRuntimeBindingIdentity,
+    observed_coordinate: u64,
 ) -> Result<
     WorthQueryTemporalReentryCounts,
     super::super::super::query_obligations::QueryObligationDenial,
@@ -142,12 +146,20 @@ where
     LifecycleValue: Clone,
     Authorization:
         super::super::WorthQueryTemporalOperationAuthorization<Schema, Operation, Input, Scope>,
+    DueField: WorthQueryTemporalDueFieldWriter<Schema, IntentEntity>,
 {
     let mut counts = WorthQueryTemporalReentryCounts::default();
     for wake in wakes.iter_mut() {
         super::durable_decision::flush_record(runtime, request_execution, wake)?;
     }
     for wake in wakes.iter_mut() {
+        // Once one wake commits on this product snapshot, the branch head has
+        // moved past `product`; leave remaining eligible wakes untouched so
+        // the caller's next step re-selects the fresh branch head cleanly
+        // without opening a managed run against a superseded Directory basis.
+        if counts.committed > 0 {
+            break;
+        }
         wake.application_attempted = false;
         wake.application_admission_canonical_work =
             worth_query_installation::facade::WorthQueryCanonicalWorkEvidence::zero();
@@ -170,9 +182,12 @@ where
             )
             | WorthQueryRetainedConditionalDecision::OperationRetryable(evidence, _)
             | WorthQueryRetainedConditionalDecision::OperationBackpressured(evidence, _)
-            | WorthQueryRetainedConditionalDecision::OperationIndeterminate(evidence, _) => {
-                evidence
-            }
+            | WorthQueryRetainedConditionalDecision::OperationIndeterminate(evidence, _)
+            | WorthQueryRetainedConditionalDecision::OperationControlStopped(
+                evidence,
+                super::WorthQueryTemporalControlStop::Cancelled
+                | super::WorthQueryTemporalControlStop::TimedOut,
+            ) => evidence,
             WorthQueryRetainedConditionalDecision::OperationCleanupRequired(evidence, cleanup) => {
                 wake.decision = WorthQueryRetainedConditionalDecision::OperationCleanupRequired(
                     evidence, cleanup,
@@ -182,7 +197,10 @@ where
             }
             other @ (WorthQueryRetainedConditionalDecision::Suppressed(_)
             | WorthQueryRetainedConditionalDecision::Deferred(_)
-            | WorthQueryRetainedConditionalDecision::OperationControlStopped(_, _)
+            | WorthQueryRetainedConditionalDecision::OperationControlStopped(
+                _,
+                super::WorthQueryTemporalControlStop::Authorization(_),
+            )
             | WorthQueryRetainedConditionalDecision::OperationTerminalFailure(_, _)
             | WorthQueryRetainedConditionalDecision::OperationProductUnpublished(
                 _,
@@ -203,7 +221,7 @@ where
         let identity = wake.due.intent_identity().as_str();
         let candidate_present = candidates
             .get(identity)
-            .is_some_and(|candidate| wake_matches_candidate(wake, candidate.candidate()));
+            .is_some_and(|candidate| wake_matches_candidate(wake, candidate));
         if !candidate_present {
             let durable_indeterminate = wake.continuation_identity.filter(|cont| {
                 was_indeterminate
@@ -220,6 +238,7 @@ where
                     cont.intent,
                 );
                 apply_reentry_outcome(
+                    request_execution,
                     bridge,
                     clock,
                     candidates,
@@ -227,16 +246,33 @@ where
                     identity.to_string(),
                     evidence,
                     outcome,
+                    observed_coordinate,
+                    None,
                     &mut counts,
                 );
                 super::durable_decision::flush_record(runtime, request_execution, wake)?;
             } else {
-                wake.decision =
-                    WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(
-                        evidence, None,
-                    );
+                wake.decision = WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(
+                    evidence, None,
+                );
             }
             continue;
+        }
+        if let Some(outcome) = super::outcome_application::consult_retryable(request_execution) {
+            apply_reentry_outcome(
+                request_execution,
+                bridge,
+                clock,
+                candidates,
+                wake,
+                identity.to_string(),
+                evidence,
+                outcome,
+                observed_coordinate,
+                None,
+                &mut counts,
+            );
+            break;
         }
         let candidate = candidates.get(identity).expect("checked candidate above");
         wake.application_attempted = true;
@@ -277,6 +313,7 @@ where
         wake.continuation_identity = attempt.continuation_identity;
         wake.application_admission_canonical_work = attempt.admission_canonical_work;
         apply_reentry_outcome(
+            request_execution,
             bridge,
             clock,
             candidates,
@@ -284,6 +321,8 @@ where
             identity.to_string(),
             evidence,
             attempt.outcome,
+            observed_coordinate,
+            attempt.rescheduled,
             &mut counts,
         );
         super::durable_decision::flush_record(runtime, request_execution, wake)?;

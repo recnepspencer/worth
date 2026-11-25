@@ -64,7 +64,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         let (_cell, mut progress) =
             navigation.registered_progress(phase, self, admission, meaning, Some(profile))?;
         let key = progress.meaning.canonical_key();
-        if progress.accept_verified_restoration(phase)? {
+        if progress.accept_verified_restoration(self.application(), phase)? {
             return Ok(HistoryOutputLookup::Pending { key });
         }
         let source_phase = match &progress.phase {

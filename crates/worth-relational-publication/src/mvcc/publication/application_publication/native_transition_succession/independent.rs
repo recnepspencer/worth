@@ -68,7 +68,7 @@ pub fn readmit_current_independent_output_successor(
         authority: installed
             .authority
             .seal_required_output_publication_at(origin.commit.commit_id.0, ordinal),
-        evidence: worth_relational_branch::internal_port::publication::ownership::evidence::PublicationEvidence::Canonical(envelope),
+        evidence: worth_relational_branch::internal_port::publication::ownership::evidence::PublicationEvidence::canonical(envelope),
         origin,
         readmitted_at: Some(basis.clone()),
     }))

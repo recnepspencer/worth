@@ -13,6 +13,6 @@ impl ManagedSourceRegistration for RelationalRuntimePublicationLifecycle {
 
 impl RelationalRuntimePublicationBinding {
     pub fn source_registration(&self) -> Arc<dyn ManagedSourceRegistration> {
-        self.lifecycle.clone()
+        self.lifecycle.to_source_registration()
     }
 }

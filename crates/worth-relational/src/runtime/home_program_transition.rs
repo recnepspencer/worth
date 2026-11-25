@@ -31,6 +31,7 @@ mod promotion;
 pub use promotion::RelationalHomeProgramPromotionRefused;
 mod schema_compilation_denial;
 mod step_admission;
+mod target_preflight;
 mod target_step;
 pub(crate) use crate::branch::home_program_step::AdmittedRelationalHomeProgramStep;
 pub(crate) use coverage::RelationalHomeTargetCoverage;

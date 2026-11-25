@@ -1,7 +1,7 @@
 //! Charge one bounded eligibility or release transition before owner effects.
 use super::*;
 
-impl<S> HistoryJournal<'_, S> {
+impl HistoryJournal {
     pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn quote_frontier(
         &self,
         execution: &ExecutionRequest<'_, '_>,

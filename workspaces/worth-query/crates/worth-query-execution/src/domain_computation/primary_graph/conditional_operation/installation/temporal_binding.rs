@@ -39,6 +39,7 @@ where
         LifecycleField,
         LifecycleValue,
         Authorization,
+        DueField,
     >(
         &mut self,
         binding: WorthQueryInstalledTemporalConditionalOperation<
@@ -72,6 +73,7 @@ where
             LifecycleField,
             LifecycleValue,
             Authorization,
+            DueField,
         >,
         reconstruction: WorthQueryTemporalReconstructionAccess<
             Schema,
@@ -176,6 +178,10 @@ where
                 Input,
                 Scope,
             > + 'static,
+        DueField: super::super::operation_invocation::WorthQueryTemporalDueFieldWriter<
+            Schema,
+            IntentEntity,
+        >,
     {
         self.validate_application_binding_scope(&binding)?;
         self.validate_temporal_binding(&binding)?;

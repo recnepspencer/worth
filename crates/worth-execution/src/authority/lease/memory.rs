@@ -34,19 +34,24 @@ impl ExecutionResourceLease<'_> {
             .map_or(0, |usage| usage.charged_memory_bytes)
     }
 
-    /// Observes the room left by every ancestor and the process. It is not a
-    /// reservation: admission checks those limits again under the ledger lock.
+    /// Observes the room left by every ancestor, any attached serial budget,
+    /// and the process. It is not a reservation: admission checks those limits
+    /// again under the ledger lock.
     pub fn available_memory_bytes(&self) -> Option<u64> {
         let ledger = self
             .authority
             .ledger
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        room::available(
+        let lease_room = room::available(
             &ledger,
             self.authority.config.charged_memory_bytes,
             std::iter::successors(Some(self.node.as_ref()), |node| node.parent.as_deref()),
-        )
+        );
+        let serial_room = self
+            .lineage_serial_budget()
+            .and_then(crate::SerialMemoryBudget::available_memory_bytes);
+        lease_room.into_iter().chain(serial_room).min()
     }
 
     /// Holds `bytes` on this lease, every ancestor and the process until the
@@ -80,6 +85,10 @@ impl LeaseMemory {
         std::iter::successors(Some(self.node.as_ref()), |node| node.parent.as_deref())
     }
 
+    fn lineage_serial_budget(&self) -> Option<&crate::SerialMemoryBudget> {
+        self.lineage().find_map(|node| node.serial_budget.as_ref())
+    }
+
     /// Transfer part of the same owned charge; the ledger total is unchanged.
     pub(in crate::authority) fn split_owned(&mut self, bytes: u64) -> Option<Self> {
         self.bytes = self.bytes.checked_sub(bytes)?;
@@ -109,13 +118,17 @@ impl LeaseMemory {
             self.lineage().map(|node| (node, held)),
             bytes,
         )?;
+        if let Some(serial_budget) = self.lineage_serial_budget() {
+            let depth = self.lineage().count() as u32;
+            serial_budget
+                .resize(held, bytes)
+                .map_err(|denial| denial.offset_ancestor(depth))?;
+        }
         ledger.charged_memory_bytes = ledger.charged_memory_bytes - held + bytes;
         for node in self.lineage() {
             let usage = ledger.nodes.entry(node.id).or_default();
             usage.charged_memory_bytes = usage.charged_memory_bytes - held + bytes;
-            if usage.active_workers == 0 && usage.charged_memory_bytes == 0 {
-                ledger.nodes.remove(&node.id);
-            }
+            ledger.retire_if_idle(node.id);
         }
         self.bytes = bytes;
         let retired = ledger.take_unused_nodes();
@@ -139,6 +152,8 @@ impl LeaseMemory {
         let old = self.lineage().map(|node| node.id).collect::<Vec<_>>();
         let new = std::iter::successors(Some(lease.node.as_ref()), |node| node.parent.as_deref())
             .collect::<Vec<_>>();
+        let old_budget = self.lineage_serial_budget();
+        let new_budget = lease.lineage_serial_budget();
         let mut ledger = self
             .authority
             .ledger
@@ -153,13 +168,14 @@ impl LeaseMemory {
             bytes,
         )
         .map_err(LeaseDenial::MemoryExhausted)?;
+        crate::SerialMemoryBudget::rebind_between(old_budget, new_budget, held, bytes).map_err(
+            |denial| LeaseDenial::MemoryExhausted(denial.offset_ancestor(new.len() as u32)),
+        )?;
         ledger.charged_memory_bytes = ledger.charged_memory_bytes - held + bytes;
         for id in old.iter().filter(|_| held != 0) {
             let usage = ledger.nodes.get_mut(id).expect("held memory has a node");
             usage.charged_memory_bytes -= held;
-            if usage.active_workers == 0 && usage.charged_memory_bytes == 0 {
-                ledger.nodes.remove(id);
-            }
+            ledger.retire_if_idle(*id);
         }
         for node in new.iter().filter(|_| bytes != 0) {
             ledger

@@ -135,9 +135,11 @@ pub struct ApplicationQueryDefinition<Schema, Query, Parameters, QueryResult, Sc
     pub(super) cardinality: ApplicationQueryCardinality,
     pub(super) predicates: Vec<ApplicationQueryPredicate>,
     pub(super) where_filter: Option<super::ApplicationQueryWhereFilterProgram>,
+    pub(super) related_predicates: Vec<super::ApplicationQueryRelatedPredicateMeaning>,
     pub(super) ordering: Vec<ApplicationQueryOrderingTerm>,
     pub(super) continuation: Option<ApplicationQueryContinuationTarget>,
     pub(super) live_cause: Option<ApplicationQueryLiveCauseContract>,
+    pub(super) live_whole_result: bool,
     pub(super) disclosure: ApplicationQueryDisclosureContract,
     pub(super) authorization: ApplicationQueryAuthorizationRequirement,
     pub(super) basis_support: ApplicationQueryBasisSupport,
@@ -226,6 +228,10 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
         self.where_filter.as_ref()
     }
 
+    pub fn related_predicates(&self) -> &[super::ApplicationQueryRelatedPredicateMeaning] {
+        &self.related_predicates
+    }
+
     pub fn ordering(&self) -> &[ApplicationQueryOrderingTerm] {
         &self.ordering
     }
@@ -236,6 +242,22 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
 
     pub const fn live_cause(&self) -> Option<&ApplicationQueryLiveCauseContract> {
         self.live_cause.as_ref()
+    }
+
+    pub const fn is_live_whole_result(&self) -> bool {
+        self.live_whole_result
+    }
+
+    pub const fn live_invalidation_mode(
+        &self,
+    ) -> Option<super::ApplicationQueryLiveInvalidationMode> {
+        if self.live_whole_result {
+            Some(super::ApplicationQueryLiveInvalidationMode::WholeResult)
+        } else if self.live_cause.is_some() {
+            Some(super::ApplicationQueryLiveInvalidationMode::CauseRouted)
+        } else {
+            None
+        }
     }
 
     pub const fn dependency_equivalence(&self) -> ApplicationQueryDependencyEquivalence {

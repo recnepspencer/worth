@@ -1,7 +1,8 @@
 use super::{SignalOwner, SignalOwnerPartition};
+use crate::branch::owner_services::owner_backing::{StrongSignalOwner, WeakSignalOwner};
 use crate::branch::owner_services::SignalOwnerUnavailable;
 use crate::branch::SignalBranchBasisRegistry;
-use std::sync::{Arc, Weak};
+use std::sync::Arc;
 
 /// Non-cloneable root field. Before sealing it contains no competing owner.
 pub(crate) struct SignalOwnerRoot<D, I, T>
@@ -25,7 +26,7 @@ where
         definition_basis: u64,
         basis_registry: SignalBranchBasisRegistry,
     },
-    Sealed(Arc<SignalOwner<D, I, T>>),
+    Sealed(StrongSignalOwner<D, I, T>),
     Transferred,
 }
 
@@ -60,7 +61,11 @@ where
         schema_commitment: String,
         conditional_budget: crate::runtime_policy::SignalConditionalEvaluationBudget,
         temporal_budget: crate::runtime_policy::SignalConditionalTemporalBudget,
-    ) {
+    ) where
+        D: Send + Sync + 'static,
+        I: Send + Sync + 'static,
+        T: Send + Sync + 'static,
+    {
         let (runtime_instance_id, definition_basis, basis_registry) = match &self.state {
             SignalOwnerRootState::Unsealed {
                 runtime_instance_id,
@@ -84,17 +89,17 @@ where
             conditional_budget,
             temporal_budget,
         );
-        self.state = SignalOwnerRootState::Sealed(owner);
+        self.state = SignalOwnerRootState::Sealed(StrongSignalOwner::from_arc(owner));
     }
 
     pub(crate) fn downgrade_owner(
         &self,
-    ) -> Result<Weak<SignalOwner<D, I, T>>, SignalOwnerUnavailable> {
+    ) -> Result<WeakSignalOwner<D, I, T>, SignalOwnerUnavailable> {
         match &self.state {
             SignalOwnerRootState::Unsealed { .. } | SignalOwnerRootState::Transferred => {
                 Err(SignalOwnerUnavailable)
             }
-            SignalOwnerRootState::Sealed(owner) => Ok(Arc::downgrade(owner)),
+            SignalOwnerRootState::Sealed(owner) => Ok(owner.downgrade()),
         }
     }
 
@@ -122,7 +127,7 @@ where
     pub(super) fn sealed_owner(&self) -> Option<Arc<SignalOwner<D, I, T>>> {
         match &self.state {
             SignalOwnerRootState::Unsealed { .. } | SignalOwnerRootState::Transferred => None,
-            SignalOwnerRootState::Sealed(owner) => Some(Arc::clone(owner)),
+            SignalOwnerRootState::Sealed(owner) => Some(owner.to_arc()),
         }
     }
 

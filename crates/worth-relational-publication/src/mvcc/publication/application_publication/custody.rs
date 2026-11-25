@@ -94,7 +94,7 @@ impl crate::transactions::data::outcomes::commit_result::CommitResult {
         .then(|| RelationalRequiredOutputPublication {
             runtime_instance_id: installed.runtime_instance_id,
             evidence: worth_relational_branch::internal_port::publication::ownership::evidence::PublicationEvidence::Canonical(
-                envelope.clone().into_arc(),
+                envelope.clone(),
             ),
             origin: Arc::clone(
                 (*envelope.owner_required_output_origin())
@@ -138,7 +138,7 @@ impl crate::transactions::data::outcomes::commit_result::CommitResult {
                         Ok(Some(RelationalRequiredOutputPublication {
                             runtime_instance_id: installed.runtime_instance_id,
                             evidence: worth_relational_branch::internal_port::publication::ownership::evidence::PublicationEvidence::Canonical(
-                                envelope.clone().into_arc(),
+                                envelope.clone(),
                             ),
                             origin: Arc::clone(origin),
                             readmitted_at: None,
@@ -335,6 +335,6 @@ impl RelationalRequiredOutputPublicationFixturePort for RelationalRequiredOutput
         envelope: Arc<worth_relational_branch::internal_port::history::data::canonical_commit_envelope::CanonicalCommitEnvelope>,
     ) {
         self.origin = origin;
-        self.evidence = worth_relational_branch::internal_port::publication::ownership::evidence::PublicationEvidence::Canonical(envelope);
+        self.evidence = worth_relational_branch::internal_port::publication::ownership::evidence::PublicationEvidence::canonical(envelope);
     }
 }

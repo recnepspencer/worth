@@ -110,7 +110,7 @@ fn child_values(
     let Some(record) = head.entity_arena().get_slot(child.slot_index()) else {
         return Ok(None);
     };
-    let plans = view.root().schema_authority().aspect_plans();
+    let plans = view.schema_authority().aspect_plans();
     work.lookup(plans.entity_plans.len(), 1)?;
     let Some(plan) = plans.entity_plans.get(&contract.child_kind) else {
         return Ok(None);

@@ -2,12 +2,12 @@
 use super::*;
 
 pub(crate) struct RecoveredNativeContinuationLoan {
-    record: Arc<RecoveredWorldPublicationRecord>,
+    record: super::SharedRecoveredWorldPublicationRecord,
     current: Option<RecoveredNativeCustody>,
 }
 impl RecoveredNativeContinuationLoan {
     pub(crate) fn take(
-        record: &Arc<RecoveredWorldPublicationRecord>,
+        record: &super::SharedRecoveredWorldPublicationRecord,
     ) -> Result<Self, crate::recovery::RuntimeWorldRecoveryDenial> {
         let current = {
             let mut native = record

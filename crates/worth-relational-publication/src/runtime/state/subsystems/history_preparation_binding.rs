@@ -46,6 +46,21 @@ impl RelationalPreparationHistory {
     pub fn index_definition_frontier(&self) -> u64 {
         self.canonical_routes.index_definition_frontier()
     }
+
+    pub fn detached_for_preflight(&self) -> Self {
+        use std::sync::atomic::Ordering;
+        Self {
+            branches: self.branches.detached_owner_snapshot(),
+            commit_ids: Arc::new(AtomicU64::new(self.commit_ids.load(Ordering::Relaxed))),
+            version_ids: Arc::new(AtomicU64::new(self.version_ids.load(Ordering::Relaxed))),
+            commit_floor: self.commit_floor,
+            version_floor: self.version_floor,
+            canonical_routes: Arc::clone(&self.canonical_routes),
+            root_ids: self.root_ids.detached_owner_snapshot(),
+            #[cfg(test)]
+            root_capture_sabotage: Arc::new(std::sync::atomic::AtomicBool::new(false)),
+        }
+    }
     #[allow(clippy::too_many_arguments)]
     pub(super) fn new(
         branches: RelationalBranchReferenceRegistry,

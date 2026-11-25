@@ -122,12 +122,16 @@ fn relation_slots_select_cardinality_from_the_field_type_and_direction_from_the_
     for constructor in ["forward_many", "reverse_optional", "forward_one"] {
         assert!(expanded.contains(constructor), "{constructor}: {expanded}");
     }
-    assert!(expanded.contains("fn lead_slot < Q >"), "{expanded}");
     assert!(
-        expanded.contains("Self :: lead_slot :: < Q > ()"),
+        expanded.contains("fn lead_slot < __WorthProjQ >"),
         "{expanded}"
     );
-    assert!(!expanded.contains("fn lead < Q >"), "{expanded}");
+    assert!(
+        expanded.contains("Self :: lead_slot :: < __WorthProjQ > ()"),
+        "{expanded}"
+    );
+    assert!(!expanded.contains("fn lead < __WorthProjQ >"), "{expanded}");
+    assert!(!expanded.contains("fn lead_slot < Q >"), "{expanded}");
     assert!(
         expanded.contains("< PersonRow > :: project_row"),
         "{expanded}"
@@ -145,11 +149,11 @@ fn a_name_slot_projects_the_root_name_and_refuses_slot_keys() {
          #[worth_query(relation = Contains, nested = Unit)] tasks: Vec<TaskRow> }}"
     ));
     assert!(
-        expanded.contains("name : row . name :: < Task > () ?"),
+        expanded.contains("name : __worth_proj_row . name :: < __WorthProjRoot > () ?"),
         "{expanded}"
     );
     assert!(
-        expanded.contains("alias : row . optional_name :: < Task > () ?"),
+        expanded.contains("alias : __worth_proj_row . optional_name :: < __WorthProjRoot > () ?"),
         "{expanded}"
     );
     assert!(
@@ -165,11 +169,11 @@ fn a_name_slot_projects_the_root_name_and_refuses_slot_keys() {
          #[worth_query(group_name)] zone: Option<WorthQueryName<Zone>> }}"
     ));
     assert!(
-        grouped.contains("shell : row . group_name () ?"),
+        grouped.contains("shell : __worth_proj_row . group_name () ?"),
         "{grouped}"
     );
     assert!(
-        grouped.contains("zone : row . optional_group_name () ?"),
+        grouped.contains("zone : __worth_proj_row . optional_group_name () ?"),
         "{grouped}"
     );
     assert!(
@@ -178,7 +182,7 @@ fn a_name_slot_projects_the_root_name_and_refuses_slot_keys() {
     );
     // A name is not a result slot: no marker, selector or shape member.
     assert!(!expanded.contains("struct Name ;"), "{expanded}");
-    assert!(!expanded.contains("fn name < Q >"), "{expanded}");
+    assert!(!expanded.contains("fn name < __WorthProjQ >"), "{expanded}");
 
     let plain = expansion(&format!(
         "{HEADER} struct Row {{ #[worth_query(field = Title)] title: String }}"

@@ -29,7 +29,7 @@ impl<
         Schema, ApplicationOperation, Input, D, O, F, Node, Provider, Clock, Source, Query, Parameters, QueryResult, Scope, Projector,
         PrincipalBinding, PrincipalMapping, Principal, PrincipalIdentity, PrincipalIdentityBinding, ScopeField, ScopeValue, PrincipalSource,
         QueryAuthorization, Invoker, IntentEntity, IdentityField, IdentityValue, RevisionField,
-        RevisionValue, LifecycleField, LifecycleValue, Authorization,
+        RevisionValue, LifecycleField, LifecycleValue, Authorization, DueField,
     > WorthQueryInstalledConditionalOperation<Schema>
     for WorthQueryInstalledTemporalOperation<
         WorthQueryInstalledTemporalConditionalOperation<
@@ -42,7 +42,7 @@ impl<
         >,
         super::super::operation_invocation::WorthQueryTemporalOperationExecution<
             Schema, ApplicationOperation, Input, Scope, Invoker, IntentEntity,
-            IdentityField, IdentityValue, RevisionField, RevisionValue, LifecycleField, LifecycleValue, Authorization,
+            IdentityField, IdentityValue, RevisionField, RevisionValue, LifecycleField, LifecycleValue, Authorization, DueField,
         >,
         Clock,
         Input,
@@ -85,9 +85,15 @@ where
     LifecycleField::Binding: worth_query_installation::facade::ApplicationReadableScalarValueBinding<Value = LifecycleValue>,
     LifecycleValue: Clone + Send + Sync + 'static,
     Authorization: super::super::WorthQueryTemporalOperationAuthorization<Schema, ApplicationOperation, Input, Scope> + 'static,
+    DueField: super::super::operation_invocation::WorthQueryTemporalDueFieldWriter<Schema, IntentEntity>,
 {
-    fn handoff_to_home(&mut self, request: &worth_execution::ExecutionRequest<'_, '_>, runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>) -> Result<(), crate::domain_computation::primary_graph::WorthQueryHomeRetirementDenial> {
-        self.handoff_to_home(request, runtime)
+    fn handoff_to_home(
+        &mut self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        bridge: &crate::domain_computation::primary_graph::managed_bridge::conditional_execution::ConditionalExecutionOwner<'_>,
+    ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryHomeRetirementDenial> {
+        self.handoff_to_home(request, runtime, bridge)
     }
 
     fn reset_retained_wakes_for_replay_for_test(&mut self) {
@@ -104,7 +110,7 @@ where
         };
         let managed_clock = self.managed_clock.as_ref().expect("selected conditional operation retains a managed clock");
         let operation = self.definition.binding.clocked_node().provider().node().operation().application_operation();
-        match super::super::application_operation_reentry::reenter_retained_wakes(&execution, phase, runtime, truth.product(), bridge, managed_clock, operation, &self.definition.reconstruction, &self.definition.execution, &mut self.reconstructed_intents, &mut self.retained_wakes, &self.runtime_canonical_identity) {
+        match super::super::application_operation_reentry::reenter_retained_wakes(&execution, phase, runtime, truth.product(), bridge, managed_clock, operation, &self.definition.reconstruction, &self.definition.execution, &mut self.reconstructed_intents, &mut self.retained_wakes, &self.runtime_canonical_identity, 0) {
             Ok(counts) => ErasedClockObservationOutcome::Accepted(due_wake_retention::complete_continuation_receipt_for_test(counts, &mut self.retained_wakes, &mut self.operation_totals)),
             Err(cause) => ErasedClockObservationOutcome::Failed { detail: format!("conditional continuation publication refused: {cause:?}"), kind: super::WorthQueryConditionalClockObservationFailureKind::Obligation(cause) },
         }
@@ -226,18 +232,15 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
 
     fn observe_clock(
         &mut self,
+        caller_execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
         bridge: &BridgeConditionalExecutionView<'_>,
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         truth: &WorthQueryConditionalTruthBasis,
     ) -> ErasedClockObservationOutcome {
-        let execution = match phase.execution_request_for(runtime.inner.runtime.product_runtime_ref()) {
-            Ok(execution) => execution,
-            Err(cause) => return ErasedClockObservationOutcome::Failed {
-                kind: super::WorthQueryConditionalClockObservationFailureKind::ExecutionRequest(
-                    cause.into()),
-                detail: "foreign conditional advancement phase".to_string(),
-            },
+        let phase_exec = match self.prepare_observe_execution(caller_execution, phase, bridge, runtime) {
+            Ok(exec) => exec,
+            Err(outcome) => return outcome,
         };
         super::super::retained_managed_cleanup::retry_wakes(self.retained_wakes.iter_mut()
             .chain(self.inactive_bindings.values_mut().flat_map(|binding| binding.retained_wakes.iter_mut())), phase);
@@ -292,16 +295,19 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
             .managed_clock
             .as_ref()
             .expect("selected conditional operation retains a managed clock");
-        super::super::authoritative_reconsideration::reconsider_retained_wakes_for_deliveries(phase,
-            bridge,
-            self.pending_invalidations.direct(),
-            &mut self.retained_wakes,
-            signal_basis,
-            &self.runtime_binding_identity,
-            self.runtime_capability_identity,
-            truth,
-        );
-        self.pending_invalidations.owe_direct();
+        if !authoritative.work_remaining {
+            super::super::authoritative_reconsideration::reconsider_retained_wakes_for_deliveries(
+                phase,
+                bridge,
+                self.pending_invalidations.direct(),
+                &mut self.retained_wakes,
+                signal_basis,
+                &self.runtime_binding_identity,
+                self.runtime_capability_identity,
+                truth,
+            );
+            self.pending_invalidations.owe_direct();
+        }
         if authoritative.caught_up_to_latest {
             self.bootstrap_commit_catch_up_pending = false;
         }
@@ -317,38 +323,24 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         let mut persistence_denial = None;
         let retain_and_reenter = |accepted| {
             let mut released = self.pending_invalidations.release();
-            let receipt = due_wake_retention::retain_due(phase,
-                accepted,
-                bridge,
-                truth,
-                &released.deliveries,
-                signal_basis,
-                &self.runtime_binding_identity,
-                self.runtime_capability_identity,
+            let receipt = due_wake_retention::retain_due(
+                phase, accepted, bridge, truth, &released.deliveries, signal_basis,
+                &self.runtime_binding_identity, self.runtime_capability_identity,
                 &mut self.retained_wakes,
             );
-            let operation = self
-                .definition
-                .binding
-                .clocked_node()
-                .provider()
-                .node()
-                .operation()
-                .application_operation();
-            let counts = match super::super::application_operation_reentry::reenter_retained_wakes(&execution, phase,
-                runtime,
-                truth.product(),
-                bridge,
-                managed_clock,
-                operation,
-                &self.definition.reconstruction,
-                &self.definition.execution,
-                &mut self.reconstructed_intents,
-                &mut self.retained_wakes,
-                &self.runtime_canonical_identity,
+            let operation = self.definition.binding.clocked_node().provider().node().operation().application_operation();
+            let counts = match super::super::application_operation_reentry::reenter_retained_wakes(
+                &phase_exec, phase, runtime, truth.product(), bridge, managed_clock, operation,
+                &self.definition.reconstruction, &self.definition.execution,
+                &mut self.reconstructed_intents, &mut self.retained_wakes,
+                &self.runtime_canonical_identity, coordinate,
             ) {
                 Ok(counts) => counts,
-                Err(cause) => { persistence_denial = Some(cause); Default::default() }
+                Err(cause) => {
+                    self.pending_invalidations.restore_released(released);
+                    persistence_denial = Some(cause);
+                    return receipt;
+                }
             };
             released.deliveries =
                 super::super::authoritative_reconsideration::promote_performed_signal_deliveries(
@@ -356,12 +348,8 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
                     &mut self.retained_wakes,
                 );
             let mut receipt = due_wake_retention::complete_clock_receipt(
-                receipt,
-                counts,
-                authoritative,
-                released,
-                &mut self.retained_wakes,
-                &mut self.operation_totals,
+                receipt, counts, authoritative, released,
+                &mut self.retained_wakes, &mut self.operation_totals,
             );
             super::super::retained_managed_cleanup::include_retained_cleanup(&mut receipt,
                 self.inactive_bindings.values().flat_map(|binding| binding.retained_wakes.iter()));
@@ -375,6 +363,17 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
             },
             None => outcome,
         }
+    }
+
+    fn settle_resolved_continuation(
+        &mut self,
+        key: [u8; 32],
+        intent: [u8; 32],
+        finish_confirmed: bool,
+        bridge: Option<&BridgeConditionalExecutionView<'_>>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) {
+        self.settle_resolved_continuation_wakes(key, intent, finish_confirmed, bridge, execution);
     }
 
     fn retained_resource_counts(&self) -> WorthQueryConditionalRetainedResourceCounts {

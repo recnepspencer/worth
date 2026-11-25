@@ -148,6 +148,16 @@ impl WorthQueryProductBranchLease {
         super::WorthQueryProductBranch::from_occurrence(self.observation().lifecycle_incarnation())
     }
 
+    pub fn lifecycle_incarnation(&self) -> worth_runtime_world::facade::ProductBranchIncarnation {
+        self.observation().lifecycle_incarnation()
+    }
+
+    pub fn reference_generation(
+        &self,
+    ) -> worth_runtime_world::facade::ProductBranchReferenceGeneration {
+        self.observation().reference_generation()
+    }
+
     pub fn selected_commit(&self) -> &worth_runtime_world::facade::CompositeCommitIdentity {
         self.observation().selected_commit()
     }

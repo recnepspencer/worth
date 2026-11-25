@@ -12,6 +12,26 @@ pub(crate) struct AdmittedRelationalHomeProgramTarget {
     _memory: Option<ExecutionMemoryReservation>,
 }
 
+impl AdmittedRelationalHomeProgramTarget {
+    pub(crate) fn for_preflight(target: &PreparedRelationalHomeProgramContracts) -> Arc<Self> {
+        let home = worth_foundational::facade::HomeIdentity::from_observed_bytes([1u8; 16])
+            .expect("non-zero sentinel");
+        let transition = worth_foundational::facade::HomeProgramTransitionIdentity::from_recorded(
+            home,
+            std::num::NonZeroU64::MIN,
+        );
+        Arc::new(Self {
+            step: worth_foundational::facade::HomeProgramTransitionStepAssociation::from_recorded(
+                transition, 0,
+            ),
+            meaning: target.meaning.clone(),
+            receiver_epoch: target.receiver_epoch.clone(),
+            index_definitions: target.index_definitions.clone(),
+            _memory: None,
+        })
+    }
+}
+
 impl RelationalRuntime {
     pub(crate) fn prepare_home_target_transaction(
         &self,

@@ -1,8 +1,9 @@
 //! Contribution-owned application handler and invariant configuration.
 pub use crate::domain_computation::primary_graph::{
-    WorthQueryDerivedRelationCountOwner, WorthQueryFeatureConfiguration,
-    WorthQueryFeatureDefinition, WorthQueryFeaturePairConfiguration, WorthQueryFeatureRoleRuntime,
-    WorthQueryFeatureRuntime, WorthQueryRequiredFeatureContract, WorthQueryRequiredFeaturePair,
+    WorthQueryApplicationManagedIndexRegistration, WorthQueryDerivedRelationCountOwner,
+    WorthQueryFeatureConfiguration, WorthQueryFeatureDefinition,
+    WorthQueryFeaturePairConfiguration, WorthQueryFeatureRoleRuntime, WorthQueryFeatureRuntime,
+    WorthQueryRequiredFeatureContract, WorthQueryRequiredFeaturePair,
 };
 pub use worth_foundational::facade::ProducerPublicationOwnership;
 

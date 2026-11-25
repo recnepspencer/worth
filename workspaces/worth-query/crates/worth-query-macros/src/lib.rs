@@ -37,10 +37,12 @@
 use proc_macro::TokenStream;
 
 mod action;
+mod binary_value;
 mod case;
 mod correction;
 mod facade_paths;
 mod grammar;
+mod managed_index;
 mod name_discriminator;
 mod name_role;
 mod projection;
@@ -48,6 +50,21 @@ mod query;
 mod record;
 mod relation;
 mod schema;
+
+/// Declares a versioned, fixed-width, metered `BinaryValueDelegate`,
+/// `ApplicationScalarValueBinding`, `ApplicationReadableScalarValueBinding`,
+/// `WorthQueryDefaultValueBinding`, and `WorthBinaryWireField` from a struct.
+#[proc_macro_derive(WorthBinaryValue, attributes(worth_binary, worth_query))]
+pub fn derive_worth_binary_value(input: TokenStream) -> TokenStream {
+    expand(input, binary_value::expand)
+}
+
+/// Declares a unit struct's `ApplicationManagedIndexBinding<Schema>` with
+/// checked binary-source-tree defaults and optional stock/custom provider wiring.
+#[proc_macro_derive(WorthManagedIndex, attributes(worth_index, worth_query))]
+pub fn derive_worth_managed_index(input: TokenStream) -> TokenStream {
+    expand(input, managed_index::expand)
+}
 
 /// Declares a unit struct's schema role: `schema` (an installation root),
 /// `fragment`, `entity` or `relation`.
@@ -73,6 +90,13 @@ pub fn derive_worth_query_record(input: TokenStream) -> TokenStream {
 /// Declares a query result row's slots, result shape and projection.
 #[proc_macro_derive(WorthQueryProjection, attributes(worth_query))]
 pub fn derive_worth_query_projection(input: TokenStream) -> TokenStream {
+    expand(input, projection::expand)
+}
+
+/// Alias for [`WorthQueryProjection`]: declares a typed query result row's
+/// slots, result shape, projection, and self-binding for `result = Row`.
+#[proc_macro_derive(WorthQueryRow, attributes(worth_query))]
+pub fn derive_worth_query_row(input: TokenStream) -> TokenStream {
     expand(input, projection::expand)
 }
 

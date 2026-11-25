@@ -18,11 +18,9 @@ mod resources;
 #[doc(hidden)]
 pub use crate::domain_computation::primary_graph::FragmentReadable;
 pub use crate::domain_computation::primary_graph::{
-    AdmittedContent, ContentReadDenial, ContentWriteDenial, RelationalContentDenial,
-    RelationalContentRejection,
-};
-pub use crate::domain_computation::primary_graph::{
-    CandidateEntity, FragmentDenial, ObservedEntity, ObservedTarget, Reading, View, Writing,
+    AdmittedContent, CandidateEntity, ContentReadDenial, ContentWriteDenial, FragmentDenial,
+    ObservedEntity, ObservedTarget, Reading, RelationalContentDenial, RelationalContentRejection,
+    View, Writing,
 };
 pub use managed_index::*;
 pub use mutation_handler::*;
@@ -33,10 +31,9 @@ pub use worth_foundational::facade::AggregateLineageKind;
 pub use worth_relational::facade::history::{CommitId, RelationalAuthoredWriteDenial};
 
 pub use crate::domain_computation::{
-    WorthQueryInvariantExecutionDenialKind,
-    WorthQueryInvariantExecutionFailure, WorthQueryInvariantExecutionFailurePosture,
-    WorthQueryPreparedProviderSession, WorthQueryProductUnpublishedRecoveryFailure,
-    WorthQueryProductUnpublishedRecoveryReleaseDenial,
+    WorthQueryInvariantExecutionDenialKind, WorthQueryInvariantExecutionFailure,
+    WorthQueryInvariantExecutionFailurePosture, WorthQueryPreparedProviderSession,
+    WorthQueryProductUnpublishedRecoveryFailure, WorthQueryProductUnpublishedRecoveryReleaseDenial,
     WorthQueryProductUnpublishedRecoveryReleaseFailure, WorthQueryProviderSessionFailure,
     WorthQueryRecoveredProductReleaseDenial, WorthQueryRelationLawDenial,
 };
@@ -67,7 +64,7 @@ pub use worth_relational::facade::{
 pub use crate::domain_computation::primary_graph::{
     CheckpointAllocatorInspection, CheckpointRecordFrontier, CheckpointRecordIdentity,
     CheckpointReservationAdvanceDenial, ExecutionRequest, VerificationCapacityStop,
-    WorthQueryAdmittedApplicationCapabilityAccess,
+    WholeResultLiveStageForTest, WorthQueryAdmittedApplicationCapabilityAccess,
     WorthQueryAdmittedApplicationConditionalDefinition,
     WorthQueryAdmittedApplicationHistoryCapture, WorthQueryAdmittedApplicationOperation,
     WorthQueryAdmittedApplicationQueryControls, WorthQueryAdmittedApplicationQueryPlan,
@@ -143,6 +140,8 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryApplicationStaleAttempt, WorthQueryApplicationTypedClosureEvidence,
     WorthQueryApplicationTypedOutputCorrespondence, WorthQueryApplicationUncommitted,
     WorthQueryApplicationUnobservedWrite, WorthQueryApplicationUnresolvedCommitEvidence,
+    WorthQueryApplicationWholeResultLiveLease, WorthQueryApplicationWholeResultLiveOutcome,
+    WorthQueryApplicationWholeResultLiveSnapshot, WorthQueryApplicationWholeResultLiveUpdate,
     WorthQueryApprovedElevation, WorthQueryAuthenticatedInboundOccurrence,
     WorthQueryAuthenticatedPrincipal, WorthQueryBoundSourceExpectation,
     WorthQueryBranchAdoptionActivationDenial, WorthQueryBranchAdoptionPreparationDenial,
@@ -172,8 +171,8 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryConditionalClockObservationReceipt, WorthQueryConditionalDefinitionPublicationDenial,
     WorthQueryConditionalDefinitionPublicationOutcome, WorthQueryConditionalExecutionCause,
     WorthQueryConditionalExecutionProvenance, WorthQueryConditionalExecutionTerminal,
-    WorthQueryConditionalOriginalResolution, WorthQueryConditionalReentryFailure, WorthQueryConditionalRuntimeInspection,
-    WorthQueryConditionalRuntimeInstallationDenial,
+    WorthQueryConditionalOriginalResolution, WorthQueryConditionalReentryFailure,
+    WorthQueryConditionalRuntimeInspection, WorthQueryConditionalRuntimeInstallationDenial,
     WorthQueryConditionalRuntimeInstallationDenialKind, WorthQueryConditionalRuntimeLifecycleProbe,
     WorthQueryConditionalRuntimeReinstallationReceipt, WorthQueryConditionalSignalDecision,
     WorthQueryCorrectionAlternativeRef, WorthQueryCorrectionAlternativeResolution,
@@ -232,24 +231,24 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryMandatoryReviewAuthorizationDenial, WorthQueryMandatoryReviewOutcome,
     WorthQueryMandatoryReviewProgram, WorthQueryMutationHandlerExecutionReport,
     WorthQueryMutationHandlerProjectionWork, WorthQueryMutationHandlerWork,
-    WorthQueryMutationPreconditionComparisonEvidence, WorthQueryObservedApplicationRelation,
-    WorthQueryObservedOutputAvailability, WorthQueryObservedResultSet, WorthQueryObservedSource,
-    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialIdentity,
-    WorthQueryOperationAuthorizationDenialKind, WorthQueryOperationAuthorizationRefusalKind,
-    WorthQueryOperationBodyAssessmentDenial, WorthQueryOperationBodyDecision,
-    WorthQueryOperationBodyDenial, WorthQueryOperationBodyRequirementFinding,
-    WorthQueryOperationBodyRequirementStatus, WorthQueryOperationBodyRequirementTarget,
-    WorthQueryOperationProjectionDenial, WorthQueryOperationProjectionDenialKind,
-    WorthQueryOperationScopeBinding, WorthQueryOperationScopeEntityBinding,
-    WorthQueryOracleHistoryPageForTest, WorthQueryOracleOccurrenceForTest,
-    WorthQueryOracleSignalMovementForTest, WorthQueryOrderedProgramAdoptionCoverage,
-    WorthQueryOrdinaryApplicationRead, WorthQueryOrdinaryReadBatch, WorthQueryOrdinaryReadMetadata,
-    WorthQueryOrdinaryReadProjection, WorthQueryOrdinaryReadVersion,
-    WorthQueryOriginalOutputDemand, WorthQueryOutputAvailabilityDenial,
-    WorthQueryOutputAvailabilityState, WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial,
-    WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandNotifications,
-    WorthQueryOutputDemandRecoveryPosture, WorthQueryOutputDemandSettlement,
-    WorthQueryOutputReadCleanup, WorthQueryOutputReadCloseDenial,
+    WorthQueryMutationPreconditionComparisonEvidence, WorthQueryNoTemporalDueField,
+    WorthQueryObservedApplicationRelation, WorthQueryObservedOutputAvailability,
+    WorthQueryObservedResultSet, WorthQueryObservedSource, WorthQueryOperationAuthorizationDenial,
+    WorthQueryOperationAuthorizationDenialIdentity, WorthQueryOperationAuthorizationDenialKind,
+    WorthQueryOperationAuthorizationRefusalKind, WorthQueryOperationBodyAssessmentDenial,
+    WorthQueryOperationBodyDecision, WorthQueryOperationBodyDenial,
+    WorthQueryOperationBodyRequirementFinding, WorthQueryOperationBodyRequirementStatus,
+    WorthQueryOperationBodyRequirementTarget, WorthQueryOperationProjectionDenial,
+    WorthQueryOperationProjectionDenialKind, WorthQueryOperationScopeBinding,
+    WorthQueryOperationScopeEntityBinding, WorthQueryOracleHistoryPageForTest,
+    WorthQueryOracleOccurrenceForTest, WorthQueryOracleSignalMovementForTest,
+    WorthQueryOrderedProgramAdoptionCoverage, WorthQueryOrdinaryApplicationRead,
+    WorthQueryOrdinaryReadBatch, WorthQueryOrdinaryReadMetadata, WorthQueryOrdinaryReadProjection,
+    WorthQueryOrdinaryReadVersion, WorthQueryOriginalOutputDemand,
+    WorthQueryOutputAvailabilityDenial, WorthQueryOutputAvailabilityState,
+    WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
+    WorthQueryOutputDemandNotifications, WorthQueryOutputDemandRecoveryPosture,
+    WorthQueryOutputDemandSettlement, WorthQueryOutputReadCleanup, WorthQueryOutputReadCloseDenial,
     WorthQueryOutputReadinessDeliveryEvidence, WorthQueryOutputSettlementPosture,
     WorthQueryOutputSettlementProvenanceDenial, WorthQueryOutputSourceEvidence,
     WorthQueryOutputSourceReplay, WorthQueryPendingSourceExpectation,
@@ -275,7 +274,9 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryRecordReservationObservation, WorthQueryRecordReservationObservationDenial,
     WorthQueryRecordReservationObservationFailure, WorthQueryRecordReservationReport,
     WorthQueryRecordedProducerDenialEncodingRefusal, WorthQueryRecordedProducerDenialValue,
-    WorthQueryRecoveredProducerPublication, WorthQueryRequestedElevation,
+    WorthQueryRecoveredAftermathCausality, WorthQueryRecoveredApplicationCommitReceipt,
+    WorthQueryRecoveredDispatchOutbox, WorthQueryRecoveredProducerPublication,
+    WorthQueryReleasedApplicationEffect, WorthQueryRequestedElevation,
     WorthQueryRequiredOutputConnectionDenial, WorthQueryRequiredOutputSourcePreparationFailure,
     WorthQueryReservedRecord, WorthQueryRestoredGeneratedOutput,
     WorthQueryRetainedBatchQueryAdmissionDenial, WorthQueryRetainedGeneratedOutputEntity,
@@ -288,8 +289,9 @@ pub use crate::domain_computation::primary_graph::{
     WorthQuerySelectedProgramInspectionDenial, WorthQuerySourceExpectationDenial,
     WorthQuerySourceExpectationDenialKind, WorthQueryStoppedBranchSetAdoption,
     WorthQueryStorageRetentionDenial, WorthQueryStorageRetentionProgress,
-    WorthQueryStorageRetentionStop, WorthQuerySuspendedGeneratedOutput,
-    WorthQueryTemporalInvocationFailure, WorthQueryTemporalInvocationFailureKind,
+    WorthQueryStorageRetentionStop, WorthQuerySuspendedGeneratedOutput, WorthQueryTemporalDueField,
+    WorthQueryTemporalDueFieldWriter, WorthQueryTemporalInvocationFailure,
+    WorthQueryTemporalInvocationFailureKind, WorthQueryTemporalOccurrenceOutcome,
     WorthQueryTemporalOperationAuthorization, WorthQueryTemporalOperationExecution,
     WorthQueryTemporalOperationInvoker, WorthQueryTemporalPrincipalAdmission,
     WorthQueryTemporalPrincipalFailure, WorthQueryTemporalPrincipalFailureKind,
@@ -299,10 +301,6 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryUnpublishedGeneratedOutputRestoration, WorthQueryValueDecodeDenial,
     WorthQueryWorkflowDefinitionDisposition, WorthQueryWorkflowDispositions,
     WorthQueryWorkflowInstanceDisposition,
-};
-pub use crate::domain_computation::primary_graph::{
-    WorthQueryRecoveredAftermathCausality, WorthQueryRecoveredApplicationCommitReceipt,
-    WorthQueryRecoveredDispatchOutbox, WorthQueryReleasedApplicationEffect,
 };
 
 pub use crate::domain_computation::application_aftermath::{
@@ -366,20 +364,17 @@ pub use {
 pub use crate::domain_computation::invalidation_equivalence_control::WorthQueryInvalidationEquivalenceForTest;
 
 /// Native delivery causes carried by the Query host audience.
-pub use worth_runtime_bridge::facade::BridgeConditionalDenialKind;
-pub use worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryStop;
-
+pub use worth_runtime_bridge::facade::{
+    BridgeConditionalDenialKind, BridgeCorrespondenceDeliveryStop,
+    BridgeExecutionBasisFinalizationFailureKind,
+};
 mod managed_cleanup;
 pub use managed_cleanup::*;
-
 mod product;
 pub use crate::domain_computation::primary_graph::WorthQueryManagedPhaseStorageForTest;
 pub use product::*;
-
 mod read_denials;
 pub use read_denials::*;
-
-pub use worth_runtime_bridge::facade::BridgeExecutionBasisFinalizationFailureKind;
 
 /// Original field refusals carried through primary-graph installation.
 pub use worth_foundational::facade::{ContractValidationDenial, PortableAspectReadmissionDenial};

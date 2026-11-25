@@ -62,7 +62,7 @@ pub fn historical_positions(
                 }
                 latest.push(SelectedOutputPublication {
                     evidence:
-                        crate::publication::ownership::evidence::PublicationEvidence::Canonical(
+                        crate::publication::ownership::evidence::PublicationEvidence::canonical(
                             Arc::clone(&envelope),
                         ),
                     origin: Arc::clone(origin),

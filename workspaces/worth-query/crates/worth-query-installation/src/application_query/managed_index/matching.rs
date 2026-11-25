@@ -44,7 +44,10 @@ pub(super) fn compile(
     let Some(selection) = definition.managed_index() else {
         return Err(Denial::UntrackedSelection);
     };
-    if definition.continuation().is_some() || definition.live_cause().is_some() {
+    if definition.continuation().is_some()
+        || definition.live_cause().is_some()
+        || definition.is_live_whole_result()
+    {
         return Err(Denial::UntrackedSelection);
     }
     let source_query = source.query();

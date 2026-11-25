@@ -85,6 +85,27 @@ impl RootPathSourceBuilder {
             )
             .map_err(|denial| source_denial(denial, entity_name))
     }
+    #[allow(clippy::too_many_arguments)]
+    pub fn observe_adjacency(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        projection: &VisibilityProjectionView,
+        anchor: EntityId,
+        relation_kind: worth_relational::facade::identity::KindId,
+        direction: worth_relational::facade::runtime::RelationalAdjacencyDirection,
+        subject: &str,
+        work: &mut RootSelectionWork,
+    ) -> Result<
+        crate::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedAdjacencyRevision,
+        WorthQueryApplicationReadExecutionDenial,
+    >{
+        if !self.facts.has_adjacency(anchor, relation_kind, direction) {
+            work.charge_source_observation(subject)?;
+        }
+        self.facts
+            .observe_adjacency(execution, projection, anchor, relation_kind, direction)
+            .map_err(|denial| source_denial(denial, subject))
+    }
     pub fn finish(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

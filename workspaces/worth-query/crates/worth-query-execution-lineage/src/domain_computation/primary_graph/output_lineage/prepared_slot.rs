@@ -35,7 +35,7 @@ pub struct PreparedOutputLineageSlot {
     pub coupled_completion: Option<super::CoupledOutputCompletion>,
     pub required_publication:
         Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
-    owner: Arc<Mutex<WorthQueryApplicationOutputLineage>>,
+    owner: super::SharedOutputLineage,
     pub source: SemanticSource,
     pub output_binding_type: TypeId,
     pub coordinate: ProductCoordinate,

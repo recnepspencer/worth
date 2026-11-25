@@ -58,8 +58,14 @@ impl<Schema> WorthQueryConditionalOperationRegistry<Schema> {
         request: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryHomeRetirementDenial> {
+        use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+        let owner = runtime.inner.runtime.bridge_ref().conditional_operations();
+        let bridge = owner
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         for cell in self.installed.values() {
-            cell.lock_operation().handoff_to_home(request, runtime)?;
+            cell.lock_operation()
+                .handoff_to_home(request, runtime, &bridge)?;
         }
         Ok(())
     }

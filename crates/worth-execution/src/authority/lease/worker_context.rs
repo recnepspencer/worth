@@ -73,3 +73,19 @@ impl ExecutionResourceLease<'_> {
         })
     }
 }
+
+/// Captures any serial budgets already attached to active leased scopes on
+/// this thread, innermost first and deduplicated across shared ledgers.
+pub(in crate::authority) fn active_worker_serial_memory() -> Option<crate::SerialMemoryBudget> {
+    ACTIVE_WORKER.with(|workers| {
+        workers
+            .borrow()
+            .iter()
+            .rev()
+            .filter_map(|(_, node, _)| {
+                std::iter::successors(Some(node.as_ref()), |current| current.parent.as_deref())
+                    .find_map(|current| current.serial_budget.clone())
+            })
+            .reduce(|inner, outer| inner.within_parent(&outer))
+    })
+}

@@ -46,6 +46,8 @@ mod application_naming;
 mod application_naming_macro;
 mod application_operation;
 mod application_program;
+#[macro_use]
+mod program_transition;
 #[doc(hidden)]
 pub mod native_input_capture;
 #[macro_use]

@@ -9,7 +9,7 @@ impl RelationalRegionResidency {
         demand: ResidencyDemand,
         limit: u64,
         authority: Option<&super::super::RelationalRegionKindAuthority>,
-    ) -> Result<Arc<ResidentRegion>, Failure> {
+    ) -> Result<super::SharedResidentRegion, Failure> {
         crate::execution::check_request(execution).map_err(Failure::Request)?;
         if let Some(authority) = authority {
             // A foreign root's proof is a refused demand, not damage to this
@@ -94,7 +94,7 @@ impl RelationalRegionResidency {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         limit: u64,
         source: &Arc<dyn RelationalDurableColdSource>,
-    ) -> Result<Arc<ResidentRegion>, Failure> {
+    ) -> Result<super::SharedResidentRegion, Failure> {
         cell_load_cache::load(&self.raw_head, self.partition_id, || {
             let cold = self
                 .backing
@@ -106,11 +106,11 @@ impl RelationalRegionResidency {
 
     fn raw_full(
         &self,
-        head: &Arc<ResidentRegion>,
+        head: &ResidentRegion,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         limit: u64,
         source: Option<&Arc<dyn RelationalDurableColdSource>>,
-    ) -> Result<Arc<ResidentRegion>, Failure> {
+    ) -> Result<super::SharedResidentRegion, Failure> {
         cell_load_cache::load(&self.raw_full, self.partition_id, || match &self.backing {
             Some(cold) => cold.read_full(
                 source.ok_or_else(|| self.failure(Cause::SourceUnavailable))?,

@@ -16,10 +16,11 @@ impl WorthQueryProductRuntime {
         RuntimeWorldServiceDenial<RuntimeWorldBranchRetirementDenial>,
     > {
         let report = self
+            .fields()
             .owner
             .branch_port()
             .retire_product_branch(observed.observation())?;
-        self.activations.release(
+        self.fields().activations.release(
             observed.branch_identity(),
             observed.observation().lifecycle_incarnation(),
         );

@@ -6,7 +6,9 @@ pub use pending_access::{prepare_funded_pending_disclosure, prepare_pending_disc
 pub use contract::DiagnosticContractDenial;
 pub use contract::{
     compile_diagnostic_disclosure_contract, compile_disclosure_contract,
-    compile_inspection_disclosure_contract, compile_resource_disclosure_contract,
+    compile_funded_disclosure_contract, compile_inspection_disclosure_contract,
+    compile_resource_disclosure_contract, FundedDisclosureCompilationDenial,
+    FundedDisclosureContract,
 };
 pub use decision::DiagnosticPreparationDenial;
 pub use decision::WorthQueryApplicationQueryGovernanceDenialKind;

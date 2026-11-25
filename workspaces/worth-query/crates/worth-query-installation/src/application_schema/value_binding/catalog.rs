@@ -1,20 +1,73 @@
 use std::collections::BTreeMap;
+use std::fmt;
+use std::panic::{RefUnwindSafe, UnwindSafe};
 use std::sync::Arc;
 
 use worth_query_declaration::facade::application_schema::{
-    ApplicationFieldBindingLocus, ApplicationFieldBindingOwnerKind,
+    fragment::FragmentCatalog, ApplicationFieldBindingLocus, ApplicationFieldBindingOwnerKind,
 };
 
 use super::WorthQueryInstalledApplicationValueBinding;
 
+type InstalledBindingsMap =
+    BTreeMap<ApplicationFieldBindingLocus, Arc<WorthQueryInstalledApplicationValueBinding>>;
+
+trait FragmentCatalogBacking: Send + Sync + UnwindSafe + RefUnwindSafe {
+    fn as_catalog(&self) -> &FragmentCatalog;
+}
+
+impl FragmentCatalogBacking for FragmentCatalog {
+    fn as_catalog(&self) -> &FragmentCatalog {
+        self
+    }
+}
+
+trait FormatsBacking: Send + Sync + UnwindSafe + RefUnwindSafe {
+    fn as_formats(&self) -> &super::content::Formats;
+}
+
+impl FormatsBacking for super::content::Formats {
+    fn as_formats(&self) -> &super::content::Formats {
+        self
+    }
+}
+
+trait InstalledBindingsBacking: Send + Sync + UnwindSafe + RefUnwindSafe {
+    fn as_bindings(&self) -> &InstalledBindingsMap;
+}
+
+impl InstalledBindingsBacking for InstalledBindingsMap {
+    fn as_bindings(&self) -> &InstalledBindingsMap {
+        self
+    }
+}
+
 /// Immutable installed bindings indexed by their exact field locus.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone)]
 pub struct WorthQueryInstalledApplicationValueBindingCatalog {
-    fragments: Arc<worth_query_declaration::facade::application_schema::fragment::FragmentCatalog>,
-    content_formats: Arc<super::content::Formats>,
-    bindings: Arc<
-        BTreeMap<ApplicationFieldBindingLocus, Arc<WorthQueryInstalledApplicationValueBinding>>,
-    >,
+    fragments: Arc<dyn FragmentCatalogBacking>,
+    content_formats: Arc<dyn FormatsBacking>,
+    bindings: Arc<dyn InstalledBindingsBacking>,
+}
+
+impl Default for WorthQueryInstalledApplicationValueBindingCatalog {
+    fn default() -> Self {
+        Self {
+            fragments: Arc::new(FragmentCatalog::default()),
+            content_formats: Arc::new(super::content::Formats::default()),
+            bindings: Arc::new(InstalledBindingsMap::default()),
+        }
+    }
+}
+
+impl fmt::Debug for WorthQueryInstalledApplicationValueBindingCatalog {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("WorthQueryInstalledApplicationValueBindingCatalog")
+            .field("fragments", self.fragments_ref())
+            .field("content_formats", self.content_formats_ref())
+            .field("bindings", self.bindings_ref())
+            .finish()
+    }
 }
 
 #[derive(Debug)]
@@ -24,15 +77,27 @@ pub enum AdmittedFieldBindingStop<E> {
 }
 
 impl WorthQueryInstalledApplicationValueBindingCatalog {
+    fn fragments_ref(&self) -> &FragmentCatalog {
+        FragmentCatalogBacking::as_catalog(&*self.fragments)
+    }
+
+    fn content_formats_ref(&self) -> &super::content::Formats {
+        FormatsBacking::as_formats(&*self.content_formats)
+    }
+
+    fn bindings_ref(&self) -> &InstalledBindingsMap {
+        InstalledBindingsBacking::as_bindings(&*self.bindings)
+    }
+
     /// Whether both catalogues retain the same immutable installed backing.
     ///
     /// Cloning retains this identity; independently installing equal bindings
     /// does not. This comparison grants no request, snapshot or publication
     /// authority.
     pub fn same_installation_as(&self, other: &Self) -> bool {
-        Arc::ptr_eq(&self.bindings, &other.bindings)
-            && Arc::ptr_eq(&self.content_formats, &other.content_formats)
-            && Arc::ptr_eq(&self.fragments, &other.fragments)
+        std::ptr::eq(self.bindings_ref(), other.bindings_ref())
+            && std::ptr::eq(self.content_formats_ref(), other.content_formats_ref())
+            && std::ptr::eq(self.fragments_ref(), other.fragments_ref())
     }
 
     pub(crate) fn new(
@@ -41,17 +106,16 @@ impl WorthQueryInstalledApplicationValueBindingCatalog {
             ApplicationFieldBindingLocus,
             WorthQueryInstalledApplicationValueBinding,
         >,
-        fragments: worth_query_declaration::facade::application_schema::fragment::FragmentCatalog,
+        fragments: FragmentCatalog,
     ) -> Self {
+        let bindings: InstalledBindingsMap = bindings
+            .into_iter()
+            .map(|(key, value)| (key, Arc::new(value)))
+            .collect();
         Self {
             fragments: Arc::new(fragments),
             content_formats: Arc::new(content_formats),
-            bindings: Arc::new(
-                bindings
-                    .into_iter()
-                    .map(|(key, value)| (key, Arc::new(value)))
-                    .collect(),
-            ),
+            bindings: Arc::new(bindings),
         }
     }
 
@@ -60,13 +124,11 @@ impl WorthQueryInstalledApplicationValueBindingCatalog {
         marker: F,
     ) -> Option<&worth_query_declaration::facade::application_schema::fragment::FragmentDefinition>
     {
-        self.fragments.fragment(marker)
+        self.fragments_ref().fragment(marker)
     }
 
-    pub fn fragments(
-        &self,
-    ) -> &worth_query_declaration::facade::application_schema::fragment::FragmentCatalog {
-        &self.fragments
+    pub fn fragments(&self) -> &FragmentCatalog {
+        self.fragments_ref()
     }
 
     pub fn field(
@@ -112,7 +174,7 @@ impl WorthQueryInstalledApplicationValueBindingCatalog {
                 ApplicationFieldBindingLocus::for_relation(name, aspect, field)
             }
         };
-        self.bindings.get(&locus).map(Arc::as_ref)
+        self.bindings_ref().get(&locus).map(Arc::as_ref)
     }
 
     /// Inspect the existing immutable catalogue after funding its lookup and
@@ -200,7 +262,7 @@ impl WorthQueryInstalledApplicationValueBindingCatalog {
         let per_key = input
             .checked_add(3)
             .ok_or(AdmittedFieldBindingStop::AccountingOverflow)?;
-        let count = self.bindings.len();
+        let count = self.bindings_ref().len();
         let levels = usize::BITS.saturating_sub(count.max(1).leading_zeros()) as usize;
         let comparisons = count
             .min(11)
@@ -223,23 +285,23 @@ impl WorthQueryInstalledApplicationValueBindingCatalog {
                 ApplicationFieldBindingLocus::for_relation(entity, aspect, field)
             }
         };
-        Ok(self.bindings.get(&locus))
+        Ok(self.bindings_ref().get(&locus))
     }
 
     pub fn content_formats(&self) -> impl ExactSizeIterator<Item = &worth_query_declaration::facade::application_schema::ApplicationContentBindingRecipe>{
-        self.content_formats.values().map(Arc::as_ref)
+        self.content_formats_ref().values().map(Arc::as_ref)
     }
     pub fn bindings(
         &self,
     ) -> impl ExactSizeIterator<Item = &WorthQueryInstalledApplicationValueBinding> {
-        self.bindings.values().map(Arc::as_ref)
+        self.bindings_ref().values().map(Arc::as_ref)
     }
 
     pub fn len(&self) -> usize {
-        self.bindings.len()
+        self.bindings_ref().len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.bindings.is_empty()
+        self.bindings_ref().is_empty()
     }
 }

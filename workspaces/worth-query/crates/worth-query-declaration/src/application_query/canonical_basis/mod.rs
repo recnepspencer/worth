@@ -3,6 +3,7 @@ mod disclosure;
 mod entry;
 mod history;
 mod inspection;
+mod related_predicate;
 mod result_shape;
 mod where_filter;
 

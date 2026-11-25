@@ -23,10 +23,20 @@ pub(in crate::domain_computation::primary_graph) struct InstalledResourceRegistr
     marker: PhantomData<fn() -> Schema>,
 }
 
+trait ResourceStorageRetention: Send + Sync {
+    fn allocated_rows_retained(&self) -> bool;
+}
+
+impl ResourceStorageRetention for super::storage::ResourceStorage {
+    fn allocated_rows_retained(&self) -> bool {
+        Self::allocated_rows_retained(self)
+    }
+}
+
 struct InstalledResourceEntry<Schema> {
     binding: Arc<dyn Any + Send + Sync>,
     custody: Arc<dyn super::custody::HomeResourceCustody<Schema>>,
-    storage: Arc<super::storage::ResourceStorage>,
+    storage: Arc<dyn ResourceStorageRetention>,
 }
 
 impl<Schema> Default for InstalledResourceRegistry<Schema> {

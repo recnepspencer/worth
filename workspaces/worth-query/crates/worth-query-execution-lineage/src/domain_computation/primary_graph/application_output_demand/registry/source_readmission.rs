@@ -132,7 +132,7 @@ impl<Query: 'static> PreparedOutputReadmissionSource<Query> {
         interest: &WorthQueryOutputDemandInterest,
         producer: Arc<dyn Any + Send + Sync>,
     ) -> Result<Arc<RetainedOutputReadmissionSource<Query>>, WorthQueryOutputDemandDenial> {
-        if !Arc::ptr_eq(&self.owner.state, &interest.owner.state) {
+        if !self.owner.state.ptr_eq(&interest.owner.state) {
             return Err(source_denial());
         }
         let epoch = self

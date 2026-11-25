@@ -31,11 +31,38 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) fn flush
     };
     let Some(support) = runtime.installed_program_support() else {
         wake.continuation_identity = None;
+        wake.original_retry_finish_confirmed = None;
         return Ok(());
     };
     let history = support.lifecycle();
     if !history.has_medium() {
+        if wake.original_retry_finish_confirmed.is_some() {
+            wake.continuation_identity = None;
+            wake.original_retry_finish_confirmed = None;
+        }
         return Ok(());
+    }
+    match wake.original_retry_finish_confirmed {
+        Some(true) => {
+            // World settlement and durable `Finish` were already confirmed via
+            // `retry_original_key`; never republish `Retain`.
+            wake.continuation_identity = None;
+            wake.original_retry_finish_confirmed = None;
+            return Ok(());
+        }
+        Some(false) => {
+            // World already resolved the original via `retry_original_key`,
+            // but durable `Finish` was refused; retry `Finish` (never `Retain`)
+            // and clear continuation identity only once durable `Finish` confirms.
+            if runtime.take_refuse_next_decision_publication() {
+                return Err(QueryObligationDenial::PublicationUnresolved);
+            }
+            history.record_conditional_decision(request, Record::Finish { key, intent })?;
+            wake.continuation_identity = None;
+            wake.original_retry_finish_confirmed = Some(true);
+            return Ok(());
+        }
+        None => {}
     }
     let already_indeterminate = history.is_indeterminate(&key);
     let posture = match &mut wake.decision {
@@ -81,6 +108,9 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) fn flush
         Decision::OperationCommitted(_, _)
         | Decision::OperationAlreadyCommitted(_, _)
         | Decision::OperationRetiredNoEffect(_) => {
+            if runtime.take_refuse_next_decision_publication() {
+                return Err(QueryObligationDenial::PublicationUnresolved);
+            }
             history.record_conditional_decision(request, Record::Finish { key, intent })?;
             wake.continuation_identity = None;
             return Ok(());
@@ -100,6 +130,9 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) fn flush
         | Decision::Failed(_) => return Ok(()),
     };
     let product = product.ok_or(QueryObligationDenial::ForeignHome)?;
+    if runtime.take_refuse_next_decision_publication() {
+        return Err(QueryObligationDenial::PublicationUnresolved);
+    }
     history.record_conditional_decision(
         request,
         Record::Retain(QueryConditionalDecision {

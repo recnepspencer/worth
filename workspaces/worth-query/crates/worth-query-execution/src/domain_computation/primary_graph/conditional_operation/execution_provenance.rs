@@ -200,12 +200,12 @@ fn cause(
         }
         Decision::OperationTerminalFailure(
             _,
+            Terminal::Admission(Admission::Principal(_) | Admission::Authorization(_)),
+        ) => Some(Cause::AuthorizationRefused),
+        Decision::OperationTerminalFailure(
+            _,
             Terminal::Admission(
-                Admission::Principal(_)
-                | Admission::Entity(_)
-                | Admission::Authorization(_)
-                | Admission::Projection(_)
-                | Admission::Invariant(_),
+                Admission::Entity(_) | Admission::Projection(_) | Admission::Invariant(_),
             ),
         ) => Some(Cause::TerminalFailure),
         Decision::OperationTerminalFailure(_, Terminal::ApplicationCommit(kind)) => {
@@ -381,6 +381,6 @@ fn authorization_cause(denial: &graph::WorthQueryOperationAuthorizationDenial) -
             stage: graph::WorthQueryApplicationCommitDenialStage::DecisionReadSet,
             cause: Ok(kind),
         },
-        AuthorizationKind::Refused(_) => Cause::TerminalFailure,
+        AuthorizationKind::Refused(_) => Cause::AuthorizationRefused,
     }
 }

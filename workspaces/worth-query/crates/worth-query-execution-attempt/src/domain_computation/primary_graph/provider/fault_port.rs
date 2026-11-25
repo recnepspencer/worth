@@ -3,8 +3,8 @@
 use std::sync::Arc;
 pub mod answer_pause;
 pub mod cancellation;
-pub use answer_pause::WorthQueryCommitAnswerPauseForTest;
 use answer_pause::BoundaryAnswerPause;
+pub use answer_pause::WorthQueryCommitAnswerPauseForTest;
 use cancellation::BoundaryCancellation;
 
 #[derive(Clone, Copy)]
@@ -59,7 +59,9 @@ pub trait WorthQueryPrimaryGraphFaultPort: Send + Sync {
 
     fn pause_before_commit_answer(&self) {}
 
-    fn arm_pause_before_commit_answer_for_test(&self) -> Option<WorthQueryCommitAnswerPauseForTest> {
+    fn arm_pause_before_commit_answer_for_test(
+        &self,
+    ) -> Option<WorthQueryCommitAnswerPauseForTest> {
         None
     }
 }
@@ -126,7 +128,9 @@ impl WorthQueryPrimaryGraphFaultPort for WorthQueryScriptedPrimaryGraphFaults {
         self.commit_answer_pause.pause_if_armed();
     }
 
-    fn arm_pause_before_commit_answer_for_test(&self) -> Option<WorthQueryCommitAnswerPauseForTest> {
+    fn arm_pause_before_commit_answer_for_test(
+        &self,
+    ) -> Option<WorthQueryCommitAnswerPauseForTest> {
         Some(self.commit_answer_pause.arm())
     }
 }
@@ -170,9 +174,7 @@ impl super::WorthQueryPrimaryGraphProvider {
         self.fault_port.pause_before_commit_answer();
     }
 
-    pub fn pause_after_commit_before_answer_for_test(
-        &self,
-    ) -> WorthQueryCommitAnswerPauseForTest {
+    pub fn pause_after_commit_before_answer_for_test(&self) -> WorthQueryCommitAnswerPauseForTest {
         self.fault_port
             .arm_pause_before_commit_answer_for_test()
             .expect("scripted fault port supports commit-answer pause")

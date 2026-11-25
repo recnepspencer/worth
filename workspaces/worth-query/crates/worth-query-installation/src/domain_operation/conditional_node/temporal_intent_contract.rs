@@ -251,6 +251,29 @@ impl<Clock, Input> WorthQueryTemporalIntentCandidate<Clock, Input> {
     pub fn into_input(self) -> Input {
         self.input
     }
+
+    /// Builds the active successor candidate after a recurring occurrence
+    /// atomically commits its next revision and due coordinate.
+    pub fn rescheduled_successor(
+        &self,
+        next_revision: u64,
+        next_due: WorthQueryClockCoordinate<Clock>,
+        next_input: Input,
+        next_input_identity: WorthQueryTemporalOperationInputIdentity,
+        next_idempotency: WorthQueryTemporalIntentIdempotencyRelation,
+    ) -> Self {
+        Self {
+            identity: self.identity.clone(),
+            record_identity: self.record_identity.clone(),
+            revision: next_revision,
+            due: next_due,
+            input: next_input,
+            input_identity: next_input_identity,
+            idempotency: next_idempotency,
+            lifecycle: WorthQueryTemporalIntentLifecycle::Active,
+            marker: PhantomData,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -313,6 +336,27 @@ pub trait WorthQueryTemporalIntentRevisionValue: ApplicationScalarValueBinding {
 impl WorthQueryTemporalIntentRevisionValue for U64ApplicationValueBinding {
     fn from_revision(revision: u64) -> Option<Self::Value> {
         Some(revision)
+    }
+}
+
+/// Application scalar conversion for the authoritative intent due-coordinate
+/// field when a recurring temporal intent reschedules its next occurrence.
+/// This is value meaning only and grants no mutation authority.
+pub trait WorthQueryTemporalIntentDueValue: ApplicationScalarValueBinding {
+    fn from_due_nanoseconds(nanoseconds: u64) -> Option<Self::Value>;
+}
+
+impl WorthQueryTemporalIntentDueValue for U64ApplicationValueBinding {
+    fn from_due_nanoseconds(nanoseconds: u64) -> Option<Self::Value> {
+        Some(nanoseconds)
+    }
+}
+
+impl WorthQueryTemporalIntentDueValue
+    for worth_query_declaration::facade::application_schema::I64ApplicationValueBinding
+{
+    fn from_due_nanoseconds(nanoseconds: u64) -> Option<Self::Value> {
+        i64::try_from(nanoseconds).ok()
     }
 }
 

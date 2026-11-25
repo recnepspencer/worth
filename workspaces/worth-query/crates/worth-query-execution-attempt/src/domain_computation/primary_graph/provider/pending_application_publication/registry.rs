@@ -1,6 +1,7 @@
 //! Pre-effect reservation and unwind-safe custody for pending publications.
 
 use std::collections::BTreeMap;
+use std::ops::Deref;
 use std::sync::{Arc, Mutex};
 
 use worth_runtime_world::facade::ProductBranchIncarnation;
@@ -8,8 +9,49 @@ use worth_runtime_world::facade::ProductBranchIncarnation;
 use super::WorthQueryPendingApplicationPublication;
 use crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding;
 
-pub type WorthQueryPendingApplicationPublicationRegistryOwner =
-    Arc<Mutex<WorthQueryPendingApplicationPublicationRegistry>>;
+trait PendingApplicationPublicationRegistryBacking:
+    Send + Sync + std::panic::UnwindSafe + std::panic::RefUnwindSafe
+{
+    fn as_mutex(&self) -> &Mutex<WorthQueryPendingApplicationPublicationRegistry>;
+}
+
+impl PendingApplicationPublicationRegistryBacking
+    for Mutex<WorthQueryPendingApplicationPublicationRegistry>
+{
+    fn as_mutex(&self) -> &Mutex<WorthQueryPendingApplicationPublicationRegistry> {
+        self
+    }
+}
+
+#[derive(Clone)]
+pub struct WorthQueryPendingApplicationPublicationRegistryOwner(
+    Arc<dyn PendingApplicationPublicationRegistryBacking>,
+);
+
+const _: fn() = || {
+    fn assert_auto_traits<T: Send + Sync + std::panic::UnwindSafe + std::panic::RefUnwindSafe>() {}
+    assert_auto_traits::<WorthQueryPendingApplicationPublicationRegistryOwner>();
+};
+
+impl WorthQueryPendingApplicationPublicationRegistryOwner {
+    pub fn new(registry: WorthQueryPendingApplicationPublicationRegistry) -> Self {
+        Self(Arc::new(Mutex::new(registry)))
+    }
+
+    pub(super) fn from_arc(
+        registry: Arc<Mutex<WorthQueryPendingApplicationPublicationRegistry>>,
+    ) -> Self {
+        Self(registry)
+    }
+}
+
+impl Deref for WorthQueryPendingApplicationPublicationRegistryOwner {
+    type Target = Mutex<WorthQueryPendingApplicationPublicationRegistry>;
+
+    fn deref(&self) -> &Self::Target {
+        PendingApplicationPublicationRegistryBacking::as_mutex(&*self.0)
+    }
+}
 
 pub struct WorthQueryPendingApplicationPublicationRegistry {
     maximum_slots: usize,
@@ -19,7 +61,7 @@ pub struct WorthQueryPendingApplicationPublicationRegistry {
 }
 
 pub struct WorthQueryApplicationPublicationRecoveryReservation {
-    registry: Arc<Mutex<WorthQueryPendingApplicationPublicationRegistry>>,
+    registry: WorthQueryPendingApplicationPublicationRegistryOwner,
     occurrence: ProductBranchIncarnation,
     slot: Arc<WorthQueryApplicationPublicationRecoverySlot>,
     active: bool,
@@ -73,7 +115,7 @@ impl WorthQueryPendingApplicationPublicationRegistry {
     }
 
     pub(super) fn reserve(
-        registry: &Arc<Mutex<Self>>,
+        registry: &WorthQueryPendingApplicationPublicationRegistryOwner,
         occurrence: ProductBranchIncarnation,
         binding: Option<WorthQueryApplicationIdempotencyBinding>,
     ) -> Result<WorthQueryApplicationPublicationRecoveryReservation, &'static str> {
@@ -102,7 +144,7 @@ impl WorthQueryPendingApplicationPublicationRegistry {
         }
         drop(locked);
         Ok(WorthQueryApplicationPublicationRecoveryReservation {
-            registry: Arc::clone(registry),
+            registry: registry.clone(),
             occurrence,
             slot,
             active: true,

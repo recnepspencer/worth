@@ -27,6 +27,7 @@ pub(in crate::application_home) fn finish_service<
     query: ReadmittedHomeQueryService<Schema, Program>,
     home: DirectoryHome,
     checkpoint_limits: ApplicationHomeCheckpointLimits,
+    open_disposition: WorthQueryHomeOpenDisposition,
     observation: ApplicationHomeOpeningObservation,
 ) -> Result<
     WorthQueryApplicationHome<Schema, Program>,
@@ -73,13 +74,19 @@ pub(in crate::application_home) fn finish_service<
             )),
         }
     })?;
-    let home = settled.consume(
-        |SettledHomeService { query, home }| WorthQueryApplicationHome {
-            query: query.into_home_program_runtime(),
-            directory: Some(home.into_no_pending_home()),
+    let home = settled.consume(|SettledHomeService { query, home }| {
+        let query = query.into_home_program_runtime();
+        let active_head = std::sync::Mutex::new(query.runtime().current_world());
+        WorthQueryApplicationHome {
+            query,
+            directory: Some(super::super::runtime::ErasedDirectoryHome::new(
+                home.into_no_pending_home(),
+            )),
             checkpoint_limits,
-        },
-    );
+            open_disposition,
+            active_head,
+        }
+    });
     observation.arrive_for_test(
         ApplicationHomeOpeningStage::ServiceHandoff,
         ApplicationHomeOpeningEdge::After,

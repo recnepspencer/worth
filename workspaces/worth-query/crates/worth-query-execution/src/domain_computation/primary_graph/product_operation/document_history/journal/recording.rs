@@ -3,7 +3,7 @@ use super::super::head_custody::HistoryHeadCustody;
 use super::*;
 use worth_query_execution_query::facade::ports::HistoryNodeIdInternalPort as _;
 
-impl<'runtime, S> HistoryJournal<'runtime, S> {
+impl HistoryJournal {
     /// Refuse step metadata above the installed bound before anything is reserved.
     pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn admit_step_metadata(
         &self,
@@ -130,7 +130,7 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
     pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn cancel_parking(
         &mut self,
         reserved: ReservedHistoryRecord,
-        custody: HistoryHeadCustody<'runtime, S>,
+        custody: HistoryHeadCustody,
     ) {
         debug_assert!(matches!(
             custody,
@@ -180,7 +180,7 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
         completed: RecordedNode,
         source: Arc<WorthQueryApplicationReadObservation>,
         discovery_recipes: Option<Arc<super::super::discovery_recipes::HistoryDiscoveryRecipes>>,
-        previous: WorthQueryOwnedProductHead<'runtime, S>,
+        previous: DetachedOwnedProductHead,
     ) -> Option<RetainedHistorySource> {
         self.store_previous(reserved.transition, previous);
         self.access(Access::Node);

@@ -64,7 +64,7 @@ impl PreparedOutputLineageSlot {
         coupled_completion: Option<super::super::CoupledOutputCompletion>,
     ) -> Self {
         Self {
-            owner,
+            owner: super::super::SharedOutputLineage::from_arc(owner),
             output_binding_type,
             source,
             coordinate,

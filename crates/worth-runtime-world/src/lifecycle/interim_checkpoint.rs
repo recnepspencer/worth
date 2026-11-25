@@ -6,10 +6,7 @@ mod restore;
 mod wire;
 use crate::branch::ProductBranchObservation;
 use crate::history::{MemoryPublicationMeaning, MemoryPublicationReceiverScope};
-use std::{
-    ops::Range,
-    sync::{Arc, Weak},
-};
+use std::{ops::Range, sync::Arc};
 use worth_execution::{
     ExecutionArray, ExecutionImmutableBytes, ExecutionMemoryReservation, ExecutionRequest,
 };
@@ -39,12 +36,12 @@ type Stop = WorldInterimCheckpointRefusal;
 /// A weak installed owner port, separate from Query's passive owner custody.
 #[derive(Debug, Clone)]
 pub struct WorldInterimCheckpointPort {
-    owner: Weak<super::RuntimeWorldOwnerRoot<(), (), (), (), ()>>,
+    owner: super::owner_backing::WeakWorldOwner<super::RuntimeWorldOwnerRoot<(), (), (), (), ()>>,
 }
 impl super::RuntimeWorldOwner<(), (), (), (), ()> {
     pub fn interim_checkpoint_port(&self) -> WorldInterimCheckpointPort {
         WorldInterimCheckpointPort {
-            owner: Arc::downgrade(&self.root),
+            owner: self.root.downgrade(),
         }
     }
 }
@@ -71,10 +68,35 @@ struct CapturedRegistry {
     digest: CanonicalDigestId,
     _memory: Option<ExecutionMemoryReservation>,
 }
+trait CapturedRegistryBacking: std::fmt::Debug + Send + Sync {
+    fn as_registry(&self) -> &CapturedRegistry;
+    fn into_any(self: Arc<Self>) -> Arc<dyn std::any::Any + Send + Sync>;
+}
+
+impl CapturedRegistryBacking for CapturedRegistry {
+    fn as_registry(&self) -> &CapturedRegistry {
+        self
+    }
+
+    fn into_any(self: Arc<Self>) -> Arc<dyn std::any::Any + Send + Sync> {
+        self
+    }
+}
+
+trait OriginBacking: std::fmt::Debug + Send + Sync {
+    fn as_origin(&self) -> &Origin;
+}
+
+impl OriginBacking for Origin {
+    fn as_origin(&self) -> &Origin {
+        self
+    }
+}
+
 #[derive(Debug)]
-pub struct CapturedWorldInterimAdmission(Arc<CapturedRegistry>);
+pub struct CapturedWorldInterimAdmission(Arc<dyn CapturedRegistryBacking>);
 #[derive(Clone, Debug)]
-pub struct CapturedWorldInterimOrigin(Arc<Origin>);
+pub struct CapturedWorldInterimOrigin(Arc<dyn OriginBacking>);
 #[derive(Debug)]
 struct Origin {
     captured: Arc<CapturedRegistry>,
@@ -84,14 +106,18 @@ struct Origin {
     _memory: Option<ExecutionMemoryReservation>,
 }
 impl CapturedWorldInterimAdmission {
+    fn registry(&self) -> &CapturedRegistry {
+        CapturedRegistryBacking::as_registry(&*self.0)
+    }
+
     pub fn registry_revision(&self) -> u64 {
-        self.0.rows.len() as u64
+        self.registry().rows.len() as u64
     }
     pub fn body_digest(&self) -> CanonicalDigestId {
-        self.0.digest
+        self.registry().digest
     }
     pub fn bytes(&self) -> &[u8] {
-        self.0.bytes.bytes()
+        self.registry().bytes.bytes()
     }
     pub fn seal_transport(
         self,
@@ -101,9 +127,14 @@ impl CapturedWorldInterimAdmission {
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<CapturedWorldInterimOrigin, Stop> {
         request_scope::run(request, || {
-            charge(request, self.0.bytes.len())?;
-            if native.coordinate() != self.0.coordinate
-                || wrapper.bytes().get(section.clone()) != Some(self.0.bytes.bytes())
+            let captured = self
+                .0
+                .into_any()
+                .downcast::<CapturedRegistry>()
+                .expect("CapturedWorldInterimAdmission always wraps CapturedRegistry");
+            charge(request, captured.bytes.len())?;
+            if native.coordinate() != captured.coordinate
+                || wrapper.bytes().get(section.clone()) != Some(captured.bytes.bytes())
             {
                 return Err(Stop::BindingMismatch);
             }
@@ -114,16 +145,16 @@ impl CapturedWorldInterimAdmission {
                     registry_revision,
                     world_snapshot_body_digest,
                 } => {
-                    transport_origin == self.0.coordinate.bytes()
-                        && *registry_revision == self.registry_revision()
-                        && world_snapshot_body_digest == self.0.digest.bytes()
+                    transport_origin == captured.coordinate.bytes()
+                        && *registry_revision == captured.rows.len() as u64
+                        && world_snapshot_body_digest == captured.digest.bytes()
                 }
                 worth_foundational::facade::CheckpointAdmissionScope::Home { .. } => false,
             };
             if !scope_matches
-                || cut.canonical_through() != self.0.covered
-                || cut.transitions_through() != self.0.transitions
-                || cut.checkpoint_digest() != self.0.native_digest.bytes()
+                || cut.canonical_through() != captured.covered
+                || cut.transitions_through() != captured.transitions
+                || cut.checkpoint_digest() != captured.native_digest.bytes()
             {
                 return Err(Stop::BindingMismatch);
             }
@@ -133,7 +164,7 @@ impl CapturedWorldInterimAdmission {
             let digest = native.wrapper_digest();
             let memory = reserve_arc::<Origin>(request, 0)?;
             Ok(CapturedWorldInterimOrigin(Arc::new(Origin {
-                captured: self.0,
+                captured,
                 wrapper_digest: digest,
                 wrapper,
                 section,
@@ -143,22 +174,27 @@ impl CapturedWorldInterimAdmission {
     }
 }
 impl CapturedWorldInterimOrigin {
+    fn origin(&self) -> &Origin {
+        OriginBacking::as_origin(&*self.0)
+    }
+
     pub fn validate_transport(
         &self,
         bytes: &[u8],
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), Stop> {
         request_scope::run(request, || {
+            let origin = self.origin();
             charge(request, 1)?;
             // Sealing authenticated this exact immutable allocation, retained
             // here for its full lifetime. Copied transports still hash below.
-            if std::ptr::eq(bytes, self.0.wrapper.bytes()) {
+            if std::ptr::eq(bytes, origin.wrapper.bytes()) {
                 return Ok(());
             }
-            charge(request, self.0.captured.bytes.len())?;
-            if bytes.len() != self.0.wrapper.len()
-                || wire::digest(bytes, request)? != self.0.wrapper_digest
-                || bytes.get(self.0.section.clone()) != Some(self.0.captured.bytes.bytes())
+            charge(request, origin.captured.bytes.len())?;
+            if bytes.len() != origin.wrapper.len()
+                || wire::digest(bytes, request)? != origin.wrapper_digest
+                || bytes.get(origin.section.clone()) != Some(origin.captured.bytes.bytes())
             {
                 return Err(Stop::AuthenticationMismatch);
             }

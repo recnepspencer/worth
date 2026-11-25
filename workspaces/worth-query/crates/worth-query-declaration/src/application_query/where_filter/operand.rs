@@ -75,8 +75,8 @@ impl ApplicationQueryWhereFilterSource {
         else {
             return Ok(());
         };
-        let limit = ApplicationQueryWhereFilterProgram::PROFILE
-            .limit(ExpressionResource::SourceBytes);
+        let limit =
+            ApplicationQueryWhereFilterProgram::PROFILE.limit(ExpressionResource::SourceBytes);
         if value.value_family() != *scalar_family
             || !value.has_canonical_representation()
             || (value.semantic_byte_width() as u64) > limit
@@ -155,7 +155,9 @@ impl ApplicationQueryWhereFilterOperand {
     }
 
     /// Stable `(key, value)` pairs for canonical identity material.
-    pub(in crate::application_query) fn canonical_parts(&self) -> Vec<(&'static str, Cow<'_, str>)> {
+    pub(in crate::application_query) fn canonical_parts(
+        &self,
+    ) -> Vec<(&'static str, Cow<'_, str>)> {
         let mut parts = vec![
             ("name", Cow::Borrowed(self.name())),
             ("kind", Cow::Borrowed(self.source.kind_name())),
@@ -192,7 +194,11 @@ impl ApplicationQueryWhereFilterOperand {
                 ("scalar", Cow::Borrowed(scalar_family.canonical_name())),
                 (
                     "value",
-                    Cow::Owned(prepare_aspect_value_identity_basis(value).as_str().to_owned()),
+                    Cow::Owned(
+                        prepare_aspect_value_identity_basis(value)
+                            .as_str()
+                            .to_owned(),
+                    ),
                 ),
             ]),
         }

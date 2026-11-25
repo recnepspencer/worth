@@ -18,7 +18,7 @@ impl WorthQueryOutputDemandRegistry {
         let returned = |kind, checkpoint| {
             CheckpointFinishStop::Returned(WorthQueryOutputDemandDenial::new(kind, ""), checkpoint)
         };
-        if !std::sync::Arc::ptr_eq(&self.state, &interest.owner.state) {
+        if !self.state.ptr_eq(&interest.owner.state) {
             return Err(returned(Kind::ForeignDemand, checkpoint));
         }
         let mut state = self

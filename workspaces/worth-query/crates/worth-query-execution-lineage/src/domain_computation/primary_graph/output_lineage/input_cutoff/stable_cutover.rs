@@ -31,13 +31,15 @@ impl From<WorthQueryOutputDemandDenial> for StablePublicationStop {
     }
 }
 
+use super::super::recorded_cell::SharedRecordedOutputCell;
+
 /// Minted after the exact current source image and its immutable lineage row
 /// have been installed together inside the World owner's currentness scope,
 /// or for the row a retained observation selects, which its reader verifies
 /// at that observation before using it.
 #[derive(Clone)]
 pub struct PublishedStableLineage {
-    cell: Arc<OnceLock<RecordedOutput>>,
+    cell: SharedRecordedOutputCell,
     observation: ProductBranchObservation,
 }
 
@@ -89,7 +91,7 @@ impl<'lane, 'selected> PreparedStableLineagePublication<'lane, 'selected> {
             return Err(denial(Kind::PublicationStale).into());
         }
 
-        let owner = Arc::clone(&self.address.owner);
+        let owner = self.address.owner.clone();
         let mut lineage = owner
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
@@ -246,7 +248,7 @@ impl<'lane, 'selected> PreparedStableLineagePublication<'lane, 'selected> {
                 );
                 StableInstallation::Installed {
                     published: PublishedStableLineage {
-                        cell: published_cell,
+                        cell: SharedRecordedOutputCell::from_arc(published_cell),
                         observation,
                     },
                     source_cleanup: cleanup,

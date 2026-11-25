@@ -31,6 +31,7 @@ const SCOPE_CANONICAL_VERSION_BYTES: usize = 47;
 const SCOPE_CANONICAL_LOCUS_SEPARATOR_BYTES: usize = 18;
 
 pub struct RowOperandReader<'filter> {
+    entity_name: &'filter str,
     fields: &'filter [WorthQueryInstalledWhereFilterField],
     kind: KindId,
     scope: ProjectionAspectScope,
@@ -39,7 +40,23 @@ pub struct RowOperandReader<'filter> {
 
 impl<'filter> RowOperandReader<'filter> {
     pub fn new<ReadIdentity>(
+        read: &NarrowingRead<'_, 'filter, '_, '_, ReadIdentity>,
+        filter: &'filter WorthQueryInstalledWhereFilter,
+        allocation: &SourceFactsAllocation,
+        work: &mut RootSelectionWork<'_>,
+    ) -> Result<Self, WorthQueryApplicationReadExecutionDenial> {
+        Self::new_for_entity(
+            read,
+            read.plan.contract.root_entity(),
+            filter,
+            allocation,
+            work,
+        )
+    }
+
+    pub fn new_for_entity<ReadIdentity>(
         read: &NarrowingRead<'_, '_, '_, '_, ReadIdentity>,
+        entity_name: &'filter str,
         filter: &'filter WorthQueryInstalledWhereFilter,
         allocation: &SourceFactsAllocation,
         work: &mut RootSelectionWork<'_>,
@@ -47,7 +64,7 @@ impl<'filter> RowOperandReader<'filter> {
         let stop = |cause| relational_read_denial(cause, WHERE_FILTER_SUBJECT);
         let kind = read
             .graph
-            .entity_kind(read.plan.contract.root_entity())
+            .entity_kind(entity_name)
             .ok_or_else(projection_unavailable)?;
         let field_count = filter.fields().len();
         let setup_bytes = setup_scope_payload_bytes(filter.fields())
@@ -85,6 +102,7 @@ impl<'filter> RowOperandReader<'filter> {
         let observe_work = observe_row_work(field_count, &scope, roster_width)
             .ok_or_else(|| stop(Cause::WorkCounterOverflow))?;
         Ok(Self {
+            entity_name,
             fields: filter.fields(),
             kind,
             scope,
@@ -109,7 +127,7 @@ impl<'filter> RowOperandReader<'filter> {
                 read.projection,
                 read.graph,
                 candidate,
-                read.plan.contract.root_entity(),
+                self.entity_name,
                 field.aspect_key(),
                 field.field_key(),
                 work,
@@ -238,7 +256,11 @@ fn scalar(
 /// Upper-bound heap bytes for `keys` strings, `AspectMask` paths, copied
 /// `AspectMaskLocator` paths, and `prepare_projection_mask_for_canonical_basis`
 /// (including version strings, digest entries, and canonical basis sequence).
-fn setup_scope_payload_bytes(fields: &[WorthQueryInstalledWhereFilterField]) -> Option<u64> {
+pub(in crate::domain_computation::primary_graph::application_query::read_execution::root_selection::narrowing) fn setup_scope_payload_bytes_for_keys<
+    'a,
+>(
+    fields: impl Iterator<Item = (&'a AspectKey, &'a FieldKey)>,
+) -> Option<u64> {
     let mut total = 0_usize;
     let per_field_fixed = 3_usize
         .checked_mul(size_of::<CanonicalFieldPath>().checked_add(size_of::<FieldKey>())?)?
@@ -247,15 +269,10 @@ fn setup_scope_payload_bytes(fields: &[WorthQueryInstalledWhereFilterField]) -> 
         .checked_add(size_of::<&str>())?
         .checked_add(SCOPE_CANONICAL_VERSION_BYTES.checked_mul(2)?)?
         .checked_add(SCOPE_CANONICAL_LOCUS_SEPARATOR_BYTES.checked_mul(2)?)?;
-    for field in fields {
-        let aspect_len = field.aspect_key().as_str().len();
-        let field_len = field.field_key().as_str().len();
-        // Owned key copies across: keys map (1), locator (1), canonical prep
-        // aspect clone (1), digest entry (1), canonical locus (1).
+    for (aspect_key, field_key) in fields {
+        let aspect_len = aspect_key.as_str().len();
+        let field_len = field_key.as_str().len();
         let aspect_bytes = aspect_len.checked_mul(5)?;
-        // Owned field copies across: keys/mask (1), locator (1), canonical prep
-        // mask clone (1), digest entry (1), path_text + locus + exact_text +
-        // transient locus format (4).
         let field_bytes = field_len.checked_mul(8)?;
         total = total
             .checked_add(per_field_fixed)?
@@ -265,11 +282,15 @@ fn setup_scope_payload_bytes(fields: &[WorthQueryInstalledWhereFilterField]) -> 
     u64::try_from(total).ok()
 }
 
+fn setup_scope_payload_bytes(fields: &[WorthQueryInstalledWhereFilterField]) -> Option<u64> {
+    setup_scope_payload_bytes_for_keys(fields.iter().map(|f| (f.aspect_key(), f.field_key())))
+}
+
 /// Per-candidate projection-scope admission and two-pass field-observation
 /// work, explicitly scaled by the root entity kind's executable binding roster
 /// width (`admit_declared_projection_aspects` + both `observe_aspect_field`
 /// passes).
-fn observe_row_work(
+pub(in crate::domain_computation::primary_graph::application_query::read_execution::root_selection::narrowing) fn observe_row_work(
     field_count: usize,
     scope: &ProjectionAspectScope,
     roster_width: usize,

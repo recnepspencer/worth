@@ -108,6 +108,7 @@ impl ExecutionResourceLease<'_> {
             Busy::busy()?;
             (0, Vec::new(), 0)
         };
+        let serial_budget = self.lineage_serial_budget_node();
         if let Some(memory_bytes) = memory_bytes {
             room::check(
                 &ledger,
@@ -117,6 +118,13 @@ impl ExecutionResourceLease<'_> {
                 memory_bytes,
             )
             .map_err(LeaseDenial::MemoryExhausted)?;
+            if memory_bytes != 0
+                && let Some((_, budget)) = serial_budget
+            {
+                budget.resize(0, memory_bytes).map_err(|denial| {
+                    LeaseDenial::MemoryExhausted(denial.offset_ancestor(lineage.len() as u32))
+                })?;
+            }
         }
         ledger.active_workers += process_workers;
         if let Some(bytes) = memory_bytes {
@@ -132,6 +140,14 @@ impl ExecutionResourceLease<'_> {
             worker_nodes
         };
         let charged_bytes = memory_bytes.filter(|bytes| *bytes != 0);
+        if charged_bytes.is_some()
+            && let Some((budget_node_id, budget)) = serial_budget
+        {
+            ledger
+                .serial_budgets
+                .entry(budget_node_id)
+                .or_insert_with(|| budget.clone());
+        }
         for node in lineage
             .iter()
             .filter(|node| charged_bytes.is_some() || worker_nodes.contains(&node.id))

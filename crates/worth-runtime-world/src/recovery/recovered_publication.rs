@@ -14,6 +14,8 @@ use worth_relational::facade::durability::{
     ReadmittedRelationalAssociatedEffect, RelationalRecoveredPublicationCustody,
 };
 
+mod backing;
+pub(crate) use backing::{RecoveredNativeObservation, SharedRecoveredWorldPublicationRecord};
 pub(crate) mod continuation;
 mod observation;
 mod signal_leg;
@@ -40,20 +42,6 @@ pub(crate) enum RecoveredNativeCustody {
     Continuing(Box<OriginalHomeTransitionContinuation>),
     Working,
     Released,
-}
-
-#[derive(Debug, Clone)]
-pub(crate) enum RecoveredNativeObservation {
-    Original(Arc<RelationalPublicationReadmitted<RelationalRecoveredPublicationCustody>>),
-    Prepared(Arc<crate::history::PreparedReadmittedPublicationRecord>),
-}
-impl RecoveredNativeObservation {
-    fn effect(&self) -> Option<&ReadmittedRelationalAssociatedEffect> {
-        match self {
-            Self::Original(native) => Some(native.custody().effect()),
-            Self::Prepared(record) => record.effect(),
-        }
-    }
 }
 
 #[derive(Debug)]
@@ -83,7 +71,7 @@ pub(crate) struct RecoveredWorldPublicationRecord {
 /// The catalog owns the Native capability independently of this caller.
 #[derive(Debug)]
 pub struct WorldRecoveredUnpublishedEffects {
-    pub(crate) record: Arc<RecoveredWorldPublicationRecord>,
+    pub(crate) record: SharedRecoveredWorldPublicationRecord,
     pub(crate) catalog: super::catalog::ProductUnpublishedRecoveryCatalog,
     pub(crate) source: Option<RecoveredNativeObservation>,
 }
@@ -238,10 +226,10 @@ impl WorldRecoveredUnpublishedEffects {
         self.source = match &*self.record.native.lock().unwrap_or_else(|e| e.into_inner()) {
             RecoveredNativeCustody::OpenOnly => None,
             RecoveredNativeCustody::Relational(native) => {
-                Some(RecoveredNativeObservation::Original(native.clone()))
+                Some(RecoveredNativeObservation::original(native.clone()))
             }
             RecoveredNativeCustody::Prepared(record) => {
-                Some(RecoveredNativeObservation::Prepared(record.clone()))
+                Some(RecoveredNativeObservation::prepared(record.clone()))
             }
             RecoveredNativeCustody::Continuing(_)
             | RecoveredNativeCustody::Working

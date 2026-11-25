@@ -1,10 +1,9 @@
 //! The actual canonical root transferred once from its consumed programme runtime.
-use super::SignalOwner;
+use crate::branch::owner_services::owner_backing::{StrongSignalOwner, WeakSignalOwner};
 use crate::branch::owner_services::{
     lifecycle_state::SignalPreparedOwnerStopGate, SignalBranchBasisPort,
 };
 use crate::branch::SignalOwnerStopDenial;
-use std::sync::{Arc, Weak};
 use worth_execution::ExecutionRequest;
 pub(crate) struct SignalSealedOwnerRoot<D, I, T>
 where
@@ -12,7 +11,7 @@ where
     I: Copy + Ord,
     T: Copy + Ord,
 {
-    pub(super) owner: Arc<SignalOwner<D, I, T>>,
+    pub(super) owner: StrongSignalOwner<D, I, T>,
 }
 impl<D, I, T> SignalSealedOwnerRoot<D, I, T>
 where
@@ -20,8 +19,8 @@ where
     I: Copy + Ord,
     T: Copy + Ord,
 {
-    pub(crate) fn downgrade_owner(&self) -> Weak<SignalOwner<D, I, T>> {
-        Arc::downgrade(&self.owner)
+    pub(crate) fn downgrade_owner(&self) -> WeakSignalOwner<D, I, T> {
+        self.owner.downgrade()
     }
     pub(crate) fn operation_control_for_test(
         &self,

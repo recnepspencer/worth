@@ -94,12 +94,12 @@ fn take_prepared_session(
     session: crate::domain_computation::WorthQueryProviderSessionView<'_>,
     allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<WorthQueryPreparedApplicationCommit, WorthQueryProviderSessionFailure> {
-    let attempts = std::sync::Arc::clone(&provider.attempts);
+    let attempts = provider.attempts.clone();
     let prepared = {
         attempts
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .take_commit_prepared(session, std::sync::Arc::clone(&attempts))
+            .take_commit_prepared(session, attempts.clone())
     }
     .ok_or_else(|| {
         commit_failure("primary graph session has no exact commit-prepared application attempt")

@@ -55,6 +55,18 @@ impl<'scope, 'authority> StorageControl<'scope, 'authority> {
         }
         Ok(())
     }
+    pub fn charge_work(self, units: u64) -> Result<(), StoreDenial> {
+        self.check_live()?;
+        if units > 0
+            && let Some(execution) = self.execution
+        {
+            crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation::request_work(
+                &execution, units,
+            )
+            .map_err(StoreDenial::ExecutionRequest)?;
+        }
+        Ok(())
+    }
 }
 
 mod court_doors_for_test;

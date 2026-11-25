@@ -39,7 +39,7 @@ pub(super) fn entity(
     let Some(kind) = slot.kind_id() else {
         return Ok(None);
     };
-    let catalog = view.root().schema_authority().aspect_plans();
+    let catalog = view.schema_authority().aspect_plans();
     work.lookup(catalog.entity_plans.len(), 1)?;
     let Some(plan) = catalog.entity_plans.get(&kind) else {
         return Ok(None);
@@ -82,7 +82,7 @@ pub(super) fn relation(
     let Some(kind) = slot.kind_id() else {
         return Ok(None);
     };
-    let catalog = view.root().schema_authority().aspect_plans();
+    let catalog = view.schema_authority().aspect_plans();
     work.lookup(catalog.relation_plans.len(), 1)?;
     let Some(plan) = catalog.relation_plans.get(&kind) else {
         return Ok(None);

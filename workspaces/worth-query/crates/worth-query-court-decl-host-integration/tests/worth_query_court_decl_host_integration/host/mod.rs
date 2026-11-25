@@ -1,6 +1,8 @@
 pub(crate) mod application_entry_current_read;
 pub(crate) mod application_home;
 mod application_startup;
+pub(crate) mod program_transition;
+mod shared_access;
 mod source_custody;
 
 pub(crate) mod application_runtime_surface;
@@ -12,5 +14,7 @@ pub(crate) mod charged_bytes_derive;
 pub(crate) mod conditional_authoring_surface;
 
 pub(crate) mod installed_contract_inspection;
+
+mod temporal_catchup;
 
 pub(crate) mod temporal_conditional_operation;

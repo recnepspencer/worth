@@ -60,18 +60,24 @@ enum CloseCustody<Schema, Program> {
         query: WorthQueryProgramApplicationRuntime<Schema, Program>,
         home: DirectoryHome,
         checkpoint_limits: ApplicationHomeCheckpointLimits,
+        open_disposition: WorthQueryHomeOpenDisposition,
+        active_head: worth_query_execution::facade::product::WorthQueryProductBranch,
         cause: ApplicationHomeCloseDenial,
     },
     QueryAdmission {
         query: WorthQueryProgramApplicationRuntime<Schema, Program>,
         home: DirectoryHome,
         checkpoint_limits: ApplicationHomeCheckpointLimits,
+        open_disposition: WorthQueryHomeOpenDisposition,
+        active_head: worth_query_execution::facade::product::WorthQueryProductBranch,
         cause: WorthQueryHomeRetirementDenial,
     },
     World {
         query: WorthQueryPreparedHomeQuery<Schema, Program>,
         home: WorldHomeCloseRefused<(), (), (), (), ()>,
         checkpoint_limits: ApplicationHomeCheckpointLimits,
+        open_disposition: WorthQueryHomeOpenDisposition,
+        active_head: worth_query_execution::facade::product::WorthQueryProductBranch,
     },
     QueryRetirement {
         query: WorthQueryRetiringHomeQuery<Schema, Program>,
@@ -136,13 +142,20 @@ impl<Schema: ApplicationSchema, Program: 'static> WorthQueryApplicationHome<Sche
             query,
             directory,
             checkpoint_limits,
+            open_disposition,
+            active_head,
         } = self;
-        let Some(home) = directory else {
+        let active_head = active_head
+            .into_inner()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let Some(home) = directory.map(ErasedDirectoryHome::into_inner) else {
             return Err(WorthQueryApplicationHomeCloseRefused::from_custody(
                 CloseCustody::MemoryLifecycleRequired(Self {
                     query,
                     directory: None,
                     checkpoint_limits,
+                    open_disposition,
+                    active_head: std::sync::Mutex::new(active_head),
                 }),
             ));
         };
@@ -152,6 +165,8 @@ impl<Schema: ApplicationSchema, Program: 'static> WorthQueryApplicationHome<Sche
                     query,
                     home,
                     checkpoint_limits,
+                    open_disposition,
+                    active_head,
                     cause,
                 },
             ));
@@ -164,6 +179,8 @@ impl<Schema: ApplicationSchema, Program: 'static> WorthQueryApplicationHome<Sche
                         query,
                         home,
                         checkpoint_limits,
+                        open_disposition,
+                        active_head,
                         cause,
                     },
                 ))
@@ -177,6 +194,8 @@ impl<Schema: ApplicationSchema, Program: 'static> WorthQueryApplicationHome<Sche
                     query,
                     home,
                     checkpoint_limits,
+                    open_disposition,
+                    active_head,
                 },
             )),
         }
@@ -222,36 +241,50 @@ impl<Schema: ApplicationSchema, Program> WorthQueryApplicationHomeCloseRefused<S
                 query,
                 home,
                 checkpoint_limits,
+                open_disposition,
+                active_head,
                 cause: _,
             } => Ok(WorthQueryApplicationHome {
                 query,
-                directory: Some(home),
+                directory: Some(ErasedDirectoryHome::new(home)),
                 checkpoint_limits,
+                open_disposition,
+                active_head: std::sync::Mutex::new(active_head),
             }),
             CloseCustody::QueryAdmission {
                 query,
                 home,
                 checkpoint_limits,
+                open_disposition,
+                active_head,
                 cause: _,
             } => Ok(WorthQueryApplicationHome {
                 query,
-                directory: Some(home),
+                directory: Some(ErasedDirectoryHome::new(home)),
                 checkpoint_limits,
+                open_disposition,
+                active_head: std::sync::Mutex::new(active_head),
             }),
             CloseCustody::World {
                 query,
                 home,
                 checkpoint_limits,
+                open_disposition,
+                active_head,
             } => match home.resume() {
                 Ok(home) => Ok(WorthQueryApplicationHome {
                     query: query.resume(),
-                    directory: Some(home),
+                    directory: Some(ErasedDirectoryHome::new(home)),
                     checkpoint_limits,
+                    open_disposition,
+                    active_head: std::sync::Mutex::new(active_head),
                 }),
                 Err(home) => Err(Self::from_custody(CloseCustody::World {
                     query,
                     home,
                     checkpoint_limits,
+                    open_disposition,
+                    active_head,
                 })),
             },
             custody => Err(Self::from_custody(custody)),
@@ -271,14 +304,12 @@ pub(super) fn classify_released_query<Schema, Program>(
                 retired_query,
             })
         }
-        ApplicationHomeCloseOutcome::CloseRefused { reason, posture } => {
-            Err(WorthQueryApplicationHomeCloseRefused::from_custody(
-                CloseCustody::QueryReleased {
-                    cause: reason,
-                    posture,
-                    retired_query,
-                },
-            ))
-        }
+        ApplicationHomeCloseOutcome::CloseRefused { reason, posture } => Err(
+            WorthQueryApplicationHomeCloseRefused::from_custody(CloseCustody::QueryReleased {
+                cause: reason,
+                posture,
+                retired_query,
+            }),
+        ),
     }
 }

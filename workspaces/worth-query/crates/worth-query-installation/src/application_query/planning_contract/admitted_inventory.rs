@@ -1,7 +1,7 @@
 use super::{
     views::{
-        guard_view, orbit_view, ordering_view, predicate_view, relation_predicate_view,
-        result_relation_view, root_step_view,
+        guard_view, orbit_view, ordering_view, predicate_view, related_predicate_relation_view,
+        relation_predicate_view, result_relation_view, root_step_view,
     },
     WorthQueryReadGraphGuardView, WorthQueryReadGraphOrderingView,
     WorthQueryReadGraphPredicateView, WorthQueryReadGraphRelationView,
@@ -31,6 +31,7 @@ impl<'a> WorthQueryAdmittedReadGraphPlanningInventory<'a> {
         let count_visits = checked_visits(&[
             (meaning.root_paths.len(), 2),
             (meaning.relations.len(), 1),
+            (meaning.related_predicates.len(), 1),
             (1, 2),
         ])?;
         admit(count_visits, 0).map_err(WorthQueryPlanningInventoryStop::Admission)?;
@@ -51,6 +52,7 @@ impl<'a> WorthQueryAdmittedReadGraphPlanningInventory<'a> {
             .count();
         let relation_count = root_step_count
             .checked_add(meaning.relations.len())
+            .and_then(|count| count.checked_add(meaning.related_predicates.len()))
             .ok_or(WorthQueryPlanningInventoryStop::AccountingOverflow)?;
         let predicate_count = meaning
             .predicates
@@ -94,6 +96,7 @@ impl<'a> WorthQueryAdmittedReadGraphPlanningInventory<'a> {
             (self.meaning.root_paths.len(), 1),
             (self.root_step_count, 5),
             (self.meaning.relations.len(), 5),
+            (self.meaning.related_predicates.len(), 5),
             (1, 2),
         ])?;
         admit(visits, 0).map_err(WorthQueryPlanningInventoryStop::Admission)?;
@@ -103,7 +106,13 @@ impl<'a> WorthQueryAdmittedReadGraphPlanningInventory<'a> {
                 .root_paths
                 .iter()
                 .flat_map(|path| path.steps().iter().map(root_step_view))
-                .chain(meaning.relations.iter().map(result_relation_view)),
+                .chain(meaning.relations.iter().map(result_relation_view))
+                .chain(
+                    meaning
+                        .related_predicates
+                        .iter()
+                        .map(related_predicate_relation_view),
+                ),
         ))
     }
 

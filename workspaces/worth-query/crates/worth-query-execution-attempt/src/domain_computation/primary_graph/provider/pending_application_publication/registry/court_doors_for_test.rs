@@ -39,7 +39,9 @@ impl WorthQueryPendingApplicationPublicationRegistry {
         occurrence: ProductBranchIncarnation,
         binding: Option<WorthQueryApplicationIdempotencyBinding>,
     ) -> Result<WorthQueryApplicationPublicationRecoveryReservation, &'static str> {
-        Self::reserve(registry, occurrence, binding)
+        let owner =
+            WorthQueryPendingApplicationPublicationRegistryOwner::from_arc(Arc::clone(registry));
+        Self::reserve(&owner, occurrence, binding)
     }
 }
 

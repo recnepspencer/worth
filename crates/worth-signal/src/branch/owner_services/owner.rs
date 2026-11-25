@@ -12,7 +12,7 @@ use crate::branch::{SignalBranchBasisRegistry, SignalBranchRetentionRegistry};
 use crate::logic::transaction::SignalOwnerPartition;
 use crate::state::SignalBranchId;
 use std::sync::atomic::AtomicU64;
-use std::sync::{Arc, Weak};
+use std::sync::Arc;
 pub(super) mod basis;
 mod basis_authority;
 #[cfg(test)]
@@ -176,7 +176,9 @@ where
         owner
     }
 
-    pub(super) fn upgrade(weak: &Weak<Self>) -> Result<Arc<Self>, SignalOwnerUnavailable> {
+    pub(super) fn upgrade(
+        weak: &super::owner_backing::WeakSignalOwner<D, I, T>,
+    ) -> Result<Arc<Self>, SignalOwnerUnavailable> {
         let owner = weak.upgrade().ok_or(SignalOwnerUnavailable)?;
         owner.counters.record_owner_upgrade_attempt();
         Ok(owner)

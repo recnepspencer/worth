@@ -122,4 +122,17 @@ where
         self.authorization_time_source = Some(Box::new(source));
         self
     }
+
+    /// Passively observe whether Store's fresh-origin gate invokes `initial_state`.
+    pub(crate) fn observe_initial_state(
+        mut self,
+        initialized_fresh: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    ) -> Self {
+        let inner = self.initial_state;
+        self.initial_state = Box::new(move |phase, bootstrap, schema| {
+            initialized_fresh.store(true, std::sync::atomic::Ordering::SeqCst);
+            inner(phase, bootstrap, schema)
+        });
+        self
+    }
 }

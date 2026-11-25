@@ -85,7 +85,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         }
         let prepared = observed
             .source()
-            .confirm(phase, self, selected.head.branch(), prepared);
+            .confirm(phase, self, selected.head_branch(), prepared);
         let prepared = match prepared {
             Ok(prepared) => prepared,
             Err((prepared, cause)) => {

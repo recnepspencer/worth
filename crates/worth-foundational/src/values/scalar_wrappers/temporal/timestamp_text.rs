@@ -7,7 +7,7 @@ use std::{fmt, str::FromStr};
 
 const MICROS_PER_SECOND: i64 = 1_000_000;
 const SECONDS_PER_DAY: i64 = 86_400;
-const MICROS_PER_DAY: i64 = SECONDS_PER_DAY * MICROS_PER_SECOND;
+pub(super) const MICROS_PER_DAY: i64 = SECONDS_PER_DAY * MICROS_PER_SECOND;
 
 impl CanonicalTimestamp {
     /// Constructs a UTC instant from proleptic Gregorian date and time components.

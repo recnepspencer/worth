@@ -9,7 +9,7 @@ impl ProductUnpublishedRecoveryCatalog {
         // This test constructor omits the metadata policy. The catalog still
         // accounts every installed record with its real charge.
         Self {
-            state: Arc::new(Mutex::new(RecoveryCatalogState {
+            state: SharedRecoveryCatalogState::new(RecoveryCatalogState {
                 costs: Default::default(),
                 owner,
                 maximum_slots: maximum_slots.get(),
@@ -21,7 +21,7 @@ impl ProductUnpublishedRecoveryCatalog {
                 updating_slots: 0,
                 metadata_bytes: 0,
                 released: Default::default(),
-            })),
+            }),
         }
     }
 
@@ -31,7 +31,7 @@ impl ProductUnpublishedRecoveryCatalog {
         maximum_metadata_bytes: RuntimeWorldBudgetLimit,
     ) -> Self {
         Self {
-            state: Arc::new(Mutex::new(RecoveryCatalogState {
+            state: SharedRecoveryCatalogState::new(RecoveryCatalogState {
                 costs: Default::default(),
                 owner,
                 maximum_slots: maximum_slots.get(),
@@ -43,7 +43,7 @@ impl ProductUnpublishedRecoveryCatalog {
                 updating_slots: 0,
                 metadata_bytes: 0,
                 released: Default::default(),
-            })),
+            }),
         }
     }
 }

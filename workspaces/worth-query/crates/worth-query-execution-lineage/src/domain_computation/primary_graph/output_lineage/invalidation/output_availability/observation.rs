@@ -95,7 +95,10 @@ impl ObservedSourcePublication {
     pub fn posture(
         &self,
     ) -> crate::domain_computation::primary_graph::invariant_projection::ObservedOutputPosture {
-        self.candidate.as_ref().map_or(crate::domain_computation::primary_graph::invariant_projection::ObservedOutputPosture::Pending, |c| c.expected())
+        self.candidate.as_ref().map_or(
+            crate::domain_computation::primary_graph::invariant_projection::ObservedOutputPosture::Pending,
+            |c| c.as_candidate().expected(),
+        )
     }
     pub fn touches_entity(&self, entity: worth_relational::facade::identity::EntityId) -> bool {
         self.source_facts()
@@ -141,7 +144,7 @@ impl ObservedSourcePublication {
             .chain(
                 self.candidate
                     .iter()
-                    .flat_map(|candidate| candidate.posting_facts()),
+                    .flat_map(|candidate| candidate.as_candidate().posting_facts()),
             )
     }
 
@@ -233,6 +236,7 @@ impl SourcePublicationReader for SourceInvalidationOwner {
         }
         if equal && let Some(candidate) = &observed.candidate {
             equal = candidate
+                .as_candidate()
                 .remains_in(execution, self, runtime, snapshot, positioned)
                 .map_err(Stop::OutputObservation)?;
         }

@@ -215,3 +215,155 @@ fn unit_struct_query_with_scope_value_and_overridden_defaults_expands_cleanly() 
     );
     assert!(!expanded.contains("worth_query_parameters"), "{expanded}");
 }
+
+#[test]
+fn managed_index_query_wires_probe_binding_defaults_and_refuses_malformed_shapes() {
+    let cases = [
+        (
+            format!(
+                "{HEADER} struct Read {{ #[worth_query(scope = ProjectKey)] project: u64, \
+                 #[worth_query(probe)] p: String }}"
+            ),
+            "`probe` requires struct-level `#[worth_query(managed_index = Index)]`",
+        ),
+        (
+            format!(
+                "#[worth_query(managed_index = MyIdx)] {HEADER} \
+                 struct Read {{ #[worth_query(scope = ProjectKey)] project: u64, p: String }}"
+            ),
+            "`managed_index` requires one field marked `#[worth_query(probe)]`",
+        ),
+        (
+            format!(
+                "#[worth_query(managed_index = MyIdx)] {HEADER} \
+                 struct Read {{ #[worth_query(scope = ProjectKey)] project: u64, \
+                 #[worth_query(probe)] a: String, #[worth_query(probe)] b: String }}"
+            ),
+            "at most one `probe` field",
+        ),
+        (
+            format!(
+                "#[worth_query(managed_index_refined)] {HEADER} \
+                 struct Read {{ #[worth_query(scope = ProjectKey)] project: u64 }}"
+            ),
+            "`managed_index_refined` does not apply to a query without `managed_index = Index`",
+        ),
+    ];
+    for (source, expected) in cases {
+        let message = refusal(&source);
+        assert!(message.contains(expected), "{source}: {message}");
+    }
+
+    let input = syn::parse_str(
+        "#[worth_query(schema = Schema, context = ShopContext, namespace = FIND, \
+         scope = FloorId, managed_index = EquipmentBoxIndex, lanes = OneShotAndLive, limits = 64)] \
+         pub struct FindEquipmentInBox { \
+             #[worth_query(scope)] pub floor: String, \
+             #[worth_query(probe)] pub region: QueryBox2D, \
+         }",
+    )
+    .unwrap();
+    let expanded = expand(&input).unwrap().to_string();
+    assert!(expanded.contains("FindEquipmentInBoxQuery"), "{expanded}");
+    assert!(expanded.contains("FindEquipmentInBoxBinding"), "{expanded}");
+    assert!(expanded.contains("ProbeBinding"), "{expanded}");
+    assert!(expanded.contains(". managed_index ("), "{expanded}");
+    assert!(
+        !expanded.contains(". parameter (Self :: region ())"),
+        "{expanded}"
+    );
+    assert!(expanded.contains(". with_live ()"), "{expanded}");
+    assert!(
+        expanded.contains("worth_query_try_parameters"),
+        "{expanded}"
+    );
+    assert!(
+        expanded.contains("ApplicationManagedIndexQueryIntent"),
+        "{expanded}"
+    );
+}
+
+#[test]
+fn unified_predicates_optional_params_related_and_live_whole_result_expand_cleanly() {
+    let cases = [
+        (
+            format!(
+                "#[worth_query(root = Task, live = whole_result, lanes = OneShot)] {HEADER} \
+                 struct Read {{ #[worth_query(scope = ProjectKey)] project: u64 }}"
+            ),
+            "`live = whole_result` requires live lane eligibility",
+        ),
+        (
+            format!(
+                "#[worth_query(managed_index = MyIdx, live = whole_result)] {HEADER} \
+                 struct Read {{ #[worth_query(scope = ProjectKey)] project: u64, #[worth_query(probe)] p: String }}"
+            ),
+            "`live` does not apply to a query with `managed_index`",
+        ),
+        (
+            format!(
+                "#[worth_query(root = Task, where_optional(TaskFacts::priority() = priority))] {HEADER} \
+                 struct Read {{ #[worth_query(scope = ProjectKey)] project: u64, priority: i64 }}"
+            ),
+            "`where_*_optional` requires an `Option<T>` parameter field",
+        ),
+        (
+            format!(
+                "#[worth_query(root = Task, where_lte(TaskFacts::due() = due_before))] {HEADER} \
+                 struct Read {{ #[worth_query(scope = ProjectKey)] project: u64, due_before: Option<CanonicalDate> }}"
+            ),
+            "requires a `where_*_optional` predicate",
+        ),
+        (
+            format!(
+                "#[worth_query(root = Task, where_no_related(BlockedBy, outgoing, incoming))] {HEADER} \
+                 struct Read {{ #[worth_query(scope = ProjectKey)] project: u64 }}"
+            ),
+            "duplicate direction in related predicate",
+        ),
+    ];
+    for (source, expected) in cases {
+        let message = refusal(&source);
+        assert!(message.contains(expected), "{source}: {message}");
+    }
+
+    let input = syn::parse_str(
+        "#[worth_query(schema = __WorthQuerySchema, context = Ctx, namespace = NS, \
+         result = TaskRow, root = Task, fields = TaskFacts, root_path(Contains), \
+         where_equal(state = \"OPEN\"), where_optional(priority = priority), \
+         where_lte_optional(due_date = due_before), \
+         where_no_related(BlockedBy, state = \"OPEN\"), \
+         where_related_exists(BlockedBy, incoming, where_gt(rank = min_rank)), \
+         order_by(TaskRow::key(), asc), live = whole_result, limits = 64)] \
+         pub struct ReadyTasks { \
+             #[worth_query(scope = ProjectKey)] pub project: u64, \
+             pub priority: Option<i64>, \
+             pub due_before: Option<CanonicalDate>, \
+             pub min_rank: i64, \
+         }",
+    )
+    .unwrap();
+    let expanded = expand(&input).unwrap().to_string();
+    for needle in [
+        "type __WorthQuerySchema_1 = __WorthQuerySchema ;",
+        "ApplicationQueryParameterRef :: optional (\"priority\")",
+        "bind_optional (ReadyTasksQuery :: priority ()",
+        "live_whole_result ()",
+        "with_live ()",
+        "try_where_equal_value (TaskFacts :: state ()",
+        "ApplicationQueryWhereFilterClauses :: < Self ,",
+        "and_compare_parameter",
+        "try_where_filter_clauses",
+        "ApplicationQueryComparisonOp :: LessThanOrEqual",
+        "where_no_related",
+        "where_related_exists",
+        "ApplicationQueryRelatedPredicate :: reverse (< BlockedBy > :: reference ())",
+        "order_by (TaskRow :: key () , :: worth_query_decl :: facade :: application_query :: ApplicationQueryOrderingDirection :: Ascending)",
+    ] {
+        assert!(expanded.contains(needle), "missing `{needle}` in: {expanded}");
+    }
+    assert!(
+        !expanded.contains(". expect ("),
+        "generated definition must never panic via .expect(): {expanded}"
+    );
+}

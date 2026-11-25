@@ -80,7 +80,7 @@ impl RelationalRuntime {
                 .map_err(Denial::Retention)?;
             Ok(RelationalCanonicalRecordHistoryCursor {
                 source: Arc::new(RetainedCanonicalRecordHistory {
-                    envelope,
+                    envelope: <crate::history::data::SharedCanonicalCommitEnvelope as worth_relational_branch::internal_port::history::data::canonical_commit_envelope::shared::SharedCanonicalCommitEnvelopeOwnerPort>::from_arc(envelope),
                     retained,
                     selection: selection.clone(),
                     _memory: memory,

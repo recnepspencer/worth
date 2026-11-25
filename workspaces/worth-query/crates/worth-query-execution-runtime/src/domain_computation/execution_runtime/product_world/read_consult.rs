@@ -37,9 +37,13 @@ impl Drop for NamedReadRegion {
 }
 impl super::WorthQueryProductRuntime {
     pub fn observe_named_read_consults_for_test(&self) -> WorthQueryNamedReadObservationForTest {
-        let previous = self.named_read_probe.armed.swap(true, Ordering::AcqRel);
+        let previous = self
+            .fields()
+            .named_read_probe
+            .armed
+            .swap(true, Ordering::AcqRel);
         WorthQueryNamedReadObservationForTest {
-            probe: Arc::clone(&self.named_read_probe),
+            probe: Arc::clone(&self.fields().named_read_probe),
             previous,
         }
     }
@@ -49,12 +53,18 @@ impl super::WorthQueryProductRuntime {
     )]
     pub(crate) fn enter_named_read(&self, name: NamedRead) -> NamedReadRegion {
         let previous = self
+            .fields()
             .named_read_probe
             .armed
             .load(Ordering::Acquire)
-            .then(|| CURRENT.replace((Arc::as_ptr(&self.named_read_probe) as usize, name as u8)));
+            .then(|| {
+                CURRENT.replace((
+                    Arc::as_ptr(&self.fields().named_read_probe) as usize,
+                    name as u8,
+                ))
+            });
         NamedReadRegion {
-            _probe: previous.map(|_| Arc::clone(&self.named_read_probe)),
+            _probe: previous.map(|_| Arc::clone(&self.fields().named_read_probe)),
             previous,
         }
     }
@@ -63,8 +73,12 @@ impl super::WorthQueryProductRuntime {
         reason = "Addresses serve live allocation lookup and custody; canonical order uses declared identity"
     )]
     fn named_read_active(&self, name: NamedRead) -> bool {
-        self.named_read_probe.armed.load(Ordering::Acquire)
-            && CURRENT.get() == (Arc::as_ptr(&self.named_read_probe) as usize, name as u8)
+        self.fields().named_read_probe.armed.load(Ordering::Acquire)
+            && CURRENT.get()
+                == (
+                    Arc::as_ptr(&self.fields().named_read_probe) as usize,
+                    name as u8,
+                )
     }
     pub(crate) fn enter_authority_revalidation(&self) -> NamedReadRegion {
         self.enter_named_read(NamedRead::AuthorityRevalidation)

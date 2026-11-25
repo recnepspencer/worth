@@ -49,6 +49,7 @@ impl WorthQueryProductBranches<'_> {
     ) -> Result<RuntimeWorldRecoveryPage, RuntimeWorldServiceDenial<RuntimeWorldRecoveryDenial>>
     {
         self.runtime
+            .fields()
             .owner
             .inspection_port()
             .recovery_page(after, maximum)
@@ -59,7 +60,7 @@ impl WorthQueryProductBranches<'_> {
         handle: &ProductUnpublishedRecoveryHandle,
     ) -> Result<WorthQueryProductBranchCreationRecovery, WorthQueryProductBranchRecoveryDenial>
     {
-        let recovery = self.runtime.owner.recovery_port();
+        let recovery = self.runtime.fields().owner.recovery_port();
         let effects = recovery
             .inspect_effects(handle)
             .map_err(super::map_recovery_denial)?;

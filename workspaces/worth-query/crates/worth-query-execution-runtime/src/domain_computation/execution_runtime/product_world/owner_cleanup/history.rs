@@ -37,6 +37,7 @@ fn walk(
     let mut index = 0;
     while let Some(from) = resume.get(index) {
         let release = match runtime
+            .fields()
             .owner
             .recovery_port()
             .release_retired_branch_history(from)

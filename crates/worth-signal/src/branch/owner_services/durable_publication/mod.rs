@@ -39,7 +39,7 @@ pub use port::SignalDurableBranchMutationPort;
 use prepared::SignalPreparedDurableAdvance;
 use std::{
     collections::BTreeMap,
-    sync::{Arc, Mutex, Weak},
+    sync::{Arc, Mutex},
 };
 pub use task::{
     SignalDurableAdvanceCompletion, SignalDurableAdvanceDenial, SignalDurableAdvanceDriveRefusal,
@@ -72,7 +72,7 @@ where
     I: Copy + Ord,
     T: Copy + Ord,
 {
-    _owner: Weak<SignalOwner<D, I, T>>,
+    _owner: super::owner_backing::WeakSignalOwner<D, I, T>,
 }
 impl<D, I, T> AuthorityMarker for SignalPublicationTaskOwner<D, I, T>
 where
@@ -159,7 +159,7 @@ where
     I: Copy + Ord + 'static,
     T: Copy + Ord + 'static,
 {
-    owner: Weak<SignalOwner<D, I, T>>,
+    owner: super::owner_backing::WeakSignalOwner<D, I, T>,
     medium: Arc<dyn SignalDurableMedium>,
     vocabulary: Arc<SignalDurableTierVocabulary<T>>,
     source: Mutex<SignalRecoveredSourceLocations>,
@@ -177,7 +177,7 @@ where
     T: Copy + Ord + 'static,
 {
     pub(crate) fn new(
-        owner: Weak<SignalOwner<D, I, T>>,
+        owner: super::owner_backing::WeakSignalOwner<D, I, T>,
         medium: Arc<dyn SignalDurableMedium>,
         vocabulary: Arc<SignalDurableTierVocabulary<T>>,
         source: SignalRecoveredSourceLocations,

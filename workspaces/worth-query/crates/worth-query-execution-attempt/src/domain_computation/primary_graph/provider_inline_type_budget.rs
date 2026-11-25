@@ -17,7 +17,7 @@ pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
             "branch_commit_coordination",
         );
         owner.field::<super::super::live_delivery::WorthQueryLiveDeliverySource>("live_delivery");
-        owner.field::<Arc<Mutex<application_attempt_state::WorthQueryPrimaryGraphApplicationAttemptStore>>>("attempts");
+        owner.field::<application_attempt_state::SharedApplicationAttemptStore>("attempts");
         owner.field::<super::super::application_runtime::WorthQueryApplicationAttemptOperationControl>("application_attempt_operation_control");
         owner.field::<application_attempt_work::WorthQueryApplicationAttemptWorkLedger>(
             "application_attempt_work",
@@ -25,7 +25,7 @@ pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
         owner.field::<Mutex<session_commit::WorthQueryCompletedCommitEvidenceStore>>(
             "completed_commit_evidence",
         );
-        owner.field::<Arc<Mutex<unpublished_idempotency::WorthQueryUnpublishedIdempotencyStore>>>(
+        owner.field::<unpublished_idempotency::SharedUnpublishedIdempotencyStore>(
             "unpublished_idempotency",
         );
         owner.field::<Arc<Mutex<session_commit::WorthQueryReceiptBasisRetentionStore>>>(

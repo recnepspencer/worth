@@ -71,7 +71,7 @@ impl<'scope> WorthQueryAdvancementPhase<'scope> {
         &self,
         runtime: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
     ) -> Result<ExecutionRequest<'scope, 'scope>, WorthQueryForeignAdvancementPhase> {
-        self.request_for_owner(runtime.owner.owner_identity())
+        self.request_for_owner(runtime.fields().owner.owner_identity())
     }
 
     /// Lends the admitted request and preserves the shared advancement refusal.
@@ -129,7 +129,7 @@ impl<'scope> WorthQueryAdvancementPhase<'scope> {
         &self,
         runtime: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
     ) -> Result<&QueryRequestExecution<'scope>, WorthQueryForeignAdvancementPhase> {
-        self.request_for_owner(runtime.owner.owner_identity())?;
+        self.request_for_owner(runtime.fields().owner.owner_identity())?;
         Ok(self.active.execution)
     }
 }

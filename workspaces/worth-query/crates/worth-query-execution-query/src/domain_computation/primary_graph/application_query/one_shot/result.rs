@@ -58,6 +58,22 @@ impl<Query, QueryResult> WorthQueryApplicationOneShotResult<Query, QueryResult> 
     pub fn into_rows(self) -> Vec<QueryResult> {
         self.rows
     }
+
+    pub(crate) fn into_whole_result_parts(
+        self,
+    ) -> (
+        Vec<QueryResult>,
+        Vec<WorthQueryObservedSource<Query>>,
+        WorthQueryObservedResultSet<Query>,
+        WorthQueryApplicationQueryAccessReceipt,
+    ) {
+        (
+            self.rows,
+            self.observed_sources,
+            self.result_set_observation,
+            self.receipt,
+        )
+    }
     pub fn into_admitted_disclosed(
         self,
     ) -> WorthQueryAdmittedDisclosedApplicationResult<Query, QueryResult> {

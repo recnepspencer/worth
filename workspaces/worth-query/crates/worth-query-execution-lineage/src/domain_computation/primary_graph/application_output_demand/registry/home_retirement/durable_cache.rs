@@ -8,7 +8,9 @@ impl WorthQueryOutputDemandRegistry {
         history: &QueryObligationHistory,
     ) -> Result<(), Denial> {
         let busy = || Denial::Busy(Owner::InstalledProducers);
-        let state = Arc::get_mut(&mut self.state)
+        let state = self
+            .state
+            .get_mut()
             .ok_or_else(busy)?
             .get_mut()
             .map_err(|_| busy())?;

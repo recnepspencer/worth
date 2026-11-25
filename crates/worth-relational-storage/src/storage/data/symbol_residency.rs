@@ -100,6 +100,24 @@ impl RuntimeSymbolResidency {
         )
     }
 
+    pub fn detached_with_owner_for_request<T>(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        snapshot: impl FnOnce() -> T,
+    ) -> Result<(Arc<Self>, T), crate::execution::denial_cause::RelationalExecutionDenialCause>
+    {
+        use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
+        crate::execution::request_custody::check_request(request)?;
+        let bytes = std::alloc::Layout::new::<[usize; 2]>()
+            .extend(std::alloc::Layout::new::<Self>())
+            .map(|(layout, _)| layout.pad_to_align().size())
+            .map_err(|_| Cause::MemoryOverflow)?;
+        let memory = request.reserve_retained_memory(bytes as u64)?;
+        let (mut detached, owner) = self.detached_with_owner(snapshot);
+        detached._memory = memory;
+        Ok((Arc::new(detached), owner))
+    }
+
     pub fn same_directory(&self, other: &Self) -> bool {
         self.by_id == other.by_id && self.by_value == other.by_value
     }

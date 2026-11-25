@@ -36,6 +36,7 @@ impl WorthQueryInstalledConditionalOperation<TestSchema> for InstalledClock {
         &mut self,
         _: &worth_execution::ExecutionRequest<'_, '_>,
         _: &WorthQueryPrimaryGraphApplicationRuntime<TestSchema>,
+        _: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::conditional_operation::lifecycle::installed_operation::ConditionalHandoffBridge<'_>,
     ) -> Result<(), worth_query_execution::facade::primary_graph::WorthQueryHomeRetirementDenial>
     {
         unreachable!("lease/lock fixture never owns a Home")
@@ -145,8 +146,8 @@ impl WorthQueryInstalledConditionalOperation<TestSchema> for InstalledClock {
 
     fn observe_clock(
         &mut self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _phase: &WorthQueryAdvancementPhase<'_>,
-
         _bridge: &BridgeConditionalExecutionView<'_>,
         _runtime: &worth_query_execution::facade::domain_computation::WorthQueryPrimaryGraphApplicationRuntime<
                 TestSchema,

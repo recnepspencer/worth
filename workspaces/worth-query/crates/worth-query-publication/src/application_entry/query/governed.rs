@@ -69,6 +69,55 @@ where
         self.execute_with_approval(Some(approved), capability, operation, input)
     }
 
+    pub fn execute_governed_in_advancement<Capability, Operation, Input>(
+        self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
+        capability: ApplicationCapabilityRef<Schema, Capability>,
+        operation: ApplicationOperationRef<Schema, Operation, Input>,
+        input: Input,
+    ) -> Result<
+        WorthQueryPublishedApplicationResult<Query<Schema, Intent>, QueryResult<Schema, Intent>>,
+        WorthQueryApplicationRequestQueryDenial,
+    >
+    where
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+        Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+        Input: ApplicationCapabilityRequest<Schema, Capability, Scope = Scope<Schema, Intent>>
+            + 'static,
+    {
+        self.execute_with_approval_in_advancement(phase, None, capability, operation, input)
+    }
+
+    pub fn execute_approved_in_advancement<Capability, Operation, Input>(
+        self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
+        approved: &WorthQueryApprovedElevation,
+        capability: ApplicationCapabilityRef<Schema, Capability>,
+        operation: ApplicationOperationRef<Schema, Operation, Input>,
+        input: Input,
+    ) -> Result<
+        WorthQueryPublishedApplicationResult<Query<Schema, Intent>, QueryResult<Schema, Intent>>,
+        WorthQueryApplicationRequestQueryDenial,
+    >
+    where
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+        Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+        Input: ApplicationCapabilityRequest<Schema, Capability, Scope = Scope<Schema, Intent>>
+            + 'static,
+    {
+        self.execute_with_approval_in_advancement(
+            phase,
+            Some(approved),
+            capability,
+            operation,
+            input,
+        )
+    }
+
     fn execute_with_approval<Capability, Operation, Input>(
         self,
         approved: Option<&WorthQueryApprovedElevation>,
@@ -89,23 +138,41 @@ where
         let request_scope = self.scope;
         application
             .with_application_advancement(request_scope, |phase| {
-                self.with_admitted_governed_query(
-                    &phase,
-                    approved,
-                    capability,
-                    operation,
-                    input,
-                    |application, binding, external, plan| {
-                        super::admitted::execute_admitted_query(
-                            &phase,
-                            application,
-                            binding,
-                            external,
-                            plan,
-                        )
-                    },
+                self.execute_with_approval_in_advancement(
+                    &phase, approved, capability, operation, input,
                 )
             })
             .map_err(WorthQueryApplicationRequestQueryDenial::ExecutionRequest)?
+    }
+
+    fn execute_with_approval_in_advancement<Capability, Operation, Input>(
+        self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
+        approved: Option<&WorthQueryApprovedElevation>,
+        capability: ApplicationCapabilityRef<Schema, Capability>,
+        operation: ApplicationOperationRef<Schema, Operation, Input>,
+        input: Input,
+    ) -> Result<
+        WorthQueryPublishedApplicationResult<Query<Schema, Intent>, QueryResult<Schema, Intent>>,
+        WorthQueryApplicationRequestQueryDenial,
+    >
+    where
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+        Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+        Input: ApplicationCapabilityRequest<Schema, Capability, Scope = Scope<Schema, Intent>>
+            + 'static,
+    {
+        self.with_admitted_governed_query(
+            phase,
+            approved,
+            capability,
+            operation,
+            input,
+            |application, binding, external, plan| {
+                super::admitted::execute_admitted_query(phase, application, binding, external, plan)
+            },
+        )
     }
 }

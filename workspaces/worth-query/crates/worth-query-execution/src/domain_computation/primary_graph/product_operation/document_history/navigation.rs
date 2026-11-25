@@ -29,7 +29,7 @@ mod transition;
 #[doc(hidden)]
 pub use control::WorthQueryHistoryNavigationPauseForTest;
 pub use custody::WorthQueryHistoryNavigationPosture;
-use custody::{NavigationAttempt, NavigationPhase, NavigationProgress};
+use custody::{NavigationAttempt, NavigationPhase, NavigationProgress, SharedNavigationAttempt};
 pub(super) use disposal::NavigationDisposal;
 pub use output_authority::WorthQueryHistoryOutputAuthority;
 pub(in crate::domain_computation::primary_graph) use output_authority::{
@@ -59,8 +59,8 @@ pub(super) use registration::NavigationJournal;
 pub use selection::{WorthQueryHistoryNavigationCompletion, WorthQueryHistorySelection};
 pub use target::WorthQueryHistoryNavigationIntent;
 
-use super::{selection::HistorySelectionCell, WorthQueryDocumentHistoryDenial};
-use std::sync::{Arc, Weak};
+use super::{selection::WeakHistorySelectionCell, WorthQueryDocumentHistoryDenial};
+use std::sync::Arc;
 
 pub use worth_query_execution_query::facade::domain_computation::primary_graph::product_operation::document_history::{
     WorthQueryHistoryNavigationDenial, WorthQueryHistoryNavigationEligibilityDenial,
@@ -70,8 +70,13 @@ pub use worth_query_execution_query::facade::domain_computation::primary_graph::
 /// The document's registry retains actual candidate custody if this handle is dropped.
 #[must_use = "advance or explicitly discard the registered navigation attempt"]
 pub struct WorthQueryDocumentHistoryNavigation<'runtime, S> {
-    cell: Weak<HistorySelectionCell<'runtime, S>>,
-    attempt: Arc<NavigationAttempt<'runtime, S>>,
+    application:
+        crate::domain_computation::primary_graph::product_operation::WorthQueryRuntimeCustody<
+            'runtime,
+            S,
+        >,
+    cell: WeakHistorySelectionCell,
+    attempt: SharedNavigationAttempt,
 }
 
 impl<S: worth_query_installation::facade::ApplicationSchema>

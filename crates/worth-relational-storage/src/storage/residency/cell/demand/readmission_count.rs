@@ -2,10 +2,10 @@
 use super::*;
 
 pub(super) fn acquire(
-    loaded: Result<Arc<ResidentRegion>, Failure>,
+    loaded: Result<super::super::SharedResidentRegion, Failure>,
     leases: &AtomicUsize,
     partition_id: crate::identity::data::PartitionId,
-) -> Result<Arc<ResidentRegion>, Failure> {
+) -> Result<super::super::SharedResidentRegion, Failure> {
     let region = loaded?;
     let mut count = leases.load(Ordering::Acquire);
     loop {

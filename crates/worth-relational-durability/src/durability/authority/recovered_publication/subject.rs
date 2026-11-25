@@ -16,7 +16,7 @@ pub fn validate(
 ) -> Result<(), Cause> {
     match effect.origin() {
         super::super::associated_effects::ReadmittedEffectOrigin::Original(source) => {
-            let source = source.envelope();
+            let source = source.as_ref();
             let original = (*source.owner_branch_cell_checkpoint())
                 .as_ref()
                 .ok_or(Cause::MissingOriginalPredecessor)?;
@@ -66,7 +66,7 @@ pub fn validate_pruned_predecessor(
     }
     match effect.origin() {
         super::super::associated_effects::ReadmittedEffectOrigin::Original(source) => {
-            let source = source.envelope();
+            let source = source.as_ref();
             let original = (*source.owner_branch_cell_checkpoint())
                 .as_ref()
                 .ok_or(Cause::MissingOriginalPredecessor)?;

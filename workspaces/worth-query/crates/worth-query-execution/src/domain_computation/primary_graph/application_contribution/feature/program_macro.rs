@@ -19,6 +19,7 @@ macro_rules! worth_query_application_program {
                 identity: $contribution_identity:expr,
                 members: [$($Member:ty),* $(,)?],
             },
+            $(managed_indexes: [$($ManagedIndex:ty),* $(,)?],)?
             feature: $Feature:ident => $Definition:ident / $Runtime:ident {
                 identity: $feature_identity:expr,
                 $($feature_block:tt)*
@@ -36,6 +37,7 @@ macro_rules! worth_query_application_program {
         $crate::worth_query_application_contribution! {
             $vis feature $Definition<$Schema> for $Feature => $Runtime {
                 $($feature_block)*
+                $(managed_indexes: [$($ManagedIndex,)*];)?
             }
         }
         $crate::worth_query_application_program! {

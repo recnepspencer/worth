@@ -17,8 +17,8 @@ mod retirement_tests;
 use crate::history::data::BranchId;
 
 use crate::branch::basis::AdmittedRelationalBranchBasis;
-use crate::branch::basis::AdmittedRelationalBranchBasisInner;
 use crate::branch::basis::RelationalBranchBasisDescriptor;
+use crate::branch::basis::WeakAdmittedRelationalBranchBasisInner;
 use crate::branch::version::RelationalBranchVersion;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -79,7 +79,7 @@ struct RelationalRetainedBasisState {
 #[derive(Debug)]
 struct RelationalRetainedBasisEntry {
     registration_id: u64,
-    basis: Weak<AdmittedRelationalBranchBasisInner>,
+    basis: WeakAdmittedRelationalBranchBasisInner,
 }
 
 #[derive(Debug)]
@@ -165,7 +165,7 @@ impl RelationalBranchBasisRegistry {
             key,
             RelationalRetainedBasisEntry {
                 registration_id,
-                basis: Arc::downgrade(&basis.inner),
+                basis: basis.inner.downgrade(),
             },
         );
         if replaced.is_some() {
@@ -182,7 +182,7 @@ impl RelationalBranchBasisRegistry {
         request: &worth_execution::ExecutionRequest<'_, '_>,
         pay_scan: impl FnOnce(usize) -> Result<(), E>,
     ) -> Result<
-        worth_execution::ExecutionArray<Weak<AdmittedRelationalBranchBasisInner>>,
+        worth_execution::ExecutionArray<WeakAdmittedRelationalBranchBasisInner>,
         RelationalRetainedBasisSnapshotStop<E>,
     > {
         use RelationalRetainedBasisSnapshotStop as Stop;

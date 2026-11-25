@@ -151,7 +151,7 @@ impl<Schema: ApplicationSchema, Program: 'static> WorthQueryRetiringHomeQuery<Sc
             .runtime
             .as_mut()
             .expect("sealed original runtime")
-            .advance(request, native, &crate::domain_computation::primary_graph::managed_bridge::conditional_owner::ConditionalOwner::Authored(std::sync::Arc::clone(bridge_owner)));
+            .advance(request, native, &crate::domain_computation::primary_graph::managed_bridge::conditional_owner::ConditionalOwner::authored(std::sync::Arc::clone(bridge_owner)));
         match advanced {
             Ok(Progress::Advanced) => Ok(WorthQueryHomeRetirementAdvance::Advanced(self)),
             Ok(Progress::Complete) => Ok(WorthQueryHomeRetirementAdvance::Complete(

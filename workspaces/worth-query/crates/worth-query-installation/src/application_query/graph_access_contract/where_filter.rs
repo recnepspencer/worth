@@ -159,11 +159,20 @@ impl WorthQueryInstalledWhereFilter {
         entries: &mut Vec<CanonicalBasisEntry>,
         text: impl Fn(String, &str) -> CanonicalBasisEntry,
     ) {
+        Self::append_canonical_at("where-filter", filter, entries, text);
+    }
+
+    pub(in crate::application_query) fn append_canonical_at(
+        prefix: &str,
+        filter: Option<&Self>,
+        entries: &mut Vec<CanonicalBasisEntry>,
+        text: impl Fn(String, &str) -> CanonicalBasisEntry,
+    ) {
         let Some(filter) = filter else {
             return;
         };
         for (index, field) in filter.fields.iter().enumerate() {
-            let path = format!("where-filter.field[{index}]");
+            let path = format!("{prefix}.field[{index}]");
             let (entity, aspect, name) = field.field();
             entries.extend([
                 text(format!("{path}.operand"), field.operand()),
@@ -184,7 +193,7 @@ impl WorthQueryInstalledWhereFilter {
             ]);
         }
         for (index, parameter) in filter.parameters.iter().enumerate() {
-            let path = format!("where-filter.parameter[{index}]");
+            let path = format!("{prefix}.parameter[{index}]");
             entries.extend([
                 text(format!("{path}.operand"), parameter.operand()),
                 text(format!("{path}.parameter"), parameter.parameter()),
@@ -194,7 +203,7 @@ impl WorthQueryInstalledWhereFilter {
             }
         }
         for (index, literal) in filter.literals.iter().enumerate() {
-            let path = format!("where-filter.literal[{index}]");
+            let path = format!("{prefix}.literal[{index}]");
             entries.extend([
                 text(format!("{path}.operand"), literal.operand()),
                 text(
@@ -208,7 +217,7 @@ impl WorthQueryInstalledWhereFilter {
             ]);
         }
         entries.push(text(
-            "where-filter.program".to_owned(),
+            format!("{prefix}.program"),
             filter.program.semantic_material(),
         ));
     }

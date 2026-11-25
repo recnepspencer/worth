@@ -28,17 +28,19 @@ pub fn issue_admitted_relational_branch_basis_with_retention(
     )
     .map_err(map_retention_acquisition_denial)?;
     Ok(AdmittedRelationalBranchBasis {
-        inner: Arc::new(AdmittedRelationalBranchBasisInner {
-            descriptor,
-            identity,
-            admission_identity: RelationalBranchBasisAdmissionIdentity::issue(),
-            root,
-            _authority: issue_relational_branch_observation_authority(),
-            retention,
-            retention_binding: retention_binding.clone(),
-            publication_cell,
-            registry_lease: std::sync::OnceLock::new(),
-        }),
+        inner: super::basis::SharedAdmittedRelationalBranchBasisInner::new(
+            AdmittedRelationalBranchBasisInner {
+                descriptor,
+                identity,
+                admission_identity: RelationalBranchBasisAdmissionIdentity::issue(),
+                root,
+                _authority: issue_relational_branch_observation_authority(),
+                retention,
+                retention_binding: retention_binding.clone(),
+                publication_cell,
+                registry_lease: std::sync::OnceLock::new(),
+            },
+        ),
     })
 }
 

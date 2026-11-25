@@ -3,7 +3,7 @@ use super::super::head_custody::HistoryHeadCustody;
 use super::*;
 use worth_query_execution_query::facade::ports::HistoryNodeIdInternalPort as _;
 
-impl<'r, S> HistoryJournal<'r, S> {
+impl HistoryJournal {
     pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn ensure_policy_ready(
         &self,
     ) -> Result<(), Denial> {
@@ -57,7 +57,7 @@ impl<'r, S> HistoryJournal<'r, S> {
             .checked_add(1)
             .ok_or(Denial::RecordingIdentityExhausted)?;
         let allocation = self
-            .allocate::<(u64, PastHead<'r, S>)>(execution, self.past_heads.len(), 0)
+            .allocate::<(u64, PastHead)>(execution, self.past_heads.len(), 0)
             .map_err(Denial::Recording)?;
         self.access(Access::Custody);
         let custody = super::super::head_custody::HistoryHeadSlot::reserve(execution)?;
@@ -96,7 +96,7 @@ impl<'r, S> HistoryJournal<'r, S> {
     pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn store_previous(
         &mut self,
         slot: u64,
-        previous: WorthQueryOwnedProductHead<'r, S>,
+        previous: DetachedOwnedProductHead,
     ) {
         let canonical = self.current_step().endpoint().product_branch() == previous.branch();
         if canonical {
@@ -151,7 +151,7 @@ impl<'r, S> HistoryJournal<'r, S> {
 
     pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn next_release(
         &mut self,
-    ) -> Option<(u64, Arc<super::super::head_custody::HistoryHeadSlot<'r, S>>)> {
+    ) -> Option<(u64, Arc<super::super::head_custody::HistoryHeadSlot>)> {
         let slot = *self.releases.front()?;
         self.releases.rotate_left(1);
         let head = self
@@ -172,7 +172,7 @@ impl<'r, S> HistoryJournal<'r, S> {
     pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn finish_release(
         &mut self,
         slot: u64,
-        original: &Arc<super::super::head_custody::HistoryHeadSlot<'r, S>>,
+        original: &Arc<super::super::head_custody::HistoryHeadSlot>,
     ) -> bool {
         let Some(registered) = self.past_heads.get(&slot) else {
             return false;
