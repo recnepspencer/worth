@@ -118,6 +118,17 @@ pub(crate) fn durable_branch_seed_in_advancement<Schema: ApplicationSchema>(
     Ok(out)
 }
 
+/// Derives the canonical durable branch seed under the Home's installed
+/// default execution policy (matching `WorthQueryHostSession`'s policy ceiling).
+pub(crate) fn durable_branch_seed_for_installed<Schema: ApplicationSchema>(
+    graph: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    branch: WorthQueryProductBranch,
+    scope: &WorthQueryRequestScope,
+) -> Result<[u8; 32], DurableSeedDenial> {
+    let policy = super::lease::default_session_policy(graph.installed_execution_policy());
+    durable_branch_seed(graph, branch, policy, scope)
+}
+
 /// Derives the canonical durable branch seed under the caller's execution policy.
 pub(crate) fn durable_branch_seed<Schema: ApplicationSchema>(
     graph: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,

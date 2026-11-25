@@ -27,13 +27,15 @@ pub const PROBE_KEY_NS: ApplicationIdentityNamespace =
 pub const EXHAUST_KEY_NS: ApplicationIdentityNamespace =
     worth_query_identity_namespace!("daymark.unified.exhaust-auto-key.v1");
 
-static LAST_CAPTURED_SEED: std::sync::Mutex<Option<[u8; 32]>> = std::sync::Mutex::new(None);
+thread_local! {
+    static THREAD_CAPTURED_SEED: std::cell::Cell<Option<[u8; 32]>> =
+        const { std::cell::Cell::new(None) };
+}
 
+/// Takes the probe-0 seed captured on the current test thread only, keeping
+/// seed observation isolated from parallel test threads.
 pub fn take_captured_auto_key_seed() -> Option<[u8; 32]> {
-    LAST_CAPTURED_SEED
-        .lock()
-        .unwrap_or_else(|p| p.into_inner())
-        .take()
+    THREAD_CAPTURED_SEED.with(|slot| slot.take())
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
@@ -42,7 +44,7 @@ pub struct SequencedAutoKey(pub u64);
 impl worth_query_host::facade::WorthQueryAutoIdempotencyKey for SequencedAutoKey {
     fn derive_auto_key(seed: [u8; 32], probe: u64) -> Self {
         if probe == 0 {
-            *LAST_CAPTURED_SEED.lock().unwrap_or_else(|p| p.into_inner()) = Some(seed);
+            THREAD_CAPTURED_SEED.with(|slot| slot.set(Some(seed)));
         }
         Self(probe + 1)
     }

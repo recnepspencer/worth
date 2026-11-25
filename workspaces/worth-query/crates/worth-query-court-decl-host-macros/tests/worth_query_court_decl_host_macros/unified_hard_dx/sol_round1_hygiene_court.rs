@@ -17,6 +17,8 @@ mod hygiene_collision {
     const value: i32 = 7;
     const row: i32 = 7;
     const related: i32 = 7;
+    const __worth_record_field_0: i32 = 7;
+    const __worth_record_row: i32 = 7;
     type Q = ();
     type B = ();
 

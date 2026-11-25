@@ -22,10 +22,11 @@ use worth_query_publication::facade::application_entry::{
 use worth_runtime_world::facade::ProductUnpublishedRecoveryHandle;
 
 use crate::session::auto_key::{
-    derive_decimal_correction_key, durable_branch_seed, DurableSeedDenial, MAX_AUTO_KEY_PROBES,
+    derive_decimal_correction_key, durable_branch_seed_for_installed, DurableSeedDenial,
+    MAX_AUTO_KEY_PROBES,
 };
 
-use super::{WorthQueryApplicationHome, DEFAULT_HOST_EXECUTION_POLICY};
+use super::WorthQueryApplicationHome;
 
 mod authored;
 mod authored_outcome;
@@ -223,13 +224,9 @@ where
             WorthQueryCancellationSource::new().token(),
             principal.clock().clone(),
         );
-        let seed = durable_branch_seed(
-            self.primary_graph(),
-            self.active_branch(),
-            DEFAULT_HOST_EXECUTION_POLICY,
-            &scope,
-        )
-        .map_err(map_seed_denial)?;
+        let seed =
+            durable_branch_seed_for_installed(self.primary_graph(), self.active_branch(), &scope)
+                .map_err(map_seed_denial)?;
         let request = self
             .primary_graph()
             .request(principal, &scope)
@@ -298,13 +295,9 @@ where
             WorthQueryCancellationSource::new().token(),
             principal.clock().clone(),
         );
-        let seed = durable_branch_seed(
-            self.primary_graph(),
-            self.active_branch(),
-            DEFAULT_HOST_EXECUTION_POLICY,
-            &scope,
-        )
-        .map_err(map_seed_denial)?;
+        let seed =
+            durable_branch_seed_for_installed(self.primary_graph(), self.active_branch(), &scope)
+                .map_err(map_seed_denial)?;
         let request = self
             .primary_graph()
             .request(principal, &scope)

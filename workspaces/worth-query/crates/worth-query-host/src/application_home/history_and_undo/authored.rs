@@ -25,14 +25,14 @@ use worth_query_publication::facade::application_entry::{
 };
 
 use crate::session::auto_key::{
-    derive_decimal_correction_key, durable_branch_seed, MAX_AUTO_KEY_PROBES,
+    derive_decimal_correction_key, durable_branch_seed_for_installed, MAX_AUTO_KEY_PROBES,
 };
 use crate::source_custody::WorthQueryAnySourceCustody;
 
 use super::authored_outcome::{map_any_custody_outcome, WorthQueryHomeAuthoredCorrectionOutcome};
 use super::{
     map_seed_denial, map_undo_denial, WorthQueryApplicationHome, WorthQueryCorrectionEntry,
-    WorthQueryHomeUndoDenial, DEFAULT_CORRECTION_HISTORY_LIMITS, DEFAULT_HOST_EXECUTION_POLICY,
+    WorthQueryHomeUndoDenial, DEFAULT_CORRECTION_HISTORY_LIMITS,
 };
 
 impl<Schema, Program> WorthQueryApplicationHome<Schema, Program>
@@ -81,13 +81,9 @@ where
             WorthQueryCancellationSource::new().token(),
             principal.clock().clone(),
         );
-        let seed = durable_branch_seed(
-            self.primary_graph(),
-            self.active_branch(),
-            DEFAULT_HOST_EXECUTION_POLICY,
-            &scope,
-        )
-        .map_err(map_seed_denial)?;
+        let seed =
+            durable_branch_seed_for_installed(self.primary_graph(), self.active_branch(), &scope)
+                .map_err(map_seed_denial)?;
         let request = self
             .primary_graph()
             .request(principal, &scope)
@@ -231,13 +227,9 @@ where
             WorthQueryCancellationSource::new().token(),
             principal.clock().clone(),
         );
-        let seed = durable_branch_seed(
-            self.primary_graph(),
-            self.active_branch(),
-            DEFAULT_HOST_EXECUTION_POLICY,
-            &scope,
-        )
-        .map_err(map_seed_denial)?;
+        let seed =
+            durable_branch_seed_for_installed(self.primary_graph(), self.active_branch(), &scope)
+                .map_err(map_seed_denial)?;
         let request = self
             .primary_graph()
             .request(principal, &scope)

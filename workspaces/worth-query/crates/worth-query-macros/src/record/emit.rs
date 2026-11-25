@@ -15,7 +15,8 @@ pub(super) fn record(input: &DeriveInput, record: &RecordDeclaration) -> TokenSt
         aspect_name,
         ..
     } = record;
-    let shape = shape(row, &record.columns);
+    let row_binder = syn::Ident::new("__worth_record_row", proc_macro2::Span::mixed_site());
+    let shape = shape(row, &row_binder, &record.columns);
     let members: Vec<_> = record.columns.iter().map(|column| &column.member).collect();
     let binders: Vec<_> = (0..members.len())
         .map(|index| {
@@ -37,6 +38,12 @@ pub(super) fn record(input: &DeriveInput, record: &RecordDeclaration) -> TokenSt
         #[allow(clippy::clone_on_copy, non_snake_case)]
         impl #frag::Record<#row> for #bindings {
             fn record() -> impl #frag::Shape<#row, Self> {
+                #[allow(dead_code)]
+                fn #row_binder() {}
+                #(
+                    #[allow(dead_code)]
+                    fn #binders() {}
+                )*
                 #shape.build(|#(#binders,)* _: &mut <Self as #frag::BindingSet>::Work<'_>| {
                     ::core::result::Result::Ok::<_, ::core::convert::Infallible>(
                         #row { #(#members: #binders,)* },
@@ -50,7 +57,7 @@ pub(super) fn record(input: &DeriveInput, record: &RecordDeclaration) -> TokenSt
 
 /// `field(first, ..)` followed by one `.and(next, ..)` per further column,
 /// each with its declared postures.
-fn shape(row: &syn::Ident, columns: &[Column]) -> TokenStream {
+fn shape(row: &syn::Ident, row_binder: &syn::Ident, columns: &[Column]) -> TokenStream {
     let frag = fragment();
     columns
         .iter()
@@ -62,7 +69,7 @@ fn shape(row: &syn::Ident, columns: &[Column]) -> TokenStream {
                 ..
             } = column;
             let read = quote_spanned!(member.span()=>
-                #name, |__worth_record_row: &#row| ::core::clone::Clone::clone(&__worth_record_row.#member)
+                #name, |#row_binder: &#row| ::core::clone::Clone::clone(&#row_binder.#member)
             );
             let start = if index == 0 {
                 quote!(#frag::field(#read))
