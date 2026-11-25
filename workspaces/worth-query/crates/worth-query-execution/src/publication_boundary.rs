@@ -102,6 +102,9 @@ pub mod recorded_correction {
         WorthQueryCorrectionInputSelection, WorthQueryCorrectionIntent,
         WorthQueryPreparedCorrectionSource, WorthQuerySelectedCorrectionAlternative,
     };
+    /// A history document's own navigation, as restored support reads it
+    /// (tree-based undo's ruling B).
+    pub use crate::domain_computation::primary_graph::product_operation::WorthQueryCorrectionNavigationLineage;
 }
 
 pub mod capability_workflow {

@@ -36,7 +36,7 @@ where
     pub(in crate::application_entry) fn execute_with_history_front(
         self,
         allocation: ExecutionAllocationPolicy<'_, '_>,
-        navigation: Option<&dyn worth_query_execution::facade::primary_graph::WorthQueryCorrectionNavigationLineage>,
+        navigation: Option<&dyn worth_query_execution::publication_boundary::recorded_correction::WorthQueryCorrectionNavigationLineage>,
         history: impl FnOnce(
             &mut EnvelopeContext<'_, S>,
             &WorthQueryAdvancementPhase<'_>,

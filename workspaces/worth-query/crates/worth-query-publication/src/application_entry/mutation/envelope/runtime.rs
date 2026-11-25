@@ -58,7 +58,7 @@ pub(in crate::application_entry) type CorrectionEnvelopeFront<'a, S, P, K> = Box
             &WorthQueryAdvancementPhase<'_>,
             &Arc<ApplicationEditEnvelopeKey<K>>,
             &mut Vec<Box<dyn EditEntry<S, P, K>>>,
-            Option<&dyn worth_query_execution::facade::primary_graph::WorthQueryCorrectionNavigationLineage>,
+            Option<&dyn worth_query_execution::publication_boundary::recorded_correction::WorthQueryCorrectionNavigationLineage>,
         ) -> Result<
             Option<WorthQueryEditEnvelopeOutcome>,
             WorthQueryEditEnvelopeExecutionDenial,
