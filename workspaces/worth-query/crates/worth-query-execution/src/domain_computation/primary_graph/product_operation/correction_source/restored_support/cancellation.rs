@@ -37,15 +37,12 @@ pub(super) fn require<Schema: ApplicationSchema>(
         .runtime
         .product_runtime_ref()
         .owner_ref();
-    let originals = match owner.owner_identity().durable() {
-        None => None,
-        Some(_) => Some(
-            owner
-                .inspection_port()
-                .observe_program_activation_history(&execution)
-                .map_err(|cause| Denial::RestoredSupport(Stop::OriginalHistory(cause)))?,
-        ),
-    };
+    let originals = originals(owner.owner_identity().durable().is_some(), occurrences, || {
+        owner
+            .inspection_port()
+            .observe_program_activation_history(&execution)
+    })
+    .map_err(|cause| Denial::RestoredSupport(Stop::OriginalHistory(cause)))?;
     super::admit_work(execution, occurrences.len() as u64).map_err(Denial::RestoredSupport)?;
     for (commit, occurrence) in occurrences {
         let witness = match &originals {
@@ -101,6 +98,19 @@ pub(super) fn require<Schema: ApplicationSchema>(
         return Err(Denial::SourceDiverged);
     }
     Ok(())
+}
+
+/// A durable Home's original history, read only when there is a witness to
+/// restore: an empty selection reads no World history.
+fn originals<History, Cause>(
+    durable: bool,
+    occurrences: &Occurrences,
+    observe: impl FnOnce() -> Result<History, Cause>,
+) -> Result<Option<History>, Cause> {
+    if !durable || occurrences.is_empty() {
+        return Ok(None);
+    }
+    observe().map(Some)
 }
 
 fn require_pair<Schema: ApplicationSchema>(
@@ -223,3 +233,7 @@ fn receipt_work(receipt: &RelationalCommitReceipt) -> Result<u64, Denial> {
             worth_execution::MapKernelStop::WorkCounterOverflow,
         )))
 }
+
+#[cfg(test)]
+#[path = "cancellation/tests.rs"]
+mod tests;

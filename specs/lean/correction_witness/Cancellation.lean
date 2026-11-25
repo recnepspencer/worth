@@ -22,8 +22,8 @@ restores it from durable custody. `require` sees only the witness map, so:
     `unavailable`;
   * `accepted_witnessed`: an accepted correction had every witness.
 -/
--- proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/correction_source/restored_support/cancellation.rs:22-104 sha256:6a52fc760939ebf256491a5741e577ab783cda1f934e8a038e71ed51a65ae552
--- proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/correction_source/restored_support/cancellation.rs:106-185 sha256:d94d09a4e3438cc215aa1ae3adcbeef9583d7e01b1691408e73d84971fc6fe31
+-- proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/correction_source/restored_support/cancellation.rs:23-101 sha256:b75b1c4e28ac6cfb111a8912a4afb5def87561ac905c78393226aeec21c2c251
+-- proof-mirror: workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/correction_source/restored_support/cancellation.rs:116-195 sha256:d94d09a4e3438cc215aa1ae3adcbeef9583d7e01b1691408e73d84971fc6fe31
 
 namespace CorrectionWitness
 
