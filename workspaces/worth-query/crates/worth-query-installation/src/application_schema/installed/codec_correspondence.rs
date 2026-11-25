@@ -3,7 +3,8 @@ use super::{
     WorthQueryInstalledApplicationSchema, WorthQueryInstalledApplicationValueBindingCatalog,
 };
 use worth_query_declaration::facade::application_schema::{
-    ApplicationOperationBodyExternalEffectRecipe, ApplicationSchema,
+    ApplicationOperationBodyEffectRecipe, ApplicationOperationBodyExternalEffectRecipe,
+    ApplicationSchema,
 };
 impl<Schema: ApplicationSchema> WorthQueryInstalledApplicationSchema<Schema> {
     /// Returns the scalar codecs validated for this exact installed generation.
@@ -17,5 +18,14 @@ impl<Schema: ApplicationSchema> WorthQueryInstalledApplicationSchema<Schema> {
         operation: &str,
     ) -> Option<&ApplicationOperationBodyExternalEffectRecipe> {
         self.member_provenance.body_external_effect(operation)
+    }
+
+    /// Resolves the payload derivation of a body's ordinary effect from the
+    /// native typed declaration.
+    pub fn body_effect_recipe(
+        &self,
+        operation: &str,
+    ) -> Option<&ApplicationOperationBodyEffectRecipe> {
+        self.member_provenance.body_effect(operation)
     }
 }

@@ -9,7 +9,13 @@ pub use value::{
     ApplicationOperationBodyEvaluationSnapshot, ApplicationOperationBodyValue,
     ApplicationOperationBodyValueProgram, ApplicationOperationBodyValueSnapshot,
 };
+mod effect_emission;
 mod emission;
+pub(crate) use effect_emission::validate_effect_emission;
+pub use effect_emission::{
+    ApplicationOperationBodyEffectEmission, ApplicationOperationBodyEffectPayload,
+    ApplicationOperationBodyEffectRecipe,
+};
 pub use emission::{
     ApplicationOperationBodyExternalEffectRecipe, ApplicationOperationBodyExternalEmission,
     ApplicationOperationBodyExternalPayloadSource,
@@ -103,6 +109,7 @@ use crate::application_schema::ApplicationValueEncodeDenial;
 pub struct ApplicationOperationBody<Schema, Operation, Input> {
     pub(super) program: ApplicationOperationBodyProgram,
     pub(super) external_emission_recipe: Option<ApplicationOperationBodyExternalEffectRecipe>,
+    pub(super) effect_emission_recipe: Option<ApplicationOperationBodyEffectRecipe>,
     pub(super) marker: PhantomData<fn(Input) -> (Schema, Operation)>,
 }
 

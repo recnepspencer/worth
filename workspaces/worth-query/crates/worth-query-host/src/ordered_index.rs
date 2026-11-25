@@ -12,6 +12,7 @@ mod box_3d;
 mod box_nd;
 mod coord;
 mod interval_1d;
+mod key_field;
 mod probes;
 mod sources;
 mod text_prefix;
@@ -47,6 +48,7 @@ pub use coord::{
 pub use interval_1d::{
     WorthQueryInterval1DDomain, WorthQueryInterval1DEnvelope, WorthQueryInterval1DIndex,
 };
+pub use key_field::{WorthQueryOrderedKeyField, WorthQueryOrderedTextKeyField};
 pub use probes::{
     WorthQueryBox2D, WorthQueryBox2DBinding, WorthQueryBox2DF64, WorthQueryBox2DF64Binding,
     WorthQueryBox2DProbe, WorthQueryBox3D, WorthQueryBox3DBinding, WorthQueryBox3DF64,

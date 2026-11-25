@@ -50,3 +50,20 @@ pub(super) fn append(
             .unwrap_or_else(|| "unconditional".into()),
     );
 }
+
+/// An ordinary body effect: its payload is derived from the exact operation input.
+pub(super) fn append_effect(
+    basis: &mut ApplicationSchemaCanonicalBasis,
+    prefix: &str,
+    emission: &crate::application_schema::ApplicationOperationBodyEffectEmission,
+) {
+    basis.text(format!("{prefix}.effect-emission.effect"), &emission.effect);
+    basis.text(
+        format!("{prefix}.effect-emission.input-binding"),
+        emission.input_binding.as_str(),
+    );
+    basis.text(
+        format!("{prefix}.effect-emission.payload-binding"),
+        emission.payload_binding.as_str(),
+    );
+}

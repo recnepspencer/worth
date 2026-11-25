@@ -26,6 +26,7 @@ mod home_binding;
 mod installer;
 mod recurring;
 mod recurring_binding_macro;
+mod recurring_fire;
 mod recurring_macro;
 mod recurring_parts_macro;
 mod recurring_vocabulary;
@@ -57,6 +58,9 @@ pub use recurring::{
     WorthQueryRecurringOccurrence, WorthQueryRecurringOccurrenceBinding, WorthQueryRecurringOwner,
     WorthQueryRecurringProjector, WorthQueryRecurringRow, WorthQueryRecurringRuleIdentity,
     WorthQueryRecurringScheduleDecision,
+};
+pub use recurring_fire::{
+    WorthQueryRecurringFire, WorthQueryRecurringFireDenial, WorthQueryRecurringFireHook,
 };
 pub use recurring_vocabulary::{
     recurring_installation_denial, WorthQueryRecurringGate, WorthQueryRecurringGateBinding,

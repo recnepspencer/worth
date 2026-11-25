@@ -1,5 +1,6 @@
 //! The board program: the stock scope access joins the contribution as members
-//! and two actions, and one `worth_query_shared_access!` binds remote access.
+//! and two actions, a declarative rename body emits the live effect, and one
+//! `worth_query_shared_access!` binds remote access.
 use std::time::Duration;
 
 use worth_query_decl::facade::authentication::*;
@@ -44,7 +45,9 @@ worth_query_application_program! {
                 project_access::ScopeAccessRevoked,
                 project_access::ScopeRevokeHandler
             ) as RevokeAction {};
-            action rename(RenameProjectBinding, ProjectRenameDelivered, RenameProjectHandler) as RenameAction {};
+            body_action(RenameProjectBinding, ProjectRenameDelivered) as RenameAction {
+                operation: rename_project_operation();
+            };
         }
     }
 }
@@ -116,7 +119,6 @@ pub fn open(path: &std::path::Path) -> BoardHome {
     let runtime = BoardRuntime::new(
         project_access::ScopeGrantHandler,
         project_access::ScopeRevokeHandler,
-        RenameProjectHandler,
     );
     WorthQueryApplicationHome::open_directory(
         path,

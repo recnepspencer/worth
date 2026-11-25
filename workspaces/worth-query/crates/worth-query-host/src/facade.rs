@@ -259,36 +259,6 @@
 //!         .correlate()?.accept()?.execute(scope)
 //! }
 //! ```
-//! Producer publication and admission diagnostics borrow the returned denial;
-//! the application keeps the original terminal operation and its cleanup custody.
-//! Native companion amounts are data, not a new retry or publication authority.
-//!
-//! ```
-//! use worth_query_host::facade::{
-//!     application_entry::{
-//!         WorthQueryApplicationOutputDemandDenial,
-//!         WorthQueryOperationAdvanceDenial,
-//!         WorthQueryRequiredOutputPreparationDenial,
-//!     },
-//!     primary_graph::{CompanionPreflightStop, VerificationCapacityStop},
-//! };
-//! fn producer_stop_origins(
-//!     denial: &WorthQueryOperationAdvanceDenial,
-//! ) -> (Option<CompanionPreflightStop>, Option<CompanionPreflightStop>, Option<VerificationCapacityStop>) {
-//!     let WorthQueryOperationAdvanceDenial::Outputs(required) = denial else {
-//!         return (None, None, None);
-//!     };
-//!     let native = match required {
-//!         WorthQueryRequiredOutputPreparationDenial::DemandExecution(native) => native,
-//!         WorthQueryRequiredOutputPreparationDenial::Demand(
-//!             WorthQueryApplicationOutputDemandDenial::Demand(native),
-//!         ) => native,
-//!         _ => return (None, None, None),
-//!     };
-//!     (native.publication_companion_stop(), native.producer_admission_stop(),
-//!      native.output_verification_capacity_stop())
-//! }
-//! ```
 pub use worth_query_admission::facade as admission;
 pub use worth_query_declaration::facade as declaration;
 pub use worth_query_declaration::{
@@ -308,6 +278,7 @@ pub use worth_query_execution::facade::application_inspection as causal_inspecti
 pub use worth_query_execution::facade::{application_contribution, application_discovery};
 pub use worth_query_execution::facade::{application_installation, application_invariants};
 pub mod application_naming;
+pub mod local_calendar;
 pub mod ordered_index;
 /// Shared scope access grants and authenticated single-owner remote transport.
 pub mod shared_access;

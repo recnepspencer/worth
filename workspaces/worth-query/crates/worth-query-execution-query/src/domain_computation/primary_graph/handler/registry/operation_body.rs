@@ -90,12 +90,21 @@ impl<Schema: ApplicationSchema> PendingMutationHandlerRegistry<Schema> {
                 Binding::IDENTITY,
             ));
         }
+        let emits = handler.body().effect_emission().is_some();
         self.register_resolved(
             binding,
             installed,
             handler,
             super::HandlerOrigin::CompiledBody,
-        )
+        )?;
+        // A compiled body supplies emission custody exactly when it declares
+        // an ordinary effect; it supplies no other durable capability.
+        if emits && let Some(entry) = self.entries.get_mut(Binding::IDENTITY) {
+            entry.durable_capabilities = Some(&[
+                super::super::super::application_entry::mutation::WorthQueryOperationDurableCapability::ExternalEmission,
+            ]);
+        }
+        Ok(())
     }
 }
 

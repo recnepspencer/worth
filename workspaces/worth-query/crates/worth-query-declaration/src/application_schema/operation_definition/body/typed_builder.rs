@@ -3,9 +3,10 @@
 
 use crate::application_query::ApplicationQueryRootPath;
 use crate::application_schema::{
-    fragment::RecordSelection, ApplicationEntityRef, ApplicationIdentityScalarValueBinding,
-    ApplicationOperationDefinition, ApplicationOperationMarkerIdentity, ApplicationOperationRef,
-    ApplicationRelationRef, ApplicationStructuredValueBinding, OperationCreates, OperationLinks,
+    fragment::RecordSelection, ApplicationEffectMarkerIdentity, ApplicationEffectRef,
+    ApplicationEntityRef, ApplicationIdentityScalarValueBinding, ApplicationOperationDefinition,
+    ApplicationOperationMarkerIdentity, ApplicationOperationRef, ApplicationRelationRef,
+    ApplicationStructuredValueBinding, OperationCreates, OperationEmits, OperationLinks,
     OperationReads, OperationUnlinks,
 };
 
@@ -126,6 +127,23 @@ impl<Schema, Operation, Input> TypedApplicationOperationBodyBuilder<Schema, Oper
 
     pub fn clear_optional<Field: RecordSelection>(self, field: Field) -> Self {
         self.step(|builder| builder.clear_optional(field))
+    }
+
+    /// Emits `effect` once in this body's commit with `Payload::from(&input)`,
+    /// so a live `effect(..)` read wakes without an operation handler.
+    pub fn emit_effect<Effect, Payload>(
+        self,
+        effect: ApplicationEffectRef<Schema, Effect, Payload>,
+    ) -> Self
+    where
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+        Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+        Effect: ApplicationEffectMarkerIdentity<Schema> + OperationEmits<Operation> + 'static,
+        Effect::PayloadBinding: ApplicationStructuredValueBinding<Value = Payload>,
+        Payload: for<'input> From<&'input Input> + Send + Sync + 'static,
+        Input: 'static,
+    {
+        self.step(|builder| builder.emit_effect(effect))
     }
 
     pub fn require_present<Field: RecordSelection>(self, field: Field) -> Self {

@@ -21,6 +21,8 @@ impl<Schema, Operation, Input> ApplicationOperationRef<Schema, Operation, Input>
             succession: None,
             external_emission: None,
             external_emission_recipe: None,
+            effect_emission: None,
+            effect_emission_recipe: None,
             marker: PhantomData,
         }
     }

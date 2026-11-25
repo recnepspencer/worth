@@ -20,6 +20,9 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
         if let Some(recipe) = definition.external_emission_recipe {
             self.member_provenance.register_body_external_effect(recipe);
         }
+        if let Some(recipe) = definition.effect_emission_recipe {
+            self.member_provenance.register_body_effect(recipe);
+        }
         self.push_member_in_place(ApplicationSchemaMember::Operation {
             operation: operation.clone(),
             input_type: definition.input_type,
@@ -158,11 +161,15 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
                     .iter()
                     .flat_map(|reference| reference.program_targets()),
             );
-            if let Some(emission) = body.external_emission() {
-                programs.insert(super::super::ApplicationOperationProgramTarget::Emit {
-                    effect: emission.effect.clone(),
-                });
-            }
+            let emitted = body.external_emission().map(|emission| &emission.effect);
+            let emitted = emitted
+                .into_iter()
+                .chain(body.effect_emission().map(|e| &e.effect));
+            programs.extend(emitted.map(|effect| {
+                super::super::ApplicationOperationProgramTarget::Emit {
+                    effect: effect.clone(),
+                }
+            }));
             for target in programs {
                 self.push_derived_member(ApplicationSchemaMember::OperationProgram {
                     operation: operation.clone(),

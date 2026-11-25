@@ -9,6 +9,7 @@ mod children;
 mod classified_capture;
 mod creation_fields;
 mod creation_links;
+mod effect_emission;
 mod enrollment;
 mod external_emission;
 mod outputs;
@@ -151,6 +152,7 @@ pub(super) fn write(
     if version >= 38 {
         peers::write(output, body, version)?;
     }
+    effect_emission::write(output, body.effect_emission(), version)?;
     Ok(())
 }
 
@@ -159,7 +161,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationOperationBodyProgram, Denial> {
     let version = input.u16()?;
-    if !matches!(version, 1..=42) {
+    if !matches!(version, 1..=effect_emission::PROFILE) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     let scope = if version >= 8 {
@@ -307,6 +309,7 @@ pub(super) fn decode(
     } else {
         creation
     };
+    let effect_emission = effect_emission::decode(input, version)?;
     if let Some(scope) = scope {
         Ok(ApplicationOperationBodyProgram::from_untrusted_in_scope(
             ARCHIVE_DECODE,
@@ -322,7 +325,8 @@ pub(super) fn decode(
         .with_untrusted_retirements(retirements)
         .with_untrusted_path_input_expectations(path_inputs)
         .with_untrusted_path_value_assignments(path_values)
-        .with_untrusted_reference_inputs(references))
+        .with_untrusted_reference_inputs(references)
+        .with_untrusted_effect_emission(ARCHIVE_DECODE, effect_emission))
     } else {
         let body = ApplicationOperationBodyProgram::from_untrusted_with_requirements(
             ARCHIVE_DECODE,

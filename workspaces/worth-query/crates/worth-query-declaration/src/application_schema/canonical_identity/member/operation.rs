@@ -17,6 +17,9 @@ pub(super) fn append_body(
     if let Some(external_emission) = body.external_emission() {
         emission::append(basis, prefix, external_emission);
     }
+    if let Some(effect_emission) = body.effect_emission() {
+        emission::append_effect(basis, prefix, effect_emission);
+    }
     if !body.outputs().is_empty() {
         basis.usize(format!("{prefix}.outputs"), body.outputs().len());
         for (index, output) in body.outputs().iter().enumerate() {

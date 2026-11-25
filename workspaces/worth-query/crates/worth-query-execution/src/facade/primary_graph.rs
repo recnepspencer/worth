@@ -22,6 +22,13 @@ pub use crate::domain_computation::primary_graph::{
     ObservedEntity, ObservedTarget, Reading, RelationalContentDenial, RelationalContentRejection,
     View, Writing,
 };
+pub use crate::domain_computation::{
+    WorthQueryInvariantExecutionDenialKind, WorthQueryInvariantExecutionFailure,
+    WorthQueryInvariantExecutionFailurePosture, WorthQueryPreparedProviderSession,
+    WorthQueryProductUnpublishedRecoveryFailure, WorthQueryProductUnpublishedRecoveryReleaseDenial,
+    WorthQueryProductUnpublishedRecoveryReleaseFailure, WorthQueryProviderSessionFailure,
+    WorthQueryRecoveredProductReleaseDenial, WorthQueryRelationLawDenial,
+};
 pub use managed_index::*;
 pub use mutation_handler::*;
 pub use resources::*;
@@ -33,14 +40,6 @@ pub use worth_relational::facade::history::{
     BranchId, CommitId, RelationalAuthoredWriteDenial, RelationalCommitReceipt,
 };
 pub use worth_relational::facade::identity::VersionId;
-
-pub use crate::domain_computation::{
-    WorthQueryInvariantExecutionDenialKind, WorthQueryInvariantExecutionFailure,
-    WorthQueryInvariantExecutionFailurePosture, WorthQueryPreparedProviderSession,
-    WorthQueryProductUnpublishedRecoveryFailure, WorthQueryProductUnpublishedRecoveryReleaseDenial,
-    WorthQueryProductUnpublishedRecoveryReleaseFailure, WorthQueryProviderSessionFailure,
-    WorthQueryRecoveredProductReleaseDenial, WorthQueryRelationLawDenial,
-};
 
 mod controls;
 pub use controls::*;

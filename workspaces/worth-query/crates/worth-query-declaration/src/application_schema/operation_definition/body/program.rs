@@ -18,6 +18,7 @@ pub struct ApplicationOperationBodyProgram {
     pub(super) outputs: Vec<super::ApplicationOperationBodyOutput>,
     pub(super) succession: Option<super::ApplicationOperationBodySuccession>,
     pub(super) external_emission: Option<super::ApplicationOperationBodyExternalEmission>,
+    pub(super) effect_emission: Option<super::ApplicationOperationBodyEffectEmission>,
     pub(super) values: Vec<super::ApplicationOperationBodyValueProgram>,
     pub(super) retirements: Vec<super::ApplicationOperationBodyOwnedSelectionRetirement>,
     pub(super) path_input_expectations: Vec<super::ApplicationOperationBodyPathInputExpectation>,
@@ -41,6 +42,7 @@ impl ApplicationOperationBodyProgram {
             outputs: Vec::new(),
             succession: None,
             external_emission: None,
+            effect_emission: None,
             values: Vec::new(),
             retirements: Vec::new(),
             path_input_expectations: Vec::new(),
@@ -61,6 +63,7 @@ impl ApplicationOperationBodyProgram {
             outputs: Vec::new(),
             succession: None,
             external_emission: None,
+            effect_emission: None,
             values: Vec::new(),
             retirements: Vec::new(),
             path_input_expectations: Vec::new(),
@@ -82,6 +85,7 @@ impl ApplicationOperationBodyProgram {
             outputs: Vec::new(),
             succession: None,
             external_emission: None,
+            effect_emission: None,
             values: Vec::new(),
             retirements: Vec::new(),
             path_input_expectations: Vec::new(),
@@ -109,6 +113,7 @@ impl ApplicationOperationBodyProgram {
             outputs: Vec::new(),
             succession: None,
             external_emission: None,
+            effect_emission: None,
             values: Vec::new(),
             retirements: Vec::new(),
             path_input_expectations: Vec::new(),
@@ -206,6 +211,20 @@ impl ApplicationOperationBodyProgram {
         emission: Option<super::ApplicationOperationBodyExternalEmission>,
     ) -> Self {
         self.external_emission = emission;
+        self
+    }
+    /// The ordinary typed effect this body emits from its operation input.
+    pub fn effect_emission(&self) -> Option<&super::ApplicationOperationBodyEffectEmission> {
+        self.effect_emission.as_ref()
+    }
+    /// Raw-part carriage for Query's own decoders and body builder; fresh
+    /// declaration admission and installation still validate it.
+    pub fn with_untrusted_effect_emission(
+        mut self,
+        _: ArchiveDecodeAuthority,
+        emission: Option<super::ApplicationOperationBodyEffectEmission>,
+    ) -> Self {
+        self.effect_emission = emission;
         self
     }
     /// All source consumers, including optional effect guards. Only `requirements`

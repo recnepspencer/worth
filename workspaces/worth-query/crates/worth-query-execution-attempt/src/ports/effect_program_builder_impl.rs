@@ -89,6 +89,14 @@ impl<Schema, Operation, Input, Scope>
         Self::body_external_emission(self, selection)
     }
 
+    fn body_effect_emission(
+        &mut self,
+        recipe: &worth_query_declaration::facade::application_schema::ApplicationOperationBodyEffectRecipe,
+        input: &dyn std::any::Any,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        Self::body_effect_emission(self, recipe, input)
+    }
+
     fn create_body_entity_in_context<ContextEntity>(
         &mut self,
         context: &WorthQueryApplicationEffectEntity<Schema, ContextEntity>,

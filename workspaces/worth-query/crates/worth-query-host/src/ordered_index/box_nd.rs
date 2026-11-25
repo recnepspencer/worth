@@ -5,54 +5,53 @@ macro_rules! impl_box_domain {
         $ProbeTrait:ident,
         $probe_fn:ident,
         $D:literal,
-        [$(($min_slot:ident, $min_field:ident, $min_member:ident)),+],
-        [$(($max_slot:ident, $max_field:ident, $max_member:ident)),+]
+        [$(($min_key:ident, $min_member:ident)),+],
+        [$(($max_key:ident, $max_member:ident)),+]
     ) => {
-        impl<S, I, $($min_slot, $min_field,)+ $($max_slot, $max_field,)+ C>
-            $Domain<S, I, $($min_slot, $min_field,)+ $($max_slot, $max_field,)+ C>
+        impl<S, I, $($min_key,)+ $($max_key,)+ C>
+            $Domain<S, I, $($min_key,)+ $($max_key,)+ C>
         where
             S: worth_query_declaration::facade::application_schema::ApplicationSchema,
             I: worth_query_declaration::facade::application_query::ApplicationManagedIndexBinding<S>,
             C: crate::ordered_index::coord::WorthQueryOrderedCoord,
-            $($min_field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<Value = C> + 'static,)+
-            $($min_field::Binding: worth_query_declaration::facade::application_schema::ApplicationReadableScalarValueBinding,)+
-            $($min_slot: worth_query_declaration::facade::portable_identity::WorthQueryPortableType + 'static,)+
-            $($max_field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<Value = C> + 'static,)+
-            $($max_field::Binding: worth_query_declaration::facade::application_schema::ApplicationReadableScalarValueBinding,)+
-            $($max_slot: worth_query_declaration::facade::portable_identity::WorthQueryPortableType + 'static,)+
+            $($min_key: crate::ordered_index::key_field::WorthQueryOrderedKeyField<S, I, Value = C>,)+
+            $($max_key: crate::ordered_index::key_field::WorthQueryOrderedKeyField<S, I, Value = C>,)+
         {
+            /// The row's `(min, max)` corners, or `None` when any endpoint is absent.
             fn read_bounds(
                 &self,
                 row: &worth_query_execution::facade::primary_graph::WorthQueryManagedIndexSourceRow<'_, S, I>,
                 control: &worth_query_execution::facade::primary_graph::WorthQueryManagedIndexControl<'_>,
             ) -> Result<
-                ([C; $D], [C; $D]),
+                Option<([C; $D], [C; $D])>,
                 worth_query_execution::facade::primary_graph::WorthQueryManagedIndexProviderStop<
                     crate::ordered_index::coord::WorthQueryStockIndexDenial,
                 >,
             > {
-                Ok((
-                    [$(crate::ordered_index::bounds::read_ordered_field(row, self.$min_member, control)?),+],
-                    [$(crate::ordered_index::bounds::read_ordered_field(row, self.$max_member, control)?),+],
-                ))
+                Ok(Some((
+                    [$(match self.$min_member.read_key(row, control)? {
+                        Some(value) => value,
+                        None => return Ok(None),
+                    }),+],
+                    [$(match self.$max_member.read_key(row, control)? {
+                        Some(value) => value,
+                        None => return Ok(None),
+                    }),+],
+                )))
             }
         }
 
-        impl<S, I, $($min_slot, $min_field,)+ $($max_slot, $max_field,)+ C>
+        impl<S, I, $($min_key,)+ $($max_key,)+ C>
             crate::ordered_index::WorthQueryOrderedIndexDomain<S, I>
-            for $Domain<S, I, $($min_slot, $min_field,)+ $($max_slot, $max_field,)+ C>
+            for $Domain<S, I, $($min_key,)+ $($max_key,)+ C>
         where
             S: worth_query_declaration::facade::application_schema::ApplicationSchema,
             I: worth_query_declaration::facade::application_query::ApplicationManagedIndexBinding<S>,
             C: crate::ordered_index::coord::WorthQueryOrderedCoord,
             worth_query_execution::facade::primary_graph::WorthQueryManagedIndexProbeValue<S, I>:
                 $ProbeTrait<C>,
-            $($min_field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<Value = C> + 'static,)+
-            $($min_field::Binding: worth_query_declaration::facade::application_schema::ApplicationReadableScalarValueBinding,)+
-            $($min_slot: worth_query_declaration::facade::portable_identity::WorthQueryPortableType + 'static,)+
-            $($max_field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<Value = C> + 'static,)+
-            $($max_field::Binding: worth_query_declaration::facade::application_schema::ApplicationReadableScalarValueBinding,)+
-            $($max_slot: worth_query_declaration::facade::portable_identity::WorthQueryPortableType + 'static,)+
+            $($min_key: crate::ordered_index::key_field::WorthQueryOrderedKeyField<S, I, Value = C>,)+
+            $($max_key: crate::ordered_index::key_field::WorthQueryOrderedKeyField<S, I, Value = C>,)+
         {
             type Summary = crate::ordered_index::coord::WorthQueryAxisEnvelope<C, $D>;
             type Denial = crate::ordered_index::coord::WorthQueryStockIndexDenial;
@@ -68,12 +67,10 @@ macro_rules! impl_box_domain {
                 std::cmp::Ordering,
                 worth_query_execution::facade::primary_graph::WorthQueryManagedIndexProviderStop<Self::Denial>,
             > {
-                let (l_min, l_max) = self.read_bounds(&left, control)?;
-                let (r_min, r_max) = self.read_bounds(&right, control)?;
+                let left = self.read_bounds(&left, control)?;
+                let right = self.read_bounds(&right, control)?;
                 control.checkpoint(1)?;
-                Ok(crate::ordered_index::coord::WorthQueryAxisEnvelope::lex_cmp(
-                    l_min, l_max, r_min, r_max,
-                ))
+                Ok(crate::ordered_index::coord::WorthQueryAxisEnvelope::row_cmp(left, right))
             }
 
             fn source_summary(
@@ -85,11 +82,10 @@ macro_rules! impl_box_domain {
                 Self::Summary,
                 worth_query_execution::facade::primary_graph::WorthQueryManagedIndexProviderStop<Self::Denial>,
             > {
-                let (min, max) = self.read_bounds(&row, control)?;
+                let bounds = self.read_bounds(&row, control)?;
                 control.checkpoint(1)?;
-                Ok(crate::ordered_index::coord::WorthQueryAxisEnvelope::from_bounds(
-                    min,
-                    max,
+                Ok(crate::ordered_index::coord::WorthQueryAxisEnvelope::from_row_bounds(
+                    bounds,
                     self.inclusion,
                 ))
             }
@@ -156,34 +152,32 @@ macro_rules! impl_box_domain {
                 bool,
                 worth_query_execution::facade::primary_graph::WorthQueryManagedIndexProviderStop<Self::Denial>,
             > {
-                let (r_min, r_max) = self.read_bounds(&row, control)?;
+                let bounds = self.read_bounds(&row, control)?;
                 control.checkpoint(1)?;
                 let (p_min, p_max) = probe.$probe_fn();
-                Ok(crate::ordered_index::coord::WorthQueryAxisEnvelope::bounds_overlap(
-                    r_min,
-                    r_max,
-                    p_min,
-                    p_max,
-                    self.inclusion,
-                ))
+                Ok(bounds.is_some_and(|(r_min, r_max)| {
+                    crate::ordered_index::coord::WorthQueryAxisEnvelope::bounds_overlap(
+                        r_min,
+                        r_max,
+                        p_min,
+                        p_max,
+                        self.inclusion,
+                    )
+                }))
             }
         }
 
-        impl<S, I, $($min_slot, $min_field,)+ $($max_slot, $max_field,)+ C>
+        impl<S, I, $($min_key,)+ $($max_key,)+ C>
             crate::ordered_index::WorthQueryOrderedIndexPredicateDomain<S, I>
-            for $Domain<S, I, $($min_slot, $min_field,)+ $($max_slot, $max_field,)+ C>
+            for $Domain<S, I, $($min_key,)+ $($max_key,)+ C>
         where
             S: worth_query_declaration::facade::application_schema::ApplicationSchema,
             I: worth_query_declaration::facade::application_query::ApplicationManagedIndexBinding<S>,
             C: crate::ordered_index::coord::WorthQueryOrderedCoord,
             worth_query_execution::facade::primary_graph::WorthQueryManagedIndexProbeValue<S, I>:
                 $ProbeTrait<C>,
-            $($min_field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<Value = C> + 'static,)+
-            $($min_field::Binding: worth_query_declaration::facade::application_schema::ApplicationReadableScalarValueBinding,)+
-            $($min_slot: worth_query_declaration::facade::portable_identity::WorthQueryPortableType + 'static,)+
-            $($max_field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<Value = C> + 'static,)+
-            $($max_field::Binding: worth_query_declaration::facade::application_schema::ApplicationReadableScalarValueBinding,)+
-            $($max_slot: worth_query_declaration::facade::portable_identity::WorthQueryPortableType + 'static,)+
+            $($min_key: crate::ordered_index::key_field::WorthQueryOrderedKeyField<S, I, Value = C>,)+
+            $($max_key: crate::ordered_index::key_field::WorthQueryOrderedKeyField<S, I, Value = C>,)+
         {
             type PredicateSummary = crate::ordered_index::coord::WorthQueryAxisEnvelope<C, $D>;
 
@@ -231,9 +225,11 @@ macro_rules! impl_box_domain {
                 bool,
                 worth_query_execution::facade::primary_graph::WorthQueryManagedIndexProviderStop<Self::Denial>,
             > {
-                let (r_min, r_max) = self.read_bounds(&row, control)?;
+                let bounds = self.read_bounds(&row, control)?;
                 control.checkpoint(1)?;
-                Ok(summary.may_overlap_bounds(r_min, r_max, self.inclusion))
+                Ok(bounds.is_some_and(|(r_min, r_max)| {
+                    summary.may_overlap_bounds(r_min, r_max, self.inclusion)
+                }))
             }
         }
     };

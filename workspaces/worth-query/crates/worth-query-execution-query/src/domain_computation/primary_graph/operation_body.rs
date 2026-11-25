@@ -15,6 +15,7 @@ pub use worth_query_execution_lineage::facade::primary_graph::operation_body::{
     WorthQueryOperationBodyRequirementTarget,
 };
 
+mod effect_emission;
 mod handler;
 mod input_expectation;
 mod installation;

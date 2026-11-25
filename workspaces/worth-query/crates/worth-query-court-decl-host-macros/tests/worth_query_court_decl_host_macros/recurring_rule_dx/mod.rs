@@ -1,5 +1,6 @@
 //! Stock recurring rule installed declaratively: scheduling, bounded catch-up
 //! after reopen, completion and idempotent re-catch-up on a Directory Home.
+mod on_fire;
 mod program;
 mod schema;
 

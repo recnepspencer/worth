@@ -127,6 +127,11 @@ impl WorthQueryPortableApplicationOperationContractRecord {
             if let Some(emission) = body.external_emission() {
                 work.observe_external_emission(emission);
             }
+            if let Some(emission) = body.effect_emission() {
+                work.observe_text(&emission.effect);
+                work.observe_text(emission.input_binding.as_str());
+                work.observe_text(emission.payload_binding.as_str());
+            }
             work.observe_body_observations(body);
             for step in body.scope_fields() {
                 work.observe_text(step.field().entity());
