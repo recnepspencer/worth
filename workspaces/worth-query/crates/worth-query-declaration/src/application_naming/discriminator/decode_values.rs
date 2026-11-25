@@ -8,7 +8,10 @@ use super::{
     TAG_I8, TAG_NAME_REF, TAG_OPTION_NONE, TAG_OPTION_SOME, TAG_PAIR, TAG_TEXT, TAG_U16, TAG_U32,
     TAG_U64, TAG_U8, TAG_UUID,
 };
-use crate::application_naming::{NameRef, WorthQueryName, WorthQuerySameCommitName};
+use crate::application_naming::kind::{subject_kind_of, subject_name_of};
+use crate::application_naming::{
+    NameRef, WorthQueryName, WorthQueryNamedKind, WorthQuerySameCommitName,
+};
 
 type Denial = ApplicationNameDiscriminatorDecodeDenial;
 type Decoded<T> = Result<T, Denial>;
@@ -94,22 +97,20 @@ impl ApplicationNameDiscriminatorValueDecode for [u8; 16] {
 }
 
 /// A recorded name reference reads back only as a name the read admitted
-/// at its basis.
-impl<K> ApplicationNameDiscriminatorValueDecode for WorthQueryName<K> {
+/// at its basis under exactly `K`'s subject class and declared subject.
+impl<K: WorthQueryNamedKind> ApplicationNameDiscriminatorValueDecode for WorthQueryName<K> {
     fn decode_discriminator_value(
         decoder: &mut ApplicationNameDiscriminatorDecoder<'_>,
     ) -> Decoded<Self> {
         decoder.tag(TAG_NAME_REF)?;
         let digest = decoder.raw::<32>()?;
-        match decoder.admits(&digest) {
-            true => Ok(WorthQueryName::from_admitted_digest(digest)),
-            false => Err(Denial::UnrecordedName { digest }),
-        }
+        decoder.admit_name(digest, subject_kind_of::<K>(), subject_name_of::<K>())?;
+        Ok(WorthQueryName::from_admitted_digest(digest))
     }
 }
 
 /// A recorded reference is always to a committed name.
-impl<K> ApplicationNameDiscriminatorValueDecode for NameRef<K> {
+impl<K: WorthQueryNamedKind> ApplicationNameDiscriminatorValueDecode for NameRef<K> {
     fn decode_discriminator_value(
         decoder: &mut ApplicationNameDiscriminatorDecoder<'_>,
     ) -> Decoded<Self> {

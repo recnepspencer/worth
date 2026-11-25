@@ -1,136 +1,9 @@
-use std::collections::BTreeSet;
-
+use super::birth_fixture::*;
 use super::{
-    recorded_name_references, ApplicationNameDiscriminator,
+    recorded_name_references, AdmittedNameReferences, ApplicationNameDiscriminator,
     ApplicationNameDiscriminatorDecodeDenial as Denial, IndexedRoleDiscriminator,
-    NameBirthDecodeDenial, NameRef, NestedDiscriminator, OccurrencePath, RecordedNameBirth,
-    WorthQueryName, WorthQueryNameRole,
+    NameBirthDecodeDenial, OccurrencePath, RecordedNameBirth,
 };
-
-struct Face;
-
-fn name(byte: u8) -> WorthQueryName<Face> {
-    WorthQueryName::from_admitted_digest([byte; 32])
-}
-
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-enum Role {
-    Authored,
-    Instance(u32),
-}
-
-impl WorthQueryNameRole for Role {
-    const ROLE_ORDER: &'static [&'static str] = &["Authored", "Instance"];
-    const ROLE_DEPENDENCIES: &'static [(&'static str, &'static str)] = &[];
-    fn role_name(&self) -> &'static str {
-        match self {
-            Self::Authored => "Authored",
-            Self::Instance(_) => "Instance",
-        }
-    }
-    fn role_index(&self) -> Option<u32> {
-        match self {
-            Self::Authored => None,
-            Self::Instance(index) => Some(*index),
-        }
-    }
-    fn from_role_parts(role: &str, index: Option<u32>) -> Option<Self> {
-        match (role, index) {
-            ("Authored", None) => Some(Self::Authored),
-            ("Instance", Some(index)) => Some(Self::Instance(index)),
-            _ => None,
-        }
-    }
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-struct Side {
-    side: u8,
-}
-crate::worth_query_name_discriminator! {
-    struct Side { identity: "test.side.v1", fields: [side] }
-}
-
-#[derive(Debug, Eq, PartialEq)]
-struct Every {
-    flag: bool,
-    small: i8,
-    medium: i32,
-    large: u64,
-    signed: i64,
-    word: u16,
-    text: String,
-    uuid: [u8; 16],
-    maybe: Option<u32>,
-    pair: (u8, String),
-    cutter: NameRef<Face>,
-    edge: WorthQueryName<Face>,
-    nested: Side,
-    nested_option: Option<NestedDiscriminator<Side>>,
-}
-crate::worth_query_name_discriminator! {
-    struct Every {
-        identity: "test.every.v1",
-        fields: [flag, small, medium, large, signed, word, text, uuid, maybe, pair, cutter, edge,
-            nested, nested_option]
-    }
-}
-
-#[derive(Debug, Eq, PartialEq)]
-enum Cut {
-    Sided { cutter: NameRef<Face>, side: u8 },
-    Seam { index: u32 },
-}
-crate::worth_query_name_discriminator! {
-    enum Cut { identity: "test.cut.v1", variants: { Sided { cutter, side }, Seam { index } } }
-}
-
-/// Other types under the same identities, to forge mismatched bodies.
-enum CutImpostor {
-    Unknown,
-}
-crate::worth_query_name_discriminator! {
-    enum CutImpostor { identity: "test.cut.v1", variants: { Unknown {} } }
-}
-struct SideImpostor {
-    other: u8,
-}
-crate::worth_query_name_discriminator! {
-    struct SideImpostor { identity: "test.side.v1", fields: [other] }
-}
-
-fn every() -> Every {
-    Every {
-        flag: true,
-        small: -3,
-        medium: i32::MIN,
-        large: u64::MAX,
-        signed: -1,
-        word: 7,
-        text: "piece".into(),
-        uuid: [9; 16],
-        maybe: Some(4),
-        pair: (1, "a".into()),
-        cutter: name(1).into(),
-        edge: name(2),
-        nested: Side { side: 1 },
-        nested_option: Some(NestedDiscriminator(Side { side: 0 })),
-    }
-}
-
-fn birth(role: &str, bytes: Vec<u8>, admitted: &[u8]) -> RecordedNameBirth<Face> {
-    RecordedNameBirth::from_admitted_parts(
-        name(0xee),
-        "feature/instance[3]".into(),
-        role.into(),
-        vec![name(0xaa)],
-        bytes,
-        admitted
-            .iter()
-            .map(|byte| [*byte; 32])
-            .collect::<BTreeSet<_>>(),
-    )
-}
 
 #[test]
 fn every_closed_value_reads_back_exactly_as_encoded() {
@@ -277,7 +150,7 @@ fn an_occurrence_no_path_renders_refuses_typed() {
         "Authored".into(),
         Vec::new(),
         Vec::new(),
-        BTreeSet::new(),
+        AdmittedNameReferences::new(),
     );
     assert!(matches!(
         recorded.decode::<Role, Side>(),

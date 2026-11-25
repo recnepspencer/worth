@@ -17,7 +17,9 @@ use worth_relational::facade::lineage::{
 };
 
 use super::{ExecutionNameReadDenial, ExecutionNameReader, NameReadDependencies};
-use crate::admission::{admit_birth_of, kind_verified_resolved_name, RequestedSubject};
+use crate::admission::{
+    admit_birth_of, kind_verified_resolved_name, verify_resolved_subject, RequestedSubject,
+};
 use crate::operation_outputs::WorthQueryOutputBirth;
 
 type Read<T> = Result<T, ExecutionNameReadDenial>;
@@ -149,13 +151,23 @@ impl ExecutionNameReader<'_> {
             // under it can be recorded before it is.
             let mut identities = Vec::with_capacity(parents.len());
             for parent in parents {
-                match view.recorded_name(requested.kind, parent.as_bytes()) {
-                    Some(PersistentNameKey::Entity(id) | PersistentNameKey::Relation(id)) => {
+                let Some(key) = view.recorded_name(requested.kind, parent.as_bytes()) else {
+                    dependencies.record_awaited_birth(&branch, *parent.as_bytes());
+                    return Ok(None);
+                };
+                // A recorded parent of another kind refuses, as every read
+                // of a held name does, rather than awaiting a birth that can
+                // never be recorded.
+                verify_resolved_subject(self.runtime, &view, key, requested)?;
+                match key {
+                    PersistentNameKey::Entity(id) | PersistentNameKey::Relation(id) => {
                         identities.push(id);
                     }
-                    Some(PersistentNameKey::Group(_)) | None => {
-                        dependencies.record_awaited_birth(&branch, *parent.as_bytes());
-                        return Ok(None);
+                    PersistentNameKey::Group(_) => {
+                        return Err(ExecutionNameReadDenial::SubjectKindMismatch {
+                            expected: requested.kind,
+                            actual: PersistentNameSubjectKind::Group,
+                        });
                     }
                 }
             }

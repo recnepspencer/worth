@@ -30,6 +30,10 @@ pub(crate) mod stored_name;
 mod stored_value;
 
 #[cfg(test)]
+mod birth_fixture;
+#[cfg(test)]
+mod birth_kind_tests;
+#[cfg(test)]
 mod birth_tests;
 #[cfg(test)]
 mod group_tests;
@@ -58,7 +62,7 @@ pub use denial::{
 };
 pub(crate) use discriminator::recorded_name_references;
 pub use discriminator::{
-    ApplicationNameDiscriminator, ApplicationNameDiscriminatorDecode,
+    AdmittedNameReferences, ApplicationNameDiscriminator, ApplicationNameDiscriminatorDecode,
     ApplicationNameDiscriminatorDecodeDenial, ApplicationNameDiscriminatorDecoder,
     ApplicationNameDiscriminatorEncoder, ApplicationNameDiscriminatorField,
     ApplicationNameDiscriminatorFieldDecode, ApplicationNameDiscriminatorValue,

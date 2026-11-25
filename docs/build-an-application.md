@@ -446,17 +446,25 @@ writer.name_created_entity(&face, WorthQueryOutputBirth::of_role(&occurrence, Fa
   or non-closing anchor refuses `InvalidAnchor`. A naming scope descends
   with `sub_scope`, `index` and `anchored`.
 - **Decoding a recorded birth.** Both derives also read their values back:
-  `#[derive(ApplicationNameDiscriminator)]` (and
-  `worth_query_name_discriminator!`) implement
-  `ApplicationNameDiscriminatorDecode`, and `#[derive(WorthQueryNameRole)]`
-  implements `from_role_parts`. A `RecordedNameBirth<K>` (from `birth_of`
+  `#[derive(ApplicationNameDiscriminator)]` implements
+  `ApplicationNameDiscriminatorDecode` (`worth_query_name_discriminator!`
+  encodes only; implement the trait by hand beside it), and
+  `#[derive(WorthQueryNameRole)]` implements `from_role_parts`. A
+  `WorthQueryName<K>` or `NameRef<K>` field decodes only when `K` declares
+  `WorthQueryNamedKind`, and only as a name the read admitted under exactly
+  `K`'s subject class and declared subject: a recorded `Face` reference
+  never decodes as an `Edge` (`NameKindMismatch`). The field name
+  `worth.role.index` and the identity `worth.query.name-role-index.v1` are
+  reserved for indexed roles. A `RecordedNameBirth<K>` (from `birth_of`
   below) decodes with `decode_role::<R>()`, `decode_discriminator::<D>()`
   (after an indexed role's index; `None` when the birth carries no typed
   discriminator) or `decode::<R, D>()` into a `NameBirth { name, occurrence,
   role, parents, discriminator }`. A recorded `NameRef` reads back as
   `Committed`, and every referenced name is one the read admitted at its
-  basis. Another identity, an unknown variant or field, truncated or
-  trailing bytes, and an unadmitted name refuse typed
+  basis. Another identity (including a typed discriminator requested of a
+  birth told apart by its index alone), an unknown variant or field, an
+  index-only discriminator missing its index, truncated or trailing bytes,
+  and an unadmitted or wrong-kind name refuse typed
   (`ApplicationNameDiscriminatorDecodeDenial`, inside
   `NameBirthDecodeDenial`).
 - **`NamedTarget<K>`** pairs a held `WorthQueryName<K>` with the
@@ -640,7 +648,8 @@ replay:
   names, compute the installed scheme's identity with Relational's one
   minting function, and answer `Some(name)` only when that birth is recorded
   and visible at the basis, `None` otherwise. A birth referencing a
-  same-commit name refuses `SameCommitBirthReference`. Resolve the answer to
+  same-commit name refuses `SameCommitBirthReference`, and a recorded parent
+  of another kind refuses as every held-name read does. Resolve the answer to
   find where that name's meaning lives now.
 - Every read records what it rested on into `NameReadDependencies`;
   `currentness_after_commit(&commit)` reports `Stale` exactly when that

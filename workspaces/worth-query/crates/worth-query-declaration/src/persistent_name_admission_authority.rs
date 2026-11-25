@@ -4,12 +4,11 @@
 //! Not re-exported through [`crate::facade`] or `worth-query-decl`; ordinary
 //! declaration consumers cannot construct a [`WorthQueryName`] from raw bytes.
 
-use std::collections::BTreeSet;
 use std::sync::Arc;
 
 use crate::application_naming::{
-    recorded_name_references, ApplicationNameDiscriminatorDecodeDenial, RecordedNameBirth,
-    SameCommitNameReference, WorthQueryName, WorthQuerySameCommitName,
+    recorded_name_references, AdmittedNameReferences, ApplicationNameDiscriminatorDecodeDenial,
+    RecordedNameBirth, SameCommitNameReference, WorthQueryName, WorthQuerySameCommitName,
 };
 
 /// Issues the kind-typed reference to the name the `output`-th named output
@@ -43,14 +42,15 @@ pub fn recorded_discriminator_references(
 
 /// Admits the birth Relational recorded for `name`, read at a basis where
 /// `name`, every parent and every reference in `admitted_references` are
-/// recorded and visible.
+/// recorded and visible, each reference under the subject class and declared
+/// subject its installed scheme governs.
 pub fn admit_recorded_birth<K>(
     name: [u8; 32],
     occurrence_key: String,
     role_path: String,
     parents: impl IntoIterator<Item = [u8; 32]>,
     canonical_discriminator: Vec<u8>,
-    admitted_references: BTreeSet<[u8; 32]>,
+    admitted_references: AdmittedNameReferences,
 ) -> RecordedNameBirth<K> {
     RecordedNameBirth::from_admitted_parts(
         WorthQueryName::from_admitted_digest(name),

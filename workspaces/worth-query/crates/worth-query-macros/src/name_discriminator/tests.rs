@@ -154,3 +154,43 @@ fn a_malformed_discriminator_is_refused() {
         assert!(message.contains(expected), "{source}: {message}");
     }
 }
+
+#[test]
+fn the_role_index_wire_names_are_reserved() {
+    let identity = refusal(
+        "#[worth_query(identity = \"worth.query.name-role-index.v1\")] struct Index { side: u8 }",
+    );
+    assert!(identity.contains("reserved"), "{identity}");
+    let field = refusal(
+        "#[worth_query(identity = \"app.face.cut.v1\")] \
+         struct Cut { #[worth_query(name = \"worth.role.index\")] index: u32 }",
+    );
+    assert!(field.contains("reserved"), "{field}");
+    let in_variant = refusal(
+        "#[worth_query(identity = \"app.face.cut.v1\")] \
+         enum Cut { Piece { #[worth_query(name = \"worth.role.index\")] index: u32 } }",
+    );
+    assert!(in_variant.contains("reserved"), "{in_variant}");
+}
+
+#[test]
+fn a_discriminator_also_reads_back_in_its_own_order() {
+    let cut = expansion(
+        "#[worth_query(identity = \"app.face.cut.v1\")] \
+         enum Cut { Sided { cutter: NameRef<Face>, #[worth_query(name = \"side\")] which: Side }, \
+         Cap(u32, bool), Whole }",
+    );
+    assert!(cut.contains(&tokens(
+        r#""Sided" => ::core::result::Result::Ok(Self::Sided {
+            cutter: decoder.field("cutter")?, which: decoder.field("side")?, }),"#
+    )));
+    assert!(cut.contains(&tokens(
+        r#""Cap" => ::core::result::Result::Ok(Self::Cap(decoder.value()?, decoder.value()?,)),"#
+    )));
+    assert!(cut.contains(&tokens(
+        r#""Whole" => ::core::result::Result::Ok(Self::Whole),"#
+    )));
+    assert!(cut.contains(&tokens(
+        "other => ::core::result::Result::Err(decoder.unknown_variant(other)),"
+    )));
+}

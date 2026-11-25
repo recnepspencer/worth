@@ -28,12 +28,24 @@ pub enum BirthObservation {
         label: String,
         refusal: String,
     },
+    /// `relation_birth_of` on the seam name held under `label`.
+    SeamBorn {
+        label: String,
+        birth: RecordedNameBirth<Seam>,
+    },
+    /// `relation_name_for_birth` on the seam birth parts held under `label`.
+    SeamMinted {
+        label: String,
+        name: Option<WorthQueryName<Seam>>,
+    },
 }
 
 #[derive(Clone)]
 enum Read {
     BirthOf(WorthQueryName<Member>),
     ForBirth(WorthQueryOutputBirth, Vec<WorthQueryName<Member>>),
+    SeamBirthOf(WorthQueryName<Seam>),
+    SeamForBirth(WorthQueryOutputBirth),
 }
 
 #[derive(Default)]
@@ -71,6 +83,16 @@ pub fn name_for_birth(
     hold(token, label, Read::ForBirth(birth, parents));
 }
 
+/// Reads the birth of seam name `name` under `label` in later probe runs.
+pub fn seam_birth_of(token: &str, label: &str, name: WorthQueryName<Seam>) {
+    hold(token, label, Read::SeamBirthOf(name));
+}
+
+/// Looks up the seam name `birth` was minted as, under `label`.
+pub fn seam_name_for_birth(token: &str, label: &str, birth: WorthQueryOutputBirth) {
+    hold(token, label, Read::SeamForBirth(birth));
+}
+
 /// Takes what probe runs carrying `token` observed since the last take.
 pub fn take(token: &str) -> Vec<BirthObservation> {
     probes()
@@ -97,6 +119,25 @@ pub(super) fn observe(
                     refusal: format!("{refusal:?}"),
                 },
             },
+            Read::SeamBirthOf(name) => {
+                match reader.reader().relation_birth_of(Seam::reference(), &name) {
+                    Ok(birth) => BirthObservation::SeamBorn { label, birth },
+                    Err(refusal) => BirthObservation::BirthRefused {
+                        label,
+                        refusal: format!("{refusal:?}"),
+                    },
+                }
+            }
+            Read::SeamForBirth(birth) => {
+                let seam = Seam::reference();
+                match reader.reader().relation_name_for_birth(seam, &birth, &[]) {
+                    Ok(name) => BirthObservation::SeamMinted { label, name },
+                    Err(refusal) => BirthObservation::LookupRefused {
+                        label,
+                        refusal: format!("{refusal:?}"),
+                    },
+                }
+            }
             Read::ForBirth(birth, parents) => {
                 match reader.reader().name_for_birth(&birth, &parents) {
                     Ok(name) => BirthObservation::Minted { label, name },

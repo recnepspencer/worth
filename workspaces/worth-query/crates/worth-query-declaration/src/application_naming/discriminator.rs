@@ -13,8 +13,9 @@ mod references;
 
 pub use decode_values::ApplicationNameDiscriminatorValueDecode;
 pub use decoder::{
-    ApplicationNameDiscriminatorDecode, ApplicationNameDiscriminatorDecodeDenial,
-    ApplicationNameDiscriminatorDecoder, ApplicationNameDiscriminatorFieldDecode,
+    AdmittedNameReferences, ApplicationNameDiscriminatorDecode,
+    ApplicationNameDiscriminatorDecodeDenial, ApplicationNameDiscriminatorDecoder,
+    ApplicationNameDiscriminatorFieldDecode,
 };
 pub use field::ApplicationNameDiscriminatorField;
 pub use nested::NestedDiscriminator;

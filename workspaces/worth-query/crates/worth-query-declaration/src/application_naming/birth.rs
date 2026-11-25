@@ -1,10 +1,9 @@
 //! A recorded name's birth as a reader admitted it, and its typed decode.
 
-use std::collections::BTreeSet;
 use std::fmt;
 
 use super::{
-    ApplicationNameDiscriminator, ApplicationNameDiscriminatorDecode,
+    AdmittedNameReferences, ApplicationNameDiscriminator, ApplicationNameDiscriminatorDecode,
     ApplicationNameDiscriminatorDecodeDenial, ApplicationNameDiscriminatorDecoder, OccurrencePath,
     OccurrencePathDenial, WorthQueryName, WorthQueryNameRole, NAME_ROLE_INDEX_IDENTITY,
 };
@@ -27,7 +26,7 @@ pub struct RecordedNameBirth<K> {
     role_path: String,
     parents: Vec<WorthQueryName<K>>,
     canonical_discriminator: Vec<u8>,
-    admitted_references: BTreeSet<[u8; 32]>,
+    admitted_references: AdmittedNameReferences,
 }
 
 /// A recorded birth decoded as its scheme's typed role `R` and
@@ -92,7 +91,7 @@ impl<K> RecordedNameBirth<K> {
         role_path: String,
         parents: Vec<WorthQueryName<K>>,
         canonical_discriminator: Vec<u8>,
-        admitted_references: BTreeSet<[u8; 32]>,
+        admitted_references: AdmittedNameReferences,
     ) -> Self {
         Self {
             name,
@@ -143,7 +142,10 @@ impl<K> RecordedNameBirth<K> {
             return Ok(None);
         }
         let mut decoder = self.decoder();
-        decoder.header()?;
+        // An index-only discriminator must carry its index.
+        if decoder.header()? == NAME_ROLE_INDEX_IDENTITY {
+            return Ok(Some(decoder.role_index()?));
+        }
         Ok(decoder.leading_role_index()?)
     }
 
@@ -169,20 +171,29 @@ impl<K> RecordedNameBirth<K> {
         }
         let mut decoder = self.decoder();
         let identity = decoder.header()?;
-        if !D::LEADS_WITH_ROLE_INDEX {
-            decoder.leading_role_index()?;
-        }
         let requested = <D as ApplicationNameDiscriminator>::DISCRIMINATOR_IDENTITY;
+        let mismatch = || ApplicationNameDiscriminatorDecodeDenial::IdentityMismatch {
+            expected: requested.to_owned(),
+            found: identity.to_owned(),
+        };
+        // A birth told apart by its role index alone carries exactly that
+        // index and no typed discriminator: nothing for a plain `D`, and a
+        // mismatch for a `D` that itself expects a discriminator after it.
         if identity == NAME_ROLE_INDEX_IDENTITY && requested != NAME_ROLE_INDEX_IDENTITY {
+            if D::LEADS_WITH_ROLE_INDEX {
+                return Err(mismatch().into());
+            }
+            decoder.role_index()?;
             decoder.finish()?;
             return Ok(None);
         }
         if identity != requested {
-            return Err(ApplicationNameDiscriminatorDecodeDenial::IdentityMismatch {
-                expected: requested.to_owned(),
-                found: identity.to_owned(),
-            }
-            .into());
+            return Err(mismatch().into());
+        }
+        if identity == NAME_ROLE_INDEX_IDENTITY && !D::LEADS_WITH_ROLE_INDEX {
+            decoder.role_index()?;
+        } else if !D::LEADS_WITH_ROLE_INDEX {
+            decoder.leading_role_index()?;
         }
         let decoded = D::decode_canonical(&mut decoder)?;
         decoder.finish()?;

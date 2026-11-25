@@ -56,7 +56,7 @@ pub trait WorthQueryNameRole: Ord + Sized + 'static {
 pub const NAME_ROLE_INDEX_IDENTITY: &str = "worth.query.name-role-index.v1";
 
 /// Label of the field an indexed role's index is written under. A Rust field
-/// name cannot spell it, so no derived discriminator declares it.
+/// name cannot spell it, and the derive refuses it as a declared field name.
 pub(crate) const NAME_ROLE_INDEX_FIELD: &str = "worth.role.index";
 
 impl ApplicationNameDiscriminatorEncoder {

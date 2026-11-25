@@ -2,8 +2,6 @@
 //! self-describing tags alone, so a read can admit each one at its basis
 //! before any typed decode.
 
-use std::collections::BTreeSet;
-
 use super::decoder::{
     ApplicationNameDiscriminatorDecodeDenial, ApplicationNameDiscriminatorDecoder,
 };
@@ -24,7 +22,7 @@ pub(crate) fn recorded_name_references(
     if bytes.is_empty() {
         return Ok(references);
     }
-    let admits_none = BTreeSet::new();
+    let admits_none = super::AdmittedNameReferences::new();
     let mut decoder = ApplicationNameDiscriminatorDecoder::new(bytes, &admits_none);
     decoder.header()?;
     // A nested body is itself a run of tagged items, so it is walked in line

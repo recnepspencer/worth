@@ -6,12 +6,17 @@
 //! a name recorded and visible at that read's basis; bare digests open
 //! nothing.
 
-use std::collections::BTreeSet;
+use std::collections::BTreeMap;
 use std::fmt;
 
 use super::sealed;
 use super::{ApplicationNameDiscriminator, NAME_DISCRIMINATOR_DOMAIN_TAG, TAG_FIELD, TAG_VARIANT};
 use crate::application_naming::role::NAME_ROLE_INDEX_FIELD;
+use crate::application_naming::ApplicationNameSubjectKind;
+
+/// Every name a read admitted as a discriminator reference, by digest, with
+/// the subject class and declared subject its installed scheme governs.
+pub type AdmittedNameReferences = BTreeMap<[u8; 32], (ApplicationNameSubjectKind, String)>;
 
 /// Reads one recorded canonical discriminator back into typed values, in
 /// exactly the order its encoder wrote them.
@@ -23,7 +28,7 @@ use crate::application_naming::role::NAME_ROLE_INDEX_FIELD;
 pub struct ApplicationNameDiscriminatorDecoder<'bytes> {
     bytes: &'bytes [u8],
     position: usize,
-    admitted: &'bytes BTreeSet<[u8; 32]>,
+    admitted: &'bytes AdmittedNameReferences,
 }
 
 /// Typed refusal of bytes that are not the canonical encoding of the
@@ -50,6 +55,14 @@ pub enum ApplicationNameDiscriminatorDecodeDenial {
     /// A name reference that is not a name recorded and visible at the
     /// read's basis.
     UnrecordedName { digest: [u8; 32] },
+    /// A referenced name the read admitted under another subject class or
+    /// declared subject than the field's kind: a name of one kind never
+    /// decodes as a name of another.
+    NameKindMismatch {
+        digest: [u8; 32],
+        expected: (ApplicationNameSubjectKind, String),
+        found: (ApplicationNameSubjectKind, String),
+    },
     /// A field type that cannot hold a recorded value: a same-commit name
     /// (use `NameRef<K>`) or borrowed text (use `String`).
     UndecodableField,
@@ -76,6 +89,16 @@ impl fmt::Display for ApplicationNameDiscriminatorDecodeDenial {
             Self::UnrecordedName { .. } => {
                 formatter.write_str("a referenced name is not recorded at the read's basis")
             }
+            Self::NameKindMismatch {
+                expected, found, ..
+            } => write!(
+                formatter,
+                "a referenced {} `{}` is not a {} `{}`",
+                found.0.canonical_name(),
+                found.1,
+                expected.0.canonical_name(),
+                expected.1
+            ),
             Self::UndecodableField => formatter.write_str("field type holds no recorded value"),
         }
     }
@@ -111,8 +134,8 @@ pub trait ApplicationNameDiscriminatorFieldDecode<Form: sealed::FieldForm>: Size
 
 impl<'bytes> ApplicationNameDiscriminatorDecoder<'bytes> {
     /// A decoder at the start of `bytes`, admitting exactly the name digests
-    /// in `admitted`.
-    pub(crate) fn new(bytes: &'bytes [u8], admitted: &'bytes BTreeSet<[u8; 32]>) -> Self {
+    /// in `admitted`, each only as the kind it was admitted under.
+    pub(crate) fn new(bytes: &'bytes [u8], admitted: &'bytes AdmittedNameReferences) -> Self {
         Self {
             bytes,
             position: 0,
@@ -204,9 +227,25 @@ impl<'bytes> ApplicationNameDiscriminatorDecoder<'bytes> {
         }
     }
 
-    /// Whether the read admitted `digest` as a name visible at its basis.
-    pub(super) fn admits(&self, digest: &[u8; 32]) -> bool {
-        self.admitted.contains(digest)
+    /// Admits `digest` only when the read admitted it as a name of exactly
+    /// subject class `kind` and declared subject `subject`.
+    pub(super) fn admit_name(
+        &self,
+        digest: [u8; 32],
+        kind: ApplicationNameSubjectKind,
+        subject: &str,
+    ) -> Decoded<()> {
+        let Some((found_kind, found_subject)) = self.admitted.get(&digest) else {
+            return Err(ApplicationNameDiscriminatorDecodeDenial::UnrecordedName { digest });
+        };
+        if *found_kind == kind && found_subject == subject {
+            return Ok(());
+        }
+        Err(ApplicationNameDiscriminatorDecodeDenial::NameKindMismatch {
+            digest,
+            expected: (kind, subject.to_owned()),
+            found: (*found_kind, found_subject.clone()),
+        })
     }
 
     pub(super) fn tag(&mut self, expected: u8) -> Decoded<()> {

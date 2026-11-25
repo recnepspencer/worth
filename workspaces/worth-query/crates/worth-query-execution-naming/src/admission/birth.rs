@@ -2,11 +2,12 @@
 //!
 //! The birth's parents and every name its discriminator references are
 //! admitted only as names the same index recorded and shows visible at the
-//! same basis; bare digests open nothing.
+//! same basis, each reference under the subject class and declared subject
+//! of its installed scheme; bare digests open nothing.
 
-use std::collections::BTreeSet;
-
-use worth_query_declaration::facade::application_naming::RecordedNameBirth;
+use worth_query_declaration::facade::application_naming::{
+    AdmittedNameReferences, ApplicationNameSubjectKind, RecordedNameBirth,
+};
 use worth_query_declaration::persistent_name_admission_authority::{
     admit_recorded_birth, recorded_discriminator_references,
 };
@@ -57,12 +58,8 @@ pub(crate) fn admit_birth_of<K>(
     let references = recorded_discriminator_references(parts.canonical_discriminator())
         .unwrap_or_default()
         .into_iter()
-        .filter(|digest| {
-            SUBJECT_KINDS
-                .iter()
-                .any(|kind| view.recorded_name(*kind, digest).is_some())
-        })
-        .collect::<BTreeSet<_>>();
+        .filter_map(|digest| Some((digest, admitted_reference(runtime, view, &digest)?)))
+        .collect::<AdmittedNameReferences>();
     Ok(admit_recorded_birth(
         *key.digest(),
         parts.occurrence_key().to_owned(),
@@ -71,4 +68,29 @@ pub(crate) fn admit_birth_of<K>(
         parts.canonical_discriminator().to_vec(),
         references,
     ))
+}
+
+/// The subject class and declared subject `digest` was born under, when it
+/// is a name recorded and visible at the basis under an installed scheme of
+/// that same class. Anything else is not admitted, so it never decodes.
+///
+/// Complexity: O(1) expected index probes plus one registry lookup.
+fn admitted_reference(
+    runtime: &RelationalRuntime,
+    view: &PersistentNameObservationView<'_>,
+    digest: &[u8; 32],
+) -> Option<(ApplicationNameSubjectKind, String)> {
+    SUBJECT_KINDS.iter().find_map(|kind| {
+        let key = view.recorded_name(*kind, digest)?;
+        let (installed, subject) = runtime.persistent_name_scheme_subject(view.scheme_of(key)?)?;
+        (installed == *kind).then(|| (application_subject(installed), subject))
+    })
+}
+
+const fn application_subject(kind: PersistentNameSubjectKind) -> ApplicationNameSubjectKind {
+    match kind {
+        PersistentNameSubjectKind::Entity => ApplicationNameSubjectKind::Entity,
+        PersistentNameSubjectKind::Relation => ApplicationNameSubjectKind::Relation,
+        PersistentNameSubjectKind::Group => ApplicationNameSubjectKind::Group,
+    }
 }

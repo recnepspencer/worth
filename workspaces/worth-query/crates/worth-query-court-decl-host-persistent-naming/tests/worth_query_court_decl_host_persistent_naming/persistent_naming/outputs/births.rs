@@ -275,3 +275,44 @@ fn name_for_birth_finds_recorded_births_and_an_unborn_answer_never_seals() {
         }
     );
 }
+
+#[test]
+fn a_seam_reads_its_birth_and_is_found_by_its_birth_parts() {
+    let token = "births-seam";
+    let world = World::install();
+    let weld = seam_names::seam("births-weld", "seam", 1);
+    world.committed(
+        &format!("{token}-link"),
+        seam_names::link("s1", "direct", "nested", weld.clone()),
+    );
+    let s1 = world.seam_name(&format!("{token}-read"), "direct", "nested");
+    births::seam_birth_of(token, "s1", s1);
+    births::seam_name_for_birth(token, "found", weld);
+    births::seam_name_for_birth(token, "unborn", seam_names::seam("births-weld", "seam", 2));
+    let (observed, ended) = world.probe_births(token, &[], 0);
+    assert!(
+        !ended.contains("Committed"),
+        "an unborn seam lookup never seals: {ended}"
+    );
+    let seam_minted = |label: &str| {
+        observed.iter().find_map(|observation| match observation {
+            BirthObservation::SeamMinted { label: l, name } if l == label => Some(*name),
+            _ => None,
+        })
+    };
+    assert_eq!(seam_minted("found"), Some(Some(s1)));
+    assert_eq!(seam_minted("unborn"), Some(None));
+    let Some(BirthObservation::SeamBorn { birth, .. }) = observed
+        .iter()
+        .find(|observation| matches!(observation, BirthObservation::SeamBorn { .. }))
+    else {
+        panic!("the seam's birth is read: {observed:?}");
+    };
+    assert_eq!(birth.name(), s1);
+    assert_eq!(birth.occurrence_key(), "births-weld");
+    assert_eq!(birth.decode_role::<SeamRole>(), Ok(SeamRole::Seam));
+    assert_eq!(
+        birth.decode_discriminator::<SeamSide>(),
+        Ok(Some(SeamSide { index: 1 }))
+    );
+}

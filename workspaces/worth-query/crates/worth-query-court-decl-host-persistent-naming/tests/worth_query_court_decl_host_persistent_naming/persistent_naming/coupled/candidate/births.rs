@@ -62,3 +62,35 @@ fn a_lookup_of_a_birth_an_earlier_stage_may_bear_refuses_and_commits_nothing() {
     assert_eq!(refusal, "CandidateNameHistory");
     nothing_committed(&world, &outcome, &["fresh"]);
 }
+
+#[test]
+fn the_birth_of_a_name_an_earlier_stage_may_bear_refuses_and_commits_nothing() {
+    // The name a fresh world's birth of `fresh` mints, read from a world that
+    // already committed that very birth.
+    let token = "cand-births-held";
+    let committed = seamed(&format!("{token}-elsewhere"));
+    committed.committed(
+        &format!("{token}-elsewhere-fresh"),
+        created("fresh", "cand-births-held-fresh"),
+    );
+    let held = committed.names(&format!("{token}-elsewhere-names"), &["fresh"], 0)[0];
+
+    let world = seamed(token);
+    births::birth_of(token, "fresh", held);
+    let outcome = world.parts(
+        token,
+        vec![
+            sculpted(
+                "cand-births-held-1",
+                created("fresh", "cand-births-held-fresh"),
+            ),
+            probed(token, &[]),
+        ],
+    );
+    let observed = births::take(token);
+    let [BirthObservation::BirthRefused { refusal, .. }] = observed.as_slice() else {
+        panic!("the birth read refuses: {observed:?}");
+    };
+    assert_eq!(refusal, "CandidateNameHistory");
+    nothing_committed(&world, &outcome, &["fresh"]);
+}
