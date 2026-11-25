@@ -63,3 +63,47 @@ pub fn declare(
         .managed_index(ApplicationManagedIndexDefinition::<Schema, Index>::new())
         .invariant(definition())
 }
+
+/// A recovered or reopened Home opens its managed index `Created` (public
+/// #359). Recovered bytes serve no live Source image until the owner's explicit
+/// rebuild places one at the readmitted head; `rebuilt` names the rows that
+/// rebuild must then serve. Neither the open, the refused read nor the rebuild
+/// moves the World.
+pub fn cold_index(host: &world::Host, rebuilt: Option<&[&str]>) {
+    let selected = world::pin(host);
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.runtime().request(&principal, &scope);
+    let find = || query::Find {
+        root: "record".into(),
+        minimum: 10,
+    };
+    let index = request
+        .query(find())
+        .open_index::<Index>()
+        .expect("a recovered Home opens its managed index Created");
+    assert_eq!(index.lifecycle(), WorthQueryManagedIndexLifecycle::Created);
+    let refused = match request.query(find()).execute() {
+        Err(cause) => cause,
+        Ok(_) => panic!("recovered bytes serve no live managed Source image before a rebuild"),
+    };
+    let WorthQueryApplicationRequestQueryDenial::ManagedIndex(cause) = refused else {
+        panic!("{refused:?}")
+    };
+    assert!(matches!(
+        cause.cause(),
+        WorthQueryManagedIndexDenialCause::Refused(WorthQueryManagedIndexRefusal::RootUnavailable)
+    ));
+    if let Some(expected) = rebuilt {
+        request.query(find()).rebuild_index(&index).unwrap();
+        assert_eq!(index.lifecycle(), WorthQueryManagedIndexLifecycle::Ready);
+        let rows = request.query(find()).execute().unwrap();
+        let keys = rows.rows().iter().map(|row| row.key.as_str());
+        assert_eq!(keys.collect::<Vec<_>>(), expected);
+    }
+    assert_eq!(
+        world::pin(host).selected_commit(),
+        selected.selected_commit()
+    );
+    index.close();
+}
