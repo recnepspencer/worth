@@ -111,18 +111,18 @@ fn an_admitted_head_read_never_becomes_absence_after_transport_damage() {
                 invalidated = true;
                 let target = fixture.source.member_reads.lock().unwrap()[0];
                 assert!(fixture.heads.contains(&target));
-                fixture
-                    .source
-                    .failures
-                    .lock()
-                    .unwrap()
-                    .insert(ColdRead::Member(target), Cause::Damaged);
+                {
+                    let mut failures = fixture.source.failures.lock().unwrap();
+                    for &member in &fixture.history {
+                        failures.insert(ColdRead::Member(member), Cause::Damaged);
+                    }
+                }
                 let failed = fixture
                     .runtime
                     .durability_authority()
-                    .native_checkpoint(execution, execution.allocation_policy())
+                    .checkpoint(execution)
                     .unwrap_err();
-                let worth_relational::facade::durability::RelationalNativeCheckpointCaptureDenial::Durability(
+                let worth_relational::facade::durability::RelationalRecoveryStop::Durability(
                     error,
                 ) = failed
                 else {

@@ -181,7 +181,13 @@ fn native_merge_touches_only_changed_revision_and_both_index_membership_keys() {
     // exactly the generations built above, source axes included.
     let complete = runtime
         .complete_checkpoint_service()
-        .prepare(execution, RelationalCheckpointArtifactPolicy::Embedded)
+        .prepare(
+            execution,
+            RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
+        )
         .expect("genuine complete multi-parent reconstruction");
     let mut restored = runtime_with_aspect_field_merge_policy(
         aspect_key("status"),
@@ -190,7 +196,11 @@ fn native_merge_touches_only_changed_revision_and_both_index_membership_keys() {
     );
     restored
         .durability_recovery()
-        .restore_native_checkpoint(execution, complete.checkpoint())
+        .restore_native_checkpoint(
+            execution,
+            complete.checkpoint(),
+            worth_testkit_relational::cold_recovery::members_source(&(complete.checkpoint())),
+        )
         .expect("the Complete checkpoint restores a separate owner");
     let preserved = restored
         .index_access()

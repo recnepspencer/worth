@@ -14,9 +14,13 @@ fn unpublished_client_keys_leave_checkpoint_dictionary_equal_and_published_keys_
     let capture = || {
         runtime
             .durability_authority()
-            .native_checkpoint(
+            .native_checkpoint_with_policy(
                 execution,
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                    current_members: &[],
+                    source: None,
+                },
             )
             .unwrap()
     };
@@ -39,9 +43,10 @@ fn unpublished_client_keys_leave_checkpoint_dictionary_equal_and_published_keys_
     drop(candidate);
     let after = capture();
     let decode = |checkpoint: &crate::durability::data::RelationalNativeCheckpoint| {
-        crate::durability::log::native_checkpoint_codec::decode_checkpoint(
+        crate::durability::log::native_checkpoint_codec::decode_expanded_checkpoint(
             execution,
             checkpoint.bytes(),
+            crate::tests::support::durability::captured_members_source(checkpoint),
         )
         .unwrap()
         .checkpoint
@@ -107,7 +112,11 @@ fn unpublished_client_keys_leave_checkpoint_dictionary_equal_and_published_keys_
     let mut recovered = runtime_with_test_schema();
     let restored = recovered
         .durability_recovery()
-        .restore_native_checkpoint(execution, &published)
+        .restore_native_checkpoint(
+            execution,
+            &published,
+            crate::tests::support::durability::captured_members_source(&published),
+        )
         .unwrap();
     assert_eq!(restored.latest_commit, Some(committed.commit.clone()));
     recovered

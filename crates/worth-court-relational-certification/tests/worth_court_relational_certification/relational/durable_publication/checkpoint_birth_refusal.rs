@@ -11,18 +11,26 @@ fn complete_refuses_recovered_empty_without_original_birth_authority() {
     let source = durable_runtime(&medium);
     let ordinary = source
         .durability_authority()
-        .native_checkpoint(&execution, execution.allocation_policy())
+        .native_checkpoint_with_policy(&execution, execution.allocation_policy(), worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
         .unwrap();
     let receiver_medium = TestDurableMedium::new();
     let mut receiver = durable_runtime(&receiver_medium);
     receiver
         .durability_recovery()
-        .restore_native_checkpoint(&execution, &ordinary)
+        .restore_native_checkpoint(
+            &execution,
+            &ordinary,
+            worth_testkit_relational::cold_recovery::members_source(&ordinary),
+        )
         .unwrap();
     assert!(matches!(
-        receiver
-            .complete_checkpoint_service()
-            .prepare(&execution, RelationalCheckpointArtifactPolicy::Embedded),
+        receiver.complete_checkpoint_service().prepare(
+            &execution,
+            RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None
+            }
+        ),
         Err(Denial::OriginalAuthorityUnavailable)
     ));
 }

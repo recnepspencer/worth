@@ -78,18 +78,29 @@ fn complete_empty_archive_and_initial_installation_preserve_unused_original_sche
     let execution = ExecutionRequest::serial(&host);
     let complete = runtime
         .complete_checkpoint_service()
-        .prepare(&execution, RelationalCheckpointArtifactPolicy::Embedded)
+        .prepare(
+            &execution,
+            RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
+        )
         .unwrap();
     let held = budget.charged_memory_bytes();
     assert!(held > 0);
     let alias = complete.checkpoint().clone();
-    let decoded = crate::durability::log::native_checkpoint_codec::decode_checkpoint(
+    let decoded = crate::durability::log::native_checkpoint_codec::decode_checkpoint_from_source(
         &setup_execution,
         complete.checkpoint().bytes(),
+        crate::tests::support::durability::captured_members_source(complete.checkpoint()),
     )
     .unwrap()
     .checkpoint;
-    let directory = decoded.canonical_directory.as_ref().unwrap();
+    let directory = decoded
+        .directory
+        .as_ref()
+        .or(decoded.canonical_directory.as_ref())
+        .unwrap();
     directory.manifest.assert_original_flat_wire();
     assert!(directory.manifest.commits.is_empty());
     assert!(directory.manifest.canonical_members.entries().is_empty());

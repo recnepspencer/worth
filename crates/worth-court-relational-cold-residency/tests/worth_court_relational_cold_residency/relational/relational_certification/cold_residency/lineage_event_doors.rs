@@ -17,10 +17,9 @@ pub(super) enum EventDoor {
     AccessAspect,
     AccessAspectTrace,
     MemoryCheckpoint,
-    EmbeddedCheckpoint,
 }
 impl EventDoor {
-    pub(super) const ALL: [Self; 9] = [
+    pub(super) const ALL: [Self; 8] = [
         Self::Historical,
         Self::Record,
         Self::Observation,
@@ -29,7 +28,6 @@ impl EventDoor {
         Self::AccessAspect,
         Self::AccessAspectTrace,
         Self::MemoryCheckpoint,
-        Self::EmbeddedCheckpoint,
     ];
     pub(super) fn read(
         self,
@@ -116,20 +114,6 @@ impl EventDoor {
                             .storage_unavailable
                             .expect("typed lineage export refusal"),
                     ),
-                    other => panic!("funded live capture request: {other:?}"),
-                }),
-            Self::EmbeddedCheckpoint => runtime
-                .durability_authority()
-                .native_checkpoint(execution, execution.allocation_policy())
-                .map(|checkpoint| checkpoint.bytes().len())
-                .map_err(|denial| match denial {
-                    RelationalNativeCheckpointCaptureDenial::Durability(error) => {
-                        Execution::StorageUnavailable(
-                            error
-                                .storage_unavailable
-                                .expect("typed lineage member export refusal"),
-                        )
-                    }
                     other => panic!("funded live capture request: {other:?}"),
                 }),
         }

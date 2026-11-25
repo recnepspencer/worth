@@ -91,6 +91,7 @@ pub struct RecoveryPlan {
     pub(crate) cold_source:
         Option<std::sync::Arc<dyn crate::durability::medium::RelationalDurableColdSource>>,
     pub checkpoint: Option<DurableCheckpoint>,
+    pub(crate) selected_checkpoint_acknowledged: bool,
     pub(crate) tail_log: Vec<crate::durability::migration::ReadmittedCanonicalCommit>,
     pub(crate) branch_transitions: super::RecoveryBranchTransitions,
     pub authority_continuity: RecoveryAuthorityContinuityCheck,
@@ -187,6 +188,7 @@ impl RecoveryPlan {
             config,
             cold_source,
             checkpoint,
+            selected_checkpoint_acknowledged: false,
             tail_log,
             branch_transitions,
             authority_continuity,

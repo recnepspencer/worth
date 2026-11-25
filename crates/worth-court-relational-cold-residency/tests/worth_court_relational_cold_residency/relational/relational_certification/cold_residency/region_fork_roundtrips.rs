@@ -93,15 +93,17 @@ fn cold_forks_edit_existing_ring_records_in_both_orders_and_checkpoint() {
             assert!(records[0].is_some());
             assert_eq!(name(records[0].as_ref().unwrap()), Some(label.as_str()));
             assert!(records[2].is_none());
-            let native = runtime
-                .durability_authority()
-                .native_checkpoint(request, request.allocation_policy())
-                .unwrap();
+            let (native, native_source) =
+                worth_testkit_relational::cold_recovery::capture_external_carrying(
+                    request,
+                    runtime,
+                    &cold.source,
+                );
             let medium = TestDurableMedium::new();
             let mut reopened = durable_runtime(&medium);
             reopened
                 .durability_recovery()
-                .restore_native_checkpoint(request, &native)
+                .restore_native_checkpoint(request, &native, native_source)
                 .unwrap();
             let mut reader = begin_main_transaction(&reopened);
             for (&id, record) in cold.entities.iter().zip(records) {

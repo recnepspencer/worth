@@ -245,12 +245,23 @@ fn checkpoint_recovery_preserves_abandoned_symbol_identity_frontiers() {
     drop(abandoned);
     let native = runtime
         .durability_authority()
-        .native_checkpoint(&execution, execution.allocation_policy())
+        .native_checkpoint_with_policy(
+            &execution,
+            execution.allocation_policy(),
+            crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
+        )
         .unwrap();
     let mut recovered = runtime_with_test_schema();
     recovered
         .durability_recovery()
-        .restore_native_checkpoint(&execution, &native)
+        .restore_native_checkpoint(
+            &execution,
+            &native,
+            crate::tests::support::durability::captured_members_source(&native),
+        )
         .unwrap();
     let mut candidate = recovered.services.symbols.begin_pending_meanings();
     let fresh = loop {

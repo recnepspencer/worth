@@ -191,7 +191,14 @@ fn dynamic_create_preserve_retire_tracks_member_birth_and_requires_prior_live_co
     // runtime position image using the exact cold-admitted before-basis custody.
     let checkpoint = runtime
         .durability_authority()
-        .native_checkpoint(execution, execution.allocation_policy())
+        .native_checkpoint_with_policy(
+            execution,
+            execution.allocation_policy(),
+            crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
+        )
         .unwrap();
     let mut reopened = runtime_with_test_schema();
     let initial_receipt = reopened
@@ -201,7 +208,11 @@ fn dynamic_create_preserve_retire_tracks_member_birth_and_requires_prior_live_co
         .unwrap();
     reopened
         .durability_recovery()
-        .restore_native_checkpoint(execution, &checkpoint)
+        .restore_native_checkpoint(
+            execution,
+            &checkpoint,
+            crate::tests::support::durability::captured_members_source(&checkpoint),
+        )
         .unwrap();
     let fresh_receipt = reopened
         .readmit_recovered_initial_schema_installation(initial_receipt)

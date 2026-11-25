@@ -47,13 +47,13 @@ fn member_directory_preserves_divergent_sibling_roots_and_pinned_reader() {
         .checkpoint(execution)
         .unwrap();
     assert_eq!(checkpoint.branch_roots.len(), 2);
-    let native = runtime
-        .durability_authority()
-        .native_checkpoint(
-            execution,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let native = crate::tests::support::durability::capture_checkpoint_with_source(
+        execution,
+        &runtime,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .unwrap()
+    .0;
     let wire: super::checkpoint_wire::CheckpointWire<'_> =
         rmp_serde::from_slice(native.bytes().strip_prefix(CHECKPOINT_MAGIC).unwrap()).unwrap();
     let sibling_root = wire
@@ -93,17 +93,27 @@ fn member_directory_preserves_divergent_sibling_roots_and_pinned_reader() {
             < (sibling_root.regions.len() + main_root.regions.len() + wire.manifest.mirror.len())
                 * 2
     );
+    assert!(
+        wire.members.is_empty(),
+        "embedded checkpoint placement is retired; wire.members must be empty"
+    );
     for key in region_keys {
         assert_eq!(
-            wire.members
+            native
+                .members()
                 .iter()
-                .filter(|(locator, _)| *locator == key)
+                .filter(|member| member.locator() == key)
                 .count(),
             1,
-            "equal regions must have exactly one member body across roots and mirror"
+            "equal regions must have exactly one external member body across roots and mirror"
         );
     }
-    let restored = decode_checkpoint(execution, native.bytes()).unwrap();
+    let restored = decode_expanded_checkpoint(
+        execution,
+        native.bytes(),
+        crate::tests::support::durability::captured_members_source(&native),
+    )
+    .unwrap();
     assert_eq!(restored.checkpoint.branch_roots, checkpoint.branch_roots);
     assert_eq!(
         restored.checkpoint.partition_images,
@@ -151,35 +161,42 @@ fn current_manifest_deduplicates_equal_region_members_and_round_trips() {
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let runtime = runtime_with_test_schema();
     create_entity(execution, &runtime, "manifest-roundtrip");
-    let native = runtime
-        .durability_authority()
-        .native_checkpoint(
-            execution,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let native = crate::tests::support::durability::capture_checkpoint_with_source(
+        execution,
+        &runtime,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .unwrap()
+    .0;
     let wire: checkpoint_wire::CheckpointWire<'_> =
         rmp_serde::from_slice(native.bytes().strip_prefix(CHECKPOINT_MAGIC).unwrap()).unwrap();
     assert_eq!(wire.manifest.roots[0].regions, wire.manifest.mirror);
+    assert!(wire.members.is_empty());
     let leaf = &wire.manifest.roots[0].regions[0];
     assert_eq!(
-        wire.members
+        native
+            .members()
             .iter()
-            .filter(|(key, _)| *key == leaf.head)
+            .filter(|member| member.locator() == leaf.head)
             .count(),
         1
     );
     assert_eq!(
-        wire.members
+        native
+            .members()
             .iter()
-            .filter(|(key, _)| *key == leaf.history)
+            .filter(|member| member.locator() == leaf.history)
             .count(),
         1
     );
     assert_eq!(wire.manifest.commits.len(), 1);
-    let decoded = decode_checkpoint(execution, native.bytes())
-        .unwrap()
-        .checkpoint;
+    let decoded = decode_expanded_checkpoint(
+        execution,
+        native.bytes(),
+        crate::tests::support::durability::captured_members_source(&native),
+    )
+    .unwrap()
+    .checkpoint;
     assert_eq!(decoded.envelopes.len(), 1);
     assert_eq!(
         decoded.branch_roots[0].partition_images,
@@ -189,47 +206,65 @@ fn current_manifest_deduplicates_equal_region_members_and_round_trips() {
 }
 
 #[test]
-fn current_directory_rejects_damaged_duplicate_and_missing_members() {
+fn current_directory_rejects_inline_members_missing_external_members_and_digest_damage() {
     let request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let runtime = runtime_with_test_schema();
     create_entity(execution, &runtime, "manifest-damage");
-    let native = runtime
-        .durability_authority()
-        .native_checkpoint(
-            execution,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    for alteration in 0..4 {
+    let native = crate::tests::support::durability::capture_checkpoint_with_source(
+        execution,
+        &runtime,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .unwrap()
+    .0;
+    let full_source = crate::tests::support::durability::captured_members_source(&native);
+
+    // 1. Non-empty wire.members (retired embedded placement) is refused at wire decode.
+    {
         let mut wire: checkpoint_wire::CheckpointWire<'_> =
             rmp_serde::from_slice(native.bytes().strip_prefix(CHECKPOINT_MAGIC).unwrap()).unwrap();
-        match alteration {
-            0 => wire.members[0].0.sha256[0] ^= 1,
-            1 => wire.members.push((
-                wire.members[0].0,
-                checkpoint_wire::ByteString(wire.members[0].1 .0),
-            )),
-            2 => {
-                let head = wire.manifest.roots[0].regions[0].head;
-                wire.members.retain(|(key, _)| *key != head);
-            }
-            3 => {
-                let mut manifest = wire.manifest.ordinary_owned_draft();
-                let mut commits = manifest.commits.iter().cloned().collect::<Vec<_>>();
-                commits[0].payload_digest[0] ^= 1;
-                manifest.commits =
-                    crate::durability::data::CheckpointCommitIndex::from_ordinary(commits);
-                wire.manifest = manifest.seal_ordinary();
-            }
-            _ => unreachable!(),
-        }
+        let crate::durability::data::RelationalCheckpointMember::New { locator, bytes } =
+            &native.members()[0]
+        else {
+            panic!("first external capture owns its members");
+        };
+        wire.members
+            .push((*locator, checkpoint_wire::ByteString(bytes.bytes())));
+        let mut encoded = CHECKPOINT_MAGIC.to_vec();
+        encoded.extend(rmp_serde::to_vec_named(&wire).unwrap());
+        let err = expect_durability_failure(
+            decode_checkpoint_from_source(execution, &encoded, full_source.clone()).unwrap_err(),
+        );
+        assert_eq!(err.class, RecoveryFailureClass::CorruptCheckpoint);
+        assert!(
+            err.detail
+                .contains("embedded checkpoint placement is retired"),
+            "unexpected detail: {}",
+            err.detail
+        );
+    }
+
+    // 2. Missing external member fails expansion against an empty cold source.
+    assert!(decode_expanded_checkpoint(
+        execution,
+        native.bytes(),
+        crate::tests::support::durability::empty_cold_source()
+    )
+    .is_err());
+
+    // 3. Corrupted commit digest in manifest is refused.
+    {
+        let mut wire: checkpoint_wire::CheckpointWire<'_> =
+            rmp_serde::from_slice(native.bytes().strip_prefix(CHECKPOINT_MAGIC).unwrap()).unwrap();
+        let mut manifest = wire.manifest.ordinary_owned_draft();
+        let mut commits = manifest.commits.iter().cloned().collect::<Vec<_>>();
+        commits[0].payload_digest[0] ^= 1;
+        manifest.commits = crate::durability::data::CheckpointCommitIndex::from_ordinary(commits);
+        wire.manifest = manifest.seal_ordinary();
         let mut bytes = CHECKPOINT_MAGIC.to_vec();
         bytes.extend(rmp_serde::to_vec_named(&wire).unwrap());
-        assert!(
-            decode_checkpoint(execution, &bytes).is_err(),
-            "alteration {alteration}"
-        );
+        assert!(decode_expanded_checkpoint(execution, &bytes, full_source).is_err());
     }
 }
 
@@ -239,33 +274,19 @@ fn native_capture_sections_count_current_directory_values() {
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let runtime = runtime_with_test_schema();
     create_entity(execution, &runtime, "manifest-sections");
-    let native = runtime
-        .durability_authority()
-        .native_checkpoint(
-            execution,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let native = crate::tests::support::durability::capture_checkpoint_with_source(
+        execution,
+        &runtime,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .unwrap()
+    .0;
     let wire: checkpoint_wire::CheckpointWire<'_> =
         rmp_serde::from_slice(native.bytes().strip_prefix(CHECKPOINT_MAGIC).unwrap()).unwrap();
+    assert!(wire.members.is_empty());
     let sections = native.captured_sections().unwrap();
     assert_eq!(sections.total, native.bytes().len());
-    let canonical_bytes: usize = wire
-        .manifest
-        .canonical_members
-        .entries()
-        .iter()
-        .map(|row| {
-            let (_, bytes) = wire
-                .members
-                .iter()
-                .find(|(member, _)| *member == row.member)
-                .unwrap();
-            rmp_serde::to_vec_named(bytes).unwrap().len()
-        })
-        .sum();
-    assert!(canonical_bytes > 0);
-    assert_eq!(sections.envelopes, canonical_bytes);
+    assert_eq!(sections.envelopes, 0);
     assert_eq!(
         sections.branch_roots,
         rmp_serde::to_vec_named(&wire.manifest.roots).unwrap().len()
@@ -297,13 +318,13 @@ fn native_capture_sections_count_current_directory_values() {
             + sections.derived_indexes
             + sections.framing_and_metadata
     );
-    let repeated = runtime
-        .durability_authority()
-        .native_checkpoint(
-            execution,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let repeated = crate::tests::support::durability::capture_checkpoint_with_source(
+        execution,
+        &runtime,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .unwrap()
+    .0;
     assert_eq!(native, repeated);
     assert_eq!(native.clone().captured_sections(), Some(sections));
     assert!(
@@ -319,13 +340,13 @@ fn chk6_and_retired_inner_partition_grammars_are_refused() {
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let runtime = runtime_with_test_schema();
     create_entity(execution, &runtime, "retired-checkpoint");
-    let native = runtime
-        .durability_authority()
-        .native_checkpoint(
-            execution,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let native = crate::tests::support::durability::capture_checkpoint_with_source(
+        execution,
+        &runtime,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .unwrap()
+    .0;
     for prefix in [
         b"WORTH-REL-CHK6\n".as_slice(),
         b"WORTH-REL-CHK17\n".as_slice(),
@@ -337,7 +358,12 @@ fn chk6_and_retired_inner_partition_grammars_are_refused() {
     ] {
         let mut old = prefix.to_vec();
         old.extend_from_slice(native.bytes().strip_prefix(CHECKPOINT_MAGIC).unwrap());
-        let stop = decode_checkpoint(execution, &old).unwrap_err();
+        let stop = decode_checkpoint_from_source(
+            execution,
+            &old,
+            crate::tests::support::durability::empty_cold_source(),
+        )
+        .unwrap_err();
         assert_eq!(
             expect_durability_failure(stop).class,
             RecoveryFailureClass::UnsupportedLegacySemantics
@@ -352,7 +378,12 @@ fn chk6_and_retired_inner_partition_grammars_are_refused() {
         bytes.extend(
             rmp_serde::to_vec_named(&std::collections::BTreeMap::from([(retired, 8_u16)])).unwrap(),
         );
-        let stop = decode_checkpoint(execution, &bytes).unwrap_err();
+        let stop = decode_checkpoint_from_source(
+            execution,
+            &bytes,
+            crate::tests::support::durability::empty_cold_source(),
+        )
+        .unwrap_err();
         assert_eq!(
             expect_durability_failure(stop).class,
             RecoveryFailureClass::CorruptCheckpoint

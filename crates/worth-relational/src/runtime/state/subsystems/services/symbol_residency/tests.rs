@@ -256,9 +256,13 @@ fn checkpoint_dictionary(
 ) {
     let native = runtime
         .durability_authority()
-        .native_checkpoint(
+        .native_checkpoint_with_policy(
             execution,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
         )
         .unwrap();
     #[derive(serde::Deserialize)]

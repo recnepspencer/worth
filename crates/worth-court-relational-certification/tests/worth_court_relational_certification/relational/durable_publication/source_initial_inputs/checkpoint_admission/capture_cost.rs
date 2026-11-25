@@ -49,54 +49,6 @@ fn selected_checkpoint_without_captured_original_base_refuses_without_body_deman
 }
 
 #[test]
-fn selected_embedded_capture_refuses_before_canonical_body_demand() {
-    let caller = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
-    let request = &ExecutionRequest::serial(&caller);
-    let (runtime, medium) = initialized(request);
-    let created = create_entity_outcome(request, &runtime, "covered-before-embedded-demand");
-    release_test_commit_snapshot(&runtime, &created);
-    drop(created);
-    let image = capture_external(&runtime, &medium, request);
-    medium.file_checkpoint(image.checkpoint().clone());
-    let tail = create_entity_outcome(request, &runtime, "uncovered-before-embedded-demand");
-    release_test_commit_snapshot(&runtime, &tail);
-    drop(tail);
-    let input = home_image_input(&medium, &image, request).unwrap();
-    drop((image, runtime));
-    let mut receiver = receiver(&medium);
-    let plan = receiver
-        .durability()
-        .recovery_plan_from_source(
-            request,
-            input,
-            RecoveryVerificationMode::NormalRecoveryVerification,
-        )
-        .unwrap();
-    receiver
-        .durability_recovery()
-        .recover_with_authority(request, plan)
-        .unwrap();
-    let before = (
-        medium.canonical_member_reads(),
-        medium.canonical_journal_reads(),
-    );
-    assert!(matches!(
-        receiver
-            .complete_checkpoint_service()
-            .prepare(request, RelationalCheckpointArtifactPolicy::Embedded),
-        Err(RelationalNativeCheckpointCaptureDenial::OriginalAuthorityUnavailable)
-    ));
-    assert_eq!(
-        (
-            medium.canonical_member_reads(),
-            medium.canonical_journal_reads()
-        ),
-        before,
-        "selected Embedded refusal precedes demands for covered and uncovered frames",
-    );
-}
-
-#[test]
 fn checkpoint_capture_restores_many_branches_with_long_common_names() {
     use worth_relational::facade::history::BranchId;
     const BRANCHES: usize = 8;

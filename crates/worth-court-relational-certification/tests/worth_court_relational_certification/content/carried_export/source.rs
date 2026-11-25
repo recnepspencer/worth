@@ -20,6 +20,26 @@ impl Source {
             reads: AtomicUsize::new(0),
         }
     }
+    pub(super) fn locators(&self) -> Vec<RelationalDurableMemberLocator> {
+        self.members
+            .iter()
+            .map(|(&(sha256, length), _)| RelationalDurableMemberLocator { sha256, length })
+            .collect()
+    }
+    pub(super) fn with_checkpoint(&self, checkpoint: &RelationalNativeCheckpoint) -> Self {
+        let mut members = self.members.clone();
+        for member in checkpoint.members() {
+            if let RelationalCheckpointMember::New { locator, bytes } = member {
+                members.insert(locator.sha256, locator.length, bytes.clone());
+            }
+        }
+        Self {
+            members,
+            commits: self.commits.clone(),
+            fault: AtomicUsize::new(0),
+            reads: AtomicUsize::new(0),
+        }
+    }
 }
 use std::any::Any;
 use worth_execution::ExecutionImmutableBytes;

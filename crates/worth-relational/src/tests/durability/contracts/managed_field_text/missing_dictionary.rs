@@ -11,7 +11,7 @@ fn native_field_text_missing_tail_dictionary_refuses_without_target_or_source_ef
     let baseline = create_entity_outcome(&execution, &source, "before-missing-meaning");
     release_test_commit_snapshot(&source, &baseline);
     let config = source.config();
-    medium.file_embedded_checkpoint(&execution, &source);
+    capture_and_file_checkpoint(&execution, &source, &medium);
     let committed = commit_text(&execution, &source).unwrap();
     release_test_commit_snapshot(&source, &committed);
     let tail_position = medium.head();
@@ -43,8 +43,7 @@ fn native_field_text_missing_tail_dictionary_refuses_without_target_or_source_ef
     let malformed = medium.artifact_bytes(tail_position).unwrap();
     let target = crate::runtime::RelationalRuntime::build_from_extensions(
         config,
-        crate::runtime::RuntimeExtensions::default()
-            .with_durable_medium(Some(medium.attachment())),
+        crate::runtime::RuntimeExtensions::default().with_durable_medium(Some(medium.attachment())),
     )
     .expect("valid native runtime configuration");
     let identity = target.main_branch_identity();

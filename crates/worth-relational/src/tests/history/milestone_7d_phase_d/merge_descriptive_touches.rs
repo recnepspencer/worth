@@ -178,11 +178,19 @@ fn native_merge_touches_only_changed_revision_and_both_index_membership_keys() {
     // including history, revision stamps and peer metadata, before the bare fold.
     let original = runtime
         .durability_authority()
-        .native_checkpoint(execution, execution.allocation_policy())
+        .native_checkpoint_with_policy(
+            execution,
+            execution.allocation_policy(),
+            crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
+        )
         .unwrap();
-    let original = crate::durability::log::native_checkpoint_codec::decode_checkpoint(
+    let original = crate::durability::log::native_checkpoint_codec::decode_expanded_checkpoint(
         execution,
         original.bytes(),
+        crate::tests::support::durability::captured_members_source(&original),
     )
     .unwrap()
     .checkpoint;
@@ -190,12 +198,16 @@ fn native_merge_touches_only_changed_revision_and_both_index_membership_keys() {
         .complete_checkpoint_service()
         .prepare(
             execution,
-            crate::durability::data::RelationalCheckpointArtifactPolicy::Embedded,
+            crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
         )
         .expect("genuine complete multi-parent reconstruction");
-    let complete = crate::durability::log::native_checkpoint_codec::decode_checkpoint(
+    let complete = crate::durability::log::native_checkpoint_codec::decode_expanded_checkpoint(
         execution,
         complete.checkpoint().bytes(),
+        crate::tests::support::durability::captured_members_source(complete.checkpoint()),
     )
     .unwrap()
     .checkpoint;

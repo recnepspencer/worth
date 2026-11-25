@@ -68,9 +68,9 @@ fn shared_root_plan(
     let runtime = durable_runtime_for_medium(&medium);
     create_entity_outcome(execution, &runtime, label);
     create_branch_from_main(&runtime, "shared-root-sibling");
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     medium
-        .recovery_plan(
+        .expanded_recovery_plan(
             execution,
             &runtime,
             RecoveryVerificationMode::NormalRecoveryVerification,

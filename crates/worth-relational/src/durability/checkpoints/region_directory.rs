@@ -113,14 +113,30 @@ impl ReadmittedRegionDirectory {
         let memory = request
             .reserve_retained_memory(bytes)
             .map_err(|cause| RelationalRecoveryStop::Request(cause.into()))?;
+        let configured_snapshot = (!directory.manifest.schemas.is_empty())
+            .then(|| {
+                configured_schema
+                    .snapshot_for_compilation(crate::schema::SchemaCompilationControl::Request(
+                        *request,
+                    ))
+                    .map_err(RelationalRecoveryStop::Request)
+            })
+            .transpose()?;
         let mut schemas = BTreeMap::new();
         for (index, image) in directory.manifest.schemas.iter().enumerate() {
-            let (mut registry, contracts) = image.readmit_registry().map_err(corrupt)?;
+            let (registry, contracts) = image.readmit_registry().map_err(corrupt)?;
             let expected = registry
                 .snapshot_for_compilation(crate::schema::SchemaCompilationControl::Request(
                     *request,
                 ))
                 .map_err(RelationalRecoveryStop::Request)?;
+            // Preserve genuine installed recipe/domain issuers when the exact
+            // schema meaning matches the receiving runtime's declaration.
+            let mut registry = if configured_snapshot.as_ref() == Some(&expected) {
+                configured_schema.clone()
+            } else {
+                registry
+            };
             registry.content_formats = registry
                 .content_formats
                 .bind_recorded(&configured_schema.content_formats)

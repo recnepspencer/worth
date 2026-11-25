@@ -22,16 +22,43 @@ pub(super) fn readmit_current_source_schema(
         let FoundationalBranchTarget::Basis(target) = cell.observation.target() else {
             continue;
         };
-        let root = checkpoint
+        let (schema_carrier_digest, carrier) = if let Some(root) = checkpoint
             .branch_roots
             .iter()
             .find(|root| root.commit_id.0 == target.selected_commit_id())
-            .ok_or_else(|| schema_denial("current source root image is unavailable".into()))?;
-        let carrier = checkpoint
-            .branch_root_schema_images
-            .iter()
-            .find(|carrier| carrier.carrier_digest() == root.schema_carrier_digest)
-            .ok_or_else(|| schema_denial("current source schema carrier is unavailable".into()))?;
+        {
+            let carrier = checkpoint
+                .branch_root_schema_images
+                .iter()
+                .find(|carrier| carrier.carrier_digest() == root.schema_carrier_digest)
+                .ok_or_else(|| {
+                    schema_denial("current source schema carrier is unavailable".into())
+                })?;
+            (root.schema_carrier_digest, carrier)
+        } else if let Some(directory) = checkpoint
+            .directory
+            .as_ref()
+            .or(checkpoint.canonical_directory.as_ref())
+        {
+            let root = directory
+                .manifest
+                .roots
+                .iter()
+                .find(|root| root.commit_id.0 == target.selected_commit_id())
+                .ok_or_else(|| schema_denial("current source root image is unavailable".into()))?;
+            let carrier = directory
+                .manifest
+                .schemas
+                .iter()
+                .find(|carrier| carrier.carrier_digest() == root.schema_carrier_digest)
+                .ok_or_else(|| {
+                    schema_denial("current source schema carrier is unavailable".into())
+                })?;
+            (root.schema_carrier_digest, carrier)
+        } else {
+            return Err(schema_denial("current source root image is unavailable".into()).into());
+        };
+        let _ = schema_carrier_digest;
         if carrier.schema_root() != *target.roots().schema_root() {
             return Err(schema_denial(
                 "current source schema carrier differs from its exact target".into(),

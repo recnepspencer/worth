@@ -16,7 +16,6 @@ use RelationalNativeCheckpointCaptureDenial as Denial;
 pub(super) struct CanonicalOutput {
     pub(super) index: CheckpointCommitIndex,
     pub(super) inventory: CanonicalCheckpointMembers,
-    pub(super) inline_bytes: usize,
     cells: ExecutionOrderedMap<PatchStreamPosition, Arc<RelationalCommitEnvelopeResidency>>,
 }
 impl CanonicalOutput {
@@ -63,7 +62,6 @@ impl CanonicalOutput {
             CanonicalCheckpointMembers::reserve(count, request).map_err(Denial::Request)?;
         let mut rows = Vec::with_capacity(count);
         let mut cells = ExecutionOrderedMap::default();
-        let mut inline_bytes = 0usize;
         if let Some(prior) = prior {
             for entry in prior.canonical_members.entries() {
                 rows.push(*entry);
@@ -110,21 +108,10 @@ impl CanonicalOutput {
                     *request,
                 )
                 .map_err(map_stop)?;
-            inline_bytes = inline_bytes
-                .checked_add(
-                    crate::durability::log::native_checkpoint_codec::canonical_inline_size(
-                        bytes.bytes(),
-                        request,
-                    )?,
-                )
-                .ok_or(Denial::Request(
-                    crate::execution::RelationalExecutionDenialCause::MemoryOverflow,
-                ))?;
         }
         Ok(Self {
             index,
             inventory: CanonicalCheckpointMembers::from_reserved(rows, memory),
-            inline_bytes,
             cells,
         })
     }

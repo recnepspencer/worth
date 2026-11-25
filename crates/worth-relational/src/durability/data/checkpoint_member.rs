@@ -2,11 +2,10 @@ use std::sync::Arc;
 
 use crate::durability::medium::RelationalDurableMemberLocator;
 
-/// Placement of the member set of one native checkpoint. The member framing
-/// and manifest are identical in both placements.
+/// Placement of the member set of one native checkpoint. All native checkpoints
+/// store members externally in cold storage; embedded placement is retired.
 #[derive(Debug, Clone)]
 pub enum RelationalCheckpointArtifactPolicy<'members> {
-    Embedded,
     ExternalMembers {
         /// The destination's currently selected membership. Only these
         /// locators may be carried, regardless of another runtime's bindings.
@@ -18,26 +17,19 @@ pub enum RelationalCheckpointArtifactPolicy<'members> {
 }
 
 impl RelationalCheckpointArtifactPolicy<'_> {
-    pub(crate) fn is_embedded(&self) -> bool {
-        matches!(self, Self::Embedded)
-    }
     pub(crate) fn current_members(
         &self,
     ) -> Option<std::collections::BTreeSet<RelationalDurableMemberLocator>> {
-        match self {
-            Self::Embedded => None,
-            Self::ExternalMembers {
-                current_members, ..
-            } => Some(current_members.iter().copied().collect()),
-        }
+        let Self::ExternalMembers {
+            current_members, ..
+        } = self;
+        Some(current_members.iter().copied().collect())
     }
     pub(crate) fn publication_source(
         &self,
     ) -> Option<Arc<dyn crate::durability::medium::RelationalDurableColdSource>> {
-        match self {
-            Self::Embedded => None,
-            Self::ExternalMembers { source, .. } => source.clone(),
-        }
+        let Self::ExternalMembers { source, .. } = self;
+        source.clone()
     }
 }
 

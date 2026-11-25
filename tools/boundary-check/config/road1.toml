@@ -984,6 +984,14 @@ forbidden_identifiers = [
   "UncleanRecoveryUnsupported",
   "unclean_recovery_unsupported",
   "UnsupportedDurableFamily",
+  "file_embedded_checkpoint",
+  "InlineCheckpointSource",
+  "corrupt_current_publication_roster_for_test",
+  "is_embedded",
+  "materialize_resident_event_members",
+  "canonical_inline_size",
+  "encode_checkpoint",
+  "decode_checkpoint",
 ]
 forbidden_identifier_fragments = [
   "InterimCheckpoint",
@@ -1092,6 +1100,12 @@ forbidden_identifiers = [
   "UncleanRecoveryUnsupported",
   "unclean_recovery_unsupported",
   "UnsupportedDurableFamily",
+  "file_embedded_checkpoint",
+  "InlineCheckpointSource",
+  "corrupt_current_publication_roster_for_test",
+  "is_embedded",
+  "materialize_resident_event_members",
+  "canonical_inline_size",
 ]
 forbidden_identifier_fragments = [
   "InterimCheckpoint",
@@ -1111,4 +1125,16 @@ forbidden_identifier_fragments = [
   "WorthQueryNativeCheckpointSectionBytes",
 ]
 guidance = "Milestone 3 Track C5 (D13/D18 retirement): interim application-checkpoint restoration and unclean-recovery-unsupported surfaces are retired; use Directory Home durability"
+
+[[source_identifier_denials]]
+root = "crates"
+exclude_paths = [
+  "crates/worth-relational/src/runtime/state/runtime_state/prepared_close.rs",
+  "crates/worth-relational/src/durability/data/mod.rs",
+  "crates/worth-relational/src/tests/durability/contracts/mod.rs",
+]
+forbidden_identifiers = [
+  "native_checkpoint",
+]
+guidance = "Milestone 3 Track C5.2.3: DurabilityAuthority::native_checkpoint (embedded placement) is retired; use native_checkpoint_with_policy with RelationalCheckpointArtifactPolicy::ExternalMembers"
 

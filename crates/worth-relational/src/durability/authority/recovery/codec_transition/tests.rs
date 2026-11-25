@@ -26,11 +26,13 @@ fn recovered(
     crate::runtime::RelationalInitialSchemaInstallationReceipt,
 ) {
     let (mut target, receipt) = installed(2);
+    let (saved, saved_source) = capture_with_source(execution, &world.runtime);
     let (_, recovered) = target
         .durability_recovery()
         .restore_native_checkpoint_for_codec_transition_with_authority(
             execution,
-            &capture(execution, &world.runtime),
+            &saved,
+            saved_source,
         )
         .unwrap();
     assert!(recovered.codec_transition_pending());
@@ -170,11 +172,11 @@ fn genuine_native_codec_adoption_preserves_raw_source_and_rebuilds_target_equali
         if entries.len()==1 && entries.iter().any(|(_,ids)| ids.iter().any(|id| *id == regenerated)))
     );
     assert_eq!(protected_payload(&target, world.authored), source_before);
-    let saved = capture(execution, &target);
+    let (saved, saved_source) = capture_with_source(execution, &target);
     let (mut reopened, receipt) = fixture::installed(2);
     reopened
         .durability_recovery()
-        .restore_native_checkpoint_with_authority(execution, &saved)
+        .restore_native_checkpoint_with_authority(execution, &saved, saved_source)
         .unwrap();
     reopened
         .readmit_recovered_initial_schema_installation(receipt)
@@ -208,6 +210,11 @@ fn genuine_native_codec_adoption_preserves_raw_source_and_rebuilds_target_equali
         protected_payload(&reopened, world.output),
         protected_payload(&target, world.output)
     );
+    reopened
+        .indexes
+        .definition_read_binding()
+        .demand_checkpoint_image(execution)
+        .unwrap();
     let reopened_index = reopened
         .indexes
         .latest_generation(INDEX, Some(old.descriptor().branch_id()))
@@ -373,11 +380,13 @@ fn unsupported_ordering_index_refuses_codec_restore_without_replacing_the_target
     let (mut target, _) = installed(2);
     let initial_id = target.runtime_instance_id();
     let initial_schema = target.config().schema.registry;
+    let (saved, saved_source) = capture_with_source(execution, &world.runtime);
     let denied = target
         .durability_recovery()
         .restore_native_checkpoint_for_codec_transition_with_authority(
             execution,
-            &capture(execution, &world.runtime),
+            &saved,
+            saved_source,
         )
         .unwrap_err();
     assert!(

@@ -65,7 +65,7 @@ pub(super) use worth_foundational::facade::AspectKey;
 #[path = "support/aspect_field_patches.rs"]
 mod aspect_field_patches;
 #[path = "support/durability.rs"]
-mod durability;
+pub(crate) mod durability;
 #[path = "support/history.rs"]
 mod history;
 mod history_snapshot;

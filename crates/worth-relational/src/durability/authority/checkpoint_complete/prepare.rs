@@ -21,8 +21,7 @@ pub(super) fn prepare(
     {
         return Err(Denial::OriginalAuthorityUnavailable);
     }
-    let mut frozen =
-        FrozenCompleteMetadata::capture(runtime, execution, &placement)?.resolve(execution)?;
+    let mut frozen = FrozenCompleteMetadata::capture(runtime, execution)?.resolve(execution)?;
     let commits = frozen.original.read_canonical(execution, 1 << 30)?;
     let dictionary =
         OriginalSymbolDictionary::capture(&frozen.original.symbols, &commits, execution)?;
@@ -112,7 +111,6 @@ pub(super) fn prepare(
     let region_custody = region_output.install_into(&mut draft);
     super::destination_members::require(&placement, &member_map, execution)?;
     let canonical_publication = canonical.publication(&draft, execution)?;
-    let inline_bytes = canonical.inline_bytes;
     let coverage = draft.covered_position;
     let through = draft.coverage.up_to_branch_transition;
     let manifest = draft.seal_for_request(execution)?;
@@ -122,30 +120,20 @@ pub(super) fn prepare(
         member_map.values().cloned(),
     )?;
     drop(member_map);
-    let (bytes, sections) = crate::durability::log::native_checkpoint_codec::encode_complete(
-        &manifest,
-        &members,
-        execution,
-        placement.is_embedded(),
-        inline_bytes,
-    )?;
-    let publication = if placement.is_embedded() {
-        None
-    } else {
-        placement
-            .publication_source()
-            .map(|source| {
-                RelationalHistoryMemberDirectory::empty_for_request(execution).map(|history| {
-                    runtime.durability.checkpoint_selection().prepare(
-                        manifest.clone(),
-                        source,
-                        history,
-                    )
-                })
+    let (bytes, sections) =
+        crate::durability::log::native_checkpoint_codec::encode_complete(&manifest, execution)?;
+    let publication = placement
+        .publication_source()
+        .map(|source| {
+            RelationalHistoryMemberDirectory::empty_for_request(execution).map(|history| {
+                runtime
+                    .durability
+                    .checkpoint_selection()
+                    .prepare(manifest.clone(), source, history)
             })
-            .transpose()
-            .map_err(stop)?
-    };
+        })
+        .transpose()
+        .map_err(stop)?;
     // Borrowed lookup scratch ends before the verified originals move into
     // their thin owning phase. The image consumes the same protected prefix.
     drop(lineage);

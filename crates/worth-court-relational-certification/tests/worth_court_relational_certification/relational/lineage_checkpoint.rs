@@ -25,12 +25,16 @@ fn reverse_partition_create_drafts_restore_the_original_published_lineage() {
     let committed = commit_reverse_partition_creates(execution, &runtime, source);
     let checkpoint = runtime
         .durability_authority()
-        .native_checkpoint(execution, Allocation::SystemAllocation)
+        .native_checkpoint_with_policy(execution, Allocation::SystemAllocation, worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
         .expect("genuine owner capture before any lineage projection read");
     let mut recovered = AspectSchemaFixture::default().build_runtime();
     let restored = recovered
         .durability_recovery()
-        .restore_native_checkpoint(execution, &checkpoint)
+        .restore_native_checkpoint(
+            execution,
+            &checkpoint,
+            worth_testkit_relational::cold_recovery::members_source(&checkpoint),
+        )
         .expect("canonical create lineage restores despite reverse draft partition order");
     assert_eq!(restored.latest_commit, Some(committed.commit.clone()));
     assert_original_lineage(execution, &runtime, &recovered, &committed);

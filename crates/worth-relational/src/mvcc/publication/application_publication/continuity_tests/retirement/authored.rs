@@ -147,7 +147,14 @@ fn ordinary_authored_complete_retirement_reissues_only_through_exact_warm_and_co
         release_test_commit_snapshot(&runtime, &retired);
         let saved = runtime
             .durability_authority()
-            .native_checkpoint(execution, execution.allocation_policy())
+            .native_checkpoint_with_policy(
+                execution,
+                execution.allocation_policy(),
+                crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                    current_members: &[],
+                    source: None,
+                },
+            )
             .unwrap();
         let mut reopened = runtime_with_test_schema();
         let receipt = reopened
@@ -157,7 +164,11 @@ fn ordinary_authored_complete_retirement_reissues_only_through_exact_warm_and_co
             .unwrap();
         reopened
             .durability_recovery()
-            .restore_native_checkpoint(execution, &saved)
+            .restore_native_checkpoint(
+                execution,
+                &saved,
+                crate::tests::support::durability::captured_members_source(&saved),
+            )
             .unwrap();
         let receipt = reopened
             .readmit_recovered_initial_schema_installation(receipt)

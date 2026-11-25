@@ -115,6 +115,7 @@ pub(super) fn medium_recovery_plan(
         Some(parts.cold_source),
     )
     .with_commit_strategy_executors(runtime.commit_strategy_executor_registry().clone());
+    plan.selected_checkpoint_acknowledged = plan.checkpoint.is_some();
     plan.original_source = original_source;
     Ok(plan)
 }
@@ -140,7 +141,7 @@ fn readmit_covered_checkpoint(
         None => crate::durability::log::native_checkpoint_codec::decode_checkpoint_from_source(
             execution,
             source.checkpoint().bytes(),
-            Some(cold_source),
+            cold_source,
         ),
     }?
     .checkpoint;

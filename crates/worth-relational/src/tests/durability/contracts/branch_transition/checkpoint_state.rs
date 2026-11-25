@@ -24,7 +24,7 @@ fn a_deleting_checkpoint_cell_requires_its_retired_name() {
         .unwrap();
     drop(transaction);
     drop(basis);
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     let mut recovered = durable_runtime_for_medium(&OwnedTestDurableMedium::new());
     let mut plan = medium
         .recovery_plan(

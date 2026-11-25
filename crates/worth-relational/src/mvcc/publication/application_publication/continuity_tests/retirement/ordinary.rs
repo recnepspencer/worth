@@ -64,7 +64,14 @@ fn ordinary_deletion_and_producer_retire_never_reopen_a_birth_route_after_restor
         release_test_commit_snapshot(&runtime, &committed);
         let saved = runtime
             .durability_authority()
-            .native_checkpoint(execution, execution.allocation_policy())
+            .native_checkpoint_with_policy(
+                execution,
+                execution.allocation_policy(),
+                crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                    current_members: &[],
+                    source: None,
+                },
+            )
             .unwrap();
         let mut cold = runtime_with_test_schema();
         let receipt = cold
@@ -73,16 +80,23 @@ fn ordinary_deletion_and_producer_retire_never_reopen_a_birth_route_after_restor
             .install(crate::schema::data::RelationalSchemaRegistry::new())
             .unwrap();
         cold.durability_recovery()
-            .restore_native_checkpoint(execution, &saved)
+            .restore_native_checkpoint(
+                execution,
+                &saved,
+                crate::tests::support::durability::captured_members_source(&saved),
+            )
             .unwrap();
         let receipt = cold
             .readmit_recovered_initial_schema_installation(receipt)
             .unwrap();
         let (_, installed) = receipt.issue_application_publication_owner();
-        let before = cold
-            .durability_authority()
-            .native_checkpoint(execution, execution.allocation_policy())
-            .unwrap();
+        let before = crate::tests::support::durability::capture_checkpoint_with_source(
+            execution,
+            &cold,
+            execution.allocation_policy(),
+        )
+        .unwrap()
+        .0;
         let basis = test_owner_main_basis(&cold).unwrap();
         let absence = cold
             .readmit_required_output_route_absence(
@@ -97,9 +111,13 @@ fn ordinary_deletion_and_producer_retire_never_reopen_a_birth_route_after_restor
             "ordinary deletion cannot authorize a new birth"
         );
         assert_eq!(
-            cold.durability_authority()
-                .native_checkpoint(execution, execution.allocation_policy())
-                .unwrap(),
+            crate::tests::support::durability::capture_checkpoint_with_source(
+                execution,
+                &cold,
+                execution.allocation_policy(),
+            )
+            .unwrap()
+            .0,
             before
         );
     }

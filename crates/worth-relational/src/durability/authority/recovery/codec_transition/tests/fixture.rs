@@ -113,17 +113,26 @@ pub(super) fn basis(runtime: &RelationalRuntime) -> AdmittedRelationalBranchBasi
         .1
 }
 
+pub(super) fn capture_with_source(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+) -> (
+    RelationalNativeCheckpoint,
+    std::sync::Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
+) {
+    crate::tests::support::durability::capture_checkpoint_with_source(
+        execution,
+        runtime,
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .unwrap()
+}
+
 pub(super) fn capture(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
 ) -> RelationalNativeCheckpoint {
-    runtime
-        .durability_authority()
-        .native_checkpoint(
-            execution,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
+    capture_with_source(execution, runtime).0
 }
 
 pub(super) fn activation(id: EntityId) -> RecoveredCheckpointProgramActivationUpdate {
@@ -152,6 +161,13 @@ pub(super) fn activation_proof(
 
 pub(super) fn protected_payload(runtime: &RelationalRuntime, id: EntityId) -> Vec<u8> {
     let basis = basis(runtime);
+    let host = crate::test_execution_policy::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&host);
+    basis
+        .inner
+        .root
+        .demand_full_region_cached(&execution, id.partition_id)
+        .expect("fixture root demands Full custody");
     let partition = basis
         .inner
         .root

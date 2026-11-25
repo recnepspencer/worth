@@ -248,7 +248,10 @@ fn original_custody(empty: bool, retire: bool) {
         runtime.prepare_close().unwrap().finish();
     }
     assert!(
-        !original.medium.member_read_digests().contains(&unrelated_sha),
+        !original
+            .medium
+            .member_read_digests()
+            .contains(&unrelated_sha),
         "unrelated commit member must never be read through retirement and close"
     );
 }
@@ -274,7 +277,7 @@ fn recorded_component_checkpoint_omits_released_components_and_plain_observation
     let decoded = crate::durability::log::native_checkpoint_codec::decode_checkpoint_from_source(
         execution,
         checkpoint.bytes(),
-        Some(source),
+        source,
     )
     .unwrap();
     let directory = decoded.checkpoint.directory.unwrap();
@@ -302,7 +305,11 @@ fn recorded_component_checkpoint_omits_released_components_and_plain_observation
     let decoded = crate::durability::log::native_checkpoint_codec::decode_checkpoint_from_source(
         execution,
         next.bytes(),
-        original.source.durability.cold_source(),
+        original
+            .source
+            .durability
+            .cold_source()
+            .expect("durable source owns cold source"),
     )
     .unwrap();
     assert_eq!(
@@ -322,9 +329,12 @@ fn recorded_component_checkpoint_refuses_chk15_before_source_admission() {
     let mut bytes = checkpoint.bytes().to_vec();
     let old = b"WORTH-REL-CHK15\n";
     bytes[..old.len()].copy_from_slice(old);
-    let stop =
-        crate::durability::log::native_checkpoint_codec::decode_checkpoint(execution, &bytes)
-            .unwrap_err();
+    let stop = crate::durability::log::native_checkpoint_codec::decode_checkpoint_from_source(
+        execution,
+        &bytes,
+        crate::tests::support::durability::empty_cold_source(),
+    )
+    .unwrap_err();
     assert_eq!(
         expect_durability_failure(stop).class,
         crate::durability::data::RecoveryFailureClass::UnsupportedLegacySemantics

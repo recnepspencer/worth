@@ -106,7 +106,10 @@ fn fresh_source_keeps_actual_runtime_root_and_installed_schema_for_complete() {
     let complete = worth_testkit_relational::initial_input_source::capture(&runtime, &execution);
     let roster = complete
         .checkpoint()
-        .inspect_component_roster(&execution, None)
+        .inspect_component_roster(
+            &execution,
+            worth_testkit_relational::cold_recovery::members_source(complete.checkpoint()),
+        )
         .unwrap()
         .unwrap();
     assert_eq!(roster.retained_empty_components, 1);

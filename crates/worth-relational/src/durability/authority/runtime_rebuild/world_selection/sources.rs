@@ -99,7 +99,10 @@ impl WorldSelectionReplay {
             Source::Recorded(recorded) => Ok(Some(recorded.clone())),
             Source::Published(coordinates) => {
                 if allow_absent
-                    && runtime.history.commit_artifact(coordinates.commit()).is_none()
+                    && runtime
+                        .history
+                        .commit_artifact(coordinates.commit())
+                        .is_none()
                 {
                     return Ok(None);
                 }
@@ -111,7 +114,8 @@ impl WorldSelectionReplay {
                         "World occurrence Native source coordinates mismatch",
                     ));
                 }
-                let Some(observations) = roots.publication_observations(coordinates.commit()) else {
+                let Some(observations) = roots.publication_observations(coordinates.commit())
+                else {
                     if allow_absent {
                         return Ok(None);
                     }

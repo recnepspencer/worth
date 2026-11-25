@@ -21,7 +21,6 @@ fn residency_failure_matrix_envelope_doors_preserve_every_failure_class() {
                 EnvelopeDoor::Patches,
                 EnvelopeDoor::Stream,
                 EnvelopeDoor::RetainedExport,
-                EnvelopeDoor::EmbeddedCheckpoint,
                 EnvelopeDoor::MemoryCheckpoint,
                 EnvelopeDoor::ReplayEnvelope,
                 EnvelopeDoor::ReplayExecution,

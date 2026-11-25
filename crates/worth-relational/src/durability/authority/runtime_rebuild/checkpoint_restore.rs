@@ -43,6 +43,7 @@ pub(super) fn restore_checkpoint_state(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     restored: &mut RelationalRuntime,
     checkpoint: DurableCheckpoint,
+    selected_checkpoint_acknowledged: bool,
     work: &mut CheckpointRestoreWork,
     original_schemas: Option<&super::original_schemas::OriginalSchemaGraph>,
 ) -> Result<(), RelationalRecoveryStop> {
@@ -60,6 +61,7 @@ pub(super) fn restore_checkpoint_state(
                         restored,
                         &checkpoint,
                         directory.clone(),
+                        selected_checkpoint_acknowledged,
                         work,
                     )
                 },

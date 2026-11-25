@@ -144,7 +144,7 @@ fn cold_current_obligations_equal_the_warm_current_facts() {
     let checkpoint = world
         .runtime
         .durability_authority()
-        .native_checkpoint(execution, execution.allocation_policy())
+        .native_checkpoint_with_policy(execution, execution.allocation_policy(), worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
         .unwrap();
     let mut cold = RelationalRuntimeApi::builder()
         .schema_registry(publication_fixture::registry())
@@ -159,7 +159,11 @@ fn cold_current_obligations_equal_the_warm_current_facts() {
         )
         .unwrap();
     cold.durability_recovery()
-        .restore_native_checkpoint(execution, &checkpoint)
+        .restore_native_checkpoint(
+            execution,
+            &checkpoint,
+            worth_testkit_relational::cold_recovery::members_source(&checkpoint),
+        )
         .unwrap();
     let receipt = cold
         .readmit_recovered_initial_schema_installation(expected)

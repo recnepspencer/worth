@@ -38,7 +38,10 @@ fn fork_checkpoint(
     assert_ne!(anchor.commit.branch_id, branch);
     let identity = runtime.branch_identity(&branch).unwrap();
     let (_, basis) = runtime.observe_branch(&identity).unwrap();
-    assert_eq!(basis.observation().commit_id(), Some(anchor.commit.commit_id));
+    assert_eq!(
+        basis.observation().commit_id(),
+        Some(anchor.commit.commit_id)
+    );
     let index = scoped_name_index(&runtime);
     let built = runtime.index_authority().build_for_basis(
         execution,
@@ -54,9 +57,13 @@ fn fork_checkpoint(
     let generation = built.generations[0].generation_id;
     drop(basis);
     release_test_commit_snapshot(&runtime, &anchor);
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     let plan = medium
-        .recovery_plan(execution, &runtime, RecoveryMode::NormalRecoveryVerification)
+        .expanded_recovery_plan(
+            execution,
+            &runtime,
+            RecoveryMode::NormalRecoveryVerification,
+        )
         .unwrap();
     (plan, entity, index.index_id, generation)
 }
@@ -85,7 +92,10 @@ fn real_shared_parent_root_scoped_checkpoint_restores_lookup_and_content() {
     let (plan, entity, index, generation) = fork_checkpoint(execution);
     let restored_medium = OwnedTestDurableMedium::new();
     let mut restored = durable_runtime_for_medium(&restored_medium);
-    restored.durability_recovery().recover(execution, plan).unwrap();
+    restored
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
     let branch = BranchId(FORK.into());
     let identity = restored.branch_identity(&branch).unwrap();
     let (_, basis) = restored.observe_branch(&identity).unwrap();
@@ -115,16 +125,27 @@ fn real_shared_parent_root_scoped_checkpoint_restores_lookup_and_content() {
     };
     let actual = restored
         .index_access()
-        .execute_bounded_entity_field_lookup(request(), BoundedIndexParityMode::Production, execution)
+        .execute_bounded_entity_field_lookup(
+            request(),
+            BoundedIndexParityMode::Production,
+            execution,
+        )
         .unwrap();
     assert_eq!(actual.generation_id(), generation);
     assert_eq!(actual.candidate_entity_ids(), &[entity]);
     let parity = restored
         .index_access()
-        .execute_bounded_entity_field_lookup(request(), BoundedIndexParityMode::Certification, execution)
+        .execute_bounded_entity_field_lookup(
+            request(),
+            BoundedIndexParityMode::Certification,
+            execution,
+        )
         .unwrap();
     assert_eq!(parity.candidate_entity_ids(), &[entity]);
-    assert_eq!(name_on_branch(execution, &restored, &branch, entity), Some(NAME.into()));
+    assert_eq!(
+        name_on_branch(execution, &restored, &branch, entity),
+        Some(NAME.into())
+    );
     restored.snapshots().release_snapshot(&snapshot).unwrap();
 }
 
@@ -140,7 +161,10 @@ fn digest_valid_unissued_scoped_branch_denies_without_replacing_target_state() {
     let mut generations = existing.readmit(&lane).unwrap();
     assert_eq!(generations.len(), 1);
     let foreign = BranchId("unissued-checkpoint-index-scope".into());
-    assert!(checkpoint.branch_cells.iter().all(|cell| cell.branch_id != foreign));
+    assert!(checkpoint
+        .branch_cells
+        .iter()
+        .all(|cell| cell.branch_id != foreign));
     generations[0].source_branch_id = foreign.clone();
     generations[0].applicability.branch_id = foreign.clone();
     let artifact =
@@ -196,21 +220,36 @@ fn checkpoint_index_artifact_missing_payload_denies_before_recovery() {
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);
     create_entity_outcome(execution, &runtime, "checkpoint-missing-index-payload");
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     let mut plan = medium
-        .recovery_plan(execution, &runtime, RecoveryMode::NormalRecoveryVerification)
+        .expanded_recovery_plan(
+            execution,
+            &runtime,
+            RecoveryMode::NormalRecoveryVerification,
+        )
         .unwrap();
     plan.checkpoint.as_mut().unwrap().derived_index_checkpoint = None;
     let recovered_medium = OwnedTestDurableMedium::new();
     let mut recovered = durable_runtime_for_medium(&recovered_medium);
-    let error = recovered.durability_recovery().recover(execution, plan).unwrap_err();
+    let error = recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap_err();
     let error = crate::tests::support::expect_durability_failure(error);
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
 
     let mut old_format = medium
-        .recovery_plan(execution, &runtime, RecoveryMode::NormalRecoveryVerification)
+        .expanded_recovery_plan(
+            execution,
+            &runtime,
+            RecoveryMode::NormalRecoveryVerification,
+        )
         .unwrap();
-    old_format.checkpoint.as_mut().unwrap().derived_index_checkpoint_format = 1;
+    old_format
+        .checkpoint
+        .as_mut()
+        .unwrap()
+        .derived_index_checkpoint_format = 1;
     let recovered_medium = OwnedTestDurableMedium::new();
     let mut recovered = durable_runtime_for_medium(&recovered_medium);
     let error = recovered
@@ -232,9 +271,13 @@ fn checkpoint_recovery_denies_a_digest_valid_foreign_generation_affinity() {
     let index = name_index(&runtime);
     build(execution, &runtime, index.index_id, &commit);
     release_test_commit_snapshot(&runtime, &commit);
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     let mut plan = medium
-        .recovery_plan(execution, &runtime, RecoveryMode::NormalRecoveryVerification)
+        .expanded_recovery_plan(
+            execution,
+            &runtime,
+            RecoveryMode::NormalRecoveryVerification,
+        )
         .unwrap();
     let checkpoint = plan.checkpoint.as_mut().unwrap();
     let existing = checkpoint.derived_index_checkpoint.as_ref().unwrap();
@@ -251,7 +294,10 @@ fn checkpoint_recovery_denies_a_digest_valid_foreign_generation_affinity() {
     );
     let recovered_medium = OwnedTestDurableMedium::new();
     let mut recovered = durable_runtime_for_medium(&recovered_medium);
-    let error = recovered.durability_recovery().recover(execution, plan).unwrap_err();
+    let error = recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap_err();
     let error = crate::tests::support::expect_durability_failure(error);
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     assert!(error.detail.contains("branch affinity"));

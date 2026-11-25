@@ -55,7 +55,10 @@ fn deleted_branch_reader_retains_only_its_exact_scoped_generation() {
         Some(0)
     );
     assert!(runtime.indexes.generation(generation).is_some());
-    runtime.durability_authority().checkpoint(execution).unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     let plan = runtime
         .durability()
         .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)

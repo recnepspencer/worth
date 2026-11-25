@@ -190,6 +190,13 @@ pub(super) fn assert_order(
     entities: &[EntityId; 3],
     relations: &[RelationId; 2],
 ) {
+    let host = crate::test_execution_policy::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&host);
+    runtime
+        .indexes
+        .definition_read_binding()
+        .demand_checkpoint_image(&execution)
+        .unwrap();
     let generation = runtime
         .indexes
         .latest_generation(ORDER, Some(basis(runtime).descriptor().branch_id()))
@@ -225,8 +232,15 @@ pub(super) fn assert_values(
     outputs: &[EntityId; 3],
     expected: [&str; 3],
 ) {
+    let host = crate::test_execution_policy::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&host);
     let selected = basis(runtime);
     for (id, expected) in outputs.iter().zip(expected) {
+        selected
+            .inner
+            .root
+            .demand_full_region_cached(&execution, id.partition_id)
+            .expect("fixture root demands Full custody");
         let record = selected
             .inner
             .root
@@ -253,7 +267,14 @@ pub(super) fn assert_values(
 }
 
 pub(super) fn relation_payload(runtime: &RelationalRuntime, id: RelationId) -> Vec<u8> {
+    let host = crate::test_execution_policy::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&host);
     let basis = basis(runtime);
+    basis
+        .inner
+        .root
+        .demand_full_region_cached(&execution, id.partition_id)
+        .expect("fixture root demands Full custody");
     let record = basis
         .inner
         .root
@@ -287,6 +308,10 @@ pub(super) fn recover(
         .restore_native_checkpoint_for_codec_transition_with_authority(
             execution,
             &capture(execution, &world.runtime),
+            crate::tests::support::durability::captured_members_source(&capture(
+                execution,
+                &world.runtime,
+            )),
         )
         .unwrap();
     (target, recovered, receipt)

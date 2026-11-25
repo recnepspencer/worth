@@ -44,7 +44,7 @@ fn native_checkpoint_retains_all_admitted_capture_owners_and_restores_editable_t
     let head = current_head(&runtime, &BranchId("main".into()));
     let system = runtime
         .durability_authority()
-        .native_checkpoint(execution, Policy::SystemAllocation)
+        .native_checkpoint_with_policy(execution, Policy::SystemAllocation, worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
         .unwrap();
     let quote = u64::try_from(system.bytes().len()).unwrap();
     const FUNDED: u64 = 8 << 20;
@@ -55,10 +55,7 @@ fn native_checkpoint_retains_all_admitted_capture_owners_and_restores_editable_t
     let zero = parent.child(request(0, CancellationToken::new())).unwrap();
     let error = runtime
         .durability_authority()
-        .native_checkpoint(
-            &worth_execution::ExecutionRequest::leased(&zero),
-            Policy::Execution(&zero),
-        )
+        .native_checkpoint_with_policy(&worth_execution::ExecutionRequest::leased(&zero), Policy::Execution(&zero), worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
         .unwrap_err();
     assert!(
         matches!(error, Denial::Request(RelationalExecutionDenialCause::PolicyMemoryExhausted { requested, admitted: 0, ancestor: 0 }) if requested > 0),
@@ -73,10 +70,7 @@ fn native_checkpoint_retains_all_admitted_capture_owners_and_restores_editable_t
     cancellation.cancel();
     let Denial::Allocation(error) = runtime
         .durability_authority()
-        .native_checkpoint(
-            &worth_execution::ExecutionRequest::leased(&stopped),
-            Policy::Execution(&stopped),
-        )
+        .native_checkpoint_with_policy(&worth_execution::ExecutionRequest::leased(&stopped), Policy::Execution(&stopped), worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
         .unwrap_err()
     else {
         panic!("caller cancellation must remain typed");
@@ -96,10 +90,7 @@ fn native_checkpoint_retains_all_admitted_capture_owners_and_restores_editable_t
             .unwrap();
         let captured = runtime
             .durability_authority()
-            .native_checkpoint(
-                &worth_execution::ExecutionRequest::leased(&child),
-                Policy::Execution(&child),
-            )
+            .native_checkpoint_with_policy(&worth_execution::ExecutionRequest::leased(&child), Policy::Execution(&child), worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
             .unwrap();
         assert_eq!(captured.bytes(), system.bytes());
         assert_eq!(captured.captured_sections(), system.captured_sections());
@@ -126,7 +117,11 @@ fn native_checkpoint_retains_all_admitted_capture_owners_and_restores_editable_t
     let prior_owner = recovered.runtime_instance_id();
     let restored = recovered
         .durability_recovery()
-        .restore_native_checkpoint(execution, &retained)
+        .restore_native_checkpoint(
+            execution,
+            &retained,
+            worth_testkit_relational::cold_recovery::members_source(&retained),
+        )
         .unwrap();
     assert_eq!(restored.latest_commit.as_ref(), Some(&committed.commit));
     assert_ne!(recovered.runtime_instance_id(), prior_owner);

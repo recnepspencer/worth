@@ -19,7 +19,13 @@ fn complete_original_request_denial_and_cancel_preserve_original_empty_source() 
     let host = SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None);
     let execution = ExecutionRequest::serial(&host);
     assert!(matches!(
-        service.prepare(&execution, RelationalCheckpointArtifactPolicy::Embedded),
+        service.prepare(
+            &execution,
+            RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None
+            }
+        ),
         Err(Denial::Request(_))
     ));
     assert_eq!(budget.charged_memory_bytes(), 0);
@@ -33,7 +39,10 @@ fn complete_original_request_denial_and_cancel_preserve_original_empty_source() 
     assert!(matches!(
         service.prepare(
             &ExecutionRequest::serial(&stopped),
-            RelationalCheckpointArtifactPolicy::Embedded
+            RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None
+            }
         ),
         Err(Denial::Request(_))
     ));
@@ -52,7 +61,10 @@ fn complete_original_request_denial_and_cancel_preserve_original_empty_source() 
     let result = service
         .prepare(
             &ExecutionRequest::serial(&retry),
-            RelationalCheckpointArtifactPolicy::Embedded,
+            RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
         )
         .unwrap();
     assert!(result.checkpoint().captured_sections().unwrap().total > 0);

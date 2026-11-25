@@ -25,9 +25,10 @@ pub(super) fn refuse_missing_and_foreign() {
         .unwrap()
         .clone();
     let saved = capture(execution, &world.runtime);
-    let decoded = crate::durability::log::native_checkpoint_codec::decode_checkpoint(
+    let decoded = crate::durability::log::native_checkpoint_codec::decode_expanded_checkpoint(
         execution,
         saved.bytes(),
+        crate::tests::support::durability::captured_members_source(&saved),
     )
     .unwrap()
     .checkpoint;
@@ -56,22 +57,16 @@ pub(super) fn refuse_missing_and_foreign() {
                 envelope.required_output_origin = Some(std::sync::Arc::new(origin));
             },
         );
-        let (bytes, _) = crate::durability::log::native_checkpoint_codec::encode_checkpoint(
-            execution,
-            &changed,
-            execution.allocation_policy(),
-        )
-        .unwrap();
-        let len = bytes.len();
-        let untrusted =
-            crate::durability::data::RelationalNativeCheckpoint::from_untrusted_bytes_region(
-                bytes,
-                0..len,
+        let (untrusted, untrusted_source) =
+            crate::tests::support::durability::encode_checkpoint_with_source(
+                execution,
+                &changed,
+                execution.allocation_policy(),
             )
             .unwrap();
         let (mut cold, receipt) = super::super::incoming_reference::installed_references(1);
         cold.durability_recovery()
-            .restore_native_checkpoint(execution, &untrusted)
+            .restore_native_checkpoint(execution, &untrusted, untrusted_source)
             .unwrap();
         let receipt = cold
             .readmit_recovered_initial_schema_installation(receipt)

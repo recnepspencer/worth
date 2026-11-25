@@ -52,7 +52,13 @@ pub fn capture(
 ) -> CompleteRelationalNativeCheckpoint {
     runtime
         .complete_checkpoint_service()
-        .prepare(request, RelationalCheckpointArtifactPolicy::Embedded)
+        .prepare(
+            request,
+            RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
+        )
         .unwrap()
 }
 /// Fresh external placement: this destination has no selected members yet.

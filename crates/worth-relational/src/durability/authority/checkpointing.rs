@@ -10,21 +10,6 @@ use crate::durability::data::{
 use crate::execution::RelationalExecutionDenialCause as Cause;
 
 impl<'runtime> DurabilityAuthority<'runtime> {
-    pub fn native_checkpoint(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
-    ) -> Result<
-        crate::durability::data::RelationalNativeCheckpoint,
-        crate::durability::data::RelationalNativeCheckpointCaptureDenial,
-    > {
-        self.native_checkpoint_with_policy(
-            execution,
-            policy,
-            crate::durability::data::RelationalCheckpointArtifactPolicy::Embedded,
-        )
-    }
-
     pub fn native_checkpoint_with_policy(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -66,17 +51,13 @@ impl<'runtime> DurabilityAuthority<'runtime> {
                     &mut control,
                 )?;
                 let mut captured = captured.seal_ordinary();
-                let manifest_publication = if !artifact_policy.is_embedded() {
-                    artifact_policy.publication_source().map(|source| {
-                        self.runtime.durability.checkpoint_selection().prepare(
-                            captured.manifest.clone(),
-                            source,
-                            captured.history_members.clone(),
-                        )
-                    })
-                } else {
-                    None
-                };
+                let manifest_publication = artifact_policy.publication_source().map(|source| {
+                    self.runtime.durability.checkpoint_selection().prepare(
+                        captured.manifest.clone(),
+                        source,
+                        captured.history_members.clone(),
+                    )
+                });
                 let coverage = captured.manifest.covered_position;
                 let transitions = captured.manifest.coverage.up_to_branch_transition;
                 let component_holds = std::mem::take(&mut captured.component_holds);
@@ -84,8 +65,6 @@ impl<'runtime> DurabilityAuthority<'runtime> {
                 let encoded = crate::durability::log::native_checkpoint_codec::encode_captured(
                     captured,
                     execution,
-                    policy,
-                    &artifact_policy,
                     &mut control,
                 )?;
                 Ok((manifest_publication, coverage, transitions, component_holds, canonical_publication, encoded))

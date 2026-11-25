@@ -22,20 +22,19 @@ fn recovered_world(
     RelationalRuntime,
     RecoveredRelationalRuntimeAuthority,
     Arc<TestDurableMedium>,
-) {
+    Arc<worth_testkit_relational::durable_medium::immutable_members::ImmutableCheckpointMemberSource>,
+){
     let medium = TestDurableMedium::new();
     let source = durable_runtime(&medium);
     create_entity(execution, &source, "checkpoint-predecessor");
-    let checkpoint = source
-        .durability_authority()
-        .native_checkpoint(execution, execution.allocation_policy())
-        .unwrap();
+    let (checkpoint, members) =
+        worth_testkit_relational::cold_recovery::capture_external_checkpoint(execution, &source);
     let mut target = durable_runtime(&medium);
     let (_, authority) = target
         .durability_recovery()
-        .restore_native_checkpoint_with_authority(execution, &checkpoint)
+        .restore_native_checkpoint_with_authority(execution, &checkpoint, members.clone())
         .unwrap();
-    (target, authority, medium)
+    (target, authority, medium, members)
 }
 fn candidate(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -76,7 +75,7 @@ fn acknowledged_transition_admits_only_its_exact_successor_and_releases_snapshot
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     for admit_successor in [true, false] {
-        let (mut runtime, authority, medium) = recovered_world(execution);
+        let (mut runtime, authority, medium, members) = recovered_world(execution);
         let predecessor = main_basis(&runtime);
         let count = runtime.history().immutable_commit_count();
         let prepared = candidate(execution, &runtime, "acknowledged-successor");
@@ -98,13 +97,9 @@ fn acknowledged_transition_admits_only_its_exact_successor_and_releases_snapshot
                 .count(),
             1
         );
-        runtime
-            .durability_authority()
-            .native_checkpoint(
-                execution,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .unwrap();
+        worth_testkit_relational::cold_recovery::capture_external_carrying(
+            execution, &runtime, &members,
+        );
         if admit_successor {
             assert!(successor_authority
                 .admit_basis(main_basis(&runtime))
@@ -121,8 +116,9 @@ fn foreign_recovery_and_foreign_candidate_are_refused_before_effects() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     for foreign_recovery in [true, false] {
-        let (mut runtime, authority, _medium) = recovered_world(execution);
-        let (foreign, foreign_authority, _foreign_medium) = recovered_world(execution);
+        let (mut runtime, authority, _medium, _members) = recovered_world(execution);
+        let (foreign, foreign_authority, _foreign_medium, _foreign_members) =
+            recovered_world(execution);
         let before = main_basis(&runtime).descriptor().clone();
         let before_foreign = main_basis(&foreign).descriptor().clone();
         let count = runtime.history().immutable_commit_count();
@@ -185,7 +181,7 @@ fn moved_source_and_stale_candidate_cannot_extend_recovery_lineage() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     for stale_candidate in [true, false] {
-        let (mut runtime, authority, _medium) = recovered_world(execution);
+        let (mut runtime, authority, _medium, _members) = recovered_world(execution);
         let predecessor = main_basis(&runtime);
         let early =
             stale_candidate.then(|| candidate(execution, &runtime, "prepared-before-movement"));

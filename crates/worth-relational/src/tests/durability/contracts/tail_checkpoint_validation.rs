@@ -10,7 +10,7 @@ fn durability_contract_recovery_rejects_tail_target_without_immutable_artifact()
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);
     create_entity_outcome(execution, &runtime, "checkpoint-basis");
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     let second = create_entity_outcome(execution, &runtime, "tail-commit");
     let mut plan = medium
         .recovery_plan(

@@ -139,21 +139,26 @@ fn reopen_keeps_regions_cold_and_a_point_read_and_commit_demand_only_their_parti
         added < 12,
         "one partition commit published {added} new physical members"
     );
-    let embedded = home
+    let captured = home
         .relational()
         .runtime()
         .durability_authority()
-        .native_checkpoint(
+        .native_checkpoint_with_policy(
             &execution,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
         )
         .unwrap();
+    let captured_source = members_source::external_members_source(&captured);
     let mut receiving = crate::workload::runtime_builder(crate::schema_transition::SOURCE)
         .build()
         .expect("valid native reference runtime configuration");
     receiving
         .durability_recovery()
-        .restore_native_checkpoint(&execution, &embedded)
+        .restore_native_checkpoint(&execution, &captured, captured_source)
         .unwrap();
     assert_eq!(
         crate::workload::artifacts_of(&execution, &receiving),
@@ -163,7 +168,7 @@ fn reopen_keeps_regions_cold_and_a_point_read_and_commit_demand_only_their_parti
         crate::workload::states_of(&receiving, std::slice::from_ref(&record)),
         expected
     );
-    drop((receiving, embedded));
+    drop((receiving, captured));
     crate::durable_run::world::close(fixture, &execution);
 }
 
@@ -320,3 +325,5 @@ fn a_cold_first_commit_on_a_fork_preserves_reference_artifacts_and_record_identi
         crate::durable_run::world::close(home, &execution);
     }
 }
+
+mod members_source;

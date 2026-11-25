@@ -1,6 +1,6 @@
 //! Mutate only exact headers in a real typed checkpoint wire.
 use crate::durability::log::native_checkpoint_codec::{
-    checkpoint_wire::CheckpointWire, decode_checkpoint, CHECKPOINT_MAGIC,
+    checkpoint_wire::CheckpointWire, decode_checkpoint_from_source, CHECKPOINT_MAGIC,
 };
 use crate::tests::support::*;
 
@@ -63,11 +63,19 @@ fn recorded_component_checkpoint_header_tamper_refuses_without_defaults_or_forei
     create_entity(execution, &runtime, "actual-header-source");
     let native = runtime
         .durability_authority()
-        .native_checkpoint(execution, execution.allocation_policy())
+        .native_checkpoint_with_policy(
+            execution,
+            execution.allocation_policy(),
+            crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
+        )
         .unwrap();
     let payload = &native.bytes()[CHECKPOINT_MAGIC.len()..];
     let original: CheckpointWire<'_> = rmp_serde::from_slice(payload).unwrap();
-    decode_checkpoint(execution, &encode(&original)).unwrap();
+    let source = crate::tests::support::durability::captured_members_source(&native);
+    decode_checkpoint_from_source(execution, &encode(&original), source.clone()).unwrap();
     for change in 0..6 {
         let mut wire: CheckpointWire<'_> = rmp_serde::from_slice(payload).unwrap();
         let mut bytes = encode(&wire);
@@ -129,7 +137,9 @@ fn recorded_component_checkpoint_header_tamper_refuses_without_defaults_or_forei
             wire.manifest = manifest.seal_ordinary();
             bytes = encode(&wire);
         }
-        let error = expect_durability_failure(decode_checkpoint(execution, &bytes).unwrap_err());
+        let error = expect_durability_failure(
+            decode_checkpoint_from_source(execution, &bytes, source.clone()).unwrap_err(),
+        );
         assert_eq!(
             error.class,
             crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,

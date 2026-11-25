@@ -127,7 +127,10 @@ fn reclamation_and_checkpoint_keep_sibling_head_generation() {
     runtime.run_index_generation_reclamation_pass();
     assert!(runtime.indexes.generation(sibling_generation).is_some());
     assert!(runtime.indexes.generation(main_generation).is_some());
-    runtime.durability_authority().checkpoint(execution).unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     let plan = runtime
         .durability()
         .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
@@ -162,7 +165,10 @@ fn reclamation_keeps_a_pinned_old_reader_until_release() {
     assert!(runtime.indexes.generation(first_generation).is_some());
     assert!(runtime.indexes.generation(latest_generation).is_some());
     assert!(runtime.indexes.generation(middle_generation).is_none());
-    runtime.durability_authority().checkpoint(execution).unwrap();
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
     let plan = runtime
         .durability()
         .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)

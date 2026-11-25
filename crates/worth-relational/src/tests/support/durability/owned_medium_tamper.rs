@@ -242,7 +242,10 @@ impl OwnedTestDurableMedium {
         self.lock().member_reads.clone()
     }
 
-    pub(super) fn check_and_record_member_read(&self, sha256: [u8; 32]) -> Result<(), StorageCause> {
+    pub(super) fn check_and_record_member_read(
+        &self,
+        sha256: [u8; 32],
+    ) -> Result<(), StorageCause> {
         let recording = self.observe_member_reads.load(Ordering::Acquire);
         let forbidding = self.has_forbidden_members.load(Ordering::Acquire);
         let recording_commits = self.observe_commit_reads.load(Ordering::Acquire);

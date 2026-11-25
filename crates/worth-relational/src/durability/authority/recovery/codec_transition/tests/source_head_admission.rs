@@ -21,7 +21,11 @@ fn codec_only_restore_refuses_partial_branch_adoption_while_exact_restore_keeps_
         let initial_identity = target.runtime_instance_id();
         let outcome = target
             .durability_recovery()
-            .restore_native_checkpoint_for_codec_transition_with_authority(execution, &checkpoint);
+            .restore_native_checkpoint_for_codec_transition_with_authority(
+                execution,
+                &checkpoint,
+                crate::tests::support::durability::captured_members_source(&checkpoint),
+            );
         if target_codec == 1 {
             let (_, recovered) = outcome.unwrap();
             assert!(!recovered.codec_transition_pending());

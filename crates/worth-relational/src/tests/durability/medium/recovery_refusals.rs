@@ -113,7 +113,7 @@ fn a_tail_that_does_not_continue_from_the_checkpoint_refuses() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let (runtime, medium) = runtime_with_commits(execution, &["a", "b"]);
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     for name in ["c", "d"] {
         let committed = create_entity_outcome(execution, &runtime, name);
         release_test_commit_snapshot(&runtime, &committed);
@@ -134,7 +134,14 @@ fn a_checkpoint_filed_under_the_wrong_position_refuses_as_corrupt() {
     let (runtime, medium) = runtime_with_commits(execution, &["a", "b"]);
     let native = runtime
         .durability_authority()
-        .native_checkpoint(execution, execution.allocation_policy())
+        .native_checkpoint_with_policy(
+            execution,
+            execution.allocation_policy(),
+            crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
+        )
         .unwrap();
     assert_eq!(native.covered_position(), Some(PatchStreamPosition(2)));
 
@@ -154,7 +161,7 @@ fn a_damaged_checkpoint_refuses_as_corrupt() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let (runtime, medium) = runtime_with_commits(execution, &["a", "b"]);
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
 
     medium.damage_checkpoint_payload();
 

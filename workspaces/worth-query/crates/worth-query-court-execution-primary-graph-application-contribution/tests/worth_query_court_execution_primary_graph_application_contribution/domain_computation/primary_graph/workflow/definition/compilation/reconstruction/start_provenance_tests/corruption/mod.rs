@@ -130,7 +130,14 @@ fn started_revision_missing_current_field_is_rejected_by_native_restore_before_p
             runtime.config(),
             runtime
                 .durability_authority()
-                .native_checkpoint(&execution, execution.allocation_policy())
+                .native_checkpoint_with_policy(
+                    &execution,
+                    execution.allocation_policy(),
+                    worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                        current_members: &[],
+                        source: None,
+                    },
+                )
                 .unwrap(),
             runtime
                 .durability()

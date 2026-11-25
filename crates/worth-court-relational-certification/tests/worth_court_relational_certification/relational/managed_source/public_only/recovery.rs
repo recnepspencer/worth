@@ -27,7 +27,7 @@ fn public_only_checkpoint_readmission_preserves_roster_and_post_restore_source_s
     assert_rows(&observe(&runtime, execution, &program, a), &[x]);
     let checkpoint = runtime
         .durability_authority()
-        .native_checkpoint(&execution, execution.allocation_policy())
+        .native_checkpoint_with_policy(&execution, execution.allocation_policy(), worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
         .unwrap();
 
     let mut missing = RelationalRuntimeApi::builder()
@@ -41,7 +41,11 @@ fn public_only_checkpoint_readmission_preserves_roster_and_post_restore_source_s
         .unwrap();
     missing
         .durability_recovery()
-        .restore_native_checkpoint(&execution, &checkpoint)
+        .restore_native_checkpoint(
+            &execution,
+            &checkpoint,
+            worth_testkit_relational::cold_recovery::members_source(&checkpoint),
+        )
         .unwrap();
     let denied = missing
         .readmit_recovered_initial_schema_installation(receipt.clone())
@@ -54,7 +58,11 @@ fn public_only_checkpoint_readmission_preserves_roster_and_post_restore_source_s
     let (mut recovered, _) = install(Installation::Builder, registry, program.clone());
     recovered
         .durability_recovery()
-        .restore_native_checkpoint(&execution, &checkpoint)
+        .restore_native_checkpoint(
+            &execution,
+            &checkpoint,
+            worth_testkit_relational::cold_recovery::members_source(&checkpoint),
+        )
         .unwrap();
     let readmitted = recovered
         .readmit_recovered_initial_schema_installation(receipt)

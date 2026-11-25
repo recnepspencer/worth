@@ -8,7 +8,7 @@ use crate::durability::medium::RelationalDurableMemberLocator;
 #[serde(deny_unknown_fields)]
 pub(super) struct CheckpointWire<'a, M = RelationalCheckpointManifest> {
     pub(super) manifest: M,
-    #[serde(borrow, deserialize_with = "super::member_sequence::decode")]
+    #[serde(borrow, deserialize_with = "super::member_sequence::empty_members")]
     pub(super) members: Vec<(RelationalDurableMemberLocator, ByteString<'a>)>,
     #[serde(borrow, deserialize_with = "super::member_sequence::empty_envelopes")]
     pub(super) envelopes: Vec<ByteString<'a>>,

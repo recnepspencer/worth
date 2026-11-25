@@ -22,7 +22,7 @@ pub(crate) fn inspect<'a>(
         branch_roots,
         branch_root_schema_images,
         branch_cells,
-    ) = if let Some(decoded) = decode_for_inspection(execution, bytes, payload, external)? {
+    ) = if let Some(decoded) = decode_for_inspection(execution, payload, external)? {
         (
             decoded.symbol_identity_frontier,
             decoded.record_identity,
@@ -34,7 +34,6 @@ pub(crate) fn inspect<'a>(
     } else {
         let memory =
             crate::durability::checkpoint_history::inventory::prepare_decode(payload, execution)?;
-        let _member_memory = super::member_sequence::reserve(payload, execution)?;
         let mut wire: super::checkpoint_wire::CheckpointWire<
             '_,
             crate::durability::data::RelationalCheckpointManifestDraft,
@@ -160,45 +159,28 @@ pub(crate) fn inspect<'a>(
 
 fn decode_for_inspection(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    bytes: &[u8],
     payload: &[u8],
     external: Option<std::sync::Arc<dyn crate::durability::medium::RelationalDurableColdSource>>,
 ) -> Result<Option<DurableCheckpoint>, RelationalRecoveryStop> {
-    if let Some(source) = external {
-        let memory =
-            crate::durability::checkpoint_history::inventory::prepare_decode(payload, execution)?;
-        let _member_memory = super::member_sequence::reserve(payload, execution)?;
-        let mut wire: super::checkpoint_wire::CheckpointWire<
-            '_,
-            crate::durability::data::RelationalCheckpointManifestDraft,
-        > = rmp_serde::from_slice(payload)
-            .map_err(|error| invalid(format!("native manifest: {error}")))?;
-        if let Err(memory) = wire.manifest.canonical_members.attach(memory) {
-            drop(wire);
-            drop(memory);
-            return Err(invalid("canonical inventory shared before original admission").into());
-        }
-        crate::durability::checkpoint_history::inventory::validate(&wire.manifest, execution)?;
-        let manifest = wire.manifest.seal_ordinary();
-        let facts = super::expanded_checkpoint::validate_manifest(&manifest)?;
-        return super::expanded_checkpoint::expand(
-            execution,
-            manifest,
-            source,
-            facts.history_members,
-        )
-        .map(Some);
+    let Some(source) = external else {
+        return Ok(None);
+    };
+    let memory =
+        crate::durability::checkpoint_history::inventory::prepare_decode(payload, execution)?;
+    let mut wire: super::checkpoint_wire::CheckpointWire<
+        '_,
+        crate::durability::data::RelationalCheckpointManifestDraft,
+    > = rmp_serde::from_slice(payload)
+        .map_err(|error| invalid(format!("native manifest: {error}")))?;
+    if let Err(memory) = wire.manifest.canonical_members.attach(memory) {
+        drop(wire);
+        drop(memory);
+        return Err(invalid("canonical inventory shared before original admission").into());
     }
-    match super::decode_checkpoint(execution, bytes) {
-        Ok(decoded) => Ok(Some(decoded.checkpoint)),
-        Err(RelationalRecoveryStop::Durability(error))
-            if error.class == RecoveryFailureClass::CorruptCheckpoint
-                && error.detail == "external checkpoint requires its cold source" =>
-        {
-            Ok(None)
-        }
-        Err(error) => Err(error),
-    }
+    crate::durability::checkpoint_history::inventory::validate(&wire.manifest, execution)?;
+    let manifest = wire.manifest.seal_ordinary();
+    let facts = super::expanded_checkpoint::validate_manifest(&manifest)?;
+    super::expanded_checkpoint::expand(execution, manifest, source, facts.history_members).map(Some)
 }
 fn record_class(class: DurableRecordGenerationClass) -> RecordAllocationClass {
     match class {

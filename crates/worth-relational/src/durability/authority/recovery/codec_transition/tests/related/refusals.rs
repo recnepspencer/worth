@@ -166,6 +166,10 @@ fn changed_ordering_key_meaning_refuses_before_destination_restore() {
         .restore_native_checkpoint_for_codec_transition_with_authority(
             execution,
             &capture(execution, &world.runtime),
+            crate::tests::support::durability::captured_members_source(&capture(
+                execution,
+                &world.runtime,
+            )),
         )
         .unwrap_err();
     assert!(

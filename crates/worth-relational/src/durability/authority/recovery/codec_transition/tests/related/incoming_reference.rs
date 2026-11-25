@@ -1,6 +1,6 @@
 //! Owned boundary edges and independent references preserve distinct native custody.
 use super::{
-    super::fixture::{basis, capture, create, locator, protected_payload},
+    super::fixture::{basis, capture, capture_with_source, create, locator, protected_payload},
     fixture::*,
 };
 use crate::identity::data::{EntityId, KindId, PartitionId, RelationId};
@@ -73,7 +73,11 @@ fn owned_boundary_and_independent_references_survive_cold_preserve_but_block_ret
     let saved = capture(execution, &world.runtime);
     let (mut cold, receipt) = installed_references(1);
     cold.durability_recovery()
-        .restore_native_checkpoint(execution, &saved)
+        .restore_native_checkpoint(
+            execution,
+            &saved,
+            crate::tests::support::durability::captured_members_source(&saved),
+        )
         .unwrap();
     let receipt = cold
         .readmit_recovered_initial_schema_installation(receipt)
@@ -208,11 +212,11 @@ fn owned_boundary_and_independent_references_survive_cold_preserve_but_block_ret
     );
 
     // Cold readmission also authenticates the Preserve envelope, not merely the birth.
-    let saved = capture(execution, &cold);
+    let (saved, saved_source) = capture_with_source(execution, &cold);
     let (mut reopened, receipt) = installed_references(1);
     reopened
         .durability_recovery()
-        .restore_native_checkpoint(execution, &saved)
+        .restore_native_checkpoint(execution, &saved, saved_source)
         .unwrap();
     let receipt = reopened
         .readmit_recovered_initial_schema_installation(receipt)
@@ -290,11 +294,13 @@ fn assert_retirement_refused(
     reference: RelationId,
 ) {
     let (mut target, _) = installed_references(2);
+    let (saved, saved_source) = capture_with_source(execution, source);
     let (_, mut recovered) = target
         .durability_recovery()
         .restore_native_checkpoint_for_codec_transition_with_authority(
             execution,
-            &capture(execution, source),
+            &saved,
+            saved_source,
         )
         .unwrap();
     let before = capture(execution, &target);

@@ -42,17 +42,25 @@ fn native_restore_work_counts_revised_history_sibling_roots_and_partition_images
     let entity = create_entity(execution, &source, "work-seed");
     let small = source
         .durability_authority()
-        .native_checkpoint(
+        .native_checkpoint_with_policy(
             execution,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
         )
         .unwrap();
     create_entity_in_partition(execution, &source, "work-secondary", PartitionId(41));
     let grown = source
         .durability_authority()
-        .native_checkpoint(
+        .native_checkpoint_with_policy(
             execution,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
         )
         .unwrap();
     assert!(
@@ -67,50 +75,45 @@ fn native_restore_work_counts_revised_history_sibling_roots_and_partition_images
     release_test_commit_snapshot(&source, &sibling_commit);
     let native = source
         .durability_authority()
-        .native_checkpoint(
+        .native_checkpoint_with_policy(
             execution,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
         )
         .unwrap();
-    assert!(
-        native.captured_sections().unwrap().envelopes
-            > grown.captured_sections().unwrap().envelopes
-    );
-    let decoded = crate::durability::log::native_checkpoint_codec::decode_checkpoint(
+    assert!(native.members().len() > grown.members().len());
+    let decoded = crate::durability::log::native_checkpoint_codec::decode_checkpoint_from_source(
         execution,
         native.bytes(),
+        crate::tests::support::durability::captured_members_source(&native),
     )
     .unwrap()
     .checkpoint;
     let mut recovered = runtime_with_test_schema();
     let outcome = recovered
         .durability_recovery()
-        .restore_native_checkpoint(execution, &native)
+        .restore_native_checkpoint(
+            execution,
+            &native,
+            crate::tests::support::durability::captured_members_source(&native),
+        )
         .unwrap();
     let work = outcome.checkpoint_restore_work.unwrap();
+    let dir = decoded
+        .directory
+        .as_ref()
+        .expect("external-member checkpoint restores cold directory");
     assert_eq!(work.native_bytes_read, Some(native.bytes().len()));
     assert_eq!(
         work.native_envelopes_readmitted,
         Some(decoded.envelopes.len())
     );
-    assert_eq!(work.root_images_verified, decoded.branch_roots.len());
-    assert_eq!(
-        work.root_partition_images_restored,
-        decoded
-            .branch_roots
-            .iter()
-            .map(|root| root.partition_images.len())
-            .sum::<usize>()
-    );
-    assert_eq!(
-        work.mirror_partition_images_examined,
-        decoded.partition_images.len()
-    );
-    assert_eq!(
-        work.mirror_partitions_reused + work.mirror_partitions_reconstructed,
-        decoded.partition_images.len()
-    );
-    assert!(work.mirror_partitions_reused > 0);
+    assert_eq!(work.root_images_verified, dir.manifest.roots.len());
+    assert_eq!(work.root_partition_images_restored, 0);
+    assert_eq!(work.mirror_partition_images_examined, 0);
     assert_eq!(work.history_envelopes_routed, decoded.envelopes.len());
     assert_eq!(work.branch_cells_readmitted, decoded.branch_cells.len());
     assert_eq!(
@@ -137,10 +140,7 @@ fn equal_exact_root_reuses_the_readmitted_partition_substrate() {
     let source = runtime_with_test_schema();
     let committed = create_entity_outcome(execution, &source, "reuse-root-mirror");
     release_test_commit_snapshot(&source, &committed);
-    let checkpoint = source
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
+    let checkpoint = source.durability_authority().checkpoint(execution).unwrap();
     assert_eq!(checkpoint.branch_roots.len(), 1);
     assert_eq!(
         checkpoint.branch_roots[0].partition_images,
@@ -150,9 +150,15 @@ fn equal_exact_root_reuses_the_readmitted_partition_substrate() {
     let mut restored = runtime_with_test_schema();
     let mut work = crate::durability::data::CheckpointRestoreWork::default();
     let lane = crate::storage::substrate::maintenance::ReconstructionLane::oracle();
-    let roots =
-        restore_branch_root_images(&lane, execution, &mut restored, &checkpoint, &mut work, None)
-            .unwrap();
+    let roots = restore_branch_root_images(
+        &lane,
+        execution,
+        &mut restored,
+        &checkpoint,
+        &mut work,
+        None,
+    )
+    .unwrap();
     let mirror =
         prepare_partitions(execution, &mut restored, &checkpoint, &roots, &mut work).unwrap();
     let root = roots.partitions.get(&committed.commit.commit_id).unwrap();
@@ -172,18 +178,21 @@ fn divergent_sibling_is_not_reused_as_the_storage_mirror() {
     release_test_commit_snapshot(&source, &sibling_commit);
     let main_commit = create_entity_outcome(execution, &source, "reuse-main-only");
     release_test_commit_snapshot(&source, &main_commit);
-    let checkpoint = source
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
+    let checkpoint = source.durability_authority().checkpoint(execution).unwrap();
     assert_eq!(checkpoint.branch_roots.len(), 2);
 
     let mut restored = runtime_with_test_schema();
     let mut work = crate::durability::data::CheckpointRestoreWork::default();
     let lane = crate::storage::substrate::maintenance::ReconstructionLane::oracle();
-    let roots =
-        restore_branch_root_images(&lane, execution, &mut restored, &checkpoint, &mut work, None)
-            .unwrap();
+    let roots = restore_branch_root_images(
+        &lane,
+        execution,
+        &mut restored,
+        &checkpoint,
+        &mut work,
+        None,
+    )
+    .unwrap();
     let mirror =
         prepare_partitions(execution, &mut restored, &checkpoint, &roots, &mut work).unwrap();
     let main_root = roots.partitions.get(&main_commit.commit.commit_id).unwrap();

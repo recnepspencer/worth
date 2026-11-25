@@ -17,7 +17,7 @@ fn fork_checkpoint_plan(
     runtime
         .fork_branch(execution, BranchId("storm".to_owned()), basis)
         .expect("fork checkpoint fixture");
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     let mut plan = medium
         .recovery_plan(
             execution,
@@ -49,7 +49,7 @@ fn fork_tail_plan(
     runtime
         .fork_branch(execution, BranchId("storm".to_owned()), basis)
         .expect("fork tail fixture");
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     create_entity_outcome_on_branch(
         execution,
         &runtime,

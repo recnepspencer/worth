@@ -41,15 +41,18 @@ impl<'runtime> DurabilityRecoveryAuthority<'runtime> {
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         checkpoint: &crate::durability::data::RelationalNativeCheckpoint,
+        source: std::sync::Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
     ) -> Result<(RuntimeRecoveryOutcome, RecoveredRelationalRuntimeAuthority), RelationalRecoveryStop>
     {
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
         let native_bytes_read = checkpoint.bytes().len();
-        let checkpoint = crate::durability::log::native_checkpoint_codec::decode_checkpoint(
-            execution,
-            checkpoint.bytes(),
-        )?
-        .checkpoint;
+        let checkpoint =
+            crate::durability::log::native_checkpoint_codec::decode_checkpoint_from_source(
+                execution,
+                checkpoint.bytes(),
+                source,
+            )?
+            .checkpoint;
         self.restore_decoded_native_checkpoint_with_authority(
             execution,
             checkpoint,
@@ -79,8 +82,9 @@ impl<'runtime> DurabilityRecoveryAuthority<'runtime> {
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         checkpoint: &crate::durability::data::RelationalNativeCheckpoint,
+        source: std::sync::Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
     ) -> Result<RuntimeRecoveryOutcome, RelationalRecoveryStop> {
-        self.restore_native_checkpoint_with_authority(execution, checkpoint)
+        self.restore_native_checkpoint_with_authority(execution, checkpoint, source)
             .map(|(outcome, _authority)| outcome)
     }
 

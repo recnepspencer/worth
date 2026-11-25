@@ -11,21 +11,26 @@ fn current_checkpoint_preserves_meaning_and_retired_or_unknown_versions_refuse()
     let host = request();
     let execution = ExecutionRequest::serial(&host);
     let world = World::new(&execution, 1);
-    let current = world
-        .runtime
-        .durability_authority()
-        .native_checkpoint(&execution, execution.allocation_policy())
-        .unwrap();
+    let (current, current_source) =
+        worth_testkit_relational::cold_recovery::capture_external_checkpoint(
+            &execution,
+            &world.runtime,
+        );
     // Protocol versions are interoperability data, not a measured cost golden.
     let body = current
         .bytes()
         .strip_prefix(b"WORTH-REL-CHK23\n")
         .expect("only the current combined checkpoint grammar is emitted");
-    let now = RelationalNativeCheckpoint::inspect_bytes(&execution, current.bytes()).unwrap();
+    let now = RelationalNativeCheckpoint::inspect_bytes_with_source(
+        &execution,
+        current.bytes(),
+        current_source.clone(),
+    )
+    .unwrap();
     let mut restored = World::empty_runtime(0);
     restored
         .durability_recovery()
-        .restore_native_checkpoint(&execution, &current)
+        .restore_native_checkpoint(&execution, &current, current_source.clone())
         .unwrap();
     assert_eq!(
         restored
@@ -38,12 +43,18 @@ fn current_checkpoint_preserves_meaning_and_retired_or_unknown_versions_refuse()
             .unwrap()
             .truth_version()
     );
-    let recaptured = restored
-        .durability_authority()
-        .native_checkpoint(&execution, execution.allocation_policy())
-        .unwrap();
-    let restored_meaning =
-        RelationalNativeCheckpoint::inspect_bytes(&execution, recaptured.bytes()).unwrap();
+    let (recaptured, recaptured_source) =
+        worth_testkit_relational::cold_recovery::capture_external_carrying(
+            &execution,
+            &restored,
+            &current_source,
+        );
+    let restored_meaning = RelationalNativeCheckpoint::inspect_bytes_with_source(
+        &execution,
+        recaptured.bytes(),
+        recaptured_source,
+    )
+    .unwrap();
     assert!(now
         .model_matches_rebound_runtime(
             &restored_meaning,
@@ -72,11 +83,13 @@ fn current_checkpoint_preserves_meaning_and_retired_or_unknown_versions_refuse()
         let before = target
             .branch_reference_state(&BranchId("main".into()))
             .unwrap();
+        let untrusted = RelationalNativeCheckpoint::from_untrusted_bytes(bytes);
         let stop = target
             .durability_recovery()
             .restore_native_checkpoint(
                 &execution,
-                &RelationalNativeCheckpoint::from_untrusted_bytes(bytes),
+                &untrusted,
+                worth_testkit_relational::cold_recovery::members_source(&untrusted),
             )
             .unwrap_err();
         assert_unsupported(stop);

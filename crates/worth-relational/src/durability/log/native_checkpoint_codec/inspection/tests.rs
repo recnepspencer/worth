@@ -3,6 +3,9 @@ use super::*;
 use crate::durability::log::native_checkpoint_codec::{
     checkpoint_wire::CheckpointWire, CHECKPOINT_MAGIC,
 };
+use crate::tests::support::durability::{
+    capture_checkpoint_with_source, captured_members_source, CapturedMembersColdSource,
+};
 use crate::tests::support::*;
 fn original(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -12,13 +15,9 @@ fn original(
     let target = create_entity(execution, &runtime, "inspected-target");
     let relation = create_relation(execution, &runtime, entity, target, "inspected-link");
     (
-        runtime
-            .durability_authority()
-            .native_checkpoint(
-                execution,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .unwrap(),
+        capture_checkpoint_with_source(execution, &runtime, execution.allocation_policy())
+            .unwrap()
+            .0,
         [
             CheckpointRecordIdentity {
                 class: RecordAllocationClass::Entity,
@@ -131,7 +130,10 @@ fn inspection_compares_every_native_model_value_as_original_bytes() {
     let host = crate::test_execution_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let (before, identities) = original(&execution);
-    let decoded = before.inspect(&execution).unwrap();
+    let source = captured_members_source(&before);
+    let decoded =
+        RelationalNativeCheckpoint::inspect_bytes_with_source(&execution, before.bytes(), source)
+            .unwrap();
     for identity in identities {
         assert!(
             decoded.live_records.contains(&identity),
@@ -208,7 +210,7 @@ fn restore_refuses_unknown_fields_before_publishing_any_model_state() {
     let mut control = runtime_with_test_schema();
     control
         .durability_recovery()
-        .restore_native_checkpoint(&execution, &original)
+        .restore_native_checkpoint(&execution, &original, captured_members_source(&original))
         .unwrap();
     assert!(control.history().immutable_commit_count() > 0);
     for owner in [
@@ -235,13 +237,17 @@ fn restore_refuses_unknown_fields_before_publishing_any_model_state() {
         });
         let checkpoint = RelationalNativeCheckpoint::from_untrusted_bytes(bytes);
         let mut target = runtime_with_test_schema();
-        let before = target
-            .durability_authority()
-            .native_checkpoint(&execution, execution.allocation_policy())
-            .unwrap();
+        let before =
+            capture_checkpoint_with_source(&execution, &target, execution.allocation_policy())
+                .unwrap()
+                .0;
         let denied = target
             .durability_recovery()
-            .restore_native_checkpoint(&execution, &checkpoint)
+            .restore_native_checkpoint(
+                &execution,
+                &checkpoint,
+                captured_members_source(&checkpoint),
+            )
             .unwrap_err();
         let RelationalRecoveryStop::Durability(error) = denied else {
             panic!("wrong restore refusal: {denied:?}")
@@ -255,10 +261,10 @@ fn restore_refuses_unknown_fields_before_publishing_any_model_state() {
             error.detail.contains("unknown field") && error.detail.contains("future_field"),
             "{owner}: {error:?}"
         );
-        let after = target
-            .durability_authority()
-            .native_checkpoint(&execution, execution.allocation_policy())
-            .unwrap();
+        let after =
+            capture_checkpoint_with_source(&execution, &target, execution.allocation_policy())
+                .unwrap()
+                .0;
         assert_eq!(
             before.bytes(),
             after.bytes(),
@@ -279,14 +285,16 @@ fn the_live_census_includes_divergent_retained_branch_roots() {
         expected.extend(changed_entities(&commit));
         release_test_commit_snapshot(&runtime, &commit);
     }
-    let checkpoint = runtime
-        .durability_authority()
-        .native_checkpoint(
-            &execution,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    let inspected = checkpoint.inspect(&execution).unwrap();
+    let checkpoint =
+        capture_checkpoint_with_source(&execution, &runtime, execution.allocation_policy())
+            .unwrap()
+            .0;
+    let inspected = RelationalNativeCheckpoint::inspect_bytes_with_source(
+        &execution,
+        checkpoint.bytes(),
+        captured_members_source(&checkpoint),
+    )
+    .unwrap();
     for entity in expected {
         assert!(
             inspected.live_records.contains(&CheckpointRecordIdentity {
@@ -305,7 +313,13 @@ fn burned_symbol_frontier_does_not_hide_published_symbol_damage() {
     let host = crate::test_execution_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let (before, _) = original(&execution);
-    let inspected = before.inspect(&execution).unwrap();
+    let source = captured_members_source(&before);
+    let inspected = RelationalNativeCheckpoint::inspect_bytes_with_source(
+        &execution,
+        before.bytes(),
+        source.clone(),
+    )
+    .unwrap();
     let next = inspected.symbol_identity_frontier.checked_add(7).unwrap();
     let advanced = rewritten(before.bytes(), false, |fields| {
         fields.insert(
@@ -313,7 +327,12 @@ fn burned_symbol_frontier_does_not_hide_published_symbol_damage() {
             rmp_serde::to_vec(&next).unwrap(),
         );
     });
-    let after = RelationalNativeCheckpoint::inspect_bytes(&execution, &advanced).unwrap();
+    let after = RelationalNativeCheckpoint::inspect_bytes_with_source(
+        &execution,
+        &advanced,
+        source.clone(),
+    )
+    .unwrap();
     assert_eq!(after.symbol_identity_frontier, next);
     assert_eq!(after.model, inspected.model);
     assert_eq!(after.live_records, inspected.live_records);
@@ -323,8 +342,11 @@ fn burned_symbol_frontier_does_not_hide_published_symbol_damage() {
             rmp_serde::to_vec(&0_u32).unwrap(),
         );
     });
-    assert!(RelationalNativeCheckpoint::inspect_bytes(&execution, &invalid).is_err());
-    let mut wire: CheckpointWire<'_> =
+    assert!(
+        RelationalNativeCheckpoint::inspect_bytes_with_source(&execution, &invalid, source)
+            .is_err()
+    );
+    let wire: CheckpointWire<'_> =
         rmp_serde::from_slice(&before.bytes()[CHECKPOINT_MAGIC.len()..]).unwrap();
     let symbol = wire
         .manifest
@@ -332,22 +354,36 @@ fn burned_symbol_frontier_does_not_hide_published_symbol_damage() {
         .first()
         .expect("fixture publishes symbol meanings")
         .member;
-    let member = wire
-        .members
-        .iter_mut()
-        .find(|(id, _)| *id == symbol)
-        .unwrap();
-    let mut damaged = member.1 .0.to_vec();
-    *damaged.last_mut().unwrap() ^= 1;
-    member.1 =
-        crate::durability::log::native_checkpoint_codec::checkpoint_wire::ByteString(&damaged);
-    let tampered = [
-        CHECKPOINT_MAGIC,
-        rmp_serde::to_vec_named(&wire).unwrap().as_slice(),
-    ]
-    .concat();
-    assert!(
-        RelationalNativeCheckpoint::inspect_bytes(&execution, &tampered).is_err(),
-        "symbol payloads still undergo owner readmission and digest validation"
-    );
+    let mut members = std::collections::BTreeMap::new();
+    for member in before.members() {
+        let crate::durability::data::RelationalCheckpointMember::New { locator, bytes } = member
+        else {
+            panic!("standalone external capture owns all members");
+        };
+        if *locator == symbol {
+            let mut damaged = bytes.to_vec();
+            *damaged.last_mut().unwrap() ^= 1;
+            let mut b = worth_execution::ExecutionRequestArrayBuilder::<u8>::allocate(
+                execution,
+                damaged.len(),
+            )
+            .unwrap();
+            b.extend_from_slice(&damaged).unwrap();
+            members.insert(*locator, b.seal_immutable_bytes().unwrap());
+        } else {
+            members.insert(*locator, bytes.clone());
+        }
+    }
+    let tampered_source: std::sync::Arc<
+        dyn crate::durability::medium::RelationalDurableColdSource,
+    > = std::sync::Arc::new(CapturedMembersColdSource {
+        members,
+        fallback: None,
+    });
+    assert!(RelationalNativeCheckpoint::inspect_bytes_with_source(
+        &execution,
+        before.bytes(),
+        tampered_source,
+    )
+    .is_err());
 }

@@ -16,9 +16,21 @@ fn checkpoint_readmission_refuses_retired_integer_array_digest_before_restore() 
     create_entity(&execution, &runtime, "binary-digest-checkpoint");
     let native = runtime
         .durability_authority()
-        .native_checkpoint(&execution, execution.allocation_policy())
+        .native_checkpoint_with_policy(
+            &execution,
+            execution.allocation_policy(),
+            crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
+        )
         .unwrap();
-    decode_checkpoint(&execution, native.bytes()).unwrap();
+    decode_checkpoint_from_source(
+        &execution,
+        native.bytes(),
+        crate::tests::support::durability::captured_members_source(&native),
+    )
+    .unwrap();
     let wire: checkpoint_wire::CheckpointWire<'_> =
         rmp_serde::from_slice(native.bytes().strip_prefix(CHECKPOINT_MAGIC).unwrap()).unwrap();
     let digest = wire.manifest.mirror[0].kind_authority.head;
@@ -43,7 +55,12 @@ fn checkpoint_readmission_refuses_retired_integer_array_digest_before_restore() 
     }
     bytes.extend_from_slice(remaining);
     assert!(replacements > 0);
-    let stop = decode_checkpoint(&execution, &bytes).unwrap_err();
+    let stop = decode_checkpoint_from_source(
+        &execution,
+        &bytes,
+        crate::tests::support::durability::captured_members_source(&native),
+    )
+    .unwrap_err();
     assert_eq!(
         expect_durability_failure(stop).class,
         RecoveryFailureClass::CorruptCheckpoint
@@ -130,19 +147,18 @@ fn forged_cross_region_kind_commitment_is_refused_before_region_payload_reads() 
             })
             .collect();
         let source = Arc::new(ForgedKindSource {
-            members: member_source::InlineCheckpointSource {
-                members: {
-                    let mut members = worth_execution::ExecutionOrderedMap::default();
-                    for member in native.members() {
+            members: crate::tests::support::durability::CapturedMembersColdSource {
+                members: native
+                    .members()
+                    .iter()
+                    .map(|member| {
                         let RelationalCheckpointMember::New { locator, bytes } = member else {
                             panic!("first capture owns its members")
                         };
-                        members
-                            .insert_cloned_native_for_request(locator, bytes, execution)
-                            .unwrap();
-                    }
-                    members
-                },
+                        (*locator, bytes.clone())
+                    })
+                    .collect(),
+                fallback: None,
             },
             commits,
             reads: Mutex::new(Vec::new()),
@@ -195,7 +211,7 @@ fn forged_cross_region_kind_commitment_is_refused_before_region_payload_reads() 
 
 #[derive(Debug)]
 struct ForgedKindSource {
-    members: member_source::InlineCheckpointSource,
+    members: crate::tests::support::durability::CapturedMembersColdSource,
     commits: BTreeMap<PatchStreamPosition, Vec<u8>>,
     reads: Mutex<Vec<RelationalDurableMemberLocator>>,
 }

@@ -10,9 +10,9 @@ fn durability_contract_damaged_checkpoint_refuses_rather_than_shortening_history
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);
     create_entity_outcome(execution, &runtime, "first");
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     create_entity_outcome(execution, &runtime, "second");
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     medium.damage_checkpoint_payload();
 
     let recovered_medium = OwnedTestDurableMedium::new();
@@ -43,7 +43,7 @@ fn durability_contract_recovery_fails_closed_without_exact_branch_cells() {
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);
     create_entity_outcome(execution, &runtime, "branch-cell-required");
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     let mut plan = medium
         .recovery_plan(
             execution,
@@ -83,9 +83,9 @@ fn durability_contract_recovery_rejects_branch_cell_target_without_catalog_artif
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);
     create_entity_outcome(execution, &runtime, "branch-cell-artifact-required");
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     let mut plan = medium
-        .recovery_plan(
+        .expanded_recovery_plan(
             execution,
             &runtime,
             RecoveryMode::NormalRecoveryVerification,
@@ -137,7 +137,7 @@ fn durability_contract_recovery_rejects_tail_checkpoint_drift_before_mutation() 
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);
     let _first = create_entity_outcome(execution, &runtime, "checkpoint-basis");
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     let second = create_entity_outcome(execution, &runtime, "tail-commit");
     let mut plan = medium
         .recovery_plan(

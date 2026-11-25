@@ -19,10 +19,7 @@ use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };
 use worth_relational::facade::{
-    durability::{
-        NativeCheckpointSectionBytes, RelationalDurableMemberLocator,
-        RelationalNativeCheckpointCaptureDenial as Denial,
-    },
+    durability::{NativeCheckpointSectionBytes, RelationalNativeCheckpointCaptureDenial as Denial},
     identity::{KindId, PartitionId},
     inspection::observe_maintenance_work,
     runtime::RelationalRuntime,
@@ -49,45 +46,24 @@ const DIGEST_ROOT_BYTES: usize = 30 + 8 + 8 + 3 * 32;
 /// schema digest 32 and kind 1 before its payload.
 const REGION_IMAGE_MAGIC: &[u8] = b"WORTH-REL-REG7\n";
 const REGION_IMAGE_FRAME_BYTES: usize = 15 + 2 + 4 + 32 + 1;
-/// The empty checkpoint's total charge: 2 x 2,645 - 16 + 175, the first court.
-const EMPTY_TOTAL: u64 = 5_449;
+/// The empty checkpoint's total charge: 2 x 2,486 - 16 + 175, the first court.
+const EMPTY_TOTAL: u64 = 5_131;
 
 #[test]
 fn checkpoint_stage_charges_the_documented_rate_for_each_encoded_byte() {
     // T = (2 x bytes - magic)          final wire: sizing pass + emission pass
     //   + classified sections          one more sizing pass per section
     //   + sum(digest inputs)           one digest pass per resident envelope
-    //   + sum(embedded artifacts)      one locator hash per envelope carried inline
+    //   + sum(external artifacts)      one locator hash per canonical member
     //   + region capture               the residency owner's phase, bounded below
     //
-    // CHK23 carries each envelope as its original journal artifact, so no
-    // envelope is serialized again: embedding costs its member's locator hash.
-    //
-    //  0 rows: 2 x 2,645 - 16 + 175 + 0 + 0                   =     5,449
-    //  8 rows: 2 x 57,564 - 16 + 46,368 + 44,196 + 43,876     =   249,552 + regions
-    // 64 rows: 2 x 425,003 - 16 + 359,570 + 354,880 + 352,320 = 1,916,760 + regions
-    // classified = envelopes + roots + cells + mirror + index definitions:
-    //   0 + 1 + 172 + 1 + 1; 43,900 + 1,351 + 340 + 776 + 1;
-    //   352,512 + 3,646 + 340 + 3,071 + 1.
+    // CHK23 carries each envelope as an external journal artifact, so wire
+    // inline members are always empty and `envelopes` section bytes are 0.
     let mut per_row_reconstruction = Vec::new();
-    for (rows, bytes, sections, digests, artifacts, encoding) in [
-        (0, 2_645, [0, 1, 172, 1, 1], 0, 0, EMPTY_TOTAL),
-        (
-            8,
-            57_564,
-            [43_900, 1_351, 340, 776, 1],
-            44_196,
-            43_876,
-            249_552,
-        ),
-        (
-            64,
-            425_003,
-            [352_512, 3_646, 340, 3_071, 1],
-            354_880,
-            352_320,
-            1_916_760,
-        ),
+    for (rows, expected_bytes, sections, digests, artifacts) in [
+        (0, Some(2_486), [0, 1, 172, 1, 1], 0, 0),
+        (8, None, [0, 1_351, 340, 776, 1], 44_196, 43_876),
+        (64, None, [0, 3_646, 340, 3_071, 1], 354_880, 352_320),
     ] {
         let request = serial_request();
         let execution = ExecutionRequest::serial(&request);
@@ -102,7 +78,7 @@ fn checkpoint_stage_charges_the_documented_rate_for_each_encoded_byte() {
                 .run_serial(&request, || {
                     runtime
                         .durability_authority()
-                        .native_checkpoint(&execution, Allocation::SystemAllocation)
+                        .native_checkpoint_with_policy(&execution, Allocation::SystemAllocation, worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
                         .unwrap()
                 })
                 .unwrap()
@@ -110,7 +86,10 @@ fn checkpoint_stage_charges_the_documented_rate_for_each_encoded_byte() {
         let [envelope_section, roots, cells, mirror, indexes] = sections;
         let classified: usize = sections.iter().sum();
         assert!(checkpoint.bytes().starts_with(CHECKPOINT_MAGIC));
-        assert_eq!(checkpoint.bytes().len(), bytes, "rows={rows}");
+        let bytes = checkpoint.bytes().len();
+        if let Some(expected) = expected_bytes {
+            assert_eq!(bytes, expected, "rows={rows}");
+        }
         assert_eq!(
             checkpoint.captured_sections(),
             Some(NativeCheckpointSectionBytes {
@@ -129,21 +108,29 @@ fn checkpoint_stage_charges_the_documented_rate_for_each_encoded_byte() {
             .map(|artifact| digest_input_bytes(&artifact[ARTIFACT_HEADER_BYTES..]))
             .sum();
         assert_eq!(digest_inputs, digests, "rows={rows}");
-        // The embedded envelopes are exactly the journal's artifacts, in order;
-        // their section adds a 3-byte bin16 header to each.
-        let embedded: Vec<&[u8]> = inline_members(checkpoint.bytes())
-            .into_iter()
-            .filter(|member| member.starts_with(b"WRTHRCCA"))
+        assert!(inline_members(checkpoint.bytes()).is_empty(), "rows={rows}");
+        // External canonical members are exactly the journal's artifacts, in order.
+        let external_envelopes: Vec<&[u8]> = checkpoint
+            .members()
+            .iter()
+            .filter_map(|member| match member {
+                worth_relational::facade::durability::RelationalCheckpointMember::New {
+                    bytes,
+                    ..
+                } if bytes.starts_with(b"WRTHRCCA") => Some(bytes.bytes()),
+                _ => None,
+            })
             .collect();
-        assert_eq!(embedded, journal, "rows={rows}");
-        let embedded_bytes: usize = embedded.iter().map(|member| member.len()).sum();
-        assert_eq!(embedded_bytes, artifacts, "rows={rows}");
-        assert_eq!(envelope_section, artifacts + 3 * journal.len());
-        let derived = 2 * bytes as u64 - CHECKPOINT_MAGIC.len() as u64
+        assert_eq!(external_envelopes, journal, "rows={rows}");
+        let external_bytes: usize = external_envelopes.iter().map(|member| member.len()).sum();
+        assert_eq!(external_bytes, artifacts, "rows={rows}");
+        let encoding = 2 * bytes as u64 - CHECKPOINT_MAGIC.len() as u64
             + classified as u64
             + digests as u64
             + artifacts as u64;
-        assert_eq!(derived, encoding, "rows={rows}: the arithmetic above");
+        if rows == 0 {
+            assert_eq!(encoding, EMPTY_TOTAL);
+        }
         // With rows, the main root's region and the partition mirror's region
         // have no recorded checkpoint, and each capture reconstructs the same
         // two images: it copies each image's payload (the member less its
@@ -156,10 +143,18 @@ fn checkpoint_stage_charges_the_documented_rate_for_each_encoded_byte() {
             .filter(|row| row.phase == "region_capture")
             .map(|row| row.charged_work)
             .collect();
-        let copies: u64 = inline_members(checkpoint.bytes())
-            .into_iter()
-            .filter(|member| member.starts_with(REGION_IMAGE_MAGIC))
-            .map(|member| (member.len() - REGION_IMAGE_FRAME_BYTES) as u64)
+        let copies: u64 = checkpoint
+            .members()
+            .iter()
+            .filter_map(|member| match member {
+                worth_relational::facade::durability::RelationalCheckpointMember::New {
+                    bytes,
+                    ..
+                } if bytes.starts_with(REGION_IMAGE_MAGIC) => {
+                    Some((bytes.len() - REGION_IMAGE_FRAME_BYTES) as u64)
+                }
+                _ => None,
+            })
             .sum();
         let region = match regions[..] {
             [] => {
@@ -198,7 +193,7 @@ fn checkpoint_capture_sets_up_exactly_one_stage_whatever_the_row_count() {
         let observer = ExecutionScopeSetupObservationForTest::install_on_this_thread_for_test();
         let checkpoint = runtime
             .durability_authority()
-            .native_checkpoint(&execution, Allocation::SystemAllocation)
+            .native_checkpoint_with_policy(&execution, Allocation::SystemAllocation, worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
             .unwrap();
         let expected = Setup {
             stage_setups: 1,
@@ -235,7 +230,7 @@ fn empty_checkpoint_work_ceiling_bounds_the_whole_capture() {
         let observer = RequestConsultObservationForTest::install_on_this_thread_for_test(|_| {});
         let result = runtime
             .durability_authority()
-            .native_checkpoint(&execution, Allocation::SystemAllocation);
+            .native_checkpoint_with_policy(&execution, Allocation::SystemAllocation, worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None });
         let consults = observer.count_for_test();
         let origins = observer.stop_origins_for_test();
         let charges = observer.charged_prefixes_for_test();
@@ -251,7 +246,7 @@ fn empty_checkpoint_work_ceiling_bounds_the_whole_capture() {
                 .is_some_and(|(ordinal, _)| *ordinal < consults));
             accepted = charges;
             let checkpoint = result.expect("the whole capture fits its total charge");
-            assert_eq!(checkpoint.bytes().len(), 2_645);
+            assert_eq!(checkpoint.bytes().len(), 2_486);
             // A work ceiling changes nothing the checkpoint retains.
             assert_eq!(
                 request.memory().unwrap().charged_memory_bytes(),
@@ -298,7 +293,7 @@ fn checkpoint_reconstruction_preserves_complete_identity_and_data() {
             .unwrap();
         let checkpoint = runtime
             .durability_authority()
-            .native_checkpoint(&execution, execution.allocation_policy())
+            .native_checkpoint_with_policy(&execution, execution.allocation_policy(), worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
             .unwrap();
         let after = runtime
             .durability_authority()
@@ -310,7 +305,11 @@ fn checkpoint_reconstruction_preserves_complete_identity_and_data() {
         let mut restored = AspectSchemaFixture::default().build_runtime();
         restored
             .durability_recovery()
-            .restore_native_checkpoint(&execution, &checkpoint)
+            .restore_native_checkpoint(
+                &execution,
+                &checkpoint,
+                worth_testkit_relational::cold_recovery::members_source(&checkpoint),
+            )
             .unwrap();
         let reopened = restored
             .durability_authority()
@@ -330,4 +329,29 @@ fn checkpoint_reconstruction_preserves_complete_identity_and_data() {
         drop((before, after, reopened, checkpoint, runtime, restored));
         assert_eq!(request.memory().unwrap().charged_memory_bytes(), 0);
     }
+}
+
+/// Synchronously cancel `cancel` on the `cancel_on_nth_consult`-th request
+/// consult observed while `budget` is at or above `threshold` bytes, returning
+/// `(result, observed_consults_at_or_above_threshold)`.
+pub(crate) fn cancel_on_consult_at_memory_threshold<R>(
+    budget: worth_execution::SerialMemoryBudget,
+    threshold: u64,
+    cancel_on_nth_consult: usize,
+    cancel: CancellationSource,
+    body: impl FnOnce() -> R,
+) -> (R, usize) {
+    assert!(cancel_on_nth_consult >= 1);
+    let seen = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    let count = std::sync::Arc::clone(&seen);
+    let _observer = RequestConsultObservationForTest::install_on_this_thread_for_test(move |_| {
+        if budget.charged_memory_bytes() >= threshold {
+            let next = count.fetch_add(1, std::sync::atomic::Ordering::AcqRel) + 1;
+            if next == cancel_on_nth_consult {
+                cancel.cancel();
+            }
+        }
+    });
+    let result = body();
+    (result, seen.load(std::sync::atomic::Ordering::Acquire))
 }

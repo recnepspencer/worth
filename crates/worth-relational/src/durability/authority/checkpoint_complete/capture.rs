@@ -54,7 +54,6 @@ impl FrozenCompleteMetadata {
     pub(super) fn capture(
         runtime: &RelationalRuntime,
         request: &ExecutionRequest<'_, '_>,
-        placement: &crate::durability::data::RelationalCheckpointArtifactPolicy<'_>,
     ) -> Result<Self, Denial> {
         let binding = runtime.configuration_binding();
         let configuration = binding.operation();
@@ -62,11 +61,6 @@ impl FrozenCompleteMetadata {
         let snapshot = routes
             .with_checkpoint_selection(|selection| {
                 let original = FrozenOriginalInputs::capture(runtime, &selection, request)?;
-                // Home selection retains immutable members by reference. Reject
-                // an Embedded demand before protecting/reading any source body.
-                if original.base.is_some() && placement.is_embedded() {
-                    return Err(Denial::OriginalAuthorityUnavailable);
-                }
                 let FrozenCurrentCheckpointMetadata {
                     branches,
                     components,

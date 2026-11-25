@@ -141,10 +141,13 @@ fn complete_capture_stopped_request_precedes_proven_selected_damage() {
                     stopped,
                     WorkCeilingDenial::Stopped(MapKernelStop::WorkCeiling)
                 );
-                match runtime
-                    .complete_checkpoint_service()
-                    .prepare(execution, RelationalCheckpointArtifactPolicy::Embedded)
-                {
+                match runtime.complete_checkpoint_service().prepare(
+                    execution,
+                    RelationalCheckpointArtifactPolicy::ExternalMembers {
+                        current_members: &[],
+                        source: None,
+                    },
+                ) {
                     Err(RelationalNativeCheckpointCaptureDenial::Request(cause)) => {
                         assert_eq!(cause, stopped.into())
                     }

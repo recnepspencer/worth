@@ -68,9 +68,13 @@ impl super::RelationalRuntime {
     ) -> RelationalColdSymbolPlacementForTest {
         let checkpoint = self
             .durability_authority()
-            .native_checkpoint(
+            .native_checkpoint_with_policy(
                 execution,
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                    current_members: &[],
+                    source: None,
+                },
             )
             .expect("certification placement exports the genuine dictionary");
         #[derive(serde::Deserialize)]

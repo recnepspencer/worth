@@ -25,66 +25,6 @@ impl CapturedManifest {
         Ok(())
     }
 
-    /// A live suffix may already be published while its runtime still owns its
-    /// rows directly. Export those exact resident bytes without inventing a cold
-    /// cell or asking an older directory's cell to serve an unknown member.
-    pub(crate) fn materialize_resident_event_members(
-        &mut self,
-        resident: &std::collections::BTreeMap<u64, RelationalCheckpointLineageEventRow>,
-        policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
-    ) -> Result<(), RelationalNativeCheckpointCaptureDenial> {
-        for page in &self.manifest.lineage_events {
-            if !matches!(
-                self.members.get(&page.member),
-                Some(RelationalCheckpointMember::Carried { .. })
-            ) {
-                continue;
-            }
-            policy.check_live()?;
-            let rows = page
-                .event_ids
-                .iter()
-                .map(|id| resident.get(id).cloned())
-                .collect::<Option<Vec<_>>>();
-            if let Some(rows) = rows {
-                let encoded =
-                    member_frame::encode(MemberKind::LineageEvents, &rows).map_err(|cause| {
-                        crate::storage::data::RelationalStorageUnavailable {
-                            subject: crate::storage::data::RelationalStorageSubject::Lineage {
-                                first: crate::identity::data::LineageId(page.first_node),
-                                last: crate::identity::data::LineageId(page.last_node),
-                            },
-                            cause,
-                        }
-                    })?;
-                if encoded.0 == page.member {
-                    self.members.insert(
-                        page.member,
-                        RelationalCheckpointMember::New {
-                            locator: page.member,
-                            bytes: worth_execution::ExecutionImmutableBytes::from_external_bytes(
-                                std::sync::Arc::new(encoded.1.into_boxed_slice()),
-                            ),
-                        },
-                    );
-                    continue;
-                }
-            }
-            if !self.guarded_members.contains_key(&page.member) {
-                return Err(crate::storage::data::RelationalStorageUnavailable {
-                    subject: crate::storage::data::RelationalStorageSubject::Lineage {
-                        first: crate::identity::data::LineageId(page.first_node),
-                        last: crate::identity::data::LineageId(page.last_node),
-                    },
-                    cause:
-                        crate::storage::data::RelationalStorageUnavailableCause::SourceUnavailable,
-                }
-                .into());
-            }
-        }
-        Ok(())
-    }
-
     fn append_event_page(
         &mut self,
         rows: &[RelationalCheckpointLineageEventRow],

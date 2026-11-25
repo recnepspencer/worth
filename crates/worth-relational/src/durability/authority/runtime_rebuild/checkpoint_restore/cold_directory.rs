@@ -14,6 +14,7 @@ pub(super) fn restore(
     runtime: &mut RelationalRuntime,
     checkpoint: &DurableCheckpoint,
     directory: Arc<crate::durability::data::RelationalCheckpointDirectory>,
+    selected_checkpoint_acknowledged: bool,
     work: &mut CheckpointRestoreWork,
 ) -> Result<
     crate::durability::checkpoints::region_directory::ReadmittedSchemas,
@@ -174,7 +175,12 @@ pub(super) fn restore(
         None => return Err(corrupt("mirror has no schema carrier").into()),
     };
     let record_identity = super::record_identity::prepare_record_identity(checkpoint)?;
-    let has_naming_schemes = !runtime.config.schema.registry.persistent_name_schemes().is_empty()
+    let has_naming_schemes = !runtime
+        .config
+        .schema
+        .registry
+        .persistent_name_schemes()
+        .is_empty()
         || regions.schemas.has_persistent_name_schemes();
     let runtime = super::super::unshared_state(runtime)?;
     runtime.services.symbols = paged_symbols;
@@ -215,9 +221,16 @@ pub(super) fn restore(
         let _event_leases = runtime.lineage.demand_event_pages(execution, None, None)?;
         runtime.lineage.finalize_cold_naming_basis(lane);
     }
-    runtime
-        .durability
-        .checkpoint_selection()
-        .restore_selected(directory);
+    if selected_checkpoint_acknowledged {
+        runtime
+            .durability
+            .checkpoint_selection()
+            .restore_selected(directory);
+    } else {
+        runtime
+            .durability
+            .checkpoint_selection()
+            .restore_data(directory);
+    }
     Ok(regions.schemas)
 }

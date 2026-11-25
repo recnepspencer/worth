@@ -37,16 +37,14 @@ impl Source {
         publication: crate::history::data::CommitId,
         change: u8,
     ) -> (RelationalNativeCheckpoint, Arc<Self>) {
-        let original = runtime
-            .durability_authority()
-            .native_checkpoint_with_policy(
-                execution,
-                execution.allocation_policy(),
-                RelationalCheckpointArtifactPolicy::Embedded,
-            )
-            .expect("actual Query checkpoint");
+        let (original, source) = Self::capture(execution, runtime);
         let native = original
-            .corrupt_current_publication_roster_external_for_test(execution, publication, change)
+            .corrupt_current_publication_roster_external_for_test(
+                execution,
+                source,
+                publication,
+                change,
+            )
             .expect(
                 "the real recorder emits damaged external current members without admitting them",
             );

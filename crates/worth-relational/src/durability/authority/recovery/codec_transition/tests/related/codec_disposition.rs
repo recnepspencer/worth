@@ -1,6 +1,6 @@
 //! Same-route birth after an actual encoded governed retirement; claims cannot substitute.
 use super::{
-    super::fixture::{basis, capture},
+    super::fixture::{basis, capture, capture_with_source},
     fixture::*,
 };
 use crate::runtime::RelationalRuntime;
@@ -43,10 +43,11 @@ fn cold_retirement_requires_every_sibling_group_before_route_eligibility() {
         .unwrap()
         .into_parts();
     recovered.admit_basis(basis(&target)).unwrap();
-    let saved = capture(execution, &target);
-    let decoded = crate::durability::log::native_checkpoint_codec::decode_checkpoint(
+    let (saved, saved_source) = capture_with_source(execution, &target);
+    let decoded = crate::durability::log::native_checkpoint_codec::decode_expanded_checkpoint(
         execution,
         saved.bytes(),
+        saved_source,
     )
     .unwrap()
     .checkpoint;
@@ -153,22 +154,16 @@ fn cold_retirement_requires_every_sibling_group_before_route_eligibility() {
             entry.synchronize_patch_semantics_for_test(execution);
         }
         assert!(entry.codec_retirement_headers_valid());
-        let (bytes, _) = crate::durability::log::native_checkpoint_codec::encode_checkpoint(
-            execution,
-            &changed,
-            execution.allocation_policy(),
-        )
-        .unwrap();
-        let len = bytes.len();
-        let checkpoint =
-            crate::durability::data::RelationalNativeCheckpoint::from_untrusted_bytes_region(
-                bytes,
-                0..len,
+        let (checkpoint, checkpoint_source) =
+            crate::tests::support::durability::encode_checkpoint_with_source(
+                execution,
+                &changed,
+                execution.allocation_policy(),
             )
             .unwrap();
         let (mut cold, receipt) = installed(2);
         cold.durability_recovery()
-            .restore_native_checkpoint(execution, &checkpoint)
+            .restore_native_checkpoint(execution, &checkpoint, checkpoint_source)
             .unwrap();
         let receipt = cold
             .readmit_recovered_initial_schema_installation(receipt)
@@ -189,7 +184,13 @@ fn cold_retirement_requires_every_sibling_group_before_route_eligibility() {
             assert_eq!(capture(execution, &cold), before);
         } else {
             assert!(eligibility.unwrap().is_some());
-            assert!(!basis(&cold)
+            let selected = basis(&cold);
+            selected
+                .inner
+                .root
+                .demand_full_region_cached(execution, sibling.partition_id)
+                .unwrap();
+            assert!(!selected
                 .inner
                 .root
                 .partition_state(sibling.partition_id)
@@ -207,10 +208,10 @@ pub(super) fn cold_retired_route(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     target: &RelationalRuntime,
 ) {
-    let saved = capture(execution, target);
+    let (saved, saved_source) = capture_with_source(execution, target);
     let (mut cold, receipt) = installed(2);
     cold.durability_recovery()
-        .restore_native_checkpoint(execution, &saved)
+        .restore_native_checkpoint(execution, &saved, saved_source.clone())
         .unwrap();
     let receipt = cold
         .readmit_recovered_initial_schema_installation(receipt)
@@ -237,9 +238,10 @@ pub(super) fn cold_retired_route(
         crate::history::data::CanonicalOutputPublication::BirthAfterCodecRetirement { .. }
     ));
 
-    let decoded = crate::durability::log::native_checkpoint_codec::decode_checkpoint(
+    let decoded = crate::durability::log::native_checkpoint_codec::decode_expanded_checkpoint(
         execution,
         saved.bytes(),
+        saved_source,
     )
     .unwrap()
     .checkpoint;
@@ -270,23 +272,17 @@ pub(super) fn cold_retired_route(
         } else {
             event.publication = foreign;
         }
-        let (bytes, _) = crate::durability::log::native_checkpoint_codec::encode_checkpoint(
-            execution,
-            &changed,
-            execution.allocation_policy(),
-        )
-        .unwrap();
-        let len = bytes.len();
-        let untrusted =
-            crate::durability::data::RelationalNativeCheckpoint::from_untrusted_bytes_region(
-                bytes,
-                0..len,
+        let (untrusted, untrusted_source) =
+            crate::tests::support::durability::encode_checkpoint_with_source(
+                execution,
+                &changed,
+                execution.allocation_policy(),
             )
             .unwrap();
         let (mut rejected, receipt) = installed(2);
         rejected
             .durability_recovery()
-            .restore_native_checkpoint(execution, &untrusted)
+            .restore_native_checkpoint(execution, &untrusted, untrusted_source)
             .unwrap();
         let receipt = rejected
             .readmit_recovered_initial_schema_installation(receipt)

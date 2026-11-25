@@ -131,16 +131,17 @@ missing generations from source records.
 this owner. The next authoritative canonical commit carries the newly introduced
 ordered definition prefix, including full names, kinds, scoping and duplicate
 equivalent definitions at distinct IDs. Artifact v4 requires this delta in full,
-authoritative and embedded checkpoint envelope projections; CHK18 carries the
+authoritative checkpoint envelope projections; CHK18 carries the
 catalog and issued frontier from one capture. Earlier development formats refuse.
 Only an actual performed canonical cutover or acknowledged checkpoint selection
 advances the accepted frontier. Preparation, refusal and uncertain fate do not.
 
 Recovery admits checkpoint definitions and exact overlapping tail declarations
 before replay, retaining the original tail payload and catalog-prefix coverage.
-The catalog is global; sibling schema bases do not prune it. Embedded restoration
-retains original canonical backing as data; an unselected standalone checkpoint
-can re-emit checkpoint-only definitions. Actual selected cold restoration and
+The catalog is global; sibling schema bases do not prune it. Standalone
+external-member restoration retains original canonical backing as data without
+fabricating medium selection, so an unselected standalone checkpoint can re-emit
+checkpoint-only definitions. Actual medium-selected cold restoration and
 completed selection acknowledgement install accepted catalog coverage.
 Generations remain derived: use the existing owner build/demand doors.
 Catalog coverage incarnation/epochs are live observations and never enter wire.
@@ -170,8 +171,8 @@ binding twice refuses and a prepared candidate cannot be rebound. Candidate
 `caller_association()` observes its retained sealed payload; the canonical
 envelope exposes the same immutable bytes. Native preserves the caller's bytes
 without interpreting them or granting completion authority. Canonical artifact
-v5 and native checkpoint CHK18 retain the field through journal and embedded or
-cold checkpoint recovery. Older artifact and checkpoint versions refuse rather
+v5 and native checkpoint CHK18 retain the field through journal and cold
+external-member checkpoint recovery. Older artifact and checkpoint versions refuse rather
 than acquiring the new grammar implicitly. Association bytes or successful
 artifact decoding alone establish no durable World effect or product movement.
 
@@ -429,11 +430,14 @@ interned keys; the pure description itself issues no text identities.
 
 ## Validated transitions before recovered installation
 
-`native_checkpoint(policy)` captures one immutable image and counts its actual
-MessagePack wire before allocating the final fixed byte backing. The same wire
-writer emits into that backing and seals it without a payload copy. The caller
-explicitly chooses System allocation or an Execution lease; allocation and live
-control refusals preserve the original typed cause and payload quote through
+`native_checkpoint_with_policy(execution, policy, artifact_policy)` captures one
+immutable manifest image with external cold-storage members
+(`RelationalCheckpointArtifactPolicy::ExternalMembers`; embedded inline member
+placement is retired and refused on decode) and counts its actual MessagePack
+wire before allocating the final fixed byte backing. The same wire writer emits
+into that backing and seals it without a payload copy. The caller explicitly
+chooses System allocation or an Execution lease; allocation and live control
+refusals preserve the original typed cause and payload quote through
 `RelationalNativeCheckpointCaptureDenial`. Captured image, partition-alias and
 serializer metadata heaps are separate from this payload admission. Imported
 bytes do not acquire a charge or recovery authority.
@@ -678,7 +682,7 @@ not claimed, and close never allocates/reserves/rehashes/shrinks those tables.
 and the provider's frozen canonical/transition bounds. Its owned read methods
 reject foreign sources before callbacks and never fall back to legacy `Vec`
 reads. Unknown providers return `UnsupportedProvider`. The two original test
-media copy/fund immutable snapshots; inline checkpoint images expose members
+media copy/fund immutable snapshots; external checkpoint sources expose members
 with zero journal bounds and do not manufacture an original journal prefix.
 
 `RelationalDurableRecoverySource::from_protected_source` feeds exact original
@@ -713,8 +717,8 @@ artifact v4 frame. Its member SHA covers the whole frame; the index retains
 the separate positioned payload digest. Capture verifies original Memory backing,
 protected Journal reads, or the installed prior selected read. It cannot reconstruct
 a missing original from an image or resident body. Earlier CHK17 selections refuse.
-Embedded checkpoints include these same original byte strings; external checkpoints
-publish them as singleton members alongside the manifest.
+External checkpoints publish these original byte strings as singleton members
+alongside the manifest (embedded inline checkpoint placement is retired).
 
 `durability().canonical_commit_artifacts(&request)` takes the original execution
 request so selected reads enforce its limits. Skipping with `nth` or

@@ -9,10 +9,14 @@ fn tail_created_lineage_regression_below_checkpoint_high_water_denies() {
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);
     create_entity_outcome(execution, &runtime, "lineage-regression-checkpoint");
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     create_entity_outcome(execution, &runtime, "lineage-regression-tail");
     let mut plan = medium
-        .recovery_plan(execution, &runtime, RecoveryMode::NormalRecoveryVerification)
+        .recovery_plan(
+            execution,
+            &runtime,
+            RecoveryMode::NormalRecoveryVerification,
+        )
         .unwrap();
     plan.tail_log[0]
         .envelope_mut_for_test(execution)
@@ -41,10 +45,14 @@ fn tail_lineage_event_regression_below_checkpoint_high_water_denies() {
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);
     create_entity_outcome(execution, &runtime, "event-regression-checkpoint");
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     create_entity_outcome(execution, &runtime, "event-regression-tail");
     let mut plan = medium
-        .recovery_plan(execution, &runtime, RecoveryMode::NormalRecoveryVerification)
+        .recovery_plan(
+            execution,
+            &runtime,
+            RecoveryMode::NormalRecoveryVerification,
+        )
         .unwrap();
     plan.tail_log[0]
         .envelope_mut_for_test(execution)

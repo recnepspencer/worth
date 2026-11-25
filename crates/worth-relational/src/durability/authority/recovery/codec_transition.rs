@@ -36,6 +36,7 @@ impl DurabilityRecoveryAuthority<'_> {
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         native: &RelationalNativeCheckpoint,
+        source: std::sync::Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
     ) -> Result<
         (
             crate::runtime::RecoveryOutcome,
@@ -52,11 +53,13 @@ impl DurabilityRecoveryAuthority<'_> {
                 detail,
             )
         })?;
-        let checkpoint = crate::durability::log::native_checkpoint_codec::decode_checkpoint(
-            execution,
-            native.bytes(),
-        )?
-        .checkpoint;
+        let checkpoint =
+            crate::durability::log::native_checkpoint_codec::decode_checkpoint_from_source(
+                execution,
+                native.bytes(),
+                source,
+            )?
+            .checkpoint;
         self.restore_decoded_for_codec_transition(execution, checkpoint, native.bytes().len())
     }
 

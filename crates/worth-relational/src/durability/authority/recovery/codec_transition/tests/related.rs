@@ -5,7 +5,7 @@ mod fixture;
 mod incoming_reference;
 mod refusals;
 mod settlement;
-use super::fixture::{basis, capture, protected_payload};
+use super::fixture::{basis, capture, capture_with_source, protected_payload};
 use crate::indexes::data::DerivedIndexEntries;
 use crate::mvcc::RelationalOperationControl;
 use fixture::*;
@@ -139,11 +139,11 @@ fn closed_three_outputs_two_relations_retire_atomically_and_regenerate_ordered_v
     );
     let v2_payloads = outputs.map(|id| protected_payload(&target, id));
     assert_ne!(v2_payloads, payloads);
-    let saved = capture(execution, &target);
+    let (saved, saved_source) = capture_with_source(execution, &target);
     let (mut reopened, receipt) = installed(2);
     reopened
         .durability_recovery()
-        .restore_native_checkpoint_with_authority(execution, &saved)
+        .restore_native_checkpoint_with_authority(execution, &saved, saved_source)
         .unwrap();
     reopened
         .readmit_recovered_initial_schema_installation(receipt)

@@ -40,9 +40,13 @@ pub(super) fn readmit(
         fixture
             .runtime
             .durability_authority()
-            .native_checkpoint(
+            .native_checkpoint_with_policy(
                 request,
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                    current_members: &[],
+                    source: None,
+                },
             )
             .unwrap(),
     );

@@ -22,6 +22,7 @@ pub(super) fn validate_manifest(
     .map_err(Into::into)
 }
 
+#[allow(dead_code)]
 pub(super) fn expand(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     manifest: RelationalCheckpointManifest,
@@ -201,7 +202,13 @@ pub(super) fn expand(
         manifest.branch_data.ordinary_owned_parts();
     let relation_lineages: Vec<_> = envelopes
         .iter()
-        .flat_map(|envelope| envelope.envelope().lineage_relation_lineages().iter().copied())
+        .flat_map(|envelope| {
+            envelope
+                .envelope()
+                .lineage_relation_lineages()
+                .iter()
+                .copied()
+        })
         .collect();
     Ok(DurableCheckpoint {
         recorded_components: manifest

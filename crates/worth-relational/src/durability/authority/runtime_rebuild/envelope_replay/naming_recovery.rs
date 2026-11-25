@@ -15,10 +15,10 @@ use crate::lineage::authority::{
     extract_embedded_name_refs, verify_persisted_birth_digest, PersistedBirthClaim,
 };
 use crate::lineage::data::{
-    CommitNamingPlan, LineageBasisView, LineageEventKind, LineageMergeKeeper,
-    LineagePostureClaim, LineageRecordTarget, LineageSplitChild, LineageSubject,
-    PersistentNameBirthRecord, PersistentNameBirthRequest, PersistentNameDiscriminatorReference,
-    PersistentNameHolder, PersistentNameIdentity, PersistentNameReferenceBasis,
+    CommitNamingPlan, LineageBasisView, LineageEventKind, LineageMergeKeeper, LineagePostureClaim,
+    LineageRecordTarget, LineageSplitChild, LineageSubject, PersistentNameBirthRecord,
+    PersistentNameBirthRequest, PersistentNameDiscriminatorReference, PersistentNameHolder,
+    PersistentNameIdentity, PersistentNameReferenceBasis,
 };
 use crate::runtime::RelationalRuntime;
 
@@ -79,7 +79,10 @@ pub(super) fn reconstruct_replay_naming_plan(
         })
     };
 
-    let resolve_basis_target = |lineage_id: LineageId| -> Result<(LineageRecordTarget, PersistentNameIdentity), DurabilityError> {
+    let resolve_basis_target = |lineage_id: LineageId| -> Result<
+        (LineageRecordTarget, PersistentNameIdentity),
+        DurabilityError,
+    > {
         let Some((holder, name)) = restored
             .lineage
             .holder_and_name_for_lineage(branch_id, lineage_id)
@@ -107,7 +110,8 @@ pub(super) fn reconstruct_replay_naming_plan(
 
     // Index all verified birth records in this envelope by their target lineage
     // and collect same-occurrence role provenance for discriminator references.
-    let mut create_births = BTreeMap::<LineageId, (LineageRecordTarget, PersistentNameBirthRecord)>::new();
+    let mut create_births =
+        BTreeMap::<LineageId, (LineageRecordTarget, PersistentNameBirthRecord)>::new();
     let mut same_occurrence_roles = BTreeMap::<[u8; 32], (String, String)>::new();
     for event in events {
         if event.kind() == LineageEventKind::Create

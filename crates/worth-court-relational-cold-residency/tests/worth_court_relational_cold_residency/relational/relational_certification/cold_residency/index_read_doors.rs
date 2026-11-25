@@ -32,7 +32,6 @@ pub(super) enum IndexDoor {
     Build,
     BasisBuild,
     MemoryCheckpoint,
-    EmbeddedCheckpoint,
     SnapshotPin,
     ViewPin,
     FieldPreparation,
@@ -41,7 +40,7 @@ pub(super) enum IndexDoor {
     Commit,
 }
 impl IndexDoor {
-    pub(super) const ALL: [Self; 14] = [
+    pub(super) const ALL: [Self; 13] = [
         Self::Latest,
         Self::CommitGeneration,
         Self::ObservationGeneration,
@@ -49,7 +48,6 @@ impl IndexDoor {
         Self::Build,
         Self::BasisBuild,
         Self::MemoryCheckpoint,
-        Self::EmbeddedCheckpoint,
         Self::SnapshotPin,
         Self::ViewPin,
         Self::FieldPreparation,
@@ -111,7 +109,6 @@ impl IndexDoor {
                     Self::Build
                     | Self::BasisBuild
                     | Self::MemoryCheckpoint
-                    | Self::EmbeddedCheckpoint
                     | Self::SnapshotPin
                     | Self::ViewPin
                     | Self::FieldPreparation
@@ -121,13 +118,8 @@ impl IndexDoor {
                 };
                 Ok(found.as_deref().is_some_and(genuine))
             }
-            Self::MemoryCheckpoint | Self::EmbeddedCheckpoint => {
-                super::index_checkpoint_reads::read(
-                    execution,
-                    runtime,
-                    matches!(self, Self::EmbeddedCheckpoint),
-                    expected_generation,
-                )
+            Self::MemoryCheckpoint => {
+                super::index_checkpoint_reads::read(execution, runtime, expected_generation)
             }
             Self::Build | Self::BasisBuild => {
                 let door = if matches!(self, Self::Build) {
@@ -195,7 +187,7 @@ impl IndexDoor {
                             ) => cause,
                             other => panic!("the actual field definition is valid: {other:?}"),
                         }),
-                    Self::Latest | Self::CommitGeneration | Self::ObservationGeneration | Self::VersionGenerations | Self::Build | Self::BasisBuild | Self::MemoryCheckpoint | Self::EmbeddedCheckpoint | Self::SnapshotPin | Self::Validation | Self::Candidate | Self::Commit => unreachable!("selected view index door"),
+                    Self::Latest | Self::CommitGeneration | Self::ObservationGeneration | Self::VersionGenerations | Self::Build | Self::BasisBuild | Self::MemoryCheckpoint | Self::SnapshotPin | Self::Validation | Self::Candidate | Self::Commit => unreachable!("selected view index door"),
                 }
             }
             Self::Validation | Self::Candidate | Self::Commit => {
@@ -222,7 +214,6 @@ impl IndexDoor {
                     | Self::Build
                     | Self::BasisBuild
                     | Self::MemoryCheckpoint
-                    | Self::EmbeddedCheckpoint
                     | Self::SnapshotPin
                     | Self::ViewPin
                     | Self::FieldPreparation => unreachable!("selected preparation index door"),

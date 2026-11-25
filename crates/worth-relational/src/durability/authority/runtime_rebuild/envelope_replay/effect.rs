@@ -177,7 +177,8 @@ pub(super) fn replay_ordinary_commit(
             "durable transaction copy/staging denied".into(),
         )
     })?;
-    if let Some(plan) = super::naming_recovery::reconstruct_replay_naming_plan(restored, envelope)? {
+    if let Some(plan) = super::naming_recovery::reconstruct_replay_naming_plan(restored, envelope)?
+    {
         txn.attach_naming_plan(plan);
     }
     let proposal = txn.validate(execution, restored).map_err(|error| {

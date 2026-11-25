@@ -72,13 +72,8 @@ fn checkpoint_restores_exact_derived_meaning_instead_of_rebinding_a_changed_reci
     let born = commit(&runtime, &execution, birth);
     let root = born.created_entity(&created(0)).unwrap();
     let target = born.created_entity(&created(1)).unwrap();
-    let checkpoint = runtime
-        .durability_authority()
-        .native_checkpoint(
-            &execution,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let (checkpoint, checkpoint_source) =
+        worth_testkit_relational::cold_recovery::capture_external_checkpoint(&execution, &runtime);
     let installed_handle = schema.derived_relation(&identity(2)).unwrap();
     let mut matching = RelationalRuntimeApi::builder()
         .schema_registry(schema)
@@ -86,7 +81,7 @@ fn checkpoint_restores_exact_derived_meaning_instead_of_rebinding_a_changed_reci
         .expect("valid native fixture configuration");
     matching
         .durability_recovery()
-        .restore_native_checkpoint(&execution, &checkpoint)
+        .restore_native_checkpoint(&execution, &checkpoint, checkpoint_source.clone())
         .unwrap();
     let (_, matching_basis) = matching
         .observe_branch(&matching.main_branch_identity())
@@ -106,22 +101,18 @@ fn checkpoint_restores_exact_derived_meaning_instead_of_rebinding_a_changed_reci
         .schema_registry(changed.clone())
         .build()
         .expect("valid native fixture configuration");
-    let before = restored
-        .durability_authority()
-        .native_checkpoint(&execution, execution.allocation_policy())
-        .unwrap();
+    let (before, _) =
+        worth_testkit_relational::cold_recovery::capture_external_checkpoint(&execution, &restored);
     let denied = restored
         .durability_recovery()
-        .restore_native_checkpoint(&execution, &checkpoint)
+        .restore_native_checkpoint(&execution, &checkpoint, checkpoint_source)
         .unwrap_err();
     assert!(
         matches!(denied, worth_relational::facade::durability::RelationalRecoveryStop::Durability(error) if error.class == worth_relational::facade::durability::RecoveryFailureClass::DeclaredSchemaMismatch)
     );
     assert_eq!(
-        restored
-            .durability_authority()
-            .native_checkpoint(&execution, execution.allocation_policy())
-            .unwrap(),
+        worth_testkit_relational::cold_recovery::capture_external_checkpoint(&execution, &restored)
+            .0,
         before
     );
     // A matching receiving declaration retains its actual recovered source issuer.

@@ -21,9 +21,13 @@ fn recovered_world(
     create_entity(execution, &source, "checkpoint-predecessor");
     let checkpoint = source
         .durability_authority()
-        .native_checkpoint(
+        .native_checkpoint_with_policy(
             execution,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
         )
         .unwrap();
     // The restored runtime continues the source's medium, which already holds
@@ -31,7 +35,11 @@ fn recovered_world(
     let mut target = durable_runtime_for_medium(&medium);
     let (_, authority) = target
         .durability_recovery()
-        .restore_native_checkpoint_with_authority(execution, &checkpoint)
+        .restore_native_checkpoint_with_authority(
+            execution,
+            &checkpoint,
+            crate::tests::support::durability::captured_members_source(&checkpoint),
+        )
         .unwrap();
     (target, authority, medium)
 }

@@ -32,9 +32,13 @@ fn digest_valid_join_checkpoint_requires_complete_rows_and_leg_state() {
         .unwrap();
     build(execution, &runtime, index.index_id, &committed);
     release_test_commit_snapshot(&runtime, &committed);
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     let lawful = medium
-        .recovery_plan(execution, &runtime, RecoveryMode::NormalRecoveryVerification)
+        .expanded_recovery_plan(
+            execution,
+            &runtime,
+            RecoveryMode::NormalRecoveryVerification,
+        )
         .unwrap();
     let control_medium = OwnedTestDurableMedium::new();
     let mut control = durable_runtime_for_medium(&control_medium);
@@ -98,9 +102,13 @@ fn digest_valid_basis_binding_cannot_carry_an_obsolete_generation_across_an_edit
     build(execution, &runtime, index.index_id, &second);
     release_test_commit_snapshot(&runtime, &first);
     release_test_commit_snapshot(&runtime, &second);
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     let mut plan = medium
-        .recovery_plan(execution, &runtime, RecoveryMode::NormalRecoveryVerification)
+        .expanded_recovery_plan(
+            execution,
+            &runtime,
+            RecoveryMode::NormalRecoveryVerification,
+        )
         .unwrap();
     let checkpoint = plan.checkpoint.as_mut().unwrap();
     let artifact = checkpoint.derived_index_checkpoint.as_ref().unwrap();
@@ -151,9 +159,9 @@ fn legacy_index_affinity_is_checked_before_replacing_a_live_recovery_target() {
     let index = name_index(&source);
     build(execution, &source, index.index_id, &committed);
     release_test_commit_snapshot(&source, &committed);
-    source_medium.file_embedded_checkpoint(execution, &source);
+    capture_and_file_checkpoint(execution, &source, &source_medium);
     let mut lawful = source_medium
-        .recovery_plan(execution, &source, RecoveryMode::NormalRecoveryVerification)
+        .expanded_recovery_plan(execution, &source, RecoveryMode::NormalRecoveryVerification)
         .unwrap();
     let checkpoint = lawful.checkpoint.as_mut().unwrap();
     let generations = checkpoint
