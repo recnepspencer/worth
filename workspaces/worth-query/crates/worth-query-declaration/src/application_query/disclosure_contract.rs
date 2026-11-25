@@ -14,6 +14,7 @@ mod inspection;
 
 mod classification;
 mod components;
+mod governed_shape;
 mod influence;
 mod optional_aspect;
 mod resource;

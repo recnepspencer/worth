@@ -43,7 +43,7 @@ pub(super) fn install(
     let expected_invariant_inventory_digest = inventory.digest();
     Ok(PreparedNativeSchemaMeaning {
         layout,
-        managed_sources,
+        managed_sources: std::sync::Arc::new(managed_sources),
         source_initializer,
         receipt: invariant_installation_receipt,
         expected_invariant_inventory_digest,

@@ -1,4 +1,6 @@
-//! Attach a paid, empty Source image to the genuine recovered Native head.
+//! Attach a paid, empty Source image to the genuine live Native head that
+//! carries none for the active registration: a recovered head, or one its
+//! publishing registration left vacant.
 use super::super::{
     cell::publication_admission::PreparedManagedSourceCell, CompanionBranchCell,
     CompanionPreflightStop as Stop, ManagedIndexSourceCellPlacement,
@@ -21,7 +23,7 @@ use worth_relational_contracts::internal_port::validation::candidate_source::den
 /// Caller must hold owner + configuration epochs and declare `lookup_cleanup`
 /// outside those guards so a failed participant placement drops after them.
 #[allow(clippy::too_many_arguments)]
-pub fn install_readmitted_source_image(
+pub fn install_vacant_source_image(
     registry: &CompanionRegistry,
     runtime_instance_id: u64,
     execution: &ExecutionRequest<'_, '_>,
@@ -44,7 +46,6 @@ pub fn install_readmitted_source_image(
                 PublicationCompanionRegistrationStop::RebindRequired,
             ))?;
             if selected.runtime_instance_id() != runtime_instance_id
-                || !root.managed_source_image.is_readmitted()
                 || !matches_live_head(selected.branch_id(), root)
             {
                 return Err(Denial::ForeignSource);
@@ -61,7 +62,7 @@ pub fn install_readmitted_source_image(
                 runtime: runtime_instance_id,
             };
             root.managed_source_image
-                .attach_readmitted(execution, selected.branch_id(), &image, || {
+                .attach_vacant(execution, selected.branch_id(), &image, || {
                     *lookup_cleanup =
                         Some(participant.prepare_managed_source_placement(execution, &placement)?);
                     Ok(())

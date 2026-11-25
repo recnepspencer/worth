@@ -1,4 +1,4 @@
-//! Fresh admission closes lookup identity, nullable cardinality and all read/link/unlink contracts.
+//! Fresh admission closes lookup identity, replacement cardinality and all read/link/unlink contracts.
 use crate::application_schema::{
     ApplicationFieldPresence, ApplicationOperationBodyAuthoringDenial as Authoring,
     ApplicationOperationBodyProgram as Body, ApplicationSchemaDeclarationDenial as Denial,
@@ -11,15 +11,8 @@ pub(in crate::application_schema::operation_definition::body) fn validate_shape(
     for reference in body.reference_inputs() {
         if Some(reference.from.as_str()) != body.scope_entity()
             || reference.to != reference.field.entity()
-            || [
-                &reference.relation,
-                &reference.from,
-                &reference.to,
-                &reference.member,
-                &reference.key,
-            ]
-            .iter()
-            .any(|part| part.is_empty() || part.trim() != part.as_str())
+            || !reference.has_trimmed_names()
+            || reference.linked_member() == Some(reference.member.as_str())
             || !relations.insert(&reference.relation)
             || body
                 .creation()
@@ -48,7 +41,8 @@ pub(in crate::application_schema::operation_definition::body) fn validate(
 ) -> Result<(), Denial> {
     validate_shape(body).map_err(|_| Denial::program_body_dependency(operation))?;
     for reference in body.reference_inputs() {
-        if !members.iter().any(|member|matches!(member,Member::Relation{relation,from,to,integrity} if relation==&reference.relation && from==&reference.from && to==&reference.to && integrity.cardinality.source_max==Some(1) && integrity.cardinality.source_min.is_none_or(|minimum|minimum==0)))
+        if !members.iter().any(|member|matches!(member,Member::Relation{relation,from,to,integrity} if relation==&reference.relation && from==&reference.from && to==&reference.to
+            && (!reference.target_is_optional() || integrity.cardinality.source_max==Some(1) && integrity.cardinality.source_min.is_none_or(|minimum|minimum==0))))
             || !members.iter().any(|member|matches!(member,Member::Field{entity,aspect,field,value_type,scalar_family,presence:ApplicationFieldPresence::Required,writable:false,equality_queryable:true,unique:true,unit:None,frame:None,..} if entity==reference.field.entity() && aspect==reference.field.aspect() && field==reference.field.field() && value_type==reference.binding.as_str() && scalar_family==&reference.scalar_family)) {
             return Err(Denial::program_body_dependency(operation));
         }

@@ -27,7 +27,9 @@
 //! contextual `worth_query_mutation_binding!` and, with `delivery`, an
 //! `ApplicationActionDelivery` impl. Each identity is the namespace's role
 //! identity (`input`, `binding`, `body` or `handler`, `completion`);
-//! namespace overrides keep existing wire identities.
+//! namespace overrides keep existing wire identities. `member` (or
+//! `member = ".."`) narrows a shared namespace to `root.<member>.<role>`, the
+//! member defaulting to the snake_case input struct name.
 use proc_macro2::TokenStream;
 use syn::DeriveInput;
 

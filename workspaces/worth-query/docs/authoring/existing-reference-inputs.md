@@ -91,6 +91,38 @@ the edge, but a changed comment can still supersede evidence that certifies it.
 Add real eligibility and editability requirements using existing authored
 requirements/capability policy, not a host lookup or an invented tenant restriction.
 
+## Exact-Edge Toggle
+
+`body.toggle_relation_from_input(relation, identity_field, member, linked_member, key)`
+(typed: `toggle_relation_from_input(relation, identity_field, Input::target_input(),
+Input::linked_input(), key)` on `typed_body()`) captures a required key and a
+required `bool`. Query resolves the key exactly as above, then observes the
+scope's complete bounded outgoing adjacency for that relation and records it, so
+a concurrent change to the edge makes preparation stale. `linked = true` links
+the exact `scope -> target` edge only when it is absent; `false` unlinks it only
+when present. Repeating either request is a no-op, other edges from the same
+scope are untouched, and an unknown target refuses before any effect.
+
+The relation may have any outgoing cardinality; its native invariants (for
+example acyclicity or a minimum) still decide the commit. Declare Reads, Links
+and Unlinks on the relation. New bodies use portable archive profile 42; the
+canonical record is `exact-reference-toggle-v1`.
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+SetDependencyOperation::reference()
+    .typed_body()
+    .toggle_relation_from_input(
+        BlockedBy::reference(),
+        TaskFacts::task_key(),
+        SetDependency::blocker_input(),
+        SetDependency::linked_input(),
+        "blocked-by",
+    )
+    .finish_pure_definition()?;
+```
+
 ## How It Relates To Other Features
 
 Signed graph subjects that traverse the reference participate in the existing
@@ -122,8 +154,8 @@ old target, or maintain a separate signature invalidator.
 
 ## Current Limits
 
-This profile replaces nullable outgoing single references, not collections,
-mandatory references or reverse selections. The same relation cannot also be
+Replacement covers nullable outgoing single references, not mandatory
+references or reverse selections; use the exact-edge toggle for collections. The same relation cannot also be
 owned by a creation link, retirement rule or another reference declaration in
 that body. Target existence does not establish workflow approval or a signer's
 authorization. Replay and recovery keep the binding's ordinary native posture.

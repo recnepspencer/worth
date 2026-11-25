@@ -11,6 +11,7 @@ use worth_relational::facade::{
 };
 mod fork;
 pub mod initialization;
+pub mod transition_target;
 
 /// This lookup is mutated only under the registry mutex; it has no persistent
 /// map clones. Its dedicated grant covers the actual key and conservative node.
@@ -73,10 +74,7 @@ impl ManagedDerivedViewRegistry {
         if self.native_runtime != Some(source.selected_basis().identity().runtime_instance_id()) {
             return Err(Denial::ForeignSource);
         }
-        let service = self
-            .sources
-            .service(source.program())
-            .ok_or(Denial::MissingParticipant)?;
+        let service = self.source_service(source)?;
         let selected = source.selected_basis();
         let cell = self
             .state

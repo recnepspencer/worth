@@ -177,7 +177,9 @@ impl<Schema, Operation, Input, Entity>
                 (matches!(
                     link.source,
                     super::ApplicationOperationBodyCreationLinkSource::Scope
-                ) && link.scope_entity() != scope)
+                ) && link
+                    .scope_entity()
+                    .is_some_and(|endpoint| endpoint != scope))
                     || link.created_entity()
                         != body.program.creation().expect("creation attached").entity()
             })

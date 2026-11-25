@@ -94,7 +94,7 @@ fn managed_fork_cancelled_lookup_releases_the_actual_registry_entry() {
         .build()
         .unwrap();
     let registry = Arc::new(ManagedDerivedViewRegistry::with_sources(
-        Default::default(),
+        Arc::default(),
         &runtime.main_branch_identity(),
     ));
     let memory = SerialMemoryBudget::new(Some(64 * 1024 * 1024));
@@ -268,7 +268,7 @@ fn refused_first_post_recovery_publish_leaves_expired_slot_that_cold_refill_repl
     };
     let (seed_rt, receipt) = install(reg.clone(), program.clone());
     let seed_reg = Arc::new(ManagedDerivedViewRegistry::with_sources(
-        ManagedSourceInstallation::with_public_cache_owner(),
+        Arc::new(ManagedSourceInstallation::with_public_cache_owner()),
         &seed_rt.main_branch_identity(),
     ));
     let _s = seed_rt
@@ -310,7 +310,7 @@ fn refused_first_post_recovery_publish_leaves_expired_slot_that_cold_refill_repl
         .unwrap();
     let cancel_first = CancellationSource::new();
     let registry = Arc::new(ManagedDerivedViewRegistry::with_sources(
-        ManagedSourceInstallation::with_public_cache_owner(),
+        Arc::new(ManagedSourceInstallation::with_public_cache_owner()),
         &recovered.main_branch_identity(),
     ));
     let reg_guard = recovered

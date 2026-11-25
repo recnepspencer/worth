@@ -40,8 +40,9 @@ fn grant_digest(domain: &[u8], grant_id: &super::ScopeGrantId) -> u64 {
 /// for a program whose shared scope is a non-empty `String` key, or a
 /// `scope: Newtype,` tuple struct over one.
 ///
-/// With a stock [`crate::worth_query_scope_access!`] module, name it and the
-/// grants, capabilities and intents follow; no access value is written:
+/// With a stock [`crate::worth_query_scope_access!`] module, name it (by
+/// identifier or module path) and the grants, capabilities and intents follow;
+/// no access value is written:
 ///
 /// ```text
 /// worth_query_shared_access! {
@@ -82,7 +83,7 @@ fn grant_digest(domain: &[u8], grant_id: &super::ScopeGrantId) -> u64 {
 macro_rules! worth_query_shared_access {
     (
         program $Program:ident for $Schema:ty {
-            access: $access:ident,
+            access: $($access:ident)::+,
             $(scope: $Scope:ident,)?
             payload: $Payload:ty,
             query: $Query:ty = |$scope:ident, $payload:pat_param| $query:expr,
@@ -96,15 +97,15 @@ macro_rules! worth_query_shared_access {
                 payload: $Payload,
                 query: $Query = |$scope, $payload| $query,
                 row: $Row = |$value| $row,
-                read: $access::ScopeReadCapability => $access::ScopeReadOperation,
-                watch: $access::ScopeWatchCapability => $access::ScopeWatchOperation,
-                grant: $access::GrantScopeAccess = |grant| $access::GrantScopeAccess {
+                read: $($access)::+::ScopeReadCapability => $($access)::+::ScopeReadOperation,
+                watch: $($access)::+::ScopeWatchCapability => $($access)::+::ScopeWatchOperation,
+                grant: $($access)::+::GrantScopeAccess = |grant| $($access)::+::GrantScopeAccess {
                     scope: $crate::worth_query_shared_access!(@grant_key [$($Scope)?] grant),
                     grant_id: grant.grant_id.as_str().to_owned(),
                     grantee: grant.collaborator.clone(),
                     access: grant.access,
                 },
-                revoke: $access::RevokeScopeAccess = |grant_id| $access::RevokeScopeAccess {
+                revoke: $($access)::+::RevokeScopeAccess = |grant_id| $($access)::+::RevokeScopeAccess {
                     grant_id: grant_id.as_str().to_owned(),
                 },
                 owner: |$schema, $request_scope| $owner,

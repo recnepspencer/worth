@@ -29,12 +29,14 @@ pub enum ApplicationIdentityRole {
     Completion,
     /// Query result projection.
     Projection,
+    /// Effect-driven live cause of a query.
+    LiveCause,
 }
 
 pub(super) const ROLE_COUNT: usize = ApplicationIdentityRole::ALL.len();
 
 impl ApplicationIdentityRole {
-    pub const ALL: [Self; 12] = [
+    pub const ALL: [Self; 13] = [
         Self::Input,
         Self::Request,
         Self::Parameters,
@@ -47,6 +49,7 @@ impl ApplicationIdentityRole {
         Self::Body,
         Self::Completion,
         Self::Projection,
+        Self::LiveCause,
     ];
 
     /// The segment appended to the namespace root.
@@ -64,6 +67,7 @@ impl ApplicationIdentityRole {
             Self::Body => "body",
             Self::Completion => "completion",
             Self::Projection => "projection",
+            Self::LiveCause => "live_cause",
         }
     }
 

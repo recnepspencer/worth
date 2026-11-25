@@ -25,6 +25,33 @@ impl<Schema: ApplicationSchema, Operation>
         self.body_directed_selection(root, selection, Direction::Outgoing, execution, context)
     }
 
+    /// Whether the exact outgoing edge `root -> target` exists. The complete bounded
+    /// adjacency is observed and recorded, so a later edge or its removal invalidates.
+    pub fn body_related_contains<Entity>(
+        &mut self,
+        root: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
+        selection: &ApplicationOperationDecisionReadTarget,
+        target: &WorthQueryInvariantEntityIdentity<Schema, ()>,
+        execution: &QueryRequestExecution<'_>,
+        context: &mut worth_execution::MapKernelContext<'_, '_>,
+    ) -> Result<bool, HandlerExecutionDenial> {
+        let ApplicationOperationDecisionReadTarget::Relation { relation, from, to } = selection
+        else {
+            return Err(HandlerExecutionDenial::new(Denial::new(
+                Kind::MissingAuthoritativeFact,
+                "body relation selection",
+            )));
+        };
+        let source = Source::RelatedItemCount {
+            relation: relation.clone(),
+            from: from.clone(),
+            to: to.clone(),
+            direction: Direction::Outgoing,
+        };
+        let observed = self.observed_requirement_collection(root, &source, execution, context)?;
+        Ok(target.entity.as_ref() == to.as_str() && observed.ids.contains(&target.entity_id))
+    }
+
     fn body_directed_selection<Entity>(
         &mut self,
         root: &WorthQueryInvariantEntityIdentity<Schema, Entity>,

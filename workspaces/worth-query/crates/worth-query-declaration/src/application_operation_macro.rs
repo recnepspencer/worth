@@ -252,7 +252,9 @@ macro_rules! worth_query_unit {
 /// SchemaBinding, payload ..` to declare it for every schema implementing that
 /// trait. It generates a unit struct `Effect` that implements
 /// `ApplicationEffectMarkerIdentity`, with a `const fn reference()` returning
-/// its typed `ApplicationEffectRef`.
+/// its typed `ApplicationEffectRef`. A concrete-schema effect also implements
+/// `fragment::Registration`, so it joins a contribution's `members` directly;
+/// a per-trait effect is registered by each schema that uses it.
 #[macro_export]
 macro_rules! worth_query_effect {
     (
@@ -261,6 +263,17 @@ macro_rules! worth_query_effect {
     ) => {
         #[derive(Clone, Copy, Debug, Eq, PartialEq)]
         $vis struct $Effect;
+
+        impl $crate::facade::application_schema::fragment::Registration<$Schema> for $Effect {
+            fn register(
+                builder: $crate::facade::application_schema::ApplicationSchemaDeclarationBuilder<$Schema>,
+            ) -> ::core::result::Result<
+                $crate::facade::application_schema::ApplicationSchemaDeclarationBuilder<$Schema>,
+                $crate::facade::application_schema::ApplicationSchemaDeclarationDenial,
+            > {
+                ::core::result::Result::Ok(builder.effect(Self::reference()))
+            }
+        }
 
         impl $crate::facade::application_schema::ApplicationEffectMarkerIdentity<$Schema>
             for $Effect

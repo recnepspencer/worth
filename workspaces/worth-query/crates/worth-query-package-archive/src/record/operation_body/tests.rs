@@ -45,6 +45,8 @@ mod requirements;
 mod retirements;
 #[path = "tests/retiring_replacement.rs"]
 mod retiring_replacement;
+#[path = "tests/self_edge_links.rs"]
+mod self_edge_links;
 #[path = "tests/signed_evidence.rs"]
 mod signed_evidence;
 #[path = "tests/signing.rs"]

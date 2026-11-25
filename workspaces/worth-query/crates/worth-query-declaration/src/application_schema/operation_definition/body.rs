@@ -41,7 +41,9 @@ mod path_value;
 mod reference_input;
 pub use path_input::ApplicationOperationBodyPathInputExpectation;
 pub use path_value::ApplicationOperationBodyPathValueAssignment;
-pub use reference_input::ApplicationOperationBodyReferenceInput;
+pub use reference_input::{
+    ApplicationOperationBodyReferenceInput, ApplicationOperationBodyReferenceInputMode,
+};
 mod present_source;
 mod related_source;
 mod retirement;
@@ -125,10 +127,14 @@ pub enum ApplicationOperationBodyAuthoringDenial {
     ForeignSourceEntity,
     IncompatibleOutput,
     InvalidCreationLink,
+    /// A created entity cannot link to itself through a relation declaring `self_edges = false`.
+    ForbiddenSelfEdge,
     InvalidWorkflowEnrollment,
     InvalidWorkflowSuccession,
     InvalidSelectionRetirement,
     InvalidReferenceReplacement,
+    /// A conditional exact-edge toggle needs a readable identity, a bool input and no other claim on its relation.
+    InvalidReferenceToggle,
     Requirement(ApplicationOperationBodyRequirementDenial),
 }
 

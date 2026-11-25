@@ -34,17 +34,6 @@ worth_query_structured_value_binding!(pub ProjectUpdatedNoticeBinding for Projec
 });
 worth_query_effect!(pub ProjectUpdatedEffect for SharedProjectSchema, payload ProjectUpdatedNoticeBinding);
 
-impl Registration<SharedProjectSchema> for ProjectUpdatedEffect {
-    fn register(
-        schema: ApplicationSchemaDeclarationBuilder<SharedProjectSchema>,
-    ) -> Result<
-        ApplicationSchemaDeclarationBuilder<SharedProjectSchema>,
-        ApplicationSchemaDeclarationDenial,
-    > {
-        Ok(schema.effect(Self::reference()))
-    }
-}
-
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct ProjectQueryParams;
 worth_query_portable_type!(ProjectQueryParams => "worth.query.court.shared_access.query_params.v1");
