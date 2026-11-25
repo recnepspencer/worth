@@ -34,6 +34,15 @@ budgets, defensive checks for states that cannot occur, and generality
 nobody asked for. Resource accounting needs a stated requirement or a
 measured failure.
 
+Formal proofs where relevant: when the governing specification carries a Verus,
+Lean 4, or TLA+ contract — or when the change implements or alters pure
+topology Euler/manifold operators, exact numerical/algebraic math, certified
+enclosures/contraction, or pure graph/database transitions — check that the
+required Verus (`tools/verus/run_verus.py`, zero `admit()` or unjustified
+`#[verifier::external_body]`) and/or Lean 4 (`tools/lean/run_lean.py`, zero
+`sorry` or unreviewed `axiom`) proofs exist, pass, and certify the real
+production logic. Missing or bypassed required proofs are a material finding.
+
 ## What counts as a finding
 
 A finding names four things:

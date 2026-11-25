@@ -104,6 +104,15 @@ certification paths in performance findings.
 Mandatory resource accounting needs an explicit product requirement or a
 measured failure requiring that remedy; hypothetical exhaustion is insufficient.
 
+Formal verification (**Verus** and **Lean 4**, alongside TLA+/DST) is required
+when relevant: whenever the governing spec names a formal contract, or when the
+diff implements or alters pure graph/database state transitions, storage/codec
+invariants, managed indexes, authorization rule IR, invalidation soundness, or
+unbounded history/merge/naming invariants. Verify `tools/verus/run_verus.py`
+(zero `admit()` or unjustified `#[verifier::external_body]`) and/or
+`tools/lean/run_lean.py` (zero `sorry` or unreviewed custom `axiom`), keeping
+formal targets isolated from normal `./loop edit` compile closure.
+
 ## Compile time is sacred
 
 During ordinary development, slice review and routine landing, use cheap source

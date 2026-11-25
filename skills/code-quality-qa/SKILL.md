@@ -42,7 +42,8 @@ code is not a defect.
   file into fragments just to meet the number.
 - A change does not widen the compile or link closure of normal edits:
   no heavy dependency, generic instantiation or test world pulled into a
-  crate that did not need it.
+  crate that did not need it. Keep Verus and Lean 4 proof modules isolated to
+  pure functional cores so normal edit compile closure stays untouched.
 
 ## Remove
 
