@@ -9,6 +9,7 @@ mod managed_index;
 mod managed_source;
 mod native_count;
 mod predicate;
+pub use managed_source::transition_target::TransitionTargetSourcesGuard;
 pub use predicate::PredicateNoticeDisposition;
 pub use predicate::PredicateRegistration;
 pub use predicate::{mark_prepared_predicates_unavailable, route_prepared_predicates};
@@ -83,13 +84,14 @@ impl RegistryState {
 pub struct ManagedDerivedViewRegistry {
     state: Mutex<RegistryState>,
     native_runtime: Option<u64>,
-    sources: super::super::managed_index::ManagedSourceInstallation,
+    sources: Arc<super::super::managed_index::ManagedSourceInstallation>,
     initialization: Mutex<Weak<managed_source::initialization::InitializationSession>>,
+    transition_target: Mutex<Weak<managed_source::transition_target::TransitionTargetSources>>,
 }
 
 impl ManagedDerivedViewRegistry {
     pub fn with_sources(
-        sources: super::super::managed_index::ManagedSourceInstallation,
+        sources: Arc<super::super::managed_index::ManagedSourceInstallation>,
         owner: &worth_relational::facade::branch::RelationalBranchIdentity,
     ) -> Self {
         Self {
@@ -97,6 +99,7 @@ impl ManagedDerivedViewRegistry {
             native_runtime: Some(owner.runtime_instance_id()),
             sources,
             initialization: Mutex::new(Weak::new()),
+            transition_target: Mutex::new(Weak::new()),
         }
     }
     pub fn has_live_views(&self) -> bool {

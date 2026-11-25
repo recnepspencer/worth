@@ -6,8 +6,8 @@ use super::RelationalPublicationCompanion;
 
 #[doc(hidden)]
 pub mod guard_fault;
-pub mod readmitted_source;
-pub use readmitted_source::install_readmitted_source_image;
+pub mod vacant_source;
+pub use vacant_source::install_vacant_source_image;
 
 pub mod registry_guard;
 #[doc(hidden)]

@@ -61,9 +61,34 @@ impl ManagedSourceRootImages {
         }
     }
 
+    /// A live head that carries no Source image: readmitted, or published
+    /// while its registration placed none (such as a Home program transition
+    /// step committed by the outgoing registration). Under the same exclusion
+    /// as a readmitted attachment, the active registration places one image.
+    /// Publication sets a Published image only on an unpublished root, so a
+    /// vacant live head is never also set by cutover.
+    pub fn attach_vacant(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        branch: &BranchId,
+        image: &ManagedSourceRootImage,
+        install_lookup: impl FnOnce() -> Result<(), Stop>,
+    ) -> Result<(), Stop> {
+        let Placement::Published(published) = &self.0 else {
+            return self.attach_readmitted(execution, branch, image, install_lookup);
+        };
+        if published.get().is_some() {
+            return Err(Stop::SelectedSourceMismatch);
+        }
+        install_lookup()?;
+        published
+            .set(image.clone())
+            .map_err(|_| Stop::SelectedSourceMismatch)
+    }
+
     /// The exclusive publication epoch excludes a competing branch publication
     /// or placement. The lookup callback only installs prepaid participant state.
-    pub fn attach_readmitted(
+    fn attach_readmitted(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         branch: &BranchId,
