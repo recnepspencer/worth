@@ -45,7 +45,7 @@ type RelationResolution<Schema, Relation, From, To> = Result<
 >;
 
 /// The installed relation a name read is about, with its endpoint kinds.
-struct NamedRelation {
+pub(super) struct NamedRelation {
     name: String,
     kind: KindId,
     from: (KindId, String),
@@ -145,7 +145,7 @@ impl<Schema: ApplicationSchema, Operation>
     /// Admits a name read of the relation named `name` against the
     /// operation's declared relation read and returns the installed relation
     /// it is about.
-    fn admit_relation_name_read(
+    pub(super) fn admit_relation_name_read(
         &self,
         name: &str,
     ) -> Result<NamedRelation, WorthQueryDecisionNameDenial> {

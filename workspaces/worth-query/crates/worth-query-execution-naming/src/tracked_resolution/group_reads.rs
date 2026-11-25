@@ -106,7 +106,7 @@ impl ExecutionNameReader<'_> {
     /// The installed group scheme governing `G`.
     fn group_scheme<G: ApplicationGroupKind>(&self) -> Result<String, ExecutionNameReadDenial> {
         self.runtime
-            .persistent_group_scheme_id(G::NAME)
+            .persistent_name_scheme_id(PersistentNameSubjectKind::Group, G::NAME)
             .ok_or(ExecutionNameReadDenial::UnknownScheme { scheme_id: None })
     }
 }

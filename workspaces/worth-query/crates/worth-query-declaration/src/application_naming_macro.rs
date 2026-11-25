@@ -44,6 +44,24 @@ macro_rules! worth_query_name_discriminator {
                 }
             }
         }
+
+        impl $crate::facade::application_naming::ApplicationNameDiscriminatorDecode for $Type {
+            fn decode_canonical(
+                decoder: &mut $crate::facade::application_naming::ApplicationNameDiscriminatorDecoder<'_>,
+            ) -> ::core::result::Result<
+                Self,
+                $crate::facade::application_naming::ApplicationNameDiscriminatorDecodeDenial,
+            > {
+                match decoder.variant()? {
+                    $(
+                        stringify!($Variant) => ::core::result::Result::Ok(Self::$Variant {
+                            $($field: decoder.field(stringify!($field))?,)*
+                        }),
+                    )*
+                    other => ::core::result::Result::Err(decoder.unknown_variant(other)),
+                }
+            }
+        }
     };
     (
         struct $Type:ty {
@@ -68,6 +86,19 @@ macro_rules! worth_query_name_discriminator {
                 $(
                     encoder.field(stringify!($field), &self.$field);
                 )*
+            }
+        }
+
+        impl $crate::facade::application_naming::ApplicationNameDiscriminatorDecode for $Type {
+            fn decode_canonical(
+                decoder: &mut $crate::facade::application_naming::ApplicationNameDiscriminatorDecoder<'_>,
+            ) -> ::core::result::Result<
+                Self,
+                $crate::facade::application_naming::ApplicationNameDiscriminatorDecodeDenial,
+            > {
+                ::core::result::Result::Ok(Self {
+                    $($field: decoder.field(stringify!($field))?,)*
+                })
             }
         }
     };

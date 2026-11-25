@@ -25,6 +25,7 @@ use worth_relational::facade::transactions::{CommitResult, CreatedEntityRef, Cre
 
 use crate::denial::ExecutionNamingDenial;
 
+mod birth;
 mod observed;
 mod resolved;
 mod same_commit;
@@ -35,6 +36,7 @@ mod same_commit;
 pub(crate) fn test_name<K>(byte: u8) -> WorthQueryName<K> {
     admit_minted_digest([byte; 32])
 }
+pub(crate) use birth::admit_birth_of;
 pub(crate) use observed::entity_scheme_subject;
 pub use observed::ObservedEntityNames;
 pub(crate) use resolved::{

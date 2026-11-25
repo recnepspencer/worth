@@ -19,8 +19,8 @@ use crate::contracts::lineage::data::name_resolution::{PersistentNameKey, Persis
 
 use super::journal::IngestionJournal;
 use super::{
-    LiveName, NameEntry, NameState, PersistentNameBranchIndex, PersistentNameCommittedBatch,
-    PersistentNameIndexDenial,
+    LiveName, NameEntry, NameOrigin, NameState, PersistentNameBranchIndex,
+    PersistentNameCommittedBatch, PersistentNameIndexDenial,
 };
 
 fn invalid(group: AggregateIdentity, detail: &'static str) -> PersistentNameIndexDenial {
@@ -73,8 +73,10 @@ impl PersistentNameBranchIndex {
         for event in events {
             match *event {
                 Event::Born { group } => {
-                    let scheme = schemes.get(&group).cloned();
-                    let entry = NameEntry::born(commit, None, scheme, live_group(group));
+                    let origin = NameOrigin::Group {
+                        scheme_id: schemes.get(&group).cloned(),
+                    };
+                    let entry = NameEntry::born(commit, origin, live_group(group));
                     self.insert_entry(PersistentNameKey::Group(group), entry, journal)?;
                 }
                 Event::Revived { group } => {

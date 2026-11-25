@@ -19,7 +19,7 @@ use std::collections::HashMap;
 
 pub use batch::PersistentNameCommittedBatch;
 pub use denial::PersistentNameIndexDenial;
-pub(crate) use entry::{LiveName, NameEntry, NameState};
+pub(crate) use entry::{LiveName, NameEntry, NameOrigin, NameState};
 
 use crate::contracts::history::data::coordinates::{BranchId, CommitId};
 use crate::contracts::identity::data::primitives::LineageId;

@@ -27,6 +27,7 @@ mod naming_resolution_agreement;
 mod naming_same_commit_names;
 mod naming_same_commit_refusals;
 mod naming_schema_authority_reopen;
+mod naming_tracked_births;
 mod naming_tracked_cold_directory;
 mod naming_tracked_cost;
 mod naming_tracked_fork_settlement;

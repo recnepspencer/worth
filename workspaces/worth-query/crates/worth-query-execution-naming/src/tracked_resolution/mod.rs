@@ -11,6 +11,7 @@
 //! lineage that read rested on, or birth a name the read found unknown;
 //! unrelated commits leave it clean.
 
+mod births;
 mod candidates;
 #[cfg(test)]
 mod candidates_tests;

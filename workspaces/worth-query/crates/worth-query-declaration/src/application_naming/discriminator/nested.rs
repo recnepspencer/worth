@@ -41,3 +41,27 @@ pub(super) fn encode_nested<D: ApplicationNameDiscriminator>(
         encoder.same_commit_names.push(slot.rebased(body_start));
     }
 }
+
+/// Reads one nested discriminator written by `encode_nested`: its identity,
+/// which must be `D`'s, then its length-prefixed body, read completely.
+///
+/// Complexity: O(B) for the B bytes of the nested body.
+pub(super) fn decode_nested<D: super::ApplicationNameDiscriminatorDecode>(
+    decoder: &mut super::ApplicationNameDiscriminatorDecoder<'_>,
+) -> Result<D, super::ApplicationNameDiscriminatorDecodeDenial> {
+    decoder.tag(TAG_NESTED_DISCRIMINATOR)?;
+    let found = decoder.text()?;
+    if found != D::DISCRIMINATOR_IDENTITY {
+        return Err(
+            super::ApplicationNameDiscriminatorDecodeDenial::IdentityMismatch {
+                expected: D::DISCRIMINATOR_IDENTITY.to_owned(),
+                found: found.to_owned(),
+            },
+        );
+    }
+    let body = decoder.len_prefixed()?;
+    let mut body = decoder.nested(body);
+    let nested = D::decode_canonical(&mut body)?;
+    body.finish()?;
+    Ok(nested)
+}

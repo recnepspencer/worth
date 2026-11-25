@@ -7,6 +7,7 @@
 //! [`ApplicationNameDiscriminator`]; handlers and callers can never forge or
 //! mutate a [`WorthQueryName`].
 
+mod birth;
 mod candidate;
 mod denial;
 mod discriminator;
@@ -29,9 +30,13 @@ pub(crate) mod stored_name;
 mod stored_value;
 
 #[cfg(test)]
+mod birth_tests;
+#[cfg(test)]
 mod group_tests;
 #[cfg(test)]
 mod name_ref_tests;
+#[cfg(test)]
+mod occurrence_anchor_tests;
 #[cfg(test)]
 mod occurrence_path_tests;
 #[cfg(test)]
@@ -45,15 +50,19 @@ mod stored_name_tests;
 #[cfg(test)]
 mod tests;
 
+pub use birth::{NameBirth, NameBirthDecodeDenial, RecordedNameBirth};
 pub use candidate::NameCandidate;
 pub use denial::{
     validate_discriminator_identity, validate_role_name, validate_scheme_identifier,
     ApplicationNameSchemeDenial,
 };
+pub(crate) use discriminator::recorded_name_references;
 pub use discriminator::{
-    ApplicationNameDiscriminator, ApplicationNameDiscriminatorEncoder,
-    ApplicationNameDiscriminatorField, ApplicationNameDiscriminatorValue, NestedDiscriminator,
-    NAME_DISCRIMINATOR_DOMAIN_TAG,
+    ApplicationNameDiscriminator, ApplicationNameDiscriminatorDecode,
+    ApplicationNameDiscriminatorDecodeDenial, ApplicationNameDiscriminatorDecoder,
+    ApplicationNameDiscriminatorEncoder, ApplicationNameDiscriminatorField,
+    ApplicationNameDiscriminatorFieldDecode, ApplicationNameDiscriminatorValue,
+    ApplicationNameDiscriminatorValueDecode, NestedDiscriminator, NAME_DISCRIMINATOR_DOMAIN_TAG,
 };
 pub use erased::ErasedWorthQueryName;
 pub(crate) use group::validate_erased_group_scheme_identifiers;

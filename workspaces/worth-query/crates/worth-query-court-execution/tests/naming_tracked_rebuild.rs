@@ -106,7 +106,10 @@ fn answers_on(
     }
 }
 
-fn recover(source: &RelationalRuntime, execution: &ExecutionRequest<'_, '_>) -> RelationalRuntime {
+pub(crate) fn recover(
+    source: &RelationalRuntime,
+    execution: &ExecutionRequest<'_, '_>,
+) -> RelationalRuntime {
     let plan = source
         .durability()
         .recovery_plan(

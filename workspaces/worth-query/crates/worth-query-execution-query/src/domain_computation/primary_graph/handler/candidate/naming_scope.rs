@@ -85,6 +85,17 @@ where
         Ok(self.writer.naming_scope(occurrence))
     }
 
+    /// A child occurrence of this one anchored to another occurrence
+    /// (`generator/placement(base/instance[2])`).
+    pub fn anchored(
+        &mut self,
+        name: &str,
+        anchor: &OccurrencePath,
+    ) -> Result<NamingScope<'_, 'borrow, Schema, Binding>, OccurrencePathDenial> {
+        let occurrence = self.occurrence.clone().anchored(name, anchor)?;
+        Ok(self.writer.naming_scope(occurrence))
+    }
+
     /// A birth in this occurrence under `role`; chain
     /// `with_discriminator` to tell siblings of one role apart.
     pub fn birth<R: WorthQueryNameRole>(&self, role: R) -> WorthQueryOutputBirth {

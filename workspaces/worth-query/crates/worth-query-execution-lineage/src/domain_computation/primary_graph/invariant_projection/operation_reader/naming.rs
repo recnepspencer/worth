@@ -222,7 +222,7 @@ impl<Schema: ApplicationSchema, Operation>
             .map_err(|denial| owner_handles(denial, &owners)))
     }
 
-    fn admit_name_read(&self, entity: &str) -> Result<(), WorthQueryDecisionNameDenial> {
+    pub(super) fn admit_name_read(&self, entity: &str) -> Result<(), WorthQueryDecisionNameDenial> {
         self.admit_decision_target(&ApplicationOperationDecisionReadTarget::Entity {
             entity: entity.to_owned(),
         })

@@ -6,7 +6,7 @@ use std::collections::BTreeSet;
 use crate::contracts::history::data::coordinates::CommitId;
 use crate::contracts::identity::data::primitives::LineageId;
 use crate::contracts::lineage::data::name_resolution::{PersistentNameKey, PersistentNameTarget};
-use crate::contracts::lineage::data::naming::PersistentNameIdentity;
+use crate::contracts::lineage::data::naming::{PersistentNameBirthParts, PersistentNameIdentity};
 
 /// What a name designates from one commit until its next timeline entry.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -22,13 +22,19 @@ pub(crate) struct LiveName {
     pub(crate) carriers: BTreeSet<PersistentNameIdentity>,
 }
 
+/// What a name was born from: an entity or relation name's canonical birth
+/// parts from its `Create` event, or a group's installed scheme.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum NameOrigin {
+    Birth(PersistentNameBirthParts),
+    Group { scheme_id: Option<String> },
+}
+
 /// Derived per-name history, rebuilt solely from committed lineage batches.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NameEntry {
-    /// Canonical birth discriminator; groups carry none.
-    side: Option<Vec<u8>>,
-    /// The installed scheme the name was born under; groups carry none.
-    scheme_id: Option<String>,
+    /// The canonical birth or group scheme the name was born from.
+    origin: NameOrigin,
     /// Strictly ascending commits from birth; each state holds until the
     /// next entry.
     timeline: Vec<(CommitId, NameState)>,
@@ -37,26 +43,37 @@ pub struct NameEntry {
 }
 
 impl NameEntry {
-    pub(crate) fn born(
-        born_at: CommitId,
-        side: Option<Vec<u8>>,
-        scheme_id: Option<String>,
-        live: LiveName,
-    ) -> Self {
+    pub(crate) fn born(born_at: CommitId, origin: NameOrigin, live: LiveName) -> Self {
         Self {
-            side,
-            scheme_id,
+            origin,
             timeline: vec![(born_at, NameState::Live(live))],
             forward_edges: Vec::new(),
         }
     }
 
+    /// The canonical birth discriminator; a name born without one has no
+    /// side, exactly like a group.
     pub fn side(&self) -> Option<&[u8]> {
-        self.side.as_deref()
+        self.birth()
+            .map(PersistentNameBirthParts::canonical_discriminator)
+            .filter(|canonical| !canonical.is_empty())
     }
 
+    /// The installed scheme the name was born under.
     pub(crate) fn scheme_id(&self) -> Option<&str> {
-        self.scheme_id.as_deref()
+        match &self.origin {
+            NameOrigin::Birth(parts) => Some(parts.scheme_id()),
+            NameOrigin::Group { scheme_id } => scheme_id.as_deref(),
+        }
+    }
+
+    /// The canonical birth parts an entity or relation name was minted
+    /// from; groups carry none.
+    pub(crate) fn birth(&self) -> Option<&PersistentNameBirthParts> {
+        match &self.origin {
+            NameOrigin::Birth(parts) => Some(parts),
+            NameOrigin::Group { .. } => None,
+        }
     }
 
     /// The commit this name was born at.

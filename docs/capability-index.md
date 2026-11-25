@@ -198,9 +198,12 @@ checked-out node with no naming ceremony: Native appends `Retire` / `Restore`
 for every named record the selection retires or restores
 ([names across undo, redo, checkout and rebuild](build-an-application.md#names-across-undo-redo-checkout-and-rebuild)). To hold a name and resolve it later at a reader's pinned basis, use
 `host::application_naming::ExecutionNameReader` (`entity_name_of`,
-`resolve_entity`, `relation_name_of`, `resolve_relation`) or the decision
-reader's `name_of` / `resolve` for entities and `relation_name_of` /
-`resolve_relation` for relations, which key every live record the answer
+`resolve_entity`, `relation_name_of`, `resolve_relation`; `entity_birth_of` /
+`relation_birth_of` read a held name's recorded birth, decoded into its typed
+role and discriminator, and `entity_name_for_birth` /
+`relation_name_for_birth` look a name up by its birth parts) or the decision
+reader's `name_of` / `resolve` / `birth_of` / `name_for_birth` for entities and `relation_name_of` /
+`resolve_relation` / `relation_birth_of` / `relation_name_for_birth` for relations, which key every live record the answer
 rested on as a decision fact; answers are kind-checked, `Exact` refuses
 `Ambiguous { candidates }` rather than picking a member, cost is O(lineage
 path), and `NameReadDependencies::currentness_after_commit` reports which

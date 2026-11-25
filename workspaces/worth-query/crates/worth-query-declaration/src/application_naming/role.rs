@@ -1,7 +1,9 @@
 use crate::application_schema::{ApplicationEntityMarkerIdentity, ApplicationRelationRef};
 
 use super::{
-    ApplicationNameDiscriminator, ApplicationNameDiscriminatorEncoder, ApplicationNameSchemeBuilder,
+    ApplicationNameDiscriminator, ApplicationNameDiscriminatorDecode,
+    ApplicationNameDiscriminatorDecodeDenial, ApplicationNameDiscriminatorDecoder,
+    ApplicationNameDiscriminatorEncoder, ApplicationNameSchemeBuilder,
 };
 
 /// The roles of one name scheme as a Rust type, so a birth names its role by
@@ -41,6 +43,12 @@ pub trait WorthQueryNameRole: Ord + Sized + 'static {
     fn role_index(&self) -> Option<u32> {
         None
     }
+
+    /// The role a recorded birth was born under: the inverse of
+    /// [`Self::role_name`] and [`Self::role_index`]. `None` when `role` is
+    /// not one of this type's roles, or when its index does not fit it (an
+    /// index on a plain role, or none on an indexed one).
+    fn from_role_parts(role: &str, index: Option<u32>) -> Option<Self>;
 }
 
 /// Identity of the canonical discriminator an indexed role's birth carries
@@ -49,7 +57,7 @@ pub const NAME_ROLE_INDEX_IDENTITY: &str = "worth.query.name-role-index.v1";
 
 /// Label of the field an indexed role's index is written under. A Rust field
 /// name cannot spell it, so no derived discriminator declares it.
-const NAME_ROLE_INDEX_FIELD: &str = "worth.role.index";
+pub(crate) const NAME_ROLE_INDEX_FIELD: &str = "worth.role.index";
 
 impl ApplicationNameDiscriminatorEncoder {
     /// Writes which repetition of an indexed role a birth is. It is the
@@ -103,6 +111,31 @@ impl<D: ApplicationNameDiscriminator> ApplicationNameDiscriminator for IndexedRo
     }
 }
 
+impl<D: ApplicationNameDiscriminatorDecode> ApplicationNameDiscriminatorDecode
+    for IndexedRoleDiscriminator<D>
+{
+    const LEADS_WITH_ROLE_INDEX: bool = true;
+
+    fn decode_canonical(
+        decoder: &mut ApplicationNameDiscriminatorDecoder<'_>,
+    ) -> Result<Self, ApplicationNameDiscriminatorDecodeDenial> {
+        let index = decoder.role_index()?;
+        Ok(Self::new(index, D::decode_canonical(decoder)?))
+    }
+}
+
+impl<D> IndexedRoleDiscriminator<D> {
+    /// Which repetition of the indexed role the birth is.
+    pub const fn index(&self) -> u32 {
+        self.index
+    }
+
+    /// The birth's own discriminator, after its role index.
+    pub const fn discriminator(&self) -> &D {
+        &self.discriminator
+    }
+}
+
 /// The empty discriminator of a birth its role index alone tells apart.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct IndexedRoleAlone;
@@ -111,6 +144,14 @@ impl ApplicationNameDiscriminator for IndexedRoleAlone {
     const DISCRIMINATOR_IDENTITY: &'static str = NAME_ROLE_INDEX_IDENTITY;
 
     fn encode_canonical(&self, _: &mut ApplicationNameDiscriminatorEncoder) {}
+}
+
+impl ApplicationNameDiscriminatorDecode for IndexedRoleAlone {
+    fn decode_canonical(
+        _: &mut ApplicationNameDiscriminatorDecoder<'_>,
+    ) -> Result<Self, ApplicationNameDiscriminatorDecodeDenial> {
+        Ok(Self)
+    }
 }
 
 impl<S, K> ApplicationNameSchemeBuilder<S, K>

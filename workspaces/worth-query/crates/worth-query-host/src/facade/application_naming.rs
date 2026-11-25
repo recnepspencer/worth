@@ -228,13 +228,15 @@
 //! ```
 
 pub use worth_query_declaration::facade::application_naming::{
-    ApplicationGroupKind, ApplicationNameDiscriminator, EntityNameSubject, ErasedWorthQueryName,
-    GroupMemberName, IndexedRoleDiscriminator, NameCandidate, NameOwnerHop, NameOwnerHopDirection,
-    NameOwnerPath, NameOwnerScope, NameOwnerStep, NameRef, NameResolutionDenial, NameSelection,
+    ApplicationGroupKind, ApplicationNameDiscriminator, ApplicationNameDiscriminatorDecode,
+    ApplicationNameDiscriminatorDecodeDenial, ApplicationNameDiscriminatorDecoder,
+    EntityNameSubject, ErasedWorthQueryName, GroupMemberName, IndexedRoleDiscriminator, NameBirth,
+    NameBirthDecodeDenial, NameCandidate, NameOwnerHop, NameOwnerHopDirection, NameOwnerPath,
+    NameOwnerScope, NameOwnerStep, NameRef, NameResolutionDenial, NameSelection,
     NameSelectionDenial, NameSubjectRole, NamedTarget, NamedTargetDelegate, NoNameOwner,
     OccurrencePath, OccurrencePathDenial, OccurrenceSegment, OwnedThrough, OwnerVia,
-    OwnerViaReverse, RelationNameSubject, ResolvedName, StoredNameDenial, Unowned,
-    WorthQueryGroupPartition, WorthQueryName, WorthQueryNameDelegate, WorthQueryNameRole,
+    OwnerViaReverse, RecordedNameBirth, RelationNameSubject, ResolvedName, StoredNameDenial,
+    Unowned, WorthQueryGroupPartition, WorthQueryName, WorthQueryNameDelegate, WorthQueryNameRole,
     WorthQueryNamedKind, WorthQuerySameCommitName,
 };
 pub use worth_query_execution::facade::application_naming::{
