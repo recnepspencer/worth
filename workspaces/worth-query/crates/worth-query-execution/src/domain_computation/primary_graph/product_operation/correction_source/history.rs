@@ -215,7 +215,7 @@ impl<'runtime, S: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime
                     if records.len() == limit.get() {
                         break;
                     }
-                    let coordinates = WorthQueryCorrectionSourceCoordinates::from_untrusted_parts(
+                    let coordinates = WorthQueryCorrectionSourceCoordinates::new(
                         world_owner,
                         walked.identity.ordinal(),
                         walked.commit.clone(),
