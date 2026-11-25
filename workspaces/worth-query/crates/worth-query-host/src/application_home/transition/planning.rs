@@ -161,7 +161,7 @@ impl<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaComposition, BP>
             );
             if catalogs.is_none() {
                 super::budget_preflight::preflight_fresh_target_budget(
-                    native, &plan, target, resources, &request,
+                    native, source, &plan, target, resources, &request,
                 )?;
             }
             let bodies = plan

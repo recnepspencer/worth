@@ -97,12 +97,11 @@ pub struct ReferenceModel {
 
 impl Default for ReferenceModel {
     fn default() -> Self {
-        let mut rows = BTreeMap::new();
-        let mut snap = BTreeMap::new();
-        for row in ROW_IDS {
-            rows.insert(row, RowState::default());
-            snap.insert(row, (false, "None"));
-        }
+        let rows = ROW_IDS
+            .into_iter()
+            .map(|r| (r, RowState::default()))
+            .collect();
+        let snap = ROW_IDS.into_iter().map(|r| (r, (false, "None"))).collect();
         Self {
             disk_version: 0,
             home_open: false,
@@ -193,6 +192,11 @@ impl ReferenceModel {
         assert!(self.home_open);
         self.home_open = false;
         self.open_version = 0;
+        self.index_state = if self.disk_version == 3 {
+            "Cold"
+        } else {
+            "None"
+        };
         self.outcome = "Closed";
     }
 
@@ -239,7 +243,7 @@ impl ReferenceModel {
         assert!(!self.home_open && self.disk_version == 3);
         self.home_open = true;
         self.open_version = 3;
-        self.index_state = "Ready";
+        self.index_state = "Cold";
         self.outcome = "ReopenedV3";
     }
 
@@ -250,7 +254,10 @@ impl ReferenceModel {
         }
         if self.disk_version == 3 {
             assert_eq!(self.transition_runs, 1);
-            assert_eq!(self.index_state, "Ready");
+            assert!(matches!(self.index_state, "Cold" | "Ready"));
+            if matches!(self.outcome, "UpgradedV2ToV3" | "WroteV3") {
+                assert_eq!(self.index_state, "Ready");
+            }
             for (&id, &(was_present, old_val)) in &self.v2_rows_at_upgrade {
                 if was_present {
                     let row = &self.rows[id];

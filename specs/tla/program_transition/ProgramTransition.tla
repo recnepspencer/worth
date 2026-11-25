@@ -143,8 +143,9 @@ CloseHome ==
     /\ homeOpen
     /\ homeOpen' = FALSE
     /\ openVersion' = 0
+    /\ indexState' = IF diskVersion = 3 THEN "Cold" ELSE "None"
     /\ lastOutcome' = "Closed"
-    /\ UNCHANGED <<diskVersion, rows, indexState, transitionRuns,
+    /\ UNCHANGED <<diskVersion, rows, transitionRuns,
                    v2RowsAtUpgrade, v3EditedRows, lastV2Rows, lastV3Rows,
                    downgradeEverSucceeded>>
 
@@ -222,7 +223,7 @@ ReopenV3 ==
     /\ diskVersion = 3
     /\ homeOpen' = TRUE
     /\ openVersion' = 3
-    /\ indexState' = "Ready"
+    /\ indexState' = "Cold"
     /\ lastOutcome' = "ReopenedV3"
     /\ UNCHANGED <<diskVersion, rows, transitionRuns,
                    v2RowsAtUpgrade, v3EditedRows, lastV2Rows, lastV3Rows,
@@ -296,7 +297,8 @@ AtomicRollbackPreservesV2Rows ==
 
 IdempotentReopenAfterUpgrade ==
     /\ transitionRuns <= 1
-    /\ (diskVersion = 3 => transitionRuns = 1 /\ indexState = "Ready")
+    /\ (diskVersion = 3 => transitionRuns = 1 /\ indexState \in {"Cold", "Ready"})
+    /\ (lastOutcome \in {"UpgradedV2ToV3", "WroteV3"} => indexState = "Ready")
     /\ (lastOutcome = "ReopenedV3" => homeOpen /\ openVersion = 3 /\ transitionRuns = 1)
 
 ReopenV3PreservesEditedPriorities ==

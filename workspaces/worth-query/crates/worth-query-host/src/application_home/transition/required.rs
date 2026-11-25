@@ -18,6 +18,7 @@ use worth_query_execution::facade::{
 use worth_relational::facade::{
     indexes::{DerivedIndexMaintenanceDenialKind, RelationalExecutionDenialCause},
     runtime::RelationalHomeProgramContractDenial,
+    transactions::{CommitExecutionDenial, CommitExecutionDenialKind, TransactionCommitError},
 };
 use worth_store_application::{
     ApplicationHomeDescriptorDenial, ApplicationHomeOpenRefusal,
@@ -244,7 +245,8 @@ pub(crate) fn index_maintenance_denial_is_budget_stop(
     kind: &DerivedIndexMaintenanceDenialKind,
 ) -> bool {
     match kind {
-        DerivedIndexMaintenanceDenialKind::WorkBudgetExceeded => true,
+        DerivedIndexMaintenanceDenialKind::WorkBudgetExceeded
+        | DerivedIndexMaintenanceDenialKind::ColdRecordSlotBudgetExceeded => true,
         DerivedIndexMaintenanceDenialKind::Execution(cause) => {
             relational_execution_denial_is_budget_stop(*cause)
         }
@@ -252,14 +254,37 @@ pub(crate) fn index_maintenance_denial_is_budget_stop(
     }
 }
 
-fn transition_denial_is_budget_stop(cause: &Denial) -> bool {
+pub(crate) fn commit_error_is_budget_stop(cause: &TransactionCommitError) -> bool {
+    match cause {
+        TransactionCommitError::Execution {
+            denial:
+                CommitExecutionDenial {
+                    kind: CommitExecutionDenialKind::Cause(cause),
+                    ..
+                },
+            ..
+        } => relational_execution_denial_is_budget_stop(*cause),
+        TransactionCommitError::Interrupted { .. } => true,
+        TransactionCommitError::Publication { error, .. } => error
+            .index_maintenance_denial()
+            .is_some_and(|denial| index_maintenance_denial_is_budget_stop(&denial.kind)),
+        TransactionCommitError::Conflict { .. }
+        | TransactionCommitError::Preparation { .. }
+        | TransactionCommitError::PublicationDenied { .. }
+        | TransactionCommitError::PublicationDeferred { .. }
+        | TransactionCommitError::PublicationFailed { .. }
+        | TransactionCommitError::DurabilityUnresolved { .. } => false,
+    }
+}
+
+pub(super) fn transition_denial_is_budget_stop(cause: &Denial) -> bool {
     match cause {
         Denial::Request(_)
-        | Denial::ColdSlotBudgetExceeded(_)
         | Denial::StoppedOpen { .. }
         | Denial::StoppedPublication { .. }
         | Denial::StoppedContinuation { .. } => true,
         Denial::Indexes(denial) => index_maintenance_denial_is_budget_stop(&denial.kind),
+        Denial::Commit(cause) => commit_error_is_budget_stop(cause),
         Denial::Author(denial) => primary_graph_denial_is_budget_stop(denial.kind()),
         Denial::AuthoredBody(WorthQueryHomeProgramTransitionBodyDenial::Request(_)) => true,
         Denial::PlanningRequest(
@@ -290,78 +315,5 @@ fn transition_denial_is_budget_stop(cause: &Denial) -> bool {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::{
-        index_maintenance_denial_is_budget_stop, transition_denial_is_budget_stop, Denial,
-    };
-    use worth_relational::facade::{
-        content::RelationalContentRejection,
-        indexes::{
-            DerivedIndexId, DerivedIndexMaintenanceDenial, DerivedIndexMaintenanceDenialKind,
-            DerivedIndexMaintenanceWork, RelationalExecutionDenialCause,
-        },
-    };
-
-    #[test]
-    fn index_denial_classifier_separates_budget_stops_from_structural_and_content_refusals() {
-        assert!(index_maintenance_denial_is_budget_stop(
-            &DerivedIndexMaintenanceDenialKind::WorkBudgetExceeded
-        ));
-        assert!(index_maintenance_denial_is_budget_stop(
-            &DerivedIndexMaintenanceDenialKind::Execution(
-                RelationalExecutionDenialCause::WorkExhausted
-            )
-        ));
-        assert!(index_maintenance_denial_is_budget_stop(
-            &DerivedIndexMaintenanceDenialKind::Execution(
-                RelationalExecutionDenialCause::Cancelled
-            )
-        ));
-        assert!(index_maintenance_denial_is_budget_stop(
-            &DerivedIndexMaintenanceDenialKind::Execution(
-                RelationalExecutionDenialCause::PolicyMemoryExhausted {
-                    requested: 1024,
-                    admitted: 512,
-                    ancestor: 0,
-                }
-            )
-        ));
-
-        // Checkpoint content refusals carried in `Execution(_)` are structural,
-        // NOT budget/cancellation stops.
-        assert!(!index_maintenance_denial_is_budget_stop(
-            &DerivedIndexMaintenanceDenialKind::Execution(
-                RelationalExecutionDenialCause::ContentInconsistency
-            )
-        ));
-        assert!(!index_maintenance_denial_is_budget_stop(
-            &DerivedIndexMaintenanceDenialKind::Execution(RelationalExecutionDenialCause::Content(
-                RelationalContentRejection::IntegrityMismatch
-            ))
-        ));
-
-        // Structural index denials remain non-budget.
-        assert!(!index_maintenance_denial_is_budget_stop(
-            &DerivedIndexMaintenanceDenialKind::IndexUnavailable(DerivedIndexId(1))
-        ));
-        assert!(!index_maintenance_denial_is_budget_stop(
-            &DerivedIndexMaintenanceDenialKind::PriorEntryMismatch
-        ));
-        assert!(!index_maintenance_denial_is_budget_stop(
-            &DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired
-        ));
-
-        // Target-step cold-slot budget exhaustion is classified as a budget stop,
-        // while structural `ColdReconstructionRequired` under `Denial::Indexes` is not.
-        let cold_denial = DerivedIndexMaintenanceDenial {
-            kind: DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired,
-            work: DerivedIndexMaintenanceWork::default(),
-        };
-        assert!(transition_denial_is_budget_stop(
-            &Denial::ColdSlotBudgetExceeded(cold_denial.clone())
-        ));
-        assert!(!transition_denial_is_budget_stop(&Denial::Indexes(
-            cold_denial
-        )));
-    }
-}
+#[path = "required_tests.rs"]
+mod tests;

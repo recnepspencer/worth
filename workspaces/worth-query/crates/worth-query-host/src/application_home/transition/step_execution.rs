@@ -102,7 +102,6 @@ pub(super) fn execute<Schema: ApplicationSchemaComposition, Program>(
     let (opened, proposal) = opened
         .bind_query_native_proposal(proposal)
         .map_err(Denial::NativePreparation)?;
-    let step_role = steps.plan.role(position);
     let candidate = native
         .prepare_validated_proposal(request, proposal)
         .map_err(|cause| {
@@ -112,20 +111,7 @@ pub(super) fn execute<Schema: ApplicationSchemaComposition, Program>(
             } = &cause
                 && let Some(indexes) = error.index_maintenance_denial()
             {
-                if step_role == HomeProgramTransitionStepRole::Target
-                    && matches!(
-                        indexes.kind,
-                        worth_relational::facade::indexes::DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired
-                    )
-                    && budget
-                        .maximum_cold_record_slots
-                        .is_some_and(|maximum| maximum > 0)
-                    && indexes.work.work_units == 0
-                {
-                    Denial::ColdSlotBudgetExceeded(indexes.clone())
-                } else {
-                    Denial::Indexes(indexes.clone())
-                }
+                Denial::Indexes(indexes.clone())
             } else {
                 Denial::Commit(cause)
             }

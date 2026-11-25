@@ -45,6 +45,7 @@ pub(in super::super) fn reconstruct_predecessor(
             | DerivedIndexMaintenanceDenialKind::GenerationKindMismatch(_)
             | DerivedIndexMaintenanceDenialKind::PriorEntryMismatch
             | DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired
+            | DerivedIndexMaintenanceDenialKind::ColdRecordSlotBudgetExceeded
             | DerivedIndexMaintenanceDenialKind::WorkBudgetExceeded
             | DerivedIndexMaintenanceDenialKind::ForeignCandidate
             | DerivedIndexMaintenanceDenialKind::CandidateUnavailable

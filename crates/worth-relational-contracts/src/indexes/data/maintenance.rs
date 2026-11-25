@@ -44,6 +44,7 @@ pub enum DerivedIndexMaintenanceDenialKind {
     GenerationKindMismatch(DerivedIndexId),
     PriorEntryMismatch,
     ColdReconstructionRequired,
+    ColdRecordSlotBudgetExceeded,
     WorkBudgetExceeded,
     ForeignCandidate,
     CandidateUnavailable,

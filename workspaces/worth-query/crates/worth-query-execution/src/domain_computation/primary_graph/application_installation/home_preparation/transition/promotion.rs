@@ -72,7 +72,6 @@ impl<Schema: ApplicationSchemaComposition, Program>
             _managed_sources,
             _source_initializer,
             _inventory,
-            index_counts: _,
         } = *self._pending;
         _state.transition_installation = Some(installation);
         let schema = Box::new(

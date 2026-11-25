@@ -1,14 +1,21 @@
 //! Fail-closed transition refusals on real Directory Homes:
 //! - Entity scan cap (`EntityScanLimitExceeded`)
 //! - Predecessor-field overwrite & non-indexed rebuild target refusals
-//! - Intermediate cold-slot & work budgets that exceed backfill-only counts
-//!   (proving zero post-intent `TransitionPending` stranding of `v2`)
-//! - Oversized default string payload exceeding retained-memory lease before clone
-//! - Owner-backed Priority equality-index residency observation (including
-//!   negative proof that non-indexed or non-published indexes never report `"Ready"`)
+//! - Exact Native-owned cold-slot & work-unit boundary (`S - 1`, `N - 1` fail
+//!   before intent publication keeping `v2` intact; `(S, N, R)` succeeds)
+//! - Oversized default string payload exceeding retained-memory lease at the
+//!   specific backfill pre-allocation boundary (`RetainedBytesExhausted`)
+//! - Owner-backed Priority equality-index residency observation across the real
+//!   `Published -> DeferredImage (reopened before read) -> Published (after read)`
+//!   lifecycle and non-indexed field `None` check.
 
 use worth_query_host::facade::{
-    application_contribution::with_bootstrap_advancement_from_request,
+    application_contribution::{
+        with_bootstrap_advancement_from_request, WorthQueryManagedComputationResourceDenial,
+    },
+    primary_graph::{
+        WorthQueryPrimaryGraphInstallationDenialKind, WorthQueryProviderSessionDenialKind,
+    },
     program_transition::{
         open_directory_with_transition, worth_query_default_build_id,
         WorthQueryProgramTransitionOpenConfig, WorthQueryProgramTransitionOpenDenial,
@@ -17,12 +24,10 @@ use worth_query_host::facade::{
 };
 use worth_query_testkit_host::facade::host::{application_home as fixture, checkpoint_capture};
 use worth_relational::facade::indexes::{
-    DerivedIndexGenerationResidency, DerivedIndexMaintenanceBudget,
+    DerivedIndexMaintenanceBudget, DerivedIndexMaintenanceDenialKind,
 };
 
 use super::journey::{assert_v2_reopens_intact, seed_v2_tasks};
-use super::observe::index_residency_to_state;
-use super::schema::{task_priority_field, task_v2_value_field};
 use super::v2_program::v2_request;
 use super::v3_program::{
     v3_request, DaymarkV2ToV3, NonIndexedRebuildTransition, OversizedDefaultTransition,
@@ -106,8 +111,36 @@ fn transition_refuses_predecessor_field_overwrite_and_non_indexed_rebuild_withou
     assert_v2_reopens_intact(&location, build, execution, 2);
 }
 
+fn try_v2_to_v3_with_budget(
+    location: &std::path::Path,
+    build: worth_query_host::facade::application_installation::ApplicationBuildIdentity,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
+    budget: DerivedIndexMaintenanceBudget,
+) -> Result<
+    worth_query_host::facade::program_transition::WorthQueryTransitionOpenedHome<
+        super::v3_program::DaymarkV3Schema,
+        super::v3_program::DaymarkV3Program,
+    >,
+    WorthQueryProgramTransitionOpenDenial<
+        super::v2_program::DaymarkV2Schema,
+        super::v2_program::DaymarkV2Program,
+        super::v3_program::DaymarkV3Schema,
+        super::v3_program::DaymarkV3Program,
+    >,
+> {
+    *with_bootstrap_advancement_from_request(execution, |phase| {
+        Box::new(open_directory_with_transition::<DaymarkV2ToV3>(
+            &phase,
+            v2_request(location.to_path_buf(), build),
+            v3_request(location.to_path_buf(), build),
+            WorthQueryProgramTransitionOpenConfig::default_bounded().with_resources(budget),
+        ))
+    })
+    .unwrap()
+}
+
 #[test]
-fn transition_cold_slot_and_work_budgets_above_backfill_count_do_not_strand_v2() {
+fn transition_native_exact_budget_boundary_refuses_n_minus_1_without_stranding_and_admits_n() {
     let location = fixture::location();
     let build = worth_query_default_build_id!();
     let lease = checkpoint_capture::lease(128 * 1024 * 1024);
@@ -115,69 +148,113 @@ fn transition_cold_slot_and_work_budgets_above_backfill_count_do_not_strand_v2()
 
     seed_v2_tasks(&location, build, execution, &[("t1", "a"), ("t2", "b")]);
 
-    // Cold-slot limit == 2 (equals the backfilled Task count, which previously
-    // slipped past backfill-only preflight and failed post-intent inside Native's
-    // `ChangedRecords::cold`, stranding v2 in `TransitionPending`).
-    let cold_slot_budget = DerivedIndexMaintenanceBudget {
-        maximum_work_units: Some(100_000),
-        maximum_cold_record_slots: Some(2),
-        maximum_derived_rows: Some(100_000),
-    };
-    let stopped_slots = with_bootstrap_advancement_from_request(execution, |phase| {
-        open_directory_with_transition::<DaymarkV2ToV3>(
-            &phase,
-            v2_request(location.clone(), build),
-            v3_request(location.clone(), build),
-            WorthQueryProgramTransitionOpenConfig::default_bounded()
-                .with_resources(cold_slot_budget),
-        )
-    })
-    .unwrap()
+    let work_probe = try_v2_to_v3_with_budget(
+        &location,
+        build,
+        execution,
+        DerivedIndexMaintenanceBudget {
+            maximum_work_units: Some(1),
+            maximum_cold_record_slots: Some(100_000),
+            maximum_derived_rows: Some(100_000),
+        },
+    )
     .err()
-    .expect("cold-slot limit of 2 must fail closed before intent publication");
-    let WorthQueryProgramTransitionOpenDenial::BudgetOrCancellationStopped { refused } =
-        stopped_slots
-    else {
-        panic!("expected BudgetOrCancellationStopped, got {stopped_slots:?}");
-    };
-    assert!(
-        matches!(
-            refused.phase(),
-            WorthQueryHomeProgramTransitionOpenPhase::Transition {
-                cause: WorthQueryHomeProgramTransitionDenial::ColdSlotBudgetExceeded(_),
+    .expect("work=1 probe must refuse");
+    let required = match work_probe {
+        WorthQueryProgramTransitionOpenDenial::BudgetOrCancellationStopped { refused } => {
+            let WorthQueryHomeProgramTransitionOpenPhase::Transition {
+                cause: WorthQueryHomeProgramTransitionDenial::Indexes(denial),
                 ..
-            }
-        ),
-        "expected ColdSlotBudgetExceeded before intent publication, got {:?}",
-        refused.phase()
-    );
-    drop(refused);
+            } = refused.phase()
+            else {
+                panic!(
+                    "expected Transition/Indexes denial, got {:?}",
+                    refused.phase()
+                );
+            };
+            assert_eq!(
+                denial.kind,
+                DerivedIndexMaintenanceDenialKind::WorkBudgetExceeded
+            );
+            let quote = denial.work;
+            drop(refused);
+            quote
+        }
+        other => panic!("expected BudgetOrCancellationStopped, got {other:?}"),
+    };
+    assert!(required.cold_record_slots > 2);
+    assert!(required.work_units > required.cold_record_slots);
+    assert!(required.generation_publications_reserved >= 1);
+
+    // S - 1 cold slots fails cleanly BEFORE intent publication with typed
+    // `ColdRecordSlotBudgetExceeded` and leaves plain v2 intact.
+    let short_slots = try_v2_to_v3_with_budget(
+        &location,
+        build,
+        execution,
+        DerivedIndexMaintenanceBudget {
+            maximum_work_units: Some(required.work_units),
+            maximum_cold_record_slots: Some(required.cold_record_slots - 1),
+            maximum_derived_rows: Some(required.derived_rows.max(1)),
+        },
+    )
+    .err()
+    .expect("cold_slots = S - 1 must fail before intent publication");
+    assert!(matches!(
+        &short_slots,
+        WorthQueryProgramTransitionOpenDenial::BudgetOrCancellationStopped { refused }
+            if matches!(
+                refused.phase(),
+                WorthQueryHomeProgramTransitionOpenPhase::Transition {
+                    cause: WorthQueryHomeProgramTransitionDenial::Indexes(denial),
+                    ..
+                } if denial.kind == DerivedIndexMaintenanceDenialKind::ColdRecordSlotBudgetExceeded
+            )
+    ));
+    drop(short_slots);
     assert_v2_reopens_intact(&location, build, execution, 2);
 
-    // Work-unit limit == 5 (above backfill count 2, below full target cold
-    // reconstruction work) must also fail closed without stranding v2.
-    let work_budget = DerivedIndexMaintenanceBudget {
-        maximum_work_units: Some(5),
-        maximum_cold_record_slots: Some(100_000),
-        maximum_derived_rows: Some(100_000),
-    };
-    let stopped_work = with_bootstrap_advancement_from_request(execution, |phase| {
-        open_directory_with_transition::<DaymarkV2ToV3>(
-            &phase,
-            v2_request(location.clone(), build),
-            v3_request(location.clone(), build),
-            WorthQueryProgramTransitionOpenConfig::default_bounded().with_resources(work_budget),
-        )
-    })
-    .unwrap()
+    // N - 1 work units fails cleanly BEFORE intent publication with typed
+    // `WorkBudgetExceeded` and leaves plain v2 intact.
+    let short_work = try_v2_to_v3_with_budget(
+        &location,
+        build,
+        execution,
+        DerivedIndexMaintenanceBudget {
+            maximum_work_units: Some(required.work_units - 1),
+            maximum_cold_record_slots: Some(required.cold_record_slots),
+            maximum_derived_rows: Some(required.derived_rows.max(1)),
+        },
+    )
     .err()
-    .expect("tight work-unit budget must fail closed before intent publication");
+    .expect("work_units = N - 1 must fail before intent publication");
     assert!(matches!(
-        stopped_work,
-        WorthQueryProgramTransitionOpenDenial::BudgetOrCancellationStopped { .. }
+        &short_work,
+        WorthQueryProgramTransitionOpenDenial::BudgetOrCancellationStopped { refused }
+            if matches!(
+                refused.phase(),
+                WorthQueryHomeProgramTransitionOpenPhase::Transition {
+                    cause: WorthQueryHomeProgramTransitionDenial::Indexes(denial),
+                    ..
+                } if denial.kind == DerivedIndexMaintenanceDenialKind::WorkBudgetExceeded
+            )
     ));
-    drop(stopped_work);
+    drop(short_work);
     assert_v2_reopens_intact(&location, build, execution, 2);
+
+    // Exact admitted boundary (N, S, R) succeeds end-to-end without stranding!
+    let admitted = try_v2_to_v3_with_budget(
+        &location,
+        build,
+        execution,
+        DerivedIndexMaintenanceBudget {
+            maximum_work_units: Some(required.work_units),
+            maximum_cold_record_slots: Some(required.cold_record_slots),
+            maximum_derived_rows: Some(required.derived_rows.max(1)),
+        },
+    )
+    .expect("exact admitted budget (N, S, R) must succeed");
+    admitted.into_home().close(&execution).unwrap().reclaim();
 }
 
 #[test]
@@ -205,68 +282,29 @@ fn transition_refuses_oversized_string_default_under_tight_memory_lease_before_c
     .expect("outer bootstrap succeeds under 16 MiB lease")
     .err()
     .expect("24 MiB default string must exceed 16 MiB retained-memory lease");
+    let WorthQueryProgramTransitionOpenDenial::BudgetOrCancellationStopped { refused } = refused
+    else {
+        panic!("expected BudgetOrCancellationStopped for oversized default, got {refused:?}");
+    };
     assert!(
         matches!(
-            refused,
-            WorthQueryProgramTransitionOpenDenial::BudgetOrCancellationStopped { .. }
+            refused.phase(),
+            WorthQueryHomeProgramTransitionOpenPhase::Transition {
+                cause: WorthQueryHomeProgramTransitionDenial::Author(denial),
+                ..
+            } if matches!(
+                denial.kind(),
+                WorthQueryPrimaryGraphInstallationDenialKind::ExecutionDenied {
+                    kind: WorthQueryProviderSessionDenialKind::ExecutionResource {
+                        denial: WorthQueryManagedComputationResourceDenial::RetainedBytesExhausted,
+                        ..
+                    }
+                }
+            )
         ),
-        "expected BudgetOrCancellationStopped for oversized default, got {refused:?}"
+        "expected specific Transition/Author/RetainedBytesExhausted backfill pre-allocation refusal, got {:?}",
+        refused.phase()
     );
     drop(refused);
     assert_v2_reopens_intact(&location, build, setup_exec, 2);
-}
-
-#[test]
-fn priority_index_observer_uses_owner_residency_and_never_reports_unindexed_or_cold_as_ready() {
-    let location = fixture::location();
-    let build = worth_query_default_build_id!();
-    let lease = checkpoint_capture::lease(128 * 1024 * 1024);
-    let execution = worth_execution::ExecutionRequest::leased(&lease);
-
-    seed_v2_tasks(&location, build, execution, &[("t1", "a")]);
-
-    let opened = with_bootstrap_advancement_from_request(execution, |phase| {
-        Box::new(
-            open_directory_with_transition::<DaymarkV2ToV3>(
-                &phase,
-                v2_request(location.clone(), build),
-                v3_request(location, build),
-                WorthQueryProgramTransitionOpenConfig::default_bounded(),
-            )
-            .expect("v2 -> v3 upgrade succeeds"),
-        )
-    })
-    .unwrap();
-    let v3_home = (*opened).into_home();
-
-    // Indexed field (`TaskPriority.Priority`) reports Published -> "Ready".
-    let priority_residency = v3_home
-        .runtime()
-        .observe_equality_index_residency(&execution, task_priority_field())
-        .expect("residency observation succeeds");
-    assert_eq!(
-        priority_residency,
-        Some(DerivedIndexGenerationResidency::Published)
-    );
-    assert_eq!(index_residency_to_state(priority_residency), "Ready");
-
-    // Non-indexed field (`TaskV2.V2Value`) reports None -> "None", NEVER "Ready".
-    let unindexed_residency = v3_home
-        .runtime()
-        .observe_equality_index_residency(&execution, task_v2_value_field())
-        .expect("residency observation succeeds");
-    assert_eq!(unindexed_residency, None);
-    assert_eq!(index_residency_to_state(unindexed_residency), "None");
-
-    // Absent / deferred index generations NEVER report "Ready".
-    assert_eq!(
-        index_residency_to_state(Some(DerivedIndexGenerationResidency::Absent)),
-        "Cold"
-    );
-    assert_eq!(
-        index_residency_to_state(Some(DerivedIndexGenerationResidency::DeferredImage)),
-        "Cold"
-    );
-
-    v3_home.close(&execution).unwrap().reclaim();
 }

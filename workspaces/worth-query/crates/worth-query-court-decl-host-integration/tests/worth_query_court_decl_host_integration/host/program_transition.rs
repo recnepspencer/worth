@@ -4,6 +4,7 @@
 
 mod driver;
 mod dst;
+mod index_residency;
 mod journey;
 mod observe;
 mod reference_model;

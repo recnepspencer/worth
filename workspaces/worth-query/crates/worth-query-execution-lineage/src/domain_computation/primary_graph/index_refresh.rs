@@ -229,6 +229,7 @@ fn maintenance_denial(
         | Native::GenerationKindMismatch(_)
         | Native::PriorEntryMismatch
         | Native::WorkBudgetExceeded
+        | Native::ColdRecordSlotBudgetExceeded
         | Native::ForeignCandidate
         | Native::CandidateUnavailable
         | Native::CandidateIndexesAlreadyPrepared

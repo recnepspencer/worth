@@ -140,12 +140,11 @@ fn verify_budget_stop_keeps_v2_intact(
         matches!(
             refused.phase(),
             WorthQueryHomeProgramTransitionOpenPhase::Transition {
-                cause: WorthQueryHomeProgramTransitionDenial::ColdSlotBudgetExceeded(_)
-                    | WorthQueryHomeProgramTransitionDenial::Indexes(_),
+                cause: WorthQueryHomeProgramTransitionDenial::Indexes(_),
                 ..
             }
         ),
-        "expected pre-intent Transition cold-slot/index budget refusal, got {:?}",
+        "expected pre-intent Transition index budget refusal, got {:?}",
         refused.phase()
     );
     drop(refused);

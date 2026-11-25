@@ -222,8 +222,10 @@ fn inspect_persisted_closed_home(
             })
             .map_err(|e| format!("persisted v3 probe bootstrap failed: {e:?}"))?
             .map_err(|e| format!("persisted v3 probe open failed: {e:?}"))?;
-            let rows = observe_v3_rows_and_verify_index(&v3_home, model)?;
+            // Sample Priority equality-index residency STRICTLY BEFORE any v3
+            // read so a deferred checkpoint image is never warmed before sampling.
             let index_state = observe_priority_index_state(&v3_home, &execution)?;
+            let rows = observe_v3_rows_and_verify_index(&v3_home, model)?;
             v3_home
                 .close(&execution)
                 .map_err(|e| format!("persisted v3 probe close failed: {e:?}"))?
@@ -246,10 +248,12 @@ impl Driver {
                 (2, true, 2, "None", rows)
             }
             LiveHome::V3(home) => {
-                let rows = observe_v3_rows_and_verify_index(home, model)?;
+                // Sample Priority equality-index residency STRICTLY BEFORE any
+                // v3 read so a deferred checkpoint image is observed truthfully.
                 let lease = checkpoint_capture::lease(128 * 1024 * 1024);
                 let execution = worth_execution::ExecutionRequest::leased(&lease);
                 let index_state = observe_priority_index_state(home, &execution)?;
+                let rows = observe_v3_rows_and_verify_index(home, model)?;
                 (3, true, 3, index_state, rows)
             }
         };

@@ -33,6 +33,7 @@ pub mod retained_projection;
 
 use publication::PreparedRefresh;
 pub mod candidate_publication;
+pub mod cold_preflight;
 pub mod cold_projection;
 
 pub mod maintained_selection;

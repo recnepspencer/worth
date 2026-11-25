@@ -1,5 +1,5 @@
 //! Lower declarative field defaults into atomic native entity backfill intents
-//! under full cooperative work metering and exact pre-allocation retained-memory
+//! under full cooperative work metering and strict pre-allocation retained-memory
 //! admission.
 //!
 //! When an entity already carries the target aspect on disk (e.g., adding a new
@@ -41,10 +41,12 @@ use worth_relational::facade::{
 };
 
 use super::backfill_memory::{
-    batch_header_retained_bytes, charge_work, contract_group_retained_bytes,
-    entity_backfill_retained_bytes, group_entry_retained_bytes, reserve_retained,
-    work_ceiling_denial,
+    batch_allocation_bytes, by_entity_entry_bytes, charge_work, contract_group_retained_bytes,
+    entity_backfill_retained_bytes, planned_group_entry_bytes, reserve_retained,
+    retained_bytes_overflow, vec_backing_bytes, work_ceiling_denial,
 };
+
+const BATCH_NAME_PREFIX: &str = "transition-default-backfill:";
 
 pub(super) struct BackfillPlan {
     pub(super) batches: Vec<WorkerIntentBatch>,
@@ -104,13 +106,29 @@ fn build_metered_backfill(
         BTreeMap::new();
     for field_default in input.descriptor.added_defaults() {
         charge_work(context, 1)?;
+        reserve_retained(
+            request,
+            context,
+            input.retained_memory,
+            by_entity_entry_bytes()?,
+        )?;
         by_entity
             .entry(field_default.entity())
             .or_default()
             .push(field_default);
     }
 
-    let mut batches = Vec::with_capacity(by_entity.len());
+    // Reserve batch vector backing strictly BEFORE allocating it.
+    reserve_retained(
+        request,
+        context,
+        input.retained_memory,
+        vec_backing_bytes::<WorkerIntentBatch>(by_entity.len())?,
+    )?;
+    let mut batches = Vec::new();
+    batches
+        .try_reserve_exact(by_entity.len())
+        .map_err(|_| retained_bytes_overflow())?;
     let mut backfilled_records = 0usize;
 
     for (entity_name, defaults) in by_entity {
@@ -129,13 +147,36 @@ fn build_metered_backfill(
         if rows.records().is_empty() {
             continue;
         }
-        let batch_name = format!(
-            "transition-default-backfill:{}:{entity_name}",
-            input.descriptor.transition_name()
-        );
-        let header_bytes = batch_header_retained_bytes(&batch_name)?;
+        // Compute exact formatted batch name length and reserve BEFORE allocating.
+        let transition_name = input.descriptor.transition_name();
+        let name_len = BATCH_NAME_PREFIX
+            .len()
+            .checked_add(transition_name.len())
+            .and_then(|n| n.checked_add(1))
+            .and_then(|n| n.checked_add(entity_name.len()))
+            .ok_or_else(retained_bytes_overflow)?;
+        let max_intents = rows
+            .records()
+            .len()
+            .checked_mul(2)
+            .ok_or_else(retained_bytes_overflow)?;
+        let header_bytes = batch_allocation_bytes(name_len, max_intents)?;
         reserve_retained(request, context, input.retained_memory, header_bytes)?;
+
+        let mut batch_name = String::new();
+        batch_name
+            .try_reserve_exact(name_len)
+            .map_err(|_| retained_bytes_overflow())?;
+        batch_name.push_str(BATCH_NAME_PREFIX);
+        batch_name.push_str(transition_name);
+        batch_name.push(':');
+        batch_name.push_str(entity_name);
         let mut batch = WorkerIntentBatch::new(batch_name);
+        batch
+            .intents
+            .try_reserve_exact(rows.records().len())
+            .map_err(|_| retained_bytes_overflow())?;
+
         for row in rows.records() {
             let field_count = defaults.len().max(1) as u64;
             charge_work(context, field_count)?;
@@ -183,6 +224,13 @@ fn resolve_aspect_groups(
         BTreeMap::new();
     for field_default in defaults {
         charge_work(context, 1)?;
+        // Reserve exact bytes BEFORE constructing the owned locator or cloning value/key.
+        let entry_bytes = planned_group_entry_bytes(
+            field_default.aspect(),
+            field_default.field(),
+            field_default.default_value(),
+        )?;
+        reserve_retained(request, context, retained_memory, entry_bytes)?;
         let locator = target
             .planned_field(entity_name, field_default.aspect(), field_default.field())
             .ok_or_else(|| {
@@ -193,16 +241,24 @@ fn resolve_aspect_groups(
                     field_default.field()
                 ))
             })?;
-        // Reserve exact retained bytes BEFORE cloning the default value or key.
-        let entry_bytes = group_entry_retained_bytes(&locator, field_default.default_value())?;
-        reserve_retained(request, context, retained_memory, entry_bytes)?;
         grouped
             .entry(locator.aspect().aspect_key().clone())
             .or_default()
             .insert(locator, field_default.default_value().clone());
     }
 
-    let mut groups = Vec::with_capacity(grouped.len());
+    // Reserve group vector backing strictly BEFORE allocating it.
+    reserve_retained(
+        request,
+        context,
+        retained_memory,
+        vec_backing_bytes::<AspectDefaultGroup>(grouped.len())?,
+    )?;
+    let mut groups = Vec::new();
+    groups
+        .try_reserve_exact(grouped.len())
+        .map_err(|_| retained_bytes_overflow())?;
+
     for (aspect_key, locators) in grouped {
         charge_work(context, 1)?;
         let binding = registration
@@ -272,8 +328,10 @@ fn build_set_whole_operation(
     let basis = PortableAspectContractBasis::from_contract(&group.contract);
     let value = match group.contract.shape() {
         AspectShape::Struct(_) => {
-            let mut entries: Vec<(FieldKey, AspectValue)> =
-                Vec::with_capacity(group.locators.len());
+            let mut entries: Vec<(FieldKey, AspectValue)> = Vec::new();
+            entries
+                .try_reserve_exact(group.locators.len())
+                .map_err(|_| retained_bytes_overflow())?;
             for (locator, field_value) in &group.locators {
                 let [field_key] = locator.field_path().fields() else {
                     return Err(schema_denial(format!(
@@ -283,12 +341,14 @@ fn build_set_whole_operation(
                 };
                 entries.push((field_key.clone(), field_value.clone()));
             }
-            let struct_value = StructAspectValue::new(entries).map_err(|cause| {
-                schema_denial(format!(
-                    "failed to construct struct aspect default for `{:?}`: {cause:?}",
-                    group.aspect_key
-                ))
-            })?;
+            entries.sort_by(|left, right| left.0.cmp(&right.0));
+            let struct_value = StructAspectValue::from_sorted_fields(entries.into_boxed_slice())
+                .map_err(|cause| {
+                    schema_denial(format!(
+                        "failed to construct struct aspect default for `{:?}`: {cause:?}",
+                        group.aspect_key
+                    ))
+                })?;
             ContractValidationInput::Struct(struct_value)
         }
         AspectShape::Scalar(_) | AspectShape::Opaque(_) | AspectShape::Reference(_) => {
