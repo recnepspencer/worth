@@ -108,7 +108,14 @@ pub fn admit_posture(
                     execution
                         .run_native_with_checkpoint(|context| {
                             let mut expected = None;
-                            for owner in &binding.owners.owners {
+                            // A later edit stage's survivor republishes from its
+                            // exact current predecessor, as a required owner does.
+                            for owner in binding
+                                .owners
+                                .owners
+                                .iter()
+                                .chain(&binding.owners.survivors)
+                            {
                                 checkpoint(
                                     context,
                                     (meaning.family.len() + owner.origin.meaning.family.len() + 65)

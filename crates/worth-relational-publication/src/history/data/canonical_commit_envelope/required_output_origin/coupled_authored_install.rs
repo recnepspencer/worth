@@ -103,13 +103,13 @@ pub(super) fn install(
             let meaning = publication
                 .producing_meaning()
                 .expect("owned participant has a route");
+            // A republished later-stage survivor keeps the Required recording
+            // every non-edit participant has; only its presence is optional.
+            let owners = &group.binding.owners;
+            let recorded = || owners.required_owners().iter().chain(&owners.survivors);
             contracts::execution::request_stage::checkpoint(
                 context,
-                group
-                    .binding
-                    .owners
-                    .required_owners()
-                    .iter()
+                recorded()
                     .map(|owner| {
                         (owner.origin.meaning.family.len() as u64)
                             .saturating_add(meaning.family.len() as u64)
@@ -118,12 +118,7 @@ pub(super) fn install(
                     .fold(0u64, u64::saturating_add),
             )
             .map_err(origin_request)?;
-            let participation = if group
-                .binding
-                .owners
-                .required_owners()
-                .iter()
-                .any(|owner| owner.origin.meaning.same_route(meaning))
+            let participation = if recorded().any(|owner| owner.origin.meaning.same_route(meaning))
             {
                 CanonicalCoupledParticipation::Required
             } else {

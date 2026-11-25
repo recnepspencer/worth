@@ -39,8 +39,9 @@ pub enum SuffixWriter<'a> {
         /// The entities the round provably deletes again (`prove_succession`).
         redeleted: &'a std::collections::BTreeSet<EntityId>,
     },
-    /// The authored writer: one later stage editing an admitted stage source.
+    /// The authored writer: later stage `stage` editing an admitted stage source.
     Authored {
+        stage: usize,
         source: contracts::identity::data::record_ids::EntityId,
         roles: &'a mut [RequiredOutputRoleTarget],
     },
@@ -108,12 +109,16 @@ pub fn scope<'a>(
             Writer::Producer(predecessor),
             Default::default(),
         ),
-        SuffixWriter::Authored { source, roles } => {
+        SuffixWriter::Authored {
+            stage,
+            source,
+            roles,
+        } => {
             local_keys::scope(execution, ordinal, created, symbols, batches, roles, naming)?;
             (
                 CoupledFreshWriter::Authored,
                 source,
-                Writer::AuthoredPrefix,
+                Writer::AuthoredStage(stage),
                 Default::default(),
             )
         }

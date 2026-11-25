@@ -37,32 +37,16 @@ pub fn assert_exact_owner_refusals_for_test(
     let mut extra = successor;
     extra["meaning"]["family"] = serde_json::json!("another-owner");
     let extra: CanonicalRequiredOutputOrigin = serde_json::from_value(extra).unwrap();
-    exact(
-        std::iter::once(&expected),
-        std::iter::once(&correct),
-        true,
-        context,
-    )
-    .unwrap();
-    assert!(exact(
-        std::iter::once(&expected),
-        std::iter::empty(),
-        true,
-        context
-    )
-    .is_err());
-    assert!(exact(
-        std::iter::once(&expected),
-        [&correct, &extra].into_iter(),
-        true,
-        context
-    )
-    .is_err());
-    assert!(exact(
-        std::iter::once(&expected),
-        std::iter::once(&wrong),
-        true,
-        context
-    )
-    .is_err());
+    let none = || std::iter::empty::<&CanonicalRequiredOutputOrigin>();
+    let one = std::iter::once;
+    exact(one(&expected), none(), one(&correct), true, context).unwrap();
+    assert!(exact(one(&expected), none(), none(), true, context).is_err());
+    assert!(exact(one(&expected), none(), [&correct, &extra].into_iter(), true, context).is_err());
+    assert!(exact(one(&expected), none(), one(&wrong), true, context).is_err());
+    // A later stage's survivor (public #348) may be absent, or recorded from
+    // its exact predecessor as older records list it; nothing else passes.
+    exact(none(), one(&expected), none(), true, context).unwrap();
+    exact(none(), one(&expected), one(&correct), true, context).unwrap();
+    assert!(exact(none(), one(&expected), one(&wrong), true, context).is_err());
+    assert!(exact(none(), one(&expected), one(&extra), true, context).is_err());
 }

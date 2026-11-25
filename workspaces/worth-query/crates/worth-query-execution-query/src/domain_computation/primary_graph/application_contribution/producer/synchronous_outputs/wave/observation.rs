@@ -41,11 +41,19 @@ pub(super) fn record_prepare<S: super::ApplicationSchema>(
             Ok(super::PlannedOutput::Recapture) => "recapture",
             Err(_) => "refused",
         };
+        // The record's own coordinates: its derived `Debug` would print the
+        // compiler's unstable type name for the kind marker.
+        let source = task.key.as_ref().map_or("None".into(), |key| {
+            let id = key.scope;
+            format!(
+                "Some(RecordId {{ partition_id: {:?}, local_slot: {:?}, generation: {:?} }})",
+                id.partition_id, id.local_slot, id.generation
+            )
+        });
         format!(
-            "prepare task={i} subject={} family={} source={:?} {outcome}",
+            "prepare task={i} subject={} family={} source={source} {outcome}",
             task.subject,
             task.tree.family(),
-            task.key.as_ref().map(|key| key.scope),
         )
     });
 }

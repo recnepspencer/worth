@@ -70,7 +70,7 @@ impl WorthQueryPrimaryGraphProvider {
                         execution,
                         &publisher.native,
                         restoration.clone(),
-                        &[],
+                        !later.is_empty(),
                     )?,
                     (None, Some((selected, source, _))) => Some(match selected {
                         Some((anchor, co_anchors, roles)) => runtime
