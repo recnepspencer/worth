@@ -112,11 +112,23 @@ pub fn visit_all_record_refs(
             }
         }
     }
-    let births = plan.pending_births.iter().map(|birth| &birth.target).chain(
-        plan.pending_splits
-            .iter()
-            .flat_map(|split| split.children.iter().map(|child| &child.target)),
-    );
+    let merges = plan
+        .pending_merges
+        .iter()
+        .filter_map(|merge| match &merge.target {
+            PendingMergeTarget::Created(created) => Some(created),
+            PendingMergeTarget::Existing(_) => None,
+        });
+    let births = plan
+        .pending_births
+        .iter()
+        .map(|birth| &birth.target)
+        .chain(
+            plan.pending_splits
+                .iter()
+                .flat_map(|split| split.children.iter().map(|child| &child.target)),
+        )
+        .chain(merges);
     for birth in births {
         if let PendingBirthTarget::CreatedRelation(created) = birth {
             for endpoint in [&created.source, &created.target] {

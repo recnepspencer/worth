@@ -99,14 +99,15 @@ impl WorkingState {
         .zip(anchors)
         {
             let (partition_id, slot) = (anchor.partition_id, anchor.slot_index());
-            let revision = retraction.restore_revision.then(|| {
-                base.get_current_partition(partition_id).and_then(|view| {
-                    direction
-                        .table(view.partition_state())
-                        .get(slot)
-                        .and_then(|set| set.structural_revision(delta.kind_id))
-                })
-            });
+            let view = base.get_current_partition(partition_id);
+            let before = view
+                .as_ref()
+                .and_then(|view| direction.table(view.partition_state()).get(slot));
+            let revision = retraction
+                .restore_revision
+                .then(|| before.and_then(|set| set.structural_revision(delta.kind_id)));
+            let historical_before = before
+                .is_some_and(|set| set.contains_historical_kind(delta.kind_id, delta.relation_id));
             if let Some(overlay) = self.partitions.get_mut(&partition_id) {
                 let table = match direction {
                     AdjacencyDirection::Outgoing => &mut overlay.adjacency,
@@ -116,7 +117,7 @@ impl WorkingState {
                     set.retract_delta_for_request(
                         delta.kind_id,
                         delta.relation_id,
-                        created,
+                        (created, historical_before),
                         revision,
                         request,
                     )?;

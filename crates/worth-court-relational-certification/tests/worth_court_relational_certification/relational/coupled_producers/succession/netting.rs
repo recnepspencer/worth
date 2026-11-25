@@ -14,6 +14,7 @@ mod multi_chain;
 mod naming;
 mod qualification;
 mod relations;
+mod replacement;
 mod replay;
 mod three_rounds;
 

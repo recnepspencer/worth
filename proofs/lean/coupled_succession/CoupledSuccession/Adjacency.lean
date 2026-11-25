@@ -28,12 +28,16 @@ def insertSorted (r : Nat) : List Nat → List Nat
 
 def StrictSorted (l : List Nat) : Prop := List.Pairwise (· < ·) l
 
-/-- Apply a delta: `Created` enters `current` and `historical`; `Deleted` leaves `current` only. -/
+/-- Ordered-set insertion that keeps a present member (production sets are idempotent). -/
+def insertSet (r : Nat) (l : List Nat) : List Nat := if r ∈ l then l else insertSorted r l
+
+/-- Apply a delta: `Created` enters `current` and `historical` (an endpoint update re-creates a
+relation the anchor may already hold historically); `Deleted` leaves `current` only. -/
 def AdjState.apply (a : AdjState) (d : AdjDelta) : AdjState :=
   match d.kind with
   | .created =>
-    { current := insertSorted d.relation a.current
-      historical := insertSorted d.relation a.historical
+    { current := insertSet d.relation a.current
+      historical := insertSet d.relation a.historical
       revision := some d.version }
   | .deleted =>
     { current := a.current.erase d.relation
@@ -41,14 +45,16 @@ def AdjState.apply (a : AdjState) (d : AdjDelta) : AdjState :=
       revision := some d.version }
 
 /-- Invert a delta. The revision returns to `B`'s value `rev0` iff no other unmasked member
-after the head touched this triple (`otherTouch = false`); otherwise it keeps its stamp. -/
-def AdjState.retract (a : AdjState) (d : AdjDelta) (rev0 : Option Nat) (otherTouch : Bool) :
-    AdjState :=
+after the head touched this triple (`otherTouch = false`); otherwise it keeps its stamp. A created
+relation leaves `historical` only when `B` did not already hold it there (`historicalBefore`,
+production's `historical_before`, read from the head image `B`). -/
+def AdjState.retract (a : AdjState) (d : AdjDelta) (rev0 : Option Nat) (historicalBefore : Bool)
+    (otherTouch : Bool) : AdjState :=
   let rev := if otherTouch then a.revision else rev0
   match d.kind with
   | .created =>
     { current := a.current.erase d.relation
-      historical := a.historical.erase d.relation
+      historical := if historicalBefore then a.historical else a.historical.erase d.relation
       revision := rev }
   | .deleted =>
     { current := insertSorted d.relation a.current
@@ -108,10 +114,30 @@ theorem insertSorted_erase (r : Nat) : ∀ l : List Nat, StrictSorted l → r �
       simp only [this, ite_false]
       rw [ih hs hm']
 
+theorem not_mem_erase_of_sorted (r : Nat) : ∀ l : List Nat, StrictSorted l → r ∉ l.erase r := by
+  intro l
+  induction l with
+  | nil => intro _; simp
+  | cons x xs ih =>
+    intro hs
+    unfold StrictSorted at hs
+    rw [List.pairwise_cons] at hs
+    obtain ⟨hlt, hs⟩ := hs
+    by_cases hx : x = r
+    · subst hx
+      rw [List.erase_cons_head]
+      exact fun m => Nat.lt_irrefl x (hlt x m)
+    · rw [List.erase_cons_tail (by simpa using hx)]
+      intro m
+      rcases List.mem_cons.mp m with h | h
+      · exact hx h.symm
+      · exact ih hs h
+
 namespace Adjacency
 
 /-- T13: retracting a delta restores the triple exactly; the revision is restored iff no other
-unmasked member touched it.
+unmasked member touched it. `historicalBefore` is whether `B` (here `a`) held the relation in its
+historical bucket, as production reads it from the head image.
 
 Changes from design §5.2 (review note 4): `rev0 : Option Nat` instead of `Nat` (`B` may have no
 revision for the triple, and `rev0 = a.revision` only typechecks as `Option Nat`); added the
@@ -121,15 +147,17 @@ r ∉ historical`; `Deleted r`: `r ∈ current ∧ r ∈ historical`). -/
 theorem invert_adjacency_exact :
     ∀ (a : AdjState) (d : AdjDelta) (rev0 : Option Nat), rev0 = a.revision →
       StrictSorted a.current → d.Fits a →
-      (a.apply d).retract d rev0 (otherTouch := false) = a ∧
-        ((a.apply d).retract d rev0 (otherTouch := true)).revision = (a.apply d).revision := by
+      (a.apply d).retract d rev0 (decide (d.relation ∈ a.historical)) (otherTouch := false) = a ∧
+        ((a.apply d).retract d rev0 (decide (d.relation ∈ a.historical))
+          (otherTouch := true)).revision = (a.apply d).revision := by
   intro a d rev0 hrev hsort hfit
   obtain ⟨cur, hist, rev⟩ := a
   obtain ⟨kind, r, v⟩ := d
   cases kind with
   | created =>
     simp only [AdjDelta.Fits] at hfit
-    simp only [AdjState.apply, AdjState.retract, Bool.false_eq_true, ite_false, ite_true]
+    simp only [AdjState.apply, AdjState.retract, insertSet, hfit.1, hfit.2, decide_false,
+      Bool.false_eq_true, ite_false, ite_true]
     refine ⟨?_, trivial⟩
     rw [erase_insertSorted r cur hfit.1, erase_insertSorted r hist hfit.2, hrev]
   | deleted =>
@@ -137,6 +165,27 @@ theorem invert_adjacency_exact :
     simp only [AdjState.apply, AdjState.retract, Bool.false_eq_true, ite_false, ite_true]
     refine ⟨?_, trivial⟩
     rw [insertSorted_erase r cur hsort hfit.1, hrev]
+
+/-- T13u (Neon code review r1, blocker 1): an endpoint update on an anchor that keeps the relation
+(`Deleted r` then `Created r`, as `UpdateEndpoints` emits on a shared endpoint), retracted in
+reverse order with `historicalBefore` read from `B`, restores the triple exactly: the relation
+stays in `historical`, which already held it before the chain. Pruning it unconditionally would
+leave `r ∈ current` with `r ∉ historical`. -/
+theorem invert_endpoint_move_exact :
+    ∀ (a : AdjState) (r v : Nat) (rev0 : Option Nat), rev0 = a.revision →
+      StrictSorted a.current → r ∈ a.current → r ∈ a.historical →
+      let deleted : AdjDelta := ⟨.deleted, r, v⟩
+      let created : AdjDelta := ⟨.created, r, v⟩
+      (((a.apply deleted).apply created).retract created rev0 (decide (r ∈ a.historical))
+          (otherTouch := false)).retract deleted rev0 (decide (r ∈ a.historical))
+          (otherTouch := false) = a := by
+  intro a r v rev0 hrev hsort hcur hhist
+  obtain ⟨cur, hist, rev⟩ := a
+  have hout : r ∉ cur.erase r := not_mem_erase_of_sorted r cur hsort
+  simp only at hcur hhist hrev
+  simp only [AdjState.apply, AdjState.retract, insertSet, hout, hhist, decide_true,
+    Bool.false_eq_true, ite_false, ite_true]
+  rw [erase_insertSorted r (cur.erase r) hout, insertSorted_erase r cur hsort hcur, hrev]
 
 end Adjacency
 end CoupledSuccession

@@ -163,7 +163,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             &mut self.mutation.state,
             outcome,
             state,
-            self.mutation.identities.symbols.interner(),
+            &self.mutation.identities,
         )?;
         self.mutation.aggregate = crate::aggregate_identity::AggregateProposal::capture(
             &self.prepared.schema_authority,

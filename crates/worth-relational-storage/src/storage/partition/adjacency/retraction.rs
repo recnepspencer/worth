@@ -6,7 +6,9 @@ use worth_execution::ExecutionRequest;
 
 impl AdjacencySet {
     /// Undo one delta on this anchor. A created relation leaves `current`,
-    /// its current kind bucket and its historical kind bucket; a deleted one
+    /// its current kind bucket and, unless `historical_before` (the anchor
+    /// already had it before the chain's head, as an endpoint update
+    /// re-creating it there does), its historical kind bucket; a deleted one
     /// returns to `current` and its current kind bucket (its historical entry
     /// was never removed). `revision`, when given, is the kind's structural
     /// revision to restore (`None` removes it): the image before the chain's
@@ -16,7 +18,7 @@ impl AdjacencySet {
         &mut self,
         kind: KindId,
         relation: RelationId,
-        created: bool,
+        (created, historical_before): (bool, bool),
         revision: Option<Option<VersionId>>,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), Cause> {
@@ -30,6 +32,9 @@ impl AdjacencySet {
                 (&mut entries.current_by_kind, false),
                 (&mut entries.historical_by_kind, true),
             ] {
+                if historical && historical_before {
+                    continue;
+                }
                 if let Some(kinds) = kinds.as_mut()
                     && kinds
                         .get(&kind)

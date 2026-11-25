@@ -88,6 +88,21 @@ impl PendingRecordAllocations {
         &self.cancelled
     }
 
+    /// Each live replacement identity, keyed by the entity it replaces.
+    /// O(live · log live).
+    pub fn replacements(&self) -> BTreeMap<&RecordRef, AllocationSource> {
+        self.canonical
+            .iter()
+            .zip(&self.sources)
+            .filter_map(|(entry, source)| match source {
+                Some(source @ AllocationSource::Replacement(_)) => {
+                    Some((entry.record(), source.clone()))
+                }
+                _ => None,
+            })
+            .collect()
+    }
+
     /// Reorder the live evidence to the order replay allocates it: one entry
     /// per allocation of `intents` (the envelope's merged plan), renumbered
     /// from zero. Every live entry must be allocated by exactly one planned

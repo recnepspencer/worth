@@ -86,7 +86,11 @@
     },
     {
       "name": "CoupledSuccession.Adjacency.invert_adjacency_exact",
-      "type": "∀ (a : CoupledSuccession.AdjState) (d : CoupledSuccession.AdjDelta) (rev0 : Option Nat), rev0 = a.revision → CoupledSuccession.StrictSorted a.current → d.Fits a → (a.apply d).retract d rev0 (otherTouch := false) = a ∧ ((a.apply d).retract d rev0 (otherTouch := true)).revision = (a.apply d).revision"
+      "type": "∀ (a : CoupledSuccession.AdjState) (d : CoupledSuccession.AdjDelta) (rev0 : Option Nat), rev0 = a.revision → CoupledSuccession.StrictSorted a.current → d.Fits a → (a.apply d).retract d rev0 (decide (d.relation ∈ a.historical)) (otherTouch := false) = a ∧ ((a.apply d).retract d rev0 (decide (d.relation ∈ a.historical)) (otherTouch := true)).revision = (a.apply d).revision"
+    },
+    {
+      "name": "CoupledSuccession.Adjacency.invert_endpoint_move_exact",
+      "type": "∀ (a : CoupledSuccession.AdjState) (r v : Nat) (rev0 : Option Nat), rev0 = a.revision → CoupledSuccession.StrictSorted a.current → r ∈ a.current → r ∈ a.historical → ((((a.apply ⟨CoupledSuccession.AdjKind.deleted, r, v⟩).apply ⟨CoupledSuccession.AdjKind.created, r, v⟩).retract ⟨CoupledSuccession.AdjKind.created, r, v⟩ rev0 (decide (r ∈ a.historical)) (otherTouch := false)).retract ⟨CoupledSuccession.AdjKind.deleted, r, v⟩ rev0 (decide (r ∈ a.historical)) (otherTouch := false) = a)"
     },
     {
       "name": "CoupledSuccession.Ledger.evidence_block_contiguous",

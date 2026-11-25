@@ -3,12 +3,18 @@ use super::*;
 
 /// The kind-`LINK` relations into the carrier, as a committed read lists them.
 fn into_carrier(world: &World) -> Vec<RelationId> {
+    into_carrier_at(world, &world.basis())
+}
+
+/// `into_carrier` as of `basis`; an earlier basis reads the anchor's
+/// historical kind bucket.
+fn into_carrier_at(world: &World, basis: &AdmittedRelationalBranchBasis) -> Vec<RelationId> {
     let host = request();
     let execution = &ExecutionRequest::serial(&host);
     let mut ids = world
         .runtime
         .read_truth()
-        .project_observation(&world.basis().observation())
+        .project_observation(&basis.observation())
         .unwrap()
         .bounded_incoming_relations_of_kind(execution, world.carrier, LINK, None)
         .unwrap()
@@ -99,6 +105,100 @@ fn a_dropped_link_leaves_a_shared_anchor_with_only_live_links() {
                 &result_ids(&chain.world, &chain.outputs)
             )),
             chain.observed.states
+        );
+    }
+}
+
+/// A committed `LINK` from the source into the carrier and a spare entity.
+fn linked_world(world: World) -> (World, RelationId, EntityId) {
+    let (world, spare) = super::replacement::spare(world);
+    let host = request();
+    let execution = &ExecutionRequest::serial(&host);
+    let mut tx = begin_main_transaction(&world.runtime);
+    let base = link(
+        "base-link",
+        EntityReference::Existing(world.source),
+        EntityReference::Existing(world.carrier),
+    );
+    tx.push_batch(
+        WorkerIntentBatch::new("link").push(base),
+        execution.allocation_policy(),
+    )
+    .unwrap();
+    let result = tx.commit(execution, &world.runtime).unwrap();
+    release_test_commit_snapshot(&world.runtime, &result);
+    let relation = into_carrier(&world)[0];
+    (world, relation, spare)
+}
+
+/// Owned Birth rounds each creating `x`; a round whose flag is set moves
+/// the committed link's source to the spare entity, keeping the carrier as
+/// its target.
+fn endpoint_moves(rounds: &[bool]) -> (Run, AdmittedRelationalBranchBasis) {
+    let ids = std::cell::Cell::new(None);
+    let before = RefCell::new(None);
+    let setup = |world: World| {
+        let (world, relation, spare) = linked_world(world);
+        ids.set(Some((relation, spare)));
+        *before.borrow_mut() = Some(world.basis());
+        world
+    };
+    let run = run_in(setup, false, &|world, execution, candidate| {
+        let (relation, spare) = ids.get().expect("the link is committed");
+        for (index, &moves) in rounds.iter().enumerate() {
+            let mut round = creates(&["x"], "1");
+            if moves {
+                let to = UpdateRelationEndpointsIntent {
+                    relation_id: relation,
+                    kind_id: LINK,
+                    source: EntityReference::Existing(spare),
+                    target: EntityReference::Existing(world.carrier),
+                };
+                round.push(
+                    WorkerIntentBatch::new("move").push(MutationIntent::Relation(
+                        RelationMutationIntent::UpdateEndpoints(to),
+                    )),
+                );
+            }
+            let posture = birth(world, execution, &["x"]);
+            if index == 0 {
+                candidate.append_publication(execution, posture, &none(), round)?;
+            } else {
+                successor(execution, candidate, posture, round)?;
+            }
+        }
+        Ok(())
+    })
+    .unwrap();
+    (run, before.into_inner().expect("the setup basis"))
+}
+
+/// Round 1 moves a committed link's source and round 2 omits or repeats the
+/// move. The carrier (the shared anchor) had the link in its historical
+/// bucket before the chain, so retracting the move restores its current link
+/// and keeps that history: a read as of the pre-chain basis still finds it,
+/// and the result's checkpoint reopens and reads like the one-round answer.
+#[test]
+fn a_retracted_endpoint_move_keeps_the_shared_anchors_history() {
+    for last in [false, true] {
+        let (chain, before) = endpoint_moves(&[true, last]);
+        let (one, one_before) = endpoint_moves(&[last]);
+        assert_eq!(chain.observed.alpha(), one.observed.alpha(), "last={last}");
+        assert_eq!(into_carrier(&chain.world), into_carrier(&one.world));
+        let historical = into_carrier_at(&chain.world, &before);
+        assert_eq!(historical.len(), 1, "last={last}: the pre-chain link");
+        assert_eq!(historical, into_carrier_at(&one.world, &one_before));
+        let host = request();
+        let execution = &ExecutionRequest::serial(&host);
+        let (cold, _) = cold::reopen(&chain.world, execution, true);
+        let reopened = World {
+            runtime: cold,
+            ..endpoint_moves(&[true, last]).0.world
+        };
+        assert_eq!(
+            into_carrier(&reopened),
+            into_carrier(&one.world),
+            "last={last}"
         );
     }
 }

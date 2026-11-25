@@ -143,7 +143,7 @@ pub fn adopt(
     current_state: &mut WorkingState,
     outcome: MutationApplyOutcome,
     state: WorkingState,
-    symbols: &StringInterner,
+    identities: &worth_relational_mutation::internal_port::authority::mutation::pending_identities::PendingMutationIdentities,
 ) -> Result<
     (
         Vec<RecordRef>,
@@ -154,6 +154,7 @@ pub fn adopt(
 > {
     use worth_relational_storage::internal_port::runtime::state::subsystems::record_identity::allocation_source::AllocationSource;
     let records = outcome.effect.publication.changed_records.clone();
+    let symbols = identities.symbols.interner();
     let text =
         |key: &contracts::symbols::data::client_key::ClientKey| {
             key.resolve_with_interner(symbols).map(str::to_owned).ok_or_else(|| {
@@ -184,6 +185,17 @@ pub fn adopt(
             record: RecordRef::Relation(*id),
             text: text(&created.client_key)?,
         });
+    }
+    // A replacement is a chain create keyed by the entity it replaces.
+    let replacements = identities.records.replacements();
+    for record in &records {
+        if let Some(source) = replacements.get(record) {
+            creates.push(super::succession::ledger::ChainCreate {
+                source: source.clone(),
+                record: record.clone(),
+                text: String::new(),
+            });
+        }
     }
     current_outcome
         .created_entities

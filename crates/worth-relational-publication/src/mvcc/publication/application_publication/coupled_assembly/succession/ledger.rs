@@ -19,7 +19,8 @@ pub enum Reservation {
     Dormant,
 }
 
-/// One created record: its source, identity and key text.
+/// One created record: its source, identity and key text (empty for a
+/// replacement).
 pub struct ChainCreate {
     pub source: AllocationSource,
     pub record: RecordRef,
@@ -38,13 +39,16 @@ impl ChainCreateLedger {
     /// Bind the records the live round created. O(creates · log n).
     pub fn bind_round(&mut self, creates: &[ChainCreate]) {
         for create in creates {
-            let (relation, partition) = match &create.source {
-                AllocationSource::Entity { partition_id, .. } => (false, *partition_id),
-                AllocationSource::Relation { partition_id, .. } => (true, *partition_id),
-                AllocationSource::Replacement(_) => continue,
+            // A replacement is keyed by the entity it replaces, not by text.
+            let keyed = match &create.source {
+                AllocationSource::Entity { partition_id, .. } => Some((false, *partition_id)),
+                AllocationSource::Relation { partition_id, .. } => Some((true, *partition_id)),
+                AllocationSource::Replacement(_) => None,
             };
-            self.partitions
-                .insert((relation, create.text.clone()), partition);
+            if let Some((relation, partition)) = keyed {
+                self.partitions
+                    .insert((relation, create.text.clone()), partition);
+            }
             self.by_record
                 .insert(create.record.clone(), create.source.clone());
             self.entries.insert(
