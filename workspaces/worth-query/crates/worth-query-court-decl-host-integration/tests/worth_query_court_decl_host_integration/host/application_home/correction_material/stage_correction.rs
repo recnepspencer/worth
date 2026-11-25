@@ -251,12 +251,11 @@ fn a_directory_home_reopens_after_reversing_two_stages_of_one_commit() {
 /// before the reopen (public #382). That history is index-keyed and crosses
 /// checkpoint-restored commits.
 #[test]
-#[ignore = "held on public #384: prepare: Derivation(RestoredSupport(Native(IncompleteIndexHistory)))"]
 fn a_reopened_directory_home_reverses_the_first_stage_after_two_later_reversals() {
     let lease = checkpoint_capture::lease(256 << 20);
     let (home, sources) =
         reopen_after_reversing_two_stages(fixture::location(), worth_execution::ExecutionRequest::leased(&lease));
     reverse!(home, DirectoryProgram, "undo-0", |corrections| corrections.select_coordinates(&sources[0], limits()))
-        .unwrap_or_else(|cause| panic!("#384 stage 0 reverses after reopen: {cause}"));
+        .unwrap_or_else(|cause| panic!("stage 0 reverses after reopen: {cause}"));
     assert_eq!(values(home.runtime()), restored(&[0, 1, 2]));
 }

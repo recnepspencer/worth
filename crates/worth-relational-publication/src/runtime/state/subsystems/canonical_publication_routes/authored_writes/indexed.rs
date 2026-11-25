@@ -1,4 +1,5 @@
-//! Derive selected-prefix postings only from actual verified canonical owners.
+//! Derive selected-prefix postings only from live-verified or owner-certified
+//! canonical evidence; anything else marks the ordinal incomplete.
 use super::*;
 use branch::history::access::relevant_writes::posting_key::AuthoredWritePostingKey as Key;
 use branch::history::access::relevant_writes::selection::RelationalAuthoredEntityIndexDefinitionOwnerPort as _;
@@ -6,14 +7,28 @@ use branch::history::access::relevant_writes::selection::RelationalAuthoredWrite
 use branch::history::data::canonical_commit_envelope::CanonicalCommitEnvelope;
 use branch::history::data::canonical_commit_envelope::CanonicalCommitEnvelopeBodyFieldsPort as _;
 use worth_relational_branch::internal_port as branch;
+use worth_relational_indexes::internal_port::runtime::state::subsystems::indexing::catalog_publication::CapturedIndexDefinitionCatalog;
 
 pub(super) fn append(
     generation: &mut AuthoredWriteGeneration,
     execution: ExecutionRequest<'_, '_>,
     context: &mut worth_execution::MapKernelContext<'_, '_>,
     envelope: &CanonicalCommitEnvelope,
+    catalog: Option<&CapturedIndexDefinitionCatalog>,
 ) -> Result<(), Denial> {
-    let Some(entries) = (*envelope.owner_authored_index_writes()).verified_entries() else {
+    let writes = envelope.owner_authored_index_writes();
+    // Live packets carry their issued coverage; readmitted ones are certified
+    // by the receiving catalog owner captured once for this generation.
+    let coverage = match (writes.coverage(), catalog) {
+        (Some(coverage), _) => Some(coverage),
+        (None, Some(catalog)) => catalog.certify_readmitted_writes(
+            writes,
+            envelope.owner_index_definition_delta().next_index_id,
+            context,
+        )?,
+        (None, None) => None,
+    };
+    let (Some(coverage), Some((_, entries))) = (coverage, writes.persisted_entries()) else {
         branch::history::access::relevant_writes::ordered_visit(
             context,
             generation.incomplete_indexes.len(),
@@ -23,9 +38,6 @@ pub(super) fn append(
             .insert_cloned_native_for_request(&generation.ordinal, &(), execution)?;
         return Ok(());
     };
-    let coverage = (*envelope.owner_authored_index_writes())
-        .coverage()
-        .expect("verified entries retain actual catalog coverage");
     if generation
         .index_run_last
         .is_none_or(|prior| !coverage.extends(prior))

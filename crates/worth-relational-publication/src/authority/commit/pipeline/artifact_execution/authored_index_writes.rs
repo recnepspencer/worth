@@ -35,6 +35,11 @@ pub(super) fn prepare(
     if !supported || inputs.original.is_some_and(Evidence::is_unavailable) {
         return Ok(Evidence::default());
     }
+    // A replayed legacy packet stays unprovenanced exactly as when it is
+    // decoded from a checkpoint; replay never re-mints it as covered.
+    if let Some(original) = inputs.original.filter(|original| original.is_legacy()) {
+        return Ok(original.clone());
+    }
     contracts::execution::phase_observation::run(
         &execution,
         "authored_index_writes",
@@ -98,7 +103,7 @@ fn prepare_evidence(
             if !catalog.catalog.has_entity_field_indexes() {
                 // The actual installed catalog proves complete-empty membership
                 // independently of record residency. Missing data never makes this proof.
-                return Ok(output.finish(catalog.coverage));
+                return Ok(output.finish(catalog.coverage, catalog.next_index_id));
             }
             let mut builder = projection::Projection {
                 execution,
@@ -120,7 +125,9 @@ fn prepare_evidence(
             if builder.unavailable {
                 Ok(Evidence::default())
             } else {
-                Ok(builder.output.finish(catalog.coverage))
+                Ok(builder
+                    .output
+                    .finish(catalog.coverage, catalog.next_index_id))
             }
         },
     )
