@@ -96,6 +96,7 @@ impl<Schema: ApplicationSchema, Program: 'static> WorthQueryHomeRetirement<Schem
 }
 
 /// Outcome of [`WorthQueryDirectoryOpenDenial::retire_opening`].
+#[must_use = "a refused retirement retains the opening owner"]
 pub enum WorthQueryDirectoryOpenRetired<Schema: ApplicationSchemaComposition, Program> {
     /// Opening refused before any Home existed; the denial is unchanged.
     Unretained(WorthQueryDirectoryOpenDenial<Schema, Program>),

@@ -74,8 +74,11 @@ macro_rules! __worth_query_scope_access_actions {
                     {
                         return ::core::result::Result::Err(HandlerExecutionDenial::new(Refusal::GranteeMappingDisabled));
                     }
-                    let grantee = reader
-                        .relations_from($MappingTarget::reference(), &mapping)?
+                    let mut targets = reader.relations_from($MappingTarget::reference(), &mapping)?;
+                    if targets.len() != 1 {
+                        return ::core::result::Result::Err(HandlerExecutionDenial::new(Refusal::GranteeUnmapped));
+                    }
+                    let grantee = targets
                         .pop()
                         .ok_or_else(|| HandlerExecutionDenial::new(Refusal::GranteeUnmapped))?
                         .into_to();

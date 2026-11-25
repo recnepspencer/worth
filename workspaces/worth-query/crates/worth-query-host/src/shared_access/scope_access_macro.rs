@@ -7,7 +7,7 @@
 pub enum WorthQueryScopeGrantRefusal {
     /// The grantee's principal mapping is disabled.
     GranteeMappingDisabled,
-    /// The grantee's mapping links no principal.
+    /// The grantee's mapping links no principal, or more than one.
     GranteeUnmapped,
     /// The grant identifier is not a valid entity key.
     InvalidGrantKey,
