@@ -216,7 +216,6 @@
 //!         .correlate()?.accept()?.execute(scope)
 //! }
 //! ```
-
 //! Producer publication and admission diagnostics borrow the returned denial;
 //! the application keeps the original terminal operation and its cleanup custody.
 //! Native companion amounts are data, not a new retry or publication authority.
@@ -265,6 +264,8 @@ pub use worth_query_execution::facade::{application_installation, application_in
 pub mod application_naming;
 /// Standard checked ordered managed-index adapter and metered prefix/field helpers.
 pub mod ordered_index;
+/// Shared scope access grants and authenticated single-owner remote transport.
+pub mod shared_access;
 pub use crate::application_home::{
     discard_home, ApplicationHomeQueryRootDenial, HomeCustodyReadmissionDenial,
     NoHomeProgramTransition, QueryHomeProgramActivationDenial, UnadmittedHomeQueryCustodyRefused,

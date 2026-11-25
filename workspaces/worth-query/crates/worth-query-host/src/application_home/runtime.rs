@@ -59,4 +59,10 @@ impl<Schema, Program> WorthQueryApplicationHome<Schema, Program> {
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
+    pub fn home_identity(&self) -> Option<worth_foundational::facade::HomeIdentity> {
+        self.directory.as_ref().map(DirectoryHome::home_identity)
+    }
+    pub fn home_incarnation(&self) -> Option<worth_foundational::facade::HomeIncarnation> {
+        self.directory.as_ref().map(DirectoryHome::incarnation)
+    }
 }

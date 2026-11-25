@@ -1,6 +1,7 @@
 pub(crate) mod application_entry_current_read;
 pub(crate) mod application_home;
 mod application_startup;
+mod shared_access;
 mod source_custody;
 
 pub(crate) mod application_runtime_surface;

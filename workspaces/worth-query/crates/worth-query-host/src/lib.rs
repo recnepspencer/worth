@@ -388,6 +388,7 @@ mod runtime_and_handler_fences_contract;
 mod semantic_refusal_contract;
 mod session;
 mod session_contract;
+mod shared_access;
 mod source_custody;
 mod source_custody_contract;
 mod temporal_contribution;

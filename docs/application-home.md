@@ -361,6 +361,51 @@ recomputes derived state only on demand.
 internal certification door scheduled for deletion. Applications reopen their
 Directory instead.
 
+## Shared Scope Access
+
+A single-owner Directory Home can delegate governed read (or read+watch) access
+for one application scope to authenticated remote collaborators without ever
+opening a second writer on the Directory:
+
+- Implement `host::shared_access::WorthQuerySharedAccessProgram<Schema>` with
+  your declared grant/revoke mutation intents, read/watch capabilities, and
+  governed live query.
+- **Native commit-backed grants and revocations:**
+  `WorthQueryApplicationHome::grant_scope_access` and
+  `WorthQueryApplicationHome::revoke_scope_access` execute your declared mutation
+  intents directly through WORTH's own mutation runtime and refuse unless a
+  published commit receipt with non-zero durable record changes is produced.
+  Grants and revocations survive graceful close and reopen. On reopen, every
+  request (including `WatchPoll` and `WatchClose`) authenticates first — so
+  earlier incarnation-pinned tokens refuse with `StaleIncarnation` and unpinned
+  tokens refuse with `IncarnationPinRequired` when
+  `RemoteAuthConfig::with_require_incarnation_pin(true)` is set; when pinning is
+  optional, valid unpinned tokens bound to the same `HomeIdentity` continue to
+  authenticate, and once authenticated, prior incarnation-bound `RemoteWatchId`
+  handles always fail closed with `WatchNotFound` even after replacement watches
+  are opened.
+- **Loopback-only TCP trust boundary:** `home.serve_remote(bind_addr, auth_config)?`
+  and `WorthQueryRemoteClient::connect(addr, token)?` both fail closed with
+  `SharedAccessDenial::NonLoopbackAddressRefused` for any non-loopback address,
+  because direct frames carry reusable HMAC-SHA256 bearer tokens and row
+  payloads without transport encryption. For cross-host deployments, tunnel
+  loopback over an authenticated encrypted transport (TLS/mTLS, Tailscale, or
+  SSH) or drive `WorthQueryRemoteServer::handle_frame` over an encrypted
+  channel.
+- **Bounded, nonblocking hosting and watch reclamation:** `RemoteServerLimits`
+  and `RemoteClientLimits` enforce `MIN_MAX_FRAME_BYTES` (64 bytes, strictly
+  above the stack-encoded refusal frame), intersect remote row limits with both
+  graph cardinality and the installed query binding cap, require bounded
+  `RemoteBinaryCodec::encode_remote_bounded` streaming through
+  `RemoteByteWriter` before allocation, keep accepted TCP sockets strictly
+  nonblocking with per-tick dispatch quotas and absolute per-frame/idle
+  deadlines, verify the native admitted watch capability proof's resolved
+  resource `EntityId` against the exact bound scope entity at both open and
+  every poll, keep `active_watch_count` / `active_watches` strictly read-only,
+  roll back failed watch opens before slot insertion, and reclaim watches on
+  disconnect or token expiry via owner progress (`serve_pending`, `serve_once`,
+  or `reap_expired_watches`).
+
 ## Examples
 
 | Example | What it shows |
