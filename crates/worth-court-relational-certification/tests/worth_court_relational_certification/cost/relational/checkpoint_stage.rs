@@ -64,29 +64,36 @@ fn checkpoint_stage_charges_the_documented_rate_for_each_encoded_byte() {
     // envelope is serialized again: embedding costs its member's locator hash.
     //
     //  0 rows: 2 x 2,645 - 16 + 175 + 0 + 0                   =     5,449
-    //  8 rows: 2 x 57,564 - 16 + 46,368 + 44,196 + 43,876     =   249,552 + regions
-    // 64 rows: 2 x 425,003 - 16 + 359,570 + 354,880 + 352,320 = 1,916,760 + regions
+    //  8 rows: 2 x 57,826 - 16 + 46,616 + 44,444 + 44,124     =   250,820 + regions
+    // 64 rows: 2 x 426,949 - 16 + 361,554 + 356,864 + 354,304 = 1,926,604 + regions
     // classified = envelopes + roots + cells + mirror + index definitions:
-    //   0 + 1 + 172 + 1 + 1; 43,900 + 1,351 + 340 + 776 + 1;
-    //   352,512 + 3,646 + 340 + 3,071 + 1.
+    //   0 + 1 + 172 + 1 + 1; 44,148 + 1,351 + 340 + 776 + 1;
+    //   354,496 + 3,646 + 340 + 3,071 + 1.
+    //
+    // Each envelope's authored index writes persist their catalog bound
+    // (public #384): `Covered { covered_next_index_id, entries }` replaces
+    // `Complete(entries)`, 42 encoded bytes instead of 11 for an empty packet,
+    // so every artifact, digest input and embedded member is 31 bytes longer.
+    // The rest of the checkpoint's change (+14 bytes at 8 rows, -38 at 64) is
+    // the MessagePack width of the changed artifact digests' bytes.
     let mut per_row_reconstruction = Vec::new();
     for (rows, bytes, sections, digests, artifacts, encoding) in [
         (0, 2_645, [0, 1, 172, 1, 1], 0, 0, EMPTY_TOTAL),
         (
             8,
-            57_564,
-            [43_900, 1_351, 340, 776, 1],
-            44_196,
-            43_876,
-            249_552,
+            57_826,
+            [44_148, 1_351, 340, 776, 1],
+            44_444,
+            44_124,
+            250_820,
         ),
         (
             64,
-            425_003,
-            [352_512, 3_646, 340, 3_071, 1],
-            354_880,
-            352_320,
-            1_916_760,
+            426_949,
+            [354_496, 3_646, 340, 3_071, 1],
+            356_864,
+            354_304,
+            1_926_604,
         ),
     ] {
         let request = serial_request();
