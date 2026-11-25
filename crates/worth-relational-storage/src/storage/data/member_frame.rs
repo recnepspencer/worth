@@ -83,6 +83,36 @@ pub fn locator_in_stage(
     })
 }
 
+fn decode_verified_header(bytes: &[u8], kind: MemberKind) -> Result<&[u8], Cause> {
+    let frame = bytes.strip_prefix(MAGIC).ok_or(Cause::Damaged)?;
+    let (header, payload) = frame.split_at_checked(3).ok_or(Cause::Damaged)?;
+    if header[..2] != 1_u16.to_be_bytes() || header[2] != kind as u8 {
+        return Err(Cause::Damaged);
+    }
+    Ok(payload)
+}
+
+pub fn decode_for_request<'a>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    bytes: &'a [u8],
+    expected: RelationalDurableMemberLocator,
+    kind: MemberKind,
+    subject: crate::storage::data::storage_unavailable::RelationalStorageSubject,
+) -> Result<&'a [u8], crate::durability::data::recovery_stop::RelationalRecoveryStop> {
+    let actual = locator_for_request(execution, bytes)
+        .map_err(crate::durability::data::recovery_stop::RelationalRecoveryStop::Request)?;
+    if actual != expected {
+        return Err(crate::storage::data::storage_unavailable::RelationalStorageUnavailable {
+            subject,
+            cause: Cause::IntegrityMismatch,
+        }
+        .into());
+    }
+    decode_verified_header(bytes, kind).map_err(|cause| {
+        crate::storage::data::storage_unavailable::RelationalStorageUnavailable { subject, cause }.into()
+    })
+}
+
 pub fn decode(
     bytes: &[u8],
     expected: RelationalDurableMemberLocator,
@@ -91,10 +121,5 @@ pub fn decode(
     if locator(bytes) != expected {
         return Err(Cause::IntegrityMismatch);
     }
-    let frame = bytes.strip_prefix(MAGIC).ok_or(Cause::Damaged)?;
-    let (header, payload) = frame.split_at_checked(3).ok_or(Cause::Damaged)?;
-    if header[..2] != 1_u16.to_be_bytes() || header[2] != kind as u8 {
-        return Err(Cause::Damaged);
-    }
-    Ok(payload)
+    decode_verified_header(bytes, kind)
 }

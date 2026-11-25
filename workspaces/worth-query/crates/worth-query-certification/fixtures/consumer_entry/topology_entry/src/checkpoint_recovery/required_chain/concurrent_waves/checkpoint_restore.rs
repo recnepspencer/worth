@@ -1,6 +1,5 @@
 //! Recovery keeps published product truth without restoring an undelivered head hold.
 use super::*;
-use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy;
 
 #[cfg(test)]
 mod serial {
@@ -8,7 +7,7 @@ mod serial {
     #[test]
     fn a_checkpoint_of_a_frozen_head_restores_truth_without_a_publication_hold() {
         let _guard = checkpoint_recovery_test_guard();
-        let application = support::install_program_with_seed::<application::Program>(
+        let application = support::open_directory_program_with_seed::<application::Program>(
             None,
             Default::default(),
             4096,
@@ -78,26 +77,17 @@ mod serial {
         assert_eq!(published.rows().len(), 1);
         let last_published_truth = published.rows()[0].value;
         assert_eq!(last_published_truth, length(8));
-        let checkpoint = application
-            .with_host_advancement(|phase| {
-                application
-                    .capture_application_checkpoint(
-                        &phase,
-                        WorthQueryCheckpointCapturePolicy::SystemAllocation,
-                    )
-                    .unwrap()
-            })
-            .expect("checkpoint capture owns its host request");
+        application.checkpoint_directory();
         assert_eq!(
             application.undelivered_publication_counts_for_test(),
             (1, 1),
-            "capture neither delivers nor abandons the owner's publication"
+            "checkpoint neither delivers nor abandons the owner's publication"
         );
-        drop((published, source, owner, principal, scope));
-        drop(application);
+        drop((changed, published, source, owner, principal, scope));
+        let directory = application.close_for_reopen();
 
-        let restored = support::install_program_with_seed::<application::Program>(
-            Some(checkpoint),
+        let restored = support::open_directory_program_with_seed::<application::Program>(
+            Some(directory),
             Default::default(),
             4096,
             source_world::seed,

@@ -255,7 +255,8 @@ pub mod runtime {
         RelationalSchemaTransitionAdmissionDenial, RelationalSchemaTransitionAdmissionDenialKind,
         RelationalSnapshotPositionAdmissionStop, RelationalStoppedRetentionPass,
         ReplaySchemaVersion, RuntimeComplexityCounters, SimulationAccess, SimulationAuthority,
-        SnapshotGuard, SnapshotPositionDenial, TopologyFreezeMode, VisibilityProjectionView,
+        SnapshotGuard, SnapshotPositionDenial, TopologyFreezeMode, HomeReadmissionMetadataKinds,
+        HomeReadmissionMetadataReadDenial, HomeReadmissionMetadataView, VisibilityProjectionView,
         VisibilityReadContext, VisibilityRetentionAuthority,
     };
     pub use crate::runtime::{

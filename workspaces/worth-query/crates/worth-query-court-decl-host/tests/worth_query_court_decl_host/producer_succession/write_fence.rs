@@ -24,8 +24,21 @@ worth_query_mutation_binding!(pub Binding for ExternalWrite, schema Schema,
     principal PrincipalBinding, mapping Mapping, principal_entity Principal, principal_identity u64, identity_binding U64ApplicationValueBinding,
     scope Key, field Key::at("Key"), value scope,
 );
+use std::cell::Cell;
+thread_local! {
+    static LAST_REALIZES_EDGE: Cell<Option<worth_relational::facade::identity::RelationId>> =
+        const { Cell::new(None) };
+}
+pub fn take_last_realizes_edge() -> Option<worth_relational::facade::identity::RelationId> {
+    LAST_REALIZES_EDGE.with(Cell::take)
+}
 pub struct Handler;
 impl OperationHandler<Schema, Binding> for Handler {
+    fn declared_durable_capabilities() -> Option<
+        &'static [worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability],
+    > {
+        Some(&[worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability::RelationalMutation])
+    }
     fn decide(
         &self,
         input: &ExternalWrite,
@@ -37,10 +50,11 @@ impl OperationHandler<Schema, Binding> for Handler {
             let edges = reader
                 .relations_to(Realizes::reference(), &node)
                 .map_err(HandlerExecutionDenial::new)?;
-            let output = edges
+            let edge = edges
                 .first()
-                .expect("settled real producer realization")
-                .from();
+                .expect("settled real producer realization");
+            LAST_REALIZES_EDGE.with(|slot| slot.set(Some(edge.relation_id())));
+            let output = edge.from();
             reader.entity(output, Realization::reference())?;
             if input.action == 3 {
                 reader.field(output, RealizedValue::at("RealizedValue"))?;

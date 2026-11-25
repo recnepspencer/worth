@@ -29,14 +29,29 @@ enum Stage {
     Rederiving,
 }
 
+fn configuration() -> world::Configuration {
+    world::Configuration { envelope_records: true, interleaved_records: true, ..Default::default() }
+}
+
+fn limits() -> WorthQueryApplicationLimits {
+    host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
+}
+
 /// A fresh host where `a` and `m` both own settled source-scope outputs.
 fn settled() -> RetirementHost {
-    let host: RetirementHost = world::install_configured(
-        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
-        1,
-        None,
-        world::Configuration { envelope_records: true, interleaved_records: true, ..Default::default() },
-    );
+    let host: RetirementHost = world::install_configured(limits(), 1, None, configuration());
+    settle(&host);
+    host
+}
+
+/// The same settled world on a Directory Home that can close and reopen.
+fn settled_directory() -> world::DirHost<RetirementProgram> {
+    let host = world::open_directory_configured::<RetirementProgram>(limits(), 1, None, configuration());
+    settle(&host);
+    host
+}
+
+fn settle(host: &RetirementHost) {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
@@ -63,7 +78,6 @@ fn settled() -> RetirementHost {
     }
     settle!(first::Demand("a".into()), ModelTree);
     settle!(downstream::Demand("m".into()), program::OwnedMemberTree);
-    host
 }
 
 fn push(edit: &mut Envelope<'_, '_, Schema, RetirementProgram, String>, stage: Stage) {
@@ -167,15 +181,18 @@ fn a_retirement_prefix_beside_later_edits_commits_its_stages_in_order() {
     for stages in [&[Stage::Retire, Stage::Plain][..], &[Stage::Retire, Stage::Plain, Stage::Producing]] {
         let expected = sequential(stages);
         assert!(!expected.2 && !expected.3, "the oracle retires m and its owned output");
-        let host = settled();
+        let host = settled_directory();
         let before = native_head(&host).0;
         committed(run(&host, "mixed", stages), stages.len());
         assert_eq!(native_head(&host).1, [before], "{stages:?} is one commit");
         assert_eq!(observe(&host), expected, "{stages:?} equals its stages one at a time");
-        // Supported checkpoint readmission revalidates the recorded coupled group.
+        // Directory Home reopen readmission revalidates the recorded coupled group.
         let head = native_head(&host);
-        let reopened =
-            world::restore_program_checkpoint::<RetirementProgram>(failure::checkpoint(&host), false, false);
+        let reopened = world::reopen_program_directory::<RetirementProgram>(
+            host.checkpoint_and_close_for_reopen(),
+            false,
+            false,
+        );
         assert_eq!(native_head(&reopened), head);
         assert_eq!(observe(&reopened), expected, "{stages:?} reopens");
     }
@@ -194,15 +211,18 @@ fn restoration_equals_sequential(stages: &[Stage]) {
         observe(&host)
     };
     assert!(expected.2 && expected.3, "the oracle restores m and its owned output");
-    let host = settled();
+    let host = settled_directory();
     let retired = committed(run(&host, "retire", &[Stage::Retire]), 1);
     let before = native_head(&host).0;
     committed(undo(&host, &retired, "undo-and-edit", stages), stages.len() + 1);
     assert_eq!(native_head(&host).1, [before], "{stages:?} is one commit");
     assert_eq!(observe(&host), expected, "{stages:?} equals its stages one at a time");
     let head = native_head(&host);
-    let reopened =
-        world::restore_program_checkpoint::<RetirementProgram>(failure::checkpoint(&host), false, false);
+    let reopened = world::reopen_program_directory::<RetirementProgram>(
+        host.checkpoint_and_close_for_reopen(),
+        false,
+        false,
+    );
     assert_eq!(native_head(&reopened), head);
     assert_eq!(observe(&reopened), expected, "{stages:?} reopens");
 }

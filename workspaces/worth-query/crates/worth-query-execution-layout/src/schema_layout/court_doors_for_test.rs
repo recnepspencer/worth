@@ -114,7 +114,7 @@ impl WorthQueryPrimaryGraphLayout {
         existing_registry: &RelationalSchemaRegistry,
         value_bindings: &worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
     ) -> Result<(Self, RelationalSchemaRegistry), WorthQuerySchemaLayoutDenial> {
-        Self::lower(schema, native_contracts, existing_registry, value_bindings)
+        Self::lower(schema, native_contracts, existing_registry, value_bindings, false)
     }
 
     #[doc(hidden)]

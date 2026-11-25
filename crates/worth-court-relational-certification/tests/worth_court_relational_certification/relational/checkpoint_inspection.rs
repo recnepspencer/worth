@@ -31,10 +31,11 @@ fn original(
         world
             .runtime
             .durability_authority()
-            .native_checkpoint(
-                execution,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
+            .native_checkpoint_with_policy(
+execution,
+worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None },
+)
             .unwrap(),
         [
             CheckpointRecordIdentity {
@@ -222,7 +223,7 @@ fn restore_refuses_unknown_fields_before_publishing_any_model_state() {
     let mut control = World::empty_runtime(0);
     control
         .durability_recovery()
-        .restore_native_checkpoint(&execution, &original)
+        .restore_native_checkpoint(&execution, &original, worth_testkit_relational::cold_recovery::members_source(&original))
         .unwrap();
     assert!(control.history().immutable_commit_count() > 0);
     for owner in [
@@ -251,11 +252,15 @@ fn restore_refuses_unknown_fields_before_publishing_any_model_state() {
         let mut target = World::empty_runtime(0);
         let before = target
             .durability_authority()
-            .native_checkpoint(&execution, execution.allocation_policy())
+            .native_checkpoint_with_policy(
+&execution,
+execution.allocation_policy(),
+worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None },
+)
             .unwrap();
         let denied = target
             .durability_recovery()
-            .restore_native_checkpoint(&execution, &checkpoint)
+            .restore_native_checkpoint(&execution, &checkpoint, worth_testkit_relational::cold_recovery::members_source(&checkpoint))
             .unwrap_err();
         let RelationalRecoveryStop::Durability(error) = denied else {
             panic!("wrong restore refusal: {denied:?}")
@@ -271,7 +276,11 @@ fn restore_refuses_unknown_fields_before_publishing_any_model_state() {
         );
         let after = target
             .durability_authority()
-            .native_checkpoint(&execution, execution.allocation_policy())
+            .native_checkpoint_with_policy(
+&execution,
+execution.allocation_policy(),
+worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None },
+)
             .unwrap();
         assert_eq!(
             before.bytes(),
@@ -312,10 +321,11 @@ fn the_live_census_includes_divergent_retained_branch_roots() {
     }
     let checkpoint = runtime
         .durability_authority()
-        .native_checkpoint(
-            &execution,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .native_checkpoint_with_policy(
+&execution,
+worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None },
+)
         .unwrap();
     let inspected = checkpoint.inspect(&execution).unwrap();
     for entity in expected {

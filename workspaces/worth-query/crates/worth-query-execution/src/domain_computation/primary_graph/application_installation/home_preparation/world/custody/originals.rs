@@ -1,5 +1,7 @@
 //! Rejoin actual World originals with their owning Query operation family.
 use super::*;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Program: 'static>
@@ -78,6 +80,23 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
                     self.release_empty_original(execution, effects)?;
                     continue;
                 }
+                if let Some(native) = effects.native_effect()
+                    && is_generated_materialization_original(
+                        execution,
+                        application
+                            .inner
+                            .runtime
+                            .primary_provider_ref()
+                            .graph_ref(),
+                        native.subject().position(),
+                        native.semantic_result(),
+                    )?
+                {
+                    // Native-bearing generated materialization suspension or
+                    // restoration carries no application idempotency key and
+                    // remains in World's real recovery catalogue.
+                    continue;
+                }
                 if let Some((entity, completion)) = application
                     .inner
                     .runtime
@@ -123,6 +142,23 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
                 if original.native_receipt().is_none() {
                     continue;
                 }
+                if let (Some(position), Some(semantic)) =
+                    (original.native_position(), original.native_semantic_result())
+                    && is_generated_materialization_original(
+                        execution,
+                        application
+                            .inner
+                            .runtime
+                            .primary_provider_ref()
+                            .graph_ref(),
+                        position,
+                        semantic,
+                    )?
+                {
+                    // Released generated materialization original has no
+                    // application idempotency key.
+                    continue;
+                }
                 if application
                     .inner
                     .runtime
@@ -149,6 +185,46 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
             }
         }
     }
+}
+
+fn is_generated_materialization_original(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    graph: &worth_query_execution_lineage::facade::primary_graph::WorthQueryPrimaryGraphIntegrationHandle,
+    position: worth_relational::facade::publication::PatchStreamPosition,
+    semantic: &worth_relational::facade::transactions::RelationalCommitSemanticResult,
+) -> Result<bool, QueryHomeCustodyReadmissionDenial> {
+    if !semantic.created_entities().is_empty() || !semantic.created_relations().is_empty() {
+        return Ok(false);
+    }
+    let after_position = position
+        .0
+        .checked_sub(1)
+        .filter(|value| *value > 0)
+        .map(worth_relational::facade::publication::PatchStreamPosition);
+    let batch = graph
+        .with_runtime(execution, |native| {
+            native.publication().patch_stream().read(
+                execution,
+                worth_relational::facade::publication::PatchStreamRequest {
+                    after_position,
+                    max_commits: 1,
+                },
+            )
+        })
+        .map_err(|_| QueryHomeCustodyReadmissionDenial::OriginalBindingUnavailable)?;
+    let Some(envelope) = batch.patches.first() else {
+        return Ok(false);
+    };
+    if envelope.position != position || envelope.authoritative_record_patches.is_empty() {
+        return Ok(false);
+    }
+    Ok(envelope.authoritative_record_patches.iter().all(|patch| {
+        matches!(
+            patch.structural_change,
+            worth_relational::facade::publication::RecordStructuralChange::MaterializationSuspended
+                | worth_relational::facade::publication::RecordStructuralChange::Rematerialized
+        )
+    }))
 }
 
 pub(super) fn original_binding_denial(

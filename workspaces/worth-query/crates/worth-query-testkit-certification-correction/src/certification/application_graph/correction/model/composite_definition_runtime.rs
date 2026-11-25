@@ -44,6 +44,31 @@ impl domain::WorthQueryHostConditionalOutputVersionProvider<ReadyNode> for TickO
         Ok(TICK_OUTPUT)
     }
 }
+impl domain::WorthQueryAuthoredHostConditionalOutputVersionProvider<ReadyNode>
+    for TickOutputVersion
+{
+    fn authored_provider_description(&self) -> domain::BridgeAuthoredProviderDescription {
+        domain::BridgeAuthoredProviderDescription::new(
+            domain::BoundaryProtocolIdentity::new("numeric-definition.tick-output"),
+            domain::BoundaryProtocolVersion::new(1),
+            Vec::new(),
+        )
+    }
+    fn readmit_authored_provider(
+        &self,
+        source: &domain::BridgeAuthoredProviderDescription,
+    ) -> Result<
+        Arc<dyn domain::WorthQueryAuthoredHostConditionalOutputVersionProvider<ReadyNode>>,
+        domain::AuthoredProviderReconstructionDenial,
+    > {
+        self.authored_provider_description()
+            .admit_source_version(source)?;
+        if !source.payload().is_empty() {
+            return Err(domain::AuthoredProviderReconstructionDenial::MalformedPayload);
+        }
+        Ok(Arc::new(Self))
+    }
+}
 impl domain::WorthQueryNamedClock for Clock {
     const PORTABLE_IDENTITY: &'static str = "numeric-definition.clock.v1";
 }
@@ -161,9 +186,9 @@ impl WorthQueryApplicationConditionalBinding<NumericSchema> for Conditional {
             .unwrap()
             .bind_node(ReadyNode::reference())
             .unwrap()
-            .bind_host_predicate_provider(Predicate(5))
+            .bind_authored_host_predicate_provider(Predicate(5))
             .unwrap()
-            .bind_host_output_version_provider(TickOutputVersion)
+            .bind_authored_host_output_version_provider(TickOutputVersion)
             .unwrap()
             .bind_named_clock::<Clock, _>(ClockSource(AtomicU64::new(0)))
             .unwrap()

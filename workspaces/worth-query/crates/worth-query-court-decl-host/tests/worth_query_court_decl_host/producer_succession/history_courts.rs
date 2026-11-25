@@ -10,8 +10,8 @@ fn checkpoint_keeps_exact_per_route_retirement_and_recovers_the_surviving_genera
     resize(&app, &request, 1, 1);
     close(settle(&app, &request), &request);
     let after = capture(&app);
-    assert_shrink_delta(&app, &before, &after);
-    let history = envelopes(&after);
+    assert_shrink_delta(app.directory(), &before, &after);
+    let history = envelopes(&app);
     let grouped = history
         .iter()
         .filter(|e| {
@@ -61,8 +61,9 @@ fn checkpoint_keeps_exact_per_route_retirement_and_recovers_the_surviving_genera
             .all(|m| m["posture"] == "Retire"));
         assert!(retired["relations"].as_array().unwrap().is_empty());
     }
-    drop((principal, scope, app));
-    let recovered = world::restore(after, Arc::default());
+    drop((principal, scope));
+    let directory = app.close_for_reopen();
+    let recovered = world::reopen(directory, Arc::default());
     let (scope, principal) = world::authenticate(&recovered);
     let request = recovered.runtime().request(&principal, &scope);
     close(settle(&recovered, &request), &request);
@@ -75,35 +76,45 @@ fn checkpoint_keeps_exact_per_route_retirement_and_recovers_the_surviving_genera
     );
 }
 #[test]
-fn a_tampered_producer_closure_is_refused_after_query_checksum_admission() {
+fn a_tampered_producer_closure_is_refused_before_service() {
     let app = world::install(2, Arc::default());
     let (scope, principal) = world::authenticate(&app);
     let request = app.runtime().request(&principal, &scope);
     close(settle(&app, &request), &request);
     resize(&app, &request, 1, 1);
     close(settle(&app, &request), &request);
-    let checkpoint = capture(&app);
-    let tampered = tamper_anchor(&checkpoint);
-    // Same frame size and valid Query checksum; the changed Native group must refuse.
-    assert_eq!(checkpoint.bytes().len(), tampered.bytes().len());
-    require_corruption_refusal(tampered);
-    let omitted_leaf = omit_leaf_publication(&checkpoint);
-    assert!(envelopes(&omitted_leaf)
+    drop((principal, scope));
+    let directory = app.checkpoint_and_close_for_reopen();
+    let snapshot =
+        worth_query_testkit_document_retention::facade::directory_home::ClosedDirectorySnapshot::capture(
+            &directory,
+            "producer-succession-tamper",
+        );
+    tamper_anchor_dir(&snapshot, &directory);
+    require_corruption_refusal(&directory);
+    omit_leaf_publication_dir(&snapshot, &directory);
+    assert!(envelopes_in_dir(&directory)
         .iter()
         .any(|e| e["producer_cascade_retirement"]["publications"]
             .as_array()
             .is_some_and(|p| p.len() == 1)));
-    require_corruption_refusal(omitted_leaf);
-    let omitted_group = omit_retirement_group(&checkpoint);
-    assert!(envelopes(&omitted_group).iter().all(|e| e
+    require_corruption_refusal(&directory);
+    omit_retirement_group_dir(&snapshot, &directory);
+    assert!(envelopes_in_dir(&directory).iter().all(|e| e
         .get("producer_cascade_retirement")
         .is_none_or(|g| g.is_null())));
-    require_corruption_refusal(omitted_group);
+    require_corruption_refusal(&directory);
+    let _ = std::fs::remove_dir_all(&directory);
 }
-fn require_corruption_refusal(tampered: installation::WorthQueryApplicationCheckpoint) {
-    let restored = world::try_restore(tampered);
-    match restored {
-        Err(denial) => assert!(!format!("{denial:?}").contains("checksum"), "{denial:?}"),
+fn require_corruption_refusal(tampered: &std::path::Path) {
+    match world::try_reopen(tampered.to_path_buf()) {
+        Err(refused) => {
+            let lease =
+                worth_query_testkit_document_retention::facade::directory_home::directory_lease();
+            if let Ok(closed) = refused.close(&worth_execution::ExecutionRequest::leased(&lease)) {
+                closed.reclaim();
+            }
+        }
         Ok(recovered) => {
             let (scope, principal) = world::authenticate(&recovered);
             let request = recovered.runtime().request(&principal, &scope);

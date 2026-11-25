@@ -397,3 +397,4 @@ fn journal_checkpoint_selection_rehomes_covered_history_and_preserves_uncovered_
 }
 
 mod complete;
+mod damage;

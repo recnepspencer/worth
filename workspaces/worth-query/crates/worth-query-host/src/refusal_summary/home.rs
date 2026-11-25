@@ -67,6 +67,12 @@ impl WorthQueryUserFacingRefusal for WorthQueryApplicationHomeCheckpointDenial {
                 Category::Unsupported,
                 "Only data saved on this device can be checkpointed.",
             ),
+            // Pending coupled output records stay in retryable owner custody;
+            // the checkpoint can be attempted again once they flush.
+            Self::CoupledOutputRetention(_) => Summary::with_message(
+                Category::Unavailable,
+                "The app is still saving recent changes. Try again in a moment.",
+            ),
             Self::Directory(_) => STORAGE,
         }
     }

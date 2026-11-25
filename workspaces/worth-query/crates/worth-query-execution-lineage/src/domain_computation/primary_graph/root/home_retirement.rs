@@ -89,13 +89,17 @@ impl PrimaryGraphSourceCustody {
         if let Some(serving) = self.serving.take() {
             storage.backing.original = Some(serving.into_home_retirement());
         }
-        storage
+        let progress = storage
             .backing
             .original
             .as_mut()
             .expect("same original source retirement")
             .advance(request, native)
-            .map_err(Into::into)
+            .map_err(WorthQueryHomeRetirementDenial::from)?;
+        if progress == super::super::WorthQueryOperationHomeRetirementProgress::Complete {
+            self.invalidation_owner.release_home_retirement_marks()?;
+        }
+        Ok(progress)
     }
 }
 impl Clone for PrimaryGraphSourceCustody {
@@ -128,6 +132,7 @@ impl WorthQueryPrimaryGraph {
         super::super::WorthQueryOperationHomeRetirementProgress,
         WorthQueryHomeRetirementDenial,
     > {
+        release_output_lineage_for_home_retirement(&self.output_lineage)?;
         self.source_owner.advance_retirement(request, native)
     }
 
@@ -155,6 +160,22 @@ impl super::WorthQueryPrimaryGraphIntegrationHandle {
         super::super::WorthQueryOperationHomeRetirementProgress,
         WorthQueryHomeRetirementDenial,
     > {
+        release_output_lineage_for_home_retirement(&self.output_lineage)?;
         self.source_owner.advance_retirement(request, native)
     }
+}
+
+fn release_output_lineage_for_home_retirement(
+    output_lineage: &Mutex<super::super::output_lineage::WorthQueryApplicationOutputLineage>,
+) -> Result<(), WorthQueryHomeRetirementDenial> {
+    let released = {
+        let mut lineage = output_lineage.try_lock().map_err(|_| {
+            WorthQueryHomeRetirementDenial::Busy(
+                crate::domain_computation::primary_graph::WorthQueryHomeRetirementOwner::RelationalSource,
+            )
+        })?;
+        std::mem::take(&mut *lineage)
+    };
+    drop(released);
+    Ok(())
 }

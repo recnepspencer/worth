@@ -93,7 +93,9 @@ pub(crate) fn readmit_no_pending_owners(
     if recovered.codec_transition_pending() {
         return Err(Denial::NativeCodecTransitionPending);
     }
-    require_no_pending_home_journals(context, request)
+    require_no_pending_home_journals(context, request)?;
+    recovered.finish_home_readmission();
+    Ok(())
 }
 
 pub(crate) fn require_no_pending_home_journals(

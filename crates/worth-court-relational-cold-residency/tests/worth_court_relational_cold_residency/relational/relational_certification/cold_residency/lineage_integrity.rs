@@ -13,7 +13,7 @@ use worth_testkit_relational::durable_medium::changed_member::ChangedMemberSourc
 fn changed_event_bytes_damage_only_their_page_and_share_the_refusal_with_export() {
     let host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
-    for first in [EventDoor::Historical, EventDoor::EmbeddedCheckpoint] {
+    for first in [EventDoor::Historical, EventDoor::MemoryCheckpoint] {
         let mut changed = None;
         let fixture = reopened_with_source(execution, |producer| {
             let source = ChangedMemberSource::new(producer);
@@ -57,7 +57,7 @@ fn changed_event_bytes_damage_only_their_page_and_share_the_refusal_with_export(
             Err(expected)
         );
         assert_eq!(
-            EventDoor::EmbeddedCheckpoint.read(&fixture, execution),
+            EventDoor::MemoryCheckpoint.read(&fixture, execution),
             Err(expected)
         );
         assert_eq!(

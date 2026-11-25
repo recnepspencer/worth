@@ -203,15 +203,24 @@ fn content_carried_export_reconstructs_exact_bytes_through_the_existing_checkpoi
     let request = SerialRequest::from_memory(SerialMemoryBudget::new(None), cancel.token(), None);
     let execution = ExecutionRequest::serial(&request);
     let (target, source) = cold_runtime(&execution);
+    let locators = source.locators();
     let checkpoint = target
         .durability_authority()
-        .native_checkpoint(&execution, execution.allocation_policy())
+        .native_checkpoint_with_policy(
+            &execution,
+            execution.allocation_policy(),
+            worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &locators,
+                source: Some(source.clone()),
+            },
+        )
         .unwrap();
     assert_eq!(source.reads.load(Ordering::SeqCst), 1);
+    let combined = Arc::new(source.with_checkpoint(&checkpoint));
     let (mut restored, _) = fixture();
     restored
         .durability_recovery()
-        .restore_native_checkpoint(&execution, &checkpoint)
+        .restore_native_checkpoint(&execution, &checkpoint, combined)
         .unwrap();
     let mut independent = Sha256::new();
     independent.update(b"worth.native.content.v1\0");

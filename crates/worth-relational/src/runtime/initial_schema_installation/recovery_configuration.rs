@@ -27,7 +27,13 @@ impl RelationalRuntime {
                         .initial_custom_invariants_sealed,
                     crate::schema::SchemaCompilationControl::Configuration,
                 )
-                .expect("request-free replay configuration has no execution refusal");
+                .expect("request-free replay configuration has no execution refusal")
+                .with_home_readmission_metadata_kinds(
+                    state
+                        .schema_contract_runtime
+                        .home_readmission_metadata_kinds
+                        .clone(),
+                );
                 config.schema.registry = schema.clone();
                 state.schema_contract_runtime = std::sync::Arc::new(rebuilt);
             }

@@ -21,7 +21,7 @@ impl ByteJournal {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct MemberBytes {
     entries: BTreeMap<([u8; 32], u64), ExecutionImmutableBytes>,
 }

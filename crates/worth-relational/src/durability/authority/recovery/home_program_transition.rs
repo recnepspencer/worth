@@ -143,6 +143,11 @@ impl DurabilityRecoveryAuthority<'_> {
         move_durable_medium(self.runtime, &mut material.restored)?;
         let (outcome, _) = publish_recovered_runtime(self.runtime, material);
         self.runtime.durability.install_source_root_inventory(roots);
+        self.runtime
+            .durability
+            .install_home_readmission_phase(std::sync::Arc::clone(
+                &recovered.home_readmission_phase,
+            ));
         Ok(worth_proof::RelationalReadmitted::from_owner(
             RelationalHomeProgramTransitionSource {
                 outcome,

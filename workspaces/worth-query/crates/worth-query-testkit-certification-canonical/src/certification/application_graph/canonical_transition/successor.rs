@@ -1,10 +1,6 @@
 //! Independently compiled V2 schema; persisted names and scalar loci match V1.
 pub use super::{model, output as wire_model};
 pub use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
-#[path = "successor/acknowledged_capture.rs"]
-pub mod acknowledged_capture;
-#[path = "successor/adoption.rs"]
-pub mod adoption;
 #[path = "../canonical_value/binding.rs"]
 #[expect(
     clippy::duplicate_mod,
@@ -23,8 +19,6 @@ pub mod derived_query;
     reason = "the successor compiles these declarations and native handlers against its distinct V2 schema and codec"
 )]
 pub mod edit;
-#[path = "successor/historical.rs"]
-pub mod historical;
 #[path = "host.rs"]
 #[expect(
     clippy::duplicate_mod,
@@ -33,8 +27,6 @@ pub mod historical;
 pub mod host;
 #[path = "successor/output.rs"]
 pub mod output;
-#[path = "successor/pre_effect_indexes.rs"]
-pub mod pre_effect_indexes;
 #[path = "producer.rs"]
 #[expect(
     clippy::duplicate_mod,
@@ -62,7 +54,6 @@ pub mod readiness;
 #[path = "successor/schema.rs"]
 pub mod schema;
 
-pub use installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 pub use worth_query_host::facade::{
     application_entry::*, application_installation as installation,
 };
@@ -130,8 +121,11 @@ pub fn assert_edit_preserves_settled_output(
     assert_eq!(host::read(application), edited);
 }
 
-pub fn predecessor_checkpoint() -> installation::WorthQueryApplicationCheckpoint {
-    let application = super::host::install(model::authored_value()).unwrap();
+pub fn predecessor_directory() -> std::path::PathBuf {
+    let dir = worth_query_testkit_document_retention::facade::directory_home::unique_directory(
+        "canonical-transition-predecessor",
+    );
+    let application = super::host::open_directory(dir, model::authored_value()).unwrap();
     let scope =
         worth_query_testkit_document_retention::facade::document_retention_model::operator_identity::request_scope();
     let principal = worth_query_testkit_document_retention::facade::document_retention_model::operator_identity::authenticate_operator(
@@ -152,20 +146,11 @@ pub fn predecessor_checkpoint() -> installation::WorthQueryApplicationCheckpoint
         panic!("predecessor native producer must settle");
     };
     assert!(settled.application_commit_receipt().is_some());
-    let (checkpoint, sections) = application
-        .runtime()
-        .with_host_advancement(|phase| {
-            application
-                .runtime()
-                .capture_application_checkpoint_with_sections(
-                    &phase,
-                    CapturePolicy::SystemAllocation,
-                )
-                .unwrap()
-        })
-        .unwrap();
-    assert_eq!(sections.accepted_output_count(), 1);
-    checkpoint
+    drop(settled);
+    drop(demand);
+    drop(principal);
+    drop(scope);
+    application.checkpoint_and_close_for_reopen()
 }
 
 pub use super::OWNERSHIP;

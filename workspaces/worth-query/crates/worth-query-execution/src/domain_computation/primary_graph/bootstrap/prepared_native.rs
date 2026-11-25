@@ -31,8 +31,12 @@ impl PreparedNativeGraph {
         } else {
             IndexInstallationPosture::Register
         };
-        register_primary_graph_indexes(&mut layout, &native, posture)
-            .map_err(super::checkpoint::checkpoint_denial)?;
+        register_primary_graph_indexes(&mut layout, &native, posture).map_err(|cause| {
+            WorthQueryPrimaryGraphInstallationDenial::new(
+                WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
+                cause,
+            )
+        })?;
         Ok(Self {
             native,
             layout: Arc::new(layout),

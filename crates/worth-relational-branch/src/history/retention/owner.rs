@@ -47,6 +47,7 @@ pub(super) struct RelationalBranchRetentionOwnerInner {
     max_live_root_obligations: usize,
     max_retired_branch_roots: usize,
     pub(super) live_head_count: AtomicUsize,
+    pub(super) live_publication_basis_count: AtomicUsize,
     live_retention_count: AtomicUsize,
     pub(super) ordinary_counters: RelationalRetentionAtomicCounters,
     pub(super) head_install_count: AtomicU64,
@@ -111,11 +112,21 @@ impl RelationalBranchRetentionOwner {
             .collect()
     }
 
-    /// Capacity retained outside the runtime's own live branch heads.
+    /// Capacity retained outside the runtime's own live branch heads and
+    /// their head-owned publication predecessor bases.
     /// These are the native admission/release counters, not diagnostic totals.
     pub fn has_detached_obligations(&self) -> bool {
-        self.inner.live_retention_count.load(Ordering::Acquire)
-            != self.inner.live_head_count.load(Ordering::Acquire)
+        let live_heads = self.inner.live_head_count.load(Ordering::Acquire);
+        let head_owned = if live_heads == 0 {
+            0
+        } else {
+            live_heads.saturating_add(
+                self.inner
+                    .live_publication_basis_count
+                    .load(Ordering::Acquire),
+            )
+        };
+        self.inner.live_retention_count.load(Ordering::Acquire) != head_owned
     }
 
     #[doc(hidden)]
@@ -150,6 +161,7 @@ impl RelationalBranchRetentionOwner {
                 max_live_root_obligations,
                 max_retired_branch_roots,
                 live_head_count: AtomicUsize::new(0),
+                live_publication_basis_count: AtomicUsize::new(0),
                 live_retention_count: AtomicUsize::new(0),
                 ordinary_counters: RelationalRetentionAtomicCounters::default(),
                 head_install_count: AtomicU64::new(0),

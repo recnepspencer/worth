@@ -332,27 +332,13 @@
 //! }
 //! ```
 //!
-//! Checkpoints, interim origins, prepared required output sources, and primary
-//! graphs keep internal backing fields private through Host:
-//!
-//! ```compile_fail,E0616
-//! use worth_query_host::facade::application_installation::WorthQueryApplicationCheckpoint;
-//! fn read_checkpoint_origin(checkpoint: &WorthQueryApplicationCheckpoint) {
-//!     let _ = &checkpoint.origin;
-//! }
-//! ```
+//! Prepared required output sources and primary graphs keep internal backing
+//! fields private through Host:
 //!
 //! ```compile_fail,E0616
 //! use worth_query_host::facade::primary_graph::WorthQueryPrimaryGraph;
 //! fn read_graph_layout(graph: &WorthQueryPrimaryGraph) {
 //!     let _ = &graph.layout;
-//! }
-//! ```
-//!
-//! ```compile_fail,E0624
-//! use worth_query_host::facade::application_installation::WorthQueryApplicationCheckpoint;
-//! fn mint_checkpoint() {
-//!     let _ = WorthQueryApplicationCheckpoint::from_admitted_parts;
 //! }
 //! ```
 //!

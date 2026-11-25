@@ -275,14 +275,8 @@ fn retained_attempt_releases_unsealed_original_admission_for_adoption() {
         shared_budget.charged_memory_bytes(),
         one_publication_bytes
     );
-    // Zero-work snapshot proves no phantom slot was installed in the registry.
-    let (snapshot, report) = shared_exec
-        .run(worth_execution::ExecutionWorkCeiling::new(Some(0)), |_| {
-            owner.state.history.snapshot_memory_originals(&shared_exec)
-        })
-        .unwrap();
-    assert_eq!(snapshot.unwrap().len(), 0);
-    assert_eq!(report.charged_work(), 0);
+    assert_eq!(owner.state.history.committed_memory_original_count_for_test(), 0);
+    assert_eq!(owner.state.history.memory_original_capacity_for_test(), 0);
 
     let resume_source = RuntimeWorldCancellationSource::new();
     let adopted = RuntimeWorldRecoveryService::prepare_settled_relational_adoption(

@@ -81,10 +81,14 @@ fn a_recovered_runtime_seeds_only_the_span_after_the_original() {
     runtime.durability_authority().checkpoint(&execution).unwrap();
     let checkpoint = runtime
         .durability_authority()
-        .native_checkpoint(&execution, execution.allocation_policy())
+        .native_checkpoint_with_policy(
+&execution,
+execution.allocation_policy(),
+worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None },
+)
         .unwrap();
     let mut recovered = runtime_with_test_schema();
-    recovered.durability_recovery().restore_native_checkpoint(&execution, &checkpoint).unwrap();
+    recovered.durability_recovery().restore_native_checkpoint(&execution, &checkpoint, worth_testkit_relational::cold_recovery::members_source(&checkpoint)).unwrap();
     for (n, expected) in SPANS.iter().zip(&live) {
         let target = format!("span-{n}");
         let cursor = recovered.authored_write_history_cursor(

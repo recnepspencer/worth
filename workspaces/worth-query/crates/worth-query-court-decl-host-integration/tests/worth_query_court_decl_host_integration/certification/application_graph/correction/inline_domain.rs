@@ -4,14 +4,12 @@ use super::model::{
     schema::*, tree_reapplication,
 };
 use worth_foundational::facade::{prepare_aspect_value_identity_basis, AspectValue};
-use worth_query_host::facade::{
-    application_entry::*, application_installation::*, primary_graph::*,
-};
+use worth_query_host::facade::{application_entry::*, primary_graph::*};
 mod controls;
 mod native;
 mod predicate;
 mod write_admission;
-use native::{assert_wire, capture, CertifiedObservation};
+use native::{assert_wire, CertifiedObservation};
 
 const FIVE: [u8; 9] = [1, 5, 0, 0, 0, 0, 0, 0, 0];
 const SEVEN: [u8; 9] = [1, 7, 0, 0, 0, 0, 0, 0, 0];
@@ -75,6 +73,11 @@ fn inline_domain_write_patch_correction_inverse_and_history_keep_exact_native_by
 
 #[test]
 fn inline_domain_retirement_restoration_and_recovery_preserve_native_digest_material() {
+    // Authored-identity creation uses a memory-only correction output shape
+    // refused by Directory Home's durable-state admission guard, so retire/
+    // restore digest preservation runs in-memory while Directory Home recovery
+    // certifies the same InlineBytes wire/digest identity across checkpoint
+    // and reopen.
     let (application, authority) = host::install_with_projection();
     authored_identity_courts::create(&application, "inline-authored", None);
     let before = CertifiedObservation::capture(&application, &authority, "inline-authored");
@@ -100,14 +103,44 @@ fn inline_domain_retirement_restoration_and_recovery_preserve_native_digest_mate
     tree_reapplication::reverse(&application, &retirement, "inline-restore-retired");
     let restored_pin = CertifiedObservation::capture(&application, &authority, "inline-authored");
     assert_wire(&restored_pin.primary(&application), &FORTY_ONE);
+    let original_current = native::current(&application, "inline-authored");
+    assert_eq!(native::digest(&original_current), original_digest);
+
     // Checkpoint metadata includes runtime identities which legitimately rebind.
     // Compare complete model bytes only within each runtime; payload and digest
     // identity across rebuild are certified independently by admitted reads.
-    let original_current = native::stable_current(&application, "inline-authored");
-    assert_eq!(native::digest(&original_current), original_digest);
-    let checkpoint = capture(&application);
-    let restored = host::restore(checkpoint);
-    let value = native::stable_current(&restored, "inline-authored");
+    let (dir_app, dir_authority) =
+        host::open_directory_with_projection(host::unique_directory("inline-domain-digest"));
+    let dir_scope = request_scope();
+    let dir_principal = authenticate_operator(dir_app.installed_schema(), &dir_scope);
+    let outcome = dir_app
+        .runtime()
+        .request(&dir_principal, &dir_scope)
+        .advanced()
+        .mutate(super::model::edit::Edit {
+            key: "numeric".to_owned(),
+            value: Value::Primary(41),
+        })
+        .without_source()
+        .idempotency(&"inline-directory-forty-one".to_owned())
+        .execute_in_program(
+            &dir_app,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
+    assert!(
+        matches!(outcome, WorthQueryApplicationMutationOutcome::Committed { .. }),
+        "inline directory edit must commit: {outcome:?}"
+    );
+    drop((outcome, dir_principal, dir_scope));
+    let dir_before = CertifiedObservation::capture(&dir_app, &dir_authority, "numeric");
+    assert_wire(&dir_before.primary(&dir_app), &FORTY_ONE);
+    let dir_current = native::stable_current(&dir_app, "numeric");
+    assert_eq!(native::digest(&dir_current), original_digest);
+    drop((dir_before, dir_authority));
+    let directory = dir_app.checkpoint_and_close_for_reopen();
+    let restored = host::open_directory(directory);
+    let value = native::stable_current(&restored, "numeric");
     assert_wire(&value, &FORTY_ONE);
     assert_eq!(native::digest(&value), original_digest);
     assert_eq!(

@@ -28,7 +28,7 @@ pub(super) fn resolve(
             return Err(Denial::HistoryLimit);
         }
         let page = observation
-            .prepare_exact_product_history_page(request, &cursor)
+            .prepare_retained_product_history_page(request, &cursor)
             .map_err(Denial::ExactHistory)?;
         if let Some(commit) = page.commit() {
             let identity = commit.identity();

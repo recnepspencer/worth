@@ -47,11 +47,11 @@ fn optional_aspect_initialization_reconstructed_presence_detects_present_empty()
             runtime, &execution, before.application_basis_for_test().snapshot_handle(), entity, kind, &aspect).unwrap().unwrap());
         assert!(!present);
         let tag = if present { WorkflowEvidenceDependencyKind::AspectPresent } else { WorkflowEvidenceDependencyKind::AspectAbsent };
-        assert_eq!(tag.encode_for_test(), "aspect-absent");
+        assert_eq!(tag.encode(), "aspect-absent");
         let readonly = WorthQueryApplicationObservedFact::AbsentField {
             entity_id: entity, kind, locator: locator.clone(),
         };
-        let decoded_tag = WorkflowEvidenceDependencyKind::decode_for_test(tag.encode_for_test()).unwrap();
+        let decoded_tag = WorkflowEvidenceDependencyKind::decode(tag.encode()).unwrap();
         let reconstructed = decode(entity, Some(aspect.as_str().to_owned()),
             Some(u64::from(kind.as_u32())), matches!(decoded_tag, WorkflowEvidenceDependencyKind::AspectPresent)).unwrap();
         handle.with_runtime(&execution, |runtime| {

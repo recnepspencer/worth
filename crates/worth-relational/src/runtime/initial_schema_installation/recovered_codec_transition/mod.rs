@@ -29,6 +29,10 @@ impl RelationalRuntime {
                 .schema_contract_runtime
                 .custom_invariant_registries
                 .source_inventory(),
+            home_readmission_metadata_kinds: self
+                .schema_contract_runtime
+                .home_readmission_metadata_kinds
+                .clone(),
             custom_invariant_generation: self.schema_contract_runtime.custom_invariant_generation,
             custom_invariant_inventory_digest: super::custom_invariant_inventory_digest(
                 &registrations,
@@ -57,7 +61,8 @@ impl RelationalRuntime {
             previous.initial_custom_invariants_sealed,
             crate::schema::SchemaCompilationControl::Configuration,
         )
-        .expect("request-free codec configuration has no execution refusal");
+        .expect("request-free codec configuration has no execution refusal")
+        .with_home_readmission_metadata_kinds(previous.home_readmission_metadata_kinds.clone());
         std::sync::Arc::make_mut(&mut installed.config)
             .schema
             .registry = registry;

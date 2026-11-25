@@ -3,7 +3,7 @@ use super::*;
 use worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation;
 use worth_query_host::facade::primary_graph::WorthQueryApplicationCommitReceipt;
 use worth_relational::facade::inspection::observe_maintenance_work;
-mod cold;
+pub(in super::super) mod cold;
 
 pub(in super::super) fn publish_and_deliver<B>(
     application: &host::OutputHost,
@@ -55,6 +55,5 @@ where
     let original = source.receipt().clone();
     settle(application, source);
     assert_eq!(read_calculation(application), expected);
-    cold::assert_reopened_ready(application, expected);
     original
 }

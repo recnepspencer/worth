@@ -51,7 +51,7 @@ impl ResolvedRelationalBasisDescriptor {
 /// Clones share one owner-issued lease and one immutable root. Cloning never
 /// revalidates, reacquires retention, copies truth, or contacts live branch
 /// state.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct AdmittedRelationalBranchBasis {
     pub(crate) inner: SharedAdmittedRelationalBranchBasisInner,
     /// Admissions of the one operation this basis value serves. Clones share
@@ -69,6 +69,16 @@ impl<'basis> From<&'basis AdmittedRelationalBranchBasis>
             partitions: basis,
             aspect_plans: basis.inner.root.schema_authority().aspect_plans(),
         }
+    }
+}
+
+impl std::fmt::Debug for AdmittedRelationalBranchBasis {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("AdmittedRelationalBranchBasis")
+            .field("descriptor", &self.inner.descriptor)
+            .field("identity", &self.inner.identity)
+            .field("admission_identity", &self.inner.admission_identity)
+            .finish_non_exhaustive()
     }
 }
 

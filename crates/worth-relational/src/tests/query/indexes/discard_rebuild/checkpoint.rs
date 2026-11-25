@@ -41,15 +41,23 @@ fn discarded_ordering_stays_cold_after_native_checkpoint_restore_then_rebuilds()
     assert!(discarded.removed_generation_count() > 0);
     let checkpoint = runtime
         .durability_authority()
-        .native_checkpoint(
+        .native_checkpoint_with_policy(
             execution,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
         )
         .unwrap();
     let mut restored = certification_index_runtime();
     let recovered = restored
         .durability_recovery()
-        .restore_native_checkpoint(execution, &checkpoint)
+        .restore_native_checkpoint(
+            execution,
+            &checkpoint,
+            crate::tests::support::durability::captured_members_source(&checkpoint),
+        )
         .unwrap();
     assert_eq!(recovered.latest_commit, Some(committed));
     assert_eq!(

@@ -4,8 +4,6 @@ pub use bootstrap_installation::{
     in_memory_rostered_program_with_authorization_time_source_in_advancement,
 };
 pub(in crate::domain_computation::primary_graph) mod assembly;
-mod checkpoint;
-mod checkpoint_transition;
 mod conditional;
 mod construction;
 pub(crate) mod demand;
@@ -32,7 +30,6 @@ mod specialized_action;
 pub(crate) mod speculation;
 pub use signing::WorthQuerySigningOwnerInstallationDenial;
 pub(crate) mod supported_program;
-pub use checkpoint::WorthQueryInterimCheckpointRestore;
 pub(in crate::domain_computation::primary_graph) use supported_program::WorthQuerySupportedProgramRecord;
 mod workflow_assessment;
 mod workflow_runtime;

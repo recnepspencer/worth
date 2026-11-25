@@ -50,11 +50,10 @@ fn residency_failure_matrix_lineage_doors_preserve_every_failure_class() {
             let failed_before = failed_reads();
             if sticky {
                 assert_eq!(door.read(&fixture, execution), Err(expected));
-                assert!(!fixture.runtime.has_resident_lineage_node(fixture.expected.lineage_id()));
-                if matches!(
-                    door,
-                    NodeDoor::MemoryCheckpoint | NodeDoor::EmbeddedCheckpoint
-                ) {
+                assert!(!fixture
+                    .runtime
+                    .has_resident_lineage_node(fixture.expected.lineage_id()));
+                if matches!(door, NodeDoor::MemoryCheckpoint) {
                     assert_eq!(failed_reads(), failed_before);
                 } else {
                     assert_eq!(fixture.source.reads.load(Ordering::Relaxed), reads);
@@ -62,25 +61,6 @@ fn residency_failure_matrix_lineage_doors_preserve_every_failure_class() {
             } else {
                 door.read(&fixture, execution).unwrap();
                 assert!(fixture.source.reads.load(Ordering::Relaxed) > reads);
-                if matches!(door, NodeDoor::EmbeddedCheckpoint) {
-                    let (_, basis) = fixture
-                        .runtime
-                        .observe_branch(&fixture.runtime.main_branch_identity())
-                        .unwrap();
-                    assert_eq!(
-                        fixture
-                            .runtime
-                            .lineage_node_at_observation(
-                                execution,
-                                &basis.observation(),
-                                fixture.expected.entity_id()
-                            )
-                            .unwrap()
-                            .as_ref()
-                            .map(|read| read.node()),
-                        Some(&fixture.expected)
-                    );
-                }
                 assert!(
                     fixture
                         .runtime

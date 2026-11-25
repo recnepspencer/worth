@@ -7,7 +7,7 @@ fn run(worker: bool) {
     } else {
         host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
     };
-    let host = world::install_configured::<program::Lazy>(
+    let host = world::open_directory_configured::<program::Lazy>(
         limits,
         2,
         None,

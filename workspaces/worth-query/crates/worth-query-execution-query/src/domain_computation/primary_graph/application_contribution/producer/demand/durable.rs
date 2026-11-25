@@ -9,6 +9,7 @@ use worth_foundational::facade::DurableCompositeCommitIdentity;
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
 };
+use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
 
 /// Identifies an existing retained demand. This DATA grants no request authority.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -18,6 +19,11 @@ pub struct WorthQueryOriginalOutputDemand {
 }
 
 impl WorthQueryOriginalOutputDemand {
+    /// Recorded obligation journal acquire position (descriptive DATA only).
+    pub const fn acquire_position(&self) -> NonZeroU64 {
+        self.position
+    }
+
     /// Encode retained position and basis DATA; no live demand or authority is carried.
     pub fn to_recorded_bytes(&self) -> Result<Vec<u8>, rmp_serde::encode::Error> {
         rmp_serde::to_vec(&(self.position, self.basis.owner(), self.basis.ordinal()))
@@ -64,6 +70,50 @@ impl<S: ApplicationSchema, F: WorthQueryProducerOutputFamily<S>>
             .and_then(|interest| interest.durable_readmission())
             .ok_or_else(unavailable)?;
         let recording = readmission.recording.get().ok_or_else(unavailable)?;
+        if recording
+            .history
+            .is_branch_retired(&recording.branch, recording.lifecycle)
+        {
+            return Err(unavailable());
+        }
+        let _pin_guard = match runtime
+            .runtime
+            .recovered_outputs
+            .try_retain_obligation_basis_in_flight(
+                recording.basis,
+                std::sync::Arc::clone(&recording.history),
+            ) {
+            Some(guard) => guard,
+            None => {
+                let observation = self
+                    .retained_program_basis
+                    .as_ref()
+                    .cloned()
+                    .or_else(|| readmission.retained_program_basis())
+                    .and_then(|basis| {
+                        let commit = basis.selected_commit();
+                        (commit.owner_identity().durable() == Some(recording.basis.owner())
+                            && commit.ordinal() == recording.basis.ordinal())
+                        .then(|| basis.product_observation().clone())
+                    })
+                    .map(Ok)
+                    .unwrap_or_else(|| {
+                        runtime.readmit_output_observation(
+                            &execution,
+                            recording.basis,
+                            &recording.branch,
+                        )
+                    })?;
+                runtime
+                    .runtime
+                    .recovered_outputs
+                    .pin_obligation_basis_in_flight(
+                        recording.basis,
+                        observation,
+                        std::sync::Arc::clone(&recording.history),
+                    )
+            }
+        };
         let position = readmission
             .retain_durable(&execution, Vec::new(), Vec::new(), Vec::new())?
             .ok_or_else(unavailable)?;

@@ -8,6 +8,8 @@ use std::{
 pub(super) enum Stage {
     OpenCloseProbe,
     Preclose,
+    PrekillBeforeCheckpoint,
+    PrekillAfterCheckpoint,
     Reopen,
 }
 impl Stage {
@@ -15,6 +17,8 @@ impl Stage {
         match self {
             Self::OpenCloseProbe => "probe-open-close",
             Self::Preclose => "preclose",
+            Self::PrekillBeforeCheckpoint => "prekill-precheckpoint",
+            Self::PrekillAfterCheckpoint => "prekill-postcheckpoint",
             Self::Reopen => "reopen",
         }
     }
@@ -42,8 +46,12 @@ impl Arguments {
         {
             Some("probe-open-close") => Stage::OpenCloseProbe,
             Some("preclose") => Stage::Preclose,
+            Some("prekill-precheckpoint") => Stage::PrekillBeforeCheckpoint,
+            Some("prekill-postcheckpoint") => Stage::PrekillAfterCheckpoint,
             Some("reopen") => Stage::Reopen,
-            _ => panic!("expected probe-open-close, preclose or reopen stage"),
+            _ => panic!(
+                "expected probe-open-close, preclose, prekill-precheckpoint, prekill-postcheckpoint or reopen stage"
+            ),
         };
         let directory = values.next().expect("Home directory").into();
         let recipe = values
@@ -74,7 +82,13 @@ impl Arguments {
                 .expect("numeric step cutoff");
             assert!((1..=8).contains(&step), "step cutoff is 1 through 8");
             assert!(
-                matches!(&stage, Stage::Preclose | Stage::Reopen),
+                matches!(
+                    &stage,
+                    Stage::Preclose
+                        | Stage::PrekillBeforeCheckpoint
+                        | Stage::PrekillAfterCheckpoint
+                        | Stage::Reopen
+                ),
                 "cutoff is a workload probe"
             );
             step
@@ -99,6 +113,8 @@ impl Arguments {
 #[serde(deny_unknown_fields)]
 pub(super) struct Handoff {
     pub preclose_pid: u32,
+    pub killed_without_close: bool,
+    pub prekill_checkpoint_coverage: Vec<(String, u64)>,
     pub workflow: Vec<u8>,
     pub required: Vec<u8>,
     pub assessment: Vec<u8>,

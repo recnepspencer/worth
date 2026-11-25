@@ -192,7 +192,14 @@ fn cold_replacement(
 ) {
     let checkpoint = original
         .durability_authority()
-        .native_checkpoint(execution, execution.allocation_policy())
+        .native_checkpoint_with_policy(
+            execution,
+            execution.allocation_policy(),
+            crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
+        )
         .unwrap();
     let mut runtime = runtime_with_test_schema();
     let receipt = runtime
@@ -202,7 +209,11 @@ fn cold_replacement(
         .unwrap();
     runtime
         .durability_recovery()
-        .restore_native_checkpoint(execution, &checkpoint)
+        .restore_native_checkpoint(
+            execution,
+            &checkpoint,
+            crate::tests::support::durability::captured_members_source(&checkpoint),
+        )
         .unwrap();
     let receipt = runtime
         .readmit_recovered_initial_schema_installation(receipt)
@@ -226,10 +237,13 @@ fn cold_replacement(
         "{denied:?}"
     );
     let before = checkpoint_manifest(
-        &runtime
-            .durability_authority()
-            .native_checkpoint(execution, execution.allocation_policy())
-            .unwrap(),
+        &crate::tests::support::durability::capture_checkpoint_with_source(
+            execution,
+            &runtime,
+            execution.allocation_policy(),
+        )
+        .unwrap()
+        .0,
     );
     // Existing spellings still request fresh native allocations. Equal keys
     // cannot authorize Birth, and ordinary key interning is not this court.
@@ -259,10 +273,13 @@ fn cold_replacement(
         "a published route requires its exact predecessor"
     );
     let after = checkpoint_manifest(
-        &runtime
-            .durability_authority()
-            .native_checkpoint(execution, execution.allocation_policy())
-            .unwrap(),
+        &crate::tests::support::durability::capture_checkpoint_with_source(
+            execution,
+            &runtime,
+            execution.allocation_policy(),
+        )
+        .unwrap()
+        .0,
     );
     // Phase-2 D7 records spent draft identities even when publication refuses.
     // Every other committed directory fact must remain byte-for-byte equal.

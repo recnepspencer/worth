@@ -78,6 +78,7 @@ pub(super) fn declare<S: TopologySchemaBinding>(
 }
 pub struct Handler;
 impl<S: TopologySchemaBinding> OperationHandler<S, ProduceBinding<S>> for Handler {
+    fn declared_durable_capabilities() -> Option<&'static [worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability]> { Some(&[worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability::RelationalMutation]) }
     fn decide(
         &self,
         input: &Input,
@@ -124,6 +125,7 @@ impl<S: TopologySchemaBinding> OperationHandler<S, ProduceBinding<S>> for Handle
     }
 }
 impl<S: TopologySchemaBinding> OperationHandler<S, EditBinding<S>> for Handler {
+    fn declared_durable_capabilities() -> Option<&'static [worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability]> { Some(&[worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability::RelationalMutation]) }
     fn decide(
         &self,
         input: &Edit,

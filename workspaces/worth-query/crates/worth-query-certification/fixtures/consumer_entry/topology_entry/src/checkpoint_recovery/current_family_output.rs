@@ -6,7 +6,6 @@ use worth_query_consumer_values::{
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationMutationOutcome, WorthQueryApplicationOutputDemandProgress,
 };
-use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 
 fn assert_stale(
     denial: worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial,
@@ -43,7 +42,7 @@ mod serial {
     fn preserved_family_head_reopens_for_current_output_before_any_demand() {
         let _guard = checkpoint_recovery_test_guard();
         let provider_observation = crate::producer::ProviderContacts::default();
-        let application = support::observed::install(None, &provider_observation);
+        let application = support::observed::open_directory(None, &provider_observation);
         let (scope, principal) = support::authenticate(&application);
         let request = application.request(&principal, &scope);
         let mut demand = request
@@ -67,19 +66,11 @@ mod serial {
         drop(demand);
         drop(principal);
         drop(scope);
-        let initial_checkpoint = application
-            .with_host_advancement(|host_phase| {
-                application
-                    .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
-                    .unwrap()
-            })
-            .expect("installed host call opens");
-        drop(application);
+        let directory = application.checkpoint_and_close_for_reopen();
 
         // The old Initial row is genuine recovered custody, so ready-cache
         // replacement cannot remove it from the next capture's recovered input.
-        let application =
-            support::observed::install(Some(initial_checkpoint), &provider_observation);
+        let application = support::observed::open_directory(Some(directory), &provider_observation);
         let (scope, principal) = support::authenticate(&application);
         let request = application.request(&principal, &scope);
         let observed = request
@@ -137,20 +128,13 @@ mod serial {
         drop(demand);
         drop(principal);
         drop(scope);
-        let checkpoint = application
-            .with_host_advancement(|host_phase| {
-                application
-                    .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
-                    .unwrap()
-            })
-            .expect("installed host call opens");
-        drop(application);
+        let directory = application.checkpoint_and_close_for_reopen();
 
-        // Retain the issued capture proof for installed producer readmission.
+        // Retain the durable Home custody for installed producer readmission.
         // No demand or supplier replay is allowed to repair this current-output read.
         provider_observation.reset();
         super::super::super::final_output::reset_provider_contacts();
-        let reopened = support::observed::install(Some(checkpoint), &provider_observation);
+        let reopened = support::observed::open_directory(Some(directory), &provider_observation);
         let (scope, principal) = support::authenticate(&reopened);
         let request = reopened.request(&principal, &scope);
         let verify = |command| {

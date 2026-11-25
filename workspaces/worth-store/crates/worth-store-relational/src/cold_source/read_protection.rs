@@ -32,6 +32,19 @@ impl StoreColdSource {
         &self,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(Bounds, RelationalDurableReadPayload), Refusal> {
+        self.capture_native_read_inner(request, true)
+    }
+    pub(super) fn capture_journal_read(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(Bounds, RelationalDurableReadPayload), Refusal> {
+        self.capture_native_read_inner(request, false)
+    }
+    fn capture_native_read_inner(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+        include_membership: bool,
+    ) -> Result<(Bounds, RelationalDurableReadPayload), Refusal> {
         let memory =
             request.reserve_retained_memory(std::mem::size_of::<StoreCheckpointReadCut>() as u64)?;
         let reader =
@@ -54,32 +67,35 @@ impl StoreColdSource {
             .map_err(|_| Refusal::Storage(Cause::SourceUnavailable))?
             .head_position_from(&reader)
             .map_err(|failure| super::owned_read::journal_failure(failure, 0))?;
-        let membership = self
-            .serving()
-            .anchored_records()
-            .map_err(|_| Refusal::Storage(Cause::SourceUnavailable))?
-            .protected_membership_from(
-                &reader,
-                request,
-                AnchoredRecordName::new("home.checkpoint").expect("static anchor"),
-            )
-            .map_err(|failure| match failure {
-                worth_store::physical_runtime::AnchoredRecordReadFailure::Execution(cause) => {
-                    Refusal::from(cause)
-                }
-                worth_store::physical_runtime::AnchoredRecordReadFailure::Allocation(cause) => {
-                    Refusal::Buffer(worth_execution::ExecutionRequestArrayDenial::Allocation(
-                        cause,
-                    ))
-                }
-                worth_store::physical_runtime::AnchoredRecordReadFailure::ProtectionBusy => {
-                    Refusal::Busy
-                }
-                worth_store::physical_runtime::AnchoredRecordReadFailure::ForeignReader => {
-                    Refusal::ForeignProtection
-                }
-                _ => Refusal::Storage(Cause::SourceUnavailable),
-            })?;
+        let membership = if include_membership {
+            self.serving()
+                .anchored_records()
+                .map_err(|_| Refusal::Storage(Cause::SourceUnavailable))?
+                .protected_membership_from(
+                    &reader,
+                    request,
+                    AnchoredRecordName::new("home.checkpoint").expect("static anchor"),
+                )
+                .map_err(|failure| match failure {
+                    worth_store::physical_runtime::AnchoredRecordReadFailure::Execution(cause) => {
+                        Refusal::from(cause)
+                    }
+                    worth_store::physical_runtime::AnchoredRecordReadFailure::Allocation(cause) => {
+                        Refusal::Buffer(worth_execution::ExecutionRequestArrayDenial::Allocation(
+                            cause,
+                        ))
+                    }
+                    worth_store::physical_runtime::AnchoredRecordReadFailure::ProtectionBusy => {
+                        Refusal::Busy
+                    }
+                    worth_store::physical_runtime::AnchoredRecordReadFailure::ForeignReader => {
+                        Refusal::ForeignProtection
+                    }
+                    _ => Refusal::Storage(Cause::SourceUnavailable),
+                })?
+        } else {
+            None
+        };
         let bounds = Bounds {
             selected_checkpoint: membership.is_some(),
             canonical: PatchStreamPosition(canonical),

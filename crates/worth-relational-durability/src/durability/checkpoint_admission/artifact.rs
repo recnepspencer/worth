@@ -15,9 +15,6 @@ use worth_relational_contracts::internal_port as contracts;
 pub struct RelationalCheckpointAdmissionArtifact(CheckpointAdmissionReadImage);
 
 impl RelationalCheckpointAdmissionArtifact {
-    pub(crate) fn same_owner(&self, other: &Self) -> bool {
-        self.0.same_owner(&other.0)
-    }
     pub const PROTOCOL: BoundaryProtocolIdentity =
         BoundaryProtocolIdentity::new("worth.relational.checkpoint-admission");
 

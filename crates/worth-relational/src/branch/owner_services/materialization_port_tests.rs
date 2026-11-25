@@ -143,7 +143,7 @@ fn assert_cold_inventory(runtime: &crate::runtime::RelationalRuntime) {
     root.assert_derived_inventory_matches_cold_for_test();
 }
 
-fn create_generated_group(
+pub(super) fn create_generated_group(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalRuntime,
 ) -> (

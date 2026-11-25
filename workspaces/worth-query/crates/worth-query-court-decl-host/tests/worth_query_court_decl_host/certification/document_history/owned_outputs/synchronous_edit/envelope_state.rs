@@ -5,14 +5,14 @@ use worth_query_host::facade::{
     application_entry::WorthQueryEditEnvelopeOutcome as Outcome, runtime::ExecutionAllocationPolicy,
 };
 use worth_relational::facade::inspection::observe_maintenance_work;
-type Host = WorthQueryProgramApplicationRuntime<Schema, fixture::Program>;
+type Host = world::DirHost<fixture::Program>;
 fn host(worker: bool) -> Host {
     let limits = if worker {
         world::worker_limits()
     } else {
         host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
     };
-    world::install_configured(
+    world::open_directory_configured(
         limits,
         2,
         None,

@@ -150,3 +150,118 @@ where
         application.workflow.vocabulary()
     }
 }
+
+/// RAII Directory Home wrapper owning a `WorthQueryWorkflowApplicationHome` and
+/// its temporary directory on disk so certification tests close and reopen cleanly.
+pub struct DocumentWorkflowDirectoryHome<
+    Program: 'static = RetentionProgramP0,
+    Spec: ApplicationWorkflowSpec<Schema = DocumentRetentionSchema> = ReviewedDocumentWorkflow,
+> {
+    workflow: Option<WorthQueryWorkflowApplicationHome<DocumentRetentionSchema, Spec, Program>>,
+    pub authentication: CertificationAuthenticationOwner,
+    pub authentication_clock: CertificationAuthenticationClockSource,
+    directory: std::path::PathBuf,
+    cleanup_dir: bool,
+}
+
+impl<Program: 'static, Spec> DocumentWorkflowDirectoryHome<Program, Spec>
+where
+    Spec: ApplicationWorkflowSpec<Schema = DocumentRetentionSchema>,
+{
+    pub fn wrap(
+        workflow: WorthQueryWorkflowApplicationHome<DocumentRetentionSchema, Spec, Program>,
+        authentication: CertificationAuthenticationOwner,
+        authentication_clock: CertificationAuthenticationClockSource,
+        directory: std::path::PathBuf,
+    ) -> Self {
+        Self {
+            workflow: Some(workflow),
+            authentication,
+            authentication_clock,
+            directory,
+            cleanup_dir: true,
+        }
+    }
+
+    pub fn home(&self) -> &WorthQueryWorkflowApplicationHome<DocumentRetentionSchema, Spec, Program> {
+        self.workflow.as_ref().expect("workflow directory Home is open")
+    }
+
+    pub fn home_mut(
+        &mut self,
+    ) -> &mut WorthQueryWorkflowApplicationHome<DocumentRetentionSchema, Spec, Program> {
+        self.workflow.as_mut().expect("workflow directory Home is open")
+    }
+
+    pub fn directory(&self) -> &std::path::Path {
+        &self.directory
+    }
+
+    pub fn workflow_spec(
+        &self,
+    ) -> &worth_query_host::facade::domain::WorthQueryInstalledApplicationWorkflowSpec<
+        DocumentRetentionSchema,
+        Spec,
+    > {
+        self.home().workflow_spec()
+    }
+
+    pub fn close_for_reopen(mut self) -> std::path::PathBuf {
+        self.cleanup_dir = false;
+        let workflow = self.workflow.take().expect("workflow directory Home is open");
+        let lease = worth_query_testkit_document_retention::facade::directory_home::directory_lease();
+        workflow
+            .close(&worth_execution::ExecutionRequest::leased(&lease))
+            .unwrap_or_else(|refused| panic!("workflow directory Home close refused: {refused:?}"))
+            .reclaim();
+        self.directory.clone()
+    }
+}
+
+impl<Program, Spec> DocumentWorkflowApplication for DocumentWorkflowDirectoryHome<Program, Spec>
+where
+    Program: ApplicationProgramDefinition<DocumentRetentionSchema> + 'static,
+    Spec: ApplicationWorkflowSpec<Schema = DocumentRetentionSchema>,
+{
+    type Program = Program;
+    type Spec = Spec;
+    fn program_runtime(
+        &self,
+    ) -> &WorthQueryProgramApplicationRuntime<DocumentRetentionSchema, Program> {
+        self.home().runtime()
+    }
+    fn vocabulary(&self) -> WorthQueryWorkflowVocabulary<'_, DocumentRetentionSchema, Spec> {
+        self.home().vocabulary()
+    }
+    fn authentication(&self) -> &CertificationAuthenticationOwner {
+        &self.authentication
+    }
+}
+
+impl<'application, Program: 'static, Spec>
+    From<&'application DocumentWorkflowDirectoryHome<Program, Spec>>
+    for WorthQueryWorkflowVocabulary<'application, DocumentRetentionSchema, Spec>
+where
+    Spec: ApplicationWorkflowSpec<Schema = DocumentRetentionSchema>,
+{
+    fn from(application: &'application DocumentWorkflowDirectoryHome<Program, Spec>) -> Self {
+        application.home().vocabulary()
+    }
+}
+
+impl<Program: 'static, Spec> Drop for DocumentWorkflowDirectoryHome<Program, Spec>
+where
+    Spec: ApplicationWorkflowSpec<Schema = DocumentRetentionSchema>,
+{
+    fn drop(&mut self) {
+        if let Some(workflow) = self.workflow.take() {
+            let lease = worth_query_testkit_document_retention::facade::directory_home::directory_lease();
+            if let Ok(closed) = workflow.close(&worth_execution::ExecutionRequest::leased(&lease)) {
+                closed.reclaim();
+            }
+        }
+        if self.cleanup_dir {
+            let _ = std::fs::remove_dir_all(&self.directory);
+        }
+    }
+}

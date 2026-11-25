@@ -1,7 +1,6 @@
 //! Genuine performed mixed Preserve/Create/Retire readiness and recovery.
 use super::*;
 use worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandProgress;
-use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 use worth_query_host::facade::{application_contribution, primary_graph};
 
 mod producer;
@@ -126,15 +125,8 @@ mod serial {
                 .execute()
                 .expect("preserved and created members stay live");
         }
-        let checkpoint = application
-            .with_host_advancement(|host_phase| {
-                application
-                    .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
-                    .unwrap()
-            })
-            .expect("installed host call opens");
         // The created live member still owns all installed aspects. Reverting its
-        // Length value cannot revert the native revision or revive this settlement.
+        // Length value cannot revert the native revision or revive a live settlement.
         for (command, value) in [(0x9176_7303_u64, 13), (0x9176_7304_u64, 1)] {
             let observed = request
                 .query(PlanarRead {
@@ -174,12 +166,66 @@ mod serial {
         drop(retained);
         drop(settled);
         drop(outputs);
+        drop(committed);
         drop(source);
         drop(principal);
         drop(scope);
         drop(application);
+
+        // Settle a fresh Directory Home before post-settlement edits, close, and reopen
+        // to verify untrusted retired descriptions refuse restored readiness.
+        let fresh = install(None);
+        let directory = {
+            let (scope, principal) = authenticate(&fresh);
+            let request = fresh.request(&principal, &scope);
+            let source = request
+                .query(PlanarRead {
+                    body_key: "anchor-a".into(),
+                })
+                .execute()
+                .unwrap();
+            let committed = request
+                .advanced()
+                .mutate(PlanarEdit(PlanarMutation {
+                    scope_key: "anchor-a".into(),
+                    operation: worth_query_consumer_values::PlanarOperation::Adjust(vec![
+                        worth_query_consumer_values::PlanarAdjustment {
+                            body_key: "anchor-a".into(),
+                            replacement_y: length(2),
+                        },
+                    ]),
+                }))
+                .expect_source(source.observed_sources()[0].clone())
+                .idempotency(&0x9176_7302_u64)
+                .execute_in_program::<MixedProgram>(
+                    &fresh,
+                    worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap();
+            assert!(matches!(
+                committed,
+                worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::Committed { .. }
+            ));
+            let mut outputs = request
+                .advanced()
+                .start_program_outputs::<MixedProgram, MixedRoot>(
+                    &fresh,
+                    ReplacementDemand("anchor-a".into()),
+                    Default::default(),
+                )
+                .unwrap();
+            let _settled = (0..64)
+                .find_map(|_| match outputs.advance(&fresh, &request).unwrap() {
+                    WorthQueryApplicationProgramOutputProgress::Pending
+                    | WorthQueryApplicationProgramOutputProgress::Progressed => None,
+                    WorthQueryApplicationProgramOutputProgress::Settled(value) => Some(value),
+                })
+                .expect("fresh mixed replacement must settle before reopen");
+            drop((_settled, outputs, committed, source, principal, scope));
+            fresh.checkpoint_and_close_for_reopen()
+        };
         reset_contacts();
-        let reopened = install(Some(checkpoint));
+        let reopened = install(Some(directory));
         let (scope, principal) = authenticate(&reopened);
         let request = reopened.request(&principal, &scope);
         let mut demand = request

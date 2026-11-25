@@ -201,9 +201,13 @@ fn changed_configured_domain_cannot_replace_the_actual_recovered_root_or_its_han
     let foreign_domain = changed.projected_member_domain(&domain()).unwrap();
     let opaque = runtime
         .durability_authority()
-        .native_checkpoint(
+        .native_checkpoint_with_policy(
             execution,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
         )
         .unwrap();
     let plan = runtime
@@ -227,11 +231,22 @@ fn changed_configured_domain_cannot_replace_the_actual_recovered_root_or_its_han
     // A native restore must enforce the same declared-schema boundary as reopen.
     let before = restored
         .durability_authority()
-        .native_checkpoint(execution, execution.allocation_policy())
+        .native_checkpoint_with_policy(
+            execution,
+            execution.allocation_policy(),
+            crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
+        )
         .unwrap();
     let denied = restored
         .durability_recovery()
-        .restore_native_checkpoint(execution, &opaque)
+        .restore_native_checkpoint(
+            execution,
+            &opaque,
+            crate::tests::support::durability::captured_members_source(&opaque),
+        )
         .unwrap_err();
     assert_eq!(
         expect_durability_failure(denied).class,
@@ -240,14 +255,25 @@ fn changed_configured_domain_cannot_replace_the_actual_recovered_root_or_its_han
     assert_eq!(
         restored
             .durability_authority()
-            .native_checkpoint(execution, execution.allocation_policy())
+            .native_checkpoint_with_policy(
+                execution,
+                execution.allocation_policy(),
+                crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                    current_members: &[],
+                    source: None
+                }
+            )
             .unwrap(),
         before
     );
     let mut restored = configured_runtime(source_registry());
     restored
         .durability_recovery()
-        .restore_native_checkpoint(execution, &opaque)
+        .restore_native_checkpoint(
+            execution,
+            &opaque,
+            crate::tests::support::durability::captured_members_source(&opaque),
+        )
         .unwrap();
     let snapshot = snapshot_for_owner_branch(&restored, &BranchId("main".into()));
     let pin = restored

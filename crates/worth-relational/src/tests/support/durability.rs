@@ -35,6 +35,10 @@ use crate::storage::data::RelationalStorageUnavailableCause as StorageCause;
 
 #[path = "durability/canonical_commit_frame.rs"]
 mod canonical_commit_frame;
+#[path = "durability/captured_members.rs"]
+mod captured_members;
+#[path = "durability/external_capture.rs"]
+mod external_capture;
 #[path = "durability/owned_medium.rs"]
 mod owned_medium;
 #[path = "durability/owned_medium_attachment.rs"]
@@ -42,6 +46,11 @@ mod owned_medium_attachment;
 #[path = "durability/owned_medium_tamper.rs"]
 mod owned_medium_tamper;
 pub(crate) use canonical_commit_frame::reseal_canonical_commit_frame;
+pub(crate) use captured_members::{
+    captured_members_source, captured_members_source_with_fallback, empty_cold_source,
+    encode_checkpoint_with_source, CapturedMembersColdSource,
+};
+pub(crate) use external_capture::capture_checkpoint_with_source;
 use owned_medium::{bounded_bytes, downcast_snapshot, map_owned_denial, OwnedMediumAttachment};
 pub(crate) use owned_medium::{
     OwnedTestDurableMedium, ScriptedPublication, TestRecoverySourceRefusal,
@@ -316,18 +325,6 @@ pub(crate) fn recover_runtime_from_medium(
         .expect("medium-sourced recovery")
 }
 impl OwnedTestDurableMedium {
-    pub(crate) fn file_embedded_checkpoint(
-        &self,
-        execution: &Req<'_, '_>,
-        runtime: &RelationalRuntime,
-    ) -> NativeCheckpoint {
-        let checkpoint = runtime
-            .durability_authority()
-            .native_checkpoint(execution, execution.allocation_policy())
-            .expect("embedded native checkpoint capture");
-        self.file_checkpoint(checkpoint.clone());
-        checkpoint
-    }
     pub(crate) fn recovery_plan(
         self: &Arc<Self>,
         execution: &Req<'_, '_>,

@@ -214,10 +214,7 @@ fn residency_failure_matrix_full_read_subjects_cover_every_door_and_class() {
                         Err(denial),
                         "{subject:?}  x  {door:?}  x  {cause:?}"
                     );
-                    if matches!(
-                        door,
-                        ReadDoor::MemoryCheckpoint | ReadDoor::EmbeddedCheckpoint
-                    ) {
+                    if matches!(door, ReadDoor::MemoryCheckpoint) {
                         assert_eq!(failed_reads(), failed_before);
                     } else {
                         assert_eq!(fixture.source.reads.load(Ordering::Relaxed), reads);

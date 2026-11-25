@@ -60,6 +60,7 @@ pub use subsystems::{
     RecordReservationObservation, RecordReservationObservationDenial, RecordReservationReport,
 };
 
+pub use subsystems::HomeReadmissionMetadataKinds;
 pub use subsystems::RelationalSymbolTableForTest;
 pub(crate) use subsystems::TryPartitionMutationDenied;
 #[cfg(test)]

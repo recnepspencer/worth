@@ -1,8 +1,8 @@
 //! Read-only inspection of captured checkpoint and recovery evidence.
 
+mod carried_index_inspection;
 use crate::durability::authority::CompleteRelationalNativeCheckpoint;
 use crate::durability::data::RelationalNativeCheckpoint;
-use crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts;
 use contracts::durability::data::recovery_stop::RelationalRecoveryStop;
 use contracts::history::data::coordinates::{BranchId, CommitId};
 use contracts::identity::data::primitives::VersionId;
@@ -62,7 +62,7 @@ impl RelationalNativeCheckpoint {
     pub fn inspect_history_fold_bounds(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        source: Option<Arc<dyn RelationalDurableColdSource>>,
+        source: Arc<dyn RelationalDurableColdSource>,
     ) -> Result<Option<RelationalHistoryFoldBounds>, RelationalRecoveryStop> {
         let decoded =
             crate::durability::log::native_checkpoint_codec::decode_checkpoint_from_source(
@@ -106,38 +106,9 @@ impl RelationalNativeCheckpoint {
     pub fn inspect_carried_index_selections(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
+        source: Arc<dyn RelationalDurableColdSource>,
     ) -> Result<Option<RelationalCompleteIndexSelectionInspection>, RelationalRecoveryStop> {
-        let decoded = crate::durability::log::native_checkpoint_codec::decode_checkpoint(
-            execution,
-            self.bytes(),
-        )?
-        .checkpoint;
-        let Some(saved) = decoded.derived_index_checkpoint.as_ref() else {
-            return Ok(None);
-        };
-        let all_bases_beside_roots = saved.bases().iter().all(|basis| {
-            decoded
-                .branch_roots
-                .iter()
-                .any(|root| root.commit_id == basis.commit)
-        });
-        let bases = saved
-            .bases()
-            .iter()
-            .map(|basis| RelationalCompleteCarriedIndexBasis {
-                branch: basis.branch.clone(),
-                commit: basis.commit,
-                version: basis.version,
-                bindings: basis.bindings.clone(),
-            })
-            .collect();
-        Ok(Some(RelationalCompleteIndexSelectionInspection {
-            format_version: decoded.derived_index_checkpoint_format,
-            expected_format_version: DerivedIndexCheckpointArtifacts::FORMAT_VERSION,
-            legacy_artifact_count: decoded.derived_index_artifacts.generations().len(),
-            all_bases_beside_roots,
-            bases,
-        }))
+        carried_index_inspection::inspect_carried_index_selections(self, execution, source)
     }
 }
 
@@ -146,8 +117,9 @@ impl CompleteRelationalNativeCheckpoint {
     pub fn inspect_carried_index_selections(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
+        source: Arc<dyn RelationalDurableColdSource>,
     ) -> Result<Option<RelationalCompleteIndexSelectionInspection>, RelationalRecoveryStop> {
         self.checkpoint()
-            .inspect_carried_index_selections(execution)
+            .inspect_carried_index_selections(execution, source)
     }
 }

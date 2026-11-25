@@ -274,3 +274,49 @@ fn advance_open(
         }
     }
 }
+
+pub(in crate::domain_computation::primary_graph::product_operation) fn query_home_binding(
+    binding: &WorthQueryProductPublicationBinding,
+) -> Result<Option<worth_foundational::facade::DurableWorldOwnerIdentity>, WorldOpenAttemptRefusal> {
+    binding
+        .publication()
+        .query_publication_home_binding(binding.observation())
+}
+
+pub(in crate::domain_computation::primary_graph::product_operation) fn prepare_ordinary_without_signal(
+    binding: &WorthQueryProductPublicationBinding,
+    control: &WorthQueryProductPublicationRequestControl,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<WorldPendingOpenAttempt, WorldOpenAttemptRefusal> {
+    binding
+        .publication()
+        .prepare_query_publication_without_signal(
+            execution,
+            binding.observation().clone(),
+            binding.admitted_program_source()?,
+            worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+            control.cancellation(),
+            control.deadline(),
+        )
+}
+
+pub(in crate::domain_computation::primary_graph::product_operation) fn bind_opened_proposal(
+    opened: WorldOpenedPublicationAttempt,
+    proposal: ValidatedRelationalProposal,
+) -> Result<
+    (
+        WorldQueryNativePreparation,
+        worth_relational::facade::mvcc::ValidatedRelationalProposal,
+    ),
+    WorldNativePreparationRefusal,
+> {
+    opened.bind_query_native_proposal(proposal)
+}
+
+pub(in crate::domain_computation::primary_graph::product_operation) fn complete_opened_native(
+    prep: WorldQueryNativePreparation,
+    candidate: worth_relational::facade::mvcc::PreparedRelationalCommitCandidate,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<WorldPreparedPublicationWithoutSignal, WorldNativePreparationRefusal> {
+    prep.complete_query_native_preparation(candidate, execution)
+}

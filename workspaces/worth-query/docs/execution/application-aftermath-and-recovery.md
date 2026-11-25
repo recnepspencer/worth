@@ -208,10 +208,11 @@ exact lookup, with its authoritative performed publication retained in World
 history. An installed host may call `repair_completed_inbound_index` with its
 verifier handle and finite World-page, changed-record and ancestry budgets.
 Ordinary exact lookup remains unavailable while that separate repair is
-incomplete. This custody guarantee is process-local; forced
-process death has no recovery promise. In particular, an authentic callback can
-receive unknown correlation if the original outstanding-dispatch provenance was
-lost; that response is not a signed permanent denial to the rail.
+incomplete. On a `MemoryOnly` runtime, this custody guarantee is process-local
+with no forced-kill recovery promise; on a Directory Home, accepted inbound
+evidence, source controls, and dispatch attempts are recorded durably in
+`query.dispatch` and readmitted across graceful close and Track C3.5 process
+kills (see [Durable inbound custody on a Directory Home](#durable-inbound-custody-on-a-directory-home)).
 
 The installed host wakes bounded custodian maintenance for retained work,
 explicit owner continuation, and the next terminal expiry after callbacks stop. It
@@ -240,9 +241,10 @@ control on a fresh host request or settle it through graceful close. A refusal
 preserves the exact execution or journal cause.
 
 Directory Home also readmits accepted-message, canonical-terminal and recovery-claim
-custody after graceful close/reopen. Those records retain their independent owner
-requirements; source control never supplies callback authority. Crash recovery is
-not yet certified (C4/C5).
+custody after graceful close/reopen and Track C3.5 process kills. Those records
+retain their independent owner requirements; source control never supplies
+callback authority. Full adversarial-oracle and Tier-3 certification runs in
+Track C4 / Landing 3.
 
 ## Core Mental Model
 
@@ -774,7 +776,8 @@ transport. The recovered custody then reaches the existing recovery handles
 (`reconcile_recovery_handle`, `safe_retry_recovery_handle`,
 `compensate_recovery_handle`, `resolve_recovery_handle`) and authentic inbound
 completion callbacks. Recovery claim readmission still requires fresh
-original-source admission. Full crash certification belongs to C4/C5.
+original-source admission. Exhaustive adversarial-oracle and Tier-3 certification
+belongs to Track C4 / Landing 3.
 
 ## Durable inbound custody on a Directory Home
 
@@ -908,4 +911,5 @@ repeated Home reopen. The fixture's admitted handler contact count and the
 rail's independent physical consequence ledger detect replay and double effect.
 This is Host/external-party integration; the full Bank server's Memory
 composition and the rail's own process-local delivery queue retain their stated
-limits. Crash recovery during an operation is not yet certified.
+limits. Track C3.5 covers real-kill dispatch/rail recovery; exhaustive
+adversarial-oracle and Tier-3 certification runs in Track C4 / Landing 3.

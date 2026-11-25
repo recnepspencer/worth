@@ -4,12 +4,10 @@ use super::{Denial, FrozenCompleteMetadata, FrozenOriginalInputs};
 use crate::runtime::RelationalRuntime;
 use worth_execution::ExecutionRequest;
 use worth_relational_contracts::internal_port::symbols::data::string_interner::StringInternerOwnerPort as _;
-use worth_relational_durability::internal_port::durability::data::checkpoint_member::RelationalCheckpointArtifactPolicyOwnerPort as _;
 
 pub(in super::super) fn capture(
     runtime: &RelationalRuntime,
     request: &ExecutionRequest<'_, '_>,
-    placement: &crate::durability::data::RelationalCheckpointArtifactPolicy<'_>,
 ) -> Result<FrozenCompleteMetadata, Denial> {
     let binding = runtime.configuration_binding();
     let configuration = binding.operation();
@@ -30,11 +28,6 @@ pub(in super::super) fn capture(
                 selection.covered_transitions(),
                 request,
             )?;
-            // Home selection retains immutable members by reference. Reject
-            // an Embedded demand before protecting/reading any source body.
-            if original.base.is_some() && placement.is_embedded() {
-                return Err(Denial::OriginalAuthorityUnavailable);
-            }
             let FrozenCurrentCheckpointMetadata {
                 branches,
                 components,

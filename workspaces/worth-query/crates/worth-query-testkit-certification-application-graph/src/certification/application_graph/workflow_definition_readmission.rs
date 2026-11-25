@@ -1,7 +1,10 @@
-//! Definition readmission through native checkpoint restore and cold compilation.
+//! Definition readmission through Directory Home reopen and cold compilation.
 
 pub use super::document_retention_model::{
-    host::{publish_workflow_on_first_program, restore_on_first_program, DocumentWorkflowRuntime},
+    host::{
+        host_limits, open_workflow_directory_for, publish_workflow_on_first_program,
+        DocumentWorkflowApplication, DocumentWorkflowDirectoryHome,
+    },
     programs::{validated_second_program, OccurrenceAction, WorkflowOwnerProgram},
     retention_entry::OccurrenceSetRetentionBinding,
     schema::DocumentRetentionSchema,
@@ -12,41 +15,16 @@ pub use worth_query_host::facade::{
         WorkflowDefinitionExpectedPredecessor, WorkflowDefinitionPublicationOutcome,
         WorkflowInstanceStartOutcome, WorkflowProgressOutcome, WorkflowProposalOutcome,
     },
-    application_installation::{
-        WorthQueryApplicationCheckpoint, WorthQueryApplicationProgramRoster,
-        WorthQueryCheckpointCapturePolicy,
-    },
+    application_installation::WorthQueryApplicationProgramRoster,
 };
+pub use worth_query_testkit_document_retention::facade::directory_home::unique_directory;
 
-pub fn capture(
-    application: &DocumentWorkflowRuntime<
-        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
-            DocumentRetentionSchema,
-        >,
-        impl worth_query_host::facade::declaration::application_program::ApplicationWorkflowSpec<
-            Schema = DocumentRetentionSchema,
-        >,
-    >,
-) -> WorthQueryApplicationCheckpoint {
-    application
-        .with_host_advancement(|phase| {
-            application
-                .runtime()
-                .capture_application_checkpoint(
-                    &phase,
-                    WorthQueryCheckpointCapturePolicy::SystemAllocation,
-                )
-                .unwrap()
-        })
-        .unwrap()
-}
-
-pub fn restore(
-    checkpoint: WorthQueryApplicationCheckpoint,
-) -> DocumentWorkflowRuntime<
+pub fn open_owner_workflow_directory(
+    directory: std::path::PathBuf,
+) -> DocumentWorkflowDirectoryHome<
     WorkflowOwnerProgram,
     worth_query_testkit_document_retention::facade::document_retention_model::workflow::governed_read::GovernedDocumentWorkflow,
->{
+> {
     let program =
         worth_query_host::facade::declaration::application_program::ApplicationProgramAuthoring::<
             DocumentRetentionSchema,
@@ -54,13 +32,13 @@ pub fn restore(
         >::begin()
         .validated_program()
         .unwrap();
-    worth_query_testkit_document_retention::facade::document_retention_model::workflow::retain_workflow_for(
-        super::document_retention_model::host::restore(
-            program,
-            checkpoint,
-            WorthQueryApplicationProgramRoster::new().support(validated_second_program()),
-        )
-        .expect("the original program and native checkpoint restore before definition readmission"),
+    open_workflow_directory_for(
+        directory,
+        program,
+        WorthQueryApplicationProgramRoster::new().support(validated_second_program()),
+        host_limits(
+            worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system(),
+        ),
         worth_query_testkit_document_retention::facade::document_retention_model::workflow::workflow_resources(),
     )
 }

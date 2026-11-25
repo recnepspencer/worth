@@ -1,6 +1,6 @@
 //! Native publication and independent grant-revocation stimuli for the public read court.
 pub use super::*;
-pub fn publish(application: &GovernedRuntime) -> PublishedWorkflowDefinitionRef {
+pub fn publish(application: &impl GovernedWorkflowOwner) -> PublishedWorkflowDefinitionRef {
     let mut builder = ApplicationWorkflowDefinitionBuilder::<GovernedDocumentWorkflow>::new(
         "governed-original-intent",
         super::super::super::definition_limits(),
@@ -17,7 +17,7 @@ pub fn publish(application: &GovernedRuntime) -> PublishedWorkflowDefinitionRef 
     )
 }
 pub fn publish_definition(
-    application: &GovernedRuntime,
+    application: &impl GovernedWorkflowOwner,
     definition: worth_query_host::facade::declaration::application_program::ValidatedWorkflowDefinition<GovernedDocumentWorkflow>,
     predecessor: WorkflowDefinitionExpectedPredecessor,
     key: u64,
@@ -45,7 +45,7 @@ pub fn publish_definition(
     }
 }
 pub fn prepare(
-    application: &GovernedRuntime,
+    application: &impl GovernedWorkflowOwner,
     definition: PublishedWorkflowDefinitionRef,
     key: u64,
 ) -> WorthQueryWorkflowInstanceStartRequest<
@@ -70,7 +70,7 @@ pub fn prepare(
         .prepare_workflow_instance_start(application.vocabulary(), definition)
         .unwrap()
 }
-pub fn revoke(application: &GovernedRuntime, grant: &str, key: u64) {
+pub fn revoke(application: &impl GovernedWorkflowOwner, grant: &str, key: u64) {
     let runtime = application.runtime();
     let scope = request_scope();
     let principal = authenticate_operator(runtime.installed_schema(), &scope);

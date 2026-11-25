@@ -38,6 +38,11 @@ pub(super) fn stop_request_during_next_decide(cancellation: WorthQueryCancellati
 }
 pub struct Handler;
 impl OperationHandler<Schema, Binding> for Handler {
+    fn declared_durable_capabilities(
+    ) -> Option<&'static [worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability]> {
+        Some(&[worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability::RelationalMutation])
+    }
+
     fn decide(
         &self,
         input: &Intent,

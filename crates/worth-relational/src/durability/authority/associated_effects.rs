@@ -8,6 +8,6 @@ pub use observed_memory_commit::ObservedRelationalMemoryCommit;
 pub use refusal::RelationalAssociatedEffectRefusal;
 pub use worth_relational_durability::internal_port::durability::authority::associated_effects::{ReadmittedRelationalAssociatedEffect, RelationalAssociatedEffectSettlement, RelationalAssociatedEffectSubject};
 pub(crate) use worth_relational_durability::internal_port::durability::authority::associated_effects::ReadmittedEffectOrigin;
-pub(super) mod discovery;
+pub(crate) mod discovery;
 mod memory_original;
 mod readmission;

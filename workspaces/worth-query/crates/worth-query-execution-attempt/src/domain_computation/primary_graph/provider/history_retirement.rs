@@ -33,13 +33,14 @@ impl WorthQueryPrimaryGraphProvider {
     /// cannot retire keeps its history; nothing is lost but capacity.
     pub fn retire_changed_history(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &RelationalRuntime,
         committed: &worth_relational::facade::transactions::CommitResult,
     ) {
         let retired = match self
             .world_history
             .get()
-            .map(|world| world.retire_changed_history())
+            .map(|world| world.retire_changed_history_with_request(execution))
         {
             Some(Ok(retired)) => retired,
             Some(Err(

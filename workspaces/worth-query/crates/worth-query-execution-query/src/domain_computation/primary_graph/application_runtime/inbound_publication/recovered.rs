@@ -116,7 +116,7 @@ fn advance_original<Schema: worth_query_installation::facade::ApplicationSchema>
     let OriginalCompletionState::Published(commit) = &continuation.state else {
         unreachable!("original continued or release returned above")
     };
-    if world.after().selected_commit() != commit {
+    if world.composite_commit() != commit {
         return Err(Denial::PublicationMismatch);
     }
     let source = InboundTerminalSource::Readmitted {

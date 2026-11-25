@@ -1,7 +1,8 @@
 use crate::branch::OwnerRetirementWork;
 use crate::recovery::{
-    ProductUnpublishedOwnerEffects, ProductUnpublishedRecoveryHandle, RecoveryCleanupOutcome,
-    RecoveryContinuationContract,
+    PerformedPublicationRecoveryDenial, ProductUnpublishedOwnerEffects,
+    ProductUnpublishedRecoveryHandle, RecoveryCleanupOutcome, RecoveryContinuationContract,
+    RuntimeWorldRecoveryDenial,
 };
 
 use super::RuntimeWorldOwnerRoot;
@@ -13,15 +14,12 @@ mod recovered_signal_leg;
 #[cfg(test)]
 #[path = "recovery_service/tests.rs"]
 mod settlement_catalog_tests;
-
 #[cfg(test)]
 #[path = "recovery_service/concurrency_tests.rs"]
 mod concurrency_tests;
-
 #[cfg(test)]
 #[path = "recovery_service/unwind_tests.rs"]
 mod unwind_tests;
-
 #[cfg(test)]
 mod update_control;
 #[cfg(test)]
@@ -165,6 +163,17 @@ where
     > {
         super::super::ports::RuntimeWorldLifecycleService::retire_changed_history(self)
     }
+    fn retire_changed_history_with_request(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        Vec<crate::identity::CompositeCommitIdentity>,
+        crate::history::HistoryReclamationDenial,
+    > {
+        super::super::ports::RuntimeWorldLifecycleService::retire_changed_history_with_request(
+            self, execution,
+        )
+    }
     fn release_retired_branch_history(
         &self,
         from: &crate::identity::CompositeCommitIdentity,
@@ -172,6 +181,16 @@ where
     {
         super::super::ports::RuntimeWorldLifecycleService::release_retired_branch_history(
             self, from,
+        )
+    }
+    fn release_retired_branch_history_with_request(
+        &self,
+        from: &crate::identity::CompositeCommitIdentity,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<crate::history::RetiredBranchHistoryRelease, crate::history::HistoryReclamationDenial>
+    {
+        super::super::ports::RuntimeWorldLifecycleService::release_retired_branch_history_with_request(
+            self, from, execution,
         )
     }
 
@@ -316,58 +335,44 @@ where
         pause_test_recovery_update(&handle);
         let record = update
             .record_mut()
-            .ok_or(crate::recovery::RuntimeWorldRecoveryDenial::CallerCapabilityLive)?;
-        let mut recovery = record.take_relational_recovery().map_err(|()| {
-            crate::recovery::RuntimeWorldRecoveryDenial::SettlementEvidenceUnavailable
-        })?;
+            .ok_or(RuntimeWorldRecoveryDenial::CallerCapabilityLive)?;
+        let mut recovery = record
+            .take_relational_recovery()
+            .map_err(|()| RuntimeWorldRecoveryDenial::SettlementEvidenceUnavailable)?;
 
-        match recovery.take_performed() {
-            Some(performed) => {
-                match self
-                    .state
-                    .relational_services()
-                    .settlement_port()
-                    .settle_performed_publication(performed)
+        if let Some(performed) = recovery.take_performed() {
+            match self
+                .state
+                .relational_services()
+                .settlement_port()
+                .settle_performed_publication(performed)
+            {
+                Ok(result)
+                    if result.outcome().commit.commit_id == recovery.commit_identity().commit_id() =>
                 {
-                    Ok(result)
-                        if result.outcome().commit.commit_id
-                            == recovery.commit_identity().commit_id() =>
-                    {
-                        recovery.finish(|record, state| {
-                            record.settle_relational_recovery(state, result)
-                        });
-                    }
-                    Ok(_) | Err(_) => {
-                        recovery.finish(|record, state| record.retain_identity_repair(state))
-                    }
+                    recovery.finish(|r, s| r.settle_relational_recovery(s, result));
                 }
+                Ok(_) | Err(_) => recovery.finish(|r, s| r.retain_identity_repair(s)),
             }
-            _ => {
-                if let Some(commit_identity) = recovery.take_identity_repair() {
-                    match self
-                        .state
-                        .relational_services()
-                        .settlement_port()
-                        .repair_pending_publication_settlement(commit_identity.commit_id())
-                    {
-                        Ok(receipt) if receipt.commit_id == commit_identity.commit_id() => {
-                            recovery.finish(|record, state| {
-                                record.settle_relational_recovery_with_receipt(state, receipt)
-                            });
-                        }
-                        Ok(_) | Err(_) => {
-                            recovery.restore_identity_repair();
-                            drop(recovery);
-                        }
-                    }
-                } else {
+        } else if let Some(commit_identity) = recovery.take_identity_repair() {
+            match self
+                .state
+                .relational_services()
+                .settlement_port()
+                .repair_pending_publication_settlement(commit_identity.commit_id())
+            {
+                Ok(receipt) if receipt.commit_id == commit_identity.commit_id() => {
+                    recovery.finish(|r, s| r.settle_relational_recovery_with_receipt(s, receipt));
+                }
+                Ok(_) | Err(_) => {
+                    recovery.restore_identity_repair();
                     drop(recovery);
-                    update.finish();
-                    return Err(
-                        crate::recovery::RuntimeWorldRecoveryDenial::SettlementEvidenceUnavailable,
-                    );
                 }
             }
+        } else {
+            drop(recovery);
+            update.finish();
+            return Err(RuntimeWorldRecoveryDenial::SettlementEvidenceUnavailable);
         }
 
         let actions = record.next_actions().to_vec();
@@ -377,14 +382,12 @@ where
     fn recover_performed(
         &self,
         identity: &crate::identity::CompositeCommitIdentity,
-    ) -> Result<
-        crate::publication::PerformedCompositePublication,
-        crate::recovery::PerformedPublicationRecoveryDenial,
-    > {
-        let _operation = self
+    ) -> Result<crate::publication::PerformedCompositePublication, PerformedPublicationRecoveryDenial>
+    {
+        let _op = self
             .reserve_recovery_operation_if_open_and_bootstrapped()
             .map_err(|_| {
-                crate::recovery::PerformedPublicationRecoveryDenial::OwnerUnavailable(
+                PerformedPublicationRecoveryDenial::OwnerUnavailable(
                     crate::lifecycle::RuntimeWorldOwnerUnavailable::new(),
                 )
             })?;

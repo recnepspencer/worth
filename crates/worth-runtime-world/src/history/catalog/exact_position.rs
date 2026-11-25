@@ -90,6 +90,45 @@ impl CompositeHistoryCatalog {
             _memory: memory,
         })))
     }
+
+    /// Follows owner-recorded retirement splices across retired interior commits.
+    /// Stops cleanly at the retained root when retired base commits were dropped.
+    pub(crate) fn next_retained_history_position(
+        &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+        current: &RetainedExactHistoryPosition,
+    ) -> Result<Option<Arc<RetainedExactHistoryPosition>>, Denial> {
+        HistoryTraversalControl::Request {
+            execution,
+            maximum: None,
+        }
+        .check_live()?;
+        let state = lock_state(&self.state);
+        validate_owner(&state, current.commit.identity().owner_identity())?;
+        if !Arc::ptr_eq(&self.state, &current.catalog.state) {
+            return Err(Denial::SourceUnavailable);
+        }
+        let Some((parent, _)) = super::support::effective_parent(&state, &current.commit) else {
+            return Ok(None);
+        };
+        if state.retiring.contains(&parent) {
+            return Err(Denial::RetiredHistoryGap);
+        }
+        let Some(entry) = state.entries.get(&parent).and_then(|slot| slot.get()) else {
+            return if state.root.as_ref() == Some(current.commit.identity()) {
+                Ok(None)
+            } else {
+                Err(Denial::RetiredHistoryGap)
+            };
+        };
+        let memory = reserve_position(execution)?;
+        Ok(Some(Arc::new(RetainedExactHistoryPosition {
+            commit: entry.shared_commit(),
+            _protection: protect_installed(&state, &parent)?,
+            catalog: self.clone(),
+            _memory: memory,
+        })))
+    }
 }
 
 fn reserve_position(

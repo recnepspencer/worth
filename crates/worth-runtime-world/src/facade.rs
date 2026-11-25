@@ -2,11 +2,6 @@
 //!
 //! This module contains exports only. Runtime behavior remains in the private
 //! owner modules so callers cannot reach around the composition boundary.
-pub use crate::lifecycle::{
-    CapturedWorldInterimAdmission, CapturedWorldInterimOrigin, WorldInterimCheckpointPort,
-    WorldInterimCheckpointRefusal,
-};
-
 pub use crate::durability::{
     PreparedWorldCheckpoint, PreparedWorldHomeData, PreparedWorldHomeSource,
     RuntimeWorldDurableMedium, WorldCheckpointJournalRecord, WorldCheckpointOriginRetirement,
@@ -47,18 +42,18 @@ pub use worth_signal::facade::{SignalError, SignalTransaction};
 pub use crate::basis::AdmittedCompositeRuntimeWorldBasis;
 
 pub use crate::branch::{
-    ComponentBranchTarget, CurrentProductHead, CustodyComponent, NoEffectRuntimeWorldBootstrap,
-    ObservedProductBranches, OwnerCreatedComponentCustodyRecord, OwnerRetirementWork,
-    PerformedRuntimeWorldBootstrap, PreparedProductExactHistoryPage,
-    ProductBranchAncestorSelection, ProductBranchAncestorSelectionDenial,
-    ProductBranchCreationIntent, ProductBranchCreationPlans, ProductBranchCurrentnessFailure,
-    ProductBranchHistoryTraversal, ProductBranchInventoryDenial, ProductBranchName,
-    ProductBranchNameDenial, ProductBranchObservation, ProductBranchObservationMismatch,
-    ProductBranchObservationMismatchAxis, ProductBranchReferenceDescription,
-    ProductBranchReferenceReadmissionDenial, ProductBranchReferenceSnapshot,
-    ProductBranchRetirementReport, ProductExactHistoryCursor, ProductExactHistoryDenial,
-    ProductExactHistoryPage, RecoveredRuntimeWorldRootAuthority, RelationalBranchCreationPlan,
-    RetainedProductBranchCreationSource, RuntimeWorldBootstrapIntent,
+    ComponentBranchTarget, CurrentProductHead, CustodyComponent, InstalledProductBranchMetadata,
+    InstalledProductBranches, NoEffectRuntimeWorldBootstrap, ObservedProductBranches,
+    OwnerCreatedComponentCustodyRecord, OwnerRetirementWork, PerformedRuntimeWorldBootstrap,
+    PreparedProductExactHistoryPage, ProductBranchAncestorSelection,
+    ProductBranchAncestorSelectionDenial, ProductBranchCreationIntent, ProductBranchCreationPlans,
+    ProductBranchCurrentnessFailure, ProductBranchHistoryTraversal, ProductBranchInventoryDenial,
+    ProductBranchName, ProductBranchNameDenial, ProductBranchObservation,
+    ProductBranchObservationMismatch, ProductBranchObservationMismatchAxis,
+    ProductBranchReferenceDescription, ProductBranchReferenceReadmissionDenial,
+    ProductBranchReferenceSnapshot, ProductBranchRetirementReport, ProductExactHistoryCursor,
+    ProductExactHistoryDenial, ProductExactHistoryPage, RecoveredRuntimeWorldRootAuthority,
+    RelationalBranchCreationPlan, RetainedProductBranchCreationSource, RuntimeWorldBootstrapIntent,
     RuntimeWorldBootstrapNoEffectCause, RuntimeWorldBootstrapOutcome,
     RuntimeWorldBranchAdmissionDenial, RuntimeWorldBranchRetirementDenial,
     SignalBranchCreationPlan, WorldDurableBootstrapOutcome, WorldDurableBootstrapRefusal,
@@ -80,8 +75,8 @@ pub use crate::history::{
     HistoryCatalogCounters, HistoryMetadataLedger, HistoryReclamationDenial, OrdinaryParent,
     RetiredBranchHistoryRelease, RuntimeWorldPerformedPublicationProtection,
     RuntimeWorldPublicationCursor, RuntimeWorldPublicationFrontier, RuntimeWorldPublicationPage,
-    RuntimeWorldPublicationRow, WorldObservedMemoryPublication, WorldReadmittedPublication,
-    WorldReadmittedPublicationDenial,
+    RuntimeWorldPublicationRow, WorldObservedHomePublication, WorldObservedMemoryPublication,
+    WorldReadmittedPublication, WorldReadmittedPublicationDenial,
 };
 
 pub use crate::identity::{

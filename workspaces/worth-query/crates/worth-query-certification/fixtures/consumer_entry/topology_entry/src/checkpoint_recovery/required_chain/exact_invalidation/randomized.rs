@@ -2,7 +2,6 @@
 //! judged after every step.
 
 use super::*;
-use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 
 mod acknowledged_claim;
 mod sequence;
@@ -84,7 +83,7 @@ fn run(seed: u64, observations: u64, steps: usize, driven: &mut Driven) {
         } else {
             "opening"
         };
-        let application = install_observing_with_policy(
+        let application = open_directory_observing_with_policy(
             checkpoint.take(),
             ring_world::seed::<3>,
             observations,
@@ -231,28 +230,8 @@ fn run(seed: u64, observations: u64, steps: usize, driven: &mut Driven) {
         idempotency = court.idempotency.get();
         drop((principal, scope));
         if step < steps {
-            // Whatever the last step left marked and unsettled is captured so.
-            let capture = worth_query_host::facade::primary_graph::query_test_execution_authority_for_test()
-                .request_lease(worth_query_host::facade::runtime::LeaseRequest {
-                    policy: crate::checkpoint_recovery::support::observation::POPULATION_BOOTSTRAP_POLICY,
-                    cancellation: worth_query_host::facade::runtime::CancellationToken::new(),
-                    deadline: None,
-                }).expect("the population owns its original checkpoint-capture request");
-            checkpoint = Some(
-                application
-                    .with_funded_host_advancement(
-                        CapturePolicy::Execution(&capture),
-                        |host_phase| {
-                            application
-                                .capture_application_checkpoint(
-                                    &host_phase,
-                                    CapturePolicy::SystemAllocation,
-                                )
-                                .unwrap()
-                        },
-                    )
-                    .expect("installed host call opens"),
-            );
+            // Whatever the last step left marked and unsettled is checkpointed on disk.
+            checkpoint = Some(application.checkpoint_and_close_for_reopen());
             driven.restores += 1;
         }
     }

@@ -104,7 +104,10 @@ impl ApplicationProgramDefinition<Schema> for OrbitProgram {
         program::features()
     }
 }
-type OrbitApp = installation::WorthQueryProgramApplicationRuntime<Schema, OrbitProgram>;
+type OrbitApp = worth_query_testkit_document_retention::facade::directory_home::DirectoryHomeGuard<
+    Schema,
+    OrbitProgram,
+>;
 fn settle_orbit(app: &OrbitApp, request: &settlement::Request<'_, '_, '_>, key: &str) {
     let settled = settle_orbit_raw(app, request, key);
     settled.deliver_current(request).unwrap();
@@ -158,7 +161,7 @@ fn resize_orbit(app: &OrbitApp, request: &settlement::Request<'_, '_, '_>, width
 }
 
 fn install_orbit(selections: Selections) -> OrbitApp {
-    world::try_install_program::<OrbitProgram>(0, selections, Fault::None, 0, true, None).unwrap()
+    world::try_install_program::<OrbitProgram>(0, selections, Fault::None, 0, true).unwrap()
 }
 
 #[path = "predecessor_orbits/independent.rs"]

@@ -163,7 +163,8 @@ reversals with cross-branch `ForeignAlternative` refusal and branch-local
 reapplication. The real Bank freeze journey also covers divergent root/child
 reversals without duplicate publication. No-output reapplication uses the
 declared zero-role contract; an empty cache is not evidence for output-bearing
-corrections. Broader crash-recovery certification remains deferred to C4–C5.
+corrections. Exhaustive adversarial-oracle and Tier-3 certification runs in
+Track C4 / Landing 3.
 
 A directory Home records the original canonical input, disclosure parameters,
 pre-image and output correspondence in `query.corrections`. Readmission joins

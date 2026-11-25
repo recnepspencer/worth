@@ -2,19 +2,14 @@
 use super::*;
 
 fn reopen(worker: bool) {
-    let host = if worker {
-        world::install_worker_only()
-    } else {
-        world::install()
-    };
+    let host = world::open_directory_host(worker);
     courts::edit_two_families(&host);
     let original = (
         world::model(&host, host.current_world()),
         world::outputs(&host, host.current_world()),
     );
-    let checkpoint = failure::checkpoint(&host);
-    drop(host);
-    let host = world::restore_same_build(checkpoint, worker);
+    let directory = host.checkpoint_and_close_for_reopen();
+    let host = world::reopen_same_build(directory, worker);
     assert_eq!(
         (
             world::model(&host, host.current_world()),

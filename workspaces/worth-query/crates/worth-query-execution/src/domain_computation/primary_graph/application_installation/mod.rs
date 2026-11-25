@@ -14,10 +14,6 @@ pub(in crate::domain_computation::primary_graph) use program::HistoryAdmittedChi
 pub(in crate::domain_computation::primary_graph) use program::OriginalProgramRootCompletion;
 pub(in crate::domain_computation::primary_graph) use program::WorthQuerySupportedProgramRecord;
 pub(in crate::domain_computation::primary_graph) mod program_admission;
-pub use super::bootstrap::checkpoint_transition::{
-    WorthQueryCheckpointMigrationWriter, WorthQueryCheckpointProgramPredecessor,
-    WorthQueryCheckpointTransitionRecovery, WorthQueryCheckpointTransitionResources,
-};
 pub use denial::WorthQueryApplicationPreparationDenial;
 pub use limits::{WorthQueryApplicationLimits, WorthQueryBoundedApplicationLimits};
 pub use profile::WorthQueryApplicationProfile;
@@ -30,12 +26,11 @@ pub use program::{
     WorthQueryApplicationPreviewReadmissionDenial, WorthQueryApplicationPreviewRequest,
     WorthQueryApplicationPreviewSession, WorthQueryApplicationProgramRoots,
     WorthQueryApplicationProgramRoster, WorthQueryHomeRetirementAdvance,
-    WorthQueryInterimCheckpointRestore, WorthQueryPreparedHomeQuery,
-    WorthQueryProgramApplicationRuntime, WorthQueryProgramOutputAdvance, WorthQueryProgramOwner,
-    WorthQueryProgramRootDemand, WorthQueryProgramSupportRetirementFailure,
-    WorthQueryProgramSupportRetirementReceipt, WorthQueryReadmittedApplicationPreview,
-    WorthQueryRecoveredProgramOutputSource, WorthQueryRetiredHomeQuery,
-    WorthQueryRetiringHomeQuery, WorthQuerySelectedProgramOwner,
+    WorthQueryPreparedHomeQuery, WorthQueryProgramApplicationRuntime,
+    WorthQueryProgramOutputAdvance, WorthQueryProgramOwner, WorthQueryProgramRootDemand,
+    WorthQueryProgramSupportRetirementFailure, WorthQueryProgramSupportRetirementReceipt,
+    WorthQueryReadmittedApplicationPreview, WorthQueryRecoveredProgramOutputSource,
+    WorthQueryRetiredHomeQuery, WorthQueryRetiringHomeQuery, WorthQuerySelectedProgramOwner,
     WorthQuerySelectedProgramOwnerDenial, WorthQuerySettledProgramOutput,
     WorthQuerySigningOwnerInstallationDenial, WorthQuerySupportedProgramHandle,
     WorthQueryUnpublishedProgramOutputSource, WorthQueryWorkflowApplicationRuntime,
@@ -128,8 +123,6 @@ where
         initial_state,
         None,
         None,
-        None,
-        None,
     )
 }
 
@@ -147,10 +140,6 @@ pub(super) fn in_memory_with_contributions<Schema, Contributions>(
         Box<dyn crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource>,
     >,
     program_admission: Option<WorthQueryProgramAdmissionStep<'_, Schema>>,
-    checkpoint: Option<super::WorthQueryApplicationCheckpoint>,
-    checkpoint_transition: Option<
-        super::bootstrap::checkpoint_transition::CheckpointTransition<'_, '_, Schema>,
-    >,
 ) -> Result<WorthQueryPrimaryGraphApplicationRuntime<Schema>, WorthQueryApplicationPreparationDenial>
 where
     Schema: ApplicationSchemaComposition,
@@ -167,8 +156,6 @@ where
             initial_state,
             authorization_time_source,
             program_admission,
-            checkpoint,
-            checkpoint_transition,
         )
     })
     .map_err(|cause| {

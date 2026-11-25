@@ -1,5 +1,6 @@
 //! Interactive source custody and bundled bounds over a real Directory Home
 //! opened under bounded serial limits and a local-process principal.
+mod bounded_history_reopen;
 mod commit_and_decline;
 mod custody_dst;
 mod erased_custody;

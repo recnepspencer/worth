@@ -41,12 +41,16 @@ fn authored_index_checkpoint_decoding_does_not_mint_live_verification() {
         .complete_checkpoint_service()
         .prepare(
             &execution,
-            crate::durability::data::RelationalCheckpointArtifactPolicy::Embedded,
+            crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
         )
         .unwrap();
-    let decoded = crate::durability::log::native_checkpoint_codec::decode_checkpoint(
+    let decoded = crate::durability::log::native_checkpoint_codec::decode_expanded_checkpoint(
         &execution,
         complete.checkpoint().bytes(),
+        crate::tests::support::durability::captured_members_source(complete.checkpoint()),
     )
     .unwrap()
     .checkpoint;

@@ -204,12 +204,16 @@ fn complete_checkpoint_saves_the_selection_carried_to_its_current_root() {
             .durability_authority()
             .complete_native_checkpoint_with_policy(
                 execution,
-                crate::durability::data::RelationalCheckpointArtifactPolicy::Embedded,
+                crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                    current_members: &[],
+                    source: None,
+                },
             )
             .unwrap();
-        let decoded = crate::durability::log::native_checkpoint_codec::decode_checkpoint(
+        let decoded = crate::durability::log::native_checkpoint_codec::decode_expanded_checkpoint(
             execution,
             complete.checkpoint().bytes(),
+            crate::tests::support::durability::captured_members_source(complete.checkpoint()),
         )
         .unwrap()
         .checkpoint;

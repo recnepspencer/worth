@@ -9,6 +9,69 @@ use worth_relational_indexes::internal_port::runtime::state::subsystems::indexin
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 
+pub(crate) struct InspectedCarriedIndexSelections {
+    pub(crate) format_version: u16,
+    pub(crate) legacy_artifact_count: usize,
+    pub(crate) bases: Vec<contracts::indexes::data::basis_checkpoint::IndexBasisCheckpoint>,
+}
+
+pub(crate) fn inspect_carried_bases(
+    payload: &[u8],
+    request: &ExecutionRequest<'_, '_>,
+) -> Result<Option<InspectedCarriedIndexSelections>, Stop> {
+    IndexCheckpointWork::with_request(request, |work| {
+        let mut fields = [None; 3];
+        let mut index = 0;
+        BorrowedPayload(payload)
+            .elements(work, |raw| {
+                let field = fields.get_mut(index).ok_or_else(
+                    contracts::durability::canonical_commit_artifact::borrowed_payload::malformed,
+                )?;
+                *field = Some(raw);
+                index += 1;
+                Ok(())
+            })
+            .map_err(wire_stop)?;
+        let [Some(legacy), Some(checkpoint), Some(format)] = fields else {
+            return Err(super::corrupt("index tuple is incomplete").into());
+        };
+        let format_version: u16 = rmp_serde::from_slice(format.0)
+            .map_err(|_| super::corrupt("invalid index tuple format"))?;
+        if !DerivedIndexCheckpointArtifacts::supports_outer_format(
+            format_version,
+            !checkpoint.is_none(),
+        ) {
+            return Err(super::corrupt("unsupported index tuple").into());
+        }
+        if checkpoint.is_none() {
+            return Ok(None);
+        }
+        let legacy_artifact_count = legacy
+            .field("generations", work)
+            .map_err(wire_stop)?
+            .elements(work, |_| Ok(()))
+            .map_err(wire_stop)?;
+        if legacy_artifact_count != 0 {
+            return Err(super::corrupt("mixed full and delta index tuple").into());
+        }
+        let count = checkpoint
+            .field("generations", work)
+            .map_err(wire_stop)?
+            .elements(work, |_| Ok(()))
+            .map_err(wire_stop)?;
+        let mut budget = IndexDecodeBudget::new(work, count)?;
+        budget
+            .reserve(super::checkpoint_delta::quote_decode(checkpoint, work).map_err(wire_stop)?)?;
+        let decoded: DerivedIndexCheckpointArtifacts = rmp_serde::from_slice(checkpoint.0)
+            .map_err(|_| super::corrupt("invalid delta index generations"))?;
+        Ok(Some(InspectedCarriedIndexSelections {
+            format_version,
+            legacy_artifact_count,
+            bases: decoded.into_bases(),
+        }))
+    })
+}
+
 pub(crate) fn decode(
     lane: &contracts::storage::substrate::maintenance::reconstruction::ReconstructionLane<'_>,
     payload: &[u8],

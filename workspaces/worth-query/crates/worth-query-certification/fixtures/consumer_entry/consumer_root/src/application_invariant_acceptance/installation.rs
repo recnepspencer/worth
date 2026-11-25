@@ -1,7 +1,9 @@
 #[cfg(test)]
 mod checkpoint_restore;
 #[cfg(test)]
-pub(super) use checkpoint_restore::restore_selected_program;
+pub(super) use checkpoint_restore::{
+    close_directory_program, open_directory_selected_program, unique_directory,
+};
 mod program;
 pub(super) use program::install_selected_program;
 #[cfg(test)]

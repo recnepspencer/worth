@@ -55,6 +55,13 @@ pub trait ProductRuntimeBranchLifecycleInternalPort {
         scope: WorthQueryProductBranchCloseScope,
     ) -> Result<WorthQueryPendingProductBranchClose, WorthQueryProductBranchCloseDenial>;
 
+    fn begin_product_branch_close_with_request(
+        &self,
+        branch: WorthQueryProductBranch,
+        scope: WorthQueryProductBranchCloseScope,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<WorthQueryPendingProductBranchClose, WorthQueryProductBranchCloseDenial>;
+
     fn open_exact_product_history(
         &self,
         execution: worth_execution::ExecutionRequest<'_, '_>,
@@ -182,6 +189,15 @@ impl ProductRuntimeBranchLifecycleInternalPort for WorthQueryProductRuntime {
         scope: WorthQueryProductBranchCloseScope,
     ) -> Result<WorthQueryPendingProductBranchClose, WorthQueryProductBranchCloseDenial> {
         Self::begin_product_branch_close(self, branch, scope)
+    }
+
+    fn begin_product_branch_close_with_request(
+        &self,
+        branch: WorthQueryProductBranch,
+        scope: WorthQueryProductBranchCloseScope,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<WorthQueryPendingProductBranchClose, WorthQueryProductBranchCloseDenial> {
+        Self::begin_product_branch_close_with_request(self, branch, scope, execution)
     }
 
     fn open_exact_product_history(

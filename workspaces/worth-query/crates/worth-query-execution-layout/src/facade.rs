@@ -17,6 +17,6 @@ pub mod workflow_schema {
 /// Never re-exported on public execution facades or court doors.
 pub mod lowering {
     pub use crate::schema_layout::lowering::{
-        lower_layout, lower_layout_successor, lower_layout_with_original,
+        lower_layout, lower_layout_for_program, lower_layout_successor, lower_layout_with_original,
     };
 }

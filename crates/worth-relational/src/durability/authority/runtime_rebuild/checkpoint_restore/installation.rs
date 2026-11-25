@@ -12,6 +12,7 @@ pub(in super::super) fn restore_checkpoint_state(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     restored: &mut RelationalRuntime,
     checkpoint: DurableCheckpoint,
+    selected_checkpoint_acknowledged: bool,
     work: &mut CheckpointRestoreWork,
     original_schemas: Option<&super::super::original_schemas::OriginalSchemaGraph>,
 ) -> Result<(), RelationalRecoveryStop> {
@@ -20,8 +21,15 @@ pub(in super::super) fn restore_checkpoint_state(
         .cloned()
         .map(|edge| edge.into_original())
     {
-        let schemas =
-            install_cold_directory(lane, execution, restored, &checkpoint, &directory, work)?;
+        let schemas = install_cold_directory(
+            lane,
+            execution,
+            restored,
+            &checkpoint,
+            &directory,
+            selected_checkpoint_acknowledged,
+            work,
+        )?;
         restored
             .indexes
             .install_cold_checkpoint(lane, directory, restored, schemas)?;
@@ -85,6 +93,7 @@ fn install_cold_directory(
     restored: &mut RelationalRuntime,
     checkpoint: &DurableCheckpoint,
     directory: &std::sync::Arc<crate::durability::data::RelationalCheckpointDirectory>,
+    selected_checkpoint_acknowledged: bool,
     work: &mut CheckpointRestoreWork,
 ) -> Result<
     crate::durability::checkpoints::region_directory::ReadmittedSchemas,
@@ -137,10 +146,19 @@ fn install_cold_directory(
         directory,
         prepared.has_naming_schemes,
     )?;
-    state
-        .durability
-        .checkpoint_selection()
-        .restore_selected(directory.clone());
+    // Only an acknowledged selected checkpoint becomes the selection owner;
+    // an unacknowledged directory restores data without claiming selection.
+    if selected_checkpoint_acknowledged {
+        state
+            .durability
+            .checkpoint_selection()
+            .restore_selected(directory.clone());
+    } else {
+        state
+            .durability
+            .checkpoint_selection()
+            .restore_data(directory.clone());
+    }
     Ok(prepared.schemas)
 }
 

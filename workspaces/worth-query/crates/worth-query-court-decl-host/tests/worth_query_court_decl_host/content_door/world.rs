@@ -218,31 +218,34 @@ pub fn pin(
         .unwrap()
 }
 
-pub fn checkpoint(host: &Host) -> WorthQueryApplicationCheckpoint {
-    host.runtime()
-        .with_host_advancement(|phase| {
-            host.runtime()
-                .capture_application_checkpoint(
-                    &phase,
-                    WorthQueryCheckpointCapturePolicy::SystemAllocation,
-                )
-                .unwrap()
-        })
-        .unwrap()
-}
-pub fn restore(
-    checkpoint: WorthQueryApplicationCheckpoint,
+pub type DirHost = worth_query_testkit_document_retention::facade::directory_home::DirectoryHomeGuard<Schema, Program>;
+
+pub fn open_directory(
+    directory: std::path::PathBuf,
     calls: std::sync::Arc<source::Calls>,
-) -> Host {
-    WorthQueryInterimCheckpointRestore::program(
-        ApplicationProgramAuthoring::<Schema, Program>::begin()
-            .validated_program()
-            .unwrap(),
-        Schema::declaration().unwrap(),
-        ((None, calls),),
-        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        host_limits(WorthQueryAdmissionClock::system()),
-        checkpoint,
+) -> DirHost {
+    let lease = worth_query_testkit_document_retention::facade::directory_home::directory_lease();
+    let home = with_bootstrap_advancement_from_request(
+        worth_execution::ExecutionRequest::leased(&lease),
+        |phase| {
+            worth_query_host::facade::WorthQueryApplicationHomeRequest::new(
+                worth_query_host::facade::WorthQueryApplicationHomeLocation::Directory(
+                    directory.clone(),
+                ),
+                ApplicationProgramAuthoring::<Schema, Program>::begin()
+                    .validated_program()
+                    .unwrap(),
+                WorthQueryApplicationProgramRoster::new(),
+                Schema::declaration().unwrap(),
+                ((None, calls),),
+                ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
+                host_limits(WorthQueryAdmissionClock::system()),
+                |_, graph, installed| seed(graph, installed),
+            )
+            .open_in_advancement(&phase)
+        },
     )
-    .unwrap()
+    .expect("directory open bootstrap request")
+    .unwrap_or_else(|refused| panic!("content_door directory open refused: {refused:?}"));
+    DirHost::wrap(home, directory)
 }

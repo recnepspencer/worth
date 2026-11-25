@@ -91,7 +91,7 @@ impl WorthQueryPrimaryGraphProvider {
     pub fn retain_readmitted_inbound_terminal(
         &self,
         sealed: WorthQueryCanonicalInboundCompletion,
-        world: worth_runtime_world::facade::WorldReadmittedPublication,
+        world: worth_runtime_world::facade::WorldObservedHomePublication,
         entity: worth_relational::facade::identity::EntityId,
     ) -> Result<(), WorthQueryInboundTerminalIndexDenial> {
         self.inbound_terminal_index

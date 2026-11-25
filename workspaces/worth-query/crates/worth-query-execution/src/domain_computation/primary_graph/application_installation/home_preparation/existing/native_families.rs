@@ -4,13 +4,14 @@ pub(super) fn readmit(
     native: &RelationalRuntime,
     layout: &super::super::super::super::schema_layout::WorthQueryPrimaryGraphLayout,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
+    metadata_authority: &worth_relational::facade::durability::HomeReadmissionMetadataAuthority,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
     let (_, basis) = native
         .observe_branch(&native.main_branch_identity())
         .map_err(|cause| denied(format!("Home latest Native basis unavailable: {cause:?}")))?;
     let view = native
         .read_truth()
-        .project_observation(&basis.observation())
+        .project_home_readmission_metadata(metadata_authority, &basis.observation())
         .map_err(|cause| denied(format!("Home latest Native view unavailable: {cause:?}")))?;
     // Completion rows join their actual World originals and original outboxes
     // in readmit_inbound_terminal_sources before the service witness escapes.

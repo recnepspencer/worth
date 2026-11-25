@@ -241,15 +241,19 @@ impl QueryObligationLedger {
             QueryObligationRecord::ConditionalDecision(record) => self.apply_conditional(record),
             QueryObligationRecord::Adoption(record) => self.adoption.apply(record),
             QueryObligationRecord::AcceptedOutput(row) => {
-                self.output.accepted.insert(
-                    (
-                        row.branch.clone(),
-                        row.producer.clone(),
-                        row.scope,
-                        row.partition,
-                    ),
-                    row,
+                let key = (
+                    row.branch.clone(),
+                    row.producer.clone(),
+                    row.scope,
+                    row.partition,
                 );
+                let superseded = self.output.accepted.get(&key).is_some_and(|existing| {
+                    existing.commit.owner().home() == row.commit.owner().home()
+                        && existing.commit.ordinal() > row.commit.ordinal()
+                });
+                if !superseded {
+                    self.output.accepted.insert(key, row);
+                }
             }
             QueryObligationRecord::ProgramSupport(record) => self.apply_support(record),
             QueryObligationRecord::ManagedCleanup(record) => self.cleanup.apply(record),
@@ -344,3 +348,6 @@ impl QueryObligationLedger {
 }
 
 mod program_support;
+#[cfg(test)]
+#[path = "ledger/accepted_output_tests.rs"]
+mod accepted_output_tests;

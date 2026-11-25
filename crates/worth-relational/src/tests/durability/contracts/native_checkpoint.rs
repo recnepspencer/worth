@@ -59,16 +59,24 @@ fn native_checkpoint_preserves_unsealed_builder_invariant_authority() {
     create_entity_outcome(execution, &source, "native-checkpoint-builder-invariant");
     let checkpoint = source
         .durability_authority()
-        .native_checkpoint(
+        .native_checkpoint_with_policy(
             execution,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
         )
         .unwrap();
     let mut recovered = memory_runtime_with_builder_invariant();
 
     recovered
         .durability_recovery()
-        .restore_native_checkpoint(execution, &checkpoint)
+        .restore_native_checkpoint(
+            execution,
+            &checkpoint,
+            crate::tests::support::durability::captured_members_source(&checkpoint),
+        )
         .expect("native recovery preserves target runtime extensions");
 
     assert_eq!(
@@ -105,18 +113,26 @@ fn repeated_native_captures_do_not_retain_checkpoint_images() {
     for label in ["second", "third", "fourth"] {
         runtime
             .durability_authority()
-            .native_checkpoint(
+            .native_checkpoint_with_policy(
                 execution,
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                    current_members: &[],
+                    source: None,
+                },
             )
             .expect("each settled world encodes without retaining an internal checkpoint");
         create_entity_outcome(execution, &runtime, label);
     }
     let checkpoint = runtime
         .durability_authority()
-        .native_checkpoint(
+        .native_checkpoint_with_policy(
             execution,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
         )
         .expect("the latest settled world encodes");
 
@@ -124,7 +140,11 @@ fn repeated_native_captures_do_not_retain_checkpoint_images() {
     let mut recovered = runtime_with_test_schema();
     recovered
         .durability_recovery()
-        .restore_native_checkpoint(execution, &checkpoint)
+        .restore_native_checkpoint(
+            execution,
+            &checkpoint,
+            crate::tests::support::durability::captured_members_source(&checkpoint),
+        )
         .expect("the final non-retained checkpoint restores");
     create_entity_outcome(execution, &recovered, "post-bounded-retention-edit");
 }
@@ -151,7 +171,11 @@ fn corrupt_native_checkpoint_is_denied_without_publishing_recovered_state() {
     let mut recovered = durable_runtime_for_medium(&medium);
     let error = recovered
         .durability_recovery()
-        .restore_native_checkpoint(execution, &corrupt)
+        .restore_native_checkpoint(
+            execution,
+            &corrupt,
+            crate::tests::support::durability::captured_members_source(&corrupt),
+        )
         .expect_err("corrupt native bytes cannot become runtime authority");
     let error = crate::tests::support::expect_durability_failure(error);
 

@@ -1,6 +1,5 @@
 //! A held required artifact follows its family's actual Preserve binding.
 use super::*;
-use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 
 #[cfg(test)]
 mod serial {
@@ -148,15 +147,9 @@ mod serial {
             WorthQueryApplicationOutputDemandProgress::Settled(_)
         ));
         drop(initial);
-        let checkpoint = application
-            .with_host_advancement(|host_phase| {
-                application
-                    .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
-                    .unwrap()
-            })
-            .expect("installed host call opens");
-        drop(application);
-        let reopened = install_no_reuse(Some(checkpoint));
+        drop((principal, scope));
+        let directory = application.checkpoint_and_close_for_reopen();
+        let reopened = install_no_reuse(Some(directory));
         let (scope, principal) = support::authenticate(&reopened);
         let request = reopened.request(&principal, &scope);
         let mut demand = request

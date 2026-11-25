@@ -37,9 +37,9 @@ fn digest_valid_join_checkpoint_requires_complete_rows_and_leg_state() {
             .unwrap();
         build(execution, &runtime, index.index_id, &committed);
         release_test_commit_snapshot(&runtime, &committed);
-        medium.file_embedded_checkpoint(execution, &runtime);
+        capture_and_file_checkpoint(execution, &runtime, &medium);
         let lawful = medium
-            .recovery_plan(
+            .expanded_recovery_plan(
                 execution,
                 &runtime,
                 RecoveryMode::NormalRecoveryVerification,
@@ -107,9 +107,9 @@ fn digest_valid_basis_binding_cannot_carry_an_obsolete_generation_across_an_edit
         build(execution, &runtime, index.index_id, &second);
         release_test_commit_snapshot(&runtime, &first);
         release_test_commit_snapshot(&runtime, &second);
-        medium.file_embedded_checkpoint(execution, &runtime);
+        capture_and_file_checkpoint(execution, &runtime, &medium);
         let mut plan = medium
-            .recovery_plan(
+            .expanded_recovery_plan(
                 execution,
                 &runtime,
                 RecoveryMode::NormalRecoveryVerification,
@@ -166,9 +166,9 @@ fn legacy_index_affinity_is_checked_before_replacing_a_live_recovery_target() {
         let index = name_index(&source);
         build(execution, &source, index.index_id, &committed);
         release_test_commit_snapshot(&source, &committed);
-        source_medium.file_embedded_checkpoint(execution, &source);
+        capture_and_file_checkpoint(execution, &source, &source_medium);
         let mut lawful = source_medium
-            .recovery_plan(execution, &source, RecoveryMode::NormalRecoveryVerification)
+            .expanded_recovery_plan(execution, &source, RecoveryMode::NormalRecoveryVerification)
             .unwrap();
         let checkpoint = lawful.checkpoint.as_mut().unwrap();
         let generations = checkpoint
@@ -266,7 +266,7 @@ fn residency_cold_index_frontier_prevents_reissue_before_any_image_demand() {
             let mut total = 0u64;
             let mut funding = execution.reserve_retained_memory(0).unwrap();
             let mut pay = |work: u64, bytes: u64| {
-                crate::durability::artifact_payload_emission::request::account_work(
+                worth_relational_contracts::internal_port::durability::artifact_payload_emission::request::account_work(
                     execution, work,
                 )
                 .unwrap();

@@ -213,7 +213,14 @@ fn query_shaped_struct_birth_optional_clear_and_fieldless_incidence_keep_warm_an
     release_test_commit_snapshot(&runtime, &clear);
     let saved = runtime
         .durability_authority()
-        .native_checkpoint(execution, execution.allocation_policy())
+        .native_checkpoint_with_policy(
+            execution,
+            execution.allocation_policy(),
+            crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
+        )
         .unwrap();
     let mut cold = build_runtime();
     let receipt = cold
@@ -222,13 +229,26 @@ fn query_shaped_struct_birth_optional_clear_and_fieldless_incidence_keep_warm_an
         .install(crate::schema::data::RelationalSchemaRegistry::new())
         .unwrap();
     cold.durability_recovery()
-        .restore_native_checkpoint(execution, &saved)
+        .restore_native_checkpoint(
+            execution,
+            &saved,
+            crate::tests::support::durability::captured_members_source(&saved),
+        )
         .unwrap();
     let receipt = cold
         .readmit_recovered_initial_schema_installation(receipt)
         .unwrap();
     let (_, installed) = receipt.issue_application_publication_owner();
     let basis = test_owner_main_basis(&cold).unwrap();
+    basis
+        .owner_inner()
+        .root
+        .demand_regions_full(
+            execution,
+            &cold.services.symbols,
+            std::iter::once(PartitionId::main()),
+        )
+        .unwrap();
     let partition = basis
         .partition_state(PartitionId::main())
         .expect("fixture root has admitted Full custody")

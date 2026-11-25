@@ -11,37 +11,25 @@ pub(super) fn require(
     members: &ExecutionOrderedMap<RelationalDurableMemberLocator, RelationalCheckpointMember>,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<(), Denial> {
-    match placement {
-        RelationalCheckpointArtifactPolicy::Embedded => {
-            if members
-                .values()
-                .any(|member| matches!(member, RelationalCheckpointMember::Carried { .. }))
-            {
-                return Err(Denial::OriginalAuthorityUnavailable);
-            }
-        }
-        RelationalCheckpointArtifactPolicy::ExternalMembers {
-            current_members, ..
-        } => {
-            let mut selected = ExecutionOrderedMap::default();
-            for locator in *current_members {
-                selected
-                    .insert_cloned_native_for_request(locator, &(), *request)
-                    .map_err(|cause| {
-                        contracts::durability::data::native_checkpoint_capture_denial::capture_stop(
-                            contracts::durability::data::recovery_stop::map_stop(cause),
-                        )
-                    })?;
-            }
-            for member in members.values() {
-                contracts::execution::request_custody::check_request(request)
-                    .map_err(Denial::Request)?;
-                if let RelationalCheckpointMember::Carried { locator } = member
-                    && !selected.contains_key(locator)
-                {
-                    return Err(Denial::OriginalAuthorityUnavailable);
-                }
-            }
+    let RelationalCheckpointArtifactPolicy::ExternalMembers {
+        current_members, ..
+    } = placement;
+    let mut selected = ExecutionOrderedMap::default();
+    for locator in *current_members {
+        selected
+            .insert_cloned_native_for_request(locator, &(), *request)
+            .map_err(|cause| {
+                contracts::durability::data::native_checkpoint_capture_denial::capture_stop(
+                    contracts::durability::data::recovery_stop::map_stop(cause),
+                )
+            })?;
+    }
+    for member in members.values() {
+        contracts::execution::request_custody::check_request(request).map_err(Denial::Request)?;
+        if let RelationalCheckpointMember::Carried { locator } = member
+            && !selected.contains_key(locator)
+        {
+            return Err(Denial::OriginalAuthorityUnavailable);
         }
     }
     Ok(())

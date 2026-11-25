@@ -60,6 +60,13 @@ impl PerformedMembers {
         }
     }
 
+    pub fn performed_keys(&self) -> impl Iterator<Item = &WorthQueryOutputDemandKey> {
+        self.entries
+            .iter()
+            .filter(|entry| entry.performed)
+            .map(|entry| entry.successor.as_deref().unwrap_or(&entry.key))
+    }
+
     /// The first exact accepted cell after a Fresh attempt seals its performed
     /// facts and consumed identities. The record survives every wave reselect.
     pub fn capture(

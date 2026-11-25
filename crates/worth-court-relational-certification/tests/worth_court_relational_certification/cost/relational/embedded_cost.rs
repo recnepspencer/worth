@@ -123,13 +123,17 @@ fn measured_restore(partitions: u32) -> usize {
     }
     let native = runtime
         .durability_authority()
-        .native_checkpoint(&execution, execution.allocation_policy())
+        .native_checkpoint_with_policy(&execution, execution.allocation_policy(), worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
         .unwrap();
     let mut receiving = fixture.build_runtime();
     let allocations = stats_alloc::Region::new(&stats_alloc::INSTRUMENTED_SYSTEM);
     receiving
         .durability_recovery()
-        .restore_native_checkpoint(&execution, &native)
+        .restore_native_checkpoint(
+            &execution,
+            &native,
+            worth_testkit_relational::cold_recovery::members_source(&native),
+        )
         .unwrap();
     allocations.change().bytes_allocated
 }

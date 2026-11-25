@@ -24,15 +24,10 @@ pub fn original_affinity_text(source: &super::super::OriginalPublication) -> Str
         super::super::OriginalPublication::Memory(_) => MEMORY_AFFINITY.to_owned(),
         super::super::OriginalPublication::Home(source) => {
             let after = source.after();
-            let owner = after
-                .branch_identity()
-                .owner_identity()
-                .durable()
-                .expect("Home source");
             home_affinity_text(
-                owner,
-                after.branch_identity().name().as_str(),
-                after.lifecycle_incarnation().ordinal(),
+                after.branch().owner(),
+                after.branch().name(),
+                after.incarnation().ordinal(),
             )
         }
     }

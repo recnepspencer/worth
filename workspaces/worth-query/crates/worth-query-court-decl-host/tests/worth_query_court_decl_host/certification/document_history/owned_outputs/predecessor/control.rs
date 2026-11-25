@@ -2,7 +2,6 @@
 use super::courts::{demand_denial, edit_model, reset, settle};
 use super::*;
 use family::predecessor_family as derived;
-use worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock;
 #[test]
 fn authentication_expiring_during_old_read_prevents_delivering_its_value() {
     use worth_query_host::facade::admission::authenticated_principal::{
@@ -11,20 +10,7 @@ fn authentication_expiring_during_old_read_prevents_delivering_its_value() {
     let controller = std::sync::Arc::new(WorthQueryAdmissionTimeController::new().unwrap());
     controller.hold();
     let clock = controller.clock();
-    let schema = Schema::declaration().unwrap();
-    let host = in_memory_program_with_authorization_time_source(
-        ApplicationProgramAuthoring::<Schema, program::Program>::begin()
-            .with_schema(&schema)
-            .validated_program()
-            .unwrap(),
-        schema,
-        (world::Configuration::default(),),
-        ApplicationBuildIdentity::parse("91830000-0000-0000-0000-000000005356").unwrap(),
-        host_limits(clock.clone()),
-        |_, graph, installed| world::seed(graph, installed, 1, None),
-        ClockSource(clock.clone()),
-    )
-    .unwrap();
+    let host = world::authorization_clock::install::<program::Program>(clock.clone(), false, 1);
     reset(false);
     let scope = WorthQueryRequestScope::new(
         None,
@@ -90,19 +76,6 @@ fn authentication_expiring_during_old_read_prevents_delivering_its_value() {
     assert_eq!(document.selection(&request).unwrap(), selected);
     host.with_host_advancement(|phase| document.close(&phase).unwrap())
         .unwrap();
-}
-
-pub(super) struct ClockSource(pub(super) WorthQueryAdmissionClock);
-impl WorthQueryRuntimeTimeSource for ClockSource {
-    fn admission_clock(
-        &self,
-    ) -> worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock
-    {
-        self.0.clone()
-    }
-    fn current_time(&self) -> Result<std::time::SystemTime, WorthQueryRuntimeTimeSourceDenial> {
-        Ok(std::time::SystemTime::now())
-    }
 }
 
 fn busy(worker: bool) {

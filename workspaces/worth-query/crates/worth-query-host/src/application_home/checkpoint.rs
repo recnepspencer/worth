@@ -8,6 +8,9 @@ use worth_store_application::{
 #[derive(Debug)]
 pub enum WorthQueryApplicationHomeCheckpointDenial {
     MemoryLifecycleRequired,
+    CoupledOutputRetention(
+        worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenial,
+    ),
     Directory(ApplicationHomeCheckpointDenial),
 }
 
@@ -16,11 +19,23 @@ impl<Schema, Program> WorthQueryApplicationHome<Schema, Program> {
         &self,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<ApplicationHomeCheckpoint, WorthQueryApplicationHomeCheckpointDenial> {
-        self.directory
+        let directory = self
+            .directory
             .as_ref()
-            .ok_or(WorthQueryApplicationHomeCheckpointDenial::MemoryLifecycleRequired)?
+            .ok_or(WorthQueryApplicationHomeCheckpointDenial::MemoryLifecycleRequired)?;
+        self.query
+            .flush_pending_coupled_outputs(request)
+            .map_err(WorthQueryApplicationHomeCheckpointDenial::CoupledOutputRetention)?;
+        directory
             .checkpoint(request)
             .map_err(WorthQueryApplicationHomeCheckpointDenial::Directory)
+    }
+
+    pub fn checkpoint_in_advancement(
+        &self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryBootstrapAdvancementPhase<'_>,
+    ) -> Result<ApplicationHomeCheckpoint, WorthQueryApplicationHomeCheckpointDenial> {
+        self.checkpoint(&phase.execution_request())
     }
 
     pub fn recover_checkpoint(
@@ -40,9 +55,14 @@ impl<Schema, Program> WorthQueryApplicationHome<Schema, Program> {
         request: &ExecutionRequest<'_, '_>,
         observer: Box<dyn Fn() + Send + Sync>,
     ) -> Result<ApplicationHomeCheckpoint, WorthQueryApplicationHomeCheckpointDenial> {
-        self.directory
+        let directory = self
+            .directory
             .as_ref()
-            .ok_or(WorthQueryApplicationHomeCheckpointDenial::MemoryLifecycleRequired)?
+            .ok_or(WorthQueryApplicationHomeCheckpointDenial::MemoryLifecycleRequired)?;
+        self.query
+            .flush_pending_coupled_outputs(request)
+            .map_err(WorthQueryApplicationHomeCheckpointDenial::CoupledOutputRetention)?;
+        directory
             .checkpoint_operation(self.checkpoint_limits)
             .map_err(WorthQueryApplicationHomeCheckpointDenial::Directory)?
             .checkpoint_with_native_ack_observer_for_test(request, observer)

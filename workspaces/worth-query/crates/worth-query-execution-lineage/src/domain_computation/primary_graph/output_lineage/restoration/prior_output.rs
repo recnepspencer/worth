@@ -91,7 +91,7 @@ impl WorthQueryApplicationOutputLineage {
             completed_decision_reuse: None,
             prepared_input_reuse_key: None,
             native_output_witness: OnceLock::new(),
-            mutable: Mutex::new(RecordedOutputMutable::new(
+            mutable: Mutex::new(RecordedOutputMutable::new_prior(
                 Some(super::super::invalidation::FullVerificationReason::CheckpointRestore),
                 None,
                 super::super::retained_computation::RecordedComputation::Absent(

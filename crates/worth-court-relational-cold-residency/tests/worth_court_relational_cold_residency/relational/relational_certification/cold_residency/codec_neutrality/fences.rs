@@ -68,12 +68,7 @@ fn changed_authored_source_codec_cannot_acquire_derived_retirement_permission() 
             .unwrap(),
         Vec::new(),
     );
-    let (_, mut recovered) = target
-        .durability_recovery()
-        .restore_native_checkpoint_for_codec_transition_with_authority(
-            execution,
-            &capture(execution, &world.runtime),
-        )
+    let (_, mut recovered) = crate::relational::relational_certification::cold_residency::codec_neutrality::fixture::restore_codec_transition(&mut target, execution, &capture(execution, &world.runtime))
         .unwrap();
     let before = protected_payload(execution, &target, world.authored);
     let selected = basis(&target);
@@ -152,12 +147,7 @@ fn actual_incident_relation_refuses_retirement_without_cascading_protected_paylo
         .release_snapshot(&committed.snapshot)
         .unwrap();
     let (mut target, _) = installed_with(with_relation(registry(2)), Vec::new());
-    let (_, mut recovered) = target
-        .durability_recovery()
-        .restore_native_checkpoint_for_codec_transition_with_authority(
-            execution,
-            &capture(execution, &world.runtime),
-        )
+    let (_, mut recovered) = crate::relational::relational_certification::cold_residency::codec_neutrality::fixture::restore_codec_transition(&mut target, execution, &capture(execution, &world.runtime))
         .unwrap();
     let selected = basis(&target);
     let before = protected_payload(execution, &target, world.authored);
@@ -232,12 +222,7 @@ fn affected_installed_custom_invariant_refuses_before_restoring_source_into_targ
         vec![CustomInvariantRegistration::new(OutputInvariant).unwrap()],
     );
     let before = target.runtime_instance_id();
-    let denied = target
-        .durability_recovery()
-        .restore_native_checkpoint_for_codec_transition_with_authority(
-            execution,
-            &capture(execution, &world.runtime),
-        )
+    let denied = crate::relational::relational_certification::cold_residency::codec_neutrality::fixture::restore_codec_transition(&mut target, execution, &capture(execution, &world.runtime))
         .unwrap_err();
     let RelationalRecoveryStop::Durability(denied) = denied else {
         panic!("custom consequence requires a schema refusal")

@@ -32,44 +32,8 @@ impl DurabilityAuthority<'_> {
             return Err(Refusal::SubjectMismatch);
         }
         let residency = artifact.envelope_residency();
-        if let Some((entry, source)) = residency.source_placement() {
-            let row = self
-                .runtime
-                .durability
-                .checkpoint_selection()
-                .admitted_commit(&entry)
-                .map_err(|cause| {
-                    Refusal::Recovery(
-                        crate::durability::data::RelationalRecoveryStop::AdmissionImage(cause),
-                    )
-                })?
-                .ok_or(Refusal::SubjectMismatch)?;
-            let interim = match row.scope() {
-                worth_foundational::facade::CheckpointAdmissionScope::Interim { .. } => true,
-                worth_foundational::facade::CheckpointAdmissionScope::Home { .. } => false,
-            };
-            if !interim
-                || !row.links_artifact(&artifact)
-                || !self
-                    .runtime
-                    .durability
-                    .checkpoint_selection()
-                    .matches_admitted_source(&row, &source)
-            {
-                return Err(Refusal::SubjectMismatch);
-            }
-            let data = crate::durability::checkpoint_admission::effect::read(&row, execution)
-                .map_err(|cause| {
-                    Refusal::Recovery(
-                        crate::durability::data::RelationalRecoveryStop::AdmissionImage(cause),
-                    )
-                })?;
-            return Ok(ObservedRelationalMemoryCommit::from_interim(
-                self.runtime.services.origin_identity(),
-                row,
-                data,
-                entry.payload_digest,
-            ));
+        if residency.source_placement().is_some() {
+            return Err(Refusal::SubjectMismatch);
         }
         let positioned = residency
             .demand_positioned(execution, 1 << 30)

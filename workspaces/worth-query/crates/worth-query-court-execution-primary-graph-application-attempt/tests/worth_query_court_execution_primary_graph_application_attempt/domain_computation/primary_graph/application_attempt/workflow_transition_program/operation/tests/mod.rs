@@ -110,14 +110,57 @@ fn workflow_operation_custody_requires_the_exact_same_runtime_commit_proof() {
     );
     assert_eq!(
         receipt_identity_from_outcome(
+            first_receipt
+                .committed_product_publication()
+                .composite_commit()
+                .owner_identity()
+                .durable(),
             first_receipt.runtime_authority_for_test().as_u64(),
             first_receipt
                 .outcome_identity()
                 .expect("committed outcome identity")
                 .get(),
-            first_receipt.installed_operation(),
+            first_receipt.operation_definition_identity(),
         ),
         receipt_identity(&first_receipt).expect("the receipt derives the same identity")
+    );
+}
+
+#[test]
+fn durable_home_workflow_receipt_identity_depends_only_on_durable_home_outcome_and_definition() {
+    let home = worth_foundational::facade::HomeIdentity::from_observed_bytes([0x5au8; 16])
+        .expect("nonzero durable home identity");
+    let durable = worth_foundational::facade::DurableWorldOwnerIdentity::from_recorded(
+        home,
+        worth_foundational::facade::WorldOwnerSlotIdentity::from_recorded(1),
+    );
+    let definition = [0x3cu8; 32];
+    let first = receipt_identity_from_outcome(Some(durable), 11, 42, &definition);
+    let reopened = receipt_identity_from_outcome(Some(durable), 999_999, 42, &definition);
+    assert_eq!(
+        first, reopened,
+        "durable Home workflow receipt identity must not depend on process-local runtime_authority"
+    );
+    assert_ne!(
+        first,
+        receipt_identity_from_outcome(Some(durable), 11, 43, &definition),
+        "different outcome identities must remain distinct"
+    );
+    assert_ne!(
+        first,
+        receipt_identity_from_outcome(Some(durable), 11, 42, &[0x3du8; 32]),
+        "different operation definition identities must remain distinct"
+    );
+    let other_home = worth_foundational::facade::HomeIdentity::from_observed_bytes([0x5bu8; 16])
+        .expect("distinct durable home identity");
+    let other_durable = worth_foundational::facade::DurableWorldOwnerIdentity::from_recorded(
+        other_home,
+        worth_foundational::facade::WorldOwnerSlotIdentity::from_recorded(1),
+    );
+    assert_ne!(
+        first,
+        receipt_identity_from_outcome(Some(other_durable), 11, 42, &definition),
+        "different durable Homes must remain distinct"
     );
 }
 

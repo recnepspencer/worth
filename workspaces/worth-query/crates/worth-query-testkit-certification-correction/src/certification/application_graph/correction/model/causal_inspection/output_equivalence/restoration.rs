@@ -5,53 +5,48 @@ use super::super::super::{
     host,
     output_program::{OutputProgram, Root},
     program,
-    schema::NumericSchema,
 };
-use super::super::{distinct_subjects::observation, journey as source_journey};
-use super::{
-    demand,
-    journey::{inspect, install},
-};
+use super::super::{distinct_subjects, distinct_subjects::observation, journey as source_journey};
+use super::{demand, journey::inspect};
 use worth_query_host::facade::{
     application_entry::*, application_installation::*, causal_inspection::*,
-    domain::ApplicationSchema, primary_graph::*, runtime::ExecutionAllocationPolicy,
+    runtime::ExecutionAllocationPolicy,
 };
 
-fn restore(checkpoint: WorthQueryApplicationCheckpoint) -> host::OutputHost {
-    WorthQueryInterimCheckpointRestore::rostered_program(
+fn open_directory(directory: std::path::PathBuf) -> host::DirOutputHost {
+    host::open_directory_with_seed_and_limits(
+        directory,
         program::validated::<OutputProgram>(),
         WorthQueryApplicationProgramRoster::new().support(program::validated::<program::Program>()),
-        NumericSchema::declaration().unwrap(),
-        ((),),
-        ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap(),
+        distinct_subjects::seed::seed,
         host::installation_limits(),
-        checkpoint,
     )
-    .expect("the same program/roster/build/limits restore without a seed callback")
 }
 
 pub fn restored_output_has_no_original_in_memory_evaluation() {
-    let original = install();
+    let dir = host::unique_directory("output-equivalence-restoration");
+    let original = open_directory(dir);
+    distinct_subjects::link(
+        &original,
+        "observer-decoy",
+        "observer",
+        "parity-viewer-output",
+    );
+    distinct_subjects::link(
+        &original,
+        "numeric",
+        "observer-decoy",
+        "parity-sibling-output",
+    );
     let (old_source, _, read) =
         source_journey::perform(&original, 4, "restored-evaluation-source-four");
     drop(read);
     let (old_producer, read, contacts) = demand::settle(&original);
     assert_eq!(contacts, 1);
     drop(read);
-    let checkpoint = original
-        .with_host_advancement(|phase| {
-            original
-                .runtime()
-                .capture_application_checkpoint(
-                    &phase,
-                    WorthQueryCheckpointCapturePolicy::SystemAllocation,
-                )
-                .unwrap()
-        })
-        .unwrap();
-    assert!(!checkpoint.bytes().is_empty());
-    drop((old_source, old_producer, original));
-    let application = restore(checkpoint);
+    drop((old_source, old_producer));
+    let dir = original.checkpoint_and_close_for_reopen();
+    let application = open_directory(dir);
     let readers = application.application_query_basis_observer();
     let baseline = readers.observe().active();
     let scope = request_scope();

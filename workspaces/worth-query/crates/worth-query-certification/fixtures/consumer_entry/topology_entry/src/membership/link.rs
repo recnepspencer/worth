@@ -100,6 +100,7 @@ pub struct PlanarDiscoveryLinkHandler;
 impl<Schema: MembershipSchemaBinding> OperationHandler<Schema, PlanarDiscoveryLinkBinding<Schema>>
     for PlanarDiscoveryLinkHandler
 {
+    fn declared_durable_capabilities() -> Option<&'static [worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability]> { Some(&[worth_query_host::facade::primary_graph::WorthQueryOperationDurableCapability::RelationalMutation]) }
     fn decide(
         &self,
         input: &PlanarDiscoveryLink,

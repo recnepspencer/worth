@@ -6,10 +6,8 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_reuse::selection::compare_retained_output_dependencies;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_reuse::selection::OutputDependencySelection;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::product_publication::publish_relational_mutation_on_application;
-use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::restored_world;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountStatus;
 use worth_query_execution::facade::domain_computation::WorthQueryPrimaryGraphApplicationRuntime;
-use worth_execution::ExecutionAllocationPolicy as CapturePolicy;
 use worth_query_declaration::facade::application_schema::ApplicationScalarValueBinding;
 use worth_query_declaration::facade::application_schema::StringApplicationValueBinding;
 use worth_relational::facade::transactions::AspectFieldPatch;
@@ -99,8 +97,11 @@ fn handler_absence_selection_competes_at_the_real_commit_boundary() {
         .expect("the fixture entity read owns its host call");
 }
 
+/// Unit codec & rebase check for `Fact::IndexedEntitySelection`. Real cold-index
+/// Directory Home close/reopen verification lives in
+/// `worth-query-court-decl-host-integration::host::application_home::reopening::indexed_selection_reopen`.
 #[test]
-fn handler_predicate_rebases_and_its_codec_compares_against_the_reopened_world() {
+fn handler_predicate_rebases_and_fact_codec_roundtrips_against_index_membership() {
     let world = installed_authorization_world(
         true,
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
@@ -154,57 +155,46 @@ fn handler_predicate_rebases_and_its_codec_compares_against_the_reopened_world()
         .expect("the fixture read owns its installed host call");
 
     let durable = encode_producer_facts(&facts).expect("all rebased handler reads are durable");
-    let checkpoint = world
-        .application
-        .with_host_advancement(|phase| {
-            world
-                .application
-                .capture_application_checkpoint(&phase, CapturePolicy::SystemAllocation)
-        })
-        .expect("installed host call opens")
-        .unwrap();
-    drop(world);
-    let reopened = restored_world(checkpoint).expect("the real native application reopens");
     let restored = decode_producer_facts(
         &durable,
         None,
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .unwrap();
-    reopened
+    world
         .application
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request_for_test();
             assert!(matches!(
                 selection(
                     &host_custody.borrowed_request_for_test(),
-                    &reopened.application,
+                    &world.application,
                     &restored
                 ),
                 OutputDependencySelection::Reuse
             ))
         })
         .expect("the fixture read owns its installed host call");
-    reopened
+    world
         .application
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request_for_test();
             change_status(
                 &host_custody.borrowed_request_for_test(),
-                &reopened.application,
+                &world.application,
                 subject,
                 "left-membership",
             )
         })
         .expect("the fixture read owns its installed host call");
-    reopened
+    world
         .application
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request_for_test();
             assert!(matches!(
                 selection(
                     &host_custody.borrowed_request_for_test(),
-                    &reopened.application,
+                    &world.application,
                     &restored
                 ),
                 OutputDependencySelection::FreshRequired

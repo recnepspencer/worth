@@ -20,16 +20,20 @@ fn exercise(worker: bool) {
         } else {
             host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
         };
-        let host: WorthQueryProgramApplicationRuntime<Schema, fixture::Program> =
-            world::install_configured(
-                limits,
-                2,
-                None,
-                world::Configuration {
-                    envelope_records: true,
-                    ..Default::default()
-                },
-            );
+        let config = world::Configuration {
+            envelope_records: true,
+            ..Default::default()
+        };
+        let mut dir_host = (!cold).then(|| {
+            world::open_directory_configured::<fixture::Program>(limits.clone(), 2, None, config)
+        });
+        let mem_host = cold.then(|| world::install_configured::<fixture::Program>(limits, 2, None, config));
+        let host: &WorthQueryProgramApplicationRuntime<Schema, fixture::Program> =
+            match (&dir_host, &mem_host) {
+                (Some(h), None) => h,
+                (None, Some(h)) => h,
+                _ => unreachable!(),
+            };
         let placement = cold.then(|| {
             host.with_host_advancement(|phase| {
                 host.runtime()
@@ -65,7 +69,7 @@ fn exercise(worker: bool) {
         let (outcome, writes) = observe_maintenance_work(8, || {
             envelope
                 .execute_performed::<fixture::Program>(
-                    &host,
+                    host,
                     ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .unwrap()
@@ -74,7 +78,7 @@ fn exercise(worker: bool) {
             panic!("cold={cold}: the genuine envelope refused: {outcome:?}")
         };
         assert_eq!(writes.published_rows.len() + writes.omitted_publications, 1);
-        if let Some(placement) = placement {
+        if let Some(ref placement) = placement {
             assert!(
                 placement.page_reads_for_test() > 0,
                 "real bucket pages were admitted, not a simulated retry"
@@ -136,11 +140,11 @@ fn exercise(worker: bool) {
             receipt.receipt().emitted_effect_count(),
         );
         eprintln!("cold={cold} named rows={rows:?}; original patches={:?}; lineage={:?}; exact sessions, witnesses and IDs={:?}; stage receipt={:?}", changes.record_patches_for_test(), changes.lineage_events(), receipt.receipt(), receipt.stage_receipt(&restored).unwrap());
-        let head = courts::native_head(&host);
+        let head = courts::native_head(host);
         let (replay, writes) = observe_maintenance_work(8, || {
             build!(request)
                 .execute_performed::<fixture::Program>(
-                    &host,
+                    host,
                     ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .unwrap()
@@ -154,12 +158,12 @@ fn exercise(worker: bool) {
             receipt.receipt().commit_reference()
         );
         assert_eq!(writes.published_rows.len() + writes.omitted_publications, 0);
-        assert_eq!(courts::native_head(&host), head);
+        assert_eq!(courts::native_head(host), head);
         let contacts = host.producer_contacts_on_this_thread_for_test();
         let (_, writes) = observe_maintenance_work(8, || {
             let mut operation = request
                 .demand(first::Demand("a".into()))
-                .retain_program_outputs::<fixture::Program, fixture::ModelTree>(&host)
+                .retain_program_outputs::<fixture::Program, fixture::ModelTree>(host)
                 .unwrap_or_else(|e| panic!("{:?}", e.denial()));
             loop {
                 match operation.advance(&request) {
@@ -186,9 +190,8 @@ fn exercise(worker: bool) {
             "both warm and cold producer receipts retain their input-derived meaning"
         );
         assert_eq!(writes.published_rows.len() + writes.omitted_publications, 0);
-        assert_eq!(courts::native_head(&host), head);
+        assert_eq!(courts::native_head(host), head);
         let live_commit = receipt.receipt().commit_reference().commit_id;
-        let checkpoint = failure::checkpoint(&host);
         let expected_rows = rows.clone();
         runs.push((
             rows,
@@ -203,9 +206,13 @@ fn exercise(worker: bool) {
         drop(receipt);
         drop(principal);
         drop(scope);
-        drop(host);
+        drop(placement);
+        let Some(dir_host) = dir_host.take() else {
+            continue;
+        };
+        let directory = dir_host.checkpoint_and_close_for_reopen();
         let restored =
-            world::restore_program_checkpoint::<fixture::Program>(checkpoint, worker, false);
+            world::reopen_program_directory::<fixture::Program>(directory, worker, false);
         let scope = request_scope();
         let principal = authenticate_operator(restored.installed_schema(), &scope);
         let request = restored.request(&principal, &scope);
@@ -318,16 +325,15 @@ fn first_cold_refusal(worker: bool) {
     } else {
         host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
     };
-    let host: WorthQueryProgramApplicationRuntime<Schema, fixture::Program> =
-        world::install_configured(
-            limits,
-            2,
-            None,
-            world::Configuration {
-                envelope_records: true,
-                ..Default::default()
-            },
-        );
+    let host = world::open_directory_configured::<fixture::Program>(
+        limits,
+        2,
+        None,
+        world::Configuration {
+            envelope_records: true,
+            ..Default::default()
+        },
+    );
     let placement = host
         .with_host_advancement(|phase| {
             host.runtime()

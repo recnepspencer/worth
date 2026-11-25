@@ -30,6 +30,23 @@ impl WorthQueryOutputDemandRegistry {
     )> {
         self.checkpoint_records(Some(key)).pop()
     }
+    pub fn durable_checkpoint_record(
+        &self,
+        key: &WorthQueryOutputDemandKey,
+    ) -> Option<(
+        WorthQueryAcceptedOutputCheckpointIdentity,
+        Option<AcceptedCheckpointFactSource>,
+        Option<TypeId>,
+    )> {
+        let state = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let newest = super::refreshed_rejoin::newest_refresh(&state.records, key);
+        let active_key = newest.as_ref().unwrap_or(key);
+        let row = state.records.get(active_key)?;
+        checkpoint_record(active_key, row).or_else(|| published_checkpoint_record(active_key, row))
+    }
     fn checkpoint_records(
         &self,
         selected: Option<&WorthQueryOutputDemandKey>,
@@ -70,6 +87,75 @@ impl WorthQueryOutputDemandRegistry {
 }
 
 mod court_doors_for_test;
+
+fn published_checkpoint_record(
+    key: &WorthQueryOutputDemandKey,
+    record: &DemandRecord,
+) -> Option<(
+    WorthQueryAcceptedOutputCheckpointIdentity,
+    Option<AcceptedCheckpointFactSource>,
+    Option<TypeId>,
+)> {
+    let DemandState::Output(output) = &record.state else {
+        return None;
+    };
+    if !matches!(output.advancement(), WorthQueryOutputAdvancement::Idle) {
+        return None;
+    }
+    match output.checkpoint.as_ref()? {
+        WorthQueryOutputCheckpoint::Published { receipt, .. }
+        | WorthQueryOutputCheckpoint::Delivered { receipt, .. } => {
+            let idempotency = receipt.idempotency_binding();
+            let exact_source =
+                idempotency.source_identity() == Some(key.source.runtime_idempotency_identity());
+            Some((
+                WorthQueryAcceptedOutputCheckpointIdentity {
+                    implementation: idempotency.producing_implementation()?,
+                    producer: (key.producer.clone()).into(),
+                    posture: WorthQueryAcceptedOutputCheckpointPosture::Performed,
+                    source: key.source.checkpoint_identity().bytes(),
+                    scope: receipt.principal_scope().scope(),
+                    source_partition: idempotency.source_partition_identity()?,
+                    producer_dependency: idempotency.producer_dependency_identity(),
+                    idempotency_key: *idempotency.key_identity(),
+                    roles: (receipt.output_correspondence().checkpoint_roles()).into(),
+                    producer_facts: None,
+                    producer_fact_wire_version: 0,
+                    metadata: None,
+                },
+                exact_source.then(|| AcceptedCheckpointFactSource::Committed(receipt.clone())),
+                receipt.output_correspondence().binding_type(),
+            ))
+        }
+        WorthQueryOutputCheckpoint::RecoveredPublished { publication, .. }
+        | WorthQueryOutputCheckpoint::RecoveredDelivered { publication, .. } => {
+            let receipt = publication.view();
+            let idempotency = receipt.idempotency_binding();
+            let exact_source =
+                idempotency.source_identity() == Some(key.source.runtime_idempotency_identity());
+            Some((
+                WorthQueryAcceptedOutputCheckpointIdentity {
+                    implementation: idempotency.producing_implementation()?,
+                    producer: (key.producer.clone()).into(),
+                    posture: WorthQueryAcceptedOutputCheckpointPosture::Performed,
+                    source: key.source.checkpoint_identity().bytes(),
+                    scope: receipt.principal_scope().scope(),
+                    source_partition: idempotency.source_partition_identity()?,
+                    producer_dependency: idempotency.producer_dependency_identity(),
+                    idempotency_key: *idempotency.key_identity(),
+                    roles: (receipt.output_correspondence().checkpoint_roles()).into(),
+                    producer_facts: None,
+                    producer_fact_wire_version: 0,
+                    metadata: None,
+                },
+                exact_source.then(|| AcceptedCheckpointFactSource::Recovered(publication.clone())),
+                receipt.output_correspondence().binding_type(),
+            ))
+        }
+        WorthQueryOutputCheckpoint::PublicationPending { .. }
+        | WorthQueryOutputCheckpoint::Ready(_) => None,
+    }
+}
 
 fn checkpoint_record(
     key: &WorthQueryOutputDemandKey,

@@ -17,7 +17,7 @@ impl DurabilityAuthority<'_> {
             return Err(Denial::OriginalAuthorityUnavailable);
         }
         let frozen =
-            capture::freeze::capture(self.runtime, execution, &placement)?.resolve(execution)?;
+            capture::freeze::capture(self.runtime, execution)?.resolve(execution)?;
         prepare::prepare(
             frozen,
             self.runtime.durability.checkpoint_selection(),

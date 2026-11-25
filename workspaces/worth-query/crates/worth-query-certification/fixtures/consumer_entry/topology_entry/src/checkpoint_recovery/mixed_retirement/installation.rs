@@ -4,6 +4,7 @@
 )]
 //! An isolated schema admits the replacement conditional without changing other programs.
 use super::*;
+use std::path::PathBuf;
 use std::sync::{
     atomic::{AtomicBool, AtomicUsize},
     Arc,
@@ -11,9 +12,13 @@ use std::sync::{
 use worth_query_decl::facade::application_program::ApplicationProgramAuthoring;
 use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::declaration::authentication::WorthQueryPrincipalMappingStatus;
+use worth_query_host::facade::{
+    WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeRequest,
+};
+
 pub(super) fn install(
-    checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
-) -> application_installation::WorthQueryProgramApplicationRuntime<MixedSchema, MixedProgram> {
+    directory: Option<PathBuf>,
+) -> support::DirectoryApp<MixedSchema, MixedProgram> {
     let configuration = (TopologyConfiguration {
         final_feature: crate::planar_final_feature_runtime(),
         setup_calls: Arc::new(AtomicUsize::new(0)),
@@ -24,52 +29,41 @@ pub(super) fn install(
         producer_domain_denial: Arc::new(AtomicBool::new(false)),
         producer_contacts: None,
     },);
-    let declaration = <MixedSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().expect("the checkpoint schema is valid");
+    let declaration =
+        <MixedSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration()
+            .expect("the checkpoint schema is valid");
     let program = ApplicationProgramAuthoring::<MixedSchema, MixedProgram>::begin()
         .with_schema(&declaration)
         .validated_program()
         .expect("the checkpoint program is complete");
-    match checkpoint {
-        Some(checkpoint) => worth_query_host::facade::application_contribution::with_bootstrap_advancement(
-            support::observation::POPULATION_BOOTSTRAP_POLICY,
-            |phase| application_installation::WorthQueryInterimCheckpointRestore::rostered_program_in_advancement(
-                &phase,
-                program,
-                application_installation::WorthQueryApplicationProgramRoster::new(),
-                declaration,
-                configuration,
-                ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-                support::limits(32, support::invalidation()),
-                checkpoint,
-            ),
-        )
-        .expect("mixed reconstruction opens its original setup request")
-        .expect("the checkpoint restores"),
-        None => application_installation::in_memory_program(
+    let dir = directory.unwrap_or_else(|| support::directory::unique_directory("mixed-retire"));
+    let home = support::directory::with_directory_bootstrap(|phase| {
+        WorthQueryApplicationHomeRequest::new(
+            WorthQueryApplicationHomeLocation::Directory(dir.clone()),
             program,
+            application_installation::WorthQueryApplicationProgramRoster::new(),
             declaration,
             configuration,
             ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-            support::limits(
-                32,
-                // Window <= history is enforced by primary_graph/bootstrap/preparation.rs:91.
-                support::invalidation(),
-            ),
+            support::limits(32, support::invalidation()),
             |_phase, graph, installed| {
                 let principal = installed
                     .principal_binding(ConsumerPrincipalBinding::reference::<MixedSchema>())
                     .expect("the principal mapping is installed");
                 graph.bind_principal(
                     &principal,
-                    primary_graph::WorthQueryApplicationPrincipalKey::new("model-owner").unwrap(),
+                    primary_graph::WorthQueryApplicationPrincipalKey::new("model-owner")
+                        .unwrap(),
                     1_u64,
-                    support::external_identity(),
-                    WorthQueryPrincipalMappingStatus::Enabled,
-                )?;
-                support::seed_cycle(graph);
-                Ok(())
-            },
-        )
-        .expect("the checkpoint source installs"),
-    }
+                        support::external_identity(),
+                        WorthQueryPrincipalMappingStatus::Enabled,
+                    )?;
+                    support::seed_cycle(graph);
+                    Ok(())
+                },
+            )
+            .open_in_advancement(phase)
+    })
+    .unwrap_or_else(|refused| panic!("mixed directory open refused: {refused:?}"));
+    support::DirectoryApp::wrap(home, dir)
 }

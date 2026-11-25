@@ -16,14 +16,15 @@ pub struct RetainedCanonicalIndex(Arc<Backing>);
 impl RetainedCanonicalIndex {
     pub(super) fn readmit_journal(
         &self,
-        source: &dyn crate::durability::medium::RelationalDurableColdSource,
+        source: &Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
+        protection: Option<&crate::durability::medium::RelationalDurableReadProtection>,
         request: &ExecutionRequest<'_, '_>,
         limit: u64,
     ) -> Result<
         PositionedCanonicalCommit,
         crate::durability::data::recovery_stop::RelationalRecoveryStop,
     > {
-        (self.0.journal_readmission)(&self.0.entry, source, request, limit)
+        (self.0.journal_readmission)(&self.0.entry, source, protection, request, limit)
     }
 
     pub fn same_owner(&self, other: &Self) -> bool {
@@ -123,13 +124,13 @@ impl RetainedCanonicalIndex {
     #[doc(hidden)]
     pub fn readmit_journal_for_test(
         &self,
-        source: &dyn crate::durability::medium::RelationalDurableColdSource,
+        source: &Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
         request: &ExecutionRequest<'_, '_>,
         limit: u64,
     ) -> Result<
         PositionedCanonicalCommit,
         crate::durability::data::recovery_stop::RelationalRecoveryStop,
     > {
-        self.readmit_journal(source, request, limit)
+        self.readmit_journal(source, None, request, limit)
     }
 }

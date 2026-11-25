@@ -3,6 +3,10 @@
 //! the same key then executes fresh exactly once, and a later reopen answers
 //! it from the record without running the handler again.
 use super::*;
+mod coupled_flush;
+mod generated_materialization;
+mod interrupted_cleanup;
+mod retired_fork_demand;
 use host_observation::{projection::StateProjection, requests};
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
@@ -223,4 +227,155 @@ fn durable_open_before_native_child() {
         crate::killed_child::announce(&markers.join("ready"), cut.as_bytes());
         crate::killed_child::park();
     });
+}
+
+#[test]
+fn early_and_post_native_suspension_interruption_exposes_reopen_required_and_recovers_on_reopen() {
+    for skip_appends in [0usize, 1usize] {
+        let dir = tempfile::tempdir().unwrap();
+        let req = opening::serial();
+        let execution = worth_execution::ExecutionRequest::serial(&req);
+        let control = host_interruption::opening::control(|_| {}, None, None);
+        let physical = control.physical_control_for_test();
+        let home = host_observation::opening::open_request(
+            generated_materialization::home_request(dir.path()),
+            Some(control),
+            &execution,
+        );
+        let (init_scope, _) = generated_materialization::scope();
+        let principal = generated_materialization::authenticate(&home, &init_scope);
+        let (branch, source) =
+            generated_materialization::produce_artifact(&home, &principal, &init_scope);
+        let arm = || {
+            physical
+                .pause_mutation_for_test(
+                    worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint::BeforeWalAppend,
+                )
+                .unwrap()
+        };
+        generated_materialization::run_interrupted_suspension(
+            &home,
+            branch,
+            source,
+            arm,
+            skip_appends,
+        );
+        drop(home);
+        generated_materialization::verify_suspension_reopen(dir.path(), skip_appends, &execution);
+    }
+}
+
+#[test]
+fn early_and_post_native_restoration_interruption_exposes_reopen_required() {
+    for skip_appends in [0usize, 1usize] {
+        let dir = tempfile::tempdir().unwrap();
+        let req = opening::serial();
+        let execution = worth_execution::ExecutionRequest::serial(&req);
+        let control = host_interruption::opening::control(|_| {}, None, None);
+        let physical = control.physical_control_for_test();
+        let home = host_observation::opening::open_request(
+            generated_materialization::home_request(dir.path()),
+            Some(control),
+            &execution,
+        );
+        let (init_scope, _) = generated_materialization::scope();
+        let principal = generated_materialization::authenticate(&home, &init_scope);
+        let (branch, source) =
+            generated_materialization::produce_artifact(&home, &principal, &init_scope);
+        let arm = || {
+            physical
+                .pause_mutation_for_test(
+                    worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint::BeforeWalAppend,
+                )
+                .unwrap()
+        };
+        generated_materialization::run_interrupted_restoration(
+            &home,
+            branch,
+            source,
+            arm,
+            skip_appends,
+        );
+        drop(home);
+        generated_materialization::verify_restoration_reopen(dir.path(), skip_appends, &execution);
+    }
+}
+
+#[test]
+fn original_coupled_write_interrupted_between_members_keeps_remaining_member_until_flushed_and_reopened(
+) {
+    let dir = tempfile::tempdir().unwrap();
+    let req = opening::serial();
+    let execution = worth_execution::ExecutionRequest::serial(&req);
+    let control = host_interruption::opening::control(|_| {}, None, None);
+    let physical = control.physical_control_for_test();
+    let home = host_observation::opening::open_request(
+        coupled_flush::home_request(dir.path()),
+        Some(control),
+        &execution,
+    );
+    let arm = || {
+        physical
+            .pause_mutation_for_test(
+                worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint::BeforeWalAppend,
+            )
+            .unwrap()
+    };
+    coupled_flush::run_original_write_interrupted_between_members(
+        dir.path(),
+        home,
+        arm,
+        &execution,
+    );
+}
+
+#[test]
+fn retired_fork_with_retained_demand_child() {
+    let Some((location, markers)) = retired_fork_demand::child_env() else {
+        return;
+    };
+    let req = opening::serial();
+    let execution = worth_execution::ExecutionRequest::serial(&req);
+    let control = host_interruption::opening::control(|_| {}, None, None);
+    let physical = control.physical_control_for_test();
+    let home = host_observation::opening::open_request(
+        coupled_flush::home_request(&location),
+        Some(control),
+        &execution,
+    );
+    let arm = || {
+        physical
+            .pause_mutation_for_test(
+                worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint::BeforeWalAppend,
+            )
+            .unwrap()
+    };
+    retired_fork_demand::run_child(home, &markers, arm);
+}
+
+#[test]
+fn interrupted_fork_cleanup_retry_discharges_retired_demand_without_affecting_live_fork() {
+    let dir = tempfile::tempdir().unwrap();
+    let req = opening::serial();
+    let execution = worth_execution::ExecutionRequest::serial(&req);
+    let control = host_interruption::opening::control(|_| {}, None, None);
+    let physical = control.physical_control_for_test();
+    let home = host_observation::opening::open_request(
+        coupled_flush::home_request(dir.path()),
+        Some(control),
+        &execution,
+    );
+    let arm = || {
+        physical
+            .pause_mutation_for_test(
+                worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint::BeforeWalAppend,
+            )
+            .unwrap()
+    };
+    interrupted_cleanup::run_interrupted_cleanup_preserves_live_fork_demand(
+        dir.path(),
+        home,
+        arm,
+        &execution,
+    );
 }

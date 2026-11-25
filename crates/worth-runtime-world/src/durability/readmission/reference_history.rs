@@ -9,12 +9,17 @@ impl WorldCheckpointImage {
         head: &WorldImageHead,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), Denial> {
-        let (_, incarnation, _, generation) = head.fields();
+        let (_, incarnation, commit, generation) = head.fields();
         let key = (incarnation, generation);
         if self.references.contains_key(&key) {
             return Err(Denial::DuplicateIdentity);
         }
-        super::journal::insert(&mut self.references, &key, head, request)
+        super::journal::insert(&mut self.references, &key, head, request)?;
+        let commit_key = (commit, incarnation);
+        if !self.commit_references.contains_key(&commit_key) {
+            super::journal::insert(&mut self.commit_references, &commit_key, head, request)?;
+        }
+        Ok(())
     }
 
     pub(in crate::durability) fn recorded_reference(

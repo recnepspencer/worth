@@ -62,18 +62,18 @@ fn accepted_pin_projections_survive_later_proven_member_damage() {
         );
         let frontier = fixture.runtime.history().latest_patch_stream_position();
         let offered = fixture.medium.offered().len();
-        fixture
-            .source
-            .failures
-            .lock()
-            .unwrap()
-            .insert(ColdRead::Member(target), cause);
+        {
+            let mut failures = fixture.source.failures.lock().unwrap();
+            for &member in &fixture.history {
+                failures.insert(ColdRead::Member(member), cause);
+            }
+        }
         let refusal = fixture
             .runtime
             .durability_authority()
-            .native_checkpoint(execution, execution.allocation_policy())
+            .checkpoint(execution)
             .unwrap_err();
-        let worth_relational::facade::durability::RelationalNativeCheckpointCaptureDenial::Durability(error) =
+        let worth_relational::facade::durability::RelationalRecoveryStop::Durability(error) =
             refusal
         else {
             panic!("actual native export refuses its selected cold frame")

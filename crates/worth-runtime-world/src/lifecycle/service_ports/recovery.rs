@@ -30,6 +30,17 @@ impl RuntimeWorldRecoveryPort {
             .map_err(crate::history::HistoryReclamationDenial::OwnerUnavailable)?
             .retire_changed_history()
     }
+    pub fn retire_changed_history_with_request(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        Vec<crate::identity::CompositeCommitIdentity>,
+        crate::history::HistoryReclamationDenial,
+    > {
+        self.service()
+            .map_err(crate::history::HistoryReclamationDenial::OwnerUnavailable)?
+            .retire_changed_history_with_request(execution)
+    }
     pub fn release_retired_branch_history(
         &self,
         from: &crate::identity::CompositeCommitIdentity,
@@ -38,6 +49,16 @@ impl RuntimeWorldRecoveryPort {
         self.service()
             .map_err(crate::history::HistoryReclamationDenial::OwnerUnavailable)?
             .release_retired_branch_history(from)
+    }
+    pub fn release_retired_branch_history_with_request(
+        &self,
+        from: &crate::identity::CompositeCommitIdentity,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<crate::history::RetiredBranchHistoryRelease, crate::history::HistoryReclamationDenial>
+    {
+        self.service()
+            .map_err(crate::history::HistoryReclamationDenial::OwnerUnavailable)?
+            .release_retired_branch_history_with_request(from, execution)
     }
 
     pub fn inspect_recovered_effects(

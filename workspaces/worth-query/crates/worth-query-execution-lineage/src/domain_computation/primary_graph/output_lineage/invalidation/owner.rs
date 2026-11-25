@@ -87,6 +87,27 @@ impl SourceInvalidationOwner {
                 .get_or_insert_with(|| Arc::new(BranchMarkRoot::initial())),
         )
     }
+
+    pub fn release_home_retirement_marks(
+        &self,
+    ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryHomeRetirementDenial> {
+        let busy = || {
+            crate::domain_computation::primary_graph::WorthQueryHomeRetirementDenial::Busy(
+                crate::domain_computation::primary_graph::WorthQueryHomeRetirementOwner::RelationalSource,
+            )
+        };
+        let released_cells = {
+            let mut branches = self.branches.try_lock().map_err(|_| busy())?;
+            (std::mem::take(&mut branches.cells), branches.vacant.take())
+        };
+        drop(released_cells);
+        let released_ids = {
+            let mut released = self.released.try_lock().map_err(|_| busy())?;
+            std::mem::take(&mut *released)
+        };
+        drop(released_ids);
+        Ok(())
+    }
 }
 
 impl worth_query_execution_runtime::facade::ports::RelationalSourceInvalidationPort

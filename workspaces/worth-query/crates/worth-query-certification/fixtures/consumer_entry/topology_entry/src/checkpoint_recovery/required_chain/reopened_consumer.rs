@@ -1,6 +1,5 @@
 //! An ordinary reopened downstream renews its actual checkpoint prerequisites.
 use super::*;
-use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 
 #[cfg(test)]
 mod serial {
@@ -10,7 +9,7 @@ mod serial {
         let _guard = checkpoint_recovery_test_guard();
         let profile =
             worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard();
-        let application = support::install_program_with_seed::<program::ChainProgram>(
+        let application = support::open_directory_program_with_seed::<program::ChainProgram>(
             None,
             profile,
             32,
@@ -74,16 +73,10 @@ mod serial {
             principal,
             scope,
         ));
-        let checkpoint = application
-            .with_host_advancement(|host_phase| {
-                application
-                    .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
-                    .unwrap()
-            })
-            .expect("installed host call opens");
-        drop(application);
+        let directory = application.checkpoint_and_close_for_reopen();
 
-        let reopened = support::install_program::<program::ChainProgram>(Some(checkpoint), profile);
+        let reopened =
+            support::open_directory_program::<program::ChainProgram>(Some(directory), profile);
         let (scope, principal) = authenticate(&reopened);
         let request = reopened.request(&principal, &scope);
         let before = request

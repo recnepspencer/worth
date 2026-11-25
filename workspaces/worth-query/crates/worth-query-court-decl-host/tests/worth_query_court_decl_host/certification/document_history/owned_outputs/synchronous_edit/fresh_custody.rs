@@ -8,11 +8,7 @@ use worth_relational::facade::{
 };
 fn refuses(worker: bool, authored: bool) {
     let _observation = WorthQueryExecutionObservation::install_on_this_thread();
-    let host = if worker {
-        world::install_worker_only()
-    } else {
-        world::install()
-    };
+    let host = world::open_directory_host(worker);
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);

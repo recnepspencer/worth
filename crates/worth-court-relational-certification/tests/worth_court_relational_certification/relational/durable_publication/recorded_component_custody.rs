@@ -20,7 +20,7 @@ fn recorded_component_checkpoint_omits_released_components_and_plain_observation
     let checkpoint = capture(execution, &original.source);
     original.medium.file_checkpoint(checkpoint.clone());
     let roster = checkpoint
-        .inspect_component_roster(execution, Some(source.clone()))
+        .inspect_component_roster(execution, source.clone())
         .unwrap()
         .unwrap();
     assert_eq!(roster.retained_roots, 1);
@@ -44,7 +44,7 @@ fn recorded_component_checkpoint_omits_released_components_and_plain_observation
     let next = capture(execution, &original.source);
     original.medium.file_checkpoint(next.clone());
     let roster = next
-        .inspect_component_roster(execution, Some(source))
+        .inspect_component_roster(execution, source)
         .unwrap()
         .unwrap();
     assert_eq!(roster.retained_roots, 1);

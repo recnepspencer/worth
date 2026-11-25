@@ -1,7 +1,13 @@
 //! Separate installed world: model `a` (value 1) owning member `m`, plus NAV grant.
 use super::*;
 pub(super) mod authorization_clock;
+mod directory;
 mod second_member;
+pub use directory::{
+    open_directory_configured, open_directory_host, open_directory_program,
+    open_directory_program_with_other_model, open_directory_program_with_value,
+    reopen_program_directory, reopen_same_build, DirHost,
+};
 mod sibling_members;
 use worth_query_host::facade::product::WorthQueryProductBranch;
 pub type Host = WorthQueryProgramApplicationRuntime<Schema, program::Program>;
@@ -186,64 +192,76 @@ where
             .unwrap(),
         schema,
         (configuration,),
-        ApplicationBuildIdentity::parse(
-            &match (
-                configuration.reconciliation_indices,
-                configuration.reconciliation_peer_caps,
-                configuration.reconciliation_emission,
-            ) {
-                (false, false, false) => "91830000-0000-0000-0000-000000005356",
-                (true, false, false) => "91830000-0000-0000-0000-000000005358",
-                (false, true, false) => "91830000-0000-0000-0000-000000005359",
-                (false, false, true) => "91830000-0000-0000-0000-00000000535a",
-                (true, true, false) => "91830000-0000-0000-0000-00000000535b",
-                (true, false, true) => "91830000-0000-0000-0000-00000000535c",
-                (false, true, true) => "91830000-0000-0000-0000-00000000535d",
-                (true, true, true) => "91830000-0000-0000-0000-00000000535e",
-            }
-            .replace(
-                "91830000",
-                if configuration.reconciliation_owned_orbits {
-                    "91830001"
-                } else {
-                    "91830000"
-                },
-            ),
-        )
-        .unwrap(),
+        build_identity(&configuration),
         limits,
         |_, graph, installed| {
-            seed(graph, installed, initial_value, other_value)?;
-            if configuration.envelope_records {
-                synchronous_edit::envelope_fixture::seed(graph)?;
-            }
-            if configuration.interleaved_records {
-                synchronous_edit::interleaved::seed(graph)?;
-            }
-            if configuration.captured_inputs {
-                family::captured_input::program::seed(
-                    graph,
-                    configuration.captured_parent_switch,
-                    configuration.captured_undeclared_anchor,
-                )?;
-            }
-            if let Some((width, waits)) = configuration.captured_composed {
-                family::captured_input::composed::seed(graph, width, waits)?;
-            }
-            if let Some((width, length)) = configuration.captured_chains {
-                family::captured_input::chains::seed(graph, width, length)?;
-            }
-            if configuration.reconciliation_peer_caps {
-                synchronous_edit::reconciliation::peer_caps::seed(graph)?;
-            }
-            if let Some(value) = configuration.second_member {
-                second_member::seed(graph, value)?;
-            }
-            sibling_members::seed(graph, configuration.sibling_members)?;
-            Ok(())
+            seed_configured(graph, installed, initial_value, other_value, configuration)
         },
     )
     .unwrap()
+}
+pub(super) fn build_identity(configuration: &Configuration) -> ApplicationBuildIdentity {
+    ApplicationBuildIdentity::parse(
+        &match (
+            configuration.reconciliation_indices,
+            configuration.reconciliation_peer_caps,
+            configuration.reconciliation_emission,
+        ) {
+            (false, false, false) => "91830000-0000-0000-0000-000000005356",
+            (true, false, false) => "91830000-0000-0000-0000-000000005358",
+            (false, true, false) => "91830000-0000-0000-0000-000000005359",
+            (false, false, true) => "91830000-0000-0000-0000-00000000535a",
+            (true, true, false) => "91830000-0000-0000-0000-00000000535b",
+            (true, false, true) => "91830000-0000-0000-0000-00000000535c",
+            (false, true, true) => "91830000-0000-0000-0000-00000000535d",
+            (true, true, true) => "91830000-0000-0000-0000-00000000535e",
+        }
+        .replace(
+            "91830000",
+            if configuration.reconciliation_owned_orbits {
+                "91830001"
+            } else {
+                "91830000"
+            },
+        ),
+    )
+    .unwrap()
+}
+pub(super) fn seed_configured(
+    graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>,
+    installed: &WorthQueryInstalledApplicationSchema<Schema>,
+    initial_value: u64,
+    other_value: Option<u64>,
+    configuration: Configuration,
+) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+    seed(graph, installed, initial_value, other_value)?;
+    if configuration.envelope_records {
+        synchronous_edit::envelope_fixture::seed(graph)?;
+    }
+    if configuration.interleaved_records {
+        synchronous_edit::interleaved::seed(graph)?;
+    }
+    if configuration.captured_inputs {
+        family::captured_input::program::seed(
+            graph,
+            configuration.captured_parent_switch,
+            configuration.captured_undeclared_anchor,
+        )?;
+    }
+    if let Some((width, waits)) = configuration.captured_composed {
+        family::captured_input::composed::seed(graph, width, waits)?;
+    }
+    if let Some((width, length)) = configuration.captured_chains {
+        family::captured_input::chains::seed(graph, width, length)?;
+    }
+    if configuration.reconciliation_peer_caps {
+        synchronous_edit::reconciliation::peer_caps::seed(graph)?;
+    }
+    if let Some(value) = configuration.second_member {
+        second_member::seed(graph, value)?;
+    }
+    sibling_members::seed(graph, configuration.sibling_members)?;
+    Ok(())
 }
 /// Attach the model history on a fresh owned head forked from the current world.
 pub fn attach<P: ApplicationProgramDefinition<Schema>>(
@@ -305,50 +323,6 @@ pub fn outputs(host: &Host, branch: WorthQueryProductBranch) -> (query::Row, que
     (first, second)
 }
 
-pub fn restore_same_build(checkpoint: WorthQueryApplicationCheckpoint, worker: bool) -> Host {
-    restore_program_checkpoint::<program::Program>(checkpoint, worker, false)
-}
-pub(super) fn restore_program_checkpoint<P>(
-    checkpoint: WorthQueryApplicationCheckpoint,
-    worker: bool,
-    changed: bool,
-) -> WorthQueryProgramApplicationRuntime<Schema, P>
-where
-    P: ApplicationProgramDefinition<Schema, Contributions = (Contribution,)>,
-    P::Outputs: WorthQueryApplicationProgramRoots<Schema>,
-{
-    let schema = Schema::declaration().unwrap();
-    let program = ApplicationProgramAuthoring::<Schema, P>::begin()
-        .with_schema(&schema)
-        .validated_program()
-        .unwrap();
-    let limits = if worker {
-        worker_limits()
-    } else {
-        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
-    };
-    WorthQueryInterimCheckpointRestore::program(
-        program,
-        schema,
-        (Configuration {
-            second_derivation: if changed {
-                Some(|value| value + 2000)
-            } else {
-                None
-            },
-            ..Default::default()
-        },),
-        ApplicationBuildIdentity::parse(if changed {
-            "91830000-0000-0000-0000-000000005357"
-        } else {
-            "91830000-0000-0000-0000-000000005356"
-        })
-        .unwrap(),
-        limits,
-        checkpoint,
-    )
-    .unwrap()
-}
 
 pub(super) fn seed(
     graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>,

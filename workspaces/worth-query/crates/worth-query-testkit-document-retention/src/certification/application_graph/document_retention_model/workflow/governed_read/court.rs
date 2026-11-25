@@ -36,7 +36,7 @@ pub mod reacquisition;
 pub use publication::{prepare, publish, revoke};
 
 pub fn read(
-    application: &GovernedRuntime,
+    application: &impl GovernedWorkflowOwner,
     principal: &WorthQueryAuthenticatedExternalPrincipal<DocumentRetentionSchema>,
     scope: &WorthQueryRequestScope,
     observation: &WorthQueryApplicationReadObservation,

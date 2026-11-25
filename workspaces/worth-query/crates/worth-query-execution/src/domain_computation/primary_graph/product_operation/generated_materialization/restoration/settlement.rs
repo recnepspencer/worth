@@ -27,6 +27,7 @@ impl PublishedRestorationSettlement {
         } = self;
         let restored = retry
             .completion
+            .expect("performed restoration adoption carries prepared Relational completion")
             .complete(commit)
             .expect("World returns the exact prepared relational restoration result");
         runtime.record_restored_generated_output(

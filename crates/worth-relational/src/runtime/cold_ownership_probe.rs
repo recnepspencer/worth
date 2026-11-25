@@ -129,20 +129,26 @@ impl RelationalRuntime {
         execution: &ExecutionRequest<'_, '_>,
         corruption: Option<(CommitId, u8)>,
     ) -> RelationalDurableRecoverySource {
-        let policy = if corruption.is_some() {
-            RelationalCheckpointArtifactPolicy::Embedded
-        } else {
-            RelationalCheckpointArtifactPolicy::ExternalMembers {
-                current_members: &[],
-                source: None,
-            }
-        };
         let checkpoint = self
             .durability_authority()
-            .native_checkpoint_with_policy(execution, execution.allocation_policy(), policy)
+            .native_checkpoint_with_policy(
+                execution,
+                execution.allocation_policy(),
+                RelationalCheckpointArtifactPolicy::ExternalMembers {
+                    current_members: &[],
+                    source: None,
+                },
+            )
             .expect("the actual private branch records");
         let checkpoint = if let Some((publication, change)) = corruption {
-            checkpoint.corrupt_current_publication_roster_external_for_test(execution, publication, change)
+            // Re-record against the original capture's own external members.
+            checkpoint
+                .corrupt_current_publication_roster_external_for_test(
+                    execution,
+                    Source::members_of(&checkpoint),
+                    publication,
+                    change,
+                )
                 .expect("the real recorder emits damaged external current members without admitting them")
         } else {
             checkpoint

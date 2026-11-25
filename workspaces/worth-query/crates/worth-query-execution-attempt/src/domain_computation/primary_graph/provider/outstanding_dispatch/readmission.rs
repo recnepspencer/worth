@@ -4,14 +4,14 @@ use super::super::{
 };
 use super::*;
 use worth_runtime_world::facade::{
-    RuntimeWorldInspectionPort, RuntimeWorldObservationPort, WorldReadmittedPublication,
+    RuntimeWorldInspectionPort, RuntimeWorldObservationPort, WorldObservedHomePublication,
 };
 
 impl OutstandingDispatchOwner {
     fn readmit_original(
         &self,
         owner: &WorthQueryCommittedDispatchOutboxObservation,
-        world: WorldReadmittedPublication,
+        world: WorldObservedHomePublication,
     ) -> Result<(), Denial> {
         let record = owner.record();
         let contract = record.inbound().ok_or(Denial::RecordMismatch)?;

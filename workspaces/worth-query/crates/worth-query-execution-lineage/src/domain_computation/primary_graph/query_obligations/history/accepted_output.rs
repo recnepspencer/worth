@@ -14,14 +14,28 @@ impl QueryObligationHistory {
             return Ok(());
         };
         let driver = self.lock_publication()?;
-        driver.finish_pending(medium.as_ref(), request)?;
+        // Drain any prior interrupted publication first: if an earlier stopped
+        // caller proved no-effect, `finish_pending` has already acknowledged it
+        // and cleared `journal.pending`, so this healthy caller can proceed to
+        // publish `row`.
+        match driver.finish_pending(medium.as_ref(), request) {
+            Ok(()) | Err(QueryObligationDenial::PublicationNoEffect) => {}
+            Err(cause) => return Err(cause),
+        }
         if self.state().journal.as_ref().is_some_and(|journal| {
-            ledger_inspect::output(&journal.ledger).accepted.get(&(
-                row.branch.clone(),
-                row.producer.clone(),
-                row.scope,
-                row.partition,
-            )) == Some(&row)
+            ledger_inspect::output(&journal.ledger)
+                .accepted
+                .get(&(
+                    row.branch.clone(),
+                    row.producer.clone(),
+                    row.scope,
+                    row.partition,
+                ))
+                .is_some_and(|existing| {
+                    existing == &row
+                        || (existing.commit.owner().home() == row.commit.owner().home()
+                            && existing.commit.ordinal() > row.commit.ordinal())
+                })
         }) {
             return Ok(());
         }

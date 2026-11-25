@@ -151,7 +151,7 @@ impl std::ops::Deref for RelationalCheckpointManifestDraft {
 }
 
 impl RelationalCheckpointManifestDraft {
-    pub(crate) fn semantic_members(
+    pub fn semantic_members(
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
@@ -258,6 +258,12 @@ pub struct RelationalCheckpointEmptyComponent {
 pub struct RelationalCheckpointContent {
     pub(crate) identity: worth_foundational::facade::ContentRefId,
     pub(crate) member: RelationalDurableMemberLocator,
+}
+
+impl RelationalCheckpointContent {
+    pub fn member(&self) -> RelationalDurableMemberLocator {
+        self.member
+    }
 }
 
 impl RelationalCheckpointManifest {

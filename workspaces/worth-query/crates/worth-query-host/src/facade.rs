@@ -1,11 +1,9 @@
 //! Host-audience view over the production Query authority graph.
 //!
 //! Start with the unified application facade:
-//! - Open or reopen a persistent Home in one call via
-//!   [`WorthQueryApplicationHome::open_directory`] with
-//!   [`WorthQueryHomeConfig::desktop_default`], check
-//!   [`WorthQueryApplicationHome::open_disposition`], and retire cleanly with
-//!   [`WorthQueryApplicationHome::close_clean`].
+//! - Open or reopen a persistent Home in one call via [`WorthQueryApplicationHome::open_directory`]
+//!   with [`WorthQueryHomeConfig::desktop_default`], check [`WorthQueryApplicationHome::open_disposition`],
+//!   and retire cleanly with [`WorthQueryApplicationHome::close_clean`].
 //! - Create a reusable authenticated session via
 //!   [`WorthQueryApplicationHome::session`] (`let session = home.session(me);`)
 //!   with bounded defaults (`DEFAULT_HOST_EXECUTION_POLICY`) and run actions
@@ -17,10 +15,8 @@
 //!   [`WorthQueryApplicationHome::fork_preview`] /
 //!   [`WorthQueryApplicationHome::adopt_preview`], attach `'static` document
 //!   history via [`WorthQueryApplicationHome::owned_history`], and perform
-//!   restart-safe undo/redo via [`WorthQueryApplicationHome::undo`],
-//!   [`WorthQueryApplicationHome::undo_authored`],
-//!   [`WorthQueryApplicationHome::redo`], and
-//!   [`WorthQueryApplicationHome::redo_authored`]; discover what to undo or
+//!   restart-safe undo/redo via [`WorthQueryApplicationHome::undo`], [`WorthQueryApplicationHome::undo_authored`],
+//!   [`WorthQueryApplicationHome::redo`], and [`WorthQueryApplicationHome::redo_authored`]; discover what to undo or
 //!   redo after a restart with [`WorthQueryApplicationHome::correction_history`]
 //!   (`history.next_undo()` / `history.next_redo()`).
 //! - Show any refusal to an end user with [`WorthQueryUserFacingRefusal`]
@@ -290,7 +286,8 @@ pub use crate::application_home::{
     WorthQueryApplicationHomeCheckpointInspection,
     WorthQueryApplicationHomeCheckpointJournalObservation,
     WorthQueryApplicationHomeCheckpointLimits, WorthQueryApplicationHomeCloseOutcome,
-    WorthQueryApplicationHomeCloseRefused, WorthQueryApplicationHomeClosed,
+    WorthQueryApplicationHomeClosePhase, WorthQueryApplicationHomeCloseRefused,
+    WorthQueryApplicationHomeClosed,
     WorthQueryApplicationHomeDiscardDenial, WorthQueryApplicationHomeLocation,
     WorthQueryApplicationHomeOpenRefused, WorthQueryApplicationHomeOpenRefusedPhase,
     WorthQueryApplicationHomeOpeningCloseRefused, WorthQueryApplicationHomeOpeningClosed,
@@ -368,9 +365,7 @@ pub use crate::source_custody::{
     WorthQuerySourceCustodyStep, WorthQuerySourceCustodyWithdrawal,
 };
 pub mod temporal_contribution;
-pub use worth_foundational::facade::{
-    CanonicalDigestId, DurableOwnerFamily, UncleanRecoveryUnsupported,
-};
+pub use worth_foundational::facade::{CanonicalDigestId, DurableOwnerFamily};
 /// Typed refusal from fresh authored-program installation before Home service.
 pub use worth_query_execution::facade::application_home_integration::QueryHomeSignalProgramPreparationDenial;
 pub use worth_runtime_world::facade::{RuntimeWorldCloseDenial, RuntimeWorldServiceDenial};

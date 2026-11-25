@@ -286,8 +286,9 @@ Three caveats:
   persistence of platform truth: no mirrored tables, saved authority, replayed
   history or application-owned checkpoint bytes as a substitute. Reopen after a
   kill recovers the cases in
-  [After a crash](application-home.md#after-a-crash-or-unclean-close); crash
-  recovery is not yet certified.
+  [After a crash](application-home.md#after-a-crash-or-unclean-close) (Track
+  C1–C3 crash-recovery cases and C5 retirement are complete; full
+  adversarial-oracle and Tier-3 certification runs in Track C4 / Landing 3).
 
 ---
 

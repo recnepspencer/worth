@@ -42,6 +42,7 @@ pub struct RelationalCheckpointInspection<'a> {
     pub frontiers: Vec<CheckpointRecordFrontier>,
     pub generations: Vec<CheckpointRecordIdentity>,
     pub current_publication_records: BTreeSet<CheckpointRecordIdentity>,
+    pub mirror_live_records: BTreeSet<CheckpointRecordIdentity>,
     pub live_records: BTreeSet<CheckpointRecordIdentity>,
 }
 
@@ -59,7 +60,7 @@ impl super::RelationalNativeCheckpoint {
     > {
         Self::inspect_bytes(execution, self.bytes())
     }
-    /// Inspect an embedded native frame without copying its enclosing buffer.
+    /// Inspect a native checkpoint frame without copying its enclosing buffer.
     pub fn inspect_bytes<'a>(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         bytes: &'a [u8],
@@ -67,6 +68,23 @@ impl super::RelationalNativeCheckpoint {
         RelationalCheckpointInspection<'a>,
         contracts::durability::data::recovery_stop::RelationalRecoveryStop,
     > {
-        crate::durability::log::native_checkpoint_codec::inspect_checkpoint(execution, bytes)
+        crate::durability::log::native_checkpoint_codec::inspect_checkpoint(execution, bytes, None)
+    }
+    /// Inspect an external-members native checkpoint frame together with its cold member source.
+    pub fn inspect_bytes_with_source<'a>(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        bytes: &'a [u8],
+        source: std::sync::Arc<
+            dyn worth_relational_storage::internal_port::durability::medium::cold_source::RelationalDurableColdSource,
+        >,
+    ) -> Result<
+        RelationalCheckpointInspection<'a>,
+        contracts::durability::data::recovery_stop::RelationalRecoveryStop,
+    > {
+        crate::durability::log::native_checkpoint_codec::inspect_checkpoint(
+            execution,
+            bytes,
+            Some(source),
+        )
     }
 }

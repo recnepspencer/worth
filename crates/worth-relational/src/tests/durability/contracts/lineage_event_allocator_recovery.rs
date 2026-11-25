@@ -16,7 +16,7 @@ fn tail_lineage_event_allocator_exhaustion_denies_before_replay() {
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);
     create_entity_outcome(execution, &runtime, "checkpoint-before-tail-overflow");
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     let replay_invalid = create_entity_outcome(execution, &runtime, "tail-before-overflow");
     let allocator_exhausted = create_entity_outcome(execution, &runtime, "tail-event-overflow");
     let mut plan = medium
@@ -78,7 +78,7 @@ fn unresolved_durable_publication_blocks_descendants_and_recovers_last_checkpoin
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);
     let checkpointed = create_entity_outcome(execution, &runtime, "lineage-gap-checkpoint");
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     let frontiers_at_checkpoint = runtime.lineage.identity_frontiers();
     let published_node_count = runtime.lineage.node_count();
     let published_event_count = runtime.lineage.event_count();

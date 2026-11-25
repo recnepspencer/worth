@@ -97,7 +97,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             correspondence,
             producer,
         } = suspended;
-        let prepared = self
+        let pending = self
             .inner
             .runtime
             .primary_provider_ref()
@@ -106,7 +106,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 runtime
                     .owner_component_services()
                     .materialization_port()
-                    .prepare_generated_rematerialization(
+                    .validate_generated_rematerialization(
                         &execution,
                         publication.observation().basis().relational_basis(),
                         custody,
@@ -114,8 +114,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         relations,
                     )
             });
-        let prepared = match prepared {
-            Ok(prepared) => prepared,
+        let pending = match pending {
+            Ok(pending) => pending,
             Err(failure) => {
                 let cause = preparation_failure_cause(&failure.error);
                 return Err(restoration_failure(
@@ -130,7 +130,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 ));
             }
         };
-        let (candidate, completion, invariant_evidence) = prepared.into_parts();
+        let (proposal, pending_completion, invariant_evidence) = pending.into_parts();
         if let Err(denial) = invariant_admission::admit::<Schema, Producer>(
             &invariant_evidence,
             publication
@@ -140,15 +140,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 .identity()
                 .branch_id(),
         ) {
-            drop(candidate);
+            drop(proposal);
             return Err(restoration_failure(
-                suspended_from_completion(
+                WorthQuerySuspendedGeneratedOutput {
                     publication,
                     branch,
+                    custody: pending_completion.into_custody(),
                     correspondence,
                     producer,
-                    completion,
-                ),
+                },
                 WorthQueryGeneratedOutputRestorationFailureCause::InvariantAdmission(denial),
             ));
         }
@@ -159,8 +159,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             branch,
             correspondence,
             producer,
-            candidate,
-            completion,
+            proposal,
+            pending_completion,
             request,
         )
     }

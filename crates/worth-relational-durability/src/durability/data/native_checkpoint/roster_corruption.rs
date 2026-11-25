@@ -8,45 +8,12 @@ use worth_relational_contracts::internal_port as contracts;
 pub mod commitments;
 pub mod portable_rows;
 impl RelationalNativeCheckpoint {
-    /// Closed certification corruption. The result is untrusted checkpoint bytes,
-    /// never admitted state or a metadata-writing grant. Zero drops a route, one
-    /// adds a foreign route and two re-points its source generation.
-    #[doc(hidden)]
-    pub fn corrupt_current_publication_roster_for_test(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        publication: CommitId,
-        change: u8,
-    ) -> Result<Self, RelationalRecoveryStop> {
-        self.corrupt_with_placement(
-            execution,
-            publication,
-            change,
-            &RelationalCheckpointArtifactPolicy::Embedded,
-        )
-    }
     pub(crate) fn corrupt_current_publication_roster_external_for_test(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
+        source: std::sync::Arc<dyn worth_relational_storage::internal_port::durability::medium::cold_source::RelationalDurableColdSource>,
         publication: CommitId,
         change: u8,
-    ) -> Result<Self, RelationalRecoveryStop> {
-        self.corrupt_with_placement(
-            execution,
-            publication,
-            change,
-            &RelationalCheckpointArtifactPolicy::ExternalMembers {
-                current_members: &[],
-                source: None,
-            },
-        )
-    }
-    fn corrupt_with_placement(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        publication: CommitId,
-        change: u8,
-        placement: &RelationalCheckpointArtifactPolicy<'_>,
     ) -> Result<Self, RelationalRecoveryStop> {
         if change > 10 {
             return Err(DurabilityError::new(
@@ -55,7 +22,8 @@ impl RelationalNativeCheckpoint {
             )
             .into());
         }
-        let mut checkpoint = codec::decode_checkpoint(execution, self.bytes())?.checkpoint;
+        let mut checkpoint =
+            codec::decode_checkpoint_from_source(execution, self.bytes(), source)?.checkpoint;
         let storage = checkpoint
             .branch_root_schema_images
             .iter()
@@ -147,13 +115,8 @@ impl RelationalNativeCheckpoint {
                         },
                     )?;
                 codec::populate_expanded_canonical_members(&mut captured, &checkpoint, execution)?;
-                let (bytes, sections, members, _) = codec::encode_captured(
-                    captured.seal_ordinary(),
-                    execution,
-                    policy,
-                    placement,
-                    &mut control,
-                )?;
+                let (bytes, sections, members, _) =
+                    codec::encode_captured(captured.seal_ordinary(), execution, &mut control)?;
                 Ok::<_, RelationalNativeCheckpointCaptureDenial>((bytes, sections, members))
             })());
         });
@@ -164,24 +127,19 @@ impl RelationalNativeCheckpoint {
             )
         })??;
         handoff.map_err(|cause| RelationalRecoveryStop::Request(cause.into()))?;
-        let native = if placement.is_embedded() {
-            Self::from_untrusted_bytes_region(bytes.clone(), 0..bytes.len())
-                .expect("the recorder emitted the selected range")
-        } else {
-            let position = self.covered_position().ok_or_else(|| {
-                DurabilityError::new(
-                    RecoveryFailureClass::CorruptCheckpoint,
-                    "external corruption requires an actual captured checkpoint",
-                )
-            })?;
-            let transitions = self.covered_branch_transitions().ok_or_else(|| {
-                DurabilityError::new(
-                    RecoveryFailureClass::CorruptCheckpoint,
-                    "external corruption lost recorded branch coverage",
-                )
-            })?;
-            Self::from_captured_bytes(bytes, sections, position, transitions)
-        };
+        let position = self.covered_position().ok_or_else(|| {
+            DurabilityError::new(
+                RecoveryFailureClass::CorruptCheckpoint,
+                "external corruption requires an actual captured checkpoint",
+            )
+        })?;
+        let transitions = self.covered_branch_transitions().ok_or_else(|| {
+            DurabilityError::new(
+                RecoveryFailureClass::CorruptCheckpoint,
+                "external corruption lost recorded branch coverage",
+            )
+        })?;
+        let native = Self::from_captured_bytes(bytes, sections, position, transitions);
         Ok(native.with_captured_members(members))
     }
 }
@@ -191,6 +149,7 @@ pub trait RelationalNativeCheckpointOwnerPort: Sized {
     fn corrupt_current_publication_roster_external_for_test(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
+        source: std::sync::Arc<dyn worth_relational_storage::internal_port::durability::medium::cold_source::RelationalDurableColdSource>,
         publication: CommitId,
         change: u8,
     ) -> Result<Self, RelationalRecoveryStop>;
@@ -200,9 +159,10 @@ impl RelationalNativeCheckpointOwnerPort for RelationalNativeCheckpoint {
     fn corrupt_current_publication_roster_external_for_test(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
+        source: std::sync::Arc<dyn worth_relational_storage::internal_port::durability::medium::cold_source::RelationalDurableColdSource>,
         publication: CommitId,
         change: u8,
     ) -> Result<Self, RelationalRecoveryStop> {
-        self.corrupt_current_publication_roster_external_for_test(execution, publication, change)
+        self.corrupt_current_publication_roster_external_for_test(execution, source, publication, change)
     }
 }

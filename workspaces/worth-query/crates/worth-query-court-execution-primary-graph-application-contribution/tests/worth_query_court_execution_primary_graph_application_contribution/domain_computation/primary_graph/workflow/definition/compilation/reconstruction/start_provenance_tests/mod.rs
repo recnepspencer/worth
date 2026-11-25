@@ -239,9 +239,17 @@ fn started_revision_current_capture_restore_retains_exact_data_after_original_pa
     let checkpoint = handle.with_runtime(&execution, |runtime| {
         runtime
             .durability_authority()
-            .native_checkpoint(&execution, execution.allocation_policy())
+            .native_checkpoint_with_policy(
+                &execution,
+                execution.allocation_policy(),
+                worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers {
+                    current_members: &[],
+                    source: None,
+                },
+            )
             .unwrap()
     });
+    let source = members_source::from_checkpoint(&checkpoint);
     let bytes = checkpoint.bytes().to_vec();
     drop((handle, world, original_payer));
     let receiving_payer = payer();
@@ -250,7 +258,7 @@ fn started_revision_current_capture_restore_retains_exact_data_after_original_pa
         RelationalRuntime::new(recovery_config).expect("valid native runtime configuration");
     restored
         .durability_recovery()
-        .restore_native_checkpoint(&receiving, &checkpoint)
+        .restore_native_checkpoint(&receiving, &checkpoint, source)
         .unwrap();
     let snapshot = native_snapshot(&restored);
     assert_eq!(
@@ -272,6 +280,8 @@ fn started_revision_current_capture_restore_retains_exact_data_after_original_pa
     );
     assert_eq!(checkpoint.bytes(), bytes);
 }
+
+mod members_source;
 
 #[path = "birth/mod.rs"]
 pub mod birth;

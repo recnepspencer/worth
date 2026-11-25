@@ -97,6 +97,7 @@ pub(super) fn rebuild_runtime_from_plan(
                 execution,
                 &mut restored,
                 checkpoint,
+                plan.selected_checkpoint_acknowledged(),
                 &mut work,
                 original_schemas.as_ref(),
             )?;

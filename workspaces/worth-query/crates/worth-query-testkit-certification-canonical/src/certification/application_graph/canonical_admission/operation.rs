@@ -129,6 +129,9 @@ pub fn record(value: Result<Option<SwallowingValue>, HandlerExecutionDenial>, ro
 }
 pub struct Handler;
 impl OperationHandler<AdmissionSchema, AdvanceBinding> for Handler {
+    fn declared_durable_capabilities() -> Option<&'static [WorthQueryOperationDurableCapability]> {
+        Some(&[WorthQueryOperationDurableCapability::RelationalMutation])
+    }
     fn decide(
         &self,
         input: &Input,

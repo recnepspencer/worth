@@ -114,9 +114,9 @@ fn recovery_rejects_a_schema_carrier_swapped_between_exact_roots() {
     transaction
         .commit(execution, &runtime)
         .expect("schema transition commits");
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     let mut plan = medium
-        .recovery_plan(
+        .expanded_recovery_plan(
             execution,
             &runtime,
             RecoveryVerificationMode::NormalRecoveryVerification,
@@ -166,9 +166,9 @@ fn checkpoint_plan_with_one_root(
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);
     create_entity_outcome(execution, &runtime, label);
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     medium
-        .recovery_plan(
+        .expanded_recovery_plan(
             execution,
             &runtime,
             RecoveryVerificationMode::NormalRecoveryVerification,

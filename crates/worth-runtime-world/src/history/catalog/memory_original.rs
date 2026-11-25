@@ -4,7 +4,6 @@ use crate::history::publication::memory_observation::MemoryPublicationRecord;
 use crate::history::{WorldObservedMemoryPublication, WorldReadmittedPublicationDenial as Denial};
 use std::sync::{atomic::Ordering, Arc, Mutex, Weak};
 mod growth;
-mod readmission;
 
 #[derive(Debug)]
 enum Slot {
@@ -13,13 +12,24 @@ enum Slot {
 }
 #[derive(Debug)]
 struct Records {
-    receiver: ReceiverAdmission,
     slots: Vec<Slot>,
     vacant: Option<usize>,
     free_count: usize,
     pending_reservations: usize,
     pending_by_tier: [usize; growth::MAX_GROWTH_TIERS],
     _capacity_funding: Option<worth_execution::ExecutionMemoryReservation>,
+}
+impl Default for Records {
+    fn default() -> Self {
+        Self {
+            slots: Vec::new(),
+            vacant: None,
+            free_count: 0,
+            pending_reservations: 0,
+            pending_by_tier: [0; growth::MAX_GROWTH_TIERS],
+            _capacity_funding: None,
+        }
+    }
 }
 impl Records {
     fn drop_pending(&mut self, tier: u8) {
@@ -31,27 +41,6 @@ impl Records {
             .checked_sub(1)
             .expect("pending reservation tier was counted");
     }
-}
-impl Default for Records {
-    fn default() -> Self {
-        Self {
-            receiver: ReceiverAdmission::default(),
-            slots: Vec::new(),
-            vacant: None,
-            free_count: 0,
-            pending_reservations: 0,
-            pending_by_tier: [0; growth::MAX_GROWTH_TIERS],
-            _capacity_funding: None,
-        }
-    }
-}
-#[derive(Debug, Default)]
-enum ReceiverAdmission {
-    #[default]
-    Available,
-    Preparing,
-    Installed,
-    Refused,
 }
 type Registry = Mutex<Records>;
 #[derive(Debug, Clone, Default)]
@@ -189,75 +178,16 @@ impl Drop for MemoryOriginalRegistration {
     }
 }
 impl CompositeHistoryCatalog {
-    pub(crate) fn snapshot_memory_originals(
-        &self,
-        request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<
-        worth_execution::ExecutionArray<Arc<MemoryPublicationRecord>>,
-        crate::lifecycle::WorldInterimCheckpointRefusal,
-    > {
-        use crate::lifecycle::WorldInterimCheckpointRefusal as Stop;
-        let records = self
-            .originals
+    #[cfg(test)]
+    pub(crate) fn committed_memory_original_count_for_test(&self) -> usize {
+        self.originals
             .0
             .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        if matches!(
-            records.receiver,
-            ReceiverAdmission::Preparing | ReceiverAdmission::Refused
-        ) {
-            return Err(Stop::OwnerUnavailable);
-        }
-        crate::lifecycle::interim_checkpoint::charge(request, records.slots.len())?;
-        let committed = records
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .slots
             .iter()
-            .filter(|slot| match slot {
-                Slot::Original(record) => record.committed.load(Ordering::Acquire),
-                Slot::Vacant(_) => false,
-            })
-            .count();
-        let mut builder =
-            worth_execution::ExecutionRequestArrayBuilder::allocate(*request, committed)
-                .map_err(Stop::Backing)?;
-        for slot in &records.slots {
-            crate::lifecycle::interim_checkpoint::charge(request, 1)?;
-            match slot {
-                Slot::Original(record) if record.committed.load(Ordering::Acquire) => {
-                    builder.push(record.clone()).map_err(Stop::Backing)?
-                }
-                Slot::Original(_) | Slot::Vacant(_) => {}
-            }
-        }
-        builder.seal().map_err(Stop::Backing)
-    }
-
-    pub(crate) fn matches_memory_originals(
-        &self,
-        originals: &[Arc<MemoryPublicationRecord>],
-        request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<bool, crate::lifecycle::WorldInterimCheckpointRefusal> {
-        let records = self
-            .originals
-            .0
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        crate::lifecycle::interim_checkpoint::charge(request, records.slots.len())?;
-        let mut originals = originals.iter();
-        for slot in &records.slots {
-            match slot {
-                Slot::Original(record) if record.committed.load(Ordering::Acquire) => {
-                    if originals
-                        .next()
-                        .is_none_or(|original| !Arc::ptr_eq(original, record))
-                    {
-                        return Ok(false);
-                    }
-                }
-                Slot::Original(_) | Slot::Vacant(_) => {}
-            }
-        }
-        Ok(originals.next().is_none())
+            .filter(|slot| matches!(slot, Slot::Original(record) if record.committed.load(Ordering::Acquire)))
+            .count()
     }
 
     /// Reserve one provisional original slot, funding any needed registry
@@ -279,14 +209,6 @@ impl CompositeHistoryCatalog {
             .0
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        if matches!(
-            records.receiver,
-            ReceiverAdmission::Preparing | ReceiverAdmission::Refused
-        ) {
-            return Err(Refusal::Basis(
-                worth_relational::facade::branch::RelationalBranchBasisDenial::OwnerUnavailable,
-            ));
-        }
         let used = records.slots.len() - records.free_count;
         let next_pending = records
             .pending_reservations

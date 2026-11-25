@@ -16,7 +16,10 @@ fn continuation_nested_decode_refusal_never_returns_a_page_or_successor() {
         .expect("funded page reached its second seed");
     drop(host);
 
-    let mut host = host::install_page(super::FUNDED_WORK);
+    let dir = worth_query_testkit_document_retention::facade::directory_home::unique_directory(
+        "canonical-admission-continuation",
+    );
+    let mut host = host::open_directory_page(dir, super::FUNDED_WORK);
     for name in ["root", "child"] {
         assert_eq!(host::read(&host, name).value, super::value());
     }
@@ -50,9 +53,8 @@ fn continuation_nested_decode_refusal_never_returns_a_page_or_successor() {
         opaque::ignored_refusals() > 0,
         "the real nested seed swallowed native refusal"
     );
-    let checkpoint = host::capture(&host);
-    drop(host);
-    let fresh = host::restore(checkpoint, super::FUNDED_WORK);
+    let dir = host.close_for_reopen();
+    let fresh = host::open_directory_page(dir, super::FUNDED_WORK);
     assert_funded_pages(&fresh);
 }
 

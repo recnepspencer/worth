@@ -81,10 +81,11 @@ fn synthetic_native_restore_and_image_digest_benchmark() {
             .run(worth_execution::ExecutionWorkCeiling::new(None), |_| {
                 source
                     .durability_authority()
-                    .native_checkpoint(
-                        execution,
-                        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                    )
+                    .native_checkpoint_with_policy(
+execution,
+worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None },
+)
                     .unwrap()
             })
             .unwrap();
@@ -98,7 +99,7 @@ fn synthetic_native_restore_and_image_digest_benchmark() {
             .run(worth_execution::ExecutionWorkCeiling::new(None), |_| {
                 recovered
                     .durability_recovery()
-                    .restore_native_checkpoint(execution, &native)
+                    .restore_native_checkpoint(execution, &native, crate::tests::support::durability::captured_members_source(&native))
                     .unwrap();
             })
             .unwrap();

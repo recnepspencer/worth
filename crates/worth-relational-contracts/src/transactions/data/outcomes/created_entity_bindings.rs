@@ -1,6 +1,7 @@
 use crate::internal_port::transactions::data::outcomes::commit_conflict::CommitConflictOwnerPort as _;
 use std::collections::{BTreeMap, BTreeSet};
 
+pub mod lookup;
 pub mod semantic;
 pub mod withdrawal;
 
@@ -204,17 +205,7 @@ impl CommitCreatedEntityBindings {
     }
 
     pub fn resolve(&self, created: &CreatedEntityRef) -> Option<EntityId> {
-        if let Some(entity_id) = self.by_exact_reference.get(created) {
-            return Some(*entity_id);
-        }
-        let client_key = created.client_key.as_raw_str()?;
-        self.by_stable_reference
-            .get(&StableCreatedEntityRef {
-                partition_id: created.partition_id,
-                kind_id: created.kind_id,
-                client_key: client_key.to_owned(),
-            })
-            .copied()
+        self.resolve_parts(created.partition_id, created.kind_id, &created.client_key)
     }
 }
 

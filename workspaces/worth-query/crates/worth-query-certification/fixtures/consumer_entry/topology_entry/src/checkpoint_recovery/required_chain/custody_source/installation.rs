@@ -1,5 +1,6 @@
 //! An isolated schema admits the replacement conditional without changing other programs.
 use super::*;
+use std::path::PathBuf;
 use std::sync::{
     atomic::{AtomicBool, AtomicUsize},
     Arc,
@@ -7,12 +8,13 @@ use std::sync::{
 use worth_query_decl::facade::application_program::ApplicationProgramAuthoring;
 use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::declaration::authentication::WorthQueryPrincipalMappingStatus;
+use worth_query_host::facade::{
+    WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeRequest,
+};
+
 pub(in crate::checkpoint_recovery::required_chain) fn install(
-    checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
-) -> application_installation::WorthQueryProgramApplicationRuntime<
-    ValueSourceSchema,
-    ValueSourceProgram,
-> {
+    directory: Option<PathBuf>,
+) -> support::DirectoryApp<ValueSourceSchema, ValueSourceProgram> {
     let configuration = (TopologyConfiguration {
         final_feature: crate::planar_final_feature_runtime(),
         setup_calls: Arc::new(AtomicUsize::new(0)),
@@ -23,50 +25,43 @@ pub(in crate::checkpoint_recovery::required_chain) fn install(
         producer_domain_denial: Arc::new(AtomicBool::new(false)),
         producer_contacts: None,
     },);
-    let declaration = <ValueSourceSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration().expect("the checkpoint schema is valid");
+    let declaration =
+        <ValueSourceSchema as worth_query_decl::facade::application_schema::ApplicationSchema>::declaration()
+            .expect("the checkpoint schema is valid");
     let program = ApplicationProgramAuthoring::<ValueSourceSchema, ValueSourceProgram>::begin()
         .with_schema(&declaration)
         .validated_program()
         .expect("the checkpoint program is complete");
-    match checkpoint {
-        Some(checkpoint) => application_installation::WorthQueryInterimCheckpointRestore::program(
+    let dir = directory.unwrap_or_else(|| support::directory::unique_directory("custody-source"));
+    let home = support::directory::with_directory_bootstrap(|phase| {
+        WorthQueryApplicationHomeRequest::new(
+            WorthQueryApplicationHomeLocation::Directory(dir.clone()),
             program,
+            application_installation::WorthQueryApplicationProgramRoster::new(),
             declaration,
             configuration,
             ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-            support::limits(
-                32,
-                // Window <= history is enforced by primary_graph/bootstrap/preparation.rs:91.
-                support::invalidation(),
-            ),
-            checkpoint,
-        )
-        .expect("the checkpoint restores"),
-        None => application_installation::in_memory_program(
-            program,
-            declaration,
-            configuration,
-            ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-            support::limits(
-                32,
-                // Window <= history is enforced by primary_graph/bootstrap/preparation.rs:91.
-                support::invalidation(),
-            ),
+            support::limits(32, support::invalidation()),
             |_phase, graph, installed| {
                 let principal = installed
-                    .principal_binding(ConsumerPrincipalBinding::reference::<ValueSourceSchema>())
+                    .principal_binding(ConsumerPrincipalBinding::reference::<
+                        ValueSourceSchema,
+                    >())
                     .expect("the principal mapping is installed");
                 graph.bind_principal(
                     &principal,
-                    primary_graph::WorthQueryApplicationPrincipalKey::new("model-owner").unwrap(),
-                    1_u64,
-                    support::external_identity(),
-                    WorthQueryPrincipalMappingStatus::Enabled,
-                )?;
-                super::super::source_world::seed(graph);
-                Ok(())
-            },
-        )
-        .expect("the checkpoint source installs"),
-    }
+                        primary_graph::WorthQueryApplicationPrincipalKey::new("model-owner")
+                            .unwrap(),
+                        1_u64,
+                        support::external_identity(),
+                        WorthQueryPrincipalMappingStatus::Enabled,
+                    )?;
+                    super::super::source_world::seed(graph);
+                    Ok(())
+                },
+            )
+            .open_in_advancement(phase)
+    })
+    .unwrap_or_else(|refused| panic!("custody_source directory open refused: {refused:?}"));
+    support::DirectoryApp::wrap(home, dir)
 }

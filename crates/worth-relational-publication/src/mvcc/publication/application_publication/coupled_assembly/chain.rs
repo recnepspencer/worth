@@ -29,7 +29,8 @@ pub struct Chain {
     pub scope: usize,
     /// Exact touches of every superseded round, captured before retraction.
     pub prior_touches: Vec<ValidatedMutationTouch>,
-    /// Exact touches of the round the live round superseded.
+    /// Exact touches of the round the live round superseded, plus the kind
+    /// touches retracting it implies (§3.7 H-Q), for the append touches only.
     pub last_superseded: Vec<ValidatedMutationTouch>,
     /// The live round's transaction batches.
     pub batches: Range<usize>,

@@ -3,7 +3,6 @@
 
 use super::*;
 use worth_query_host::facade::application_entry::WorthQueryApplicationPerformedMutationOutcome;
-use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 use worth_query_host::facade::primary_graph::inexact_native_deliveries_on_this_thread_for_test as inexact_deliveries;
 
 macro_rules! settle {
@@ -60,15 +59,7 @@ macro_rules! writes_y {
     };
 }
 
-fn chain_application() -> application_installation::WorthQueryProgramApplicationRuntime<
-    CheckpointSchema,
-    program::ChainProgram,
-> {
-    chain_application_from_checkpoint(None)
-}
-
-fn chain_application_from_checkpoint(
-    checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
+fn chain_application(
 ) -> application_installation::WorthQueryProgramApplicationRuntime<
     CheckpointSchema,
     program::ChainProgram,
@@ -76,7 +67,20 @@ fn chain_application_from_checkpoint(
     let profile =
         worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard();
     support::install_program_with_seed::<program::ChainProgram>(
-        checkpoint,
+        None,
+        profile,
+        4_096,
+        source_world::seed,
+    )
+}
+
+fn chain_application_from_checkpoint(
+    directory: Option<std::path::PathBuf>,
+) -> support::DirectoryApp<CheckpointSchema, program::ChainProgram> {
+    let profile =
+        worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard();
+    support::open_directory_program_with_seed::<program::ChainProgram>(
+        directory,
         profile,
         4_096,
         source_world::seed,
@@ -123,24 +127,18 @@ mod current_acknowledgement;
 mod owned_continuation;
 mod selection_at_inspection;
 
-fn ready_chain_checkpoint() -> application_installation::WorthQueryApplicationCheckpoint {
-    let application = chain_application();
+fn ready_chain_checkpoint() -> std::path::PathBuf {
+    let application = chain_application_from_checkpoint(None);
     {
         let (scope, principal) = authenticate(&application);
         let request = application.request(&principal, &scope);
         let _demands = chain_with_unrelated!(application, request);
     }
-    application
-        .with_host_advancement(|host_phase| {
-            application
-                .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
-                .expect("the settled required chain is checkpointable")
-        })
-        .expect("installed host call opens")
+    application.checkpoint_and_close_for_reopen()
 }
 
 fn run_unrelated_required_advance(
-    application: application_installation::WorthQueryProgramApplicationRuntime<
+    application: &application_installation::WorthQueryProgramApplicationRuntime<
         CheckpointSchema,
         program::ChainProgram,
     >,
@@ -245,7 +243,7 @@ mod serial {
     #[test]
     fn an_unrelated_required_advance_progresses_the_dirty_required_set() {
         let _guard = checkpoint_recovery_test_guard();
-        run_unrelated_required_advance(chain_application(), [1, 1, 1]);
+        run_unrelated_required_advance(&chain_application(), [1, 1, 1]);
     }
 
     #[test]
@@ -253,10 +251,8 @@ mod serial {
         let _guard = checkpoint_recovery_test_guard();
         let checkpoint = ready_chain_checkpoint();
         // The restored original demands must reenter their authentic source query.
-        run_unrelated_required_advance(
-            chain_application_from_checkpoint(Some(checkpoint)),
-            [0, 1, 1],
-        );
+        let reopened = chain_application_from_checkpoint(Some(checkpoint));
+        run_unrelated_required_advance(&reopened, [0, 1, 1]);
     }
 
     #[test]

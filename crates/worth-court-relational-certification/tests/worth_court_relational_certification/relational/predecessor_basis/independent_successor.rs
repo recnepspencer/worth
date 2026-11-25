@@ -51,7 +51,7 @@ fn run(execution: &ExecutionRequest<'_, '_>) {
         world
             .runtime
             .durability_authority()
-            .native_checkpoint(execution, execution.allocation_policy())
+            .native_checkpoint_with_policy(execution, execution.allocation_policy(), worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
             .unwrap()
     };
     let before = checkpoint();

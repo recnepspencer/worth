@@ -1,6 +1,8 @@
 //! One complete Native population and endpoint index, without a second schema engine.
 use super::*;
-use worth_relational::facade::runtime::VisibilityProjectionView;
+use worth_relational::facade::runtime::{
+    HomeReadmissionMetadataReadDenial, HomeReadmissionMetadataView, VisibilityProjectionView,
+};
 
 pub(super) struct WorkflowPopulation {
     entities: BTreeMap<KindId, Vec<EntityId>>,
@@ -13,6 +15,87 @@ impl WorkflowPopulation {
         execution: &ExecutionRequest<'_, '_>,
         layout: &WorthQueryWorkflowLayout,
     ) -> Result<Self, Denial> {
+        let map_exec = |cause| {
+            Denial::Source(
+                crate::domain_computation::primary_graph::bootstrap::request_read_denial::read(
+                    cause,
+                ),
+            )
+        };
+        Self::read_with(
+            execution,
+            layout,
+            |exec, kind| {
+                view.bounded_entities_of_kind(exec, kind, usize::MAX)
+                    .map_err(map_exec)
+            },
+            |exec, kind| {
+                view.bounded_relations_of_kind(exec, kind, usize::MAX)
+                    .map_err(map_exec)
+            },
+        )
+    }
+    pub(super) fn read_home_readmission(
+        view: &HomeReadmissionMetadataView<'_>,
+        execution: &ExecutionRequest<'_, '_>,
+        layout: &WorthQueryWorkflowLayout,
+    ) -> Result<Self, Denial> {
+        let map_read = |cause| match cause {
+            HomeReadmissionMetadataReadDenial::Execution(cause) => Denial::Source(
+                crate::domain_computation::primary_graph::bootstrap::request_read_denial::read(
+                    cause,
+                ),
+            ),
+            HomeReadmissionMetadataReadDenial::PhaseClosed => Denial::Source(
+                WorthQueryPrimaryGraphInstallationDenial::new(
+                    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
+                    "Home readmission metadata phase already closed",
+                ),
+            ),
+            HomeReadmissionMetadataReadDenial::KindNotAdmitted(kind) => Denial::Source(
+                WorthQueryPrimaryGraphInstallationDenial::new(
+                    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
+                    format!("Home readmission metadata kind {} is not admitted", kind.0),
+                ),
+            ),
+        };
+        Self::read_with(
+            execution,
+            layout,
+            |exec, kind| {
+                view.bounded_entities_of_kind(exec, kind, usize::MAX)
+                    .map_err(map_read)
+            },
+            |exec, kind| {
+                view.bounded_relations_of_kind(exec, kind, usize::MAX)
+                    .map_err(map_read)
+            },
+        )
+    }
+    fn read_with(
+        execution: &ExecutionRequest<'_, '_>,
+        layout: &WorthQueryWorkflowLayout,
+        read_entities: impl Fn(
+            &ExecutionRequest<'_, '_>,
+            KindId,
+        ) -> Result<
+            Result<
+                worth_relational::facade::runtime::BoundedEntityKindTruthRead,
+                worth_relational::facade::runtime::EntityKindTruthReadLimitExceeded,
+            >,
+            Denial,
+        >,
+        read_relations: impl Fn(
+            &ExecutionRequest<'_, '_>,
+            KindId,
+        ) -> Result<
+            Result<
+                worth_relational::facade::runtime::BoundedRelationKindTruthRead,
+                worth_relational::facade::runtime::RelationKindTruthReadDenial,
+            >,
+            Denial,
+        >,
+    ) -> Result<Self, Denial> {
         let (entities, relations) = layout.home_readmission_kinds();
         let mut result = Self {
             entities: BTreeMap::new(),
@@ -20,13 +103,7 @@ impl WorkflowPopulation {
             incoming: BTreeMap::new(),
         };
         for kind in entities {
-            let rows = view
-                .bounded_entities_of_kind(execution, kind, usize::MAX)
-                .map_err(
-                    crate::domain_computation::primary_graph::bootstrap::request_read_denial::read,
-                )
-                .map_err(Denial::Source)?
-                .map_err(Denial::EntityPopulation)?;
+            let rows = read_entities(execution, kind)?.map_err(Denial::EntityPopulation)?;
             let mut ids = rows
                 .into_records()
                 .into_iter()
@@ -36,13 +113,7 @@ impl WorkflowPopulation {
             result.entities.insert(kind, ids);
         }
         for kind in relations {
-            let rows = view
-                .bounded_relations_of_kind(execution, kind, usize::MAX)
-                .map_err(
-                    crate::domain_computation::primary_graph::bootstrap::request_read_denial::read,
-                )
-                .map_err(Denial::Source)?
-                .map_err(Denial::RelationPopulation)?;
+            let rows = read_relations(execution, kind)?.map_err(Denial::RelationPopulation)?;
             for relation in rows.into_records() {
                 result
                     .outgoing

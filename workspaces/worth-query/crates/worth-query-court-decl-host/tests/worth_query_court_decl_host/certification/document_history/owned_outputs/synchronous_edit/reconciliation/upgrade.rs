@@ -1,5 +1,4 @@
 //! Equal output from a new installed implementation must physically publish.
-use super::super::failure;
 use super::*;
 use worth_relational::facade::inspection::observe_maintenance_work;
 fn settle(
@@ -31,13 +30,10 @@ fn settle(
     panic!("upgraded producer tree must settle within its request bound");
 }
 fn run(worker: bool) {
-    let mut saved = None;
-    courts::with_legacy_rows(worker, |host, _, expected| {
-        saved = Some((failure::checkpoint(host), expected));
-    });
-    let (checkpoint, expected) = saved.unwrap();
     let _observation = WorthQueryExecutionObservation::install_on_this_thread();
-    let host = world::restore_program_checkpoint::<program::Lazy>(checkpoint, worker, true);
+    let (host, expected) = courts::build_legacy_rows(worker);
+    let directory = host.checkpoint_and_close_for_reopen();
+    let host = world::reopen_program_directory::<program::Lazy>(directory, worker, true);
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);

@@ -1,5 +1,5 @@
 //! Continuable unpublished dispatch correlations resolve strictly once published.
-use super::recovered::{describe, native_denial, world_denial, RecoveredDispatchSelector};
+use super::recovered::{describe_observed, native_denial, world_denial, RecoveredDispatchSelector};
 use super::*;
 use crate::domain_computation::application_aftermath::ExternalEffectCorrelationIdentity;
 use worth_foundational::facade::{DurableCompositePublicationAttemptIdentity, WorldOriginalFate};
@@ -58,20 +58,24 @@ impl WorthQueryPrimaryGraphProvider {
                 }
                 Err(cause) => return Err(world_denial(cause)),
             };
-            let description = describe(&original, inspection)?;
+            // Once World has readmitted the original, read it through the
+            // same observed-Home publication path as every recovered source.
+            drop(original);
+            let native = runtime
+                .durability_authority()
+                .readmit_associated_effect(execution, &pending.selector.subject)
+                .map_err(native_denial)?;
+            let original = observation
+                .observe_home_original_publication(execution, native)
+                .map_err(world_denial)?;
+            let description = describe_observed(&original, inspection)?;
             let record =
                 self.original_record(execution, &original, pending.selector.entity, &description)?;
             if record != pending.selector.record {
                 return Err(Denial::RecordMismatch);
             }
-            self.read_recovered_with_original(
-                execution,
-                runtime,
-                &pending.selector,
-                &original,
-                description,
-            )
-            .map(Some)
+            self.read_recovered_with_original(runtime, &pending.selector, &original, description)
+                .map(Some)
         })?;
         match resolved {
             Some(owner) => {

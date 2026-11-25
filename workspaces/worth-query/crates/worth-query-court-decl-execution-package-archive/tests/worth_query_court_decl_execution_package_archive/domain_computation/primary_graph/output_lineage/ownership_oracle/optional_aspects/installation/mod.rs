@@ -3,7 +3,6 @@ use std::sync::atomic::AtomicUsize;
 use std::sync::Arc;
 use worth_foundational::facade::ApplicationBuildIdentity;
 use worth_query_execution::facade::application_installation::in_memory_program;
-use worth_query_execution::facade::application_installation::WorthQueryApplicationCheckpoint;
 use worth_query_execution::facade::application_installation::WorthQueryApplicationLimits;
 use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -290,32 +289,4 @@ pub fn limits<Schema: BirthSchema>() -> WorthQueryApplicationLimits {
         Default::default(),
         worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
     )
-}
-pub fn restore<Schema: BirthSchema + ApplicationSchemaComposition<Contributions = (Members,)>>(
-    checkpoint: WorthQueryApplicationCheckpoint,
-) -> Application<Schema> {
-    restore_with_projection::<Schema>(checkpoint).0
-}
-
-pub fn restore_with_projection<
-    Schema: BirthSchema + ApplicationSchemaComposition<Contributions = (Members,)>,
->(
-    checkpoint: WorthQueryApplicationCheckpoint,
-) -> (
-    Application<Schema>,
-    WorthQueryApplicationInvariantProjectionAuthority<Schema>,
-) {
-    worth_query_execution::facade::application_installation::WorthQueryInterimCheckpointRestore::program_with_projection(
-        ApplicationProgramAuthoring::<Schema, Program<Schema>>::begin()
-            .with_schema(&Schema::declaration().unwrap())
-            .validated_program()
-            .unwrap(),
-        Schema::declaration().unwrap(),
-        (false,),
-        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111")
-            .expect("embedded application build identity"),
-        limits::<Schema>(),
-        checkpoint,
-    )
-    .unwrap()
 }

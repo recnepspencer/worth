@@ -23,6 +23,7 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
 
         presented: &WorthQueryPresentedProgram<'_>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
+        retain_output_observation: bool,
         causality: ApplicationCommitCausality,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
         coordination: Option<&crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'_>>,
@@ -59,7 +60,7 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
         .compare_and_commit_application_with_causality_under_coordination(
             execution,
             idempotency,
-            true,
+            retain_output_observation,
             causality,
             None,
             allocation_policy,

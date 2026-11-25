@@ -63,6 +63,45 @@ pub(in crate::domain_computation::primary_graph) fn read_activation(
         .bounded_entities_of_kind(execution, layout.entity_kind, maximum_work_units)
         .map_err(super::request_read_denial::read)?
         .map_err(|_| denial("recovered program activation scan exceeded its bound"))?;
+    decode_activation(read, layout, mismatch_subject, accepts)
+}
+
+/// Reads the activation during Home readmission using the restricted metadata view.
+pub(in crate::domain_computation::primary_graph) fn read_activation_home_readmission(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    branch: &worth_relational::facade::runtime::HomeReadmissionMetadataView<'_>,
+    layout: &super::super::schema_layout::WorthQueryProgramActivationLayout,
+    maximum_work_units: usize,
+    mismatch_subject: &str,
+    accepts: impl FnOnce(&worth_foundational::facade::AspectValue) -> bool,
+) -> Result<
+    (worth_relational::facade::identity::EntityId, usize),
+    WorthQueryPrimaryGraphInstallationDenial,
+> {
+    use worth_relational::facade::runtime::HomeReadmissionMetadataReadDenial as ReadDenial;
+    let read = branch
+        .bounded_entities_of_kind(execution, layout.entity_kind, maximum_work_units)
+        .map_err(|cause| match cause {
+            ReadDenial::Execution(cause) => super::request_read_denial::read(cause),
+            ReadDenial::PhaseClosed => denial("Home readmission metadata phase already closed"),
+            ReadDenial::KindNotAdmitted(kind) => denial(format!(
+                "Home readmission metadata kind {} is not admitted",
+                kind.0
+            )),
+        })?
+        .map_err(|_| denial("recovered program activation scan exceeded its bound"))?;
+    decode_activation(read, layout, mismatch_subject, accepts)
+}
+
+fn decode_activation(
+    read: worth_relational::facade::runtime::BoundedEntityKindTruthRead,
+    layout: &super::super::schema_layout::WorthQueryProgramActivationLayout,
+    mismatch_subject: &str,
+    accepts: impl FnOnce(&worth_foundational::facade::AspectValue) -> bool,
+) -> Result<
+    (worth_relational::facade::identity::EntityId, usize),
+    WorthQueryPrimaryGraphInstallationDenial,
+> {
     let work = read.work_units();
     let records = read.into_records();
     let [record] = records.as_slice() else {

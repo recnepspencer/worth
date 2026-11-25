@@ -35,7 +35,7 @@ mod serial {
         let _guard = checkpoint_recovery_test_guard();
         let _observation = WorthQueryExecutionObservation::install_on_this_thread();
         take();
-        let mut application = install(None);
+        let application = install(None);
         {
             let (scope, principal) = authenticate(&application);
             let request = application.request(&principal, &scope);
@@ -170,6 +170,6 @@ mod serial {
                 .unwrap_or_else(|stop| panic!("{:?}", stop.denial()));
             drop((original, closed_successor));
         }
-        application.close_conditional_runtime().unwrap();
+        let _ = application.close_for_reopen();
     }
 }

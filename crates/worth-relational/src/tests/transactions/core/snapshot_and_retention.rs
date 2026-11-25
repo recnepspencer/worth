@@ -269,13 +269,17 @@ fn readmitted_cold_source_refill_succeeds_at_exact_observation_retention_ceiling
     );
     let ckpt = runtime
         .durability_authority()
-        .native_checkpoint(&exec, exec.allocation_policy())
+        .native_checkpoint_with_policy(
+&exec,
+exec.allocation_policy(),
+crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None },
+)
         .unwrap();
 
     let (mut recovered, _) = install(reg.clone(), program.clone());
     recovered
         .durability_recovery()
-        .restore_native_checkpoint(&exec, &ckpt)
+        .restore_native_checkpoint(&exec, &ckpt, crate::tests::support::durability::captured_members_source(&ckpt))
         .unwrap();
     recovered
         .readmit_recovered_initial_schema_installation(receipt.clone())
@@ -349,7 +353,7 @@ fn readmitted_cold_source_refill_succeeds_at_exact_observation_retention_ceiling
     let (mut stale, _) = install(reg, program.clone());
     stale
         .durability_recovery()
-        .restore_native_checkpoint(&exec, &ckpt)
+        .restore_native_checkpoint(&exec, &ckpt, crate::tests::support::durability::captured_members_source(&ckpt))
         .unwrap();
     stale
         .readmit_recovered_initial_schema_installation(receipt)

@@ -10,8 +10,7 @@ fn exercise(worker: bool) {
     } else {
         host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
     };
-    let host: WorthQueryProgramApplicationRuntime<Schema, program::Program> =
-        world::install_program_with_value(limits, 2);
+    let host = world::open_directory_program_with_value::<program::Program>(limits, 2);
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);

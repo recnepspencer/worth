@@ -64,7 +64,11 @@ fn ordinary_deletion_and_producer_retire_never_reopen_a_birth_route_after_restor
         release_test_commit_snapshot(&runtime, &committed);
         let saved = runtime
             .durability_authority()
-            .native_checkpoint(execution, execution.allocation_policy())
+            .native_checkpoint_with_policy(
+execution,
+execution.allocation_policy(),
+worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None },
+)
             .unwrap();
         let mut cold = runtime_with_test_schema();
         let receipt = cold
@@ -73,7 +77,7 @@ fn ordinary_deletion_and_producer_retire_never_reopen_a_birth_route_after_restor
             .install(RelationalSchemaRegistry::new())
             .unwrap();
         cold.durability_recovery()
-            .restore_native_checkpoint(execution, &saved)
+            .restore_native_checkpoint(execution, &saved, worth_testkit_relational::cold_recovery::members_source(&saved))
             .unwrap();
         let receipt = cold
             .readmit_recovered_initial_schema_installation(receipt)
@@ -81,7 +85,11 @@ fn ordinary_deletion_and_producer_retire_never_reopen_a_birth_route_after_restor
         let (_, installed) = receipt.issue_application_publication_owner();
         let before = cold
             .durability_authority()
-            .native_checkpoint(execution, execution.allocation_policy())
+            .native_checkpoint_with_policy(
+execution,
+execution.allocation_policy(),
+worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None },
+)
             .unwrap();
         let basis = cold
             .admit_branch_basis(&cold.main_branch_identity())
@@ -100,7 +108,11 @@ fn ordinary_deletion_and_producer_retire_never_reopen_a_birth_route_after_restor
         );
         assert_eq!(
             cold.durability_authority()
-                .native_checkpoint(execution, execution.allocation_policy())
+                .native_checkpoint_with_policy(
+execution,
+execution.allocation_policy(),
+worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None },
+)
                 .unwrap(),
             before
         );

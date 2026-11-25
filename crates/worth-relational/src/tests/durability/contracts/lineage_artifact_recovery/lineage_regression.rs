@@ -21,7 +21,7 @@ fn tail_created_lineage_regression_below_checkpoint_high_water_denies() {
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);
     create_entity_outcome(execution, &runtime, "lineage-regression-checkpoint");
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     create_entity_outcome(execution, &runtime, "lineage-regression-tail");
     let mut plan = medium
         .recovery_plan(
@@ -57,7 +57,7 @@ fn tail_lineage_event_regression_below_checkpoint_high_water_denies() {
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);
     create_entity_outcome(execution, &runtime, "event-regression-checkpoint");
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     create_entity_outcome(execution, &runtime, "event-regression-tail");
     let mut plan = medium
         .recovery_plan(
@@ -87,7 +87,7 @@ fn tail_lineage_commit_and_branch_cross_splices_deny() {
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);
     create_entity_outcome(execution, &runtime, "cross-splice-checkpoint");
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     create_entity_outcome(execution, &runtime, "cross-splice-tail");
     let mut plan = medium
         .recovery_plan(
@@ -145,7 +145,7 @@ fn plan_with_group_frame(
     let medium = OwnedTestDurableMedium::new();
     let runtime = durable_runtime_for_medium(&medium);
     create_entity_outcome(execution, &runtime, "group-posture");
-    medium.file_embedded_checkpoint(execution, &runtime);
+    capture_and_file_checkpoint(execution, &runtime, &medium);
     let mode = RecoveryMode::NormalRecoveryVerification;
     let mut plan = medium.recovery_plan(execution, &runtime, mode).unwrap();
     let envelopes = plan.checkpoint.as_mut().unwrap().envelopes_mut_for_test();

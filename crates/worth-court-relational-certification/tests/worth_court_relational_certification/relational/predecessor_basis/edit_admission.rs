@@ -27,7 +27,7 @@ fn ordinary_edit_custody_requires_a_live_source_in_its_exact_current_basis() {
     drop(admitted);
     let before = runtime
         .durability_authority()
-        .native_checkpoint(execution, execution.allocation_policy())
+        .native_checkpoint_with_policy(execution, execution.allocation_policy(), worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
         .unwrap();
     let missing = EntityId::new(
         source.partition_id,
@@ -48,7 +48,7 @@ fn ordinary_edit_custody_requires_a_live_source_in_its_exact_current_basis() {
     assert_eq!(
         runtime
             .durability_authority()
-            .native_checkpoint(execution, execution.allocation_policy())
+            .native_checkpoint_with_policy(execution, execution.allocation_policy(), worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
             .unwrap(),
         before
     );
@@ -56,7 +56,7 @@ fn ordinary_edit_custody_requires_a_live_source_in_its_exact_current_basis() {
     world.change_source(execution, "other-edit");
     let before = runtime
         .durability_authority()
-        .native_checkpoint(execution, execution.allocation_policy())
+        .native_checkpoint_with_policy(execution, execution.allocation_policy(), worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
         .unwrap();
     let denied = runtime
         .readmit_edit_coupled_owners(execution, installed, &basis, source)
@@ -72,7 +72,7 @@ fn ordinary_edit_custody_requires_a_live_source_in_its_exact_current_basis() {
     assert_eq!(
         runtime
             .durability_authority()
-            .native_checkpoint(execution, execution.allocation_policy())
+            .native_checkpoint_with_policy(execution, execution.allocation_policy(), worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None })
             .unwrap(),
         before
     );

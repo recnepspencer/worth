@@ -112,9 +112,6 @@ pub use correction_material_pin::{
     CorrectionMaterialPinIdentity, CorrectionMaterialPinOwner, CorrectionMaterialPinTerminal,
 };
 
-mod unclean_recovery;
-pub use unclean_recovery::UncleanRecoveryUnsupported;
-
 mod recovery_claim;
 pub use recovery_claim::{DurableRecoveryClaimIdentity, RecoveryClaimDisposition};
 mod world_original_fate;

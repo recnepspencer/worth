@@ -56,6 +56,24 @@ impl QueryObligationHistory {
             })
             .unwrap_or_default()
     }
+    pub fn active_output_sources_for_branch(
+        &self,
+        branch: &str,
+        lifecycle: u64,
+    ) -> Vec<DurableCompositeCommitIdentity> {
+        self.state()
+            .journal
+            .as_ref()
+            .map(|journal| {
+                ledger_inspect::output(&journal.ledger)
+                    .sources
+                    .values()
+                    .filter(|row| row.branch == branch && row.lifecycle == lifecycle)
+                    .map(|row| row.commit)
+                    .collect()
+            })
+            .unwrap_or_default()
+    }
     pub fn retain_output_source(
         &self,
         request: &ExecutionRequest<'_, '_>,
@@ -66,6 +84,13 @@ impl QueryObligationHistory {
         };
         let driver = self.lock_publication()?;
         driver.finish_pending(medium.as_ref(), request)?;
+        if self
+            .state()
+            .retired_branches
+            .contains(&(row.branch.clone(), row.lifecycle))
+        {
+            return Err(QueryObligationDenial::ObligationSubjectMismatch);
+        }
         if let Some(prior) = self.state().journal.as_ref().and_then(|journal| {
             ledger_inspect::output(&journal.ledger)
                 .sources

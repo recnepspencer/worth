@@ -53,7 +53,9 @@ pub mod retention_body;
 pub mod retirement;
 #[path = "operation_body/schema.rs"]
 pub mod schema;
-pub use installation::{install, install_with_projection};
+pub use installation::{
+    close_directory, install, install_with_projection, open_directory, unique_directory,
+};
 
 pub use schema::*;
 pub use worth_query_host::facade::application_installation::ApplicationBuildIdentity;

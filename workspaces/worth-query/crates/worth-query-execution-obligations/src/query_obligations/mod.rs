@@ -68,7 +68,7 @@ pub use output_custody::{
 };
 pub use program_support::{QueryProgramSupportObligation, QueryProgramSupportRecord};
 
-pub const QUERY_OBLIGATION_FRAME_MAX_BYTES: u64 = 16 * 1024;
+pub const QUERY_OBLIGATION_FRAME_MAX_BYTES: u64 = 256 * 1024;
 mod managed_cleanup;
 pub use managed_cleanup::{
     QueryManagedCleanupObligation, QueryManagedCleanupOriginal, QueryManagedCleanupRecord,

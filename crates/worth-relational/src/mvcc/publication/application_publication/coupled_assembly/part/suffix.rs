@@ -18,6 +18,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         mut batches: Vec<WorkerIntentBatch>,
         mut naming: Option<&mut crate::lineage::data::CommitNamingPlan>,
     ) -> Result<AppliedSuffix, RelationalCoupledAssemblyFailure> {
+        let successor = matches!(writer, SuffixWriter::Successor { .. });
         let (creator, source, custody, local_keys) = suffix_scope::scope(
             execution,
             writer,
@@ -67,7 +68,11 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         // endpoints are lowered, for every writer's suffix.
         let (intents, originals) =
             suffix_scope::normalize(execution, intents, &self.mutation.outcome.created_entities)?;
-        let read = self.pin_source(execution)?;
+        let read = if successor {
+            self.retracted_pin(execution)?
+        } else {
+            self.pin_source(execution)?
+        };
         // The pin's own read residency lends the base partitions.
         let root = read.resident_basis().basis();
         let plan = self

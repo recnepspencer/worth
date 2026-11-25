@@ -87,7 +87,7 @@ fn owned_boundary_and_independent_references_survive_cold_preserve_but_block_ret
     let saved = capture(execution, &world.runtime);
     let (mut cold, receipt) = installed_references(1);
     cold.durability_recovery()
-        .restore_native_checkpoint(execution, &saved)
+        .restore_native_checkpoint(execution, &saved, worth_testkit_relational::cold_recovery::members_source(&saved))
         .unwrap();
     let receipt = cold
         .readmit_recovered_initial_schema_installation(receipt)
@@ -240,7 +240,7 @@ fn owned_boundary_and_independent_references_survive_cold_preserve_but_block_ret
     let (mut reopened, receipt) = installed_references(1);
     reopened
         .durability_recovery()
-        .restore_native_checkpoint(execution, &saved)
+        .restore_native_checkpoint(execution, &saved, worth_testkit_relational::cold_recovery::members_source(&saved))
         .unwrap();
     let receipt = reopened
         .readmit_recovered_initial_schema_installation(receipt)
@@ -328,12 +328,7 @@ fn assert_retirement_refused(
     reference: RelationId,
 ) {
     let (mut target, _) = installed_references(2);
-    let (_, mut recovered) = target
-        .durability_recovery()
-        .restore_native_checkpoint_for_codec_transition_with_authority(
-            execution,
-            &capture(execution, source),
-        )
+    let (_, mut recovered) = crate::relational::relational_certification::cold_residency::codec_neutrality::fixture::restore_codec_transition(&mut target, execution, &capture(execution, source))
         .unwrap();
     let before = capture(execution, &target);
     let selected = basis(&target);

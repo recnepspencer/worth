@@ -46,12 +46,7 @@ fn transitioned(
     world: &World,
 ) -> RelationalRuntime {
     let (mut target, _receipt) = installed(2);
-    let (_, mut recovered) = target
-        .durability_recovery()
-        .restore_native_checkpoint_for_codec_transition_with_authority(
-            execution,
-            &capture(execution, &world.runtime),
-        )
+    let (_, mut recovered) = crate::relational::relational_certification::cold_residency::codec_neutrality::fixture::restore_codec_transition(&mut target, execution, &capture(execution, &world.runtime))
         .expect("the source checkpoint restores for transition");
     let (owner, installed) = target
         .durability_recovery()
@@ -151,12 +146,7 @@ fn recovered(
     RelationalInitialSchemaInstallationReceipt,
 ) {
     let (mut target, receipt) = installed(2);
-    let (_, recovered) = target
-        .durability_recovery()
-        .restore_native_checkpoint_for_codec_transition_with_authority(
-            execution,
-            &capture(execution, &world.runtime),
-        )
+    let (_, recovered) = crate::relational::relational_certification::cold_residency::codec_neutrality::fixture::restore_codec_transition(&mut target, execution, &capture(execution, &world.runtime))
         .unwrap();
     assert!(recovered.codec_transition_pending());
     (target, recovered, receipt)
@@ -326,12 +316,7 @@ fn unsupported_ordering_index_refuses_codec_restore_without_replacing_the_target
     let (mut target, _) = installed(2);
     let initial_id = target.runtime_instance_id();
     let initial_schema = target.config().schema.registry;
-    let denied = target
-        .durability_recovery()
-        .restore_native_checkpoint_for_codec_transition_with_authority(
-            execution,
-            &capture(execution, &world.runtime),
-        )
+    let denied = crate::relational::relational_certification::cold_residency::codec_neutrality::fixture::restore_codec_transition(&mut target, execution, &capture(execution, &world.runtime))
         .unwrap_err();
     assert!(
         matches!(denied,facade::durability::RelationalRecoveryStop::Durability(error) if error.class==facade::durability::RecoveryFailureClass::SchemaMismatch)

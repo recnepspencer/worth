@@ -31,6 +31,7 @@ pub enum WorthQueryProductPreparationStage {
 pub struct WorthQueryProductPreparationPending {
     stage: WorthQueryProductPreparationStage,
     recovery: WorthQueryProductUnpublishedRecovery,
+    native_preparation_error: Option<Box<worth_relational::facade::mvcc::TransactionCommitError>>,
     // The checked-out preparation contains the full Native and World phases.
     // Keep that original owner out of every ordinary commit-result stack frame.
     preparation: Option<Box<dyn std::any::Any + Send>>,
@@ -45,8 +46,21 @@ impl WorthQueryProductPreparationPending {
         Self {
             stage,
             recovery: WorthQueryProductUnpublishedRecovery::new(handle, recovery, disposition),
+            native_preparation_error: None,
             preparation: None,
         }
+    }
+    pub fn with_native_preparation_error(
+        mut self,
+        error: worth_relational::facade::mvcc::TransactionCommitError,
+    ) -> Self {
+        self.native_preparation_error = Some(Box::new(error));
+        self
+    }
+    pub fn native_preparation_error(
+        &self,
+    ) -> Option<&worth_relational::facade::mvcc::TransactionCommitError> {
+        self.native_preparation_error.as_deref()
     }
     pub fn retaining_preparation(mut self, preparation: Box<dyn std::any::Any + Send>) -> Self {
         self.preparation = Some(preparation);
@@ -78,6 +92,7 @@ impl std::fmt::Debug for WorthQueryProductPreparationPending {
         f.debug_struct("WorthQueryProductPreparationPending")
             .field("stage", &self.stage)
             .field("recovery", &self.recovery)
+            .field("native_preparation_error", &self.native_preparation_error)
             .field("preparation", &self.preparation)
             .finish()
     }

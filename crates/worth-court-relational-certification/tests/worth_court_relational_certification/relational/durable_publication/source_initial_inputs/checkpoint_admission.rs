@@ -8,7 +8,6 @@ mod capture_cost;
 pub(crate) mod cold_materialization;
 mod contract_work;
 mod indexes;
-mod interim_origin;
 mod operational;
 mod references;
 mod region_memory;
@@ -166,10 +165,7 @@ fn checkpoint_image_sealing_refuses_a_different_original_source_or_cut() {
         complete_source_digest,
         world_through,
         world_image_digest,
-    } = scope
-    else {
-        panic!("the fixture has a Home cut");
-    };
+    } = scope;
     let changed_source = CheckpointAdmissionScope::Home {
         home,
         native_origin,

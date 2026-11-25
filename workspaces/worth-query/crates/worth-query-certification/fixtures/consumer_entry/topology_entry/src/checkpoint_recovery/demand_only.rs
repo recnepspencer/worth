@@ -26,7 +26,7 @@ mod serial {
         let _guard = checkpoint_recovery_test_guard();
         let provider_observation = crate::producer::ProviderContacts::default();
         provider_observation.reset();
-        let application = support::observed::install_program::<DemandProgram>(
+        let application = support::observed::open_directory_program::<DemandProgram>(
             None,
             Default::default(),
             &provider_observation,
@@ -76,20 +76,14 @@ mod serial {
             length(2),
             "saving does not update the seeded output value"
         );
-        let checkpoint = application
-            .with_application_advancement(&scope, |phase| {
-                application.capture_application_checkpoint(&phase, CapturePolicy::SystemAllocation)
-            })
-            .expect("the original request admits native capture")
-            .expect("the unassessed source is checkpointable");
         drop(receipt);
         drop(observed);
         drop(principal);
         drop(scope);
-        drop(application);
+        let directory = application.checkpoint_and_close_for_reopen();
 
-        let restored = support::observed::install_program::<DemandProgram>(
-            Some(checkpoint),
+        let restored = support::observed::open_directory_program::<DemandProgram>(
+            Some(directory),
             Default::default(),
             &provider_observation,
         );

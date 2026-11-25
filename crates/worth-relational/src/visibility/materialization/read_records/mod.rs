@@ -13,7 +13,8 @@ pub use projection::{
     RelationalAspectPresenceSupportDenial, RelationalBorrowedRecordReadDenial,
     RelationalEntityMetadata, RelationalEntityRetirement, RelationalFieldSupportComparisonDenial,
     RelationalProjectedFieldObservation, RelationalProjectionContractDenial,
-    RelationalRelationMetadata, VisibilityProjectionView,
+    RelationalRelationMetadata, HomeReadmissionMetadataReadDenial, HomeReadmissionMetadataView,
+    VisibilityProjectionView,
 };
 pub use reader::{
     AdjacencyTruthReadLimitExceeded, BoundedAdjacencyTruthRead, BoundedEntityKindTruthRead,

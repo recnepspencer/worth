@@ -43,6 +43,31 @@ impl WorthQueryApplicationHomeClosed {
     }
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQueryApplicationHomeClosePhase {
+    MemoryLifecycle,
+    WorldAdmission,
+    QueryAdmission,
+    WorldClose,
+    QueryRetirement,
+    MaintenanceRetirement,
+    PhysicalClose,
+}
+
+impl WorthQueryApplicationHomeClosePhase {
+    const fn label(self) -> &'static str {
+        match self {
+            Self::MemoryLifecycle => "memory-lifecycle",
+            Self::WorldAdmission => "world-admission",
+            Self::QueryAdmission => "query-admission",
+            Self::WorldClose => "world-close",
+            Self::QueryRetirement => "query-retirement",
+            Self::MaintenanceRetirement => "maintenance-retirement",
+            Self::PhysicalClose => "physical-close",
+        }
+    }
+}
+
 pub struct WorthQueryApplicationHomeCloseRefused<Schema, Program> {
     custody: Box<CloseCustody<Schema, Program>>,
 }
@@ -51,6 +76,30 @@ impl<Schema, Program> WorthQueryApplicationHomeCloseRefused<Schema, Program> {
     fn from_custody(custody: CloseCustody<Schema, Program>) -> Self {
         Self {
             custody: Box::new(custody),
+        }
+    }
+
+    pub fn phase(&self) -> WorthQueryApplicationHomeClosePhase {
+        match self.custody.as_ref() {
+            CloseCustody::MemoryLifecycleRequired(_) => {
+                WorthQueryApplicationHomeClosePhase::MemoryLifecycle
+            }
+            CloseCustody::WorldAdmission { .. } => {
+                WorthQueryApplicationHomeClosePhase::WorldAdmission
+            }
+            CloseCustody::QueryAdmission { .. } => {
+                WorthQueryApplicationHomeClosePhase::QueryAdmission
+            }
+            CloseCustody::World { .. } => WorthQueryApplicationHomeClosePhase::WorldClose,
+            CloseCustody::QueryRetirement { .. } => {
+                WorthQueryApplicationHomeClosePhase::QueryRetirement
+            }
+            CloseCustody::MaintenanceRetirement { .. } => {
+                WorthQueryApplicationHomeClosePhase::MaintenanceRetirement
+            }
+            CloseCustody::QueryReleased { .. } => {
+                WorthQueryApplicationHomeClosePhase::PhysicalClose
+            }
         }
     }
 }
@@ -99,16 +148,7 @@ impl<Schema, Program> std::fmt::Debug for WorthQueryApplicationHomeCloseRefused<
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut output = f.debug_struct("WorthQueryApplicationHomeCloseRefused");
         output.field("reason", &self.detail());
-        let phase = match self.custody.as_ref() {
-            CloseCustody::MemoryLifecycleRequired(_) => "memory-lifecycle",
-            CloseCustody::WorldAdmission { .. } => "world-admission",
-            CloseCustody::QueryAdmission { .. } => "query-admission",
-            CloseCustody::World { .. } => "world-close",
-            CloseCustody::QueryRetirement { .. } => "query-retirement",
-            CloseCustody::MaintenanceRetirement { .. } => "maintenance-retirement",
-            CloseCustody::QueryReleased { .. } => "physical-close",
-        };
-        output.field("phase", &phase);
+        output.field("phase", &self.phase().label());
         if let CloseCustody::QueryReleased {
             posture: ApplicationHomeClosePosture::RecoveryRequired(custody),
             ..
@@ -128,6 +168,16 @@ impl<Schema: ApplicationSchema, Program: 'static> WorthQueryApplicationHome<Sche
         WorthQueryApplicationHomeCloseRefused<Schema, Program>,
     > {
         worth_execution::run_with_execution_stack(move || self.close_on_execution_stack(request))
+    }
+
+    pub fn close_in_advancement(
+        self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryBootstrapAdvancementPhase<'_>,
+    ) -> Result<
+        WorthQueryApplicationHomeClosed,
+        WorthQueryApplicationHomeCloseRefused<Schema, Program>,
+    > {
+        self.close(&phase.execution_request())
     }
 
     #[inline(never)]

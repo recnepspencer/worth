@@ -10,6 +10,8 @@ pub struct ReadmittedExistingHomeNativeMeaning<Schema: ApplicationSchemaComposit
     pub(super) state: Box<HomeApplicationState<Schema, Program>>,
     pub(super) schema: Box<InstalledNativeSchemaMeaning>,
     pub(super) restore_work: Option<worth_relational::facade::durability::CheckpointRestoreWork>,
+    pub(super) metadata_readmission_authority:
+        Option<worth_relational::facade::durability::HomeReadmissionMetadataAuthority>,
 }
 pub struct QueryExistingHomeNativeReadmissionRefused<Schema: ApplicationSchemaComposition, Program>
 {
@@ -53,6 +55,13 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeNativeMeaning<Sc
                     self.schema.receipt.clone(),
                 )
                 .map_err(super::super::super::initial_schema_denial::map_initial_schema_installation_denial)?;
+            let metadata_authority = recovered
+                .begin_home_readmission_metadata()
+                .map_err(|cause| {
+                    existing_denial(format!(
+                        "Home readmission metadata authority unavailable: {cause:?}"
+                    ))
+                })?;
             use super::super::super::bootstrap::home_publication::readmission::{
                 inspect_native_completion, RecoveredBootstrapPublication,
             };
@@ -63,6 +72,7 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeNativeMeaning<Sc
                 &self.state.support.initial_revision,
                 self.state.transition_installation.as_ref(),
                 &execution,
+                &metadata_authority,
             )? {
                 RecoveredBootstrapPublication::Incomplete => (),
                 RecoveredBootstrapPublication::Completed => {
@@ -72,13 +82,15 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeNativeMeaning<Sc
                     ).map_err(existing_denial)?;
                 }
             }
-            native_families::readmit(native, &self.schema.layout, &execution)
+            native_families::readmit(native, &self.schema.layout, &execution, &metadata_authority)?;
+            Ok(metadata_authority)
         })();
         match result {
-            Ok(()) => Ok(ReadmittedExistingHomeNativeMeaning {
+            Ok(metadata_authority) => Ok(ReadmittedExistingHomeNativeMeaning {
                 state: self.state,
                 schema: Box::new(self.schema.bind_sources(&native.main_branch_identity())),
                 restore_work: outcome.checkpoint_restore_work,
+                metadata_readmission_authority: Some(metadata_authority),
             }),
             Err(cause) => Err(QueryExistingHomeNativeReadmissionRefused {
                 _prepared: self,
@@ -98,6 +110,7 @@ impl<Schema: ApplicationSchemaComposition, Program>
             state,
             schema,
             restore_work: None,
+            metadata_readmission_authority: None,
         }
     }
 

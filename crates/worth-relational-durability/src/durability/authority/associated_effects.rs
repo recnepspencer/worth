@@ -204,6 +204,7 @@ pub trait ReadmittedRelationalAssociatedEffectOwnerPort: Sized {
     ) -> Self;
 
     fn branch(&self) -> &contracts::history::data::coordinates::BranchId;
+    fn readmitted_origin(&self) -> &ReadmittedEffectOrigin;
 }
 
 impl ReadmittedRelationalAssociatedEffectOwnerPort for ReadmittedRelationalAssociatedEffect {
@@ -223,5 +224,9 @@ impl ReadmittedRelationalAssociatedEffectOwnerPort for ReadmittedRelationalAssoc
 
     fn branch(&self) -> &contracts::history::data::coordinates::BranchId {
         self.branch()
+    }
+
+    fn readmitted_origin(&self) -> &ReadmittedEffectOrigin {
+        self.origin()
     }
 }

@@ -1,9 +1,7 @@
 //! An original's capture, paid on its request before the attempt's first owner
 //! effect. After the effect only its charge-free seal runs, so a request one
 //! unit short stops with no effect rather than after its commit.
-use super::memory_observation::{
-    MemoryPublicationMeaning, MemoryPublicationReceiver, MemoryPublicationRecord,
-};
+use super::memory_observation::{MemoryPublicationMeaning, MemoryPublicationRecord};
 use super::CanonicalPublicationEnvelope;
 use std::sync::{atomic::AtomicBool, Arc};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
@@ -92,7 +90,6 @@ impl CanonicalPublicationEnvelope {
         };
         let record = Arc::new(MemoryPublicationRecord {
             meaning: admitted.meaning,
-            receiver: MemoryPublicationReceiver::Live,
             before_component: admitted.before,
             after_component,
             committed: AtomicBool::new(false),

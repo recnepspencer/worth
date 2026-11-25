@@ -82,6 +82,24 @@ where
     pub fn is_directory(&self) -> bool {
         self.home.is_directory()
     }
+    pub fn checkpoint(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        worth_store_application::ApplicationHomeCheckpoint,
+        super::WorthQueryApplicationHomeCheckpointDenial,
+    > {
+        self.home.checkpoint(request)
+    }
+    pub fn inspect_checkpoint(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        worth_store_application::ApplicationHomeCheckpointInspection,
+        super::WorthQueryApplicationHomeCheckpointDenial,
+    > {
+        self.home.inspect_checkpoint(request)
+    }
     pub fn workflow_spec(&self) -> &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec> {
         self.configuration.workflow_spec()
     }

@@ -11,7 +11,6 @@ pub(super) enum EnvelopeDoor {
     Patches,
     Stream,
     RetainedExport,
-    EmbeddedCheckpoint,
     MemoryCheckpoint,
     ReplayEnvelope,
     ReplayExecution,
@@ -66,10 +65,6 @@ impl EnvelopeDoor {
                     worth_relational::facade::durability::RelationalCanonicalCommitArtifactEncodeDenial::StorageUnavailable(failure) => Execution::StorageUnavailable(failure),
                     other => panic!("funded real artifact: {other:?}"),
                 }),
-            Self::EmbeddedCheckpoint => runtime.durability_authority()
-                .native_checkpoint(execution, execution.allocation_policy())
-                .map(|checkpoint| checkpoint.bytes().len())
-                .map_err(super::checkpoint_read_refusal::native_stop),
             Self::MemoryCheckpoint => {
                 let image=runtime.durability_authority().checkpoint(execution).map_err(super::checkpoint_read_refusal::memory_stop)?;
                 let plan=runtime.durability().recovery_plan(execution,worth_relational::facade::durability::RecoveryVerificationMode::NormalRecoveryVerification).map_err(super::checkpoint_read_refusal::memory_stop)?;

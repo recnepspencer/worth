@@ -28,8 +28,7 @@ where
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         request: &WorthQueryRequestScope,
-        runtime_authority: u64,
-        observation: &WorthQueryProductBranchReadIdentity,
+        authority: &worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_transition_program::publication::operation::WorkflowOperationAuthority,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
             Ok(request) => request,
@@ -47,10 +46,11 @@ where
                 "workflow operation authority is no longer current",
             )
         };
-        if self.runtime.authority_identity().as_u64() != runtime_authority {
+        if self.runtime.authority_identity().as_u64() != authority.runtime_authority_u64() {
             return Err(mismatch());
         }
         check_request_live(request, "workflow operation authority")?;
+        let observation = authority.observation_identity();
         let selected = self
             .on_branch(observation.product_branch())
             .select_with_request(execution)
@@ -76,7 +76,16 @@ where
         if !observation.same_branch_occurrence(&current) {
             return Err(mismatch());
         }
-        Ok(())
+        authority.validate_on_selected_product(
+            execution,
+            request,
+            selected.product().retained_clone(),
+            |approval, product, session| {
+                self.readmit_workflow_approval_authority_on_product(
+                    execution, approval, product, session,
+                )
+            },
+        )
     }
 }
 

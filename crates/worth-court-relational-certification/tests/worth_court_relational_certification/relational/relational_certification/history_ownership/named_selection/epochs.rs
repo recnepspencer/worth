@@ -81,12 +81,16 @@ fn cold_reads_at_a_second_deletion_start_from_its_own_epoch_across_node_pages() 
 
     let checkpoint = runtime
         .durability_authority()
-        .native_checkpoint(execution, execution.allocation_policy())
+        .native_checkpoint_with_policy(
+execution,
+execution.allocation_policy(),
+worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None },
+)
         .unwrap();
     let mut expanded = named_runtime();
     expanded
         .durability_recovery()
-        .restore_native_checkpoint(execution, &checkpoint)
+        .restore_native_checkpoint(execution, &checkpoint, worth_testkit_relational::cold_recovery::members_source(&checkpoint))
         .unwrap();
     assert_eq!(
         history_start(execution, &expanded, member),

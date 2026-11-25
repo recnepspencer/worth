@@ -26,25 +26,14 @@ pub fn unrelated_restored_selection(population: u64) {
         None,
     );
     let execution = worth_execution::ExecutionRequest::serial(&host);
-    let mut metadata = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::metadata_funding::CheckpointMetadataFunding::new(&execution).unwrap();
-    metadata
-        .slots_for_test::<WorthQueryReadmittedAcceptedOutput>((population + 1) as usize, &execution)
-        .unwrap();
-    metadata
-        .bytes_for_test("producer".len() * (population + 1) as usize, &execution)
-        .unwrap();
-    metadata
-        .slots_for_test::<String>((population + 1) as usize, &execution)
-        .unwrap();
-    metadata.slots_for_test::<Vec<worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryCheckpointOutputRole>>((population + 1) as usize, &execution).unwrap();
     let records = (0..=population)
             .map(|number| WorthQueryReadmittedAcceptedOutput::new_for_test(WorthQueryAcceptedOutputCheckpointIdentity::new_for_test(worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint([0x11; 16], [0x22; 32]).unwrap(), ("producer".to_owned()).into(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture::Performed, [0x31; 32], scope, partition(number), None, [0x41; 32], (Vec::new()).into(), None, 0, None), Arc::clone(&correspondence)))
             .collect();
-    let recovered =
-        WorthQueryRecoveredOutputs::from_records_for_test(records, metadata, &execution).unwrap();
+    let recovered = WorthQueryRecoveredOutputs::default();
+    recovered.readmit_journal(records, &execution).unwrap();
     assert_eq!(recovered.iter().count(), (population + 1) as usize);
     let selected = recovered
-        .matching_source_partition_for_test(scope, partition(0))
+        .matching_source_partition(scope, partition(0))
         .collect::<Vec<_>>();
     assert_eq!(selected.len(), 1);
     assert_eq!(
@@ -52,7 +41,7 @@ pub fn unrelated_restored_selection(population: u64) {
         partition(0)
     );
     assert!(recovered
-        .matching_source_partition_for_test(scope, [0xff; 32])
+        .matching_source_partition(scope, [0xff; 32])
         .next()
         .is_none());
 }
