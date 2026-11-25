@@ -325,9 +325,9 @@ fn sol_r3_blocker_3_automatic_undo_and_redo_honor_installed_serial_ceiling() {
     let me = owner(&home, &clock);
     let session = home.session(&me);
 
-    // 1. Conventional `home.undo` seed selection honors the installed 2_000_000
-    //    serial ceiling and advances past seed selection to history selection
-    //    (refusing only with `SourceNotCorrectable`, never `WorkLimit`).
+    // 1. Conventional `home.undo` and `home.redo` seed selection both honor
+    //    the installed 2_000_000 serial ceiling and advance past seed selection
+    //    into history selection (never refusing with `WorkLimit`).
     let rename = session
         .run(RenameProject {
             project: 1,
@@ -342,6 +342,14 @@ fn sol_r3_blocker_3_automatic_undo_and_redo_honor_installed_serial_ceiling() {
         matches!(non_correctable, WorthQueryHomeUndoDenial::Correction(_))
             && format!("{non_correctable:?}").contains("SourceNotCorrectable"),
         "expected home.undo to pass installed serial seed selection and reach SourceNotCorrectable, got {non_correctable:?}"
+    );
+    let redo_err = home
+        .redo(&rename_entry, &me)
+        .expect_err("RenameProject has no recorded_inverse correction for redo");
+    assert!(
+        matches!(redo_err, WorthQueryHomeUndoDenial::Correction(_))
+            && format!("{redo_err:?}").contains("SourceNotCorrectable"),
+        "expected home.redo to pass installed serial seed selection and reach SourceNotCorrectable, got {redo_err:?}"
     );
 
     // 2. Authored-body automatic undo + redo on a 2_000_000 serial Home.
