@@ -7,7 +7,8 @@ court_seed = "courts"
 physical = true
 crate = "worth-relational-contracts"
 layer = 0
-cap = 68000
+# +100 for the typed later-stage retirement refusal (public #348).
+cap = 68100
 floor = 38300
 depends = []
 

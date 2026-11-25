@@ -9,6 +9,7 @@ mod authored_only;
 mod correction;
 mod early_settle;
 mod instance_replay;
+mod mixed_retirement;
 mod positioned;
 mod prefix;
 mod resolution;

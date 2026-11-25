@@ -91,4 +91,10 @@ pub enum AuthoredRetirementRefusal {
     UnadmittedAuthoredStage,
     /// The assembly completed before every admitted authored stage applied.
     MissingAuthoredStage,
+    /// Stage `stage` (0 is the prefix) retires `owner`; only the prefix retires (public #`issue`).
+    LaterStageRetirementPostponed {
+        issue: u16,
+        stage: usize,
+        owner: crate::identity::data::EntityId,
+    },
 }

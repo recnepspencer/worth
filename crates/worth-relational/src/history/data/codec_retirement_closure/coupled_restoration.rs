@@ -23,21 +23,24 @@ use worth_relational_contracts::internal_port::publication::data::publication_er
 impl RelationalRuntime {
     /// Explicit envelope conversion retains the genuine restoration plan.
     /// With no later stages the established independent/coupled choice stays.
+    /// Later stages run only inside the coupled assembly, so an envelope with
+    /// them always binds restoration custody (public #348); the caller then
+    /// admits their sources with `readmit_later_authored_stage_owners`.
     pub fn readmit_authored_restoration_stage_owners(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         installed: &RelationalInstalledApplicationPublicationAuthority,
         restoration: RelationalAuthoredRestoration,
-        later: &[EntityId],
+        later_stages: bool,
     ) -> Result<Option<RelationalAuthoredCoupledOwners>, TransactionCommitError> {
-        if later.is_empty() {
+        if !later_stages {
             return self.readmit_authored_restoration_coupled_owners(
                 execution,
                 installed,
                 restoration,
             );
         }
-        let owners = if (*restoration
+        Ok(Some(if (*restoration
             .retirement()
             .owner_coupled_authored_publication())
         .is_some()
@@ -84,9 +87,7 @@ impl RelationalRuntime {
                 Vec::new(),
                 None,
             )
-        };
-        self.readmit_later_authored_stage_owners(execution, installed, owners, later)
-            .map(Some)
+        }))
     }
 
     pub fn readmit_authored_restoration_coupled_owners(

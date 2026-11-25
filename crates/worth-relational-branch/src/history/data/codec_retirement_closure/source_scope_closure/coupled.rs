@@ -61,6 +61,7 @@ pub(super) fn validate_ancestry(
                     let retiring = select(&anchors, &preceding, context)?;
                     exact(
                         retiring.iter().map(|item| item.origin.as_ref()),
+                        std::iter::empty(),
                         source.publications.iter().map(Arc::as_ref),
                         false,
                         context,
@@ -68,9 +69,11 @@ pub(super) fn validate_ancestry(
                     let mut required = super::super::scope_dependents::linked_owners(
                         &anchors, &retiring, &preceding, context,
                     )?;
+                    let mut optional = Vec::new();
                     if !group.sources.is_edit() {
                         include_later(
-                            &mut required,
+                            &required,
+                            &mut optional,
                             later,
                             &preceding,
                             retiring.iter().map(|item| item.origin.as_ref()),
@@ -79,6 +82,7 @@ pub(super) fn validate_ancestry(
                     }
                     exact(
                         required.iter().map(|item| item.origin.as_ref()),
+                        optional.iter().map(|item| item.origin.as_ref()),
                         group
                             .participants
                             .iter()
@@ -147,9 +151,11 @@ pub(super) fn validate_ancestry(
                             })?;
                         required.push(current.clone());
                     }
+                    let mut optional = Vec::new();
                     if !group.sources.is_edit() {
                         include_later(
-                            &mut required,
+                            &required,
+                            &mut optional,
                             later,
                             &preceding,
                             retirement.publications.iter().map(Arc::as_ref),
@@ -158,6 +164,7 @@ pub(super) fn validate_ancestry(
                     }
                     exact(
                         required.iter().map(|item| item.origin.as_ref()),
+                        optional.iter().map(|item| item.origin.as_ref()),
                         group
                             .participants
                             .iter()
@@ -202,8 +209,12 @@ pub(super) fn validate_ancestry(
     Ok(())
 }
 
+/// Current owners of later edit stages' sources survive a retirement or
+/// restoration prefix as they survive a lone edit: each may republish, none
+/// must (public #348). Records that list one as a required owner still validate.
 fn include_later<'a>(
-    required: &mut Vec<SelectedOutputPublication>,
+    required: &[SelectedOutputPublication],
+    optional: &mut Vec<SelectedOutputPublication>,
     later: &[EntityId],
     preceding: &[SelectedOutputPublication],
     retired: impl ExactSizeIterator<Item = &'a CanonicalRequiredOutputOrigin> + Clone,
@@ -214,7 +225,12 @@ fn include_later<'a>(
             for other_family_bytes in retired
                 .clone()
                 .map(|item| item.meaning.family.len())
-                .chain(required.iter().map(|item| item.origin.meaning.family.len()))
+                .chain(
+                    required
+                        .iter()
+                        .chain(optional.iter())
+                        .map(|item| item.origin.meaning.family.len()),
+                )
             {
                 charge(
                     context,
@@ -226,21 +242,39 @@ fn include_later<'a>(
                 .any(|item| item.same_publication(&owner.origin))
                 && !required
                     .iter()
+                    .chain(optional.iter())
                     .any(|item| item.origin.same_publication(&owner.origin))
             {
-                required.push(owner);
+                optional.push(owner);
             }
         }
     }
     Ok(())
 }
 
+/// Every `required` route is recorded, and every recorded route is required
+/// or `optional`; each succeeds its exact predecessor.
 fn exact<'a, 'b>(
     required: impl Iterator<Item = &'b CanonicalRequiredOutputOrigin> + Clone,
+    optional: impl Iterator<Item = &'b CanonicalRequiredOutputOrigin> + Clone,
     recorded: impl Iterator<Item = &'a CanonicalRequiredOutputOrigin> + Clone,
     preserve: bool,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), Failure> {
+    let succeeds = |before: &CanonicalRequiredOutputOrigin, after: &CanonicalRequiredOutputOrigin| {
+        let valid = if preserve {
+            matches!(after.publication, CanonicalOutputPublication::Preserve { predecessor } if predecessor == before.commit.commit_id)
+        } else {
+            matches!(after.publication, CanonicalOutputPublication::AuthoredRetirement { predecessor } if predecessor == before.commit.commit_id)
+        };
+        if !valid || !after.source_scope_owned {
+            return Err(Failure::at_source(
+                before.meaning.source_scope,
+                "coupled group has a foreign predecessor".into(),
+            ));
+        }
+        Ok(())
+    };
     for before in required.clone() {
         for observed in recorded.clone() {
             charge(
@@ -257,34 +291,31 @@ fn exact<'a, 'b>(
                     "coupled group omits required owner".into(),
                 )
             })?;
-        let valid = if preserve {
-            matches!(after.publication, CanonicalOutputPublication::Preserve { predecessor } if predecessor == before.commit.commit_id)
-        } else {
-            matches!(after.publication, CanonicalOutputPublication::AuthoredRetirement { predecessor } if predecessor == before.commit.commit_id)
-        };
-        if !valid || !after.source_scope_owned {
-            return Err(Failure::at_source(
-                before.meaning.source_scope,
-                "coupled group has a foreign predecessor".into(),
-            ));
-        }
+        succeeds(before, after)?;
     }
     for observed in recorded {
-        for expected in required.clone() {
+        for expected in required.clone().chain(optional.clone()) {
             charge(
                 context,
                 observed.meaning.family.len() + expected.meaning.family.len() + 65,
             )?;
         }
-        if !required
+        if required
             .clone()
             .any(|item| item.meaning.same_route(&observed.meaning))
         {
-            return Err(Failure::at_source(
-                observed.meaning.source_scope,
-                "coupled group contains an extra owner".into(),
-            ));
+            continue;
         }
+        let before = optional
+            .clone()
+            .find(|item| item.meaning.same_route(&observed.meaning))
+            .ok_or_else(|| {
+                Failure::at_source(
+                    observed.meaning.source_scope,
+                    "coupled group contains an extra owner".into(),
+                )
+            })?;
+        succeeds(before, observed)?;
     }
     Ok(())
 }

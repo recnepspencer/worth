@@ -74,6 +74,7 @@ impl AuthoredPublicationReads<'_> {
             source: CoupledSource::Edit(source),
             retirements: Vec::new(),
             owners,
+            survivors: Vec::new(),
             current,
             deferred_edges,
             stages: Vec::new(),

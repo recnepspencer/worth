@@ -203,6 +203,15 @@ impl WorthQueryPrimaryGraphProvider {
 
         let coupling =
             self.native_authored_coupling(execution, session, &mut material, assembly)?;
+        // Later authored stages execute only inside Native's coupled assembly.
+        // Without it they would never run, and the prefix would commit alone.
+        if coupling.is_none()
+            && assembly.is_some_and(|assembly| !assembly.authored_stage_sources().is_empty())
+        {
+            return Err(closure_failure(
+                "later authored stages require Native coupled assembly",
+            ));
+        }
         self.bind_independent_restoration(&mut material)?;
         let appendix = if assembly.is_none()
             && coupling.is_none()

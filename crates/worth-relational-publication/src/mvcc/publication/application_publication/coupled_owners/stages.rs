@@ -78,12 +78,15 @@ impl AuthoredPublicationReads<'_> {
                         }
                         checkpoint(
                             context,
-                            (owners.owners.len() + owners.retirements.len()) as u64 + 1,
+                            (owners.owners.len()
+                                + owners.survivors.len()
+                                + owners.retirements.len()) as u64
+                                + 1,
                         )
                         .map_err(custody::execution_stop)?;
                         // A later source's current closure can also see a route
                         // genuinely retired by this prefix. Its actual retirement
-                        // custody must not become a required surviving writer.
+                        // custody must not become a surviving writer.
                         if owners
                             .retirements
                             .iter()
@@ -91,15 +94,24 @@ impl AuthoredPublicationReads<'_> {
                         {
                             continue;
                         }
-                        if !owners
-                            .owners
-                            .iter()
-                            .any(|known| known.origin.same_publication(&owner.origin))
-                        {
-                            owners
-                                .deferred_edges
-                                .extend(owner.origin.relations.iter().map(|edge| edge.id));
+                        let known = |list: &[RelationalRequiredOutputPublication]| {
+                            list.iter()
+                                .any(|known| known.origin.same_publication(&owner.origin))
+                        };
+                        if known(&owners.owners) || known(&owners.survivors) {
+                            continue;
+                        }
+                        owners
+                            .deferred_edges
+                            .extend(owner.origin.relations.iter().map(|edge| edge.id));
+                        // An Edit prefix's owners already survive. Under a
+                        // retirement or restoration prefix, a later edit stage
+                        // owes its source's owners what a lone edit does:
+                        // nothing; it may republish them (public #348).
+                        if owners.source.is_edit() {
                             owners.owners.push(owner);
+                        } else {
+                            owners.survivors.push(owner);
                         }
                     }
                     for current in stage.current {

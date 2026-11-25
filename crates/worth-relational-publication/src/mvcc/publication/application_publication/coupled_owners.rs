@@ -37,6 +37,10 @@ pub struct RelationalAuthoredCoupledOwners {
     pub(crate) source: CoupledSource,
     pub(crate) retirements: Vec<RelationalRequiredOutputPublication>,
     pub(crate) owners: Vec<RelationalRequiredOutputPublication>,
+    /// Current owners of later edit stages' sources under a Retirement or
+    /// Restoration prefix. Like a lone edit's, they survive and may republish,
+    /// but no later stage is required to (public #348).
+    pub(crate) survivors: Vec<RelationalRequiredOutputPublication>,
     pub(crate) current: Vec<worth_relational_branch::internal_port::history::data::codec_retirement_closure::output_correspondence::SelectedOutputPublication>,
     pub(crate) deferred_edges: BTreeSet<RelationId>,
     /// Sources of authored stages 2..k in envelope order, also when the
@@ -107,9 +111,17 @@ impl std::fmt::Debug for RelationalAuthoredCoupledOwners {
         f.debug_struct("RelationalAuthoredCoupledOwners")
             .field("source", &self.source.subject())
             .field("owner_count", &self.owners.len())
+            .field("survivor_count", &self.survivors.len())
             .field("retirement_count", &self.retirements.len())
             .finish_non_exhaustive()
     }
+}
+
+#[derive(Clone, Copy)]
+enum Recorded {
+    Owner,
+    Survivor,
+    Retiring,
 }
 
 /// Native classification of an installed declared producer route.
@@ -145,7 +157,11 @@ impl RelationalAuthoredCoupledOwners {
     ) -> Result<Option<RelationalDeclaredCoupledOwner<'_>>, TransactionCommitError> {
         execution
             .run_native_with_checkpoint(|context| {
-                for (publications, retiring) in [(&self.owners, false), (&self.retirements, true)] {
+                for (publications, posture) in [
+                    (&self.owners, Recorded::Owner),
+                    (&self.survivors, Recorded::Survivor),
+                    (&self.retirements, Recorded::Retiring),
+                ] {
                     for owner in publications {
                         checkpoint(
                             context,
@@ -157,12 +173,14 @@ impl RelationalAuthoredCoupledOwners {
                             && meaning.source_scope == source
                             && meaning.source_partition.bytes() == partition
                         {
-                            return Ok(Some(if retiring {
-                                RelationalDeclaredCoupledOwner::Retiring
-                            } else if matches!(self.source, CoupledSource::Edit(_)) {
-                                RelationalDeclaredCoupledOwner::Surviving(owner)
-                            } else {
-                                RelationalDeclaredCoupledOwner::RequiredSurviving(owner)
+                            return Ok(Some(match posture {
+                                Recorded::Retiring => RelationalDeclaredCoupledOwner::Retiring,
+                                Recorded::Owner if !matches!(self.source, CoupledSource::Edit(_)) => {
+                                    RelationalDeclaredCoupledOwner::RequiredSurviving(owner)
+                                }
+                                Recorded::Owner | Recorded::Survivor => {
+                                    RelationalDeclaredCoupledOwner::Surviving(owner)
+                                }
                             }));
                         }
                     }
@@ -273,6 +291,7 @@ impl AuthoredPublicationReads<'_> {
                     },
                     retirements,
                     owners,
+                    survivors: Vec::new(),
                     current,
                     deferred_edges,
                     stages: Vec::new(),
@@ -351,6 +370,7 @@ impl RelationalAuthoredCoupledOwnersOwnerPort for RelationalAuthoredCoupledOwner
             source,
             retirements,
             owners,
+            survivors: Vec::new(),
             current,
             deferred_edges,
             stages,

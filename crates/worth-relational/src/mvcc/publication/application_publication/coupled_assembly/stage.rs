@@ -49,6 +49,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         let applied = self.apply_suffix(
             execution,
             part::SuffixWriter::Authored {
+                stage: self.stages.len() + 1,
                 source,
                 roles: &mut roles,
             },

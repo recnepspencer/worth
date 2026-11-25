@@ -21,6 +21,8 @@ use worth_relational_contracts::internal_port as contracts;
 
 pub enum Writer<'a> {
     AuthoredPrefix,
+    /// Later authored stage `n` (the prefix is stage 0).
+    AuthoredStage(usize),
     Producer(Option<&'a CanonicalRequiredOutputOrigin>),
 }
 
@@ -33,11 +35,15 @@ pub fn require(
     std::collections::BTreeSet<contracts::identity::data::record_ids::RelationId>,
     TransactionCommitError,
 > {
-    let (writer, authored) = match posture {
-        Writer::AuthoredPrefix => (None, true),
-        Writer::Producer(prior) => (prior, false),
+    let (writer, authored, stage) = match posture {
+        Writer::AuthoredPrefix => (None, true, None),
+        Writer::AuthoredStage(stage) => (None, true, Some(stage)),
+        Writer::Producer(prior) => (prior, false, None),
     };
     let result = execution.run_native_with_checkpoint(|context| {
+        if let Some(stage) = stage {
+            require_prefix_retirement(context, custody, stage, plan)?;
+        }
         let mut roots = Vec::new();
         if let Some(writer) = writer {
             for member in &writer.members {
@@ -107,6 +113,45 @@ pub fn require(
         Ok(deferred_edges)
     }).map_err(stop)?;
     result.0
+}
+
+/// Only the prefix carries retirement custody until per-stage retirement
+/// events exist (public #369). A later stage that deletes the live owner of a
+/// source-scope publication the prefix does not retire is refused, typed and
+/// naming that stage, before its owned records are inspected.
+fn require_prefix_retirement(
+    context: &mut worth_execution::MapKernelContext<'_, '_>,
+    custody: &RelationalAuthoredCoupledOwners,
+    stage: usize,
+    plan: &contracts::transactions::data::outcomes::plan_artifacts::MergedCommitPlan,
+) -> Result<(), TransactionCommitError> {
+    for intent in &plan.merged_intents {
+        let MutationIntent::Entity(EntityMutationIntent::Delete(spec)) = intent else {
+            continue;
+        };
+        for publication in &custody.current {
+            let origin = &publication.origin;
+            checkpoint(context, (origin.members.len() + custody.retirements.len() + 1) as u64)
+                .map_err(stop)?;
+            if origin.source_scope_owned
+                && origin.meaning.source_scope == spec.entity_id
+                && origin.members.iter().any(|m| m.posture != Posture::Retire)
+                && !custody.retirements.iter().any(|p| p.origin.same_publication(origin))
+            {
+                return Err(TransactionCommitError::publication(
+                    PublicationError::authored_retirement(
+                        Cause::LaterStageRetirementPostponed {
+                            issue: 369,
+                            stage,
+                            owner: spec.entity_id,
+                        },
+                        RecordRef::Entity(spec.entity_id),
+                    ),
+                ));
+            }
+        }
+    }
+    Ok(())
 }
 
 fn stop(
