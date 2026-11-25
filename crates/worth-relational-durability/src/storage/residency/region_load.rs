@@ -186,6 +186,7 @@ fn load_head(
             sealed_watermarks: worth_relational_storage::internal_port::storage::substrate::record_arena::arena::extra_allocations::SealedAllocationWatermarks::capture(),
             commitment: Some(commitment),
             _history_custody: Some(history_custody),
+            working_set: OnceLock::new(),
             _memory: memory.retained.into_memory(),
         }))
     })
@@ -332,6 +333,7 @@ fn load_full(
             sealed_watermarks: worth_relational_storage::internal_port::storage::substrate::record_arena::arena::extra_allocations::SealedAllocationWatermarks::capture(),
             commitment: Some(commitment),
             _history_custody: None,
+            working_set: OnceLock::new(),
             _memory: retained.into_memory(),
         }))
     })

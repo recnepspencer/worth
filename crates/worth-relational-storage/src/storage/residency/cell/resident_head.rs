@@ -60,6 +60,7 @@ impl RelationalRegionResidency {
             sealed_watermarks: crate::storage::substrate::SealedAllocationWatermarks::capture(),
             commitment,
             _history_custody: None,
+            working_set: OnceLock::new(),
             _memory: None,
             kind_indexes,
         });
@@ -80,6 +81,7 @@ impl RelationalRegionResidency {
             symbol_inheritance: OnceLock::new(),
             symbol_aliases: OnceLock::new(),
             leases: AtomicUsize::new(1),
+            working_set: OnceLock::new(),
             _control_memory: None,
         });
         RelationalResidencyLease::accepted(cell, region)

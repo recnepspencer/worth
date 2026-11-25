@@ -1,6 +1,10 @@
 pub mod demand;
+#[path = "cell/eviction.rs"]
+pub mod eviction;
 #[path = "cell/reconstruction_head.rs"]
 pub mod reconstruction_head;
+#[path = "cell/working_set_charge.rs"]
+mod working_set_charge;
 pub use reconstruction_head::ReconstructedRegionHead;
 #[path = "cell/member_export.rs"]
 pub mod member_export;
@@ -66,6 +70,8 @@ pub struct ResidentRegion {
     pub commitment: Option<PartitionContentCommitment>,
     pub _memory: Option<worth_execution::ExecutionMemoryReservation>,
     pub kind_indexes: Option<Arc<super::kind_incremental::RegionKindIndexes>>,
+    /// Working-set credit for this exact allocation, returned on its last drop.
+    pub working_set: OnceLock<super::working_set::WorkingSetCharge>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -98,6 +104,7 @@ pub struct RelationalRegionResidency {
     raw_head: RegionLoadCache,
     raw_full: RegionLoadCache,
     pub leases: AtomicUsize,
+    working_set: OnceLock<eviction::WorkingSetBinding>,
     _control_memory: Option<Arc<worth_execution::ExecutionMemoryReservation>>,
 }
 
@@ -157,6 +164,7 @@ impl RelationalRegionResidency {
             symbol_inheritance: OnceLock::new(),
             symbol_aliases: OnceLock::new(),
             leases: AtomicUsize::new(0),
+            working_set: OnceLock::new(),
             _control_memory: None,
         }))
     }
@@ -194,6 +202,7 @@ impl RelationalRegionResidency {
             sealed_watermarks: crate::storage::substrate::SealedAllocationWatermarks::capture(),
             commitment,
             _history_custody: None,
+            working_set: OnceLock::new(),
             _memory: None,
             kind_indexes,
         });
@@ -212,6 +221,7 @@ impl RelationalRegionResidency {
             symbol_inheritance: OnceLock::new(),
             symbol_aliases: OnceLock::new(),
             leases: AtomicUsize::new(1),
+            working_set: OnceLock::new(),
             _control_memory: None,
         });
         RelationalResidencyLease::accepted(cell, region)

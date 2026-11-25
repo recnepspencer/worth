@@ -1,5 +1,6 @@
 //! Explicit region demand and raw readmission under the original cell gate.
 use super::*;
+use crate::storage::residency::working_set::ResidencyLevelKind;
 use worth_relational_contracts::internal_port::storage::data::storage_unavailable::RelationalStorageUnavailableCauseOwnerPort as _;
 pub mod readmission_count;
 impl RelationalRegionResidency {
@@ -18,6 +19,8 @@ impl RelationalRegionResidency {
                 .require_cell(self)
                 .map_err(|cause| self.failure(cause))?;
         }
+        // M4 §4.3: working-set bytes are reserved before this cell's gate.
+        let mut admission = self.admit_working_set(demand);
         let mut state = self
             .state
             .lock()
@@ -25,7 +28,9 @@ impl RelationalRegionResidency {
         let loaded = (|| {
             self.check_damage()?;
             if let ResidencyState::Cold = &**state {
+                self.require_capacity(admission.as_ref())?;
                 let region = self.raw_head(
+                    admission.as_mut(),
                     execution,
                     limit,
                     state
@@ -39,7 +44,9 @@ impl RelationalRegionResidency {
             if matches!(demand, ResidencyDemand::Full)
                 && let ResidencyState::Head { region } = &**state
             {
+                self.require_capacity(admission.as_ref())?;
                 let region = self.raw_full(
+                    admission.as_mut(),
                     region,
                     execution,
                     limit,
@@ -60,7 +67,10 @@ impl RelationalRegionResidency {
             }
         })();
         match readmission_count::acquire(loaded, &self.leases, self.partition_id) {
-            Ok(region) => Ok(region),
+            Ok(region) => {
+                self.mark_referenced();
+                Ok(region)
+            }
             Err(Failure::StorageUnavailable(failure)) => {
                 if failure.cause.is_proven_damage()
                     && failure.subject == RelationalStorageSubject::Region(self.partition_id)
@@ -91,6 +101,7 @@ impl RelationalRegionResidency {
     // bucket verification never waits for another region's serving admission.
     fn raw_head(
         &self,
+        admission: Option<&mut super::working_set_charge::WorkingSetAdmission>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         limit: u64,
         source: &Arc<dyn RelationalDurableColdSource>,
@@ -100,24 +111,35 @@ impl RelationalRegionResidency {
                 .backing
                 .as_ref()
                 .ok_or_else(|| self.failure(Cause::SourceUnavailable))?;
-            cold.read_head(source, execution, limit)
+            let region = cold.read_head(source, execution, limit)?;
+            self.charge_loaded(
+                region,
+                admission,
+                ResidencyLevelKind::Head,
+                cold.head.length,
+            )
         })
     }
 
     fn raw_full(
         &self,
+        admission: Option<&mut super::working_set_charge::WorkingSetAdmission>,
         head: &ResidentRegion,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         limit: u64,
         source: Option<&Arc<dyn RelationalDurableColdSource>>,
     ) -> Result<super::SharedResidentRegion, Failure> {
         cell_load_cache::load(&self.raw_full, self.partition_id, || match &self.backing {
-            Some(cold) => cold.read_full(
-                source.ok_or_else(|| self.failure(Cause::SourceUnavailable))?,
-                head,
-                execution,
-                limit,
-            ),
+            Some(cold) => {
+                let region = cold.read_full(
+                    source.ok_or_else(|| self.failure(Cause::SourceUnavailable))?,
+                    head,
+                    execution,
+                    limit,
+                )?;
+                let encoded = cold.head.length.saturating_add(cold.history.length);
+                self.charge_loaded(region, admission, ResidencyLevelKind::Full, encoded)
+            }
             None => self
                 .head_readmission
                 .as_ref()

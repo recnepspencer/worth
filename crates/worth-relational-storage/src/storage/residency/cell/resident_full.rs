@@ -46,6 +46,7 @@ impl RelationalRegionResidency {
             sealed_watermarks: crate::storage::substrate::SealedAllocationWatermarks::capture(),
             commitment: Some(commitment),
             _history_custody: None,
+            working_set: OnceLock::new(),
             _memory: memory,
         });
         let cell = Arc::new(Self {
@@ -63,6 +64,7 @@ impl RelationalRegionResidency {
             symbol_aliases: OnceLock::new(),
             symbol_inheritance: OnceLock::new(),
             leases: AtomicUsize::new(1),
+            working_set: OnceLock::new(),
             _control_memory: control_memory,
         });
         Ok(RelationalResidencyLease::accepted(cell, region))

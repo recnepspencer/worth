@@ -33,19 +33,23 @@ impl RegionLeaseCustody {
 }
 
 impl Clone for RegionLeaseCustody {
+    /// A clone shares its source's custody state. Cloning an active custody
+    /// adds one count while the source's own count keeps the total nonzero,
+    /// so a clone never moves a cell from zero to one outside its gate.
+    /// Cloning a retired custody yields another retired custody: retirement
+    /// can never re-mint an eviction-blocking count.
     fn clone(&self) -> Self {
-        {
-       let update_counter = &self.cell
-            .leases;
-       let mut count = update_counter.load(Ordering::Acquire);
-       loop {
-           let Some(updated_value) = count.checked_add(1) else { break Err(count) };
-           match update_counter.compare_exchange_weak(count, updated_value, Ordering::AcqRel, Ordering::Acquire) {
-               Ok(previous) => break Ok(previous),
-               Err(reloaded_value) => count = reloaded_value,
-           }
-       }
-   }
+        if !self.active.load(Ordering::Acquire) {
+            return Self {
+                cell: self.cell.clone(),
+                active: AtomicBool::new(false),
+            };
+        }
+        self.cell
+            .leases
+            .try_update(Ordering::AcqRel, Ordering::Acquire, |count| {
+                count.checked_add(1)
+            })
             .expect(/* Proof: Every live lease owns a strong Arc to this cell; lease count is bounded by Arc strong count, whose maximum is below usize::MAX. */ "a resident lease count fits the address space");
         Self::accepted(self.cell.clone())
     }
