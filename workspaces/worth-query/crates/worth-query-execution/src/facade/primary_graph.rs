@@ -397,3 +397,4 @@ pub use crate::domain_computation::primary_graph::product_operation::document_hi
 mod inbound_completion;
 pub use crate::domain_computation::primary_graph::WorthQueryOutputDiscoveryRecipe;
 pub use inbound_completion::*;
+pub use crate::domain_computation::primary_graph::product_operation::WorthQueryCorrectionNavigationLineage;

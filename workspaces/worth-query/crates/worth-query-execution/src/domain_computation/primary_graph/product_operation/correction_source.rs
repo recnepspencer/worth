@@ -29,7 +29,7 @@ pub use alternatives::{
 pub(in crate::domain_computation::primary_graph) use authored_identity::AuthoredCorrectionCandidateDenial;
 mod compatibility;
 pub(crate) mod restored_support;
-pub use restored_support::WorthQueryCorrectionRestoredSupportDenial;
+pub use restored_support::{WorthQueryCorrectionNavigationLineage, WorthQueryCorrectionRestoredSupportDenial};
 mod derivation;
 mod discovered_output;
 mod inspection;
@@ -141,6 +141,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         key: &WorthQueryCorrectionCommandKey,
         maximum_history: Option<NonZeroUsize>,
         maximum_results: NonZeroUsize,
+        navigation: Option<&dyn restored_support::WorthQueryCorrectionNavigationLineage>,
     ) -> Result<
         (
             ApplicationEncodedInput<<ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<Schema>>::InputBinding>,
@@ -164,6 +165,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             maximum_history,
             maximum_results,
             None,
+            navigation,
         )
     }
     /// A history correction's read-only head pass: the inverse input from the

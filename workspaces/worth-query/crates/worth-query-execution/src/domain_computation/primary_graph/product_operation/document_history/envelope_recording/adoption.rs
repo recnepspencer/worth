@@ -118,6 +118,8 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             WorthQueryProductBranchReadIdentity::from_observation(selected.product().observation());
         let exact = selected.product().read_lease();
         let source_commit = receipt.committed_product_publication().composite_commit().clone();
+        // The basis a later navigation to this step selects (its retained source).
+        let basis_commit = selected.product().relational_basis().observation().commit_id();
         let execution = phase
             .checked_execution_request_for(runtime.inner.runtime.product_runtime_ref())
             .map_err(Denial::Stopped)?;
@@ -125,7 +127,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             let mut selection = self.selection.lock();
             selection
                 .journal
-                .index_source(&execution, &source_commit, reserved.record.node)
+                .index_source(&execution, Some(&source_commit), basis_commit, reserved.record.node)
                 .map_err(Denial::Recording)?;
             selection.journal.prepared_step(&reserved.record, endpoint.clone())
         };

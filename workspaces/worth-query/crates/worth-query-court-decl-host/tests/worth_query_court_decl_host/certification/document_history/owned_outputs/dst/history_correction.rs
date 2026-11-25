@@ -126,3 +126,21 @@ fn a_correction_costs_logarithmic_journal_work_in_history_depth() {
     assert!(mid >= near && far >= mid, "probes grow with depth: {probes:?}");
     assert!(far - mid <= 3 * (mid - near), "node probes at depths 2, 12, 72: {probes:?}");
 }
+
+/// S3: after an undo the document stands on the navigation's fork, and a
+/// step still on its line remains a correction source: reversing `e1`'s
+/// creation (step 1) records as one step there.
+#[test]
+fn a_step_still_on_the_line_is_corrected_after_an_undo() {
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+    let host = world::install();
+    let mut document = created(&host, &[E1, E2]);
+    assert_eq!(document.act(&Action::Undo), Outcome::Moved);
+    let corrected = document.correct_recorded(3, 1, E1, &SKIP);
+    assert!(matches!(corrected, Corrected::Recorded(3)), "{corrected:?}");
+    let observed = document.observe(4);
+    assert_eq!(observed.current, Some(3));
+    assert_eq!(observed.head_diverged, Some(false));
+    assert_eq!(observed.branch.as_ref().map(|branch| branch.live), Some([false, false]));
+    document.release();
+}

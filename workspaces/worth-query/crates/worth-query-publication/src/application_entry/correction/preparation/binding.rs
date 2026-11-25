@@ -202,6 +202,7 @@ impl<'a, Schema: ApplicationSchema> Prepare<'a, '_, '_, '_, '_, '_, Schema> {
                     key,
                     limits.maximum_ancestors,
                     limits.maximum_disclosure_results,
+                    None,
                 )
                 .map_err(WorthQueryApplicationCorrectionDenial::Derivation)
         })?;

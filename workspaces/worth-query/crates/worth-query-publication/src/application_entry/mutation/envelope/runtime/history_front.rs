@@ -36,6 +36,7 @@ where
     pub(in crate::application_entry) fn execute_with_history_front(
         self,
         allocation: ExecutionAllocationPolicy<'_, '_>,
+        navigation: Option<&dyn worth_query_execution::facade::primary_graph::WorthQueryCorrectionNavigationLineage>,
         history: impl FnOnce(
             &mut EnvelopeContext<'_, S>,
             &WorthQueryAdvancementPhase<'_>,
@@ -122,7 +123,7 @@ where
                 // The candidate pass: the owner retargeted `context` to its
                 // candidate, where the correction derives and admits again.
                 let mut corrective = Vec::new();
-                if let Some(outcome) = front(context, program, phase, key, &mut corrective)? {
+                if let Some(outcome) = front(context, program, phase, key, &mut corrective, navigation)? {
                     return Ok(Some(outcome));
                 }
                 entries.splice(0..0, corrective);

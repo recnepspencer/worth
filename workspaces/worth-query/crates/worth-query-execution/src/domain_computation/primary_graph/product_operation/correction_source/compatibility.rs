@@ -82,6 +82,7 @@ pub(super) fn require_compatible_source<'check, 'target, 'source, Schema, C>(
     source: &'check WorthQuerySelectedCorrectionSource<'source, Schema>,
     ancestry: ProductBranchAncestorSelection,
     required_root: Option<PreparedOutputRootKind>,
+    navigation: Option<&dyn super::restored_support::WorthQueryCorrectionNavigationLineage>,
 ) -> Result<
     CheckedCorrectionSource<
         'check,
@@ -110,7 +111,7 @@ where
             .occurrence()
             .facts(&execution)
             .map_err(|_| Denial::SemanticMaterialUnavailable)?;
-        super::restored_support::require(target, phase, source, &facts)?;
+        super::restored_support::require(target, phase, source, &facts, navigation)?;
     }
     // Compensation uses the historical effect/input and fresh ordinary reads;
     // it deliberately does not claim reverse-restoration eligibility.

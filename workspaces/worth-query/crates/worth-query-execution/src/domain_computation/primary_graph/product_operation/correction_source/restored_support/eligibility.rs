@@ -26,6 +26,7 @@ pub(in crate::domain_computation::primary_graph::product_operation::correction_s
     phase: &WorthQueryAdvancementPhase<'_>,
     source: &WorthQuerySelectedCorrectionSource<'_, Schema>,
     facts: &FactPayload,
+    navigation: Option<&dyn super::WorthQueryCorrectionNavigationLineage>,
 ) -> Result<(), Denial> {
     let application = target.application();
     let execution = phase
@@ -99,6 +100,16 @@ pub(in crate::domain_computation::primary_graph::product_operation::correction_s
         })?;
     let occurrences = history::narrow(target, execution, facts, occurrences)
         .inspect_err(|cause| correction_rejection("managed-historical-relevance", None, cause))?;
+    // A history document's own navigation commits restore recorded states
+    // (S3 ruling B; the rule and its soundness are in `navigation`).
+    let occurrences = application
+        .inner
+        .runtime
+        .primary_provider_ref()
+        .graph_ref()
+        .with_runtime(&execution, |runtime| {
+            super::navigation::without_vouched_navigation(runtime, execution, source, occurrences, navigation)
+        })?;
     cancellation::require(target, execution, &occurrences).inspect_err(|cause| {
         correction_rejection(
             if selection.managed.is_empty() {

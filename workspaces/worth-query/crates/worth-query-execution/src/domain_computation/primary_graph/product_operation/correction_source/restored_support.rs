@@ -3,6 +3,8 @@
 mod cancellation;
 pub(crate) mod eligibility;
 mod history;
+pub(crate) mod navigation;
+pub use navigation::WorthQueryCorrectionNavigationLineage;
 pub(crate) mod overlap;
 pub(super) use eligibility::require;
 

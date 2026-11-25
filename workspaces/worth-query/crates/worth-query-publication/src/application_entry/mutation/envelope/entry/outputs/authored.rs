@@ -79,6 +79,7 @@ where
         key: &WorthQueryCorrectionCommandKey,
         maximum_history: Option<NonZeroUsize>,
         maximum_results: NonZeroUsize,
+        navigation: Option<&dyn worth_query_execution::facade::primary_graph::WorthQueryCorrectionNavigationLineage>,
     ) -> SelectedSource<S, B>
     where
         C: ApplicationCorrectionBinding<S>,
@@ -93,6 +94,7 @@ where
             key,
             maximum_history,
             maximum_results,
+            navigation,
         )
     }
     fn reapplication<C>(

@@ -87,6 +87,16 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             .ok_or_else(|| Denial::SourceNotOnSelectedLine { source: source.clone() })
     }
 
+    /// This document's answer about its own navigation commits, for a
+    /// correction's restored support on its candidate (S3 ruling B).
+    pub fn correction_navigation_lineage(
+        &self,
+    ) -> std::sync::Arc<dyn crate::domain_computation::primary_graph::product_operation::WorthQueryCorrectionNavigationLineage + 'runtime> {
+        std::sync::Arc::new(DocumentNavigationLineage {
+            selection: std::sync::Arc::clone(&self.selection),
+        })
+    }
+
     /// Reserve the one record an envelope will complete. Nothing is forked here:
     /// a refusal or an already recorded step leaves the document untouched.
     pub fn reserve_history_envelope(
@@ -178,5 +188,23 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
                 meaning,
             },
         ))
+    }
+}
+
+/// A document's navigation lineage: the journal's O(log) source and basis
+/// indexes, read under the document's selection lock.
+struct DocumentNavigationLineage<'runtime, S> {
+    selection: std::sync::Arc<super::super::HistorySelectionCell<'runtime, S>>,
+}
+
+impl<S: ApplicationSchema> crate::domain_computation::primary_graph::product_operation::WorthQueryCorrectionNavigationLineage
+    for DocumentNavigationLineage<'_, S>
+{
+    fn restores_descendant_of(
+        &self,
+        selected: worth_relational::facade::history::CommitId,
+        source: &worth_runtime_world::facade::CompositeCommitIdentity,
+    ) -> bool {
+        self.selection.lock().journal.restores_descendant_of(selected, source)
     }
 }

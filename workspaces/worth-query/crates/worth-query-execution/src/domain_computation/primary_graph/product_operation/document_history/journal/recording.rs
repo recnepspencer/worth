@@ -209,6 +209,7 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
         self.view_generation = reserved.view_after;
         self.pending = None;
         self.pending_source = None;
+        self.pending_endpoint = None;
         self.trim_one()
     }
 }

@@ -56,6 +56,7 @@ pub(in crate::application_entry) type CorrectionEnvelopeFront<'a, S, P, K> = Box
             &WorthQueryAdvancementPhase<'_>,
             &Arc<ApplicationEditEnvelopeKey<K>>,
             &mut Vec<Box<dyn EditEntry<S, P, K>>>,
+            Option<&dyn worth_query_execution::facade::primary_graph::WorthQueryCorrectionNavigationLineage>,
         ) -> Result<
             Option<WorthQueryEditEnvelopeOutcome>,
             WorthQueryEditEnvelopeExecutionDenial,
@@ -171,7 +172,7 @@ where
             allocation,
             AuthoredEnvelopeResolutionPurpose::Execute,
             move |context, program, phase, key, entries| match self.front {
-                Some(front) => front(context, program, phase, key, entries),
+                Some(front) => front(context, program, phase, key, entries, None),
                 None => Ok(None),
             },
         )
@@ -192,7 +193,7 @@ where
             allocation,
             AuthoredEnvelopeResolutionPurpose::ResolveOnly,
             move |context, program, phase, key, entries| match self.front {
-                Some(front) => front(context, program, phase, key, entries),
+                Some(front) => front(context, program, phase, key, entries, None),
                 None => Ok(None),
             },
         )
