@@ -6,10 +6,12 @@ use crate::{estate::RestrictedBankField, schema::ViewEstateAdministrationCapabil
 
 use super::{governance_fields::*, governance_relations::*};
 
+worth_query_decl::facade::worth_query_disclosure_classification!(EstateGovernanceContextDisclosure);
+
 pub(super) fn governance_disclosure() -> ApplicationQueryDisclosureContract {
     let influence = ApplicationQueryInfluenceContract::forbid_all();
     let contract = ApplicationQueryDisclosureContract::governed_by(
-        "estate-governance-context",
+        EstateGovernanceContextDisclosure,
         ViewEstateAdministrationCapability::reference(),
     );
     let contract = disclose_estate(contract, &influence);

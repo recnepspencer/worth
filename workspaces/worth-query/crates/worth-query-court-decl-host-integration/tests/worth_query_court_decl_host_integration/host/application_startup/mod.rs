@@ -18,11 +18,15 @@ use worth_query_host::facade::{
 };
 use worth_query_testkit_host::facade::host::{application_home as fixture, checkpoint_capture};
 
+worth_query_decl::facade::worth_query_authentication_audience!(HostAudience);
+worth_query_decl::facade::worth_query_principal_issuer!(IssuerExampleIssuer);
+worth_query_decl::facade::worth_query_authentication_method!(TestMethod);
+
 pub(super) type Schema = fixture::schema::HomeIdentitySchema;
 pub(super) type Home = WorthQueryApplicationHome<Schema, fixture::HomeProgram>;
 
 fn issuer(subject: &str) -> WorthQueryExternalPrincipalIdentity {
-    WorthQueryExternalPrincipalIdentity::new("https://issuer.example", subject).unwrap()
+    WorthQueryExternalPrincipalIdentity::new(IssuerExampleIssuer, subject).unwrap()
 }
 
 /// Opens a fresh Directory Home whose seed maps `subject` (enabled) and
@@ -89,22 +93,16 @@ pub(super) fn local_principal(
     admit_authentication_adapter(
         home.runtime().runtime().installed_schema(),
         admission(clock),
-        WorthQueryLocalProcessPrincipal::new(
-            "worth.query.startup.local.v1",
-            issuer(subject),
-            WorthQueryAuthenticationAudience::new("host").unwrap(),
-            WorthQueryAuthenticationMethod::new("test").unwrap(),
-            lifetime,
-        )
-        .unwrap(),
+        WorthQueryLocalProcessPrincipal::new(issuer(subject), HostAudience, TestMethod, lifetime)
+            .unwrap(),
     )
     .unwrap()
 }
 
 fn admission(clock: &WorthQueryAdmissionClock) -> WorthQueryAuthenticationAdapterAdmission {
     WorthQueryAuthenticationAdapterAdmission::new(
-        WorthQueryAuthenticationAudience::new("host").unwrap(),
-        WorthQueryAuthenticationMethod::new("test").unwrap(),
+        WorthQueryAuthenticationAudience::of(HostAudience),
+        WorthQueryAuthenticationMethod::of(TestMethod),
         clock.clone(),
     )
 }

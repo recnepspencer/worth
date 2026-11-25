@@ -14,6 +14,10 @@ pub use super::schema::{
     TemporalIntent,
 };
 
+worth_query_decl::facade::worth_query_authentication_audience!(HostAudience);
+worth_query_decl::facade::worth_query_principal_issuer!(IssuerExampleIssuer);
+worth_query_decl::facade::worth_query_authentication_method!(TestMethod);
+
 #[path = "adapters/clock.rs"]
 pub mod clock;
 pub use clock::{ClockController, ClockSource, CourtroomClock};
@@ -361,14 +365,12 @@ impl admission::authenticated_principal::WorthQueryAuthenticationAdapter for Ide
             let now = SystemTime::now();
             admission::authenticated_principal::WorthQueryValidatedExternalPrincipal::new(
                 worth_query_host::facade::declaration::authentication::WorthQueryExternalPrincipalIdentity::new(
-                    "https://issuer.example",
+                    IssuerExampleIssuer,
                     "temporal-host",
                 )
                 .unwrap(),
-                admission::authenticated_principal::WorthQueryAuthenticationAudience::new("host")
-                    .unwrap(),
-                admission::authenticated_principal::WorthQueryAuthenticationMethod::new("test")
-                    .unwrap(),
+                admission::authenticated_principal::WorthQueryAuthenticationAudience::of(HostAudience),
+                admission::authenticated_principal::WorthQueryAuthenticationMethod::of(TestMethod),
                 now,
                 now + Duration::from_secs(3600),
                 Vec::new(),

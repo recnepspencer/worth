@@ -12,6 +12,8 @@ use worth_query_host::facade::{
     primary_graph::*,
     *,
 };
+
+worth_query_decl::facade::worth_query_disclosure_classification!(NumericCausalDiagnosticDisclosure);
 pub struct OutputSlot;
 pub struct EnabledParameter;
 fn enabled_parameter(
@@ -46,7 +48,7 @@ pub fn definition(
     .field(output())
     .build();
     let disclosure = ApplicationQueryDisclosureContract::governed_by(
-        "numeric-causal-diagnostic",
+        NumericCausalDiagnosticDisclosure,
         capability::Inspect::reference(),
     )
     .use_field_by(

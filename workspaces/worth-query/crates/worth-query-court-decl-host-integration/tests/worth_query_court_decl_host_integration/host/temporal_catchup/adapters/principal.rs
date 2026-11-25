@@ -20,6 +20,10 @@ use worth_query_host::facade::{
 
 use super::super::schema::DesktopReminderSchema;
 
+worth_query_decl::facade::worth_query_authentication_audience!(DesktopAudience);
+worth_query_decl::facade::worth_query_principal_issuer!(LocalDesktopIssuer);
+worth_query_decl::facade::worth_query_authentication_method!(LocalMethod);
+
 #[derive(Clone)]
 pub struct AuthControl {
     valid: Arc<AtomicBool>,
@@ -46,16 +50,14 @@ pub fn admit_local_adapter(
     admit_authentication_adapter(
         schema,
         WorthQueryAuthenticationAdapterAdmission::new(
-            WorthQueryAuthenticationAudience::new("desktop").unwrap(),
-            WorthQueryAuthenticationMethod::new("local").unwrap(),
+            WorthQueryAuthenticationAudience::of(DesktopAudience),
+            WorthQueryAuthenticationMethod::of(LocalMethod),
             clock,
         ),
         WorthQueryLocalProcessPrincipal::new(
-            "worth.query.court.desktop-reminder.local-principal.v1",
-            WorthQueryExternalPrincipalIdentity::new("https://local.desktop", "daymark-user")
-                .unwrap(),
-            WorthQueryAuthenticationAudience::new("desktop").unwrap(),
-            WorthQueryAuthenticationMethod::new("local").unwrap(),
+            WorthQueryExternalPrincipalIdentity::new(LocalDesktopIssuer, "daymark-user").unwrap(),
+            DesktopAudience,
+            LocalMethod,
             Duration::from_secs(3600),
         )
         .unwrap(),

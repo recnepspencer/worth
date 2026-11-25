@@ -6,6 +6,9 @@ use worth_query_decl::facade::application_schema::fragment::Registration;
 use worth_query_decl::facade::{application_query::*, application_schema::*, *};
 use worth_query_host::facade::primary_graph::*;
 
+worth_query_decl::facade::worth_query_disclosure_classification!(GovReadyDisclosure);
+worth_query_decl::facade::worth_query_disclosure_classification!(GovTodayDisclosure);
+
 pub struct EmptyParams;
 pub struct TodayParams;
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -127,7 +130,7 @@ fn shape<Q: ApplicationQueryMarkerIdentity<Schema, ResultBinding = RowBinding>>(
 
 fn governed_today_disclosure() -> ApplicationQueryDisclosureContract {
     let all = ApplicationQueryInfluenceContract::permit_all();
-    ApplicationQueryDisclosureContract::governed_by("gov-today", ReadBoard::reference())
+    ApplicationQueryDisclosureContract::governed_by(GovTodayDisclosure, ReadBoard::reference())
         .use_field_by(TaskKey::at("TaskKey"), tag(1), all.clone())
         .unwrap()
         .use_field_by(Status::at("Status"), tag(1), all.clone())
@@ -142,7 +145,7 @@ fn governed_today_disclosure() -> ApplicationQueryDisclosureContract {
 
 fn governed_ready_disclosure() -> ApplicationQueryDisclosureContract {
     let all = ApplicationQueryInfluenceContract::permit_all();
-    ApplicationQueryDisclosureContract::governed_by("gov-ready", ReadBoard::reference())
+    ApplicationQueryDisclosureContract::governed_by(GovReadyDisclosure, ReadBoard::reference())
         .use_field_by(TaskKey::at("TaskKey"), tag(1), all.clone())
         .unwrap()
         .use_field_by(Status::at("Status"), tag(1), all.clone())

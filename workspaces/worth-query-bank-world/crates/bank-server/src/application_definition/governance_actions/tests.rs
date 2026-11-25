@@ -23,6 +23,8 @@ use super::super::{
 };
 use crate::{BankIdentityRuntime, BankPrincipalSeed};
 
+worth_query_decl::facade::worth_query_principal_issuer!(BankProgramTestIssuer);
+
 struct ForgedRequestOperation;
 
 impl ApplicationOperationMarkerIdentity<BankSchema> for ForgedRequestOperation {
@@ -101,7 +103,7 @@ fn specialized_admission_refuses_an_unlisted_installed_operation() {
 fn installed_bank_program() -> BankIdentityRuntime {
     BankIdentityRuntime::install([BankPrincipalSeed::enabled(
         BankPrincipalId::new(1).expect("one is a valid Bank principal identity"),
-        WorthQueryExternalPrincipalIdentity::new("bank-program-test", "one")
+        WorthQueryExternalPrincipalIdentity::new(BankProgramTestIssuer, "one")
             .expect("the test identity has valid external components"),
     )])
     .expect("the real Bank program installs with one principal binding")

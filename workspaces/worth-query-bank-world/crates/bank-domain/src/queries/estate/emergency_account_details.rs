@@ -17,6 +17,10 @@ use super::emergency_account_details_selectors::{
 };
 use super::emergency_account_details_shape::emergency_account_details_shape;
 
+worth_query_decl::facade::worth_query_disclosure_classification!(
+    EstateEmergencyAccountDetailsDisclosure
+);
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct EstateEmergencyAccountDetailsQueryParameters;
 
@@ -100,7 +104,7 @@ pub fn estate_emergency_account_details_definition() -> ApplicationQueryDefiniti
     };
     let influence = ApplicationQueryInfluenceContract::forbid_all();
     let disclosure = ApplicationQueryDisclosureContract::governed_by(
-        "estate-emergency-account-details",
+        EstateEmergencyAccountDetailsDisclosure,
         ViewEstateEmergencyProtectionCapability::reference(),
     )
     .disclose_relation_by(estate_account(), field(), influence.clone())

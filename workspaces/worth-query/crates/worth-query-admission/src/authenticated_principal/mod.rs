@@ -28,10 +28,7 @@ pub use request_scope::{
     WorthQueryCancellationSource, WorthQueryCancellationToken, WorthQueryRequestInterruption,
     WorthQueryRequestScope, WorthQueryRequestTimeRemaining,
 };
-pub use vocabulary::{
-    WorthQueryAuthenticationAudience, WorthQueryAuthenticationMethod,
-    WorthQueryAuthenticationVocabularyDenial,
-};
+pub use vocabulary::{WorthQueryAuthenticationAudience, WorthQueryAuthenticationMethod};
 
 #[cfg(test)]
 mod tests;

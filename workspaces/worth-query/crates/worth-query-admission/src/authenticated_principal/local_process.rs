@@ -1,7 +1,10 @@
 //! Synchronous authentication of the local operating-system process.
 use std::time::{Duration, SystemTime};
 
-use worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentity;
+use worth_query_declaration::facade::authentication::{
+    WorthQueryAuthenticationAudienceIdentity, WorthQueryAuthenticationMethodIdentity,
+    WorthQueryExternalPrincipalIdentity,
+};
 
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationSchema};
 
@@ -15,6 +18,10 @@ use super::{
     WorthQueryAuthenticationFuture, WorthQueryAuthenticationMethod, WorthQueryRequestScope,
     WorthQueryValidatedExternalPrincipal, WorthQueryValidatedExternalPrincipalDenial,
 };
+
+/// Every local-process adapter shares one configuration; its audience and
+/// method are fixed by the declared vocabulary at construction.
+const LOCAL_PROCESS_CONFIGURATION_IDENTITY: &str = "worth.query.local-process.v1";
 
 /// The external identity a desktop or single-host process acts as, with a
 /// finite credential lifetime.
@@ -31,27 +38,21 @@ use super::{
 /// use std::time::Duration;
 /// use worth_query_admission::facade::authenticated_principal::*;
 /// use worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentity;
+/// worth_query_declaration::worth_query_authentication_audience!(Board);
+/// worth_query_declaration::worth_query_authentication_method!(LocalProcess);
+/// worth_query_declaration::worth_query_principal_issuer!(BoardLocal);
 ///
+/// let owner = || WorthQueryExternalPrincipalIdentity::new(BoardLocal, "owner").unwrap();
 /// let local = WorthQueryLocalProcessPrincipal::new(
-///     "board.local-owner.v1",
-///     WorthQueryExternalPrincipalIdentity::new("local://board", "owner").unwrap(),
-///     WorthQueryAuthenticationAudience::new("board").unwrap(),
-///     WorthQueryAuthenticationMethod::new("local-process").unwrap(),
-///     Duration::from_secs(600),
+///     owner(), Board, LocalProcess, Duration::from_secs(600),
 /// )
 /// .unwrap();
 /// assert_eq!(local.lifetime(), Duration::from_secs(600));
-/// assert!(WorthQueryLocalProcessPrincipal::new(
-///     "board.local-owner.v1",
-///     WorthQueryExternalPrincipalIdentity::new("local://board", "owner").unwrap(),
-///     WorthQueryAuthenticationAudience::new("board").unwrap(),
-///     WorthQueryAuthenticationMethod::new("local-process").unwrap(),
-///     Duration::ZERO,
-/// )
-/// .is_err());
+/// assert!(
+///     WorthQueryLocalProcessPrincipal::new(owner(), Board, LocalProcess, Duration::ZERO).is_err()
+/// );
 /// ```
 pub struct WorthQueryLocalProcessPrincipal {
-    configuration_identity: String,
     identity: WorthQueryExternalPrincipalIdentity,
     audience: WorthQueryAuthenticationAudience,
     method: WorthQueryAuthenticationMethod,
@@ -59,22 +60,25 @@ pub struct WorthQueryLocalProcessPrincipal {
 }
 
 impl WorthQueryLocalProcessPrincipal {
-    /// Refuses a zero lifetime: every local proof expires.
-    pub fn new(
-        configuration_identity: impl Into<String>,
+    /// The local process acting as `identity` for the declared `Audience`
+    /// and `Method`. Refuses a zero lifetime: every local proof expires.
+    pub fn new<Audience, Method>(
         identity: WorthQueryExternalPrincipalIdentity,
-        audience: WorthQueryAuthenticationAudience,
-        method: WorthQueryAuthenticationMethod,
+        audience: Audience,
+        method: Method,
         lifetime: Duration,
-    ) -> Result<Self, WorthQueryValidatedExternalPrincipalDenial> {
+    ) -> Result<Self, WorthQueryValidatedExternalPrincipalDenial>
+    where
+        Audience: WorthQueryAuthenticationAudienceIdentity,
+        Method: WorthQueryAuthenticationMethodIdentity,
+    {
         if lifetime.is_zero() {
             return Err(WorthQueryValidatedExternalPrincipalDenial::InvalidTimeRange);
         }
         Ok(Self {
-            configuration_identity: configuration_identity.into(),
             identity,
-            audience,
-            method,
+            audience: WorthQueryAuthenticationAudience::of(audience),
+            method: WorthQueryAuthenticationMethod::of(method),
             lifetime,
         })
     }
@@ -134,7 +138,7 @@ impl WorthQueryAuthenticationAdapter for WorthQueryLocalProcessPrincipal {
     type Credential = ();
 
     fn configuration_identity(&self) -> &str {
-        &self.configuration_identity
+        LOCAL_PROCESS_CONFIGURATION_IDENTITY
     }
 
     fn validate<'a>(
@@ -169,7 +173,6 @@ impl std::fmt::Debug for WorthQueryLocalProcessPrincipal {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter
             .debug_struct("WorthQueryLocalProcessPrincipal")
-            .field("configuration_identity", &self.configuration_identity)
             .field("identity", &self.identity)
             .field("audience", &self.audience)
             .field("method", &self.method)

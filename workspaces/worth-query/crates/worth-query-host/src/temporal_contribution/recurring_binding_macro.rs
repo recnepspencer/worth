@@ -21,13 +21,18 @@ macro_rules! __worth_query_recurring_rule_schedule {
                     $crate::facade::temporal_contribution::WorthQueryRecurringScheduleDecision<$Schema, $Entity>,
                     $crate::facade::primary_graph::HandlerExecutionDenial,
                 > {
+                    if input.rule_id == $hub {
+                        return ::core::result::Result::Err($crate::facade::primary_graph::HandlerExecutionDenial::new(
+                            $crate::facade::temporal_contribution::WorthQueryRecurringRuleRefusal::HubRuleIdentifier,
+                        ));
+                    }
                     let hub = reader.resolve_entity(<$Fields>::rule_id(), ::std::string::String::from($hub))?;
                     let hub = reader.mutation_target(&hub)?;
                     let ::core::result::Result::Ok(rule) =
                         reader.resolve_entity(<$Fields>::rule_id(), input.rule_id.clone())
                     else {
                         return ::core::result::Result::Ok(
-                            $crate::facade::temporal_contribution::WorthQueryRecurringScheduleDecision { hub, existing: None },
+                            $crate::facade::temporal_contribution::WorthQueryRecurringScheduleDecision { hub, existing: ::core::option::Option::None },
                         );
                     };
                     let revision = reader.field(&rule, <$Fields>::revision())?.unwrap_or(0);
@@ -40,7 +45,7 @@ macro_rules! __worth_query_recurring_rule_schedule {
                     ::core::result::Result::Ok(
                         $crate::facade::temporal_contribution::WorthQueryRecurringScheduleDecision {
                             hub,
-                            existing: Some(existing),
+                            existing: ::core::option::Option::Some(existing),
                         },
                     )
                 })()
@@ -56,15 +61,15 @@ macro_rules! __worth_query_recurring_rule_schedule {
                 (),
                 <$ScheduleBinding as $crate::facade::declaration::application_operation::ApplicationMutationBinding<$Schema>>::Denial,
             > {
-                let gate = || ::std::string::String::from($crate::facade::temporal_contribution::WORTH_QUERY_RECURRING_READY_GATE);
+                let gate = || $crate::facade::temporal_contribution::WorthQueryRecurringGate::Ready;
                 (|| -> ::core::result::Result<(), $crate::facade::primary_graph::HandlerExecutionDenial> {
-                    if let Some((target, revision)) = decision.existing {
+                    if let ::core::option::Option::Some((target, revision)) = decision.existing {
                         let rule = writer.projected_entity(&target)?;
                         writer.write_field(&rule, <$Fields>::revision(), revision)?;
                         writer.write_field(&rule, <$Fields>::due_ns(), input.due_ns)?;
                         writer.write_field(&rule, <$Fields>::interval_ns(), input.interval_ns)?;
                         writer.write_field(&rule, <$Fields>::max_fires(), input.max_fires)?;
-                        writer.write_field(&rule, <$Fields>::lifecycle(), input.lifecycle.clone())?;
+                        writer.write_field(&rule, <$Fields>::lifecycle(), input.lifecycle)?;
                         writer.write_field(&rule, <$Fields>::gate(), gate())?;
                         return ::core::result::Result::Ok(());
                     }
@@ -72,7 +77,9 @@ macro_rules! __worth_query_recurring_rule_schedule {
                     let key = $crate::facade::primary_graph::WorthQueryApplicationEntityKey::new(
                         ::std::format!("rule:{}", input.rule_id),
                     )
-                    .expect("a recurring rule key is a valid entity key");
+                    .map_err(|_| $crate::facade::primary_graph::HandlerExecutionDenial::new(
+                        $crate::facade::temporal_contribution::WorthQueryRecurringRuleRefusal::InvalidRuleKey,
+                    ))?;
                     let rule = writer.create_entity_in_context(&hub, $Entity::reference(), key)?;
                     writer.initialize_field(&rule, <$Fields>::rule_id(), input.rule_id.clone())?;
                     writer.initialize_field(&rule, <$Fields>::revision(), 1_u64)?;
@@ -80,7 +87,7 @@ macro_rules! __worth_query_recurring_rule_schedule {
                     writer.initialize_field(&rule, <$Fields>::interval_ns(), input.interval_ns)?;
                     writer.initialize_field(&rule, <$Fields>::max_fires(), input.max_fires)?;
                     writer.initialize_field(&rule, <$Fields>::fired_count(), 0_u64)?;
-                    writer.initialize_field(&rule, <$Fields>::lifecycle(), input.lifecycle.clone())?;
+                    writer.initialize_field(&rule, <$Fields>::lifecycle(), input.lifecycle)?;
                     writer.initialize_field(&rule, <$Fields>::gate(), gate())?;
                     writer.link(<$Link>::reference(), ::std::format!("recurrence:{}", input.rule_id), &hub, &rule)?;
                     ::core::result::Result::Ok(())
@@ -125,23 +132,25 @@ macro_rules! __worth_query_recurring_rule_binding {
                 installation: &mut $crate::facade::primary_graph::WorthQueryConditionalApplicationRuntimeInstallation<$Schema>,
             ) -> ::core::result::Result<Self::Installed, $crate::facade::primary_graph::WorthQueryConditionalRuntimeInstallationDenial> {
                 use $crate::facade::temporal_contribution as temporal;
+                use temporal::recurring_installation_denial as refused;
                 let declaration = <$Schema as $crate::facade::declaration::application_schema::ApplicationSchema>::declaration()
-                    .expect("the recurring rule's schema declares");
+                    .map_err(|cause| refused("schema declaration", cause))?;
                 let conditional_binding = Self::node_spec()
                     .conditional_binding(declaration.erased(), $Operation::reference())
-                    .expect("the recurring rule's node matches its fire operation");
+                    .map_err(|cause| refused("conditional binding", cause))?;
+                let bounds = configuration.intent_bounds().map_err(|cause| refused("intent bounds", cause))?;
                 let principal_source = configuration
                     .admit_owner::<$Schema, $Rule>(installation.installed_schema())
-                    .expect("the recurring rule's owner admits against the installed schema");
+                    .map_err(|cause| refused("owner admission", cause))?;
                 let clock_source = temporal::WorthQueryDesktopClockSource::<temporal::WorthQueryRecurringClock<$Rule>>::new(
-                    $crate::facade::domain::WorthQueryClockSourceIdentity::declare(concat!($identity, ".clock-source"))
-                        .expect("a recurring rule identity names a clock source"),
-                    $crate::facade::domain::WorthQueryClockTimelineIdentity::declare(concat!($identity, ".timeline"))
-                        .expect("a recurring rule identity names a timeline"),
+                    $crate::facade::domain::WorthQueryClockSourceIdentity::declare(::core::concat!($identity, ".clock-source"))
+                        .map_err(|cause| refused("clock source identity", cause))?,
+                    $crate::facade::domain::WorthQueryClockTimelineIdentity::declare(::core::concat!($identity, ".timeline"))
+                        .map_err(|cause| refused("clock timeline identity", cause))?,
                     $crate::facade::domain::WorthQueryClockCoordinate::from_nanoseconds(0),
                 )
                 .0;
-                ::core::result::Result::Ok(temporal::install_desktop_temporal_clock_operation(
+                temporal::install_desktop_temporal_clock_operation(
                     installation,
                     temporal::WorthQueryDesktopTemporalBindingSpec {
                         operation: $Operation::reference(),
@@ -151,8 +160,7 @@ macro_rules! __worth_query_recurring_rule_binding {
                         clock_source,
                         parameters: $crate::facade::declaration::application_query::ApplicationQueryParameterSet::new(),
                         projector: temporal::WorthQueryRecurringProjector::<$Rule>::default(),
-                        bounds: $crate::facade::domain::WorthQueryTemporalIntentBounds::new(16, 32, 16)
-                            .expect("recurring rule intent bounds are finite"),
+                        bounds,
                         principal_binding: <$Context as $crate::facade::declaration::application_schema::ApplicationBindingContext<$Schema>>::principal_binding(),
                         principal_source,
                         scope_field: <$Fields>::rule_id(),
@@ -161,8 +169,8 @@ macro_rules! __worth_query_recurring_rule_binding {
                         identity_field: <$Fields>::rule_id(),
                         revision_field: <$Fields>::revision(),
                         lifecycle_field: <$Fields>::lifecycle(),
-                        active_lifecycle: ::std::string::String::from(temporal::WORTH_QUERY_RECURRING_ACTIVE),
-                        completed_lifecycle: ::std::string::String::from(temporal::WORTH_QUERY_RECURRING_COMPLETED),
+                        active_lifecycle: temporal::WorthQueryRecurringLifecycle::Active,
+                        completed_lifecycle: temporal::WorthQueryRecurringLifecycle::Completed,
                         due_field: $crate::facade::primary_graph::WorthQueryTemporalDueField::new(<$Fields>::due_ns()),
                         authorization: $crate::facade::primary_graph::WorthQueryPublicTemporalOperationAuthorization,
                         query_authorization: $crate::facade::primary_graph::WorthQueryPublicTemporalQueryAuthorization,
@@ -174,7 +182,10 @@ macro_rules! __worth_query_recurring_rule_binding {
                         )>,
                     },
                 )
-                .expect("the recurring rule installs its temporal operation"))
+                .map_err(|denial| match denial {
+                    temporal::WorthQueryDesktopTemporalInstallationDenial::RuntimeInstallation(denial) => denial,
+                    other => refused("temporal operation", other),
+                })
             }
         }
     };

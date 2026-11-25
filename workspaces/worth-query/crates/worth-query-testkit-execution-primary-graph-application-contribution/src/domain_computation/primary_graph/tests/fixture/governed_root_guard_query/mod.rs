@@ -26,6 +26,8 @@ use worth_query_execution::facade::domain_computation::WorthQueryApplicationProj
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationProjectionDenial;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationProjectionRow;
 
+worth_query_declaration::worth_query_disclosure_classification!(RootGuardDisclosure);
+
 pub struct RootGuardSequenceSlot;
 worth_query_declaration::worth_query_portable_type!(RootGuardSequenceSlot => "worth.query.test.execution.root_guard.sequence_slot.v1");
 
@@ -116,7 +118,7 @@ where
     .field(sequence::<Query>())
     .build();
     let disclosure = ApplicationQueryDisclosureContract::governed_by(
-        "root-guard",
+        RootGuardDisclosure,
         TouchAccountCapability::reference(),
     )
     .use_field_by(

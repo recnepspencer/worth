@@ -20,6 +20,10 @@ use super::actions::*;
 use super::queries::*;
 use super::schema::*;
 
+worth_query_decl::facade::worth_query_principal_issuer!(DaymarkIssuer);
+worth_query_decl::facade::worth_query_authentication_audience!(HostAudience);
+worth_query_decl::facade::worth_query_authentication_method!(LocalProcessMethod);
+
 impl WorthQueryApplicationManagedIndexRegistration<DaymarkSchema> for TaskTitleIndex {
     fn install_managed_index(
         setup: &mut WorthQueryApplicationContributionSetup<'_, DaymarkSchema>,
@@ -139,7 +143,7 @@ fn key<E>(kind: &str, id: u64) -> WorthQueryApplicationEntityKey<DaymarkSchema, 
 }
 
 fn owner_identity() -> WorthQueryExternalPrincipalIdentity {
-    WorthQueryExternalPrincipalIdentity::new("local://daymark", "owner").unwrap()
+    WorthQueryExternalPrincipalIdentity::new(DaymarkIssuer, "owner").unwrap()
 }
 
 pub fn owner(
@@ -151,13 +155,12 @@ pub fn owner(
         WorthQueryCancellationSource::new().token(),
         clock.clone(),
     );
-    let audience = || WorthQueryAuthenticationAudience::new("host").unwrap();
-    let method = || WorthQueryAuthenticationMethod::new("local-process").unwrap();
+    let audience = || WorthQueryAuthenticationAudience::of(HostAudience);
+    let method = || WorthQueryAuthenticationMethod::of(LocalProcessMethod);
     let local = WorthQueryLocalProcessPrincipal::new(
-        "daymark.local-owner.v1",
         owner_identity(),
-        audience(),
-        method(),
+        HostAudience,
+        LocalProcessMethod,
         Duration::from_secs(600),
     )
     .expect("finite local lifetime admits");

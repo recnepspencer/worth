@@ -22,6 +22,8 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationProjection, WorthQueryApplicationProjectionDenial,
     WorthQueryApplicationProjectionRow,
 };
+
+worth_query_decl::facade::worth_query_disclosure_classification!(HostNumberDiagnosticDisclosure);
 worth_query_application_query!(pub GovernedAccountQuery for HostIdentitySchema,
     identity "HostGovernedInspectionAccountQuery", parameters AccountParametersBinding,
     result AccountResultBinding, scope Account => "Account", name "host_governed_inspection_account_query");
@@ -43,7 +45,7 @@ pub(super) fn definition() -> ApplicationQueryDefinitionBuilder<
     .field(number_result())
     .build();
     let disclosure = ApplicationQueryDisclosureContract::governed_by(
-        "host-number-diagnostic",
+        HostNumberDiagnosticDisclosure,
         InspectAccountCapability::reference(),
     )
     .disclose_field_by(

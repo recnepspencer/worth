@@ -3,7 +3,9 @@ use super::grammar::{
     extends, is_dotted_identity, is_segment, same_text, MAXIMUM_APPLICATION_IDENTITY_BYTES,
 };
 use super::role::ROLE_COUNT;
-use super::{ApplicationDerivedIdentity, ApplicationIdentityNamespaceDenial, ApplicationIdentityRole};
+use super::{
+    ApplicationDerivedIdentity, ApplicationIdentityNamespaceDenial, ApplicationIdentityRole,
+};
 
 const SLOT_SEGMENT: &str = "slot";
 
@@ -122,8 +124,7 @@ impl ApplicationIdentityNamespace {
         let mut index = 0;
         while index < ROLE_COUNT {
             let other = ApplicationIdentityRole::ALL[index];
-            if other.index() != role.index() && same_text(identity, self.identity(other).as_str())
-            {
+            if other.index() != role.index() && same_text(identity, self.identity(other).as_str()) {
                 return true;
             }
             index += 1;

@@ -28,6 +28,8 @@ use worth_query_execution::facade::domain_computation::WorthQueryInvariantAggreg
 use worth_query_execution::facade::domain_computation::WorthQueryInvariantEntityIdentity;
 use worth_query_execution::facade::domain_computation::WorthQueryPrimaryGraphApplicationRuntime;
 
+worth_query_declaration::worth_query_principal_issuer!(AggregateTestIssuer);
+
 pub struct AggregateIdentityBinding;
 impl AggregateIdentityBinding {
     pub fn reference() -> ApplicationPrincipalBindingRef<
@@ -309,7 +311,7 @@ impl AggregateWorld {
                         .expect("principal key is valid"),
                     1,
                     WorthQueryExternalPrincipalIdentity::new(
-                        "https://aggregate.test",
+                        AggregateTestIssuer,
                         "aggregate-principal",
                     )
                     .expect("external principal identity is valid"),

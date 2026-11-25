@@ -33,12 +33,26 @@ impl std::fmt::Debug for WorthQueryExternalPrincipalIdentity {
 }
 
 impl WorthQueryExternalPrincipalIdentity {
-    pub fn new(
-        issuer: impl Into<String>,
+    /// The identity `subject` holds at the declared `Issuer`. The issuer is a
+    /// declared type ([`crate::worth_query_principal_issuer!`]), never a string.
+    pub fn new<Issuer: super::WorthQueryPrincipalIssuerIdentity>(
+        _: Issuer,
         subject: impl Into<String>,
     ) -> Result<Self, WorthQueryExternalPrincipalIdentityDenial> {
-        let issuer = issuer.into();
-        let subject = subject.into();
+        const {
+            assert!(
+                super::is_declared_vocabulary(Issuer::ISSUER, MAX_ISSUER_BYTES),
+                "a declared principal issuer names a non-empty bounded identity"
+            )
+        };
+        Self::from_components(Issuer::ISSUER.to_owned(), subject.into())
+    }
+
+    /// Decodes stored components; only this owner's codec reaches it.
+    fn from_components(
+        issuer: String,
+        subject: String,
+    ) -> Result<Self, WorthQueryExternalPrincipalIdentityDenial> {
         Self::validate_components(&issuer, &subject)?;
         Ok(Self { issuer, subject })
     }
@@ -69,6 +83,12 @@ impl WorthQueryExternalPrincipalIdentity {
         (bytes, bytes)
     }
 
+    /// The length-framed portable text of this identity: what its scalar
+    /// binding stores and decodes.
+    pub fn portable_text(&self) -> String {
+        self.clone().into_index_value()
+    }
+
     fn encoded_index_len(&self) -> usize {
         self.issuer.len()
             + self.subject.len()
@@ -86,6 +106,21 @@ impl WorthQueryExternalPrincipalIdentity {
         write!(&mut encoded, "{}:", self.subject.len()).expect("writing to a String cannot fail");
         encoded.push_str(&self.subject);
         encoded
+    }
+}
+
+/// Serialized as its validated `issuer` and `subject`; deserialization
+/// revalidates both, so a decoded identity carries the constructor's bounds.
+impl serde::Serialize for WorthQueryExternalPrincipalIdentity {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        (&self.issuer, &self.subject).serialize(serializer)
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for WorthQueryExternalPrincipalIdentity {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let (issuer, subject) = <(String, String)>::deserialize(deserializer)?;
+        Self::from_components(issuer, subject).map_err(serde::de::Error::custom)
     }
 }
 
@@ -144,7 +179,13 @@ fn decode_index_value(encoded: &str) -> Option<WorthQueryExternalPrincipalIdenti
     let issuer = decode_index_component(encoded, &mut offset)?;
     let subject = decode_index_component(encoded, &mut offset)?;
     (offset == encoded.len())
-        .then(|| WorthQueryExternalPrincipalIdentity::new(issuer, subject).ok())
+        .then(|| {
+            WorthQueryExternalPrincipalIdentity::from_components(
+                issuer.to_owned(),
+                subject.to_owned(),
+            )
+            .ok()
+        })
         .flatten()
 }
 
@@ -221,22 +262,24 @@ fn validate_component(
 mod tests {
     use super::*;
 
+    fn parts(
+        issuer: impl Into<String>,
+        subject: impl Into<String>,
+    ) -> Result<WorthQueryExternalPrincipalIdentity, WorthQueryExternalPrincipalIdentityDenial>
+    {
+        WorthQueryExternalPrincipalIdentity::from_components(issuer.into(), subject.into())
+    }
+
     #[test]
     fn length_delimited_pairs_do_not_alias() {
-        let left = WorthQueryExternalPrincipalIdentity::new("ab", "c")
-            .unwrap()
-            .into_index_value();
-        let right = WorthQueryExternalPrincipalIdentity::new("a", "bc")
-            .unwrap()
-            .into_index_value();
+        let left = parts("ab", "c").unwrap().into_index_value();
+        let right = parts("a", "bc").unwrap().into_index_value();
         assert_ne!(left, right);
     }
 
     #[test]
     fn binding_round_trips_the_exact_issuer_and_subject() {
-        let identity =
-            WorthQueryExternalPrincipalIdentity::new("https://issuer.example", "subject-123")
-                .unwrap();
+        let identity = parts("https://issuer.example", "subject-123").unwrap();
         let encoded = WorthQueryExternalPrincipalIdentityBinding::encode(&identity).unwrap();
         assert_eq!(
             WorthQueryExternalPrincipalIdentityBinding::decode(&encoded).unwrap(),
@@ -250,7 +293,7 @@ mod tests {
         issuer.push_str("https://identity.example/realm/production-issuer");
         let mut subject = String::with_capacity(384);
         subject.push_str("account:regional-team:operator-123456789");
-        let identity = WorthQueryExternalPrincipalIdentity::new(issuer, subject).unwrap();
+        let identity = parts(issuer, subject).unwrap();
         let (bytes, work) = identity.index_encoding_copy_requirements();
         let encoded = WorthQueryExternalPrincipalIdentityBinding::encode(&identity).unwrap();
         let Some(encoded) = (encoded).raw_text() else {
@@ -278,12 +321,7 @@ mod tests {
                 WorthQueryExternalPrincipalIdentityDenialKind::SurroundingWhitespace,
             ),
         ] {
-            assert_eq!(
-                WorthQueryExternalPrincipalIdentity::new(value, "subject")
-                    .unwrap_err()
-                    .kind(),
-                expected
-            );
+            assert_eq!(parts(value, "subject").unwrap_err().kind(), expected);
         }
     }
 
@@ -315,7 +353,7 @@ mod tests {
                 WorthQueryExternalPrincipalIdentityDenialKind::TooLong,
             ),
         ] {
-            let denial = WorthQueryExternalPrincipalIdentity::new(issuer, subject).unwrap_err();
+            let denial = parts(issuer, subject).unwrap_err();
             assert_eq!(denial.component(), component);
             assert_eq!(denial.kind(), kind);
         }
@@ -323,9 +361,7 @@ mod tests {
 
     #[test]
     fn debug_output_discloses_neither_issuer_nor_subject() {
-        let identity =
-            WorthQueryExternalPrincipalIdentity::new("https://issuer.example", "subject-123")
-                .unwrap();
+        let identity = parts("https://issuer.example", "subject-123").unwrap();
         let debug = format!("{identity:?}");
         assert!(!debug.contains("https://issuer.example"));
         assert!(!debug.contains("subject-123"));

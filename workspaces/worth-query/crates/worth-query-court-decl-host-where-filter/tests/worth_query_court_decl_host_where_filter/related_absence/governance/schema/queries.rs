@@ -7,6 +7,12 @@ use worth_query_decl::facade::application_schema::fragment::Registration;
 use worth_query_decl::facade::*;
 use worth_query_host::facade::primary_graph::*;
 
+worth_query_decl::facade::worth_query_disclosure_classification!(DenyFldDisclosure);
+worth_query_decl::facade::worth_query_disclosure_classification!(DenyRelDisclosure);
+worth_query_decl::facade::worth_query_disclosure_classification!(NoRelDisclosure);
+worth_query_decl::facade::worth_query_disclosure_classification!(NoTfldDisclosure);
+worth_query_decl::facade::worth_query_disclosure_classification!(OkDisclosure);
+
 pub struct GovParams;
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct GovRow {
@@ -137,57 +143,72 @@ impl Registration<GovSchema> for GovQueries {
     ) -> Result<ApplicationSchemaDeclarationBuilder<GovSchema>, ApplicationSchemaDeclarationDenial>
     {
         let all = ApplicationQueryInfluenceContract::permit_all();
-        let root_disc = |name: &'static str| {
-            ApplicationQueryDisclosureContract::governed_by(name, ReadBoard::reference())
+        let root_disc = |governed: ApplicationQueryDisclosureContract| {
+            governed
                 .use_field_by(TaskKey::at("TaskKey"), tag(1), all.clone())
                 .unwrap()
                 .use_field_by(Status::at("Status"), tag(1), all.clone())
                 .unwrap()
         };
-        let ok_disc = root_disc("ok")
-            .use_relation_by(
-                BlockedBy::reference(),
-                RelationDirection::Forward,
-                tag(1),
-                all.clone(),
-            )
-            .use_field_by(Gate::at("Gate"), tag(1), all.clone())
-            .unwrap()
-            .disclose_field_by(key::<GovAllowedQuery>(), tag(1), all.clone());
-        let no_rel_disc = root_disc("no-rel")
-            .use_field_by(Gate::at("Gate"), tag(1), all.clone())
-            .unwrap()
-            .disclose_field_by(key::<GovMissingRelRuleQuery>(), tag(1), all.clone());
-        let no_tfld_disc = root_disc("no-tfld")
-            .use_relation_by(
-                BlockedBy::reference(),
-                RelationDirection::Forward,
-                tag(1),
-                all.clone(),
-            )
-            .disclose_field_by(key::<GovMissingTargetFieldRuleQuery>(), tag(1), all.clone());
-        let deny_rel_disc = root_disc("deny-rel")
-            .use_relation_by(
-                BlockedBy::reference(),
-                RelationDirection::Forward,
-                tag(2),
-                all.clone(),
-            )
-            .use_field_by(Gate::at("Gate"), tag(1), all.clone())
-            .unwrap()
-            .disclose_field_by(key::<GovDeniedRelQuery>(), tag(1), all.clone());
+        let ok_disc = root_disc(ApplicationQueryDisclosureContract::governed_by(
+            OkDisclosure,
+            ReadBoard::reference(),
+        ))
+        .use_relation_by(
+            BlockedBy::reference(),
+            RelationDirection::Forward,
+            tag(1),
+            all.clone(),
+        )
+        .use_field_by(Gate::at("Gate"), tag(1), all.clone())
+        .unwrap()
+        .disclose_field_by(key::<GovAllowedQuery>(), tag(1), all.clone());
+        let no_rel_disc = root_disc(ApplicationQueryDisclosureContract::governed_by(
+            NoRelDisclosure,
+            ReadBoard::reference(),
+        ))
+        .use_field_by(Gate::at("Gate"), tag(1), all.clone())
+        .unwrap()
+        .disclose_field_by(key::<GovMissingRelRuleQuery>(), tag(1), all.clone());
+        let no_tfld_disc = root_disc(ApplicationQueryDisclosureContract::governed_by(
+            NoTfldDisclosure,
+            ReadBoard::reference(),
+        ))
+        .use_relation_by(
+            BlockedBy::reference(),
+            RelationDirection::Forward,
+            tag(1),
+            all.clone(),
+        )
+        .disclose_field_by(key::<GovMissingTargetFieldRuleQuery>(), tag(1), all.clone());
+        let deny_rel_disc = root_disc(ApplicationQueryDisclosureContract::governed_by(
+            DenyRelDisclosure,
+            ReadBoard::reference(),
+        ))
+        .use_relation_by(
+            BlockedBy::reference(),
+            RelationDirection::Forward,
+            tag(2),
+            all.clone(),
+        )
+        .use_field_by(Gate::at("Gate"), tag(1), all.clone())
+        .unwrap()
+        .disclose_field_by(key::<GovDeniedRelQuery>(), tag(1), all.clone());
         // Root fields (`TaskKey`, `Status`) and `BlockedBy` relation are ALL tag 1 (authorized).
         // ONLY target-only field `Gate` requires tag 2 (unauthorized).
-        let deny_fld_disc = root_disc("deny-fld")
-            .use_relation_by(
-                BlockedBy::reference(),
-                RelationDirection::Forward,
-                tag(1),
-                all.clone(),
-            )
-            .use_field_by(Gate::at("Gate"), tag(2), all.clone())
-            .unwrap()
-            .disclose_field_by(key::<GovDeniedFieldQuery>(), tag(1), all);
+        let deny_fld_disc = root_disc(ApplicationQueryDisclosureContract::governed_by(
+            DenyFldDisclosure,
+            ReadBoard::reference(),
+        ))
+        .use_relation_by(
+            BlockedBy::reference(),
+            RelationDirection::Forward,
+            tag(1),
+            all.clone(),
+        )
+        .use_field_by(Gate::at("Gate"), tag(2), all.clone())
+        .unwrap()
+        .disclose_field_by(key::<GovDeniedFieldQuery>(), tag(1), all);
         Ok(builder
             .application_query(gov_def(GovAllowedQuery::reference(), ok_disc))
             .application_query_binding::<GovAllowedBind>()

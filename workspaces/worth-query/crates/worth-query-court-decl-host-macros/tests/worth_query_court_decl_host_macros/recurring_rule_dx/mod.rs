@@ -5,7 +5,8 @@ mod schema;
 
 use worth_query_host::facade::{
     admission::authenticated_principal::WorthQueryAdmissionClock,
-    domain::WorthQueryClockCoordinate, temporal_contribution::WorthQueryTemporalCatchUpPolicy,
+    domain::WorthQueryClockCoordinate,
+    temporal_contribution::{WorthQueryRecurringLifecycle, WorthQueryTemporalCatchUpPolicy},
 };
 
 use program::{open, owner, RecurringHome};
@@ -44,13 +45,25 @@ fn recurring_rule_fires_each_missed_occurrence_once_and_completes_across_reopen(
             due_ns: 1_000,
             interval_ns: 1_000,
             max_fires: 3,
-            lifecycle: "active".to_owned(),
+            lifecycle: WorthQueryRecurringLifecycle::Active,
         })
         .unwrap_or_else(|denial| panic!("schedule: {denial:?}"));
     let scheduled = rules(&home, &clock);
     assert_eq!(scheduled.len(), 1);
     assert_eq!((scheduled[0].fired_count, scheduled[0].revision), (0, 1));
-    assert_eq!(scheduled[0].lifecycle, "active");
+    assert_eq!(scheduled[0].lifecycle, WorthQueryRecurringLifecycle::Active);
+    let hub_overwrite = home.session(owner(&home, &clock)).run(ScheduleRule {
+        rule_id: HUB.to_owned(),
+        due_ns: 1,
+        interval_ns: 1,
+        max_fires: 1,
+        lifecycle: WorthQueryRecurringLifecycle::Active,
+    });
+    assert!(
+        hub_overwrite.is_err(),
+        "the hub row is never rescheduled as a rule"
+    );
+    assert_eq!(rules(&home, &clock), scheduled);
     home.close_clean().unwrap();
 
     // Three occurrences (1000, 2000, 3000) were missed while closed.
@@ -59,7 +72,10 @@ fn recurring_rule_fires_each_missed_occurrence_once_and_completes_across_reopen(
     let completed = rules(&home, &clock);
     assert_eq!(completed[0].fired_count, 3);
     assert_eq!(completed[0].due_ns, 3_000);
-    assert_eq!(completed[0].lifecycle, "completed");
+    assert_eq!(
+        completed[0].lifecycle,
+        WorthQueryRecurringLifecycle::Completed
+    );
     home.close_clean().unwrap();
 
     let home = open(&path, &clock);

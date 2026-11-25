@@ -11,6 +11,10 @@ use worth_query_host::facade::{
 
 use worth_query_decl::facade::application_schema::ApplicationSchema;
 
+worth_query_decl::facade::worth_query_principal_issuer!(ConsumerInvalidLocalIssuer);
+worth_query_decl::facade::worth_query_authentication_audience!(ConsumerRootAudience);
+worth_query_decl::facade::worth_query_authentication_method!(LocalCredentialMethod);
+
 pub(super) struct LocalIdentityAdapter;
 
 pub(super) struct LocalCredential(&'static str);
@@ -43,13 +47,10 @@ impl authentication::WorthQueryAuthenticationAdapter for LocalIdentityAdapter {
             }
             let now = SystemTime::now();
             authentication::WorthQueryValidatedExternalPrincipal::new(
-                WorthQueryExternalPrincipalIdentity::new(
-                    "https://consumer.invalid/local",
-                    credential.0,
-                )
-                .map_err(|_| protocol_failure())?,
-                authentication::WorthQueryAuthenticationAudience::new("consumer-root").unwrap(),
-                authentication::WorthQueryAuthenticationMethod::new("local-credential").unwrap(),
+                WorthQueryExternalPrincipalIdentity::new(ConsumerInvalidLocalIssuer, credential.0)
+                    .map_err(|_| protocol_failure())?,
+                authentication::WorthQueryAuthenticationAudience::of(ConsumerRootAudience),
+                authentication::WorthQueryAuthenticationMethod::of(LocalCredentialMethod),
                 now,
                 now + Duration::from_secs(600),
                 Vec::new(),
@@ -66,8 +67,7 @@ fn protocol_failure() -> authentication::WorthQueryAuthenticationAdapterFailure 
 }
 
 pub(super) fn external_identity() -> WorthQueryExternalPrincipalIdentity {
-    WorthQueryExternalPrincipalIdentity::new("https://consumer.invalid/local", "model-owner")
-        .unwrap()
+    WorthQueryExternalPrincipalIdentity::new(ConsumerInvalidLocalIssuer, "model-owner").unwrap()
 }
 
 pub(super) fn admit<Schema: ApplicationSchema>(
@@ -83,8 +83,8 @@ pub(super) fn admit_with_clock<Schema: ApplicationSchema>(
     authentication::admit_authentication_adapter(
         schema,
         authentication::WorthQueryAuthenticationAdapterAdmission::new(
-            authentication::WorthQueryAuthenticationAudience::new("consumer-root").unwrap(),
-            authentication::WorthQueryAuthenticationMethod::new("local-credential").unwrap(),
+            authentication::WorthQueryAuthenticationAudience::of(ConsumerRootAudience),
+            authentication::WorthQueryAuthenticationMethod::of(LocalCredentialMethod),
             clock,
         ),
         LocalIdentityAdapter,

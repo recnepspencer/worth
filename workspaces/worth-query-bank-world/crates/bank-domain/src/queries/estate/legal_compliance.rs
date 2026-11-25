@@ -16,6 +16,8 @@ use super::{
     legal_compliance_rows::{AuthorityRow, EstateRow, HolderRow},
 };
 
+worth_query_decl::facade::worth_query_disclosure_classification!(EstateLegalComplianceDisclosure);
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct EstateLegalComplianceQueryParameters;
 
@@ -99,7 +101,7 @@ fn disclosure_contract() -> ApplicationQueryDisclosureContract {
     type Q = EstateLegalComplianceQuery;
     let influence = ApplicationQueryInfluenceContract::forbid_all();
     ApplicationQueryDisclosureContract::governed_by(
-        "estate-legal-compliance",
+        EstateLegalComplianceDisclosure,
         ViewEstateLegalComplianceCapability::reference(),
     )
     .disclose_field_by(EstateRow::estate::<Q>(), field(), influence.clone())

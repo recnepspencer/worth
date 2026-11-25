@@ -9,7 +9,8 @@ use std::time::Duration;
 
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAdmissionClock, WorthQueryAdmittedAuthenticationAdapter,
-    WorthQueryCancellationSource, WorthQueryLocalProcessPrincipal, WorthQueryRequestScope,
+    WorthQueryAuthenticationAdapterAdmissionDenial, WorthQueryCancellationSource,
+    WorthQueryLocalProcessPrincipal, WorthQueryRequestScope,
 };
 use worth_query_declaration::facade::application_schema::{
     ApplicationSchema, StringApplicationValueBinding,
@@ -22,18 +23,14 @@ use worth_query_execution::facade::primary_graph::{
 };
 use worth_query_installation::facade::{
     WorthQueryClockCoordinate, WorthQueryConditionalNodeLocation, WorthQueryConditionalNodeRef,
-    WorthQueryInstalledApplicationSchema, WorthQueryNamedClock, WorthQueryTemporalIntentCandidate,
-    WorthQueryTemporalIntentIdempotencyRelation, WorthQueryTemporalIntentIdentity,
-    WorthQueryTemporalIntentProjectionFailure, WorthQueryTemporalIntentProjectionFailureKind,
-    WorthQueryTemporalIntentProjector, WorthQueryTemporalOperationInputIdentity,
+    WorthQueryInstalledApplicationSchema, WorthQueryNamedClock, WorthQueryTemporalIntentBounds,
+    WorthQueryTemporalIntentCandidate, WorthQueryTemporalIntentIdempotencyRelation,
+    WorthQueryTemporalIntentIdentity, WorthQueryTemporalIntentProjectionFailure,
+    WorthQueryTemporalIntentProjectionFailureKind, WorthQueryTemporalIntentProjector,
+    WorthQueryTemporalOperationInputIdentity,
 };
 
-/// Lifecycle value of a rule that still fires.
-pub const WORTH_QUERY_RECURRING_ACTIVE: &str = "active";
-/// Lifecycle value of a rule whose last occurrence fired.
-pub const WORTH_QUERY_RECURRING_COMPLETED: &str = "completed";
-/// Gate value under which the temporal node evaluates a rule.
-pub const WORTH_QUERY_RECURRING_READY_GATE: &str = "ready";
+use worth_query_declaration::facade::application_schema::WorthQueryRecurringLifecycle;
 
 /// One due occurrence of a recurring rule; the input of its fire operation.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -59,7 +56,7 @@ worth_query_declaration::worth_query_structured_value_binding!(
 /// rule's `#[derive(WorthQueryRow)]` row.
 pub trait WorthQueryRecurringRow {
     fn occurrence(&self) -> WorthQueryRecurringOccurrence;
-    fn lifecycle(&self) -> &str;
+    fn lifecycle(&self) -> WorthQueryRecurringLifecycle;
 }
 
 /// Stable semantic identities of one recurring rule's installed parts.
@@ -103,8 +100,8 @@ impl<Rule: WorthQueryRecurringRuleIdentity> WorthQueryNamedClock
     const PORTABLE_IDENTITY: &'static str = Rule::CLOCK;
 }
 
-/// Projects a rule row into its timed intent: `active` rows schedule their
-/// due occurrence, `completed` rows retire, and any other lifecycle cancels.
+/// Projects a rule row into its timed intent: `Active` rows schedule their
+/// due occurrence, `Completed` rows retire, and `Cancelled` or `Hub` rows cancel.
 pub struct WorthQueryRecurringProjector<Rule>(PhantomData<fn() -> Rule>);
 
 impl<Rule> Default for WorthQueryRecurringProjector<Rule> {
@@ -141,13 +138,15 @@ where
         let (input_identity, idempotency) = occurrence_identities(&occurrence).map_err(invalid)?;
         let due = WorthQueryClockCoordinate::from_nanoseconds(occurrence.due_ns);
         let candidate = match row.lifecycle() {
-            WORTH_QUERY_RECURRING_ACTIVE => {
+            WorthQueryRecurringLifecycle::Active => {
                 WorthQueryTemporalIntentCandidate::active::<StringApplicationValueBinding>
             }
-            WORTH_QUERY_RECURRING_COMPLETED => {
+            WorthQueryRecurringLifecycle::Completed => {
                 WorthQueryTemporalIntentCandidate::completed::<StringApplicationValueBinding>
             }
-            _ => WorthQueryTemporalIntentCandidate::cancelled::<StringApplicationValueBinding>,
+            WorthQueryRecurringLifecycle::Cancelled | WorthQueryRecurringLifecycle::Hub => {
+                WorthQueryTemporalIntentCandidate::cancelled::<StringApplicationValueBinding>
+            }
         };
         let (record, revision) = (occurrence.rule_id.clone(), occurrence.revision);
         candidate(
@@ -247,15 +246,43 @@ fn occurrence_identities(
 }
 
 /// Configuration of one installed recurring rule: the local owner whose fresh
-/// authority reconstructs and fires occurrences, and its admission clock.
+/// authority reconstructs and fires occurrences, its admission clock and the
+/// bounds of the rule's reconstructed intents.
 pub struct WorthQueryRecurringConfig {
     owner: WorthQueryLocalProcessPrincipal,
     clock: WorthQueryAdmissionClock,
+    bounds: Option<WorthQueryTemporalIntentBounds>,
 }
+
+/// Default reconstruction bounds: at most 64 reconstruction rows, 128 query
+/// work units and 64 due wakes per observation.
+const DEFAULT_RECURRING_BOUNDS: (usize, usize, usize) = (64, 128, 64);
 
 impl WorthQueryRecurringConfig {
     pub fn new(owner: WorthQueryLocalProcessPrincipal, clock: WorthQueryAdmissionClock) -> Self {
-        Self { owner, clock }
+        Self {
+            owner,
+            clock,
+            bounds: None,
+        }
+    }
+
+    /// Replaces the default reconstruction bounds.
+    pub fn with_intent_bounds(mut self, bounds: WorthQueryTemporalIntentBounds) -> Self {
+        self.bounds = Some(bounds);
+        self
+    }
+
+    /// The configured or default reconstruction bounds.
+    #[doc(hidden)]
+    pub fn intent_bounds(&self) -> Result<WorthQueryTemporalIntentBounds, &'static str> {
+        match self.bounds {
+            Some(bounds) => Ok(bounds),
+            None => {
+                let (rows, work, wakes) = DEFAULT_RECURRING_BOUNDS;
+                WorthQueryTemporalIntentBounds::new(rows, work, wakes)
+            }
+        }
     }
 
     /// Admits the configured owner against the installed schema.
@@ -263,9 +290,12 @@ impl WorthQueryRecurringConfig {
     pub fn admit_owner<Schema: ApplicationSchema, Rule>(
         self,
         schema: &WorthQueryInstalledApplicationSchema<Schema>,
-    ) -> Option<WorthQueryRecurringOwner<Schema, Rule>> {
-        let adapter = self.owner.admit(schema, self.clock.clone()).ok()?;
-        Some(WorthQueryRecurringOwner {
+    ) -> Result<
+        WorthQueryRecurringOwner<Schema, Rule>,
+        WorthQueryAuthenticationAdapterAdmissionDenial,
+    > {
+        let adapter = self.owner.admit(schema, self.clock.clone())?;
+        Ok(WorthQueryRecurringOwner {
             adapter: Arc::new(adapter),
             clock: self.clock,
             rule: PhantomData,

@@ -15,13 +15,15 @@ use worth_query_host::facade::{
 mod custody;
 pub use custody::source_report_retains_fresh_request_funding_until_close;
 
+worth_query_decl::facade::worth_query_disclosure_classification!(NumericSourceMetadataDisclosure);
+
 pub(super) fn metadata(
 ) -> ApplicationQueryInspectionDefinition<NumericSchema, calculation_query::Binding> {
     let contract = ApplicationQueryInspectionMetadataFacet::ALL
         .into_iter()
         .fold(
             ApplicationQueryDisclosureContract::governed_by(
-                "numeric-source-metadata",
+                NumericSourceMetadataDisclosure,
                 capability::Inspect::reference(),
             ),
             |contract, facet| {

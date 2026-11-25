@@ -181,6 +181,27 @@ pub fn discover(
 /// Only lifecycle absence is data; audience, storage, budget and original
 /// request stops retain their exact causes.
 struct LifecycleSource<'a, 'b>(StructuralSource<'a, 'b>);
+
+impl LifecycleSource<'_, '_> {
+    /// The kind of `id` when this Source's audience reads that kind, else
+    /// `None`: a record of an undeclared kind is no scope, row or dependency
+    /// of this Source, so classifying it is not an out-of-audience read.
+    fn declared_entity_kind(
+        &mut self,
+        id: EntityId,
+    ) -> Result<Option<crate::contracts::identity::data::primitives::KindId>, Denial> {
+        match self.0.view.readable_entity_kind(id) {
+            Ok(kind) => {
+                self.0.reads.entity_records += 1;
+                Ok(kind)
+            }
+            Err(StructuralReadError::RecordUnavailable) => {
+                Err(Definition::RecordUnavailable.into())
+            }
+            Err(cause) => Err(Denial::Structural(self.0.view.read_budget().refusal(cause))),
+        }
+    }
+}
 impl SourceRead for LifecycleSource<'_, '_> {
     fn admit_definition(
         &mut self,

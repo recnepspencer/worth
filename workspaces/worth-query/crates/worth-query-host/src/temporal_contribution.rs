@@ -28,6 +28,7 @@ mod recurring;
 mod recurring_binding_macro;
 mod recurring_macro;
 mod recurring_parts_macro;
+mod recurring_vocabulary;
 
 pub use catch_up::{
     pump_temporal_catch_up, pump_temporal_catch_up_observing, pump_temporal_catch_up_until,
@@ -55,6 +56,10 @@ pub use recurring::{
     WorthQueryRecurringConfig, WorthQueryRecurringInvoker, WorthQueryRecurringNode,
     WorthQueryRecurringOccurrence, WorthQueryRecurringOccurrenceBinding, WorthQueryRecurringOwner,
     WorthQueryRecurringProjector, WorthQueryRecurringRow, WorthQueryRecurringRuleIdentity,
-    WorthQueryRecurringScheduleDecision, WORTH_QUERY_RECURRING_ACTIVE,
-    WORTH_QUERY_RECURRING_COMPLETED, WORTH_QUERY_RECURRING_READY_GATE,
+    WorthQueryRecurringScheduleDecision,
+};
+pub use recurring_vocabulary::{
+    recurring_installation_denial, WorthQueryRecurringGate, WorthQueryRecurringGateBinding,
+    WorthQueryRecurringLifecycle, WorthQueryRecurringLifecycleBinding,
+    WorthQueryRecurringRuleRefusal,
 };

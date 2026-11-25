@@ -12,6 +12,7 @@ use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
     WorthQueryInvariantMutationTarget, WorthQueryOperationDurableCapability,
 };
+use worth_query_host::facade::shared_access::{ScopeAccess, ScopeGrantAction, ScopeGrantPurpose};
 
 use super::capabilities::{
     build_capability_contract, text, ProjectCapabilityInputBinding, SharedAccessContext,
@@ -49,11 +50,13 @@ impl ApplicationCapabilityRequest<SharedProjectSchema, WatchProjectByAliasCapabi
                 text(self),
             )
             .unwrap(),
-            text("access"),
-            text("shared"),
+            worth_query_host::facade::shared_access::scope_grant_value(ScopeGrantAction::Access),
+            worth_query_host::facade::shared_access::scope_grant_value(ScopeGrantPurpose::Shared),
             ApplicationCapabilityRequestContext::new(SharedAccessContext::reference()),
         )
-        .field(text("read_and_watch")))
+        .field(worth_query_host::facade::shared_access::scope_grant_value(
+            ScopeAccess::ReadAndWatch,
+        )))
     }
 }
 
@@ -90,7 +93,9 @@ impl Registration<SharedProjectSchema> for WatchProjectByAliasCapability {
             WatchProjectByAliasCapability::reference(),
             WatchProjectByAliasOperation::reference(),
             GrantModeField::at("GrantMode"),
-            vec![text("read_and_watch")],
+            vec![worth_query_host::facade::shared_access::scope_grant_value(
+                ScopeAccess::ReadAndWatch,
+            )],
         )))
     }
 }

@@ -1,7 +1,13 @@
 //! Pure RFC 2104 HMAC-SHA256, constant-time tag comparison, and canonical token codec.
 
 use sha2::{Digest, Sha256};
-use worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentity;
+use worth_foundational::facade::{AspectValue, InternedString};
+use worth_query_declaration::facade::{
+    application_schema::ApplicationReadableScalarValueBinding,
+    authentication::{
+        WorthQueryExternalPrincipalIdentity, WorthQueryExternalPrincipalIdentityBinding,
+    },
+};
 
 use super::capped_writer::RemoteByteWriter;
 use super::denial::{AuthenticationRefusalReason, SharedAccessDenial};
@@ -10,6 +16,9 @@ use super::framing::{BinaryReader, BinaryWriter};
 pub(super) const TOKEN_MAC_DOMAIN: &[u8] = b"worth.query.shared_access.token.v1\0";
 pub(super) const MAX_KEY_ID_BYTES: usize = 64;
 pub(super) const MAX_TOKEN_BYTES: usize = 2048;
+/// A token principal travels as its identity binding's length-framed index
+/// encoding, so decoding reuses the identity owner's codec.
+const MAX_PRINCIPAL_BYTES: usize = 600;
 
 #[derive(Clone, Eq, PartialEq)]
 pub(super) struct TokenBody {
@@ -32,8 +41,7 @@ pub(super) fn encode_token_body(writer: &mut BinaryWriter, body: &TokenBody) {
         }
         None => writer.write_u8(0),
     }
-    writer.write_str(body.principal.issuer());
-    writer.write_str(body.principal.subject());
+    writer.write_str(&body.principal.portable_text());
     writer.write_u64(body.issued_at_unix_secs);
     writer.write_u64(body.expires_at_unix_secs);
     writer.write_fixed(&body.nonce);
@@ -52,8 +60,7 @@ pub(super) fn encode_token_body_capped(
         }
         None => writer.write_u8(0)?,
     }
-    writer.write_str(body.principal.issuer())?;
-    writer.write_str(body.principal.subject())?;
+    writer.write_str(&body.principal.portable_text())?;
     writer.write_u64(body.issued_at_unix_secs)?;
     writer.write_u64(body.expires_at_unix_secs)?;
     writer.write_fixed(&body.nonce)
@@ -73,11 +80,7 @@ pub(super) fn decode_token_parts(
             ));
         }
     };
-    let issuer = reader.read_str_bounded(256)?;
-    let subject = reader.read_str_bounded(256)?;
-    let principal = WorthQueryExternalPrincipalIdentity::new(issuer, subject).map_err(|_| {
-        SharedAccessDenial::AuthenticationRefused(AuthenticationRefusalReason::MalformedToken)
-    })?;
+    let principal = decode_principal(&reader.read_str_bounded(MAX_PRINCIPAL_BYTES)?)?;
     let issued_at_unix_secs = reader.read_u64()?;
     let expires_at_unix_secs = reader.read_u64()?;
     let nonce = reader.read_fixed::<16>()?;
@@ -136,4 +139,17 @@ pub(super) fn constant_time_eq_32(left: &[u8; 32], right: &[u8; 32]) -> bool {
         diff |= left[idx] ^ right[idx];
     }
     std::hint::black_box(diff) == 0
+}
+
+fn malformed_token() -> SharedAccessDenial {
+    SharedAccessDenial::AuthenticationRefused(AuthenticationRefusalReason::MalformedToken)
+}
+
+fn decode_principal(
+    encoded: &str,
+) -> Result<WorthQueryExternalPrincipalIdentity, SharedAccessDenial> {
+    WorthQueryExternalPrincipalIdentityBinding::decode(&AspectValue::String(InternedString::from(
+        encoded,
+    )))
+    .map_err(|_| malformed_token())
 }

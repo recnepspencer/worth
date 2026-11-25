@@ -34,6 +34,8 @@ use crate::domain_computation::primary_graph::tests::fixture::CapabilityDisclosu
 use crate::domain_computation::primary_graph::tests::fixture::IdentityExecutionSchema;
 use crate::domain_computation::primary_graph::tests::fixture::TouchAccountCapability;
 
+worth_query_declaration::worth_query_disclosure_classification!(ForbiddenLiveIdentityDisclosure);
+
 worth_query_declaration::worth_query_structured_value_binding!(NestedUnitResultBinding for () { identity: "worth.rust.unit" });
 
 pub struct AccountIdentityParameter;
@@ -161,7 +163,7 @@ where
     .relation(activities::<Query>(), activity)
     .build();
     let disclosure = ApplicationQueryDisclosureContract::governed_by(
-        "forbidden-live-identity",
+        ForbiddenLiveIdentityDisclosure,
         TouchAccountCapability::reference(),
     )
     .use_field_by(

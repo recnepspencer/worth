@@ -1,7 +1,11 @@
 use crate::domain_computation::primary_graph::tests::inbound_admission::fixture::*;
 
+worth_query_declaration::worth_query_authentication_audience!(InboundTestAudience);
+worth_query_declaration::worth_query_principal_issuer!(InboundTestExampleIssuer);
+worth_query_declaration::worth_query_authentication_method!(TestIdentityMethod);
+
 pub fn external_identity() -> WorthQueryExternalPrincipalIdentity {
-    WorthQueryExternalPrincipalIdentity::new("https://inbound-test.example", "alice").unwrap()
+    WorthQueryExternalPrincipalIdentity::new(InboundTestExampleIssuer, "alice").unwrap()
 }
 
 pub fn authenticate(
@@ -13,8 +17,8 @@ pub fn authenticate(
     let adapter = admit_authentication_adapter(
         schema,
         WorthQueryAuthenticationAdapterAdmission::new(
-            WorthQueryAuthenticationAudience::new("inbound-test").unwrap(),
-            WorthQueryAuthenticationMethod::new("test-identity").unwrap(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
+            WorthQueryAuthenticationAudience::of(InboundTestAudience),
+            WorthQueryAuthenticationMethod::of(TestIdentityMethod), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
         TestIdentityAdapter,
     )
     .unwrap();
@@ -36,8 +40,8 @@ impl WorthQueryAuthenticationAdapter for TestIdentityAdapter {
             let now = SystemTime::now();
             WorthQueryValidatedExternalPrincipal::new(
                 external_identity(),
-                WorthQueryAuthenticationAudience::new("inbound-test").unwrap(),
-                WorthQueryAuthenticationMethod::new("test-identity").unwrap(),
+                WorthQueryAuthenticationAudience::of(InboundTestAudience),
+                WorthQueryAuthenticationMethod::of(TestIdentityMethod),
                 now,
                 now + Duration::from_secs(60),
                 vec![],

@@ -25,6 +25,8 @@ use crate::host::temporal_catchup::{
     },
 };
 
+worth_query_decl::facade::worth_query_principal_issuer!(LocalDesktopIssuer);
+
 pub(super) fn seed_reminder_graph(
     graph: &mut primary_graph::WorthQueryPrimaryGraphBootstrap<DesktopReminderSchema>,
     principal_binding: &domain::WorthQueryInstalledPrincipalBinding<
@@ -41,8 +43,7 @@ pub(super) fn seed_reminder_graph(
             principal_binding,
             primary_graph::WorthQueryApplicationPrincipalKey::new("daymark-user").unwrap(),
             1_u64,
-            WorthQueryExternalPrincipalIdentity::new("https://local.desktop", "daymark-user")
-                .unwrap(),
+            WorthQueryExternalPrincipalIdentity::new(LocalDesktopIssuer, "daymark-user").unwrap(),
             WorthQueryPrincipalMappingStatus::Enabled,
         )
         .unwrap();

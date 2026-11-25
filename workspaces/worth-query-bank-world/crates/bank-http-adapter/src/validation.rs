@@ -1,5 +1,6 @@
 use std::time::SystemTime;
 
+use crate::configuration::AuthentikIssuer;
 use openidconnect::{
     AccessTokenHash, ClaimsVerificationError, SignatureVerificationError,
     TokenIntrospectionResponse,
@@ -55,7 +56,7 @@ pub(crate) async fn validate_credential(
     require_unexpired(local.expires_at, validated_at)?;
 
     WorthQueryValidatedExternalPrincipal::new(
-        WorthQueryExternalPrincipalIdentity::new(local.issuer, local.subject)
+        WorthQueryExternalPrincipalIdentity::new(AuthentikIssuer, local.subject)
             .map_err(|_| failure(WorthQueryAuthenticationAdapterFailureKind::ProtocolViolation))?,
         adapter
             .configuration

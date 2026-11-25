@@ -69,8 +69,10 @@ fn optional_filter_parameters_literals_and_value_predicates_join_graph_and_plann
         U64ApplicationValueBinding,
         true,
     >::optional("account");
-    let lit_seven = ApplicationEncodedScalarValue::<U64ApplicationValueBinding>::try_new(7).unwrap();
-    let lit_eight = ApplicationEncodedScalarValue::<U64ApplicationValueBinding>::try_new(8).unwrap();
+    let lit_seven =
+        ApplicationEncodedScalarValue::<U64ApplicationValueBinding>::try_new(7).unwrap();
+    let lit_eight =
+        ApplicationEncodedScalarValue::<U64ApplicationValueBinding>::try_new(8).unwrap();
 
     let opt_filter = ApplicationQueryWhereFilterOperands::new()
         .field("id", AccountId::at("AccountId"))

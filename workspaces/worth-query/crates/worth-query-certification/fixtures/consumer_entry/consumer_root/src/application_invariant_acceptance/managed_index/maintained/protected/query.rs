@@ -6,6 +6,8 @@ use super::{
 pub(super) mod exact;
 use worth_query_decl::facade::{application_query::*, application_schema::*, *};
 use worth_query_host::facade::primary_graph::*;
+
+worth_query_decl::facade::worth_query_disclosure_classification!(ProtectedPrefixDisclosure);
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Row {
     pub identity: String,
@@ -38,7 +40,7 @@ fn definition_for<
     let hidden =
         ApplicationEncodedScalarValue::<U64ApplicationValueBinding>::try_new(2u64).unwrap();
     let disclosure = ApplicationQueryDisclosureContract::governed_by(
-        "protected-prefix",
+        ProtectedPrefixDisclosure,
         access::ReadBoxes::reference(),
     )
     .use_field_by(

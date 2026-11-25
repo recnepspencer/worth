@@ -40,8 +40,14 @@ fn inline_clauses_grant_each_listed_capability() {
     linked::<Add, InboxTasks>();
     grants::<Retitle, Task>();
     written::<Retitle, Title>();
-    assert_eq!(<Add as ApplicationOperationMarkerIdentity<Board>>::IDENTIFIER, "Add");
-    assert_eq!(<Retitle as ApplicationOperationMarkerIdentity<Board>>::IDENTIFIER, "Retitle");
+    assert_eq!(
+        <Add as ApplicationOperationMarkerIdentity<Board>>::IDENTIFIER,
+        "Add"
+    );
+    assert_eq!(
+        <Retitle as ApplicationOperationMarkerIdentity<Board>>::IDENTIFIER,
+        "Retitle"
+    );
     assert_eq!(Add::reference().name(), "Add");
     assert_eq!(Retitle::reference::<Board>().name(), "Retitle");
 }

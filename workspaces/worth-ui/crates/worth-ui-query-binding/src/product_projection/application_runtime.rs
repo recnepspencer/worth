@@ -29,6 +29,8 @@ use crate::declaration::{
 use super::application_program::{validated_status_program, WorthUiStatusProgram};
 use super::WorthUiStatusOwnerError;
 
+worth_query_decl::facade::worth_query_principal_issuer!(WorthUiLocalIssuer);
+
 pub(super) type WorthUiStatusApplication =
     WorthQueryProgramApplicationRuntime<WorthUiApplicationSchema, WorthUiStatusProgram>;
 
@@ -90,7 +92,7 @@ pub(super) fn install_status_application(
 }
 
 pub(super) fn external_identity() -> WorthQueryExternalPrincipalIdentity {
-    WorthQueryExternalPrincipalIdentity::new("https://worth.ui/local", "platform-pulse-source")
+    WorthQueryExternalPrincipalIdentity::new(WorthUiLocalIssuer, "platform-pulse-source")
         .expect("the local UI source identity is canonical")
 }
 

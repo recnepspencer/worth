@@ -9,7 +9,10 @@ use worth_query_decl::facade::{
 };
 use worth_query_host::facade::{
     primary_graph::WorthQueryOperationBodyDenial,
-    temporal_contribution::WorthQueryRecurringScheduleDecision, worth_query_recurring_rule,
+    temporal_contribution::{
+        WorthQueryRecurringGate, WorthQueryRecurringLifecycle, WorthQueryRecurringScheduleDecision,
+    },
+    worth_query_recurring_rule,
 };
 
 pub const HUB: &str = "hub";
@@ -98,9 +101,9 @@ pub struct RuleRecord {
     pub interval_ns: u64,
     pub max_fires: u64,
     pub fired_count: u64,
-    pub lifecycle: String,
+    pub lifecycle: WorthQueryRecurringLifecycle,
     #[worth_query(equality)]
-    pub gate: String,
+    pub gate: WorthQueryRecurringGate,
 }
 
 worth_query_structured_value_binding!(pub UnitResult for () { identity: worth_query_identity!(NS, result) });
@@ -137,7 +140,7 @@ pub struct RuleView {
     #[worth_query(field = FiredCount)]
     pub fired_count: u64,
     #[worth_query(field = Lifecycle)]
-    pub lifecycle: String,
+    pub lifecycle: WorthQueryRecurringLifecycle,
 }
 
 #[derive(Clone, Debug, WorthQuery)]
@@ -179,7 +182,7 @@ pub struct ScheduleRule {
     pub due_ns: u64,
     pub interval_ns: u64,
     pub max_fires: u64,
-    pub lifecycle: String,
+    pub lifecycle: WorthQueryRecurringLifecycle,
 }
 
 worth_query_recurring_rule! {
@@ -188,7 +191,7 @@ worth_query_recurring_rule! {
         node: "recurring-dx-due",
         operation: FireRule = "recurring_dx_gate",
         context: Desktop,
-        entity: Rule { fields: RuleFacts, link: RuleTarget },
+        entity: Rule { fields: RuleFacts, link: RuleTarget, bindings: Codecs },
         hub: HUB,
         row: RuleView,
         query: ReadRulesBinding,

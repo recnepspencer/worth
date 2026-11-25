@@ -108,7 +108,7 @@ pub async fn install_identity(
         .build()
         .expect("real certification identity configuration should admit");
     let external = WorthQueryExternalPrincipalIdentity::new(
-        &issuer,
+        bank_http_adapter::AuthentikIssuer,
         world.fixture.primary_participant().username(),
     )
     .expect("real certification mapping should admit");

@@ -29,7 +29,7 @@ use worth_query_host::facade::{
         DeterminismContract, ExecutionAllocationPolicy, ExecutionBudget, ExecutionPosture,
         ExecutionRequestPolicy, WorthQueryApplicationQueryResourceProfile,
     },
-    shared_access::{ScopeAccess, SharedAccessDenial},
+    shared_access::SharedAccessDenial,
     worth_query_shared_access, WorthQueryApplicationHome, WorthQueryApplicationHomeLocation,
     WorthQueryApplicationHomeRequest,
 };
@@ -51,6 +51,9 @@ use super::schema::{
     SharedProjectSchema, SharedProjectSurface,
 };
 
+worth_query_decl::facade::worth_query_authentication_audience!(DaymarkLocalAudience);
+worth_query_decl::facade::worth_query_authentication_method!(LocalProcessMethod);
+
 static NEXT_IDEMPOTENCY_KEY: AtomicU64 = AtomicU64::new(1);
 
 worth_query_shared_access! {
@@ -64,13 +67,8 @@ worth_query_shared_access! {
         grant: GrantProjectIntent = |grant| GrantProjectIntent(GrantProjectInput {
             grant_id: grant.grant_id.as_str().to_owned(),
             project_key: grant.scope.0.clone(),
-            grantee_issuer: grant.collaborator.issuer().to_owned(),
-            grantee_subject: grant.collaborator.subject().to_owned(),
-            mode: match grant.access {
-                ScopeAccess::ReadOnly => "read_only",
-                ScopeAccess::ReadAndWatch => "read_and_watch",
-            }
-            .to_owned(),
+            grantee: grant.collaborator.clone(),
+            mode: grant.access,
         }),
         revoke: RevokeProjectIntent = |grant_id| RevokeProjectIntent(RevokeProjectInput {
             grant_id: grant_id.as_str().to_owned(),
@@ -83,13 +81,12 @@ pub fn authenticate_local_owner(
     schema: &WorthQueryInstalledApplicationSchema<SharedProjectSchema>,
     request_scope: &WorthQueryRequestScope,
 ) -> Result<WorthQueryAuthenticatedExternalPrincipal<SharedProjectSchema>, SharedAccessDenial> {
-    let audience = WorthQueryAuthenticationAudience::new("daymark.local").unwrap();
-    let method = WorthQueryAuthenticationMethod::new("local-process").unwrap();
+    let audience = WorthQueryAuthenticationAudience::of(DaymarkLocalAudience);
+    let method = WorthQueryAuthenticationMethod::of(LocalProcessMethod);
     let local = WorthQueryLocalProcessPrincipal::new(
-        "worth.court.shared_access.local_owner.v1",
         owner_identity(),
-        audience.clone(),
-        method.clone(),
+        DaymarkLocalAudience,
+        LocalProcessMethod,
         Duration::from_secs(3600),
     )
     .unwrap();

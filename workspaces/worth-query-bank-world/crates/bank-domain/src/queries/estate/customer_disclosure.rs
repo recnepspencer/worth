@@ -17,6 +17,8 @@ use super::customer_disclosure_selectors::{
 };
 use super::customer_disclosure_shape::customer_disclosure_shape;
 
+worth_query_decl::facade::worth_query_disclosure_classification!(EstateCustomerIdentityDisclosure);
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct EstateCustomerDisclosureQueryParameters;
 
@@ -102,7 +104,7 @@ pub fn estate_customer_disclosure_definition() -> ApplicationQueryDefinitionBuil
 > {
     let influence = ApplicationQueryInfluenceContract::forbid_all();
     let disclosure = ApplicationQueryDisclosureContract::governed_by(
-        "estate-customer-identity",
+        EstateCustomerIdentityDisclosure,
         ViewEstateIdentityVerificationCapability::reference(),
     )
     .disclose_relation_by(

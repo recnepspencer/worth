@@ -11,6 +11,9 @@ pub use worth_query_host::facade::{
     application_entry::WorthQueryWorkflowAdvancePreparationDenial,
 };
 
+worth_query_decl::facade::worth_query_authentication_method!(CertificationMethod);
+worth_query_decl::facade::worth_query_authentication_audience!(DocumentRetentionHostAudience);
+
 pub struct SecondarySigner;
 impl WorthQueryAuthenticationAdapter for SecondarySigner {
     type Credential = ();
@@ -26,8 +29,8 @@ impl WorthQueryAuthenticationAdapter for SecondarySigner {
             let now = SystemTime::now();
             WorthQueryValidatedExternalPrincipal::new(
                 secondary_signer_identity(),
-                WorthQueryAuthenticationAudience::new("document-retention-host").unwrap(),
-                WorthQueryAuthenticationMethod::new("certification").unwrap(),
+                WorthQueryAuthenticationAudience::of(DocumentRetentionHostAudience),
+                WorthQueryAuthenticationMethod::of(CertificationMethod),
                 now,
                 now + Duration::from_secs(3600),
                 vec![],

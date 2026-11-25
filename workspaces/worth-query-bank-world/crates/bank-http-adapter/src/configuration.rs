@@ -8,7 +8,20 @@ use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryAuthenticationAudience, WorthQueryAuthenticationMethod,
 };
 
-const AUTHENTICATION_METHOD: &str = "authentik-oidc-code-pkce";
+worth_query_host::facade::worth_query_authentication_audience!(
+    /// The bank's OIDC client: introspection pins the token audience to the
+    /// configured client id before identities carry this audience.
+    pub BankClientAudience
+);
+worth_query_host::facade::worth_query_authentication_method!(
+    /// Authentik OIDC authorization-code flow with PKCE.
+    pub AuthentikOidcCodePkce
+);
+worth_query_host::facade::worth_query_principal_issuer!(
+    /// The configured Authentik issuer: ID-token verification pins the claimed
+    /// issuer to the configured issuer URL before identities carry it.
+    pub AuthentikIssuer
+);
 
 #[derive(Clone)]
 pub struct AuthentikOidcConfiguration {
@@ -95,10 +108,8 @@ impl AuthentikOidcConfiguration {
         &self,
     ) -> Result<BankAuthenticationConfiguration, AuthentikOidcConfigurationError> {
         Ok(BankAuthenticationConfiguration::new(
-            WorthQueryAuthenticationAudience::new(self.client_id.as_str())
-                .map_err(|_| AuthentikOidcConfigurationError::InvalidClientId)?,
-            WorthQueryAuthenticationMethod::new(AUTHENTICATION_METHOD)
-                .map_err(|_| AuthentikOidcConfigurationError::InvalidAuthenticationMethod)?,
+            self.authentication_audience()?,
+            self.authentication_method()?,
         ))
     }
 
@@ -106,22 +117,16 @@ impl AuthentikOidcConfiguration {
         &self.configuration_identity
     }
 
-    pub(crate) fn issuer_text(&self) -> &str {
-        self.issuer.as_str()
-    }
-
     pub(crate) fn authentication_audience(
         &self,
     ) -> Result<WorthQueryAuthenticationAudience, AuthentikOidcConfigurationError> {
-        WorthQueryAuthenticationAudience::new(self.client_id.as_str())
-            .map_err(|_| AuthentikOidcConfigurationError::InvalidClientId)
+        Ok(WorthQueryAuthenticationAudience::of(BankClientAudience))
     }
 
     pub(crate) fn authentication_method(
         &self,
     ) -> Result<WorthQueryAuthenticationMethod, AuthentikOidcConfigurationError> {
-        WorthQueryAuthenticationMethod::new(AUTHENTICATION_METHOD)
-            .map_err(|_| AuthentikOidcConfigurationError::InvalidAuthenticationMethod)
+        Ok(WorthQueryAuthenticationMethod::of(AuthentikOidcCodePkce))
     }
 }
 

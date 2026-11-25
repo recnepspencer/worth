@@ -2,6 +2,8 @@
 use super::*;
 use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 
+worth_query_decl::facade::worth_query_principal_issuer!(CheckpointInvalidLocalIssuer);
+
 mod graph;
 pub(super) use crate::checkpoint_recovery::support::authentication_fixture;
 pub(super) use graph::{DependentRoot, Root};
@@ -106,7 +108,7 @@ fn install_configured(
     let limits = support::limits_with_room(32, 16, 64, support::invalidation());
     application_installation::in_memory_program(program, declaration, ((witnesses, indexed_selection),), ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(), limits, |_bootstrap_phase, graph, installed| {
         let binding = installed.principal_binding(ConsumerPrincipalBinding::reference::<Schema>()).unwrap();
-        let external = worth_query_host::facade::declaration::authentication::WorthQueryExternalPrincipalIdentity::new("https://checkpoint.invalid/local", "model-owner").unwrap();
+        let external = worth_query_host::facade::declaration::authentication::WorthQueryExternalPrincipalIdentity::new(CheckpointInvalidLocalIssuer, "model-owner").unwrap();
         graph.bind_principal(&binding, primary_graph::WorthQueryApplicationPrincipalKey::new("model-owner").unwrap(), 1_u64, external, worth_query_host::facade::declaration::authentication::WorthQueryPrincipalMappingStatus::Enabled)?;
         seed::seed_cycle(graph); Ok(())
     }).unwrap()

@@ -22,7 +22,10 @@ pub struct BinaryProbe(u8);
 impl BinaryValueDelegate for BinaryProbeDelegate {
     type Value = BinaryProbe;
     const MAXIMUM_WIRE_BYTES: usize = 1;
-    fn encode(value: &BinaryProbe, writer: &mut dyn BinaryValueWriter) -> Result<(), ValueCodecDenial> {
+    fn encode(
+        value: &BinaryProbe,
+        writer: &mut dyn BinaryValueWriter,
+    ) -> Result<(), ValueCodecDenial> {
         writer.write(&[value.0])
     }
     fn admit(
@@ -337,7 +340,8 @@ fn managed_source_requires_public_disclosure_and_a_real_cycle_is_refused() {
     let source = source_query();
     assert!(validate_portable_application_schema_freshly(schema(source.clone())).is_ok());
     let mut parts = source.clone().into_parts();
-    parts.disclosure = ApplicationQueryDisclosureContract::installed_policy("private");
+    worth_query_declaration::worth_query_disclosure_classification!(PrivateDisclosure);
+    parts.disclosure = ApplicationQueryDisclosureContract::installed_policy(PrivateDisclosure);
     assert_eq!(
         validate_portable_application_schema_freshly(schema(
             ErasedApplicationQueryDefinition::from_untrusted_parts(parts)

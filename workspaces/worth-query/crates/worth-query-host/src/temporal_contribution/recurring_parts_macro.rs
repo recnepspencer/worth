@@ -15,7 +15,7 @@ macro_rules! __worth_query_recurring_rule_parts {
                     <$Rule as $crate::facade::temporal_contribution::WorthQueryRecurringRuleIdentity>::NODE,
                     <$Fields>::rule_id(),
                     <$Fields>::gate(),
-                    concat!($identity, ".temporal"),
+                    ::core::concat!($identity, ".temporal"),
                 )
             }
 
@@ -27,7 +27,10 @@ macro_rules! __worth_query_recurring_rule_parts {
                 let key = $crate::facade::primary_graph::WorthQueryApplicationEntityKey::new(
                     ::std::string::String::from($hub),
                 )
-                .expect("the recurring hub key is a valid entity key");
+                .map_err(|_| $crate::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenial::new(
+                    $crate::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::NativeInitialInputsRejected,
+                    ::std::string::String::from($hub),
+                ))?;
                 bootstrap.bind_entity(
                     $crate::facade::primary_graph::WorthQueryApplicationEntitySeed::new($Entity::reference(), key)
                         .field(<$Fields>::rule_id(), ::std::string::String::from($hub))
@@ -36,11 +39,8 @@ macro_rules! __worth_query_recurring_rule_parts {
                         .field(<$Fields>::interval_ns(), 0_u64)
                         .field(<$Fields>::max_fires(), 0_u64)
                         .field(<$Fields>::fired_count(), 0_u64)
-                        .field(<$Fields>::lifecycle(), ::std::string::String::from("hub"))
-                        .field(
-                            <$Fields>::gate(),
-                            ::std::string::String::from($crate::facade::temporal_contribution::WORTH_QUERY_RECURRING_READY_GATE),
-                        ),
+                        .field(<$Fields>::lifecycle(), $crate::facade::temporal_contribution::WorthQueryRecurringLifecycle::Hub)
+                        .field(<$Fields>::gate(), $crate::facade::temporal_contribution::WorthQueryRecurringGate::Ready),
                 )
             }
         }

@@ -43,7 +43,7 @@ worth_query_structured_value_binding!(pub OwnerObserveParamsBinding for OwnerObs
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ObservedGrantRow {
     pub active: bool,
-    pub mode: String,
+    pub mode: worth_query_host::facade::shared_access::ScopeAccess,
 }
 worth_query_portable_type!(
     ObservedGrantRow => "worth.query.court.shared_access.observed_grant_row.v1"
@@ -313,7 +313,8 @@ pub fn observe_durable_home_state(
                 .ok_or_else(|| format!("missing ProjectGrant row for {grant_id}"))?;
             grants[p][s] = if !row.active {
                 GrantState::Revoked
-            } else if row.mode == "read_and_watch" {
+            } else if row.mode == worth_query_host::facade::shared_access::ScopeAccess::ReadAndWatch
+            {
                 GrantState::ActiveReadAndWatch
             } else {
                 GrantState::ActiveReadOnly

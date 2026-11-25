@@ -78,7 +78,7 @@ pub async fn prove_real_wrong_audience_denial(
 ) {
     let configuration = wrong_audience_configuration(endpoints, fixture, callback);
     let external_identity = WorthQueryExternalPrincipalIdentity::new(
-        endpoints.issuer(),
+        bank_http_adapter::AuthentikIssuer,
         fixture.primary_participant().username(),
     )
     .expect("wrong-audience mapping identity should admit");
@@ -153,9 +153,11 @@ pub async fn prove_real_wrong_issuer_denial(
         .revocation_url(endpoints.revocation_url())
         .build()
         .expect("alternate real issuer configuration should admit");
-    let external_identity =
-        WorthQueryExternalPrincipalIdentity::new(&issuer, fixture.primary_participant().username())
-            .expect("alternate issuer mapping should admit");
+    let external_identity = WorthQueryExternalPrincipalIdentity::new(
+        bank_http_adapter::AuthentikIssuer,
+        fixture.primary_participant().username(),
+    )
+    .expect("alternate issuer mapping should admit");
     let alternate = cold_certification_for_test::install_identity_for_test(
         configuration,
         [BankPrincipalSeed::enabled(

@@ -8,9 +8,13 @@
 //! `WorthQueryRemoteServer::handle_frame` over an encrypted channel.
 //!
 //! Query payloads and rows implement `RemoteBinaryCodec` from their fields
-//! with [`crate::facade::worth_query_remote_codec!`]; a string-scoped program
-//! implements `WorthQuerySharedAccessProgram` with
-//! [`crate::facade::worth_query_shared_access!`].
+//! with [`crate::facade::worth_query_remote_codec!`]. A schema declares its
+//! typed grant records, read/watch capabilities, governed disclosure and
+//! grant/revoke actions once with [`crate::facade::worth_query_scope_access!`];
+//! a string-scoped program then implements `WorthQuerySharedAccessProgram`
+//! with [`crate::facade::worth_query_shared_access!`]. Grant dimensions are
+//! typed (`ScopeAccess`, `ScopeGrantAction`, `ScopeGrantPurpose`,
+//! `ScopeGrantDisclosure`), never strings.
 //!
 //! Only the owner's `WorthQueryApplicationHome` may issue or revoke durable
 //! scope-access grants and host remote requests. `ScopeAccessGrant` cannot be
@@ -59,12 +63,18 @@
 //! ```
 
 pub use crate::shared_access::{
+    scope_grant_idempotency_key, scope_grant_value, scope_revoke_idempotency_key,
+    ScopeAccessBinding, ScopeGrantAction, ScopeGrantActionBinding, ScopeGrantDisclosure,
+    ScopeGrantDisclosureBinding, ScopeGrantPurpose, ScopeGrantPurposeBinding, ScopeGrantValue,
+};
+pub use crate::shared_access::{
     AuthenticationRefusalReason, AuthorizationRefusalReason, BudgetRefusalReason,
     ProtocolRefusalReason, RemoteAuthConfig, RemoteAuthKey, RemoteAuthToken, RemoteBinaryCodec,
     RemoteBinaryField, RemoteByteReader, RemoteByteWriter, RemoteClientLimits, RemoteServerLimits,
     RemoteTokenIssueRequest, RemoteWatchContext, RemoteWatchId, RemoteWatchPollOutcome,
     ScopeAccess, ScopeAccessGrant, ScopeGrantId, SharedAccessDenial, WatchRefusalReason,
     WorthQueryRemoteClient, WorthQueryRemoteServer, WorthQueryRemoteWatch,
-    WorthQuerySharedAccessProgram, MIN_MAX_FRAME_BYTES, WORTH_QUERY_SHARED_GRANT_KEY_TAG,
-    WORTH_QUERY_SHARED_REVOKE_KEY_TAG, WORTH_QUERY_SHARED_SEQUENCE_MASK,
+    WorthQueryScopeGrantRefusal, WorthQuerySharedAccessProgram, MIN_MAX_FRAME_BYTES,
+    WORTH_QUERY_SHARED_GRANT_KEY_TAG, WORTH_QUERY_SHARED_REVOKE_KEY_TAG,
+    WORTH_QUERY_SHARED_SEQUENCE_MASK,
 };

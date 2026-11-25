@@ -21,6 +21,8 @@ use worth_query_host::facade::{
     },
 };
 
+worth_query_decl::facade::worth_query_principal_issuer!(IssuerExampleIssuer);
+
 pub struct DaymarkBindings;
 impl BindingSet for DaymarkBindings {
     type Work<'a> = ValueDecodeAdmission<'a>;
@@ -290,7 +292,7 @@ pub fn seed_base_project<S: ApplicationSchema>(
             &binding,
             WorthQueryApplicationPrincipalKey::new("daymark-principal").unwrap(),
             1_u64,
-            WorthQueryExternalPrincipalIdentity::new("https://issuer.example", "subject").unwrap(),
+            WorthQueryExternalPrincipalIdentity::new(IssuerExampleIssuer, "subject").unwrap(),
             WorthQueryPrincipalMappingStatus::Enabled,
         )
         .unwrap();

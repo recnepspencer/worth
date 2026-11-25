@@ -1,5 +1,7 @@
 //! Component fixtures share installed bindings while varying only the disputed contract.
 use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::declared_queries::components::*;
+
+worth_query_declaration::worth_query_disclosure_classification!(ComponentQueryDisclosure);
 pub fn path<S: OrbitModel>() -> ApplicationQueryRootPath<S, Node, Node> {
     ApplicationQueryRootPath::from(Node::reference()).forward_closure(Visible::reference())
 }
@@ -45,7 +47,7 @@ pub fn disclosure_with_influence<
     influence: ApplicationQueryInfluenceContract,
 ) -> ApplicationQueryDisclosureContract {
     let contract = ApplicationQueryDisclosureContract::governed_by(
-        "component-query",
+        ComponentQueryDisclosure,
         crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::declared_queries::capability::declarations::ReadOrbit::<S>::reference(),
     )
     .disclose_field_by(

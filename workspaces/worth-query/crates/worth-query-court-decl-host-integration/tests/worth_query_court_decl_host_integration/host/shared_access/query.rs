@@ -14,11 +14,13 @@ use worth_query_host::facade::{
     worth_query_remote_codec,
 };
 
-use super::capabilities::{text, ReadProjectCapability, SharedPrincipalBinding};
+use super::capabilities::{scope_view, ReadProjectCapability, SharedPrincipalBinding};
 use super::schema::{
     ExternalMapping, Principal, Project, ProjectKeyField, ProjectLiveSelf, ProjectVersionField,
     SharedProjectSchema,
 };
+
+worth_query_decl::facade::worth_query_disclosure_classification!(SharedProjectVersionDisclosure);
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ProjectUpdatedNotice {
@@ -162,31 +164,19 @@ impl ApplicationQueryLiveCauseBinding<SharedProjectSchema, ProjectStateQuery, Pr
 fn project_state_disclosure() -> ApplicationQueryDisclosureContract {
     let influence = ApplicationQueryInfluenceContract::permit_all();
     ApplicationQueryDisclosureContract::governed_by(
-        "shared-project-version-disclosure",
+        SharedProjectVersionDisclosure,
         ReadProjectCapability::reference(),
     )
     .use_field_by(
         ProjectKeyField::at("ProjectKey"),
-        text("project_version"),
+        scope_view(),
         influence.clone(),
     )
     .unwrap()
-    .disclose_field_by(
-        project_key_result(),
-        text("project_version"),
-        influence.clone(),
-    )
-    .disclose_field_by(
-        project_version_result(),
-        text("project_version"),
-        influence.clone(),
-    )
-    .disclose_field_by(
-        target_project_key_result(),
-        text("project_version"),
-        influence.clone(),
-    )
-    .disclose_relation_by(project_live_targets(), text("project_version"), influence)
+    .disclose_field_by(project_key_result(), scope_view(), influence.clone())
+    .disclose_field_by(project_version_result(), scope_view(), influence.clone())
+    .disclose_field_by(target_project_key_result(), scope_view(), influence.clone())
+    .disclose_relation_by(project_live_targets(), scope_view(), influence)
 }
 
 pub fn project_state_query_definition() -> ApplicationQueryDefinitionBuilder<

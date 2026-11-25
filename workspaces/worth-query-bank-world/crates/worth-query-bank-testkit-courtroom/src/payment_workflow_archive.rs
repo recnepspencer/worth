@@ -22,6 +22,8 @@ pub use worth_query_package_archive::facade::{
     WorthQueryPackageArchiveLimits, WorthQueryWorkflowDefinitionDraftDenialKind,
 };
 
+worth_query_host::facade::worth_query_principal_issuer!(PaymentArchiveBankTestInvalidIssuer);
+
 #[derive(Clone)]
 pub struct ForeignPaymentSettlementEffect;
 
@@ -35,7 +37,7 @@ pub fn installed_bank() -> BankIdentityRuntime {
     BankIdentityRuntime::install([BankPrincipalSeed::enabled(
         BankPrincipalId::new(1).unwrap(),
         WorthQueryExternalPrincipalIdentity::new(
-            "https://payment-archive.bank.test.invalid",
+            PaymentArchiveBankTestInvalidIssuer,
             "archive-principal",
         )
         .unwrap(),

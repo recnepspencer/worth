@@ -11,13 +11,15 @@ use worth_query_declaration::facade::application_query::ApplicationQueryInspecti
 use worth_query_declaration::facade::application_query::ApplicationQueryInspectionMetadataRef;
 use worth_query_declaration::facade::application_schema::ApplicationEncodedScalarValue;
 
+worth_query_declaration::worth_query_disclosure_classification!(AccountHolderDisclosure);
+
 pub fn governed(
 ) -> ApplicationQueryInspectionDefinition<IdentityExecutionSchema, AlternateAccountSourceBinding> {
     let contract = ApplicationQueryInspectionMetadataFacet::ALL
         .into_iter()
         .fold(
             ApplicationQueryDisclosureContract::governed_by(
-                "account-holder",
+                AccountHolderDisclosure,
                 TouchAccountCapability::reference(),
             ),
             |contract, facet| {

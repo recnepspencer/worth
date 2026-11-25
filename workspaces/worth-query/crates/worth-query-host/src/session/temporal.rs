@@ -15,8 +15,9 @@ type BindingClock<Schema, Binding> =
 
 impl<Schema: ApplicationSchema + 'static, Program> WorthQueryHostSession<'_, Schema, Program> {
     /// Advances installed temporal binding `Binding`'s caller-pumped clock to
-    /// `now` and fires due timed intents, funding the run from this session's
-    /// execution policy instead of a caller-assembled lease.
+    /// `now` and fires due timed intents on this session's branch, funding the
+    /// run from this session's execution policy instead of a caller-assembled
+    /// lease.
     ///
     /// `policy` bounds the number of steps; the report is that of
     /// [`crate::application_home::WorthQueryApplicationHome::catch_up_temporal`].
@@ -36,7 +37,11 @@ impl<Schema: ApplicationSchema + 'static, Program> WorthQueryHostSession<'_, Sch
         let lease = self
             .open_lease(&scope)
             .map_err(WorthQueryTemporalCatchUpDenial::Advancement)?;
-        self.home
-            .catch_up_temporal::<Binding>(now, &ExecutionRequest::leased(&lease), policy)
+        self.home.catch_up_temporal_on::<Binding>(
+            self.branch,
+            now,
+            &ExecutionRequest::leased(&lease),
+            policy,
+        )
     }
 }

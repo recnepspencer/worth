@@ -24,6 +24,9 @@ use worth_query_testkit_document_retention::facade::document_retention_model::{
     host::host_limits,
     operator_identity::{block_on, request_scope},
 };
+
+worth_query_host::facade::worth_query_authentication_audience!(CapabilityRetentionHostAudience);
+worth_query_host::facade::worth_query_authentication_method!(CertificationMethod);
 type Home = WorthQueryApplicationHome<CapabilitySchema, Program>;
 
 fn request(
@@ -87,8 +90,8 @@ fn authenticate(
     let adapter = admit_authentication_adapter(
         home.runtime().installed_schema(),
         WorthQueryAuthenticationAdapterAdmission::new(
-            WorthQueryAuthenticationAudience::new("capability-retention-host").unwrap(),
-            WorthQueryAuthenticationMethod::new("certification").unwrap(),
+            WorthQueryAuthenticationAudience::of(CapabilityRetentionHostAudience),
+            WorthQueryAuthenticationMethod::of(CertificationMethod),
             WorthQueryAdmissionClock::system(),
         ),
         Adapter,

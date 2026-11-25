@@ -16,6 +16,10 @@ use worth_query_host::facade::{
 
 use super::schema::*;
 
+worth_query_decl::facade::worth_query_authentication_method!(LocalProcessMethod);
+worth_query_decl::facade::worth_query_authentication_audience!(RecurringAudience);
+worth_query_decl::facade::worth_query_principal_issuer!(RecurringIssuer);
+
 worth_query_application_program! {
     pub program RecurringProgram for RecurringSchema {
         identity: "recurring.dx.program.v1",
@@ -35,15 +39,14 @@ worth_query_application_program! {
 pub type RecurringHome = WorthQueryApplicationHome<RecurringSchema, RecurringProgram>;
 
 fn owner_identity() -> WorthQueryExternalPrincipalIdentity {
-    WorthQueryExternalPrincipalIdentity::new("local://recurring", "owner").unwrap()
+    WorthQueryExternalPrincipalIdentity::new(RecurringIssuer, "owner").unwrap()
 }
 
 fn local_owner() -> WorthQueryLocalProcessPrincipal {
     WorthQueryLocalProcessPrincipal::new(
-        "recurring.dx.owner.v1",
         owner_identity(),
-        WorthQueryAuthenticationAudience::new("recurring").unwrap(),
-        WorthQueryAuthenticationMethod::new("local-process").unwrap(),
+        RecurringAudience,
+        LocalProcessMethod,
         Duration::from_secs(600),
     )
     .unwrap()

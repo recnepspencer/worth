@@ -12,6 +12,7 @@ mod opening;
 mod preview;
 mod refusal;
 mod request;
+mod retirement;
 mod runtime;
 mod temporal_catch_up;
 mod transition;
@@ -41,6 +42,9 @@ pub use refusal::{
     WorthQueryApplicationHomeOpenRefused, WorthQueryApplicationHomeOpenRefusedPhase,
 };
 pub use request::{WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeRequest};
+pub use retirement::{
+    WorthQueryDirectoryOpenRetired, WorthQueryHomeRetirement, WorthQueryHomeRetirementStop,
+};
 pub use runtime::{WorthQueryApplicationHome, WorthQueryHomeOpenDisposition};
 pub use transition::{
     NoHomeProgramTransition, WorthQueryApplicationHomeTransitionRequired,

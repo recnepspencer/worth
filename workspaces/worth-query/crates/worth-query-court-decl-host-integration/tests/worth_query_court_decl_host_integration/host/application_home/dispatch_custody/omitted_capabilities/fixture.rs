@@ -28,6 +28,8 @@ use worth_query_testkit_host::facade::host::application_home::{
     },
 };
 
+worth_query_decl::facade::worth_query_principal_issuer!(IssuerExampleIssuer);
+
 pub(super) type Number = FieldSelection<HomeRecords, Account, AccountIdentity, String>;
 pub(super) type Balance = FieldSelection<HomeRecords, Account, AccountIdentity, u64>;
 pub(super) type Scope = ApplicationMutationFieldScope<Number>;
@@ -349,7 +351,7 @@ pub(super) fn seed(
         &binding,
         WorthQueryApplicationPrincipalKey::new("host-principal").unwrap(),
         1_u64,
-        WorthQueryExternalPrincipalIdentity::new("https://issuer.example", "subject").unwrap(),
+        WorthQueryExternalPrincipalIdentity::new(IssuerExampleIssuer, "subject").unwrap(),
         WorthQueryPrincipalMappingStatus::Enabled,
     )?;
     graph.bind_entity(

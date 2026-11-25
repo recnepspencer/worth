@@ -249,9 +249,12 @@
 pub use worth_query_admission::facade as admission;
 pub use worth_query_declaration::facade as declaration;
 pub use worth_query_declaration::{
-    worth_query_application_query, worth_query_effect, worth_query_operation,
-    worth_query_operation_emits, worth_query_operation_reads, worth_query_operation_writes,
-    worth_query_portable_type, worth_query_structured_value_binding, worth_query_workflow,
+    worth_query_application_query, worth_query_authentication_audience,
+    worth_query_authentication_method, worth_query_capability, worth_query_capability_context,
+    worth_query_capability_provenance, worth_query_disclosure_classification, worth_query_effect,
+    worth_query_identity_namespace, worth_query_operation, worth_query_operation_emits,
+    worth_query_operation_reads, worth_query_operation_writes, worth_query_portable_type,
+    worth_query_principal_issuer, worth_query_structured_value_binding, worth_query_workflow,
 };
 /// Explain saved query results and authored source operations for audit or debugging.
 /// Start with [`application_entry::WorthQueryApplicationRequest::inspect`] or
@@ -278,15 +281,16 @@ pub use crate::application_home::{
     WorthQueryApplicationHomeOpenRefused, WorthQueryApplicationHomeOpenRefusedPhase,
     WorthQueryApplicationHomeOpeningCloseRefused, WorthQueryApplicationHomeOpeningClosed,
     WorthQueryApplicationHomeRequest, WorthQueryApplicationHomeTransitionRequired,
-    WorthQueryCorrectionEntry, WorthQueryDirectoryOpenDenial,
+    WorthQueryCorrectionEntry, WorthQueryDirectoryOpenDenial, WorthQueryDirectoryOpenRetired,
     WorthQueryHomeAuthoredCorrectionOutcome, WorthQueryHomeClosePolicyRefused,
     WorthQueryHomeConfig, WorthQueryHomeCorrectionOutcome, WorthQueryHomeOpenDisposition,
     WorthQueryHomeOwnedHistoryDenial, WorthQueryHomeProgramTransition,
     WorthQueryHomeProgramTransitionDenial, WorthQueryHomeProgramTransitionOpenPhase,
     WorthQueryHomeProgramTransitionOpenRefused, WorthQueryHomeProgramTransitionPlan,
-    WorthQueryHomeProgramTransitionStep, WorthQueryHomeUndoDenial, WorthQueryPreviewAdoptDenial,
-    WorthQueryPreviewAdoptFailure, WorthQueryPreviewDiscardDenial, WorthQueryPreviewDiscardFailure,
-    WorthQueryPreviewFork, WorthQueryPreviewForkDenial, WorthQueryWorkflowApplicationHome,
+    WorthQueryHomeProgramTransitionStep, WorthQueryHomeRetirement, WorthQueryHomeRetirementStop,
+    WorthQueryHomeUndoDenial, WorthQueryPreviewAdoptDenial, WorthQueryPreviewAdoptFailure,
+    WorthQueryPreviewDiscardDenial, WorthQueryPreviewDiscardFailure, WorthQueryPreviewFork,
+    WorthQueryPreviewForkDenial, WorthQueryWorkflowApplicationHome,
     WorthQueryWorkflowHomeBindingRefused, WorthQueryWorkflowHomeCloseRefused,
     WorthQueryWorkflowHomeClosed, DEFAULT_CORRECTION_HISTORY_LIMITS, DEFAULT_HOST_EXECUTION_POLICY,
     DEFAULT_HOST_EXECUTION_WORK_CEILING,
@@ -294,11 +298,15 @@ pub use crate::application_home::{
 /// Reusable authenticated Host session and typed whole-result / managed-index live handles.
 pub use crate::session::{
     WorthQueryAutoIdempotencyKey, WorthQueryHostSession, WorthQuerySessionCommit,
-    WorthQuerySessionRunDenial, WorthQueryTypedLiveCloseDenial, WorthQueryTypedLiveRefreshDenial,
+    WorthQuerySessionIndexedQuery, WorthQuerySessionQuery, WorthQuerySessionRunDenial,
+    WorthQueryTypedLiveCloseDenial, WorthQueryTypedLiveRefreshDenial,
     WorthQueryTypedLiveSubscription, WorthQueryTypedManagedIndexRefreshDenial,
     WorthQueryTypedManagedIndexWatch,
 };
-pub use crate::{worth_query_recurring_rule, worth_query_remote_codec, worth_query_shared_access};
+pub use crate::{
+    worth_query_recurring_rule, worth_query_remote_codec, worth_query_scope_access,
+    worth_query_shared_access,
+};
 /// Read-only observations for facade-only certification; these reports grant no authority.
 pub use worth_query_execution::facade::{
     certification, convergence_epoch, installed, primary_graph, product, runtime,

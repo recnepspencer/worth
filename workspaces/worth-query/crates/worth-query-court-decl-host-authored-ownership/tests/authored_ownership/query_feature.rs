@@ -1,5 +1,7 @@
 //! Query authoring remains infallible in both manual and complete feature hooks.
 use super::*;
+
+worth_query_host::facade::worth_query_principal_issuer!(OwnershipInvalidIssuer);
 type S = Model<0>;
 worth_query_application_query!(FeatureQuery for Schema: Scenario, identity "ownership.feature-query.v1", parameters query::UnitBinding, result query::RowBinding, scope Node<Schema> => "Node", name "feature_query");
 fn definition<S: Scenario, const INVALID: bool>(
@@ -73,7 +75,7 @@ fn a_lawful_query_in_a_feature_installs() {
             &installed.principal_binding(actor::<Model<71>>()).unwrap(),
             WorthQueryApplicationPrincipalKey::new("operator").unwrap(),
             1,
-            WorthQueryExternalPrincipalIdentity::new("https://ownership.invalid", "operator").unwrap(),
+            WorthQueryExternalPrincipalIdentity::new(OwnershipInvalidIssuer, "operator").unwrap(),
             WorthQueryPrincipalMappingStatus::Enabled,
         )?;
         Ok(())

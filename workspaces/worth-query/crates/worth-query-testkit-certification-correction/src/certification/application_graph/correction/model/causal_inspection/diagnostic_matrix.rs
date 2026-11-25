@@ -11,6 +11,13 @@ pub mod journeys;
 mod shape;
 use shape::*;
 
+worth_query_decl::facade::worth_query_disclosure_classification!(MatrixCompleteMetadataDisclosure);
+worth_query_decl::facade::worth_query_disclosure_classification!(MatrixFieldMetadataDisclosure);
+worth_query_decl::facade::worth_query_disclosure_classification!(MatrixInternalMetadataDisclosure);
+worth_query_decl::facade::worth_query_disclosure_classification!(MatrixRelationMetadataDisclosure);
+
+worth_query_decl::facade::worth_query_disclosure_classification!(MatrixDisclosure);
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Row {
     pub operand: Option<u64>,
@@ -122,40 +129,42 @@ where
                 }),
         )
     };
-    let disclosure =
-        ApplicationQueryDisclosureContract::governed_by("matrix", capability::Inspect::reference())
-            .use_field_by(
-                ReadEnabled::at("ReadEnabled"),
-                capability::text("calculation"),
-                influence(policy == Policy::Internal),
-            )
-            .unwrap()
-            .use_field_by(
-                Primary::at("Primary"),
-                capability::text("calculation"),
-                influence(false),
-            )
-            .unwrap()
-            .disclose_optional_field_by(
-                operand::<Q>(),
-                capability::text("calculation"),
-                influence(policy == Policy::Field),
-            )
-            .disclose_field_by(
-                calculated::<Q>(),
-                capability::text("calculation"),
-                influence(false),
-            )
-            .disclose_field_by(
-                ordering::<Q>(),
-                capability::text("calculation"),
-                influence(false),
-            )
-            .disclose_relation_by(
-                references::<Q>(),
-                capability::text("calculation"),
-                influence(policy == Policy::Relation),
-            );
+    let disclosure = ApplicationQueryDisclosureContract::governed_by(
+        MatrixDisclosure,
+        capability::Inspect::reference(),
+    )
+    .use_field_by(
+        ReadEnabled::at("ReadEnabled"),
+        capability::text("calculation"),
+        influence(policy == Policy::Internal),
+    )
+    .unwrap()
+    .use_field_by(
+        Primary::at("Primary"),
+        capability::text("calculation"),
+        influence(false),
+    )
+    .unwrap()
+    .disclose_optional_field_by(
+        operand::<Q>(),
+        capability::text("calculation"),
+        influence(policy == Policy::Field),
+    )
+    .disclose_field_by(
+        calculated::<Q>(),
+        capability::text("calculation"),
+        influence(false),
+    )
+    .disclose_field_by(
+        ordering::<Q>(),
+        capability::text("calculation"),
+        influence(false),
+    )
+    .disclose_relation_by(
+        references::<Q>(),
+        capability::text("calculation"),
+        influence(policy == Policy::Relation),
+    );
     ApplicationQueryDefinitionBuilder::declare(reference)
         .root(Number::reference())
         .scope(Number::reference())
@@ -175,20 +184,22 @@ pub(super) fn declare(
     schema
         .application_query(definition(Complete::reference(), Policy::Complete))
         .application_query_binding::<Binding>()
-        .application_query_inspection(independent::metadata::<Binding>("matrix-complete-metadata"))
+        .application_query_inspection(independent::metadata::<Binding>(
+            MatrixCompleteMetadataDisclosure,
+        ))
         .application_query(definition(Internal::reference(), Policy::Internal))
         .application_query_binding::<InternalBinding>()
         .application_query_inspection(independent::metadata::<InternalBinding>(
-            "matrix-internal-metadata",
+            MatrixInternalMetadataDisclosure,
         ))
         .application_query(definition(Relation::reference(), Policy::Relation))
         .application_query_binding::<RelationBinding>()
         .application_query_inspection(independent::metadata::<RelationBinding>(
-            "matrix-relation-metadata",
+            MatrixRelationMetadataDisclosure,
         ))
         .application_query(definition(Field::reference(), Policy::Field))
         .application_query_binding::<FieldBinding>()
         .application_query_inspection(independent::metadata::<FieldBinding>(
-            "matrix-field-metadata",
+            MatrixFieldMetadataDisclosure,
         ))
 }

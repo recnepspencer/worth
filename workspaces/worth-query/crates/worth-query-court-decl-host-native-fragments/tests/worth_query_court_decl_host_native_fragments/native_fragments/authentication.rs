@@ -9,6 +9,10 @@ use worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema;
 
 use worth_query_host::facade::domain::ApplicationSchema;
 
+worth_query_decl::facade::worth_query_authentication_audience!(BankAudience);
+worth_query_decl::facade::worth_query_principal_issuer!(IssuerExampleIssuer);
+worth_query_decl::facade::worth_query_authentication_method!(TestOidcMethod);
+
 pub(super) fn authenticate_external<Schema: ApplicationSchema>(
     schema: &WorthQueryInstalledApplicationSchema<Schema>,
     subject: &str,
@@ -18,8 +22,8 @@ pub(super) fn authenticate_external<Schema: ApplicationSchema>(
     let adapter = admit_authentication_adapter(
         schema,
         WorthQueryAuthenticationAdapterAdmission::new(
-            WorthQueryAuthenticationAudience::new("bank").unwrap(),
-            WorthQueryAuthenticationMethod::new("test-oidc").unwrap(),
+            WorthQueryAuthenticationAudience::of(BankAudience),
+            WorthQueryAuthenticationMethod::of(TestOidcMethod),
             scope.clock().clone(),
         ),
         CausalIdentityAdapter,
@@ -70,8 +74,8 @@ impl WorthQueryAuthenticationAdapter for CausalIdentityAdapter {
             let now = SystemTime::now();
             WorthQueryValidatedExternalPrincipal::new(
                 external_identity(&credential.subject),
-                WorthQueryAuthenticationAudience::new("bank").unwrap(),
-                WorthQueryAuthenticationMethod::new("test-oidc").unwrap(),
+                WorthQueryAuthenticationAudience::of(BankAudience),
+                WorthQueryAuthenticationMethod::of(TestOidcMethod),
                 now,
                 now + credential.lifetime,
                 vec![WorthQueryPrincipalAttribute::new("display", "Test User").unwrap()],
@@ -86,7 +90,7 @@ impl WorthQueryAuthenticationAdapter for CausalIdentityAdapter {
 }
 
 pub(super) fn external_identity(subject: &str) -> WorthQueryExternalPrincipalIdentity {
-    WorthQueryExternalPrincipalIdentity::new("https://issuer.example", subject).unwrap()
+    WorthQueryExternalPrincipalIdentity::new(IssuerExampleIssuer, subject).unwrap()
 }
 pub(super) fn live_scope() -> WorthQueryRequestScope {
     let source = WorthQueryCancellationSource::new();

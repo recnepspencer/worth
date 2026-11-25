@@ -1,5 +1,9 @@
 //! Independently governed exact source field used by the real producer.
 use super::*;
+
+worth_query_decl::facade::worth_query_disclosure_classification!(
+    PredecessorInspectionSourceDisclosure
+);
 worth_query_application_query!(pub Query for Schema, identity "predecessor.inspection-source.query.v1",
     parameters query::ParametersBinding, result query::RowBinding, scope Model => "Model", name "PredecessorInspectionSource");
 pub struct KeySlot;
@@ -26,7 +30,7 @@ pub(super) fn declare(
     .field(value())
     .build();
     let disclosure = ApplicationQueryDisclosureContract::governed_by(
-        "predecessor-inspection-source",
+        PredecessorInspectionSourceDisclosure,
         Inspect::reference(),
     )
     .disclose_field_by(

@@ -6,6 +6,9 @@ use std::pin::pin;
 use std::task::{Context, Poll, Waker};
 use std::time::SystemTime;
 
+worth_query_decl::facade::worth_query_authentication_audience!(HostAudience);
+worth_query_decl::facade::worth_query_authentication_method!(TestMethod);
+
 /// An ordinary asynchronous adapter vouching for one subject, standing in for
 /// a remote identity provider.
 struct RemoteDirectory {
@@ -27,8 +30,8 @@ impl WorthQueryAuthenticationAdapter for RemoteDirectory {
             let now = SystemTime::now();
             WorthQueryValidatedExternalPrincipal::new(
                 issuer(self.subject),
-                WorthQueryAuthenticationAudience::new("host").unwrap(),
-                WorthQueryAuthenticationMethod::new("test").unwrap(),
+                WorthQueryAuthenticationAudience::of(HostAudience),
+                WorthQueryAuthenticationMethod::of(TestMethod),
                 now,
                 now + self.lifetime,
                 Vec::new(),

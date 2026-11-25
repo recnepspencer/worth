@@ -1,6 +1,8 @@
 #[path = "records.rs"]
 mod storage_model;
 pub use storage_model::*;
+
+worth_query_declaration::worth_query_principal_issuer!(PreviewIssuer);
 mod custody;
 
 use worth_foundational::facade::ApplicationBuildIdentity;
@@ -199,7 +201,7 @@ fn installed_preview_runtime() -> WorthQueryProgramApplicationRuntime<PreviewSch
         |_, graph, installed| {
             let binding = installed.principal_binding(PreviewBinding::reference()).unwrap();
             graph.bind_principal(&binding, worth_query_execution::facade::domain_computation::WorthQueryApplicationPrincipalKey::new("preview-owner").unwrap(), 1_u64,
-                WorthQueryExternalPrincipalIdentity::new("preview", "owner").unwrap(), WorthQueryPrincipalMappingStatus::Enabled)?;
+                WorthQueryExternalPrincipalIdentity::new(PreviewIssuer, "owner").unwrap(), WorthQueryPrincipalMappingStatus::Enabled)?;
             Ok(())
         },
     ).unwrap()

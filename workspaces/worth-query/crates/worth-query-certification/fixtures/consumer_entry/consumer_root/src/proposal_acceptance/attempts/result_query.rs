@@ -6,6 +6,8 @@ use super::super::{
 use super::{data::*, schema::*};
 use worth_query_decl::facade::{application_query::*, application_schema::*, *};
 use worth_query_host::facade::primary_graph::*;
+
+worth_query_decl::facade::worth_query_disclosure_classification!(StoredResultsDisclosure);
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ResultRow {
     pub key: String,
@@ -62,7 +64,7 @@ pub fn declare(
     use super::super::access;
     let influence = ApplicationQueryInfluenceContract::permit_all();
     let disclosure = ApplicationQueryDisclosureContract::governed_by(
-        "stored-results",
+        StoredResultsDisclosure,
         access::ReadDomain::reference(),
     )
     .use_field_by(

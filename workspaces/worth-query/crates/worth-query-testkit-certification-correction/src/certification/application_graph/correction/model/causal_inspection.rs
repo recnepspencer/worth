@@ -3,6 +3,10 @@ use super::{edit, schema::*};
 use worth_query_host::facade::declaration::{
     application_operation::*, application_query::*, application_schema::*,
 };
+
+worth_query_decl::facade::worth_query_disclosure_classification!(
+    NumericDistinctSubjectMetadataDisclosure
+);
 pub mod absence;
 pub mod capability;
 pub mod diagnostic_matrix;
@@ -52,7 +56,7 @@ pub fn declare(
         .application_query(distinct_subjects::query::definition())
         .application_query_binding::<distinct_subjects::query::Binding>()
         .application_query_inspection(independent::metadata::<distinct_subjects::query::Binding>(
-            "numeric-distinct-subject-metadata",
+            NumericDistinctSubjectMetadataDisclosure,
         ))
         .application_query_inspection(source_only::metadata())
         .application_query(query::definition())
