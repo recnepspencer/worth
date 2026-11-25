@@ -108,15 +108,20 @@ impl<Binding, Reconstruction, Execution, Clock, Input>
         bridge: Option<&BridgeConditionalExecutionView<'_>>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) {
-        // Active-binding wakes stay retained so the next active observation
-        // still reports their `AlreadyCommitted` provenance; record the
-        // explicit settlement status in case the binding later moves inactive.
+        // Active-binding wakes keep their decision provenance so the next
+        // active observation still reports `AlreadyCommitted` via World, while
+        // immediately clearing continuation custody on confirmed `Finish` (or
+        // recording `Some(false)` on refused `Finish` so the shared flush path
+        // retries `Finish` and never republishes `Retain`).
         for wake in &mut self.retained_wakes {
             if wake
                 .continuation_identity
                 .is_some_and(|cont| cont.key == key && cont.intent == intent)
             {
                 wake.original_retry_finish_confirmed = Some(finish_confirmed);
+                if finish_confirmed {
+                    wake.continuation_identity = None;
+                }
             }
         }
         let mut any_settled_inactive = false;
@@ -153,27 +158,14 @@ impl<Binding, Reconstruction, Execution, Clock, Input>
             let mut binding_flushed = false;
             for wake in &mut binding.retained_wakes {
                 if wake.continuation_identity.is_some() {
-                    match wake.original_retry_finish_confirmed {
-                        Some(true) => {
-                            wake.continuation_identity = None;
-                            promote_indeterminate_to_already_committed(&mut wake.decision);
-                            binding_flushed = true;
-                            any_flushed = true;
-                            continue;
-                        }
-                        Some(false) => {
-                            // Resolved in World via `retry_original_key`, but
-                            // durable `Finish` was refused; retry `Finish`
-                            // (never `Retain`) and only clear once confirmed.
-                            promote_indeterminate_to_already_committed(&mut wake.decision);
-                        }
-                        None => {}
-                    }
+                    let retry_settled = wake.original_retry_finish_confirmed.is_some();
                     super::super::application_operation_reentry::durable_decision::flush_record(
                         runtime, execution, wake,
                     )?;
                     if wake.continuation_identity.is_none() {
-                        wake.original_retry_finish_confirmed = None;
+                        if retry_settled {
+                            promote_indeterminate_to_already_committed(&mut wake.decision);
+                        }
                         binding_flushed = true;
                         any_flushed = true;
                     }

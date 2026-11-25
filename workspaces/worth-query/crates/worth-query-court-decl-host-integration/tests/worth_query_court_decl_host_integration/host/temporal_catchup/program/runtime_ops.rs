@@ -77,6 +77,14 @@ pub(super) fn seed_reminder_graph(
 }
 
 pub fn mutate_reminder(home: &ReminderHome, input: MutateReminderInput, command_key: u64) {
+    let _ = mutate_reminder_returning_change(home, input, command_key);
+}
+
+pub fn mutate_reminder_returning_change(
+    home: &ReminderHome,
+    input: MutateReminderInput,
+    command_key: u64,
+) -> Option<worth_query_host::facade::runtime::WorthQueryPerformedRelationalProductChange> {
     let runtime = home.runtime();
     let scope = fresh_request_scope();
     let adapter = admit_local_adapter(runtime.installed_schema());
@@ -92,13 +100,12 @@ pub fn mutate_reminder(home: &ReminderHome, input: MutateReminderInput, command_
             runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("reminder mutation executes");
-    assert!(
-        matches!(
-            outcome,
-            WorthQueryApplicationMutationOutcome::Committed { .. }
-        ),
-        "expected committed reminder mutation, got {outcome:?}"
-    );
+    match outcome {
+        WorthQueryApplicationMutationOutcome::Committed { mut receipt, .. } => {
+            receipt.take_performed_relational_product_change()
+        }
+        other => panic!("expected committed reminder mutation, got {other:?}"),
+    }
 }
 
 pub fn read_reminders(home: &ReminderHome) -> BTreeMap<String, ReminderRow> {

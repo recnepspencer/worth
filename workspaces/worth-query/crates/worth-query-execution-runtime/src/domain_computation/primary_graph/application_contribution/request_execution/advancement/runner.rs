@@ -56,11 +56,17 @@ fn run_admitted_advancement(
         discard: Some(discard),
         published: published.clone(),
     };
-    let request = execution
-        .execution_request()
-        .map_err(WorthQueryAdvancementDenial::Resource)?;
-    let caller_serial = match &execution.form {
-        Form::Leased { caller_serial, .. } | Form::Serial { caller_serial, .. } => *caller_serial,
+    let (caller_serial, caller_serial_hold) = match &execution.form {
+        Form::Leased {
+            caller_serial,
+            caller_serial_hold,
+            ..
+        }
+        | Form::Serial {
+            caller_serial,
+            caller_serial_hold,
+            ..
+        } => (*caller_serial, caller_serial_hold.as_ref()),
     };
     if let Some(caller) = caller_serial
         && let Err(stop) = caller.check_live()
@@ -75,37 +81,58 @@ fn run_admitted_advancement(
         ));
     }
     let mut body_unwind = None;
-    let execute = |lease: Option<&worth_execution::ExecutionResourceLease<'_>>| {
-        observation::record_workers(lease.map_or(1, |lease| lease.policy().max_workers().get()));
-        let active = ActiveAdvancement { execution };
-        let source = match (source_instance, owner) {
-            (Some(source), _) => AdvancementSource::Relational(source),
-            (None, Some(owner)) => AdvancementSource::ProductOwner(owner),
-            (None, None) => AdvancementSource::Bootstrap,
+    let run_inner = |active_execution: &QueryRequestExecution<'_>| {
+        let request = match active_execution.execution_request() {
+            Ok(request) => request,
+            Err(_) => {
+                // Re-extract the original LeaseDenial through `execution_request`.
+                return Err(match &active_execution.form {
+                    Form::Leased {
+                        lease: Err(denial), ..
+                    }
+                    | Form::Serial {
+                        lease: Err(denial), ..
+                    } => worth_execution::WorkCeilingDenial::Admission(*denial),
+                    _ => worth_execution::WorkCeilingDenial::Stopped(
+                        worth_execution::MapKernelStop::AccountingUnavailable,
+                    ),
+                });
+            }
         };
-        match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            body(WorthQueryAdvancementPhase {
-                active: &active,
-                source,
-                owner,
-            });
-            if let Some(maintenance) = maintenance {
-                let invoking = lease
-                    .map(worth_execution::ExecutionRequest::leased)
-                    .unwrap_or(request);
-                super::directory_completion::after_business(invoking, maintenance);
+        let execute = |lease: Option<&worth_execution::ExecutionResourceLease<'_>>| {
+            observation::record_workers(
+                lease.map_or(1, |lease| lease.policy().max_workers().get()),
+            );
+            let active = ActiveAdvancement {
+                execution: active_execution,
+            };
+            let source = match (source_instance, owner) {
+                (Some(source), _) => AdvancementSource::Relational(source),
+                (None, Some(owner)) => AdvancementSource::ProductOwner(owner),
+                (None, None) => AdvancementSource::Bootstrap,
+            };
+            match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                body(WorthQueryAdvancementPhase {
+                    active: &active,
+                    source,
+                    owner,
+                });
+                if let Some(maintenance) = maintenance {
+                    let invoking = lease
+                        .map(worth_execution::ExecutionRequest::leased)
+                        .unwrap_or(request);
+                    super::directory_completion::after_business(invoking, maintenance);
+                }
+            })) {
+                Ok(()) => Some(handoff),
+                Err(payload) => {
+                    body_unwind = Some(payload);
+                    None
+                }
             }
-        })) {
-            Ok(()) => Some(handoff),
-            Err(payload) => {
-                body_unwind = Some(payload);
-                None
-            }
-        }
-    };
-    let run_inner = || {
-        if execution.has_accounting() {
-            let ceiling = ExecutionWorkCeiling::new(execution.declared_work);
+        };
+        if active_execution.has_accounting() {
+            let ceiling = ExecutionWorkCeiling::new(active_execution.declared_work);
             if retain_returned_outcome || maintenance.is_some() {
                 request.run_completion(ceiling, execute)
             } else {
@@ -132,15 +159,25 @@ fn run_admitted_advancement(
     };
     let outcome = match caller_serial {
         Some(caller) => {
+            let run_within_serial = |_: Option<&worth_execution::ExecutionResourceLease<'_>>| {
+                if let Some(shared) = caller_serial_hold {
+                    super::super::serial_hold::bind_in_active_serial_scope(shared);
+                }
+                let narrowed =
+                    worth_execution::ExecutionMemoryReservation::available_in_scope(None)
+                        .and_then(|available| execution.narrowed_to_live_serial_room(available));
+                run_inner(narrowed.as_ref().unwrap_or(execution))
+            };
             let outer = if caller.has_accounting() || caller.work_ceiling().is_some() {
                 caller
-                    .run_completion(ExecutionWorkCeiling::new(caller.work_ceiling()), |_| {
-                        run_inner()
-                    })
+                    .run_completion(
+                        ExecutionWorkCeiling::new(caller.work_ceiling()),
+                        run_within_serial,
+                    )
                     .map(|(inner, _)| inner)
             } else {
                 caller
-                    .run_native_completion(|_| run_inner())
+                    .run_native_completion(run_within_serial)
                     .map(|(inner, _)| inner)
             };
             match outer {
@@ -148,7 +185,7 @@ fn run_admitted_advancement(
                 Err(denial) => Err(denial),
             }
         }
-        None => run_inner(),
+        None => run_inner(execution),
     };
     // The execution owner catches unwinds to close its accounting scope.
     // Preserve the host body's original unwind and its existing posture.

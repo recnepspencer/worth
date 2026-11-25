@@ -196,3 +196,115 @@ pub mod panic_custody;
 pub mod seam_cancellation;
 
 mod completion_custody;
+
+fn serial_policy(memory_bytes: Option<u64>) -> worth_foundational::ExecutionRequestPolicy {
+    worth_foundational::ExecutionRequestPolicy::new(
+        worth_foundational::ExecutionPosture::Serial,
+        worth_foundational::DeterminismContract::CanonicalBitwise,
+        ExecutionBudget::new(NonZeroUsize::MIN, memory_bytes, None),
+    )
+}
+
+fn serial_available_bytes(caller: worth_execution::ExecutionRequest<'_, '_>) -> u64 {
+    caller
+        .run_completion(worth_execution::ExecutionWorkCeiling::new(None), |_| {
+            worth_execution::ExecutionMemoryReservation::available_in_scope(None)
+                .expect("bounded serial scope reports available bytes")
+        })
+        .expect("serial availability probe")
+        .0
+}
+
+#[test]
+fn serial_reserve_and_resize_succeed_inside_narrowed_advancement_without_nested_lease_misuse() {
+    let caller_policy = serial_policy(Some(16 * 1024));
+    let installed_policy = serial_policy(Some(12 * 1024));
+    let serial = worth_execution::SerialRequest::from_policy(
+        &caller_policy,
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let caller = worth_execution::ExecutionRequest::serial(&serial);
+    let baseline = serial_available_bytes(caller);
+    let exec = QueryRequestExecution::open_serial_request(
+        worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(installed_policy),
+        caller,
+    );
+
+    let retained = exec
+        .run_advancement(None, None, |_phase| {
+            let mut held = exec
+                .reserve(4096)
+                .expect("serial retained reserve must succeed inside narrowed lease");
+            assert_eq!(held.bytes(), 4096);
+
+            held.resize(8192).expect("resize within both ceilings");
+            assert_eq!(held.bytes(), 8192);
+
+            // Exceeding tighter installed ceiling (12 KiB) must refuse with
+            // MemoryLimit and preserve the 8 KiB hold cleanly.
+            let over_installed = held.resize(14 * 1024);
+            assert!(matches!(over_installed, Err(Resource::MemoryLimit { .. })));
+            assert_eq!(held.bytes(), 8192);
+
+            held
+        })
+        .expect("advancement completes");
+
+    assert_eq!(baseline - serial_available_bytes(caller), 8 * 1024);
+    drop(retained);
+    assert_eq!(serial_available_bytes(caller), baseline);
+}
+
+#[test]
+fn preexisting_serial_caller_hold_narrows_inner_lease_and_rejects_over_budget_allocations() {
+    let caller_policy = serial_policy(Some(16 * 1024));
+    let installed_policy = serial_policy(Some(16 * 1024));
+    let serial = worth_execution::SerialRequest::from_policy(
+        &caller_policy,
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let caller = worth_execution::ExecutionRequest::serial(&serial);
+    let baseline = serial_available_bytes(caller);
+    let preexisting = caller
+        .reserve_retained_memory(12 * 1024)
+        .expect("pre-existing caller hold")
+        .expect("bounded serial returns reservation");
+    assert_eq!(baseline - serial_available_bytes(caller), 12 * 1024);
+
+    let exec = QueryRequestExecution::open_serial_request(
+        worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(installed_policy),
+        caller,
+    );
+    exec.run_advancement(None, None, |phase| {
+        // Only ~4 KiB remains on the caller's serial budget: both ordinary
+        // inner-lease allocations and retained reserves of 6 KiB must fail
+        // cleanly (never NestedLeaseMisuse).
+        assert!(phase
+            .borrowed_request_for_test()
+            .reserve_retained_memory(6 * 1024)
+            .is_err());
+        assert!(matches!(
+            exec.reserve(6 * 1024),
+            Err(Resource::MemoryLimit { .. })
+        ));
+
+        let ok_retained = exec
+            .reserve(3 * 1024)
+            .expect("3 KiB fits within remaining serial room");
+        assert_eq!(ok_retained.bytes(), 3 * 1024);
+        assert!(matches!(
+            exec.reserve(2 * 1024),
+            Err(Resource::MemoryLimit { .. })
+        ));
+        drop(ok_retained);
+        let again = exec.reserve(3 * 1024).expect("released hold restores room");
+        drop(again);
+    })
+    .expect("advancement completes");
+
+    assert_eq!(baseline - serial_available_bytes(caller), 12 * 1024);
+    drop(preexisting);
+    assert_eq!(serial_available_bytes(caller), baseline);
+}

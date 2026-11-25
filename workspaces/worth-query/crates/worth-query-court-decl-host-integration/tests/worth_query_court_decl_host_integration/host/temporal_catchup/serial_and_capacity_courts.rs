@@ -9,7 +9,14 @@ use worth_foundational::facade::{
 use worth_query_host::facade::{
     application_installation::{WorthQueryApplicationLimits, WorthQueryBoundedApplicationLimits},
     domain::WorthQueryClockCoordinate,
-    temporal_contribution::{WorthQueryTemporalCatchUpPolicy, WorthQueryTemporalCatchUpStatus},
+    primary_graph::{
+        WorthQueryConditionalClockObservationOutcome, WorthQueryConditionalExecutionCause,
+        WorthQueryConditionalExecutionTerminal,
+    },
+    temporal_contribution::{
+        WorthQueryDesktopTemporalHomeBinding, WorthQueryTemporalCatchUpPolicy,
+        WorthQueryTemporalCatchUpStatus,
+    },
 };
 
 use super::{
@@ -23,17 +30,34 @@ use super::{
     with_leased_request,
 };
 
-#[test]
-fn desktop_temporal_catch_up_enforces_serial_request_budget_on_admitted_snapshot() {
-    let fire_log = ReminderFireLog::default();
-    let auth = AuthControl::valid();
-    let controls = InvokerControls::default();
+fn active_reminder(identity: &str, revision: u64, due: u64) -> MutateReminderInput {
+    MutateReminderInput {
+        identity: identity.to_owned(),
+        revision,
+        due,
+        interval: 0,
+        max_fires: 1,
+        fired_count: 0,
+        lifecycle: "active".to_owned(),
+    }
+}
 
-    let healthy_policy = ExecutionRequestPolicy::new(
+fn serial_policy(memory_bytes: Option<u64>, work: Option<u64>) -> ExecutionRequestPolicy {
+    ExecutionRequestPolicy::new(
         ExecutionPosture::Serial,
         DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(128 * 1024 * 1024), None),
+        ExecutionBudget::new(std::num::NonZeroUsize::MIN, memory_bytes, work),
+    )
+}
+
+#[test]
+fn desktop_temporal_catch_up_enforces_serial_request_budget_on_admitted_snapshot() {
+    let (fire_log, auth, controls) = (
+        ReminderFireLog::default(),
+        AuthControl::valid(),
+        InvokerControls::default(),
     );
+    let healthy_policy = serial_policy(Some(128 * 1024 * 1024), None);
     let healthy_serial = worth_execution::SerialRequest::from_policy(
         &healthy_policy,
         worth_execution::CancellationToken::new(),
@@ -48,19 +72,7 @@ fn desktop_temporal_catch_up_enforces_serial_request_budget_on_admitted_snapshot
         None,
         &healthy_exec,
     );
-    mutate_reminder(
-        &home,
-        MutateReminderInput {
-            identity: "i1".to_owned(),
-            revision: 1,
-            due: 10,
-            interval: 0,
-            max_fires: 1,
-            fired_count: 0,
-            lifecycle: "active".to_owned(),
-        },
-        1,
-    );
+    mutate_reminder(&home, active_reminder("i1", 1, 10), 1);
     let pre = home
         .catch_up_temporal::<DesktopReminderConditional>(
             WorthQueryClockCoordinate::from_nanoseconds(5),
@@ -76,15 +88,7 @@ fn desktop_temporal_catch_up_enforces_serial_request_budget_on_admitted_snapshot
         .advance_to(WorthQueryClockCoordinate::from_nanoseconds(15))
         .unwrap();
 
-    let tiny_policy = ExecutionRequestPolicy::new(
-        ExecutionPosture::Serial,
-        DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(
-            std::num::NonZeroUsize::MIN,
-            Some(128 * 1024 * 1024),
-            Some(1),
-        ),
-    );
+    let tiny_policy = serial_policy(Some(128 * 1024 * 1024), Some(1));
     let tiny_serial = worth_execution::SerialRequest::from_policy(
         &tiny_policy,
         worth_execution::CancellationToken::new(),
@@ -137,19 +141,7 @@ fn desktop_temporal_catch_up_maps_retention_capacity_to_backpressured() {
             Some(limits),
             execution,
         );
-        mutate_reminder(
-            &home,
-            MutateReminderInput {
-                identity: "i1".to_owned(),
-                revision: 1,
-                due: 10,
-                interval: 0,
-                max_fires: 1,
-                fired_count: 0,
-                lifecycle: "active".to_owned(),
-            },
-            1,
-        );
+        mutate_reminder(&home, active_reminder("i1", 1, 10), 1);
 
         let stopped = home
             .catch_up_temporal::<DesktopReminderConditional>(
@@ -197,19 +189,7 @@ fn desktop_temporal_catch_up_enforces_tighter_installed_placement_and_in_flight_
         {
             let seeded =
                 open_directory_home(dir.clone(), fire_log.clone(), auth.clone(), generous_leased);
-            mutate_reminder(
-                &seeded,
-                MutateReminderInput {
-                    identity: "i1".to_owned(),
-                    revision: 1,
-                    due: 10,
-                    interval: 0,
-                    max_fires: 1,
-                    fired_count: 0,
-                    lifecycle: "active".to_owned(),
-                },
-                1,
-            );
+            mutate_reminder(&seeded, active_reminder("i1", 1, 10), 1);
             seeded.close(generous_leased).unwrap().reclaim();
         }
         let home = open_directory_home_with_limits(
@@ -316,28 +296,80 @@ fn desktop_temporal_catch_up_enforces_tighter_installed_placement_and_in_flight_
         Some(finite_limits),
         &healthy_exec,
     );
-    mutate_reminder(
-        &home,
-        MutateReminderInput {
-            identity: "i1".to_owned(),
-            revision: 1,
-            due: 10,
-            interval: 0,
-            max_fires: 1,
-            fired_count: 0,
-            lifecycle: "active".to_owned(),
-        },
-        1,
-    );
+    mutate_reminder(&home, active_reminder("i1", 1, 10), 1);
 
+    // Pre-existing caller serial memory hold must narrow live execution room
+    // and refuse catch-up cleanly with BudgetExhausted (never NestedLeaseMisuse).
+    let tight_serial_policy = serial_policy(Some(64 * 1024), None);
+    let held_serial = worth_execution::SerialRequest::from_policy(
+        &tight_serial_policy,
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let held_exec = ExecutionRequest::serial(&held_serial);
+    let caller_hold = held_exec
+        .reserve_retained_memory(62 * 1024)
+        .expect("pre-existing serial caller hold")
+        .expect("bounded serial reservation");
+    let hold_stop = home
+        .catch_up_temporal::<DesktopReminderConditional>(
+            WorthQueryClockCoordinate::from_nanoseconds(15),
+            &held_exec,
+            WorthQueryTemporalCatchUpPolicy::bounded(2).unwrap(),
+        )
+        .unwrap();
+    assert_eq!(
+        hold_stop.status(),
+        &WorthQueryTemporalCatchUpStatus::BudgetExhausted,
+        "pre-existing serial caller memory hold must enforce live remaining room: {hold_stop:?}"
+    );
+    assert_eq!(hold_stop.fired(), 0);
+    assert!(hold_stop.remaining());
+    drop(caller_hold);
+
+    // In-flight cancellation under a finite tighter-than-caller installed World
+    // placement must surface BOTH a typed Operation(ControlStopped) receipt on
+    // direct clock observation AND Cancelled on catch_up_temporal, then resume
+    // cleanly on a fresh serial request.
     let cancel_source = worth_execution::CancellationSource::new();
     controls.set_cancel_on_project(Some(cancel_source.clone()));
     let cancellable_serial =
         worth_execution::SerialRequest::from_policy(&healthy_policy, cancel_source.token(), None);
+    let cancellable_exec = ExecutionRequest::serial(&cancellable_serial);
+    let binding = installed(&home);
+    let selected = home
+        .runtime()
+        .runtime()
+        .with_execution_request_advancement(healthy_exec, |phase| {
+            home.runtime()
+                .runtime()
+                .on_branch(home.runtime().current_world())
+                .select(&phase)
+        })
+        .unwrap()
+        .unwrap();
+    let mut port = selected
+        .conditional_clock(&healthy_exec, binding.clock_handle())
+        .unwrap();
+    let WorthQueryConditionalClockObservationOutcome::Accepted(observed) =
+        port.observe(&cancellable_exec)
+    else {
+        panic!("in-flight serial cancellation must return Accepted with ControlStopped terminal");
+    };
+    assert!(observed.execution_provenance().iter().any(|provenance| {
+        provenance.terminal() == WorthQueryConditionalExecutionTerminal::ControlStopped
+            && matches!(
+                provenance.cause(),
+                Some(WorthQueryConditionalExecutionCause::Cancelled) | None
+            )
+    }));
+    drop((observed, port));
+    drop(binding);
+
     let cancelled = home
         .catch_up_temporal::<DesktopReminderConditional>(
             WorthQueryClockCoordinate::from_nanoseconds(15),
-            &ExecutionRequest::serial(&cancellable_serial),
+            &cancellable_exec,
             WorthQueryTemporalCatchUpPolicy::bounded(2).unwrap(),
         )
         .unwrap();

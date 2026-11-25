@@ -5,11 +5,12 @@
 use worth_query_host::facade::{
     domain::WorthQueryClockCoordinate,
     primary_graph::{
-        WorthQueryConditionalOriginalResolution, WorthQueryGranularInvalidationCoverage,
+        WorthQueryConditionalClockObservationOutcome, WorthQueryConditionalOriginalResolution,
+        WorthQueryGranularInvalidationCoverage,
     },
     temporal_contribution::{
         WorthQueryDesktopTemporalHomeBinding, WorthQueryTemporalCatchUpPolicy,
-        WorthQueryTemporalCatchUpStatus,
+        WorthQueryTemporalCatchUpReport, WorthQueryTemporalCatchUpStatus,
     },
 };
 
@@ -17,7 +18,7 @@ use super::{
     adapters::{AuthControl, InvokerControls, ReminderFireLog},
     program::{
         installed, mutate_reminder, open_directory_home, open_directory_home_configured,
-        read_reminders, unique_temp_dir, DesktopReminderConditional,
+        read_reminders, unique_temp_dir, DesktopReminderConditional, ReminderHome,
     },
     schema::MutateReminderInput,
     with_leased_request,
@@ -35,11 +36,50 @@ fn active_reminder(identity: &str, revision: u64, due: u64) -> MutateReminderInp
     }
 }
 
+fn managed_clock_count(home: &ReminderHome) -> usize {
+    home.runtime()
+        .runtime()
+        .inspect_conditional_runtime()
+        .managed_clock_count()
+}
+
+fn select_current_branch<'a>(
+    home: &'a ReminderHome,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> worth_query_host::facade::primary_graph::WorthQuerySelectedProductOperation<
+    'a,
+    super::schema::DesktopReminderSchema,
+> {
+    home.runtime()
+        .runtime()
+        .with_execution_request_advancement(*execution, |phase| {
+            home.runtime()
+                .runtime()
+                .on_branch(home.runtime().current_world())
+                .select(&phase)
+        })
+        .unwrap()
+        .unwrap()
+}
+
+fn catch_up(
+    home: &ReminderHome,
+    ns: u64,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    max_steps: usize,
+) -> WorthQueryTemporalCatchUpReport<super::adapters::DesktopReminderClock> {
+    home.catch_up_temporal::<DesktopReminderConditional>(
+        WorthQueryClockCoordinate::from_nanoseconds(ns),
+        execution,
+        WorthQueryTemporalCatchUpPolicy::bounded(max_steps).unwrap(),
+    )
+    .unwrap()
+}
+
 #[test]
 fn desktop_temporal_live_continuation_survives_fresh_branch_selection() {
     let dir = unique_temp_dir("live-continuation-branch-advance");
-    let fire_log = ReminderFireLog::default();
-    let auth = AuthControl::valid();
+    let (fire_log, auth) = (ReminderFireLog::default(), AuthControl::valid());
     with_leased_request(512 * 1024 * 1024, None, |execution| {
         let home = open_directory_home(dir.clone(), fire_log.clone(), auth.clone(), execution);
         mutate_reminder(&home, active_reminder("i1", 1, 10), 1);
@@ -49,13 +89,7 @@ fn desktop_temporal_live_continuation_survives_fresh_branch_selection() {
             .reject_next_commit_before_transaction_for_test()
             .unwrap();
         home.runtime().runtime().lose_next_commit_answer_for_test();
-        let report = home
-            .catch_up_temporal::<DesktopReminderConditional>(
-                WorthQueryClockCoordinate::from_nanoseconds(15),
-                execution,
-                WorthQueryTemporalCatchUpPolicy::bounded(2).unwrap(),
-            )
-            .unwrap();
+        let report = catch_up(&home, 15, execution, 2);
         drop(rejection);
         assert_eq!(
             report.status(),
@@ -67,13 +101,7 @@ fn desktop_temporal_live_continuation_survives_fresh_branch_selection() {
 
         mutate_reminder(&home, active_reminder("i2", 1, 50), 2);
         auth.set_valid(false);
-        let after_branch_move = home
-            .catch_up_temporal::<DesktopReminderConditional>(
-                WorthQueryClockCoordinate::from_nanoseconds(16),
-                execution,
-                WorthQueryTemporalCatchUpPolicy::bounded(2).unwrap(),
-            )
-            .unwrap();
+        let after_branch_move = catch_up(&home, 16, execution, 2);
         assert_eq!(
             after_branch_move.status(),
             &WorthQueryTemporalCatchUpStatus::AuthorizationRefused
@@ -86,32 +114,17 @@ fn desktop_temporal_live_continuation_survives_fresh_branch_selection() {
         );
 
         auth.set_valid(true);
-        let resumed = home
-            .catch_up_temporal::<DesktopReminderConditional>(
-                WorthQueryClockCoordinate::from_nanoseconds(20),
-                execution,
-                WorthQueryTemporalCatchUpPolicy::bounded(4).unwrap(),
-            )
-            .unwrap();
+        let resumed = catch_up(&home, 20, execution, 4);
         assert_eq!(resumed.status(), &WorthQueryTemporalCatchUpStatus::CaughtUp);
         assert_eq!(resumed.fired(), 1);
-        assert!(
-            home.runtime().conditional_decision_obligations().is_empty(),
-            "resolved continuation must discharge and clear obligations"
-        );
+        assert!(home.runtime().conditional_decision_obligations().is_empty());
         assert_eq!(read_reminders(&home)["i1"].lifecycle, "completed");
         drop((report, after_branch_move, resumed));
         home.close(execution).unwrap().reclaim();
 
         let home = open_directory_home(dir.clone(), fire_log.clone(), auth.clone(), execution);
         assert!(home.runtime().conditional_decision_obligations().is_empty());
-        let after_reopen = home
-            .catch_up_temporal::<DesktopReminderConditional>(
-                WorthQueryClockCoordinate::from_nanoseconds(30),
-                execution,
-                WorthQueryTemporalCatchUpPolicy::bounded(4).unwrap(),
-            )
-            .unwrap();
+        let after_reopen = catch_up(&home, 30, execution, 4);
         assert_eq!(
             after_reopen.status(),
             &WorthQueryTemporalCatchUpStatus::CaughtUp
@@ -126,21 +139,12 @@ fn desktop_temporal_live_continuation_survives_fresh_branch_selection() {
 #[test]
 fn desktop_temporal_retry_original_key_settles_predecessor_custody_before_next_pump() {
     let dir = unique_temp_dir("retry-original-key-predecessor-settle");
-    let fire_log = ReminderFireLog::default();
-    let auth = AuthControl::valid();
+    let (fire_log, auth) = (ReminderFireLog::default(), AuthControl::valid());
     with_leased_request(512 * 1024 * 1024, None, |execution| {
         let home = open_directory_home(dir.clone(), fire_log.clone(), auth.clone(), execution);
         mutate_reminder(&home, active_reminder("i1", 1, 10), 1);
-        // Lose only the answer so World publishes the original commit while
-        // the binding retains an OperationIndeterminate continuation.
         home.runtime().runtime().lose_next_commit_answer_for_test();
-        let report = home
-            .catch_up_temporal::<DesktopReminderConditional>(
-                WorthQueryClockCoordinate::from_nanoseconds(15),
-                execution,
-                WorthQueryTemporalCatchUpPolicy::bounded(2).unwrap(),
-            )
-            .unwrap();
+        let report = catch_up(&home, 15, execution, 2);
         assert_eq!(
             report.status(),
             &WorthQueryTemporalCatchUpStatus::BlockedByRetainedDecision
@@ -154,108 +158,43 @@ fn desktop_temporal_retry_original_key_settles_predecessor_custody_before_next_p
         // inactive predecessor custody.
         mutate_reminder(&home, active_reminder("i2", 1, 50), 2);
         let binding = installed(&home);
-        let selected = home
-            .runtime()
-            .runtime()
-            .with_execution_request_advancement(*execution, |phase| {
-                home.runtime()
-                    .runtime()
-                    .on_branch(home.runtime().current_world())
-                    .select(&phase)
-            })
-            .unwrap()
-            .unwrap();
+        let selected = select_current_branch(&home, execution);
         let mut port = selected
             .conditional_clock(execution, binding.clock_handle())
             .unwrap();
-        assert_eq!(
-            home.runtime()
-                .runtime()
-                .inspect_conditional_runtime()
-                .managed_clock_count(),
-            2,
-            "indeterminate predecessor clock must stay retained while obligation is unresolved"
-        );
+        assert_eq!(managed_clock_count(&home), 2);
 
-        // First prove a refused durable Finish keeps the durable obligation
-        // live AND does not prematurely reclaim the superseded predecessor clock.
+        // Refused durable Finish keeps both obligation and superseded clock live.
         home.runtime()
             .runtime()
             .refuse_next_conditional_decision_publication_for_test();
-        let resolved_under_refused_finish = port
-            .retry_original_key(execution, original.key, original.intent)
-            .expect("key fate resolves even when durable Finish publication is refused");
         assert!(matches!(
-            resolved_under_refused_finish,
+            port.retry_original_key(execution, original.key, original.intent)
+                .unwrap(),
             WorthQueryConditionalOriginalResolution::Published(_)
         ));
-        assert_eq!(
-            home.runtime().conditional_decision_obligations().len(),
-            1,
-            "refused durable Finish must keep the durable obligation live"
-        );
-        assert_eq!(
-            home.runtime()
-                .runtime()
-                .inspect_conditional_runtime()
-                .managed_clock_count(),
-            2,
-            "refused durable Finish must not prematurely reclaim predecessor clock"
-        );
+        assert_eq!(home.runtime().conditional_decision_obligations().len(), 1);
+        assert_eq!(managed_clock_count(&home), 2);
 
-        // Now confirm settlement with healthy execution: durable obligation
-        // discharges AND superseded predecessor clock is reclaimed (2 -> 1).
-        let resolved = port
-            .retry_original_key(execution, original.key, original.intent)
-            .expect("retry_original_key resolves published original");
-        assert!(
-            matches!(
-                resolved,
-                WorthQueryConditionalOriginalResolution::Published(_)
-            ),
-            "published original must resolve via retry_original_key: {resolved:?}"
-        );
+        // Confirmed settlement discharges obligation and reclaims predecessor (2 -> 1).
+        assert!(matches!(
+            port.retry_original_key(execution, original.key, original.intent)
+                .unwrap(),
+            WorthQueryConditionalOriginalResolution::Published(_)
+        ));
         drop(port);
         drop(binding);
-        assert!(
-            home.runtime().conditional_decision_obligations().is_empty(),
-            "retry_original_key must discharge the durable conditional obligation"
-        );
-        assert_eq!(
-            home.runtime()
-                .runtime()
-                .inspect_conditional_runtime()
-                .managed_clock_count(),
-            1,
-            "confirmed settlement must reclaim the superseded predecessor managed clock"
-        );
+        assert!(home.runtime().conditional_decision_obligations().is_empty());
+        assert_eq!(managed_clock_count(&home), 1);
 
-        // Pumping again must NOT flush the settled predecessor wake back into
-        // a fresh Retain obligation or duplicate-fire i1, and retains 1 clock.
-        let next_pump = home
-            .catch_up_temporal::<DesktopReminderConditional>(
-                WorthQueryClockCoordinate::from_nanoseconds(20),
-                execution,
-                WorthQueryTemporalCatchUpPolicy::bounded(4).unwrap(),
-            )
-            .unwrap();
+        let next_pump = catch_up(&home, 20, execution, 4);
         assert_eq!(
             next_pump.status(),
             &WorthQueryTemporalCatchUpStatus::CaughtUp
         );
         assert_eq!(next_pump.fired(), 0);
-        assert!(
-            home.runtime().conditional_decision_obligations().is_empty(),
-            "subsequent pump after retry_original_key must not re-record Retain for the settled predecessor wake"
-        );
-        assert_eq!(
-            home.runtime()
-                .runtime()
-                .inspect_conditional_runtime()
-                .managed_clock_count(),
-            1,
-            "managed clock count must remain 1 after subsequent pump"
-        );
+        assert!(home.runtime().conditional_decision_obligations().is_empty());
+        assert_eq!(managed_clock_count(&home), 1);
         assert_eq!(read_reminders(&home)["i1"].lifecycle, "completed");
         assert_eq!(fire_log.snapshot().len(), 1);
         drop((report, next_pump));
@@ -267,9 +206,11 @@ fn desktop_temporal_retry_original_key_settles_predecessor_custody_before_next_p
 #[test]
 fn desktop_temporal_restored_invalidations_carry_across_same_branch_successor() {
     let dir = unique_temp_dir("restored-invalidations-successor");
-    let fire_log = ReminderFireLog::default();
-    let auth = AuthControl::valid();
-    let controls = InvokerControls::default();
+    let (fire_log, auth, controls) = (
+        ReminderFireLog::default(),
+        AuthControl::valid(),
+        InvokerControls::default(),
+    );
     with_leased_request(512 * 1024 * 1024, None, |execution| {
         let home = open_directory_home_configured(
             dir.clone(),
@@ -280,53 +221,27 @@ fn desktop_temporal_restored_invalidations_carry_across_same_branch_successor() 
             execution,
         );
         mutate_reminder(&home, active_reminder("i1", 1, 10), 1);
-        let initial = home
-            .catch_up_temporal::<DesktopReminderConditional>(
-                WorthQueryClockCoordinate::from_nanoseconds(5),
-                execution,
-                WorthQueryTemporalCatchUpPolicy::bounded(2).unwrap(),
-            )
-            .unwrap();
+        let initial = catch_up(&home, 5, execution, 2);
         assert_eq!(initial.status(), &WorthQueryTemporalCatchUpStatus::CaughtUp);
 
-        // Commit a Signal-watched gate update so B1 consumes its granular
-        // invalidation delivery when advancing the commit cursor on the next
-        // observation.
         controls.set_next_gate_write(Some("gate-restored-carry".to_owned()));
         mutate_reminder(&home, active_reminder("i2", 1, 50), 2);
         controls.set_next_gate_write(None);
 
-        // Trigger a durable Retain refusal AFTER B1 advanced the commit cursor
-        // past the gate commit and released that granular invalidation batch,
-        // so `temporal_operation` restores it onto B1 while World publishes
-        // i1's non-gate fire commit and advances the branch head.
+        // Trigger durable Retain refusal AFTER commit cursor advances past the
+        // gate commit, so `temporal_operation` restores the granular batch onto
+        // B1 while World publishes i1's non-gate fire commit.
         home.runtime().runtime().lose_next_commit_answer_for_test();
         home.runtime()
             .runtime()
             .refuse_next_conditional_decision_publication_for_test();
-        let failed = home
-            .catch_up_temporal::<DesktopReminderConditional>(
-                WorthQueryClockCoordinate::from_nanoseconds(15),
-                execution,
-                WorthQueryTemporalCatchUpPolicy::bounded(2).unwrap(),
-            )
-            .unwrap();
-        assert!(
-            matches!(
-                failed.status(),
-                WorthQueryTemporalCatchUpStatus::ObservationFailed(_)
-            ),
-            "durable Retain refusal after commit cursor advance must surface ObservationFailed: {failed:?}"
-        );
-        assert!(
-            failed.granular_invalidation_batches().is_empty(),
-            "failed observation must restore owed granular invalidations instead of emitting them"
-        );
+        let failed = catch_up(&home, 15, execution, 2);
+        assert!(matches!(
+            failed.status(),
+            WorthQueryTemporalCatchUpStatus::ObservationFailed(_)
+        ));
+        assert!(failed.granular_invalidation_batches().is_empty());
 
-        // Branch head advanced via i1's non-gate commit; selecting same-branch
-        // successor B2 inherits the already-advanced commit cursor (past the
-        // gate commit) and reads zero new gate deliveries. Only carrying B1's
-        // restored invalidation batch into B2 can deliver it now.
         let mut streamed_batches = Vec::new();
         let recovered = home
             .catch_up_temporal_observing::<DesktopReminderConditional>(
@@ -338,8 +253,7 @@ fn desktop_temporal_restored_invalidations_carry_across_same_branch_successor() 
             .unwrap();
         assert_eq!(
             recovered.status(),
-            &WorthQueryTemporalCatchUpStatus::CaughtUp,
-            "successor binding should flush inactive Retain and complete observation cleanly: {recovered:?}"
+            &WorthQueryTemporalCatchUpStatus::CaughtUp
         );
         let installation = home.primary_graph().granular_invalidation_installation();
         let delivered_count: usize = streamed_batches
@@ -349,30 +263,14 @@ fn desktop_temporal_restored_invalidations_carry_across_same_branch_successor() 
         let saw_refresh_all = streamed_batches
             .iter()
             .any(|batch| batch.coverage() == WorthQueryGranularInvalidationCoverage::RefreshAll);
-        assert!(
-            delivered_count > 0 || saw_refresh_all,
-            "restored gate granular invalidation must carry across same-branch successor (batches={}, delivered_count={delivered_count}, saw_refresh_all={saw_refresh_all}, report={recovered:?})",
-            streamed_batches.len()
-        );
+        assert!(delivered_count > 0 || saw_refresh_all);
         assert!(streamed_batches
             .iter()
             .all(|batch| installation.admits_batch(batch)));
-        // Settle the flushed predecessor obligation before closing Directory Home.
-        let obligations = home.runtime().conditional_decision_obligations();
-        assert_eq!(obligations.len(), 1);
-        let original = obligations[0].clone();
+
+        let original = home.runtime().conditional_decision_obligations()[0].clone();
         let binding = installed(&home);
-        let selected = home
-            .runtime()
-            .runtime()
-            .with_execution_request_advancement(*execution, |phase| {
-                home.runtime()
-                    .runtime()
-                    .on_branch(home.runtime().current_world())
-                    .select(&phase)
-            })
-            .unwrap()
-            .unwrap();
+        let selected = select_current_branch(&home, execution);
         let mut port = selected
             .conditional_clock(execution, binding.clock_handle())
             .unwrap();
@@ -390,6 +288,101 @@ fn desktop_temporal_restored_invalidations_carry_across_same_branch_successor() 
             recovered,
             streamed_batches,
         ));
+        home.close(execution).unwrap().reclaim();
+    });
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn desktop_temporal_active_wake_reobserve_honors_refused_and_confirmed_finish() {
+    let dir = unique_temp_dir("active-wake-refused-and-confirmed-finish");
+    let (fire_log, auth) = (ReminderFireLog::default(), AuthControl::valid());
+    with_leased_request(512 * 1024 * 1024, None, |execution| {
+        let home = open_directory_home(dir.clone(), fire_log.clone(), auth.clone(), execution);
+        mutate_reminder(&home, active_reminder("i1", 1, 10), 1);
+        mutate_reminder(&home, active_reminder("i2", 1, 20), 2);
+        let binding = installed(&home);
+        binding
+            .desktop_clock()
+            .advance_to(WorthQueryClockCoordinate::from_nanoseconds(15))
+            .unwrap();
+        let selected = select_current_branch(&home, execution);
+        let mut port = selected
+            .conditional_clock(execution, binding.clock_handle())
+            .unwrap();
+
+        // Case A: Active wake + refused Finish -> re-observing on the SAME
+        // retained port retries Finish (never Retain) and clears obligations.
+        home.runtime().runtime().lose_next_commit_answer_for_test();
+        let WorthQueryConditionalClockObservationOutcome::Accepted(first) = port.observe(execution)
+        else {
+            panic!("initial active observation must accept");
+        };
+        assert_eq!(first.indeterminate_operation_count(), 1);
+        drop(first);
+        let ob1 = home.runtime().conditional_decision_obligations();
+        assert_eq!(ob1.len(), 1);
+        home.runtime()
+            .runtime()
+            .refuse_next_conditional_decision_publication_for_test();
+        assert!(matches!(
+            port.retry_original_key(execution, ob1[0].key, ob1[0].intent)
+                .unwrap(),
+            WorthQueryConditionalOriginalResolution::Published(_)
+        ));
+        assert_eq!(home.runtime().conditional_decision_obligations().len(), 1);
+        home.runtime()
+            .runtime()
+            .refuse_next_conditional_decision_publication_for_test();
+        assert!(matches!(
+            port.observe(execution),
+            WorthQueryConditionalClockObservationOutcome::Failed(_)
+        ));
+        assert_eq!(home.runtime().conditional_decision_obligations().len(), 1);
+        let WorthQueryConditionalClockObservationOutcome::Accepted(settled) =
+            port.observe(execution)
+        else {
+            panic!("active re-observation after refused Finish must retry Finish and accept");
+        };
+        assert_eq!(settled.already_committed_operation_count(), 1);
+        assert!(home.runtime().conditional_decision_obligations().is_empty());
+        drop((settled, port));
+
+        // Case B: Active wake + confirmed Finish -> re-observing on the SAME
+        // retained port must NEVER republish Retain.
+        binding
+            .desktop_clock()
+            .advance_to(WorthQueryClockCoordinate::from_nanoseconds(25))
+            .unwrap();
+        let selected = select_current_branch(&home, execution);
+        let mut port = selected
+            .conditional_clock(execution, binding.clock_handle())
+            .unwrap();
+        home.runtime().runtime().lose_next_commit_answer_for_test();
+        let WorthQueryConditionalClockObservationOutcome::Accepted(second) =
+            port.observe(execution)
+        else {
+            panic!("second active observation must accept");
+        };
+        assert_eq!(second.indeterminate_operation_count(), 2);
+        drop(second);
+        let ob2 = home.runtime().conditional_decision_obligations();
+        assert_eq!(ob2.len(), 1);
+        assert!(matches!(
+            port.retry_original_key(execution, ob2[0].key, ob2[0].intent)
+                .unwrap(),
+            WorthQueryConditionalOriginalResolution::Published(_)
+        ));
+        assert!(home.runtime().conditional_decision_obligations().is_empty());
+        let WorthQueryConditionalClockObservationOutcome::Accepted(reobserved) =
+            port.observe(execution)
+        else {
+            panic!("active re-observation after confirmed Finish must accept without Retain");
+        };
+        assert_eq!(reobserved.already_committed_operation_count(), 2);
+        assert!(home.runtime().conditional_decision_obligations().is_empty());
+        drop((reobserved, port));
+        drop(binding);
         home.close(execution).unwrap().reclaim();
     });
     let _ = std::fs::remove_dir_all(&dir);

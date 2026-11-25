@@ -29,6 +29,7 @@ pub use test_placement::{
     WorthQueryExecutionPlacementForTest,
 };
 mod caller_lease;
+mod serial_hold;
 mod serial_placement;
 mod test_authority;
 pub use test_authority::query_test_execution_authority_for_test;
@@ -67,6 +68,7 @@ enum Form<'a> {
         /// Original lease-free serial caller backing when a leased placement
         /// ran for a serial caller, preserving its cancellation and memory holds.
         caller_serial: Option<worth_execution::ExecutionRequest<'a, 'a>>,
+        caller_serial_hold: Option<serial_hold::SharedCallerSerialHold>,
     },
     Serial {
         lease: Result<ExecutionResourceLease<'a>, LeaseDenial>,
@@ -74,6 +76,7 @@ enum Form<'a> {
         /// Original lease-free serial caller backing when serial placement ran
         /// for a serial caller, preserving its cancellation and memory holds.
         caller_serial: Option<worth_execution::ExecutionRequest<'a, 'a>>,
+        caller_serial_hold: Option<serial_hold::SharedCallerSerialHold>,
     },
 }
 
@@ -131,6 +134,7 @@ impl<'a> QueryRequestExecution<'a> {
                 }),
                 policy,
                 caller_serial: None,
+                caller_serial_hold: None,
             },
         };
         Self {
@@ -150,27 +154,24 @@ impl<'a> QueryRequestExecution<'a> {
 
     /// Holds `bytes` on the request's memory until the reservation drops.
     pub fn reserve(&self, bytes: u64) -> Result<QueryMemoryReservation, Resource> {
-        let (lease, caller_serial) = match &self.form {
+        let (lease, caller_serial, caller_serial_hold) = match &self.form {
             Form::Leased {
                 lease,
                 caller_serial,
+                caller_serial_hold,
                 ..
             }
             | Form::Serial {
                 lease,
                 caller_serial,
+                caller_serial_hold,
                 ..
-            } => (lease, *caller_serial),
+            } => (lease, *caller_serial, caller_serial_hold.as_ref()),
         };
         let lease = lease.as_ref().map_err(|denial| lease_denial(*denial))?;
         let secondary_held = match caller_serial {
             Some(caller) => {
-                caller
-                    .reserve_retained_memory(bytes)
-                    .map_err(|denial| match advancement_denial(denial) {
-                        WorthQueryAdvancementDenial::Resource(resource) => resource,
-                        _ => Resource::NoActiveExecutionScope,
-                    })?
+                serial_hold::SecondarySerialHold::reserve(caller, caller_serial_hold, bytes)?
             }
             None => None,
         };
@@ -210,7 +211,7 @@ impl<'a> QueryRequestExecution<'a> {
 /// Bytes held against the request's lease lineage until the reservation drops.
 pub struct QueryMemoryReservation {
     held: Option<ExecutionMemoryReservation>,
-    secondary_held: Option<ExecutionMemoryReservation>,
+    secondary_held: Option<serial_hold::SecondarySerialHold>,
     bytes: u64,
 }
 
@@ -223,13 +224,13 @@ impl QueryMemoryReservation {
     pub fn resize(&mut self, bytes: u64) -> Result<(), Resource> {
         let prev = self.bytes;
         if let Some(secondary) = &mut self.secondary_held {
-            secondary.resize(bytes).map_err(memory_denial)?;
+            secondary.resize(bytes)?;
         }
         if let Some(held) = &mut self.held
             && let Err(err) = held.resize(bytes)
         {
             if let Some(secondary) = &mut self.secondary_held {
-                let _ = secondary.resize(prev);
+                secondary.rollback_to(prev);
             }
             return Err(memory_denial(err));
         }
@@ -278,6 +279,7 @@ impl QueryDispatch<'_> {
         E: Send + ChargedBytes,
         Kernel: Fn(&T, &mut MapKernelContext<'_, '_>) -> Result<R, MapKernelFailure<E>> + Sync,
     {
+        let _secondary_hold = inputs.secondary_held;
         let ceiling = ExecutionWorkCeiling::new(Some(ceiling));
         let run = |lease: Option<&ExecutionResourceLease<'_>>| match inputs.held {
             Some(inputs) => map.run_taking(lease, inputs, kernel),

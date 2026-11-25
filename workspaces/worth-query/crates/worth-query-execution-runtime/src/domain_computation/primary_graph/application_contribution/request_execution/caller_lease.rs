@@ -25,6 +25,7 @@ impl<'a> QueryRequestExecution<'a> {
                 lease: Ok(lease.controlled_child(cancellation, deadline)),
                 policy,
                 caller_serial: None,
+                caller_serial_hold: None,
             },
         }
     }
@@ -79,6 +80,7 @@ impl<'a> QueryRequestExecution<'a> {
                 lease: final_lease,
                 policy: narrowed,
                 caller_serial: None,
+                caller_serial_hold: None,
             },
         }
     }
@@ -86,7 +88,7 @@ impl<'a> QueryRequestExecution<'a> {
     /// Preserves a lease-free `ExecutionRequest::serial` caller's backing,
     /// memory holds, deadline, and cancellation token while enforcing any
     /// tighter installed placement ceilings.
-    pub(super) fn open_serial_request(
+    pub fn open_serial_request(
         placement: RuntimeWorldExecutionPlacement<'a>,
         caller: worth_execution::ExecutionRequest<'a, 'a>,
     ) -> Self {
@@ -124,6 +126,7 @@ impl<'a> QueryRequestExecution<'a> {
                         ),
                         policy: narrowed_pol,
                         caller_serial: Some(caller),
+                        caller_serial_hold: Some(super::serial_hold::unbound_hold()),
                     },
                 }
             }
@@ -142,10 +145,70 @@ impl<'a> QueryRequestExecution<'a> {
                         }),
                         policy: narrowed,
                         caller_serial: Some(caller),
+                        caller_serial_hold: Some(super::serial_hold::unbound_hold()),
                     },
                 }
             }
         }
+    }
+
+    /// Narrows this execution's inner lease to `available_bytes` when a serial
+    /// caller's live remaining room (after pre-existing holds) is tighter than
+    /// the static policy ceiling already installed on the lease.
+    pub(super) fn narrowed_to_live_serial_room(&self, available_bytes: u64) -> Option<Self> {
+        let (lease, policy, caller_serial, caller_serial_hold, is_serial) = match &self.form {
+            Form::Leased {
+                lease,
+                policy,
+                caller_serial,
+                caller_serial_hold,
+            } => (lease, *policy, *caller_serial, caller_serial_hold, false),
+            Form::Serial {
+                lease,
+                policy,
+                caller_serial,
+                caller_serial_hold,
+            } => (lease, *policy, *caller_serial, caller_serial_hold, true),
+        };
+        let current_limit = policy.charged_memory_bytes();
+        if current_limit.is_some_and(|limit| available_bytes >= limit) {
+            return None;
+        }
+        let narrowed = narrowed_policy_with_workers(
+            policy,
+            policy.max_workers(),
+            Some(available_bytes),
+            policy.work_ceiling(),
+        );
+        let child_lease = lease.as_ref().map_err(|denial| *denial).and_then(|parent| {
+            parent.child(LeaseRequest {
+                policy: narrowed,
+                deadline: None,
+                cancellation: CancellationToken::new(),
+            })
+        });
+        let form = if is_serial {
+            Form::Serial {
+                lease: child_lease,
+                policy: narrowed,
+                caller_serial,
+                caller_serial_hold: caller_serial_hold.clone(),
+            }
+        } else {
+            Form::Leased {
+                lease: child_lease,
+                policy: narrowed,
+                caller_serial,
+                caller_serial_hold: caller_serial_hold.clone(),
+            }
+        };
+        Some(Self {
+            cancellation: self.cancellation.clone(),
+            deadline: self.deadline.clone(),
+            declared_work: self.declared_work,
+            certified_seed: self.certified_seed,
+            form,
+        })
     }
 
     /// The request's cancellation or elapsed deadline, if either happened,

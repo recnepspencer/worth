@@ -2,7 +2,9 @@
 
 mod runtime_ops;
 use runtime_ops::seed_reminder_graph;
-pub use runtime_ops::{mutate_reminder, read_reminders, unique_temp_dir};
+pub use runtime_ops::{
+    mutate_reminder, mutate_reminder_returning_change, read_reminders, unique_temp_dir,
+};
 
 use std::{marker::PhantomData, path::PathBuf, sync::Arc};
 use worth_execution::ExecutionRequest;
