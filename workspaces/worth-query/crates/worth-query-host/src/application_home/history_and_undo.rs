@@ -30,8 +30,12 @@ use super::WorthQueryApplicationHome;
 
 mod authored;
 mod authored_outcome;
+mod durable_history;
 mod owned_history;
 pub use authored_outcome::WorthQueryHomeAuthoredCorrectionOutcome;
+pub use durable_history::{
+    WorthQueryCorrectionHistory, WorthQueryCorrectionHistoryEntry, WorthQueryCorrectionHistoryLimit,
+};
 pub use owned_history::WorthQueryHomeOwnedHistoryDenial;
 
 /// Default bounded history traversal limits for Home undo and redo helpers.
