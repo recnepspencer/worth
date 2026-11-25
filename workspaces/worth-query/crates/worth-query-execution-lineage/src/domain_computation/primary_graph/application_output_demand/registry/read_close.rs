@@ -57,10 +57,15 @@ impl WorthQueryOutputDemandInterest {
         let Some(record) = state.records.get(&self.key) else {
             return Ok(());
         };
+        // A stopped row owes no delivery: stopping drops its undelivered hold
+        // and its last release retires it Finished. Only a live claim, an
+        // outstanding close loan or an open pending publication still holds
+        // native custody once the row has stopped (#406).
         if record.interests == 1
             && record.held_successor.is_none()
             && matches!(&record.state, DemandState::Output(output)
-                if matches!(&output.checkpoint, Some(WorthQueryOutputCheckpoint::Published { .. } | WorthQueryOutputCheckpoint::RecoveredPublished { .. } | WorthQueryOutputCheckpoint::Delivered { .. } | WorthQueryOutputCheckpoint::RecoveredDelivered { .. }))
+                if !matches!(output.advancement(), WorthQueryOutputAdvancement::Stopped { .. })
+                    && matches!(&output.checkpoint, Some(WorthQueryOutputCheckpoint::Published { .. } | WorthQueryOutputCheckpoint::RecoveredPublished { .. } | WorthQueryOutputCheckpoint::Delivered { .. } | WorthQueryOutputCheckpoint::RecoveredDelivered { .. }))
                     || matches!(&output.checkpoint, Some(WorthQueryOutputCheckpoint::PublicationPending { owner, .. }) if !owner.is_closed())
                     || matches!(output.advancement(), WorthQueryOutputAdvancement::Claimed(_)
                         | WorthQueryOutputAdvancement::Stopped { interrupted_claim: Some(_), .. }))
