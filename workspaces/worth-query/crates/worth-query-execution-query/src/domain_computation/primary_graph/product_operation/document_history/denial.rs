@@ -65,6 +65,13 @@ pub enum WorthQueryDocumentHistoryDenial {
     RecordingIdentityExhausted,
     AttemptInFlight,
     IntentDrift,
+    /// A correction's source is not a step the document recorded on its
+    /// selected line (the current step or one of its ancestors): an undone
+    /// step, a step on another branch, or a commit from before
+    /// `attach_history`. Refused before any reservation (plan §10.1a).
+    SourceNotOnSelectedLine {
+        source: worth_runtime_world::facade::CompositeCommitIdentity,
+    },
     /// The step metadata exceeds the installed `maximum_step_metadata_bytes`.
     StepMetadataTooLarge {
         length: usize,

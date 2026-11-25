@@ -30,6 +30,29 @@ impl<S> HistoryJournal<'_, S> {
         }
     }
 
+    /// The recorded step on the selected line (the current step or one of
+    /// its ancestors, never the root) whose stages made `commit`: the walk
+    /// navigation's undo takes, so it costs the selected line's depth and
+    /// never scans the whole history (plan §10.1a).
+    pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn selected_line_source(
+        &self,
+        commit: &worth_runtime_world::facade::CompositeCommitIdentity,
+    ) -> Option<WorthQueryHistoryNodeId> {
+        self.access(Access::Selection);
+        let mut node = self.current;
+        loop {
+            self.access(Access::Node);
+            let NodeBinding::Completed(recorded) = &self.nodes.get(&node.ordinal())?.binding else {
+                return None;
+            };
+            let parent = recorded.step.parent()?;
+            if recorded.source_commit.as_ref() == Some(commit) {
+                return Some(node);
+            }
+            node = parent;
+        }
+    }
+
     pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn prepare_navigation(
         &self,
         node: WorthQueryHistoryNodeId,

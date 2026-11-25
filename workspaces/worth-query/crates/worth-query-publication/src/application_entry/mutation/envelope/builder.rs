@@ -27,6 +27,7 @@ impl<'a, S: ApplicationSchema> WorthQueryApplicationRequest<'a, 'a, 'a, S> {
                 order: ApplicationEditEnvelopeOrder::DeclaredDependencies,
                 correction: None,
                 history: None,
+                correction_attempt: None,
             },
             stages: NoEditStages,
             brand: Arc::new(()),

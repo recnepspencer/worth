@@ -9,7 +9,11 @@ use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
 };
 use worth_query_declaration::facade::{
-    application_operation::{ApplicationMutationBinding, ApplicationMutationIntent},
+    application_aftermath::{ApplicationCorrectionBinding, ApplicationInverseBinding},
+    application_operation::{
+        ApplicationMutationAdmissionBinding, ApplicationMutationBinding, ApplicationMutationInputScope,
+        ApplicationMutationIntent, ApplicationMutationScopeResolution,
+    },
     application_program::ApplicationProgramDefinition,
 };
 use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
@@ -90,6 +94,88 @@ where
             scope: request.scope,
             document: self,
         })
+    }
+}
+
+impl<'runtime, S, H, Payload, Outputs>
+    WorthQueryApplicationHistoryDocument<'runtime, S, H, Payload, Outputs>
+where
+    S: ApplicationSchema,
+    H: ApplicationHistoryBinding<S>,
+    Payload: WorthQueryHistoryPayloadMode<S, H>,
+{
+    /// Begin a correction envelope recorded as this document's next step:
+    /// stage 0 reverses the selected source, and stages pushed after it commit
+    /// with it. The source must be a step this document recorded on its
+    /// selected line. An envelope that retires an owner beside another stage
+    /// on a live member is held on public #348, and a later stage of a
+    /// multi-stage step cannot yet be corrected (public #368).
+    pub fn correction_envelope<'request, 'program, C, P, R>(
+        self,
+        program: &'program WorthQueryProgramApplicationRuntime<S, P>,
+        correction: crate::application_entry::correction::WorthQueryApplicationCorrectionRequest<
+            'request,
+            'request,
+            'request,
+            'request,
+            S,
+        >,
+    ) -> Result<
+        WorthQueryHistoryEditEnvelope<
+            'runtime,
+            'request,
+            'program,
+            S,
+            H,
+            P,
+            <ApplicationInverseBinding<S, C> as ApplicationMutationBinding<S>>::IdempotencyKey,
+            Payload,
+            Outputs,
+        >,
+        WorthQueryHistoryEditEnvelopeFailure<'runtime, S, H, Payload, Outputs>,
+    >
+    where
+        P: ApplicationProgramDefinition<S>,
+        C: ApplicationCorrectionBinding<S>,
+        ApplicationInverseBinding<S, C>: ApplicationMutationBinding<S> + ApplicationMutationAdmissionBinding<S>,
+        <ApplicationInverseBinding<S, C> as ApplicationMutationAdmissionBinding<S>>::Admission: crate::application_entry::mutation::authorization::WorthQueryBindingAdmission<S, ApplicationInverseBinding<S, C>>,
+        <ApplicationInverseBinding<S, C> as ApplicationMutationBinding<S>>::Input: Clone + Send + Sync + ApplicationMutationInputScope<S, ApplicationInverseBinding<S, C>>,
+        <ApplicationInverseBinding<S, C> as ApplicationMutationBinding<S>>::Result: Send,
+        <ApplicationInverseBinding<S, C> as ApplicationMutationBinding<S>>::Denial: Send,
+        <ApplicationInverseBinding<S, C> as ApplicationMutationBinding<S>>::ScopeBinding: ApplicationMutationScopeResolution<S, <ApplicationInverseBinding<S, C> as ApplicationMutationBinding<S>>::PrincipalIdentity>,
+        <ApplicationInverseBinding<S, C> as ApplicationMutationBinding<S>>::IdempotencyKey: serde::Serialize + Send + Sync + 'static,
+        R: crate::application_entry::mutation::envelope::entry::outputs::EditStageOutputs<S, ApplicationInverseBinding<S, C>>,
+    {
+        let runtime = self.owner.application();
+        let corrections = correction.corrections();
+        let (principal, scope) = (corrections.principal, corrections.scope);
+        let refusal = if !std::ptr::eq(runtime, corrections.application)
+            || !std::ptr::eq(runtime, program.runtime())
+        {
+            Some(WorthQueryApplicationHistoryDenial::ForeignRuntime)
+        } else if corrections.branch != self.owner.branch() {
+            Some(WorthQueryApplicationHistoryDenial::RequestTargetMismatch)
+        } else {
+            None
+        };
+        if let Some(denial) = refusal {
+            return Err(WorthQueryHistoryEditEnvelopeFailure {
+                document: self,
+                denial: WorthQueryHistoryEditEnvelopeDenial::History(denial),
+            });
+        }
+        match correction.history_envelope::<C, P, R>(program) {
+            Ok(envelope) => Ok(WorthQueryHistoryEditEnvelope {
+                envelope,
+                principal,
+                scope,
+                document: self,
+            }),
+            Err(denial) => Err(WorthQueryHistoryEditEnvelopeFailure {
+                document: self,
+                denial: WorthQueryHistoryEditEnvelopeDenial::Correction(denial),
+            }),
+        }
     }
 }
 

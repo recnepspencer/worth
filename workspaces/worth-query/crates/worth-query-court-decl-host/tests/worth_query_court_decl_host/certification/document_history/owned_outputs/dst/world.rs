@@ -2,6 +2,8 @@
 //! public entry point it names, each return is classified into the model's
 //! outcome, and each observation is read with fresh requests.
 mod coupled;
+mod history_correction;
+pub use history_correction::Corrected;
 mod observation;
 mod writer;
 

@@ -1,6 +1,7 @@
 //! One envelope reserves one history record before any candidate exists.
 use super::super::{
     journal::AttemptLookup, WorthQueryDocumentHistory, WorthQueryDocumentHistoryDenial as Denial,
+    WorthQueryHistoryNodeId,
     WorthQueryDocumentHistoryRecordPreparation, WorthQueryDocumentHistoryReservation,
     WorthQueryHistoryStepMetadata,
 };
@@ -23,6 +24,7 @@ use worth_query_declaration::facade::{
 };
 use worth_query_execution_lineage::facade::ports::IdempotencyBindingInternalPort;
 use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_query::facade::ports::HistoryNodeIdInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::WorthQueryInstalledDocumentHistory;
 
@@ -36,6 +38,16 @@ pub struct WorthQueryDocumentHistoryEnvelopeIntent<'a> {
     key: &'a [u8; 32],
     intent: ApplicationEditIntentIdentity,
     first_operation: &'a ApplicationMutationBindingDescriptor,
+    correction: Option<WorthQueryDocumentHistoryCorrectionMeaning>,
+}
+
+/// What a correction envelope's meaning adds to its stages (plan §11.1): the
+/// correction binding, and the recorded step it reverses. Two sources whose
+/// derived inverse inputs are equal are two meanings, as in the model.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct WorthQueryDocumentHistoryCorrectionMeaning {
+    pub binding: &'static str,
+    pub source: WorthQueryHistoryNodeId,
 }
 
 impl<'a> WorthQueryDocumentHistoryEnvelopeIntent<'a> {
@@ -48,13 +60,33 @@ impl<'a> WorthQueryDocumentHistoryEnvelopeIntent<'a> {
             key,
             intent,
             first_operation,
+            correction: None,
         }
+    }
+
+    /// The same envelope, meaning a correction of `correction.source`.
+    pub fn with_correction(mut self, correction: WorthQueryDocumentHistoryCorrectionMeaning) -> Self {
+        self.correction = Some(correction);
+        self
     }
 }
 
 impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
     WorthQueryDocumentHistory<'runtime, S, H>
 {
+    /// The recorded step on the selected line whose stages made `source`, for
+    /// a correction naming it; refused before any reservation otherwise.
+    pub fn selected_line_correction_source(
+        &self,
+        source: &worth_runtime_world::facade::CompositeCommitIdentity,
+    ) -> Result<WorthQueryHistoryNodeId, Denial> {
+        self.selection
+            .lock()
+            .journal
+            .selected_line_source(source)
+            .ok_or_else(|| Denial::SourceNotOnSelectedLine { source: source.clone() })
+    }
+
     /// Reserve the one record an envelope will complete. Nothing is forked here:
     /// a refusal or an already recorded step leaves the document untouched.
     pub fn reserve_history_envelope(
@@ -89,8 +121,20 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         key_hash.update(H::IDENTITY.as_bytes());
         key_hash.update(envelope.key);
         let mut intent_hash = Sha256::new();
-        intent_hash.update(b"worth.query.document-history.envelope.intent.v1");
-        intent_hash.update(envelope.intent.identity());
+        match envelope.correction {
+            // An edit keeps Phase 1's meaning byte for byte.
+            None => {
+                intent_hash.update(b"worth.query.document-history.envelope.intent.v1");
+                intent_hash.update(envelope.intent.identity());
+            }
+            Some(correction) => {
+                intent_hash.update(b"worth.query.document-history.envelope.correction-intent.v1");
+                intent_hash.update(envelope.intent.identity());
+                intent_hash.update((correction.binding.len() as u64).to_be_bytes());
+                intent_hash.update(correction.binding.as_bytes());
+                intent_hash.update(correction.source.ordinal().to_be_bytes());
+            }
+        }
         let meaning = <WorthQueryApplicationIdempotencyBinding as IdempotencyBindingInternalPort>::from_identities(
             key_hash.finalize().into(),
             intent_hash.finalize().into(),

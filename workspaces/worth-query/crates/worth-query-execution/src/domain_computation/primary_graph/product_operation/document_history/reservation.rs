@@ -18,6 +18,7 @@ use worth_query_declaration::facade::{
     application_schema::{ApplicationSchema, ApplicationStructuredValueBinding},
 };
 use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_query::facade::ports::HistoryNodeIdInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::WorthQueryInstalledDocumentHistory;
 
@@ -206,6 +207,14 @@ impl<S> super::selection::HistorySelection<'_, S> {
 }
 
 impl WorthQueryDocumentHistoryReservation {
+    /// A value unique to this one reserved attempt in this document. A
+    /// correction's candidate pass binds its command under it (plan §10.1
+    /// step 5), so a stopped or refused attempt's correction evidence and
+    /// preparation never meet a retry, which reserves a new node.
+    pub fn attempt_identity(&self) -> String {
+        format!("{:?}#{}", self.record.node.document(), self.record.node.ordinal())
+    }
+
     pub(super) fn operation_scope(&self) -> Result<&super::HistoryOperationScope, Denial> {
         self.operation_scope
             .as_ref()

@@ -38,7 +38,8 @@ pub use description::{
 mod disposal;
 mod envelope_recording;
 pub use envelope_recording::{
-    WorthQueryDocumentHistoryEnvelopeConstraint, WorthQueryDocumentHistoryEnvelopeIntent,
+    WorthQueryDocumentHistoryCorrectionMeaning, WorthQueryDocumentHistoryEnvelopeConstraint,
+    WorthQueryDocumentHistoryEnvelopeIntent,
 };
 mod group;
 mod head_custody;

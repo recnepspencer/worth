@@ -114,3 +114,50 @@ where
     )?;
     Ok((input, std::sync::Arc::new(prepared)))
 }
+
+/// A history correction's head pass (plan §10.1): the inverse input derived
+/// from the source alone, after a fresh disclosure. It only reads: no reversal
+/// lineage, compatibility, workflow preparation, command recovery or
+/// retention, so no Home pin is taken on the document's branch. The
+/// candidate pass derives again with [`derive_correction_inverse`].
+pub(in crate::domain_computation::primary_graph) fn derive_correction_inverse_input<Schema, C>(
+    target: &WorthQuerySelectedProductOperation<'_, Schema>,
+    access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+    phase: &WorthQueryAdvancementPhase<'_>,
+    principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+    request: &WorthQueryRequestScope,
+    source: &WorthQuerySelectedCorrectionSource<'_, Schema>,
+    maximum_history: Option<NonZeroUsize>,
+    maximum_results: NonZeroUsize,
+) -> Result<
+    ApplicationEncodedInput<<ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<Schema>>::InputBinding>,
+    Denial,
+>
+where
+    Schema: ApplicationSchema,
+    C: ApplicationCorrectionBinding<Schema>,
+    <ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<Schema>>::Input: Clone + Send + Sync,
+{
+    disclose_correction_source::<Schema, C>(
+        target,
+        phase,
+        principal,
+        request,
+        source,
+        maximum_history,
+        maximum_results,
+    )?;
+    let (bytes, identity) = source
+        .occurrence()
+        .input()
+        .ok_or(Denial::UnsupportedSourceMeaning)?;
+    let input =
+        super::material::recorded_input::recover_bytes(bytes, identity, C::recover_source_input)?;
+    let execution = phase
+        .execution_request_for(target.application().inner.runtime.product_runtime_ref())
+        .map_err(|_| Denial::ForeignPhase)?;
+    let inverse = super::material::derive::<Schema, C>(source, execution, input.input())?;
+    target.application().capture_operation_input_in_advancement::<<ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<Schema>>::InputBinding>(
+        phase, access, request, inverse.input(),
+    ).map_err(Denial::InputCapture)
+}

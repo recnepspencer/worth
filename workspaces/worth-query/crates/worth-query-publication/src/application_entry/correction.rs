@@ -66,6 +66,10 @@ pub enum WorthQueryApplicationCorrectionDenial {
     ProductSelection(WorthQueryProductBranchAdmissionDenial),
     Source(WorthQueryCorrectionSelectionDenial),
     Derivation(worth_query_execution::facade::primary_graph::WorthQueryCorrectionDerivationDenial),
+    /// A history correction derived another inverse on its private candidate
+    /// than at the document head, so the meaning it reserved no longer holds.
+    /// Nothing committed.
+    CandidateMeaningChanged,
 }
 
 /// The current principal, request scope and target branch for recorded corrections.

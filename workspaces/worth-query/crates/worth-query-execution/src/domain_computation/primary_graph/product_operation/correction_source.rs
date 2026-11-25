@@ -166,6 +166,35 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             None,
         )
     }
+    /// A history correction's read-only head pass: the inverse input from the
+    /// source alone after a fresh disclosure, with no retention (plan §10.1).
+    pub fn derive_correction_inverse_input<C: ApplicationCorrectionBinding<Schema>>(
+        &self,
+        access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        request: &WorthQueryRequestScope,
+        source: &WorthQuerySelectedCorrectionSource<'_, Schema>,
+        maximum_history: Option<NonZeroUsize>,
+        maximum_results: NonZeroUsize,
+    ) -> Result<
+        ApplicationEncodedInput<<ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<Schema>>::InputBinding>,
+        WorthQueryCorrectionDerivationDenial,
+    >
+    where
+        <ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<Schema>>::Input: Clone + Send + Sync,
+    {
+        derivation::derive_correction_inverse_input::<Schema, C>(
+            self,
+            access,
+            phase,
+            principal,
+            request,
+            source,
+            maximum_history,
+            maximum_results,
+        )
+    }
 }
 
 struct DiscloseSelection<'a, 'runtime, 'phase, Schema> {
@@ -217,6 +246,23 @@ impl<Schema> WorthQuerySelectedCorrectionSource<'_, Schema> {
         self.occurrence
             .original_binding()
             .expect("selected correction retained its native binding")
+    }
+
+    /// The composite commit whose stages this source names: a history
+    /// correction resolves it to a recorded step on the selected line.
+    pub fn source_commit(&self) -> &worth_runtime_world::facade::CompositeCommitIdentity {
+        self.ancestry.source().identity()
+    }
+
+    /// This source's recorded coordinates, to select it again on another
+    /// target (a history correction's private candidate).
+    pub fn recorded_source(
+        &self,
+    ) -> crate::domain_computation::application_aftermath::WorthQueryRecordedCorrectionSource {
+        crate::domain_computation::application_aftermath::WorthQueryRecordedCorrectionSource::from_untrusted_parts(
+            self.source_commit().clone(),
+            self.occurrence.commit_reference().clone(),
+        )
     }
 
     pub(in crate::domain_computation::primary_graph) fn application(

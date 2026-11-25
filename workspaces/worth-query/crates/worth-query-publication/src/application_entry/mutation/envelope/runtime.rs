@@ -4,6 +4,7 @@ use entry::{CaptureEditStages, EditEntry};
 mod history_front;
 pub(in crate::application_entry) use history_front::CapturedEnvelopeIntent;
 
+
 #[doc(hidden)]
 pub struct RuntimeEditStages<S: ApplicationSchema, P: ApplicationProgramDefinition<S>, K> {
     entries: Vec<Box<dyn CaptureEditStages<S, P, K>>>,
@@ -18,7 +19,35 @@ where
     program: &'program WorthQueryProgramApplicationRuntime<S, P>,
     front: Option<CorrectionEnvelopeFront<'a, S, P, K>>,
     front_binding: Option<std::any::TypeId>,
+    /// A history correction's read-only head pass, run before the document
+    /// reserves its record; the front then runs on the private candidate.
+    head: Option<CorrectionEnvelopeHead<'a, S>>,
 }
+
+/// What a history correction's head pass read at the document head: the
+/// corrective stage's intent and operation, its correction binding, and the
+/// commit its source names.
+pub(in crate::application_entry) struct CorrectionHead {
+    pub(in crate::application_entry) intent: ApplicationEditStageIntent,
+    pub(in crate::application_entry) operation:
+        worth_query_declaration::facade::application_operation::ApplicationMutationBindingDescriptor,
+    pub(in crate::application_entry) source: CorrectionSource,
+}
+
+/// The part of a correction's meaning the history owner resolves: the
+/// correction binding, and the commit its source names.
+pub(in crate::application_entry) struct CorrectionSource {
+    pub(in crate::application_entry) binding: &'static str,
+    pub(in crate::application_entry) commit: worth_runtime_world::facade::CompositeCommitIdentity,
+}
+
+pub(in crate::application_entry) type CorrectionEnvelopeHead<'a, S> = Box<
+    dyn FnOnce(
+            &EnvelopeContext<'_, S>,
+            &WorthQueryAdvancementPhase<'_>,
+        ) -> Result<CorrectionHead, crate::application_entry::correction::WorthQueryApplicationCorrectionDenial>
+        + 'a,
+>;
 
 pub(in crate::application_entry) type CorrectionEnvelopeFront<'a, S, P, K> = Box<
     dyn FnOnce(
@@ -47,6 +76,7 @@ impl<'a, S: ApplicationSchema, K> WorthQueryKeyedEditEnvelope<'a, S, NoEditStage
             program,
             front: None,
             front_binding: None,
+            head: None,
             envelope: WorthQueryKeyedEditEnvelope {
                 key: self.key,
                 envelope: WorthQueryEditEnvelope {
@@ -213,6 +243,16 @@ where
     ) -> Self {
         self.front = Some(front);
         self.front_binding = Some(std::any::TypeId::of::<B>());
+        self
+    }
+
+    /// Record this correction envelope in a history document: `head` reads its
+    /// meaning at the document head, and the front runs on the candidate.
+    pub(in crate::application_entry) fn with_correction_head(
+        mut self,
+        head: CorrectionEnvelopeHead<'a, S>,
+    ) -> Self {
+        self.head = Some(head);
         self
     }
 }
