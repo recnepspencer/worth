@@ -19,6 +19,7 @@ pub mod conditional_operation;
 pub mod content;
 pub mod denial;
 pub mod derived_source;
+pub mod domain_refusal;
 pub mod entity_key;
 pub mod entity_resolution;
 pub mod entity_resolution_denial;
@@ -164,6 +165,7 @@ pub use content::{
 };
 pub use denial::*;
 pub use derived_source::DerivedSourceObservation;
+pub use domain_refusal::*;
 pub use entity_key::*;
 pub use entity_resolution::{
     WorthQueryApplicationEntityIdentity, WorthQueryEntityResolutionTruth,

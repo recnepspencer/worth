@@ -2,6 +2,8 @@
 use std::borrow::Cow;
 use std::fmt;
 
+use worth_query_execution::facade::domain_refusal::WorthQueryDomainRefusal;
+
 /// What kind of problem stopped an operation, from the end user's side.
 ///
 /// Closed and machine-readable: branch on it for UI treatment (retry button,
@@ -68,10 +70,13 @@ impl WorthQueryRefusalCategory {
 ///
 /// The message never contains Rust type names, `Debug` structure, internal
 /// paths or identifiers; log the original refusal with `{:?}` for developers.
+/// A [`WorthQueryDomainRefusal`] is the one exception to fixed sentences: its
+/// application-authored message is shown as written.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryRefusalSummary {
     category: WorthQueryRefusalCategory,
     message: Cow<'static, str>,
+    domain_refusal: Option<WorthQueryDomainRefusal>,
 }
 
 impl WorthQueryRefusalSummary {
@@ -80,6 +85,7 @@ impl WorthQueryRefusalSummary {
         Self {
             category,
             message: Cow::Borrowed(category.default_message()),
+            domain_refusal: None,
         }
     }
 
@@ -88,6 +94,17 @@ impl WorthQueryRefusalSummary {
         Self {
             category,
             message: Cow::Borrowed(message),
+            domain_refusal: None,
+        }
+    }
+
+    /// An application rule's own refusal: `Validation`, showing its message
+    /// verbatim and keeping its code for [`Self::domain_refusal`].
+    pub fn domain(refusal: WorthQueryDomainRefusal) -> Self {
+        Self {
+            category: WorthQueryRefusalCategory::Validation,
+            message: Cow::Owned(refusal.message().to_owned()),
+            domain_refusal: Some(refusal),
         }
     }
 
@@ -102,6 +119,12 @@ impl WorthQueryRefusalSummary {
 
     pub const fn retryable(&self) -> bool {
         self.category.retryable()
+    }
+
+    /// The business rule that refused, when the application named one; branch
+    /// on its `code()` rather than on the message.
+    pub const fn domain_refusal(&self) -> Option<&WorthQueryDomainRefusal> {
+        self.domain_refusal.as_ref()
     }
 }
 
@@ -136,6 +159,13 @@ pub trait WorthQueryUserFacingRefusal {
 impl<T: WorthQueryUserFacingRefusal + ?Sized> WorthQueryUserFacingRefusal for Box<T> {
     fn user_summary(&self) -> WorthQueryRefusalSummary {
         (**self).user_summary()
+    }
+}
+
+/// A domain refusal's message is application-authored operator text.
+impl WorthQueryUserFacingRefusal for WorthQueryDomainRefusal {
+    fn user_summary(&self) -> WorthQueryRefusalSummary {
+        WorthQueryRefusalSummary::domain(self.clone())
     }
 }
 

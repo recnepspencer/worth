@@ -1,5 +1,8 @@
 //! Installed domain rules and bounded proposed-state access for application hosts.
 
+/// Refuse with an application's structured code and message: declare
+/// `type Refusal = WorthQueryDomainRefusal; type RefusalBinding = WorthQueryDomainRefusalBinding;`.
+pub use super::domain_refusal::{WorthQueryDomainRefusal, WorthQueryDomainRefusalBinding};
 pub use crate::domain_computation::primary_graph::application_invariant::{
     CustomInvariantInterruption, CustomInvariantNameReadDenial, WorthQueryAggregateIdentity,
     WorthQueryApplicationInvariantComponent, WorthQueryApplicationInvariantComponentSetBinding,

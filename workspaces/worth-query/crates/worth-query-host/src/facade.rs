@@ -362,9 +362,13 @@ pub use crate::application_home::{
     ApplicationHomePhysicalRefusal, ApplicationHomePhysicalRefusalKind,
     ApplicationHomePhysicalStage,
 };
-/// End-user refusal summaries: `denial.user_message()` for UIs, `{denial:?}` for logs.
+/// End-user refusal summaries: `denial.user_message()` for UIs, `{denial:?}` for logs;
+/// an application rule's own structured refusal: `denial.domain_refusal()`.
 pub use crate::refusal_summary::{
+    WorthQueryDomainRefusal, WorthQueryDomainRefusalCarrier, WorthQueryDomainRefusalDenial,
     WorthQueryRefusalCategory, WorthQueryRefusalSummary, WorthQueryUserFacingRefusal,
+    WORTH_QUERY_DOMAIN_REFUSAL_CODE_MAXIMUM_BYTES,
+    WORTH_QUERY_DOMAIN_REFUSAL_MESSAGE_MAXIMUM_BYTES,
 };
 /// Interactive custody of one source-only command or correction across frames.
 pub use crate::source_custody::{

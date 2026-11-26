@@ -79,6 +79,7 @@ impl WorthQueryUserFacingRefusal for WorthQueryOperationBodyDenial {
             Self::SourceMismatch { .. } => STALE,
             Self::InputMismatch { .. } => BAD_INPUT,
             Self::RequirementUnmet { .. } | Self::DeclaredRequirementUnmet { .. } => RULE_REFUSED,
+            Self::DomainRefused(refusal) => refusal.user_summary(),
         }
     }
 }
@@ -164,7 +165,10 @@ impl WorthQueryUserFacingRefusal for WorthQueryApplicationUncommitted {
             Self::Denied(denial) if denial.kind() == CommitDenialKind::UniqueValueTaken => {
                 ALREADY_EXISTS
             }
-            Self::NoEffect(_) | Self::Aborted | Self::Denied(_) => RULE_REFUSED,
+            Self::Denied(denial) => denial
+                .domain_refusal()
+                .map_or(RULE_REFUSED, Summary::domain),
+            Self::NoEffect(_) | Self::Aborted => RULE_REFUSED,
             Self::OutputAdopted(_) => ALREADY_DONE,
             Self::CleanupRequired(_)
             | Self::ProductUnpublished(_)
