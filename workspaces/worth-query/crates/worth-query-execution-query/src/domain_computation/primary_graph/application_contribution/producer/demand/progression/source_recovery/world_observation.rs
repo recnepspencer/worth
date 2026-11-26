@@ -81,6 +81,61 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         };
         Ok(observation)
     }
+
+    pub fn observe_live_output_branch_head(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        branch: &str,
+        lifecycle: u64,
+        owner: worth_foundational::facade::DurableWorldOwnerIdentity,
+    ) -> Result<worth_runtime_world::facade::ProductBranchObservation, Denial> {
+        let world = self.runtime.product_runtime.owner_ref().observation_port();
+        let request_stop = |cause| {
+            Denial::new(
+                Kind::ExecutionRequest(
+                    crate::domain_computation::primary_graph::application_contribution::advancement_denial(
+                        cause,
+                    ),
+                ),
+                "required source readmission",
+            )
+        };
+        let branches =
+            world
+                .installed_product_branches(execution)
+                .map_err(|cause| match cause {
+                    worth_runtime_world::facade::RuntimeWorldServiceDenial::Denied(
+                        worth_runtime_world::facade::ProductBranchInventoryDenial::Request(cause),
+                    ) => request_stop(cause),
+                    _ => match execution.consult() {
+                        Err(cause) => request_stop(cause),
+                        Ok(()) => unavailable(),
+                    },
+                })?;
+        let current = branches
+            .branches()
+            .iter()
+            .find(|known| {
+                known.branch_identity().name().as_str() == branch
+                    && known.lifecycle_incarnation().ordinal() == lifecycle
+                    && known.owner_identity().durable() == Some(owner)
+            })
+            .ok_or_else(unavailable)?;
+        let observation = world
+            .observe_product_branch_occurrence(current.lifecycle_incarnation())
+            .map_err(|_| match execution.consult() {
+                Err(cause) => request_stop(cause),
+                Ok(()) => unavailable(),
+            })?;
+        if observation.branch_identity().name().as_str() != branch
+            || observation.lifecycle_incarnation().ordinal() != lifecycle
+            || observation.owner_identity().durable() != Some(owner)
+            || observation.selected_commit().owner_identity().durable() != Some(owner)
+        {
+            return Err(unavailable());
+        }
+        Ok(observation)
+    }
 }
 fn unavailable() -> Denial {
     Denial::new(

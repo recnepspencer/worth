@@ -41,6 +41,7 @@ where
     prerequisites.record_durable_prerequisites(
         execution,
         handle.output_lineage_ref(),
+        observation,
         |commit, branch| runtime.readmit_output_observation(execution, commit, branch),
     )?;
     prerequisites.reserve_identity(publication.identity())?;

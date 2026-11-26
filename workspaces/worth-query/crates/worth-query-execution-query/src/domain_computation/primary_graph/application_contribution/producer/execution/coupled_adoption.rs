@@ -234,6 +234,7 @@ impl CoupledAdoption {
                 .primary_provider
                 .graph_ref()
                 .output_lineage_ref(),
+            current.product().observation(),
             |commit, branch| runtime.readmit_output_observation(&execution, commit, branch),
         )?;
         claims.reserve_identity(self.candidate.settlement_identity())?;

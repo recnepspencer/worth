@@ -44,6 +44,7 @@ pub fn finish(
 ) -> Result<CheckpointProgress, CompletionRefusal> {
     let receipt = match result.map(|prepared| prepared.into_parts()) {
         Ok((execution::ProducerExecutionOutcome::Unpublished(mut owner), ready_backing)) => {
+            performed.borrow_mut().mark_accepted(readiness);
             owner.retain_original_publication(original_publication);
             let checkpoint = WorthQueryOutputCheckpoint::PublicationPending {
                 owner: Box::new(owner),
@@ -71,9 +72,11 @@ pub fn finish(
             // The original coupled publication already happened. Preserve its
             // existing Published delivery protocol without marking another
             // publication.
+            performed.borrow_mut().mark_accepted(readiness);
             (receipt, ready_backing)
         }
         Ok((execution::ProducerExecutionOutcome::Stable(stable), ready_backing)) => {
+            performed.borrow_mut().mark_accepted(readiness);
             let completion = ready_backing.complete(
                     crate::domain_computation::primary_graph::application_output_demand::WorthQueryCompletedOutputDemand {
                         authority: crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority::Stable(stable),
