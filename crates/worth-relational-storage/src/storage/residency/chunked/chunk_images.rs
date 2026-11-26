@@ -154,18 +154,28 @@ impl ResidentPage for ChunkHistoryImage {
     }
 
     fn resident_bytes(&self) -> u64 {
-        let rows = self.layers.iter().flat_map(|layer| &layer.rows).map(|row| {
-            std::mem::size_of::<HistoryRow>()
-                + row.versions.capacity() * std::mem::size_of::<SlotVersion>()
-                + row
-                    .versions
+        let layers: usize = self
+            .layers
+            .iter()
+            .map(|layer| {
+                let row_contents: usize = layer
+                    .rows
                     .iter()
-                    .map(|version| version.payload.capacity())
-                    .sum::<usize>()
-        });
+                    .map(|row| {
+                        row.versions.capacity() * std::mem::size_of::<SlotVersion>()
+                            + row
+                                .versions
+                                .iter()
+                                .map(|version| version.payload.capacity())
+                                .sum::<usize>()
+                    })
+                    .sum();
+                layer.rows.capacity() * std::mem::size_of::<HistoryRow>() + row_contents
+            })
+            .sum();
         (std::mem::size_of::<Self>()
             + self.layers.capacity() * std::mem::size_of::<HistoryLayer>()
-            + rows.sum::<usize>()) as u64
+            + layers) as u64
     }
 }
 

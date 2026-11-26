@@ -145,3 +145,83 @@ fn cold_verifier_refuses_a_member_whose_edge_set_differs_from_the_sealed_summary
         Err(ChunkVerificationRefusal::CommitmentDiverged { .. })
     ));
 }
+
+#[test]
+fn cold_verifier_refuses_orphaned_continuation_directory_entries() {
+    use super::super::continuation::{
+        ContinuationEntries, ContinuationKey, ContinuationPage, ContinuationPageRef,
+        ContinuationStream,
+    };
+    use super::super::member_frame::encode_member;
+    use super::super::paged_directory::PagedDirectoryBuilder;
+    use crate::storage::data::RelationalStorageUnavailableCause as Cause;
+
+    let store = MemberStore::default();
+    let range = fixed_partition(64, LAYOUT.chunk_slots).next().unwrap();
+    // Slot 0 has only inline data, so continuation_directory_locator is None.
+    let sealed = seal(
+        &store,
+        SlotDomain::Entity,
+        64,
+        range,
+        &[SlotFixture {
+            slot: 0,
+            head: Some(version(1, 0)),
+            history: vec![version(1, 1)],
+            adjacency: Vec::new(),
+        }],
+    );
+    assert_eq!(sealed.binding.continuation_directory_locator(), None);
+
+    // Attach an orphaned continuation page for unoccupied slot 50.
+    let orphan_key = ContinuationKey {
+        slot: 50,
+        stream: ContinuationStream::History,
+        sequence: 0,
+    };
+    let orphan_page = ContinuationPage {
+        key: orphan_key,
+        entries: ContinuationEntries::History(vec![version(9, 99)]),
+    };
+    let encoded_page = encode_member(ChunkMemberKind::Continuation, &orphan_page, 4096).unwrap();
+    store.replace(encoded_page.locator, encoded_page.bytes);
+    let mut dir = PagedDirectoryBuilder::<ContinuationKey, ContinuationPageRef>::new(
+        LAYOUT.directory_page_entries,
+        4096,
+    )
+    .unwrap();
+    dir.push(
+        &mut &store,
+        orphan_key,
+        ContinuationPageRef {
+            page: encoded_page.locator,
+            entries: 1,
+        },
+    )
+    .unwrap();
+    let orphan_root = dir.finish(&mut &store).unwrap().unwrap();
+    let residency = ChunkResidency::new(
+        &accountant(1 << 20, 1 << 20, 4096),
+        ResidencyPoolKind::Historical,
+    );
+
+    // Both an honest entry_count (1) and a forged entry_count (0) must be refused.
+    for root in [
+        orphan_root,
+        super::super::paged_directory::PagedDirectoryRoot {
+            entry_count: 0,
+            ..orphan_root
+        },
+    ] {
+        let tampered = super::super::locator_binding::ChunkLocatorBinding::new(
+            sealed.binding.slot_range(),
+            sealed.binding.head_locator(),
+            sealed.binding.history_locator(),
+            Some(root),
+        );
+        assert_eq!(
+            verify_bound_chunk(&residency, &store, &sealed.semantic, &tampered),
+            Err(ChunkVerificationRefusal::Member(Cause::Damaged))
+        );
+    }
+}

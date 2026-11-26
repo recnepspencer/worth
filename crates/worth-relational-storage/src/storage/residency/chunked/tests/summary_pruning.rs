@@ -94,3 +94,46 @@ fn pruned_scans_agree_with_canonical_full_scans_and_read_only_candidate_chunks()
         scan(ChunkScan::HeadKind(KindId::new(1)), ScanPruning::Canonical)
     );
 }
+
+#[test]
+fn bounded_multi_chunk_scan_evicts_across_chunk_residency_caches() {
+    let store = MemberStore::default();
+    let sealed = fixed_partition(SLOTS, LAYOUT.chunk_slots)
+        .enumerate()
+        .map(|(chunk, range)| {
+            let base = chunk as u64 * LAYOUT.chunk_slots;
+            let slots = vec![SlotFixture {
+                slot: base + 1,
+                head: Some(version(1, base + 1)),
+                // Every chunk spills continuation pages so all four caches
+                // compete for the same tight pool budget.
+                history: (0..250)
+                    .map(|v| version(if chunk == 9 && v == 0 { 9 } else { 1 }, v))
+                    .collect(),
+                adjacency: vec![edge(10, base + 1)],
+            }];
+            let sealed = seal(&store, SlotDomain::Entity, SLOTS, range, &slots);
+            (sealed.semantic, sealed.binding)
+        })
+        .collect::<Vec<_>>();
+    let directory = RegionChunkDirectory::admit(LAYOUT, SLOTS, 0, sealed).unwrap();
+
+    // Tight enough that unborrowed continuation pages from earlier chunks MUST
+    // be evicted for later chunks' head/history/directory pages to fit.
+    let tight_budget = 16 * 1024;
+    let tight_accountant = accountant(tight_budget, 1 << 20, 4096);
+    let tight_residency = ChunkResidency::new(&tight_accountant, ResidencyPoolKind::Head);
+    let outcome = scan_chunks(
+        &directory,
+        &tight_residency,
+        &store,
+        SlotDomain::Entity,
+        ChunkScan::HistoryKind(KindId::new(9)),
+        ScanPruning::Canonical,
+    )
+    .expect("cross-cache eviction prevents starvation across chunks");
+    assert_eq!(outcome.chunks_read, 10);
+    assert_eq!(outcome.hits.len(), 1);
+    assert!(tight_accountant.charged_bytes(ResidencyPoolKind::Head) <= tight_budget);
+    assert!(tight_residency.continuation_observation().evictions > 0);
+}

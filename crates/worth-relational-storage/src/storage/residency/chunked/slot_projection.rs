@@ -10,7 +10,44 @@ pub struct SlotVersion {
     pub kind: KindId,
     /// Canonical record bytes. Large field values are carried out of line
     /// behind value locators and streamed by `ValueReader`.
+    #[serde(with = "byte_vec")]
     pub payload: Vec<u8>,
+}
+
+/// Encodes `Vec<u8>` using MessagePack binary (`bin`) framing rather than an
+/// integer array so every payload byte takes 1 byte on the wire.
+mod byte_vec {
+    use std::fmt;
+
+    use serde::{de, Deserializer, Serializer};
+
+    pub(super) fn serialize<S: Serializer>(bytes: &[u8], serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_bytes(bytes)
+    }
+
+    pub(super) fn deserialize<'de, D: Deserializer<'de>>(
+        deserializer: D,
+    ) -> Result<Vec<u8>, D::Error> {
+        struct BytesVisitor;
+
+        impl<'de> de::Visitor<'de> for BytesVisitor {
+            type Value = Vec<u8>;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+                formatter.write_str("a byte buffer")
+            }
+
+            fn visit_bytes<E: de::Error>(self, value: &[u8]) -> Result<Self::Value, E> {
+                Ok(value.to_vec())
+            }
+
+            fn visit_byte_buf<E: de::Error>(self, value: Vec<u8>) -> Result<Self::Value, E> {
+                Ok(value)
+            }
+        }
+
+        deserializer.deserialize_byte_buf(BytesVisitor)
+    }
 }
 
 /// One incident relation of a vertex slot.

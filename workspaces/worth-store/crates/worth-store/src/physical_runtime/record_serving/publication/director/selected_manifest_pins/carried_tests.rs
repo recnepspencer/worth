@@ -321,3 +321,32 @@ fn carried_roster_cutover_work_tracks_touched_routes_not_total_routes() {
         "delta {reads_10x} vs full {full_10x}"
     );
 }
+
+#[test]
+fn carried_roster_carries_to_rejects_different_root_at_equal_generation() {
+    use worth_store_physical_format::{
+        PhysicalGeneration, PhysicalGenerationAuthority, PhysicalRootReference,
+    };
+
+    use super::carried::CarriedManifestRoster;
+
+    let authority = PhysicalGenerationAuthority::for_canonical_physical_format();
+    let cell = |root_ref: u64, generation: u64| {
+        authority
+            .root_publication_cell(PhysicalRootReference::from_raw(root_ref).unwrap())
+            .with_root_publication_generation(PhysicalGeneration::from_raw(generation).unwrap())
+    };
+    let carried = CarriedManifestRoster {
+        root: cell(2, 2),
+        tree_identity: 7,
+        pins: Vec::new(),
+    };
+    assert!(carried.carries_to(cell(2, 2), 7), "same root at same gen");
+    assert!(carried.carries_to(cell(3, 3), 7), "strictly newer gen");
+    assert!(
+        !carried.carries_to(cell(99, 2), 7),
+        "different root at equal generation must fall back to full scan"
+    );
+    assert!(!carried.carries_to(cell(1, 1), 7), "older gen");
+    assert!(!carried.carries_to(cell(3, 3), 8), "different tree");
+}

@@ -92,10 +92,14 @@ impl SlotRange {
 }
 
 /// The ascending fixed partition of `[0, total_slots)`. A domain no larger
-/// than one chunk is one chunk; an empty domain has none.
+/// than one chunk is one chunk; an empty domain or `chunk_slots == 0` has none.
 pub fn fixed_partition(total_slots: u64, chunk_slots: u64) -> impl Iterator<Item = SlotRange> {
-    let chunk_slots = chunk_slots.max(1);
-    (0..total_slots.div_ceil(chunk_slots)).filter_map(move |index| {
+    let chunks = if chunk_slots == 0 {
+        0
+    } else {
+        total_slots.div_ceil(chunk_slots)
+    };
+    (0..chunks).filter_map(move |index| {
         SlotRange::fixed_chunk_of(index * chunk_slots, total_slots, chunk_slots)
     })
 }

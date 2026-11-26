@@ -90,3 +90,94 @@ fn builder_refuses_unordered_keys_and_an_empty_directory_has_no_root() {
         Some(DirectoryBuildError::PageTooSmall)
     );
 }
+
+#[test]
+fn cursor_refuses_mismatched_child_bounds_and_non_uniform_depth_and_oversized_pages_preserve_cache()
+{
+    use super::super::member_frame::{encode_member, ChunkMemberKind};
+    use super::super::paged_directory::page::DirectoryChild;
+    use super::super::paged_directory::DirectoryPage;
+    use crate::storage::data::RelationalStorageUnavailableCause as Cause;
+
+    let store = MemberStore::default();
+    let put_page = |page: DirectoryPage<u64, u64>| {
+        let member = encode_member(ChunkMemberKind::DirectoryPage, &page, 64 * 1024).unwrap();
+        let locator = member.locator;
+        store.replace(locator, member.bytes);
+        locator
+    };
+
+    // Child claims [0, 10], but leaf only carries [0, 9].
+    let leaf = put_page(DirectoryPage::Leaf(vec![(0, 100), (9, 109)]));
+    let bad_bounds_root = put_page(DirectoryPage::Branch(vec![DirectoryChild {
+        first: 0,
+        last: 10,
+        page: leaf,
+    }]));
+    let acc = accountant(64 * 1024, 64 * 1024, 4096);
+    let cache = Arc::new(ResidentPageCache::new(
+        Arc::clone(&acc),
+        ResidencyPoolKind::Head,
+    ));
+    let bad_dir = PagedDirectory::<u64, u64>::open(
+        Some(PagedDirectoryRoot {
+            root_page: bad_bounds_root,
+            entry_count: 2,
+        }),
+        Arc::clone(&cache),
+    );
+    assert_eq!(bad_dir.get(&store, 0), Err(Cause::Damaged));
+
+    // Left child is a Leaf (depth 1), right child is Branch -> Leaf (depth 2).
+    let left_leaf = put_page(DirectoryPage::Leaf(vec![(0, 1), (1, 2)]));
+    let right_leaf = put_page(DirectoryPage::Leaf(vec![(10, 11), (11, 12)]));
+    let right_branch = put_page(DirectoryPage::Branch(vec![DirectoryChild {
+        first: 10,
+        last: 11,
+        page: right_leaf,
+    }]));
+    let ragged_root = put_page(DirectoryPage::Branch(vec![
+        DirectoryChild {
+            first: 0,
+            last: 1,
+            page: left_leaf,
+        },
+        DirectoryChild {
+            first: 10,
+            last: 11,
+            page: right_branch,
+        },
+    ]));
+    let ragged_dir = PagedDirectory::<u64, u64>::open(
+        Some(PagedDirectoryRoot {
+            root_page: ragged_root,
+            entry_count: 4,
+        }),
+        Arc::clone(&cache),
+    );
+    let mut cursor = ragged_dir.range_from(&store, 0).unwrap();
+    assert_eq!(cursor.next_entry(), Ok(Some((0, 1))));
+    assert_eq!(cursor.next_entry(), Ok(Some((1, 2))));
+    assert_eq!(cursor.next_entry(), Err(Cause::Damaged));
+
+    // Oversized page (> pool ceiling) refuses without wiping already cached pages.
+    let tiny_acc = accountant(512, 64 * 1024, 4096);
+    let tiny_cache = ResidentPageCache::<DirectoryPage<u64, u64>>::new(
+        Arc::clone(&tiny_acc),
+        ResidencyPoolKind::Head,
+    );
+    let small_leaf = put_page(DirectoryPage::Leaf(vec![(1, 2)]));
+    let huge_leaf = put_page(DirectoryPage::Leaf((0..128).map(|k| (k, k)).collect()));
+    assert!(tiny_cache.page(&store, small_leaf).is_ok());
+    assert_eq!(tiny_cache.observation().resident_pages, 1);
+    assert_eq!(
+        tiny_cache.page(&store, huge_leaf),
+        Err(Cause::MemoryExhausted)
+    );
+    assert_eq!(
+        tiny_cache.observation().resident_pages,
+        1,
+        "oversized page refusal must not evict live cached pages"
+    );
+    assert_eq!(tiny_cache.observation().evictions, 0);
+}

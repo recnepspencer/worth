@@ -90,3 +90,35 @@ fn value_reader_refuses_corrupt_and_out_of_member_values() {
         Some(ValueReadError::OutOfBounds)
     );
 }
+
+#[test]
+fn value_reader_verifies_zero_length_value_digest_and_sticks_on_corruption() {
+    let store = MemberStore::default();
+    let member = store.put_raw(b"member-bytes".to_vec());
+    let accountant = accountant(1 << 20, 1 << 20, WINDOW);
+
+    let valid_empty = ValueLocator {
+        member,
+        offset: 4,
+        length: 0,
+        value_sha256: Sha256::digest(b"").into(),
+    };
+    let mut reader = open_value_reader(&accountant, &store, valid_empty).unwrap();
+    assert_eq!(reader.next_window(), Ok(None));
+    assert_eq!(reader.next_window(), Ok(None));
+
+    let corrupt_empty = ValueLocator {
+        value_sha256: [0xaa; 32],
+        ..valid_empty
+    };
+    let mut corrupt_reader = open_value_reader(&accountant, &store, corrupt_empty).unwrap();
+    assert_eq!(
+        corrupt_reader.next_window(),
+        Err(ValueReadError::IntegrityMismatch)
+    );
+    assert_eq!(
+        corrupt_reader.next_window(),
+        Err(ValueReadError::IntegrityMismatch),
+        "corruption must remain sticky"
+    );
+}

@@ -28,10 +28,11 @@ pub(in crate::physical_runtime::record_serving::publication::director) struct Ca
 
 impl CarriedManifestRoster {
     /// Whether `current` may be derived from this roster by a delta walk.
-    /// A different tree or an older root falls back to the full rebuild.
+    /// A different tree, a different root at the same generation, or an older
+    /// root falls back to the full rebuild.
     pub(super) fn carries_to(&self, current: RootPublicationCell, tree_identity: u64) -> bool {
         self.tree_identity == tree_identity
-            && self.root.generation().get() <= current.generation().get()
+            && (self.root == current || self.root.generation().get() < current.generation().get())
     }
 }
 

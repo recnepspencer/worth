@@ -26,6 +26,14 @@ pub struct DirectoryChild<K> {
 }
 
 impl<K: DirectoryEntry + Ord, V: DirectoryEntry> DirectoryPage<K, V> {
+    /// The inclusive `[first, last]` key range covered by this canonical page.
+    pub(super) fn key_bounds(&self) -> Option<(K, K)> {
+        match self {
+            Self::Leaf(entries) => Some((entries.first()?.0, entries.last()?.0)),
+            Self::Branch(children) => Some((children.first()?.first, children.last()?.last)),
+        }
+    }
+
     /// Whether keys and child ranges are in canonical order. Pages are
     /// immutable, so this is checked once, when a page is faulted.
     fn is_canonical(&self) -> bool {

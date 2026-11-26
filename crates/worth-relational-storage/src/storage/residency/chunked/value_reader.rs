@@ -45,6 +45,8 @@ pub struct ValueReader<'loan> {
     _fill: WorkingSetCharge,
     position: u64,
     digest: Sha256,
+    /// Set once the whole value's digest has been verified against `locator`.
+    verified: bool,
     /// Set once the streamed bytes failed verification; never cleared.
     corrupt: bool,
 }
@@ -87,6 +89,7 @@ pub fn open_value_reader<'loan>(
         _fill: fill,
         position: 0,
         digest: Sha256::new(),
+        verified: false,
         corrupt: false,
     })
 }
@@ -102,13 +105,17 @@ impl ValueReader<'_> {
 
     /// The next window of the value, or `None` after the last one. The read
     /// that reaches the end verifies the whole value's digest first, so the
-    /// final window is lent only for a value proven intact.
+    /// final window (and empty-value completion) is returned only for a value
+    /// proven intact.
     pub fn next_window(&mut self) -> Result<Option<&[u8]>, ValueReadError> {
         if self.corrupt {
             return Err(ValueReadError::IntegrityMismatch);
         }
         let remaining = self.remaining();
         if remaining == 0 {
+            if !self.verified {
+                self.verify_digest()?;
+            }
             return Ok(None);
         }
         let take = remaining.min(self.window.len() as u64) as usize;
@@ -127,12 +134,18 @@ impl ValueReader<'_> {
         self.digest.update(&self.window[..take]);
         self.position += take as u64;
         if self.position == self.locator.length {
-            let digest = std::mem::take(&mut self.digest).finalize();
-            if <[u8; 32]>::from(digest) != self.locator.value_sha256 {
-                self.corrupt = true;
-                return Err(ValueReadError::IntegrityMismatch);
-            }
+            self.verify_digest()?;
         }
         Ok(Some(&self.window[..take]))
+    }
+
+    fn verify_digest(&mut self) -> Result<(), ValueReadError> {
+        let digest = std::mem::take(&mut self.digest).finalize();
+        if <[u8; 32]>::from(digest) != self.locator.value_sha256 {
+            self.corrupt = true;
+            return Err(ValueReadError::IntegrityMismatch);
+        }
+        self.verified = true;
+        Ok(())
     }
 }

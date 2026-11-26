@@ -29,6 +29,8 @@ impl BoundChunk {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ChunkCoverageRefusal {
+    /// The layout's chunk geometry is invalid (e.g. `chunk_slots == 0`).
+    InvalidLayout { chunk_slots: u64 },
     /// A chunk's binding names another range than its semantic entry.
     BindingMismatch { slot_range: SlotRange },
     /// The domain's chunks differ from its fixed partition: a gap, an
@@ -61,6 +63,11 @@ impl RegionChunkDirectory {
         relation_slots: u64,
         sealed: impl IntoIterator<Item = (ChunkSemanticEntry, ChunkLocatorBinding)>,
     ) -> Result<Self, ChunkCoverageRefusal> {
+        if layout.chunk_slots == 0 {
+            return Err(ChunkCoverageRefusal::InvalidLayout {
+                chunk_slots: layout.chunk_slots,
+            });
+        }
         let chunks = sealed
             .into_iter()
             .map(|(semantic, binding)| {

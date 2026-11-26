@@ -105,4 +105,15 @@ fn directory_admits_exact_coverage_and_refuses_every_partition_defect() {
             slot_range: foreign_binding.slot_range()
         })
     );
+    assert_eq!(fixed_partition(10, 0).next(), None);
+    let zero_layout = super::super::layout::ChunkLayout {
+        chunk_slots: 0,
+        ..LAYOUT
+    };
+    for (entities, relations) in [(0, 0), (10, 0)] {
+        assert_eq!(
+            RegionChunkDirectory::admit(zero_layout, entities, relations, []),
+            Err(ChunkCoverageRefusal::InvalidLayout { chunk_slots: 0 })
+        );
+    }
 }

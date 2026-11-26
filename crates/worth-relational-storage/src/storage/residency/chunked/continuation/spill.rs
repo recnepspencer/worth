@@ -14,7 +14,7 @@ use super::super::paged_directory::{
 use super::super::slot_projection::{AdjacencyEdge, SlotVersion};
 use super::{
     version_bytes, ContinuationEntries, ContinuationKey, ContinuationPage, ContinuationPageRef,
-    ContinuationStream, EDGE_BYTES, PAGE_FRAME_SLACK,
+    ContinuationStream, EDGE_BYTES, MAX_CONTINUATION_DIRECTORY_ENTRY_BYTES, PAGE_FRAME_SLACK,
 };
 
 /// An entry kind that a continuation page can carry.
@@ -58,11 +58,16 @@ pub struct ContinuationWriter {
 
 impl ContinuationWriter {
     pub fn new(layout: ChunkLayout) -> Result<Self, DirectoryBuildError> {
+        let directory_page_limit = layout
+            .directory_page_entries
+            .saturating_mul(MAX_CONTINUATION_DIRECTORY_ENTRY_BYTES)
+            .max(layout.continuation_page_bytes)
+            .saturating_add(PAGE_FRAME_SLACK);
         Ok(Self {
             layout,
             directory: PagedDirectoryBuilder::new(
                 layout.directory_page_entries,
-                layout.continuation_page_bytes + PAGE_FRAME_SLACK,
+                directory_page_limit,
             )?,
             pages_written: 0,
         })

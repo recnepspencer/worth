@@ -1,11 +1,16 @@
 //! The single sealing owner derives summaries before hashing and refuses an
 //! omitted kind or edge (`M3` at the writer), out-of-chunk or overlapping
 //! slots, foreign ranges and oversize versions.
+use super::super::canonical_read::ChunkResidency;
 use super::super::chunk_summary::ClaimedChunkSummaries;
+use super::super::consolidation::verify_bound_chunk;
+use super::super::layout::ChunkLayout;
 use super::super::sealing::{seal_chunk_image, ChunkSealRefusal, ChunkSealRequest};
+use super::super::slot_projection::{AdjacencyEdge, SlotVersion};
 use super::super::slot_range::{SlotDomain, SlotRange};
-use super::member_store::{edge, seal, version, MemberStore, SlotFixture, LAYOUT};
-use crate::identity::data::KindId;
+use super::member_store::{accountant, edge, seal, version, MemberStore, SlotFixture, LAYOUT};
+use crate::identity::data::{KindId, PartitionId, RelationId};
+use crate::storage::residency::working_set::ResidencyPoolKind;
 
 fn slots() -> Vec<SlotFixture> {
     vec![
@@ -122,4 +127,72 @@ fn sealing_refuses_foreign_ranges_out_of_chunk_or_overlapping_slots_and_oversize
             limit: LAYOUT.slot_inline_budget
         }
     );
+}
+
+#[test]
+fn reg8_seals_high_byte_payloads_large_edge_ids_and_multi_level_continuation_directories() {
+    let store = MemberStore::default();
+    let range = SlotRange::new(0, ChunkLayout::REG8.chunk_slots).unwrap();
+    let fixtures = vec![
+        SlotFixture {
+            slot: 1,
+            head: Some(SlotVersion {
+                kind: KindId::new(u32::MAX),
+                payload: vec![0xff; 1000],
+            }),
+            // 300 * 1000B of 0xff produces >= 75 continuation pages (> 64 directory entries).
+            history: (0..300)
+                .map(|index| {
+                    let mut payload = vec![0xff; 1000];
+                    payload[..4].copy_from_slice(&(index as u32).to_be_bytes());
+                    SlotVersion {
+                        kind: KindId::new(u32::MAX - (index % 3) as u32),
+                        payload,
+                    }
+                })
+                .collect(),
+            adjacency: Vec::new(),
+        },
+        SlotFixture {
+            slot: 2,
+            head: Some(SlotVersion {
+                kind: KindId::new(1),
+                payload: vec![0xfe; 16],
+            }),
+            history: Vec::new(),
+            adjacency: (0..300_u64)
+                .map(|index| AdjacencyEdge {
+                    relation_kind: KindId::new(u32::MAX),
+                    relation: RelationId::new(
+                        PartitionId::new(u32::MAX),
+                        u64::MAX - index,
+                        u32::MAX,
+                    ),
+                })
+                .collect(),
+        },
+    ];
+    let sealed = seal_chunk_image(
+        ChunkSealRequest {
+            layout: ChunkLayout::REG8,
+            domain: SlotDomain::Entity,
+            domain_slots: ChunkLayout::REG8.chunk_slots,
+            slot_range: range,
+            slots: Box::new(fixtures.iter().map(SlotFixture::projection)),
+            claimed: None,
+        },
+        &mut &store,
+    )
+    .expect("REG8 must seal high-byte payloads, max-width edges, and >=64 continuation pages");
+    assert!(
+        sealed.continuation_pages >= 75,
+        "expected >= 75 continuation pages (multi-level REG8 directory), got {}",
+        sealed.continuation_pages
+    );
+    let residency = ChunkResidency::new(
+        &accountant(1 << 20, 1 << 20, 4096),
+        ResidencyPoolKind::Historical,
+    );
+    verify_bound_chunk(&residency, &store, &sealed.semantic, &sealed.binding)
+        .expect("cold verification agrees with REG8 sealed commitment");
 }

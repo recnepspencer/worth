@@ -99,10 +99,18 @@ impl ResidentPage for ContinuationPage {
     }
 }
 
-/// Encoded-size estimate of one history version, used for spill decisions.
+/// Encoded-size upper bound of one history version, used for spill decisions.
+/// Binary `payload` framing takes at most 5 header bytes + `payload.len()`,
+/// plus struct and `KindId` tags (<= 11 bytes total).
 pub(super) fn version_bytes(version: &SlotVersion) -> usize {
     version.payload.len() + 16
 }
 
-/// Encoded-size estimate of one adjacency edge.
-pub(super) const EDGE_BYTES: usize = 32;
+/// Encoded-size upper bound of one adjacency edge (covers max-width integer
+/// encoding of `KindId` and `RelationId`).
+pub(super) const EDGE_BYTES: usize = 48;
+
+/// Encoded-size upper bound of one `DirectoryPage<ContinuationKey, ContinuationPageRef>`
+/// leaf or branch entry, including worst-case integer-array framing of
+/// `RelationalDurableMemberLocator::sha256`.
+pub(super) const MAX_CONTINUATION_DIRECTORY_ENTRY_BYTES: usize = 128;

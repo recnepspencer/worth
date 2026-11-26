@@ -7,10 +7,13 @@ use std::sync::Arc;
 
 use super::super::member_io::ChunkMemberSource;
 use super::super::page_cache::ResidentPageCache;
-use super::page::DirectoryPage;
+use super::page::{DirectoryChild, DirectoryPage};
 use super::DirectoryEntry;
 use crate::durability::medium::RelationalDurableMemberLocator;
 use crate::storage::data::RelationalStorageUnavailableCause as Cause;
+
+/// Upper bound on B-tree depth (a 2-way tree of `u64::MAX` entries fits in 64).
+const MAX_DIRECTORY_DEPTH: usize = 64;
 
 pub struct DirectoryCursor<'d, K: DirectoryEntry + Ord, V: DirectoryEntry> {
     cache: &'d ResidentPageCache<DirectoryPage<K, V>>,
@@ -18,6 +21,9 @@ pub struct DirectoryCursor<'d, K: DirectoryEntry + Ord, V: DirectoryEntry> {
     /// Branch pages on the current path with the index of the next child.
     parents: Vec<(Arc<DirectoryPage<K, V>>, usize)>,
     leaf: Option<(Arc<DirectoryPage<K, V>>, usize)>,
+    /// Depth (number of ancestor branch levels) of the first visited leaf,
+    /// enforced uniformly across every leaf descended later.
+    leaf_depth: Option<usize>,
 }
 
 impl<'d, K: DirectoryEntry + Ord, V: DirectoryEntry> DirectoryCursor<'d, K, V> {
@@ -32,25 +38,37 @@ impl<'d, K: DirectoryEntry + Ord, V: DirectoryEntry> DirectoryCursor<'d, K, V> {
             source,
             parents: Vec::new(),
             leaf: None,
+            leaf_depth: None,
         };
         let Some(mut locator) = root else {
             return Ok(cursor);
         };
+        let mut expected_bounds: Option<(K, K)> = None;
         loop {
             let page = cache.page(source, locator)?;
+            if let Some(bounds) = expected_bounds
+                && page.key_bounds() != Some(bounds)
+            {
+                return Err(Cause::Damaged);
+            }
             match &*page {
                 DirectoryPage::Leaf(entries) => {
+                    cursor.leaf_depth = Some(cursor.parents.len());
                     let index = entries.partition_point(|(key, _)| *key < start);
                     cursor.leaf = Some((page, index));
                     return Ok(cursor);
                 }
                 DirectoryPage::Branch(children) => {
+                    if cursor.parents.len() >= MAX_DIRECTORY_DEPTH {
+                        return Err(Cause::Damaged);
+                    }
                     let index = children.partition_point(|child| child.last < start);
                     let Some(child) = children.get(index) else {
                         // Every key is below `start`: the cursor starts exhausted.
                         return Ok(cursor);
                     };
                     locator = child.page;
+                    expected_bounds = Some((child.first, child.last));
                     cursor.parents.push((Arc::clone(&page), index + 1));
                 }
             }
@@ -85,25 +103,35 @@ impl<'d, K: DirectoryEntry + Ord, V: DirectoryEntry> DirectoryCursor<'d, K, V> {
                 continue;
             };
             self.parents.push((page, next + 1));
-            self.descend_leftmost(child.page)?;
+            self.descend_leftmost(child)?;
             return Ok(true);
         }
         Ok(false)
     }
 
-    fn descend_leftmost(
-        &mut self,
-        mut locator: RelationalDurableMemberLocator,
-    ) -> Result<(), Cause> {
+    fn descend_leftmost(&mut self, mut child: DirectoryChild<K>) -> Result<(), Cause> {
         loop {
-            let page = self.cache.page(self.source, locator)?;
+            let page = self.cache.page(self.source, child.page)?;
+            if page.key_bounds() != Some((child.first, child.last)) {
+                return Err(Cause::Damaged);
+            }
             match &*page {
                 DirectoryPage::Leaf(_) => {
+                    if self
+                        .leaf_depth
+                        .is_some_and(|depth| depth != self.parents.len())
+                    {
+                        return Err(Cause::Damaged);
+                    }
+                    self.leaf_depth = Some(self.parents.len());
                     self.leaf = Some((page, 0));
                     return Ok(());
                 }
                 DirectoryPage::Branch(children) => {
-                    locator = children.first().ok_or(Cause::Damaged)?.page;
+                    if self.parents.len() >= MAX_DIRECTORY_DEPTH {
+                        return Err(Cause::Damaged);
+                    }
+                    child = *children.first().ok_or(Cause::Damaged)?;
                     self.parents.push((Arc::clone(&page), 1));
                 }
             }
