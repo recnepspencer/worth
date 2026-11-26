@@ -17,7 +17,9 @@ use super::{
     ExecutionNameReadDenial, ExecutionNameReader, ExecutionNameResolveDenial, NameReadDependencies,
     NameResolutionCandidates,
 };
-use crate::admission::{kind_verified_resolved_name, resolved_group_handle, RequestedSubject};
+use crate::admission::{
+    kind_verified_resolved_name, resolved_group_handle, AtObservation, RequestedSubject,
+};
 
 type Resolved<G> = Result<ResolvedName<WorthQueryName<G>>, ExecutionNameResolveDenial<G>>;
 
@@ -46,9 +48,15 @@ impl ExecutionNameReader<'_> {
                 return Ok(None);
             };
             match view.group_of_member(&scheme, &identity) {
-                Some(key) => {
-                    kind_verified_resolved_name::<G>(self.runtime, &view, key, requested).map(Some)
-                }
+                Some(key) => kind_verified_resolved_name::<G>(
+                    &AtObservation {
+                        runtime: self.runtime,
+                        view: &view,
+                    },
+                    key,
+                    requested,
+                )
+                .map(Some),
                 None => Ok(None),
             }
         })??;

@@ -150,13 +150,13 @@ impl Registration<Schema> for Actor {
 fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    coupled::producer::declare(retarget::declare(stored::declare(named_read::declare(
-        outputs::sculpt::declare(refusals::declare(probe::declare(delete::declare(
-            query::member::declare(query::model::declare(edit::declare(navigation::declare(
-                schema,
+    invariant_names::declare(coupled::producer::declare(retarget::declare(
+        stored::declare(named_read::declare(outputs::sculpt::declare(
+            refusals::declare(probe::declare(delete::declare(query::member::declare(
+                query::model::declare(edit::declare(navigation::declare(schema))),
             )))),
-        )))),
-    ))))
+        ))),
+    )))
     .application_history(
         ApplicationHistoryDefinition::<Schema, History>::for_binding(
             ApplicationQueryDisclosureContract::public(),

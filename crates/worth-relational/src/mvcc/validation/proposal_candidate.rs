@@ -180,7 +180,16 @@ pub(super) fn validate(
         execution.allocation_policy(),
         crate::runtime::operation_control::interruption_event::RelationalInterruptionBoundary::ProposalValidation,
     );
-    let pending = runtime.invariant_authority().begin_proposed_state(
+    let names = mutation.proposal_names(
+        round.lineage_preparation_authority(),
+        &validation_input,
+        validation_input.naming_plan(),
+        prepared.plan.view(),
+        &identity,
+        Default::default(),
+    );
+    let authority = runtime.invariant_authority().with_names(&names);
+    let pending = authority.begin_proposed_state(
         &selected,
         mutation.state(),
         identity.proposed_version_id(),
@@ -200,7 +209,9 @@ pub(super) fn validate(
                 .then_some(prepared.plan.view().commands()),
             )
         },
-    )?;
+    );
+    let (pending, carried) = names.settle(pending);
+    let pending = pending?;
     mutation.prepare_aggregate(execution, round, selected, prepared.plan.view().commands())?;
     let aggregate_admission = mutation.complete_aggregate_draft(
         execution,
@@ -216,7 +227,16 @@ pub(super) fn validate(
         .map_or(prepared.plan.view(), |admission| {
             prepared.plan.view().with_commands(&admission.plan)
         });
-    let invariants = runtime.invariant_authority().enforce_proposed_state(
+    let names = mutation.proposal_names(
+        round.lineage_preparation_authority(),
+        &validation_input,
+        validation_input.naming_plan(),
+        prepared.plan.view(),
+        &identity,
+        carried.kept_while(aggregate_admission.is_none()),
+    );
+    let authority = runtime.invariant_authority().with_names(&names);
+    let invariants = authority.enforce_proposed_state(
         &selected,
         mutation.state(),
         pending,
@@ -227,7 +247,8 @@ pub(super) fn validate(
         mutation.aggregate_source(selected),
         execution,
         &control,
-    )?;
+    );
+    let invariants = names.settle(invariants).0?;
     Ok(storage.fill(PreparedProposalRound {
         prepared,
         mutation,

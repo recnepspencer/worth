@@ -42,6 +42,8 @@ mod field_reads;
 mod graph_member;
 pub use graph_member::WorthQueryApplicationInvariantGraphMember;
 mod interruption;
+mod naming;
+pub use naming::WorthQueryInvariantNameDenial;
 mod orbit;
 mod relation_reads;
 mod touched_entities;
@@ -139,6 +141,7 @@ pub struct WorthQueryApplicationInvariantReadView<'runtime, Schema> {
     reads: &'runtime InvariantReadObservation,
     content_fields: &'runtime super::content_fields::InvariantContentFields,
     content_decode: &'runtime super::super::value_decode::ValueDecodeState,
+    names: worth_relational::facade::runtime::CustomInvariantNameReads<'runtime>,
     _schema: PhantomData<fn() -> Schema>,
 }
 

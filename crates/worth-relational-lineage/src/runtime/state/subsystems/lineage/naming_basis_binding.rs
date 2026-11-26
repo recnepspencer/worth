@@ -44,6 +44,26 @@ impl LineageBasisView for BranchNamingBasisGuard<'_> {
 }
 
 impl BranchNamingBasisGuard<'_> {
+    /// The guarded branch's derived name index under the same read lock;
+    /// `None` before its first named lineage.
+    pub fn name_index(
+        &self,
+    ) -> Result<
+        Option<&crate::lineage::index::PersistentNameBranchIndex>,
+        &crate::lineage::index::PersistentNameIndexDenial,
+    > {
+        self.guard.name_indexes.read(&self.branch_id)
+    }
+
+    /// The latest commit whose lineage events this branch's naming basis
+    /// holds; `None` before its first. A basis read for a proposal is only
+    /// that proposal's basis while this is at or before the proposal's commit.
+    pub fn latest_event_commit(&self) -> Option<CommitId> {
+        self.guard
+            .branch_naming_state(&self.branch_id)
+            .and_then(|state| state.latest_event_commit())
+    }
+
     /// The guarded branch's group state; `None` before its first group
     /// lineage, and a refusal while it is unavailable.
     pub fn group_state(

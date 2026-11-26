@@ -15,7 +15,7 @@ use worth_relational::facade::mvcc::RelationalBranchObservation;
 use worth_relational::facade::runtime::RelationalRuntime;
 
 use super::{ExecutionNameReadDenial, NameReadDependencies};
-use crate::admission::{kind_verified_resolved_name, RequestedSubject};
+use crate::admission::{kind_verified_resolved_name, AtObservation, RequestedSubject};
 
 /// Unprivileged, dependency-tracked persistent-name reads exactly as one
 /// admitted branch observation sees them.
@@ -100,10 +100,15 @@ impl<'read> ExecutionNameReader<'read> {
     ) -> Result<WorthQueryName<K>, ExecutionNameReadDenial> {
         let branch = self.branch().clone();
         let (name, lineage) = self.with_view(|view| match view.name_of_record(record) {
-            PersistentNameOfRecord::Live { name, lineage } => {
-                kind_verified_resolved_name::<K>(self.runtime, &view, name, requested)
-                    .map(|admitted| (admitted, lineage))
-            }
+            PersistentNameOfRecord::Live { name, lineage } => kind_verified_resolved_name::<K>(
+                &AtObservation {
+                    runtime: self.runtime,
+                    view: &view,
+                },
+                name,
+                requested,
+            )
+            .map(|admitted| (admitted, lineage)),
             PersistentNameOfRecord::Ended { .. } => {
                 Err(ExecutionNameReadDenial::RecordNoLongerNamed { record })
             }

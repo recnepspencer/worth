@@ -18,7 +18,9 @@ use super::{
     ExecutionNameReadDenial, ExecutionNameReader, ExecutionNameResolveDenial, NameReadDependencies,
     NameResolutionCandidates,
 };
-use crate::admission::{kind_verified_resolved_name, verify_resolved_subject, RequestedSubject};
+use crate::admission::{
+    kind_verified_resolved_name, verify_resolved_subject, AtObservation, RequestedSubject,
+};
 
 type Resolved<H, K> = Result<ResolvedName<H>, ExecutionNameResolveDenial<K>>;
 type Candidates<K, H> = Result<NameResolutionCandidates<K, H>, ExecutionNameReadDenial>;
@@ -159,7 +161,14 @@ impl ExecutionNameReader<'_> {
                     NameResolutionDenial::UnknownName,
                 ));
             };
-            verify_resolved_subject(self.runtime, &view, key, requested)?;
+            verify_resolved_subject(
+                &AtObservation {
+                    runtime: self.runtime,
+                    view: &view,
+                },
+                key,
+                requested,
+            )?;
             let (outcome, unrecorded_carrier) = match lower_selection(&view, selection) {
                 LoweredSelection::Relational(lowered) => (view.resolve(key, &lowered), false),
                 LoweredSelection::UnrecordedCarriers(unborn) => {
@@ -234,8 +243,14 @@ impl LiftAt<'_, '_> {
         let matched = targets
             .iter()
             .map(|target| {
-                let name =
-                    kind_verified_resolved_name(self.runtime, view, target.key(), self.requested)?;
+                let name = kind_verified_resolved_name(
+                    &AtObservation {
+                        runtime: self.runtime,
+                        view,
+                    },
+                    target.key(),
+                    self.requested,
+                )?;
                 let handle =
                     handle(target).ok_or(ExecutionNameReadDenial::SubjectKindMismatch {
                         expected: self.requested.kind,
@@ -253,7 +268,16 @@ impl LiftAt<'_, '_> {
         keys: impl IntoIterator<Item = PersistentNameKey>,
     ) -> Result<Vec<WorthQueryName<K>>, ExecutionNameReadDenial> {
         keys.into_iter()
-            .map(|key| kind_verified_resolved_name(self.runtime, view, key, self.requested))
+            .map(|key| {
+                kind_verified_resolved_name(
+                    &AtObservation {
+                        runtime: self.runtime,
+                        view,
+                    },
+                    key,
+                    self.requested,
+                )
+            })
             .collect()
     }
 

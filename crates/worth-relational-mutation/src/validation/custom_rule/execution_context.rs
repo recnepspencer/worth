@@ -29,6 +29,7 @@ pub struct CustomInvariantExecutionContext<'runtime> {
     proposal_identity:
         Option<crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity>,
     work: super::CustomInvariantWorkMeter,
+    pub(super) names: super::persistent_names::InvariantNames<'runtime>,
 }
 
 pub use crate::contracts::validation::data::non_applicability::CustomInvariantNonApplicability;
@@ -170,6 +171,7 @@ impl<'runtime> CustomInvariantExecutionContext<'runtime> {
             counts,
             traversal,
             proposal_identity,
+            names: super::persistent_names::InvariantNames::new(runtime.names(), work.clone()),
             work,
         }
     }

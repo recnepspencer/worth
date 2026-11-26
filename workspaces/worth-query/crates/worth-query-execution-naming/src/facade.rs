@@ -74,6 +74,9 @@ pub use crate::birth_plan::{
 };
 pub use crate::commit_wiring::{CommittedNamedTransaction, ExecutionNamingCommitAuthority};
 pub use crate::denial::ExecutionNamingDenial;
+pub use crate::invariant_reads::{
+    invariant_entity_birth_of, invariant_entity_name_of, InvariantNameRead,
+};
 pub use crate::lowering::{LoweredExecutionGroupScheme, LoweredExecutionNameSchemeCatalog};
 pub use crate::operation_outputs::{
     admit_output_birth, admit_same_commit_names, AuthoredOperationNaming, BoundOperationNaming,

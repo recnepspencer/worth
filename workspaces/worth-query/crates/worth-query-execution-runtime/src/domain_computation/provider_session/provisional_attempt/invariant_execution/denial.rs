@@ -256,6 +256,23 @@ impl WorthQueryInvariantExecutionFailure {
         Self::native_denied(NativeDenial::AuthoredRetirement(Box::new(error)), detail)
     }
 
+    /// The naming law Relational refused while an installed invariant read
+    /// the commit's names; the commit refuses with it, ahead of any verdict.
+    pub fn persistent_name(error: worth_relational::facade::publication::PublicationError) -> Self {
+        let detail = error.detail.clone();
+        Self::native_denied(NativeDenial::PersistentName(Box::new(error)), detail)
+    }
+
+    /// The typed naming refusal [`Self::persistent_name`] carries.
+    pub fn persistent_name_refusal(
+        &self,
+    ) -> Option<&worth_relational::facade::lineage::LineageNameDenial> {
+        match self.native.as_ref()? {
+            NativeDenial::PersistentName(error) => error.lineage_name_denial(),
+            _ => None,
+        }
+    }
+
     /// Original authored retirement refusal and its affected records.
     pub fn authored_retirement_error(
         &self,

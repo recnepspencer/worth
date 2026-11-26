@@ -47,9 +47,30 @@ pub struct InvariantRuntimeView<'a> {
     relation_count: usize,
     version_depth: usize,
     snapshot_pressure: bool,
+    names: Option<&'a dyn crate::validation::custom_rule::CustomInvariantNameSource>,
 }
 
 impl<'a> InvariantRuntimeView<'a> {
+    /// This view with the owner's persistent names for the commit under
+    /// evaluation; `None` leaves installed invariants without name reads.
+    pub fn with_names<'round>(
+        &self,
+        names: Option<&'round dyn crate::validation::custom_rule::CustomInvariantNameSource>,
+    ) -> InvariantRuntimeView<'round>
+    where
+        'a: 'round,
+    {
+        let mut view: InvariantRuntimeView<'round> = self.clone();
+        view.names = names;
+        view
+    }
+
+    pub(crate) fn names(
+        &self,
+    ) -> Option<&'a dyn crate::validation::custom_rule::CustomInvariantNameSource> {
+        self.names
+    }
+
     pub fn from_inputs(inputs: InvariantRuntimeInputs<'a>) -> Self {
         Self {
             selected_registry: inputs.selected_registry,
@@ -67,6 +88,7 @@ impl<'a> InvariantRuntimeView<'a> {
             relation_count: inputs.relation_count,
             version_depth: inputs.version_depth,
             snapshot_pressure: inputs.snapshot_pressure,
+            names: None,
         }
     }
 
@@ -121,6 +143,7 @@ impl<'a> InvariantRuntimeView<'a> {
             relation_count: self.relation_count,
             version_depth: self.version_depth,
             snapshot_pressure: self.snapshot_pressure,
+            names: self.names,
         }
     }
 

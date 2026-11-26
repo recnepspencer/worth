@@ -27,6 +27,7 @@ use crate::denial::ExecutionNamingDenial;
 
 mod birth;
 mod observed;
+mod recorded_names;
 mod resolved;
 mod same_commit;
 
@@ -39,6 +40,7 @@ pub(crate) fn test_name<K>(byte: u8) -> WorthQueryName<K> {
 pub(crate) use birth::admit_birth_of;
 pub(crate) use observed::entity_scheme_subject;
 pub use observed::ObservedEntityNames;
+pub(crate) use recorded_names::{AtObservation, InInvariant, RecordedNames};
 pub(crate) use resolved::{
     kind_verified_resolved_name, resolved_group_handle, verify_resolved_subject, RequestedSubject,
 };

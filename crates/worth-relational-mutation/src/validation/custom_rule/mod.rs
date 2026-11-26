@@ -7,6 +7,7 @@ pub use worth_relational_contracts::internal_port::validation::custom_rule::inte
 pub mod read_budget;
 pub use read_budget::{CustomInvariantNativeCheckpointDenial, CustomInvariantReadBudget};
 pub mod managed_source;
+pub mod persistent_names;
 #[cfg(test)]
 pub mod provenance_decode_tests;
 pub mod registration;
@@ -23,6 +24,10 @@ pub mod work_meter;
 
 pub use execution_context::{
     CustomInvariantExecutionContext, CustomInvariantNonApplicability, CustomInvariantProvenance,
+};
+pub use persistent_names::{
+    CustomInvariantNamePosture, CustomInvariantNameReadDenial, CustomInvariantNameReads,
+    CustomInvariantNameSource, CustomInvariantNameView, CustomInvariantRecordName,
 };
 pub use registration::{
     CustomInvariantLeaseBudget, CustomInvariantRegistration, CustomInvariantRegistrationError,

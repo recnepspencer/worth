@@ -20,6 +20,7 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         setup.handler::<stored::Binding, _>(stored::Handler)?;
         setup.handler::<retarget::Binding, _>(retarget::Handler)?;
         coupled::producer::install(setup)?;
+        invariant_names::install(setup)?;
         setup.handler::<edit::member::Binding, _>(edit::member::Handler)
     }
 }
@@ -127,6 +128,16 @@ pub fn attach_as<H>(host: &Host) -> WorthQueryApplicationHistoryDocument<'_, Sch
 where
     H: ApplicationHistoryBinding<Schema, Access = query::model::Read>,
 {
+    attach_in(host)
+}
+/// Attaches history `H` to a fork of `host`'s current world, on program `P`.
+pub fn attach_in<H, P>(
+    host: &WorthQueryProgramApplicationRuntime<Schema, P>,
+) -> WorthQueryApplicationHistoryDocument<'_, Schema, H>
+where
+    H: ApplicationHistoryBinding<Schema, Access = query::model::Read>,
+    P: ApplicationProgramDefinition<Schema>,
+{
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     host.with_host_advancement(|phase| {
@@ -147,11 +158,14 @@ where
     .unwrap()
 }
 /// A description for independent comparison; it never admits an edit or owner.
-pub fn member_identity(
-    host: &Host,
+pub fn member_identity<P>(
+    host: &WorthQueryProgramApplicationRuntime<Schema, P>,
     branch: worth_query_host::facade::product::WorthQueryProductBranch,
     key: &str,
-) -> Option<(u32, u64, u32)> {
+) -> Option<(u32, u64, u32)>
+where
+    P: ApplicationProgramDefinition<Schema>,
+{
     let scope = request_scope();
     host.with_host_advancement(|phase| {
         let selected = host.on_branch(branch).select(&phase).unwrap();

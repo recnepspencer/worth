@@ -18,6 +18,7 @@ mod admission;
 mod birth_plan;
 mod commit_wiring;
 mod denial;
+mod invariant_reads;
 mod lowering;
 mod operation_outputs;
 mod tracked_resolution;

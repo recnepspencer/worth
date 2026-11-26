@@ -18,7 +18,8 @@ use worth_relational::facade::lineage::{
 
 use super::{ExecutionNameReadDenial, ExecutionNameReader, NameReadDependencies};
 use crate::admission::{
-    admit_birth_of, kind_verified_resolved_name, verify_resolved_subject, RequestedSubject,
+    admit_birth_of, kind_verified_resolved_name, verify_resolved_subject, AtObservation,
+    RequestedSubject,
 };
 use crate::operation_outputs::WorthQueryOutputBirth;
 
@@ -127,7 +128,14 @@ impl ExecutionNameReader<'_> {
                 dependencies.record_awaited_birth(&branch, *held.as_bytes());
                 return Err(ExecutionNameReadDenial::UnknownName);
             };
-            admit_birth_of(self.runtime, &view, key, requested)
+            admit_birth_of(
+                &AtObservation {
+                    runtime: self.runtime,
+                    view: &view,
+                },
+                key,
+                requested,
+            )
         })?
     }
 
@@ -158,7 +166,14 @@ impl ExecutionNameReader<'_> {
                 // A recorded parent of another kind refuses, as every read
                 // of a held name does, rather than awaiting a birth that can
                 // never be recorded.
-                verify_resolved_subject(self.runtime, &view, key, requested)?;
+                verify_resolved_subject(
+                    &AtObservation {
+                        runtime: self.runtime,
+                        view: &view,
+                    },
+                    key,
+                    requested,
+                )?;
                 match key {
                     PersistentNameKey::Entity(id) | PersistentNameKey::Relation(id) => {
                         identities.push(id);
@@ -179,9 +194,15 @@ impl ExecutionNameReader<'_> {
                 discriminator,
             );
             match view.recorded_name(requested.kind, minted.as_bytes()) {
-                Some(key) => {
-                    kind_verified_resolved_name(self.runtime, &view, key, requested).map(Some)
-                }
+                Some(key) => kind_verified_resolved_name(
+                    &AtObservation {
+                        runtime: self.runtime,
+                        view: &view,
+                    },
+                    key,
+                    requested,
+                )
+                .map(Some),
                 None => {
                     dependencies.record_awaited_birth(&branch, *minted.as_bytes());
                     Ok(None)
