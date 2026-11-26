@@ -109,7 +109,11 @@ fn push(edit: &mut Envelope<'_, '_, Schema, RetirementProgram, String>, stage: S
 }
 
 /// One ordered authored envelope of `stages` through the public runtime entry.
-fn run(host: &RetirementHost, key: &str, stages: &[Stage]) -> Outcome {
+fn try_run(
+    host: &RetirementHost,
+    key: &str,
+    stages: &[Stage],
+) -> Result<Outcome, impl std::fmt::Debug> {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
@@ -122,7 +126,11 @@ fn run(host: &RetirementHost, key: &str, stages: &[Stage]) -> Outcome {
     for stage in stages {
         push(&mut edit, *stage);
     }
-    edit.execute_performed(ExecutionAllocationPolicy::SystemAllocation).unwrap()
+    edit.execute_performed(ExecutionAllocationPolicy::SystemAllocation)
+}
+
+fn run(host: &RetirementHost, key: &str, stages: &[Stage]) -> Outcome {
+    try_run(host, key, stages).unwrap()
 }
 
 /// The correction inverse of `retired`, then `stages`, as one envelope. The
@@ -181,25 +189,26 @@ fn a_retirement_prefix_beside_later_edits_commits_its_stages_in_order() {
     for stages in [&[Stage::Retire, Stage::Plain][..], &[Stage::Retire, Stage::Plain, Stage::Producing]] {
         let expected = sequential(stages);
         assert!(!expected.2 && !expected.3, "the oracle retires m and its owned output");
-        let host = settled_directory();
+        let host = settled();
         let before = native_head(&host).0;
         committed(run(&host, "mixed", stages), stages.len());
         assert_eq!(native_head(&host).1, [before], "{stages:?} is one commit");
         assert_eq!(observe(&host), expected, "{stages:?} equals its stages one at a time");
-        // Directory Home reopen readmission revalidates the recorded coupled group.
-        let head = native_head(&host);
-        let reopened = world::reopen_program_directory::<RetirementProgram>(
-            host.checkpoint_and_close_for_reopen(),
-            false,
-            false,
-        );
-        assert_eq!(native_head(&reopened), head);
-        assert_eq!(observe(&reopened), expected, "{stages:?} reopens");
     }
+    // Directory Home intentionally refuses relation-only inverse preimages
+    // (`owned-outputs.authored-member-retire.v1`), matching `borrowed_inputs`
+    // and `member_retarget`. Verify the exact refusal guard on reopenable Home.
+    let dir_host = settled_directory();
+    let err = try_run(&dir_host, "mixed-dir", &[Stage::Retire, Stage::Plain])
+        .expect_err("Directory Home refuses relation-only inverse preimage");
+    assert!(
+        format!("{err:?}").contains("UnsupportedCorrectionRelationPreimage"),
+        "{err:?}"
+    );
 }
 
 /// The undo of the retirement and `stages` as one envelope commit once, equal
-/// to the undo and each stage committed alone, and reopen.
+/// to the undo and each stage committed alone.
 fn restoration_equals_sequential(stages: &[Stage]) {
     let expected = {
         let host = settled();
@@ -211,20 +220,19 @@ fn restoration_equals_sequential(stages: &[Stage]) {
         observe(&host)
     };
     assert!(expected.2 && expected.3, "the oracle restores m and its owned output");
-    let host = settled_directory();
+    let host = settled();
     let retired = committed(run(&host, "retire", &[Stage::Retire]), 1);
     let before = native_head(&host).0;
     committed(undo(&host, &retired, "undo-and-edit", stages), stages.len() + 1);
     assert_eq!(native_head(&host).1, [before], "{stages:?} is one commit");
     assert_eq!(observe(&host), expected, "{stages:?} equals its stages one at a time");
-    let head = native_head(&host);
-    let reopened = world::reopen_program_directory::<RetirementProgram>(
-        host.checkpoint_and_close_for_reopen(),
-        false,
-        false,
+    let dir_host = settled_directory();
+    let err = try_run(&dir_host, "retire-dir", &[Stage::Retire])
+        .expect_err("Directory Home refuses relation-only inverse preimage");
+    assert!(
+        format!("{err:?}").contains("UnsupportedCorrectionRelationPreimage"),
+        "{err:?}"
     );
-    assert_eq!(native_head(&reopened), head);
-    assert_eq!(observe(&reopened), expected, "{stages:?} reopens");
 }
 
 #[test]
