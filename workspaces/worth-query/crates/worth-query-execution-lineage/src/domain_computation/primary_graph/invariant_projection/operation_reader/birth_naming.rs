@@ -20,6 +20,7 @@ use worth_query_execution_naming::facade::{
     ExecutionNameReadDenial, InvariantNameRead, NameReadDependencies, WorthQueryOutputBirth,
 };
 use worth_query_installation::facade::{ApplicationRelationRef, ApplicationSchema, OperationReads};
+use worth_relational::facade::lineage::PersistentNameSubjectKind;
 
 use super::naming::{PersistentNameReadVeto, WorthQueryDecisionNameDenial};
 use super::WorthQueryApplicationOperationInvariantProjectionReader;
@@ -54,7 +55,7 @@ impl<Schema: ApplicationSchema, Operation>
         let answer = self.tracked_birth_read(|reader, dependencies| {
             reader.entity_birth_of::<Schema, Entity>(held, dependencies)
         });
-        self.or_pending_birth(answer, |names| {
+        self.or_pending_birth(answer, PersistentNameSubjectKind::Entity, |names| {
             candidate_entity_birth_of::<Schema, Entity>(names, held)
         })
     }
@@ -72,7 +73,7 @@ impl<Schema: ApplicationSchema, Operation>
         let answer = self.tracked_birth_read(|reader, dependencies| {
             reader.relation_birth_of::<Relation>(held, dependencies)
         });
-        self.or_pending_birth(answer, |names| {
+        self.or_pending_birth(answer, PersistentNameSubjectKind::Relation, |names| {
             candidate_relation_birth_of::<Relation>(names, held)
         })
     }
@@ -117,13 +118,14 @@ impl<Schema: ApplicationSchema, Operation>
     fn or_pending_birth<K>(
         &mut self,
         answer: BirthRead<RecordedNameBirth<K>>,
+        subject: PersistentNameSubjectKind,
         pending: impl FnOnce(
             &dyn worth_relational::facade::runtime::CustomInvariantNameSource,
         ) -> InvariantNameRead<CandidateBirth<K>>,
     ) -> Result<RecordedNameBirth<K>, Denial> {
         match answer {
             BirthRead::Settled(answer) => answer,
-            BirthRead::Awaited { refusal, veto } => match self.pending_birth(pending)? {
+            BirthRead::Awaited { refusal, veto } => match self.pending_birth(subject, pending)? {
                 Some(birth) => Ok(birth),
                 None => {
                     self.decision_facts.veto_persistent_name(veto);

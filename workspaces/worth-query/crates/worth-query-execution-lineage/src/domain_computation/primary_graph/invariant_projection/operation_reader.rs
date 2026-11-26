@@ -42,6 +42,7 @@ pub mod managed_index;
 pub mod name_owner;
 pub mod naming;
 mod pending_naming;
+pub use pending_naming::PendingNameRead;
 pub mod relation_naming;
 pub use managed_index::{
     native_index_decision_cause, WorthQueryComputationManagedIndexDenial,

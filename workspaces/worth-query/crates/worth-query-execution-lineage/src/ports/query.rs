@@ -172,6 +172,15 @@ pub trait SourceQueryReaderPort {
         read: &mut dyn FnMut(&dyn worth_relational::facade::runtime::CustomInvariantNameSource),
     ) -> Result<(), worth_relational::facade::runtime::CustomInvariantNameReadDenial>;
 
+    /// On a coupled candidate: retains a pending name or birth a decision
+    /// read (#426) with the envelope's owner, which re-verifies it at every
+    /// later append and refuses the envelope once one falsifies it. `false`
+    /// when no coupled candidate is lent to this reader.
+    fn retain_applied_pending_read(
+        &self,
+        read: crate::domain_computation::primary_graph::invariant_projection::operation_reader::PendingNameRead,
+    ) -> bool;
+
     /// Returns `(installed_schema, mutation_projection, installed_packages, predecessor_access, original_access)` as `'static` `Any` refs.
     fn observation_components_any(
         &self,

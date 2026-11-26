@@ -20,10 +20,14 @@ impl<S: ApplicationSchema> SourceQueryReaderAccess<'_, S> {
         read: &mut dyn FnMut(&dyn CustomInvariantNameSource),
     ) -> Result<(), Denial> {
         let assembly = self.applied_managed_sources.ok_or(Denial::Unavailable)?;
-        // Composing the plans spends only the request's work and memory.
+        // Composing the plans refuses a naming plan with its exact denial;
+        // any other stop only spends the request's work and memory.
         assembly
             .with_candidate_names(execution, candidate, |names| read(names))
-            .map_err(|_| Denial::WorkExhausted)?
+            .map_err(|stop| match stop.lineage_name_denial_ref() {
+                Some(denial) => Denial::Naming(denial.clone()),
+                None => Denial::WorkExhausted,
+            })?
             .ok_or(Denial::Unavailable)
     }
 }

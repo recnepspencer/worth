@@ -18,6 +18,8 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         mut batches: Vec<WorkerIntentBatch>,
         mut naming: Option<&mut crate::lineage::data::CommitNamingPlan>,
     ) -> Result<AppliedSuffix, RelationalCoupledAssemblyFailure> {
+        // The applied state changes from here on, even if this apply fails.
+        self.candidate_names.take();
         let successor = matches!(writer, SuffixWriter::Successor { .. });
         let (creator, source, custody, local_keys) = suffix_scope::scope(
             execution,

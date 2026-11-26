@@ -827,7 +827,11 @@ replay:
   over the applied candidate exactly as finalization validates and mints,
   and they seal: the record is created by this very commit, so a chain of
   coupled producers each reading what the one before it created commits in
-  one envelope. Otherwise the read refuses typed and vetoes the envelope
+  one envelope. Until the envelope completes, every later append re-checks
+  each such answer: a successor round that re-creates the record under
+  another name, or no longer bears the birth, refuses the envelope
+  (`DecisionDependencyMismatch`) with no effect. A successor round reads
+  its own chain's births as before the chain, unborn. Otherwise the read refuses typed and vetoes the envelope
   with zero effects: a record an earlier member created but named nothing
   has no name (`UnpublishedCandidateRecord`); an earlier member's naming
   plan the commit would refuse (`MissingBirth`, `DuplicateBirth`, a stale

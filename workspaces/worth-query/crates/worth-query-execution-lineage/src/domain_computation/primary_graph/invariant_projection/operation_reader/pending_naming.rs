@@ -12,9 +12,14 @@
 //!
 //! Such an answer seals. The record is created by this very commit, so its
 //! minted name and birth are immutable once the commit seals, and the read
-//! is keyed on the record's own fact (and, through it, on the member that
-//! created it); an envelope that does not commit seals nothing. Every other
-//! outcome still refuses typed and vetoes sealing:
+//! is keyed on the record's own fact; an envelope that does not commit seals
+//! nothing. Until the envelope completes, though, a successor round (#119)
+//! may re-create the same record under another name, or drop the birth: no
+//! record fact sees that. So each answer is also retained with the coupled
+//! assembly as a [`PendingNameRead`], and every later append re-verifies it
+//! against the envelope's names at the new pin; one it falsifies refuses the
+//! envelope (the `#361` group-read discipline). Every other outcome still
+//! refuses typed and vetoes sealing:
 //!
 //! - a created record no member named refuses `UnpublishedCandidateRecord`;
 //! - a refused composed plan or a stale naming basis refuses
@@ -29,8 +34,11 @@
 use worth_query_declaration::facade::application_naming::{RecordedNameBirth, WorthQueryName};
 use worth_query_execution_naming::facade::{CandidateBirth, ExecutionNameReadDenial};
 use worth_query_installation::facade::ApplicationSchema;
-use worth_relational::facade::lineage::LineageRecordTarget;
-use worth_relational::facade::runtime::{CustomInvariantNameReadDenial, CustomInvariantNameSource};
+use worth_relational::facade::lineage::{LineageRecordTarget, PersistentNameSubjectKind};
+use worth_relational::facade::runtime::{
+    CustomInvariantNameReadDenial, CustomInvariantNameSource, CustomInvariantNameView,
+    CustomInvariantRecordName,
+};
 
 use super::naming::{PersistentNameReadVeto, WorthQueryDecisionNameDenial};
 use super::WorthQueryApplicationOperationInvariantProjectionReader;
@@ -38,6 +46,39 @@ use crate::domain_computation::primary_graph::invariant_projection::read_basis::
 
 type Denial = WorthQueryDecisionNameDenial;
 type PendingRead<T> = Result<Result<T, ExecutionNameReadDenial>, CustomInvariantNameReadDenial>;
+
+/// One answer a decision read from an envelope's pending names, retained
+/// with the coupled assembly until the envelope completes.
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub enum PendingNameRead {
+    /// `record` carried the name whose digest is `name`.
+    Name {
+        record: LineageRecordTarget,
+        name: [u8; 32],
+    },
+    /// A birth of a `subject` name with digest `name` was recorded.
+    Birth {
+        subject: PersistentNameSubjectKind,
+        name: [u8; 32],
+    },
+}
+
+impl PendingNameRead {
+    /// Whether an envelope's proposed `names` still give this answer: the
+    /// record still carries exactly that name, or that birth is still
+    /// recorded (a birth's digest fixes its parts).
+    ///
+    /// Complexity: O(log r) in the envelope's r named records and births.
+    pub fn holds(&self, names: &dyn CustomInvariantNameView) -> bool {
+        match *self {
+            Self::Name { record, name } => matches!(
+                names.record_name(record),
+                CustomInvariantRecordName::Named(key) if *key.digest() == name
+            ),
+            Self::Birth { subject, name } => names.recorded_name(subject, &name).is_some(),
+        }
+    }
+}
 
 impl<Schema: ApplicationSchema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>
@@ -54,7 +95,12 @@ impl<Schema: ApplicationSchema, Operation>
             Err(unnamed)
         } else {
             match self.with_pending_names(read) {
-                Ok(Some(Ok(name))) => Ok(name),
+                Ok(Some(Ok(name))) => self
+                    .retain(PendingNameRead::Name {
+                        record,
+                        name: *name.as_bytes(),
+                    })
+                    .map(|()| name),
                 Ok(None | Some(Err(ExecutionNameReadDenial::RecordNotNamed { .. }))) => {
                     Err(unnamed)
                 }
@@ -74,12 +120,17 @@ impl<Schema: ApplicationSchema, Operation>
     /// own chain covers), so the read refuses as an unborn name.
     pub(super) fn pending_birth<K>(
         &mut self,
+        subject: PersistentNameSubjectKind,
         read: impl FnOnce(&dyn CustomInvariantNameSource) -> PendingRead<CandidateBirth<K>>,
     ) -> Result<Option<RecordedNameBirth<K>>, Denial> {
         let answer = match self.with_pending_names(read) {
-            Ok(Some(Ok((birth, record)))) => {
-                Ok((!record.is_some_and(|record| self.own_chain_covers(record))).then_some(birth))
-            }
+            Ok(Some(Ok((_, Some(record))))) if self.own_chain_covers(record) => Ok(None),
+            Ok(Some(Ok((birth, _)))) => self
+                .retain(PendingNameRead::Birth {
+                    subject,
+                    name: *birth.name().as_bytes(),
+                })
+                .map(|()| Some(birth)),
             Ok(None | Some(Err(ExecutionNameReadDenial::UnknownName))) => Ok(None),
             Ok(Some(Err(denial))) => Err(Denial::Read(denial)),
             Err(denial) => Err(denial),
@@ -116,6 +167,15 @@ impl<Schema: ApplicationSchema, Operation>
             Ok(answer) => Ok(answer),
             Err(CustomInvariantNameReadDenial::Unavailable) => Ok(None),
             Err(denial) => Err(Denial::CandidateNaming(denial)),
+        }
+    }
+
+    /// Retains `read` with the lent coupled assembly, whose every later
+    /// append re-verifies it; an answer it cannot retain refuses.
+    fn retain(&self, read: PendingNameRead) -> Result<(), Denial> {
+        match self.source_query {
+            Some(access) if access.retain_applied_pending_read(read) => Ok(()),
+            _ => Err(Denial::CandidateBasis),
         }
     }
 

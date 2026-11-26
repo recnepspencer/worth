@@ -241,7 +241,7 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
             AppendedMember::Part { position, owed, .. } => (*position, *owed, false),
             AppendedMember::Stage { position, .. } => (*position, *position, true),
         };
-        self.refuse_claimed_group_reads(candidate)?;
+        self.refuse_stale_candidate_reads(execution, candidate)?;
         self.mark_alignments(execution, candidate, &member)?;
         self.mark_selections(execution, candidate, at, at_owed, stage)?;
         if self.ledger.borrow().is_empty() {

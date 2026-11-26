@@ -202,7 +202,8 @@ envelope's commit basis and admitted only while the unpublished candidate
 leaves every record the answer rests on live at the same identity. A record
 an earlier member created and named reads the name and birth the envelope's
 commit records (`name_of`, `relation_name_of`, `birth_of`,
-`relation_birth_of`), and seals; one it created unnamed refuses
+`relation_birth_of`), and seals unless a later append (a successor round)
+changes that name or birth, which refuses the envelope; one it created unnamed refuses
 `UnpublishedCandidateRecord`, a naming plan the commit would refuse refuses
 `CandidateNaming`, one it ended refuses `EndedInCandidate`, and a resolution
 resting on an ended or unborn name refuses `CandidateNameHistory`, each

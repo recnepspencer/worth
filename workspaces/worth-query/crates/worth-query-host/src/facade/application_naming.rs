@@ -239,6 +239,9 @@ pub use worth_query_declaration::facade::application_naming::{
     Unowned, WorthQueryGroupPartition, WorthQueryName, WorthQueryNameDelegate, WorthQueryNameRole,
     WorthQueryNamedKind, WorthQuerySameCommitName,
 };
+/// The envelope naming refusal `WorthQueryDecisionNameDenial::CandidateNaming`
+/// carries, beside the denial that carries it.
+pub use worth_query_execution::facade::application_invariants::CustomInvariantNameReadDenial;
 pub use worth_query_execution::facade::application_naming::{
     AggregateGroupNamingDenial, DiscriminatorBasisDenialReason, ExecutionNameReadDenial,
     ExecutionNameReader, ExecutionNameResolveDenial, ExecutionNamingDenial, LineageNameDenial,

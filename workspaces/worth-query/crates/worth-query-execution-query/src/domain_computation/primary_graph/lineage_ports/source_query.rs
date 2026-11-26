@@ -135,6 +135,17 @@ impl<S: ApplicationSchema + 'static> SourceQueryReaderPort for SourceQueryReader
         SourceQueryReaderAccess::with_applied_candidate_names(self, execution, candidate, read)
     }
 
+    fn retain_applied_pending_read(
+        &self,
+        read: worth_query_execution_lineage::facade::primary_graph::invariant_projection::operation_reader::PendingNameRead,
+    ) -> bool {
+        let Some(participants) = self.applied_participants else {
+            return false;
+        };
+        participants.retain_pending_name_read(read);
+        true
+    }
+
     fn observation_components_any(
         &self,
     ) -> (

@@ -106,6 +106,7 @@ macro_rules! child_phase {
                         let reference = reader
                             .resolve_entity(MemberKey::at("MemberKey"), "reference".to_owned())?;
                         reader.field(&reference, MemberValue::at("MemberValue"))?;
+                        pending_read!(reader, input, $posture);
                         let prior = prior!(reader, $posture);
                         Ok::<_, HandlerExecutionDenial>((
                             Targets {
@@ -140,6 +141,14 @@ macro_rules! child_phase {
                 }
             }
         }
+    };
+}
+/// A Preserve, the child's phase in a later edit, makes the registered
+/// pending read (`pending`).
+macro_rules! pending_read {
+    ($reader:ident, $input:ident, Initial) => {};
+    ($reader:ident, $input:ident, Preserve) => {
+        super::super::pending::child_read($reader, $input.value)?
     };
 }
 macro_rules! prior {

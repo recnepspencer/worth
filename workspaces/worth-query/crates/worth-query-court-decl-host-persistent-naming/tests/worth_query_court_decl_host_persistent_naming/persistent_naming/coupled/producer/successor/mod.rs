@@ -14,6 +14,7 @@ use super::*;
 
 pub mod child;
 mod courts;
+mod pending;
 pub mod root;
 mod world;
 pub use world::{installing, SuccessorWorld};
