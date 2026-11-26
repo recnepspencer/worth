@@ -46,6 +46,13 @@ impl OwnedTestDurableMedium {
         let mut contents = self.lock();
         for member in checkpoint.members() {
             if let RelationalCheckpointMember::New { locator, bytes } = member {
+                if bytes
+                    .strip_prefix(b"WORTH-REL-CHUNK1\n")
+                    .and_then(|rest| rest.first())
+                    == Some(&4)
+                {
+                    contents.commit_index_page_digests.insert(locator.sha256);
+                }
                 contents
                     .members
                     .insert(locator.sha256, locator.length, bytes.clone());
@@ -246,6 +253,17 @@ impl OwnedTestDurableMedium {
 
     pub(crate) fn member_read_digests(&self) -> Vec<[u8; 32]> {
         self.lock().member_reads.clone()
+    }
+
+    /// Protected member reads excluding paged commit-index metadata pages (`G7`).
+    pub(crate) fn non_index_member_read_digests(&self) -> Vec<[u8; 32]> {
+        let contents = self.lock();
+        contents
+            .member_reads
+            .iter()
+            .copied()
+            .filter(|digest| !contents.commit_index_page_digests.contains(digest))
+            .collect()
     }
 
     pub(super) fn check_and_record_member_read(

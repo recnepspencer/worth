@@ -137,13 +137,24 @@ impl ColdCommitCatalog {
     /// Every cold artifact in position order. Whole-history consumers only.
     pub fn for_each_artifact(
         &self,
+        visit: impl FnMut(Arc<RelationalCommitArtifact>),
+    ) -> Result<(), Cause> {
+        self.for_each_artifact_except(|_| false, visit)
+    }
+
+    /// Every cold artifact not skipped by `skip`, in position order.
+    pub fn for_each_artifact_except(
+        &self,
+        mut skip: impl FnMut(CommitId) -> bool,
         mut visit: impl FnMut(Arc<RelationalCommitArtifact>),
     ) -> Result<(), Cause> {
         let index = self.index()?;
         for ordinal in 0..index.descriptor().pages.len() {
             let page = index.page(ordinal)?;
             for row in &page.page.rows {
-                visit(self.materialize(row)?);
+                if !skip(row.commit.commit_id) {
+                    visit(self.materialize(row)?);
+                }
             }
         }
         Ok(())

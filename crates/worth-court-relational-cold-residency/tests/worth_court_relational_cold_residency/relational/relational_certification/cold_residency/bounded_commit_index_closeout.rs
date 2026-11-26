@@ -222,6 +222,26 @@ fn damaged_commit_index_page_surfaces_typed_storage_unavailable() {
         ),
         "damaged commit-index page must return typed ColdStorageUnavailable, got {err:?}"
     );
+    // Patch-stream reads spanning the damaged page also return typed StorageUnavailable.
+    let stream_err = runtime
+        .publication()
+        .read_patch_stream(
+            request,
+            worth_relational::facade::publication::PatchStreamRequest {
+                after_position: Some(PatchStreamPosition(128)),
+                max_commits: 10,
+            },
+        )
+        .unwrap_err();
+    assert!(
+        matches!(
+            stream_err.class,
+            worth_relational::facade::publication::PatchStreamReadErrorClass::ReadRequest(
+                worth_relational::facade::transactions::RelationalExecutionDenialCause::StorageUnavailable(_)
+            )
+        ),
+        "patch stream over damaged commit-index page must return StorageUnavailable, got {stream_err:?}"
+    );
 }
 
 #[test]

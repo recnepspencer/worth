@@ -158,12 +158,15 @@ impl HistoryLedger {
             return Ok(self.commit_catalog.snapshot());
         };
         let mut artifacts = std::collections::BTreeMap::new();
-        cold.for_each_artifact(|artifact| {
-            artifacts.insert(artifact.commit_id(), artifact);
-        })?;
         for artifact in self.commit_catalog.snapshot() {
             artifacts.insert(artifact.commit_id(), artifact);
         }
+        cold.for_each_artifact_except(
+            |commit_id| self.commit_catalog.contains(commit_id),
+            |artifact| {
+                artifacts.insert(artifact.commit_id(), artifact);
+            },
+        )?;
         Ok(artifacts.into_values().collect())
     }
 
@@ -231,7 +234,7 @@ impl HistoryLedger {
         if expected.is_some_and(|expected| Arc::ptr_eq(expected, &artifact)) {
             return Ok(());
         }
-        self.commit_catalog.install_prepared_recovery(artifact);
+        self.commit_catalog.replace_source_recovery(artifact);
         Ok(())
     }
 

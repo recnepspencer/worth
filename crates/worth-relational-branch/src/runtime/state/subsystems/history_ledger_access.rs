@@ -272,11 +272,34 @@ impl HistorySubsystem {
         self.ledger.read().latest_patch_position()
     }
 
+    pub fn try_recorded_commit_at_patch_position(
+        &self,
+        position: PatchStreamPosition,
+    ) -> Result<
+        Option<CommitId>,
+        worth_relational_contracts::internal_port::storage::data::storage_unavailable::RelationalStorageUnavailableCause,
+    >{
+        self.ledger.read().try_commit_at_patch_position(position)
+    }
+
     pub fn recorded_commit_at_patch_position(
         &self,
         position: PatchStreamPosition,
     ) -> Option<CommitId> {
         self.ledger.read().commit_at_patch_position(position)
+    }
+
+    pub fn try_recorded_patch_positions_after(
+        &self,
+        after_position: Option<PatchStreamPosition>,
+        max_commits: usize,
+    ) -> Result<
+        Vec<(PatchStreamPosition, CommitId)>,
+        worth_relational_contracts::internal_port::storage::data::storage_unavailable::RelationalStorageUnavailableCause,
+    >{
+        self.ledger
+            .read()
+            .try_patch_positions_after(after_position, max_commits)
     }
 
     pub fn recorded_patch_positions_after(

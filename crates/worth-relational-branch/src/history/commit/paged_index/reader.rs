@@ -141,6 +141,35 @@ impl ColdCommitIndex {
             })
     }
 
+    /// Reads, decodes, and admits page `ordinal` without inserting it into the
+    /// resident page cache, for single-pass streaming readers.
+    pub fn read_page_uncached(&self, ordinal: usize) -> Result<ResidentCommitPage, Cause> {
+        use worth_relational_storage::internal_port::storage::residency::chunked::{
+            member_io::ChunkMemberSource as _, page_cache::ResidentPage as _,
+        };
+        let reference = self.index.pages.get(ordinal).ok_or(Cause::Damaged)?;
+        let length =
+            usize::try_from(reference.member.length).map_err(|_| Cause::MemoryExhausted)?;
+        let mut bytes = Vec::new();
+        bytes
+            .try_reserve_exact(length)
+            .map_err(|_| Cause::MemoryExhausted)?;
+        bytes.resize(length, 0);
+        let mut filled = 0;
+        while filled < length {
+            match self
+                .source
+                .read_range(reference.member, filled as u64, &mut bytes[filled..])?
+            {
+                0 => return Err(Cause::MissingMember),
+                read => filled += read,
+            }
+        }
+        let page = ResidentCommitPage::decode(&bytes, reference.member)?;
+        page.admit(reference, &self.index)?;
+        Ok(page)
+    }
+
     pub fn at_position(&self, position: PatchStreamPosition) -> Result<Option<Entry>, Cause> {
         if let Some(inline) = self.index.inline_at(position.0) {
             return Ok(Some(inline.clone()));

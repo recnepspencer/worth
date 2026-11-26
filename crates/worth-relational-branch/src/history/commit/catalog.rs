@@ -99,6 +99,12 @@ impl RelationalCommitCatalog {
     }
 
     /// Source preparation and allocation already completed outside the ledger.
+    pub fn replace_source_recovery(&mut self, artifact: Arc<RelationalCommitArtifact>) {
+        self.materializations.fetch_add(1, Ordering::Relaxed);
+        self.entries.insert(artifact.commit_id(), artifact);
+    }
+
+    /// Source preparation and allocation already completed outside the ledger.
     pub fn install_source_recovery(
         &mut self,
         expected: Option<&Arc<RelationalCommitArtifact>>,

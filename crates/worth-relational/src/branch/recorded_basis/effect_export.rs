@@ -198,7 +198,18 @@ impl RelationalRuntime {
                 let prior_commit_id = CommitId(prior_target.selected_commit_id());
                 let prior_cell = self
                     .history
-                    .commit_artifact(prior_commit_id)
+                    .try_commit_artifact(prior_commit_id)
+                    .map_err(|cause| {
+                        Refusal::Source(
+                            contracts::storage::data::storage_unavailable::RelationalStorageUnavailable {
+                                subject: contracts::storage::data::storage_unavailable::RelationalStorageSubject::Envelope(
+                                    crate::publication::patch::data::PatchStreamPosition(0),
+                                ),
+                                cause,
+                            }
+                            .into(),
+                        )
+                    })?
                     .map(|artifact| artifact.envelope_residency())
                     .or_else(|| self.history.performed_envelope_residency(prior_commit_id))
                     .ok_or(Refusal::MissingPerformedCommit {

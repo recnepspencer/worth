@@ -96,6 +96,7 @@ pub(super) struct OwnedMediumContents {
     pub(super) retain_transition_wires: bool,
     pub(super) retained_transition_wires: Vec<TransArt>,
     pub(super) forbidden_members: BTreeSet<[u8; 32]>,
+    pub(super) commit_index_page_digests: BTreeSet<[u8; 32]>,
     pub(super) member_reads: Vec<[u8; 32]>,
     pub(super) canonical_member_positions: BTreeMap<[u8; 32], PatchStreamPosition>,
     pub(super) commit_read_failures: BTreeMap<PatchStreamPosition, StorageCause>,
@@ -250,6 +251,13 @@ impl OwnedTestDurableMedium {
         let mut contents = self.lock();
         for member in checkpoint.members() {
             if let RelationalCheckpointMember::New { locator, bytes } = member {
+                if bytes
+                    .strip_prefix(b"WORTH-REL-CHUNK1\n")
+                    .and_then(|rest| rest.first())
+                    == Some(&4)
+                {
+                    contents.commit_index_page_digests.insert(locator.sha256);
+                }
                 contents
                     .members
                     .insert(locator.sha256, locator.length, bytes.clone());

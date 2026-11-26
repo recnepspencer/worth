@@ -23,7 +23,7 @@ struct CommitPageStream<'a> {
     index: &'a worth_relational_branch::internal_port::history::commit::paged_index::reader::ColdCommitIndex,
     page_ordinal: usize,
     row_offset: usize,
-    page: Option<std::sync::Arc<worth_relational_branch::internal_port::history::commit::paged_index::page::ResidentCommitPage>>,
+    page: Option<worth_relational_branch::internal_port::history::commit::paged_index::page::ResidentCommitPage>,
 }
 impl<'a> CommitPageStream<'a> {
     fn new(
@@ -47,7 +47,7 @@ impl<'a> CommitPageStream<'a> {
                     return Ok(Some(std::sync::Arc::new(row.clone())));
                 }
                 // Drop the finished page before loading the next so at most one
-                // commit-index page is borrowed at any moment.
+                // decoded commit-index page exists in memory at any moment.
                 self.page = None;
                 self.page_ordinal += 1;
                 self.row_offset = 0;
@@ -55,9 +55,11 @@ impl<'a> CommitPageStream<'a> {
             if self.page_ordinal >= self.index.descriptor().pages.len() {
                 return Ok(None);
             }
-            self.page = Some(self.index.page(self.page_ordinal).map_err(|cause| {
-                Refusal::Native(crate::durability::data::commit_index_access::stop(0, cause))
-            })?);
+            self.page = Some(self.index.read_page_uncached(self.page_ordinal).map_err(
+                |cause| {
+                    Refusal::Native(crate::durability::data::commit_index_access::stop(0, cause))
+                },
+            )?);
         }
     }
 }

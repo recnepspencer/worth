@@ -60,11 +60,13 @@ pub(crate) struct RelationalCheckpointManifestPublication {
 }
 
 impl RelationalCheckpointManifestSelection {
-    pub(crate) fn freeze_capture_base(&self) -> Result<Option<FrozenSelectedCaptureBase>, Denial> {
-        let state = self
-            .selected
+    fn lock_state(&self) -> std::sync::MutexGuard<'_, CheckpointSelectionState> {
+        self.selected
             .lock()
-            .unwrap_or_else(|cause| cause.into_inner());
+            .unwrap_or_else(|cause| cause.into_inner())
+    }
+    pub(crate) fn freeze_capture_base(&self) -> Result<Option<FrozenSelectedCaptureBase>, Denial> {
+        let state = self.lock_state();
         match (&state.directory, &state.capture_base) {
             (None, None) => Ok(None),
             (Some(edge), Some(base)) => {
@@ -90,10 +92,7 @@ impl RelationalCheckpointManifestSelection {
         original: &crate::durability::source_initial_inputs::source_admission::SourceOriginalInputs,
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<(), Refusal> {
-        let mut state = self
-            .selected
-            .lock()
-            .unwrap_or_else(|cause| cause.into_inner());
+        let mut state = self.lock_state();
         let owner = state.admission.as_ref().ok_or(Refusal::OwnerUnavailable)?;
         let base = SelectedCheckpointCaptureBase::from_bound_inputs(owner, original, request)?;
         state.capture_base = Some(base.consume(Arc::new));
@@ -107,10 +106,7 @@ impl RelationalCheckpointManifestSelection {
         >,
     ) -> Result<(), Refusal> {
         owner.consume(|owner| {
-            let mut state = self
-                .selected
-                .lock()
-                .unwrap_or_else(|cause| cause.into_inner());
+            let mut state = self.lock_state();
             if state.admission.is_some() {
                 return Err(Refusal::OwnerUnavailable);
             }
@@ -122,12 +118,7 @@ impl RelationalCheckpointManifestSelection {
         &self,
         entry: &RelationalCommitIndexEntry,
     ) -> Result<Option<CheckpointAdmittedCommit>, Refusal> {
-        let owner = self
-            .selected
-            .lock()
-            .unwrap_or_else(|cause| cause.into_inner())
-            .admission
-            .clone();
+        let owner = self.lock_state().admission.clone();
         match owner {
             Some(owner) => owner.commit(entry),
             None => Ok(None),
@@ -138,12 +129,7 @@ impl RelationalCheckpointManifestSelection {
         entry: &RelationalCommitIndexEntry,
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Option<CheckpointAdmittedCommit>, Refusal> {
-        let owner = self
-            .selected
-            .lock()
-            .unwrap_or_else(|cause| cause.into_inner())
-            .admission
-            .clone();
+        let owner = self.lock_state().admission.clone();
         match owner {
             Some(owner) => owner.commit_for_request(entry, request),
             None => Ok(None),
@@ -154,34 +140,23 @@ impl RelationalCheckpointManifestSelection {
         commit: &CheckpointAdmittedCommit,
         source: &Arc<dyn RelationalDurableColdSource>,
     ) -> bool {
-        self.selected
-            .lock()
-            .unwrap_or_else(|cause| cause.into_inner())
+        self.lock_state()
             .admission
             .as_ref()
             .is_some_and(|binding| binding.matches_source(commit, source))
     }
     pub fn snapshot(&self) -> Option<Arc<RelationalCheckpointDirectory>> {
-        self.selected
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
+        self.lock_state()
             .directory
             .as_ref()
             .and_then(NativeCheckpointDirectoryEdge::snapshot)
     }
     pub fn acknowledged_index_definition_frontier(&self) -> u64 {
-        self.selected
-            .lock()
-            .unwrap_or_else(|error| error.into_inner())
-            .acknowledged_index_definition_frontier
+        self.lock_state().acknowledged_index_definition_frontier
     }
     pub fn detached(&self) -> Self {
         // Pointer and completed semantic frontier come from ONE owner observation.
-        let state = self
-            .selected
-            .lock()
-            .unwrap_or_else(|error| error.into_inner())
-            .clone();
+        let state = self.lock_state().clone();
         Self {
             selected: Arc::new(Mutex::new(state)),
         }
@@ -332,23 +307,41 @@ impl RelationalCheckpointManifestPublication {
     pub(crate) fn rebind_cold_catalog(
         &self,
         directory: &Arc<RelationalCheckpointDirectory>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        context: &mut worth_execution::MapKernelContext<'_, '_>,
     ) -> Result<(), Ack> {
         let cold = self
             .selection
             .selected
             .lock()
-            .unwrap_or_else(|error| error.into_inner())
+            .unwrap_or_else(|e| e.into_inner())
             .cold_catalog
             .as_ref()
             .and_then(Weak::upgrade);
-        if let Some(cold) = cold {
-            for artifact in cold.live_artifacts() {
-                let cell = artifact.envelope_residency();
-                if let Some((entry, _)) = cell.source_placement()
-                    && entry.position <= directory.manifest.covered_position
-                {
-                    let _displaced = cell.install_selected(entry, directory.clone())?;
-                }
+        let Some(cold) = cold else {
+            return Ok(());
+        };
+        let target = Arc::as_ptr(directory) as *const ();
+        for artifact in cold.live_artifacts() {
+            execution.check_live().map_err(Ack::Stopped)?;
+            if context.has_accounting() {
+                context.checkpoint(1).map_err(Ack::Stopped)?;
+            } else {
+                context.poll().map_err(Ack::Stopped)?;
+            }
+            let cell = artifact.envelope_residency();
+            if cell
+                .selected_directory()
+                .is_some_and(|dir| Arc::as_ptr(&dir) as *const () == target)
+            {
+                continue;
+            }
+            if let Some((entry, _)) = cell.source_placement()
+                && entry.position <= directory.manifest.covered_position
+            {
+                // Displaced prior directory remains pinned in `retired` until `retired.advance`.
+                let mut displaced = cell.install_selected(entry, directory.clone())?;
+                displaced.retire_journal_source(Some(directory.source.as_ref()))?;
             }
         }
         Ok(())

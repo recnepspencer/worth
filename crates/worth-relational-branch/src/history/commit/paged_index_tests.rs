@@ -344,4 +344,9 @@ fn damaged_pages_and_descriptors_refuse_without_panicking() {
     assert!(outside.validate().is_err());
     let reader = ColdCommitIndex::open(Arc::new(index), members);
     assert_eq!(reader.at_position(PatchStreamPosition(301)).unwrap(), None);
+    // Single-pass uncached page reads verify and decode without pinning cache slots.
+    let uncached = reader.read_page_uncached(0).unwrap();
+    assert_eq!(uncached.page.rows.len(), 128);
+    assert_eq!(reader.observation().resident_pages, 0);
+    assert_eq!(reader.observation().faults, 0);
 }
