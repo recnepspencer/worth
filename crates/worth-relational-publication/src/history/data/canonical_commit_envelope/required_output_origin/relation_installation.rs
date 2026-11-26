@@ -6,7 +6,6 @@ use worth_relational_branch::internal_port::history::data::canonical_commit_enve
 use worth_relational_storage::internal_port::storage::overlay::current_access::CurrentPartitionAccess;
 use contracts::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_execution::MapKernelContext;
-use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 
 /// Prior edges retain native before-write fences; only actual candidate changes
 /// can update or retire them. New edges were captured from real allocations.
@@ -24,14 +23,12 @@ pub(super) fn continue_relations(
     use worth_relational_storage::internal_port::storage::overlay::{
         current_relation_partition_source_for_slot, OverlayStateView,
     };
-    let after_image = OverlayStateView::new(basis.owner_inner().root.as_ref(), state);
+    let after_image = OverlayStateView::new(basis, state);
     for relation in &prior.relations {
         context
             .checkpoint(2 + envelope.patch.authoritative_record_patches.len() as u64)
             .map_err(origin_request)?;
         let before = basis
-            .owner_inner()
-            .root
             .get_current_partition(relation.id.partition_id)
             .ok_or_else(|| {
                 contracts::transactions::data::outcomes::transaction_commit_error::origin_denial(

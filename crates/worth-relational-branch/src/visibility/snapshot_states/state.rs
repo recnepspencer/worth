@@ -117,6 +117,14 @@ impl SnapshotStateBasis {
         }
     }
 
+    /// The same selection with a fresh residency for one read operation.
+    pub fn reading(&self) -> Self {
+        match self {
+            Self::Exact(basis) => Self::Exact(basis.reading()),
+            Self::Historical(basis) => Self::Historical(basis.reading()),
+        }
+    }
+
     pub fn root_version(&self) -> Option<VersionId> {
         self.root().and_then(|root| root.storage_version())
     }
@@ -130,4 +138,119 @@ pub struct SnapshotState {
     pub pinned_partitions: BTreeMap<PartitionId, SnapshotPartitionPins>,
     pub pinned_entity_count: usize,
     pub pinned_relation_count: usize,
+}
+
+/// A selected state lends partitions through its basis' own read residency.
+impl crate::storage::overlay::PartitionAccess for SnapshotStateBasis {
+    fn get_partition(&self, id: PartitionId) -> Option<&crate::storage::overlay::PartitionState> {
+        match self.probe_full_partition(id) {
+            crate::storage::residency::PartitionProbe::Resident(partition) => Some(partition),
+            _ => None,
+        }
+    }
+    fn probe_full_partition(
+        &self,
+        id: PartitionId,
+    ) -> crate::storage::residency::PartitionProbe<'_> {
+        self.root()
+            .map_or(crate::storage::residency::PartitionProbe::Absent, |root| {
+                root.probe_full_region(id)
+            })
+    }
+    fn demand_full_partition(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        id: PartitionId,
+    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
+        self.root()
+            .map_or(Ok(()), |root| root.demand_full_region_cached(execution, id))
+    }
+}
+
+impl crate::storage::overlay::CurrentPartitionAccess for SnapshotStateBasis {
+    fn get_current_partition(
+        &self,
+        id: PartitionId,
+    ) -> Option<crate::storage::residency::RelationalRegionHeadView<'_>> {
+        self.root()?.accepted_head_region_view(id)
+    }
+    fn probe_head_partition(
+        &self,
+        id: PartitionId,
+    ) -> crate::storage::residency::PartitionHeadProbe<'_> {
+        self.root().map_or(
+            crate::storage::residency::PartitionHeadProbe::Absent,
+            |root| root.probe_head_region(id),
+        )
+    }
+    fn demand_head_partition(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        id: PartitionId,
+    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
+        self.root()
+            .map_or(Ok(()), |root| root.demand_head_region_cached(execution, id))
+    }
+    fn partition_ids(&self) -> Vec<PartitionId> {
+        self.root()
+            .map(|root| root.partition_ids_iter().collect())
+            .unwrap_or_default()
+    }
+    fn partition_ids_iter(&self) -> Box<dyn Iterator<Item = PartitionId> + '_> {
+        match self.root() {
+            Some(root) => Box::new(root.partition_ids_iter()),
+            None => Box::new(std::iter::empty()),
+        }
+    }
+    fn partition_ids_with_memory(
+        &self,
+        memory: &mut dyn crate::storage::overlay::PartitionIdMemory,
+    ) -> Result<Vec<PartitionId>, crate::storage::overlay::PartitionIdsDenial> {
+        let Some(root) = self.root() else {
+            return Ok(Vec::new());
+        };
+        crate::storage::overlay::collect_partition_ids(
+            root.region_count(),
+            root.partition_ids_iter(),
+            memory,
+        )
+    }
+}
+
+impl SnapshotState {
+    /// The same derived state with a fresh basis residency for one read.
+    pub fn reading(&self) -> Self {
+        Self {
+            basis: self.basis.reading(),
+            ..self.clone()
+        }
+    }
+
+    /// The same pins read through `basis`, the exact selection they were
+    /// derived from, whose residency the caller already demanded.
+    pub fn within(self, basis: crate::history::retention::VisibilitySnapshotBasis) -> Self {
+        debug_assert_eq!(
+            /* Proof: cache keys bind the exact selection, so a state resolved for a basis shares its key. */
+            self.basis.key(),
+            *basis.key()
+        );
+        Self {
+            basis: SnapshotStateBasis::Exact(basis),
+            ..self
+        }
+    }
+
+    /// The same pins read through `basis`, the historical selection they were
+    /// derived from, whose residency the caller already demanded.
+    pub fn within_historical(self, basis: HistoricalVisibilityBasis) -> Self {
+        debug_assert_eq!(
+            /* Proof: cache keys bind the exact historical selection, so a state resolved for a basis shares its key. */
+            self.basis.key(),
+            VisibilitySnapshotStateKey::historical(&basis)
+        );
+        Self {
+            basis: SnapshotStateBasis::Historical(basis),
+            ..self
+        }
+    }
 }

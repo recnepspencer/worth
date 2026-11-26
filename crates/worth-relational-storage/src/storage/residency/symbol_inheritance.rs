@@ -158,32 +158,81 @@ impl SymbolAdmissionInheritance {
         (self.owned.clone(), self.changes.owned.as_ref())
     }
 }
-impl RelationalRegionRetention {
-    pub(super) fn inherit_symbols(&self, previous: &Self, changes: Arc<RegionSymbolChanges>) {
-        let basis = if let Some(lease) = previous.admitted_full_lease() {
+/// The publishing lease of a freshly sealed successor region.
+pub(super) enum PublishedRegionLease {
+    Head(RelationalResidencyLease<Head>),
+    Full(RelationalResidencyLease<Full>),
+}
+
+impl PublishedRegionLease {
+    /// Inherit the predecessor closure `scope` admitted for `previous`.
+    pub(super) fn inherit_symbols(
+        &self,
+        previous: &RelationalRegionRetention,
+        scope: &operation_residency::OperationResidency,
+        changes: Arc<RegionSymbolChanges>,
+    ) {
+        let basis = if let Some(lease) = previous.admitted_full_lease(scope) {
             Some(SymbolAdmissionBasis::full(&lease))
         } else {
             previous
-                .accepted_head_lease()
+                .accepted_head_lease(scope)
                 .map(|lease| SymbolAdmissionBasis::head(&lease))
         };
         if let Some(basis) = basis {
             let basis = basis.prepared(changes, None);
-            if let Some(lease) = self.admitted_full_lease() {
-                basis.install_full(&lease);
-            } else if let Some(lease) = self.accepted_head_lease() {
-                basis.install_head(&lease);
+            match self {
+                Self::Full(lease) => basis.install_full(lease),
+                Self::Head(lease) => basis.install_head(lease),
             }
         }
     }
-    pub fn admit_own_symbols(
+
+    pub(super) fn admit_own_symbols(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     ) -> Result<(), RelationalResidencyDemandFailure> {
-        if let Some(lease) = self.admitted_full_lease() {
+        match self {
+            Self::Full(lease) => lease.admit_symbols(execution, symbols),
+            Self::Head(lease) => lease.admit_owned_symbols(execution, symbols),
+        }
+    }
+
+    pub(super) fn into_retention(self) -> RelationalRegionRetention {
+        match self {
+            Self::Full(lease) => RelationalRegionRetention::from_lease(lease),
+            Self::Head(lease) => RelationalRegionRetention::from_head_lease(lease),
+        }
+    }
+}
+
+impl RelationalRegionRetention {
+    /// Admit the symbols of a freshly published, still-unbacked resident image
+    /// without retaining its lease.
+    pub fn admit_published_symbols(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
+    ) -> Result<(), RelationalResidencyDemandFailure> {
+        if let Some(lease) = self.cell().lease_resident_full()? {
             lease.admit_symbols(execution, symbols)
-        } else if let Some(lease) = self.accepted_head_lease() {
+        } else if let Some(lease) = self.cell().lease_resident_head()? {
+            lease.admit_owned_symbols(execution, symbols)
+        } else {
+            Ok(())
+        }
+    }
+
+    pub fn admit_own_symbols(
+        &self,
+        scope: &operation_residency::OperationResidency,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
+    ) -> Result<(), RelationalResidencyDemandFailure> {
+        if let Some(lease) = self.admitted_full_lease(scope) {
+            lease.admit_symbols(execution, symbols)
+        } else if let Some(lease) = self.accepted_head_lease(scope) {
             lease.admit_owned_symbols(execution, symbols)
         } else {
             Ok(())

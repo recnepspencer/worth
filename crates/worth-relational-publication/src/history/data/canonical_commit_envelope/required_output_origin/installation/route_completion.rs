@@ -234,7 +234,7 @@ pub(super) fn install_route(
             )?)
         };
         worth_relational_branch::internal_port::history::data::publication_relations::validate(
-        &basis.owner_inner().root,
+        &basis.root_read(),
         Some(state),
         (*envelope.owner_required_output_origin()).as_deref().unwrap(/* Proof: This method assigns Some(required_output_origin) immediately above and borrows it without an intervening take or mutation. */ ),
         Some(current),

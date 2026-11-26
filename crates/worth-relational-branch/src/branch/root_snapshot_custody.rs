@@ -29,6 +29,17 @@ impl VisibilityProjectionView {
         }
     }
 
+    /// The selected root's partitions, admitted by this view's own read.
+    pub(crate) fn selected_partitions(
+        &self,
+    ) -> Option<&dyn crate::storage::overlay::PartitionAccess> {
+        let basis = self.snapshot_basis();
+        basis
+            .root()
+            .is_some()
+            .then_some(basis as &dyn crate::storage::overlay::PartitionAccess)
+    }
+
     pub(crate) fn retain_selected_root(&self) -> Option<Arc<RelationalBranchRoot>> {
         match self.snapshot_basis() {
             SnapshotStateBasis::Exact(basis) => Some(basis.retain_root()),
@@ -46,12 +57,17 @@ impl ResidentVisibilitySnapshotBasis {
 #[doc(hidden)]
 pub trait VisibilityProjectionViewOwnerPort: Sized {
     fn selected_root(&self) -> Option<&RelationalBranchRoot>;
+    fn selected_partitions(&self) -> Option<&dyn crate::storage::overlay::PartitionAccess>;
     fn retain_selected_root(&self) -> Option<Arc<RelationalBranchRoot>>;
 }
 
 impl VisibilityProjectionViewOwnerPort for VisibilityProjectionView {
     fn selected_root(&self) -> Option<&RelationalBranchRoot> {
         self.selected_root()
+    }
+
+    fn selected_partitions(&self) -> Option<&dyn crate::storage::overlay::PartitionAccess> {
+        self.selected_partitions()
     }
 
     fn retain_selected_root(&self) -> Option<Arc<RelationalBranchRoot>> {

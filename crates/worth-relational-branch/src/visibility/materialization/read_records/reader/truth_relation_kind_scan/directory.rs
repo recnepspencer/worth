@@ -16,11 +16,22 @@ impl ProjectionRecordReader<'_> {
         let mut scan =
             RelationKindScan::with_limit(maximum, maximum.is_some(), charge, Some(memory));
         let registry = source.registry();
+        // Rolling one-region window (Store M4 D7), as for entity kind scans.
+        let mut window = None;
         for id in source.relation_ids(kind, partition) {
             scan.examine_slot()?;
-            let head = source
-                .demand_head(execution, id.partition_id)
-                .map_err(NativeScanStop::Request)?;
+            if window.as_ref().map(|(region, _)| *region) != Some(id.partition_id) {
+                // Release the previous borrow before demanding the next region.
+                drop(window.take());
+                let lease = source
+                    .borrow_head(execution, id.partition_id)
+                    .map_err(NativeScanStop::Request)?;
+                window = Some((id.partition_id, lease));
+            }
+            let head = window.as_ref().map(|(_, lease)| lease.head_view()).expect(
+                /* Proof: The window was filled for this exact partition immediately above. */
+                "window holds the current region",
+            );
             if head
                 .relation_arena()
                 .get(&id)

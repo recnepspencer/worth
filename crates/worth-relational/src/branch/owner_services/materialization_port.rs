@@ -71,10 +71,7 @@ impl RelationalMaterializationPort {
             .ok_or(RelationalMaterializationError::SourceCommitMismatch)?;
         let records = crate::storage::residency::probe_full(
             execution,
-            &basis
-                .owner_inner()
-                .root
-                .symbol_admitted_projection(&runtime.services.symbols),
+            &basis.symbol_admitted_projection(&runtime.services.symbols),
             |state| {
                 source_generated_manifest(
                     state,

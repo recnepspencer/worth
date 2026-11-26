@@ -21,7 +21,7 @@ impl RelationalPreparationRuntime {
             (None, Some(_)) => None,
             (None, None) => {
                 crate::runtime::home_program_transition::retain_root_execution_contracts(
-                    &basis.owner_inner().root,
+                    &basis.root_read(),
                 )
             }
         };

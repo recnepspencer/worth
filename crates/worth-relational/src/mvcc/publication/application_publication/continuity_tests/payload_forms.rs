@@ -241,8 +241,7 @@ fn query_shaped_struct_birth_optional_clear_and_fieldless_incidence_keep_warm_an
     let (_, installed) = receipt.issue_application_publication_owner();
     let basis = test_owner_main_basis(&cold).unwrap();
     basis
-        .owner_inner()
-        .root
+        .root_read()
         .demand_regions_full(
             execution,
             &cold.services.symbols,
@@ -250,8 +249,6 @@ fn query_shaped_struct_birth_optional_clear_and_fieldless_incidence_keep_warm_an
         )
         .unwrap();
     let partition = basis
-        .owner_inner()
-        .root
         .partition_state(PartitionId::main())
         .expect("fixture root has admitted Full custody")
         .unwrap();

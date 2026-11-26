@@ -22,8 +22,11 @@ impl SymbolPublicationAdmission {
             .clone();
         let key = SymbolPublicationKey::new();
         let mut regions = BTreeMap::new();
+        // The prepared root's fresh regions are unbacked resident images.
+        let read = root.read();
         for (id, _) in change.partitions() {
-            let lease = root
+            let _ = read.probe_head_region(id);
+            let lease = read
                 .accepted_head_region_witness(id)
                 .map_err(missing)?
                 .ok_or_else(|| missing(id))?;

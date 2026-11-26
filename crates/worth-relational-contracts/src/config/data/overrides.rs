@@ -56,6 +56,7 @@ pub struct StorageConfigOverride {
     pub adjacency_policy: Option<AdjacencyPolicy>,
     pub cross_context_policy: Option<CrossContextPolicy>,
     pub cascade_delete_policy: Option<CascadeDeletePolicy>,
+    pub residency_budget: Option<super::residency_budget::ResidencyBudget>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]

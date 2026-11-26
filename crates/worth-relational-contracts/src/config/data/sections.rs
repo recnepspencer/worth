@@ -60,6 +60,8 @@ pub struct StorageConfig {
     pub adjacency_policy: AdjacencyPolicy,
     pub cross_context_policy: CrossContextPolicy,
     pub cascade_delete_policy: CascadeDeletePolicy,
+    /// Bounded working set for cold-backed regions; None keeps them resident.
+    pub residency_budget: Option<super::residency_budget::ResidencyBudget>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

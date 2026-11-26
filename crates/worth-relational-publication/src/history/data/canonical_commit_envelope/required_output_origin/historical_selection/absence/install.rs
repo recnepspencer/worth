@@ -3,7 +3,7 @@ use worth_relational_contracts::internal_port as contracts;
 use super::super::super::*;
 use super::super::records;
 use worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::historical_selection::absence::CanonicalHistoricalOutputAbsence;
-use worth_relational_branch::internal_port::branch::basis::{AdmittedRelationalBranchBasis, AdmittedRelationalBranchBasisFieldsPort as _};
+use worth_relational_branch::internal_port::branch::basis::{AdmittedRelationalBranchBasis};
 use worth_relational_branch::internal_port::history::data::required_output_positions::RequiredOutputPublicationPositions;
 use contracts::identity::data::primitives::VersionId;
 use worth_relational_storage::internal_port::storage::overlay::record_observation::{observe_entity_metadata, observe_relation_metadata};
@@ -23,7 +23,7 @@ pub(in crate::internal_port::history::data::canonical_commit_envelope::required_
     lease: Option<&ExecutionResourceLease<'_>>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<CanonicalHistoricalOutputAbsence, TransactionCommitError> {
-    let overlay = OverlayStateView::new(basis.owner_inner().root.as_ref(), working);
+    let overlay = OverlayStateView::new(basis, working);
     for member in original
         .members
         .iter()

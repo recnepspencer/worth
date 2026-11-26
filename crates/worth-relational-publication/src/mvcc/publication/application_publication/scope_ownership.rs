@@ -75,8 +75,6 @@ impl RelationalInstalledApplicationPublicationAuthority {
         };
         if self.source_scope_ownership.scope_kind(producer).is_some() {
             basis
-                .owner_inner()
-                .root
                 .demand_full_partition(execution, meaning.source_scope.partition_id)
                 .map_err(super::custody::execution_stop)?;
         }

@@ -47,7 +47,11 @@ impl DurabilityRecoveryAuthority<'_> {
             ));
         }
         crate::history::data::validate_retired_codec_closure(
-            execution, &before, &after, retirement, activation,
+            execution,
+            &before.read(),
+            &after.read(),
+            retirement,
+            activation,
         )
         .map_err(|stop| match stop {
             crate::history::data::CodecRetirementClosureStop::Request(cause) => {

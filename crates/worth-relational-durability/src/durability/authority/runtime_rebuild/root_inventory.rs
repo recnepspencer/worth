@@ -58,6 +58,8 @@ pub struct RecoveredRootInventory {
     directory: Option<Weak<crate::durability::data::RelationalCheckpointDirectory>>,
     empty: Vec<RecoveredRootImage>,
     _sharing_memory: Option<worth_execution::ExecutionMemoryReservation>,
+    /// Historical images readmitted from the checkpoint join this pool.
+    historical_working_set: Option<Arc<worth_relational_storage::internal_port::storage::residency::working_set::WorkingSetAccountant>>,
 }
 
 impl RecoveredRootInventory {
@@ -72,6 +74,15 @@ impl RecoveredRootInventory {
         }
         inventory.install_checkpoint_headers(checkpoint)?;
         Ok(inventory)
+    }
+
+    /// Bind historical root images this inventory readmits to `accountant`.
+    pub fn with_historical_working_set(
+        mut self,
+        accountant: Option<Arc<worth_relational_storage::internal_port::storage::residency::working_set::WorkingSetAccountant>>,
+    ) -> Self {
+        self.historical_working_set = accountant;
+        self
     }
 
     pub fn publication_observations(

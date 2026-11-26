@@ -72,7 +72,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 producer,
                 branch,
                 lifecycle,
-                basis,
+                basis: std::sync::Mutex::new(basis),
                 query: *source.query_identity().as_bytes(),
                 root: source.source_root(),
                 parameters: Arc::clone(source.retained_parameters()),
@@ -99,16 +99,86 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             })
             .collect::<Result<Vec<_>, _>>()?;
         let mut _pin_guards = Vec::new();
+        let mut basis_override = None;
         if let Some(recording) = readmission.recording.get() {
-            let mut required = Vec::with_capacity(1 + sources.len());
-            required.push(recording.basis);
-            required.extend(sources.iter().copied());
-            _pin_guards.reserve(required.len());
-            for commit in required {
+            let recorded_basis = recording.basis();
+            _pin_guards.reserve(1 + sources.len());
+            let basis_guard = match self
+                .runtime
+                .recovered_outputs
+                .try_retain_obligation_basis_in_flight(
+                    recorded_basis,
+                    Arc::clone(&recording.history),
+                ) {
+                Some(guard) => guard,
+                None => {
+                    let resolved = readmission
+                        .retained_program_basis()
+                        .and_then(|basis| {
+                            let selected = basis.selected_commit();
+                            (selected.owner_identity().durable() == Some(recorded_basis.owner())
+                                && selected.ordinal() == recorded_basis.ordinal())
+                            .then(|| basis.product_observation().clone())
+                        })
+                        .map(Ok)
+                        .unwrap_or_else(|| {
+                            self.readmit_output_observation(
+                                execution,
+                                recorded_basis,
+                                &recording.branch,
+                            )
+                        });
+                    match resolved {
+                        Ok(observation) => self
+                            .runtime
+                            .recovered_outputs
+                            .pin_obligation_basis_in_flight(
+                                recorded_basis,
+                                observation,
+                                Arc::clone(&recording.history),
+                            ),
+                        Err(denial)
+                            if denial.kind()
+                                == WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable
+                                && !readmission.durable_pending() =>
+                        {
+                            let observation = self.observe_live_output_branch_head(
+                                execution,
+                                &recording.branch,
+                                recording.lifecycle,
+                                recorded_basis.owner(),
+                            )?;
+                            let live_basis = DurableCompositeCommitIdentity::from_recorded(
+                                recorded_basis.owner(),
+                                observation.selected_commit().ordinal(),
+                            );
+                            basis_override = Some(live_basis);
+                            self.runtime
+                                .recovered_outputs
+                                .try_retain_obligation_basis_in_flight(
+                                    live_basis,
+                                    Arc::clone(&recording.history),
+                                )
+                                .unwrap_or_else(|| {
+                                    self.runtime
+                                        .recovered_outputs
+                                        .pin_obligation_basis_in_flight(
+                                            live_basis,
+                                            observation,
+                                            Arc::clone(&recording.history),
+                                        )
+                                })
+                        }
+                        Err(denial) => return Err(denial),
+                    }
+                }
+            };
+            _pin_guards.push(basis_guard);
+            for commit in &sources {
                 let guard = match self
                     .runtime
                     .recovered_outputs
-                    .try_retain_obligation_basis_in_flight(commit, Arc::clone(&recording.history))
+                    .try_retain_obligation_basis_in_flight(*commit, Arc::clone(&recording.history))
                 {
                     Some(guard) => guard,
                     None => {
@@ -124,14 +194,14 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                             .unwrap_or_else(|| {
                                 self.readmit_output_observation(
                                     execution,
-                                    commit,
+                                    *commit,
                                     &recording.branch,
                                 )
                             })?;
                         self.runtime
                             .recovered_outputs
                             .pin_obligation_basis_in_flight(
-                                commit,
+                                *commit,
                                 observation,
                                 Arc::clone(&recording.history),
                             )
@@ -140,7 +210,13 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 _pin_guards.push(guard);
             }
         }
-        readmission.retain_durable(execution, sources, prerequisites, Vec::new())?;
+        readmission.retain_durable(
+            execution,
+            basis_override,
+            sources,
+            prerequisites,
+            Vec::new(),
+        )?;
         Ok(())
     }
 }

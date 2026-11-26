@@ -127,10 +127,11 @@ impl RelationalRootRegion {
     }
 
     /// A cold region refuses rather than reading as absent.
-    pub(super) fn resident_partition(
-        &self,
-    ) -> Result<&PartitionState, crate::storage::data::RelationalStorageUnavailable> {
-        self.partition.try_admitted_partition()?.ok_or(
+    pub(super) fn resident_partition<'s>(
+        &'s self,
+        scope: &'s crate::storage::residency::OperationResidency,
+    ) -> Result<&'s PartitionState, crate::storage::data::RelationalStorageUnavailable> {
+        self.partition.try_admitted_partition(scope)?.ok_or(
             crate::storage::data::RelationalStorageUnavailable {
                 subject: crate::storage::data::RelationalStorageSubject::Region(self.partition_id),
                 cause: crate::storage::data::RelationalStorageUnavailableCause::SourceUnavailable,

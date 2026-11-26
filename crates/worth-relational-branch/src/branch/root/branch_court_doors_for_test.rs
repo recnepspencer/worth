@@ -13,7 +13,8 @@ impl RelationalBranchRoot {
         symbols: &crate::symbols::data::StringInterner,
     ) -> Option<Arc<Self>> {
         let region = self.regions.get(entity.partition_id)?;
-        let mut partition = region.resident_partition().ok()?.clone();
+        let scope = crate::storage::residency::OperationResidency::new();
+        let mut partition = region.resident_partition(&scope).ok()?.clone();
         if !partition.corrupt_entity_field_for_test(execution, entity, locator, replacement) {
             return None;
         }

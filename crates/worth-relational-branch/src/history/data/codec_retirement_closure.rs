@@ -90,9 +90,10 @@ pub fn derive_codec_retirement_closure<'r>(
     {
         return Err("codec provenance requires the current recovered native basis".into());
     }
+    // Recovery-lane whole-root admission lives in this basis' transaction
+    // residency, released with the basis rather than retained by the root.
     basis
-        .inner
-        .root
+        .root_read()
         .demand_all_full(execution, runtime.input.projection.symbols)
         .map_err(|failure| CodecRetirementClosureStop::Request(failure.into()))?;
     let result = execution
@@ -122,7 +123,7 @@ fn derive_metered(
     {
         return Err("codec provenance requires the current recovered native basis".into());
     }
-    let root = &basis.inner.root;
+    let root = &basis.root_read();
     for locus in changed_fields {
         charge(context, locus.field_key.as_str().len())?;
         if !matches!(

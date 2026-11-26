@@ -24,6 +24,7 @@ impl super::HistoricalVisibilityBasis {
                 source_version,
             },
             root: Some(std::sync::Arc::new(root)),
+            residency: Default::default(),
         }
     }
 }

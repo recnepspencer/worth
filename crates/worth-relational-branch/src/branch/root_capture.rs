@@ -97,7 +97,7 @@ pub(super) fn build_incremental_regions(
     issuer: &RelationalBranchRootIdentityIssuer,
     root_id: u64,
     published_delta: &RelationalPublishedPartitionDelta,
-    previous: &RelationalBranchRoot,
+    previous: &super::RelationalRootRead<'_>,
     symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     schema: &Arc<super::RelationalBranchRootSchemaAuthority>,
     change: Option<&Arc<crate::branch::maintenance::CommitChange>>,
@@ -123,6 +123,7 @@ pub(super) fn build_incremental_regions(
                 execution,
                 crate::storage::residency::RegionCaptureBasis {
                     retention: &prior.partition,
+                    scope: previous.residency(),
                     directory: &prior.directory,
                     inventory: prior.allocation_inventory().map_err(|_| {
                         RelationalBranchRootCaptureDenial::AllocationAccountingOverflow(
@@ -161,7 +162,7 @@ pub(super) fn build_incremental_regions(
         .map_err(|failure| super::super::root_region::capture_failure(partition_id, failure))?;
         prepared
             .retention
-            .admit_own_symbols(execution, symbols)
+            .admit_published_symbols(execution, symbols)
             .map_err(|failure| {
                 super::super::root_region::capture_failure(partition_id, failure.into())
             })?;

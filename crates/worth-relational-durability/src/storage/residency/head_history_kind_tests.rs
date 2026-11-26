@@ -30,10 +30,14 @@ fn a_cached_head_guard_refuses_after_full_demand_proves_region_damage() {
     cold.source = Some(source.clone());
     let cell = RelationalRegionResidency::cold(cold).unwrap();
     let retained = RelationalRegionRetention::new(cell, None);
-    retained.demand_head_cached(execution, 1 << 24).unwrap();
-    let accepted = retained.admitted_head_view().unwrap();
+    let scope =
+        worth_relational_storage::internal_port::storage::residency::OperationResidency::new();
+    retained
+        .demand_head_cached(&scope, execution, 1 << 24)
+        .unwrap();
+    let accepted = retained.admitted_head_view(&scope).unwrap();
     let worth_relational_storage::internal_port::storage::residency::demand_failure::RelationalResidencyDemandFailure::StorageUnavailable(failure) =
-        retained.demand_full(execution, 1 << 24).unwrap_err()
+        retained.demand_full(&scope, execution, 1 << 24).unwrap_err()
     else {
         panic!("missing named history must be a storage refusal")
     };
@@ -43,10 +47,12 @@ fn a_cached_head_guard_refuses_after_full_demand_proves_region_damage() {
         accepted.entity(fixture.entity).is_some(),
         "an already borrowed immutable view remains valid"
     );
-    assert!(matches!(retained.demand_head_cached(execution, 1 << 24),
-        Err(worth_relational_storage::internal_port::storage::residency::demand_failure::RelationalResidencyDemandFailure::StorageUnavailable(retry)) if retry == failure));
     assert!(
-        retained.admitted_head_view().is_none(),
+        matches!(retained.demand_head_cached(&worth_relational_storage::internal_port::storage::residency::OperationResidency::new(), execution, 1 << 24),
+        Err(worth_relational_storage::internal_port::storage::residency::demand_failure::RelationalResidencyDemandFailure::StorageUnavailable(retry)) if retry == failure)
+    );
+    assert!(
+        retained.admitted_head_view(&worth_relational_storage::internal_port::storage::residency::OperationResidency::new()).is_none(),
         "a probe must miss rather than accept a new damaged view"
     );
     assert!(matches!(retained.cell().capture_checkpoint(execution,

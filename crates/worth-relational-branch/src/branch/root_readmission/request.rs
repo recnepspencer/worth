@@ -102,15 +102,16 @@ fn bind_original(
         }),
         _memory: memory,
     };
-    root.content = prior_content
+    let content = prior_content
         .reconstruct_original(
             lane,
             execution,
             root.schema_authority.registry(),
             &incoming,
-            &root,
+            &root.read(),
             crate::identity::data::VersionId(storage_version),
         )
         .map_err(RelationalBranchRootCaptureDenial::Content)?;
+    root.content = content;
     Ok(Arc::new(root))
 }

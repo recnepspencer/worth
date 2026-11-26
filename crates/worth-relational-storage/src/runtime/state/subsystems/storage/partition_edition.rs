@@ -35,9 +35,17 @@ pub type PartitionMap = crate::storage::substrate::SharedMap<
 /// reader and it is the writer that pays, once, and only while observed. Read
 /// paths must pin exactly one edition for a whole traversal; read-modify-read
 /// loops must drop theirs before each write and take a fresh one after.
+///
+/// Each acquisition owns one operation's residency: clones of an acquired
+/// edition share it, and dropping the last clone releases every lease the
+/// traversal admitted (Store M4 D1). Readers always take a fresh
+/// [`acquired`](Self::acquired) edition; only the mirror's own edition admits
+/// into its entries' owner slots, which drop with each replaced entry.
 #[derive(Clone, Debug, Default)]
 pub struct PartitionEdition {
     partitions: Arc<PartitionMap>,
+    /// `None` only for the mirror's own edition, whose entries keep owner slots.
+    residency: Option<Arc<crate::storage::residency::OperationResidency>>,
 }
 
 impl PartitionEdition {
@@ -63,10 +71,43 @@ impl PartitionEdition {
         Ok(())
     }
 
+    /// The mirror's own edition over `partitions`; readers use [`Self::acquired`].
     pub fn new(partitions: PartitionMap) -> Self {
         Self {
             partitions: Arc::new(partitions),
+            residency: None,
         }
+    }
+
+    /// The same frozen spine with a fresh, empty operation residency.
+    pub fn acquired(&self) -> Self {
+        Self {
+            partitions: self.partitions.clone(),
+            residency: Some(Default::default()),
+        }
+    }
+
+    fn custody<'s>(
+        &'s self,
+        region: &'s RelationalRegionRetention,
+    ) -> crate::storage::residency::ResidencyCustody<'s> {
+        match &self.residency {
+            Some(scope) => crate::storage::residency::ResidencyCustody::Operation(scope),
+            None => region.mirror_custody(),
+        }
+    }
+
+    fn region(
+        &self,
+        id: PartitionId,
+    ) -> Result<&RelationalRegionRetention, crate::storage::data::RelationalStorageUnavailable>
+    {
+        self.partitions
+            .get(&id)
+            .ok_or(crate::storage::data::RelationalStorageUnavailable {
+                subject: crate::storage::data::RelationalStorageSubject::Region(id),
+                cause: crate::storage::data::RelationalStorageUnavailableCause::SourceUnavailable,
+            })
     }
 
     /// Retain Full custody already admitted by an operation, without storage I/O.
@@ -80,7 +121,7 @@ impl PartitionEdition {
     > {
         self.partitions
             .get(&id)
-            .map(|region| region.pin_lease())
+            .map(|region| region.pin_lease(self.custody(region)))
             .transpose()
     }
 
@@ -91,17 +132,13 @@ impl PartitionEdition {
         let Some(region) = self.partitions.get(&id) else {
             return Ok(None);
         };
-        region.try_admitted_partition()?.map(Some).ok_or(
-            crate::storage::data::RelationalStorageUnavailable {
+        region
+            .try_admitted_partition(self.custody(region))?
+            .map(Some)
+            .ok_or(crate::storage::data::RelationalStorageUnavailable {
                 subject: crate::storage::data::RelationalStorageSubject::Region(id),
                 cause: crate::storage::data::RelationalStorageUnavailableCause::SourceUnavailable,
-            },
-        )
-    }
-
-    /// Pure read-only peek of an already-accepted Full mirror partition (no lease install).
-    pub fn peek_accepted_full_partition(&self, id: PartitionId) -> Option<&PartitionState> {
-        self.partitions.get(&id)?.accepted_full_partition()
+            })
     }
 
     /// Pure read-only peek of a mirror partition's Head residency (no lease install).
@@ -113,7 +150,8 @@ impl PartitionEdition {
         use crate::storage::residency::PartitionHeadProbe as Probe;
         match self.partitions.get(&id) {
             None => Probe::Absent,
-            Some(region) => match region.peek_head_view_with_symbols(symbols) {
+            Some(region) => match region.peek_head_view_with_symbols(self.custody(region), symbols)
+            {
                 Some(view) => Probe::Resident(view),
                 None => Probe::Cold,
             },
@@ -129,10 +167,12 @@ impl PartitionEdition {
         use crate::storage::residency::PartitionProbe as Probe;
         match self.partitions.get(&id) {
             None => Probe::Absent,
-            Some(region) => match region.peek_full_partition_with_symbols(symbols) {
-                Some(partition) => Probe::Resident(partition),
-                None => Probe::Cold,
-            },
+            Some(region) => {
+                match region.peek_full_partition_with_symbols(self.custody(region), symbols) {
+                    Some(partition) => Probe::Resident(partition),
+                    None => Probe::Cold,
+                }
+            }
         }
     }
 
@@ -140,7 +180,7 @@ impl PartitionEdition {
         &self,
     ) -> Result<ResidentPartitionEdition, crate::storage::data::RelationalStorageUnavailable> {
         self.cells()
-            .map(|(id, region)| Ok((id, region.pin_lease()?)))
+            .map(|(id, region)| Ok((id, region.pin_lease(self.custody(region))?)))
             .collect::<Result<BTreeMap<_, _>, _>>()
             .map(|leases| ResidentPartitionEdition::new(self.clone(), leases))
     }
@@ -154,17 +194,14 @@ impl PartitionEdition {
         id: PartitionId,
     ) -> Result<RelationalResidencyLease<Full>, crate::storage::data::RelationalStorageUnavailable>
     {
-        self.partitions
-            .get(&id)
-            .ok_or(crate::storage::data::RelationalStorageUnavailable {
-                subject: crate::storage::data::RelationalStorageSubject::Region(id),
-                cause: crate::storage::data::RelationalStorageUnavailableCause::SourceUnavailable,
-            })?
-            .pin_lease()
+        let region = self.region(id)?;
+        region.pin_lease(self.custody(region))
     }
 
     pub fn admitted_full_lease(&self, id: PartitionId) -> Option<RelationalResidencyLease<Full>> {
-        self.partitions.get(&id)?.admitted_full_lease()
+        self.partitions
+            .get(&id)
+            .and_then(|region| region.admitted_full_lease(self.custody(region)))
     }
 
     pub fn resident_head_lease(
@@ -174,13 +211,8 @@ impl PartitionEdition {
         RelationalResidencyLease<crate::storage::residency::Head>,
         crate::storage::data::RelationalStorageUnavailable,
     > {
-        self.partitions
-            .get(&id)
-            .ok_or(crate::storage::data::RelationalStorageUnavailable {
-                subject: crate::storage::data::RelationalStorageSubject::Region(id),
-                cause: crate::storage::data::RelationalStorageUnavailableCause::SourceUnavailable,
-            })?
-            .pin_head_lease()
+        let region = self.region(id)?;
+        region.pin_head_lease(self.custody(region))
     }
 
     pub fn demand_partition(
@@ -197,6 +229,7 @@ impl PartitionEdition {
             .get(&id)
             .map(|region| {
                 region.demand_full(
+                    self.custody(region),
                     execution,
                     crate::storage::residency::history_capture_bound::FULL_HISTORY_READ_LIMIT,
                 )
@@ -218,6 +251,7 @@ impl PartitionEdition {
             .get(&id)
             .map(|region| {
                 region.demand_head(
+                    self.custody(region),
                     execution,
                     crate::storage::residency::history_capture_bound::FULL_HISTORY_READ_LIMIT,
                 )
@@ -256,6 +290,7 @@ impl PartitionEdition {
         let mut leases = BTreeMap::new();
         for (id, region) in self.cells() {
             let lease = region.demand_full(
+                self.custody(region),
                 execution,
                 crate::storage::residency::history_capture_bound::FULL_HISTORY_READ_LIMIT,
             )?;
@@ -302,7 +337,7 @@ impl crate::storage::overlay::CurrentPartitionAccess for PartitionEdition {
     ) -> Option<crate::storage::residency::RelationalRegionHeadView<'_>> {
         self.partitions
             .get(&id)
-            .and_then(|region| region.admitted_head_view())
+            .and_then(|region| region.admitted_head_view(self.custody(region)))
     }
     fn probe_head_partition(
         &self,
@@ -312,7 +347,7 @@ impl crate::storage::overlay::CurrentPartitionAccess for PartitionEdition {
         match self.partitions.get(&id) {
             None => Probe::Absent,
             Some(region) => region
-                .admitted_head_view()
+                .admitted_head_view(self.custody(region))
                 .map_or(Probe::Cold, Probe::Resident),
         }
     }
@@ -325,6 +360,7 @@ impl crate::storage::overlay::CurrentPartitionAccess for PartitionEdition {
             .map_err(crate::storage::residency::RelationalResidencyDemandFailure::Request)?;
         if let Some(region) = self.partitions.get(&id) {
             region.demand_head_cached(
+                self.custody(region),
                 execution,
                 crate::storage::residency::history_capture_bound::FULL_HISTORY_READ_LIMIT,
             )?;

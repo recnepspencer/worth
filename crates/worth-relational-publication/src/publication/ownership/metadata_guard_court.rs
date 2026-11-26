@@ -144,8 +144,7 @@ pub fn inspect_metadata_writes(
                 },
                 RecordRef::Relation(id) => {
                     let endpoints = basis
-                        .owner_inner()
-                        .root
+
                         .get_current_partition(id.partition_id)
                         .and_then(|p| p.relation_arena().get(id))
                         .and_then(|r| r.extra().endpoints.clone())

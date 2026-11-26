@@ -102,8 +102,6 @@ pub fn readmit_canonical_publication(
     };
     for member in &origin.members {
         basis
-            .owner_inner()
-            .root
             .demand_full_partition(execution, member.id.partition_id)
             .map_err(|stop| {
                 custody::execution_stop(
@@ -113,8 +111,6 @@ pub fn readmit_canonical_publication(
     }
     for relation in &origin.relations {
         basis
-            .owner_inner()
-            .root
             .demand_full_partition(execution, relation.id.partition_id)
             .map_err(|stop| {
                 custody::execution_stop(
@@ -125,8 +121,6 @@ pub fn readmit_canonical_publication(
     for relation in &origin.relations {
         for endpoint in [relation.source, relation.target] {
             basis
-                .owner_inner()
-                .root
                 .demand_head_partition(execution, endpoint.partition_id)
                 .map_err(|stop| {
                     custody::execution_stop(

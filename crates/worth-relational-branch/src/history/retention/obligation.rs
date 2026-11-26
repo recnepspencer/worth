@@ -107,8 +107,12 @@ impl RelationalRetainedHistoricalRoot {
             })
     }
 
-    pub fn projection_root(&self) -> SnapshotProjectionRoot<'_> {
-        self.root.project_snapshot()
+    /// A projection whose admissions live in the reading `residency`.
+    pub fn projection_root_within<'a>(
+        &'a self,
+        residency: &'a crate::storage::residency::OperationResidency,
+    ) -> SnapshotProjectionRoot<'a> {
+        self.root.project_snapshot_within(residency)
     }
 
     pub fn root(&self) -> &Arc<RelationalBranchRoot> {

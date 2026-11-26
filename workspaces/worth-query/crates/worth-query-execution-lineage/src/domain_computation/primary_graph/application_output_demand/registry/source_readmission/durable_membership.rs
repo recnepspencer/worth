@@ -34,12 +34,26 @@ pub struct DurableDemandRecording {
     pub query: [u8; 32],
     pub branch: String,
     pub lifecycle: u64,
-    pub basis: DurableCompositeCommitIdentity,
+    pub basis: std::sync::Mutex<DurableCompositeCommitIdentity>,
     pub root: worth_relational::facade::identity::EntityId,
     pub parameters: Arc<crate::domain_computation::primary_graph::application_query::WorthQueryRetainedObservedParameters>,
     pub scope: Arc<crate::domain_computation::primary_graph::WorthQueryObservedScopeSelector>,
 }
 impl DurableDemandRecording {
+    pub fn basis(&self) -> DurableCompositeCommitIdentity {
+        *self
+            .basis
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
+
+    pub fn set_basis(&self, basis: DurableCompositeCommitIdentity) {
+        *self
+            .basis
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = basis;
+    }
+
     pub fn capture(&self) -> Result<QueryOutputDemandObligation, WorthQueryOutputDemandDenial> {
         let mut root = [0; 16];
         root[..4].copy_from_slice(&self.root.partition_value().to_le_bytes());
@@ -72,7 +86,7 @@ impl DurableDemandRecording {
             producer: self.producer.clone(),
             query: self.query,
             branch: self.branch.clone(),
-            basis: self.basis,
+            basis: self.basis(),
             root,
             parameters,
             scope,
@@ -86,10 +100,12 @@ impl RequiredOutputReadmission {
     pub fn retain_durable(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
+        basis_override: Option<DurableCompositeCommitIdentity>,
         mut sources: Vec<DurableCompositeCommitIdentity>,
         mut prerequisites: Vec<NonZeroU64>,
         mut checkpoints: Vec<Vec<u8>>,
-    ) -> Result<Option<NonZeroU64>, WorthQueryOutputDemandDenial> {
+    ) -> Result<Option<(NonZeroU64, DurableCompositeCommitIdentity)>, WorthQueryOutputDemandDenial>
+    {
         let Some(recording) = self.recording.get() else {
             return Ok(None);
         };
@@ -107,7 +123,7 @@ impl RequiredOutputReadmission {
                 checkpoints.clone(),
             );
             match result {
-                Ok(()) => return Ok(Some(held.position)),
+                Ok(()) => return Ok(Some((held.position, recording.basis()))),
                 Err(cause) => {
                     let absent = !held.history.output_demand_retained(held.position);
                     if absent && matches!(cause,
@@ -126,6 +142,9 @@ impl RequiredOutputReadmission {
         prerequisites.sort_unstable();
         prerequisites.dedup();
         let mut row = recording.capture()?;
+        if let Some(basis) = basis_override {
+            row.basis = basis;
+        }
         row.performed_sources = sources;
         row.prerequisites = prerequisites;
         checkpoints.sort_unstable();
@@ -143,7 +162,17 @@ impl RequiredOutputReadmission {
         let Some(retained) = retained else {
             return Ok(None);
         };
+        let basis = if let Some(basis) = basis_override {
+            recording.set_basis(basis);
+            basis
+        } else {
+            recording.basis()
+        };
         let position = retained.position;
+        *self
+            .recorded_prerequisites
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = None;
         *membership = Some(DurableDemandMembership {
             history: Arc::clone(&recording.history),
             position,
@@ -155,7 +184,7 @@ impl RequiredOutputReadmission {
                 "required output retention",
             ));
         }
-        Ok(Some(position))
+        Ok(Some((position, basis)))
     }
     pub fn rejoin_durable(&self) -> Result<(), WorthQueryOutputDemandDenial> {
         let Some(recording) = self.recording.get() else {
@@ -178,7 +207,8 @@ impl RequiredOutputReadmission {
             *self
                 .recorded_prerequisites
                 .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner) = Some(row.prerequisites);
+                .unwrap_or_else(std::sync::PoisonError::into_inner) =
+                (!row.prerequisites.is_empty()).then_some(row.prerequisites);
             *held = Some(DurableDemandMembership {
                 history: Arc::clone(&recording.history),
                 position: row.acquire_position,
@@ -192,12 +222,14 @@ impl RequiredOutputReadmission {
             .durable
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let completed = !history.output_demand_retained(position);
         *self
             .recorded_prerequisites
             .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner) =
-            history.output_demand(position).map(|row| row.prerequisites);
-        let completed = !history.output_demand_retained(position);
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = (!completed)
+            .then(|| history.output_demand(position).map(|row| row.prerequisites))
+            .flatten()
+            .filter(|prerequisites| !prerequisites.is_empty());
         *held = Some(DurableDemandMembership {
             history,
             position,
@@ -216,12 +248,15 @@ impl RequiredOutputReadmission {
         self.durable_position().is_some()
     }
     pub fn complete_durable(&self) {
-        if let Some(membership) = self
+        let held = self
             .durable
             .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .as_ref()
-        {
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        *self
+            .recorded_prerequisites
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = None;
+        if let Some(membership) = held.as_ref() {
             membership.completed();
         }
     }

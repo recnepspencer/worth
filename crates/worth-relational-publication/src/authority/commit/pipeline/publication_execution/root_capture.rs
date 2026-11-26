@@ -62,6 +62,7 @@ impl<Attach: FnOnce(&PreparedRelationalBranchRootCapture)> PublicationRootCaptur
             selected_branch_state.state(),
             &published_partition_delta,
             selected_branch_state.root(),
+            binding.residency(),
             Arc::clone(&envelope),
             envelope.owner_content(),
             schema_registry,

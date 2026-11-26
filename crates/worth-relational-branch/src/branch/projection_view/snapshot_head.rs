@@ -1,35 +1,43 @@
-//! A point read borrows only the selected partition's Head custody.
+//! A point read borrows only the selected partition's Head custody, admitted
+//! into the reading operation's residency.
 use crate::identity::data::PartitionId;
 use crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable;
 use crate::storage::residency::{
-    Head, RelationalRegionHeadView, RelationalRegionRetention, RelationalResidencyDemandFailure,
-    RelationalResidencyLease,
+    Head, OperationResidency, RelationalRegionHeadView, RelationalRegionRetention,
+    RelationalResidencyDemandFailure, RelationalResidencyLease,
 };
 use worth_execution::ExecutionRequest;
 
 pub struct SelectedSnapshotHead<'selected> {
     partition: PartitionId,
     retention: Option<&'selected RelationalRegionRetention>,
+    residency: &'selected OperationResidency,
 }
 
 impl<'selected> SelectedSnapshotHead<'selected> {
     pub(in crate::internal_port::branch) fn new(
         partition: PartitionId,
         retention: Option<&'selected RelationalRegionRetention>,
+        residency: &'selected OperationResidency,
     ) -> Self {
         Self {
             partition,
             retention,
+            residency,
         }
     }
 
     pub fn view(&self) -> Option<RelationalRegionHeadView<'selected>> {
-        self.retention?.accepted_head_view()
+        self.retention?.accepted_head_view(self.residency)
     }
 
     pub fn witness(&self) -> Result<Option<RelationalResidencyLease<Head>>, PartitionId> {
         self.retention
-            .map(|retention| retention.accepted_head_lease().ok_or(self.partition))
+            .map(|retention| {
+                retention
+                    .accepted_head_lease(self.residency)
+                    .ok_or(self.partition)
+            })
             .transpose()
     }
 
@@ -38,7 +46,7 @@ impl<'selected> SelectedSnapshotHead<'selected> {
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<Option<RelationalResidencyLease<Head>>, RelationalResidencyDemandFailure> {
         self.retention
-            .map(|retention| retention.demand_head(execution, 1 << 30))
+            .map(|retention| retention.demand_head(self.residency, execution, 1 << 30))
             .transpose()
     }
 

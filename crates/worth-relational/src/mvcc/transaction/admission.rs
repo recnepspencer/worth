@@ -238,7 +238,8 @@ impl crate::runtime::RelationalRuntime {
             content: Default::default(),
             symbols: services.symbols.clone(),
             read_leases: Default::default(),
-            basis: basis.clone(),
+            // Each transaction admits into its own residency (Store M4 D1).
+            basis: basis.for_operation(),
             mutation_authority: crate::branch::issue_relational_branch_mutation_authority(),
             transaction_id: services.next_transaction_id(),
             intent,

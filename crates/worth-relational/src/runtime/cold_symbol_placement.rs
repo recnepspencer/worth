@@ -120,8 +120,10 @@ impl super::RelationalRuntime {
                     .branch_cell(&id)
                     .and_then(|cell| cell.root())
                     .expect("placement retains each live branch root");
+                let read = root.read();
                 for partition_id in root.partition_ids() {
-                    root.accepted_head_region_witness(partition_id)
+                    let _ = read.probe_head_region(partition_id);
+                    read.accepted_head_region_witness(partition_id)
                         .expect("placement starts resident")
                         .expect("enumerated actual region")
                         .admit_cold_placement_symbols_for_test(
@@ -135,7 +137,10 @@ impl super::RelationalRuntime {
             let mirror = self.acquire_partition_edition();
             for (_, region) in mirror.cells() {
                 region
-                    .accepted_head_lease()
+                    .cell()
+                    .lease_resident_head()
+                    .ok()
+                    .flatten()
                     .expect("placement starts with a resident mirror")
                     .admit_cold_placement_symbols_for_test(lane, execution, &self.services.symbols)
                     .expect("real mirror symbol admission");

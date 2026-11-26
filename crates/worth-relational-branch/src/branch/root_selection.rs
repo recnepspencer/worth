@@ -24,7 +24,12 @@ impl SelectedRelationalBranchState {
         &'read self,
         symbols: &'read crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     ) -> crate::branch::symbol_read::SymbolAdmittedRootRead<'read> {
-        self.state().root().symbol_admitted_projection(symbols)
+        let state = self.state();
+        crate::branch::symbol_read::SymbolAdmittedRootRead::new(
+            state.root.regions_for_projection(),
+            symbols,
+            &state.residency,
+        )
     }
 
     pub fn from_owner_basis(
@@ -45,7 +50,8 @@ impl SelectedRelationalBranchState {
     pub fn from_admitted_basis(
         basis: &crate::branch::basis::AdmittedRelationalBranchBasis,
     ) -> Self {
-        let state = RelationalBranchRootState::new(basis.inner.root.clone());
+        let state =
+            RelationalBranchRootState::within(basis.inner.root.clone(), basis.residency.clone());
         match basis.descriptor().reference().target() {
             FoundationalBranchTarget::Empty => Self::Empty(state),
             FoundationalBranchTarget::Basis(_) => Self::Committed(state),

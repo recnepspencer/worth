@@ -44,8 +44,9 @@ impl RelationalRegionSourceWalk {
         }
     }
     /// Exactly one actual radix node; original set ownership prevents any
-    /// popped Arc from destroying a final node or region payload here.
-    pub fn advance(&mut self, retire_native_leases: bool) -> RelationalRegionSourceWalkProgress {
+    /// popped Arc from destroying a final node or region payload here. Root
+    /// regions hold no leases, so the walk has no native count to retire.
+    pub fn advance(&mut self) -> RelationalRegionSourceWalkProgress {
         use RelationalRegionSourceWalkProgress as Progress;
         if self.length == 0 {
             return Progress::Complete;
@@ -60,15 +61,10 @@ impl RelationalRegionSourceWalk {
             .expect("original occupied radix frame");
         if depth == PARTITION_KEY_BITS {
             return match &node.leaf {
-                Some(RelationalPersistentRegionLeaf::Present(original)) => {
-                    if retire_native_leases {
-                        original.region.partition.retire_native_leases();
-                    }
-                    Progress::Region(
-                        PartitionId(prefix),
-                        original.region.partition.cell().clone(),
-                    )
-                }
+                Some(RelationalPersistentRegionLeaf::Present(original)) => Progress::Region(
+                    PartitionId(prefix),
+                    original.region.partition.cell().clone(),
+                ),
                 Some(RelationalPersistentRegionLeaf::Removed(_)) | None => Progress::Advanced,
             };
         }

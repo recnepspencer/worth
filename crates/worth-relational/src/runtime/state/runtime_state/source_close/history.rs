@@ -71,7 +71,7 @@ impl NativeHistorySourceRetirement {
             return Ok(false);
         }
         if let Some(regions) = &mut self.regions {
-            match regions.advance(self.pass.retires()) {
+            match regions.advance() {
                 Walk::Advanced => {}
                 Walk::Region(_, cell) => {
                     self.cell = Some(NativeRegionSourceRetirement::new(cell, self.pass))

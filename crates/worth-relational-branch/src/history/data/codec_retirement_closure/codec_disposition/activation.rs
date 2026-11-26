@@ -22,12 +22,13 @@ pub(super) fn validate(
     charge(context, root.entity_slot_count().saturating_add(1))?;
     // Kind is immutable for this exact native generation. Its value at the
     // retirement is reconstructed below, independently of today's program.
+    let root = root.read();
     root.demand_regions_full(
         &runtime.execution(),
         runtime.input.projection.symbols,
-        std::iter::once(id.partition_id),
+        [id.partition_id],
     )
-    .map_err(|failure| Stop::Request(failure.into()))?;
+    .map_err(|failure| super::super::request(failure))?;
     let kind = root
         .partition_state(id.partition_id)?
         .and_then(|partition| partition.entity_arena.get(&id))

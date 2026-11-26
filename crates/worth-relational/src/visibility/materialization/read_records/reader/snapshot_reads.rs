@@ -13,7 +13,6 @@ use crate::visibility::snapshot_states::{
 use worth_relational_branch::internal_port::mvcc::observation::RelationalBranchObservationOwnerPort as _;
 use worth_relational_branch::internal_port::snapshots::data::SnapshotHandleFieldsPort as _;
 use worth_relational_branch::internal_port::visibility::snapshot_read_view::RelationalReadViewFieldsPort as _;
-use worth_relational_branch::internal_port::visibility::snapshot_states::retained_state_building::RelationalBranchObservationOwnerPort as _;
 
 impl<'runtime> VisibilityReadContext<'runtime> {
     pub fn inspect_snapshot(
@@ -53,16 +52,18 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         Option<RelationalReadView>,
         crate::execution::denial_cause::RelationalExecutionDenialCause,
     > {
-        if let Some(basis) = resolve_snapshot_basis(self.runtime, handle) {
+        // One read residency admits every region before pins are assembled
+        // and serves the materialization that reads them.
+        let resolved = resolve_snapshot_state(self.runtime, handle, |basis| {
             basis
                 .projection_root()
                 .demand_all_full(execution, &self.runtime.services.symbols)
-                .map_err(crate::execution::denial_cause::RelationalExecutionDenialCause::from)?;
-        }
+        })
+        .map_err(crate::execution::denial_cause::RelationalExecutionDenialCause::from)?;
         super::super::read_work::metered_with_memory(
             execution,
             |context, memory| {
-                let Some(resolved) = resolve_snapshot_state(self.runtime, handle) else {
+                let Some(resolved) = resolved.as_ref() else {
                     return Ok(None);
                 };
                 if resolved
@@ -174,11 +175,15 @@ impl<'runtime> VisibilityReadContext<'runtime> {
                 crate::branch::basis_denial::RelationalBranchBasisDenial::MaterializationUnavailable,
             ));
         }
-        observation
-            .selected_root()
+        // Pins derive from Full partitions, so this read's residency admits
+        // every region before they are assembled and while they are read.
+        let basis =
+            crate::history::retention::VisibilitySnapshotBasis::from_observation(observation);
+        basis
+            .projection_root()
             .demand_all_full(execution, &self.runtime.services.symbols)
             .map_err(crate::execution::denial_cause::RelationalExecutionDenialCause::from)?;
-        let state = observation.build_visibility_state(
+        let state = basis.build_visibility_state(
             self.runtime.runtime_instance_id(),
             crate::snapshots::data::SnapshotId(0),
             SnapshotReadPolicy::ImmutablePinnedNoLazyMutation,

@@ -61,6 +61,7 @@ pub(super) fn default_profile_config(profile: RelationalRuntimeProfile) -> Relat
             adjacency_policy,
             cross_context_policy,
             cascade_delete_policy,
+            residency_budget: None,
         },
         visibility: VisibilityConfig {
             cache_policy: visibility_cache_policy,

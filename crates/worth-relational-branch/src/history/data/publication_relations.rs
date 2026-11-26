@@ -3,7 +3,7 @@ use super::{
     CanonicalCommitEnvelope, CanonicalCommitEnvelopeBody, CanonicalRequiredOutputOrigin,
     CodecRetirementClosureStop as Stop,
 };
-use crate::branch::root::RelationalBranchRoot;
+
 use crate::history::data::CommitId;
 use crate::identity::data::{RelationId, VersionId};
 use crate::storage::overlay::{
@@ -21,7 +21,7 @@ pub(super) use creation::validate_owned;
 
 #[allow(clippy::too_many_arguments)]
 pub fn validate(
-    root: &RelationalBranchRoot,
+    root: &crate::branch::root::RelationalRootRead<'_>,
     candidate: Option<&WorkingState>,
     origin: &CanonicalRequiredOutputOrigin,
     current: Option<CurrentPublicationFrame<'_>>,
@@ -135,7 +135,7 @@ pub fn validate(
     incidence::validate(
         incidence,
         state,
-        root,
+        root.root(),
         origin,
         current,
         lookup,

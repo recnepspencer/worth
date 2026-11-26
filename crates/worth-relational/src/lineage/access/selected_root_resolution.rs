@@ -15,7 +15,14 @@ impl<'runtime> LineageAccess<'runtime> {
         observation: &crate::mvcc::RelationalBranchObservation,
     ) -> Result<Option<HistoricalLineageResolution>, crate::execution::RelationalExecutionDenialCause>
     {
-        let root = observation.selected_root();
+        // This resolution's own read admits the record's region; nothing is
+        // retained by the observation's root once it returns.
+        let root = observation.selected_root().read();
+        root.demand_regions_full(
+            execution,
+            &self.runtime.services.symbols,
+            [entity_id.partition_id],
+        )?;
         let Some(selected_commit) = observation.commit_id() else {
             self.runtime
                 .performance_access()
@@ -26,7 +33,7 @@ impl<'runtime> LineageAccess<'runtime> {
             .runtime
             .read_truth()
             .authoritative_entity_record_for_id_from_exact_state(
-                root.as_ref(),
+                &root,
                 root.schema_authority().registry(),
                 entity_id,
             )
@@ -52,7 +59,7 @@ impl<'runtime> LineageAccess<'runtime> {
         // own slot lineage joins the candidates before any is tried.
         if needs_participation
             && (candidates.is_empty() || self.runtime.lineage.has_paged_nodes())
-            && let Some(slot_lineage) = self.head_slot_lineage(execution, root, entity_id)?
+            && let Some(slot_lineage) = self.head_slot_lineage(execution, &root, entity_id)?
             && !candidates.contains(&slot_lineage)
         {
             candidates.push(slot_lineage);
@@ -76,7 +83,7 @@ impl<'runtime> LineageAccess<'runtime> {
         }
         if chosen.is_none()
             && needs_participation
-            && let Some(candidate) = self.head_slot_lineage(execution, root, entity_id)?
+            && let Some(candidate) = self.head_slot_lineage(execution, &root, entity_id)?
             && tried.insert(candidate)
             && self.lineage_in_scope(execution, candidate, true, &mut reachable_scope, &mut work)?
         {
@@ -152,7 +159,7 @@ impl<'runtime> LineageAccess<'runtime> {
     fn head_slot_lineage(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        root: &crate::branch::RelationalBranchRoot,
+        root: &crate::branch::root::RelationalRootRead<'_>,
         entity_id: crate::identity::data::EntityId,
     ) -> Result<
         Option<crate::identity::data::LineageId>,

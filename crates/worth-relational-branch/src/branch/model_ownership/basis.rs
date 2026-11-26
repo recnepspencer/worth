@@ -50,17 +50,15 @@ pub fn read<R, E: From<RelationalModelOwnershipDenial>>(
         .axes()
         .ok_or(RelationalModelOwnershipDenial::ForeignBasis)?
         .storage_version;
+    let root = basis.inner.root.read();
     let mut read = BasisRead {
         execution,
         context,
         basis: Some(basis),
-        root: &basis.inner.root,
+        root: &root,
         memory: Vec::new(),
         custody: None,
-        state: StructuralStateView::new(
-            basis.inner.root.as_ref(),
-            crate::identity::data::VersionId(version),
-        ),
+        state: StructuralStateView::new(&root, crate::identity::data::VersionId(version)),
     };
     operation(&mut read).map(|value| (value, read.memory))
 }
@@ -70,7 +68,7 @@ pub struct BasisRead<'a, 'basis, 'context, 'kernel, 'execution, 'request> {
     context: &'a mut MapKernelContext<'context, 'kernel>,
     state: StructuralStateView<'basis>,
     basis: Option<&'basis AdmittedRelationalBranchBasis>,
-    root: &'basis crate::branch::root::RelationalBranchRoot,
+    root: &'basis crate::branch::root::RelationalRootRead<'basis>,
     memory: Vec<worth_execution::ExecutionMemoryReservation>,
     /// Candidate observations only: each entity's custody, read once.
     custody:
@@ -178,6 +176,7 @@ pub fn read_candidate<R>(
         &mut BasisRead<'_, '_, '_, '_, '_, '_>,
     ) -> Result<R, RelationalModelOwnershipDenial>,
 ) -> Result<R, RelationalModelOwnershipDenial> {
+    let root = &root.read();
     let mut read = BasisRead {
         execution,
         context,

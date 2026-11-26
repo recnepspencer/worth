@@ -1,7 +1,6 @@
 //! Authorize the exact live source closure and its submitted retirement roster.
 use worth_relational_branch::internal_port::branch::basis::{
-    AdmittedRelationalBranchBasis, AdmittedRelationalBranchBasisFieldsPort as _,
-    AdmittedRelationalBranchBasisOwnerPort as _,
+    AdmittedRelationalBranchBasis, AdmittedRelationalBranchBasisOwnerPort as _,
 };
 use worth_relational_contracts::internal_port as contracts;
 pub mod foreign_member;
@@ -105,13 +104,11 @@ pub(crate) fn select_authored_source_retirement<'r>(
                         .scope_kind(&origin.producer)
                         .ok_or_else(|| reject(Cause::CorruptPublication, source))?;
                     basis
-                        .owner_inner()
-                        .root
+
                         .demand_full_partition(execution, source.partition_id)
                         .map_err(|cause| stopped(request(cause)))?;
                     let partition = basis
-                        .owner_inner()
-                        .root
+
                         .partition_state(source.partition_id)
                         .map_err(|cause| stopped(cause.into()))?
                         .ok_or_else(|| reject(Cause::CorruptPublication, source))?;
@@ -147,8 +144,7 @@ pub(crate) fn select_authored_source_retirement<'r>(
                 {
                     let EntityReference::Existing(id) = role.target else { unreachable!() };
                     let partition = basis
-                        .owner_inner()
-                        .root
+
                         .partition_state(id.partition_id)
                         .map_err(|cause| stopped(cause.into()))?
                         .ok_or_else(|| reject(Cause::InvalidAuthoredAnchor, id))?;

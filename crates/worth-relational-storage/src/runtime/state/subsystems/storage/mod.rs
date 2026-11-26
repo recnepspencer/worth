@@ -36,16 +36,49 @@ use std::sync::Mutex;
 #[derive(Debug, Default)]
 pub struct StorageSubsystem {
     partitions: RuntimeOwnedState<CurrentMirror>,
+    /// This runtime's bounded working set, fixed by the first configured
+    /// budget it sees; every cold-backed region it readmits joins it.
+    working_set: std::sync::OnceLock<
+        Option<std::sync::Arc<crate::storage::residency::working_set::WorkingSetAccountant>>,
+    >,
 }
 
 impl StorageSubsystem {
+    /// The working-set authority for `budget`, created once per runtime.
+    pub fn working_set(
+        &self,
+        budget: Option<crate::storage::residency::working_set::ResidencyBudget>,
+    ) -> Option<std::sync::Arc<crate::storage::residency::working_set::WorkingSetAccountant>> {
+        self.working_set
+            .get_or_init(|| {
+                budget.map(crate::storage::residency::working_set::WorkingSetAccountant::new)
+            })
+            .clone()
+    }
+
+    /// Point-in-time residency pressure; None for an unbounded runtime.
+    pub fn residency_pressure(
+        &self,
+    ) -> Option<crate::storage::residency::working_set::ResidencyPressureSnapshot> {
+        self.working_set
+            .get()
+            .and_then(Option::as_ref)
+            .map(|accountant| accountant.pressure())
+    }
+
     pub fn install_cells(&self, cells: PartitionMap) {
         *self.partitions.write() = CurrentMirror::from_cells(cells);
     }
-    /// One structurally shared edition of the substrate. O(1): one atomic
-    /// increment, no allocation, no retained lock.
+    /// One structurally shared edition of the substrate with its own empty
+    /// operation residency. O(1): one atomic increment, no retained lock.
     pub fn acquire(&self) -> PartitionEdition {
-        self.partitions.read().edition.clone()
+        self.partitions.read().edition.acquired()
+    }
+
+    /// Diagnostic edition with its own empty residency that counts no
+    /// acquisition: it observes what the cells already serve, with no I/O.
+    pub fn observe_edition(&self) -> PartitionEdition {
+        self.partitions.read().edition.acquired()
     }
 
     /// Exclusive authority to install the next edition, charged to `lane`.
@@ -69,10 +102,22 @@ impl StorageSubsystem {
         crate::storage::residency::RelationalResidencyDemandFailure,
     > {
         loop {
-            self.acquire().demand_all(execution, symbols)?;
+            // Borrow Full custody outside the write lock without pinning mirror
+            // `owner` slots; unedited partitions release their leases on drop.
+            let mirror = self.partitions.read().edition.acquired();
+            let mut leases = std::collections::BTreeMap::new();
+            for (id, region) in mirror.cells() {
+                let lease = region.borrow_full(
+                    execution,
+                    crate::storage::residency::history_capture_bound::FULL_HISTORY_READ_LIMIT,
+                )?;
+                lease.admit_symbols(execution, symbols)?;
+                leases.insert(id, lease);
+            }
+            drop(mirror);
             match self
                 .edit(copy_counters, PartitionEditionCopyLane::Ordinary)
-                .accept_resident(symbols)
+                .accept_resident(symbols, leases)
             {
                 Ok(writer) => return Ok(writer),
                 Err(writer) => drop(writer),
@@ -90,6 +135,7 @@ impl StorageSubsystem {
         self.partitions
             .read()
             .edition
+            .acquired()
             .shared_partition(partition_id)
             .expect("test fixture admits a resident partition")
     }
@@ -103,7 +149,11 @@ impl StorageSubsystem {
         let installed: PartitionMap = partitions
             .into_iter()
             .map(|(partition_id, partition)| {
-                (partition_id, RelationalRegionRetention::resident(partition))
+                let lease =
+                    crate::storage::residency::RelationalRegionResidency::resident_uncommitted(
+                        partition,
+                    );
+                (partition_id, RelationalRegionRetention::mirror_owned(lease))
             })
             .collect();
         self.edit(copy_counters, lane).install(installed);
@@ -121,6 +171,7 @@ impl StorageSubsystem {
             .collect();
         Self {
             partitions: RuntimeOwnedState::new(CurrentMirror::from_cells(partitions)),
+            working_set: self.working_set.clone(),
         }
     }
 }

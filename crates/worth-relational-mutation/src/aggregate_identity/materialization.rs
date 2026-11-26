@@ -26,7 +26,7 @@ impl PreparedConsequences {
     ) -> Result<(), TransactionCommitError> {
         selected
             .state()
-            .root()
+            .read()
             .demand_regions_head(execution, symbols, self.demands.partitions.iter().copied())
             .map_err(|failure| {
                 worth_relational_branch::internal_port::authority::commit::preparation::storage_denial::storage_read_denial(

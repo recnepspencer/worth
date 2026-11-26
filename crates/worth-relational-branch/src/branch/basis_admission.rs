@@ -27,8 +27,8 @@ pub fn issue_admitted_relational_branch_basis_with_retention(
         Arc::clone(&root),
     )
     .map_err(map_retention_acquisition_denial)?;
-    Ok(AdmittedRelationalBranchBasis {
-        inner: super::basis::SharedAdmittedRelationalBranchBasisInner::new(
+    Ok(AdmittedRelationalBranchBasis::from_inner(
+        super::basis::SharedAdmittedRelationalBranchBasisInner::new(
             AdmittedRelationalBranchBasisInner {
                 descriptor,
                 identity,
@@ -41,7 +41,7 @@ pub fn issue_admitted_relational_branch_basis_with_retention(
                 registry_lease: std::sync::OnceLock::new(),
             },
         ),
-    })
+    ))
 }
 
 pub fn descriptor_for_cell(

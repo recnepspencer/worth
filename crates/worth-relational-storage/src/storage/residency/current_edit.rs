@@ -56,10 +56,12 @@ impl ResidentRegionLease {
             Self::Full(lease) => lease.as_head(),
         }
     }
+    /// The mirror entry for this edit target; its owner slot keeps the lease
+    /// until the writer replaces the entry.
     pub fn retention(&self) -> RelationalRegionRetention {
         match self {
-            Self::Head { lease, .. } => RelationalRegionRetention::from_head_lease(lease.clone()),
-            Self::Full(lease) => RelationalRegionRetention::from_lease(lease.clone()),
+            Self::Head { lease, .. } => RelationalRegionRetention::mirror_owned_head(lease.clone()),
+            Self::Full(lease) => RelationalRegionRetention::mirror_owned(lease.clone()),
         }
     }
     pub fn into_edit(self, readmission: ResidentHistoryReadmission) -> (ResidentRegionEdit, bool) {

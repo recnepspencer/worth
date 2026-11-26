@@ -1,6 +1,6 @@
 //! Cold association authenticates owned succession before independent reference classification.
 use super::{charge, CodecRetirementClosureStop as Stop};
-use crate::branch::root::RelationalBranchRoot;
+use crate::branch::root::RelationalRootRead;
 use crate::history::data::canonical_commit_envelope::CanonicalRequiredOutputOrigin;
 use crate::history::data::canonical_commit_envelope::OutputOriginHistory;
 use std::sync::Arc;
@@ -8,7 +8,7 @@ use worth_execution::{ExecutionResourceLease, MapKernelContext};
 
 pub(in super::super) fn validate_complete_publication(
     runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
-    root: &RelationalBranchRoot,
+    root: &RelationalRootRead<'_>,
     origin: &Arc<CanonicalRequiredOutputOrigin>,
     validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,

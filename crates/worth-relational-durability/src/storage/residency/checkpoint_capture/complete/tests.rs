@@ -66,10 +66,11 @@ fn bytes(member: &RelationalCheckpointMember) -> &worth_execution::ExecutionImmu
 fn complete_full_current_wire_matches_prior_nontrivial_head_and_history_bytes() {
     worth_relational_branch::internal_port::branch::root::capture::with_reconstruction_fixture_for_test(|fixture_lane| {
         let fixture = fixture();
+        let scope = worth_relational_storage::internal_port::storage::residency::OperationResidency::new();
         let region = fixture
             .prepared
             .retention
-            .capture_region()
+            .capture_region(&scope)
             .unwrap()
             .unwrap();
         let host = worth_harness::facade::execution_fixture::serial_request();

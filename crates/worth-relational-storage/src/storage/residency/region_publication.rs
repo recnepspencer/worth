@@ -17,6 +17,8 @@ use std::sync::Arc;
 
 pub struct RegionCaptureBasis<'region> {
     pub retention: &'region RelationalRegionRetention,
+    /// The operation whose demands admitted this predecessor's custody.
+    pub scope: &'region super::OperationResidency,
     pub directory: &'region Arc<super::RegionRecordDirectory>,
     pub inventory: RelationalPartitionAllocationInventory,
     pub unavailable_records: usize,
@@ -57,7 +59,7 @@ impl PreparedResidentRegion {
         };
         let previous = basis
             .retention
-            .capture_region()
+            .capture_region(basis.scope)
             .map_err(RegionContentFailure::Storage)?
             .ok_or_else(|| {
                 absent(RelationalStorageUnavailableCause::MissingResidentPublicationRegion)
@@ -66,18 +68,18 @@ impl PreparedResidentRegion {
         // by another observer. Acquire its real Full witness before carrying
         // Full dictionary coverage; this branch never requests omitted history.
         if previous.history_presence.is_complete()
-            && basis.retention.admitted_full_lease().is_none()
+            && basis.retention.admitted_full_lease(basis.scope).is_none()
         {
             let full = basis
                 .retention
-                .demand_full(execution, 1 << 30)
+                .demand_full(basis.scope, execution, 1 << 30)
                 .map_err(RegionContentFailure::from)?;
             full.admit_symbols(execution, symbols)
                 .map_err(RegionContentFailure::from)?;
         }
         basis
             .retention
-            .admit_own_symbols(execution, symbols)
+            .admit_own_symbols(basis.scope, execution, symbols)
             .map_err(RegionContentFailure::from)?;
         let prior_commitment = previous.commitment.as_ref().ok_or_else(|| {
             absent(RelationalStorageUnavailableCause::MissingResidentPublicationCommitment)
@@ -150,12 +152,13 @@ impl PreparedResidentRegion {
             .updated(&previous.partition, &partition);
         let live_counts = super::LiveRecordCounts::from_partition(&partition);
         let partition_id = partition.partition_id;
-        let retention = if !history_presence.is_complete() {
+        use super::symbol_inheritance::PublishedRegionLease;
+        let published = if !history_presence.is_complete() {
             let codec = basis.retention.cell().history_codec().ok_or_else(|| {
                 absent(RelationalStorageUnavailableCause::MissingResidentPublicationRegion)
             })?;
             let readmission = super::ResidentHistoryReadmission::new(schema(), symbols, codec);
-            RelationalRegionRetention::from_head_lease(RelationalRegionResidency::resident_head(
+            PublishedRegionLease::Head(RelationalRegionResidency::resident_head(
                 partition,
                 commitment,
                 kind_indexes,
@@ -163,20 +166,20 @@ impl PreparedResidentRegion {
                 readmission,
             ))
         } else {
-            RelationalRegionRetention::from_lease(RelationalRegionResidency::resident(
+            PublishedRegionLease::Full(RelationalRegionResidency::resident(
                 partition,
                 commitment,
                 kind_indexes,
                 None,
             ))
         };
-        retention.inherit_symbols(basis.retention, symbol_changes);
-        retention
+        published.inherit_symbols(basis.retention, basis.scope, symbol_changes);
+        published
             .admit_own_symbols(execution, symbols)
             .map_err(RegionContentFailure::from)?;
         Ok(Self {
             partition_id,
-            retention,
+            retention: published.into_retention(),
             inventory,
             content_digest,
             kind_commitment,

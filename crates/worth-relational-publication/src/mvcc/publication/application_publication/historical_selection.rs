@@ -186,8 +186,6 @@ fn admit_publication(
     ordinal: usize,
 ) -> Result<RelationalRequiredOutputPublication, TransactionCommitError> {
     let source_kind = basis
-        .owner_inner()
-        .root
         .get_current_partition(origin.meaning.source_scope.partition_id)
         .and_then(|region| region.entity(origin.meaning.source_scope))
         .filter(|slot| slot.is_live())
@@ -237,7 +235,7 @@ fn existing_entities(
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<Vec<RecordRef>, TransactionCommitError> {
     let view = worth_relational_mutation::internal_port::validation::engine::state_view::InvariantStateView::new(
-        basis.owner_inner().root.as_ref(),
+        basis,
         contracts::identity::data::primitives::VersionId(
             basis
                 .owner_inner()
@@ -251,8 +249,7 @@ fn existing_entities(
         contracts::execution::request_stage::checkpoint(context, 1)
             .map_err(custody::execution_stop)?;
         basis
-            .owner_inner()
-            .root
+
             .demand_head_partition(execution, id.partition_id)
             .map_err(|stop| {
                 worth_relational_branch::internal_port::authority::commit::preparation::storage_denial::storage_read_denial(basis, stop)

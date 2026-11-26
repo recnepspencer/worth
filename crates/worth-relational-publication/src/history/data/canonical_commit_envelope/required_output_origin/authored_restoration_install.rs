@@ -116,10 +116,8 @@ pub(super) fn install(
             )
         };
 
-        let after = OverlayStateView::new(basis.owner_inner().root.as_ref(), state);
+        let after = OverlayStateView::new(basis, state);
         let source = basis
-            .owner_inner()
-            .root
             .get_current_partition(original_anchor.partition_id)
             .and_then(|part| part.entity_arena().get(&original_anchor))
             .ok_or_else(refuse_source)?;

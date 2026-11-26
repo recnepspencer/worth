@@ -41,6 +41,7 @@ pub(crate) fn prepare_mirror_publication(
             }
             None => {
                 let lease = root
+                    .read()
                     .resident_full_region_witness(id)?
                     .ok_or(contracts::storage::data::storage_unavailable::RelationalStorageUnavailable {
                     subject: contracts::storage::data::storage_unavailable::RelationalStorageSubject::Region(id),

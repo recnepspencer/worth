@@ -1,10 +1,11 @@
 impl super::RelationalBranchRoot {
     pub(crate) fn assert_derived_inventory_matches_cold(&self) {
         let mut unavailable = 0;
+        let scope = crate::storage::residency::OperationResidency::new();
         for region in self.regions.values() {
             let lease = region
                 .partition
-                .pin_lease()
+                .pin_lease(&scope)
                 .expect("resident root fixture has Full custody");
             let partition = lease.full_view().partition();
             assert_eq!(

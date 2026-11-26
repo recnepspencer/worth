@@ -9,7 +9,7 @@ pub fn selectors(
     destroyed: &[RecordRef],
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<Vec<RecordRef>, TransactionCommitError> {
-    let root = &basis.inner.root;
+    let root = &basis.root_read();
     let Some(storage) = root
         .schema_authority()
         .registry()
@@ -18,7 +18,7 @@ pub fn selectors(
         return Ok(Vec::new());
     };
     let view = StructuralStateView::new(
-        root.as_ref(),
+        root,
         crate::identity::data::VersionId(root.axes().map_or(0, |a| a.storage_version)),
     );
     let mut selected = BTreeSet::new();

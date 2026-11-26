@@ -16,9 +16,7 @@ use contracts::transactions::data::primitives::EntitySpec;
 use contracts::transactions::data::primitives::RecordRef;
 use contracts::transactions::data::primitives::WorkerIntentBatch;
 use worth_execution::ExecutionRequest;
-use worth_relational_branch::internal_port::branch::basis::{
-    AdmittedRelationalBranchBasis, AdmittedRelationalBranchBasisFieldsPort as _,
-};
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasis;
 use worth_relational_contracts::internal_port as contracts;
 use worth_relational_storage::internal_port::storage::overlay::current_access::CurrentPartitionAccess;
 
@@ -40,8 +38,6 @@ pub fn owner_kind(
     owner: EntityId,
 ) -> Result<KindId, TransactionCommitError> {
     basis
-        .owner_inner()
-        .root
         .get_current_partition(owner.partition_id)
         .and_then(|p| p.entity_arena().get(&owner))
         .and_then(|r| r.kind_id())
@@ -92,12 +88,13 @@ pub fn inspect_recovered_locality(
         WorkerIntentBatch,
     ) -> Result<Result<(), TransactionCommitError>, TransactionCommitError>,
 ) -> Result<CurrentOwnershipLocalityObservation, TransactionCommitError> {
-    let root = &basis.owner_inner().root;
+    use worth_relational_storage::internal_port::storage::overlay::current_access::CurrentPartitionAccess as _;
+    let root = basis;
     let count = || {
         (1002..=1064)
             .filter(|p| {
                 matches!(
-                    root.probe_head_region(PartitionId(*p)),
+                    root.probe_head_partition(PartitionId(*p)),
                     worth_relational_storage::internal_port::storage::residency::head_probe::PartitionHeadProbe::Cold
                 )
             })

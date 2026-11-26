@@ -6,7 +6,6 @@ use crate::transactions::data::primitives::CreatedEntityRef;
 use crate::transactions::data::primitives::EntitySpec;
 use crate::transactions::data::primitives::WorkerIntentBatch;
 use worth_foundational::facade::{AspectBinding, ContractValidatedAspectValueView};
-use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasisFieldsPort as _;
 
 #[test]
 fn absent_optional_codec_cell_does_not_bypass_present_aspect_provenance() {
@@ -81,8 +80,6 @@ fn absent_optional_codec_cell_does_not_bypass_present_aspect_provenance() {
         release_test_commit_snapshot(&runtime, &committed);
         let basis = test_owner_main_basis(&runtime).unwrap();
         let partition = basis
-            .owner_inner()
-            .root
             .partition_state(entity.partition_id)
             .expect("fixture root has admitted Full custody")
             .unwrap();

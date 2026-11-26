@@ -107,8 +107,6 @@ fn relation_birth(
 ) -> Result<OwnedValidatedOutputOrigins, Stop> {
     charge(context, 3)?;
     let partition = basis
-        .inner
-        .root
         .partition_state(relation_id.partition_id)?
         .ok_or("incident producer relation partition absent")?;
     let created = partition
@@ -128,7 +126,7 @@ fn relation_birth(
     // Actual Created allocation/endpoints establish producer ownership. Current
     // incidence and caller-supplied restoration fields provide no such proof.
     crate::history::data::publication_relations::validate_owned(
-        &*basis.inner.root,
+        basis,
         relation_id,
         origin,
         &mut |version, context| runtime.version(version, context),

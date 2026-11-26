@@ -99,7 +99,7 @@ impl LineageAccess<'_> {
                 nodes.push(node);
             }
         }
-        let root = observation.selected_root();
+        let root = observation.selected_root().read();
         root.demand_regions_full(
             execution,
             &self.runtime.services.symbols,
@@ -111,7 +111,7 @@ impl LineageAccess<'_> {
         let mut entity_ids = Vec::new();
         for node in nodes {
             let Some(record) = read_truth.authoritative_entity_record_for_id_from_exact_state(
-                root.as_ref(),
+                &root,
                 root.schema_authority().registry(),
                 node.node().entity_id(),
             ) else {

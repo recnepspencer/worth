@@ -109,8 +109,9 @@ impl Reach<'_, '_, '_, '_, '_> {
         direction: Direction,
     ) -> Result<Vec<RelationId>, TransactionCommitError> {
         self.demand(id.partition_id)?;
-        let root = self.source.root();
-        let head = root
+        let head = self
+            .source
+            .partitions()
             .get_current_partition(id.partition_id)
             .ok_or_else(|| damaged(&RecordRef::Entity(id)))?;
         let table = head.adjacency(direction);
@@ -269,7 +270,7 @@ pub fn claims(
         )
     })?;
     let view = StructuralStateView::new(
-        basis.inner.root.as_ref(),
+        basis,
         crate::identity::data::VersionId(basis.inner.root.axes().map_or(0, |a| a.storage_version)),
     );
     let mut reach = Reach {

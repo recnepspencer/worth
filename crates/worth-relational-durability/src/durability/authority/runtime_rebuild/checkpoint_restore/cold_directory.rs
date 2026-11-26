@@ -33,6 +33,7 @@ pub fn prepare(
     checkpoint: &DurableCheckpoint,
     directory: &Arc<crate::durability::data::RelationalCheckpointDirectory>,
     work: &mut CheckpointRestoreWork,
+    working_set: Option<&Arc<worth_relational_storage::internal_port::storage::residency::working_set::WorkingSetAccountant>>,
 ) -> Result<PreparedColdDirectory, RelationalRecoveryStop> {
     let mut history = source_history
         .detached_owner_snapshot()
@@ -54,12 +55,19 @@ pub fn prepare(
         )?;
         paged
     };
+    // Branch heads and the mirror serve current reads: the Head pool.
     let mut regions = ReadmittedRegionDirectory::new(
         directory.clone(),
         paged_symbols.clone(),
         execution,
         registry,
-    )?;
+    )?
+    .with_working_set(working_set.map(|accountant| {
+        (
+            accountant.clone(),
+            worth_relational_storage::internal_port::storage::residency::working_set::ResidencyPoolKind::Head,
+        )
+    }));
     let mut head_ids = worth_execution::ExecutionOrderedMap::default();
     for cell in &checkpoint.branch_cells {
         contracts::durability::data::recovery_stop::account_work(execution, 1)?;
