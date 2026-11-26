@@ -12,6 +12,7 @@ pub use record_directory::{
 pub mod live_counts;
 pub use live_counts::LiveRecordCounts;
 pub mod cell;
+pub mod chunked;
 pub mod cold_readmission;
 pub mod content_capture;
 pub use content_capture::RegionContentFailure;
