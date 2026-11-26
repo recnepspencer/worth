@@ -44,21 +44,207 @@ impl ChunkMemberSource for ConfinedMemberSource {
         }
         self.inner.read_range(member, offset, target)
     }
+}
 
-    fn cold_source_identity(&self) -> Option<usize> {
-        self.inner.cold_source_identity()
+/// Bounds and verifies one table scan against its manifest `entry_count`.
+pub(super) struct RowCount {
+    seen: u64,
+    expected: u64,
+}
+
+impl RowCount {
+    pub(super) fn new(
+        root: Option<crate::storage::residency::chunked::paged_directory::PagedDirectoryRoot>,
+    ) -> Self {
+        Self {
+            seen: 0,
+            expected: root.map_or(0, |r| r.entry_count),
+        }
+    }
+
+    pub(super) fn step(&mut self) -> Result<(), Cause> {
+        if self.seen >= self.expected {
+            return Err(Cause::Damaged);
+        }
+        self.seen += 1;
+        Ok(())
+    }
+
+    pub(super) fn finish(self) -> Result<(), Cause> {
+        if self.seen != self.expected {
+            return Err(Cause::Damaged);
+        }
+        Ok(())
     }
 }
 
 impl super::PagedIdentityBase {
-    pub(in super::super) fn source_matches(
+    /// Opens paged tables backed by a managed `NativeSourceMemberState` custody
+    /// pin so checkpoint replacement retains unfaulted pages until close.
+    pub fn open_with_custody(
+        paged: crate::storage::data::record_identity_pages::PagedRecordIdentity,
+        accountant: Arc<crate::storage::residency::working_set::WorkingSetAccountant>,
+        physical: crate::durability::medium::member_custody::native_source_slot::NativeSourceMemberState,
+        member_limit: u64,
+    ) -> Self {
+        let cold = Arc::new(
+            crate::storage::residency::chunked::cold_member_port::ColdMemberSource::with_custody(
+                physical,
+                member_limit,
+            ),
+        );
+        let confined = Arc::new(ConfinedMemberSource::new(cold.clone(), &paged.pages));
+        Self {
+            directories: crate::storage::data::record_identity_pages::IdentityDirectories::open(
+                &paged.roots,
+                accountant,
+            ),
+            roots: paged.roots,
+            paged,
+            source: confined,
+            custody: Some(cold),
+        }
+    }
+
+    /// One page member's verified bytes, for a capture whose destination lacks it.
+    pub fn page_bytes(&self, page: RelationalDurableMemberLocator) -> Result<Vec<u8>, Cause> {
+        let limit = crate::storage::data::record_identity_pages::IDENTITY_PAGE_BYTES as u64;
+        if page.length > limit {
+            return Err(Cause::LimitExceeded {
+                length: page.length,
+                limit,
+            });
+        }
+        let length = usize::try_from(page.length).map_err(|_| Cause::MemoryExhausted)?;
+        let mut bytes = Vec::new();
+        bytes
+            .try_reserve_exact(length)
+            .map_err(|_| Cause::MemoryExhausted)?;
+        bytes.resize(length, 0);
+        let mut filled = 0;
+        while filled < length {
+            match self
+                .source
+                .read_range(page, filled as u64, &mut bytes[filled..])?
+            {
+                0 => return Err(Cause::MissingMember),
+                read => filled += read,
+            }
+        }
+        verify_page_bytes(page, &bytes)?;
+        Ok(bytes)
+    }
+
+    /// Loads the entire allocator image with roster confinement, exact entry
+    /// counts, and pending-reservation consistency checks.
+    pub fn load_resident(
+        &self,
+    ) -> Result<crate::storage::data::record_identity_image::DurableRecordIdentityState, Cause>
+    {
+        use crate::history::data::canonical_record_allocation::RecordAllocationClass;
+        use crate::storage::data::record_identity_image::{
+            DurablePendingRecordReservation, DurableRecordGenerationClass,
+            DurableRecordGenerationHighWater, DurableRecordIdentityState,
+            DurableRecordReservationOrigin, DurableRecordSlotFrontier, DurableReusableRecordSlot,
+        };
+        let class = |c| match c {
+            RecordAllocationClass::Entity => DurableRecordGenerationClass::Entity,
+            RecordAllocationClass::Relation => DurableRecordGenerationClass::Relation,
+        };
+        let rows = self.all_rows()?;
+        Ok(DurableRecordIdentityState::current_with_memory(
+            rows.generations
+                .into_iter()
+                .map(
+                    |((c, partition_id, slot), generation)| DurableRecordGenerationHighWater {
+                        class: class(c),
+                        partition_id,
+                        slot: slot as u64,
+                        generation,
+                    },
+                )
+                .collect(),
+            rows.reusable
+                .into_iter()
+                .map(|(c, partition_id, slot)| DurableReusableRecordSlot {
+                    class: class(c),
+                    partition_id,
+                    slot: slot as u64,
+                })
+                .collect(),
+            rows.frontiers
+                .into_iter()
+                .map(|((c, partition_id), next_slot)| DurableRecordSlotFrontier {
+                    class: class(c),
+                    partition_id,
+                    next_slot: next_slot as u64,
+                })
+                .collect(),
+            rows.pending
+                .into_iter()
+                .map(
+                    |((c, partition_id, slot), reservation)| DurablePendingRecordReservation {
+                        class: class(c),
+                        partition_id,
+                        slot: slot as u64,
+                        generation: reservation.generation,
+                        origin: match reservation.origin {
+                            RecordAllocationOrigin::AppendFrontier => {
+                                DurableRecordReservationOrigin::AppendFrontier
+                            }
+                            RecordAllocationOrigin::Reclaimed { prior_generation } => {
+                                DurableRecordReservationOrigin::Reclaimed { prior_generation }
+                            }
+                        },
+                    },
+                )
+                .collect(),
+            None,
+        ))
+    }
+
+    pub(in super::super) fn preflight_source_retirement(
         &self,
         source: &dyn crate::durability::medium::cold_source::RelationalDurableColdSource,
-    ) -> bool {
-        let expected = (source
-            as *const dyn crate::durability::medium::cold_source::RelationalDurableColdSource)
-            .cast::<()>() as usize;
-        self.source.cold_source_identity() == Some(expected)
+    ) -> Result<(), crate::durability::medium::member_custody::native_slot::NativeMemberSlotDenial>
+    {
+        match &self.custody {
+            Some(cold) => cold.preflight_source_retirement(source),
+            None => Ok(()),
+        }
+    }
+
+    pub(in super::super) fn loan_source_retirement(
+        &self,
+        handoff: &mut Option<
+            crate::durability::medium::member_custody::native_slot::NativeMemberRetirementHandoff,
+        >,
+    ) -> Result<bool, crate::durability::medium::member_custody::native_slot::NativeMemberSlotDenial>
+    {
+        match &self.custody {
+            Some(cold) => cold.loan_source_retirement(handoff),
+            None => Ok(true),
+        }
+    }
+
+    pub(in super::super) fn return_source_retirement(
+        &self,
+        handoff: &mut Option<
+            crate::durability::medium::member_custody::native_slot::NativeMemberRetirementHandoff,
+        >,
+        source: &dyn crate::durability::medium::cold_source::RelationalDurableColdSource,
+    ) -> Result<
+        crate::durability::medium::member_custody::retirement::RelationalDurableMemberRetirementObservation,
+        crate::durability::medium::member_custody::native_slot::NativeMemberSlotDenial,
+    >{
+        match &self.custody {
+            Some(cold) => cold.return_source_retirement(handoff, source),
+            None => Err(
+                crate::durability::medium::member_custody::native_slot::NativeMemberSlotDenial::Refused(
+                    crate::durability::medium::member_custody::retirement::RelationalDurableMemberRetirementRefusal::ForeignCustody,
+                ),
+            ),
+        }
     }
 }
 

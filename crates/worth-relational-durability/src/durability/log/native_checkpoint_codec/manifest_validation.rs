@@ -204,11 +204,12 @@ pub(super) fn validate_pages(
 pub(super) fn validate_record_identity(
     identity: &worth_relational_storage::internal_port::storage::data::record_identity_pages::PagedRecordIdentity,
 ) -> Result<(), DurabilityError> {
+    let limit = worth_relational_storage::internal_port::storage::data::record_identity_pages::IDENTITY_PAGE_BYTES as u64;
     let mut previous = None;
     for page in &identity.pages {
-        if previous.is_some_and(|prior| prior >= page) {
+        if previous.is_some_and(|prior| prior >= page) || page.length > limit {
             return Err(corrupt(
-                "checkpoint record identity page roster is duplicate or unsorted",
+                "checkpoint record identity page roster is duplicate, unsorted or oversized",
             ));
         }
         previous = Some(page);

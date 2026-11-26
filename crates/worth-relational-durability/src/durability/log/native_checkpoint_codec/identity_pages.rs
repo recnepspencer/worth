@@ -11,8 +11,7 @@ use worth_relational_storage::internal_port::durability::medium::cold_source::Re
 use worth_relational_storage::internal_port::runtime::state::subsystems::record_identity::paged_base::PagedIdentityBase;
 use worth_relational_storage::internal_port::runtime::state::subsystems::record_identity::RecordIdentitySubsystem;
 use worth_relational_storage::internal_port::storage::data::record_identity_pages::{
-    encode_record_identity, IdentityDirectories, PagedRecordIdentity, PagedRecordIdentityRoots,
-    IDENTITY_PAGE_BYTES,
+    encode_record_identity, PagedRecordIdentity, IDENTITY_PAGE_BYTES,
 };
 use worth_relational_storage::internal_port::storage::residency::chunked::cold_member_port::{
     CollectedMembers, ColdMemberSource,
@@ -63,26 +62,27 @@ fn unbudgeted() -> Arc<WorkingSetAccountant> {
 /// The whole allocator image. Expanded decode and inspection only; reopen
 /// uses [`open_paged_identity`].
 pub(crate) fn load_identity(
-    roots: &PagedRecordIdentityRoots,
+    paged: &PagedRecordIdentity,
     source: &Arc<dyn RelationalDurableColdSource>,
 ) -> Result<DurableRecordIdentityState, DurabilityError> {
-    let directories = IdentityDirectories::open(roots, unbudgeted());
-    roots
-        .load_resident(&directories, &pages(source))
+    PagedIdentityBase::open(paged.clone(), unbudgeted(), Arc::new(pages(source)))
+        .load_resident()
         .map_err(|cause| corrupt(format!("record identity directory: {cause:?}")))
 }
 
 /// The reopened allocator: only `roots` are retained; partitions fault their
-/// rows through `accountant` on first use.
+/// rows through `accountant` on first use while `custody` pins the pages across
+/// later checkpoint replacements until close retirement.
 pub(crate) fn open_paged_identity(
     paged: PagedRecordIdentity,
-    source: &Arc<dyn RelationalDurableColdSource>,
+    custody: worth_relational_storage::internal_port::durability::medium::member_custody::native_source_slot::NativeSourceMemberState,
     accountant: Option<Arc<WorkingSetAccountant>>,
 ) -> RecordIdentitySubsystem {
-    RecordIdentitySubsystem::from_paged(PagedIdentityBase::open(
+    RecordIdentitySubsystem::from_paged(PagedIdentityBase::open_with_custody(
         paged,
         accountant.unwrap_or_else(unbudgeted),
-        Arc::new(pages(source)),
+        custody,
+        IDENTITY_PAGE_BYTES as u64,
     ))
 }
 

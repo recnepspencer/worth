@@ -123,17 +123,7 @@ impl NativeSourceGraphRetirement {
                 self.symbols = Some(runtime.services.symbols.clone());
                 self.stage = Stage::RecordIdentity;
             }
-            Stage::RecordIdentity => {
-                if !self.pass.retires() {
-                    runtime
-                        .record_identity
-                        .preflight_source_retirement(source)?;
-                } else {
-                    runtime.record_identity.retire_source(source)?;
-                }
-                self.stage = Stage::Nodes;
-            }
-            Stage::Nodes | Stage::Events | Stage::IndexMember => {
+            Stage::RecordIdentity | Stage::Nodes | Stage::Events | Stage::IndexMember => {
                 self.advance_member(runtime, request, source)?
             }
             Stage::Index => {

@@ -22,11 +22,6 @@ pub trait ChunkMemberSource {
         offset: u64,
         target: &mut [u8],
     ) -> Result<usize, Cause>;
-
-    /// Data-pointer identity of an underlying `RelationalDurableColdSource`, if any.
-    fn cold_source_identity(&self) -> Option<usize> {
-        None
-    }
 }
 
 /// A member's bytes together with the fill charge that funds them.

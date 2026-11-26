@@ -17,6 +17,7 @@ use crate::storage::data::record_identity_pages::{
     IdentityDirectories, IdentitySlotKey, PagedRecordIdentity, PagedRecordIdentityRoots,
 };
 use crate::storage::data::RelationalStorageUnavailableCause as Cause;
+use crate::storage::residency::chunked::cold_member_port::ColdMemberSource;
 use crate::storage::residency::chunked::member_io::ChunkMemberSource;
 use crate::storage::residency::working_set::WorkingSetAccountant;
 
@@ -25,6 +26,7 @@ pub struct PagedIdentityBase {
     paged: PagedRecordIdentity,
     directories: IdentityDirectories,
     source: Arc<dyn ChunkMemberSource + Send + Sync>,
+    custody: Option<Arc<ColdMemberSource>>,
 }
 
 impl std::fmt::Debug for PagedIdentityBase {
@@ -84,33 +86,13 @@ impl PagedIdentityBase {
             roots: paged.roots,
             paged,
             source: confined,
+            custody: None,
         }
     }
 
     /// The checkpoint facts these tables were reopened from.
     pub fn paged(&self) -> &PagedRecordIdentity {
         &self.paged
-    }
-
-    /// One page member's verified bytes, for a capture whose destination lacks it.
-    pub fn page_bytes(
-        &self,
-        page: crate::durability::medium::RelationalDurableMemberLocator,
-    ) -> Result<Vec<u8>, Cause> {
-        let length = usize::try_from(page.length).map_err(|_| Cause::MemoryExhausted)?;
-        let mut bytes = vec![0; length];
-        let mut filled = 0;
-        while filled < length {
-            match self
-                .source
-                .read_range(page, filled as u64, &mut bytes[filled..])?
-            {
-                0 => return Err(Cause::MissingMember),
-                read => filled += read,
-            }
-        }
-        validation::verify_page_bytes(page, &bytes)?;
-        Ok(bytes)
     }
 
     pub fn roots(&self) -> PagedRecordIdentityRoots {
@@ -193,23 +175,34 @@ impl PagedIdentityBase {
     pub(super) fn all_rows(&self) -> Result<BaseRows, Cause> {
         let mut rows = BaseRows::default();
         let source = self.source.as_ref();
+        let mut count = validation::RowCount::new(self.roots.generation_high_water);
         let mut cursor = self.directories.generations.range_from(source, (0, 0, 0))?;
         while let Some(((tag, partition, at), generation)) = cursor.next_entry()? {
+            count.step()?;
             let key = (class_of(tag)?, PartitionId(partition), slot(at)?);
             rows.generations.insert(key, generation);
         }
+        count.finish()?;
+        let mut count = validation::RowCount::new(self.roots.reusable_slots);
         let mut cursor = self.directories.reusable.range_from(source, (0, 0, 0))?;
         while let Some(((tag, partition, at), ())) = cursor.next_entry()? {
+            count.step()?;
             rows.reusable
                 .push((class_of(tag)?, PartitionId(partition), slot(at)?));
         }
+        count.finish()?;
+        let mut count = validation::RowCount::new(self.roots.append_frontiers);
         let mut cursor = self.directories.frontiers.range_from(source, (0, 0))?;
         while let Some(((tag, partition), next)) = cursor.next_entry()? {
+            count.step()?;
             rows.frontiers
                 .insert((class_of(tag)?, PartitionId(partition)), slot(next)?);
         }
+        count.finish()?;
+        let mut count = validation::RowCount::new(self.roots.pending_reservations);
         let mut cursor = self.directories.pending.range_from(source, (0, 0, 0))?;
         while let Some(((tag, partition, at), (generation, prior))) = cursor.next_entry()? {
+            count.step()?;
             let key = (class_of(tag)?, PartitionId(partition), slot(at)?);
             let reservation = PendingRecordReservation {
                 generation,
@@ -217,6 +210,7 @@ impl PagedIdentityBase {
             };
             rows.pending.push((key, reservation));
         }
+        count.finish()?;
         validation::validate_all_rows(&rows, self.roots.partition_high_water)?;
         Ok(rows)
     }

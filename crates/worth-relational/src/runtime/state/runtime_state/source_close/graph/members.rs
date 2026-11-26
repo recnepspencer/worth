@@ -33,6 +33,9 @@ impl NativeSourceGraphRetirement {
     ) -> Result<(), RelationalSourceCloseDenial> {
         let done = if !self.pass.retires() {
             match self.stage {
+                Stage::RecordIdentity => runtime
+                    .record_identity
+                    .preflight_source_retirement(source)?,
                 Stage::Nodes => runtime.lineage.preflight_node_source_retirement(source)?,
                 Stage::Events => runtime.lineage.preflight_event_source_retirement(source)?,
                 Stage::IndexMember => {} // The index preflight validates both original slots.
@@ -41,7 +44,6 @@ impl NativeSourceGraphRetirement {
                 | Stage::Edition
                 | Stage::Mirror
                 | Stage::Symbols
-                | Stage::RecordIdentity
                 | Stage::Index
                 | Stage::IndexDirectory
                 | Stage::SelectedDirectory
@@ -53,6 +55,9 @@ impl NativeSourceGraphRetirement {
         } else if let Some(handoff) = &mut self.member {
             handoff.observe(request, source);
             let observation = match self.stage {
+                Stage::RecordIdentity => runtime
+                    .record_identity
+                    .return_source_retirement(&mut self.member, source)?,
                 Stage::Nodes => runtime
                     .lineage
                     .return_node_source_retirement(&mut self.member, source)?,
@@ -67,7 +72,6 @@ impl NativeSourceGraphRetirement {
                 | Stage::Edition
                 | Stage::Mirror
                 | Stage::Symbols
-                | Stage::RecordIdentity
                 | Stage::Index
                 | Stage::IndexDirectory
                 | Stage::SelectedDirectory
@@ -78,6 +82,9 @@ impl NativeSourceGraphRetirement {
             complete(observation)?
         } else {
             match self.stage {
+                Stage::RecordIdentity => runtime
+                    .record_identity
+                    .loan_source_retirement(&mut self.member)?,
                 Stage::Nodes => runtime
                     .lineage
                     .loan_node_source_retirement(&mut self.member)?,
@@ -90,7 +97,6 @@ impl NativeSourceGraphRetirement {
                 | Stage::Edition
                 | Stage::Mirror
                 | Stage::Symbols
-                | Stage::RecordIdentity
                 | Stage::Index
                 | Stage::IndexDirectory
                 | Stage::SelectedDirectory
@@ -101,6 +107,7 @@ impl NativeSourceGraphRetirement {
         };
         if done {
             self.stage = match self.stage {
+                Stage::RecordIdentity => Stage::Nodes,
                 Stage::Nodes => Stage::Events,
                 Stage::Events => Stage::Index,
                 Stage::IndexMember => Stage::IndexDirectory,
@@ -109,7 +116,6 @@ impl NativeSourceGraphRetirement {
                 | Stage::Edition
                 | Stage::Mirror
                 | Stage::Symbols
-                | Stage::RecordIdentity
                 | Stage::Index
                 | Stage::IndexDirectory
                 | Stage::SelectedDirectory

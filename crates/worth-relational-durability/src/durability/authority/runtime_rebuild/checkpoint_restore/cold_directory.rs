@@ -179,7 +179,7 @@ pub fn prepare(
     let record_identity =
         crate::durability::log::native_checkpoint_codec::identity_pages::open_paged_identity(
             directory.manifest.record_identity.clone(),
-            &directory.source,
+            directory.identity_member_custody(),
             working_set.cloned(),
         );
     let has_naming_schemes = !registry.persistent_name_schemes().is_empty()

@@ -120,6 +120,15 @@ impl RelationalCheckpointDirectory {
             self.member_basis(),
         )
     }
+
+    pub fn identity_member_custody(
+        &self,
+    ) -> worth_relational_storage::internal_port::durability::medium::member_custody::native_source_slot::NativeSourceMemberState{
+        worth_relational_storage::internal_port::durability::medium::member_custody::native_source_slot::NativeSourceMemberState::new(
+            self.source.clone(),
+            self.member_basis(),
+        )
+    }
 }
 
 impl RelationalCheckpointDirectory {

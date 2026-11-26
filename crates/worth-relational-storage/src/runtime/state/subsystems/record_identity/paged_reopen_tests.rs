@@ -309,6 +309,48 @@ fn working_set_accountant_evicts_unborrowed_identity_pages_for_region_loads() {
 }
 
 #[test]
+fn page_bytes_caps_length_and_load_resident_verifies_declared_entry_counts() {
+    let image = image(2);
+    let members = Arc::new(Members::default());
+    let paged = encode_record_identity(&image, &mut &*members).unwrap();
+    let accountant = WorkingSetAccountant::new(BUDGET);
+    let base = PagedIdentityBase::open(paged.clone(), accountant.clone(), members.clone());
+    assert_eq!(base.load_resident().unwrap(), image);
+
+    // Oversized locator fails before allocation with LimitExceeded.
+    let huge = Locator {
+        sha256: [0; 32],
+        length: u64::MAX,
+    };
+    assert!(matches!(
+        base.page_bytes(huge),
+        Err(Cause::LimitExceeded {
+            length: u64::MAX,
+            ..
+        })
+    ));
+
+    // Under-declared or over-declared entry_count fails closed with Damaged.
+    let mut under = paged.clone();
+    under
+        .roots
+        .generation_high_water
+        .as_mut()
+        .unwrap()
+        .entry_count = 1;
+    assert_eq!(
+        PagedIdentityBase::open(under, accountant.clone(), members.clone()).load_resident(),
+        Err(Cause::Damaged)
+    );
+    let mut over = paged;
+    over.roots.append_frontiers.as_mut().unwrap().entry_count += 1;
+    assert_eq!(
+        PagedIdentityBase::open(over, accountant, members).load_resident(),
+        Err(Cause::Damaged)
+    );
+}
+
+#[test]
 fn manifest_roster_names_exactly_the_written_pages_without_reading_any() {
     for partitions in [1_u32, 4, 40] {
         let members = Members::default();

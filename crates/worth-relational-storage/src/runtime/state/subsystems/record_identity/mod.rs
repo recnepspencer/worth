@@ -273,46 +273,67 @@ impl RecordIdentitySubsystem {
         ))
     }
 
-    /// Validates exclusive ownership and source identity of any paged base
+    /// Validates exclusive ownership and source custody of any paged base
     /// before irreversible close retirement.
     pub fn preflight_source_retirement(
         &self,
         source: &dyn crate::durability::medium::cold_source::RelationalDurableColdSource,
     ) -> Result<(), crate::durability::medium::member_custody::native_slot::NativeMemberSlotDenial>
     {
-        self.retire_paged_source(source, false)
-    }
-
-    /// Releases any paged base's cold-source reference during irreversible close.
-    pub fn retire_source(
-        &self,
-        source: &dyn crate::durability::medium::cold_source::RelationalDurableColdSource,
-    ) -> Result<(), crate::durability::medium::member_custody::native_slot::NativeMemberSlotDenial>
-    {
-        self.retire_paged_source(source, true)
-    }
-
-    fn retire_paged_source(
-        &self,
-        source: &dyn crate::durability::medium::cold_source::RelationalDurableColdSource,
-        retire: bool,
-    ) -> Result<(), crate::durability::medium::member_custody::native_slot::NativeMemberSlotDenial>
-    {
         use crate::durability::medium::member_custody::native_slot::NativeMemberSlotDenial as Denial;
-        use crate::durability::medium::member_custody::retirement::RelationalDurableMemberRetirementRefusal as Refusal;
-        let mut state = self.state.try_lock().map_err(|_| Denial::Busy)?;
-        if let Some(paged) = state.paged.as_mut() {
-            if Arc::get_mut(paged).is_none() {
-                return Err(Denial::Busy);
+        let target = {
+            let mut state = self.state.try_lock().map_err(|_| Denial::Busy)?;
+            match state.paged.as_mut() {
+                None => None,
+                Some(paged) => {
+                    Arc::get_mut(paged).ok_or(Denial::Busy)?;
+                    Some(Arc::clone(paged))
+                }
             }
-            if !paged.source_matches(source) {
-                return Err(Denial::Refused(Refusal::ForeignCustody));
-            }
-            if retire {
-                state.paged = None;
-            }
+        };
+        if let Some(target) = target {
+            target.preflight_source_retirement(source)?;
         }
         Ok(())
+    }
+
+    /// Loans the paged base's physical member retirement handoff without
+    /// invoking provider callbacks under the allocator mutex.
+    pub fn loan_source_retirement(
+        &self,
+        handoff: &mut Option<
+            crate::durability::medium::member_custody::native_slot::NativeMemberRetirementHandoff,
+        >,
+    ) -> Result<bool, crate::durability::medium::member_custody::native_slot::NativeMemberSlotDenial>
+    {
+        use crate::durability::medium::member_custody::native_slot::NativeMemberSlotDenial as Denial;
+        let state = self.state.try_lock().map_err(|_| Denial::Busy)?;
+        match state.paged.as_ref() {
+            Some(paged) => paged.loan_source_retirement(handoff),
+            None => Ok(true),
+        }
+    }
+
+    /// Returns a completed retirement handoff to the paged base, releasing its
+    /// cold-source handle once complete while keeping inert caches until reclaim.
+    pub fn return_source_retirement(
+        &self,
+        handoff: &mut Option<
+            crate::durability::medium::member_custody::native_slot::NativeMemberRetirementHandoff,
+        >,
+        source: &dyn crate::durability::medium::cold_source::RelationalDurableColdSource,
+    ) -> Result<
+        crate::durability::medium::member_custody::retirement::RelationalDurableMemberRetirementObservation,
+        crate::durability::medium::member_custody::native_slot::NativeMemberSlotDenial,
+    >{
+        use crate::durability::medium::member_custody::native_slot::NativeMemberSlotDenial as Denial;
+        use crate::durability::medium::member_custody::retirement::RelationalDurableMemberRetirementRefusal as Refusal;
+        let state = self.state.try_lock().map_err(|_| Denial::Busy)?;
+        state
+            .paged
+            .as_ref()
+            .ok_or(Denial::Refused(Refusal::ForeignCustody))?
+            .return_source_retirement(handoff, source)
     }
 }
 

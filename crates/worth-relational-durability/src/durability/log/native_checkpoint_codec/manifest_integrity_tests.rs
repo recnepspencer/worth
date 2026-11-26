@@ -66,6 +66,12 @@ fn record_identity_validation_refuses_unsorted_orphan_overflow_and_mismatched_ro
     bad(&|p| p.roots.reusable_slots = Some(r(locator(b"orphan"), 1)));
     bad(&|p| p.roots.generation_high_water = Some(r(low, u64::MAX)));
     bad(&|p| p.roots.partition_high_water = None);
+    bad(&|p| {
+        let mut huge = high;
+        huge.length = u64::MAX;
+        p.pages = vec![low, huge];
+        p.roots.append_frontiers = Some(r(huge, 1));
+    });
     assert!(validate_record_identity(&Paged {
         roots: Roots::default(),
         pages: vec![low]
