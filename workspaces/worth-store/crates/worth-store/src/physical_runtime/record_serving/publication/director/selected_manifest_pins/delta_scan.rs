@@ -34,9 +34,9 @@ pub(super) fn delta_scan(
     carried: &CarriedManifestRoster,
     limits: RosterLimits,
     scratch: &mut [u8],
-) -> Result<Vec<SelectedBlobManifestPin>, SelectedBlobManifestPinDenial> {
+) -> Result<(Vec<SelectedBlobManifestPin>, u64), SelectedBlobManifestPinDenial> {
     if carried.root == reader.current_root.root_cell() {
-        return carried_roster_unchanged(carried, limits);
+        return carried_roster_unchanged(carried, limits).map(|pins| (pins, 0));
     }
     let manifest = ManifestReader::serving(
         reader.residency.clone(),
@@ -56,6 +56,7 @@ pub(super) fn delta_scan(
         manifest: &manifest,
         allocation: &allocation,
         counters: ManifestDiscoveryCounterSnapshot::default(),
+        blocks_read: 0,
     };
     let mut roster = DeltaRoster {
         carried: &carried.pins,
@@ -64,6 +65,7 @@ pub(super) fn delta_scan(
         scratch,
         pins: Vec::new(),
         attempts: HashSet::new(),
+        records_read: 0,
     };
     walk_changed_since(
         &mut source,
@@ -71,7 +73,8 @@ pub(super) fn delta_scan(
         carried.root.generation().get(),
         &mut roster,
     )?;
-    Ok(roster.pins)
+    // Routing blocks re-read plus rewritten records inspected: `O(touched)`.
+    Ok((roster.pins, source.blocks_read + roster.records_read))
 }
 
 /// The selected root is the carried root itself: its roster is re-admitted
@@ -92,6 +95,7 @@ struct SelectedRoutingSource<'walk> {
     manifest: &'walk ManifestReader<'static>,
     allocation: &'walk worth_store_buffer_pool::OperationAllocationGrant,
     counters: ManifestDiscoveryCounterSnapshot,
+    blocks_read: u64,
 }
 
 impl RoutingSource for SelectedRoutingSource<'_> {
@@ -114,6 +118,7 @@ impl RoutingSource for SelectedRoutingSource<'_> {
         &mut self,
         reference: ManifestBlockReference,
     ) -> Result<RoutingNode<ManifestBlockReference, PersistedRecordIdentity>, Self::Error> {
+        self.blocks_read += 1;
         let block = self
             .manifest
             .read_block(self.allocation, reference, &mut self.counters)
@@ -136,6 +141,7 @@ struct DeltaRoster<'walk> {
     scratch: &'walk mut [u8],
     pins: Vec<SelectedBlobManifestPin>,
     attempts: HashSet<[u8; 16]>,
+    records_read: u64,
 }
 
 impl RoutingDeltaVisitor<PersistedRecordIdentity> for DeltaRoster<'_> {
@@ -154,6 +160,7 @@ impl RoutingDeltaVisitor<PersistedRecordIdentity> for DeltaRoster<'_> {
     }
 
     fn changed(&mut self, record: PersistedRecordIdentity) -> Result<(), Self::Error> {
+        self.records_read += 1;
         let Some(used) = read_changed_manifest(self.reader, record, self.scratch)? else {
             return Ok(());
         };

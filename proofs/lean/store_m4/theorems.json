@@ -4,7 +4,8 @@
     "StoreM4.PinSafety",
     "StoreM4.GCPinSafety",
     "StoreM4.ChunkedCoverage",
-    "StoreM4.ExtentGenerationSafety"
+    "StoreM4.ExtentGenerationSafety",
+    "StoreM4.ReclamationSafety"
   ],
   "allowed_axioms": [],
   "theorems": [
@@ -99,6 +100,46 @@
     {
       "name": "StoreM4.ExtentGenerationSafety.M10_without_cancel_epoch_advance_aliases",
       "type": "let first := StoreM4.ExtentGenerationSafety.init.admitNoAdvance ⟨1, 0, 8⟩; let reopened : StoreM4.ExtentGenerationSafety.Sys := { first with seen := [], inflight := [], frames := [] }; let reused := reopened.admitNoAdvance ⟨1, 0, 8⟩; reused.rootGen = StoreM4.ExtentGenerationSafety.init.rootGen ∧ ∃ stale ∈ first.history, ∃ live ∈ reused.seen, StoreM4.ExtentGenerationSafety.lookupMatches live ⟨1, 0, 8⟩ stale"
+    },
+    {
+      "name": "StoreM4.ReclamationSafety.planVerdict_admit_iff",
+      "type": "∀ (candidate reach obligations : List StoreM4.ReclamationSafety.Span) (coverage : StoreM4.ReclamationSafety.Coverage), StoreM4.ReclamationSafety.planVerdict candidate reach obligations coverage = StoreM4.ReclamationSafety.Verdict.accept ↔ StoreM4.ReclamationSafety.admissible candidate reach obligations coverage"
+    },
+    {
+      "name": "StoreM4.ReclamationSafety.ReclaimPreservesAllReachableRoots",
+      "type": "∀ (h : StoreM4.ReclamationSafety.Holders) (obligations : List StoreM4.ReclamationSafety.Span) (plan : StoreM4.ReclamationSafety.Plan), StoreM4.ReclamationSafety.Plan.admitted plan (StoreM4.ReclamationSafety.Holders.reach h) obligations → (∀ p, StoreM4.ReclamationSafety.Holders.protects h p → ¬ StoreM4.ReclamationSafety.Plan.frees plan p) ∧ (∀ c ∈ plan, c.2 = StoreM4.ReclamationSafety.Coverage.canonicalSuccessor)"
+    },
+    {
+      "name": "StoreM4.ReclamationSafety.retain_members_in_reach",
+      "type": "∀ (h : StoreM4.ReclamationSafety.Holders), ∀ y ∈ h.retainMembers, y ∈ StoreM4.ReclamationSafety.Holders.reach h"
+    },
+    {
+      "name": "StoreM4.ReclamationSafety.overlay_ancestors_in_reach",
+      "type": "∀ (h : StoreM4.ReclamationSafety.Holders), ∀ y ∈ h.overlayAncestors, y ∈ StoreM4.ReclamationSafety.Holders.reach h"
+    },
+    {
+      "name": "StoreM4.ReclamationSafety.M5_forgetting_retain_members_frees_held_root",
+      "type": "StoreM4.ReclamationSafety.Plan.admitted StoreM4.ReclamationSafety.m5Plan (StoreM4.ReclamationSafety.Holders.reachWithoutRetain StoreM4.ReclamationSafety.m5Holders) [] ∧ StoreM4.ReclamationSafety.Holders.protects StoreM4.ReclamationSafety.m5Holders ⟨1, 0, 5⟩ ∧ StoreM4.ReclamationSafety.Plan.frees StoreM4.ReclamationSafety.m5Plan ⟨1, 0, 5⟩"
+    },
+    {
+      "name": "StoreM4.ReclamationSafety.CanonicalCoverageBeforePrune",
+      "type": "∀ (live : List Nat) {j : StoreM4.ReclamationSafety.Journal}, StoreM4.ReclamationSafety.JReachable StoreM4.ReclamationSafety.Journal.coverage live j → (∀ m ∈ live, StoreM4.ReclamationSafety.Journal.recoverable j m) ∧ (∀ m ∈ live, StoreM4.ReclamationSafety.Journal.recoverable ({ j with derived := [] } : StoreM4.ReclamationSafety.Journal) m)"
+    },
+    {
+      "name": "StoreM4.ReclamationSafety.M8_derived_coverage_loses_meaning",
+      "type": "let j0 : StoreM4.ReclamationSafety.Journal := ⟨[7], [], []⟩; let j1 : StoreM4.ReclamationSafety.Journal := { j0 with derived := [[7]] }; let j2 : StoreM4.ReclamationSafety.Journal := { j1 with segments := j1.segments.erase 7 }; let j3 : StoreM4.ReclamationSafety.Journal := { j2 with derived := [] }; StoreM4.ReclamationSafety.JReachable StoreM4.ReclamationSafety.derivedCountsCoverage [7] j3 ∧ ¬ StoreM4.ReclamationSafety.Journal.recoverable j3 7"
+    },
+    {
+      "name": "StoreM4.ReclamationSafety.InterruptedReclaimIdempotent",
+      "type": "∀ {s : StoreM4.ReclamationSafety.Sys}, StoreM4.ReclamationSafety.Reachable StoreM4.ReclamationSafety.resumeRelease s → s.freeCount ≤ 1 ∧ (s.owner.isSome → s.freeCount = 0 ∧ s.durableFree = false)"
+    },
+    {
+      "name": "StoreM4.ReclamationSafety.chained_crash_reaches_reallocated_range",
+      "type": "∃ s, StoreM4.ReclamationSafety.Reachable StoreM4.ReclamationSafety.resumeRelease s ∧ s.owner = some 9 ∧ s.barrier = StoreM4.ReclamationSafety.Barrier.completionDurable"
+    },
+    {
+      "name": "StoreM4.ReclamationSafety.M9_readmitting_published_range_double_frees",
+      "type": "∃ s, StoreM4.ReclamationSafety.Reachable StoreM4.ReclamationSafety.resumeReadmits s ∧ s.freeCount = 2"
     }
   ]
 }

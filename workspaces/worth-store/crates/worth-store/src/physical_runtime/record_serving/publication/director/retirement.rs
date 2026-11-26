@@ -20,8 +20,8 @@ impl RetirementIntentGate {
 
 use super::RecordPublicationDirector;
 use crate::physical_runtime::durability::{
-    encode_retirement, DisplacedArtifact, PhysicalRootPublicationWorkFailure, RetiredArtifact,
-    ScheduledMaintenanceDenial,
+    DisplacedArtifact, PhysicalRootPublicationWorkFailure, RetiredArtifact,
+    ScheduledMaintenanceDenial, encode_retirement,
 };
 use crate::physical_runtime::{
     PhysicalPublicationEffect, PhysicalRetirementDenial, PhysicalSchedulerDenial,
@@ -53,15 +53,12 @@ impl RecordPublicationDirector {
         }
     }
 
-    pub(super) fn commit_retirement_intent(
+    /// Commits a durable retirement intent for a freshly claimed, already
+    /// checkpoint-covered displaced artifact.
+    pub(super) fn commit_fresh_retirement_intent(
         &self,
-    ) -> Result<Option<DisplacedArtifact>, PhysicalRetirementDenial> {
-        if self.has_pending_extent_release() {
-            return self.commit_extent_release_intent().map(Some);
-        }
-        let Some(displaced) = self.root_owner.claim_retirement()? else {
-            return Ok(None);
-        };
+        displaced: DisplacedArtifact,
+    ) -> Result<(), PhysicalRetirementDenial> {
         if matches!(
             displaced.artifact,
             RetiredArtifact::Extent { .. } | RetiredArtifact::Arena { .. }
@@ -70,24 +67,31 @@ impl RecordPublicationDirector {
                 self.root_owner.revert_displaced_claim(displaced.artifact);
                 return Err(denial);
             }
-            return self.commit_extent_release_intent().map(Some);
-        }
-        #[cfg(feature = "certification-test-authority")]
-        self.wait_retirement_intent_gate();
-        let intent = encode_retirement(
-            displaced.artifact,
-            false,
-            displaced.source_root,
-            displaced.bytes,
-            None,
-        );
-        if let Err(denial) = self.append_retirement(&intent) {
-            if denial != PhysicalRetirementDenial::Waiting {
+            // `prepare_extent_release` installed `PendingRetirementRelease`;
+            // never revert `garbage.claimed` once it is active.
+            self.commit_extent_release_intent().map(|_| ())
+        } else {
+            if let Some(denial) = self.root_owner.blocked_retirement(&displaced) {
                 self.root_owner.revert_displaced_claim(displaced.artifact);
+                return Err(denial);
             }
-            return Err(denial);
+            #[cfg(feature = "certification-test-authority")]
+            self.wait_retirement_intent_gate();
+            let intent = encode_retirement(
+                displaced.artifact,
+                false,
+                displaced.source_root,
+                displaced.bytes,
+                None,
+            );
+            if let Err(denial) = self.append_retirement(&intent) {
+                if denial != PhysicalRetirementDenial::Waiting {
+                    self.root_owner.revert_displaced_claim(displaced.artifact);
+                }
+                return Err(denial);
+            }
+            Ok(())
         }
-        Ok(Some(displaced))
     }
 
     pub(super) fn revert_retirement_claim(&self, artifact: RetiredArtifact) {
@@ -100,11 +104,8 @@ impl RecordPublicationDirector {
         checkpoint: &crate::physical_runtime::CompletedPhysicalCheckpoint,
     ) -> Result<(), PhysicalRetirementDenial> {
         let captured = checkpoint.basis().source().root().generation();
-        let covered = match displaced.artifact {
-            RetiredArtifact::Arena { .. } => captured >= displaced.source_root,
-            _ => captured > displaced.source_root,
-        };
-        if !covered {
+        // Canonical coverage before prune, decided by the verified planner.
+        if !crate::physical_runtime::durability::checkpoint_covers(&displaced, captured) {
             return Err(PhysicalRetirementDenial::Checkpoint);
         }
         if matches!(

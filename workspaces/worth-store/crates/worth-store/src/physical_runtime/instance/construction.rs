@@ -12,14 +12,14 @@ use crate::physical_runtime::{
     artifact_family::PhysicalArtifactFamilyRegistry,
     durability::ServingCheckpointCustody,
     record_serving::{
-        checkpoint_pin_scan_bytes, RecordAllocationFrontier, RecordServingOwner, RecordServingState,
+        RecordAllocationFrontier, RecordServingOwner, RecordServingState, checkpoint_pin_scan_bytes,
     },
     runtime::PhysicalRuntimeCore,
 };
 
 use super::{
-    reopen_durability_basis, PhysicalResidencyOwner, PhysicalSignalConstructionFailure,
-    PhysicalStoreInstanceParts,
+    PhysicalResidencyOwner, PhysicalSignalConstructionFailure, PhysicalStoreInstanceParts,
+    reopen_durability_basis,
 };
 
 pub(in crate::physical_runtime) struct PhysicalStoreInstanceFoundation {
@@ -81,7 +81,7 @@ impl PhysicalStoreInstanceParts {
                         residency,
                         durability,
                         cause,
-                    })
+                    });
                 }
             };
         let signal_profile = prepared_work.signal_profile();
@@ -133,7 +133,7 @@ impl PhysicalStoreInstanceParts {
                     cause: PhysicalSignalConstructionFailure::DurabilityStateReopenRejected(
                         failure,
                     ),
-                })
+                });
             }
         };
         let retained_wal_tail = durability
@@ -197,16 +197,14 @@ impl PhysicalStoreInstanceParts {
                 }),
             };
         let reopened = durability_reopen.install(durability);
-        if let Ok(
-            crate::physical_runtime::durability::ReopenedPhysicalBindingCompaction::NamespaceDurable(
-                reopened_checkpoint,
-            ),
-        ) = &checkpoint_custody.checkpoint
-            && let Some(floor) =
-                worth_store_physical_format::ExtentAllocationGeneration::at_durable_barrier(
-                    bootstrap.current_root.generation(),
-                    reopened_checkpoint.wal_cutoff_lsn_exclusive(),
-                )
+        // Seed from the reopened durable WAL frontier, with or without a
+        // recent checkpoint, so no post-reopen generation ever rewinds below
+        // a pre-crash barrier (`post_crash_frame_never_rewinds_below_history`).
+        if let Some(floor) =
+            worth_store_physical_format::ExtentAllocationGeneration::at_durable_barrier(
+                bootstrap.current_root.generation(),
+                reopened.wal.reopened_arena_floor_sequence(),
+            )
         {
             frame_ports.seed_arena_generation_floor(floor);
         }

@@ -3,12 +3,12 @@ use std::{num::NonZeroU64, sync::Arc};
 use worth_store_physical_format::{RecordArtifactFile, RecordFrameCoordinate};
 
 use super::{
+    FrameWritebackPort,
     candidate_frame_residency::{CandidateFrameSet, StoreCandidateFramePublicationSession},
     frame_loading::{
         CanonicalFrameReadSource, ExactFrameSourceExtent, FrameLoadFailure, LoadedPhysicalFrame,
     },
     frame_ports::RecordFramePorts,
-    FrameWritebackPort,
 };
 
 /// The single Store-private capability for ordinary serving-frame residency.
@@ -58,6 +58,20 @@ impl PhysicalResidencyWorkPort {
         self.access
             .frame_ports
             .drain_writeback_fence(range, barrier, reuse)
+    }
+
+    pub(in crate::physical_runtime::record_serving) fn drain_recovered_cancelled_fence(
+        &self,
+        range: worth_store_physical_format::ExtentArenaRange,
+        barrier: worth_store_buffer_pool::ArenaReuseBarrier,
+        covered_at: worth_store_physical_format::ExtentAllocationGeneration,
+    ) -> Result<
+        worth_store_physical_format::ArenaExtentFrameIdentity,
+        worth_store_buffer_pool::WritebackFenceDrainDenial,
+    > {
+        self.access
+            .frame_ports
+            .drain_recovered_cancelled_fence(range, barrier, covered_at)
     }
 
     pub(in crate::physical_runtime::record_serving) fn store_identity(

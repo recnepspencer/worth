@@ -1,5 +1,5 @@
 use super::super::{
-    selected_segment_rewrite::damaged, PhysicalRecordSubmission, RecordPublicationDirector,
+    PhysicalRecordSubmission, RecordPublicationDirector, selected_segment_rewrite::damaged,
 };
 use super::obligation::CopyObligation;
 use crate::physical_runtime::durability::ScheduledMaintenanceDenial;
@@ -164,19 +164,32 @@ impl RecordPublicationDirector {
             if !state.drained {
                 // Path B: the cancellation's own durable WAL record advances the
                 // fence sequence even when no root was published since the intent.
+                // A recovered cancellation whose pre-crash resolution LSN is
+                // already covered by the monotonic reopen floor drains through
+                // `drain_recovered_cancelled_fence` without lowering any floor.
                 let (intent, _, _) = state.intent.ok_or_else(damaged)?;
                 let reuse = ExtentAllocationGeneration::at_durable_barrier(
                     source.root().generation(),
                     resolution.end_lsn(),
                 )
                 .ok_or_else(damaged)?;
-                self.residency
-                    .drain_writeback_fence(
-                        intent.destination().arena_range(),
-                        ArenaReuseBarrier::CheckpointCoveredCancel,
-                        reuse,
-                    )
-                    .map_err(cancelled_drain_error)?;
+                let drain = match resolution {
+                    super::obligation::CopyResolution::Live(..) => {
+                        self.residency.drain_writeback_fence(
+                            intent.destination().arena_range(),
+                            ArenaReuseBarrier::CheckpointCoveredCancel,
+                            reuse,
+                        )
+                    }
+                    super::obligation::CopyResolution::Recovered { .. } => {
+                        self.residency.drain_recovered_cancelled_fence(
+                            intent.destination().arena_range(),
+                            ArenaReuseBarrier::CheckpointCoveredCancel,
+                            reuse,
+                        )
+                    }
+                };
+                drain.map_err(cancelled_drain_error)?;
                 state.drained = true;
             }
             self.settle_durably_cancelled_copy_binding(&state)?;
@@ -223,7 +236,7 @@ impl RecordPublicationDirector {
             ) => {
                 return Err(RecordAppendError::Denied(
                     RecordAppendDenial::PhysicalPressure,
-                ))
+                ));
             }
             Err(_) => {
                 state.inspection = true;

@@ -1,6 +1,6 @@
 use crate::allocation_generation_guard::{
-    active_generation, generation_precedes, ranges_overlap, GuardGeneration, GuardIdentity,
-    GuardRange,
+    GuardGeneration, GuardIdentity, GuardRange, active_generation, generation_precedes,
+    ranges_overlap,
 };
 use std::collections::BTreeMap;
 use worth_store_physical_format::{
@@ -144,8 +144,13 @@ impl ArenaGenerationLedger {
             (admitted.arena, admitted.offset),
             (admitted.length, guard_generation(generation)),
         );
-        // Carve out the admitted portion from any overlapping fences so split
-        // or partial drains lift their covered sub-ranges cleanly.
+        self.clear_fence(range);
+    }
+
+    /// Carves out `range` from any overlapping fences once its drain settled.
+    pub(super) fn clear_fence(&mut self, range: ExtentArenaRange) {
+        let admitted = guard_range(range);
+        let end = range.end();
         let mut remaining_fences = Vec::with_capacity(self.fenced.len());
         for fenced in self.fenced.drain(..) {
             let f = guard_range(fenced);

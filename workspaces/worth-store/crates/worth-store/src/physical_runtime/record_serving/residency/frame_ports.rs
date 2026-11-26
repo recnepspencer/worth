@@ -17,7 +17,7 @@ use worth_store_buffer_pool::{
     PhysicalResidencyPool, PhysicalResidencyPoolOwner, PhysicalResidencyShutdown,
     PhysicalWritebackClaim,
 };
-use worth_store_physical_format::{store_namespace::StableStoreIdentity, RecordFrameCoordinate};
+use worth_store_physical_format::{RecordFrameCoordinate, store_namespace::StableStoreIdentity};
 
 pub(in crate::physical_runtime::record_serving) use super::candidate_frame_residency::{
     CandidateFrame, CandidateFrameCoordinate, CandidateFrameDeclaration,
@@ -58,6 +58,19 @@ impl RecordFramePorts {
         worth_store_buffer_pool::WritebackFenceDrainDenial,
     > {
         self.pool.drain_writeback_fence(range, barrier, reuse)
+    }
+
+    pub(in crate::physical_runtime::record_serving) fn drain_recovered_cancelled_fence(
+        &self,
+        range: worth_store_physical_format::ExtentArenaRange,
+        barrier: worth_store_buffer_pool::ArenaReuseBarrier,
+        covered_at: worth_store_physical_format::ExtentAllocationGeneration,
+    ) -> Result<
+        worth_store_physical_format::ArenaExtentFrameIdentity,
+        worth_store_buffer_pool::WritebackFenceDrainDenial,
+    > {
+        self.pool
+            .drain_recovered_cancelled_fence(range, barrier, covered_at)
     }
 
     pub(in crate::physical_runtime) fn seed_arena_generation_floor(
