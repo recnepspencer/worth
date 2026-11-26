@@ -24,7 +24,7 @@ mod resume;
 #[cfg(all(test, not(verus_keep_ghost)))]
 mod tests;
 
-pub(crate) use resume::{resume_release, ReleaseBarrier};
+pub(crate) use resume::{ReleaseBarrier, resume_release};
 
 #[cfg(verus_keep_ghost)]
 use vstd::prelude::*;
@@ -75,7 +75,12 @@ verus_items! {
 #[cfg(verus_keep_ghost)]
 verus! {
     spec fn spec_overlaps(a: ReachSpan, b: ReachSpan) -> bool {
-        a.space == b.space && a.key == b.key && a.first <= b.last && b.first <= a.last
+        a.space == b.space
+            && a.key == b.key
+            && a.first <= a.last
+            && b.first <= b.last
+            && a.first <= b.last
+            && b.first <= a.last
     }
 
     spec fn spec_span_clear(c: ReachSpan, reach: Seq<ReachSpan>) -> bool {
@@ -103,7 +108,12 @@ verus_fn! {
     pub(crate) fn spans_overlap(a: ReachSpan, b: ReachSpan) -> (result: bool);
     ensures { result == spec_overlaps(a, b), }
     body {
-        a.space == b.space && a.key == b.key && a.first <= b.last && b.first <= a.last
+        a.space == b.space
+            && a.key == b.key
+            && a.first <= a.last
+            && b.first <= b.last
+            && a.first <= b.last
+            && b.first <= a.last
     }
 }
 

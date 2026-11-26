@@ -1,8 +1,8 @@
 use super::RecordPublicationDirector;
 use crate::physical_runtime::durability::{
-    encode_retirement, DisplacedArtifact, DurableMaintenanceReceipt, PendingPublicationLease,
+    DisplacedArtifact, DurableMaintenanceReceipt, PendingPublicationLease,
     PhysicalRetirementDenial, PhysicalRootPublicationTransition, RetainedByteLease,
-    RetirementReleaseProjection, ScheduledMaintenanceDenial,
+    RetirementReleaseProjection, ScheduledMaintenanceDenial, encode_retirement,
 };
 use crate::physical_runtime::record_serving::arena::ArenaAllocationDenial;
 use crate::physical_runtime::record_serving::publication::PublicationPlan;
@@ -100,7 +100,7 @@ impl RecordPublicationDirector {
             let receipt = match result {
                 Ok(receipt) => receipt,
                 Err(denial @ ScheduledMaintenanceDenial::NotStarted(_)) => {
-                    return Err(maintenance_denial(denial))
+                    return Err(maintenance_denial(denial));
                 }
                 Err(ScheduledMaintenanceDenial::WrittenAwaitingBarrier { interval }) => {
                     if let Some(growth) = state.growth.take() {
@@ -163,20 +163,24 @@ impl RecordPublicationDirector {
         }
         match std::mem::replace(&mut state.progress, ReleaseProgress::InspectionRequired) {
             ReleaseProgress::IntentDurable(candidate, receipt) => {
-                if let Err(denial) = self.publish_extent_release(candidate, receipt) {
-                    if let Some(runtime) = self.runtime.upgrade() {
-                        runtime.health.revoke();
-                    }
-                    return Err(denial);
-                }
                 // This process published the free-space root, so it alone
                 // returns the range after completion and the fence drain.
                 let plan = crate::reclamation_plan_validator::resume_release(
                     crate::reclamation_plan_validator::ReleaseBarrier::IntentDurable,
                 );
-                state.progress = ReleaseProgress::RootPublished {
-                    allocator_update: plan.admit_to_allocator,
-                };
+                if plan.publish_free_space
+                    && let Err(denial) = self.publish_extent_release(candidate, receipt)
+                {
+                    if let Some(runtime) = self.runtime.upgrade() {
+                        runtime.health.revoke();
+                    }
+                    return Err(denial);
+                }
+                if plan.record_completion {
+                    state.progress = ReleaseProgress::RootPublished {
+                        allocator_update: plan.admit_to_allocator,
+                    };
+                }
             }
             ReleaseProgress::RootPublished { allocator_update } => {
                 state.progress = ReleaseProgress::RootPublished { allocator_update };

@@ -36,6 +36,9 @@ fn intent_admits_only_unreached_canonically_covered_unobligated_candidates() {
         plan(&unrelated, &[span(1, 0, 0, u64::MAX)], canonical),
         ReclaimVerdict::Obligated
     );
+    // Inverted (empty) spans never overlap valid spans.
+    assert!(!spans_overlap(span(1, 0, 10, 5), span(1, 0, 6, 9)));
+    assert!(!spans_overlap(span(1, 0, 6, 9), span(1, 0, 10, 5)));
     // Reach outranks coverage and obligations.
     assert_eq!(
         plan(

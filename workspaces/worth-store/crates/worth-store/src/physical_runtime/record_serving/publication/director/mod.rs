@@ -7,10 +7,10 @@ use worth_store_physical_format::{DurableFreeSpaceManifestHeader, DurablePhysica
 use crate::physical_runtime::instance::PhysicalStoreWorkRuntime;
 
 use super::super::{
-    residency::{frame_loading::CanonicalFrameReadSource, PhysicalResidencyWorkPort},
     AdmittedPhysicalRecordFormat, AdmittedRecordAccessPolicy, CanonicalRecordMutationPort,
     CanonicalRecordReadPort, RecordAllocationFrontier, RecordFramePorts,
     RecordPublicationResidueObservation,
+    residency::{PhysicalResidencyWorkPort, frame_loading::CanonicalFrameReadSource},
 };
 
 mod arena_allocation;
@@ -40,6 +40,7 @@ mod record_anchor_planning;
 mod record_append_fingerprint;
 mod retirement;
 mod retirement_progression;
+pub(in crate::physical_runtime) use retirement_progression::BoundedRetirementStep;
 mod retirement_release;
 pub(in crate::physical_runtime::record_serving) use arena_evacuation::ArenaEvacuationSelection;
 pub use arena_evacuation_producer::PhysicalArenaEvacuationPreparationOutcome;
@@ -57,7 +58,7 @@ mod root_progression;
 mod selected_manifest_pins;
 mod selected_segment_rewrite;
 pub(in crate::physical_runtime) use selected_manifest_pins::{
-    checkpoint_pin_scan_bytes, SelectedBlobManifestPins,
+    SelectedBlobManifestPins, checkpoint_pin_scan_bytes,
 };
 mod submission;
 #[cfg(feature = "certification-test-authority")]

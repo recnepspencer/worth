@@ -3,8 +3,8 @@ use super::arena_generation_ledger::{
 };
 use super::*;
 use crate::allocation_generation_guard::{
-    active_generation, can_admit_for_reuse, exceeds_seen_generations, frame_lookup_matches,
-    ranges_overlap, GuardIdentity, GuardRange, ReuseBarrier,
+    GuardIdentity, GuardRange, ReuseBarrier, active_generation, can_admit_for_reuse,
+    exceeds_seen_generations, frame_lookup_matches, ranges_overlap,
 };
 use crate::{ArenaReuseBarrier, WritebackFenceDrainDenial};
 use worth_store_physical_format::{
@@ -117,6 +117,89 @@ impl PhysicalResidencyPool {
         state.arena_generations.admit(range, next);
         self.inner.changed.notify_all();
         Ok(ArenaExtentFrameIdentity::new(range, next))
+    }
+
+    /// `WritebackFenceDrain` for a cancelled copy obligation recovered across
+    /// process reopen whose destination range remained reserved since open.
+    ///
+    /// When `covered_at` exceeds the range's active generation (e.g. a newer
+    /// root published after reopen), this delegates to [`Self::drain_writeback_fence`].
+    /// When the global reopen floor already covers `covered_at` without
+    /// rewinding, this verifies zero in-flight writebacks and drains any
+    /// residual frames while keeping the monotonic floor intact.
+    pub fn drain_recovered_cancelled_fence(
+        &self,
+        range: ExtentArenaRange,
+        barrier: ArenaReuseBarrier,
+        covered_at: ExtentAllocationGeneration,
+    ) -> Result<ArenaExtentFrameIdentity, WritebackFenceDrainDenial> {
+        if barrier != ArenaReuseBarrier::CheckpointCoveredCancel {
+            return Err(WritebackFenceDrainDenial::BarrierIncomplete(barrier));
+        }
+        let mut state = self.inner.lock();
+        if !state.accepting {
+            state.accounting.deny();
+            return Err(WritebackFenceDrainDenial::PoolClosed);
+        }
+        let freed = guard_range(range);
+        let seen = state.arena_generations.overlapping(freed);
+        if exceeds_seen_generations(freed, &seen, guard_generation(covered_at)) {
+            drop(state);
+            return self.drain_writeback_fence(range, barrier, covered_at);
+        }
+        let active = physical_generation(active_generation(freed, &seen));
+        let overlapping = overlapping_coordinates(&state, freed);
+        let in_flight: Vec<GuardRange> = overlapping
+            .iter()
+            .filter(|coordinate| {
+                state
+                    .frames
+                    .get(coordinate)
+                    .expect("occupied slot")
+                    .writeback_claimed
+            })
+            .filter_map(|coordinate| arena_range(*coordinate).map(guard_range))
+            .collect();
+        if !in_flight.is_empty() {
+            state.accounting.deny();
+            state.arena_generations.fence(range);
+            return Err(WritebackFenceDrainDenial::WritebackInFlight {
+                overlapping: u32::try_from(in_flight.len()).unwrap_or(u32::MAX),
+            });
+        }
+        let artifact = RecordArtifactFile::ExtentArena {
+            arena: range.arena().get(),
+        };
+        let busy = if state.frames.contains_artifact_alias(artifact) {
+            Some(PhysicalResidencyDenial::ArtifactIdentityOccupied)
+        } else {
+            overlapping.iter().find_map(|coordinate| {
+                validate_drain_eviction(state.frames.get(coordinate).expect("occupied slot")).err()
+            })
+        };
+        if let Some(reason) = busy {
+            state.arena_generations.fence(range);
+            state.accounting.deny();
+            return Err(WritebackFenceDrainDenial::FrameBusy(reason));
+        }
+        for coordinate in overlapping {
+            let was_dirty = state
+                .frames
+                .get(&coordinate)
+                .expect("validated frame")
+                .dirty;
+            if !was_dirty {
+                state.detach_evictable(coordinate);
+            }
+            let removed = state.frames.remove(&coordinate).expect("validated frame");
+            state.accounting.remove_frame(removed.accounting_removal());
+            if was_dirty {
+                state.accounting.record_administrative_drain();
+            }
+        }
+        state.arena_generations.clear_fence(range);
+        self.inner.changed.notify_all();
+        Ok(ArenaExtentFrameIdentity::new(range, active))
     }
 
     /// Seeds the durable reopen frontier floor so post-reopen arena frames

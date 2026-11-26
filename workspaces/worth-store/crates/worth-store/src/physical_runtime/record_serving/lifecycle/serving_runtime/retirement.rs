@@ -10,37 +10,40 @@ impl ServingPhysicalRuntime {
     }
 
     /// One bounded incremental reclamation pass (`ReclaimBudget`). Each
-    /// artifact is admitted against the remaining budget before its claim and
-    /// retired through the same verified planner as [`Self::retire_displaced_segment`],
-    /// so a pass never retires more than the budget slice and stops at the
-    /// first protected, uncovered or unresolved artifact.
+    /// artifact is admitted against the remaining budget atomically with its
+    /// claim and retired through the same verified planner as
+    /// [`Self::retire_displaced_segment`], so a pass never retires more than
+    /// the budget slice and skips protected artifacts instead of wedging on
+    /// them.
     pub fn reclaim_within_budget(
         &self,
         budget: crate::physical_runtime::PhysicalReclaimBudget,
     ) -> crate::physical_runtime::PhysicalReclaimPass {
+        use crate::physical_runtime::record_serving::publication::BoundedRetirementStep;
         use crate::physical_runtime::{PhysicalReclaimPass, PhysicalReclaimPassEnd as End};
+        let checkpoints = self.checkpoints();
         let mut pass = PhysicalReclaimPass {
             retired_artifacts: 0,
             retired_bytes: 0,
             end: End::Drained,
         };
         loop {
-            let Some(next) = self.parts.publication.next_reclaim_bytes() else {
-                return pass;
-            };
-            if !budget.admits(&pass, next) {
-                pass.end = End::BudgetExhausted;
-                return pass;
-            }
-            match self.retire_displaced_artifact() {
-                Ok(retired) => {
+            match self
+                .parts
+                .publication
+                .retire_displaced_artifact_step(&checkpoints, |next| budget.admits(&pass, next))
+            {
+                BoundedRetirementStep::Retired(displaced) => {
                     pass.retired_artifacts += 1;
-                    pass.retired_bytes = pass
-                        .retired_bytes
-                        .saturating_add(retired.map_or(0, |displaced| displaced.bytes));
+                    pass.retired_bytes = pass.retired_bytes.saturating_add(displaced.bytes);
                 }
-                Err(crate::physical_runtime::PhysicalRetirementDenial::Absent) => return pass,
-                Err(denial) => {
+                BoundedRetirementStep::SkippedCompleted => continue,
+                BoundedRetirementStep::Drained => return pass,
+                BoundedRetirementStep::BudgetExhausted => {
+                    pass.end = End::BudgetExhausted;
+                    return pass;
+                }
+                BoundedRetirementStep::Denied(denial) => {
                     pass.end = End::Denied(denial);
                     return pass;
                 }

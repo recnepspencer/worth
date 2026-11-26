@@ -12,14 +12,14 @@ use crate::physical_runtime::{
     artifact_family::PhysicalArtifactFamilyRegistry,
     durability::ServingCheckpointCustody,
     record_serving::{
-        checkpoint_pin_scan_bytes, RecordAllocationFrontier, RecordServingOwner, RecordServingState,
+        RecordAllocationFrontier, RecordServingOwner, RecordServingState, checkpoint_pin_scan_bytes,
     },
     runtime::PhysicalRuntimeCore,
 };
 
 use super::{
-    reopen_durability_basis, PhysicalResidencyOwner, PhysicalSignalConstructionFailure,
-    PhysicalStoreInstanceParts,
+    PhysicalResidencyOwner, PhysicalSignalConstructionFailure, PhysicalStoreInstanceParts,
+    reopen_durability_basis,
 };
 
 pub(in crate::physical_runtime) struct PhysicalStoreInstanceFoundation {
@@ -81,7 +81,7 @@ impl PhysicalStoreInstanceParts {
                         residency,
                         durability,
                         cause,
-                    })
+                    });
                 }
             };
         let signal_profile = prepared_work.signal_profile();
@@ -133,7 +133,7 @@ impl PhysicalStoreInstanceParts {
                     cause: PhysicalSignalConstructionFailure::DurabilityStateReopenRejected(
                         failure,
                     ),
-                })
+                });
             }
         };
         let retained_wal_tail = durability
@@ -198,9 +198,8 @@ impl PhysicalStoreInstanceParts {
             };
         let reopened = durability_reopen.install(durability);
         // Seed from the reopened durable WAL frontier, with or without a
-        // recent checkpoint, so no post-reopen generation rewinds below a
-        // pre-crash barrier; the WAL owner caps it below unresolved Path B
-        // retries.
+        // recent checkpoint, so no post-reopen generation ever rewinds below
+        // a pre-crash barrier (`post_crash_frame_never_rewinds_below_history`).
         if let Some(floor) =
             worth_store_physical_format::ExtentAllocationGeneration::at_durable_barrier(
                 bootstrap.current_root.generation(),

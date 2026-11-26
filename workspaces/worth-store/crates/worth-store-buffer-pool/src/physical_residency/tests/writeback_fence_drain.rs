@@ -250,3 +250,40 @@ fn cancelled_writeback_claim_discards_unpinned_dirty_frame_and_stale_gen_never_p
     assert_eq!(pool.counters().frame_entries(), 0);
     assert_eq!(pool.counters().dirty_frames(), 0);
 }
+
+#[test]
+fn recovered_cancelled_drain_preserves_monotonic_floor_and_subsequent_live_advances() {
+    let identity = store(117);
+    let pool =
+        PhysicalResidencyPool::open(identity, limits(256, 4, 2, candidate_batch_bytes(2), 8))
+            .unwrap();
+    // Global reopen floor (6, 11) already covers a pre-crash Path A barrier at
+    // (6, 10) on range B and a pre-crash cancelled copy on range A at (6, 10).
+    pool.seed_arena_generation_floor(generation(6, 11));
+    let cancelled = ArenaReuseBarrier::CheckpointCoveredCancel;
+    assert_eq!(
+        pool.drain_recovered_cancelled_fence(
+            range(0, 64),
+            ArenaReuseBarrier::CompletedRetirement,
+            generation(6, 10),
+        ),
+        Err(WritebackFenceDrainDenial::BarrierIncomplete(
+            ArenaReuseBarrier::CompletedRetirement
+        ))
+    );
+    let recovered = pool
+        .drain_recovered_cancelled_fence(range(0, 64), cancelled, generation(6, 10))
+        .unwrap();
+    assert_eq!(recovered.generation(), generation(6, 11));
+    // Unrelated range B keeps the exact monotonic reopen floor (6, 11).
+    assert_eq!(
+        pool.active_arena_generation(range(64, 64)),
+        generation(6, 11)
+    );
+    // A subsequent live Path B cancellation at WAL LSN 12 still advances past
+    // (6, 11) cleanly on range A without colliding with a fabricated sequence.
+    let live = pool
+        .drain_writeback_fence(range(0, 64), cancelled, generation(6, 12))
+        .unwrap();
+    assert_eq!(live.generation(), generation(6, 12));
+}

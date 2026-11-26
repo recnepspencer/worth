@@ -4,15 +4,21 @@
 //! full-scan oracle pin for pin, in order, across drop additions, retirement,
 //! route additions, rewrites and reopen, while the work it inspects tracks the touched routes
 //! rather than every route in the selected root.
+use worth_store::physical_runtime::production::PhysicalMutationCheckpoint;
 use worth_store::physical_runtime::{
-    BlobReclaimReceipt, BlobReclaimRetirement, BlobReclaimRetirementBudget,
-    PhysicalCheckpointDeadline, PhysicalCheckpointIdempotencyKey, PhysicalCheckpointOutcome,
-    PhysicalCheckpointRequest, PhysicalMutationDeadline, ServingPhysicalRuntime,
+    BlobAppendFailure, BlobReclaimFailure, BlobReclaimReceipt, BlobReclaimRetirement,
+    BlobReclaimRetirementBudget, PhysicalCheckpointDeadline, PhysicalCheckpointIdempotencyKey,
+    PhysicalCheckpointOutcome, PhysicalCheckpointRequest, PhysicalMutationDeadline,
+    PhysicalMutationProvenNoEffectCause, ServingPhysicalRuntime,
 };
 use worth_store_testkit_store::fixture::{
     placement, serving_from_initialization, serving_from_open,
 };
-use worth_store_testkit_store::physical_blob_journeys::checkpoint_capture_envelope::release_one_batch;
+use worth_store_testkit_store::physical_blob_journeys::checkpoint_capture_envelope::{
+    admitted_blob_scope, release_one_batch, BlobCheckpointLimit, BlobChunkSize,
+    BlobIngestDeclaration, BlobReadLimits, BlobReclaimDisposition, BlobReclaimLimits,
+    BlobReclaimRequest,
+};
 use worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::selected_segment_rewrite::prepare_rewrite;
 use worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::{
     completed, prepare_records,
@@ -90,9 +96,15 @@ fn retire(serving: &ServingPhysicalRuntime, receipt: &mut BlobReclaimReceipt) {
     panic!("released drop retirement must settle");
 }
 
-/// Real released drops: each holds its manifest (and the exclusive
-/// publication lease) until its covering checkpoint lets it retire, so each
-/// drop is one roster addition followed by one removal.
+/// Real released drops and real orphan-manifest removal:
+/// - Released drops (`DropSetManifestV3`) add descriptor-linked manifests to
+///   the C.5 routing tree (`0 -> 1 -> 2`); `continue_reclaim_retirement`
+///   retires their displaced extents while keeping those linked manifests.
+/// - A timed-out abandoned-ingest drop leaves an orphan `DropSetManifestV2`
+///   (`2 -> 3`); once its payload drops (`3 -> 4`), C.11 manifest-residue
+///   cleanup deletes that orphan manifest from the C.5 routing tree (`4 -> 3`),
+///   exercising both real-Store additions and real-Store removals through
+///   `delta_scan` against the full-scan oracle.
 #[test]
 fn carried_cutover_roster_matches_full_scan_across_released_drops() {
     let parent = tempfile::tempdir().unwrap();
@@ -109,26 +121,171 @@ fn carried_cutover_roster_matches_full_scan_across_released_drops() {
     assert!(unchanged.carried);
     assert_eq!(unchanged.inspected, 0);
     assert_eq!(unchanged.attempts, added.attempts);
-    // Retirement rewrites the drop's records and removes its batch routes.
+    // Retiring the drop's extents leaves its descriptor-linked manifest on the
+    // routing tree.
     checkpoint(&serving, 0x41);
     retire(&serving, &mut first);
     let retired = audit(&serving);
     assert!(retired.carried);
+    assert_eq!(retired.attempts, added.attempts);
     // Ordinary route additions leave the roster unchanged.
     fill(&serving, 2, 8);
     let rewritten = audit(&serving);
     assert!(rewritten.carried);
     assert_eq!(rewritten.attempts, retired.attempts);
     let mut second = release_one_batch(&serving, 0x32, true);
-    let readded = audit(&serving);
-    assert_eq!(readded.attempts.len(), rewritten.attempts.len() + 1);
-    assert!(readded
-        .attempts
-        .iter()
-        .any(|attempt| !rewritten.attempts.contains(attempt)));
+    let two_manifests = audit(&serving);
+    assert!(two_manifests.carried);
+    assert_eq!(two_manifests.attempts.len(), 2);
+    assert!(
+        two_manifests
+            .attempts
+            .iter()
+            .any(|attempt| !rewritten.attempts.contains(attempt))
+    );
     checkpoint(&serving, 0x42);
     retire(&serving, &mut second);
-    audit(&serving);
+    let both_retired = audit(&serving);
+    assert!(both_retired.carried);
+    assert_eq!(both_retired.attempts.len(), 2);
+
+    // Create one real orphan DropSetManifestV2 from an abandoned ingest, then
+    // remove it via C.11 manifest-residue cleanup to exercise delta_scan removal.
+    const CHUNK: usize = 64 << 10;
+    let scope = admitted_blob_scope("c11.blob.carried.cutover.orphan");
+    let read_limits = BlobReadLimits::new(std::num::NonZeroU64::new(128).unwrap());
+    let blobs = serving.blobs().unwrap();
+    let object = blobs.issue_object_id(read_limits).unwrap();
+    let declaration = BlobIngestDeclaration::new(
+        object,
+        BlobChunkSize::from_bytes(CHUNK as u64).unwrap(),
+        (2 * CHUNK) as u64,
+        &scope,
+        BlobCheckpointLimit::bounded_horizon(16).unwrap(),
+        PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+    )
+    .unwrap();
+    let mut ingest = blobs
+        .begin_ingest(declaration, placement(), CHUNK as u64, read_limits)
+        .unwrap();
+    ingest.push(&vec![0x55; CHUNK]).unwrap();
+    ingest.checkpoint().unwrap();
+    let token = ingest.resume_token();
+    drop(ingest);
+    blobs
+        .abort_ingest(
+            token,
+            &scope,
+            placement(),
+            PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+            worth_store::physical_runtime::BlobTerminalLimits::new(
+                std::num::NonZeroU64::new(256).unwrap(),
+            ),
+        )
+        .unwrap();
+    let orphan_handle = blobs
+        .reclaim(BlobReclaimRequest::abandoned(
+            token,
+            &scope,
+            placement(),
+            PhysicalMutationDeadline::after_milliseconds(5_000).unwrap(),
+            BlobReclaimLimits::new(
+                std::num::NonZeroU64::new(256).unwrap(),
+                std::num::NonZeroU64::new(64 << 20).unwrap(),
+                std::num::NonZeroU16::new(1).unwrap(),
+            )
+            .unwrap(),
+        ))
+        .unwrap();
+    let manifest_gate =
+        serving.pause_physical_mutation_at(PhysicalMutationCheckpoint::BeforeTerminalFinalization);
+    let orphan_result = std::thread::scope(|workers| {
+        let worker = workers.spawn(|| {
+            assert!(manifest_gate.await_arrival());
+            let reservation_gate = serving
+                .pause_physical_mutation_at(PhysicalMutationCheckpoint::BeforeTerminalFinalization);
+            manifest_gate.release();
+            assert!(reservation_gate.await_arrival());
+            let drop_gate =
+                serving.pause_physical_mutation_at(PhysicalMutationCheckpoint::BeforeEffectCutover);
+            reservation_gate.release();
+            assert!(drop_gate.await_arrival());
+            serving
+                .certification_advance_physical_signal_clock(
+                    worth_signal::facade::ClockAdvanceRequest::new(
+                        worth_signal::facade::ClockDomain::MonotonicExecution,
+                        worth_signal::facade::ClockTick::new(5_000),
+                    ),
+                )
+                .unwrap();
+            drop_gate.release();
+        });
+        let result = orphan_handle.wait();
+        worker.join().unwrap();
+        result
+    });
+    assert!(matches!(
+        orphan_result,
+        Err(BlobReclaimFailure::ManifestRetained {
+            cause: BlobAppendFailure::ProvenNoEffect(fate),
+            ..
+        }) if fate.cause() == PhysicalMutationProvenNoEffectCause::DeadlineElapsedBeforeGroupSeal
+    ));
+    let with_orphan = audit(&serving);
+    assert!(with_orphan.carried);
+    assert_eq!(with_orphan.attempts.len(), 3);
+    // Drop all abandoned payload records (each batch adds one linked manifest).
+    loop {
+        let payload_drop = blobs
+            .reclaim(BlobReclaimRequest::abandoned(
+                token,
+                &scope,
+                placement(),
+                PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+                BlobReclaimLimits::new(
+                    std::num::NonZeroU64::new(256).unwrap(),
+                    std::num::NonZeroU64::new(64 << 20).unwrap(),
+                    std::num::NonZeroU16::new(4).unwrap(),
+                )
+                .unwrap(),
+            ))
+            .unwrap()
+            .wait()
+            .unwrap();
+        assert_eq!(payload_drop.disposition(), BlobReclaimDisposition::Dropped);
+        if payload_drop.remaining_payload_records() == 0 {
+            break;
+        }
+    }
+    let before_removal = audit(&serving);
+    assert!(before_removal.carried);
+    assert!(before_removal.attempts.len() >= 4);
+    // C.11 manifest-residue cleanup deletes the orphan DropSetManifestV2 from
+    // the C.5 routing tree, shrinking the roster by one and exercising
+    // real-Store manifest removal through `delta_scan`.
+    let cleanup = blobs
+        .reclaim(BlobReclaimRequest::abandoned(
+            token,
+            &scope,
+            placement(),
+            PhysicalMutationDeadline::after_milliseconds(30_000).unwrap(),
+            BlobReclaimLimits::new(
+                std::num::NonZeroU64::new(256).unwrap(),
+                std::num::NonZeroU64::new(64 << 20).unwrap(),
+                std::num::NonZeroU16::new(4).unwrap(),
+            )
+            .unwrap(),
+        ))
+        .unwrap()
+        .wait()
+        .unwrap();
+    assert_eq!(cleanup.disposition(), BlobReclaimDisposition::Dropped);
+    let after_removal = audit(&serving);
+    assert!(after_removal.carried);
+    assert_eq!(
+        after_removal.attempts.len(),
+        before_removal.attempts.len() - 1
+    );
     // Released-drop custody reopens only through C.8 rejoin; the ordinary
     // reopen fallback is proven on a record-only Store below.
     serving.close();

@@ -84,12 +84,19 @@ fn bounded_reclamation_keeps_held_roots_and_returns_space_after_release() {
         )
         .unwrap()
         .pin();
+    // A second live reader holds the post-pin tail generation so both held
+    // generations become displaced and later drain across multiple passes.
+    let reader_two = serving.records().unwrap();
 
     // Repeated edit -> bounded maintenance cycles while both holders live.
+    // Unrelated displaced segments behind the held reader and durable pin must
+    // actively reclaim rather than suffering head-of-line veto (`M5`, `D5`).
     let one = PhysicalReclaimBudget::new(1, u64::MAX);
+    let mut unrelated_retired = 0;
     for material in 83..89 {
         completed(prepare_rewrite(&serving, placement, [material; 32]).execute());
-        bounded_pass(&serving, one);
+        let pass = bounded_pass(&serving, one);
+        unrelated_retired += pass.retired_artifacts;
         assert_eq!(read_from_reader(&reader, record), b"held-history");
         let pins = serving.root_pins().unwrap();
         let loan = pins.loan(pin).unwrap();
@@ -98,33 +105,51 @@ fn bounded_reclamation_keeps_held_roots_and_returns_space_after_release() {
             b"held-history"
         );
     }
-    // A zero or undersized budget retires nothing, however much awaits.
+    assert!(
+        unrelated_retired >= 4,
+        "unrelated displaced segments must reclaim while holders live (retired {unrelated_retired})"
+    );
+    // When only protected artifacts remain, even a 1-byte budget reports
+    // `Denied(Protected)` rather than a false `BudgetExhausted`.
+    let protected_tiny = bounded_pass(&serving, PhysicalReclaimBudget::new(8, 1));
+    assert_eq!(protected_tiny.retired_artifacts, 0);
+    assert_eq!(
+        protected_tiny.end,
+        PhysicalReclaimPassEnd::Denied(PhysicalRetirementDenial::Protected)
+    );
+    // Create one more unrelated displaced segment to test zero and undersized
+    // budgets against an actually eligible artifact.
+    completed(prepare_rewrite(&serving, placement, [89; 32]).execute());
     let starved = bounded_pass(&serving, PhysicalReclaimBudget::new(0, u64::MAX));
     assert_eq!(starved.retired_artifacts, 0);
+    assert_eq!(starved.end, PhysicalReclaimPassEnd::BudgetExhausted);
     let undersized = bounded_pass(&serving, PhysicalReclaimBudget::new(8, 1));
     assert_eq!(undersized.retired_artifacts, 0);
     assert_eq!(undersized.end, PhysicalReclaimPassEnd::BudgetExhausted);
-    // The registration still blocks its displaced generation (`M5`).
+    // Draining that one eligible segment leaves only the two held generations
+    // (`M5`), where the next unbounded pass stops at `Denied(Protected)`.
     let held = bounded_pass(&serving, PhysicalReclaimBudget::new(u64::MAX, u64::MAX));
+    assert_eq!(held.retired_artifacts, 1);
     assert_eq!(
         held.end,
         PhysicalReclaimPassEnd::Denied(PhysicalRetirementDenial::Protected)
     );
-    let held_bytes = segment_bytes(&root);
-    let held_segments = segment_names(&root).len();
     assert_eq!(read_from_reader(&reader, record), b"held-history");
 
-    // Release every holder; bounded passes then drain all garbage.
+    // Release every holder; bounded passes then drain all remaining garbage.
     drop(reader);
+    drop(reader_two);
     assert_eq!(
         serving.root_pins().unwrap().expire(pin, write()),
         Ok(RootPinState::Expired)
     );
-    let two = PhysicalReclaimBudget::new(2, u64::MAX);
+    let held_bytes = segment_bytes(&root);
+    let held_segments = segment_names(&root).len();
+    let one_each = PhysicalReclaimBudget::new(1, u64::MAX);
     let mut passes = 0;
     let mut retired = 0;
     loop {
-        let pass = bounded_pass(&serving, two);
+        let pass = bounded_pass(&serving, one_each);
         retired += pass.retired_artifacts;
         passes += 1;
         if pass.end == PhysicalReclaimPassEnd::Drained {
@@ -137,8 +162,8 @@ fn bounded_reclamation_keeps_held_roots_and_returns_space_after_release() {
         );
         assert!(passes < 64, "bounded passes must converge");
     }
-    assert!(retired >= 2, "held garbage retires once released");
-    assert!(passes >= 2, "a two-artifact budget needs several passes");
+    assert_eq!(retired, 2, "both held generations retire once released");
+    assert!(passes >= 2, "a one-artifact budget needs multiple passes");
     assert!(segment_names(&root).len() < held_segments);
     assert!(
         segment_bytes(&root) < held_bytes,
@@ -147,6 +172,36 @@ fn bounded_reclamation_keeps_held_roots_and_returns_space_after_release() {
     assert_eq!(
         read_from_reader(&serving.records().unwrap(), record),
         b"held-history"
+    );
+    serving.close();
+}
+
+#[test]
+fn failed_covering_checkpoint_reverts_cleanly_without_wedging_writes_or_retirement() {
+    let parent = tempfile::tempdir().unwrap();
+    let root = parent.path().join("store");
+    let serving = initialized(&root);
+    let placement = configuration().1;
+    let written = completed(prepare(&serving, placement, [91; 32], b"barrier-order").execute());
+    let record = written.into_acknowledgment().record_ids().next().unwrap();
+    completed(prepare_rewrite(&serving, placement, [92; 32]).execute());
+
+    // Fail the covering checkpoint before any durable intent lands.
+    serving.certification_fail_next_checkpoint_admission();
+    assert_eq!(
+        serving.retire_displaced_segment(),
+        Err(PhysicalRetirementDenial::Waiting)
+    );
+    // Ordinary writes and subsequent retirement must remain completely unwedged.
+    completed(prepare(&serving, placement, [93; 32], b"after-failed-ckpt").execute());
+    serving.retire_displaced_segment().unwrap();
+    assert_eq!(
+        serving.retire_displaced_segment(),
+        Err(PhysicalRetirementDenial::Absent)
+    );
+    assert_eq!(
+        read_from_reader(&serving.records().unwrap(), record),
+        b"barrier-order"
     );
     serving.close();
 }
