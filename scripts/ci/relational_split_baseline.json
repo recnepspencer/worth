@@ -156,6 +156,7 @@
     "facade::branch::RelationalModelOwnershipConflict",
     "facade::branch::RelationalModelOwnershipDenial",
     "facade::branch::RelationalModelOwnershipDomain",
+    "facade::branch::RelationalOwnedGraphCompanions",
     "facade::branch::RelationalOwnedModelEntityBoundary",
     "facade::branch::RelationalOwnedModelForeignRelation",
     "facade::branch::RelationalOwnedModelGraphSelection",

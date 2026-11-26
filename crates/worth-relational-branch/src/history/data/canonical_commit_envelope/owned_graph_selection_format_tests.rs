@@ -5,10 +5,13 @@
 use super::*;
 use crate::identity::data::PartitionId;
 
+/// A descriptor of an empty main branch, as an observed basis serializes
+/// it. The envelope only carries it; this test reads no branch.
+const DESCRIPTOR: &str = r#"{"descriptor_version":2,"runtime_instance_id":1,"branch_id":"main","reference":{"branch_id":"relational/1/main","target":"Empty","generation":0},"truth_version":0,"root_identity":0,"schema_commitment":"d88918c5d7c1c31bc3df72d45eac0c683488dbff018bca1726e03b7004685707","visibility_commitment":"0000000000000000000000000000000000000000000000000000000000000000","posture":"Live"}"#;
+
 fn selection(companion_retired: Vec<EntityId>, companion_selected: Vec<SelectedEntity>) -> CanonicalOwnedGraphSelection {
-    let (_history, basis) = crate::branch::basis_fixture::observed_empty_branch_for_test(1);
     CanonicalOwnedGraphSelection::from_observed(
-        basis.observation().descriptor().clone(),
+        serde_json::from_str(DESCRIPTOR).unwrap(),
         EntityId::new(PartitionId::main(), 1, 1),
         vec![EntityId::new(PartitionId::main(), 2, 1)],
         Vec::new(),
