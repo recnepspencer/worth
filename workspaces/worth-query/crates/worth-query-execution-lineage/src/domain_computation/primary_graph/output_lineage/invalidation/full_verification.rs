@@ -194,20 +194,33 @@ impl FullVerificationImage<'_> {
             let Some(facts) = row.facts.for_comparison() else {
                 return Ok(FullVerificationDecision::Changed);
             };
+            // Each restored fact holds as readmission accepts it, through the
+            // coordinate of the row it belongs to (public #358).
+            let accept = |coordinate| {
+                super::super::RestoredAcceptance::new(execution, self.runtime, self.snapshot, coordinate)
+            };
+            let source = accept(row.historical.as_ref());
             for fact in facts.iter() {
-                if !fact_is_current(execution, fact, self.runtime, self.snapshot)? {
+                if !(fact_is_current(execution, fact, self.runtime, self.snapshot)?
+                    || source.moved_fact_holds(fact)?)
+                {
                     return Ok(FullVerificationDecision::Changed);
                 }
             }
             let projection = equality::output_projection(&self.state, terminal, observed_rows)?;
             if let Some(projection) = projection {
+                let output = accept(projection.historical.as_ref());
                 for fact in projection.facts.iter() {
-                    if !fact_is_current(execution, fact, self.runtime, self.snapshot)? {
+                    if !(fact_is_current(execution, fact, self.runtime, self.snapshot)?
+                        || output.moved_fact_holds(fact)?)
+                    {
                         return Ok(FullVerificationDecision::Changed);
                     }
                 }
             } else if let Some(witness) = fallback_witness.filter(|_| direct) {
-                if !witness.unchanged_in(self.runtime, self.snapshot, execution)? {
+                // The fallback witness is the root evidence's own row.
+                let output = accept(root_source.and_then(|root| root.historical));
+                if !output.witness_holds(witness)? {
                     return Ok(FullVerificationDecision::Changed);
                 }
             } else {

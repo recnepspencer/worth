@@ -63,7 +63,13 @@ impl FullVerificationImage<'_> {
                         evidence,
                     )?
                     .map_err(super::historical_selection::evidence_stop)?,
-                None => witness.unchanged_in(self.runtime, self.snapshot, execution)?,
+                None => super::super::super::RestoredAcceptance::new(
+                    execution,
+                    self.runtime,
+                    self.snapshot,
+                    source.historical,
+                )
+                .witness_holds(witness)?,
             };
             if !output_current {
                 return Ok(FullVerificationDecision::Changed);

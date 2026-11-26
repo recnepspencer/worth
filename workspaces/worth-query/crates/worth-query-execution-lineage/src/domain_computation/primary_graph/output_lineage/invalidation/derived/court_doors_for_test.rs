@@ -52,3 +52,40 @@ impl SourceInvalidationOwner {
         Self::prepare_settlement(self, registration)
     }
 }
+
+impl SourceInvalidationOwner {
+    /// Public #358 courts: the installed image at `selected` takes a declared
+    /// unavailable change at its commit, exactly as a delivery without exact
+    /// touches applies it (`delivery::affected::apply` with no keys).
+    #[doc(hidden)]
+    pub fn apply_discontinuity_for_test(
+        &self,
+        selected: &PositionedRelationalSnapshot,
+    ) -> Result<(), SettlementRegistrationStop> {
+        let cell = self
+            .cell_for_read(selected)?
+            .ok_or(SettlementRegistrationStop::Alignment(
+                FullVerificationReason::MissingSettlement,
+            ))?;
+        let image = cell.read_image();
+        let mut state = (*image.payload().current).clone();
+        let commit = selected
+            .commit_id()
+            .ok_or(SettlementRegistrationStop::SourceUnavailable)?;
+        super::super::delivery::affected::apply(
+            &mut state,
+            None,
+            commit,
+            &mut Default::default(),
+        )?;
+        let mut root = (**image.payload()).clone();
+        root.current = Arc::new(state);
+        let prepared = self.prepare_root_replacement(cell, image, Arc::new(root))?;
+        drop(
+            prepared
+                .install()
+                .map_err(|stopped| SettlementRegistrationStop::Edit(stopped.reason()))?,
+        );
+        Ok(())
+    }
+}

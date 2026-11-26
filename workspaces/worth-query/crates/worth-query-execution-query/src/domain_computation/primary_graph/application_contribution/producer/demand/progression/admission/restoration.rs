@@ -195,6 +195,8 @@ where
             },
             settlement,
             verified_at,
+            historical: None,
+            marks_posted: false,
         }))
     }
 
@@ -257,7 +259,7 @@ where
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         readmitted: &ReadmittedOutput,
     ) {
-        if readmitted.verified_at.is_none() {
+        if readmitted.verified_at.is_none() || readmitted.marks_posted {
             return;
         }
         let facts = self
@@ -304,7 +306,7 @@ use worth_relational::facade::mvcc::PublicationCompanionRegistrationStop as Nati
                         | NativeStop::HeadUnavailable)) => false,
                 }
             }) {
-                let _ = source_owner.invalidation_owner.establish_verified_root(head, identity, &facts, witness);
+                let _ = source_owner.invalidation_owner.establish_verified_root(head, identity, &facts, witness, readmitted.historical.as_ref());
             }
         }
     }
@@ -320,6 +322,11 @@ pub struct ReadmittedOutput {
         crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity,
     >,
     pub verified_at: Option<worth_relational::facade::runtime::PositionedRelationalSnapshot>,
+    /// The transported row's selection coordinate; `None` for a checkpoint.
+    pub historical: Option<crate::domain_computation::primary_graph::output_lineage::SelectionCoordinate>,
+    /// Readmission already posted this row's chain at `verified_at`
+    /// (public #358); nothing is marked again.
+    pub marks_posted: bool,
 }
 
 fn restoration_resource_denial(

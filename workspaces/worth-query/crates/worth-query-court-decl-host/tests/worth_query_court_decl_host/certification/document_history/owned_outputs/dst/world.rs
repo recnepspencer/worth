@@ -119,7 +119,7 @@ impl<'h> Document<'h> {
     }
 
     /// [`Document::attach`] binding the tree with the `dst-use` consumer;
-    /// only the regression held on public #358 uses it.
+    /// the #358 consumer regressions use it.
     pub fn attach_consumer(host: &'h Host) -> Self {
         Self::attach_as(host, Shape::WithConsumer)
     }

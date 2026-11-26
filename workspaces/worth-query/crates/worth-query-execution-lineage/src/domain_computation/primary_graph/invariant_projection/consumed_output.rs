@@ -51,6 +51,10 @@ pub struct RecordedConsumedOutput {
     verification_requirement: Option<FullVerificationReason>,
     native_output_witness: Option<Arc<OnceLock<SealedNativeOutputWitness>>>,
     selected_native_root: ConsumedReadRoot,
+    /// The consumed row's own selection coordinate when a graph selection
+    /// transported it: its restored facts and witness hold through that
+    /// selection's evidence as well as by revision (public #358).
+    historical: Option<crate::domain_computation::primary_graph::output_lineage::SelectionCoordinate>,
 }
 #[derive(Clone, Debug)]
 enum ConsumedReadRoot {
@@ -103,6 +107,11 @@ impl PartialEq for RecordedConsumedOutput {
                 _ => false,
             }
             && self.selected_native_root == other.selected_native_root
+            && match (&self.historical, &other.historical) {
+                (Some(left), Some(right)) => Arc::ptr_eq(left, right),
+                (None, None) => true,
+                _ => false,
+            }
     }
 }
 
@@ -142,6 +151,7 @@ impl ConsumedOutputEvidence {
         verification_requirement: Option<FullVerificationReason>,
         native_output_witness: Arc<OnceLock<SealedNativeOutputWitness>>,
         selected_native_root: Arc<PositionedRelationalSnapshot>,
+        historical: Option<crate::domain_computation::primary_graph::output_lineage::SelectionCoordinate>,
     ) -> Self {
         Self::Recorded(RecordedConsumedOutput {
             source: computation.source(),
@@ -151,6 +161,7 @@ impl ConsumedOutputEvidence {
             verification_requirement,
             native_output_witness: Some(native_output_witness),
             selected_native_root: ConsumedReadRoot::Selected(selected_native_root),
+            historical,
         })
     }
 
@@ -166,6 +177,7 @@ impl ConsumedOutputEvidence {
         verification_requirement: Option<FullVerificationReason>,
         native_output_witness: Option<Arc<OnceLock<SealedNativeOutputWitness>>>,
         selected_native_root: PositionedRelationalSnapshot,
+        historical: Option<crate::domain_computation::primary_graph::output_lineage::SelectionCoordinate>,
     ) -> Self {
         Self::Recorded(RecordedConsumedOutput {
             source,
@@ -175,6 +187,7 @@ impl ConsumedOutputEvidence {
             verification_requirement,
             native_output_witness,
             selected_native_root: ConsumedReadRoot::Published(selected_native_root),
+            historical,
         })
     }
 
@@ -209,6 +222,7 @@ impl ConsumedOutputEvidence {
                 .as_ref()
                 .ok_or(SettlementRegistrationStop::SourceUnavailable)?,
             witness,
+            self.recorded().historical.as_ref(),
         )
     }
 

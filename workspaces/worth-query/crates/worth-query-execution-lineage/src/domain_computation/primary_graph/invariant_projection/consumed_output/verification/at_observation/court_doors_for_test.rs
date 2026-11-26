@@ -11,7 +11,7 @@ impl ConsumedOutputEvidence {
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
     ) -> Result<bool, ConsumedOutputVerificationStop> {
-        Self::own_evidence_is_current(execution, facts, consumed, witness, runtime, snapshot)
+        Self::own_evidence_is_current(execution, facts, consumed, witness, runtime, snapshot, None)
     }
 }
 
@@ -40,6 +40,7 @@ impl ConsumedOutputEvidence {
             runtime,
             snapshot,
             selected,
+            None,
         )
     }
 }

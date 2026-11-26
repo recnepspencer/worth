@@ -108,9 +108,10 @@ impl OwnedVerifiedInputCutoff {
         observation::reach(Gate::PublicationConsumedOutputs);
         let current = ConsumedOutputEvidence::verify_many_with_admission(
             execution,
-            self.verified_consumed
-                .as_deref()
-                .unwrap_or_else(|| self.candidate.consumed_outputs()),
+            &self
+                .verified_consumed
+                .clone()
+                .unwrap_or_else(|| self.candidate.consumed_outputs_at(selected)),
             owner,
             runtime,
             snapshot,

@@ -4,6 +4,7 @@ impl WorthQueryCurrentOutputCandidate {
     pub fn from_recorded(recorded: &RecordedOutput, role: &str) -> Option<Self> {
         Some(Self {
             consumed_outputs: Arc::clone(&recorded.consumed_outputs),
+            transported: recorded.transported_view(),
             verification_requirement: recorded.verification_requirement(),
             settlement_identity: Arc::clone(&recorded.settlement_identity),
             correspondence: Arc::clone(&recorded.correspondence),

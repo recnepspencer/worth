@@ -87,6 +87,9 @@ pub struct SettlementMarks {
     pub posting_projection: Arc<super::settlement::PostingProjection>,
     pub consumed_upstream: OrdSet<Arc<RecordedSettlementIdentity>>,
     pub facts: super::super::RetainedSourceFacts,
+    /// The coordinate of a transported row's source `facts` only; the output
+    /// projection carries its own.
+    pub historical: Option<super::super::SelectionCoordinate>,
     pub output_facts: Option<super::output_facts::RegisteredOutputFacts>,
     pub output_coverage: OutputFactCoverage,
     pub read_basis: Arc<PositionedRelationalSnapshot>,
@@ -113,14 +116,22 @@ impl OutputFactCoverage {
 }
 
 impl SettlementMarks {
-    pub fn fact_at(&self, ordinal: usize) -> Option<&WorthQueryApplicationObservedFact> {
+    /// The fact at `ordinal` and the coordinate that may restore it: the
+    /// row's own below its source facts' length, the output projection's above.
+    pub fn fact_with_coordinate_at(
+        &self,
+        ordinal: usize,
+    ) -> Option<(
+        &WorthQueryApplicationObservedFact,
+        Option<&super::super::SelectionCoordinate>,
+    )> {
         self.facts.for_comparison()?;
-        self.facts.postconditions().get(ordinal).or_else(|| {
-            self.output_facts
-                .as_ref()?
-                .facts
-                .get(ordinal.checked_sub(self.facts.len())?)
-        })
+        if let Some(fact) = self.facts.postconditions().get(ordinal) {
+            return Some((fact, self.historical.as_ref()));
+        }
+        let output = self.output_facts.as_ref()?;
+        let fact = output.facts.get(ordinal.checked_sub(self.facts.len())?)?;
+        Some((fact, output.historical.as_ref()))
     }
 }
 

@@ -270,6 +270,7 @@ impl SourceInvalidationOwner {
             super::mark_state::OutputFactCoverage::Absent
         };
         settlement::insert(&mut state, registration, &image, alignment, output_coverage)?;
+        super::readmission_observation::record_settlement_registration();
         match output_basis {
             RegistrationOutputBasis::Ordinary => {}
             RegistrationOutputBasis::VerifiedCutoff(equality) => {

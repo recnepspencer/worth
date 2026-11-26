@@ -31,7 +31,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             .invalidation_owner;
         match ConsumedOutputEvidence::verify_many_with_admission(
             execution,
-            &read.consumed_outputs,
+            &read.consumed_outputs_at(&selected),
             owner,
             relational,
             snapshot,

@@ -218,7 +218,7 @@ impl CoupledAdoption {
             .source_owner_ref()
             .invalidation_owner;
         let mut claims =
-            required.prepare_prerequisites(self.candidate.consumed_outputs().iter(), owner)?;
+            required.prepare_prerequisites(self.candidate.performed_consumed_outputs().iter(), owner)?;
         let execution = phase
             .execution_request_for(&runtime.runtime.product_runtime)
             .map_err(|cause| {

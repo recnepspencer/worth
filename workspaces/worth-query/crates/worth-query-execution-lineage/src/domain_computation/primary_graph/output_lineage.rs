@@ -68,6 +68,7 @@ pub use historical_transport::{
 };
 pub use historical_transport::{
     HistoricalSelectionCoordinate, HistoricalTransportDenial, PreparedHistoricalTransport,
+    RerootPlan, RestoredAcceptance, SelectionCoordinate,
 };
 pub mod retention;
 pub mod settlement_identity;
@@ -102,6 +103,7 @@ pub use prepared_slot::prepare as prepare_output_lineage_slot;
 pub use prepared_slot::PreparedLineageRecoveryMetadata;
 pub use prepared_slot::PreparedOutputLineageSlot;
 pub use recorded_output::RecordedOutput;
+pub use recorded_output::{RerootedConsumed, TransportedView};
 use recorded_output::RecordedOutputMutable;
 pub use recorded_source_identity::RecordedSourceIdentity;
 use resolution::latest_output_matching;
@@ -182,6 +184,9 @@ pub struct WorthQueryCurrentOutputCandidate {
     pub output_role: String,
     pub observed_source_facts: RetainedSourceFacts,
     pub native_output_witness: Option<Arc<OnceLock<SealedNativeOutputWitness>>>,
+    /// The row's coordinate and re-rooted sets, when a selection transported
+    /// it (public #358); `consumed_outputs` stays its provenance.
+    pub transported: Option<TransportedView>,
 }
 
 pub struct WorthQueryCurrentOutputFamilyResolution {

@@ -6,6 +6,7 @@ impl AcceptedCurrentCandidate {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
+        selected: &PositionedRelationalSnapshot,
     ) -> Result<bool, ConsumedOutputVerificationStop> {
         // An old dependency set cannot constrain a consumer whose own native
         // evidence has changed. Missing evidence cannot reject the old edges.
@@ -31,10 +32,11 @@ impl AcceptedCurrentCandidate {
         match ConsumedOutputEvidence::own_evidence_is_current(
             execution,
             &handler_facts,
-            &self.selected.recorded().consumed_outputs,
+            &self.selected.recorded().consumed_outputs_at(selected),
             witness,
             runtime,
             snapshot,
+            self.selected.recorded().historical_selection.as_ref(),
         ) {
             Ok(false) => Ok(false),
             Ok(true) | Err(ConsumedOutputVerificationStop::Unavailable) => Ok(true),

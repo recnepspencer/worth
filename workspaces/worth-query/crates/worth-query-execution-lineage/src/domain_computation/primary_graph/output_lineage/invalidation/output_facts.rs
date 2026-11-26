@@ -12,6 +12,9 @@ use crate::domain_computation::primary_graph::output_lineage::SealedNativeOutput
 #[derive(Clone, Debug)]
 pub struct RegisteredOutputFacts {
     pub facts: Arc<[Fact]>,
+    /// The coordinate of the transported row whose sealed witness produced
+    /// these facts; it follows the projection to every row that carries it.
+    pub historical: Option<super::super::SelectionCoordinate>,
 }
 
 impl SourceInvalidationOwner {
@@ -21,6 +24,7 @@ impl SourceInvalidationOwner {
     pub fn prepare_performed_output_facts(
         &self,
         witness: &SealedNativeOutputWitness,
+        historical: Option<&super::super::SelectionCoordinate>,
     ) -> Result<Option<RegisteredOutputFacts>, CompanionPreflightStop> {
         let Some(projection) = witness.prepare_fact_projection()? else {
             return Ok(None);
@@ -29,7 +33,10 @@ impl SourceInvalidationOwner {
         let mut facts = Vec::with_capacity(count);
         projection.append_into(&mut facts);
         let facts = Arc::from(facts.into_boxed_slice());
-        Ok(Some(RegisteredOutputFacts { facts }))
+        Ok(Some(RegisteredOutputFacts {
+            facts,
+            historical: historical.cloned(),
+        }))
     }
 }
 

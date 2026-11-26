@@ -3,6 +3,7 @@ use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort a
 use worth_query_installation::facade::ApplicationSchema;
 
 mod dependent;
+mod chain_readmission;
 mod historical_restoration;
 pub mod restoration;
 mod retained_observation;

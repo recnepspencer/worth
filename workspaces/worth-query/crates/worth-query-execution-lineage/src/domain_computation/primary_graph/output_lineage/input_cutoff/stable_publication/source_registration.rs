@@ -61,6 +61,7 @@ impl<'lane, 'selected> PreparedStableLineagePublication<'lane, 'selected> {
                 stale_at_read_basis: im::OrdSet::new(),
                 requirement: None,
                 upstream,
+                historical: None,
             };
         match adoption {
             Some(adoption) => owner.prepare_current_executed_settlement(

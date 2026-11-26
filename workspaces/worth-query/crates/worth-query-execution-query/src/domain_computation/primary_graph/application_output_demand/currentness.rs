@@ -195,7 +195,13 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 .filter(|_| read.consumed_nothing)
             {
                 // A restored output gets its row from this comparison.
-                let _ = owner.establish_verified_root(&selected, &read.identity, facts, witness);
+                let _ = owner.establish_verified_root(
+                    &selected,
+                    &read.identity,
+                    facts,
+                    witness,
+                    read.historical_selection.as_ref(),
+                );
             }
             // A row that cannot be re-established keeps requiring verification.
             let _ =

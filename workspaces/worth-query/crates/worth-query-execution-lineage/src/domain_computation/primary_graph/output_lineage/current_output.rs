@@ -30,6 +30,9 @@ pub struct RetainedOutputCurrentnessRead {
     /// The facts and the witness are everything this output depends on.
     pub consumed_nothing: bool,
     pub verification_requirement: Option<super::invalidation::FullVerificationReason>,
+    /// Readers at a head serve `consumed_outputs_at`; the field stays
+    /// provenance for historical reads (public #358).
+    pub transported: Option<super::TransportedView>,
 }
 
 impl WorthQueryApplicationOutputLineage {
@@ -324,6 +327,7 @@ fn retained_currentness_read(
         required_publication: recorded.required_publication.clone(),
         facts,
         consumed_outputs: Arc::clone(&recorded.consumed_outputs),
+        transported: recorded.transported_view(),
         native_output_witness: completed.native_output_witness_cell().map(Arc::clone),
         consumed_nothing: recorded.consumed_outputs.is_empty()
             && recorded.performed_origin.is_none(),

@@ -16,10 +16,11 @@ impl ConsumedOutputEvidence {
             facts.computation(),
             Arc::clone(bound.consumed_identity()),
             facts.clone(),
-            Arc::clone(bound.consumed_upstream()),
+            bound.consumed_upstream(),
             None,
             Arc::clone(witness),
             Arc::new(selected.clone()),
+            bound.consumed_historical(),
         ))
     }
 

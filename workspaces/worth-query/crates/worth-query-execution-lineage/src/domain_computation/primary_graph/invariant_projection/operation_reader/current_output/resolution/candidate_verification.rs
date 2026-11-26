@@ -60,13 +60,14 @@ where
                 execution,
                 &candidate.settlement_identity,
                 &facts,
-                &candidate.consumed_outputs,
+                &candidate.consumed_outputs_at(selected),
                 candidate.verification_requirement,
                 witness,
                 &self.reader.invalidation_owner,
                 native,
                 self.reader.snapshot,
                 selected,
+                candidate.historical(),
             )
             .map(|verification| {
                 Some(match verification {

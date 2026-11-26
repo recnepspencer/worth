@@ -31,7 +31,6 @@ use crate::domain_computation::primary_graph::output_lineage::SealedNativeOutput
 use crate::domain_computation::primary_graph::SourceInvalidationOwner;
 pub use capacity_stop::VerificationCapacityStop;
 
-use work_budget::fact_is_current;
 pub use work_budget::map_admission_stop;
 pub use work_budget::map_verification_stop;
 pub use work_budget::reserve_pending;
@@ -45,6 +44,9 @@ pub struct EvidenceView<'a> {
     pub verification_requirement: Option<FullVerificationReason>,
     pub native_output_witness: Option<&'a Arc<OnceLock<SealedNativeOutputWitness>>>,
     pub selected_native_root: &'a PositionedRelationalSnapshot,
+    /// The viewed row's own selection coordinate, if a graph selection
+    /// transported it (public #358).
+    pub historical: Option<&'a crate::domain_computation::primary_graph::output_lineage::SelectionCoordinate>,
 }
 
 impl<'a> EvidenceView<'a> {
@@ -79,6 +81,7 @@ impl<'a> From<&'a ConsumedOutputEvidence> for EvidenceView<'a> {
             verification_requirement: evidence.verification_requirement,
             native_output_witness: evidence.native_output_witness.as_ref(),
             selected_native_root: &evidence.selected_native_root,
+            historical: evidence.historical.as_ref(),
         }
     }
 }

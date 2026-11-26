@@ -9,6 +9,17 @@ pub struct HistoricalSelectionCoordinate {
     pub prior: Option<std::sync::Arc<Self>>,
 }
 
+/// A transported row's coordinate, shared by its evidence, marks and projection.
+pub type SelectionCoordinate = std::sync::Arc<HistoricalSelectionCoordinate>;
+
+impl std::fmt::Debug for HistoricalSelectionCoordinate {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("HistoricalSelectionCoordinate")
+            .field("prior", &self.prior.is_some())
+            .finish_non_exhaustive()
+    }
+}
+
 impl HistoricalSelectionCoordinate {
     pub fn read_evidence(
         &self,

@@ -75,11 +75,10 @@ fn a_write_outside_on_a_forked_head_settles() {
 
 /// Public #358: [`a_write_outside_on_a_forked_head_settles`]'s first shape
 /// with a `dst-use` output that reads the root through `current_output`.
-/// Readmitted at the forked head, the consumer's evidence stays on the
-/// abandoned line, so it never certifies and the settle spins to the call
-/// deadline.
+/// Readmitted at the forked head with its chain, the consumer's evidence is
+/// re-identified at its own selection commit, so it certifies there instead
+/// of spinning to the call deadline on the abandoned line.
 #[test]
-#[ignore = "held on public #358: a current_output consumer readmitted at a forked head never certifies; its consumed evidence stays on the abandoned line"]
 fn a_consumer_on_a_forked_head_settles() {
     let equivalence =
         worth_query_host::facade::primary_graph::WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();
@@ -91,6 +90,10 @@ fn a_consumer_on_a_forked_head_settles() {
 {failure:#?}");
     }
     assert!(equivalence.shadow_checks_for_test() > 0, "the armed shadow must check a certification");
+    assert!(
+        worth_query_host::facade::primary_graph::readmitted_chains_on_this_thread_for_test() > 0,
+        "the consumer must be readmitted with its chain, not executed again"
+    );
 }
 
 /// One envelope that sets `e1` then retires `e2`, or retires both, on the
