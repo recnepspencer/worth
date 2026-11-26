@@ -1,6 +1,7 @@
 use contracts::lineage::data::graph::LineageNodeFieldsPort as _;
 use worth_relational_branch::internal_port::history::data::association_discovery::CanonicalCommitEnvelopeBodyOwnerPort as _;
 use worth_relational_contracts::internal_port as contracts;
+pub mod commit_rows;
 pub mod seal;
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -40,6 +41,13 @@ pub(crate) struct CapturedManifest<M = RelationalCheckpointManifestDraft> {
         ),
     >,
     pub(crate) history_members: Arc<RelationalHistoryMemberDirectory>,
+    /// The complete commit index rows, paged by [`Self::seal_commit_index`]
+    /// once the selected roots are known.
+    pub(crate) commit_rows: Vec<worth_relational_branch::internal_port::history::commit::index_entry::RelationalCommitIndexEntry>,
+    /// The prior selected checkpoint's index and canonical roster, whose
+    /// unchanged prefix this capture carries instead of re-reading it.
+    pub(crate) prior_commits: Option<Arc<worth_relational_branch::internal_port::history::commit::paged_index::reader::ColdCommitIndex>>,
+    pub(crate) prior_canonical: Option<crate::durability::checkpoint_history::inventory::CanonicalCheckpointMembers>,
 }
 
 impl CapturedManifest {
@@ -47,7 +55,7 @@ impl CapturedManifest {
         lane: &contracts::storage::substrate::maintenance::reconstruction::ReconstructionLane<'_>,
         checkpoint: &DurableCheckpoint,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
-        prior: Option<&RelationalCheckpointManifest>,
+        prior: Option<&RelationalCheckpointDirectory>,
         journal_index: Vec<worth_relational_branch::internal_port::history::commit::index_entry::RelationalCommitIndexEntry>,
         control: &mut super::CheckpointEncodingControl<'_, '_, '_, '_, '_>,
         original_digest: impl Fn(
@@ -55,53 +63,8 @@ impl CapturedManifest {
         ) -> Result<[u8; 32], RelationalNativeCheckpointCaptureDenial>,
     ) -> Result<Self, RelationalNativeCheckpointCaptureDenial> {
         let mut members = BTreeMap::new();
-        let mut commits = BTreeMap::new();
-        for entry in prior
-            .into_iter()
-            .flat_map(|prior| prior.commits.iter().cloned())
-            .chain(journal_index)
-        {
-            if let Some(existing) = commits.insert(entry.position, entry.clone())
-                && existing != entry
-            {
-                return Err(
-                    corrupt("checkpoint commit index has competing placement facts").into(),
-                );
-            }
-        }
-        for positioned in &checkpoint.envelopes {
-            control.checkpoint(0)?;
-            let envelope = positioned.envelope();
-            let root = checkpoint
-                .commit_descriptors
-                .get(&envelope.commit.commit_id)
-                .ok_or_else(|| corrupt("checkpoint commit lacks its catalog descriptor"))?;
-            if let Some(existing) = commits.get(&positioned.position()) {
-                if existing.commit != envelope.commit
-                    || existing.association_discovery != envelope.association_discovery()
-                    || &existing.root != root
-                    || existing.schema_version != envelope.schema_version
-                {
-                    return Err(
-                        corrupt("resident envelope disagrees with its admitted index").into(),
-                    );
-                }
-            } else {
-                let payload_digest = original_digest(positioned.position())?;
-                commits.insert(
-                    positioned.position(),
-                    worth_relational_branch::internal_port::history::commit::index_entry::RelationalCommitIndexEntry {
-                        association_discovery: envelope.association_discovery(),
-                        commit: envelope.commit.clone(),
-                        position: positioned.position(),
-                        root: root.clone(),
-                        payload_digest,
-                        schema_version: envelope.schema_version,
-                    },
-                );
-            }
-        }
-        let commits = commits.into_values().collect::<Vec<_>>();
+        let (commits, prior_commits, covered) =
+            commit_rows::capture(checkpoint, prior, journal_index, control, original_digest)?;
         let dictionary = super::dictionary_capture::capture(
             lane,
             &checkpoint.symbol_table,
@@ -153,7 +116,7 @@ impl CapturedManifest {
             manifest: RelationalCheckpointManifestDraft {
                 coverage: checkpoint.coverage.clone(),
                 covered_position: commits.last().map_or(
-                    contracts::publication::patch::data::patch_position::PatchStreamPosition(0),
+                    contracts::publication::patch::data::patch_position::PatchStreamPosition(covered),
                     |entry| entry.position,
                 ),
                 branch_data: worth_relational_branch::internal_port::branch::registry::checkpoint_capture::data::CheckpointBranchMetadata::from_ordinary_parts(
@@ -177,7 +140,7 @@ impl CapturedManifest {
                 mirror_schema: checkpoint.mirror_schema_digest,
                 mirror: Vec::new(),
                 history_dependencies: Vec::new(),
-                commits: CheckpointCommitIndex::from_ordinary(commits),
+                commits: CheckpointCommitIndex::default(),
                 canonical_members: Default::default(),
                 symbols: CheckpointPages::from_ordinary(symbol_pages),
                 symbol_identity_frontier: checkpoint.symbol_identity_frontier,
@@ -197,6 +160,9 @@ impl CapturedManifest {
             cold_source: None,
             guarded_members: BTreeMap::new(),
             history_members: Arc::default(),
+            commit_rows: commits,
+            prior_canonical: prior.map(|prior| prior.manifest.canonical_members.clone()),
+            prior_commits,
         })
     }
     #[cfg(test)]
@@ -356,6 +322,11 @@ impl CapturedManifest {
         };
         captured.manifest.roots = CheckpointRoots::from_ordinary(roots);
         captured.manifest.mirror = mirror;
+        for member in
+            captured.seal_commit_index(super::commit_pages::CommitPageCarry::Prior(false))?
+        {
+            members.entry(member.locator()).or_insert(member);
+        }
         captured.members = members;
         Ok(captured)
     }

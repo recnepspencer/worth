@@ -124,6 +124,7 @@ fn install_cold_directory(
             .partitions
             .working_set(restored.config.storage.residency_budget)
             .as_ref(),
+        restored.durability.checkpoint_selection(),
     )?;
     let history = restore_canonical_routes(
         &restored.history,
@@ -145,6 +146,7 @@ fn install_cold_directory(
         checkpoint,
         directory,
         prepared.has_naming_schemes,
+        state.history.cold_commit_catalog(),
     )?;
     // Only an acknowledged selected checkpoint becomes the selection owner;
     // an unacknowledged directory restores data without claiming selection.
@@ -244,7 +246,7 @@ fn restore_canonical_routes(
     if install_catalog {
         history
             .canonical_checkpoint_gate()
-            .install_checkpoint_catalog(history.commit_artifacts());
+            .install_checkpoint_catalog(history.checkpoint_catalog_parts());
     }
     Ok(history)
 }

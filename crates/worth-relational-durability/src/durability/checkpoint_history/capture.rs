@@ -1,20 +1,57 @@
-//! Freeze complete original canonical bytes into singleton members.
+//! Freeze original canonical bytes of uncovered commits into singleton members.
 use super::inventory::{CanonicalCheckpointMember, CanonicalCheckpointMembers};
 use crate::durability::data::*;
 use crate::durability::log::native_checkpoint_codec::CapturedManifest;
 use worth_execution::ExecutionRequest;
 use worth_relational_contracts::internal_port as contracts;
 use worth_relational_storage::internal_port::durability::medium::read_protection::RelationalDurableReadProtection;
+/// The prior checkpoint's roster is carried (`O(touched)`): its members are
+/// carried where the destination holds them and copied from the prior source
+/// otherwise; only commits above its covered prefix freeze new members.
 pub(crate) fn capture(
     captured: &mut CapturedManifest,
     request: &ExecutionRequest<'_, '_>,
+    may_carry: &dyn Fn(worth_relational_storage::internal_port::durability::medium::cold_source::RelationalDurableMemberLocator) -> bool,
 ) -> Result<(), RelationalNativeCheckpointCaptureDenial> {
-    let count = captured.manifest.commits.len();
+    let prior = captured.prior_canonical.clone();
+    let carried = prior.as_ref().map_or(&[][..], |prior| prior.entries());
+    let covered = carried.len() as u64;
+    let appended = captured
+        .commit_rows
+        .iter()
+        .filter(|entry| entry.position.0 > covered)
+        .cloned()
+        .collect::<Vec<_>>();
+    let count = carried.len() + appended.len();
     let memory = CanonicalCheckpointMembers::reserve(count, request)
         .map_err(RelationalNativeCheckpointCaptureDenial::Request)?;
     let mut rows = Vec::with_capacity(count);
     let mut payloads = worth_execution::ExecutionRequestArrayBuilder::allocate(*request, count)
         .map_err(array_capture_stop)?;
+    for row in carried {
+        contracts::execution::request_custody::check_request(request)
+            .map_err(RelationalNativeCheckpointCaptureDenial::Request)?;
+        let member = if may_carry(row.member) {
+            RelationalCheckpointMember::Carried {
+                locator: row.member,
+            }
+        } else {
+            let bytes = captured
+                .cold_source
+                .as_ref()
+                .ok_or_else(|| corrupt("carried canonical member has no source"))?
+                .read_member(row.member, row.member.length)
+                .map_err(|cause| corrupt(&format!("carried canonical member: {cause:?}")))?;
+            RelationalCheckpointMember::New {
+                locator: row.member,
+                bytes: worth_execution::ExecutionImmutableBytes::from_external_bytes(
+                    std::sync::Arc::new(bytes.into_boxed_slice()),
+                ),
+            }
+        };
+        rows.push(*row);
+        payloads.push(member).map_err(array_capture_stop)?;
+    }
     // A prior standalone Inline directory has no journal prefix. Select the
     // actual Journal issuer from its cells, independently of selected members.
     let source = captured
@@ -33,10 +70,10 @@ pub(crate) fn capture(
                 ),
             ))
         })?;
-    for (ordinal, entry) in captured.manifest.commits.iter().enumerate() {
+    for (offset, entry) in appended.iter().enumerate() {
         contracts::execution::request_custody::check_request(request)
             .map_err(RelationalNativeCheckpointCaptureDenial::Request)?;
-        if entry.position.0 != ordinal as u64 + 1 {
+        if entry.position.0 != covered + offset as u64 + 1 {
             return Err(corrupt("original canonical prefix is incomplete").into());
         }
         let cell = captured
@@ -77,7 +114,8 @@ pub(crate) fn capture(
     captured.canonical_publication = (count > 0)
         .then(|| {
             super::publication::CanonicalCheckpointPublication::capture(
-                &captured.manifest,
+                &captured.commit_rows,
+                covered,
                 &captured.envelope_cells,
                 request,
             )

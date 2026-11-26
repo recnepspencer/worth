@@ -54,7 +54,7 @@ impl RelationalCanonicalPublicationRoutes {
             .checkpoint_catalog
             .read()
             .unwrap_or_else(|error| error.into_inner());
-        let artifact = catalog.get(&entry.commit.commit_id)?;
+        let artifact = catalog.artifact(entry.commit.commit_id)?;
         let actual = artifact.envelope_residency();
         (Arc::ptr_eq(&actual, residency) && actual.journal_index().as_deref() == Some(entry))
             .then_some(Settlement::CheckpointReadmitted)

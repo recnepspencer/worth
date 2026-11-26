@@ -228,6 +228,19 @@ impl RelationalCommitCatalog {
         self.entries.len()
     }
 
+    /// Membership without counting a lookup.
+    pub fn contains(&self, commit_id: CommitId) -> bool {
+        self.entries.contains_key(&commit_id)
+    }
+
+    /// Versions of the resident entries, for counter floors.
+    pub fn max_version(&self) -> Option<VersionId> {
+        self.entries
+            .values()
+            .map(|artifact| artifact.version_id())
+            .max()
+    }
+
     pub fn is_empty(&self) -> bool {
         self.entries.is_empty()
     }

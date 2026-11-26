@@ -37,13 +37,32 @@ pub(super) struct RuntimeLineageEventResidency {
     pub(super) custody: Mutex<worth_relational_storage::internal_port::durability::medium::member_custody::native_source_slot::NativeSourceMemberState>,
     pages: BTreeMap<RelationalDurableMemberLocator, Arc<EventPageCell>>,
     routes: BTreeMap<RelationalLineageEventPageRoute, Vec<Arc<EventPageCell>>>,
-    commit_bindings: BTreeMap<CommitId, RelationalCommitReceipt>,
+    commit_bindings: LineageCommitBinding,
+}
+/// The checkpoint's indexed receipt for a commit, read lazily from its paged
+/// commit index so admission never materializes every commit.
+#[derive(Clone)]
+pub struct LineageCommitBinding(
+    pub  Arc<
+        dyn Fn(
+                CommitId,
+            ) -> Result<
+                Option<RelationalCommitReceipt>,
+                crate::contracts::storage::data::storage_unavailable::RelationalStorageUnavailableCause,
+            > + Send
+            + Sync,
+    >,
+);
+impl std::fmt::Debug for LineageCommitBinding {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str("LineageCommitBinding")
+    }
 }
 impl RuntimeLineageEventResidency {
     pub(super) fn new(
         page_descriptors: &[RelationalCheckpointLineageEventPage],
         source: &Arc<dyn RelationalDurableColdSource>,
-        commits: impl Iterator<Item = RelationalCommitReceipt>,
+        commits: LineageCommitBinding,
     ) -> Result<Self, RelationalStorageUnavailable> {
         let members = page_descriptors
             .iter()
@@ -91,7 +110,7 @@ impl RuntimeLineageEventResidency {
             )),
             pages,
             routes,
-            commit_bindings: commits.map(|commit| (commit.commit_id, commit)).collect(),
+            commit_bindings: commits,
         })
     }
     pub(super) fn member_subjects(
@@ -160,7 +179,7 @@ impl EventPageCell {
         self: &Arc<Self>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         source: &dyn RelationalDurableColdSource,
-        bindings: &BTreeMap<CommitId, RelationalCommitReceipt>,
+        bindings: &LineageCommitBinding,
     ) -> Result<ResidentLineageEventPage, Failure> {
         crate::contracts::execution::request_custody::check_request(execution)
             .map_err(Failure::Request)?;
@@ -177,14 +196,21 @@ impl EventPageCell {
             .map_err(|cause| event_page::failure(&self.descriptor, cause))
             .and_then(|bytes| event_page::readmit(execution, &bytes, &self.descriptor))
             .and_then(|page| {
-                if page.rows.iter().any(|row| {
-                    !bindings.contains_key(&row.publication_commit_id)
-                        || bindings.get(&row.event.commit().commit_id) != Some(row.event.commit())
-                }) {
-                    Err(event_page::failure(&self.descriptor, Cause::Damaged))
-                } else {
-                    Ok(page)
+                let bound = |row: &RelationalCheckpointLineageEventRow| -> Result<bool, Cause> {
+                    Ok((bindings.0)(row.publication_commit_id)?.is_some()
+                        && (bindings.0)(row.event.commit().commit_id)?.as_ref()
+                            == Some(row.event.commit()))
+                };
+                for row in &page.rows {
+                    match bound(row) {
+                        Ok(true) => {}
+                        Ok(false) => {
+                            return Err(event_page::failure(&self.descriptor, Cause::Damaged));
+                        }
+                        Err(cause) => return Err(event_page::failure(&self.descriptor, cause)),
+                    }
                 }
+                Ok(page)
             });
             match loaded {
                 Ok(page) => *state = EventPageState::Resident(Arc::new(page)),

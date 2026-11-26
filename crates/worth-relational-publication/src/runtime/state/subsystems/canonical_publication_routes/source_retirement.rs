@@ -1,7 +1,6 @@
 //! Original performed and checkpoint catalogs each retain their own cursor.
 pub use super::performed_stream::RelationalPerformedSourceWalk;
 use super::*;
-use std::ops::Bound::{Excluded, Unbounded};
 impl RelationalCanonicalPublicationRoutes {
     pub(crate) fn source_retirement_walk(&self) -> RelationalPerformedSourceWalk {
         self.performed_stream.source_retirement_walk()
@@ -21,10 +20,8 @@ impl RelationalCanonicalPublicationRoutes {
             Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
             Err(std::sync::TryLockError::WouldBlock) => return Err(()),
         };
-        let next = match after {
-            None => catalog.first_key_value(),
-            Some(key) => catalog.range((Excluded(key), Unbounded)).next(),
-        };
-        Ok(next.map(|(&key, artifact)| (key, artifact.envelope_residency())))
+        Ok(catalog
+            .next_retirement(after)
+            .map(|(key, artifact)| (key, artifact.envelope_residency())))
     }
 }

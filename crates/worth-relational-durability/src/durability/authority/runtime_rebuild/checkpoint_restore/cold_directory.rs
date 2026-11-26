@@ -8,7 +8,6 @@ use crate::durability::data::CheckpointRestoreWork;
 use crate::durability::data::DurableCheckpoint;
 use contracts::durability::data::recovery_stop::RelationalRecoveryStop;
 use contracts::schema::data::RelationalSchemaRegistry;
-use worth_relational_branch::internal_port::history::data::VersionNode;
 use worth_relational_branch::internal_port::runtime::state::subsystems::history::HistorySubsystem;
 use worth_relational_lineage::internal_port::runtime::state::subsystems::lineage::LineageSubsystem;
 use worth_relational_storage::internal_port::runtime::state::subsystems::record_identity::RecordIdentitySubsystem;
@@ -34,6 +33,7 @@ pub fn prepare(
     directory: &Arc<crate::durability::data::RelationalCheckpointDirectory>,
     work: &mut CheckpointRestoreWork,
     working_set: Option<&Arc<worth_relational_storage::internal_port::storage::residency::working_set::WorkingSetAccountant>>,
+    selection: &crate::runtime::state::subsystems::durability::checkpoint_selection::RelationalCheckpointManifestSelection,
 ) -> Result<PreparedColdDirectory, RelationalRecoveryStop> {
     let mut history = source_history
         .detached_owner_snapshot()
@@ -82,45 +82,45 @@ pub fn prepare(
             }
         }
     }
+    // G7: no artifact, graph node or patch position is installed per commit.
+    // Only the selected heads become resident (their entries are inline in
+    // the commit index); every other commit faults through the cold catalog.
     let positioned = checkpoint
         .envelopes
         .iter()
-        .map(|entry| (entry.commit.commit_id, entry.clone()))
+        .map(|entry| (entry.commit.commit_id, entry))
         .collect::<BTreeMap<_, _>>();
-    let catalog = super::selected_catalog::admit(execution, directory, |entry| {
-        positioned.get(&entry.commit.commit_id).cloned()
-    })?;
-    let head_cells = head_ids
-        .iter()
-        .map(|(id, _)| {
-            catalog
-                .get(*id)
-                .map(|artifact| (*id, artifact.envelope_residency()))
-                .ok_or_else(|| corrupt("admitted head has no catalog entry"))
-        })
-        .collect::<Result<_, _>>()?;
+    let cold = worth_relational_branch::internal_port::history::commit::cold_catalog::ColdCommitCatalog::new(
+        Arc::new(super::cold_commits::SelectedCommitSource::new(
+            selection.clone(),
+            directory,
+            working_set.cloned(),
+        )),
+    );
+    let mut catalog =
+        worth_relational_branch::internal_port::history::commit::catalog::RelationalCommitCatalog::default();
+    let mut head_cells = BTreeMap::new();
+    for (id, _) in head_ids.iter() {
+        let artifact = cold
+            .artifact(*id)
+            .map_err(|cause| crate::durability::data::commit_index_access::stop(0, cause))?
+            .ok_or_else(|| corrupt("admitted head has no catalog entry"))?;
+        if let Some(admitted) = positioned.get(id) {
+            artifact
+                .envelope_residency()
+                .bind_recovered_positioned(execution, admitted)?;
+        }
+        head_cells.insert(*id, artifact.envelope_residency());
+        catalog
+            .append_preencoded_recovery(artifact)
+            .map_err(|cause| corrupt(format!("selected head insertion: {cause:?}")))?;
+    }
     history.with_ledger_mut(|ledger| {
         ledger.commit_catalog = catalog;
         ledger.commit_envelopes = head_cells;
-        ledger.commit_graph = directory
-            .manifest
-            .commits
-            .iter()
-            .map(|entry| {
-                (
-                    entry.commit.commit_id,
-                    VersionNode {
-                        commit: entry.commit.clone(),
-                    },
-                )
-            })
-            .collect();
-        ledger.patch_stream_index = directory
-            .manifest
-            .commits
-            .iter()
-            .map(|entry| (entry.position, entry.commit.commit_id))
-            .collect();
+        ledger.commit_graph = BTreeMap::new();
+        ledger.patch_stream_index = BTreeMap::new();
+        ledger.cold_catalog = Some(cold);
     });
     let mut roots = BTreeMap::new();
     let mut authorities = BTreeMap::new();
@@ -201,8 +201,15 @@ pub fn readmit_lineage(
     checkpoint: &DurableCheckpoint,
     directory: &Arc<crate::durability::data::RelationalCheckpointDirectory>,
     has_naming_schemes: bool,
+    commits: Option<Arc<worth_relational_branch::internal_port::history::commit::cold_catalog::ColdCommitCatalog>>,
 ) -> Result<(), RelationalRecoveryStop> {
-    lineage.install_cold_pages(directory.prepare_lineage_cold_pages()?);
+    // Event rows resolve their commits through the history's cold catalog,
+    // which follows the selected checkpoint and holds no source past close.
+    let commits = commits.ok_or_else(|| corrupt("cold lineage has no cold commit catalog"))?;
+    let binding = worth_relational_lineage::internal_port::runtime::state::subsystems::lineage::event_residency::LineageCommitBinding(
+        Arc::new(move |commit| commits.entry(commit).map(|entry| entry.map(|entry| entry.commit))),
+    );
+    lineage.install_cold_pages(directory.prepare_lineage_cold_pages(binding)?);
     for cell in &checkpoint.branch_cells {
         if let (Some(source_branch), Some(provenance)) =
             (&cell.fork_source_branch_id, &cell.fork_provenance)

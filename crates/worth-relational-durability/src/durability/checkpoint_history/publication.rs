@@ -3,7 +3,6 @@ use worth_relational_branch::internal_port as branch;
 use worth_relational_contracts::internal_port as contracts;
 use crate::durability::canonical_commit_artifact::journal_source_read::readmit_journal_commit;
 use crate::durability::data::RelationalCheckpointDirectory;
-use crate::durability::data::RelationalCheckpointManifestDraft;
 use contracts::durability::data::native_checkpoint_capture_denial::RelationalNativeCheckpointCaptureDenial as Capture;
 use worth_relational_storage::internal_port::durability::medium::checkpoint_acknowledgement_denial::RelationalCheckpointAcknowledgementDenial as Ack;
 use branch::history::commit::envelope_residency::RelationalCommitEnvelopeResidency;
@@ -28,7 +27,8 @@ struct Backing {
 pub(crate) struct CanonicalCheckpointPublication(Arc<Backing>);
 impl CanonicalCheckpointPublication {
     pub(crate) fn capture(
-        manifest: &RelationalCheckpointManifestDraft,
+        commits: &[branch::history::commit::index_entry::RelationalCommitIndexEntry],
+        covered: u64,
         cells: &worth_execution::ExecutionOrderedMap<
             contracts::publication::patch::data::patch_position::PatchStreamPosition,
             Arc<RelationalCommitEnvelopeResidency>,
@@ -46,32 +46,38 @@ impl CanonicalCheckpointPublication {
         let memory = request
             .reserve_retained_memory(bytes as u64)
             .map_err(|cause| Capture::Request(cause.into()))?;
-        let mut rows = ExecutionRequestArrayBuilder::allocate(*request, manifest.commits.len())
-            .map_err(
-                contracts::durability::data::native_checkpoint_capture_denial::array_capture_stop,
-            )?;
-        for original in &manifest.commits {
-            let cell = cells.get(&original.position).ok_or_else(|| {
+        // Covered commits rebind only the cells this runtime still holds (selected
+        // heads, faulted cold artifacts); unfaulted cold commits own no cell and
+        // fault from the new selection directly. Every uncovered commit has one.
+        let mut rows = ExecutionRequestArrayBuilder::allocate(*request, cells.len()).map_err(
+            contracts::durability::data::native_checkpoint_capture_denial::array_capture_stop,
+        )?;
+        let start = commits.first().map_or(covered + 1, |row| row.position.0);
+        let mut uncovered = 0;
+        for (position, cell) in cells.iter() {
+            let corrupt = |detail: &str| {
                 Capture::Durability(contracts::durability::data::recovery_errors::DurabilityError::new(
                     contracts::durability::data::recovery_errors::RecoveryFailureClass::CorruptCheckpoint,
-                    "captured canonical cell unavailable",
+                    detail,
                 ))
-            })?;
-            let entry = match cell.source_placement() {
-                Some((entry, _)) if entry.as_ref() == original => entry,
-                Some(_) => {
-                    return Err(Capture::Durability(
-                        contracts::durability::data::recovery_errors::DurabilityError::new(
-                            contracts::durability::data::recovery_errors::RecoveryFailureClass::CorruptCheckpoint,
-                            "captured canonical entry differs",
-                        ),
-                    ))
-                }
-                None => {
+            };
+            let original = position
+                .0
+                .checked_sub(start)
+                .and_then(|offset| commits.get(usize::try_from(offset).ok()?))
+                .filter(|row| row.position == *position);
+            let entry = match (cell.source_placement(), original) {
+                (Some((entry, _)), Some(original)) if entry.as_ref() == original => entry,
+                (Some(_), Some(_)) => return Err(corrupt("captured canonical entry differs")),
+                (Some((entry, _)), None) if position.0 <= covered => entry,
+                (None, None) if position.0 <= covered => continue,
+                (None, Some(original)) => {
                     RetainedCanonicalIndex::copy_original(original, request, readmit_journal_commit)
                         .map_err(Capture::Request)?
                 }
+                _ => return Err(corrupt("captured canonical cell unavailable")),
             };
+            uncovered += usize::from(position.0 > covered);
             rows.push(CapturedCell {
                 entry,
                 cell: cell.clone(),
@@ -79,6 +85,19 @@ impl CanonicalCheckpointPublication {
             .map_err(
                 contracts::durability::data::native_checkpoint_capture_denial::array_capture_stop,
             )?;
+        }
+        if uncovered
+            != commits
+                .iter()
+                .filter(|row| row.position.0 > covered)
+                .count()
+        {
+            return Err(Capture::Durability(
+                contracts::durability::data::recovery_errors::DurabilityError::new(
+                    contracts::durability::data::recovery_errors::RecoveryFailureClass::CorruptCheckpoint,
+                    "captured canonical cell unavailable",
+                ),
+            ));
         }
         let cells = rows.seal().map_err(
             contracts::durability::data::native_checkpoint_capture_denial::array_capture_stop,

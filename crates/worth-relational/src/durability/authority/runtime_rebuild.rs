@@ -375,7 +375,7 @@ pub(super) fn rebuild_runtime_from_plan(
             restored
                 .history
                 .canonical_checkpoint_gate()
-                .install_checkpoint_catalog(restored.history.commit_artifacts());
+                .install_checkpoint_catalog(restored.history.checkpoint_catalog_parts());
         }
         Ok((restored, plan, checkpoint_work, recovered_roots))
     })

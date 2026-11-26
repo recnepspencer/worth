@@ -228,7 +228,7 @@ impl RelationalPublicationHistory {
             self.canonical_publication_routes
                 .continuing_branch_transitions(),
         );
-        routes.install_checkpoint_catalog(self.commit_artifacts());
+        routes.install_checkpoint_catalog(self.checkpoint_catalog_parts());
         for commit in commits {
             let artifact = self
                 .commit_artifact(commit.commit.commit_id)

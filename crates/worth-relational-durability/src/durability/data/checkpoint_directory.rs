@@ -28,6 +28,8 @@ pub struct RelationalCheckpointDirectory {
     pub(crate) history_members: Arc<worth_relational_storage::internal_port::storage::data::history_member_directory::RelationalHistoryMemberDirectory>,
     pub(crate) canonical_read:
         crate::durability::checkpoint_history::readmission::SelectedCheckpointRead,
+    /// The paged commit index, opened read-free over this directory's source.
+    pub(crate) commit_index: Arc<worth_relational_branch::internal_port::history::commit::paged_index::reader::ColdCommitIndex>,
     _basis: RelationalDurableMemberCustody,
     retirement: PreparedCheckpointDirectoryRetirement,
 }
@@ -92,6 +94,7 @@ impl RelationalCheckpointDirectory {
             source: self.source.clone(),
             history_members: self.history_members.clone(),
             canonical_read: self.canonical_read.clone(),
+            commit_index: self.commit_index.clone(),
             _basis: self._basis.clone(),
             retirement,
         }))
@@ -132,8 +135,11 @@ impl RelationalCheckpointDirectory {
 }
 
 impl RelationalCheckpointDirectory {
+    /// Lineage event pages check each row's commit against `commits`; the
+    /// binding must hold no source, so close can retire every share of it.
     pub(crate) fn prepare_lineage_cold_pages(
         &self,
+        commits: worth_relational_lineage::internal_port::runtime::state::subsystems::lineage::event_residency::LineageCommitBinding,
     ) -> Result<
         worth_relational_lineage::internal_port::runtime::state::subsystems::lineage::page_admission::PreparedLineageColdPages,
         contracts::storage::data::storage_unavailable::RelationalStorageUnavailable,
@@ -142,10 +148,7 @@ impl RelationalCheckpointDirectory {
             &self.manifest.lineage,
             &self.manifest.lineage_events,
             &self.source,
-            self.manifest
-                .commits
-                .iter()
-                .map(|entry| entry.commit.clone()),
+            commits,
         )
     }
 }

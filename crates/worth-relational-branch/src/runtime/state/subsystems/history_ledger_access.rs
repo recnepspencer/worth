@@ -18,26 +18,25 @@ use super::{HistoryLedger, HistorySubsystem};
 /// hold the ledger across storage, durability, or projection work.
 impl HistorySubsystem {
     pub fn commit_artifact(&self, commit_id: CommitId) -> Option<Arc<RelationalCommitArtifact>> {
-        self.ledger.read().commit_catalog.get(commit_id).cloned()
+        self.ledger.read().catalog_artifact(commit_id)
     }
 
     pub fn latest_commit_artifact(&self) -> Option<Arc<RelationalCommitArtifact>> {
-        self.ledger.read().commit_catalog.latest_artifact().cloned()
+        self.ledger.read().latest_catalog_artifact()
     }
 
     pub fn latest_commit_identity(&self) -> Option<RelationalCommitIdentity> {
-        self.ledger.read().commit_catalog.latest_identity().cloned()
+        self.ledger
+            .read()
+            .latest_catalog_artifact()
+            .map(|artifact| artifact.identity().clone())
     }
 
     pub fn commit_artifact_for_version(
         &self,
         version_id: VersionId,
     ) -> Option<Arc<RelationalCommitArtifact>> {
-        self.ledger
-            .read()
-            .commit_catalog
-            .find_by_version(version_id)
-            .cloned()
+        self.ledger.read().catalog_artifact_for_version(version_id)
     }
 
     pub fn commit_artifacts_for_request(
@@ -47,38 +46,96 @@ impl HistorySubsystem {
         worth_execution::ExecutionArray<Arc<RelationalCommitArtifact>>,
         worth_execution::ExecutionRequestArrayDenial,
     > {
-        self.ledger
-            .read()
-            .commit_catalog
-            .snapshot_for_request(request)
+        let artifacts = self.commit_artifacts();
+        let mut rows =
+            worth_execution::ExecutionRequestArrayBuilder::allocate(*request, artifacts.len())?;
+        for artifact in artifacts {
+            rows.push(artifact)?;
+        }
+        rows.seal()
     }
 
+    /// Every catalog artifact. After a cold reopen this faults every commit
+    /// page; if one is unreadable it answers with the resident catalog only.
     pub fn commit_artifacts(&self) -> Vec<Arc<RelationalCommitArtifact>> {
-        self.ledger.read().commit_catalog.snapshot()
+        let ledger = self.ledger.read();
+        ledger
+            .try_catalog_artifacts()
+            .unwrap_or_else(|_| ledger.resident_catalog_artifacts())
+    }
+
+    /// The resident catalog and faulted cold artifacts still held: what a
+    /// checkpoint capture must rebind, without reading any commit page.
+    pub fn resident_commit_artifacts(&self) -> Vec<Arc<RelationalCommitArtifact>> {
+        let mut artifacts = self.ledger.read().resident_catalog_artifacts();
+        // Every branch's selected commit stays capturable even when no resident
+        // artifact holds it (a fork of a cold commit faults it here).
+        let mut held = artifacts
+            .iter()
+            .map(|artifact| artifact.commit_id())
+            .collect::<std::collections::BTreeSet<_>>();
+        for cell in self.branch_cells.values() {
+            if let worth_foundational::FoundationalBranchTarget::Basis(target) =
+                cell.observation().target()
+            {
+                let id = CommitId(target.selected_commit_id());
+                if held.insert(id)
+                    && let Some(artifact) = self.commit_artifact(id)
+                {
+                    artifacts.push(artifact);
+                }
+            }
+        }
+        artifacts.sort_by_key(|artifact| artifact.commit_id());
+        artifacts
+    }
+
+    /// Largest commit and version ids, answered from page descriptors.
+    pub fn max_commit_and_version(&self) -> (Option<u64>, Option<u64>) {
+        self.ledger.read().max_commit_and_version()
+    }
+
+    pub fn has_commit(&self, commit_id: CommitId) -> bool {
+        self.ledger.read().has_commit(commit_id)
+    }
+
+    /// What a checkpoint catalog installs: resident artifacts over the cold
+    /// base, without enumerating cold commits.
+    pub fn checkpoint_catalog_parts(
+        &self,
+    ) -> (
+        Vec<Arc<RelationalCommitArtifact>>,
+        Option<Arc<crate::history::commit::cold_catalog::ColdCommitCatalog>>,
+    ) {
+        let ledger = self.ledger.read();
+        (
+            ledger.resident_catalog_artifacts(),
+            ledger.cold_catalog.clone(),
+        )
+    }
+
+    pub fn cold_commit_catalog(
+        &self,
+    ) -> Option<Arc<crate::history::commit::cold_catalog::ColdCommitCatalog>> {
+        self.ledger.read().cold_catalog.clone()
     }
 
     pub fn catalog_len(&self) -> usize {
-        self.ledger.read().commit_catalog.len()
+        self.ledger.read().catalog_len()
     }
 
     pub fn validate_catalog_envelope(
         &self,
         envelope: &CanonicalCommitEnvelope,
     ) -> Result<(), RelationalCommitCatalogEnvelopeAppendDenial> {
-        self.ledger
-            .read()
-            .commit_catalog
-            .validate_envelope(envelope)
+        self.ledger.read().validate_envelope(envelope)
     }
 
     pub fn validate_new_catalog_envelope(
         &self,
         envelope: &CanonicalCommitEnvelope,
     ) -> Result<(), RelationalCommitCatalogEnvelopeAppendDenial> {
-        self.ledger
-            .read()
-            .commit_catalog
-            .validate_new_envelope(envelope)
+        self.ledger.read().validate_new_envelope(envelope)
     }
 
     pub fn install_commit_catalog(&self, catalog: RelationalCommitCatalog) {
@@ -114,22 +171,14 @@ impl HistorySubsystem {
     }
 
     pub fn latest_recorded_patch_position(&self) -> Option<PatchStreamPosition> {
-        self.ledger
-            .read()
-            .patch_stream_index
-            .last_key_value()
-            .map(|(position, _)| *position)
+        self.ledger.read().latest_patch_position()
     }
 
     pub fn recorded_commit_at_patch_position(
         &self,
         position: PatchStreamPosition,
     ) -> Option<CommitId> {
-        self.ledger
-            .read()
-            .patch_stream_index
-            .get(&position)
-            .copied()
+        self.ledger.read().commit_at_patch_position(position)
     }
 
     pub fn recorded_patch_positions_after(
@@ -137,38 +186,28 @@ impl HistorySubsystem {
         after_position: Option<PatchStreamPosition>,
         max_commits: usize,
     ) -> Vec<(PatchStreamPosition, CommitId)> {
-        let start = after_position
-            .map(std::ops::Bound::Excluded)
-            .unwrap_or(std::ops::Bound::Unbounded);
         self.ledger
             .read()
-            .patch_stream_index
-            .range((start, std::ops::Bound::Unbounded))
-            .take(max_commits)
-            .map(|(position, commit_id)| (*position, *commit_id))
-            .collect()
+            .patch_positions_after(after_position, max_commits)
     }
 
     pub fn latest_recorded_patch_references(
         &self,
         limit: usize,
     ) -> Vec<(PatchStreamPosition, CommitId)> {
-        self.ledger
-            .read()
-            .patch_stream_index
-            .iter()
-            .rev()
-            .take(limit)
-            .map(|(position, commit_id)| (*position, *commit_id))
-            .collect()
+        self.ledger.read().latest_patch_references(limit)
     }
 
     pub fn recorded_patch_position_count_for_test(&self) -> usize {
-        self.ledger.read().patch_stream_index.len()
+        self.ledger.read().patch_position_count() as usize
     }
 
     pub fn commit_graph_len_for_test(&self) -> usize {
-        self.ledger.read().commit_graph.len()
+        let ledger = self.ledger.read();
+        match &ledger.cold_catalog {
+            None => ledger.commit_graph.len(),
+            Some(_) => ledger.patch_position_count() as usize,
+        }
     }
 
     pub fn insert_commit_graph_node(&self, commit_id: CommitId, node: VersionNode) {

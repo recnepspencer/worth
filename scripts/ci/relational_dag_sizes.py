@@ -30,7 +30,8 @@ def check_owner_sizes(audit, examples):
             failures.append(f'{owner} exceeds the 23.0% Total or Prod share')
     print(f'{"combined":<12} {"":>10} {all_total:>11,} {all_production:>11,}')
     print(f'Runtime Total includes {example_lines:,} example lines')
-    # +5,000 for Persistent Naming (#421) and Store M4.3b CHK24/REG8 paged record identity.
-    if all_total > 520_000:
-        failures.append(f'combined Total LOC exceeds 520,000: {all_total:,}')
+    # +5,000 for Persistent Naming (#421) and Store M4.3b CHK24/REG8 paged record identity;
+    # +4,000 for Store M4.3e paged CHK24 CheckpointCommitIndex and lazy cold catalog (G7).
+    if all_total > 524_000:
+        failures.append(f'combined Total LOC exceeds 524,000: {all_total:,}')
     return failures

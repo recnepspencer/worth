@@ -8,6 +8,7 @@ use worth_relational::facade::{
 };
 
 pub(super) const CHECKPOINT_MAGIC: &[u8] = b"WORTH-REL-CHK24\n";
+const PAGE_MAGIC: &[u8] = b"WORTH-REL-CHUNK1\n";
 
 pub(super) fn field<'a>(bytes: &'a [u8], name: &str) -> &'a [u8] {
     fields(bytes)
@@ -121,11 +122,6 @@ impl Serialize for Bytes<'_> {
 }
 
 #[derive(Deserialize)]
-struct CommitIndexRow {
-    position: u64,
-    commit: worth_relational::facade::history::RelationalCommitReceipt,
-}
-#[derive(Deserialize)]
 struct CanonicalMemberRow {
     position: u64,
     member: RelationalDurableMemberLocator,
@@ -138,14 +134,37 @@ pub(super) fn edit_original(
 ) -> RelationalNativeCheckpoint {
     let checkpoint = checkpoint.bytes().strip_prefix(CHECKPOINT_MAGIC).unwrap();
     let manifest = field(checkpoint, "manifest");
-    let commits = field(manifest, "commits");
-    let mut commit_rows = rows(commits);
-    let (commit_index, position) = commit_rows
+    let mut members = rows(field(checkpoint, "members"));
+    let member_bytes = |members: &[&[u8]], locator: RelationalDurableMemberLocator| {
+        members
+            .iter()
+            .enumerate()
+            .find_map(|(index, row)| {
+                let [key, bytes]: [&[u8]; 2] = rows(row).try_into().unwrap();
+                let current: RelationalDurableMemberLocator = rmp_serde::from_slice(key).unwrap();
+                (current == locator).then_some((index, raw_bytes(bytes).to_vec()))
+            })
+            .unwrap()
+    };
+    // CHK24: the edited commit's row lives in one compact commit-index page.
+    let index = field(manifest, "commits");
+    let mut pages = rows(field(index, "pages"));
+    let (page_index, page_member, page_frame, row_index, position) = pages
         .iter()
         .enumerate()
-        .find_map(|(index, row)| {
-            let row: CommitIndexRow = rmp_serde::from_slice(row).unwrap();
-            (row.commit.commit_id == commit_id).then_some((index, row.position))
+        .find_map(|(page_index, page)| {
+            let locator: RelationalDurableMemberLocator =
+                rmp_serde::from_slice(field(page, "member")).unwrap();
+            let (member, frame) = member_bytes(&members, locator);
+            let payload = &frame[PAGE_MAGIC.len() + 1..];
+            let row_index = rows(rows(payload)[1]).iter().position(|row| {
+                let receipt: worth_relational::facade::history::RelationalCommitReceipt =
+                    rmp_serde::from_slice(rows(row)[1]).unwrap();
+                receipt.commit_id == commit_id
+            })?;
+            let row = rows(rows(payload)[1])[row_index];
+            let position: u64 = rmp_serde::from_slice(rows(row)[2]).unwrap();
+            Some((page_index, member, frame, row_index, position))
         })
         .unwrap();
     let mut placements = rows(field(manifest, "canonical_members"));
@@ -157,18 +176,9 @@ pub(super) fn edit_original(
             (row.position == position).then_some((index, row.member))
         })
         .unwrap();
-    let mut members = rows(field(checkpoint, "members"));
-    let (member_index, bytes) = members
-        .iter()
-        .enumerate()
-        .find_map(|(index, row)| {
-            let [key, bytes]: [&[u8]; 2] = rows(row).try_into().unwrap();
-            let current: RelationalDurableMemberLocator = rmp_serde::from_slice(key).unwrap();
-            (current == locator).then_some((index, raw_bytes(bytes)))
-        })
-        .unwrap();
+    let (member_index, bytes) = member_bytes(&members, locator);
 
-    let (original, digest) = edit_frame(bytes, edit);
+    let (original, digest) = edit_frame(&bytes, edit);
     let locator = RelationalDurableMemberLocator {
         sha256: Sha256::digest(&original).into(),
         length: original.len() as u64,
@@ -178,12 +188,56 @@ pub(super) fn edit_original(
     let member = array(&[&locator_wire, &body]);
     members[member_index] = &member;
 
+    // Re-sign the page row, its descriptor and any inline head/tail copy.
     let digest = rmp_serde::to_vec(&digest).unwrap();
-    let changed_commit = replace_field(commit_rows[commit_index], "payload_digest", &digest);
-    commit_rows[commit_index] = &changed_commit;
+    let payload = &page_frame[PAGE_MAGIC.len() + 1..];
+    let page_rows = rows(rows(payload)[1]);
+    let mut row = rows(page_rows[row_index]);
+    row[4] = &digest;
+    let row = array(&row);
+    let mut page_rows = page_rows;
+    page_rows[row_index] = &row;
+    let page_rows = array(&page_rows);
+    let payload = array(&[rows(payload)[0], &page_rows]);
+    let frame = [PAGE_MAGIC, &[4], &payload].concat();
+    let page_locator = RelationalDurableMemberLocator {
+        sha256: Sha256::digest(&frame).into(),
+        length: frame.len() as u64,
+    };
+    let page_locator_wire = rmp_serde::to_vec_named(&page_locator).unwrap();
+    let page_body = rmp_serde::to_vec(&Bytes(&frame)).unwrap();
+    let page_entry = array(&[&page_locator_wire, &page_body]);
+    members[page_member] = &page_entry;
+    let page = replace_field(pages[page_index], "member", &page_locator_wire);
+    pages[page_index] = &page;
+    let mut index = replace_field(index, "pages", &array(&pages));
+    let mut heads = rows(field(&index, "heads"))
+        .into_iter()
+        .map(<[u8]>::to_vec)
+        .collect::<Vec<_>>();
+    for head in &mut heads {
+        if rmp_serde::from_slice::<u64>(field(head, "position")).unwrap() == position {
+            *head = replace_field(head, "payload_digest", &digest);
+        }
+    }
+    index = replace_field(
+        &index,
+        "heads",
+        &array(&heads.iter().map(Vec::as_slice).collect::<Vec<_>>()),
+    );
+    let tail = field(&index, "tail").to_vec();
+    if tail[0] != 0xc0
+        && rmp_serde::from_slice::<u64>(field(&tail, "position")).unwrap() == position
+    {
+        index = replace_field(
+            &index,
+            "tail",
+            &replace_field(&tail, "payload_digest", &digest),
+        );
+    }
     let changed_placement = replace_field(placements[placement_index], "member", &locator_wire);
     placements[placement_index] = &changed_placement;
-    let manifest = replace_field(manifest, "commits", &array(&commit_rows));
+    let manifest = replace_field(manifest, "commits", &index);
     let manifest = replace_field(&manifest, "canonical_members", &array(&placements));
     let with_manifest = replace_field(checkpoint, "manifest", &manifest);
     let amended = replace_field(&with_manifest, "members", &array(&members));

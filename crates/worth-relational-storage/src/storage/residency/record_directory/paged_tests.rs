@@ -354,3 +354,30 @@ fn aspect_only_edit_materializes_paged_domains_and_understated_count_refuses() {
         maintenance::finalize_edit(&tampered, (*tampered).clone(), false, &mut |_, _| Ok(()));
     assert!(matches!(result, Err(DirectoryError::Corrupt)));
 }
+
+#[test]
+fn only_cold_domains_route_scans_through_held_heads_and_exhausted_ids_drop_pages() {
+    let fixture = fixture(1);
+    let directory = open(&fixture, fixture.descriptor.pages.clone());
+    assert!(directory.entity_scan_needs_cold_pages() && directory.relation_scan_needs_cold_pages());
+    let mut next = (*directory).clone();
+    let added = (3_u128 << 96) | (90_000_u128 << 32) | 1;
+    next.entities
+        .update(added, true, &mut |_, _| Ok(()))
+        .unwrap();
+    assert!(
+        !next.entity_scan_needs_cold_pages(),
+        "an edited domain scans its map"
+    );
+    assert!(!RegionRecordDirectory::empty(PartitionId::main()).entity_scan_needs_cold_pages());
+    let Membership::Paged(paged) = &directory.relations else {
+        panic!("a readmitted domain is paged")
+    };
+    let mut ids =
+        paged.ids::<crate::identity::data::RelationDomain>(KindId(7), PartitionId::main());
+    assert_eq!(ids.by_ref().filter(Result::is_ok).count(), 300);
+    assert!(
+        !ids.holds_cursor(),
+        "an exhausted iterator releases its pages"
+    );
+}

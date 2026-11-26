@@ -23,6 +23,7 @@ pub(super) fn validate(
     initial: &InitialInputsImage,
     normalized: &NormalizedOriginalInputs,
     manifest: &RelationalCheckpointManifest,
+    commits: &[&worth_relational_branch::internal_port::history::commit::index_entry::RelationalCommitIndexEntry],
     schemas: &[crate::durability::data::DurableBranchRootSchemaImage],
     world: Option<&crate::durability::home_world_catalog::RelationalWorldSourceCatalog>,
     request: &ExecutionRequest<'_, '_>,
@@ -53,7 +54,7 @@ pub(super) fn validate(
         let Some(record) = normalized.canonical.get(position) else {
             break;
         };
-        let index = manifest.commits.get(position).ok_or(Refusal::Malformed)?;
+        let index = *commits.get(position).ok_or(Refusal::Malformed)?;
         let branch = &index.commit.branch_id;
         let mut state = sources.before_canonical(&mut fold, index, request)?;
         let before = state.clone();

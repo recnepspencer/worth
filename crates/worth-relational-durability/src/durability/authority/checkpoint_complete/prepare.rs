@@ -60,11 +60,7 @@ pub fn prepare(
     let canonical = CanonicalOutput::prepare(
         &commits,
         &frozen.original.artifacts,
-        frozen
-            .original
-            .base
-            .as_ref()
-            .map(|base| &base.directory.manifest),
+        frozen.original.base.as_ref().map(|base| &*base.directory),
         &mut metadata.members,
         execution,
     )?;
@@ -113,6 +109,19 @@ pub fn prepare(
     )?;
     super::contracts::install(&main_schema, &mut draft, execution)?;
     let region_custody = region_output.install_into(&mut draft);
+    let mut member_map = member_map;
+    super::commit_members::install(
+        &mut draft,
+        &canonical.rows,
+        frozen
+            .original
+            .base
+            .as_ref()
+            .map(|base| base.directory.commit_index().as_ref()),
+        &placement,
+        &mut member_map,
+        execution,
+    )?;
     super::destination_members::require(&placement, &member_map, execution)?;
     let canonical_publication = canonical.publication(&draft, execution)?;
     let coverage = draft.covered_position;

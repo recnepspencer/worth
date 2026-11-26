@@ -10,30 +10,74 @@ use std::sync::{atomic::Ordering, Arc};
 use worth_relational_branch::internal_port as branch;
 use worth_relational_contracts::internal_port as contracts;
 
+type Artifact = Arc<branch::history::commit::artifact::RelationalCommitArtifact>;
+
+/// The checkpoint catalog: resident artifacts (recovery overrides and heads)
+/// over the history's cold base, which faults commit pages on demand (`G7`).
 #[derive(Default)]
 pub(super) struct IndexedPublicationCatalog {
-    entries: std::collections::BTreeMap<
-        CommitId,
-        Arc<branch::history::commit::artifact::RelationalCommitArtifact>,
-    >,
+    entries: std::collections::BTreeMap<CommitId, Artifact>,
+    cold: Option<Arc<branch::history::commit::cold_catalog::ColdCommitCatalog>>,
     pub(super) head: Option<branch::history::commit::retained_index::RetainedCanonicalIndex>,
 }
-impl std::ops::Deref for IndexedPublicationCatalog {
-    type Target = std::collections::BTreeMap<
-        CommitId,
-        Arc<branch::history::commit::artifact::RelationalCommitArtifact>,
-    >;
-    fn deref(&self) -> &Self::Target {
-        &self.entries
+impl IndexedPublicationCatalog {
+    pub(super) fn artifact(&self, id: CommitId) -> Option<Artifact> {
+        self.entries
+            .get(&id)
+            .cloned()
+            .or_else(|| self.cold.as_ref()?.artifact(id).ok().flatten())
+    }
+    pub(super) fn len_bound(&self) -> usize {
+        let cold = self.cold.as_ref().map_or(0, |cold| cold.count());
+        self.entries.len() + usize::try_from(cold).unwrap_or(usize::MAX)
+    }
+    fn commit_for_version(&self, version: VersionId) -> Option<CommitId> {
+        self.entries
+            .values()
+            .find(|artifact| artifact.version_id() == version)
+            .cloned()
+            .or_else(|| {
+                self.cold
+                    .as_ref()?
+                    .artifact_for_version(version)
+                    .ok()
+                    .flatten()
+            })
+            .map(|artifact| artifact.commit_id())
+    }
+    /// Close walks resident artifacts and every faulted cold artifact still
+    /// held; unfaulted cold commits own no cell and nothing to retire.
+    pub(super) fn next_retirement(&self, after: Option<CommitId>) -> Option<(CommitId, Artifact)> {
+        let beyond = |id: &CommitId| after.is_none_or(|after| *id > after);
+        let resident = self
+            .entries
+            .iter()
+            .find(|(id, _)| beyond(id))
+            .map(|(id, artifact)| (*id, artifact.clone()));
+        let cold = self.cold.as_ref().and_then(|cold| {
+            cold.live_artifacts()
+                .into_iter()
+                .filter(|artifact| beyond(&artifact.commit_id()))
+                .filter(|artifact| !self.entries.contains_key(&artifact.commit_id()))
+                .min_by_key(|artifact| artifact.commit_id())
+                .map(|artifact| (artifact.commit_id(), artifact))
+        });
+        match (resident, cold) {
+            (Some(resident), Some(cold)) => Some(if cold.0 < resident.0 { cold } else { resident }),
+            (resident, cold) => resident.or(cold),
+        }
     }
 }
 
 impl RelationalCanonicalPublicationRoutes {
     pub fn install_checkpoint_catalog(
         &self,
-        entries: Vec<Arc<branch::history::commit::artifact::RelationalCommitArtifact>>,
+        (entries, cold): (
+            Vec<Artifact>,
+            Option<Arc<branch::history::commit::cold_catalog::ColdCommitCatalog>>,
+        ),
     ) {
-        let head = entries
+        let resident_head = entries
             .iter()
             .filter_map(|artifact| {
                 artifact
@@ -42,6 +86,21 @@ impl RelationalCanonicalPublicationRoutes {
                     .map(|(entry, _)| entry)
             })
             .max_by_key(|entry| entry.position);
+        // The cold tail is inline in the commit index: no page is read.
+        let cold_head = cold
+            .as_ref()
+            .and_then(|cold| cold.index().ok())
+            .and_then(|index| index.descriptor().tail.clone())
+            .map(|tail| {
+                branch::history::commit::retained_index::RetainedCanonicalIndex::copy_cold(
+                    &tail,
+                    worth_relational_durability::internal_port::durability::canonical_commit_artifact::journal_source_read::readmit_journal_commit,
+                )
+            });
+        let head = match (resident_head, cold_head) {
+            (Some(resident), Some(cold)) if cold.position > resident.position => Some(cold),
+            (resident, cold) => resident.or(cold),
+        };
         if let Some(head) = &head {
             self.performed_stream.advance_position_floor(head.position);
         }
@@ -50,6 +109,7 @@ impl RelationalCanonicalPublicationRoutes {
             .write()
             .unwrap_or_else(|error| error.into_inner()) = Arc::new(IndexedPublicationCatalog {
             head,
+            cold,
             entries: entries
                 .into_iter()
                 .map(|artifact| (artifact.commit_id(), artifact))
@@ -78,7 +138,7 @@ impl RelationalCanonicalPublicationRoutes {
             self.checkpoint_catalog
                 .read()
                 .unwrap_or_else(|error| error.into_inner())
-                .get(&id)
+                .artifact(id)
                 .map(|artifact| artifact.envelope_residency())
         });
         cell.map(|cell| cell.demand(execution, 1 << 30)).transpose()
@@ -92,7 +152,7 @@ impl RelationalCanonicalPublicationRoutes {
         self.checkpoint_catalog
             .read()
             .unwrap_or_else(|error| error.into_inner())
-            .get(&id)
+            .artifact(id)
             .map(|artifact| artifact.receipt())
     }
     pub(crate) fn by_commit(&self, commit_id: CommitId) -> Option<Arc<CanonicalCommitEnvelope>> {
@@ -100,7 +160,7 @@ impl RelationalCanonicalPublicationRoutes {
             self.checkpoint_catalog
                 .read()
                 .unwrap_or_else(|error| error.into_inner())
-                .get(&commit_id)
+                .artifact(commit_id)
                 .and_then(|artifact| artifact.resident_envelope())
         })
     }
@@ -112,7 +172,7 @@ impl RelationalCanonicalPublicationRoutes {
                 .checkpoint_catalog
                 .read()
                 .unwrap_or_else(|error| error.into_inner())
-                .len()
+                .len_bound()
     }
 
     pub(crate) fn commit_for_version_in_context(
@@ -138,7 +198,7 @@ impl RelationalCanonicalPublicationRoutes {
             .checkpoint_catalog
             .read()
             .unwrap_or_else(|error| error.into_inner());
-        let work = u64::try_from(catalog.len()).map_err(|_| {
+        let work = u64::try_from(catalog.len_bound()).map_err(|_| {
             contracts::execution::denial_cause::RelationalExecutionDenialCause::WorkCounterOverflow
         })?;
         if context.has_accounting() {
@@ -147,10 +207,7 @@ impl RelationalCanonicalPublicationRoutes {
             context.poll()
         }
         .map_err(contracts::execution::denial_cause::RelationalExecutionDenialCause::from)?;
-        Ok(catalog
-            .values()
-            .find(|artifact| artifact.version_id() == version)
-            .map(|artifact| artifact.commit_id()))
+        Ok(catalog.commit_for_version(version))
     }
 
     pub(crate) fn by_version(&self, version_id: VersionId) -> Option<Arc<CanonicalCommitEnvelope>> {
@@ -203,7 +260,7 @@ impl RelationalCanonicalPublicationRoutes {
         self.checkpoint_catalog
             .read()
             .unwrap_or_else(|error| error.into_inner())
-            .get(&commit_id)
+            .artifact(commit_id)
             .and_then(|artifact| artifact.envelope_residency().journal_index())
             .map(|entry| entry.position)
     }
@@ -220,7 +277,7 @@ impl RelationalCanonicalPublicationRoutes {
         self.checkpoint_catalog
             .read()
             .unwrap_or_else(|error| error.into_inner())
-            .get(&commit_id)
+            .artifact(commit_id)
             .and_then(|artifact| artifact.envelope_residency().captured_position())
     }
 
@@ -232,7 +289,7 @@ impl RelationalCanonicalPublicationRoutes {
             self.checkpoint_catalog
                 .read()
                 .unwrap_or_else(|error| error.into_inner())
-                .get(&commit_id)
+                .artifact(commit_id)
                 .and_then(|artifact| artifact.envelope_residency().positioned_if_resident())
                 .map(Arc::new)
         })

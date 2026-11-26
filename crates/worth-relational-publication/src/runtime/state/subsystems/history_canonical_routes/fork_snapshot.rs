@@ -51,7 +51,7 @@ impl RelationalPublicationHistory {
             self.canonical_publication_routes
                 .detached_branch_transitions(),
         );
-        canonical_publication_routes.install_checkpoint_catalog(self.commit_artifacts());
+        canonical_publication_routes.install_checkpoint_catalog(self.checkpoint_catalog_parts());
         for positioned in positioned {
             let artifact = self.commit_artifact(positioned.commit.commit_id).ok_or(
                 contracts::runtime::fork_denial::RelationalRuntimeForkDenial::CanonicalInventoryInvalid,

@@ -15,7 +15,7 @@ pub(super) fn admit(
     admitted: impl Fn(&RelationalCommitIndexEntry) -> Option<PositionedCanonicalCommit>,
 ) -> Result<RelationalCommitCatalog, RelationalRecoveryStop> {
     let mut catalog = RelationalCommitCatalog::default();
-    for entry in &directory.manifest.commits {
+    directory.for_each_commit(|entry| -> Result<(), RelationalRecoveryStop> {
         let actual =
             RetainedCanonicalIndex::copy_original(entry, execution, readmit_journal_commit)
                 .map_err(RelationalRecoveryStop::Request)?;
@@ -59,6 +59,7 @@ pub(super) fn admit(
                     "selected canonical placement: {cause:?}"
                 ))
             })?;
-    }
+        Ok(())
+    })?;
     Ok(catalog)
 }

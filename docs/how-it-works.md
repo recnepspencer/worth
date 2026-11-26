@@ -394,6 +394,18 @@ and a kind scan faults only that kind's pages through the cell's working-set
 pool. The first edit to a region, or a read through an already accepted resident
 head, turns the directory resident once, after checking it against the recorded
 commitment.
+The checkpoint's commit index is paged the same way. Commits sit in
+content-addressed pages in patch-stream order; the manifest keeps their count,
+the tail and selected-head entries, and one small descriptor per page (its
+position range, the exact commit and version id ranges of its rows, and its
+member). Manifest validation checks that descriptor without reading a page.
+Reopen installs no artifact, graph node or patch position per commit: the
+history ledger and the publication catalog consult a cold base that faults
+only the pages a lookup touches, through the historical working-set pool, and
+resolves the currently selected checkpoint so a later checkpoint serves later
+faults. A capture carries every prior page but the last and re-pages only the
+tail; the prior canonical roster is carried too, so covered commit bodies are
+not re-read.
 Every `CHK24` region leaf also records a chunk placement: each slot domain is
 cut into fixed 4096-slot chunks, sealed by one producer that derives each
 chunk's kind and adjacency summary before hashing it. The leaf keeps the Merkle

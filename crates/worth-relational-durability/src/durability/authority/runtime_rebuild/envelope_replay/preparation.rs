@@ -128,7 +128,7 @@ fn validate_parent_closure(
     if authoritative_parent_list
         .as_slice()
         .iter()
-        .any(|parent| !available_commit_ids.contains(parent))
+        .any(|parent| !available_commit_ids.contains(parent) && !history.has_commit(*parent))
     {
         return Err(DurabilityError::new(
             RecoveryFailureClass::MissingAuthoritativeParentClosure,

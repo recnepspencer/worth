@@ -171,6 +171,7 @@ fn forged_cross_region_kind_commitment_is_refused_before_region_payload_reads() 
             reads: Default::default(),
             member_reads: Default::default(),
             paged_reads: Default::default(),
+            commit_page_reads: Default::default(),
             commit_reads: Default::default(),
             commits_damaged: Default::default(),
             failed_member: Default::default(),

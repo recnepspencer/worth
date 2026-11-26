@@ -71,6 +71,13 @@ impl CheckpointDirectoryAdmission {
             .draft
             .take()
             .expect("admission owns the same original draft");
+        // G7: the commit index opens read-free over the admitted roster.
+        let commit_index = std::sync::Arc::new(
+            worth_relational_branch::internal_port::history::commit::paged_index::reader::ColdCommitIndex::open(
+                std::sync::Arc::new(draft.manifest.commits.clone()),
+                draft.source.clone(),
+            ),
+        );
         Ok(RelationalCheckpointDirectory {
             admission_owner: Default::default(),
             admission_image: None,
@@ -79,6 +86,7 @@ impl CheckpointDirectoryAdmission {
             source: draft.source,
             history_members: draft.history_members,
             canonical_read: self.read.take().expect("admitted original selected read"),
+            commit_index,
             _basis: self.basis.take().expect("admitted original member custody"),
             retirement: self
                 .retirement

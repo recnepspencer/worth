@@ -50,15 +50,23 @@ impl CheckpointAdmissionOwner {
         let selected = SelectedCheckpointSource::retain(&directory.source, request)?;
         let owner = AdmissionCustody::retain(&selected, request)?;
         let mut rows = ExecutionOrderedMap::default();
-        for entry in &directory.manifest.commits {
-            let row =
-                super::admit_row::admit_row(directory, entry, Arc::downgrade(&owner), request)?;
-            rows.insert_cloned_native_for_request(&entry.commit.commit_id, &row, *request)
-                .map_err(|cause| {
-                    contracts::durability::checkpoint_admission::refusal::native_stop(
-                        contracts::durability::data::recovery_stop::map_stop(cause),
-                    )
-                })?;
+        let index = directory.commit_index();
+        for (ordinal, reference) in index.descriptor().pages.iter().enumerate() {
+            let page = index.page(ordinal).map_err(|cause| {
+                contracts::durability::checkpoint_admission::refusal::native_stop(
+                    crate::durability::data::commit_index_access::stop(reference.first, cause),
+                )
+            })?;
+            for entry in &page.page.rows {
+                let row =
+                    super::admit_row::admit_row(directory, entry, Arc::downgrade(&owner), request)?;
+                rows.insert_cloned_native_for_request(&entry.commit.commit_id, &row, *request)
+                    .map_err(|cause| {
+                        contracts::durability::checkpoint_admission::refusal::native_stop(
+                            contracts::durability::data::recovery_stop::map_stop(cause),
+                        )
+                    })?;
+            }
         }
         owner.install_rows(rows)?;
         directory
