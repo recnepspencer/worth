@@ -1,40 +1,8 @@
 //! Retention at the exact records an authored correction anchors.
 use super::*;
-use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
 use crate::domain_computation::primary_graph::RetainedPreImageExt;
 
-/// An optional field or aspect the attempt read at one record and found absent.
-struct ObservedAbsence<'fact> {
-    read_scope: &'fact WorthQueryOperationGraphReadScope,
-    target_record: RecordRef,
-    locator: &'fact AspectFieldLocator,
-}
-
-impl<'fact> ObservedAbsence<'fact> {
-    fn from_decision_fact(
-        fact: &'fact WorthQueryPrimaryGraphApplicationDecisionFact,
-    ) -> Option<Self> {
-        let WorthQueryPrimaryGraphApplicationDecisionFact::Application { read_scope, fact } = fact
-        else {
-            return None;
-        };
-        let (WorthQueryApplicationObservedFact::AbsentField {
-            entity_id, locator, ..
-        }
-        | WorthQueryApplicationObservedFact::OptionalAspectAbsent {
-            entity_id, locator, ..
-        }) = fact.as_ref()
-        else {
-            return None;
-        };
-        let read_scope = read_scope.as_ref();
-        projection_admits(read_scope, locator).then_some(Self {
-            read_scope,
-            target_record: RecordRef::Entity(*entity_id),
-            locator,
-        })
-    }
-}
+use super::absence::ObservedAbsence;
 
 /// Co-anchor declarations select exact records; loci never guess a common entity.
 ///
@@ -125,7 +93,7 @@ impl AnchoredFields<'_> {
                 let Some(candidate) = matched.next() else {
                     if absences.iter().any(|absence| {
                         absence.target_record == *record
-                            && locus_matches(absence.read_scope, absence.locator, locus)
+                            && absence.matches(locus)
                             && mutation.mutates_field(record, absence.locator)
                     }) {
                         continue;

@@ -15,13 +15,18 @@
 mod correction;
 mod custody;
 mod home;
+mod live_open;
+mod local_setup;
+mod managed_index;
 mod preview;
 mod query_read;
 mod request;
 mod session;
 mod stops;
 mod summary;
+mod temporal_occurrence;
 mod transition;
+mod validation;
 mod world_history;
 
 pub use summary::{

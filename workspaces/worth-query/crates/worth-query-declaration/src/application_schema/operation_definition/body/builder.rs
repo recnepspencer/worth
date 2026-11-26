@@ -317,6 +317,31 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
         Ok(self)
     }
 
+    /// Requires an optional scope field to match a present Option-valued input
+    /// member: `Some(v)` matches iff the field holds `v`, `None` matches iff
+    /// the field is absent. Anything else refuses as a source mismatch.
+    pub fn expect_optional_input<Field: crate::application_schema::fragment::RecordSelection>(
+        mut self,
+        field: Field,
+        member: &str,
+    ) -> Result<Self, ApplicationOperationBodyAuthoringDenial> {
+        let checked = super::record_authoring::resolve(field)?;
+        if checked.presence() != crate::application_schema::ApplicationFieldPresence::Optional {
+            return Err(ApplicationOperationBodyAuthoringDenial::IncompatibleSourceBinding);
+        }
+        if member.is_empty() || member.trim() != member {
+            return Err(ApplicationOperationBodyAuthoringDenial::InvalidInputMember);
+        }
+        self.steps
+            .push(ApplicationOperationBodyScopeField::ExpectOptionalInput {
+                field: checked.locus().clone(),
+                binding: Field::Binding::IDENTITY,
+                scalar_family: Field::Binding::SCALAR_FAMILY,
+                member: member.to_owned(),
+            });
+        Ok(self)
+    }
+
     /// Clears one optional scalar; absence is not an empty value.
     pub fn clear_optional<Field: crate::application_schema::fragment::RecordSelection>(
         mut self,

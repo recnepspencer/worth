@@ -1,4 +1,5 @@
 mod classification;
+mod occurrence_refusal;
 mod types;
 
 use worth_execution::ExecutionRequest;
@@ -21,6 +22,9 @@ use classification::{
     classify_observation_failure, classify_work_ceiling_denial, empty_report, CatchUpAccumulator,
 };
 
+pub use occurrence_refusal::{
+    WorthQueryTemporalOccurrenceRefusal, WorthQueryTemporalOccurrenceRefusalKind,
+};
 pub use types::{
     WorthQueryTemporalCatchUpClockStop, WorthQueryTemporalCatchUpDenial,
     WorthQueryTemporalCatchUpPolicy, WorthQueryTemporalCatchUpReport,

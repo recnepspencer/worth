@@ -36,3 +36,8 @@ pub use crate::domain_computation::primary_graph::provider::original_attempt_com
 
 #[doc(hidden)]
 pub use crate::domain_computation::primary_graph::provider::session_commit::WorthQueryRetainedApplicationCommitBasis;
+/// Shared runtime custody for whole-result live subscriptions stored beside
+/// their runtime's owner.
+pub use crate::domain_computation::primary_graph::{
+    WorthQueryLiveRuntimeKeepalive, WorthQuerySharedLiveRuntime,
+};

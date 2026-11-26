@@ -18,6 +18,7 @@ pub fn evaluate<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<S
             step,
             ApplicationOperationBodyScopeField::RequirePresent { .. }
                 | ApplicationOperationBodyScopeField::ExpectInput { .. }
+                | ApplicationOperationBodyScopeField::ExpectOptionalInput { .. }
         ) {
             continue;
         }
@@ -28,7 +29,8 @@ pub fn evaluate<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<S
             ApplicationOperationBodyScopeField::RequirePresent { .. } => {
                 BodyFieldExpectation::Present
             }
-            ApplicationOperationBodyScopeField::ExpectInput { .. } => {
+            ApplicationOperationBodyScopeField::ExpectInput { .. }
+            | ApplicationOperationBodyScopeField::ExpectOptionalInput { .. } => {
                 unreachable!("input guards compare prepared canonical members")
             }
             ApplicationOperationBodyScopeField::Assign { .. }

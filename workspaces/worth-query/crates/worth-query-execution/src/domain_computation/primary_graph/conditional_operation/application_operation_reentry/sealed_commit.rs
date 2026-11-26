@@ -1,4 +1,5 @@
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use worth_query_execution_attempt::facade::ports::EffectProgramBuilderAuthoringInternalPort as _;
 use worth_query_execution_attempt::facade::ports::ProjectedReadSetInternalPort as _;
 use worth_query_installation::facade::{
     ApplicationReadableScalarValueBinding, ApplicationScalarValueBinding, ApplicationSchema,
@@ -132,6 +133,12 @@ where
                     .write_due(&mut effects, &target, *next_due_nanoseconds)?;
             }
         }
+        // A unique field the fire writes (an `on_fire` create included) earns
+        // its indexed selection at this basis exactly as ordinary mutation
+        // candidates do; lowering then refuses any value another entity holds.
+        effects
+            .observe_unique_write_dependencies(execution, execution.allocation_policy())
+            .map_err(|denial| super::super::WorthQueryConditionalReentryFailure::ApplicationAttempt(denial.kind()))?;
         let program = effects.finish().map_err(|denial| super::super::WorthQueryConditionalReentryFailure::ApplicationAttempt(denial.kind()))?;
         if let Some(outcome) = super::outcome_application::consult_retryable(execution) {
             return Ok((outcome, None));

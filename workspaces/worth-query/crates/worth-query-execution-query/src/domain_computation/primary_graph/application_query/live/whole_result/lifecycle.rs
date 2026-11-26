@@ -91,7 +91,7 @@ impl<Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope
         match bridge.finalize(disposition) {
             Ok(_) => true,
             Err(failure) => {
-                self.basis = Some(
+                *self.basis = Some(
                     crate::domain_computation::managed_run::WorthQueryManagedLowerExecutionBasis {
                         bridge: failure.into_basis(),
                         relational,
@@ -140,22 +140,5 @@ impl<Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope
     ) -> WorthQueryApplicationWholeResultLiveOutcome<Query, QueryResult> {
         self.terminate_stopped_read();
         WorthQueryApplicationWholeResultLiveOutcome::DeadlineExceeded
-    }
-}
-
-impl<Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope> Drop
-    for WorthQueryApplicationWholeResultLiveLease<
-        '_,
-        Schema,
-        Query,
-        Parameters,
-        QueryResult,
-        Principal,
-        PrincipalIdentity,
-        Scope,
-    >
-{
-    fn drop(&mut self) {
-        let _ = self.terminate(BridgeExecutionBasisTerminalDisposition::Abandoned);
     }
 }

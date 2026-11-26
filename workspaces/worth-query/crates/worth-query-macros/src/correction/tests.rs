@@ -255,3 +255,25 @@ fn a_member_correction_shares_its_application_namespace() {
     );
     assert!(!explicit.contains("correct_state_change"), "{explicit}");
 }
+
+#[test]
+fn an_omitted_reversal_grant_is_typed_and_needs_inline_preimage_fields() {
+    let input = syn::parse_str(
+        "#[worth_query(schema = Schema, namespace = CORRECTION, source = EditBinding, \
+         inverse = RestoreEdit, disclosure = DetailsBinding, source_body = edit_body, \
+         preimage_fields(TaskFacts::title()), preimage_bytes = 64, \
+         allow_omitted_reversal(TaskFacts::revision()), derive = derive_restore)] \
+         pub struct CorrectEdit;",
+    )
+    .unwrap();
+    let expanded = expand(&input).unwrap().to_string();
+    assert!(
+        expanded.contains(". allow_omitted_reversal (TaskFacts :: revision ())"),
+        "{expanded}"
+    );
+    assert!(refusal(&format!(
+        "#[worth_query({BASE}, namespace = NS, demand = preimage_demand, \
+             allow_omitted_reversal(TaskFacts::revision()))] struct Fix;"
+    ))
+    .contains("not both"));
+}

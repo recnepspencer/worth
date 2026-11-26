@@ -38,14 +38,18 @@ macro_rules! relations {
     };
 }
 
-tuples!(A WA);
-tuples!(A WA, B WB);
-tuples!(A WA, B WB, C WC);
-tuples!(A WA, B WB, C WC, D WD);
-tuples!(A WA, B WB, C WC, D WD, E WE);
-tuples!(A WA, B WB, C WC, D WD, E WE, F WF);
-tuples!(A WA, B WB, C WC, D WD, E WE, F WF, G WG);
-tuples!(A WA, B WB, C WC, D WD, E WE, F WF, G WG, H WH);
+/// Emits `$emit!` once per non-empty prefix of the member list.
+macro_rules! each_prefix {
+    ($emit:ident; [$($done:ident $done_witness:ident),*];) => {};
+    ($emit:ident; [$($done:ident $done_witness:ident),*]; $next:ident $witness:ident $(, $rest:ident $rest_witness:ident)*) => {
+        $emit!($($done $done_witness,)* $next $witness);
+        each_prefix!($emit; [$($done $done_witness,)* $next $witness]; $($rest $rest_witness),*);
+    };
+}
+
+// Fragments, and aspects within an entity, hold up to 24 members.
+each_prefix!(tuples; []; A WA, B WB, C WC, D WD, E WE, F WF, G WG, H WH, I WI, J WJ, K WK, L WL,
+    M WM, N WN, O WO, P WP, Q WQ, R WR, T WT, U WU, V WV, X WX, Y WY, Z WZ);
 relations!(A WA);
 relations!(A WA, B WB);
 relations!(A WA, B WB, C WC);
@@ -54,3 +58,6 @@ relations!(A WA, B WB, C WC, D WD, E WE);
 relations!(A WA, B WB, C WC, D WD, E WE, F WF);
 relations!(A WA, B WB, C WC, D WD, E WE, F WF, G WG);
 relations!(A WA, B WB, C WC, D WD, E WE, F WF, G WG, H WH);
+
+#[cfg(test)]
+mod tests;

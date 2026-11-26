@@ -93,6 +93,9 @@ pub(super) fn append_body(
                 ApplicationOperationBodyScopeField::AssignOptionalInput { .. } => {
                     "assign-optional-input"
                 }
+                ApplicationOperationBodyScopeField::ExpectOptionalInput { .. } => {
+                    "expect-optional-input"
+                }
                 ApplicationOperationBodyScopeField::ClearOptional { .. } => "clear-optional",
                 ApplicationOperationBodyScopeField::RequirePresent { .. } => "require-present",
             },

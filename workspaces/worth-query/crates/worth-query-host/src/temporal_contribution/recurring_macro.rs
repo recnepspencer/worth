@@ -49,10 +49,22 @@
 /// same `kind: [..];` clauses as `worth_query_operation!` access blocks).
 /// A hook creating one entity per fire under
 /// `fire.entity_key()` creates each exactly once: each occurrence commits once,
-/// and a refused hook commits nothing, `fired_count` included. The fire
-/// projection observes only the rule row, so fields the hook initializes may
-/// not be `unique` (the commit refuses them). Without
-/// `on_fire`, the rule row is the only record of fires.
+/// and a refused hook commits nothing, `fired_count` included. A hook may
+/// initialize `unique` fields: the fire verifies each written value against
+/// the field's index at its decision basis, and a value another entity holds
+/// refuses the fire. Without `on_fire`, the rule row is the only record of
+/// fires.
+///
+/// Appending `in Inbox by InboxFacts::inbox_id()` after the access block makes
+/// the hook a
+/// [`WorthQueryRecurringTargetedFireHook`](crate::facade::temporal_contribution::WorthQueryRecurringTargetedFireHook):
+/// each fire resolves the `Inbox` whose unique `inbox_id` equals the hook's
+/// `target_key(fire)` (the read is implied) and passes it to `on_fire`, so the
+/// hook can create into it and link from it (`links: [InboxTasks];`).
+///
+/// A refused fire stops catch-up with `OperationRefused`; the report's
+/// `refusal()` carries its typed cause, readable through
+/// [`WorthQueryUserFacingRefusal`](crate::facade::WorthQueryUserFacingRefusal).
 #[macro_export]
 macro_rules! worth_query_recurring_rule {
     (
@@ -66,7 +78,8 @@ macro_rules! worth_query_recurring_rule {
             row: $Row:ty,
             query: $Query:ty,
             schedule: $ScheduleBinding:ty => $ScheduleHandler:ident
-            $(, on_fire: $Hook:ty { $($kind:ident: [$($Member:tt)*];)* })? $(,)?
+            $(, on_fire: $Hook:ty { $($kind:ident: [$($Member:tt)*];)* }
+                $(in $Target:ident by $TargetKey:expr)?)? $(,)?
         }
     ) => {
         #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -110,7 +123,7 @@ macro_rules! worth_query_recurring_rule {
         $crate::__worth_query_recurring_rule_parts!(
             [$vis $Rule, $Schema, $identity, $Operation, $operation_name, $Context, $Entity,
              $Fields, $Link, $hub, $Query, $ScheduleBinding, $ScheduleHandler]
-            [$($Hook { $($kind: [$($Member)*];)* })?]
+            [$($Hook { $($kind: [$($Member)*];)* } $(in $Target by $TargetKey)?)?]
         );
     };
 }

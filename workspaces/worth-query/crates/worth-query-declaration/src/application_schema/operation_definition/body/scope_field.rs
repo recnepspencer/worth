@@ -46,6 +46,14 @@ pub enum ApplicationOperationBodyScopeField {
         scalar_family: ScalarAspectType,
         member: String,
     },
+    /// Requires an optional scope field to match an Option-valued input
+    /// member: `Some(v)` iff the field holds `v`, `None` iff it is absent.
+    ExpectOptionalInput {
+        field: ApplicationFieldBindingLocus,
+        binding: WorthQueryPortableTypeIdentity,
+        scalar_family: ScalarAspectType,
+        member: String,
+    },
     ClearOptional {
         field: ApplicationFieldBindingLocus,
         binding: WorthQueryPortableTypeIdentity,
@@ -68,6 +76,7 @@ impl ApplicationOperationBodyScopeField {
             | Self::AssignValue { field, .. }
             | Self::SetOptionalInput { field, .. }
             | Self::AssignOptionalInput { field, .. }
+            | Self::ExpectOptionalInput { field, .. }
             | Self::ClearOptional { field, .. }
             | Self::RequirePresent { field, .. } => field,
         }
@@ -82,6 +91,7 @@ impl ApplicationOperationBodyScopeField {
             | Self::AssignValue { binding, .. }
             | Self::SetOptionalInput { binding, .. }
             | Self::AssignOptionalInput { binding, .. }
+            | Self::ExpectOptionalInput { binding, .. }
             | Self::ClearOptional { binding, .. }
             | Self::RequirePresent { binding, .. } => binding,
         }
@@ -95,6 +105,7 @@ impl ApplicationOperationBodyScopeField {
             | Self::AssignValue { .. }
             | Self::SetOptionalInput { .. }
             | Self::AssignOptionalInput { .. }
+            | Self::ExpectOptionalInput { .. }
             | Self::ClearOptional { .. }
             | Self::RequirePresent { .. } => None,
         }
@@ -108,6 +119,7 @@ impl ApplicationOperationBodyScopeField {
             | Self::AssignInput { scalar_family, .. }
             | Self::SetOptionalInput { scalar_family, .. }
             | Self::AssignOptionalInput { scalar_family, .. }
+            | Self::ExpectOptionalInput { scalar_family, .. }
             | Self::ClearOptional { scalar_family, .. }
             | Self::RequirePresent { scalar_family, .. } => *scalar_family,
         }
@@ -117,12 +129,16 @@ impl ApplicationOperationBodyScopeField {
             Self::ExpectInput { member, .. }
             | Self::AssignInput { member, .. }
             | Self::SetOptionalInput { member, .. }
-            | Self::AssignOptionalInput { member, .. } => Some(member),
+            | Self::AssignOptionalInput { member, .. }
+            | Self::ExpectOptionalInput { member, .. } => Some(member),
             _ => None,
         }
     }
     pub fn input_is_optional(&self) -> bool {
-        matches!(self, Self::AssignOptionalInput { .. })
+        matches!(
+            self,
+            Self::AssignOptionalInput { .. } | Self::ExpectOptionalInput { .. }
+        )
     }
 
     pub fn decision_read(&self) -> ApplicationOperationDecisionReadTarget {
@@ -137,7 +153,10 @@ impl ApplicationOperationBodyScopeField {
     pub fn write_target(&self) -> Option<ApplicationOperationProgramTarget> {
         if matches!(
             self,
-            Self::Expect { .. } | Self::ExpectInput { .. } | Self::RequirePresent { .. }
+            Self::Expect { .. }
+                | Self::ExpectInput { .. }
+                | Self::ExpectOptionalInput { .. }
+                | Self::RequirePresent { .. }
         ) {
             return None;
         }

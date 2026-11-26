@@ -38,8 +38,10 @@ use crate::application_home::{WorthQueryApplicationHome, WorthQueryCorrectionEnt
 pub(crate) mod auto_key;
 mod execution;
 mod lease;
+mod live_open;
 mod live_subscription;
 mod managed_index;
+mod owned_live_subscription;
 mod query_execution;
 mod query_intent;
 mod temporal;
@@ -51,6 +53,7 @@ pub use live_subscription::{
 pub use managed_index::{
     WorthQueryTypedManagedIndexRefreshDenial, WorthQueryTypedManagedIndexWatch,
 };
+pub use owned_live_subscription::WorthQueryOwnedLiveSubscription;
 pub use query_intent::{WorthQuerySessionIndexedQuery, WorthQuerySessionQuery};
 
 const DEFAULT_LIVE_BUFFER_CAPACITY: usize = 64;

@@ -11,12 +11,13 @@ mod relation_material;
 pub use relation_material::ApplicationCorrectionRelationMaterial;
 mod correction_binding;
 pub use correction_binding::{
-    decode_preimage_field, dispatch_application_correction, ApplicationAuthoredBodyCorrection,
-    ApplicationAuthoredBodyReapplication, ApplicationCorrectionBinding,
-    ApplicationCorrectionDerivationDenial, ApplicationCorrectionDispatch,
-    ApplicationCorrectionFieldPreImage, ApplicationCorrectionPreImage,
-    ApplicationCorrectionSourceMaterial, ApplicationCorrectionVisitor, ApplicationInverseBinding,
-    DeclaredCorrectionBinding, DeclaredCorrectionBindingParts,
+    decode_optional_preimage_field, decode_preimage_field, dispatch_application_correction,
+    ApplicationAuthoredBodyCorrection, ApplicationAuthoredBodyReapplication,
+    ApplicationCorrectionBinding, ApplicationCorrectionDerivationDenial,
+    ApplicationCorrectionDispatch, ApplicationCorrectionFieldPreImage,
+    ApplicationCorrectionPreImage, ApplicationCorrectionSourceMaterial,
+    ApplicationCorrectionVisitor, ApplicationInverseBinding, DeclaredCorrectionBinding,
+    DeclaredCorrectionBindingParts,
 };
 pub use correction_binding::{
     dispatch_application_reapplication, ApplicationReapplicationDispatch,

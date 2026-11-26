@@ -84,7 +84,13 @@ impl WorthQueryUserFacingRefusal for WorthQueryApplicationRequestMutationDenial 
             Self::Authorization(denial) => authorization(&denial.kind()),
             Self::PrincipalResolution(_) | Self::WorkflowAuthoritySpent => PERMISSION,
             Self::ScopeResolution(cause) => cause.user_summary(),
-            Self::Identity(_) | Self::InputCapture(_) | Self::WorkflowCapturedInput(_) => BAD_INPUT,
+            Self::Identity(cause) => cause.user_summary(),
+            Self::InputCapture(cause) => match (cause.encoding(), cause.execution_stop()) {
+                (Some(encoding), _) => encoding.user_summary(),
+                (None, Some(stop)) => stop.user_summary(),
+                (None, None) => CAPACITY,
+            },
+            Self::WorkflowCapturedInput(_) => BAD_INPUT,
             Self::Handler(cause) => cause.user_summary(),
             Self::SourceExpectation(_) | Self::WorkflowTransitionCurrentness(_) => STALE,
             Self::Idempotency(_) | Self::PreparationSpent => ALREADY_DONE,
@@ -122,16 +128,13 @@ impl WorthQueryUserFacingRefusal for WorthQueryApplicationRequestQueryDenial {
             Self::PrincipalResolution(_) | Self::CapabilityAdmission(_) => PERMISSION,
             Self::Admission(cause) => cause.user_summary(),
             Self::ScopeResolution(cause) => cause.user_summary(),
-            Self::InputPreparation(_) => BAD_INPUT,
+            Self::InputPreparation(cause) => cause.user_summary(),
             Self::Limit(_) => Summary::with_message(
                 Category::Capacity,
                 "There are too many results to show. Narrow the search and try again.",
             ),
             Self::ProductSelection(_) | Self::HistoryOutput(_) | Self::OutputSettlement(_) => BUSY,
-            Self::ManagedIndex(_) => Summary::with_message(
-                Category::Unavailable,
-                "Search is still being prepared. Try again in a moment.",
-            ),
+            Self::ManagedIndex(cause) => cause.user_summary(),
             Self::Execution(cause) => cause.user_summary(),
             Self::ContinuationExecution(cause) => cause.user_summary(),
             Self::RequestMode | Self::BindingInstallation(_) | Self::CapabilityInstallation(_) => {

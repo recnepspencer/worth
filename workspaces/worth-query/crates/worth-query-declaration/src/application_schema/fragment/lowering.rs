@@ -213,7 +213,8 @@ where
 #[doc(hidden)]
 #[diagnostic::on_unimplemented(
     message = "members `{Self}` cannot be declared in schema `{Schema}`",
-    note = "each member's schema requirements must be implemented by `{Schema}`"
+    note = "each member's schema requirements must be implemented by `{Schema}`",
+    note = "a members tuple holds at most 24 members; nest a tuple or fragment to declare more"
 )]
 pub trait FragmentMembers<Schema, Set, Witness> {
     fn lower(

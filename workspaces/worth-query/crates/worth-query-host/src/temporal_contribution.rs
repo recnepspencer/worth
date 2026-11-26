@@ -27,6 +27,7 @@ mod installer;
 mod recurring;
 mod recurring_binding_macro;
 mod recurring_fire;
+mod recurring_invoker_macro;
 mod recurring_macro;
 mod recurring_parts_macro;
 mod recurring_vocabulary;
@@ -35,7 +36,9 @@ pub use catch_up::{
     pump_temporal_catch_up, pump_temporal_catch_up_observing, pump_temporal_catch_up_until,
     pump_temporal_catch_up_until_observing, WorthQueryTemporalCatchUpClockStop,
     WorthQueryTemporalCatchUpDenial, WorthQueryTemporalCatchUpPolicy,
-    WorthQueryTemporalCatchUpReport, WorthQueryTemporalCatchUpStatus, MAX_TEMPORAL_CATCH_UP_STEPS,
+    WorthQueryTemporalCatchUpReport, WorthQueryTemporalCatchUpStatus,
+    WorthQueryTemporalOccurrenceRefusal, WorthQueryTemporalOccurrenceRefusalKind,
+    MAX_TEMPORAL_CATCH_UP_STEPS,
 };
 pub use clock::{
     WorthQueryDesktopClockAdvanceDenial, WorthQueryDesktopClockHandle, WorthQueryDesktopClockSource,
@@ -61,6 +64,7 @@ pub use recurring::{
 };
 pub use recurring_fire::{
     WorthQueryRecurringFire, WorthQueryRecurringFireDenial, WorthQueryRecurringFireHook,
+    WorthQueryRecurringTargetedFireHook,
 };
 pub use recurring_vocabulary::{
     recurring_installation_denial, WorthQueryRecurringGate, WorthQueryRecurringGateBinding,

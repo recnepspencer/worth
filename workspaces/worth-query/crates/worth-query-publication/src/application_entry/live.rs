@@ -61,6 +61,9 @@ pub enum WorthQueryApplicationLiveOpenRequestDenial {
         worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
     ),
     RetainedBasis,
+    /// The runtime custody offered for an owned subscription belongs to
+    /// another runtime than the one the subscription opened on.
+    ForeignRuntime,
     InputPreparation(
         worth_query_declaration::facade::application_query::ApplicationQueryInputPreparationDenial,
     ),

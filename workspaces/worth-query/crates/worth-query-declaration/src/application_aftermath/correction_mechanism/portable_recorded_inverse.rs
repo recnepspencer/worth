@@ -43,6 +43,7 @@ pub struct PortablePreImageDemand {
     pub(super) output_fields: Option<super::PortablePreImageFieldOutput>,
     pub(super) loci: Vec<PortablePreImageLocus>,
     pub(super) relations: Vec<super::PortablePreImageRelationLocus>,
+    pub(super) omitted_reversals: Vec<PortablePreImageLocus>,
     pub(super) maximum_encoded_bytes: usize,
 }
 
@@ -56,6 +57,7 @@ impl PortablePreImageDemand {
             loci,
             output_fields: None,
             relations: Vec::new(),
+            omitted_reversals: Vec::new(),
             maximum_encoded_bytes,
         }
     }
@@ -86,6 +88,21 @@ impl PortablePreImageDemand {
 
     pub fn loci(&self) -> &[PortablePreImageLocus] {
         &self.loci
+    }
+
+    /// Source-written fields the correction explicitly does not reverse.
+    pub fn omitted_reversals(&self) -> &[PortablePreImageLocus] {
+        &self.omitted_reversals
+    }
+
+    /// Reconstructs untrusted omission grants; schema validation judges them.
+    pub fn with_untrusted_omitted_reversals(
+        mut self,
+        _: ArchiveDecodeAuthority,
+        omitted_reversals: Vec<PortablePreImageLocus>,
+    ) -> Self {
+        self.omitted_reversals = omitted_reversals;
+        self
     }
 
     pub const fn maximum_encoded_bytes(&self) -> usize {

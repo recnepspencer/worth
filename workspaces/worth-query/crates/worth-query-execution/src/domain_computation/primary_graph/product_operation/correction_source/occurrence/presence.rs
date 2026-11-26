@@ -42,4 +42,46 @@ impl CorrectionOccurrence {
             }
         }
     }
+
+    /// Original state of one demanded locus captured without an output role:
+    /// its value, or the authenticated absence the original read observed.
+    pub(in crate::domain_computation::primary_graph::product_operation::correction_source) fn preimage_locus_state(
+        &self,
+        entity: &str,
+        aspect: &str,
+        field: &str,
+    ) -> State<'_> {
+        use crate::domain_computation::application_aftermath::retained_preimage::RetainedPreImageAbsenceKind as Retained;
+        use crate::domain_computation::primary_graph::retained_correction::record::RecordedAbsenceKind as Recorded;
+        if let Some(value) = self.preimage_value(entity, aspect, field) {
+            return State::Value(value);
+        }
+        let absence = match self {
+            Self::Memory(_) => self.memory_preimage().and_then(|image| {
+                image
+                    .absences()
+                    .iter()
+                    .find(|absent| {
+                        absent.locus.entity() == entity
+                            && absent.locus.aspect() == aspect
+                            && absent.locus.field() == field
+                    })
+                    .map(|absent| matches!(absent.kind, Retained::Field))
+            }),
+            Self::Home(value) => value
+                .material
+                .capture
+                .absences
+                .iter()
+                .find(|absent| {
+                    absent.entity == entity && absent.aspect == aspect && absent.field == field
+                })
+                .map(|absent| matches!(absent.absence, Recorded::Field)),
+        };
+        match absence {
+            Some(true) => State::AbsentField,
+            Some(false) => State::AbsentAspect,
+            None => State::Uncaptured,
+        }
+    }
 }

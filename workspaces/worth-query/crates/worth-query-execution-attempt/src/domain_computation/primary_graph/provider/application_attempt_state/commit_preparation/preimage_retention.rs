@@ -173,7 +173,12 @@ pub(super) fn retain_attempt_preimage(
         )
     } else {
         (
-            selection::retain_from_attempt_with_context(demand, candidates.iter(), &footprint),
+            selection::retain_from_attempt_with_context(
+                demand,
+                candidates.iter(),
+                &footprint,
+                Some(layout),
+            ),
             "strict-mutated-fields",
         )
     };

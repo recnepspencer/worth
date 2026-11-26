@@ -29,6 +29,16 @@ pub enum ApplicationSchemaDeclarationDenial {
         correction: String,
         cause: crate::application_aftermath::DeclaredPreImageDemandDenial,
     },
+    /// A recorded inverse would leave a field its source operation writes
+    /// unreversed (a half-undo). Retain and restore the field, or grant the
+    /// omission explicitly with `allow_omitted_reversal(Field)`.
+    IncompleteCorrectionCoverage {
+        operation: String,
+        entity: String,
+        aspect: String,
+        field: String,
+        gap: super::ApplicationCorrectionCoverageGap,
+    },
 
     MissingReferencedMutation {
         operation: String,

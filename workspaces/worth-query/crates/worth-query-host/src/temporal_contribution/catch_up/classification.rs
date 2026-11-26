@@ -14,7 +14,10 @@ use worth_query_execution::facade::{
 use worth_query_installation::facade::WorthQueryClockCoordinate;
 use worth_runtime_bridge::facade::{BridgeConditionalDenialKind, BridgeExecutionDenial};
 
-use super::{WorthQueryTemporalCatchUpReport, WorthQueryTemporalCatchUpStatus};
+use super::{
+    WorthQueryTemporalCatchUpReport, WorthQueryTemporalCatchUpStatus,
+    WorthQueryTemporalOccurrenceRefusal,
+};
 
 mod denials;
 pub(super) use denials::{
@@ -28,6 +31,7 @@ pub(super) struct CatchUpAccumulator<Clock> {
     already_committed_occurrences: usize,
     failed_occurrences: usize,
     indeterminate_occurrences: usize,
+    refusal: Option<WorthQueryTemporalOccurrenceRefusal>,
     last_observed_time: Option<WorthQueryClockCoordinate<Clock>>,
     last_sequence: Option<u64>,
     granular_invalidation_batches: Vec<WorthQueryGranularInvalidationDeliveryBatch>,
@@ -46,6 +50,7 @@ impl<Clock> CatchUpAccumulator<Clock> {
             already_committed_occurrences: 0,
             failed_occurrences: 0,
             indeterminate_occurrences: 0,
+            refusal: None,
             last_observed_time: None,
             last_sequence: None,
             granular_invalidation_batches: Vec::new(),
@@ -59,6 +64,15 @@ impl<Clock> CatchUpAccumulator<Clock> {
         if !batch.is_empty() {
             self.granular_invalidation_batches.push(batch);
         }
+    }
+
+    fn retain_first_refusal(
+        &mut self,
+        terminal: WorthQueryConditionalExecutionTerminal,
+        cause: Option<WorthQueryConditionalExecutionCause>,
+    ) {
+        self.refusal
+            .get_or_insert_with(|| WorthQueryTemporalOccurrenceRefusal::new(terminal, cause));
     }
 
     pub(super) fn has_progress_or_batches(&self) -> bool {
@@ -114,15 +128,20 @@ impl<Clock> CatchUpAccumulator<Clock> {
                 WorthQueryConditionalExecutionTerminal::Retryable
                 | WorthQueryConditionalExecutionTerminal::Failed => {
                     self.failed_occurrences = self.failed_occurrences.saturating_add(1);
+                    let mut refused = false;
                     classify_failure_cause(
                         provenance.cause().as_ref(),
                         &mut saw_cancelled,
                         &mut saw_budget,
                         &mut saw_auth,
-                        &mut saw_operation_refused,
+                        &mut refused,
                         &mut saw_backpressure,
                         &mut saw_blocked,
                     );
+                    if refused {
+                        saw_operation_refused = true;
+                        self.retain_first_refusal(provenance.terminal(), provenance.cause());
+                    }
                 }
                 WorthQueryConditionalExecutionTerminal::DeferredRetained => {
                     if is_backpressure_cause(provenance.cause().as_ref()) {
@@ -137,15 +156,20 @@ impl<Clock> CatchUpAccumulator<Clock> {
                 }
                 WorthQueryConditionalExecutionTerminal::NoEffect => {
                     self.failed_occurrences = self.failed_occurrences.saturating_add(1);
+                    let mut refused = false;
                     classify_failure_cause(
                         provenance.cause().as_ref(),
                         &mut saw_cancelled,
                         &mut saw_budget,
                         &mut saw_auth,
-                        &mut saw_operation_refused,
+                        &mut refused,
                         &mut saw_backpressure,
                         &mut saw_blocked,
                     );
+                    if refused {
+                        saw_operation_refused = true;
+                        self.retain_first_refusal(provenance.terminal(), provenance.cause());
+                    }
                 }
                 WorthQueryConditionalExecutionTerminal::EligibleRetained
                 | WorthQueryConditionalExecutionTerminal::SuppressedRetained => {}
@@ -199,6 +223,7 @@ impl<Clock> CatchUpAccumulator<Clock> {
             self.already_committed_occurrences,
             self.failed_occurrences,
             self.indeterminate_occurrences,
+            self.refusal,
             work_remaining,
             self.last_observed_time,
             self.last_sequence,

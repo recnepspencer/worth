@@ -13,6 +13,7 @@ pub use crate::temporal_contribution::{
     WorthQueryInstalledDesktopTemporalClock, WorthQueryTemporalCatchUpClockStop,
     WorthQueryTemporalCatchUpDenial, WorthQueryTemporalCatchUpPolicy,
     WorthQueryTemporalCatchUpReport, WorthQueryTemporalCatchUpStatus,
+    WorthQueryTemporalOccurrenceRefusal, WorthQueryTemporalOccurrenceRefusalKind,
     DEFAULT_DESKTOP_TEMPORAL_MAX_MEMORY_BYTES, DEFAULT_DESKTOP_TEMPORAL_MAX_WORK,
     MAX_TEMPORAL_CATCH_UP_STEPS,
 };
@@ -27,7 +28,7 @@ pub use crate::temporal_contribution::{
     WorthQueryRecurringLifecycleBinding, WorthQueryRecurringNode, WorthQueryRecurringOccurrence,
     WorthQueryRecurringOccurrenceBinding, WorthQueryRecurringOwner, WorthQueryRecurringProjector,
     WorthQueryRecurringRow, WorthQueryRecurringRuleIdentity, WorthQueryRecurringRuleRefusal,
-    WorthQueryRecurringScheduleDecision,
+    WorthQueryRecurringScheduleDecision, WorthQueryRecurringTargetedFireHook,
 };
 #[doc(hidden)]
 pub use worth_query_declaration::__worth_query_operation_access;

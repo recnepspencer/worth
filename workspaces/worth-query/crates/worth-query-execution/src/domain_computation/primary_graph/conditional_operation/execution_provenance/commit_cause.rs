@@ -12,16 +12,16 @@ pub(super) fn application_commit_cause(
         | Kind::ExecutionNestedPatternStopped { .. }
         | Kind::ExecutionWorkerPanicked { .. }
         | Kind::ExecutionUncheckedCustomKernel { .. }
-        | Kind::ExecutionIdentitiesNotCanonical { .. } => {
-            WorthQueryConditionalExecutionCause::ApplicationCommitDenied(kind)
-        }
+        | Kind::ExecutionIdentitiesNotCanonical { .. }
+        // The caller acts on a taken unique value (choose another), so the
+        // refusal keeps its typed kind instead of an anonymous terminal one.
+        | Kind::UniqueValueTaken => WorthQueryConditionalExecutionCause::ApplicationCommitDenied(kind),
         Kind::UnobservedWrite
         | Kind::ProviderRejected
         | Kind::CustomInvariantDenied
         | Kind::DomainValueRejected
         | Kind::WorkflowSettlementDenied { .. }
         | Kind::ProductBasisStale
-        | Kind::UniqueValueTaken
         | Kind::UniqueIndexUnavailable
         | Kind::ActiveSnapshotCapacityExhausted { .. }
         | Kind::RetentionCapacityExhausted

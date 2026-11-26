@@ -205,6 +205,30 @@ impl WorthQueryRetainedPreImage {
             })
     }
 
+    /// Original state of one demanded locus regardless of target record: its
+    /// value, its authenticated absence, or uncaptured.
+    pub fn original_locus_state(
+        &self,
+        entity: &str,
+        aspect: &str,
+        field: &str,
+    ) -> worth_query_declaration::facade::application_aftermath::ApplicationCorrectionFieldPreImage<'_>{
+        use worth_query_declaration::facade::application_aftermath::ApplicationCorrectionFieldPreImage as State;
+        let named = |locus: &InstalledPreImageLocus| {
+            locus.entity() == entity && locus.aspect() == aspect && locus.field() == field
+        };
+        if let Some(retained) = self.fields.iter().find(|retained| named(retained.locus())) {
+            return State::Value(retained.value());
+        }
+        self.absences
+            .iter()
+            .find(|absent| named(&absent.locus))
+            .map_or(State::Uncaptured, |absent| match absent.kind {
+                RetainedPreImageAbsenceKind::Field => State::AbsentField,
+                RetainedPreImageAbsenceKind::Aspect => State::AbsentAspect,
+            })
+    }
+
     pub const fn total_encoded_bytes(&self) -> usize {
         self.total_encoded_bytes
     }

@@ -81,6 +81,19 @@ pub trait ApplicationCorrectionPreImage<Schema> {
         locus: &DeclaredPreImageLocus<Schema>,
     ) -> Option<&worth_foundational::facade::AspectValue>;
 
+    /// Historical state of one declared locus: its value, or an authenticated
+    /// absence of an optional field (or its optional aspect) the original
+    /// read observed. Only an SDK-sealed absence can return an absence variant.
+    fn field_state(
+        &self,
+        locus: &DeclaredPreImageLocus<Schema>,
+    ) -> ApplicationCorrectionFieldPreImage<'_> {
+        self.field(locus).map_or(
+            ApplicationCorrectionFieldPreImage::Uncaptured,
+            ApplicationCorrectionFieldPreImage::Value,
+        )
+    }
+
     /// Read one declared locus on the exact original record bound to this output
     /// role. An absent optional role yields None; equal loci on co-anchors never
     /// substitute for one another. This grants historical values only.
@@ -109,4 +122,31 @@ where
         raw,
     )
     .map_err(|_| super::ApplicationCorrectionDerivationDenial::InvalidPreImage)
+}
+
+/// Reads and decodes one recorded optional pre-image field: `Some(value)` when
+/// the original record held a value, `None` when the original read
+/// authenticated the field (or its optional aspect) as absent.
+///
+/// An uncaptured locus refuses `MissingPreImage`, never `None`: absence must
+/// be proven by the recorded original read, not inferred.
+pub fn decode_optional_preimage_field<Schema, Field>(
+    preimage: &dyn ApplicationCorrectionPreImage<Schema>,
+    field: Field,
+) -> Result<Option<Field::Value>, super::ApplicationCorrectionDerivationDenial>
+where
+    Field: crate::application_schema::fragment::RecordSelection,
+{
+    match preimage.field_state(&DeclaredPreImageLocus::from_field(field)) {
+        ApplicationCorrectionFieldPreImage::Value(raw) => {
+            <Field::Binding as crate::application_schema::ApplicationReadableScalarValueBinding>::decode(raw)
+                .map(Some)
+                .map_err(|_| super::ApplicationCorrectionDerivationDenial::InvalidPreImage)
+        }
+        ApplicationCorrectionFieldPreImage::AbsentField
+        | ApplicationCorrectionFieldPreImage::AbsentAspect => Ok(None),
+        ApplicationCorrectionFieldPreImage::Uncaptured => {
+            Err(super::ApplicationCorrectionDerivationDenial::MissingPreImage)
+        }
+    }
 }

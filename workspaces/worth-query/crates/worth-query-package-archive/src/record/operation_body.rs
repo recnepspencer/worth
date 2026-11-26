@@ -161,7 +161,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationOperationBodyProgram, Denial> {
     let version = input.u16()?;
-    if !matches!(version, 1..=effect_emission::PROFILE) {
+    if !matches!(version, 1..=scope_fields::OPTIONAL_GUARD_PROFILE) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     let scope = if version >= 8 {

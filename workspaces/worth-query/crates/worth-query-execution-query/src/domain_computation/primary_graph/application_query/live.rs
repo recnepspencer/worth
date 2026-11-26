@@ -18,7 +18,7 @@ pub use outcome::{
 pub use whole_result::{
     WholeResultLiveStageForTest, WorthQueryApplicationWholeResultLiveLease,
     WorthQueryApplicationWholeResultLiveOutcome, WorthQueryApplicationWholeResultLiveSnapshot,
-    WorthQueryApplicationWholeResultLiveUpdate,
+    WorthQueryApplicationWholeResultLiveUpdate, WorthQuerySharedLiveRuntime,
 };
 #[cfg(test)]
 #[path = "live_inline_type_budget.rs"]

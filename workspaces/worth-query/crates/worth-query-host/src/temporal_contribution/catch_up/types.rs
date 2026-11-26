@@ -11,6 +11,7 @@ use worth_query_execution::facade::{
 use worth_query_installation::facade::WorthQueryClockCoordinate;
 
 use super::super::clock::WorthQueryDesktopClockAdvanceDenial;
+use super::WorthQueryTemporalOccurrenceRefusal;
 
 /// Hard ceiling on per-call catch-up steps. Public Host APIs never accept
 /// `usize::MAX` as a pump ceiling.
@@ -74,7 +75,9 @@ pub enum WorthQueryTemporalCatchUpStatus {
     /// durable state remains consistent until valid authority is restored.
     AuthorizationRefused,
     /// Operation invocation, due-field verification, or domain/commit validation
-    /// refused execution terminally (distinct from authorization refusal).
+    /// refused execution terminally (distinct from authorization refusal); the
+    /// report's [`refusal`](WorthQueryTemporalCatchUpReport::refusal) carries
+    /// the typed cause.
     OperationRefused,
     /// Owner-local snapshot, retention, or provider capacity backpressure
     /// deferred execution.
@@ -124,6 +127,7 @@ pub struct WorthQueryTemporalCatchUpReport<Clock> {
     already_committed_occurrences: usize,
     failed_occurrences: usize,
     indeterminate_occurrences: usize,
+    refusal: Option<WorthQueryTemporalOccurrenceRefusal>,
     work_remaining: bool,
     last_observed_time: Option<WorthQueryClockCoordinate<Clock>>,
     last_sequence: Option<u64>,
@@ -140,6 +144,7 @@ impl<Clock> std::fmt::Debug for WorthQueryTemporalCatchUpReport<Clock> {
             .field("skipped", &self.already_committed_occurrences)
             .field("failed", &self.failed_occurrences)
             .field("indeterminate", &self.indeterminate_occurrences)
+            .field("refusal", &self.refusal)
             .field("remaining", &self.work_remaining)
             .field(
                 "last_observed_time_ns",
@@ -163,6 +168,7 @@ impl<Clock> WorthQueryTemporalCatchUpReport<Clock> {
         already_committed_occurrences: usize,
         failed_occurrences: usize,
         indeterminate_occurrences: usize,
+        refusal: Option<WorthQueryTemporalOccurrenceRefusal>,
         work_remaining: bool,
         last_observed_time: Option<WorthQueryClockCoordinate<Clock>>,
         last_sequence: Option<u64>,
@@ -175,6 +181,7 @@ impl<Clock> WorthQueryTemporalCatchUpReport<Clock> {
             already_committed_occurrences,
             failed_occurrences,
             indeterminate_occurrences,
+            refusal,
             work_remaining,
             last_observed_time,
             last_sequence,
@@ -212,6 +219,13 @@ impl<Clock> WorthQueryTemporalCatchUpReport<Clock> {
 
     pub const fn indeterminate(&self) -> usize {
         self.indeterminate_occurrences
+    }
+
+    /// The typed cause of the first occurrence whose operation was refused
+    /// (status [`WorthQueryTemporalCatchUpStatus::OperationRefused`]); render
+    /// it for end users with `WorthQueryUserFacingRefusal`.
+    pub const fn refusal(&self) -> Option<&WorthQueryTemporalOccurrenceRefusal> {
+        self.refusal.as_ref()
     }
 
     pub fn last_observed_time(&self) -> Option<WorthQueryClockCoordinate<Clock>> {

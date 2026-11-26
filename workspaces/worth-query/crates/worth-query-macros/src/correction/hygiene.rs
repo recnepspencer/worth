@@ -100,8 +100,12 @@ fn collect_used_idents(input: &DeriveInput, spec: &CorrectionDeclaration) -> BTr
         PreImageDemandSpec::Function(func) => {
             collect_stream_idents(func.to_token_stream(), &mut used);
         }
-        PreImageDemandSpec::Fields { fields, bytes } => {
-            for field in fields {
+        PreImageDemandSpec::Fields {
+            fields,
+            bytes,
+            omitted,
+        } => {
+            for field in fields.iter().chain(omitted) {
                 collect_stream_idents(field.to_token_stream(), &mut used);
             }
             collect_stream_idents(bytes.to_token_stream(), &mut used);
