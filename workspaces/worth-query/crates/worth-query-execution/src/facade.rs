@@ -159,6 +159,7 @@ pub mod application_contribution;
 pub mod application_discovery;
 pub mod application_installation;
 pub mod application_invariants;
+pub mod domain_refusal;
 pub mod product;
 
 pub mod provider_session;

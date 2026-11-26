@@ -36,6 +36,7 @@ use worth_query_publication::facade::application_entry::{
 use crate::application_home::{WorthQueryApplicationHome, WorthQueryCorrectionEntry};
 
 pub(crate) mod auto_key;
+mod domain_refusal;
 mod execution;
 mod home_access;
 mod keyed_refusal;

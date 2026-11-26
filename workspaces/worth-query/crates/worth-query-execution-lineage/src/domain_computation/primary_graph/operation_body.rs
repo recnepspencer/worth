@@ -55,7 +55,8 @@ pub struct WorthQueryOperationBodyDecision<Schema, Scope> {
     pub(crate) children: Option<PreparedBodyChildren<Schema>>,
 }
 
-/// A declared source expectation failed before any candidate effect.
+/// A declared source expectation, input, requirement or handler rule refused
+/// the mutation before any candidate effect.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum WorthQueryOperationBodyDenial {
     SourceMismatch {
@@ -74,4 +75,13 @@ pub enum WorthQueryOperationBodyDenial {
     DeclaredRequirementUnmet {
         identity: String,
     },
+    /// A hand-written handler refused with the application's own bounded
+    /// reason; see `HandlerResult::domain_refusal`.
+    DomainRefused(super::WorthQueryDomainRefusal),
+}
+
+impl From<super::WorthQueryDomainRefusal> for WorthQueryOperationBodyDenial {
+    fn from(refusal: super::WorthQueryDomainRefusal) -> Self {
+        Self::DomainRefused(refusal)
+    }
 }

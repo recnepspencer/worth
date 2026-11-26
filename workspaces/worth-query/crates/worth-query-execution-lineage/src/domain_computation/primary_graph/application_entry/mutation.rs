@@ -93,6 +93,24 @@ pub enum HandlerResult<Value, Denial> {
     DeadlineExceeded,
 }
 
+impl<Value, Denial> HandlerResult<Value, Denial>
+where
+    Denial: From<super::super::WorthQueryDomainRefusal>,
+{
+    /// Refuses with the application's bounded domain reason, for example
+    /// `HandlerResult::domain_refusal("lot_expired", "Lot 7 expired on 3 May.")`.
+    ///
+    /// An inadmissible code or message is a handler defect, not a business
+    /// refusal: it returns `ExecutionDenied` carrying the
+    /// `WorthQueryDomainRefusalDenial`, never a truncated reason or a panic.
+    pub fn domain_refusal(code: &str, message: &str) -> Self {
+        match super::super::WorthQueryDomainRefusal::new(code, message) {
+            Ok(refusal) => Self::DomainDenied(refusal.into()),
+            Err(denial) => Self::ExecutionDenied(HandlerExecutionDenial::new(denial)),
+        }
+    }
+}
+
 impl<Value, Denial, Execution> From<Result<Value, Execution>> for HandlerResult<Value, Denial>
 where
     Execution: Into<HandlerExecutionDenial>,

@@ -7037,6 +7037,14 @@ case; commit's `decode_invariant_refusal::<Binding>()` and byte accessor do the
 same. A closed application enum can distinguish, for example, a membership
 violation from `Capacity { field, maximum, observed }` without parsing a message.
 
+When the caller only needs to know which rule refused and what to tell the
+operator, use the stock `WorthQueryDomainRefusal` (a bounded `code` and
+`message`) with `WorthQueryDomainRefusalBinding` as the rule's binding. A
+session run denial then reads it back with `denial.domain_refusal()`, the same
+accessor that returns a hand-written handler's
+`HandlerResult::domain_refusal(code, message)`, and its user summary shows the
+message verbatim. No per-rule binding has to be decoded by the caller.
+
 Checkpoint recovery callers use `primary_graph::{RelationalRecoveryStop,
 RecoveryFailureClass, DurabilityError}`. The installation denial's
 `native_recovery_cause()` retains every original Native stop, including
