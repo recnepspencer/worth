@@ -55,13 +55,8 @@ impl DirectoryMaintainer<'_> {
             any |= update_record(&mut next, before, false, work)?;
             any |= update_record(&mut next, after, true, work)?;
         }
-        if any {
-            make_resident(&mut next, work)?;
-        }
-        Ok(if any {
-            Arc::new(next)
-        } else {
-            previous.clone()
+        finalize_edit(previous, next, any, &mut |units, bytes| {
+            work.prepare(units, bytes).map_err(Into::into)
         })
     }
 }
@@ -113,26 +108,25 @@ impl DirectoryMaintainer<'_> {
             any |= update_record(&mut next, old.as_ref(), false, work)?;
             any |= update_record(&mut next, current.as_ref(), true, work)?;
         }
-        if any {
-            make_resident(&mut next, work)?;
-        }
-        Ok(if any {
-            Arc::new(next)
-        } else {
-            previous.clone()
+        finalize_edit(previous, next, any, &mut |units, bytes| {
+            work.prepare(units, bytes).map_err(Into::into)
         })
     }
 }
-/// An edited directory leaves no domain paged: its successor never depends
-/// on the predecessor's cold cell, which retires with the predecessor root.
-fn make_resident(
-    directory: &mut RegionRecordDirectory,
-    work: &mut ChangeWork<'_>,
-) -> Result<(), DirectoryError> {
-    let mut prepare = |units, bytes| work.prepare(units, bytes).map_err(Into::into);
-    directory.entities.make_resident(&mut prepare)?;
-    directory.relations.make_resident(&mut prepare)?;
-    Ok(())
+/// An edited directory leaves no domain paged: even an aspect-only edit with
+/// unchanged live membership must detach from the predecessor's cold cell.
+pub(super) fn finalize_edit(
+    previous: &Arc<RegionRecordDirectory>,
+    mut next: RegionRecordDirectory,
+    any: bool,
+    prepare: &mut dyn FnMut(u64, u64) -> Result<(), DirectoryError>,
+) -> Result<Arc<RegionRecordDirectory>, DirectoryError> {
+    if any || next.has_paged_domain() {
+        next.entities.make_resident(prepare)?;
+        next.relations.make_resident(prepare)?;
+        return Ok(Arc::new(next));
+    }
+    Ok(previous.clone())
 }
 
 fn update_record(

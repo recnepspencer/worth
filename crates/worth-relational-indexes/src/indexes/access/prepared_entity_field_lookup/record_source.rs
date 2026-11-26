@@ -50,7 +50,10 @@ impl worth_relational_branch::internal_port::visibility::materialization::read_r
         kind: crate::contracts::identity::data::primitives::KindId,
         partition: Option<crate::contracts::identity::data::primitives::PartitionId>,
     ) -> impl Iterator<Item = Result<crate::contracts::identity::data::record_ids::EntityId, worth_relational_storage::internal_port::storage::data::RelationalStorageUnavailable>> + '_ {
-        self.basis.root().entity_ids_of_kind(kind, partition)
+        self.basis
+            .basis()
+            .projection_root()
+            .entity_ids_of_kind(kind, partition)
     }
 
     fn selected_relation_ids(
@@ -58,7 +61,10 @@ impl worth_relational_branch::internal_port::visibility::materialization::read_r
         kind: crate::contracts::identity::data::primitives::KindId,
         partition: Option<crate::contracts::identity::data::primitives::PartitionId>,
     ) -> impl Iterator<Item = Result<crate::contracts::identity::data::record_ids::RelationId, worth_relational_storage::internal_port::storage::data::RelationalStorageUnavailable>> + '_ {
-        self.basis.root().relation_ids_of_kind(kind, partition)
+        self.basis
+            .basis()
+            .projection_root()
+            .relation_ids_of_kind(kind, partition)
     }
 
     fn retained_head_region(

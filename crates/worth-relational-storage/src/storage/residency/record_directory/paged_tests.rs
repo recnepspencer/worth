@@ -332,3 +332,25 @@ fn tampered_descriptors_refuse_without_reading_any_page() {
     };
     assert!(overflow.validate(facts).is_err(), "entry counts overflow");
 }
+
+#[test]
+fn aspect_only_edit_materializes_paged_domains_and_understated_count_refuses() {
+    let f = fixture(1);
+    let paged = open(&f, f.descriptor.pages.clone());
+    assert!(paged.has_paged_domain());
+    let updated =
+        maintenance::finalize_edit(&paged, (*paged).clone(), false, &mut |_, _| Ok(())).unwrap();
+    assert!(!updated.has_paged_domain());
+    // Dropping all backing page members must not break scans of the updated directory.
+    f.members.0.lock().unwrap().clear();
+    assert_eq!(updated.entity_ids(KindId(3)).count(), 5);
+    assert_eq!(updated.relation_ids(KindId(7)).count(), 300);
+
+    // P2: an understated `entry_count` refuses before building ResidentMembership.
+    let mut f2 = fixture(1);
+    f2.descriptor.entities.root.as_mut().unwrap().entry_count = 1;
+    let tampered = open(&f2, f2.descriptor.pages.clone());
+    let result =
+        maintenance::finalize_edit(&tampered, (*tampered).clone(), false, &mut |_, _| Ok(()));
+    assert!(matches!(result, Err(DirectoryError::Corrupt)));
+}

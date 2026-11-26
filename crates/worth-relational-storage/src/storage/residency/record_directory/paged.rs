@@ -144,26 +144,19 @@ impl PagedMembership {
             .range_from(&self.pages.source, (0, 0, 0))
             .map_err(DirectoryError::Unavailable)?;
         while let Some((key, ())) = cursor.next_entry().map_err(DirectoryError::Unavailable)? {
+            if keys.len() as u64 == count {
+                return Err(DirectoryError::Corrupt);
+            }
             keys.push(encoded_key(key));
         }
+        if keys.len() as u64 != count {
+            return Err(DirectoryError::Corrupt);
+        }
         let resident = ResidentMembership::from_sorted_keys(keys)?;
-        if resident.len() as u64 != count || resident.digest() != self.digest {
+        if resident.digest() != self.digest {
             return Err(DirectoryError::Corrupt);
         }
         Ok(self.resident.get_or_init(|| resident))
-    }
-
-    /// Adopts resident keys that reproduce the recorded count and commitment.
-    pub(super) fn adopt(&self, keys: Vec<u128>) {
-        if self.resident.get().is_some() {
-            return;
-        }
-        if let Ok(resident) = ResidentMembership::from_sorted_keys(keys)
-            && resident.len() as u64 == self.directory.entry_count()
-            && resident.digest() == self.digest
-        {
-            let _ = self.resident.set(resident);
-        }
     }
 
     pub(super) fn ids<K: Copy>(&self, kind: KindId, partition: PartitionId) -> PagedIds<'_, K> {

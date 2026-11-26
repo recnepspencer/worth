@@ -111,22 +111,6 @@ impl RegionRecordDirectory {
         })
     }
 
-    /// Serves a paged domain from `partition`'s resident rows when they
-    /// reproduce the recorded commitment; otherwise the domain stays paged.
-    pub fn adopt_resident(&self, partition: &PartitionState) {
-        if partition.partition_id != self.partition
-            || [&self.entities, &self.relations]
-                .iter()
-                .all(|domain| !domain.awaits_adoption())
-        {
-            return;
-        }
-        if let Ok((entities, relations)) = partition_keys(partition, &mut |_, _| Ok(())) {
-            self.entities.adopt(entities);
-            self.relations.adopt(relations);
-        }
-    }
-
     pub fn capture(
         lane: &ReconstructionLane<'_>,
         partition: &PartitionState,

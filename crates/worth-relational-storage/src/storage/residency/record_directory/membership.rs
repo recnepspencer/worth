@@ -112,15 +112,9 @@ impl Membership {
         }
     }
 
-    /// A paged domain that has not yet gained a resident image.
-    pub(super) fn awaits_adoption(&self) -> bool {
-        matches!(self, Self::Paged(paged) if paged.resident().is_none())
-    }
-
-    pub(super) fn adopt(&self, keys: Vec<u128>) {
-        if let Self::Paged(paged) = self {
-            paged.adopt(keys);
-        }
+    /// Whether this domain is still backed by cold directory pages.
+    pub(super) fn is_paged(&self) -> bool {
+        matches!(self, Self::Paged(_))
     }
 
     pub(super) fn has_kind(&self, kind: KindId) -> bool {

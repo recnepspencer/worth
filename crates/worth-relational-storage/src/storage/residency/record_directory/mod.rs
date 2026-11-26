@@ -83,6 +83,9 @@ impl RegionRecordDirectory {
     pub fn has_relation_kind(&self, kind: KindId) -> bool {
         self.relations.has_kind(kind)
     }
+    pub(super) fn has_paged_domain(&self) -> bool {
+        self.entities.is_paged() || self.relations.is_paged()
+    }
     /// Faults and evictions of this directory's cold pages, if it is paged.
     pub fn page_observation(
         &self,
