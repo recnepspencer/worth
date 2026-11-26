@@ -67,7 +67,8 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             _ => None,
         };
         let read = self.pin_source(execution)?;
-        let root = read.resident_basis().root();
+        // The pin's own read residency lends the base partitions.
+        let root = read.resident_basis().basis();
         let runtime = self
             .runtime
             .with_candidate_symbols(self.mutation.candidate_symbols());
@@ -76,12 +77,9 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             &batches,
             execution,
         )?;
-        let plan = self.transaction.build_merged_plan_for_state(
-            &runtime,
-            root.as_ref(),
-            intents,
-            execution,
-        )?;
+        let plan = self
+            .transaction
+            .build_merged_plan_for_state(&runtime, root, intents, execution)?;
         round::verify(
             execution,
             root,

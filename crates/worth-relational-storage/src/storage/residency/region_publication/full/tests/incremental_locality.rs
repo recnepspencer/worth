@@ -21,6 +21,7 @@ pub(super) fn publish_one_slot_and_assert(
         execution,
         RegionCaptureBasis {
             retention: &initial.retention,
+            scope: &crate::storage::residency::OperationResidency::new(),
             directory: &initial.directory,
             inventory: initial.inventory,
             unavailable_records: initial.unavailable_records,
@@ -45,12 +46,11 @@ pub(super) fn publish_one_slot_and_assert(
             "{label}: must never scan prior partition"
         );
     }
-    let actual = &updated
+    let actual_lease = updated
         .retention
-        .capture_region()
-        .unwrap()
-        .unwrap()
-        .partition;
+        .pin_lease(&crate::storage::residency::OperationResidency::new())
+        .unwrap();
+    let actual = &actual_lease.resident_region().partition;
     let exp_new = locality_helpers::assert_directed_ids(
         &initial_region.partition,
         actual,

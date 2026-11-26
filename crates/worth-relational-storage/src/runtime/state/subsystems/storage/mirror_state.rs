@@ -37,10 +37,11 @@ impl CurrentMirror {
         id: PartitionId,
     ) -> Result<Option<ResidentMirrorTarget>, crate::storage::data::RelationalStorageUnavailable>
     {
+        let scope = self.edition.acquired();
         let target = match self.regions.get(&id) {
             None => return Ok(None),
             Some(MirrorRegion::Resident(target)) => {
-                target.promote_full(self.edition.resident_pin_lease(id)?);
+                target.promote_full(scope.resident_pin_lease(id)?);
                 return Ok(Some(target.clone()));
             }
             Some(MirrorRegion::AwaitingResidentTarget(region)) => {
@@ -48,7 +49,7 @@ impl CurrentMirror {
                 // kind authority. A copied directory retention has a separate
                 // admission cache and cannot promote physically warmed bytes.
                 ResidentMirrorTarget::new(
-                    self.edition.resident_pin_lease(id)?,
+                    scope.resident_pin_lease(id)?,
                     region.clears_pins_on_write(),
                 )
             }
@@ -58,19 +59,64 @@ impl CurrentMirror {
         Ok(Some(target))
     }
 
+    pub(super) fn admit_target_with_lease(
+        &mut self,
+        id: PartitionId,
+        lease: crate::storage::residency::RelationalResidencyLease<crate::storage::residency::Full>,
+    ) -> Option<ResidentMirrorTarget> {
+        let target = match self.regions.get(&id) {
+            None => return None,
+            Some(MirrorRegion::Resident(target)) => {
+                if !target.is_full() {
+                    target.promote_full(lease);
+                }
+                return Some(target.clone());
+            }
+            Some(MirrorRegion::AwaitingResidentTarget(region)) => {
+                ResidentMirrorTarget::new(lease, region.clears_pins_on_write())
+            }
+        };
+        self.regions
+            .insert(id, MirrorRegion::Resident(target.clone()));
+        Some(target)
+    }
+
+    pub(super) fn prepare_current_target(
+        &self,
+        id: PartitionId,
+    ) -> Result<Option<ResidentMirrorTarget>, crate::storage::data::RelationalStorageUnavailable>
+    {
+        let scope = self.edition.acquired();
+        let target = match self.regions.get(&id) {
+            None => return Ok(None),
+            Some(MirrorRegion::Resident(target)) => return Ok(Some(target.clone())),
+            Some(MirrorRegion::AwaitingResidentTarget(region)) => {
+                match scope.admitted_full_lease(id) {
+                    Some(lease) => ResidentMirrorTarget::new(lease, region.clears_pins_on_write()),
+                    _ => ResidentMirrorTarget::from_head(
+                        scope.resident_head_lease(id)?,
+                        region.clears_pins_on_write(),
+                    )?,
+                }
+            }
+        };
+        Ok(Some(target))
+    }
+
     pub(super) fn admit_current_target(
         &mut self,
         id: PartitionId,
     ) -> Result<Option<ResidentMirrorTarget>, crate::storage::data::RelationalStorageUnavailable>
     {
+        let scope = self.edition.acquired();
         let target = match self.regions.get(&id) {
             None => return Ok(None),
             Some(MirrorRegion::Resident(target)) => return Ok(Some(target.clone())),
             Some(MirrorRegion::AwaitingResidentTarget(region)) => {
-                match self.edition.admitted_full_lease(id) {
+                match scope.admitted_full_lease(id) {
                     Some(lease) => ResidentMirrorTarget::new(lease, region.clears_pins_on_write()),
                     _ => ResidentMirrorTarget::from_head(
-                        self.edition.resident_head_lease(id)?,
+                        scope.resident_head_lease(id)?,
                         region.clears_pins_on_write(),
                     )?,
                 }

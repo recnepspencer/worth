@@ -135,10 +135,7 @@ pub fn predecessor_publication_input(
         .head_retention()
         .publication_bases()
         .unwrap_or_else(|| {
-            PublicationBasisImage::at_for_owner(
-                &selected.owner_inner().root,
-                &history.retention_binding(),
-            )
+            PublicationBasisImage::at_for_owner(&selected.root_read(), &history.retention_binding())
         });
     let work = u64::from(usize::BITS - image.routes().len().max(1).leading_zeros())
         .saturating_add(1)

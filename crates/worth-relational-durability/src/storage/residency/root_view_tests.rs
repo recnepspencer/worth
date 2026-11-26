@@ -52,14 +52,15 @@ fn a_shared_full_load_requires_a_separate_admitted_view_for_each_root() {
         let second = make_root_view();
         let host = worth_harness::facade::execution_fixture::serial_request();
         let execution = worth_execution::ExecutionRequest::serial(&host);
-        let first_full = first.demand_full(&execution, 1 << 24).unwrap();
+        let (first_scope, second_scope) = (worth_relational_storage::internal_port::storage::residency::OperationResidency::new(), worth_relational_storage::internal_port::storage::residency::OperationResidency::new());
+        let first_full = first.demand_full(&first_scope, &execution, 1 << 24).unwrap();
         let reads = fixture.source.reads.load(Ordering::SeqCst);
         assert!(reads > 0 && reads < 4);
         assert!(
             fixture.cell.lease_resident_full().unwrap().is_none(),
             "a raw full load is not a root-qualified serving view"
         );
-        let second_full = second.demand_full(&execution, 1 << 24).unwrap();
+        let second_full = second.demand_full(&second_scope, &execution, 1 << 24).unwrap();
         assert_eq!(
             fixture.source.reads.load(Ordering::SeqCst),
             reads,

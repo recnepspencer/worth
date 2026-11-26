@@ -65,9 +65,10 @@ pub fn read_candidate(
     records: &[RecordRef],
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<CurrentPublicationRoster, TransactionCommitError> {
+    let read = root.read();
     read_source(
         execution,
-        OwnershipReadSource::Candidate(root),
+        OwnershipReadSource::Candidate(&read),
         records,
         records,
         None,
@@ -93,7 +94,7 @@ fn read_source(
         return Ok(roster);
     };
     let view = StructuralStateView::new(
-        root,
+        source.partitions(),
         crate::identity::data::VersionId(root.axes().map_or(0, |a| a.storage_version)),
     );
     reach::read(

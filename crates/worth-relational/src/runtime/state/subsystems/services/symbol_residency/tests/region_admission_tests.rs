@@ -27,6 +27,7 @@ fn region_symbol_admission_is_retryable_and_owned_by_each_fork() {
                 .root()
                 .unwrap();
             let lease = root
+                .read()
                 .demand_region_head(&execution, entity.partition_id)
                 .unwrap()
                 .unwrap();
@@ -161,6 +162,7 @@ fn candidate_admission_transfers_only_after_publication_and_never_borrows_later_
                 .root()
                 .unwrap();
             let lease = root
+                .read()
                 .demand_region_head(&execution, entity.partition_id)
                 .unwrap()
                 .unwrap();
@@ -298,6 +300,7 @@ fn owned_successor_without_predecessor_admission_refuses_instead_of_rebuilding()
                 .root()
                 .unwrap();
             let previous = root
+                .read()
                 .demand_region_full(&request, entity.partition_id)
                 .unwrap()
                 .unwrap();
@@ -310,6 +313,7 @@ fn owned_successor_without_predecessor_admission_refuses_instead_of_rebuilding()
                 .root()
                 .unwrap();
             let next = next_root
+                .read()
                 .demand_region_full(&request, entity.partition_id)
                 .unwrap()
                 .unwrap();

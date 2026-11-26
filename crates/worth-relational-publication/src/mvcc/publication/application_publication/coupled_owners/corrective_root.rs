@@ -5,7 +5,7 @@ use super::*;
 use worth_relational_storage::internal_port::storage::overlay::current_access::CurrentPartitionAccess;
 use worth_relational_storage::internal_port::storage::overlay::access::PartitionAccess;
 use contracts::transactions::data::primitives::CreatedEntityRef;
-use worth_relational_branch::internal_port::branch::basis::{AdmittedRelationalBranchBasisFieldsPort as _, AdmittedRelationalBranchBasisOwnerPort as _};
+use worth_relational_branch::internal_port::branch::basis::{AdmittedRelationalBranchBasisOwnerPort as _};
 use contracts::mvcc::transaction::staging::RelationalTransactionStagingDenialOwnerPort as _;
 use contracts::symbols::data::client_key::ClientKeyOwnerPort as _;
 
@@ -79,14 +79,10 @@ impl AuthoredPublicationReads<'_> {
                 .0?;
             owners
                 .before
-                .owner_inner()
-                .root
                 .demand_full_partition(execution, old.partition_id)
                 .map_err(custody::execution_stop)?;
             if !owners
                 .before
-                .owner_inner()
-                .root
                 .get_current_partition(old.partition_id)
                 .and_then(|partition| partition.entity_arena().get(&old))
                 .is_some_and(|row| {

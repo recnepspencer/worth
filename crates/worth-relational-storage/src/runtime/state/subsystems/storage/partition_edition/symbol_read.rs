@@ -23,12 +23,14 @@ impl PartitionAccess for SymbolAdmittedEdition<'_> {
     fn probe_full_partition(&self, id: PartitionId) -> PartitionProbe<'_> {
         match self.edition.partitions.get(&id) {
             None => PartitionProbe::Absent,
-            Some(region) => match region.admitted_partition() {
+            Some(region) => match region.admitted_partition(self.edition.custody(region)) {
                 Some(partition)
-                    if region.admitted_full_lease().is_some_and(|lease| {
-                        self.symbols
-                            .region_symbols_admitted(lease.symbol_admission_identity())
-                    }) =>
+                    if region
+                        .admitted_full_lease(self.edition.custody(region))
+                        .is_some_and(|lease| {
+                            self.symbols
+                                .region_symbols_admitted(lease.symbol_admission_identity())
+                        }) =>
                 {
                     PartitionProbe::Resident(partition)
                 }
@@ -58,8 +60,10 @@ impl CurrentPartitionAccess for SymbolAdmittedEdition<'_> {
     fn probe_head_partition(&self, id: PartitionId) -> PartitionHeadProbe<'_> {
         match self.edition.partitions.get(&id) {
             None => PartitionHeadProbe::Absent,
-            Some(region) => match region.admitted_head_view() {
-                Some(view) if region.head_symbols_admitted(self.symbols) => {
+            Some(region) => match region.admitted_head_view(self.edition.custody(region)) {
+                Some(view)
+                    if region.head_symbols_admitted(self.edition.custody(region), self.symbols) =>
+                {
                     PartitionHeadProbe::Resident(view)
                 }
                 _ => PartitionHeadProbe::Cold,

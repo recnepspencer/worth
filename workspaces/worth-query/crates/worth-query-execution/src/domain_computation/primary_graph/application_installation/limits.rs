@@ -20,6 +20,7 @@ pub struct WorthQueryApplicationLimits {
     pub(super) conditionals: SignalConditionalEvaluationBudget,
     pub(super) profile: WorthQueryApplicationProfile,
     pub(super) maximum_publication_records: Option<std::num::NonZeroUsize>,
+    pub(super) residency_budget: Option<worth_relational::facade::config::ResidencyBudget>,
 }
 
 impl WorthQueryApplicationLimits {
@@ -45,6 +46,7 @@ impl WorthQueryApplicationLimits {
             conditionals,
             profile: WorthQueryApplicationProfile::GeneralPurpose,
             maximum_publication_records: None,
+            residency_budget: None,
         }
     }
 
@@ -87,6 +89,17 @@ impl WorthQueryApplicationLimits {
         maximum: std::num::NonZeroUsize,
     ) -> Self {
         self.maximum_publication_records = Some(maximum);
+        self
+    }
+
+    /// Bounds the Home's resident working set on every open and reopen:
+    /// cold regions are evicted under pressure and genuine saturation
+    /// refuses with typed `MemoryExhausted`. Unset, residency is unbounded.
+    pub const fn with_residency_budget(
+        mut self,
+        budget: worth_relational::facade::config::ResidencyBudget,
+    ) -> Self {
+        self.residency_budget = Some(budget);
         self
     }
 }

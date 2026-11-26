@@ -365,7 +365,7 @@ fn selected_branch_views_preserve_cold_probe_and_demand() {
         0,
         "acquiring selected_branch_state performs zero cold I/O"
     );
-    let root = selected.state().root();
+    let root = selected.state().read();
     assert!(matches!(
         root.probe_full_region(entity.partition_id),
         crate::storage::residency::PartitionProbe::Cold

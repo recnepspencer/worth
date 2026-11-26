@@ -137,6 +137,7 @@ impl CandidateRegistration {
             branch_id,
             expected_basis,
             expected_root,
+            decision_basis.shared_residency(),
             publication_cell,
             prepared,
             candidate_retention,

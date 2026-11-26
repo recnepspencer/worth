@@ -49,7 +49,7 @@ pub fn require_exact_subject(
     record: &RecordRef,
 ) -> Result<(), Denial> {
     let observation = basis.observation();
-    let root = observation.selected_root();
+    let root = observation.selected_root().read();
     let partition_id = match record {
         RecordRef::Entity(id) => id.partition_id,
         RecordRef::Relation(id) => id.partition_id,

@@ -72,12 +72,12 @@ pub fn resolve_snapshot_basis<'a>(
         .visibility
         .active_handle_binding(handle.snapshot_id)
     {
-        return Some(binding.basis.clone());
+        return Some(binding.basis.reading());
     }
     directory
         .visibility
         .published_snapshot_binding(handle.snapshot_id)
-        .map(|binding| binding.basis)
+        .map(|binding| binding.basis.reading())
 }
 
 #[derive(Clone, Copy)]
@@ -86,13 +86,17 @@ pub struct SnapshotResolutionInputs<'a> {
     pub cache: VisibilityCacheInputs<'a>,
 }
 
-pub fn resolve_snapshot_state<'a>(
+/// Resolve a handle's state. `demand` admits the selected basis' regions
+/// into its read residency before pins are assembled from them; a cached
+/// state is rebased onto that demanded basis so the read borrows it.
+pub fn resolve_snapshot_state<'a, E>(
     inputs: impl Into<SnapshotResolutionInputs<'a>>,
     handle: &SnapshotHandle,
-) -> Option<ResolvedVisibilitySnapshot> {
+    demand: impl FnOnce(&VisibilitySnapshotBasis) -> Result<(), E>,
+) -> Result<Option<ResolvedVisibilitySnapshot>, E> {
     let inputs = inputs.into();
     if handle.runtime_instance_id != inputs.directory.runtime_identity {
-        return None;
+        return Ok(None);
     }
     if let Some(binding) = inputs
         .directory
@@ -106,28 +110,34 @@ pub fn resolve_snapshot_state<'a>(
             version_id: binding.version_id,
             read_policy: binding.read_policy,
         };
+        let basis = binding.basis.reading();
+        demand(&basis)?;
         let state = materialize_selected_state(
             inputs.cache,
-            &binding.basis,
+            &basis,
             !inputs.cache.policy.protect_active_snapshots,
-        )?;
-        return Some(ResolvedVisibilitySnapshot {
+        );
+        return Ok(state.map(|state| ResolvedVisibilitySnapshot {
             handle: resolved_handle,
-            state,
-        });
+            state: state.within(basis),
+        }));
     }
 
-    resolve_published_snapshot_state(inputs, handle)
+    resolve_published_snapshot_state(inputs, handle, demand)
 }
 
-fn resolve_published_snapshot_state(
+fn resolve_published_snapshot_state<E>(
     inputs: SnapshotResolutionInputs<'_>,
     handle: &SnapshotHandle,
-) -> Option<ResolvedVisibilitySnapshot> {
-    let binding = inputs
+    demand: impl FnOnce(&VisibilitySnapshotBasis) -> Result<(), E>,
+) -> Result<Option<ResolvedVisibilitySnapshot>, E> {
+    let Some(binding) = inputs
         .directory
         .visibility
-        .published_snapshot_binding(handle.snapshot_id)?;
+        .published_snapshot_binding(handle.snapshot_id)
+    else {
+        return Ok(None);
+    };
     let resolved_handle = SnapshotHandle {
         runtime_instance_id: inputs.directory.runtime_identity,
         branch_id: binding.branch_id,
@@ -135,18 +145,19 @@ fn resolve_published_snapshot_state(
         version_id: binding.version_id,
         read_policy: binding.read_policy,
     };
-    let state =
-        materialize_selected_state(inputs.cache, &binding.basis, true).unwrap_or_else(|| {
-            binding.basis.build_visibility_state(
-                inputs.directory.runtime_identity,
-                handle.snapshot_id,
-                binding.read_policy,
-            )
-        });
-    Some(ResolvedVisibilitySnapshot {
+    let basis = binding.basis.reading();
+    demand(&basis)?;
+    let state = materialize_selected_state(inputs.cache, &basis, true).unwrap_or_else(|| {
+        basis.clone().build_visibility_state(
+            inputs.directory.runtime_identity,
+            handle.snapshot_id,
+            binding.read_policy,
+        )
+    });
+    Ok(Some(ResolvedVisibilitySnapshot {
         handle: resolved_handle,
-        state,
-    })
+        state: state.within(basis),
+    }))
 }
 
 pub fn resolve_snapshot_inspection<'a>(

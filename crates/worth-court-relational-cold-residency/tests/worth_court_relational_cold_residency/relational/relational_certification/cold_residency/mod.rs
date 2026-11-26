@@ -121,3 +121,7 @@ mod checkpoint_restore_work;
 
 mod checkpoint_wire_fixture;
 mod native_checkpoint_directory;
+
+mod working_set_eviction;
+mod working_set_fixture;
+mod working_set_stress;

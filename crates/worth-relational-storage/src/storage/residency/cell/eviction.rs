@@ -132,6 +132,22 @@ impl RelationalRegionResidency {
         }
     }
 
+    /// The level this cell currently serves, without admission or I/O.
+    pub fn resident_level(
+        &self,
+    ) -> Option<crate::storage::residency::working_set::ResidencyLevelKind> {
+        use crate::storage::residency::working_set::ResidencyLevelKind as Level;
+        match &**self
+            .state
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+        {
+            ResidencyState::Head { .. } => Some(Level::Head),
+            ResidencyState::Full(_) => Some(Level::Full),
+            ResidencyState::Cold | ResidencyState::Damaged { .. } => None,
+        }
+    }
+
     pub fn working_set_observation(&self) -> CellWorkingSetObservation {
         let state = self
             .state

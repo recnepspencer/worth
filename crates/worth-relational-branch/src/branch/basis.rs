@@ -54,6 +54,10 @@ impl ResolvedRelationalBasisDescriptor {
 #[derive(Clone)]
 pub struct AdmittedRelationalBranchBasis {
     pub(crate) inner: SharedAdmittedRelationalBranchBasisInner,
+    /// Admissions of the one operation this basis value serves. Clones share
+    /// it, so preparation and the capture publishing from it agree; it drops
+    /// with the last clone, never with the shared root or inner (Store M4 D1).
+    pub(crate) residency: Arc<crate::storage::residency::OperationResidency>,
 }
 
 impl<'basis> From<&'basis AdmittedRelationalBranchBasis>
@@ -61,7 +65,8 @@ impl<'basis> From<&'basis AdmittedRelationalBranchBasis>
 {
     fn from(basis: &'basis AdmittedRelationalBranchBasis) -> Self {
         Self {
-            partitions: basis.inner.root.as_ref(),
+            // The basis lends partitions through its transaction residency.
+            partitions: basis,
             aspect_plans: basis.inner.root.schema_authority().aspect_plans(),
         }
     }
@@ -101,6 +106,26 @@ pub struct AdmittedRelationalBranchBasisInner {
     pub publication_cell:
         crate::branch::reference_publication_cell::RelationalBranchPublicationCell,
     pub registry_lease: OnceLock<super::basis_registry::RelationalBasisRegistryLease>,
+}
+
+impl AdmittedRelationalBranchBasis {
+    /// Read the basis root within this basis' transaction residency.
+    pub fn root_read(&self) -> super::root::RelationalRootRead<'_> {
+        self.inner.root.read_within(&self.residency)
+    }
+
+    /// The same admitted basis for a new operation: shared inner, empty
+    /// residency, so the new operation's admissions end with it.
+    pub fn for_operation(&self) -> Self {
+        Self::from_inner(self.inner.clone())
+    }
+
+    pub(crate) fn from_inner(inner: SharedAdmittedRelationalBranchBasisInner) -> Self {
+        Self {
+            inner,
+            residency: Default::default(),
+        }
+    }
 }
 
 impl AdmittedRelationalBranchBasis {
@@ -206,7 +231,5 @@ impl AdmittedRelationalBranchBasisOwnerPort for AdmittedRelationalBranchBasis {
 pub fn assemble_admitted_relational_branch_basis(
     inner: impl Into<SharedAdmittedRelationalBranchBasisInner>,
 ) -> AdmittedRelationalBranchBasis {
-    AdmittedRelationalBranchBasis {
-        inner: inner.into(),
-    }
+    AdmittedRelationalBranchBasis::from_inner(inner.into())
 }

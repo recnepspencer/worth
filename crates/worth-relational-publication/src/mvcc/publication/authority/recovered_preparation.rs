@@ -45,6 +45,7 @@ impl RelationalPublicationAuthority<'_> {
             selected_branch_state.state(),
             &published_partition_delta,
             selected_branch_state.root(),
+            binding.residency(),
             Arc::clone(&envelope),
             &content,
             &schema_registry,

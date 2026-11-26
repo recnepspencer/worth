@@ -146,12 +146,11 @@ fn controlled_full_region_matches_current_kind_preimages_and_truth() {
         .unwrap();
         assert_eq!(prepared.content_digest, expected_digest);
         assert_eq!(prepared.content_values_hashed, expected_hashed as u64);
-        let actual = &prepared
+        let actual_lease = prepared
             .retention
-            .capture_region()
-            .unwrap()
-            .unwrap()
-            .partition;
+            .pin_lease(&crate::storage::residency::OperationResidency::new())
+            .unwrap();
+        let actual = &actual_lease.resident_region().partition;
         let old = &original;
         for (basis, expected) in [
             (
@@ -195,6 +194,7 @@ fn controlled_full_region_matches_current_kind_preimages_and_truth() {
             actual.relation_arena.metadata_history_at(2).unwrap().len(),
             old.relation_arena.metadata_history_at(2).unwrap().len()
         );
+        drop(actual_lease);
         drop(prepared);
         assert_eq!(budget.charged_memory_bytes(), 0);
     })
@@ -215,15 +215,17 @@ fn controlled_full_commitment_clone_retains_only_its_actual_node_backing() {
             &symbols,
         )
         .unwrap();
-        let commitment = prepared
+        let commitment_lease = prepared
             .retention
-            .capture_region()
-            .unwrap()
-            .unwrap()
+            .pin_lease(&crate::storage::residency::OperationResidency::new())
+            .unwrap();
+        let commitment = commitment_lease
+            .resident_region()
             .commitment
             .as_ref()
             .unwrap()
             .clone();
+        drop(commitment_lease);
         let expected = commitment.allocation_bytes();
         let original = commitment.digest(prepared.partition_id);
         assert!(expected > 0);
@@ -269,7 +271,11 @@ fn ordinary_one_slot_incremental_publication_does_not_scan_prior_partition_with_
             let initial =
                 PreparedResidentRegion::initial(lane, &execution, base, &StringInterner::default())
                     .unwrap();
-            let region = initial.retention.capture_region().unwrap().unwrap();
+            let region_lease = initial
+                .retention
+                .pin_lease(&crate::storage::residency::OperationResidency::new())
+                .unwrap();
+            let region = region_lease.resident_region();
             let fresh_stored = StoredValueText::new(format!("fresh-{population}-{history_depth}"));
             let external_seal_holder = fresh_stored.clone();
             publish_one_slot_and_assert(
@@ -307,7 +313,11 @@ fn ordinary_one_slot_incremental_publication_does_not_scan_prior_partition_with_
                 &StringInterner::default(),
             )
             .unwrap();
-            let s_region = s_initial.retention.capture_region().unwrap().unwrap();
+            let s_region_lease = s_initial
+                .retention
+                .pin_lease(&crate::storage::residency::OperationResidency::new())
+                .unwrap();
+            let s_region = s_region_lease.resident_region();
             let fresh_struct = make_one_field_struct(900_000 + population as u64 + history_depth);
             let external_struct_holder = fresh_struct.clone();
             publish_one_slot_and_assert(

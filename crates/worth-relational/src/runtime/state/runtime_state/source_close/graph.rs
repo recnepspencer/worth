@@ -94,7 +94,7 @@ impl NativeSourceGraphRetirement {
             Stage::DeferredHistory => self.stage = Stage::Edition,
             Stage::Edition => match runtime
                 .partitions
-                .source_retirement_edition_cell(self.partition, self.pass.retires())
+                .source_retirement_edition_cell(self.partition)
                 .map_err(|()| Denial::Busy)?
             {
                 Some((id, cell)) => {

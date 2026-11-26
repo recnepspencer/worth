@@ -4,9 +4,7 @@ use crate::durability::transition_admission_denial::{
     RelationalSchemaTransitionAdmissionDenialKind as Kind,
 };
 use contracts::indexes::data::definition::DerivedIndexKind;
-use worth_relational_branch::internal_port::branch::basis::{
-    AdmittedRelationalBranchBasis, AdmittedRelationalBranchBasisFieldsPort as _,
-};
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasis;
 use worth_relational_branch::internal_port::history::data::codec_retirement_closure::OwnedCodecRetirementClosure;
 use worth_relational_contracts::internal_port as contracts;
 use worth_relational_indexes::internal_port::runtime::state::subsystems::indexing::IndexingSubsystem;
@@ -24,7 +22,7 @@ pub fn admit_retired_relation_consequences(
             .run_with_checkpoint(lease, None, |context| {
                 for id in &retirement.relations {
                     context.checkpoint(1).map_err(|stop| Denial::request(stop.into()))?;
-                    let kind = basis.owner_inner().root.partition_state(id.partition_id).map_err(|failure| Denial::request(contracts::execution::denial_cause::RelationalExecutionDenialCause::StorageUnavailable(failure)))?
+                    let kind = basis.partition_state(id.partition_id).map_err(|failure| Denial::request(contracts::execution::denial_cause::RelationalExecutionDenialCause::StorageUnavailable(failure)))?
                         .and_then(|partition| partition.relation_arena.get(id))
                         .and_then(|record| record.kind_id())
                         .ok_or_else(|| deny("retiring relation lost its proven kind"))?;

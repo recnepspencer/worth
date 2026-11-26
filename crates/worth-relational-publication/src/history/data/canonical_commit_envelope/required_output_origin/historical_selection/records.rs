@@ -8,9 +8,7 @@ use contracts::publication::data::publication_error::PublicationError;
 use contracts::publication::data::publication_error::PublicationErrorOwnerPort as _;
 use contracts::transactions::data::primitives::RecordRef;
 use worth_execution::MapKernelContext;
-use worth_relational_branch::internal_port::branch::basis::{
-    AdmittedRelationalBranchBasis, AdmittedRelationalBranchBasisFieldsPort as _,
-};
+use worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasis;
 use worth_relational_contracts::internal_port as contracts;
 use worth_relational_storage::internal_port::storage::overlay::access::OverlayStateView;
 use worth_relational_storage::internal_port::storage::overlay::current_access::CurrentPartitionAccess;
@@ -27,8 +25,8 @@ pub(super) fn validate(
     version: VersionId,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), TransactionCommitError> {
-    let before = selected.owner_inner().root.as_ref();
-    let after = OverlayStateView::new(basis.owner_inner().root.as_ref(), working);
+    let before = selected;
+    let after = OverlayStateView::new(basis, working);
     let original_version = original.commit.version_id;
     let source = original.meaning.source_scope;
     if observe_entity_metadata(&after, source, version).is_none() {
@@ -101,8 +99,6 @@ pub(super) fn entity_version(
     id: EntityId,
 ) -> Option<VersionId> {
     basis
-        .owner_inner()
-        .root
         .get_current_partition(id.partition_id)?
         .entity_arena()
         .current_metadata_at(id.slot_index())
@@ -113,8 +109,6 @@ pub(super) fn relation_version(
     id: RelationId,
 ) -> Option<VersionId> {
     basis
-        .owner_inner()
-        .root
         .get_current_partition(id.partition_id)?
         .relation_arena()
         .current_metadata_at(id.slot_index())

@@ -90,8 +90,7 @@ pub(super) fn select(
     }
     let after_image =
         worth_relational_storage::internal_port::storage::overlay::access::OverlayStateView::new(
-            basis.owner_inner().root.as_ref(),
-            working,
+            basis, working,
         );
     let after =
         worth_relational_branch::internal_port::branch::structural_state::StructuralStateView::new(

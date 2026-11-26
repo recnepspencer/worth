@@ -232,6 +232,8 @@ impl RelationalRuntime {
         if let Some(medium) = extensions.durable_medium.take() {
             durability.attach_medium(medium);
         }
+        let partitions = <StorageSubsystem as RuntimeSubsystem>::new(&());
+        partitions.working_set(config.storage.residency_budget);
         let visibility = VisibilitySubsystem::new(&config);
         Ok(Self::from_state(crate::runtime::RelationalRuntimeState {
             commit_strategies,
@@ -243,7 +245,7 @@ impl RelationalRuntime {
             services,
             owner_lifecycle: RelationalRuntimeOwner::new(),
             publication_owner: RelationalRuntimePublicationOwner::standalone(),
-            partitions: <StorageSubsystem as RuntimeSubsystem>::new(&()),
+            partitions,
             visibility,
             publication: extensions.build_publication_subsystem(),
             configuration: RelationalRuntimeConfiguration::new(config, schema_contract_runtime),

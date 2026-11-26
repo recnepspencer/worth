@@ -173,6 +173,9 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeApplication<Sche
         {
             builder = builder.publication(publication);
         }
+        if let Some(budget) = limits.residency_budget {
+            builder = builder.residency_budget(budget);
+        }
         builder.resolve()
     }
 }

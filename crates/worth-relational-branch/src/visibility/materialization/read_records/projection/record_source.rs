@@ -76,7 +76,10 @@ impl super::ProjectionRecordSource for VisibilityProjectionView {
         if let Some(resident) = &self.resident {
             Some(resident)
         } else {
-            self.basis.root().map(|root| root.partition_access())
+            self.basis
+                .root()
+                .is_some()
+                .then_some(&self.basis as &dyn crate::storage::overlay::PartitionAccess)
         }
     }
     fn is_exact_basis(&self) -> bool {

@@ -148,7 +148,7 @@ impl ResidentMirrorTarget {
                 })?;
         if head.has_complete_history() {
             retention
-                .demand_full(execution, 1 << 30)?
+                .borrow_full(execution, 1 << 30)?
                 .admit_symbols(execution, symbols)
         } else {
             head.admit_owned_symbols(execution, symbols)

@@ -263,7 +263,6 @@ crates/worth-relational-storage/ crates/worth-relational-durability/src/storage/
 crates/worth-relational-storage/ crates/worth-relational-durability/src/storage/residency/root_view_tests.rs
 crates/worth-relational-storage/ crates/worth-relational-durability/src/storage/residency/symbol_admission_tests.rs
 crates/worth-relational-storage/ crates/worth-relational-durability/src/storage/residency/tests.rs
-crates/worth-relational-storage/ crates/worth-relational-durability/src/storage/residency/working_set_fixture.rs
 crates/worth-relational-storage/ crates/worth-relational/src/tests/complexity/contracts/substrate_edition_budgets/partition_copy_on_write.rs
 crates/worth-relational-storage/ crates/worth-relational/src/tests/durability/contracts/caller_association.rs
 crates/worth-relational-storage/ crates/worth-relational/src/tests/durability/contracts/record_allocation_recovery.rs
@@ -399,7 +398,6 @@ crates/worth-relational-branch/ crates/worth-relational-durability/src/storage/r
 crates/worth-relational-branch/ crates/worth-relational-durability/src/storage/residency/root_view_tests.rs
 crates/worth-relational-branch/ crates/worth-relational-durability/src/storage/residency/symbol_admission_tests.rs
 crates/worth-relational-branch/ crates/worth-relational-durability/src/storage/residency/tests.rs
-crates/worth-relational-branch/ crates/worth-relational-durability/src/storage/residency/working_set_fixture.rs
 crates/worth-relational-branch/ crates/worth-relational/src/tests/complexity/contracts/visibility_budgets/partition_scoped_projection.rs
 crates/worth-relational-branch/ crates/worth-relational/src/tests/complexity/contracts/visibility_budgets/snapshot_visibility.rs
 crates/worth-relational-branch/ crates/worth-relational/src/tests/durability/contracts/canonical_commit_artifact.rs

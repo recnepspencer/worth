@@ -285,7 +285,7 @@ fn resident_pin_custody_and_cache_clear_preserve_owned_mirror_residency() {
             .unwrap()
             .expect("the recovered fork retains the exact old root");
         basis
-            .root()
+            .projection_root()
             .demand_all_full(execution, &runtime.services.symbols)
             .unwrap();
         let source_state = basis.build_visibility_state(

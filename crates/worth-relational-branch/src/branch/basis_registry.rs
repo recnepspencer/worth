@@ -143,7 +143,7 @@ impl RelationalBranchBasisRegistry {
             .get(&key)
             .and_then(|entry| entry.basis.upgrade())
         {
-            return Ok(AdmittedRelationalBranchBasis { inner: existing });
+            return Ok(AdmittedRelationalBranchBasis::from_inner(existing));
         }
         let registration_id = retained
             .next_registration_id
@@ -231,7 +231,7 @@ impl RelationalBranchBasisRegistry {
         let retained = retained_bases.entries.get(&key)?.basis.upgrade();
         match retained {
             Some(inner) if inner.descriptor == *descriptor => {
-                Some(AdmittedRelationalBranchBasis { inner })
+                Some(AdmittedRelationalBranchBasis::from_inner(inner))
             }
             Some(_) => None,
             None => {

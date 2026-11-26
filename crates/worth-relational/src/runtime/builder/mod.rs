@@ -206,6 +206,12 @@ impl RelationalRuntimeBuilder {
         self
     }
 
+    /// Bound the working set of every cold-backed region this runtime reopens.
+    pub fn residency_budget(mut self, budget: crate::config::data::ResidencyBudget) -> Self {
+        self.overrides.storage.residency_budget = Some(budget);
+        self
+    }
+
     pub fn cascade_delete_policy(mut self, cascade_delete_policy: CascadeDeletePolicy) -> Self {
         self.overrides.storage.cascade_delete_policy = Some(cascade_delete_policy);
         self

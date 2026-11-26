@@ -1,65 +1,69 @@
-use super::root::{RelationalBranchRoot, RelationalBranchRootState};
+//! Only an operation-scoped root read lends partitions; the root itself and
+//! its branch state hold custody alone (Store M4 D1).
+use super::root::RelationalRootRead;
 use crate::identity::data::PartitionId;
-use crate::storage::overlay::{PartitionAccess, PartitionState};
+use crate::storage::overlay::{
+    CurrentPartitionAccess, PartitionAccess, PartitionIdMemory, PartitionIdsDenial, PartitionState,
+};
+use crate::storage::residency::{
+    PartitionHeadProbe, PartitionProbe, RelationalRegionHeadView, RelationalResidencyDemandFailure,
+};
+use worth_execution::ExecutionRequest;
 
-impl PartitionAccess for RelationalBranchRootState {
-    fn probe_full_partition(
-        &self,
-        id: PartitionId,
-    ) -> crate::storage::residency::PartitionProbe<'_> {
-        self.root.probe_full_partition(id)
-    }
-
-    fn demand_full_partition(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        id: PartitionId,
-    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
-        self.root.demand_full_partition(execution, id)
-    }
-    fn get_partition(&self, partition_id: PartitionId) -> Option<&PartitionState> {
-        match self.root.probe_full_region(partition_id) {
-            crate::storage::residency::PartitionProbe::Resident(partition) => Some(partition),
+impl PartitionAccess for super::root::RelationalBranchRootState {
+    fn get_partition(&self, id: PartitionId) -> Option<&PartitionState> {
+        match self.probe_full_partition(id) {
+            PartitionProbe::Resident(partition) => Some(partition),
             _ => None,
         }
     }
+    fn probe_full_partition(&self, id: PartitionId) -> PartitionProbe<'_> {
+        self.root
+            .regions_for_projection()
+            .probe_full_region(id, &self.residency)
+    }
+    fn demand_full_partition(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        id: PartitionId,
+    ) -> Result<(), RelationalResidencyDemandFailure> {
+        self.root
+            .regions_for_projection()
+            .demand_full_region_cached(execution, id, &self.residency)
+    }
 }
 
-impl crate::storage::overlay::CurrentPartitionAccess for RelationalBranchRootState {
-    fn get_current_partition(
-        &self,
-        id: crate::identity::data::PartitionId,
-    ) -> Option<crate::storage::residency::RelationalRegionHeadView<'_>> {
-        self.root.get_current_partition(id)
+impl CurrentPartitionAccess for super::root::RelationalBranchRootState {
+    fn get_current_partition(&self, id: PartitionId) -> Option<RelationalRegionHeadView<'_>> {
+        self.root
+            .regions_for_projection()
+            .accepted_head_region_view(id, &self.residency)
     }
-    fn probe_head_partition(
-        &self,
-        id: crate::identity::data::PartitionId,
-    ) -> crate::storage::residency::PartitionHeadProbe<'_> {
-        self.root.probe_head_partition(id)
+    fn probe_head_partition(&self, id: PartitionId) -> PartitionHeadProbe<'_> {
+        self.root
+            .regions_for_projection()
+            .probe_head_region(id, &self.residency)
     }
     fn demand_head_partition(
         &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        id: crate::identity::data::PartitionId,
-    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
-        self.root.demand_head_partition(execution, id)
+        execution: &ExecutionRequest<'_, '_>,
+        id: PartitionId,
+    ) -> Result<(), RelationalResidencyDemandFailure> {
+        self.root
+            .regions_for_projection()
+            .demand_region_head_cached(execution, id, &self.residency)
     }
-
     fn partition_ids(&self) -> Vec<PartitionId> {
         self.root.partition_ids()
     }
-
     fn partition_ids_iter(&self) -> Box<dyn Iterator<Item = PartitionId> + '_> {
         Box::new(self.root.partition_ids_iter())
     }
-
     fn partition_ids_with_memory(
         &self,
-        memory: &mut dyn crate::storage::overlay::PartitionIdMemory,
-    ) -> Result<Vec<PartitionId>, crate::storage::overlay::PartitionIdsDenial> {
-        use crate::storage::overlay::collect_partition_ids;
-        collect_partition_ids(
+        memory: &mut dyn PartitionIdMemory,
+    ) -> Result<Vec<PartitionId>, PartitionIdsDenial> {
+        crate::storage::overlay::collect_partition_ids(
             self.root.region_count(),
             self.root.partition_ids_iter(),
             memory,
@@ -67,58 +71,55 @@ impl crate::storage::overlay::CurrentPartitionAccess for RelationalBranchRootSta
     }
 }
 
-impl PartitionAccess for RelationalBranchRoot {
+impl PartitionAccess for RelationalRootRead<'_> {
     fn get_partition(&self, id: PartitionId) -> Option<&PartitionState> {
-        self.regions_for_projection().get_partition(id)
+        match self.probe_full_region(id) {
+            PartitionProbe::Resident(partition) => Some(partition),
+            _ => None,
+        }
     }
-    fn probe_full_partition(
-        &self,
-        id: PartitionId,
-    ) -> crate::storage::residency::PartitionProbe<'_> {
-        self.regions_for_projection().probe_full_partition(id)
+    fn probe_full_partition(&self, id: PartitionId) -> PartitionProbe<'_> {
+        self.probe_full_region(id)
     }
     fn demand_full_partition(
         &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        execution: &ExecutionRequest<'_, '_>,
         id: PartitionId,
-    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
-        self.regions_for_projection()
-            .demand_full_partition(execution, id)
+    ) -> Result<(), RelationalResidencyDemandFailure> {
+        self.demand_region_full(execution, id).map(drop)
     }
 }
 
-impl crate::storage::overlay::CurrentPartitionAccess for RelationalBranchRoot {
-    fn get_current_partition(
-        &self,
-        id: PartitionId,
-    ) -> Option<crate::storage::residency::RelationalRegionHeadView<'_>> {
-        self.regions_for_projection().get_current_partition(id)
+impl CurrentPartitionAccess for RelationalRootRead<'_> {
+    fn get_current_partition(&self, id: PartitionId) -> Option<RelationalRegionHeadView<'_>> {
+        // Fresh admission belongs to probe_head_partition; a paid read consumes
+        // the immutable counted custody this operation already accepted.
+        self.accepted_head_region_view(id)
     }
-    fn probe_head_partition(
-        &self,
-        id: PartitionId,
-    ) -> crate::storage::residency::PartitionHeadProbe<'_> {
-        self.regions_for_projection().probe_head_partition(id)
+    fn probe_head_partition(&self, id: PartitionId) -> PartitionHeadProbe<'_> {
+        self.probe_head_region(id)
     }
     fn demand_head_partition(
         &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        execution: &ExecutionRequest<'_, '_>,
         id: PartitionId,
-    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
-        self.regions_for_projection()
-            .demand_head_partition(execution, id)
+    ) -> Result<(), RelationalResidencyDemandFailure> {
+        self.demand_region_head_cached(execution, id)
     }
     fn partition_ids(&self) -> Vec<PartitionId> {
-        self.partition_ids()
+        self.root().partition_ids()
     }
     fn partition_ids_iter(&self) -> Box<dyn Iterator<Item = PartitionId> + '_> {
-        Box::new(RelationalBranchRoot::partition_ids_iter(self))
+        Box::new(self.root().partition_ids_iter())
     }
     fn partition_ids_with_memory(
         &self,
-        memory: &mut dyn crate::storage::overlay::PartitionIdMemory,
-    ) -> Result<Vec<PartitionId>, crate::storage::overlay::PartitionIdsDenial> {
-        self.regions_for_projection()
-            .partition_ids_with_memory(memory)
+        memory: &mut dyn PartitionIdMemory,
+    ) -> Result<Vec<PartitionId>, PartitionIdsDenial> {
+        crate::storage::overlay::collect_partition_ids(
+            self.root().region_count(),
+            self.root().partition_ids_iter(),
+            memory,
+        )
     }
 }

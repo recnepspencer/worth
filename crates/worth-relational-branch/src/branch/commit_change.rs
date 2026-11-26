@@ -1,6 +1,8 @@
 //! Join the sealed storage journal to its original canonical envelope once.
 use super::maintenance::CommitChange;
-use super::root::{RelationalBranchRoot, RelationalBranchRootCaptureDenial as Denial};
+use super::root::{
+    RelationalBranchRoot, RelationalBranchRootCaptureDenial as Denial, RelationalRootRead,
+};
 use crate::history::data::{CanonicalCommitEnvelope, RelationalDescriptiveTouch as Touch};
 use crate::identity::data::PartitionId;
 use crate::storage::residency::{PartitionHeadProbe, RelationalRegionHeadView};
@@ -40,6 +42,8 @@ fn build(
     let mut routes = BTreeSet::new();
     let mut created = Vec::new();
     let mut retired = Vec::new();
+    // Before-images are admitted for this build only, never into the root.
+    let previous = previous.map(RelationalBranchRoot::read);
     for id in delta.partition_ids() {
         work.prepare(33, 512)?;
         let (overlay, journal) = delta
@@ -47,7 +51,7 @@ fn build(
             .ok_or(Denial::PublishedPartitionMissing(id))?;
         let records = project_records(
             id,
-            admitted_before(execution, previous, id)?,
+            admitted_before(execution, previous.as_ref(), id)?,
             overlay,
             journal,
             work,
@@ -85,7 +89,7 @@ fn build(
 
 fn admitted_before<'root>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    previous: Option<&'root RelationalBranchRoot>,
+    previous: Option<&'root RelationalRootRead<'_>>,
     id: PartitionId,
 ) -> Result<Option<RelationalRegionHeadView<'root>>, Denial> {
     match previous.map(|root| root.probe_head_region(id)) {

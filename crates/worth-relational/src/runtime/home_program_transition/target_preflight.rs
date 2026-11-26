@@ -41,7 +41,7 @@ impl PreflightOverlayAccumulator {
 
     fn merge_step(
         &mut self,
-        predecessor_root: &crate::branch::RelationalBranchRoot,
+        predecessor_root: &crate::branch::root::RelationalRootRead<'_>,
         committed_partitions: BTreeMap<
             crate::identity::data::PartitionId,
             (
@@ -139,9 +139,10 @@ impl RelationalRuntime {
                 work: DerivedIndexMaintenanceWork::default(),
             })?;
         let mut accumulator = PreflightOverlayAccumulator::from_predecessor(predecessor_root);
+        let predecessor_read = predecessor.root_read();
 
         if !before_target_steps.is_empty() && !accumulator.all_partitions.is_empty() {
-            predecessor_root
+            predecessor_read
                 .demand_regions_full(
                     request,
                     &detached_prep.services.symbols,
@@ -172,7 +173,7 @@ impl RelationalRuntime {
                 &accumulator.staged_partitions,
             )?;
             detached_prep.services.symbols = next_symbols;
-            accumulator.merge_step(predecessor_root, committed_partitions);
+            accumulator.merge_step(&predecessor_read, committed_partitions);
         }
 
         let mut target_intent = crate::mvcc::RelationalTransactionIntent::ordinary();
@@ -199,7 +200,7 @@ impl RelationalRuntime {
             target_step_batches,
             &accumulator.staged_partitions,
         )?;
-        accumulator.merge_step(predecessor_root, committed_partitions);
+        accumulator.merge_step(&predecessor_read, committed_partitions);
 
         let staged = worth_relational_indexes::internal_port::indexes::authority::maintenance::cold_preflight::StagedHomeTargetSuccessor {
             predecessor_root: Arc::clone(predecessor_root),

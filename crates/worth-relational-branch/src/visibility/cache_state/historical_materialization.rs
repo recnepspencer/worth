@@ -19,7 +19,7 @@ pub fn ensure_historical_state<'a>(
         inputs
             .instrumentation
             .count(|counters| counters.visibility_cache_hits += 1);
-        return Ok(state);
+        return Ok(state.within_historical(basis));
     }
     inputs
         .instrumentation
@@ -70,7 +70,7 @@ pub fn materialize_historical_visibility<'a>(
         inputs
             .instrumentation
             .count(|counters| counters.visibility_cache_hits += 1);
-        return Ok(Some(state));
+        return Ok(Some(state.within_historical(basis)));
     }
     let recent_candidate = allow_recent_admission
         && inputs.policy.enabled

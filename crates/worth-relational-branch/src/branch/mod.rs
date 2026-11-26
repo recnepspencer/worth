@@ -20,6 +20,7 @@ pub mod basis_descriptor_resolution;
 pub mod basis_fixture;
 pub mod basis_identity_validation;
 pub mod basis_observation_inputs;
+pub mod basis_read;
 pub mod basis_readmission_inputs;
 pub mod basis_registry;
 pub mod basis_retention;

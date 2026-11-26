@@ -3,7 +3,6 @@ use crate::identity::data::{EntityId, LineageId};
 use crate::lineage::data::HistoricalLineageResolution;
 use crate::mvcc::RelationalBranchObservation;
 use crate::runtime::RelationalRuntime;
-use worth_relational_branch::internal_port::mvcc::observation::RelationalBranchObservationOwnerPort as _;
 
 impl RelationalRuntime {
     /// Resolve the lineage history of one entity as `observation`'s retained
@@ -26,10 +25,6 @@ impl RelationalRuntime {
         self.admit_observation_read(observation)?;
         crate::execution::check_request(execution)
             .map_err(RelationalObservationReadDenial::Execution)?;
-        observation
-            .selected_root()
-            .demand_regions_full(execution, &self.services.symbols, [entity_id.partition_id])
-            .map_err(|failure| RelationalObservationReadDenial::Execution(failure.into()))?;
         self.lineage_access()
             .resolve_record_history_for_observation(execution, entity_id, observation)
             .map_err(RelationalObservationReadDenial::Execution)

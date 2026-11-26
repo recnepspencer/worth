@@ -1,6 +1,6 @@
 //! Reconstruct one live incident edge over its exact publication predecessors.
 use super::{charge, memory_overflow, reserve, CodecRetirementClosureStop as Stop};
-use crate::branch::root::RelationalBranchRoot;
+use crate::branch::root::RelationalRootRead;
 use crate::history::data::canonical_commit_envelope::{
     OutputOriginHistory, OwnedValidatedOutputOrigins,
 };
@@ -13,7 +13,7 @@ use worth_execution::{ExecutionResourceLease, MapKernelContext};
 
 pub(super) fn validate(
     runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
-    root: &RelationalBranchRoot,
+    root: &RelationalRootRead<'_>,
     selected: &OwnedValidatedOutputOrigins,
     id: RelationId,
     validated_history: &mut OutputOriginHistory,

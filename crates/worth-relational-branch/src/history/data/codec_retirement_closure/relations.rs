@@ -1,6 +1,6 @@
 //! Destructive retirement requires a closed set of authenticated incident relations.
 use super::{charge, memory_overflow, reserve, CodecRetirementClosureStop, OutputOrigin};
-use crate::branch::root::RelationalBranchRoot;
+use crate::branch::root::RelationalRootRead;
 use crate::history::data::canonical_commit_envelope::OutputOriginHistory;
 use crate::identity::data::RelationId;
 use worth_execution::{ExecutionMemoryReservation, ExecutionResourceLease, MapKernelContext};
@@ -19,7 +19,7 @@ pub(super) use association::validate_complete_publication;
 
 pub(super) fn derive_closed_relations(
     runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
-    root: &RelationalBranchRoot,
+    root: &RelationalRootRead<'_>,
     origins: &[OutputOrigin],
     purpose: RelationClosurePurpose,
     validated_history: &mut OutputOriginHistory,

@@ -59,9 +59,12 @@ fn an_owned_head_promotes_without_a_checkpoint_and_keeps_its_old_observation() {
             ))
         ));
         assert_eq!(fixture.source.reads.load(Ordering::SeqCst), reads);
-        let prior = RelationalRegionRetention::from_head_lease(
-            head_demand(&fixture.cell, 1 << 24).unwrap(),
-        );
+        // The capturing operation's residency holds the predecessor's Head.
+        let prior = RelationalRegionRetention::new(fixture.cell.clone(), None);
+        let scope = worth_relational_storage::internal_port::storage::residency::OperationResidency::new();
+        let predecessor = head_demand(&fixture.cell, 1 << 24).unwrap();
+        prior.demand_head(&scope, execution, 1 << 24).unwrap();
+        drop(predecessor);
         let mut journal = worth_relational_storage::internal_port::storage::overlay::partition::PartitionMutationJournal::default();
         journal.entity_slots.insert(fixture.entity.slot_index());
         let directory = worth_relational_storage::internal_port::storage::residency::record_directory::RegionRecordDirectory::capture(
@@ -75,6 +78,7 @@ fn an_owned_head_promotes_without_a_checkpoint_and_keeps_its_old_observation() {
             execution,
             RegionCaptureBasis {
                 retention: &prior,
+                scope: &scope,
                 directory: &directory,
                 kind_commitment: fixture.cold.kind_authority,
                 inventory: original.partition.allocation_inventory().unwrap(),
@@ -100,7 +104,8 @@ fn an_owned_head_promotes_without_a_checkpoint_and_keeps_its_old_observation() {
         let head = prepared.retention;
         assert_eq!(fixture.source.reads.load(Ordering::SeqCst), before);
         assert!(head.cell().lease_resident_full().unwrap().is_none());
-        let accepted = head.admitted_head_view().unwrap();
+        let head_scope = worth_relational_storage::internal_port::storage::residency::OperationResidency::new();
+        let accepted = head.admitted_head_view(&head_scope).unwrap();
         let captured = head
             .cell()
             .capture_checkpoint(

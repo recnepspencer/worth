@@ -128,7 +128,7 @@ pub(super) fn validate<'a>(
         .map_err(worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::installation::relation_failure::relation_stop)?;
     compare_retained_origin(origin, expected, context)?;
     worth_relational_branch::internal_port::history::data::publication_relations::validate(
-        &basis.owner_inner().root,
+        &basis.root_read(),
         None,
         origin,
         Some(

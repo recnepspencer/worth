@@ -20,15 +20,22 @@ pub struct RelationalRootRegionCheckpoint {
 }
 
 /// Selection retains one immutable root; native capture walks its leaves.
+/// The capture operation's admissions live in its own residency, released
+/// with the capture rather than retained by the root.
 #[derive(Debug, Clone)]
 pub struct RelationalBranchRootCheckpoint {
     root: Arc<crate::branch::root::RelationalBranchRoot>,
     commit_id: CommitId,
+    residency: Arc<crate::storage::residency::OperationResidency>,
 }
 
 impl RelationalBranchRootCheckpoint {
     pub fn new(commit_id: CommitId, root: Arc<crate::branch::root::RelationalBranchRoot>) -> Self {
-        Self { root, commit_id }
+        Self {
+            root,
+            commit_id,
+            residency: Default::default(),
+        }
     }
     pub fn content(&self) -> &crate::content::ContentDirectory {
         self.root.retained_content()
@@ -44,16 +51,18 @@ impl RelationalBranchRootCheckpoint {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
-        self.root.demand_all_full(execution, symbols)
+        self.root
+            .read_within(&self.residency)
+            .demand_all_full(execution, symbols)
     }
     pub fn partitions(
         &self,
     ) -> Result<Vec<PartitionState>, crate::storage::data::RelationalStorageUnavailable> {
+        let read = self.root.read_within(&self.residency);
         self.root
             .partition_ids_iter()
             .map(|id| {
-                let lease = self
-                    .root
+                let lease = read
                     .resident_full_region_witness(id)?
                     .ok_or(crate::storage::data::RelationalStorageUnavailable {
                     subject: crate::storage::data::RelationalStorageSubject::Region(id),

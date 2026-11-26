@@ -193,7 +193,7 @@ pub(super) fn install(
         .map_err(worth_relational_branch::internal_port::history::data::canonical_commit_envelope::required_output_origin::installation::relation_failure::relation_stop)?;
     for origin in envelope.output_origins() {
         worth_relational_branch::internal_port::history::data::publication_relations::validate(
-            &basis.owner_inner().root,
+            &basis.root_read(),
             Some(state),
             origin,
             Some(

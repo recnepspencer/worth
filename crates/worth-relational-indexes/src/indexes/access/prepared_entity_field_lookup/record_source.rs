@@ -65,10 +65,13 @@ impl worth_relational_branch::internal_port::visibility::materialization::read_r
         &self,
         partition: crate::contracts::identity::data::primitives::PartitionId,
     ) -> Option<worth_relational_storage::internal_port::storage::residency::views::RelationalRegionHeadView<'_>> {
-        self.basis.root().accepted_head_region_view(partition)
+        self.basis
+            .basis()
+            .projection_root()
+            .accepted_head_region_view(partition)
     }
     fn selected_storage(&self) -> Option<&dyn worth_relational_storage::internal_port::storage::overlay::access::PartitionAccess> {
-        Some(self.basis.root())
+        Some(self.basis.basis())
     }
     fn is_exact_basis(&self) -> bool {
         true

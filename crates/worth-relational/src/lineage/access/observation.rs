@@ -59,6 +59,7 @@ impl RelationalRuntime {
         crate::execution::check_request(request)?;
         let Some(head) = observation
             .selected_root()
+            .read()
             .demand_region_head(request, entity.partition_id)
             .map_err(crate::execution::RelationalExecutionDenialCause::from)?
         else {

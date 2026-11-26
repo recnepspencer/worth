@@ -284,6 +284,7 @@ impl WalkGraph {
             execution,
             &RelationalBranchRootIdentityIssuer::default(),
             &base,
+            &crate::storage::residency::OperationResidency::new(),
             &delta,
             &symbols,
             Default::default(),

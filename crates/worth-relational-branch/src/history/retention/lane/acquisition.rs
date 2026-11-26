@@ -34,7 +34,7 @@ impl RelationalBranchRetentionBinding {
                     .component
                     .as_ref()?
                     .upgrade()
-                    .map(|inner| crate::branch::basis::AdmittedRelationalBranchBasis { inner })
+                    .map(crate::branch::basis::AdmittedRelationalBranchBasis::from_inner)
             })
             .collect()
     }
@@ -66,7 +66,7 @@ impl RelationalBranchRetentionBinding {
                 .as_ref()
                 .and_then(crate::branch::basis::WeakAdmittedRelationalBranchBasisInner::upgrade)
             {
-                let basis = crate::branch::basis::AdmittedRelationalBranchBasis { inner };
+                let basis = crate::branch::basis::AdmittedRelationalBranchBasis::from_inner(inner);
                 if !Weak::ptr_eq(&basis.inner.retention_binding.owner, &self.owner) {
                     return Err(Denial::Retention(
                         RelationalRetentionAcquisitionDenial::BindingMismatch,

@@ -17,6 +17,8 @@ pub struct HistoricalVisibilityBasis {
     version_id: VersionId,
     root: Option<Arc<crate::history::retention::RelationalRetainedHistoricalRoot>>,
     coverage: HistoricalVisibilityCoverage,
+    /// This historical read's residency; [`Self::reading`] starts a fresh one.
+    residency: Arc<crate::storage::residency::OperationResidency>,
 }
 
 #[derive(Clone, Debug)]
@@ -85,6 +87,7 @@ impl HistoricalVisibilityBasis {
                     version_id,
                     root: None,
                     coverage: HistoricalVisibilityCoverage::EmptyGenesis,
+                    residency: Default::default(),
                 });
             }
             return Err(HistoricalVisibilityDenial::CertificationReconstructionRequired);
@@ -131,7 +134,15 @@ impl HistoricalVisibilityBasis {
     pub fn root(&self) -> Option<SnapshotProjectionRoot<'_>> {
         self.root
             .as_deref()
-            .map(crate::history::retention::RelationalRetainedHistoricalRoot::projection_root)
+            .map(|retained| retained.projection_root_within(&self.residency))
+    }
+
+    /// The same retained selection with a fresh residency for one read.
+    pub fn reading(&self) -> Self {
+        Self {
+            residency: Default::default(),
+            ..self.clone()
+        }
     }
 
     pub fn source_root_id(&self) -> Option<u64> {

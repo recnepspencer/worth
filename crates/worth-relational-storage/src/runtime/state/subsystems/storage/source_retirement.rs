@@ -23,14 +23,13 @@ impl StorageSubsystem {
     pub fn source_retirement_edition_cell(
         &self,
         after: Option<PartitionId>,
-        retire_native: bool,
     ) -> Result<Option<(PartitionId, Arc<RelationalRegionResidency>)>, ()> {
         Ok(self
             .partitions
             .try_read()
             .ok_or(())?
             .edition
-            .source_retirement_cell(after, retire_native))
+            .source_retirement_cell(after))
     }
     #[allow(
         clippy::result_unit_err,
@@ -58,12 +57,9 @@ impl StorageSubsystem {
             return Ok(None);
         };
         Ok(Some(match region {
-            MirrorRegion::AwaitingResidentTarget(original) => {
-                if retire_native {
-                    original.retire_native_leases();
-                }
-                (id, original.cell().clone(), None)
-            }
+            // A retention holds no leases; only the resident target's edit
+            // lease carries a native count to retire.
+            MirrorRegion::AwaitingResidentTarget(original) => (id, original.cell().clone(), None),
             MirrorRegion::Resident(original) => {
                 let (cell, symbols) = original.source_retirement_binding(retire_native)?;
                 (id, cell, symbols)

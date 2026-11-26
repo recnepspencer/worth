@@ -192,6 +192,11 @@ fn apply_storage_overrides(
         "storage.cascade_delete_policy",
         section.cascade_delete_policy.is_some(),
     );
+    insert_override_provenance(
+        provenance,
+        "storage.residency_budget",
+        section.residency_budget.is_some(),
+    );
 
     if let Some(capacity) = section.initial_entity_capacity {
         config.storage.initial_entity_capacity = capacity;
@@ -218,6 +223,9 @@ fn apply_storage_overrides(
     }
     if let Some(cascade_delete_policy) = section.cascade_delete_policy {
         config.storage.cascade_delete_policy = cascade_delete_policy;
+    }
+    if let Some(budget) = section.residency_budget {
+        config.storage.residency_budget = Some(budget);
     }
 }
 

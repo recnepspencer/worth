@@ -46,9 +46,11 @@ fn visit_node<V: RelationalRootAllocationVisitor>(
                 }
                 .into(),
             );
+            // Each visit's admission ends with its callback.
+            let scope = crate::storage::residency::OperationResidency::new();
             visitor.region(
                 value.region.observation(),
-                value.region.resident_partition(),
+                value.region.resident_partition(&scope),
             )?;
         }
         Some(RelationalPersistentRegionLeaf::Removed(value)) => {
