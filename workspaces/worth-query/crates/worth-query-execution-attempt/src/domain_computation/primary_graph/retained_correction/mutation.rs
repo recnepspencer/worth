@@ -115,7 +115,7 @@ impl CorrectionMaterialOwner {
     ) -> Result<(), Denial> {
         self.settle(request)?;
         let original = material.original;
-        let already_present = {
+        {
             let mut state = self.state();
             let key = (material.original, material.member);
             if let Some(existing) = state.catalog.material.get(&key) {
@@ -131,14 +131,9 @@ impl CorrectionMaterialOwner {
                     return Err(Denial::OriginalMismatch);
                 }
                 state.world_ordinals.insert(original, world_commit_ordinal);
-                true
-            } else {
-                false
+                self.retain_world_ordinal(world_commit_ordinal);
+                return Ok(());
             }
-        };
-        if already_present {
-            self.retain_world_ordinal(world_commit_ordinal);
-            return Ok(());
         }
         self.publish_with_ordinal(
             MaterialRecord::Capture {
@@ -156,7 +151,7 @@ impl CorrectionMaterialOwner {
     ) -> Result<(), Denial> {
         self.settle(request)?;
         let original = material.original;
-        let already_ready = {
+        {
             let mut state = self.state();
             let existing = state
                 .catalog
@@ -169,17 +164,14 @@ impl CorrectionMaterialOwner {
                         return Err(Denial::OriginalMismatch);
                     }
                     state.world_ordinals.insert(original, world_commit_ordinal);
-                    true
+                    self.retain_world_ordinal(world_commit_ordinal);
+                    return Ok(());
                 }
-                MaterialBody::Captured(_) => false,
+                MaterialBody::Captured(_) => {}
                 MaterialBody::Expired { .. } | MaterialBody::Abandoned => {
                     return Err(Denial::Unavailable)
                 }
             }
-        };
-        if already_ready {
-            self.retain_world_ordinal(world_commit_ordinal);
-            return Ok(());
         }
         self.publish_with_ordinal(
             MaterialRecord::Ready {

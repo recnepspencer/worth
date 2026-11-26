@@ -126,7 +126,10 @@ impl CorrectionMaterialOwner {
         world: worth_runtime_world::facade::RuntimeWorldRecoveryPort,
     ) {
         let world = self.world_history.0.get_or_init(|| world);
-        let ordinals: Vec<u64> = self.retained_world_commit_ordinals().into_iter().collect();
+        let state = self.state();
+        let ordinals: Vec<u64> = Self::active_world_commit_ordinals(&state)
+            .into_iter()
+            .collect();
         world.retain_external_history_ordinals(&ordinals);
     }
     pub(super) fn retain_world_ordinal(&self, ordinal: u64) {
@@ -143,27 +146,24 @@ impl CorrectionMaterialOwner {
         &self,
         originals: &worth_runtime_world::facade::WorldProgramActivationHistory,
     ) {
-        let mut ordinals = Vec::new();
-        {
-            let mut state = self.state();
-            let active: std::collections::BTreeSet<_> =
-                state
-                    .catalog
-                    .material
-                    .iter()
-                    .filter_map(|((original, _), entry)| match &entry.body {
-                        catalog::MaterialBody::Captured(_)
-                        | catalog::MaterialBody::Ready { .. } => Some(*original),
-                        catalog::MaterialBody::Expired { .. }
-                        | catalog::MaterialBody::Abandoned => None,
-                    })
-                    .collect();
-            for original in active {
-                if let Some(entry) = originals.original_state(original) {
-                    let ordinal = entry.reserved_commit().ordinal();
-                    state.world_ordinals.insert(original, ordinal);
-                    ordinals.push(ordinal);
+        let mut state = self.state();
+        let active: std::collections::BTreeSet<_> = state
+            .catalog
+            .material
+            .iter()
+            .filter_map(|((original, _), entry)| match &entry.body {
+                catalog::MaterialBody::Captured(_) | catalog::MaterialBody::Ready { .. } => {
+                    Some(*original)
                 }
+                catalog::MaterialBody::Expired { .. } | catalog::MaterialBody::Abandoned => None,
+            })
+            .collect();
+        let mut ordinals = Vec::new();
+        for original in active {
+            if let Some(entry) = originals.original_state(original) {
+                let ordinal = entry.reserved_commit().ordinal();
+                state.world_ordinals.insert(original, ordinal);
+                ordinals.push(ordinal);
             }
         }
         if let Some(world) = self.world_history.0.get() {
@@ -171,10 +171,7 @@ impl CorrectionMaterialOwner {
         }
     }
 
-    /// World commit ordinals of writers whose correction material is still
-    /// active (`Captured` or `Ready`), excluding `Expired` and `Abandoned`.
-    pub fn retained_world_commit_ordinals(&self) -> std::collections::BTreeSet<u64> {
-        let state = self.state();
+    fn active_world_commit_ordinals(state: &MaterialState) -> std::collections::BTreeSet<u64> {
         state
             .catalog
             .material

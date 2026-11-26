@@ -55,33 +55,23 @@ impl MaterialPublication<'_> {
         loop {
             match medium.advance_publication(request, &frame) {
                 Outcome::Committed(proof) => {
-                    let mut retained_ordinal = None;
-                    let mut released_ordinal = None;
-                    proof.consume(|committed| {
+                    return proof.consume(|committed| {
                         Self::admit_subject(medium, &frame, committed.subject())?;
                         let mut state = self.owner.state();
                         let (change, terminal) = state.catalog.fold_with_terminal(&frame)?;
                         state.pins.committed(change, medium.authority());
                         state.pending = None;
-                        retained_ordinal =
-                            state
-                                .pending_world_ordinal
-                                .take()
-                                .map(|(original, ordinal)| {
-                                    state.world_ordinals.insert(original, ordinal);
-                                    ordinal
-                                });
-                        released_ordinal =
-                            terminal.and_then(|original| state.world_ordinals.remove(&original));
+                        if let Some((original, ordinal)) = state.pending_world_ordinal.take() {
+                            state.world_ordinals.insert(original, ordinal);
+                            self.owner.retain_world_ordinal(ordinal);
+                        }
+                        if let Some(ordinal) =
+                            terminal.and_then(|original| state.world_ordinals.remove(&original))
+                        {
+                            self.owner.release_world_ordinal(ordinal);
+                        }
                         Ok(())
-                    })?;
-                    if let Some(ordinal) = retained_ordinal {
-                        self.owner.retain_world_ordinal(ordinal);
-                    }
-                    if let Some(ordinal) = released_ordinal {
-                        self.owner.release_world_ordinal(ordinal);
-                    }
-                    return Ok(());
+                    });
                 }
                 Outcome::ProvenNoEffect(proof) => {
                     Self::admit_subject(medium, &frame, proof.subject())?;

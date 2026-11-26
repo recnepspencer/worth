@@ -121,9 +121,6 @@ impl WorthQueryPrimaryGraphProvider {
             })
         })?;
         owner.record_world_ordinals(originals);
-        if let Some(world) = self.world_history.get() {
-            owner.attach_world_history(world.clone());
-        }
         self.correction_material
             .set(owner)
             .map_err(|_| Denial::AdmissionAlreadyRecorded)?;
@@ -131,6 +128,9 @@ impl WorthQueryPrimaryGraphProvider {
             .correction_material
             .get()
             .expect("same installed material receiver");
+        if let Some(world) = self.world_history.get() {
+            owner.attach_world_history(world.clone());
+        }
         owner.abandon_released(originals, request)?;
         owner.discharge_unperformed(Some(originals), request)?;
         owner.admission()

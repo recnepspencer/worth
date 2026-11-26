@@ -206,3 +206,30 @@ fn external_history_ordinals_defer_interior_retirement_in_o1_until_released() {
     assert!(catalog.lookup(commits[1].identity()).is_none());
     assert!(catalog.lookup(commits[3].identity()).is_some());
 }
+
+#[test]
+fn retaining_external_ordinal_respects_durable_retiring_fence() {
+    let (fixture, commits) = linear_history(3);
+    let catalog = CompositeHistoryCatalog::new(
+        commits[0].identity().owner_identity(),
+        history_contract(3, u64::MAX),
+    );
+    for commit in &commits {
+        catalog
+            .append(commit.clone(), fixture.history_pins(commit))
+            .unwrap();
+    }
+    let _head = catalog.protect_explicit_commit(&commits[2]).unwrap();
+    let mut pending = catalog.begin_durable_retire_changed_history();
+    assert_eq!(pending.remaining().len(), 2);
+    // Attempting to retain an ordinal already fenced in `state.retiring` must
+    // be ignored so `commit_next` settles cleanly without violating the fence.
+    catalog.retain_external_history_ordinals(&[commits[1].identity().ordinal()]);
+    let retired = pending.commit_next(2);
+    assert_eq!(retired.len(), 2);
+    drop(retired);
+    drop(pending);
+    assert_eq!(catalog.len(), 1);
+    assert!(catalog.lookup(commits[1].identity()).is_none());
+    assert!(catalog.lookup(commits[2].identity()).is_some());
+}
