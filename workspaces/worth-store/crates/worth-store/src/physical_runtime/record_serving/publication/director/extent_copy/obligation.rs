@@ -35,6 +35,7 @@ pub(in crate::physical_runtime::record_serving::publication::director) struct Co
     pub(super) published_root: Option<u64>,
     pub(super) resolution: Option<CopyResolution>,
     pub(super) inspection: bool,
+    pub(super) drained: bool,
     pub(super) resolution_requested:
         Option<worth_store_physical_format::PhysicalExtentCopyResolutionKind>,
 }

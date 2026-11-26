@@ -31,10 +31,12 @@ pub(super) struct FrameTable {
 }
 
 impl FrameTable {
-    pub(super) fn exact_coordinate_at(&self, slot: usize) -> Option<RecordFrameCoordinate> {
+    pub(super) fn coordinate_at(&self, slot: usize) -> Option<RecordFrameCoordinate> {
         match self.slots.get(slot)?.as_ref()? {
             FrameSlot::Exact { coordinate, .. } => Some(*coordinate),
-            FrameSlot::Bounded { .. } => None,
+            FrameSlot::Bounded { artifact, entry } => {
+                entry.resident_coordinate_for_artifact(*artifact)
+            }
         }
     }
 

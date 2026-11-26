@@ -78,7 +78,11 @@
     },
     {
       "name": "StoreM4.ExtentGenerationSafety.AddressReuseGenerationAndWriteFenceSound",
-      "type": "∀ s : StoreM4.ExtentGenerationSafety.Sys, StoreM4.ExtentGenerationSafety.Reachable s → (∀ w ∈ s.inflight, ∀ e ∈ s.seen, e.range.overlaps w.range → ¬ w.gen.lt e.gen) ∧ (∀ f ∈ s.frames, ∀ e ∈ s.seen, e.range.overlaps f.range → ¬ f.gen.lt e.gen) ∧ (∀ (r : StoreM4.ExtentGenerationSafety.Range), ∀ h ∈ s.history, h.lt s.nextGen ∧ ¬ StoreM4.ExtentGenerationSafety.lookupMatches ⟨r, s.nextGen⟩ r h)"
+      "type": "∀ s : StoreM4.ExtentGenerationSafety.Sys, StoreM4.ExtentGenerationSafety.Reachable s → (∀ w ∈ s.inflight, ¬ w.gen.lt s.floorGen ∧ ∀ e ∈ s.seen, e.range.overlaps w.range → ¬ w.gen.lt e.gen) ∧ (∀ f ∈ s.frames, ¬ f.gen.lt s.floorGen ∧ ∀ e ∈ s.seen, e.range.overlaps f.range → ¬ f.gen.lt e.gen) ∧ (∀ (r : StoreM4.ExtentGenerationSafety.Range), ∀ h ∈ s.history, h.lt s.nextGen ∧ ¬ StoreM4.ExtentGenerationSafety.lookupMatches ⟨r, s.nextGen⟩ r h)"
+    },
+    {
+      "name": "StoreM4.ExtentGenerationSafety.post_crash_frame_never_rewinds_below_history",
+      "type": "∀ {s : StoreM4.ExtentGenerationSafety.Sys}, StoreM4.ExtentGenerationSafety.Reachable s → ∀ (i : StoreM4.ExtentGenerationSafety.Ident), StoreM4.ExtentGenerationSafety.current { s with seen := [], inflight := [], frames := [], floorGen := ⟨s.rootGen, s.walSeq⟩ } i → ∀ g ∈ s.history, ¬ i.gen.lt g"
     },
     {
       "name": "StoreM4.ExtentGenerationSafety.Reachable.inv",

@@ -65,12 +65,12 @@ impl PhysicalResidencyPool {
             state.accounting.deny();
             return Err(WritebackFenceDrainDenial::BarrierIncomplete(barrier));
         }
-        // The barrier is complete: no new writeback may claim the range until
-        // a drain admits it.
-        state.arena_generations.fence(range);
         if !admissible {
             state.accounting.deny();
             if !in_flight.is_empty() {
+                // Only fence when waiting on in-flight writebacks (never on a
+                // terminal `GenerationNotAdvanced` refusal).
+                state.arena_generations.fence(range);
                 return Err(WritebackFenceDrainDenial::WritebackInFlight {
                     overlapping: u32::try_from(in_flight.len()).unwrap_or(u32::MAX),
                 });
@@ -87,24 +87,39 @@ impl PhysicalResidencyPool {
             Some(PhysicalResidencyDenial::ArtifactIdentityOccupied)
         } else {
             overlapping.iter().find_map(|coordinate| {
-                PoolInner::validate_clean_invalidation(
-                    state.frames.get(coordinate).expect("occupied slot"),
-                )
-                .err()
+                validate_drain_eviction(state.frames.get(coordinate).expect("occupied slot")).err()
             })
         };
         if let Some(reason) = busy {
+            state.arena_generations.fence(range);
             state.accounting.deny();
             return Err(WritebackFenceDrainDenial::FrameBusy(reason));
         }
         for coordinate in overlapping {
-            state.detach_evictable(coordinate);
+            let was_dirty = state
+                .frames
+                .get(&coordinate)
+                .expect("validated frame")
+                .dirty;
+            if !was_dirty {
+                state.detach_evictable(coordinate);
+            }
             let removed = state.frames.remove(&coordinate).expect("validated frame");
             state.accounting.remove_frame(removed.accounting_removal());
+            if was_dirty {
+                state.accounting.record_administrative_drain();
+            }
         }
         state.arena_generations.admit(range, next);
         self.inner.changed.notify_all();
         Ok(ArenaExtentFrameIdentity::new(range, next))
+    }
+
+    /// Seeds the durable reopen frontier floor so post-reopen arena frames
+    /// and active-generation queries never rewind below pre-crash barriers.
+    pub fn seed_arena_generation_floor(&self, floor: ExtentAllocationGeneration) {
+        let mut state = self.inner.lock();
+        state.arena_generations.seed_floor(floor);
     }
 
     /// The newest generation admitted on any range overlapping `range` in this
@@ -163,9 +178,27 @@ impl PhysicalResidencyPool {
     }
 }
 
+fn validate_drain_eviction(entry: &FrameEntry) -> Result<(), PhysicalResidencyDenial> {
+    match &entry.state {
+        FrameState::LoadFailed(terminal) => {
+            Err(PhysicalResidencyDenial::FrameLoadTerminated(*terminal))
+        }
+        FrameState::Loading | FrameState::CandidateReserved => {
+            Err(PhysicalResidencyDenial::FrameIdentityOccupied)
+        }
+        FrameState::Resident(_) if entry.pins != 0 => Err(PhysicalResidencyDenial::FramePinned),
+        FrameState::Resident(_) if entry.writeback_claimed => {
+            Err(PhysicalResidencyDenial::WriteBackFrameAlreadyClaimed)
+        }
+        // After a durable reuse barrier, unpinned unclaimed dirty frames hold
+        // obsolete bytes for the retired/cancelled range and are discarded.
+        FrameState::Resident(_) => Ok(()),
+    }
+}
+
 fn overlapping_coordinates(state: &PoolState, freed: GuardRange) -> Vec<RecordFrameCoordinate> {
     (0..state.frames.slot_count())
-        .filter_map(|slot| state.frames.exact_coordinate_at(slot))
+        .filter_map(|slot| state.frames.coordinate_at(slot))
         .filter(|coordinate| {
             arena_range(*coordinate).is_some_and(|range| ranges_overlap(freed, guard_range(range)))
         })

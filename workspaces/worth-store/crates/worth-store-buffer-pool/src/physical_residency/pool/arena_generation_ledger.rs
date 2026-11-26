@@ -1,5 +1,6 @@
 use crate::allocation_generation_guard::{
-    active_generation, ranges_overlap, GuardGeneration, GuardIdentity, GuardRange,
+    active_generation, generation_precedes, ranges_overlap, GuardGeneration, GuardIdentity,
+    GuardRange,
 };
 use std::collections::BTreeMap;
 use worth_store_physical_format::{
@@ -15,15 +16,34 @@ use worth_store_physical_format::{
 /// generation, so it replaces the parts of older intervals it covers: the
 /// newest overlapping generation of any frame range is unchanged, and lookups
 /// visit only the few intervals that overlap.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub(super) struct ArenaGenerationLedger {
+    floor: GuardGeneration,
     seen: BTreeMap<(u64, u64), (u64, GuardGeneration)>,
     fenced: Vec<ExtentArenaRange>,
 }
 
+impl Default for ArenaGenerationLedger {
+    fn default() -> Self {
+        Self {
+            floor: GuardGeneration { root: 0, seq: 0 },
+            seen: BTreeMap::new(),
+            fenced: Vec::new(),
+        }
+    }
+}
+
 impl ArenaGenerationLedger {
-    /// Every admitted interval overlapping `range`, in arena order.
-    pub(super) fn overlapping(&self, range: GuardRange) -> Vec<GuardIdentity> {
+    /// Seeds the durable reopen frontier floor so newly admitted frames and
+    /// active-generation queries never rewind to `(0, 0)` after reopen.
+    pub(super) fn seed_floor(&mut self, floor: ExtentAllocationGeneration) {
+        let next = guard_generation(floor);
+        if generation_precedes(self.floor, next) {
+            self.floor = next;
+        }
+    }
+
+    fn overlapping_seen(&self, range: GuardRange) -> Vec<GuardIdentity> {
         let end = range.offset + range.length;
         let mut found: Vec<GuardIdentity> = self
             .seen
@@ -40,6 +60,19 @@ impl ArenaGenerationLedger {
             .take_while(|entry| ranges_overlap(entry.range, range))
             .collect();
         found.reverse();
+        found
+    }
+
+    /// Every admitted interval overlapping `range`, plus the durable reopen
+    /// floor when non-zero, in arena order.
+    pub(super) fn overlapping(&self, range: GuardRange) -> Vec<GuardIdentity> {
+        let mut found = self.overlapping_seen(range);
+        if self.floor.root > 0 || self.floor.seq > 0 {
+            found.push(GuardIdentity {
+                range,
+                generation: self.floor,
+            });
+        }
         found
     }
 
@@ -90,7 +123,7 @@ impl ArenaGenerationLedger {
     ) {
         let admitted = guard_range(range);
         let end = range.end();
-        for older in self.overlapping(admitted) {
+        for older in self.overlapping_seen(admitted) {
             let older_range = older.range;
             self.seen.remove(&(older_range.arena, older_range.offset));
             let older_end = older_range.offset + older_range.length;
@@ -111,8 +144,30 @@ impl ArenaGenerationLedger {
             (admitted.arena, admitted.offset),
             (admitted.length, guard_generation(generation)),
         );
-        self.fenced
-            .retain(|fenced| !covers(admitted, guard_range(*fenced)));
+        // Carve out the admitted portion from any overlapping fences so split
+        // or partial drains lift their covered sub-ranges cleanly.
+        let mut remaining_fences = Vec::with_capacity(self.fenced.len());
+        for fenced in self.fenced.drain(..) {
+            let f = guard_range(fenced);
+            if !ranges_overlap(admitted, f) {
+                remaining_fences.push(fenced);
+                continue;
+            }
+            let f_end = fenced.end();
+            if f.offset < admitted.offset {
+                if let Some(left) =
+                    ExtentArenaRange::new(fenced.arena(), f.offset, admitted.offset - f.offset)
+                {
+                    remaining_fences.push(left);
+                }
+            }
+            if f_end > end {
+                if let Some(right) = ExtentArenaRange::new(fenced.arena(), end, f_end - end) {
+                    remaining_fences.push(right);
+                }
+            }
+        }
+        self.fenced = remaining_fences;
     }
 }
 
@@ -147,12 +202,6 @@ pub(super) fn physical_generation(generation: GuardGeneration) -> ExtentAllocati
         .unwrap_or(ExtentAllocationGeneration::OPENED)
 }
 
-const fn covers(outer: GuardRange, inner: GuardRange) -> bool {
-    outer.arena == inner.arena
-        && outer.offset <= inner.offset
-        && inner.offset - outer.offset + inner.length <= outer.length
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -185,5 +234,25 @@ mod tests {
         ledger.admit(range(0, 128), generation(4));
         assert_eq!(ledger.seen.len(), 1);
         assert_eq!(active(&ledger, 20, 1), guard_generation(generation(4)));
+    }
+
+    #[test]
+    fn split_admissions_carve_fences_and_seeded_floor_prevents_rewind() {
+        let mut ledger = ArenaGenerationLedger::default();
+        ledger.seed_floor(generation(10));
+        assert_eq!(active(&ledger, 0, 64), guard_generation(generation(10)));
+        ledger.fence(range(0, 128));
+        let coord = |offset, len| {
+            RecordFrameCoordinate::new(RecordArtifactFile::ExtentArena { arena: 3 }, offset, len)
+                .unwrap()
+        };
+        assert!(ledger.fences(coord(0, 32)));
+        assert!(ledger.fences(coord(96, 32)));
+        ledger.admit(range(0, 64), generation(11));
+        assert!(!ledger.fences(coord(0, 32)));
+        assert!(ledger.fences(coord(64, 32)));
+        ledger.admit(range(64, 64), generation(12));
+        assert!(!ledger.fences(coord(64, 32)));
+        assert!(ledger.fenced.is_empty());
     }
 }

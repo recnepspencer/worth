@@ -1,5 +1,50 @@
-pub(crate) use {worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationOutcome, worth_store::physical_runtime::ServingPhysicalRuntime, worth_signal::facade::TemporalDuration, worth_proof::TransitionOutcome, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::completed, worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::extent_frame_fixture::extent_payload, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::prepare, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::read_record, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::request, worth_store_testkit_store::physical_record_journeys::serving_from_initialization};
+pub(crate) use {worth_store::physical_runtime::PhysicalMutationIdempotencyMaterial, worth_store::physical_runtime::PhysicalMutationOutcome, worth_store::physical_runtime::ServingPhysicalRuntime, worth_signal::facade::TemporalDuration, worth_proof::TransitionOutcome, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::completed, worth_store_testkit_store::physical_record_journeys::configuration, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::extent_frame_fixture::extent_payload, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::prepare, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::read_record, worth_store_testkit_store::physical_record_journeys::durability_admission::managed_mutation::extent_record_rewrite::request, worth_store_testkit_store::physical_record_journeys::manifest_fixture::current_extent_route, worth_store_testkit_store::physical_record_journeys::serving_from_initialization, worth_store_testkit_store::physical_record_journeys::serving_from_open};
 pub(crate) use {worth_store::physical_runtime::PhysicalCheckpointDeadline, worth_store::physical_runtime::PhysicalCheckpointIdempotencyKey, worth_store::physical_runtime::PhysicalCheckpointOutcome, worth_store::physical_runtime::PhysicalCheckpointRequest, worth_store::physical_runtime::PhysicalExtentCopyPhase, worth_store::physical_runtime::PhysicalExtentCopyResolutionProgress, worth_store::physical_runtime::PhysicalMutationIndeterminateStage};
+
+pub(crate) fn copy_and_publish_extent(
+    serving: &ServingPhysicalRuntime,
+    persisted: worth_store_physical_format::PersistedRecordIdentity,
+    material: u8,
+) {
+    let (_, placement, _) = configuration();
+    let submission = serving.record_submission();
+    let key = submission
+        .issue_idempotency_key(PhysicalMutationIdempotencyMaterial::new([material; 32]))
+        .unwrap();
+    let Ok(mut progress) = submission
+        .certification_begin_selected_extent_copy(placement, request(key), persisted)
+        .unwrap()
+    else {
+        panic!("actual selected extent must admit a bounded copy");
+    };
+    for _ in 0..128 {
+        if progress.phase == PhysicalExtentCopyPhase::ReadyForAdoption {
+            break;
+        }
+        progress = submission.advance_extent_copy().unwrap();
+    }
+    assert_eq!(progress.phase, PhysicalExtentCopyPhase::ReadyForAdoption);
+    completed(
+        submission
+            .prepare_completed_extent_copy()
+            .unwrap()
+            .execute(),
+    );
+    let published_checkpoint = checkpoint_copy_cancellation(serving, material.wrapping_add(1));
+    assert!(matches!(
+        submission
+            .finalize_extent_copy(&published_checkpoint)
+            .unwrap(),
+        PhysicalExtentCopyResolutionProgress::AwaitingCheckpoint { .. }
+    ));
+    let settled_checkpoint = checkpoint_copy_cancellation(serving, material.wrapping_add(2));
+    assert_eq!(
+        submission
+            .finalize_extent_copy(&settled_checkpoint)
+            .unwrap(),
+        PhysicalExtentCopyResolutionProgress::Resolved
+    );
+}
 
 pub(crate) fn checkpoint_copy_cancellation(
     serving: &ServingPhysicalRuntime,

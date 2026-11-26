@@ -76,12 +76,16 @@ structure Sys where
   rootGen : Nat
   /-- Durable WAL sequence. -/
   walSeq : Nat
+  /-- Durable reopen floor seeded on crash/reopen so frames never rewind. -/
+  floorGen : Gen
   /-- Ghost: every generation ever admitted, across crashes. -/
   history : List Gen
 
-/-- An identity no admitted overlapping generation has superseded. -/
+/-- An identity at or above the reopen floor and superseded by no overlapping
+admitted generation. -/
 def current (s : Sys) (i : Ident) : Prop :=
-  ∀ e ∈ s.seen, e.range.overlaps i.range → ¬ i.gen.lt e.gen
+  ¬ i.gen.lt s.floorGen ∧
+    ∀ e ∈ s.seen, e.range.overlaps i.range → ¬ i.gen.lt e.gen
 
 inductive Barrier where
   | retirementIncomplete
@@ -116,20 +120,23 @@ inductive Step : Sys → Sys → Prop
       (∀ w ∈ s.inflight, ¬ r.overlaps w.range) →
       (∀ e ∈ s.seen, e.range.overlaps r → e.gen.lt s.nextGen) →
       Step s (s.admitRange r)
-  | crash (s : Sys) : Step s { s with seen := [], inflight := [], frames := [] }
+  | crash (s : Sys) :
+      Step s { s with seen := [], inflight := [], frames := [], floorGen := ⟨s.rootGen, s.walSeq⟩ }
 
-def init : Sys := ⟨[], [], [], 0, 0, []⟩
+def init : Sys := ⟨[], [], [], 0, 0, ⟨0, 0⟩, []⟩
 
 inductive Reachable : Sys → Prop
   | init : Reachable init
   | step {s s' : Sys} : Reachable s → Step s s' → Reachable s'
 
-/-- Every in-flight writeback and resident frame is at its range's current
-generation, every admitted generation is below the durable frontier, and the
-ledger only names admitted generations. -/
+/-- Every in-flight writeback and resident frame is at or above the reopen floor
+and its range's current generation, the reopen floor and every admitted
+generation lie below the durable frontier, and the ledger only names admitted
+generations. -/
 structure Inv (s : Sys) : Prop where
   inflight_current : ∀ w ∈ s.inflight, current s w
   frames_current : ∀ f ∈ s.frames, current s f
+  floor_below : s.floorGen.lt s.nextGen
   history_below : ∀ h ∈ s.history, h.lt s.nextGen
   seen_admitted : ∀ e ∈ s.seen, e.gen ∈ s.history
 
@@ -143,19 +150,21 @@ theorem nextGen_advances_seq (s : Sys) (h : Gen) (hl : h.lt s.nextGen) :
 
 theorem admit_current_preserved (s : Sys) (r : Range) (i : Ident)
     (hc : current s i) (hd : ¬ r.overlaps i.range) : current (s.admitRange r) i := by
+  refine ⟨hc.1, ?_⟩
   intro e he ho
   simp only [Sys.admitRange, List.mem_cons] at he
   rcases he with rfl | he
   · exact absurd ho hd
-  · exact hc e he ho
+  · exact hc.2 e he ho
 
 theorem init_inv : Inv init :=
-  ⟨by simp [init], by simp [init], by simp [init], by simp [init]⟩
+  ⟨by simp [init], by simp [init], by simp [init, Gen.lt, Sys.nextGen],
+   by simp [init], by simp [init]⟩
 
 theorem step_inv {s s' : Sys} (hi : Inv s) (hs : Step s s') : Inv s' := by
   cases hs with
   | issue i hc =>
-    refine ⟨?_, hi.frames_current, hi.history_below, hi.seen_admitted⟩
+    refine ⟨?_, hi.frames_current, hi.floor_below, hi.history_below, hi.seen_admitted⟩
     intro w hw
     simp only [List.mem_cons] at hw
     rcases hw with rfl | hw
@@ -163,9 +172,9 @@ theorem step_inv {s s' : Sys} (hi : Inv s) (hs : Step s s') : Inv s' := by
     · exact hi.inflight_current w hw
   | land i _ =>
     exact ⟨fun w hw => hi.inflight_current w (List.mem_of_mem_erase hw),
-      hi.frames_current, hi.history_below, hi.seen_admitted⟩
+      hi.frames_current, hi.floor_below, hi.history_below, hi.seen_admitted⟩
   | load i hc =>
-    refine ⟨hi.inflight_current, ?_, hi.history_below, hi.seen_admitted⟩
+    refine ⟨hi.inflight_current, ?_, hi.floor_below, hi.history_below, hi.seen_admitted⟩
     intro f hf
     simp only [List.mem_cons] at hf
     rcases hf with rfl | hf
@@ -173,18 +182,23 @@ theorem step_inv {s s' : Sys} (hi : Inv s) (hs : Step s s') : Inv s' := by
     · exact hi.frames_current f hf
   | publishRoot =>
     exact ⟨hi.inflight_current, hi.frames_current,
+      nextGen_advances_root s s.floorGen hi.floor_below,
       fun h hh => nextGen_advances_root s h (hi.history_below h hh), hi.seen_admitted⟩
   | barrier =>
     exact ⟨hi.inflight_current, hi.frames_current,
+      nextGen_advances_seq s s.floorGen hi.floor_below,
       fun h hh => nextGen_advances_seq s h (hi.history_below h hh), hi.seen_admitted⟩
   | admitRange r _ _ hdrain _ =>
-    refine ⟨?_, ?_, ?_, ?_⟩
+    refine ⟨?_, ?_, ?_, ?_, ?_⟩
     · intro w hw
       exact admit_current_preserved s r w (hi.inflight_current w hw) (hdrain w hw)
     · intro f hf
       simp only [Sys.admitRange, List.mem_filter, Bool.not_eq_true', decide_eq_false_iff_not] at hf
       exact admit_current_preserved s r f (hi.frames_current f hf.1)
         (fun ho => hf.2 (Range.overlaps_symm ho))
+    · have hf := hi.floor_below
+      simp only [Gen.lt, Sys.nextGen, Sys.admitRange] at hf ⊢
+      omega
     · intro h hh
       simp only [Sys.admitRange, List.mem_cons] at hh
       rcases hh with rfl | hh
@@ -198,7 +212,7 @@ theorem step_inv {s s' : Sys} (hi : Inv s) (hs : Step s s') : Inv s' := by
       · exact Or.inl rfl
       · exact Or.inr (hi.seen_admitted e he)
   | crash =>
-    exact ⟨by simp, by simp, hi.history_below, by simp⟩
+    exact ⟨by simp, by simp, by simp [Gen.lt, Sys.nextGen], hi.history_below, by simp⟩
 
 theorem Reachable.inv {s : Sys} (h : Reachable s) : Inv s := by
   induction h with
@@ -211,21 +225,35 @@ theorem guard_generation_holds {s : Sys} (h : Reachable s) (r : Range) :
     ∀ e ∈ s.seen, e.range.overlaps r → e.gen.lt s.nextGen :=
   fun e he _ => h.inv.history_below e.gen (h.inv.seen_admitted e he)
 
+/-- Immediately after a crash/reopen, the seeded durable floor dominates every
+previously admitted generation, so no newly loaded frame or issued writeback
+can rewind below any pre-crash barrier generation. -/
+theorem post_crash_frame_never_rewinds_below_history {s : Sys} (h : Reachable s) (i : Ident)
+    (hc : current { s with seen := [], inflight := [], frames := [], floorGen := ⟨s.rootGen, s.walSeq⟩ } i) :
+    ∀ g ∈ s.history, ¬ i.gen.lt g := by
+  intro g hg hlt
+  have hbelow := h.inv.history_below g hg
+  have hfloor := hc.1
+  simp only [Gen.lt, Sys.nextGen] at hbelow hfloor hlt
+  omega
+
 /-- **`AddressReuseGenerationAndWriteFenceSound`.** In every reachable state,
 across arbitrary split/coalesced ranges, candidate cancellations without root
 publication and crashes:
 
-1. no in-flight writeback has been superseded by a newer overlapping
-   generation, so landing it never clobbers a reused range;
-2. no resident frame has been superseded, so a lookup never serves a stale
-   generation's bytes for a reused range;
+1. no in-flight writeback is below the reopen floor or superseded by a newer
+   overlapping generation, so landing it never clobbers a reused range;
+2. no resident frame is below the reopen floor or superseded, so a lookup never
+   serves a stale generation's bytes for a reused range;
 3. every admission's generation strictly exceeds every generation ever
    admitted before it, so a stale `(range, g)` lookup or submission can never
    match the reused identity. -/
 theorem AddressReuseGenerationAndWriteFenceSound :
     ∀ s : Sys, Reachable s →
-      (∀ w ∈ s.inflight, ∀ e ∈ s.seen, e.range.overlaps w.range → ¬ w.gen.lt e.gen) ∧
-      (∀ f ∈ s.frames, ∀ e ∈ s.seen, e.range.overlaps f.range → ¬ f.gen.lt e.gen) ∧
+      (∀ w ∈ s.inflight, ¬ w.gen.lt s.floorGen ∧
+        ∀ e ∈ s.seen, e.range.overlaps w.range → ¬ w.gen.lt e.gen) ∧
+      (∀ f ∈ s.frames, ¬ f.gen.lt s.floorGen ∧
+        ∀ e ∈ s.seen, e.range.overlaps f.range → ¬ f.gen.lt e.gen) ∧
       (∀ (r : Range), ∀ h ∈ s.history,
         h.lt s.nextGen ∧ ¬ lookupMatches ⟨r, s.nextGen⟩ r h) := by
   intro s hs
@@ -238,7 +266,7 @@ theorem AddressReuseGenerationAndWriteFenceSound :
 /-! ## `M10` negative witnesses -/
 
 /-- Admission with the drain premise removed. -/
-def unfencedAdmitWitness : Sys := ⟨[], [⟨⟨1, 0, 8⟩, ⟨0, 0⟩⟩], [], 0, 0, []⟩
+def unfencedAdmitWitness : Sys := ⟨[], [⟨⟨1, 0, 8⟩, ⟨0, 0⟩⟩], [], 0, 0, ⟨0, 0⟩, []⟩
 
 /-- M10a: removing `WritebackFenceDrain` lets a paused writeback survive a
 split-range reuse; landing it would clobber the newer generation. -/
@@ -246,12 +274,16 @@ theorem M10_without_drain_paused_writeback_clobbers :
     Inv unfencedAdmitWitness ∧
       ∃ w ∈ (unfencedAdmitWitness.admitRange ⟨1, 4, 2⟩).inflight,
         ¬ current (unfencedAdmitWitness.admitRange ⟨1, 4, 2⟩) w := by
-  refine ⟨⟨?_, by simp [unfencedAdmitWitness], ?_, by simp [unfencedAdmitWitness]⟩, ?_⟩
-  · intro w hw e he; simp [unfencedAdmitWitness] at he
+  refine ⟨⟨?_, by simp [unfencedAdmitWitness], by simp [unfencedAdmitWitness, Gen.lt, Sys.nextGen],
+    ?_, by simp [unfencedAdmitWitness]⟩, ?_⟩
+  · intro w hw
+    simp only [unfencedAdmitWitness, List.mem_singleton] at hw
+    subst hw
+    exact ⟨by simp [Gen.lt, unfencedAdmitWitness], fun e he => by simp [unfencedAdmitWitness] at he⟩
   · intro h hh; simp [unfencedAdmitWitness] at hh
   · refine ⟨⟨⟨1, 0, 8⟩, ⟨0, 0⟩⟩, by simp [unfencedAdmitWitness, Sys.admitRange], ?_⟩
     intro hc
-    have := hc ⟨⟨1, 4, 2⟩, ⟨0, 1⟩⟩ (by simp [Sys.admitRange, Sys.nextGen, unfencedAdmitWitness])
+    have := hc.2 ⟨⟨1, 4, 2⟩, ⟨0, 1⟩⟩ (by simp [Sys.admitRange, Sys.nextGen, unfencedAdmitWitness])
       ⟨rfl, by decide, by decide⟩
     exact this (Or.inr ⟨rfl, by decide⟩)
 

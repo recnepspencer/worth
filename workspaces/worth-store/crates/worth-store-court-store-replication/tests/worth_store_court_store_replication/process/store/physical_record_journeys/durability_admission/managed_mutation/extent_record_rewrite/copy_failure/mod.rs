@@ -68,28 +68,82 @@ fn unstarted_final_copy_wal_does_not_fence_root_or_prevent_durable_cancellation(
     serving.close();
 }
 
-/// S8b: a cancelled candidate extent re-enters the allocator through
-/// `WritebackFenceDrain` once a checkpoint covers its cancellation, at a
-/// strictly newer generation although no root was published, and the extent
-/// that reuses the range never observes the cancelled candidate's bytes.
+/// S8b: a cancelled candidate extent in a published arena re-enters the
+/// allocator through `WritebackFenceDrain` once a checkpoint covers its
+/// cancellation (with zero root publication), survives close + reopen without
+/// generation rewind, and is reused at the exact cancelled `(arena, offset,
+/// length)` with different bytes and zero stale residue.
 #[test]
 fn cancelled_candidate_extent_reuses_at_newer_generation_without_root_publication() {
     let parent = tempfile::tempdir().unwrap();
     let root = parent.path().join("store");
-    let serving = serving_from_initialization(&root);
     let (_, placement, _) = configuration();
-    let payload = extent_payload();
-    let appended = completed(prepare(&serving, placement, [240; 32], &payload).execute());
-    let persisted = appended.persisted_records()[0];
-    let record = appended.into_acknowledgment().record_ids().next().unwrap();
-    let reissued = cancel_copy_without_root_publication(&serving, persisted, 241);
-    assert!(reissued > worth_store_physical_format::ExtentAllocationGeneration::OPENED);
+    let payload_a = vec![0x5a; extent_payload().len()];
+    let payload_b = vec![0xaa; extent_payload().len()];
 
-    let reuse = vec![0x5a; payload.len()];
-    let reused = completed(prepare(&serving, placement, [247; 32], &reuse).execute());
-    let reused = reused.into_acknowledgment().record_ids().next().unwrap();
-    assert_eq!(read_record(&serving, record), payload);
-    assert_eq!(read_record(&serving, reused), reuse);
-    assert_eq!(newest_arena_generation(&serving), reissued);
-    serving.close();
+    // Session 1: publish arena 2 by copying `a` from arena 1 -> arena 2, then
+    // retire `a`'s displaced slot in arena 1 so both arena 1 and arena 2 are
+    // published (< next_arena = 3) and arena 1 is free from offset 0.
+    let (a_persisted, a_record, expected_len) = {
+        let serving = serving_from_initialization(&root);
+        let a = completed(prepare(&serving, placement, [240; 32], &payload_a).execute());
+        let a_persisted = a.persisted_records()[0];
+        let a_record = a.into_acknowledgment().record_ids().next().unwrap();
+        let orig_route = current_extent_route(&root, a_persisted);
+        assert_eq!(orig_route.arena, 1);
+        assert_eq!(orig_route.offset, 0);
+        copy_and_publish_extent(&serving, a_persisted, 241);
+        while serving.retire_displaced_segment().is_ok() {}
+        let moved_route = current_extent_route(&root, a_persisted);
+        assert_eq!(moved_route.arena, 2);
+        serving.close();
+        (a_persisted, a_record, orig_route.length)
+    };
+
+    // Session 2: append `b` (0xaa) — best-fit places it in arena 2 (tighter
+    // free tail than empty arena 1). Copy `b` into published arena 1 at offset
+    // 0, then durably cancel + checkpoint + finalize with zero root pub.
+    let arena1 = worth_store_physical_format::ExtentArenaId::new(1).unwrap();
+    let cancelled_range =
+        worth_store_physical_format::ExtentArenaRange::new(arena1, 0, expected_len).unwrap();
+    let (b_record, reissued) = {
+        let serving = serving_from_open(&root);
+        let b = completed(prepare(&serving, placement, [244; 32], &payload_b).execute());
+        let b_persisted = b.persisted_records()[0];
+        let b_record = b.into_acknowledgment().record_ids().next().unwrap();
+        let b_route = current_extent_route(&root, b_persisted);
+        assert_eq!(b_route.arena, 2, "best-fit places b in tighter arena 2");
+        let reissued = cancel_copy_without_root_publication(&serving, b_persisted, 245);
+        assert!(reissued > worth_store_physical_format::ExtentAllocationGeneration::OPENED);
+        assert_eq!(
+            serving
+                .certification_physical_residency()
+                .active_arena_generation(cancelled_range),
+            reissued,
+            "Path B drain must advance generation on exact cancelled range (arena 1, offset 0)"
+        );
+        serving.close();
+        (b_record, reissued)
+    };
+
+    // Session 3 (post-reopen): floor must not rewind to OPENED, and copying `a`
+    // (0x5a) out of arena 2 must reuse the exact cancelled `(arena 1, 0, len)`.
+    let reopened = serving_from_open(&root);
+    let reopened_gen = reopened
+        .certification_physical_residency()
+        .active_arena_generation(cancelled_range);
+    assert!(
+        reopened_gen >= reissued,
+        "reopen must seed durable generation floor >= pre-close barrier ({reopened_gen:?} vs {reissued:?})"
+    );
+    copy_and_publish_extent(&reopened, a_persisted, 250);
+    let reused_route = current_extent_route(&root, a_persisted);
+    assert_eq!(
+        (reused_route.arena, reused_route.offset, reused_route.length),
+        (1, 0, expected_len),
+        "reopened allocation must reuse the exact cancelled arena range"
+    );
+    assert_eq!(read_record(&reopened, a_record), payload_a);
+    assert_eq!(read_record(&reopened, b_record), payload_b);
+    reopened.close();
 }

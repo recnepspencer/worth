@@ -88,6 +88,9 @@ impl PoolInner {
         {
             return Err(PhysicalResidencyDenial::ArtifactIdentityOccupied);
         }
+        if state.arena_generations.fences(key.coordinate) {
+            return Err(PhysicalResidencyDenial::WriteBackRangeFenced);
+        }
         Ok(())
     }
 

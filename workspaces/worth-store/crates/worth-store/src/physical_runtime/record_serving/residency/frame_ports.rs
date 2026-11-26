@@ -60,6 +60,21 @@ impl RecordFramePorts {
         self.pool.drain_writeback_fence(range, barrier, reuse)
     }
 
+    pub(in crate::physical_runtime) fn seed_arena_generation_floor(
+        &self,
+        floor: worth_store_physical_format::ExtentAllocationGeneration,
+    ) {
+        self.pool.seed_arena_generation_floor(floor);
+    }
+
+    pub(in crate::physical_runtime::record_serving) fn require_arena_frame_identity(
+        &self,
+        key: worth_store_buffer_pool::PhysicalFrameKey,
+        expected: worth_store_physical_format::ArenaExtentFrameIdentity,
+    ) -> Result<(), PhysicalResidencyDenial> {
+        self.pool.require_arena_frame_identity(key, expected)
+    }
+
     #[cfg(feature = "certification-test-authority")]
     pub(in crate::physical_runtime) fn certification_active_arena_generation(
         &self,
